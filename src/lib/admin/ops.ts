@@ -1,0 +1,42 @@
+import { z } from 'zod';
+
+/** Operaciones del builder (contrato compartido cliente/servidor). Cada op devuelve el BuilderState completo. */
+const id = z.string().uuid();
+const money = z.number().finite().min(0).max(10_000_000).multipleOf(0.01);
+const optText = (max: number) => z.string().trim().max(max).transform((s) => (s === '' ? null : s)).nullable();
+
+export const dossierPatchSchema = z.object({
+  title: z.string().trim().min(1, 'El título es obligatorio').max(140),
+  prospectName: optText(120),
+  prospectCompany: optText(120),
+  locale: z.enum(['es-ES', 'en-GB', 'ca-ES', 'pt-PT', 'fr-FR']),
+  priceMode: z.enum(['none', 'total', 'per_module']),
+  totalPrice: money.nullable(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+}).partial().strict();
+
+export const builderOpSchema = z.discriminatedUnion('op', [
+  z.object({ op: z.literal('update'), patch: dossierPatchSchema }),
+  z.object({ op: z.literal('addItem'), moduleVersionId: id, index: z.number().int().min(0).optional() }),
+  z.object({ op: z.literal('move'), itemId: id, toIndex: z.number().int().min(0) }),
+  z.object({ op: z.literal('setVisible'), itemId: id, visible: z.boolean() }),
+  z.object({ op: z.literal('setPrice'), itemId: id, priceOverride: money.nullable() }),
+  z.object({ op: z.literal('setProps'), itemId: id, propOverrides: z.record(z.unknown()) }),
+  z.object({ op: z.literal('removeItem'), itemId: id }),
+  z.object({ op: z.literal('upgradeItem'), itemId: id }),
+  z.object({ op: z.literal('setStatus'), status: z.enum(['draft', 'published', 'archived']) }),
+  z.object({ op: z.literal('createLink'), expiresAt: z.string().datetime({ offset: true }).nullable().optional() }),
+  z.object({ op: z.literal('revokeLink'), linkId: id }),
+]);
+
+export type BuilderOp = z.infer<typeof builderOpSchema>;
+export type DossierPatch = z.infer<typeof dossierPatchSchema>;
+
+export const createDossierSchema = z.object({
+  title: z.string().trim().min(1, 'El título es obligatorio').max(140),
+  prospectName: optText(120).optional(),
+  prospectCompany: optText(120).optional(),
+  /** Copiar módulos/precio de otro dossier del tenant (plantilla). */
+  fromDossierId: id.optional(),
+});
+export type CreateDossierInput = z.infer<typeof createDossierSchema>;

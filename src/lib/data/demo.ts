@@ -3,13 +3,11 @@
  * aplicando EXACTAMENTE los mismos gates que el RPC public.get_public_dossier.
  * Sirve para desarrollo local y para el plan de verificación sin infraestructura.
  */
-import fixtures from '../../../supabase/seed/fixtures.json';
 import type { PublicRepository } from './index';
 import { toPublicDossier, toTenant, type PublicDossierRow } from './mappers';
+import { demoDb, type DemoDb } from './store';
 
-type F = typeof fixtures;
-
-export function getPublicDossierFromRows(db: Pick<F, 'share_link' | 'dossier' | 'dossier_item' | 'module_version' | 'module'>, token: string, tenantId: string, now = new Date()): PublicDossierRow | null {
+export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossier' | 'dossier_item' | 'module_version' | 'module'>, token: string, tenantId: string, now = new Date()): PublicDossierRow | null {
   const link = db.share_link.find((l) => l.token === token);
   if (!link || !link.is_active || (link.expires_at && new Date(link.expires_at) <= now)) return null;
   const d = db.dossier.find((x) => x.id === link.dossier_id);
@@ -22,33 +20,33 @@ export function getPublicDossierFromRows(db: Pick<F, 'share_link' | 'dossier' | 
       const m = db.module.find((x) => x.id === mv.module_id)!;
       return {
         id: i.id, position: i.position, block_type: m.block_type, module_key: m.key,
-        default_props: mv.default_props as Record<string, unknown>, prop_overrides: i.prop_overrides as Record<string, unknown>,
+        default_props: mv.default_props, prop_overrides: i.prop_overrides,
         default_price: mv.default_price, price_override: i.price_override, currency: mv.default_currency,
       };
     });
 
   return {
     id: d.id, tenant_id: d.tenant_id, title: d.title, prospect_name: d.prospect_name, prospect_company: d.prospect_company,
-    locale: d.locale, price_mode: d.price_mode as PublicDossierRow['price_mode'], total_price: d.total_price,
+    locale: d.locale, price_mode: d.price_mode, total_price: d.total_price,
     currency: d.currency, theme_override: d.theme_override, items,
   };
 }
 
 export function demoRepository(): PublicRepository {
-  const tenants = fixtures.tenant.filter((t) => t.status === 'active');
+  const tenants = () => demoDb().tenant.filter((t) => t.status === 'active');
   return {
     mode: 'demo',
     async resolveTenantByHost(host) {
-      const dom = fixtures.domain.find((d) => d.hostname === host);
-      const t = dom && tenants.find((x) => x.id === dom.tenant_id);
+      const dom = demoDb().domain.find((d) => d.hostname === host);
+      const t = dom && tenants().find((x) => x.id === dom.tenant_id);
       return t ? toTenant(t) : null;
     },
     async resolveTenantBySlug(slug) {
-      const t = tenants.find((x) => x.slug === slug);
+      const t = tenants().find((x) => x.slug === slug);
       return t ? toTenant(t) : null;
     },
     async getPublicDossier(token, tenantId) {
-      const row = getPublicDossierFromRows(fixtures, token, tenantId);
+      const row = getPublicDossierFromRows(demoDb(), token, tenantId);
       return row ? toPublicDossier(row) : null;
     },
   };
