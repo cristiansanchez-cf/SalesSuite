@@ -1,0 +1,23 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Builder from '~/components/admin/Builder.svelte';
+import { AdminError } from '~/lib/admin/service';
+import type { BuilderState } from '~/lib/admin/types';
+import { requestOrigin } from '~/lib/http';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+
+let state: BuilderState;
+try {
+  state = await admin.service.getState(Astro.params.id ?? '');
+} catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+// El enlace público vive en el mismo host del tenant que la consola.
+const origin = requestOrigin(Astro.request, Astro.url);
+---
+<AdminLayout title={state.dossier.title} wide>
+  <Builder client:load initial={state} publicOrigin={origin} />
+</AdminLayout>

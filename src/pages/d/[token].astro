@@ -3,12 +3,8 @@
  * Renderer público del dossier: pitch.<tenant>/d/<token>. SSR, temado, sin login.
  * Cualquier fallo de gate (token, revocado, expirado, no publicado, otro tenant) → 404 idéntico.
  */
-import ThemedShell from '~/layouts/ThemedShell.astro';
-import ItemPrice from '~/components/ItemPrice.astro';
+import DossierView from '~/components/dossier/DossierView.astro';
 import { publicRepository } from '~/lib/data';
-import { resolveTotal } from '~/lib/pricing';
-import { REGISTRY } from '~/modules/registry';
-import { resolveItem } from '~/modules/resolve';
 
 const { tenant } = Astro.locals;
 const token = Astro.params.token ?? '';
@@ -16,36 +12,5 @@ const TOKEN_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
 const dossier = tenant && TOKEN_RE.test(token) ? await publicRepository().getPublicDossier(token, tenant.id) : null;
 if (!tenant || !dossier) return Astro.rewrite('/404');
-
-const total = resolveTotal(dossier);
-const resolved = dossier.items.map((it) => resolveItem(it, dossier, total));
-const blocks = await Promise.all(
-  resolved.map(async (r) => {
-    if (!r.ok) {
-      console.error(`[dossier ${dossier.id}] item ${r.item.id} omitido: ${r.reason}`);
-      return null;
-    }
-    const mod = await REGISTRY[r.blockType].load();
-    return { ...r, Comp: mod.default as unknown as (props: Record<string, unknown>) => unknown };
-  }),
-);
 ---
-<ThemedShell
-  title={dossier.title}
-  tenantName={tenant.name}
-  locale={dossier.locale}
-  theme={tenant.themeTokens}
-  themeOverride={dossier.themeOverride}
->
-  <main>
-    {blocks.map((b) => b && (
-      <div data-item-id={b.item.id} data-block-type={b.blockType}>
-        <b.Comp {...b.props} ctx={b.ctx} />
-        {b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
-      </div>
-    ))}
-  </main>
-  <footer class="border-t border-line py-8 text-center text-sm text-muted">
-    {tenant.name} · Propuesta para {dossier.prospectCompany ?? dossier.prospectName ?? dossier.title}
-  </footer>
-</ThemedShell>
+<DossierView tenant={tenant} dossier={dossier} />

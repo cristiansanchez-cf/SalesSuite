@@ -1,0 +1,112 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { createDossierSchema } from '~/lib/admin/ops';
+import { AdminError } from '~/lib/admin/service';
+import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
+import type { DossierStatus } from '~/lib/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const { service, session } = admin;
+
+let error: string | null = null;
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = createDossierSchema.safeParse({
+    title: form.get('title') ?? '',
+    prospectName: form.get('prospectName') ?? '',
+    prospectCompany: form.get('prospectCompany') ?? '',
+    fromDossierId: form.get('fromDossierId') || undefined,
+  });
+  if (!parsed.success) error = parsed.error.issues[0]?.message ?? 'Datos no válidos';
+  else {
+    try {
+      const id = await service.createDossier(parsed.data);
+      return Astro.redirect(`/admin/dossiers/${id}`, 303);
+    } catch (e) {
+      if (!(e instanceof AdminError)) throw e;
+      error = e.message;
+    }
+  }
+}
+
+const all = await service.listDossiers();
+const status = Astro.url.searchParams.get('status') as DossierStatus | null;
+const mine = Astro.url.searchParams.get('mine') === '1';
+const q = (Astro.url.searchParams.get('q') ?? '').trim().toLowerCase();
+const list = all.filter((d) =>
+  (!status || d.status === status)
+  && (!mine || d.authorId === session.userId)
+  && (!q || [d.title, d.prospectName, d.prospectCompany].some((x) => x?.toLowerCase().includes(q))));
+
+const filterHref = (p: Record<string, string | null>) => {
+  const u = new URL(Astro.url);
+  for (const [k, v] of Object.entries(p)) v == null ? u.searchParams.delete(k) : u.searchParams.set(k, v);
+  return u.pathname + u.search;
+};
+const chip = (on: boolean) => ['rounded-full border px-3 py-1 text-sm', on ? 'border-ink bg-ink text-bg' : 'border-line bg-bg hover:bg-surface'];
+const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+---
+<AdminLayout title="Dossiers">
+  <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <section>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-3xl font-extrabold">Dossiers</h1>
+          <p class="text-sm text-muted">{all.length} en total · {all.filter((d) => d.status === 'published').length} publicados</p>
+        </div>
+        <form method="get" class="flex gap-2">
+          {status && <input type="hidden" name="status" value={status} />}
+          {mine && <input type="hidden" name="mine" value="1" />}
+          <input class="rounded-lg border border-line bg-bg px-3 py-1.5 text-sm" type="search" name="q" value={q} placeholder="Buscar prospecto…" aria-label="Buscar" />
+        </form>
+      </div>
+
+      <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtros">
+        <a href={filterHref({ status: null })} class:list={chip(!status)}>Todos</a>
+        {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class:list={chip(status === s)}>{STATUS_LABEL[s]}</a>)}
+        <span class="mx-1 w-px bg-line"></span>
+        <a href={filterHref({ mine: mine ? null : '1' })} class:list={chip(mine)}>Solo míos</a>
+      </nav>
+
+      {list.length === 0 ? (
+        <p class="mt-10 rounded-2xl border border-dashed border-line p-10 text-center text-muted">No hay dossiers con estos filtros.</p>
+      ) : (
+        <ul class="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0" data-testid="dossier-list">
+          {list.map((d) => (
+            <li class="list-none">
+              <a href={`/admin/dossiers/${d.id}`} class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface">
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold">{d.title}</span>
+                  <span class="block truncate text-sm text-muted">
+                    {[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ') || 'Sin prospecto'}
+                    {' · '}{d.itemCount} módulos{d.activeLinks ? ` · ${d.activeLinks} enlace${d.activeLinks > 1 ? 's' : ''}` : ''}
+                  </span>
+                </span>
+                <span class="text-xs text-muted">{d.authorName ?? '—'} · {relativeTime(d.updatedAt)}</span>
+                <span class:list={['rounded-full px-2.5 py-0.5 text-xs font-semibold', STATUS_CLASS[d.status]]}>{STATUS_LABEL[d.status]}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <aside>
+      <form method="post" class="space-y-3 rounded-2xl border border-line bg-bg p-5 lg:sticky lg:top-6" data-testid="create-form">
+        <h2 class="text-lg font-bold">Nuevo dossier</h2>
+        {error && <p class="rounded-lg bg-red-50 p-2 text-sm text-red-700" role="alert">{error}</p>}
+        <label class="block text-sm font-medium">Título<input class={input} name="title" required maxlength="140" placeholder="Sala X · Bodas 2027" /></label>
+        <label class="block text-sm font-medium">Empresa del prospecto<input class={input} name="prospectCompany" maxlength="120" /></label>
+        <label class="block text-sm font-medium">Persona de contacto<input class={input} name="prospectName" maxlength="120" /></label>
+        <label class="block text-sm font-medium">Partir de
+          <select class={input} name="fromDossierId">
+            <option value="">Dossier vacío</option>
+            {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
+          </select>
+        </label>
+        <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg hover:opacity-90" type="submit">Crear y editar</button>
+      </form>
+    </aside>
+  </div>
+</AdminLayout>

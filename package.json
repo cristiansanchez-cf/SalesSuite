@@ -15,7 +15,8 @@
     "check": "astro check",
     "test": "vitest run",
     "db:test": "bash supabase/tests/run-local.sh",
-    "db:seed:build": "node scripts/build-seed.mjs"
+    "db:seed:build": "node scripts/build-seed.mjs",
+    "db:it": "bash supabase/tests/run-it.sh"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.5",

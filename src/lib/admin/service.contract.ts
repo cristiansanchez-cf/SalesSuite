@@ -194,6 +194,15 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       expect(new Set(pos).size).toBe(3);
     });
 
+    test('editar módulos actualiza la fecha de edición del dossier', async () => {
+      const s = svc(USERS.rep);
+      const id = await s.createDossier({ title: 'T' });
+      const before = (await s.getState(id)).dossier.updatedAt!;
+      await new Promise((r) => setTimeout(r, 20));
+      const after = (await s.apply(id, { op: 'addItem', moduleVersionId: V.pricing })).dossier.updatedAt!;
+      expect(new Date(after).getTime()).toBeGreaterThan(new Date(before).getTime());
+    });
+
     test('defensa en profundidad: sesión falsificada con otro tenant la frena la RLS', async () => {
       if (!E.enforcesRls) return;
       // Usuario de ALT con sesión que dice ser admin de ENJOY: el servicio no lo detecta, la RLS sí.

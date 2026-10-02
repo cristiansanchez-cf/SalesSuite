@@ -29,3 +29,16 @@ Estado: **aceptado (Fase 0)** · Fecha: 2026-10-02 · Contexto: [`PLAN.md`](./PL
 - `share_link.token`: 24 bytes aleatorios base64url (32 chars), `check length >= 16`.
 - `/d/*`: `noindex`, `Referrer-Policy: no-referrer`, `Cache-Control: private, no-store`; todos los fallos de gate → mismo 404.
 - Host desconocido → sin tenant → 404. El fallback `DEV_TENANT_SLUG` solo aplica a `localhost`/`127.0.0.1`.
+
+## Fase 1 (consola) — decisiones
+
+| Tema | Decisión | Por qué |
+|---|---|---|
+| Auth consola | Supabase Auth (email+contraseña y magic link, `shouldCreateUser: false`) con `@supabase/ssr` (cookies httpOnly). `getUser()` en cada petición. | Sin alta abierta: los usuarios los da de alta la plataforma/admin. |
+| Ámbito | La consola se sirve en el **host del tenant** (`pitch.<tenant>/admin`); el usuario necesita `membership` en ESE tenant (si no, 403). | Un único dominio por tenant; cookies aisladas por host. |
+| Arquitectura del builder | El cliente envía **ops** (Zod discriminated union) y recibe el estado completo. Reglas en un único `service.ts` sobre `AdminDb` (demo / Supabase con JWT del usuario). | Sin lógica duplicada en cliente; misma suite de contrato contra ambas BDs. |
+| Permisos | El servicio comprueba rol/autor/tenant **y** la RLS lo repite en Supabase (test de sesión falsificada incluido). | Defensa en profundidad. |
+| CSRF | `security.checkOrigin` de Astro **desactivado**: compara con el host interno del servidor y rompería los formularios bajo el dominio del tenant. Sustituto: `isSameOriginWrite` en el middleware (Origin == host real; si falta Origin, solo `Sec-Fetch-Site: same-origin`). La API además exige `application/json`. | Correcto para dominios dinámicos por tenant. |
+| Drag & drop | `svelte-dnd-action` (ratón, táctil y teclado) + botones ↑↓ explícitos. | Tablet y accesibilidad. |
+| Personalización | JSON de `prop_overrides` validado en servidor contra el `schema.ts` del módulo (422 con el motivo). Formulario generado desde Zod: pendiente. | Valor inmediato sin bloquear la fase. |
+| Ediciones en vivo | Editar un dossier publicado se refleja al instante en sus enlaces (es el objetivo del producto). Despublicar o revocar → 404. | — |

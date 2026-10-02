@@ -7,7 +7,7 @@ Producto multi-tenant de Cofundo: un comercial compone un **dossier vivo** por p
 - Cómo añadir un módulo: [`docs/MODULE_AUTHORING.md`](docs/MODULE_AUTHORING.md)
 - Alta de un tenant: [`docs/ONBOARDING_TENANT.md`](docs/ONBOARDING_TENANT.md)
 
-**Stack:** Astro 5 SSR (adapter Node) · Tailwind 3 sobre CSS vars · Zod · Supabase (Postgres + Auth + RLS).
+**Stack:** Astro 5 SSR (adapter Node) · Tailwind 3 sobre CSS vars · Zod · Svelte 5 (builder) · Supabase (Postgres + Auth + RLS).
 
 ## Arrancar en local (modo DEMO, sin Supabase)
 
@@ -23,8 +23,11 @@ npm run dev                 # http://localhost:4321
 | http://retheme.localhost:4321/d/demo-retheme-Hx8v | Mismos módulos con otro tenant → re-skin solo con `theme_tokens` |
 | `/d/demo-draft-Kp9wQ1`, `/d/demo-revoked-Zt4c`, `/d/demo-expired-Bn3r` | Gates → 404 idéntico |
 | http://retheme.localhost:4321/d/demo-sala-x-7Qm2 | Token válido bajo otro tenant → 404 |
+| http://localhost:4321/admin | **Consola**: en demo eliges usuario (comercial / admin de Enjoy, o comercial de otro tenant → 403) |
 
 `localhost` se resuelve al tenant `DEV_TENANT_SLUG` (por defecto `enjoy`); `*.localhost` se resuelve por la tabla `domain`.
+
+En modo demo los cambios hechos en `/admin` se ven al momento en `/d/<token>` (BD en memoria; se pierde al reiniciar).
 
 ## Con Supabase
 
@@ -32,7 +35,21 @@ npm run dev                 # http://localhost:4321
 supabase db reset                      # aplica supabase/migrations + supabase/seed.sql
 # .env: PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY
 ```
-El renderer público solo usa la clave **anon** y dos RPC `security definer` (`resolve_tenant`, `get_public_dossier`).
+- El renderer público solo usa la clave **anon** y dos RPC `security definer` (`resolve_tenant`, `get_public_dossier`).
+- La consola usa **Supabase Auth** (email+contraseña o magic link) con cookies httpOnly (`@supabase/ssr`); cada consulta va con el JWT del usuario, así que la **RLS** aplica siempre. En Auth → URL Configuration añade `https://<host-del-tenant>/admin/auth/callback` a las Redirect URLs.
+- Alta de usuarios/membresías: [`docs/ONBOARDING_TENANT.md`](docs/ONBOARDING_TENANT.md).
+
+## Consola `/admin`
+
+| Ruta | |
+|---|---|
+| `/admin/login` | Login (demo: selector de usuario) |
+| `/admin` | Listado: filtros por estado / "solo míos" / búsqueda; alta de dossier (vacío o desde plantilla) |
+| `/admin/dossiers/:id` | **Builder**: datos del prospecto, modo de precio (`none`/`total`/`per_module`), catálogo, reordenar (drag & drop + botones ↑↓), ocultar, precio por módulo, personalizar textos (JSON validado contra el schema), actualizar a la última versión del módulo, publicar/despublicar/archivar/borrar, generar/copiar/revocar enlaces con caducidad, vista previa móvil/tablet/escritorio |
+| `/admin/dossiers/:id/preview` | Vista previa autenticada (cualquier estado) |
+| `/admin/api/dossiers/:id` | API JSON del builder: `GET` estado · `POST {op}` → estado · `DELETE` |
+
+Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/ops.ts`); las reglas viven en un único servicio (`src/lib/admin/service.ts`) sobre la interfaz `AdminDb`, con dos implementaciones: memoria (demo) y Supabase con la sesión del usuario. La misma batería de tests de contrato (`service.contract.ts`) se ejecuta contra ambas.
 
 ## Scripts
 
@@ -42,15 +59,21 @@ El renderer público solo usa la clave **anon** y dos RPC `security definer` (`r
 | `npm run check` | `astro check` (tipos) |
 | `npm test` | Vitest: tema (incl. inyección CSS), precios, rank fraccional, resolución de props, gates del repo demo, resolución de tenant |
 | `npm run db:test` | Migración + seed + **aserciones de RLS/RPC** sobre un Postgres pelado (stub de `auth`), sin Supabase CLI |
+| `npm run db:it` | Tests de contrato del servicio de la consola contra **Postgres + PostgREST + RLS** reales con `supabase-js` (`POSTGREST_BIN=/ruta/postgrest`) |
 | `npm run db:seed:build` | Regenera `supabase/seed.sql` desde `fixtures.json` (CI comprueba que está al día) |
-| `node scripts/smoke-e2e.cjs` | Smoke Playwright contra un servidor en marcha (orden, precios, 404s, tema, multi-instancia) |
+| `node scripts/smoke-e2e.cjs` | Smoke Playwright del enlace público (orden, precios, 404s, tema, multi-instancia) |
+| `node scripts/smoke-admin.cjs` | Smoke Playwright de la consola: plan §13 pasos 2–7 por la UI (login, crear, drag & drop, ocultar, precio, publicar, enlace, revocar, RBAC, móvil) |
 
 ## Estructura
 
 ```
 src/
-  middleware.ts            Host → tenant (Astro.locals.tenant) + cabeceras de /d/*
+  middleware.ts            Host → tenant, CSRF, sesión de /admin, cabeceras
   pages/d/[token].astro    Renderer público SSR
+  pages/admin/             Consola (login, listado, builder, preview, API)
+  components/admin/Builder.svelte   Isla del builder
+  components/dossier/DossierView.astro   Render compartido (público + preview)
+  lib/admin/               ops (contrato), service (reglas), db-demo / db-supabase, auth
   layouts/ThemedShell.astro Inyección de theme_tokens ⊕ theme_override
   modules/
     registry.ts            block_type → { schema, Component }
@@ -76,8 +99,16 @@ supabase/
 - [x] Esquema Supabase + RLS + RPC token-gated, con tests de seguridad
 - [x] Middleware de tenant por Host, renderer `/d/<token>` con gates y 404 neutro
 
+**Fase 1 — consola y builder: hecha**
+- [x] Auth (Supabase Auth email+contraseña / magic link; login de demo), RBAC admin/rep, 403 por tenant
+- [x] Listado con filtros y alta (vacío o desde plantilla)
+- [x] Builder: catálogo, drag & drop + teclado/botones, ocultar, precio `none|total|per_module` + overrides, personalización validada, actualizar versión, publicar/despublicar/archivar/borrar, enlaces con caducidad y revocación, vista previa por dispositivo
+- [x] CSRF propio (Origin vs host del tenant) — ver ADR-0001
+- [x] Tests: contrato del servicio en demo **y** en Postgres+PostgREST+RLS; E2E de consola en navegador
+
 **Pendiente**
 - [ ] **Portar el markup/CSS real `nh-*` de EnjoyWeb** a los módulos (el repo de Enjoy no estaba accesible desde esta sesión: los módulos actuales siguen la estructura del plan con copys placeholder) + `logo-marquee`, `testimonials`, `steps-howitworks`
 - [ ] Subir la fuente YWFTKul a Storage y añadir `font.faces` al tema de Enjoy
-- [ ] Fase 1: consola `/admin` (Supabase Auth, CRUD, builder Svelte con dnd, precio, enlaces)
+- [ ] Gestión de miembros y del catálogo/tema desde la consola (hoy por SQL, ver ONBOARDING)
+- [ ] Editor de personalización por formulario (hoy JSON validado) a partir de los schemas Zod
 - [ ] Despliegue (ver ADR-0001) + dominio `pitch.enjoytheclub.es`

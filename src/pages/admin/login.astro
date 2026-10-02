@@ -1,0 +1,83 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { authMode, demoLogin, safeNext, supabaseServerClient } from '~/lib/admin/auth';
+import { DEMO_USERS } from '~/lib/data/store';
+import { demoDb } from '~/lib/data/store';
+import { requestOrigin } from '~/lib/http';
+
+const { tenant } = Astro.locals;
+if (!tenant) return Astro.rewrite('/404');
+
+const mode = authMode();
+const next = safeNext(Astro.url.searchParams.get('next'));
+let error: string | null = null;
+let info: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('action') ?? '');
+  if (mode === 'demo' && action === 'demo') {
+    if (demoLogin(Astro, String(form.get('userId') ?? ''))) return Astro.redirect(next, 303);
+    error = 'Usuario de demo no válido';
+  } else if (mode === 'supabase') {
+    const email = String(form.get('email') ?? '').trim();
+    const sb = supabaseServerClient(Astro);
+    if (action === 'password') {
+      const { error: e } = await sb.auth.signInWithPassword({ email, password: String(form.get('password') ?? '') });
+      if (!e) return Astro.redirect(next, 303);
+      error = 'Email o contraseña incorrectos';
+    } else if (action === 'magic') {
+      const redirectTo = `${requestOrigin(Astro.request, Astro.url)}/admin/auth/callback?next=${encodeURIComponent(next)}`;
+      const { error: e } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
+      // Mismo mensaje exista o no la cuenta (no enumerar usuarios).
+      info = e && e.status !== 400 && e.status !== 422 ? null : 'Si el email tiene acceso, recibirás un enlace para entrar.';
+      if (!info) error = 'No se pudo enviar el enlace. Inténtalo de nuevo.';
+    }
+  }
+}
+
+const tenantName = (id: string) => demoDb().tenant.find((t) => t.id === id)?.name ?? id;
+const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2.5 outline-none focus:border-ink';
+const btn = 'w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg hover:opacity-90';
+---
+<AdminLayout title="Entrar">
+  <div class="mx-auto mt-6 max-w-sm rounded-2xl border border-line bg-bg p-6 shadow-sm sm:mt-16">
+    <h1 class="text-2xl font-extrabold">Entrar</h1>
+    <p class="mt-1 text-sm text-muted">Consola de dossiers de {tenant.name}</p>
+    {error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+    {info && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{info}</p>}
+
+    {mode === 'demo' ? (
+      <div class="mt-6 space-y-2">
+        <p class="text-sm text-muted">Modo demo: elige un usuario.</p>
+        {DEMO_USERS.map((u) => (
+          <form method="post">
+            <input type="hidden" name="action" value="demo" />
+            <input type="hidden" name="userId" value={u.id} />
+            <button type="submit" class="w-full rounded-lg border border-line px-4 py-3 text-left hover:bg-surface" data-testid={`demo-${u.email}`}>
+              <span class="block font-semibold">{u.display_name}</span>
+              <span class="block text-xs text-muted">
+                {u.email} · {u.memberships.map((m) => `${m.role} en ${tenantName(m.tenant_id)}`).join(', ')}
+              </span>
+            </button>
+          </form>
+        ))}
+      </div>
+    ) : (
+      <>
+        <form method="post" class="mt-6 space-y-3">
+          <input type="hidden" name="action" value="password" />
+          <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
+          <label class="block text-sm font-medium">Contraseña<input class={input} type="password" name="password" required autocomplete="current-password" /></label>
+          <button class={btn} type="submit">Entrar</button>
+        </form>
+        <div class="my-5 flex items-center gap-3 text-xs text-muted"><span class="h-px flex-1 bg-line"></span>o<span class="h-px flex-1 bg-line"></span></div>
+        <form method="post" class="space-y-3">
+          <input type="hidden" name="action" value="magic" />
+          <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
+          <button class="w-full rounded-lg border border-line px-4 py-2.5 font-semibold hover:bg-surface" type="submit">Enviarme un enlace mágico</button>
+        </form>
+      </>
+    )}
+  </div>
+</AdminLayout>

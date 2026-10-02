@@ -39,6 +39,12 @@ function check<T>(res: { data: T; error: { message: string } | null }): T {
   return res.data;
 }
 
+function checkOne<T>(res: { data: T; error: { message: string } | null }): NonNullable<T> {
+  const d = check(res);
+  if (d == null) throw new Error('[supabase] la escritura no devolvió fila (¿RLS?)');
+  return d as NonNullable<T>;
+}
+
 /** `sb` DEBE ser un cliente con la sesión del usuario (no service role): la RLS es la última barrera. */
 export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
   return {
@@ -60,7 +66,7 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       return r ? toDossier(r) : null;
     },
     async insertDossier(n) {
-      const r = check(await sb.from('dossier').insert({
+      const r = checkOne(await sb.from('dossier').insert({
         tenant_id: n.tenantId, author_id: n.authorId, title: n.title, prospect_name: n.prospectName,
         prospect_company: n.prospectCompany, locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
       }).select(DOSSIER_COLS).single());
@@ -90,7 +96,7 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       return (check(await sb.from('dossier_item').select(ITEM_COLS).in('dossier_id', dossierIds)) ?? []).map(toItem);
     },
     async insertItem(n) {
-      const r = check(await sb.from('dossier_item').insert({
+      const r = checkOne(await sb.from('dossier_item').insert({
         dossier_id: n.dossierId, module_version_id: n.moduleVersionId, position: n.position,
         visible: n.visible ?? true, price_override: n.priceOverride ?? null, prop_overrides: n.propOverrides ?? {},
       }).select('id').single());
@@ -130,7 +136,7 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
     },
     async insertLink(dossierId, expiresAt) {
       // El token lo genera Postgres (24 bytes aleatorios).
-      return toLink(check(await sb.from('share_link').insert({ dossier_id: dossierId, expires_at: expiresAt }).select(LINK_COLS).single()));
+      return toLink(checkOne(await sb.from('share_link').insert({ dossier_id: dossierId, expires_at: expiresAt }).select(LINK_COLS).single()));
     },
     async revokeLink(id) {
       const rows = check(await sb.from('share_link').update({ is_active: false, revoked_at: new Date().toISOString() }).eq('id', id).select('id')) ?? [];

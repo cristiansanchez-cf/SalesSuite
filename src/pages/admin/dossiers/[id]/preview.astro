@@ -1,0 +1,19 @@
+---
+/** Vista previa autenticada: renderiza el dossier tal cual lo vería el cliente, en cualquier estado. */
+import DossierView from '~/components/dossier/DossierView.astro';
+import { AdminError } from '~/lib/admin/service';
+import { STATUS_LABEL } from '~/lib/admin/format';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+let dossier;
+let status;
+try {
+  dossier = await admin.service.previewDossier(Astro.params.id ?? '');
+  status = (await admin.service.getState(Astro.params.id!)).dossier.status;
+} catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+---
+<DossierView tenant={tenant} dossier={dossier} banner={`Vista previa · ${STATUS_LABEL[status]}`} />

@@ -1,0 +1,48 @@
+---
+/**
+ * Render de un dossier (compartido por el enlace público /d/<token> y la preview de la consola).
+ * Items inválidos se omiten con log en vez de romper el dossier.
+ */
+import ThemedShell from '~/layouts/ThemedShell.astro';
+import ItemPrice from '~/components/ItemPrice.astro';
+import { resolveTotal } from '~/lib/pricing';
+import type { PublicDossier, TenantContext } from '~/lib/types';
+import { REGISTRY } from '~/modules/registry';
+import { resolveItem } from '~/modules/resolve';
+
+interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string }
+const { tenant, dossier, banner } = Astro.props;
+
+const total = resolveTotal(dossier);
+const blocks = await Promise.all(
+  dossier.items.map(async (it) => {
+    const r = resolveItem(it, dossier, total);
+    if (!r.ok) {
+      console.error(`[dossier ${dossier.id}] item ${r.item.id} omitido: ${r.reason}`);
+      return null;
+    }
+    const mod = await REGISTRY[r.blockType].load();
+    return { ...r, Comp: mod.default as unknown as (props: Record<string, unknown>) => unknown };
+  }),
+);
+---
+<ThemedShell
+  title={dossier.title}
+  tenantName={tenant.name}
+  locale={dossier.locale}
+  theme={tenant.themeTokens}
+  themeOverride={dossier.themeOverride}
+>
+  {banner && <div class="sticky top-0 z-50 bg-ink py-2 text-center text-xs font-semibold text-bg">{banner}</div>}
+  <main>
+    {blocks.map((b) => b && (
+      <div data-item-id={b.item.id} data-block-type={b.blockType}>
+        <b.Comp {...b.props} ctx={b.ctx} />
+        {b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
+      </div>
+    ))}
+  </main>
+  <footer class="border-t border-line py-8 text-center text-sm text-muted">
+    {tenant.name} · Propuesta para {dossier.prospectCompany ?? dossier.prospectName ?? dossier.title}
+  </footer>
+</ThemedShell>

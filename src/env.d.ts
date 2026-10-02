@@ -11,5 +11,9 @@ declare namespace App {
   interface Locals {
     /** Tenant resuelto por Host (middleware). null = host no mapeado. */
     tenant: import('./lib/types').TenantContext | null;
+    /** Sesión de consola (solo en /admin/*, tras el middleware). */
+    admin: import('./lib/admin/auth').AdminContext | null;
+    /** Email autenticado sin membership en este tenant (página 403). */
+    forbiddenEmail?: string;
   }
 }

@@ -1,0 +1,46 @@
+---
+/** Shell de la consola: estética neutra de plataforma (no el tema del tenant) + marca del tenant. */
+import '~/styles/global.css';
+
+interface Props { title: string; wide?: boolean }
+const { title, wide = false } = Astro.props;
+const { tenant, admin } = Astro.locals;
+const roleLabel = { admin: 'Admin', rep: 'Comercial' } as const;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · {tenant?.name ?? 'SalesSuite'}</title>
+  </head>
+  <body class="min-h-screen bg-surface text-ink">
+    {admin?.mode === 'demo' && (
+      <div class="bg-amber-300 px-4 py-1.5 text-center text-xs font-semibold text-black">
+        Modo DEMO · datos en memoria, se pierden al reiniciar el servidor
+      </div>
+    )}
+    <header class="border-b border-line bg-bg">
+      <div class:list={['mx-auto flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6', wide ? 'max-w-[110rem]' : 'max-w-6xl']}>
+        <a href="/admin" class="flex items-center gap-2 font-bold">
+          <span class="grid h-7 w-7 place-items-center rounded-lg bg-ink text-xs text-bg">SS</span>
+          <span>{tenant?.name}</span>
+        </a>
+        {admin && <nav class="text-sm"><a href="/admin" class="text-muted hover:text-ink">Dossiers</a></nav>}
+        {admin && (
+          <div class="ml-auto flex items-center gap-3 text-sm">
+            <span class="hidden text-muted sm:inline">{admin.session.email}</span>
+            <span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold" data-testid="role">{roleLabel[admin.session.role]}</span>
+            <form method="post" action="/admin/logout">
+              <button class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface" type="submit">Salir</button>
+            </form>
+          </div>
+        )}
+      </div>
+    </header>
+    <main class:list={['mx-auto px-4 py-6 sm:px-6 sm:py-8', wide ? 'max-w-[110rem]' : 'max-w-6xl']}>
+      <slot />
+    </main>
+  </body>
+</html>

@@ -10,5 +10,7 @@ export default defineConfig({
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   integrations: [tailwind({ applyBaseStyles: false }), svelte()],
-  security: { checkOrigin: true },
+  // CSRF propio en src/middleware.ts (isSameOriginWrite): checkOrigin de Astro compara con el host
+  // interno del servidor, no con el dominio del tenant, y rechazaría los formularios en producción.
+  security: { checkOrigin: false },
 });
