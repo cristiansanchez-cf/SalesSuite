@@ -1,0 +1,39 @@
+/*
+ * Tokens de diseño = el "seam" white-label.
+ * Los valores de :root son el tema por defecto de la plataforma (neutro).
+ * Cada tenant los sobreescribe vía `tenant.theme_tokens` (⊕ `dossier.theme_override`),
+ * que ThemedShell inyecta sobre `.ds-root`. Los módulos SOLO consumen var(--…).
+ * Mismo mecanismo que el bloque de override de :root de la página `bodas` de Enjoy.
+ *
+ * Valores de color en canales RGB ("255 39 187") para que Tailwind pueda aplicar opacidad.
+ */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: var(--font-sans);
+
+  --color-bg: 255 255 255;
+  --color-surface: 246 246 248;
+  --color-text: 17 17 20;
+  --color-muted: 102 102 115;
+  --color-border: 228 228 234;
+  --color-primary: 37 99 235;
+  --color-primary-contrast: 255 255 255;
+  --color-accent: 16 185 129;
+  --color-accent-contrast: 17 17 20;
+
+  --radius-card: 20px;
+  --radius-button: 999px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 10px 30px -12px rgb(0 0 0 / 0.18);
+
+  --space-section: clamp(4rem, 8vw, 7.5rem);
+  --container-max: 72rem;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-base: 400ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-base: 0ms; }
+}

@@ -1,0 +1,13 @@
+---
+/** Precio por módulo (price_mode = per_module) mostrado bajo cualquier módulo que no lo pinte él mismo. */
+import Container from './Container.astro';
+import type { ResolvedPrice } from '~/lib/pricing';
+interface Props { price: ResolvedPrice }
+const { price } = Astro.props;
+---
+<Container class="py-6">
+  <p class="inline-flex items-baseline gap-2 rounded-pill border border-line bg-bg px-5 py-2 text-sm" data-testid="item-price">
+    <span class="text-muted">Inversión</span>
+    <strong class="font-display text-lg">{price.formatted}</strong>
+  </p>
+</Container>

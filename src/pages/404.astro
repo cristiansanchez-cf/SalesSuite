@@ -1,0 +1,20 @@
+---
+import '~/styles/global.css';
+// Página neutra a propósito: no revela si el dossier existe ni de qué tenant es.
+Astro.response.status = 404;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>No encontrado</title>
+  </head>
+  <body class="grid min-h-screen place-items-center p-6 text-center">
+    <div>
+      <h1 class="text-4xl font-extrabold">404</h1>
+      <p class="mt-3 text-muted">Este enlace no existe o ya no está disponible.</p>
+    </div>
+  </body>
+</html>

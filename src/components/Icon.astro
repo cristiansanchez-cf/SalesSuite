@@ -1,0 +1,17 @@
+---
+/** Set mínimo de iconos inline (stroke = currentColor → hereda el tema). */
+const PATHS = {
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  spark: 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18',
+  heart: 'M12 20s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.5-7 10-7 10z',
+  chat: 'M4 5h16v11H8l-4 4V5z',
+} as const;
+interface Props { name: keyof typeof PATHS; size?: number; class?: string; label?: string }
+const { name, size = 20, class: cls = '', label } = Astro.props;
+---
+<svg
+  width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={cls}
+  role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}
+><path d={PATHS[name]} /></svg>

@@ -1,0 +1,31 @@
+# ADR-0001 · Stack y decisiones abiertas del plan
+
+Estado: **aceptado (Fase 0)** · Fecha: 2026-10-02 · Contexto: [`PLAN.md`](./PLAN.md) §4.2 y §12.
+
+## Decisión
+
+| Tema | Decisión | Por qué |
+|---|---|---|
+| Framework | **Astro 5 SSR** (`output: 'server'`) | Reutiliza 1:1 los `.astro` + CSS `nh-*` de Enjoy; el valor del producto es esa UI. |
+| Datos/Auth | **Supabase** (Postgres + Auth + Storage + RLS) | Relacional para el CRM futuro; RLS por tenant. |
+| Adapter | **`@astrojs/node` standalone** | Portable (Cloud Run / Firebase App Hosting / Fly / Render). Cambiar a `@astrojs/vercel` son 2 líneas en `astro.config.mjs`; ningún código de la app depende del adapter. |
+| Target de despliegue recomendado | **Vercel** para el MVP (dominios por API, SSL automático); migrar a Cloudflare for SaaS si hay >~20 tenants con dominio propio. | No bloquear el MVP. El middleware ya soporta `X-Forwarded-Host` (`TRUST_FORWARDED_HOST=1`). |
+| Dominios MVP | wildcard `*.cofundo.app` + CNAME `pitch.enjoytheclub.es`; ambos en la tabla `domain`. | Ya modelado (varios hosts por tenant). |
+| Islas del builder (Fase 1) | **Svelte 5** (`@astrojs/svelte`), sin mezclar frameworks. | Bundle pequeño, encaja con el estilo Astro, dnd sencillo. |
+| Camino público | El renderer usa la **clave anon** y solo 2 RPC `security definer` (`resolve_tenant`, `get_public_dossier`). **Sin service-role** en el camino público. | Superficie mínima de bypass de RLS (riesgo #4). |
+| Orden | `dossier_item.position numeric` con rank fraccional (`src/lib/rank.ts`) + rebalanceo cuando los huecos < 1e-6. | Reordenar = 1 UPDATE. |
+| i18n | **`locale` por dossier** (no trilingüe en MVP). Formato de precio con `Intl` según `locale`. | Suficiente para vender; el contenido viene del módulo/overrides. |
+| Precio | Moneda **por dossier** (`dossier.currency`); importes **sin impuestos** (nota "IVA no incluido" configurable en `pricing-card`); en `per_module` **sí** se muestra el total (suma de items visibles con precio). | Pregunta abierta #9 cerrada para MVP. Multi-moneda por item: fuera. |
+| Assets | Supabase Storage, bucket por tenant (`tenant-assets/<tenant_id>/…`). Fuentes por `theme_tokens.font.faces[].src` (https). | Pendiente de Fase 1. |
+| Gobernanza de módulos | Build-time: **solo plataforma** (PR al repo) crea `block_type` nuevos; los **admins de tenant** crean `module`/`module_version` (variantes de props) desde la consola. | Sin ejecución de código de tenant en runtime. |
+
+## Seguridad aplicada en Fase 0
+
+- `theme_tokens`/`theme_override` validados con Zod (lista blanca de claves, hex, longitudes, fuentes https) antes de entrar en `<style>`.
+- Props de módulo validadas contra `schema.ts`; `href` limitado a `https:`/`mailto:`/`tel:`/`#`/`/`. Un item inválido se **omite** (log) en vez de romper el dossier.
+- FKs compuestas `(tenant_id, …)` → imposible mezclar items/versiones/enlaces entre tenants aunque un usuario pertenezca a varios.
+- `tenant_id` de tablas hijas lo deriva un trigger del padre.
+- `module_version` no-draft es inmutable (trigger).
+- `share_link.token`: 24 bytes aleatorios base64url (32 chars), `check length >= 16`.
+- `/d/*`: `noindex`, `Referrer-Policy: no-referrer`, `Cache-Control: private, no-store`; todos los fallos de gate → mismo 404.
+- Host desconocido → sin tenant → 404. El fallback `DEV_TENANT_SLUG` solo aplica a `localhost`/`127.0.0.1`.

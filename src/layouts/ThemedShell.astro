@@ -1,0 +1,35 @@
+---
+/**
+ * Shell temado (white-label). Inyecta tenant.theme_tokens ⊕ dossier.theme_override como
+ * CSS custom properties sobre .ds-root. Los módulos no cambian: re-skin con cero código.
+ */
+import '~/styles/global.css';
+import { mergeTheme, themeToCss, type ThemeTokens } from '~/lib/theme';
+
+interface Props {
+  title: string;
+  tenantName: string;
+  locale?: string;
+  theme: ThemeTokens;
+  themeOverride?: ThemeTokens | null;
+  robots?: string;
+}
+const { title, tenantName, locale = 'es-ES', theme, themeOverride, robots = 'noindex, nofollow' } = Astro.props;
+const css = themeToCss(mergeTheme(theme, themeOverride));
+const lang = locale.split('-')[0];
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content={robots} />
+    <title>{title} · {tenantName}</title>
+    <style set:html={css}></style>
+  </head>
+  <body>
+    <div class="ds-root min-h-screen bg-bg text-ink">
+      <slot />
+    </div>
+  </body>
+</html>

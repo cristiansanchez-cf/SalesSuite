@@ -1,0 +1,106 @@
+---
+/**
+ * tabs-showcase ← nh-tabs + mock animado nh-kissmock/nh-sender (Enjoy). Módulo estrella.
+ * IDs derivados de ctx.itemId → dos instancias en el mismo dossier no colisionan.
+ */
+import Section from '~/components/Section.astro';
+import Icon from '~/components/Icon.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { TabsShowcaseProps } from './schema';
+
+type Props = TabsShowcaseProps & ModuleBaseProps;
+const { eyebrow, title, tabs, autoAdvanceMs, ctx } = Astro.props;
+const uid = `ts-${ctx.itemId}`;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="tabs-showcase" data-auto-advance={autoAdvanceMs} class="tabs-showcase">
+  <Section tone="surface">
+    {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+
+    <div role="tablist" aria-label={t(title)} class="mt-10 flex gap-2 overflow-x-auto pb-1">
+      {tabs.map((tab, i) => (
+        <button
+          role="tab" type="button" id={`${uid}-tab-${i}`} aria-controls={`${uid}-panel-${i}`}
+          aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}
+          class="tabs-showcase__tab relative shrink-0 overflow-hidden rounded-pill border border-line bg-bg px-5 py-2.5 text-sm font-semibold"
+        >
+          {tab.label}
+          <span data-progress class="tabs-showcase__progress" aria-hidden="true"></span>
+        </button>
+      ))}
+    </div>
+
+    {tabs.map((tab, i) => (
+      <div
+        role="tabpanel" id={`${uid}-panel-${i}`} aria-labelledby={`${uid}-tab-${i}`} hidden={i !== 0}
+        data-active={i === 0 ? '' : undefined}
+        class="tabs-showcase__panel mt-8 grid items-center gap-10 rounded-card bg-bg p-6 shadow-card md:grid-cols-2 md:p-10"
+      >
+        <div>
+          <h3 class="font-display text-2xl font-extrabold sm:text-3xl">{t(tab.title)}</h3>
+          {tab.body && <p class="mt-4 text-muted">{t(tab.body)}</p>}
+          {tab.bullets.length > 0 && (
+            <ul class="mt-6 space-y-3 p-0">
+              {tab.bullets.map((b) => (
+                <li class="flex list-none items-start gap-3">
+                  <span class="mt-0.5 rounded-pill bg-accent p-1 text-accent-contrast"><Icon name="check" size={14} /></span>
+                  <span>{t(b)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {tab.mock?.kind === 'chat' && (
+          <div class="tabs-showcase__phone mx-auto w-full max-w-xs rounded-[2rem] border-8 border-ink bg-surface p-4">
+            <p class="mb-3 flex items-center gap-2 text-xs font-bold text-muted"><Icon name="chat" size={14} />{tab.mock.header}</p>
+            <ol class="m-0 flex flex-col gap-2 p-0">
+              {tab.mock.messages.map((m, k) => (
+                <li
+                  style={`--k:${k}`}
+                  class:list={[
+                    'tabs-showcase__msg max-w-[85%] list-none rounded-2xl px-3 py-2 text-sm',
+                    m.from === 'me' ? 'self-end bg-primary text-primary-contrast' : 'self-start bg-bg text-ink',
+                  ]}
+                >{t(m.text)}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+        {tab.mock?.kind === 'image' && (
+          <img src={tab.mock.src} alt={tab.mock.alt} loading="lazy" class="w-full rounded-card" />
+        )}
+      </div>
+    ))}
+  </Section>
+</div>
+
+<style>
+  .tabs-showcase__tab[aria-selected='true'] { background: rgb(var(--color-text)); color: rgb(var(--color-bg)); border-color: transparent; }
+  .tabs-showcase__panel[hidden] { display: none; }
+  .tabs-showcase__progress {
+    position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+    background: rgb(var(--color-accent)); transform-origin: left; transform: scaleX(0);
+  }
+  [data-running] .tabs-showcase__tab[aria-selected='true'] .tabs-showcase__progress {
+    animation: ts-progress var(--tabs-every, 6000ms) linear forwards;
+  }
+  @keyframes ts-progress { to { transform: scaleX(1); } }
+
+  .tabs-showcase__panel[data-active] > * { animation: ts-in var(--duration-base) var(--ease-out) both; }
+  .tabs-showcase__msg { opacity: 0; }
+  .tabs-showcase__panel[data-active] .tabs-showcase__msg {
+    animation: ts-msg var(--duration-base) var(--ease-out) forwards;
+    animation-delay: calc(var(--k) * 450ms + 200ms);
+  }
+  @keyframes ts-in { from { opacity: 0; transform: translateY(12px); } }
+  @keyframes ts-msg { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .tabs-showcase__msg { opacity: 1; } }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('tabs-showcase', init);
+</script>

@@ -1,0 +1,20 @@
+---
+import ThemedShell from '~/layouts/ThemedShell.astro';
+import Section from '~/components/Section.astro';
+import { publicRepository } from '~/lib/data';
+
+const { tenant } = Astro.locals;
+if (!tenant) return Astro.rewrite('/404');
+const mode = publicRepository().mode;
+---
+<ThemedShell title="Dossiers" tenantName={tenant.name} theme={tenant.themeTokens}>
+  <Section>
+    <h1 class="font-display text-5xl font-extrabold">{tenant.name}</h1>
+    <p class="mt-4 text-muted">Los dossiers se comparten por enlace privado (<code>/d/&lt;token&gt;</code>).</p>
+    {mode === 'demo' && (
+      <p class="mt-6 rounded-card border border-line bg-surface p-4 text-sm">
+        Modo DEMO (sin Supabase). Prueba <a class="text-primary underline" href="/d/demo-sala-x-7Qm2">/d/demo-sala-x-7Qm2</a>.
+      </p>
+    )}
+  </Section>
+</ThemedShell>

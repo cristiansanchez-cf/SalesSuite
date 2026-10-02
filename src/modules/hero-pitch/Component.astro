@@ -1,0 +1,81 @@
+---
+/**
+ * hero-pitch ← nh-hero (Enjoy). Consume solo tokens (bg-primary, rounded-card, font-display…).
+ */
+import Button from '~/components/Button.astro';
+import Container from '~/components/Container.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { HeroPitchProps } from './schema';
+
+type Props = HeroPitchProps & ModuleBaseProps;
+const { eyebrow, title, rotatingWords, subtitle, ctas, stats, rotateEveryMs, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<section
+  class="hero-pitch relative overflow-hidden py-[var(--space-section)]"
+  data-module="hero-pitch"
+  data-rotate-every={rotateEveryMs}
+>
+  <div class="hero-pitch__glow" aria-hidden="true"></div>
+  <Container class="relative">
+    {eyebrow && (
+      <p class="hero-pitch__in mb-5 inline-flex rounded-pill bg-accent px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-accent-contrast">
+        {t(eyebrow)}
+      </p>
+    )}
+    <h1 class="hero-pitch__in font-display text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-tight" style="--d:80ms">
+      {t(title)}
+      {rotatingWords.length > 0 && (
+        <span class="hero-pitch__words text-primary">
+          {rotatingWords.map((w, i) => <span data-hero-word data-active={i === 0 ? '' : undefined}>{w}</span>)}
+        </span>
+      )}
+    </h1>
+    {subtitle && <p class="hero-pitch__in mt-6 max-w-2xl text-lg text-muted sm:text-xl" style="--d:160ms">{t(subtitle)}</p>}
+    {ctas.length > 0 && (
+      <div class="hero-pitch__in mt-9 flex flex-wrap gap-3" style="--d:240ms">
+        {ctas.map((c) => <Button href={c.href} variant={c.variant}>{c.label}</Button>)}
+      </div>
+    )}
+    {stats.length > 0 && (
+      <dl class="hero-pitch__in mt-14 grid grid-cols-2 gap-6 sm:grid-cols-4" style="--d:320ms">
+        {stats.map((s) => (
+          <div class="rounded-card border border-line bg-bg/70 p-5 backdrop-blur">
+            <dt class="text-sm text-muted">{s.label}</dt>
+            <dd class="m-0 font-display text-3xl font-extrabold">{s.value}</dd>
+          </div>
+        ))}
+      </dl>
+    )}
+  </Container>
+</section>
+
+<style>
+  .hero-pitch__glow {
+    position: absolute; inset: -30% -10% auto auto; width: 60vmax; height: 60vmax;
+    background: radial-gradient(closest-side, rgb(var(--color-primary) / 0.22), transparent 70%),
+      radial-gradient(closest-side at 30% 70%, rgb(var(--color-accent) / 0.25), transparent 70%);
+    filter: blur(20px); pointer-events: none;
+  }
+  .hero-pitch__in {
+    opacity: 0; transform: translateY(18px);
+    transition: opacity var(--duration-base) var(--ease-out) var(--d, 0ms),
+      transform calc(var(--duration-base) * 1.5) var(--ease-out) var(--d, 0ms);
+  }
+  [data-revealed] .hero-pitch__in { opacity: 1; transform: none; }
+  .hero-pitch__words { display: inline-grid; margin-left: 0.25em; vertical-align: bottom; }
+  .hero-pitch__words > span {
+    grid-area: 1 / 1; opacity: 0; transform: translateY(0.4em);
+    transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  }
+  .hero-pitch__words > span[data-active] { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .hero-pitch__in { opacity: 1; transform: none; } }
+</style>
+<noscript><style>.hero-pitch__in { opacity: 1 !important; transform: none !important; }</style></noscript>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('hero-pitch', init);
+</script>
