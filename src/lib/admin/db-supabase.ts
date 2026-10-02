@@ -1,6 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AdminDb } from './db';
-import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, Role } from './types';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { AdminDb, AssetStore, Identity } from './db';
+import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, Role } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -141,6 +141,125 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
     async revokeLink(id) {
       const rows = check(await sb.from('share_link').update({ is_active: false, revoked_at: new Date().toISOString() }).eq('id', id).select('id')) ?? [];
       return rows.length > 0;
+    },
+
+    // ---- gestión del tenant
+    async getTenant(id) {
+      const r = check(await sb.from('tenant').select('id, slug, name, default_locale, theme_tokens, brand').eq('id', id).maybeSingle());
+      return r ? { id: r.id, slug: r.slug, name: r.name, defaultLocale: r.default_locale, themeTokens: r.theme_tokens, brand: r.brand } : null;
+    },
+    async updateTenant(id, p) {
+      const patch: Row = {};
+      if (p.name !== undefined) patch.name = p.name;
+      if (p.defaultLocale !== undefined) patch.default_locale = p.defaultLocale;
+      if (p.themeTokens !== undefined) patch.theme_tokens = p.themeTokens;
+      if (p.brand !== undefined) patch.brand = p.brand;
+      const rows = check(await sb.from('tenant').update(patch).eq('id', id).select('id')) ?? [];
+      return rows.length > 0;
+    },
+
+    async listMembers(tenantId) {
+      const rows = check(await sb.from('membership').select('user_id, role, users!inner(email, display_name)').eq('tenant_id', tenantId)) ?? [];
+      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role }));
+    },
+    async addMember(tenantId, userId, role) {
+      const rows = check(await sb.from('membership').insert({ tenant_id: tenantId, user_id: userId, role }).select('user_id')) ?? [];
+      return rows.length > 0;
+    },
+    async setMemberRole(tenantId, userId, role) {
+      const rows = check(await sb.from('membership').update({ role }).eq('tenant_id', tenantId).eq('user_id', userId).select('user_id')) ?? [];
+      return rows.length > 0;
+    },
+    async removeMember(tenantId, userId) {
+      const rows = check(await sb.from('membership').delete().eq('tenant_id', tenantId).eq('user_id', userId).select('user_id')) ?? [];
+      return rows.length > 0;
+    },
+
+    async listModules(tenantId) {
+      const rows = check(await sb.from('module').select('id, tenant_id, key, block_type, name, description, is_catalog').eq('tenant_id', tenantId)) ?? [];
+      return rows.map((m: Row): ModuleRecord => ({
+        id: m.id, tenantId: m.tenant_id, key: m.key, blockType: m.block_type, name: m.name, description: m.description, isCatalog: m.is_catalog,
+      }));
+    },
+    async listModuleVersions(tenantId) {
+      const rows = check(await sb.from('module_version').select('id, module_id, version, status, default_props, default_price, default_currency').eq('tenant_id', tenantId)) ?? [];
+      return rows.map((v: Row): ModuleVersionRecord => ({
+        id: v.id, moduleId: v.module_id, version: v.version, status: v.status,
+        defaultProps: v.default_props ?? {}, defaultPrice: num(v.default_price), currency: v.default_currency,
+      }));
+    },
+    async versionUsage(tenantId) {
+      const rows = check(await sb.from('dossier_item').select('module_version_id').eq('tenant_id', tenantId)) ?? [];
+      const out = new Map<string, number>();
+      for (const r of rows as Row[]) out.set(r.module_version_id, (out.get(r.module_version_id) ?? 0) + 1);
+      return out;
+    },
+    async insertModule(m) {
+      const r = checkOne(await sb.from('module').insert({
+        tenant_id: m.tenantId, key: m.key, block_type: m.blockType, name: m.name, description: m.description, is_catalog: m.isCatalog,
+      }).select('id').single());
+      return r.id as string;
+    },
+    async updateModule(id, p) {
+      const patch: Row = {};
+      if (p.name !== undefined) patch.name = p.name;
+      if (p.description !== undefined) patch.description = p.description;
+      if (p.isCatalog !== undefined) patch.is_catalog = p.isCatalog;
+      const rows = check(await sb.from('module').update(patch).eq('id', id).select('id')) ?? [];
+      return rows.length > 0;
+    },
+    async insertModuleVersion(v) {
+      const r = checkOne(await sb.from('module_version').insert({
+        module_id: v.moduleId, version: v.version, status: v.status, default_props: v.defaultProps,
+        default_price: v.defaultPrice, default_currency: v.currency,
+      }).select('id').single());
+      return r.id as string;
+    },
+    async updateModuleVersion(id, p) {
+      const patch: Row = {};
+      if (p.defaultProps !== undefined) patch.default_props = p.defaultProps;
+      if (p.defaultPrice !== undefined) patch.default_price = p.defaultPrice;
+      if (p.currency !== undefined) patch.default_currency = p.currency;
+      if (p.status !== undefined) patch.status = p.status;
+      const rows = check(await sb.from('module_version').update(patch).eq('id', id).select('id')) ?? [];
+      return rows.length > 0;
+    },
+  };
+}
+
+/**
+ * Invitaciones con la service role (solo servidor). Únicas operaciones privilegiadas:
+ * buscar un usuario por email e invitarlo. La membership la crea después el admin con SU sesión (RLS).
+ */
+export function supabaseIdentity(url: string, serviceRoleKey: string): Identity {
+  const admin = createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  return {
+    async findOrInvite(email, { redirectTo }) {
+      const e = email.trim().toLowerCase();
+      const existing = check(await admin.from('users').select('id').ilike('email', e).maybeSingle());
+      if (existing) return { userId: existing.id as string, invited: false };
+      const { data, error } = await admin.auth.admin.inviteUserByEmail(e, { redirectTo });
+      if (error || !data.user) throw new Error(`[supabase] invitación: ${error?.message ?? 'sin usuario'}`);
+      return { userId: data.user.id, invited: true };
+    },
+  };
+}
+
+const EXT: Record<string, string> = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/svg+xml': 'svg',
+  'image/x-icon': 'ico', 'image/vnd.microsoft.icon': 'ico', 'font/woff2': 'woff2', 'font/woff': 'woff',
+};
+
+/** Storage con la sesión del usuario: la política de storage.objects exige admin del tenant. */
+export function supabaseAssets(sb: SupabaseClient): AssetStore {
+  return {
+    async upload(tenantId, file, kind) {
+      const ext = EXT[file.type];
+      if (!ext) throw new Error('TIPO_NO_PERMITIDO');
+      const path = `${tenantId}/${kind}-${Date.now().toString(36)}.${ext}`;
+      const { error } = await sb.storage.from('tenant-assets').upload(path, file.bytes, { contentType: file.type, upsert: false, cacheControl: '31536000' });
+      if (error) throw new Error(`[supabase] storage: ${error.message}`);
+      return { url: sb.storage.from('tenant-assets').getPublicUrl(path).data.publicUrl };
     },
   };
 }

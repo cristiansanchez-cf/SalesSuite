@@ -1,0 +1,52 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { demoDb } from '~/lib/data/store';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const setup = Astro.url.searchParams.get('setup') === '1';
+
+let error: string | null = null;
+let ok: string | null = null;
+let name = admin.session.displayName ?? '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  name = String(form.get('name') ?? '').trim().slice(0, 80);
+  const password = String(form.get('password') ?? '');
+  const confirm = String(form.get('confirm') ?? '');
+  if (password && password.length < 10) error = 'La contraseña debe tener al menos 10 caracteres';
+  else if (password !== confirm) error = 'Las contraseñas no coinciden';
+  else if (admin.mode === 'supabase' && admin.supabase) {
+    const sb = admin.supabase;
+    const { error: e } = await sb.auth.updateUser({ ...(password ? { password } : {}), data: { name } });
+    if (e) error = e.message.includes('should be different') ? 'La nueva contraseña debe ser distinta de la anterior' : 'No se pudo guardar';
+    else {
+      await sb.from('users').update({ display_name: name || null }).eq('id', admin.session.userId);
+      if (setup) return Astro.redirect('/admin', 303);
+      ok = 'Guardado';
+    }
+  } else {
+    const u = demoDb().users.find((x) => x.id === admin.session.userId);
+    if (u) u.display_name = name;
+    ok = password ? 'Guardado (en demo no hay contraseñas)' : 'Guardado';
+  }
+}
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2.5 outline-none focus:border-ink';
+---
+<AdminLayout title="Mi cuenta">
+  <div class="mx-auto max-w-md rounded-2xl border border-line bg-bg p-6">
+    <h1 class="text-2xl font-extrabold">{setup ? 'Bienvenido/a' : 'Mi cuenta'}</h1>
+    <p class="mt-1 text-sm text-muted">{setup ? 'Elige tu nombre y una contraseña para entrar la próxima vez.' : admin.session.email}</p>
+    {error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+    {ok && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{ok}</p>}
+    <form method="post" class="mt-6 space-y-3">
+      <label class="block text-sm font-medium">Nombre<input class={field} name="name" value={name} maxlength="80" autocomplete="name" /></label>
+      <label class="block text-sm font-medium">{setup ? 'Contraseña' : 'Nueva contraseña (opcional)'}
+        <input class={field} type="password" name="password" minlength="10" autocomplete="new-password" required={setup} />
+      </label>
+      <label class="block text-sm font-medium">Repite la contraseña<input class={field} type="password" name="confirm" autocomplete="new-password" required={setup} /></label>
+      <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg" type="submit">Guardar</button>
+    </form>
+  </div>
+</AdminLayout>

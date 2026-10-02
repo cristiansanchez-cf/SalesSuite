@@ -1,0 +1,22 @@
+---
+/** Cabecera de marca del dossier: logo del tenant + contacto directo (WhatsApp / email / teléfono). */
+import Container from '~/components/Container.astro';
+import type { Brand } from '~/lib/brand';
+import { contactLinks } from '~/lib/contact';
+
+interface Props { brand: Brand; tenantName: string; dossierTitle: string }
+const { brand, tenantName, dossierTitle } = Astro.props;
+const primary = contactLinks(brand, dossierTitle)[0];
+---
+<header class="border-b border-line bg-bg/90 backdrop-blur" data-testid="brand-bar">
+  <Container class="flex h-16 items-center justify-between gap-4">
+    {brand.logoUrl
+      ? <img src={brand.logoUrl} alt={brand.logoAlt ?? tenantName} class="h-8 w-auto max-w-[11rem] object-contain" />
+      : <span class="font-display text-lg font-extrabold">{tenantName}</span>}
+    {primary && (
+      <a href={primary.href} class="rounded-button bg-primary px-4 py-2 text-sm font-semibold text-primary-contrast" target={primary.external ? '_blank' : undefined} rel="noopener noreferrer">
+        {primary.cta}
+      </a>
+    )}
+  </Container>
+</header>

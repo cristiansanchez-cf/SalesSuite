@@ -3,15 +3,25 @@ import { authenticate } from './lib/admin/auth';
 import { publicRepository } from './lib/data';
 import { env } from './lib/env';
 import { isSameOriginWrite, requestHost } from './lib/http';
+import { appMode } from './lib/mode';
 import { resolveTenant } from './lib/tenant';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
 // y la sesión de consola exige membership en ese tenant.
 
 /** Rutas de /admin accesibles sin sesión. */
-const ADMIN_PUBLIC = new Set(['/admin/login', '/admin/auth/callback', '/admin/forbidden']);
+const ADMIN_PUBLIC = new Set(['/admin/login', '/admin/auth/callback', '/admin/auth/confirm', '/admin/forbidden']);
+
+const MISCONFIGURED_HTML = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="robots" content="noindex">
+<title>Configuración pendiente</title><body style="font-family:system-ui;max-width:36rem;margin:15vh auto;padding:0 1rem">
+<h1>Configuración pendiente</h1><p>Faltan variables de entorno de Supabase. Detalle en <code>/api/health</code>; guía en <code>docs/SETUP.md</code>.</p>`;
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  if (context.url.pathname === '/api/health') return next();
+  if (appMode() === 'misconfigured') {
+    return new Response(MISCONFIGURED_HTML, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '300' } });
+  }
+
   const host = requestHost(context.request, context.url.host);
   if (!isSameOriginWrite(context.request, host)) {
     return new Response('Origen no permitido', { status: 403 });

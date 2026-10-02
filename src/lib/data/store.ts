@@ -9,7 +9,7 @@ export type Role = 'admin' | 'rep';
 export type DossierStatus = 'draft' | 'published' | 'archived';
 export type PriceModeRow = 'none' | 'total' | 'per_module';
 
-export interface TenantRow { id: string; slug: string; name: string; status: string; default_locale: string; theme_tokens: unknown }
+export interface TenantRow { id: string; slug: string; name: string; status: string; default_locale: string; theme_tokens: unknown; brand: unknown }
 export interface DomainRow { id: string; tenant_id: string; hostname: string; is_primary: boolean; ssl_status: string }
 export interface ModuleRow { id: string; tenant_id: string; key: string; block_type: string; name: string; description: string | null; is_catalog: boolean }
 export interface ModuleVersionRow {

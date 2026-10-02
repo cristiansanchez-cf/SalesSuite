@@ -13,4 +13,5 @@ for f in supabase/migrations/*.sql; do run "$f"; done
 run supabase/tests/10_grants.sql
 run supabase/seed.sql
 run supabase/tests/20_rls.test.sql
+run supabase/tests/25_brand_team_storage.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

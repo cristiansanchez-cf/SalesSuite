@@ -19,10 +19,20 @@
           "accent": "#e1ff00",
           "accent-contrast": "#0d0d0d"
         },
-        "radius": { "card": "28px", "button": "999px" },
+        "radius": {
+          "card": "28px",
+          "button": "999px"
+        },
         "font": {
           "display": "'YWFTKul', ui-sans-serif, system-ui, sans-serif",
           "sans": "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        }
+      },
+      "brand": {
+        "logoUrl": "/demo/enjoy-logo-placeholder.svg",
+        "logoAlt": "Enjoy the Club",
+        "contact": {
+          "email": "hola@enjoytheclub.es"
         }
       }
     },
@@ -44,114 +54,603 @@
           "accent": "#a78bfa",
           "accent-contrast": "#0b1020"
         },
-        "radius": { "card": "8px", "button": "8px" },
-        "font": { "display": "Georgia, 'Times New Roman', serif" }
+        "radius": {
+          "card": "8px",
+          "button": "8px"
+        },
+        "font": {
+          "display": "Georgia, 'Times New Roman', serif"
+        }
+      },
+      "brand": {
+        "logoUrl": "/demo/retheme-logo.svg",
+        "logoAlt": "ReTheme",
+        "contact": {
+          "whatsapp": "34600000000",
+          "email": "ventas@example.com"
+        },
+        "legal": "Tenant de prueba · datos ficticios"
       }
     }
   ],
   "domain": [
-    { "id": "00000000-0000-4000-8000-0000000d0e01", "tenant_id": "00000000-0000-4000-8000-000000000e01", "hostname": "pitch.enjoytheclub.es", "is_primary": true, "ssl_status": "pending" },
-    { "id": "00000000-0000-4000-8000-0000000d0e02", "tenant_id": "00000000-0000-4000-8000-000000000e01", "hostname": "enjoy.cofundo.app", "is_primary": false, "ssl_status": "active" },
-    { "id": "00000000-0000-4000-8000-0000000d0e03", "tenant_id": "00000000-0000-4000-8000-000000000e01", "hostname": "enjoy.localhost", "is_primary": false, "ssl_status": "active" },
-    { "id": "00000000-0000-4000-8000-0000000d0a01", "tenant_id": "00000000-0000-4000-8000-000000000a01", "hostname": "retheme.localhost", "is_primary": true, "ssl_status": "active" }
+    {
+      "id": "00000000-0000-4000-8000-0000000d0e01",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "hostname": "pitch.enjoytheclub.es",
+      "is_primary": true,
+      "ssl_status": "pending"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000d0e02",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "hostname": "enjoy.cofundo.app",
+      "is_primary": false,
+      "ssl_status": "active"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000d0e03",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "hostname": "enjoy.localhost",
+      "is_primary": false,
+      "ssl_status": "active"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000d0a01",
+      "tenant_id": "00000000-0000-4000-8000-000000000a01",
+      "hostname": "retheme.localhost",
+      "is_primary": true,
+      "ssl_status": "active"
+    }
   ],
   "module": [
-    { "id": "00000000-0000-4000-8000-00000000e101", "tenant_id": "00000000-0000-4000-8000-000000000e01", "key": "hero-bodas", "block_type": "hero-pitch", "name": "Hero · Bodas", "description": "Portada del dossier con titular personalizado y palabras rotando.", "is_catalog": true },
-    { "id": "00000000-0000-4000-8000-00000000e102", "tenant_id": "00000000-0000-4000-8000-000000000e01", "key": "tabs-experiencias", "block_type": "tabs-showcase", "name": "Tabs · Experiencias", "description": "Servicios en pestañas con mock de chat animado.", "is_catalog": true },
-    { "id": "00000000-0000-4000-8000-00000000e103", "tenant_id": "00000000-0000-4000-8000-000000000e01", "key": "tabs-locales", "block_type": "tabs-showcase", "name": "Tabs · Locales", "description": "Propuesta para salas y locales.", "is_catalog": true },
-    { "id": "00000000-0000-4000-8000-00000000e104", "tenant_id": "00000000-0000-4000-8000-000000000e01", "key": "pricing", "block_type": "pricing-card", "name": "Tarjeta de precio", "description": "Cifra según price_mode del dossier.", "is_catalog": true },
-    { "id": "00000000-0000-4000-8000-00000000a101", "tenant_id": "00000000-0000-4000-8000-000000000a01", "key": "hero", "block_type": "hero-pitch", "name": "Hero", "description": null, "is_catalog": true },
-    { "id": "00000000-0000-4000-8000-00000000a102", "tenant_id": "00000000-0000-4000-8000-000000000a01", "key": "tabs", "block_type": "tabs-showcase", "name": "Tabs", "description": null, "is_catalog": true },
-    { "id": "00000000-0000-4000-8000-00000000a103", "tenant_id": "00000000-0000-4000-8000-000000000a01", "key": "pricing", "block_type": "pricing-card", "name": "Precio", "description": null, "is_catalog": true }
+    {
+      "id": "00000000-0000-4000-8000-00000000e101",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "hero-bodas",
+      "block_type": "hero-pitch",
+      "name": "Hero · Bodas",
+      "description": "Portada del dossier con titular personalizado y palabras rotando.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000e102",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "tabs-experiencias",
+      "block_type": "tabs-showcase",
+      "name": "Tabs · Experiencias",
+      "description": "Servicios en pestañas con mock de chat animado.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000e103",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "tabs-locales",
+      "block_type": "tabs-showcase",
+      "name": "Tabs · Locales",
+      "description": "Propuesta para salas y locales.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000e104",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "pricing",
+      "block_type": "pricing-card",
+      "name": "Tarjeta de precio",
+      "description": "Cifra según price_mode del dossier.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a101",
+      "tenant_id": "00000000-0000-4000-8000-000000000a01",
+      "key": "hero",
+      "block_type": "hero-pitch",
+      "name": "Hero",
+      "description": null,
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a102",
+      "tenant_id": "00000000-0000-4000-8000-000000000a01",
+      "key": "tabs",
+      "block_type": "tabs-showcase",
+      "name": "Tabs",
+      "description": null,
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a103",
+      "tenant_id": "00000000-0000-4000-8000-000000000a01",
+      "key": "pricing",
+      "block_type": "pricing-card",
+      "name": "Precio",
+      "description": null,
+      "is_catalog": true
+    }
   ],
   "module_version": [
     {
-      "id": "00000000-0000-4000-8000-0000000e1011", "module_id": "00000000-0000-4000-8000-00000000e101", "version": 1, "status": "published", "default_price": null, "default_currency": "EUR",
+      "id": "00000000-0000-4000-8000-0000000e1011",
+      "module_id": "00000000-0000-4000-8000-00000000e101",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
       "default_props": {
         "eyebrow": "Propuesta para {company}",
         "title": "Una fiesta que nadie va a",
-        "rotatingWords": ["olvidar", "dejar de bailar", "contar igual"],
+        "rotatingWords": [
+          "olvidar",
+          "dejar de bailar",
+          "contar igual"
+        ],
         "subtitle": "Enjoy convierte cada momento de la celebración en una experiencia compartida: interacción en directo, recuerdos y sorpresa para todos los invitados.",
-        "ctas": [{ "label": "Ver la propuesta", "href": "#propuesta", "variant": "primary" }, { "label": "Hablar con nosotros", "href": "mailto:hola@enjoytheclub.es", "variant": "ghost" }],
-        "stats": [{ "value": "+500", "label": "eventos" }, { "value": "4,9★", "label": "valoración media" }, { "value": "92%", "label": "invitados participan" }, { "value": "24h", "label": "puesta en marcha" }]
+        "ctas": [
+          {
+            "label": "Ver la propuesta",
+            "href": "#propuesta",
+            "variant": "primary"
+          },
+          {
+            "label": "Hablar con nosotros",
+            "href": "mailto:hola@enjoytheclub.es",
+            "variant": "ghost"
+          }
+        ],
+        "stats": [
+          {
+            "value": "+500",
+            "label": "eventos"
+          },
+          {
+            "value": "4,9★",
+            "label": "valoración media"
+          },
+          {
+            "value": "92%",
+            "label": "invitados participan"
+          },
+          {
+            "value": "24h",
+            "label": "puesta en marcha"
+          }
+        ]
       }
     },
     {
-      "id": "00000000-0000-4000-8000-0000000e1012", "module_id": "00000000-0000-4000-8000-00000000e101", "version": 2, "status": "published", "default_price": null, "default_currency": "EUR",
+      "id": "00000000-0000-4000-8000-0000000e1012",
+      "module_id": "00000000-0000-4000-8000-00000000e101",
+      "version": 2,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
       "default_props": {
         "eyebrow": "Propuesta para {company}",
         "title": "La boda de la que todos van a",
-        "rotatingWords": ["hablar", "acordarse", "presumir"],
+        "rotatingWords": [
+          "hablar",
+          "acordarse",
+          "presumir"
+        ],
         "subtitle": "v2 del módulo: los dossiers ya publicados siguen en v1 hasta que el comercial actualice.",
-        "ctas": [{ "label": "Ver la propuesta", "href": "#propuesta", "variant": "primary" }],
+        "ctas": [
+          {
+            "label": "Ver la propuesta",
+            "href": "#propuesta",
+            "variant": "primary"
+          }
+        ],
         "stats": []
       }
     },
     {
-      "id": "00000000-0000-4000-8000-0000000e1021", "module_id": "00000000-0000-4000-8000-00000000e102", "version": 1, "status": "published", "default_price": 450, "default_currency": "EUR",
+      "id": "00000000-0000-4000-8000-0000000e1021",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "version": 1,
+      "status": "published",
+      "default_price": 450,
+      "default_currency": "EUR",
       "default_props": {
         "eyebrow": "Experiencias",
         "title": "Todo lo que pasa en tu evento, en el móvil de cada invitado",
         "autoAdvanceMs": 6000,
         "tabs": [
-          { "label": "Kiss-cam", "title": "Kiss-cam en pantalla gigante", "body": "Los invitados envían su momento y aparece en directo.", "bullets": ["Moderación previa", "Branding del evento"], "mock": { "kind": "chat", "header": "Enjoy · Kiss-cam", "messages": [{ "from": "them", "text": "¡Mesa 4 lista! 💋" }, { "from": "me", "text": "En pantalla en 3, 2, 1…" }, { "from": "them", "text": "😍😍😍" }] } },
-          { "label": "Dedicatorias", "title": "Dedicatorias que se leen en voz alta", "body": "Mensajes desde el móvil, proyectados en el momento justo.", "bullets": ["Sin descargar app", "Exportables al final"], "mock": { "kind": "chat", "header": "Dedicatorias", "messages": [{ "from": "them", "text": "Para los novios: ¡que viva el amor!" }, { "from": "me", "text": "Recibido ✨ sale tras el brindis" }] } },
-          { "label": "Retos", "title": "Retos y votaciones por mesa", "body": "Gamificación ligera para que nadie se quede sentado.", "bullets": ["Ranking en directo", "Premios del local"] }
+          {
+            "label": "Kiss-cam",
+            "title": "Kiss-cam en pantalla gigante",
+            "body": "Los invitados envían su momento y aparece en directo.",
+            "bullets": [
+              "Moderación previa",
+              "Branding del evento"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Enjoy · Kiss-cam",
+              "messages": [
+                {
+                  "from": "them",
+                  "text": "¡Mesa 4 lista! 💋"
+                },
+                {
+                  "from": "me",
+                  "text": "En pantalla en 3, 2, 1…"
+                },
+                {
+                  "from": "them",
+                  "text": "😍😍😍"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Dedicatorias",
+            "title": "Dedicatorias que se leen en voz alta",
+            "body": "Mensajes desde el móvil, proyectados en el momento justo.",
+            "bullets": [
+              "Sin descargar app",
+              "Exportables al final"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Dedicatorias",
+              "messages": [
+                {
+                  "from": "them",
+                  "text": "Para los novios: ¡que viva el amor!"
+                },
+                {
+                  "from": "me",
+                  "text": "Recibido ✨ sale tras el brindis"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Retos",
+            "title": "Retos y votaciones por mesa",
+            "body": "Gamificación ligera para que nadie se quede sentado.",
+            "bullets": [
+              "Ranking en directo",
+              "Premios del local"
+            ]
+          }
         ]
       }
     },
     {
-      "id": "00000000-0000-4000-8000-0000000e1031", "module_id": "00000000-0000-4000-8000-00000000e103", "version": 1, "status": "published", "default_price": 300, "default_currency": "EUR",
+      "id": "00000000-0000-4000-8000-0000000e1031",
+      "module_id": "00000000-0000-4000-8000-00000000e103",
+      "version": 1,
+      "status": "published",
+      "default_price": 300,
+      "default_currency": "EUR",
       "default_props": {
         "eyebrow": "Para {company}",
         "title": "Tu sala, con algo que la competencia no tiene",
         "autoAdvanceMs": 4500,
         "tabs": [
-          { "label": "Pack sala", "title": "Enjoy incluido en tu oferta de bodas", "body": "Un extra diferencial que puedes vender o regalar.", "bullets": ["Margen para el local", "Formación en 1 hora"], "mock": { "kind": "chat", "header": "Coordinación sala", "messages": [{ "from": "me", "text": "Sábado: 180 invitados confirmados" }, { "from": "them", "text": "Perfecto, pantalla montada a las 19h" }] } },
-          { "label": "Datos", "title": "Datos de cada evento", "body": "Participación, momentos top y reseñas al terminar.", "bullets": ["Informe automático"] }
+          {
+            "label": "Pack sala",
+            "title": "Enjoy incluido en tu oferta de bodas",
+            "body": "Un extra diferencial que puedes vender o regalar.",
+            "bullets": [
+              "Margen para el local",
+              "Formación en 1 hora"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Coordinación sala",
+              "messages": [
+                {
+                  "from": "me",
+                  "text": "Sábado: 180 invitados confirmados"
+                },
+                {
+                  "from": "them",
+                  "text": "Perfecto, pantalla montada a las 19h"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Datos",
+            "title": "Datos de cada evento",
+            "body": "Participación, momentos top y reseñas al terminar.",
+            "bullets": [
+              "Informe automático"
+            ]
+          }
         ]
       }
     },
     {
-      "id": "00000000-0000-4000-8000-0000000e1041", "module_id": "00000000-0000-4000-8000-00000000e104", "version": 1, "status": "published", "default_price": null, "default_currency": "EUR",
+      "id": "00000000-0000-4000-8000-0000000e1041",
+      "module_id": "00000000-0000-4000-8000-00000000e104",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
       "default_props": {
         "eyebrow": "Inversión",
         "title": "Propuesta para {company}",
         "subtitle": "Todo lo necesario para el día del evento, sin sorpresas.",
-        "features": ["Montaje y soporte en directo", "Personalización con vuestra marca", "Informe post-evento", "Sin permanencia"],
+        "features": [
+          "Montaje y soporte en directo",
+          "Personalización con vuestra marca",
+          "Informe post-evento",
+          "Sin permanencia"
+        ],
         "priceSuffix": "/ evento",
-        "cta": { "label": "Reservar fecha", "href": "mailto:hola@enjoytheclub.es" }
+        "cta": {
+          "label": "Reservar fecha",
+          "href": "mailto:hola@enjoytheclub.es"
+        }
       }
     },
-    { "id": "00000000-0000-4000-8000-0000000a1011", "module_id": "00000000-0000-4000-8000-00000000a101", "version": 1, "status": "published", "default_price": null, "default_currency": "EUR",
-      "default_props": { "eyebrow": "Para {company}", "title": "Mismos módulos,", "rotatingWords": ["otra marca", "cero código"], "subtitle": "Este tenant re-skinea los mismos componentes solo con theme_tokens.", "ctas": [{ "label": "Ver precio", "href": "#precio", "variant": "accent" }], "stats": [] } },
-    { "id": "00000000-0000-4000-8000-0000000a1021", "module_id": "00000000-0000-4000-8000-00000000a102", "version": 1, "status": "published", "default_price": 900, "default_currency": "EUR",
-      "default_props": { "title": "Servicios", "autoAdvanceMs": 5000, "tabs": [{ "label": "Uno", "title": "Servicio uno", "body": "Descripción.", "bullets": ["Punto A"], "mock": { "kind": "chat", "header": "Demo", "messages": [{ "from": "them", "text": "Hola" }, { "from": "me", "text": "¡Hola!" }] } }, { "label": "Dos", "title": "Servicio dos", "body": "Descripción.", "bullets": [] }] } },
-    { "id": "00000000-0000-4000-8000-0000000a1031", "module_id": "00000000-0000-4000-8000-00000000a103", "version": 1, "status": "published", "default_price": null, "default_currency": "EUR",
-      "default_props": { "title": "Precio", "features": ["Todo incluido"] } }
+    {
+      "id": "00000000-0000-4000-8000-0000000a1011",
+      "module_id": "00000000-0000-4000-8000-00000000a101",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Para {company}",
+        "title": "Mismos módulos,",
+        "rotatingWords": [
+          "otra marca",
+          "cero código"
+        ],
+        "subtitle": "Este tenant re-skinea los mismos componentes solo con theme_tokens.",
+        "ctas": [
+          {
+            "label": "Ver precio",
+            "href": "#precio",
+            "variant": "accent"
+          }
+        ],
+        "stats": []
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000a1021",
+      "module_id": "00000000-0000-4000-8000-00000000a102",
+      "version": 1,
+      "status": "published",
+      "default_price": 900,
+      "default_currency": "EUR",
+      "default_props": {
+        "title": "Servicios",
+        "autoAdvanceMs": 5000,
+        "tabs": [
+          {
+            "label": "Uno",
+            "title": "Servicio uno",
+            "body": "Descripción.",
+            "bullets": [
+              "Punto A"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Demo",
+              "messages": [
+                {
+                  "from": "them",
+                  "text": "Hola"
+                },
+                {
+                  "from": "me",
+                  "text": "¡Hola!"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Dos",
+            "title": "Servicio dos",
+            "body": "Descripción.",
+            "bullets": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000a1031",
+      "module_id": "00000000-0000-4000-8000-00000000a103",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "title": "Precio",
+        "features": [
+          "Todo incluido"
+        ]
+      }
+    }
   ],
   "dossier": [
-    { "id": "00000000-0000-4000-8000-000000d05501", "tenant_id": "00000000-0000-4000-8000-000000000e01", "author_id": null, "title": "Sala X · Bodas 2027", "prospect_name": "Laura", "prospect_company": "Sala X", "prospect_meta": {}, "status": "published", "locale": "es-ES", "price_mode": "per_module", "total_price": null, "currency": "EUR", "theme_override": null },
-    { "id": "00000000-0000-4000-8000-000000d05502", "tenant_id": "00000000-0000-4000-8000-000000000e01", "author_id": null, "title": "Borrador (no publicado)", "prospect_name": null, "prospect_company": "Finca Y", "prospect_meta": {}, "status": "draft", "locale": "es-ES", "price_mode": "none", "total_price": null, "currency": "EUR", "theme_override": null },
-    { "id": "00000000-0000-4000-8000-000000d05503", "tenant_id": "00000000-0000-4000-8000-000000000e01", "author_id": null, "title": "Enlace revocado", "prospect_name": null, "prospect_company": "Hotel Z", "prospect_meta": {}, "status": "published", "locale": "es-ES", "price_mode": "total", "total_price": 1500, "currency": "EUR", "theme_override": null },
-    { "id": "00000000-0000-4000-8000-000000d05504", "tenant_id": "00000000-0000-4000-8000-000000000a01", "author_id": null, "title": "Re-tema", "prospect_name": null, "prospect_company": "ACME", "prospect_meta": {}, "status": "published", "locale": "es-ES", "price_mode": "total", "total_price": 2400, "currency": "EUR", "theme_override": null }
+    {
+      "id": "00000000-0000-4000-8000-000000d05501",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Sala X · Bodas 2027",
+      "prospect_name": "Laura",
+      "prospect_company": "Sala X",
+      "prospect_meta": {},
+      "status": "published",
+      "locale": "es-ES",
+      "price_mode": "per_module",
+      "total_price": null,
+      "currency": "EUR",
+      "theme_override": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000d05502",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Borrador (no publicado)",
+      "prospect_name": null,
+      "prospect_company": "Finca Y",
+      "prospect_meta": {},
+      "status": "draft",
+      "locale": "es-ES",
+      "price_mode": "none",
+      "total_price": null,
+      "currency": "EUR",
+      "theme_override": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000d05503",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Enlace revocado",
+      "prospect_name": null,
+      "prospect_company": "Hotel Z",
+      "prospect_meta": {},
+      "status": "published",
+      "locale": "es-ES",
+      "price_mode": "total",
+      "total_price": 1500,
+      "currency": "EUR",
+      "theme_override": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000d05504",
+      "tenant_id": "00000000-0000-4000-8000-000000000a01",
+      "author_id": null,
+      "title": "Re-tema",
+      "prospect_name": null,
+      "prospect_company": "ACME",
+      "prospect_meta": {},
+      "status": "published",
+      "locale": "es-ES",
+      "price_mode": "total",
+      "total_price": 2400,
+      "currency": "EUR",
+      "theme_override": null
+    }
   ],
   "dossier_item": [
-    { "id": "00000000-0000-4000-8000-00000017e001", "dossier_id": "00000000-0000-4000-8000-000000d05501", "module_version_id": "00000000-0000-4000-8000-0000000e1031", "position": 512, "visible": true, "price_override": 250, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017e002", "dossier_id": "00000000-0000-4000-8000-000000d05501", "module_version_id": "00000000-0000-4000-8000-0000000e1011", "position": 256, "visible": true, "price_override": null, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017e003", "dossier_id": "00000000-0000-4000-8000-000000d05501", "module_version_id": "00000000-0000-4000-8000-0000000e1021", "position": 2048, "visible": true, "price_override": null, "prop_overrides": { "title": "Lo que vivirán los invitados de {company}" } },
-    { "id": "00000000-0000-4000-8000-00000017e004", "dossier_id": "00000000-0000-4000-8000-000000d05501", "module_version_id": "00000000-0000-4000-8000-0000000e1012", "position": 3072, "visible": false, "price_override": null, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017e005", "dossier_id": "00000000-0000-4000-8000-000000d05501", "module_version_id": "00000000-0000-4000-8000-0000000e1041", "position": 4096, "visible": true, "price_override": null, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017e006", "dossier_id": "00000000-0000-4000-8000-000000d05503", "module_version_id": "00000000-0000-4000-8000-0000000e1041", "position": 1024, "visible": true, "price_override": null, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017a001", "dossier_id": "00000000-0000-4000-8000-000000d05504", "module_version_id": "00000000-0000-4000-8000-0000000a1011", "position": 1024, "visible": true, "price_override": null, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017a002", "dossier_id": "00000000-0000-4000-8000-000000d05504", "module_version_id": "00000000-0000-4000-8000-0000000a1021", "position": 2048, "visible": true, "price_override": null, "prop_overrides": {} },
-    { "id": "00000000-0000-4000-8000-00000017a003", "dossier_id": "00000000-0000-4000-8000-000000d05504", "module_version_id": "00000000-0000-4000-8000-0000000a1031", "position": 3072, "visible": true, "price_override": null, "prop_overrides": {} }
+    {
+      "id": "00000000-0000-4000-8000-00000017e001",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "module_version_id": "00000000-0000-4000-8000-0000000e1031",
+      "position": 512,
+      "visible": true,
+      "price_override": 250,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017e002",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "module_version_id": "00000000-0000-4000-8000-0000000e1011",
+      "position": 256,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017e003",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "module_version_id": "00000000-0000-4000-8000-0000000e1021",
+      "position": 2048,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {
+        "title": "Lo que vivirán los invitados de {company}"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017e004",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "module_version_id": "00000000-0000-4000-8000-0000000e1012",
+      "position": 3072,
+      "visible": false,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017e005",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "module_version_id": "00000000-0000-4000-8000-0000000e1041",
+      "position": 4096,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017e006",
+      "dossier_id": "00000000-0000-4000-8000-000000d05503",
+      "module_version_id": "00000000-0000-4000-8000-0000000e1041",
+      "position": 1024,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017a001",
+      "dossier_id": "00000000-0000-4000-8000-000000d05504",
+      "module_version_id": "00000000-0000-4000-8000-0000000a1011",
+      "position": 1024,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017a002",
+      "dossier_id": "00000000-0000-4000-8000-000000d05504",
+      "module_version_id": "00000000-0000-4000-8000-0000000a1021",
+      "position": 2048,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000017a003",
+      "dossier_id": "00000000-0000-4000-8000-000000d05504",
+      "module_version_id": "00000000-0000-4000-8000-0000000a1031",
+      "position": 3072,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    }
   ],
   "share_link": [
-    { "id": "00000000-0000-4000-8000-0000005a0001", "dossier_id": "00000000-0000-4000-8000-000000d05501", "token": "demo-sala-x-7Qm2", "is_active": true, "expires_at": null },
-    { "id": "00000000-0000-4000-8000-0000005a0002", "dossier_id": "00000000-0000-4000-8000-000000d05502", "token": "demo-draft-Kp9wQ1", "is_active": true, "expires_at": null },
-    { "id": "00000000-0000-4000-8000-0000005a0003", "dossier_id": "00000000-0000-4000-8000-000000d05503", "token": "demo-revoked-Zt4c", "is_active": false, "expires_at": null },
-    { "id": "00000000-0000-4000-8000-0000005a0004", "dossier_id": "00000000-0000-4000-8000-000000d05504", "token": "demo-retheme-Hx8v", "is_active": true, "expires_at": null },
-    { "id": "00000000-0000-4000-8000-0000005a0005", "dossier_id": "00000000-0000-4000-8000-000000d05501", "token": "demo-expired-Bn3r", "is_active": true, "expires_at": "2020-01-01T00:00:00Z" }
+    {
+      "id": "00000000-0000-4000-8000-0000005a0001",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "token": "demo-sala-x-7Qm2",
+      "is_active": true,
+      "expires_at": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005a0002",
+      "dossier_id": "00000000-0000-4000-8000-000000d05502",
+      "token": "demo-draft-Kp9wQ1",
+      "is_active": true,
+      "expires_at": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005a0003",
+      "dossier_id": "00000000-0000-4000-8000-000000d05503",
+      "token": "demo-revoked-Zt4c",
+      "is_active": false,
+      "expires_at": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005a0004",
+      "dossier_id": "00000000-0000-4000-8000-000000d05504",
+      "token": "demo-retheme-Hx8v",
+      "is_active": true,
+      "expires_at": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005a0005",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "token": "demo-expired-Bn3r",
+      "is_active": true,
+      "expires_at": "2020-01-01T00:00:00Z"
+    }
   ]
 }

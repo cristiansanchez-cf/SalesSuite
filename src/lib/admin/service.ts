@@ -13,7 +13,7 @@ import type { BuilderOp, CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
 export class AdminError extends Error {
-  constructor(public status: 400 | 403 | 404 | 409 | 422, message: string, public details?: string[]) {
+  constructor(public status: 400 | 403 | 404 | 409 | 422 | 501 | 503, message: string, public details?: string[]) {
     super(message);
   }
 }

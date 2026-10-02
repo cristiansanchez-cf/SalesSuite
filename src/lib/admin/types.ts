@@ -95,3 +95,48 @@ export interface BuilderState {
   /** Problemas que impiden publicar. */
   publishBlockers: string[];
 }
+
+// ---------------------------------------------------------------- gestión del tenant (admins)
+
+export interface MemberRecord {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  role: Role;
+}
+
+export interface ModuleRecord {
+  id: string;
+  tenantId: string;
+  key: string;
+  blockType: string;
+  name: string;
+  description: string | null;
+  isCatalog: boolean;
+}
+
+export type VersionStatus = 'draft' | 'published' | 'archived';
+
+export interface ModuleVersionRecord {
+  id: string;
+  moduleId: string;
+  version: number;
+  status: VersionStatus;
+  defaultProps: Record<string, unknown>;
+  defaultPrice: number | null;
+  currency: string;
+}
+
+export interface CatalogModuleView extends ModuleRecord {
+  blockLabel: string;
+  versions: Array<ModuleVersionRecord & { usage: number; error: string | null }>;
+}
+
+export interface TenantSettings {
+  id: string;
+  slug: string;
+  name: string;
+  defaultLocale: string;
+  themeTokens: unknown;
+  brand: unknown;
+}

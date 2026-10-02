@@ -3,8 +3,9 @@
  * Postgres + PostgREST + RLS reales (service.supabase.test.ts) para garantizar el mismo comportamiento.
  */
 import { beforeEach, describe, expect, test } from 'vitest';
-import type { AdminDb } from './db';
+import type { AdminDb, AssetStore, Identity } from './db';
 import { AdminError, createAdminService } from './service';
+import { createTenantAdminService } from './tenant-service';
 import type { AdminSession, Role } from './types';
 
 export const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -31,7 +32,15 @@ export interface ContractEnv {
   publicGet(token: string, tenantId: string): Promise<{ items: Array<{ blockType: string }> } | null>;
   /** true si la BD aplica RLS (Supabase): habilita tests de defensa en profundidad. */
   enforcesRls: boolean;
+  identity(): Identity;
+  /** Tenant público por slug (RPC resolve_tenant o repo demo): para comprobar cambios de marca. */
+  publicTenant(slug: string): Promise<{ name: string; brand: Record<string, unknown>; themeTokens: Record<string, unknown> } | null>;
 }
+
+const fakeAssets = (): AssetStore & { calls: string[] } => {
+  const calls: string[] = [];
+  return { calls, async upload(t, f, kind) { calls.push(`${t}/${kind}`); return { url: `https://cdn.example.com/${t}/${kind}-${f.name}` }; } };
+};
 
 type U = (typeof USERS)[keyof typeof USERS];
 const session = (u: U, over: Partial<AdminSession> = {}): AdminSession => ({
@@ -209,6 +218,140 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       const forged = svc(USERS.altRep, { tenantId: ENJOY, role: 'admin' });
       await rejects(forged.getState(SALA_X), 404);
       expect((await forged.listDossiers()).length).toBe(0);
+    });
+  });
+
+  describe(`gestión del tenant · ${name}`, () => {
+    let E: ContractEnv;
+    const tsvc = (u: U, assets: AssetStore = fakeAssets()) =>
+      createTenantAdminService(E.dbFor(u.id), session(u), { identity: E.identity(), assets });
+
+    beforeEach(async () => {
+      E = env();
+      await E.reset();
+    });
+
+    test('solo admins', async () => {
+      await rejects(tsvc(USERS.rep).listMembers(), 403);
+      await rejects(tsvc(USERS.rep).listCatalog(), 403);
+      await rejects(tsvc(USERS.rep).saveSettings({}), 403);
+    });
+
+    test('equipo: invitar, promover, no quedarse sin admin, quitar', async () => {
+      const t = tsvc(USERS.admin);
+      expect((await t.listMembers()).map((m) => m.role)).toEqual(['admin', 'rep']);
+      const r = await t.invite({ email: 'Nuevo@Enjoy.test', role: 'rep' }, 'https://x/admin/auth/confirm');
+      expect(r.invited).toBe(true);
+      const members = await t.listMembers();
+      const nuevo = members.find((m) => m.email === 'nuevo@enjoy.test')!;
+      expect(nuevo.role).toBe('rep');
+      await rejects(t.invite({ email: 'nuevo@enjoy.test', role: 'rep' }, 'x'), 409);
+      await rejects(t.invite({ email: 'no-es-email', role: 'rep' }, 'x'), 422);
+
+      // usuario existente de otro tenant: se añade sin re-invitar
+      const r2 = await t.invite({ email: USERS.altRep.email, role: 'rep' }, 'x');
+      expect(r2.invited).toBe(false);
+
+      await rejects(t.setRole(USERS.admin.id, 'rep'), 409);
+      await rejects(t.removeMember(USERS.admin.id), 409);
+      await t.setRole(nuevo.userId, 'admin');
+      await t.setRole(USERS.admin.id, 'rep');  // ahora sí: queda otro admin
+      expect((await t.listMembers()).find((m) => m.userId === USERS.admin.id)?.role).toBe('rep');
+      // el antiguo admin ya no puede gestionar (el rol de la sesión se recalcula en cada petición)
+      const newRole = await E.dbFor(USERS.admin.id).membershipRole(USERS.admin.id, ENJOY);
+      expect(newRole).toBe('rep');
+      await rejects(createTenantAdminService(E.dbFor(USERS.admin.id), session(USERS.admin, { role: newRole! }), { identity: E.identity(), assets: fakeAssets() }).listMembers(), 403);
+      const t2 = createTenantAdminService(E.dbFor(nuevo.userId), { userId: nuevo.userId, email: 'nuevo@enjoy.test', displayName: null, tenantId: ENJOY, role: 'admin' }, { identity: E.identity(), assets: fakeAssets() });
+      await t2.removeMember(USERS.rep.id);
+      expect((await t2.listMembers()).some((m) => m.userId === USERS.rep.id)).toBe(false);
+    });
+
+    test('catálogo: crear módulo, publicar, nueva versión, archivar', async () => {
+      const t = tsvc(USERS.admin);
+      const { moduleId, versionId } = await t.createModule({ key: 'hero-locales', blockType: 'hero-pitch', name: 'Hero · Locales', description: '' });
+      await rejects(t.createModule({ key: 'hero-locales', blockType: 'hero-pitch', name: 'dup' }), 409);
+      await rejects(t.createModule({ key: 'X Y', blockType: 'hero-pitch', name: 'mal' }), 422);
+      await rejects(t.createModule({ key: 'ok-key', blockType: 'no-existe', name: 'mal' }), 422);
+
+      let cat = await t.listCatalog();
+      let mod = cat.find((m) => m.id === moduleId)!;
+      expect(mod.versions[0]).toMatchObject({ version: 1, status: 'draft', error: null });
+
+      // el borrador no aparece en el catálogo del builder
+      const builder = createAdminService(E.dbFor(USERS.rep.id), session(USERS.rep));
+      const dossierId = await builder.createDossier({ title: 'T' });
+      expect((await builder.getState(dossierId)).catalog.some((c) => c.moduleId === moduleId)).toBe(false);
+
+      const e = await rejects(t.saveDraft(versionId, { defaultProps: { title: '' }, defaultPrice: null, currency: 'EUR' }), 422);
+      expect(e.details?.join()).toMatch(/title/);
+      await t.saveDraft(versionId, { defaultProps: { title: 'Tu local, {company}' }, defaultPrice: 99, currency: 'EUR' });
+      await t.publish(versionId);
+      expect((await builder.getState(dossierId)).catalog.find((c) => c.moduleId === moduleId)?.version).toBe(1);
+      await rejects(t.saveDraft(versionId, { defaultProps: { title: 'x' }, defaultPrice: null, currency: 'EUR' }), 409);
+
+      // usar v1 en un dossier publicado y crear v2
+      let st = await builder.apply(dossierId, { op: 'addItem', moduleVersionId: versionId });
+      await builder.apply(dossierId, { op: 'setStatus', status: 'published' });
+      st = await builder.apply(dossierId, { op: 'createLink' });
+      const token = st.links[0].token;
+
+      const v2 = await t.newDraft(moduleId);
+      expect(await t.newDraft(moduleId)).toBe(v2);  // reutiliza el borrador
+      await t.saveDraft(v2, { defaultProps: { title: 'Versión 2' }, defaultPrice: 120, currency: 'EUR' });
+      await t.publish(v2);
+      cat = await t.listCatalog();
+      mod = cat.find((m) => m.id === moduleId)!;
+      expect(mod.versions.map((v) => [v.version, v.status, v.usage])).toEqual([[2, 'published', 0], [1, 'published', 1]]);
+      st = await builder.getState(dossierId);
+      expect(st.items[0].upgradeTo?.version).toBe(2);
+
+      // archivar v1: fuera del catálogo, pero el dossier publicado sigue renderizando
+      await t.archive(versionId);
+      await rejects(t.publish(versionId), 409);
+      expect((await E.publicGet(token, ENJOY))?.items.map((i) => i.blockType)).toEqual(['hero-pitch']);
+
+      const preview = await t.previewVersion(v2, 'es-ES');
+      expect(preview.items[0].defaultProps).toEqual({ title: 'Versión 2' });
+
+      await t.updateModule(moduleId, { name: 'Hero · Locales (nuevo)' });
+      expect((await t.listCatalog()).some((m) => m.name === 'Hero · Locales (nuevo)')).toBe(true);
+    });
+
+    test('marca y tema: validados y visibles en público', async () => {
+      const t = tsvc(USERS.admin);
+      const cur = await t.getSettings();
+      expect(cur.slug).toBe('enjoy');
+      await rejects(t.saveSettings({ name: 'Enjoy', defaultLocale: 'es-ES', themeTokens: { colors: { primary: 'red' } }, brand: {} }), 422);
+      await rejects(t.saveSettings({ name: 'Enjoy', defaultLocale: 'es-ES', themeTokens: {}, brand: { logoUrl: 'javascript:alert(1)' } }), 422);
+      await t.saveSettings({
+        name: 'Enjoy the Club', defaultLocale: 'es-ES',
+        themeTokens: { colors: { primary: '#ff0088' } },
+        brand: { logoUrl: 'https://cdn.example.com/logo.svg', contact: { whatsapp: '34600111222' } },
+      });
+      const pub = await E.publicTenant('enjoy');
+      expect(pub?.brand).toMatchObject({ logoUrl: 'https://cdn.example.com/logo.svg', contact: { whatsapp: '34600111222' } });
+      expect(pub?.themeTokens).toMatchObject({ colors: { primary: '#ff0088' } });
+    });
+
+    test('subida de assets: tipos y tamaño', async () => {
+      const assets = fakeAssets();
+      const t = tsvc(USERS.admin, assets);
+      const url = await t.uploadAsset({ name: 'logo.svg', type: 'image/svg+xml', bytes: new Uint8Array([60]) }, 'logo');
+      expect(url).toContain(`${ENJOY}/logo`);
+      await rejects(t.uploadAsset({ name: 'x', type: 'image/png', bytes: new Uint8Array([1]) }, 'virus'), 422);
+      await rejects(t.uploadAsset({ name: 'x', type: 'image/png', bytes: new Uint8Array(5 * 1024 * 1024 + 1) }, 'logo'), 422);
+      await rejects(t.uploadAsset({ name: 'x', type: 'image/png', bytes: new Uint8Array(0) }, 'logo'), 422);
+      expect(assets.calls).toEqual([`${ENJOY}/logo`]);
+    });
+
+    test('defensa en profundidad: sesión falsificada como admin no gestiona el tenant', async () => {
+      if (!E.enforcesRls) return;
+      // rep de Enjoy con sesión que dice ser admin: el servicio lo deja pasar, la RLS no.
+      const forged = createTenantAdminService(E.dbFor(USERS.rep.id), session(USERS.rep, { role: 'admin' }), { identity: E.identity(), assets: fakeAssets() });
+      await rejects(forged.saveSettings({ name: 'Hack', defaultLocale: 'es-ES', themeTokens: {}, brand: {} }), 403);
+      await rejects(forged.setRole(USERS.rep.id, 'admin'), 403);
+      await expect(forged.createModule({ key: 'hack', blockType: 'hero-pitch', name: 'Hack' })).rejects.toThrow();
+      expect((await E.publicTenant('enjoy'))?.name).toBe('Enjoy the Club');
     });
   });
 }

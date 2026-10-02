@@ -42,3 +42,12 @@ describe('helpers', () => {
     expect(interpolate('Para {company}', { prospectName: 'Laura', prospectCompany: null })).toBe('Para Laura');
   });
 });
+
+describe('registry', () => {
+  test('cada block_type trae un ejemplo válido para su schema', async () => {
+    const { REGISTRY } = await import('./registry');
+    for (const [k, v] of Object.entries(REGISTRY)) {
+      expect(v.schema.safeParse(v.example).success, k).toBe(true);
+    }
+  });
+});

@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { demoDb, type DemoDb, type DossierRow, type ShareLinkRow } from '../data/store';
-import type { AdminDb } from './db';
-import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord } from './types';
+import type { AdminDb, AssetStore, Identity } from './db';
+import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord } from './types';
 
 export const newToken = () => randomBytes(24).toString('base64url');
 
@@ -152,5 +152,120 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       l.revoked_at = new Date().toISOString();
       return true;
     },
+
+    // ---- gestión del tenant
+    async getTenant(id) {
+      const t = db().tenant.find((x) => x.id === id);
+      return t ? { id: t.id, slug: t.slug, name: t.name, defaultLocale: t.default_locale, themeTokens: t.theme_tokens, brand: t.brand } : null;
+    },
+    async updateTenant(id, p) {
+      const t = db().tenant.find((x) => x.id === id);
+      if (!t) return false;
+      if (p.name !== undefined) t.name = p.name;
+      if (p.defaultLocale !== undefined) t.default_locale = p.defaultLocale;
+      if (p.themeTokens !== undefined) t.theme_tokens = p.themeTokens;
+      if (p.brand !== undefined) t.brand = p.brand;
+      return true;
+    },
+
+    async listMembers(tenantId) {
+      return db().users.flatMap((u) => u.memberships
+        .filter((m) => m.tenant_id === tenantId)
+        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role })));
+    },
+    async addMember(tenantId, userId, role) {
+      const u = db().users.find((x) => x.id === userId);
+      if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) return false;
+      u.memberships.push({ tenant_id: tenantId, role });
+      return true;
+    },
+    async setMemberRole(tenantId, userId, role) {
+      const m = db().users.find((x) => x.id === userId)?.memberships.find((x) => x.tenant_id === tenantId);
+      if (!m) return false;
+      m.role = role;
+      return true;
+    },
+    async removeMember(tenantId, userId) {
+      const u = db().users.find((x) => x.id === userId);
+      if (!u) return false;
+      const before = u.memberships.length;
+      u.memberships = u.memberships.filter((m) => m.tenant_id !== tenantId);
+      return u.memberships.length < before;
+    },
+
+    async listModules(tenantId) {
+      return db().module.filter((m) => m.tenant_id === tenantId).map((m): ModuleRecord => ({
+        id: m.id, tenantId: m.tenant_id, key: m.key, blockType: m.block_type, name: m.name, description: m.description, isCatalog: m.is_catalog,
+      }));
+    },
+    async listModuleVersions(tenantId) {
+      const ids = new Set(db().module.filter((m) => m.tenant_id === tenantId).map((m) => m.id));
+      return db().module_version.filter((v) => ids.has(v.module_id)).map((v): ModuleVersionRecord => ({
+        id: v.id, moduleId: v.module_id, version: v.version, status: v.status,
+        defaultProps: v.default_props, defaultPrice: v.default_price, currency: v.default_currency,
+      }));
+    },
+    async versionUsage(tenantId) {
+      const s = db();
+      const dossiers = new Set(s.dossier.filter((d) => d.tenant_id === tenantId).map((d) => d.id));
+      const out = new Map<string, number>();
+      for (const i of s.dossier_item) if (dossiers.has(i.dossier_id)) out.set(i.module_version_id, (out.get(i.module_version_id) ?? 0) + 1);
+      return out;
+    },
+    async insertModule(m) {
+      const s = db();
+      if (s.module.some((x) => x.tenant_id === m.tenantId && x.key === m.key)) throw new Error('duplicate key: module (tenant_id, key)');
+      const id = randomUUID();
+      s.module.push({ id, tenant_id: m.tenantId, key: m.key, block_type: m.blockType, name: m.name, description: m.description, is_catalog: m.isCatalog });
+      return id;
+    },
+    async updateModule(id, p) {
+      const m = db().module.find((x) => x.id === id);
+      if (!m) return false;
+      if (p.name !== undefined) m.name = p.name;
+      if (p.description !== undefined) m.description = p.description;
+      if (p.isCatalog !== undefined) m.is_catalog = p.isCatalog;
+      return true;
+    },
+    async insertModuleVersion(v) {
+      const s = db();
+      if (s.module_version.some((x) => x.module_id === v.moduleId && x.version === v.version)) throw new Error('duplicate key: module_version (module_id, version)');
+      const id = randomUUID();
+      s.module_version.push({ id, module_id: v.moduleId, version: v.version, status: v.status, default_props: v.defaultProps, default_price: v.defaultPrice, default_currency: v.currency });
+      return id;
+    },
+    async updateModuleVersion(id, p) {
+      const v = db().module_version.find((x) => x.id === id);
+      if (!v) return false;
+      // Misma regla que el trigger module_version_immutable de Postgres.
+      const contentChange = p.defaultProps !== undefined || p.defaultPrice !== undefined || p.currency !== undefined;
+      if (v.status !== 'draft' && (contentChange || p.status === 'draft')) throw new Error('module_version ya no es draft: crea una versión nueva');
+      if (p.defaultProps !== undefined) v.default_props = p.defaultProps;
+      if (p.defaultPrice !== undefined) v.default_price = p.defaultPrice;
+      if (p.currency !== undefined) v.default_currency = p.currency;
+      if (p.status !== undefined) v.status = p.status;
+      return true;
+    },
   };
 }
+
+/** Invitaciones en demo: crea el usuario en memoria (aparece en el selector de login). */
+export function demoIdentity(getDb: () => DemoDb = demoDb): Identity {
+  return {
+    async findOrInvite(email) {
+      const e = email.trim().toLowerCase();
+      const found = getDb().users.find((u) => u.email.toLowerCase() === e);
+      if (found) return { userId: found.id, invited: false };
+      const id = randomUUID();
+      getDb().users.push({ id, email: e, display_name: '', memberships: [] });
+      return { userId: id, invited: true };
+    },
+  };
+}
+
+/** En demo no hay almacenamiento: se usan URLs. */
+export const demoAssets: AssetStore = {
+  async upload() {
+    throw new Error('DEMO_NO_STORAGE');
+  },
+};

@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const fx = JSON.parse(readFileSync(`${root}supabase/seed/fixtures.json`, 'utf8'));
 
 const ORDER = ['tenant', 'domain', 'module', 'module_version', 'dossier', 'dossier_item', 'share_link'];
-const JSON_COLS = new Set(['theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification']);
+const JSON_COLS = new Set(['brand', 'theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification']);
 const DERIVED = new Set(['tenant_id']);
 const derivedTables = new Set(['module_version', 'dossier_item', 'share_link']);
 

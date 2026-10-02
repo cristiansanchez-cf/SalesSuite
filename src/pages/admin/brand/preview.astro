@@ -1,0 +1,12 @@
+---
+/** Muestra de dossier con la marca recién guardada (lee el tenant fresco, sin la caché del middleware). */
+import DossierView from '~/components/dossier/DossierView.astro';
+import { toTenant } from '~/lib/data/mappers';
+
+const { admin } = Astro.locals;
+if (!admin || admin.session.role !== 'admin') return Astro.rewrite('/404');
+const s = await admin.tenantAdmin.getSettings();
+const tenant = toTenant({ id: s.id, slug: s.slug, name: s.name, default_locale: s.defaultLocale, theme_tokens: s.themeTokens, brand: s.brand });
+const dossier = await admin.tenantAdmin.previewSample(tenant.defaultLocale);
+---
+<DossierView tenant={tenant} dossier={dossier} banner="Vista previa de marca · contenido de muestra" />

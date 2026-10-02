@@ -1,0 +1,159 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { LOCALES } from '~/lib/admin/ops';
+import { AdminError } from '~/lib/admin/service';
+import { parseBrand, type Brand } from '~/lib/brand';
+import { COLOR_KEYS, parseTheme, type ThemeTokens } from '~/lib/theme';
+import { clearTenantCache } from '~/lib/tenant';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const t = admin.tenantAdmin;
+
+const COLOR_LABEL: Record<(typeof COLOR_KEYS)[number], string> = {
+  bg: 'Fondo', surface: 'Fondo secundario', text: 'Texto', muted: 'Texto suave', border: 'Bordes',
+  primary: 'Primario', 'primary-contrast': 'Texto sobre primario', accent: 'Acento', 'accent-contrast': 'Texto sobre acento',
+};
+const ASSETS = [
+  { kind: 'logo', field: 'logoUrl', label: 'Logo', accept: 'image/svg+xml,image/png,image/webp' },
+  { kind: 'logo-dark', field: 'logoOnDarkUrl', label: 'Logo para fondo oscuro', accept: 'image/svg+xml,image/png,image/webp' },
+  { kind: 'favicon', field: 'faviconUrl', label: 'Favicon', accept: 'image/png,image/svg+xml,image/x-icon' },
+  { kind: 'og', field: 'ogImageUrl', label: 'Imagen al compartir (1200×630)', accept: 'image/png,image/jpeg,image/webp' },
+] as const;
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '').trim();
+  result = await formAction(async () => {
+    const upload = async (kind: string, name: string): Promise<string | null> => {
+      const file = f.get(name);
+      if (!(file instanceof File) || file.size === 0) return null;
+      return t.uploadAsset({ name: file.name, type: file.type, bytes: new Uint8Array(await file.arrayBuffer()) }, kind);
+    };
+    const brand: Record<string, unknown> = { logoAlt: str('logoAlt'), legal: str('legal') };
+    for (const a of ASSETS) brand[a.field] = (await upload(a.kind, `file_${a.kind}`)) ?? str(a.field);
+    brand.contact = { email: str('email'), phone: str('phone'), whatsapp: str('whatsapp').replace(/\D/g, ''), website: str('website') };
+
+    const colors: Record<string, string> = {};
+    for (const k of COLOR_KEYS) if (str(`color_${k}`)) colors[k] = str(`color_${k}`);
+    const fontUrl = (await upload('font', 'file_font')) ?? str('fontFaceUrl');
+    const faceFamily = str('fontFaceFamily');
+    let faces: unknown[] = [];
+    if (faceFamily || fontUrl) {
+      if (!faceFamily || !fontUrl) throw new AdminError(422, 'Para una fuente propia indica familia y archivo/URL');
+      faces = [{ family: faceFamily, src: fontUrl, weight: str('fontFaceWeight') || '400 900' }];
+    }
+    const themeTokens = {
+      colors,
+      radius: Object.fromEntries((['card', 'button'] as const).filter((k) => str(`radius_${k}`)).map((k) => [k, str(`radius_${k}`)])),
+      font: Object.fromEntries(Object.entries({ display: str('fontDisplay'), sans: str('fontSans'), faces: faces.length ? faces : undefined }).filter(([, v]) => v)),
+    };
+    // Limpia vacíos para no guardar strings "" (el schema los acepta pero ensucian el JSON).
+    const clean = (o: Record<string, unknown>): Record<string, unknown> =>
+      Object.fromEntries(Object.entries(o).filter(([, v]) => v !== '' && v != null && !(typeof v === 'object' && !Array.isArray(v) && !Object.keys(v as object).length))
+        .map(([k, v]) => [k, typeof v === 'object' && !Array.isArray(v) ? clean(v as Record<string, unknown>) : v]));
+    await t.saveSettings({ name: str('name'), defaultLocale: str('defaultLocale'), themeTokens: clean(themeTokens), brand: clean(brand) });
+    clearTenantCache();
+  });
+  if (!result.error) return Astro.redirect('/admin/brand?ok=saved', 303);
+}
+
+const settings = await t.getSettings();
+const theme: ThemeTokens = parseTheme(settings.themeTokens);
+const brand: Brand = parseBrand(settings.brand);
+const face = theme.font?.faces?.[0];
+const okMsg = flash(Astro.url, { saved: 'Marca guardada. Los dossiers ya la muestran.' });
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+const card = 'space-y-3 rounded-2xl border border-line bg-bg p-5';
+---
+<AdminLayout title="Marca" wide>
+  <h1 class="text-3xl font-extrabold">Marca y tema</h1>
+  <p class="text-sm text-muted">Se aplica a todos los dossiers de <code>{settings.slug}</code> sin tocar código.{admin.mode === 'demo' && ' En demo no hay subida de archivos: usa URLs.'}</p>
+  {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+  {result.error && (
+    <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error">
+      <p class="font-semibold">{result.error}</p>
+      {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
+    </div>
+  )}
+
+  <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
+    <form method="post" enctype="multipart/form-data" class="space-y-5" data-testid="brand-form">
+      <section class={card}>
+        <h2 class="font-bold">General</h2>
+        <label class="block text-sm font-medium">Nombre comercial<input class={field} name="name" value={settings.name} required maxlength="80" /></label>
+        <label class="block text-sm font-medium">Idioma por defecto
+          <select class={field} name="defaultLocale">{LOCALES.map((l) => <option selected={l === settings.defaultLocale}>{l}</option>)}</select>
+        </label>
+      </section>
+
+      <section class={card}>
+        <h2 class="font-bold">Colores</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {COLOR_KEYS.map((k) => (
+            <label class="flex items-center gap-2 text-sm">
+              <input type="color" class="h-9 w-12 cursor-pointer rounded border border-line" value={theme.colors?.[k] ?? '#000000'}
+                oninput={`this.nextElementSibling.value=this.value`} aria-label={COLOR_LABEL[k]} />
+              <input class="w-24 rounded-lg border border-line px-2 py-1.5 font-mono text-xs" name={`color_${k}`} value={theme.colors?.[k] ?? ''} placeholder="por defecto" pattern="#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?" />
+              <span>{COLOR_LABEL[k]}</span>
+            </label>
+          ))}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm font-medium">Radio tarjetas<input class={field} name="radius_card" value={theme.radius?.card ?? ''} placeholder="20px" /></label>
+          <label class="text-sm font-medium">Radio botones<input class={field} name="radius_button" value={theme.radius?.button ?? ''} placeholder="999px" /></label>
+        </div>
+      </section>
+
+      <section class={card}>
+        <h2 class="font-bold">Tipografía</h2>
+        <label class="block text-sm font-medium">Titulares (font-family)<input class={field} name="fontDisplay" value={theme.font?.display ?? ''} placeholder="'YWFTKul', ui-sans-serif, sans-serif" /></label>
+        <label class="block text-sm font-medium">Texto (font-family)<input class={field} name="fontSans" value={theme.font?.sans ?? ''} placeholder="ui-sans-serif, system-ui, sans-serif" /></label>
+        <fieldset class="rounded-xl border border-line p-3">
+          <legend class="px-1 text-sm font-medium">Fuente propia (WOFF2)</legend>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="text-sm">Familia<input class={field} name="fontFaceFamily" value={face?.family ?? ''} placeholder="YWFTKul" /></label>
+            <label class="text-sm">Pesos<input class={field} name="fontFaceWeight" value={face?.weight ?? ''} placeholder="400 900" /></label>
+          </div>
+          <label class="mt-2 block text-sm">URL<input class={field} name="fontFaceUrl" value={face?.src ?? ''} placeholder="https://…/fuente.woff2" /></label>
+          {admin.mode === 'supabase' && <label class="mt-2 block text-sm">…o sube el archivo<input type="file" name="file_font" accept=".woff2,.woff,font/woff2,font/woff" class="block text-sm" /></label>}
+        </fieldset>
+      </section>
+
+      <section class={card}>
+        <h2 class="font-bold">Logos e imágenes</h2>
+        {ASSETS.map((a) => (
+          <div>
+            <label class="block text-sm font-medium">{a.label}<input class={field} name={a.field} value={brand[a.field] ?? ''} placeholder="https://…" /></label>
+            {admin.mode === 'supabase' && <input type="file" name={`file_${a.kind}`} accept={a.accept} class="mt-1 block text-sm" aria-label={`Subir ${a.label}`} />}
+            {brand[a.field] && <img src={brand[a.field]} alt="" class="mt-2 h-10 w-auto rounded border border-line bg-surface p-1" />}
+          </div>
+        ))}
+        <label class="block text-sm font-medium">Texto alternativo del logo<input class={field} name="logoAlt" value={brand.logoAlt ?? ''} maxlength="80" /></label>
+      </section>
+
+      <section class={card}>
+        <h2 class="font-bold">Contacto en los dossiers</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="text-sm font-medium">WhatsApp (con prefijo)<input class={field} name="whatsapp" value={brand.contact?.whatsapp ?? ''} placeholder="34600111222" inputmode="numeric" /></label>
+          <label class="text-sm font-medium">Email<input class={field} type="email" name="email" value={brand.contact?.email ?? ''} /></label>
+          <label class="text-sm font-medium">Teléfono<input class={field} name="phone" value={brand.contact?.phone ?? ''} placeholder="+34 600 111 222" /></label>
+          <label class="text-sm font-medium">Web<input class={field} name="website" value={brand.contact?.website ?? ''} placeholder="https://…" /></label>
+        </div>
+        <label class="block text-sm font-medium">Texto legal del pie<input class={field} name="legal" value={brand.legal ?? ''} maxlength="200" /></label>
+      </section>
+
+      <button class="w-full rounded-lg bg-ink px-4 py-3 font-semibold text-bg" type="submit">Guardar marca</button>
+    </form>
+
+    <div>
+      <div class="xl:sticky xl:top-4">
+        <p class="mb-2 text-sm font-bold">Vista previa <span class="font-normal text-muted">· tras guardar</span></p>
+        <iframe title="Vista previa de la marca" src={`/admin/brand/preview?t=${Date.now()}`} class="h-[80vh] w-full rounded-2xl border border-line bg-bg" data-testid="brand-preview"></iframe>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

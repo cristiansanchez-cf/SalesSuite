@@ -7,6 +7,7 @@ import { env } from '../env';
 const url = () => env('PUBLIC_SUPABASE_URL');
 const anon = () => env('PUBLIC_SUPABASE_ANON_KEY');
 
+/** Solo indica si hay credenciales; para decidir el modo usar appMode() (src/lib/mode.ts). */
 export const supabaseConfigured = () => Boolean(url() && anon());
 
 /**

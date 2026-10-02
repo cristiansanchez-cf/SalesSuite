@@ -1,6 +1,7 @@
 import type { PublicDossier, TenantContext } from '../types';
 import { demoRepository } from './demo';
-import { supabaseRepository, supabaseConfigured } from './supabase';
+import { appMode } from '../mode';
+import { supabaseRepository } from './supabase';
 
 /** Lecturas públicas (sin sesión): resolución de tenant y render de dossier por token. */
 export interface PublicRepository {
@@ -13,7 +14,10 @@ export interface PublicRepository {
 
 let repo: PublicRepository | undefined;
 
+/** El middleware corta antes con 503 si appMode() === 'misconfigured'. */
 export function publicRepository(): PublicRepository {
-  repo ??= supabaseConfigured() ? supabaseRepository() : demoRepository();
+  const mode = appMode();
+  if (mode === 'misconfigured') throw new Error('Configuración incompleta: ver /api/health');
+  if (repo?.mode !== mode) repo = mode === 'supabase' ? supabaseRepository() : demoRepository();
   return repo;
 }

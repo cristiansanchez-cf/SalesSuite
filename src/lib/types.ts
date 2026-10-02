@@ -1,3 +1,4 @@
+import type { Brand } from './brand';
 import type { ThemeTokens } from './theme';
 
 export type PriceMode = 'none' | 'total' | 'per_module';
@@ -10,6 +11,7 @@ export interface TenantContext {
   name: string;
   defaultLocale: string;
   themeTokens: ThemeTokens;
+  brand: Brand;
 }
 
 /** Item de dossier ya resuelto contra su module_version fijada. */

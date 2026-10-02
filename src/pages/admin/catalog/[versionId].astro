@@ -1,0 +1,80 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { REGISTRY, isBlockType } from '~/modules/registry';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const t = admin.tenantAdmin;
+const versionId = Astro.params.versionId ?? '';
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let draftJson: string | null = null;
+let draftPrice: string | null = null;
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const action = String(f.get('action'));
+  draftJson = String(f.get('defaultProps') ?? '');
+  draftPrice = String(f.get('defaultPrice') ?? '');
+  let ok = 'saved';
+  result = await formAction(async () => {
+    if (action === 'save' || action === 'publish') {
+      let props: unknown;
+      try { props = JSON.parse(draftJson || '{}'); } catch { throw new AdminError(422, 'El contenido no es JSON válido'); }
+      const p = draftPrice!.trim().replace(',', '.');
+      await t.saveDraft(versionId, { defaultProps: props, defaultPrice: p === '' ? null : Number(p), currency: String(f.get('currency') ?? 'EUR') });
+      if (action === 'publish') { await t.publish(versionId); ok = 'published'; }
+    }
+  });
+  if (!result.error) return Astro.redirect(ok === 'published' ? '/admin/catalog?ok=published' : `/admin/catalog/${versionId}?ok=saved`, 303);
+}
+
+const catalog = await t.listCatalog();
+const mod = catalog.find((m) => m.versions.some((v) => v.id === versionId));
+if (!mod) return Astro.rewrite('/404');
+const v = mod.versions.find((x) => x.id === versionId)!;
+const editable = v.status === 'draft';
+const example = isBlockType(mod.blockType) ? REGISTRY[mod.blockType].example : {};
+const okMsg = flash(Astro.url, { saved: 'Borrador guardado.', created: 'Módulo creado con contenido de ejemplo: edítalo y publícalo.' });
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink disabled:bg-surface';
+---
+<AdminLayout title={`${mod.name} · v${v.version}`} wide>
+  <a href="/admin/catalog" class="text-sm text-muted hover:text-ink">← Catálogo</a>
+  <h1 class="mt-1 text-2xl font-extrabold">{mod.name} · v{v.version}</h1>
+  <p class="text-sm text-muted"><code>{mod.key}</code> · {mod.blockLabel} · {editable ? 'Borrador' : v.status === 'published' ? 'Publicada (solo lectura)' : 'Archivada (solo lectura)'}</p>
+  {okMsg && <p class="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+  {result.error && (
+    <div class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error">
+      <p class="font-semibold">{result.error}</p>
+      {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
+    </div>
+  )}
+
+  <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
+    <form method="post" class="space-y-3 rounded-2xl border border-line bg-bg p-5">
+      <label class="block text-sm font-medium">Contenido (JSON)
+        <textarea class={`${field} h-[26rem] font-mono text-xs`} name="defaultProps" spellcheck="false" disabled={!editable} data-testid="props">{draftJson ?? JSON.stringify(v.defaultProps, null, 2)}</textarea>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="text-sm font-medium">Precio por defecto<input class={field} name="defaultPrice" inputmode="decimal" value={draftPrice ?? (v.defaultPrice ?? '')} disabled={!editable} placeholder="sin precio" /></label>
+        <label class="text-sm font-medium">Moneda
+          <select class={field} name="currency" disabled={!editable}>{['EUR', 'USD', 'GBP', 'MXN'].map((c) => <option selected={c === v.currency}>{c}</option>)}</select>
+        </label>
+      </div>
+      <p class="text-xs text-muted">Textos admiten <code>{'{company}'}</code> y <code>{'{prospect}'}</code>. Se valida contra el contrato del bloque al guardar.</p>
+      {editable && (
+        <div class="flex gap-2">
+          <button class="rounded-lg border border-line px-4 py-2 font-semibold hover:bg-surface" name="action" value="save" type="submit">Guardar borrador</button>
+          <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg" name="action" value="publish" type="submit" data-testid="publish-version">Guardar y publicar</button>
+        </div>
+      )}
+      <details class="text-xs"><summary class="cursor-pointer text-muted">Ejemplo mínimo de este bloque</summary><pre class="mt-1 overflow-auto rounded-lg bg-surface p-2">{JSON.stringify(example, null, 2)}</pre></details>
+    </form>
+    <div>
+      <p class="mb-2 text-sm font-bold">Vista previa {editable && <span class="font-normal text-muted">· del último guardado</span>}</p>
+      <iframe title="Vista previa del módulo" src={`/admin/catalog/preview/${v.id}?t=${Date.now()}`} class="h-[75vh] w-full rounded-2xl border border-line bg-bg" data-testid="version-preview"></iframe>
+    </div>
+  </div>
+</AdminLayout>

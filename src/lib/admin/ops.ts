@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { REGISTRY } from '../../modules/registry';
+import { brandSchema } from '../brand';
+import { themeTokensSchema } from '../theme';
 
 /** Operaciones del builder (contrato compartido cliente/servidor). Cada op devuelve el BuilderState completo. */
 const id = z.string().uuid();
@@ -40,3 +43,43 @@ export const createDossierSchema = z.object({
   fromDossierId: id.optional(),
 });
 export type CreateDossierInput = z.infer<typeof createDossierSchema>;
+
+// ---------------------------------------------------------------- gestión del tenant (admins)
+
+export const roleSchema = z.enum(['admin', 'rep']);
+
+export const inviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email no válido').max(200),
+  role: roleSchema,
+});
+
+const blockTypes = Object.keys(REGISTRY) as [keyof typeof REGISTRY, ...(keyof typeof REGISTRY)[]];
+
+export const moduleCreateSchema = z.object({
+  key: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/, 'Clave: minúsculas, números y guiones (2-63)'),
+  blockType: z.enum(blockTypes),
+  name: z.string().trim().min(1, 'Nombre obligatorio').max(80),
+  description: optText(240).optional(),
+});
+
+export const moduleUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: optText(240).optional(),
+  isCatalog: z.boolean(),
+}).partial();
+
+export const draftSchema = z.object({
+  defaultProps: z.record(z.unknown()),
+  defaultPrice: money.nullable(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+});
+
+export const LOCALES = ['es-ES', 'en-GB', 'ca-ES', 'pt-PT', 'fr-FR'] as const;
+
+export const settingsSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  defaultLocale: z.enum(LOCALES),
+  themeTokens: themeTokensSchema,
+  brand: brandSchema,
+});
+export type SettingsInput = z.infer<typeof settingsSchema>;

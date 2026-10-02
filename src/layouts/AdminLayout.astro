@@ -6,6 +6,17 @@ interface Props { title: string; wide?: boolean }
 const { title, wide = false } = Astro.props;
 const { tenant, admin } = Astro.locals;
 const roleLabel = { admin: 'Admin', rep: 'Comercial' } as const;
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/admin', label: 'Dossiers', on: path === '/admin' || path.startsWith('/admin/dossiers') },
+  ...(admin?.session.role === 'admin'
+    ? [
+        { href: '/admin/catalog', label: 'Catálogo', on: path.startsWith('/admin/catalog') },
+        { href: '/admin/team', label: 'Equipo', on: path.startsWith('/admin/team') },
+        { href: '/admin/brand', label: 'Marca', on: path.startsWith('/admin/brand') },
+      ]
+    : []),
+];
 ---
 <!doctype html>
 <html lang="es">
@@ -27,10 +38,14 @@ const roleLabel = { admin: 'Admin', rep: 'Comercial' } as const;
           <span class="grid h-7 w-7 place-items-center rounded-lg bg-ink text-xs text-bg">SS</span>
           <span>{tenant?.name}</span>
         </a>
-        {admin && <nav class="text-sm"><a href="/admin" class="text-muted hover:text-ink">Dossiers</a></nav>}
+        {admin && (
+          <nav class="flex gap-4 text-sm" aria-label="Secciones">
+            {nav.map((n) => <a href={n.href} class:list={[n.on ? 'font-semibold text-ink' : 'text-muted hover:text-ink']} aria-current={n.on ? 'page' : undefined}>{n.label}</a>)}
+          </nav>
+        )}
         {admin && (
           <div class="ml-auto flex items-center gap-3 text-sm">
-            <span class="hidden text-muted sm:inline">{admin.session.email}</span>
+            <a href="/admin/account" class="hidden text-muted hover:text-ink sm:inline">{admin.session.displayName || admin.session.email}</a>
             <span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold" data-testid="role">{roleLabel[admin.session.role]}</span>
             <form method="post" action="/admin/logout">
               <button class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface" type="submit">Salir</button>

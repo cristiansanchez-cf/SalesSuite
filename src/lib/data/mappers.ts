@@ -1,8 +1,9 @@
+import { parseBrand } from '../brand';
 import { parseTheme } from '../theme';
 import type { PublicDossier, RenderItem, TenantContext } from '../types';
 
 /** Filas snake_case (Postgres / fixtures) → modelos de la app. Compartido por demo y supabase. */
-export interface TenantRow { id: string; slug: string; name: string; default_locale: string; theme_tokens: unknown }
+export interface TenantRow { id: string; slug: string; name: string; default_locale: string; theme_tokens: unknown; brand?: unknown }
 
 export const toTenant = (r: TenantRow): TenantContext => ({
   id: r.id,
@@ -10,6 +11,7 @@ export const toTenant = (r: TenantRow): TenantContext => ({
   name: r.name,
   defaultLocale: r.default_locale,
   themeTokens: parseTheme(r.theme_tokens),
+  brand: parseBrand(r.brand),
 });
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
