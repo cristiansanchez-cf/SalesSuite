@@ -1,4 +1,8 @@
 ---
+/**
+ * Dossiers: tus propuestas como tarjetas, agrupadas por lo que piden (atención → enviadas → borradores → archivadas),
+ * con las aperturas y el próximo paso a la vista. «Nueva propuesta» abre el formulario en una ventana (#nuevo).
+ */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { createDossierSchema } from '~/lib/admin/ops';
 import { AdminError } from '~/lib/admin/service';
@@ -6,7 +10,6 @@ import { relativeTime, STATUS_CLASS, STATUS_LABELS } from '~/lib/admin/format';
 import type { DossierStatus } from '~/lib/types';
 import PartnerHome from '~/components/admin/PartnerHome.astro';
 import { requestOrigin } from '~/lib/http';
-import PageHeader from '~/components/ui/PageHeader.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
@@ -84,11 +87,42 @@ const filterHref = (p: Record<string, string | null>) => {
 };
 const filtered = !!(status || mine || follow || q);
 const published = all.filter((d) => d.status === 'published').length;
+const groups = filtered
+  ? [{ key: 'all', title: '', items: list }]
+  : [
+      { key: 'attention', title: m.dossiers.groups.attention, items: list.filter((d) => d.status === 'published' && (isOverdue(d.nextStepAt) || !d.nextStepAt)) },
+      { key: 'sent', title: m.dossiers.groups.sent, items: list.filter((d) => d.status === 'published' && d.nextStepAt && !isOverdue(d.nextStepAt)) },
+      { key: 'drafts', title: m.dossiers.groups.drafts, items: list.filter((d) => d.status === 'draft') },
+      { key: 'archived', title: m.dossiers.groups.archived, items: list.filter((d) => d.status === 'archived') },
+    ].filter((g) => g.items.length);
+const initial = (d: { prospectCompany: string | null; title: string }) => (d.prospectCompany || d.title).trim().charAt(0).toUpperCase();
 ---
-<AdminLayout title={isPartner ? m.dossiers.partnerTitle : m.dossiers.title}>
+<AdminLayout title={isPartner ? m.dossiers.partnerTitle : m.dossiers.title} wide>
   {isPartner ? <PartnerHome admin={admin} error={error} errorAccount={errorAccount} inviteError={inviteMsg} /> : (
-  <>
-    <PageHeader eyebrow={m.common.eyebrow} title={m.dossiers.title} lede={m.dossiers.lede(all.length, published)}>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 pb-10">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div class="grid gap-2">
+        <h1 class="co-page-title !text-5xl">{m.dossiers.title}</h1>
+        <p class="co-lede !text-lg">{m.dossiers.count(all.length, published)}</p>
+      </div>
+      <button type="button" class="co-btn co-btn--primary" data-open-new data-testid="new-dossier">{m.home.newProposal} <span aria-hidden="true">→</span></button>
+    </header>
+
+    {myOverdue > 0 && !follow && (
+      <a href="?follow=1&mine=1" class="co-row co-row--attention" data-testid="overdue-banner">
+        <span class="co-row__lead"><Icon name="clock" /></span>
+        <span class="co-row__main"><span class="co-row-title">{m.common.youHaveOverdue(myOverdue)}</span><span class="co-meta">{m.dossiers.overdueHint}</span></span>
+        <span class="co-row__chevron"><Icon name="chevron-right" /></span>
+      </a>
+    )}
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <nav class="co-chips" aria-label={m.dossiers.filters}>
+        <a href={filterHref({ status: null })} class="co-chip" aria-current={!status ? 'true' : undefined}>{m.common.all}</a>
+        {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class="co-chip" aria-current={status === s ? 'true' : undefined}>{STATUS_LABEL[s]}</a>)}
+        <a href={filterHref({ mine: mine ? null : '1' })} class="co-chip" aria-current={mine ? 'true' : undefined}>{m.dossiers.onlyMine}</a>
+        <a href={filterHref({ follow: follow ? null : '1' })} class="co-chip" aria-current={follow ? 'true' : undefined} data-testid="filter-follow"><Icon name="clock" size={14} />{m.dossiers.followups}{myOverdue ? m.common.overdueN(myOverdue) : ''}</a>
+      </nav>
       <form method="get" class="relative" role="search">
         {status && <input type="hidden" name="status" value={status} />}
         {mine && <input type="hidden" name="mine" value="1" />}
@@ -97,77 +131,95 @@ const published = all.filter((d) => d.status === 'published').length;
         <input id="q" class="co-input w-64 pl-9" type="search" name="q" value={q} placeholder={m.dossiers.search} />
         <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--co-ink-dim)]"><Icon name="search" size={16} /></span>
       </form>
-    </PageHeader>
+    </div>
 
-    <div class="co-split">
-      <section>
-        {myOverdue > 0 && !follow && (
-          <a href="?follow=1&mine=1" class="co-row co-row--attention mb-3" data-testid="overdue-banner">
-            <span class="co-row__lead"><Icon name="clock" /></span>
-            <span class="co-row__main"><span class="co-row-title">{m.common.youHaveOverdue(myOverdue)}</span><span class="co-meta">{m.dossiers.overdueHint}</span></span>
-            <span class="co-row__chevron"><Icon name="chevron-right" /></span>
-          </a>
-        )}
-        <nav class="co-chips mb-4" aria-label={m.dossiers.filters}>
-          <a href={filterHref({ status: null })} class="co-chip" aria-current={!status ? 'true' : undefined}>{m.common.all}</a>
-          {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class="co-chip" aria-current={status === s ? 'true' : undefined}>{STATUS_LABEL[s]}</a>)}
-          <a href={filterHref({ mine: mine ? null : '1' })} class="co-chip" aria-current={mine ? 'true' : undefined}>{m.dossiers.onlyMine}</a>
-          <a href={filterHref({ follow: follow ? null : '1' })} class="co-chip" aria-current={follow ? 'true' : undefined} data-testid="filter-follow"><Icon name="clock" size={14} />{m.dossiers.followups}{myOverdue ? m.common.overdueN(myOverdue) : ''}</a>
-        </nav>
-
-        {list.length === 0 ? (
-          filtered
-            ? <EmptyState kind="filter" title={m.dossiers.emptyFiltered} clearHref="/admin" />
-            : <EmptyState kind="create" title={m.dossiers.emptyTitle} detail={m.dossiers.emptyDetail} action={{ href: '#create-title', label: m.dossiers.emptyAction }} />
-        ) : (
-          <ul class="co-rows" data-testid="dossier-list">
-            {list.map((d) => {
-              const late = isOverdue(d.nextStepAt);
-              return (
-                <li>
-                  <a href={`/admin/dossiers/${d.id}`} class:list={['co-row', late && 'co-row--attention']}>
-                    <span class="co-row__main">
-                      <span class="co-row-title">{d.title}</span>
-                      <span class="co-meta">
-                        {[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ') || m.dossiers.noProspect}
-                        {' · '}{m.dossiers.modules(d.itemCount)}{d.activeLinks ? m.dossiers.links(d.activeLinks) : ''}
-                        {' · '}{d.authorName ?? m.dossiers.noAuthor} · {relativeTime(d.updatedAt, undefined, locale)}
+    {list.length === 0 ? (
+      filtered
+        ? <EmptyState kind="filter" title={m.dossiers.emptyFiltered} clearHref="/admin" />
+        : <EmptyState kind="create" title={m.dossiers.emptyTitle} detail={m.dossiers.emptyDetail} action={{ href: '#nuevo', label: m.dossiers.emptyAction }} />
+    ) : (
+      <div class="grid grid-cols-[minmax(0,1fr)] gap-10" data-testid="dossier-list">
+        {groups.map((g) => (
+          <section class="grid grid-cols-[minmax(0,1fr)] gap-4" data-group={g.key}>
+            {g.title && <h2 class="text-eyebrow">{g.title} · {g.items.length}</h2>}
+            <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0 md:grid-cols-2">
+              {g.items.map((d) => {
+                const late = isOverdue(d.nextStepAt);
+                const o = opens.get(d.id)?.opens ?? 0;
+                return (
+                  <li class="list-none">
+                    <a href={`/admin/dossiers/${d.id}`} class:list={['co-card co-card--link !grid h-full grid-cols-[minmax(0,1fr)] content-start gap-3 !p-5', late && 'dossier-card--late']}>
+                      <span class="flex items-start gap-4">
+                        <span class:list={['inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold', d.status === 'published' ? 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]' : 'bg-[var(--console-chip-bg)]']} aria-hidden="true">{initial(d)}</span>
+                        <span class="grid min-w-0 flex-1 gap-0.5">
+                          <span class="co-entity text-lg leading-snug">{d.title}</span>
+                          <span class="co-meta truncate">{[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ') || m.dossiers.noProspect}</span>
+                        </span>
+                        <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
                       </span>
                       {d.nextStepAt && (
-                        <span class="co-meta mt-1 !text-[var(--co-ink)]" title={d.nextStep ?? ''} data-testid="next-step-chip">
-                          {late ? m.common.overdueFollowup : m.common.nextStep}: {when(d.nextStepAt)}{d.nextStep ? ` · ${d.nextStep}` : ''}
+                        <span class:list={['flex items-center gap-2 text-sm', late ? 'font-semibold text-[color:var(--console-attention,#b42318)]' : '']} title={d.nextStep ?? ''} data-testid="next-step-chip">
+                          <Icon name="clock" size={14} />
+                          <span class="truncate">{late ? m.common.overdueFollowup : m.common.nextStep}: {when(d.nextStepAt)}{d.nextStep ? ` · ${d.nextStep}` : ''}</span>
                         </span>
                       )}
-                    </span>
-                    {d.status === 'published' && <span class={opens.get(d.id)?.opens ? 'co-badge co-badge--signal' : 'co-badge'} data-testid="opens-badge">{am.badge(opens.get(d.id)?.opens ?? 0)}</span>}
-                    <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
-                    <span class="co-row__chevron"><Icon name="chevron-right" /></span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                      <span class="flex flex-wrap items-center gap-2">
+                        {d.status === 'published' && <span class={o ? 'co-badge co-badge--signal' : 'co-badge'} data-testid="opens-badge">{am.badge(o)}</span>}
+                        <span class="co-meta">{m.dossiers.modules(d.itemCount)} · {d.authorName ?? m.dossiers.noAuthor} · {relativeTime(d.updatedAt, undefined, locale)}</span>
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
+    )}
 
-      <aside class="co-split__aside--sticky">
-        <form method="post" id="nuevo" class="co-card grid gap-3" data-testid="create-form">
-          <p class="text-eyebrow">{m.dossiers.newEyebrow}</p>
-          <h2 class="co-entity">{m.dossiers.newTitle}</h2>
-          {error && <Alert kind="rejection" title={error} />}
-          <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} /></label>
-          <label class="co-field">{m.dossiers.company}<input class="co-input" name="prospectCompany" maxlength="120" /></label>
-          <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" /></label>
-          <label class="co-field">{m.common.startFrom}
-            <select class="co-select" name="fromDossierId">
-              <option value="">{m.dossiers.emptyDossier}</option>
-              {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
-            </select>
-          </label>
-          <button class="co-btn co-btn--primary co-btn--block" type="submit">{m.common.createEdit} <span aria-hidden="true">→</span></button>
-        </form>
-      </aside>
-    </div>
-  </>
+    <dialog class="new-dossier" data-new {...(error ? { 'data-open': '' } : {})}>
+      <form method="post" id="nuevo" class="grid gap-4 p-7" data-testid="create-form">
+        <div class="flex items-start justify-between gap-3">
+          <h2 class="co-page-title !text-3xl">{m.home.newProposal}</h2>
+          <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-close-new>{m.dossiers.close}</button>
+        </div>
+        {error && <Alert kind="rejection" title={error} />}
+        <label class="co-field">{m.dossiers.company}<input class="co-input" name="prospectCompany" maxlength="120" autofocus data-company /></label>
+        <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" /></label>
+        <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title /></label>
+        <label class="co-field">{m.common.startFrom}
+          <select class="co-select" name="fromDossierId">
+            <option value="">{m.dossiers.emptyDossier}</option>
+            {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
+          </select>
+        </label>
+        <button class="co-btn co-btn--primary co-btn--block" type="submit">{m.common.createEdit} <span aria-hidden="true">→</span></button>
+      </form>
+    </dialog>
+  </div>
   )}
 </AdminLayout>
+
+<style>
+  .dossier-card--late { border-color: var(--console-attention, #b42318); }
+  .new-dossier { width: min(520px, 94vw); padding: 0; border: 0; border-radius: 1.25rem; background: var(--console-surface, #fff); color: inherit; }
+  .new-dossier::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+</style>
+
+<script>
+  const dlg = document.querySelector<HTMLDialogElement>('[data-new]');
+  if (dlg) {
+    const open = () => { if (!dlg.open) dlg.showModal(); };
+    document.querySelectorAll('[data-open-new]').forEach((b) => b.addEventListener('click', open));
+    document.querySelectorAll('a[href="#nuevo"]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); open(); }));
+    dlg.querySelector('[data-close-new]')?.addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+    if (location.hash === '#nuevo' || dlg.hasAttribute('data-open')) open();
+    // El título se propone solo a partir de la empresa (se puede cambiar).
+    const company = dlg.querySelector<HTMLInputElement>('[data-company]');
+    const title = dlg.querySelector<HTMLInputElement>('[data-title]');
+    let touched = false;
+    title?.addEventListener('input', () => { touched = true; });
+    company?.addEventListener('input', () => { if (title && !touched) title.value = company.value ? `${company.value} · ` : ''; });
+  }
+</script>

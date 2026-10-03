@@ -25,7 +25,21 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForURL(`${BASE}/admin`);
   assert((await p.textContent('[data-testid=role]')).includes('Comercial'), 'sesión de comercial');
 
+  // Inicio: una sola cosa destacada («Lo siguiente») y el día en tres números.
+  await p.goto(`${BASE}/admin/inicio`);
+  assert(await p.isVisible('[data-testid=home-focus]'), 'Inicio: «Lo siguiente» destacado');
+  await p.goto(`${BASE}/admin`);
+  assert((await p.locator('[data-testid=dossier-list] [data-group]').count()) >= 1, 'Dossiers: agrupados por lo que piden');
+  assert(!(await p.isVisible('[data-testid=create-form]')), 'el formulario no ocupa la pantalla hasta pedirlo');
+  await p.goto(`${BASE}/admin/inicio`);
+  await p.click('[data-testid=home-new]');
+  await p.waitForURL(/\/admin#nuevo/);
+  await p.waitForSelector('[data-testid=create-form]', { state: 'visible' });
+  assert(await p.isVisible('[data-testid=create-form]'), '«Nueva propuesta» desde Inicio abre el formulario');
+  await p.goto(`${BASE}/admin`);
+
   // 3. Crear dossier "Sala X"
+  await p.click('[data-testid=new-dossier]');
   await p.fill('[data-testid=create-form] [name=title]', 'Sala X · E2E');
   await p.fill('[data-testid=create-form] [name=prospectCompany]', 'Sala X');
   await p.click('[data-testid=create-form] button[type=submit]');

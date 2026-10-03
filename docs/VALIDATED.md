@@ -24,4 +24,5 @@ Método (docs/FOUNDATIONS.md §7): cuando el fundador prueba un recorrido y dice
 | Aprende visual (recorrido del producto, sectores con foto, Imagínatelo, progreso en positivo, ficha de módulo con pestañas y vista del cliente a demanda) | `scripts/smoke-learn.cjs`, `scripts/smoke-playbook.cjs`, `src/lib/playbook/learn.test.ts`, `supabase/tests/39_learn_visual.test.sql` | Pendiente | |
 | Resumen diario de seguimientos (email a las 7:00, preferencia y zona horaria) | `scripts/smoke-daily.cjs`, `src/lib/notify/daily.test.ts`, `supabase/tests/38_daily_digest.test.sql` | Pendiente | |
 | Analítica de dossiers (aperturas, secciones, aviso al autor) | `scripts/smoke-analytics.cjs`, `src/lib/analytics/analytics.test.ts`, `supabase/tests/37_dossier_views.test.sql` | Pendiente | |
+| Inicio («Lo siguiente», tu día en tres números, quién te está mirando) y Dossiers (tarjetas agrupadas, «Nueva propuesta» en ventana) | `scripts/smoke-admin.cjs`, `scripts/smoke-commissions.cjs` | Pendiente | |
 | Móvil sin desbordes | `scripts/smoke-mobile.cjs` | Pendiente | |

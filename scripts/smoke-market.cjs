@@ -57,6 +57,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---- cuenta del dossier
   await rep.goto(`${BASE}/admin`);
+  await rep.click('[data-testid=new-dossier]');
   await rep.fill('[data-testid=create-form] [name=title]', `Club Noche ${RUN}`);
   await rep.fill('[data-testid=create-form] [name=prospectCompany]', 'Club Noche');
   await rep.click('[data-testid=create-form] button[type=submit]');

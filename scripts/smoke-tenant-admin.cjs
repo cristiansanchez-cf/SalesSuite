@@ -52,6 +52,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // aparece en el builder
   await p.goto(`${BASE}/admin`);
+  await p.click('[data-testid=new-dossier]');
   await p.fill('[data-testid=create-form] [name=title]', 'Prueba catálogo');
   await p.click('[data-testid=create-form] button[type=submit]');
   await p.waitForURL(/\/admin\/dossiers\//);

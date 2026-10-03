@@ -35,6 +35,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---- dossier con situación
   await p.goto(`${BASE}/admin`);
+  await p.click('[data-testid=new-dossier]');
   await p.fill('[data-testid=create-form] [name=title]', `Club Prueba ${RUN}`);
   await p.fill('[data-testid=create-form] [name=prospectCompany]', `Club Prueba ${RUN}`);
   await p.click('[data-testid=create-form] button[type=submit]');

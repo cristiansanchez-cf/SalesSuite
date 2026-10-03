@@ -41,6 +41,7 @@ const euros = (s) => Number(String(s).replace(/[^\d,-]/g, '').replace(/\./g, '')
 
   // ---- el comercial gana y declara la venta
   await rep.goto(`${BASE}/admin`);
+  await rep.click('[data-testid=new-dossier]');
   await rep.fill('[data-testid=create-form] [name=title]', `Boda ${RUN}`);
   await rep.click('[data-testid=create-form] button[type=submit]');
   await rep.waitForURL(/\/admin\/dossiers\//);
