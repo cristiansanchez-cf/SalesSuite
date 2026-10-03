@@ -359,6 +359,12 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 /* Quién puede tumbar la venta: lo que más importa de un actor, con la misma señal que «pide atención». */
 .co-blocker { display: block; padding: 8px 12px; border-radius: var(--console-radius-control); background: var(--console-attention-bg); box-shadow: inset 3px 0 0 var(--console-attention); font-size: 0.875rem; line-height: 1.45; }
 
+/* Política de precio: el % solo con «Precio especial». */
+.co-policy { border: 0; padding: 0; margin: 0; min-width: 0; }
+.co-policy__pct { display: none; }
+.co-policy:has(input[value='adjusted']:checked) .co-policy__pct { display: grid; }
+.co-policy:disabled .co-option { cursor: not-allowed; opacity: 0.7; }
+
 /* Opción grande con icono (wizards). */
 .co-option {
   position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px;

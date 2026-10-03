@@ -14,10 +14,10 @@ Un subagente recorrió las diez tareas reales con Playwright, a 1440×900 y a 39
 | 4 | Configuración guiada, paso 3: actores en lista de texto (la queja del dueño) | `setup.astro` | Tarjetas de actor por sector, tarjeta «+ Añadir actor» con el sector puesto | M | Hecho |
 | 5 | «Preparar mensaje» ignoraba la objeción elegida si el tipo no era «objeción» | `compose.astro` | Elegir objeción pasa el tipo a «Responder a una objeción» | S | Hecho |
 | 6 | Sectores y actores en dos sitios con aspectos distintos; «Qué funciona» duplicado | `nav.ts`, `setup`, `playbook` | Un solo editor de mercado; las métricas pasan a Inicio | M | Pendiente |
-| 7 | `confirm()` nativo en el builder, sin decir lo que la acción no hace | `Builder.svelte` | `<dialog>` con «Lo que no hace» y «Deshacer» en lo reversible | S | Pendiente |
+| 7 | `confirm()` nativo en el builder, sin decir lo que la acción no hace | `Builder.svelte` | `<dialog>` con «Lo que no hace» y «Deshacer» en lo reversible | S | Hecho |
 | 8 | El debrief mide 2,4 pantallas, con 24 casillas y 18 actores | `debrief.astro` | Jugadas del guion de ese dossier y el resto plegadas | M | Pendiente |
 | 9 | El colaborador ve 3 formularios abiertos y el builder completo de un comercial | `PartnerHome`, builder | «Nueva propuesta» en un clic y builder reducido | M | Pendiente |
-| 10 | Editar la cuenta de un colaborador: la ayuda contradice el select y el cambio toca propuestas ya enviadas sin opción | `team/partners/[userId]` | Política como tarjetas, % solo con «especial» y casilla «Aplicar también a las ya enviadas» | S–M | Pendiente |
+| 10 | Editar la cuenta de un colaborador: la ayuda contradice el select y el cambio toca propuestas ya enviadas sin opción | `team/partners/[userId]` | Política como tarjetas, % solo con «especial» y casilla «Aplicar también a las ya enviadas» | S–M | Hecho |
 
 ## Clics medidos y objetivo
 

@@ -107,21 +107,27 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
       expect((await rep.service.getState(id)).partnerAccount).toBeNull();
     });
 
-    test('el admin decide el precio de cada cuenta y se aplica a lo ya enviado', async () => {
+    test('el admin decide el precio de cada cuenta: borradores siempre, lo enviado solo si lo pide', async () => {
       const dj = await ctx(DJ);
       const id = await dj.service.createDossier({ title: 'Neón', partnerAccountId: ACC.neon });
       await dj.service.apply(id, { op: 'addItem', moduleVersionId: V.tabsExp });
+      const sent = await dj.service.createDossier({ title: 'Neón enviado', partnerAccountId: ACC.neon });
+      await dj.service.apply(sent, { op: 'addItem', moduleVersionId: V.tabsExp });
+      await dj.service.apply(sent, { op: 'setStatus', status: 'published' });
       const admin = await ctx(ADMIN);
       expect((await admin.service.getState(id)).partnerAccount).toMatchObject({ name: 'Club Neón', priceAdjustPct: -10 });
 
       await admin.tenantAdmin.savePartnerAccount(DJ.id, { name: 'Club Neón', segmentId: '00000000-0000-4000-8000-0000005e0002', pricePolicy: 'list', priceAdjustPct: 0 }, ACC.neon);
       expect((await admin.service.getState(id)).items[0].priceOverride).toBe(450);
-      await admin.tenantAdmin.savePartnerAccount(DJ.id, { name: 'Club Neón', pricePolicy: 'adjusted', priceAdjustPct: 20 }, ACC.neon);
+      expect((await admin.service.getState(sent)).items[0].priceOverride).toBe(405);  // el cliente conserva lo que recibió
+      await admin.tenantAdmin.savePartnerAccount(DJ.id, { name: 'Club Neón', pricePolicy: 'adjusted', priceAdjustPct: 20 }, ACC.neon, { applyToSent: true });
       expect((await admin.service.getState(id)).items[0].priceOverride).toBe(540);
+      expect((await admin.service.getState(sent)).items[0].priceOverride).toBe(540);
       await admin.tenantAdmin.savePartnerAccount(DJ.id, { name: 'Club Neón', pricePolicy: 'hidden' }, ACC.neon);
       const st = await admin.service.getState(id);
       expect(st.dossier.priceMode).toBe('none');
       expect(st.items[0].priceOverride).toBeNull();
+      expect((await admin.service.getState(sent)).dossier.priceMode).toBe('per_module');
       await rejects(admin.tenantAdmin.savePartnerAccount(DJ.id, { name: 'x', pricePolicy: 'adjusted', priceAdjustPct: -95 }), 422);
 
       // Nueva cuenta → la ve el colaborador al volver a entrar.

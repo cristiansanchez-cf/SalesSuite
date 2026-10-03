@@ -29,7 +29,7 @@ Cada cuenta del colaborador tiene una **política de precio**:
 | **Precio especial** | Tarifa ± un % (de −90 % a +200 %) | Más barato para un local amigo, o más caro donde haga falta |
 
 - El precio se aplica **solo** al añadir un módulo; el colaborador ve el resultado («405 €»), nunca la tarifa ni el %.
-- Si el admin **cambia la política**, se recalculan las propuestas de esa cuenta, **también las ya enviadas** (el enlace muestra el precio nuevo).
+- Si el admin **cambia la política**, se recalculan los **borradores** de esa cuenta. Las propuestas **ya enviadas** conservan el precio que recibió el cliente, salvo que el admin marque «Aplicar también a las ya enviadas» (migración `20261010000000_partner_reprice_drafts.sql`).
 - El admin puede abrir cualquier propuesta del colaborador y ajustar un precio a mano.
 - Ojo: si la cuenta muestra precios, el colaborador los ve en *su* propuesta (es lo que envía). Lo que nunca ve es la tarifa general, los precios de otras cuentas ni la monetización del playbook.
 

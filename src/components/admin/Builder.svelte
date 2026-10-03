@@ -130,8 +130,10 @@
     list = next;
     run({ op: 'move', itemId: item.id, toIndex: to });
   }
-  function remove(item: BuilderItem) {
-    if (confirm(`¿Quitar «${item.moduleName}» del dossier?`)) run({ op: 'removeItem', itemId: item.id });
+  async function remove(item: BuilderItem) {
+    if (await ask({ title: `Quitar «${item.moduleName}»`, label: 'Quitar módulo', danger: true,
+      does: 'El módulo sale de esta propuesta, con los cambios que le hubieras hecho aquí.',
+      doesNot: 'No lo borra del catálogo: puedes volver a añadirlo cuando quieras.' })) run({ op: 'removeItem', itemId: item.id });
   }
   function toggleProps(item: BuilderItem) {
     if (openProps === item.id) { openProps = null; return; }
@@ -147,9 +149,29 @@
     if (await run({ op: 'setProps', itemId: item.id, propOverrides: parsed as Record<string, unknown> })) openProps = null;
   }
 
+  // ---------- confirmación (guía Lumbra §9–11: dice lo que hace y lo que NO hace; nada de confirm() nativo)
+  type Ask = { title: string; does: string; doesNot: string; label: string; danger?: boolean };
+  let askDlg: HTMLDialogElement | undefined = $state();
+  let asking: Ask | null = $state(null);
+  let askResolve: ((ok: boolean) => void) | null = null;
+  function ask(o: Ask): Promise<boolean> {
+    askResolve?.(false);
+    asking = o;
+    queueMicrotask(() => askDlg?.showModal());
+    return new Promise((r) => (askResolve = r));
+  }
+  function answer(ok: boolean) {
+    const r = askResolve;
+    askResolve = null;
+    askDlg?.close();
+    r?.(ok);
+  }
+
   // ---------- estado y enlaces
   async function setStatus(status: 'draft' | 'published' | 'archived') {
-    if (status === 'draft' && d.status === 'published' && !confirm('Al despublicar, los enlaces dejarán de funcionar. ¿Continuar?')) return;
+    if (status === 'draft' && d.status === 'published' && !(await ask({ title: 'Despublicar la propuesta', label: 'Despublicar',
+      does: 'Los enlaces que has enviado dejan de abrir la propuesta hasta que la vuelvas a publicar.',
+      doesNot: 'No borra la propuesta ni sus enlaces, y no avisa al cliente.' }))) return;
     await run({ op: 'setStatus', status });
   }
   async function createLink() {
@@ -157,8 +179,10 @@
     const expiresAt = days > 0 ? new Date(Date.now() + days * 86_400_000).toISOString() : null;
     await run({ op: 'createLink', expiresAt });
   }
-  function revoke(id: string) {
-    if (confirm('¿Revocar este enlace? Quien lo tenga verá un 404.')) run({ op: 'revokeLink', linkId: id });
+  async function revoke(id: string) {
+    if (await ask({ title: 'Revocar el enlace', label: 'Revocar enlace', danger: true,
+      does: 'Quien tenga este enlace verá que ya no está disponible. No se puede reactivar: tendrías que crear otro.',
+      doesNot: 'No despublica la propuesta ni afecta a los demás enlaces.' })) run({ op: 'revokeLink', linkId: id });
   }
   const linkUrl = (token: string) => `${publicOrigin}/d/${token}`;
   async function copy(token: string) {
@@ -170,7 +194,9 @@
     setTimeout(() => { if (copied === token) copied = null; }, 1800);
   }
   async function destroy() {
-    if (!confirm('¿Borrar el dossier definitivamente?')) return;
+    if (!(await ask({ title: 'Borrar la propuesta', label: 'Borrar para siempre', danger: true,
+      does: 'Se borra la propuesta con sus módulos, personas y enlaces. No se puede deshacer.',
+      doesNot: 'No toca el catálogo, el playbook ni los cierres ya documentados.' }))) return;
     const res = await fetch(api, { method: 'DELETE' });
     if (res.ok) location.href = '/admin';
     else error = (await res.json().catch(() => ({}))).error ?? 'No se pudo borrar';
@@ -490,7 +516,9 @@
                   </select>
                 {/each}
                 <a class="co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&contact={c.id}&type=primer_contacto">Mensaje</a>
-                {#if editable}<button class={iconBtn} onclick={() => confirm(`¿Quitar a ${c.name}?`) && run({ op: 'removeContact', contactId: c.id })} aria-label="Quitar {c.name}">✕</button>{/if}
+                {#if editable}<button class={iconBtn} onclick={async () => (await ask({ title: `Quitar a ${c.name}`, label: 'Quitar', danger: true,
+                  does: 'Sale de las personas de esta cuenta, con su postura y sus notas.',
+                  doesNot: 'No borra el actor del mercado ni afecta a otras propuestas.' })) && run({ op: 'removeContact', contactId: c.id })} aria-label="Quitar {c.name}">✕</button>{/if}
               </div>
             </li>
           {:else}
@@ -693,4 +721,17 @@
       </div>
     </div>
   </div>
+  <dialog bind:this={askDlg} class="co-dialog" aria-labelledby="ask-title" data-testid="confirm-modal" onclose={() => answer(false)}>
+    {#if asking}
+      <div class="co-dialog__body">
+        <h2 id="ask-title" class="co-entity">{asking.title}</h2>
+        <p class="co-body">{asking.does}</p>
+        <p class="co-dialog__not"><strong>Lo que no hace:</strong> {asking.doesNot}</p>
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" onclick={() => answer(false)}>Cancelar</button>
+        <button type="button" class="co-btn {asking.danger ? 'co-btn--danger' : 'co-btn--primary'}" onclick={() => answer(true)} data-testid="confirm-modal-ok">{asking.label}</button>
+      </div>
+    {/if}
+  </dialog>
 </div>

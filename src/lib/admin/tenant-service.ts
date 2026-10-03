@@ -310,8 +310,11 @@ export function createTenantAdminService(
     try { wrote(await db.upsertPartnerProfile({ tenantId: s.tenantId, userId, ...v })); } catch (e) { mapDbError(e); }
   }
 
-  /** Crea o edita una cuenta del colaborador. Si cambia la política de precio, se aplica a sus propuestas (también publicadas). */
-  async function savePartnerAccount(userId: string, input: unknown, accountId?: string): Promise<string> {
+  /**
+   * Crea o edita una cuenta del colaborador. Si cambia la política de precio, se aplica a sus borradores;
+   * a las propuestas ya enviadas solo con applyToSent (el cliente ya tiene ese precio en la mano).
+   */
+  async function savePartnerAccount(userId: string, input: unknown, accountId?: string, opts: { applyToSent?: boolean } = {}): Promise<string> {
     requireTeam();
     const parsed = parse(partnerAccountSchema, input);
     const p = await partner(userId);
@@ -329,8 +332,9 @@ export function createTenantAdminService(
       });
     } catch (e) { mapDbError(e); }
     if (cur && (cur.pricePolicy !== v.pricePolicy || cur.priceAdjustPct !== priceAdjustPct)) {
-      // En Supabase lo hace también el trigger partner_account_reprice; aquí cubre la demo (mismo cálculo).
-      const ds = p.dossiers.filter((d) => d.partnerAccountId === id);
+      // Borradores: en Supabase lo hace también el trigger partner_account_reprice; aquí cubre la demo (mismo cálculo).
+      // Enviadas: solo si el admin lo pide (con permiso de precios, que es lo único que llega hasta aquí con cambios).
+      const ds = p.dossiers.filter((d) => d.partnerAccountId === id && (d.status === 'draft' || opts.applyToSent));
       const items = ds.length ? await db.listItems(ds.map((d) => d.id)) : [];
       for (const d of ds) await db.updateDossier(d.id, { priceMode: priceModeFor(v.pricePolicy), totalPrice: null });
       for (const i of items) await db.updateItem(i.id, { priceOverride: partnerPrice(v.pricePolicy, priceAdjustPct, i.defaultPrice) });

@@ -128,9 +128,15 @@ reset role;
 
 set role authenticated;
 set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
--- Admin cambia la política de Club Neón → se reprecia (también lo publicado).
+-- Una propuesta de Club Neón ya enviada al cliente (a −10 %).
+insert into public.dossier (id, tenant_id, author_id, title, partner_account_id, status, published_at)
+values ('99999999-1111-4000-8000-000000000003', '00000000-0000-4000-8000-000000000e01', '22222222-2222-4222-8222-222222222222', 'Neón enviado', '99999999-0000-4000-8000-000000000002', 'published', now());
+insert into public.dossier_item (id, dossier_id, module_version_id, position, price_override)
+values ('99999999-2222-4000-8000-000000000003', '99999999-1111-4000-8000-000000000003', '00000000-0000-4000-8000-0000000e1021', 1024, 405);
+-- Admin cambia la política de Club Neón → se reprecian los borradores; lo enviado conserva su precio.
 update public.partner_account set price_policy = 'list' where id = '99999999-0000-4000-8000-000000000002';
 select pg_temp.assert((select price_override from public.dossier_item where id = '99999999-2222-4000-8000-000000000001') = 450.00, 'tarifa → 450 €');
+select pg_temp.assert((select price_override from public.dossier_item where id = '99999999-2222-4000-8000-000000000003') = 405.00, 'lo ya enviado no se toca sin pedirlo');
 update public.partner_account set price_policy = 'hidden' where id = '99999999-0000-4000-8000-000000000002';
 select pg_temp.assert((select price_mode::text from public.dossier where id = '99999999-1111-4000-8000-000000000002') = 'none', 'oculta → dossier sin precio');
 -- El admin sí puede fijar precios a mano en el dossier del partner.

@@ -97,12 +97,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(prices2[0] === '300 €', 'cambio en vivo reflejado en el enlace');
 
   // 6. Negativos: revocar → 404; despublicar → 404
-  await p.click('text=Revocar'); await settle();
+  await p.click('text=Revocar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();
   assert((await v.goto(url)).status() === 404, 'enlace revocado → 404');
   await p.click('[data-testid=create-link]'); await settle();
   const url2 = (await p.$$eval('[data-state=active] [data-testid=link-url]', (els) => els.map((e) => e.textContent.trim())))[0];
   assert((await v.goto(url2)).status() === 200, 'nuevo enlace 200');
-  await p.click('text=Despublicar'); await settle();
+  await p.click('text=Despublicar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();
   assert((await v.goto(url2)).status() === 404, 'despublicado → 404');
 
   // otro tenant no ve el dossier

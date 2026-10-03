@@ -2,6 +2,7 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import { PERSONA_ROLES, ROLE_HINT, ROLE_LABEL, type PersonaView } from '~/lib/playbook/market';
 import { OBJECTIONS, OBJECTION_LABEL } from '~/lib/playbook/types';
 
@@ -75,7 +76,7 @@ const areas: Array<[string, string, string]> = [
       </fieldset>
       <div class="flex gap-2">
         <button class="co-btn co-btn--primary" type="submit">{isNew ? 'Crear actor' : 'Guardar'}</button>
-        {!isNew && <button class="rounded-lg border border-line px-4 py-2 font-semibold text-red-700" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('¿Borrar este actor? Los contactos que lo usen quedarán sin tipo.')">Borrar</button>}
+        {!isNew && <button type="button" class="co-btn co-btn--danger" data-dialog-open="delete-persona" data-testid="delete-persona">Borrar</button>}
       </div>
     </form>
 
@@ -99,4 +100,11 @@ const areas: Array<[string, string, string]> = [
       </section>
     )}
   </div>
+  {p && (
+    <ConfirmDialog id="delete-persona" title={`Borrar «${p.name}»`} confirmLabel="Borrar actor" danger testid="delete-persona-dialog"
+      does="El actor desaparece del mercado, del guion y de «Preparar mensaje». Las personas de tus propuestas que lo usaban se quedan sin tipo."
+      doesNot="No borra a esas personas ni sus notas, ni los cierres ya documentados.">
+      <input type="hidden" name="action" value="delete" />
+    </ConfirmDialog>
+  )}
 </AdminLayout>

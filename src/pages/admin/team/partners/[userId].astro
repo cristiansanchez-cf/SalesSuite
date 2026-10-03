@@ -5,7 +5,7 @@ import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
 import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
-import { PRICE_POLICY_HELP, PRICE_POLICY_LABEL } from '~/lib/partner/labels';
+import { PRICE_POLICY_LABEL } from '~/lib/partner/labels';
 import { partnerPrice } from '~/lib/partner/scope';
 import type { PartnerAccount } from '~/lib/admin/types';
 import PageHeader from '~/components/ui/PageHeader.astro';
@@ -13,6 +13,7 @@ import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
+import PricePolicyFields from '~/components/admin/PricePolicyFields.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -39,7 +40,7 @@ if (Astro.request.method === 'POST') {
       });
       ok = 'profile';
     } else if (action === 'account') {
-      await t.savePartnerAccount(userId, accountInput(), accountId);
+      await t.savePartnerAccount(userId, accountInput(), accountId, { applyToSent: f.get('applyToSent') === 'on' });
       ok = accountId ? 'account-saved' : 'account-added';
     } else if (action === 'account-delete' && accountId) {
       await t.deletePartnerAccount(userId, accountId);
@@ -73,11 +74,12 @@ const okMsg = flash(Astro.url, {
   'partner-added': 'Ya tenía cuenta: tiene acceso como colaborador. Ahora asígnale sus cuentas.',
   profile: 'Permisos guardados.',
   'account-added': 'Cuenta añadida.',
-  'account-saved': 'Cuenta guardada. Si cambiaste el precio, ya se aplica a sus propuestas.',
+  'account-saved': 'Cuenta guardada. Si cambiaste el precio, ya se aplica a sus borradores.',
   'account-deleted': 'Cuenta eliminada. Sus propuestas se conservan, sin cuenta asignada.',
 });
 const dateInput = p.profile?.expiresAt ? p.profile.expiresAt.slice(0, 10) : '';
 const segName = new Map(segments.map((sg) => [sg.id, sg.name]));
+const sentCount = (a: PartnerAccount) => p.dossiers.filter((d) => d.partnerAccountId === a.id && d.status !== 'draft').length;
 const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
 ---
 <AdminLayout title={p.displayName || p.email}>
@@ -119,7 +121,7 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
                   ))}
                 </ul>
               )}
-              <dialog id={`acc-${a.id}`} class="co-dialog" aria-label={`Editar ${a.name}`}>
+              <dialog id={`acc-${a.id}`} class="co-dialog co-dialog--wide" aria-label={`Editar ${a.name}`}>
                 <form method="post">
                   <input type="hidden" name="action" value="account" />
                   <input type="hidden" name="accountId" value={a.id} />
@@ -129,18 +131,15 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
                     <label class="co-field">Sector
                       <select class="co-select" name="segmentId"><option value="">Sin sector</option>{segments.map((sg) => <option value={sg.id} selected={sg.id === a.segmentId}>{sg.name}</option>)}</select>
                     </label>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                      <label class="co-field">Precio para el cliente
-                        <select class="co-select" name="pricePolicy" data-testid="price-policy" disabled={!canPrice}>{(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k} selected={k === a.pricePolicy}>{PRICE_POLICY_LABEL[k]}</option>)}</select>
-                      </label>
-                      <label class="co-field">Ajuste sobre tarifa (%)
-                        <input class="co-input" name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value={a.priceAdjustPct} data-testid="price-adjust" disabled={!canPrice} />
-                        <span class="co-help">Solo con «Precio especial». −10 = 10 % más barato.</span>
-                      </label>
-                    </div>
+                    <PricePolicyFields policy={a.pricePolicy} pct={a.priceAdjustPct} canPrice={canPrice} />
                     <label class="co-field">Indicaciones para él<textarea class="co-textarea" name="notes" maxlength="2000">{a.notes ?? ''}</textarea></label>
-                    <p class="co-help">{canPrice ? PRICE_POLICY_HELP[a.pricePolicy] : 'El precio de cada cuenta lo decide un admin.'}</p>
-                    <p class="co-dialog__not"><strong>Ojo:</strong> si cambias el precio se recalculan sus propuestas de esta cuenta, también las ya enviadas. <strong>Lo que no hace:</strong> no avisa ni al colaborador ni al cliente.</p>
+                    {canPrice && sentCount(a) > 0 && (
+                      <label class="co-check" data-testid="apply-to-sent">
+                        <input type="checkbox" name="applyToSent" />
+                        <span>Aplicar el precio nuevo también a {sentCount(a) === 1 ? 'la propuesta ya enviada' : `las ${sentCount(a)} propuestas ya enviadas`}<span class="co-help block">Sin marcar, el cliente sigue viendo el precio que recibió. Los borradores se actualizan siempre.</span></span>
+                      </label>
+                    )}
+                    <p class="co-dialog__not"><strong>Lo que no hace:</strong> no avisa ni al colaborador ni al cliente.</p>
                   </div>
                   <div class="co-dialog__foot">
                     <button type="button" class="co-btn co-btn--quiet !mr-auto !text-[var(--console-danger)]" data-dialog-open={`del-${a.id}`}><Icon name="trash2" size={14} />Eliminar cuenta</button>
@@ -215,17 +214,14 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
     </aside>
   </div>
 
-  <dialog id="add-account-dialog" class="co-dialog" aria-label="Añadir cuenta">
+  <dialog id="add-account-dialog" class="co-dialog co-dialog--wide" aria-label="Añadir cuenta">
     <form method="post" data-testid="add-account">
       <input type="hidden" name="action" value="account" />
       <div class="co-dialog__body">
         <h2 class="co-entity">Añadir cuenta</h2>
         <label class="co-field">Nombre<input class="co-input" name="name" required maxlength="120" placeholder="Sala Luna" /></label>
         <label class="co-field">Sector<select class="co-select" name="segmentId"><option value="">Sin sector</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select></label>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="co-field">Precio para el cliente<select class="co-select" name="pricePolicy" disabled={!canPrice}>{(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k}>{PRICE_POLICY_LABEL[k]}</option>)}</select></label>
-          <label class="co-field">Ajuste sobre tarifa (%)<input class="co-input" name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value="0" /></label>
-        </div>
+        <PricePolicyFields canPrice={canPrice} />
         <label class="co-field">Indicaciones para él<textarea class="co-textarea" name="notes" maxlength="2000" placeholder="El dueño es Marcos; no hables de precio, lo cerramos nosotros."></textarea></label>
       </div>
       <div class="co-dialog__foot">

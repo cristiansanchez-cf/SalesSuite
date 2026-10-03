@@ -88,7 +88,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const acc = admin.locator('[data-testid=partner-account][data-account="Club Neón"]');
   assert((await acc.locator('[data-testid=price-preview]').textContent()).includes('405'), 'vista previa del precio por cuenta');
   await acc.locator('[data-testid=edit-account]').click();
-  await acc.locator('[data-testid=price-policy]').selectOption('list');
+  assert(await acc.locator('[data-testid=price-adjust]').isVisible(), 'el % se ve con «Precio especial»');
+  await acc.locator('[data-testid=policy-list]').click();
+  assert(!(await acc.locator('[data-testid=price-adjust]').isVisible()), 'con tarifa no se pide %');
   await acc.locator('button[type=submit]', { hasText: 'Guardar cuenta' }).click();
   await admin.waitForURL(/ok=account-saved/);
   if (OUT) await admin.screenshot({ path: `${OUT}/partner-admin.png`, fullPage: true });

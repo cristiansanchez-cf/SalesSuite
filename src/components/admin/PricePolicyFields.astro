@@ -1,0 +1,31 @@
+---
+/**
+ * Precio que verá el cliente de una cuenta de colaborador (docs/PARTNERS.md): tres opciones en tarjetas;
+ * el ajuste en % solo aparece con «Precio especial». Sin permiso de precios, se ve pero no se cambia.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { PRICE_POLICY_HELP, PRICE_POLICY_LABEL } from '~/lib/partner/labels';
+import type { PricePolicy } from '~/lib/admin/types';
+import type { IconName } from '~/lib/ui/icons';
+
+interface Props { policy?: PricePolicy; pct?: number; canPrice: boolean }
+const { policy = 'hidden', pct = 0, canPrice } = Astro.props;
+const ICON: Record<PricePolicy, IconName> = { hidden: 'eye-off', list: 'tag', adjusted: 'percent' };
+---
+<fieldset class="co-policy grid gap-3" data-testid="price-policy" disabled={!canPrice}>
+  <legend class="co-field mb-2">Precio para el cliente {!canPrice && <span class="co-help">Lo decide un admin</span>}</legend>
+  <div class="grid gap-2 sm:grid-cols-3">
+    {(['hidden', 'list', 'adjusted'] as const).map((k) => (
+      <label class="co-option !p-3" data-testid={`policy-${k}`}>
+        <input type="radio" name="pricePolicy" value={k} checked={k === policy} />
+        <span class="co-option__icon"><Icon name={ICON[k]} size={16} /></span>
+        <span class="co-row-title">{PRICE_POLICY_LABEL[k]}</span>
+        <span class="co-meta">{PRICE_POLICY_HELP[k]}</span>
+      </label>
+    ))}
+  </div>
+  <label class="co-field co-policy__pct">Ajuste sobre la tarifa (%)
+    <input class="co-input max-w-[10rem]" name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value={pct} data-testid="price-adjust" />
+    <span class="co-help">−10 = un 10 % más barato; 15 = un 15 % más caro.</span>
+  </label>
+</fieldset>
