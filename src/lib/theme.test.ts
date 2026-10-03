@@ -24,8 +24,14 @@ describe('theme', () => {
     { font: { sans: 'x}</style>' } },
     { font: { faces: [{ family: 'X', src: 'javascript:alert(1)' }] } },
     { font: { faces: [{ family: 'X', src: 'https://a.b/f.woff2) ;x' }] } },
+    { font: { faces: [{ family: 'X', src: '//otro-host.com/f.woff2' }] } },
+    { font: { faces: [{ family: 'X', src: 'http://a.b/f.woff2' }] } },
   ])('rechaza tokens peligrosos/desconocidos %#', (raw) => {
     expect(parseTheme(raw)).toEqual({});
+  });
+
+  test('fuentes servidas desde el propio sitio (/fonts/…) también valen', () => {
+    expect(parseTheme({ font: { faces: [{ family: 'YWFTKul', src: '/demo/enjoy/fonts/ywft-kul-bold.woff2', weight: '700' }] } }).font?.faces?.[0].src).toBe('/demo/enjoy/fonts/ywft-kul-bold.woff2');
   });
 
   test('font-face válida', () => {

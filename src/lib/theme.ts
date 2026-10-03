@@ -8,7 +8,8 @@ import { z } from 'zod';
 const hex = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'color hex (#rgb o #rrggbb)');
 const length = z.string().regex(/^(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))$/, 'longitud CSS (px|rem|em|%)');
 const fontStack = z.string().max(300).regex(/^[\w\s,'"-]+$/, 'stack de fuentes');
-const fontUrl = z.string().url().refine((u) => /^https:\/\//.test(u) || u.startsWith('/'), 'https o ruta absoluta')
+// https://… o ruta absoluta del propio sitio (/fonts/…); nunca //otro-host ni otros esquemas.
+const fontUrl = z.string().max(500).refine((u) => (/^https:\/\/[^\s/]+\//.test(u) || (u.startsWith('/') && !u.startsWith('//'))), 'https o ruta absoluta')
   .refine((u) => !/["'()\\\s]/.test(u), 'url sin comillas/paréntesis');
 
 export const COLOR_KEYS = [
