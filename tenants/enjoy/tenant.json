@@ -553,6 +553,54 @@
       "image": "asset:img/usecases/locales.webp"
     },
     {
+      "key": "promotoras",
+      "name": "Promotoras de eventos",
+      "icon": "ticket",
+      "image": "asset:img/usecases/promotoras.webp",
+      "description": "Montan eventos puntuales en locales de otros. Venden entradas a base de contenido en redes.",
+      "value_prop": "Necesitan material visual de sus propias fiestas y dinámicas que diferencien su evento del de la semana siguiente. Y cada evento que montan con Enjoy deja el producto visto por el local que las aloja.",
+      "icp": "- Promotoras comerciales: reggaetón y música de público amplio\n- Foco en el público, no en el artista o el DJ que pincha\n- Ya hacen fiestas temáticas y dinámicas: solteros, juegos, cuentas atrás en pantalla",
+      "disqualifiers": "- Perfil rock o de nicho de artista\n- Eventos donde lo importante es quién pincha",
+      "buying_process": "Decide quien lleva la promotora, rápido. El riesgo es el seguimiento: equipos dispersos y siempre ocupados.",
+      "deal_size": "Por evento (Paradox: dos eventos pagados)",
+      "sales_cycle": "Días; se pierden en el seguimiento",
+      "modules": [
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "Fotos y mensajes del público en pantalla, temporizadores y dinámicas; contenido para sus redes."
+        },
+        {
+          "module_key": "pricing",
+          "priority": 2,
+          "fit": "Precio por evento."
+        }
+      ],
+      "personas": [
+        {
+          "key": "promotor-eventos",
+          "name": "Responsable de la promotora",
+          "role": "decisor",
+          "goals": "Vender entradas para la próxima fiesta.",
+          "pains": "Cada fiesta se parece a la anterior; necesita contenido para redes.",
+          "kpis": "Entradas vendidas, alcance en redes.",
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Enséñale contenido de una fiesta real y una dinámica que pueda anunciar. Cierra con fecha del próximo evento.",
+          "avoid": "Dejar la conversación sin fecha: así se perdieron todas las de ForVenues.",
+          "can_help": "Lleva Enjoy a cada local donde monta.",
+          "can_block": "Si nadie hace seguimiento, se enfría sola.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Material de su propia fiesta para vender la siguiente."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "key": "conciertos",
       "name": "Conciertos y artistas",
       "icon": "mic",
@@ -2007,8 +2055,8 @@
         "propietario-local",
         "gerente-local"
       ],
-      "title": "Sin fecha de prueba no has cerrado nada",
-      "body": "Llamada de 20 minutos guiando la configuración en remoto, el mismo día. En un local de Murcia quedó configurado el primer día y esa noche ya tenía 30 peticiones.\n\nLo que tienen en común todos los que se quedaron: no dieron largas para probarlo. A veces es el mismo día; a veces, la primera noche que abren. Lo que importa es que haya fecha de prueba antes de colgar.",
+      "title": "Sal con fecha de prueba",
+      "body": "Llamada de 20 minutos guiando la configuración en remoto. En un local de Murcia quedó configurado el primer día y esa noche ya tenía 30 peticiones.\n\nLo que distingue a los que se quedaron no es probar el mismo día (a veces el local está cerrado y la prueba es la siguiente noche que abren): es que **no dieron largas**. Salieron de la conversación con fecha de prueba puesta.",
       "why_it_works": "También cualifica: quien da largas para probar algo gratis que se configura en veinte minutos, normalmente no va a comprar."
     },
     {
@@ -2051,7 +2099,7 @@
         "dueno-oficina"
       ],
       "title": "El dinero de las peticiones: nunca «se paga solo»",
-      "body": "La lección más cara que hemos aprendido: se vendía con «pagas 100 € pero lo generas con las peticiones». El dueño hacía la cuenta cada mes y, el mes que no llegaba, concluía que pagaba mucho. Nos cargamos nosotros la percepción de valor.\n\n- **Nunca** digas que se paga solo, ni des una cifra, ni lo metas en la cuenta del precio.\n- **Solo si lo saca él:** «Se le puede poner precio a las peticiones y a los mensajes, y ese dinero se queda en el local. Depende mucho del público y de la temporada, así que no te lo pongo en la cuenta».\n- **Si pide números, el bajo:** 10–50 €/mes en temporada baja. Quien espera 300 y recibe 30 se va; quien espera 30 y recibe 300 se queda para siempre.\n\n**Y lo que no se toca:** las peticiones siempre arrancan gratis. Cobrar 3 € de entrada hunde el volumen (comprobado dos veces). El pago solo aparece para adelantar cola.",
+      "body": "La lección más cara que hemos aprendido: se vendía con «pagas 100 € pero lo generas con las peticiones». El dueño hacía la cuenta cada mes y, el mes que no llegaba, concluía que pagaba mucho. Nos cargamos nosotros la percepción de valor.\n\n- **Nunca** digas que se paga solo, ni des una cifra, ni lo metas en la cuenta del precio.\n- **Si pide números, el bajo:** 10–50 €/mes en temporada baja. Quien espera 300 y recibe 30 se va; quien espera 30 y recibe 300 se queda para siempre.\n\n**Adónde va el dinero (decidido):** lo que paga el público entra siempre en la cuenta del local, que es quien tiene el contrato. Lo recomendado es el modelo de La Biblioteca: repartirlo como propina de todo el equipo. Sin DJ, se queda en el local sin más.\n\n«Lo que paga el público va a tu cuenta. Lo que hacen casi todos los locales es repartirlo como propina del equipo, así el DJ y la barra tienen interés en que funcione. Pero eso lo decides tú».\n\n**Y lo que no se toca:** las peticiones siempre arrancan gratis. Cobrar 3 € de entrada hunde el volumen (comprobado dos veces). El pago solo aparece para adelantar cola.",
       "when_to_use": "Cuando el dueño pregunta «¿y qué gano yo?» o saca el dinero de las canciones."
     },
     {
@@ -2162,7 +2210,120 @@
       ],
       "audience": "team",
       "title": "Pendiente en locales",
-      "body": "- **Propinas con DJ:** si las peticiones son 100 % del DJ, el dueño no ve ese ingreso. Recomendado: por defecto al DJ; sin DJ, al local; con DJ, el modelo de La Biblioteca. Lo decide Cristian.\n- **Techos de interacciones reales:** sacarlos de los datos, no estimarlos.\n- **Probar el teléfono y medirlo.**\n- **Vídeo corto de la pantalla funcionando.**"
+      "body": "- **Techos de interacciones reales:** sacarlos de los datos, no estimarlos.\n- **Probar el teléfono y medirlo.**\n- **Vídeo corto de la pantalla funcionando.**\n- **El plan gratuito para DJs** (90 % para el DJ, 10 % para nosotros, la pasarela la paga el usuario): no se anuncia hasta que salga."
+    },
+    {
+      "key": "promo-encaje",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [
+        "promotor-eventos"
+      ],
+      "title": "Su negocio es vender entradas con contenido",
+      "body": "Organizan eventos puntuales en locales de terceros y venden entradas en buena medida con contenido en redes. Les das material visual de su propia fiesta y dinámicas que diferencian su evento del de la semana siguiente."
+    },
+    {
+      "key": "promo-paradox",
+      "module_key": "tabs-experiencias",
+      "kind": "proof",
+      "stage": "pitch_demo",
+      "segments": [
+        "promotoras"
+      ],
+      "title": "Paradox (Albacete): dos eventos pagados",
+      "body": "Promotora centrada en la interacción y la sorpresa: cambian cosas constantemente y usan las pantallas para temporizadores y dinámicas. Ya lo hacían sin herramienta, así que lo vieron desde el primer momento.\n\nTambién fue cliente de pago la promotora que operaba en Santos Pitute (la relación era con la promotora, no con el local).\n\nLa única fricción: el seguimiento, con un equipo disperso."
+    },
+    {
+      "key": "promo-canal",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "segments": [
+        "promotoras",
+        "ocio-nocturno"
+      ],
+      "title": "Una promotora abre la puerta del local",
+      "body": "Una promotora que lleva Enjoy a su evento deja el producto visto por el local que la aloja: el local ve funcionar algo que podría tener todas las noches.\n\nY al revés: a La Biblioteca una promotora la eligió porque ya ofrecía estas dinámicas. El producto hace más atractivo al local para las promotoras, y a la promotora para los locales."
+    },
+    {
+      "key": "promo-seguimiento",
+      "module_key": null,
+      "kind": "script",
+      "stage": "seguimiento",
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [
+        "promotor-eventos"
+      ],
+      "title": "Con promotoras, el seguimiento es la venta",
+      "body": "A todas las del congreso les gustó mucho y ninguna se cerró. Una tercera, interesada, «siempre ocupada», se perdió igual.\n\n- Sal de la conversación con la fecha de su próximo evento.\n- Agenda tú el siguiente contacto antes de colgar.\n- Escríbeles con algo útil para su próxima fiesta, no con «¿cómo lo veis?»."
+    },
+    {
+      "key": "fest-selvatic",
+      "module_key": "tabs-experiencias",
+      "kind": "proof",
+      "stage": "pitch_demo",
+      "segments": [
+        "festivales"
+      ],
+      "title": "Selvatic Fest: dijeron que sí",
+      "body": "Se les vendió sobre todo la kiss cam voluntaria (aún no sabíamos todo lo que permitía la herramienta, así que no se habló de dinámicas).\n\nNo son un festival de un día: son una infraestructura que opera todo el verano, con conciertos, artistas y festivales pequeños dentro. Propusieron ofrecerlo a los artistas y locales que pasan por allí, validándolo primero en el Selvatic.\n\nNunca se acordó precio: buscaban que la primera vez fuera gratis a cambio de servir de validación."
+    },
+    {
+      "key": "fest-bresh",
+      "module_key": "tabs-experiencias",
+      "kind": "proof",
+      "stage": "pitch_demo",
+      "segments": [
+        "festivales",
+        "promotoras"
+      ],
+      "title": "Bresh: lo que de verdad quieren son los datos",
+      "body": "Una de las promotoras más grandes del mundo hispanohablante: locales de 2.000–3.000 personas en Latinoamérica, España, Europa, Estados Unidos y Japón. Dijeron que sí; la relación está viva.\n\n- **Les interesaron los datos:** qué canciones piden, qué perfiles, qué edades. Hacen la misma fiesta temática en ciudades muy distintas y la música que funciona cambia (lo que funciona en Estados Unidos no funciona igual en Murcia).\n- **Photocall físico conectado a la pantalla:** te haces la foto, hay un QR, y sale en pantalla con tu consentimiento.\n- **Registro en la entrada:** sube fotos al álbum y entras en un sorteo; para eso te registras.\n- **Mundial de fútbol:** les vendrían bien dinámicas para esa temporada.\n\nNo se cerró: un evento se canceló y luego tenían que hablarlo con los operadores de cada ciudad, y no llegaron a hacerlo.",
+      "why_it_works": "Con cuentas grandes, la palanca son los datos para expandirse a ciudades que no conocen."
+    },
+    {
+      "key": "fest-desconocido",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "festivales"
+      ],
+      "audience": "team",
+      "title": "Festivales: lo que no sabemos",
+      "body": "Un solo contacto real (Selvatic). No tenemos precios de referencia propios, ni ciclo de decisión, ni quién compra. Lo de actores y calendario viene de investigación (manual de Conciertos), no de experiencia.\n\nEntra a aprender: cada conversación debe traer quién decide, cuándo y con qué presupuesto."
+    },
+    {
+      "key": "gen-cuentas-abiertas",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "audience": "team",
+      "title": "Cuentas grandes que dijeron que sí",
+      "body": "Bresh, Selvatic, Shark Events, Topamin Fest y The Lab (Madrid) dijeron que sí. Ninguno se perdió por precio, producto ni competencia: **todos se perdieron en el seguimiento**, igual que La Parada, Altare y Batiq.\n\n- **Shark Events:** le dieron la oportunidad a Webit; con Webit la gente no pedía y lo dejaron.\n- **Topamin Fest:** quería ponerlo.\n- **The Lab:** discoteca grande, quería ponerlo.\n\nRetomarlas es trabajo de seguimiento, no de venta."
+    },
+    {
+      "key": "gen-webit",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "objeciones",
+      "objection": "ya_tengo_proveedor",
+      "title": "Competencia: Webit",
+      "body": "El único competidor que nos hemos encontrado dentro de un cliente potencial. Aplicación bastante mal hecha: el local la dejó porque la gente no pedía.\n\nSi sale, no la ataques: pregunta qué pasó con las peticiones. La respuesta trabaja por ti."
+    },
+    {
+      "key": "gen-congresos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "title": "Congresos del sector: el otro canal que funciona",
+      "body": "ForVenues (congreso de ocio nocturno) nos dio contacto directo con varias promotoras y con Shark Events, que de otra forma no habrían atendido. Junto con la puerta fría presencial, es el canal que más conversaciones con cuentas grandes ha producido.\n\nVe con fechas para proponer: lo que se pierde ahí se pierde en el seguimiento."
     }
   ]
 }
