@@ -402,108 +402,149 @@
     {
       "key": "ocio-nocturno",
       "name": "Locales de ocio nocturno",
-      "description": "Discotecas, pubs y salas con programación semanal.",
-      "value_prop": "Más tiempo en pista, más consumo y clientes que vuelven: el público interactúa con la pantalla y genera contenido para redes.",
-      "icp": "- Aforo 300+ y pantallas en sala\n- Noches temáticas o eventos semanales\n- Interés en captar datos de clientes",
-      "disqualifiers": "Locales sin pantallas o con público muy de paso (turismo puntual).",
-      "buying_process": "Decide el propietario/gerente. RRPP/marketing lo empuja; el DJ residente puede integrarlo o sabotearlo. Las marcas de bebida pueden cofinanciar.",
-      "deal_size": "Suscripción mensual (ejemplo: 150–400 €/mes)",
-      "sales_cycle": "1–4 semanas",
+      "description": "Pubs, discotecas y salas que abren varias noches por semana. Y casetas de feria.",
+      "value_prop": "Diferenciarse en un sector en caída. El público pide canciones, manda mensajes y sube fotos a la pantalla; el local gana contenido para redes, una pantalla que maneja desde su móvil y motivos para que la gente vuelva. A La Biblioteca hasta le trajo una fiesta de una promotora.",
+      "icp": "- Pubs y salas de 150 a 500 personas con dueño o gerente que pisa el local\n- Locales con pantallas ya instaladas, aunque las lleve un VJ\n- Locales que abren varias noches por semana\n- Casetas de feria y eventos de temporada\n- Locales que necesitan diferenciarse",
+      "disqualifiers": "- Sin cobertura: se comprueba antes y, si no hay, no se vende\n- Si te dicen que no van a poder estar pendientes de validar\n- Dueños de oficina sin aliado dentro de la sala\n- Locales con deudas o cerrando",
+      "buying_process": "El gerente lo ve clarísimo y empuja; el dueño no lo obstaculiza. Si el dueño no pisa la sala, reunión con los dos: nunca dejes que el gerente se lo venda solo. El DJ puede tumbarlo en los dos sentidos. Se cierra con fecha de prueba antes de colgar.",
+      "deal_size": "99–499 €/mes (supuesto; hoy pagan 67–100 €/mes)",
+      "sales_cycle": "Días: en persona, miércoles por la mañana, y prueba el mismo día",
       "modules": [
         {
           "module_key": "tabs-experiencias",
           "priority": 1,
-          "fit": "Retos y kiss-cam en pantalla durante la sesión."
+          "fit": "Canciones con menú cerrado, mensajes y fotos a pantalla, álbum descargable."
         },
         {
           "module_key": "pricing",
           "priority": 2,
-          "fit": "Precio mensual claro."
+          "fit": "Cuota mensual por tramo de aforo."
         }
       ],
       "personas": [
         {
           "key": "propietario-local",
-          "name": "Propietario/gerente del local",
+          "name": "Dueño de sala",
           "role": "decisor",
-          "goals": "Más consumo por cliente y que vuelvan cada semana.",
-          "pains": "Noches flojas entre semana, competencia de otros locales.",
-          "kpis": "Caja por noche, ocupación, repetición.",
+          "goals": "Un local con ambiente al que la gente vuelva.",
+          "pains": "Gente que viene una noche y no vuelve. Fiestas que los demás le copian.",
           "objections": [
-            "precio",
-            "no_lo_necesito"
+            "precio"
           ],
-          "how_to_approach": "Visita por la tarde (nunca en plena noche) con datos de otro local y una demo en su pantalla.",
-          "avoid": "Llamarle un sábado por la noche; hablar de \"experiencia\" sin hablar de caja.",
-          "can_help": "Decide rápido si ve el retorno.",
-          "can_block": "El precio mensual si no ve el retorno en caja.",
+          "how_to_approach": "Pisa la sala: enséñaselo funcionando. La pantalla desde su móvil, el contenido para redes y que la gente vuelva.",
+          "can_help": "Nuestro mejor comprador.",
+          "can_block": "Si no hay nadie que valide, lo deja caer.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Más tiempo en pista = más consumo; contenido que trae a gente la semana siguiente."
+              "angle": "Su pantalla desde el móvil: promociones, felicitaciones, «chupito a 2 €»."
             }
           ]
         },
         {
-          "key": "rrpp-marketing",
-          "name": "RRPP / marketing del local",
-          "role": "campeon",
-          "goals": "Contenido para redes y base de datos de clientes.",
-          "pains": "No saber quién viene ni cómo volver a llamarlos.",
-          "kpis": "Seguidores, asistentes a eventos, base de datos.",
+          "key": "dueno-oficina",
+          "name": "Dueño de oficina",
+          "role": "decisor",
+          "goals": "Números: facturación y coste.",
+          "pains": "No ve el ambiente: el argumento de experiencia le resbala.",
           "objections": [
-            "no_decido_yo"
+            "no_lo_necesito",
+            "precio"
           ],
-          "how_to_approach": "Enséñale el contenido que genera una noche y la captación de datos de asistentes.",
-          "avoid": "Darle todo el mérito al dueño delante de él.",
-          "can_help": "Lo defiende internamente y lo usa cada semana.",
-          "can_block": "Si no lo ve útil para redes, no lo empuja.",
+          "how_to_approach": "Ponle delante, en este orden: la promotora de La Biblioteca (fiestas = facturación), contenido para redes sin pagar fotógrafo, datos de interacción y diferenciación en su zona. Y nunca sin el gerente: reunión con los dos.",
+          "avoid": "Hablarle de ambiente o de «la gente se lo pasa bien».",
+          "can_block": "Lo quitó de 5 a 8 locales de golpe aunque a los gerentes les encantaba.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Contenido generado por el público + datos de asistentes."
+              "angle": "Una fiesta más al mes y contenido para redes sin coste."
+            }
+          ]
+        },
+        {
+          "key": "gerente-local",
+          "name": "Gerente",
+          "role": "campeon",
+          "goals": "Que el local se note distinto.",
+          "pains": "Le toca convencer al dueño.",
+          "objections": [],
+          "how_to_approach": "Normalmente el que lo ve clarísimo y empuja. Que te acompañe a la reunión con el dueño.",
+          "avoid": "Dejar que se lo venda él solo al dueño.",
+          "can_help": "Empuja la venta y la prueba.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Algo nuevo que ofrecer cada noche."
+            }
+          ]
+        },
+        {
+          "key": "encargado-sala",
+          "name": "Encargado o jefe de sala",
+          "role": "usuario",
+          "goals": "Una noche que salga sin líos.",
+          "pains": "Una cosa más que vigilar.",
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Es quien acaba teniendo el acceso: enséñale que validar es un botón en su móvil.",
+          "can_help": "Lo hace funcionar cada noche.",
+          "can_block": "Si nadie valida, una foto esperando media hora en pantalla quema al cliente.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Valida desde el móvil en un segundo."
             }
           ]
         },
         {
           "key": "dj-residente",
-          "name": "DJ residente",
+          "name": "DJ",
           "role": "guardian",
-          "goals": "Control total de la pista y de la sesión.",
-          "pains": "Interrupciones y cosas que cortan el ritmo.",
+          "goals": "Que su sesión suene como él quiere.",
+          "pains": "Que le rompan el ambiente musical del local.",
           "objections": [
             "desconfianza"
           ],
-          "how_to_approach": "Habla con él ANTES de la demo con el dueño; que decida en qué momentos de la sesión se lanza cada reto.",
-          "avoid": "Imponérselo a través del dueño.",
-          "can_help": "Lo integra en la sesión y lo convierte en parte del show.",
-          "can_block": "Lo ignora o lo sabotea: sin él no hay participación.",
+          "how_to_approach": "Menú cerrado: solo se pide lo que está en la lista. Y el modelo de La Biblioteca: las peticiones se reparten como propina para todo el equipo.",
+          "avoid": "Preguntar al dueño «¿crees que a tu DJ le parecerá bien?».",
+          "can_block": "Nos ha tumbado dos acuerdos confirmados.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Momentos de interacción que él dispara cuando la pista lo pide."
+              "angle": "Menú cerrado: nadie le toca el repertorio."
             }
           ]
         },
         {
-          "key": "marca-bebidas",
-          "name": "Marca de bebidas patrocinadora",
-          "role": "pagador",
-          "goals": "Visibilidad y activaciones medibles en el local.",
-          "pains": "Activaciones caras sin datos de resultado.",
-          "kpis": "Impactos, participación, leads.",
-          "objections": [
-            "comparar",
-            "precio"
-          ],
-          "how_to_approach": "Propón una activación cofinanciada con el local: retos patrocinados con su marca en pantalla.",
-          "avoid": "Pedirle dinero sin enseñar métricas.",
-          "can_help": "Paga parte (o todo) el coste para el local.",
-          "can_block": "Si no hay datos, no repite.",
+          "key": "puerta-local",
+          "name": "El de la puerta",
+          "role": "usuario",
+          "goals": "Una noche tranquila.",
+          "pains": "Otra tarea más.",
+          "objections": [],
+          "how_to_approach": "En locales pequeños puede ser quien valida.",
+          "can_help": "En locales pequeños, el que lo lleva.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Retos y kiss-cam con su marca, con datos de participación."
+              "angle": "Un botón: aceptar o no aceptar."
+            }
+          ]
+        },
+        {
+          "key": "rrpp-marketing",
+          "name": "Quien lleva el Instagram",
+          "role": "influenciador",
+          "goals": "Contenido para redes cada semana.",
+          "pains": "Lo hace a desgana, entre otras tareas.",
+          "objections": [],
+          "how_to_approach": "Suele ser el encargado, la de cuentas o una camarera; agencias, casi nunca. Cientos de fotos del público, ya con permiso para publicarlas.",
+          "can_help": "Lo defiende porque le quita trabajo.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Fotos del público con permiso para publicarlas."
             }
           ]
         }
@@ -913,9 +954,67 @@
       "kind": "pitch",
       "stage": "pitch_demo",
       "title": "Enjoy en una frase",
-      "body": "Enjoy convierte cada momento de la celebración en algo que los invitados **hacen**, no que **miran**: kiss-cam, dedicatorias y retos desde su propio móvil, sin descargar nada.",
-      "when_to_use": "Primeros 30 segundos de cualquier conversación (novios o sala).",
-      "why_it_works": "Diferencia frente al fotomatón o el DJ: la participación es el producto."
+      "body": "El público escanea un QR, sin descargar nada, y **sube fotos, manda mensajes y pide canciones** que salen en la pantalla. Quien organiza lo controla todo desde su móvil.\n\n- **Pantalla Lite:** navegador o Smart TV, se abre y listo.\n- **Pantalla Desktop:** en un ordenador; con NDI se pone encima de los visuales que ya hay.\n- **Álbum:** todas las fotos de la noche, descargables.",
+      "when_to_use": "Los primeros 30 segundos de cualquier conversación.",
+      "why_it_works": "Cuenta lo que pasa en la sala, no la herramienta: nadie compra «interactividad»."
+    },
+    {
+      "key": "gen-consentimiento",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "title": "El activo es el consentimiento",
+      "body": "Quien sube una foto acepta los términos de uso: quien organiza puede usar ese contenido en sus redes y su comunicación.\n\nNinguna cámara, kiss cam ni fotomatón da eso.",
+      "why_it_works": "Es lo único que nadie más ofrece, y responde a «¿y los derechos de imagen?» antes de que salga."
+    },
+    {
+      "key": "gen-cobertura",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "descubrimiento",
+      "title": "Sin cobertura no se vende",
+      "body": "Es lo que más rompe, con diferencia. Antes de vender, comprueba la cobertura y el wifi del sitio.\n\n«Es lo único que nos puede estropear la noche, y te lo digo yo antes de que lo descubras tú. Si no hay cobertura, te lo digo y no lo hacemos».\n\nUn evento fallido se cuenta entre clientes."
+    },
+    {
+      "key": "gen-no-decir",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "title": "Lo que no se dice (en ningún sector)",
+      "body": "- **Cifras de monetización o retorno**, ni «se paga solo». Si hay que dar un número, el bajo.\n- **Soporte 24 h o SLA.** Hoy lo da el CTO (y casi no hay incidencias).\n- **El plan gratuito para DJs:** sale en semanas.\n- **CRM de fidelización, remarketing, peticiones patrocinadas:** no existen.\n- **Nada que esté «a punto de salir»:** si no está en producción, no se vende.\n- **Nombres de clientes** sin autorización.\n\n**Sí se puede usar:** cerca de 30.000 peticiones en 2025 con muy pocos eventos. El público sí escanea un QR."
+    },
+    {
+      "key": "gen-cobro",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "cierre",
+      "title": "Cobrar es más difícil que vender",
+      "body": "La tarjeta de empresa la tiene alguien que no está, y las facturas las llevan mal.\n\n1. **Siempre por adelantado**, como Netflix. Sin cobro no hay servicio.\n2. **Enlace de pago en el momento**, no «ya te lo paso».\n3. Si hay peticiones acumuladas, se liquidan a final de mes **siempre que nos den la factura**. Se dice desde el primer día.\n4. **Por escrito** quién paga y con qué tarjeta, antes de la fecha."
+    },
+    {
+      "key": "gen-postventa",
+      "module_key": null,
+      "kind": "script",
+      "stage": "seguimiento",
+      "title": "Después de la venta: la parte que hemos fallado",
+      "body": "Tres de las bajas fueron por no hacer seguimiento. No es opcional.\n\n- **Noche 1:** mira los datos y escríbele al día siguiente con el resultado, no con «¿qué tal?».\n- **Semana 1:** llamada corta: qué ha funcionado y qué no.\n- **Mes 1:** revisión y, si va bien, pide una referencia.\n- **Cada mes:** algo útil para él, no para nosotros.\n- **Cierre de temporada:** contacta antes de que reabra. Altare se perdió exactamente aquí."
+    },
+    {
+      "key": "empresa-obj-pensar",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "title": "«Me lo tengo que pensar»",
+      "body": "«Perfecto. Lo que tienes que pensar, ¿tiene que ver más con la propuesta, con la inversión, o con el resultado?»",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Desglose del «déjame pensarlo»",
+          "creator": "Manuel Trejo",
+          "url": "https://www.tiktok.com/@manueltrejove/video/7648050248446790933"
+        }
+      ]
     },
     {
       "key": "empresa-icp",
@@ -990,15 +1089,6 @@
       ]
     },
     {
-      "key": "empresa-obj-pensar",
-      "module_key": null,
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "tiempo",
-      "title": "\"Nos lo pensamos\"",
-      "body": "Pregunta qué parte quieren pensar: ¿precio, fecha o si encaja con su boda? Propón dejar la fecha **reservada 7 días sin compromiso** y agenda la llamada en ese momento."
-    },
-    {
       "key": "empresa-cierre",
       "module_key": null,
       "kind": "script",
@@ -1017,7 +1107,10 @@
       "stage": "pitch_demo",
       "title": "Kiss-cam, dedicatorias y retos: el banquete se convierte en juego",
       "body": "Cada invitado participa desde su móvil (sin app) y lo que envía sale en la pantalla en directo. Nadie se queda mirando el plato.",
-      "when_to_use": "Cuando han mencionado tiempos muertos o mesas que no se mezclan."
+      "when_to_use": "Cuando han mencionado tiempos muertos o mesas que no se mezclan.",
+      "segments": [
+        "bodas"
+      ]
     },
     {
       "key": "exp-fit",
@@ -1036,7 +1129,10 @@
       "kind": "tip",
       "stage": "pitch_demo",
       "title": "Enseña el móvil, no la pantalla",
-      "body": "En la demo, pásale TU móvil con la kiss-cam abierta y que envíe algo: lo ve aparecer en la vista previa del dossier. Vender la experiencia > describirla."
+      "body": "En la demo, pásale TU móvil con la kiss-cam abierta y que envíe algo: lo ve aparecer en la vista previa del dossier. Vender la experiencia > describirla.",
+      "segments": [
+        "bodas"
+      ]
     },
     {
       "key": "exp-obj-mayores",
@@ -1045,7 +1141,10 @@
       "stage": "objeciones",
       "objection": "no_lo_necesito",
       "title": "\"Mis invitados son mayores, no van a participar\"",
-      "body": "Las dedicatorias son el módulo que más usan los mayores: escribir unas palabras a los novios. Los nietos les ayudan con el móvil y eso también es parte del recuerdo."
+      "body": "Las dedicatorias son el módulo que más usan los mayores: escribir unas palabras a los novios. Los nietos les ayudan con el móvil y eso también es parte del recuerdo.",
+      "segments": [
+        "bodas"
+      ]
     },
     {
       "key": "exp-prueba",
@@ -1053,7 +1152,10 @@
       "kind": "proof",
       "stage": "pitch_demo",
       "title": "Participación media 92 %",
-      "body": "Dato de ejemplo (sustituir por el real de Enjoy): 9 de cada 10 invitados envían al menos una kiss-cam o dedicatoria."
+      "body": "Dato de ejemplo (sustituir por el real de Enjoy): 9 de cada 10 invitados envían al menos una kiss-cam o dedicatoria.",
+      "segments": [
+        "bodas"
+      ]
     },
     {
       "key": "exp-upsell",
@@ -1062,7 +1164,10 @@
       "stage": "negociacion",
       "title": "Pack Kiss-cam + Retos",
       "body": "Vende las experiencias en pack (no sueltas): el pack completo sube el ticket medio ~30 % y el coste marginal es casi cero. Descuento máximo autorizado: 10 %.",
-      "why_it_works": "El margen está en el pack; las experiencias sueltas compiten con el DJ."
+      "why_it_works": "El margen está en el pack; las experiencias sueltas compiten con el DJ.",
+      "segments": [
+        "bodas"
+      ]
     },
     {
       "key": "loc-pitch",
@@ -1117,35 +1222,6 @@
       "objection": "precio",
       "title": "Presenta el precio después del valor",
       "body": "La tarjeta de precio va siempre al final del dossier. Si te piden precio al principio, da una horquilla y vuelve al descubrimiento."
-    },
-    {
-      "key": "noche-obj-dj",
-      "module_key": "tabs-experiencias",
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "desconfianza",
-      "segments": [
-        "ocio-nocturno"
-      ],
-      "personas": [
-        "dj-residente"
-      ],
-      "title": "DJ residente: \"Esto me corta la sesión\"",
-      "body": "Él decide cuándo se lanza cada reto: Enjoy no interrumpe, le da munición. Propón probarlo una noche en los momentos que él elija."
-    },
-    {
-      "key": "noche-pitch-propietario",
-      "module_key": "tabs-experiencias",
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "segments": [
-        "ocio-nocturno"
-      ],
-      "personas": [
-        "propietario-local"
-      ],
-      "title": "Para el dueño del local: más tiempo en pista, más caja",
-      "body": "Cada reto en pantalla mantiene a la gente en la pista (y en la barra) 10–15 minutos más. Ejemplo para validar con datos reales del local."
     },
     {
       "key": "fest-patrocinios",
@@ -1227,23 +1303,6 @@
       "body": "Un concierto ya tiene visuales y un VJ. No los sustituimos: entramos en un lateral, por encima de lo que ya hay, sin tocar su producción.\n\n- **Lite:** se abre en un navegador o una Smart TV. QR fijo y vídeos de fondo.\n- **Desktop:** se instala en el ordenador de la señal. Con NDI (Resolume Arena, Virtual DJ…) y modo transparente sobre sus visuales.\n\nQuien no entienda esto no puede vender aquí: la primera objeción técnica siempre es «ya tenemos pantallas».",
       "when_to_use": "En cuanto aparezca producción o alguien diga «ya tenemos pantallas».",
       "why_it_works": "Quita el miedo número uno: que les toquemos el show."
-    },
-    {
-      "key": "conc-consentimiento",
-      "module_key": "tabs-experiencias",
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "segments": [
-        "conciertos"
-      ],
-      "personas": [
-        "promotor",
-        "marca-patrocinadora",
-        "manager-artista"
-      ],
-      "title": "El activo es legal: contenido consentido",
-      "body": "Quien sube una foto acepta los términos de uso. El organizador puede usar ese contenido en su comunicación.\n\nNinguna cámara, kiss cam ni fotomatón da eso.",
-      "why_it_works": "Es lo único que nadie más ofrece y responde a «¿y los derechos de imagen?» antes de que salga."
     },
     {
       "key": "conc-sin-video",
@@ -1627,26 +1686,6 @@
       ]
     },
     {
-      "key": "conc-obj-pensar",
-      "module_key": null,
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "tiempo",
-      "segments": [
-        "conciertos"
-      ],
-      "title": "«Me lo tengo que pensar»",
-      "body": "«Perfecto. Lo que tienes que pensar, ¿tiene que ver más con la propuesta, con la inversión, o más con el resultado?»",
-      "technique_refs": [
-        {
-          "source": "cerebro",
-          "title": "Desglose del «déjame pensarlo»",
-          "creator": "Manuel Trejo",
-          "url": "https://www.tiktok.com/@manueltrejove/video/7648050248446790933"
-        }
-      ]
-    },
-    {
       "key": "conc-no-decir",
       "module_key": null,
       "kind": "tip",
@@ -1682,13 +1721,10 @@
       "body": "- **Prueba de carga:** sin ella no se vende por encima de 20.000.\n- **% que paga y ticket medio:** sin esto no se habla de monetización.\n- **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.\n- **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.\n- **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.\n- **Pie de foto en el álbum:** hasta que esté, no se vende."
     },
     {
-      "key": "conc-video-fundamentos",
+      "key": "gen-video-fundamentos",
       "module_key": null,
       "kind": "script",
       "stage": "prospeccion",
-      "segments": [
-        "conciertos"
-      ],
       "title": "Manda el vídeo antes de la llamada",
       "body": "Técnica del Cerebro: pre-encuadre de la llamada por posicionamiento (Alfonso y Cristian). Guion literal:\n\n«Una de las claves del posicionamiento: nunca recibas una llamada sin estar agendada. Si alguien te dice 'oye, ¿podemos hablar? tengo cinco minutitos', no. Agenda la llamada y prepárate bien para ella: haz una investigación previa. O dile a la persona: 'antes de que hablemos y veamos si te puedo ayudar, necesito que veas este vídeo de diez minutos donde explico los fundamentos, para que después en la llamada tú y yo hablemos el mismo lenguaje, porque yo uso unos términos concretos y, si no los entiendes, probablemente no nos sirva de nada esta llamada'. Cuanto mejor posicionado estés, menos venta tendrás que hacer: la persona llega ya en un 80-90% convencida».",
       "when_to_use": "Antes de cada primera llamada.",
@@ -1703,17 +1739,14 @@
       ]
     },
     {
-      "key": "conc-precalificar",
+      "key": "gen-precalificar",
       "module_key": null,
       "kind": "script",
       "stage": "descubrimiento",
       "objection": "no_decido_yo",
-      "segments": [
-        "conciertos"
-      ],
       "title": "Pregunta quién decide, al principio",
-      "body": "Adaptado a conciertos:\n\n«Antes de empezar: si esto os encaja, ¿lo decides tú o tendría que estar también producción o el manager en la conversación?»\n\nGuion literal del creador (Alfonso y Cristian): «Oye, una pregunta, Juan, simplemente antes de empezar: si tuviéramos que tomar hoy una decisión, ¿es algo que podrías tomar tú al 100% o tendría que estar en esta conversación también tu socio Sergio? Si me dices que no está tu socio: hagamos una cosa, como el tiempo es algo muy escaso porque no lo podemos comprar, ¿te parece bien que hagamos una reunión donde esté Sergio y así, si tenéis que tomar una decisión los dos, lo tengáis 100% claro? ¿Te parece bien?»",
-      "why_it_works": "En un concierto hay cinco actores y casi nunca decide el primero que te atiende. La objeción previsible se saca al principio, no al final.",
+      "body": "Adaptado:\n\n«Antes de empezar: si esto os encaja, ¿lo decides tú o tendría que estar también tu socio, el gerente o producción en la conversación?»\n\nGuion literal del creador (Alfonso y Cristian): «Oye, una pregunta, Juan, simplemente antes de empezar: si tuviéramos que tomar hoy una decisión, ¿es algo que podrías tomar tú al 100% o tendría que estar en esta conversación también tu socio Sergio? Si me dices que no está tu socio: hagamos una cosa, como el tiempo es algo muy escaso porque no lo podemos comprar, ¿te parece bien que hagamos una reunión donde esté Sergio y así, si tenéis que tomar una decisión los dos, lo tengáis 100% claro? ¿Te parece bien?»",
+      "why_it_works": "Casi nunca decide el primero que te atiende. La objeción previsible se saca al principio, no al final.",
       "technique_refs": [
         {
           "source": "cerebro",
@@ -1724,15 +1757,12 @@
       ]
     },
     {
-      "key": "conc-gatekeeper",
+      "key": "gen-gatekeeper",
       "module_key": null,
       "kind": "script",
       "stage": "prospeccion",
-      "segments": [
-        "conciertos"
-      ],
       "title": "Convierte a quien coge el teléfono en aliado",
-      "body": "Adaptado a una oficina de management o una promotora:\n\n«Una pregunta y te dejo: ¿crees que les interesaría que el público pudiera participar en pantalla durante la espera previa al show? ¿Es algo que os estéis planteando?»\n\nGuion literal del creador (Alfonso y Cristian): «Solo una pregunta: ¿tú crees que le interesaría tener productos que de verdad cuiden el cabello de vuestros clientes? ¿Podría ser algo que le interese?»",
+      "body": "Adaptado (oficina de una promotora, un grupo de locales o una finca):\n\n«Una pregunta y te dejo: ¿crees que les interesaría que el público pudiera participar en pantalla durante la espera previa al show? ¿Es algo que os estéis planteando?»\n\nGuion literal del creador (Alfonso y Cristian): «Solo una pregunta: ¿tú crees que le interesaría tener productos que de verdad cuiden el cabello de vuestros clientes? ¿Podría ser algo que le interese?»",
       "why_it_works": "Te dice si tu beneficio encaja antes de llegar al decisor.",
       "technique_refs": [
         {
@@ -1744,13 +1774,10 @@
       ]
     },
     {
-      "key": "conc-frio",
+      "key": "gen-frio",
       "module_key": null,
       "kind": "script",
       "stage": "primer_contacto",
-      "segments": [
-        "conciertos"
-      ],
       "title": "Apertura en frío sin sonar a comercial",
       "body": "**Pattern interrupt** (Alfonso y Cristian), guion literal: «Oye, Jaime. — ¿Sí? ¿Quién es? — Soy Cristian. — ¿Cristian? ¿Qué Cristian? — Oye, una pregunta: si esta fuera una llamada comercial, ¿me matarías directamente?»\n\nEl «hola, buenos días, ¿hablo con el señor X?» te delata en cuatro segundos.\n\n**Llamada en frío por relación** (Alfonso y Cristian), guion literal: «Adriá, soy Cristian, ¿qué tal, cómo va tu día? — 'Perdona, es que no te ubico'. — No, ya lo sé, no te preocupes. De hecho, estaba entre llamarte y no llamarte, porque últimamente hay tantos bots y emails que no sabes si es verdad o no. Te llamo para darte la enhorabuena por el premio que he visto que te han dado en LinkedIn por ser el mejor comunicador del año. He dicho: chapó, escucho tu podcast, he visto tus vídeos y he sentido la necesidad de darte la enhorabuena, pero en persona, no de una forma fría como hace todo el mundo. Simplemente eso, y que disfrutes de la semana. Espero que no te haya molestado».\n\n**Requisito:** algo real con lo que conectar (una gira, un premio, una sala nueva). Si no hay dato real, no se usa.",
       "technique_refs": [
@@ -1769,17 +1796,10 @@
       ]
     },
     {
-      "key": "conc-inbound",
+      "key": "gen-inbound",
       "module_key": null,
       "kind": "tip",
       "stage": "primer_contacto",
-      "segments": [
-        "conciertos"
-      ],
-      "personas": [
-        "promotor",
-        "manager-artista"
-      ],
       "title": "Si el decisor te escribe él",
       "body": "Guion literal del creador (Alfonso y Cristian): «Claro que sí, no se preocupe. Dígame cuál es la persona indicada de su equipo para que los pongamos en contacto: mi persona con la suya».\n\nÚtil cuando escribe el dueño de una promotora o un manager con agenda imposible: no le quemas el tiempo y bajas la operativa un nivel sin perder posición.",
       "technique_refs": [
@@ -1792,24 +1812,18 @@
       ]
     },
     {
-      "key": "conc-lenguaje",
+      "key": "gen-lenguaje",
       "module_key": null,
       "kind": "tip",
       "stage": "primer_contacto",
-      "segments": [
-        "conciertos"
-      ],
       "title": "Filtro de lenguaje antes de enviar",
       "body": "- **Verbos de lo que hiciste, no de lo que sentiste.** «He mirado vuestro cartel», no «me quedé pensando en vuestro proyecto».\n- **Si lo averiguaste después, dilo así.** Fingir familiaridad se detecta.\n- **No niegues para plantar la idea.** Nada de «no vengo a venderte nada».\n- **Adjetivos solo con el dato detrás.** «Muy potente» no dice nada.\n- **Una sola fecha concreta.** «Hablamos la semana que viene» no es un cierre.\n\n**Dos pruebas antes de enviar:** si el mensaje vale para otro cambiando solo el nombre, no está terminado. Y todo lo que dice que hiciste o sabes tiene que ser cierto."
     },
     {
-      "key": "conc-no-vender-por",
+      "key": "gen-no-vender-por",
       "module_key": null,
       "kind": "tip",
       "stage": "mentalidad",
-      "segments": [
-        "conciertos"
-      ],
       "audience": "team",
       "title": "Si acompañas al vendedor: no vendas por él",
       "body": "Guion literal del creador (Alfonso y Cristian): «No vendas tú, por favor. Tenemos la tendencia... 'joder, que se le va la operación, prefiero que se le vaya', porque si no, no va a aprender nunca. No puedes crear la dependencia absoluta del director. El director llega, se saca la calculadora y da el precio más barato: ahí no hay habilidad, y el comercial se queda diciendo 'esto no lo hagas'. El proveedor luego ya no quiere hablar con el vendedor, quiere hablar contigo. Si hay que conceder algo, dile al vendedor: 'venga, véndeselo a 0,15 y dile tú que TÚ lo has conseguido'. Que la medalla se la cuelgue el vendedor. Si no, lo ninguneas, no es feliz, y no vende».\n\nAplica al DJ colaborador y a cualquier vendedor nuevo: si hay margen que conceder, se decide aparte y lo comunica el vendedor como logro suyo.",
@@ -1821,6 +1835,334 @@
           "url": "https://open.spotify.com/episode/6v6B2Cizpozb34m0eZot3I"
         }
       ]
+    },
+    {
+      "key": "noche-bajas",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "audience": "team",
+      "title": "Por qué se fueron los que se fueron",
+      "body": "Hemos tenido unos diez locales. **Ni una baja fue por precio ni por «no funciona».** Por orden:\n\n- **Falta de seguimiento:** La Parada, Altare, Batiq Málaga Fest.\n- **El DJ:** Tennessee, Habana Cánovas.\n- **Cobertura:** Pastrami.\n- **El dueño de oficina:** el grupo de Juan Rambla (5–8 locales).\n- **Deudas o cierre:** Catedral, Jumanji, Enjoy (el local).\n\nEl trabajo no termina cuando firma: ahí es donde lo hemos perdido todo."
+    },
+    {
+      "key": "noche-biblioteca",
+      "module_key": "tabs-experiencias",
+      "kind": "proof",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dueno-oficina",
+        "propietario-local"
+      ],
+      "title": "La Biblioteca: una promotora les trajo una fiesta",
+      "body": "La Biblioteca (pub mediano de Málaga, 300–400 personas) consiguió que una promotora eligiera su local para montar una fiesta porque ofrecían estas dinámicas.\n\n«A La Biblioteca le pasó algo que no esperábamos: una promotora los eligió a ellos para montar una fiesta porque podían ofrecer estas dinámicas y otros no. Una fiesta más al mes es dinero que antes no estaba».\n\nCaso autorizado: se puede usar con nombre.",
+      "why_it_works": "Habla el idioma del dueño de oficina: no es ambiente, es facturación."
+    },
+    {
+      "key": "noche-diferenciarse",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local",
+        "dueno-oficina"
+      ],
+      "title": "Diferenciarse o morir",
+      "body": "El ocio nocturno está en caída: la gente sale menos y los locales se copian las fiestas. Venden experiencia y necesitan experiencia nueva para seguir vendiéndola.\n\nDurante bastante tiempo, nuestros clientes han sido los únicos de su zona con esto."
+    },
+    {
+      "key": "noche-redes",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "rrpp-marketing",
+        "dueno-oficina"
+      ],
+      "title": "Contenido para redes sin pagar a nadie",
+      "body": "Cada noche, cientos de fotos subidas por el propio público, ya aceptando los términos. **Y se pueden descargar:** es lo que más valoran.\n\nEn locales pequeños y medianos el Instagram lo lleva el encargado o una camarera: les resuelves un trabajo que hacen a desgana."
+    },
+    {
+      "key": "noche-pantalla-movil",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local",
+        "encargado-sala"
+      ],
+      "title": "Su pantalla, desde su móvil",
+      "body": "Mensajes en tiempo real a la pantalla desde su propio móvil: «chupito a 2 €», promociones, felicitaciones. Es la primera vez que tienen comunicación y venta en el momento con su propia sala.\n\nY gusta por una razón menos noble que conviene saber: les sirve para interactuar con el público e invitar a quien quieran."
+    },
+    {
+      "key": "noche-fidelizacion",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local"
+      ],
+      "title": "Que la gente vuelva",
+      "body": "Uno de sus miedos reales: cada noche ven gente que viene y no vuelve. Cuando alguien vuelve, lo cuidan.\n\nTodo lo que les ayude a que la gente regrese les toca una fibra que el precio no toca."
+    },
+    {
+      "key": "noche-temporada-baja",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local",
+        "dueno-oficina"
+      ],
+      "title": "En temporada baja es cuando más falta hace",
+      "body": "Con quince personas en el local, las peticiones de canciones y los mensajes en pantalla les dan algo que hacer y los retienen.\n\nLas fotos lucen más con la sala llena; las canciones funcionan igual con la sala vacía.",
+      "why_it_works": "Nadie lo espera: desmonta el «ahora no es buen momento»."
+    },
+    {
+      "key": "noche-dj-menu",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dj-residente",
+        "propietario-local"
+      ],
+      "title": "El DJ: menú cerrado y propinas para el equipo",
+      "body": "El miedo del DJ y del dueño nunca fue la tecnología: era «que me rompan el ambiente musical».\n\n- **Menú cerrado:** el buscador se limita a una lista fija. Nadie le toca el repertorio.\n- **El modelo de La Biblioteca:** el DJ acepta las peticiones y el dueño reparte ese dinero como propina para todo el equipo. Si el DJ no acepta, deja sin propina a sus compañeros: la presión del equipo hace lo que no hace ningún contrato.\n\nCómo decirlo: «Tu DJ no tiene que estar pendiente de esto. Quien valida lo decides tú: puede ser el encargado, el de la puerta, o va con Spotify sin DJ. Y las canciones van con menú cerrado: solo se puede pedir lo que tú metas en la lista».\n\n**Nunca preguntes «¿crees que a tu DJ le parecerá bien?»:** le das un motivo para dudar y un tercero tras el que esconderse.",
+      "when_to_use": "En toda presentación a un local con DJ, antes de que salga la objeción.",
+      "why_it_works": "Nos ha tumbado dos acuerdos confirmados: se contesta antes de que lo pregunten."
+    },
+    {
+      "key": "noche-pitch-propietario",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dueno-oficina",
+        "gerente-local"
+      ],
+      "title": "Al dueño de oficina: fiestas, no ambiente",
+      "body": "No pisa la sala y decide por números. El ambiente le resbala.\n\n1. La promotora de La Biblioteca: fiestas = facturación.\n2. Contenido para redes sin coste de fotógrafo.\n3. Datos: cuánta gente interactúa, qué piden y a qué hora.\n4. Diferenciación frente a los locales de su zona.\n\n**Y la jugada previa:** si el gerente está a favor, no vayas al dueño sin él. Pide reunión con los dos.",
+      "why_it_works": "Así se perdieron de 5 a 8 locales de golpe: se le vendió al gerente y él se lo vendió al dueño."
+    },
+    {
+      "key": "noche-casetas",
+      "module_key": "tabs-experiencias",
+      "kind": "fit",
+      "stage": "prospeccion",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "title": "Casetas de feria: se venden allí, en mitad del follón",
+      "body": "Dos de nuestros tres mejores casos:\n\n- **El Andén:** pantalla gigante, funcionó muy bien.\n- **Batiq Málaga Fest (caseta):** sin pantalla, y funcionó muy bien, con peticiones de pago incluidas.\n- **El Portón (Córdoba):** falló por cobertura en plena calle de la feria.\n\nSe vendieron presentándose allí durante la feria: lo vieron y al día siguiente estaban funcionando. La decisión es inmediata y la toma quien está allí. Funciona sin pantalla porque la gracia son las canciones y la impaciencia. Y se repiten cada año: una venta bien hecha es un cliente anual.\n\nEl Andén y Batiq autorizan su caso con nombre.",
+      "why_it_works": "La cobertura es el único riesgo real, y en feria de calle es el peor escenario: compruébala antes."
+    },
+    {
+      "key": "noche-calendario",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "title": "Cuándo y cómo llegar a un local",
+      "body": "- **Octubre y noviembre:** la mejor ventana. **Es ahora.**\n- **Febrero a abril:** segunda ventana buena.\n- **Diciembre y enero:** temporada alta, imposible vender; buen momento para dar soporte.\n- **Junio a agosto:** temporada alta; muchos de temporada cierran o se mudan.\n\n**Día y hora:** miércoles, y si no jueves, por la mañana o a primera hora de la tarde. El miércoles llega el reparto del distribuidor: hay alguien con llaves y están receptivos. No a primerísima hora. **Lunes y martes, no:** libran.\n\n**Canal:** en persona, a puerta fría: es lo único probado. Instagram no funciona. El teléfono está sin probar: pruébalo y mídelo."
+    },
+    {
+      "key": "noche-prueba-hoy",
+      "module_key": "tabs-experiencias",
+      "kind": "script",
+      "stage": "cierre",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local",
+        "gerente-local"
+      ],
+      "title": "Sin fecha de prueba no has cerrado nada",
+      "body": "Llamada de 20 minutos guiando la configuración en remoto, el mismo día. En un local de Murcia quedó configurado el primer día y esa noche ya tenía 30 peticiones.\n\nLo que tienen en común todos los que se quedaron: no dieron largas para probarlo. A veces es el mismo día; a veces, la primera noche que abren. Lo que importa es que haya fecha de prueba antes de colgar.",
+      "why_it_works": "También cualifica: quien da largas para probar algo gratis que se configura en veinte minutos, normalmente no va a comprar."
+    },
+    {
+      "key": "noche-precios",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local",
+        "dueno-oficina"
+      ],
+      "title": "Precios: lo que pagan y lo que proponemos",
+      "body": "**Hechos:** La Biblioteca paga 70 €/mes. Máximo sostenido en otros locales, 67 €/mes. Un local de grupo llegó a 100 €. Una promotora pequeña, 70 € por evento. Todo con el producto antiguo, solo canciones.\n\n**Propuesta (sin validar, sin IVA):**\n- Pequeño (hasta 150): **99 €/mes** · hasta 500 interacciones\n- Mediano (150–500): **249 €/mes** · hasta 2.500\n- Grande (más de 500): **499 €/mes** · hasta 7.000\n- Evento suelto: **150 €**\n\n**Los 5 primeros clientes nuevos:** 99 €/mes sin permanencia los dos primeros meses, a cambio de feedback mensual, permiso para grabar una noche y usarlos de referencia. Sin contrapartida, tarifa.\n\n**Clientes antiguos:** mantienen su precio; no se sube sin una conversación aparte.\n\nCuentan como interacción canciones, mensajes, fotos a pantalla y subidas al álbum. El techo no es argumento de venta: es protección. Aviso al 80 % y subida de tramo en la revisión trimestral; nunca se corta el servicio ni se factura el exceso."
+    },
+    {
+      "key": "noche-descuentos",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "audience": "team",
+      "title": "Descuentos: siempre a cambio de algo",
+      "body": "- **Primeros 5 clientes del producto nuevo:** hasta 99 €, a cambio de feedback, grabación y referencia.\n- **Ciudad de menos poder adquisitivo:** hasta 20 %.\n- **Grupo con varios locales:** hasta 25 %, con todos los locales, no uno.\n\n**Suelo: 99 €.** Todo descuento es un intercambio, nunca un regalo."
+    },
+    {
+      "key": "noche-dinero-peticiones",
+      "module_key": "pricing",
+      "kind": "tip",
+      "stage": "negociacion",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local",
+        "dueno-oficina"
+      ],
+      "title": "El dinero de las peticiones: nunca «se paga solo»",
+      "body": "La lección más cara que hemos aprendido: se vendía con «pagas 100 € pero lo generas con las peticiones». El dueño hacía la cuenta cada mes y, el mes que no llegaba, concluía que pagaba mucho. Nos cargamos nosotros la percepción de valor.\n\n- **Nunca** digas que se paga solo, ni des una cifra, ni lo metas en la cuenta del precio.\n- **Solo si lo saca él:** «Se le puede poner precio a las peticiones y a los mensajes, y ese dinero se queda en el local. Depende mucho del público y de la temporada, así que no te lo pongo en la cuenta».\n- **Si pide números, el bajo:** 10–50 €/mes en temporada baja. Quien espera 300 y recibe 30 se va; quien espera 30 y recibe 300 se queda para siempre.\n\n**Y lo que no se toca:** las peticiones siempre arrancan gratis. Cobrar 3 € de entrada hunde el volumen (comprobado dos veces). El pago solo aparece para adelantar cola.",
+      "when_to_use": "Cuando el dueño pregunta «¿y qué gano yo?» o saca el dinero de las canciones."
+    },
+    {
+      "key": "noche-reunion-dos",
+      "module_key": null,
+      "kind": "script",
+      "stage": "objeciones",
+      "objection": "no_decido_yo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "gerente-local",
+        "dueno-oficina"
+      ],
+      "title": "«Lo tengo que consultar con mi socio»",
+      "body": "Pide reunión con los dos. **No dejes que el gerente se lo venda al dueño por su cuenta:** así perdimos los locales de Juan Rambla.\n\n«Tiene todo el sentido. Para que no tengas que contárselo tú y te pregunte cosas que no sabes, ¿quedamos los tres? Te propongo el miércoles por la mañana»."
+    },
+    {
+      "key": "noche-obj-dj",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dj-residente",
+        "propietario-local"
+      ],
+      "title": "«Me va a romper el ambiente musical del local»",
+      "body": "La objeción número uno. Va contestada antes de que la hagan, en la propia presentación:\n\n«Las canciones van con menú cerrado: tú metes la lista y solo se puede pedir lo que esté ahí. Y si en algún momento la quieres abierta, se abre»."
+    },
+    {
+      "key": "noche-obj-operativa",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "encargado-sala",
+        "propietario-local"
+      ],
+      "title": "«No tenemos tiempo de estar pendientes»",
+      "body": "«¿Quién está en la puerta los sábados? En otros locales lo lleva el de la puerta, o el encargado. Es un botón: aceptar o no aceptar. Y si no hay nadie, va con Spotify y nadie tiene que tocar nada».\n\n**Si insisten en que no van a poder: no vendas.** Mejor perder la venta que un cliente quemado."
+    },
+    {
+      "key": "noche-obj-vj",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "ya_tengo_proveedor",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "title": "«Ya tenemos pantallas y un VJ»",
+      "body": "«Y mejor, porque no lo sustituimos: nos metemos por encima de sus visuales, en un lateral, y él sigue con lo suyo»."
+    },
+    {
+      "key": "noche-obj-gano",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "no_lo_necesito",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dueno-oficina"
+      ],
+      "title": "«¿Y qué gano yo con esto?»",
+      "body": "No contestes con dinero de peticiones. Contesta con La Biblioteca y la promotora que les trajo una fiesta."
+    },
+    {
+      "key": "noche-obj-caro",
+      "module_key": "pricing",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "precio",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "title": "«Es caro»",
+      "body": "No bajes de 99 €. Cambia de línea: los dos primeros meses sin permanencia, y que lo vea funcionar."
+    },
+    {
+      "key": "noche-nombres",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "title": "Casos que se pueden contar con nombre",
+      "body": "Solo La Biblioteca, El Andén y Batiq están autorizados. El resto, sin nombre.\n\nDinámicas vistas funcionando: mesas numeradas mandándose mensajes (Torremolinos), chupito a cambio de subir fotos al álbum, sorteos por participación."
+    },
+    {
+      "key": "noche-pendiente",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "audience": "team",
+      "title": "Pendiente en locales",
+      "body": "- **Propinas con DJ:** si las peticiones son 100 % del DJ, el dueño no ve ese ingreso. Recomendado: por defecto al DJ; sin DJ, al local; con DJ, el modelo de La Biblioteca. Lo decide Cristian.\n- **Techos de interacciones reales:** sacarlos de los datos, no estimarlos.\n- **Probar el teléfono y medirlo.**\n- **Vídeo corto de la pantalla funcionando.**"
     }
   ]
 }
