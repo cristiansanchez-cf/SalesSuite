@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { heroPitchSchema } from './hero-pitch/schema';
 import { tabsShowcaseSchema } from './tabs-showcase/schema';
 import { pricingCardSchema } from './pricing-card/schema';
+import { liveScreenSchema } from './live-screen/schema';
 
 /**
  * Registry build-time: block_type → { schema de props, componente (lazy) }.
@@ -25,6 +26,12 @@ export const REGISTRY = {
     schema: pricingCardSchema,
     example: { title: 'Propuesta para {company}', features: ['Incluido'] },
     load: () => import('./pricing-card/Component.astro'),
+  },
+  'live-screen': {
+    label: 'Pantalla en vivo (interactiva)',
+    schema: liveScreenSchema,
+    example: { title: 'Así se ve en tu local', scenes: [{ scene: 'club.idle', label: 'Reclamo', says: 'Lo que se ve el 90 % de la noche: el QR.' }] },
+    load: () => import('./live-screen/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

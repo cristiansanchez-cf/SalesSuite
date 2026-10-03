@@ -1,0 +1,411 @@
+/*
+ * Enjoy Screen: carcasa real de la pantalla del local (kit de Enjoy, «enjoy-screen-ui-kit.html»), VERBATIM salvo:
+ *  - variables con prefijo --es- (las del dossier, --color-*, son tripletas RGB y chocaban);
+ *  - tokens en .es-stage en vez de :root.
+ * No cambiar cqw/cqh/cqmin por vw, ni contain/cover de fotos/carátulas, ni la paleta, ni la esquina del QR (ver BRIEF).
+ */
+/* ==========================================================================
+   3. TOKENS DE MARCA — copiados tal cual del producto
+   ========================================================================== */
+.es-stage, .es-scope {
+  --es-persianRose-500:#ff27bb;
+  --es-chartreuse-400:#e1ff00;
+  --es-peach-400:#fb873c;
+  --es-bunker-900:#363b44;
+  --es-bunker-950:#17191d;
+
+  --es-color-primary:   #ff27bb;   /* rosa Enjoy — acento principal */
+  --es-color-secondary: #e1ff00;   /* chartreuse — "gratis", quién la pide */
+  --es-color-accent:    #fb873c;   /* melocotón — tier más alto */
+
+  --es-color-bg:        #17191d;
+  --es-color-bg-alt:    #363b44;
+  --es-color-ink:       #08030c;   /* negro de fondo de la pantalla */
+
+  --es-color-text-muted:#a7a5a9;
+  --es-color-border:    rgba(255,255,255,.16);
+
+  --es-radius-md: 12px;
+  --es-radius-lg: 16px;
+  --es-radius-pill: 9999px;
+  --es-ease: cubic-bezier(.4,0,.2,1);
+
+  --es-font: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ==========================================================================
+   4. LA PANTALLA
+   --------------------------------------------------------------------------
+   `.es-stage` es el lienzo. Lleva `container-type: size`, así que TODO el
+   interior se dimensiona en `cqw` (1% del ancho de la pantalla) en vez de en
+   vw. Traducción: la carcasa se ve idéntica tanto a 1920px como dentro de una
+   tarjeta de 320px del dossier. Nunca cambies esto por vw.
+   ========================================================================== */
+.es-stage {
+  position: relative;
+  container-type: size;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: var(--es-color-ink);
+  color: #fff;
+  font-family: var(--es-font);
+  border-radius: 10px;
+  isolation: isolate;
+}
+.es-stage * { box-sizing: border-box; }
+.es-layer { position: absolute; inset: 0; pointer-events: none; }
+
+/* --- 4.1 Fondo modo CLUB: degradado estático (el "lite" del producto) ----- */
+.es-bg-club {
+  background:
+    radial-gradient(closest-side at 22% 28%, rgba(255,39,187,.13), transparent 72%),
+    radial-gradient(closest-side at 82% 74%, rgba(225,255,0,.07), transparent 72%),
+    radial-gradient(closest-side at 55% 52%, rgba(251,135,60,.08), transparent 74%),
+    #08030c;
+}
+/* Efectos completos: manchas de color que orbitan + partículas. Solo en PC
+   potente; en TV flojas el producto lo deja apagado por defecto. */
+.es-bg-club.fx { background: #08030c; }
+.es-blob-anchor { position: absolute; top: 50%; left: 50%; }
+.es-blob {
+  position: absolute; transform: translate(-50%,-50%);
+  width: 60cqmin; height: 60cqmin; border-radius: 50%;
+  filter: blur(7cqmin);
+}
+.es-blob--es-orange { background: radial-gradient(circle, rgba(251,135,60,.14) 0%, rgba(251,135,60,0) 72%); animation: es-breathe 7s ease-in-out infinite alternate; }
+.es-blob--es-pink   { background: radial-gradient(circle, rgba(255,39,187,.17) 0%, rgba(255,39,187,0) 72%); }
+.es-blob--es-yellow { background: radial-gradient(circle, rgba(225,255,0,.11) 0%, rgba(225,255,0,0) 72%); }
+.es-orbit        { animation: es-orbit 40s linear infinite; }
+.es-orbit.delay  { animation-delay: -20s; }
+.es-particles span {
+  position: absolute; bottom: -2%; background: #fff; border-radius: 50%;
+  animation: es-rise linear infinite;
+}
+@keyframes es-orbit {
+  0%{transform:translate(30cqw,-32cqh)} 25%{transform:translate(30cqw,32cqh)}
+  50%{transform:translate(-30cqw,32cqh)} 75%{transform:translate(-30cqw,-32cqh)}
+  100%{transform:translate(30cqw,-32cqh)}
+}
+@keyframes es-breathe { from{opacity:.7} to{opacity:1} }
+@keyframes es-rise { from{transform:translate(0,0)} to{transform:translate(var(--es-drift),-112cqh)} }
+
+/* --- 4.2 Fondo modo TRANSPARENTE ----------------------------------------
+   En el local NO hay fondo: la pantalla sale por encima de los visuales del
+   local (NDI / Resolume / captura). Aquí pintamos el damero de "transparente"
+   igual que hace el producto mientras configuras, para que se entienda. */
+.es-bg-tp {
+  background-color: #2a2a2a;
+  background-image:
+    linear-gradient(45deg,#333 25%,transparent 25%), linear-gradient(-45deg,#333 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#333 75%), linear-gradient(-45deg,transparent 75%,#333 75%);
+  background-size: 6cqw 6cqw;
+  background-position: 0 0, 0 3cqw, 3cqw -3cqw, -3cqw 0;
+}
+/* Vídeo de fondo del local (la playlist) */
+.es-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.es-bg-video.contain { object-fit: contain; }
+/* Marcador cuando aún no has puesto vídeos */
+.es-bg-fake {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255,39,187,.5), transparent 55%),
+    radial-gradient(circle at 70% 60%, rgba(225,255,0,.35), transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(80,0,180,.6), transparent 70%), #120020;
+  animation: es-fake-visual 9s ease-in-out infinite alternate;
+}
+@keyframes es-fake-visual { from{filter:hue-rotate(0) saturate(1)} to{filter:hue-rotate(60deg) saturate(1.5)} }
+.es-bg-fake::after {
+  content: 'VÍDEO DEL LOCAL'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3cqw; font-weight: 700; letter-spacing: .3em; color: rgba(255,255,255,.3);
+}
+
+/* --- 4.3 Barra superior: local · DJ en vivo · marca ---------------------- */
+.es-topbar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 6;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 1cqw; padding: 1.5cqw 1.8cqw;
+}
+.es-venue {
+  justify-self: start; font-size: 1.1cqw; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.es-venue-logo { justify-self: start; height: 3cqw; width: auto; object-fit: contain; }
+.es-dj {
+  justify-self: center; display: inline-flex; align-items: center; gap: .7cqw;
+  padding: .5cqw 1.1cqw .55cqw; background: rgba(15,10,18,.86);
+  border: 1px solid rgba(255,39,187,.35); border-radius: var(--es-radius-pill);
+  box-shadow: 0 0 2.2cqw rgba(255,39,187,.3);
+}
+.es-dj-dot {
+  width: .5cqw; height: .5cqw; background: var(--es-color-primary); border-radius: 50%;
+  box-shadow: 0 0 .8cqw var(--es-color-primary); animation: es-pulse 1.6s ease-in-out infinite;
+}
+.es-dj-stack { display: inline-flex; flex-direction: column; gap: 1px; }
+.es-dj-tag  { font-size: .7cqw; font-weight: 700; letter-spacing: .14em; color: var(--es-color-primary); line-height: 1; }
+.es-dj-name { font-size: 1.1cqw; font-weight: 700; letter-spacing: .06em; line-height: 1.05; text-transform: uppercase; }
+.es-brand { justify-self: end; font-size: 1.25cqw; font-weight: 700; letter-spacing: -.02em; opacity: .95; font-style: italic; }
+@keyframes es-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+/* --- 4.4 IDLE CLUB: el reclamo. CTA rotatorio + QR gigante -------------- */
+.es-idle {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3.2cqw; padding: 4cqw 2.4cqw;
+}
+.es-cta { text-align: center; }
+.es-cta-title { margin: 0; font-weight: 700; font-size: 6cqw; line-height: 1.1; animation: es-cta-in .5s var(--es-ease) both; }
+.es-cta-sub   { margin: 1.6cqw 0 0; font-style: italic; color: var(--es-color-text-muted); font-size: 2.4cqw; animation: es-cta-in .5s var(--es-ease) both 60ms; }
+.es-qr-box { background: #fff; padding: 1.2cqw; border-radius: var(--es-radius-lg); line-height: 0; }
+.es-qr-box img, .es-qr-box canvas { width: 14cqw; height: 14cqw; display: block; }
+@keyframes es-cta-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* Chip "GRATIS": discreto a propósito, no un cartelón */
+.es-free {
+  display: inline-flex; align-items: center; padding: .25cqw .8cqw;
+  background: rgba(225,255,0,.08); color: var(--es-color-secondary);
+  border: 1px solid rgba(225,255,0,.5); font-weight: 600; font-size: 1cqw;
+  letter-spacing: .12em; border-radius: var(--es-radius-pill);
+}
+
+/* --- 4.5 IDLE TRANSPARENTE: el QR se vuelve tarjeta colocable ------------ */
+.es-qr-card {
+  position: absolute; z-index: 6; display: flex; align-items: center; gap: 1.2cqw;
+  padding: 1.1cqw 1.3cqw; background: rgba(8,3,12,.82);
+  border: 1px solid var(--es-color-border); border-radius: var(--es-radius-lg);
+  box-shadow: 0 1.2cqw 3.4cqw rgba(0,0,0,.55);
+  transition: opacity .6s var(--es-ease);
+}
+.es-qr-card.hidden { opacity: 0; }
+.es-qr-card-text { display: flex; flex-direction: column; align-items: flex-start; gap: .3cqw; }
+.es-qr-card-title { font-size: 1.7cqw; font-weight: 700; white-space: nowrap; line-height: 1.1; }
+.es-qr-card-sub   { font-size: 1.1cqw; font-style: italic; color: var(--es-color-text-muted); white-space: nowrap; }
+.es-qr-card-arrow { flex-shrink: 0; width: 1.8cqw; height: 1.8cqw; color: var(--es-color-secondary); display: inline-flex; animation: es-nudge 1.6s var(--es-ease) infinite; }
+.es-qr-card-box { background: #fff; padding: .5cqw; border-radius: var(--es-radius-md); line-height: 0; flex-shrink: 0; }
+.es-qr-card-box img, .es-qr-card-box canvas { width: 9cqw; height: 9cqw; display: block; }
+@keyframes es-nudge { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+
+/* --- 4.6 PETICIÓN A PANTALLA COMPLETA ------------------------------------
+   Es el momento estrella: la foto o la carátula ocupan los 100 pulgadas.
+   · Carátula de canción → `cover` (llena, recorta): queda cinematográfica.
+   · Foto de un cliente  → `contain` (entera sobre negro): nunca le cortamos
+     la cara a nadie. Esta distinción es deliberada, no la cambies. */
+.es-np { position: absolute; inset: 0; background: #000; }
+.es-np-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.es-np-img.is-photo { object-fit: contain; background: #000; }
+.es-np.fx .es-np-img:not(.is-photo) { animation: es-kenburns 24s ease-out both; }
+@keyframes es-kenburns { from{transform:scale(1)} to{transform:scale(1.08)} }
+.es-np-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(8,3,12,.55) 0%, rgba(8,3,12,0) 22%, rgba(8,3,12,0) 50%, rgba(8,3,12,.88) 100%);
+}
+.es-np-bottom {
+  position: absolute; z-index: 4; left: 1.8cqw; bottom: 6cqh;
+  max-width: min(70%, calc(100% - 16cqw));
+  display: flex; flex-direction: column; gap: .7cqw;
+  animation: es-card-in .6s cubic-bezier(.16,1,.3,1) backwards;
+}
+.es-song-name   { margin: 0; font-size: 3cqw; font-weight: 700; line-height: 1.05; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+.es-song-artist { margin: 0; font-size: 1.3cqw; font-weight: 300; color: #f6f6f6; text-shadow: 0 2px 10px rgba(0,0,0,.55); }
+.es-sep { width: 3cqw; height: .2cqw; background: rgba(255,255,255,.45); border-radius: 2px; }
+.es-np-text { margin: 0; font-size: 2cqw; font-weight: 600; line-height: 1.2; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+
+/* Tarjeta centrada: dedicatoria sin imagen */
+.es-msg-card {
+  position: absolute; z-index: 4; left: 12%; right: 12%; top: 50%; transform: translateY(-50%);
+  padding: 2cqw 2.6cqw; background: rgba(20,8,32,.9);
+  border: 1px solid rgba(255,39,187,.85); border-left: .4cqw solid var(--es-color-primary);
+  border-radius: 1.8cqw; box-shadow: 0 0 6cqw rgba(255,39,187,.1), 0 4cqw 8cqw rgba(0,0,0,.5);
+  display: flex; flex-direction: column; gap: 1.2cqw;
+  animation: es-card-in .6s cubic-bezier(.16,1,.3,1) backwards;
+}
+.es-msg-text { margin: 0; font-size: 2.4cqw; font-weight: 700; line-height: 1.3; }
+.es-np-glow { position: absolute; inset: 0; overflow: hidden; }
+.es-np-glow span { position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; filter: blur(9cqmin); }
+.es-np-glow .g1 { top:-28%; left:-28%; background: radial-gradient(circle,#ff27bb 0%, rgba(255,39,187,0) 62%); opacity:.34; }
+.es-np-glow .g2 { top:26%; left:58%; background: radial-gradient(circle,#8b2ff8 0%, rgba(139,47,248,0) 62%); opacity:.24; }
+.es-np-nocover {
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%, rgba(180,70,220,.25) 0%, rgba(180,70,220,0) 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(255,39,187,.18) 0%, rgba(255,39,187,0) 60%),
+    linear-gradient(180deg,#0b0318 0%,#06020e 50%,#08030c 100%);
+}
+@keyframes es-card-in { from{opacity:0;transform:translateY(16px) scale(.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+/* Chapa de identidad de quien pide */
+.es-badge {
+  display: inline-flex; align-items: center; gap: .7cqw; width: max-content; max-width: 100%;
+  padding: .35cqw 1cqw .35cqw .35cqw; background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14); border-radius: var(--es-radius-pill);
+}
+.es-badge.over { background: rgba(8,3,12,.62); }
+.es-badge-av {
+  width: 2cqw; height: 2cqw; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--es-color-primary), #7c00ff);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .8cqw; font-weight: 700; color: #fff;
+}
+.es-badge-av img { width: 100%; height: 100%; object-fit: cover; }
+.es-badge-name { font-size: 1.1cqw; font-weight: 700; color: rgba(255,255,255,.92); white-space: nowrap; }
+
+/* Importe pagado — el color sube de tramo: chartreuse → rosa → melocotón */
+.es-amount {
+  align-self: flex-start; display: inline-flex; align-items: center;
+  padding: .4cqw 1cqw; border: .15cqw solid currentColor; border-radius: var(--es-radius-pill);
+  background: transparent; font-size: 1.3cqw; font-weight: 700; white-space: nowrap;
+}
+.tier-highlight .es-amount { color: var(--es-color-secondary); }
+.tier-premium   .es-amount { color: var(--es-color-primary); }
+.tier-platinum  .es-amount { color: var(--es-color-accent); box-shadow: 0 0 1.6cqw rgba(251,135,60,.45); }
+
+/* QR pequeño: SIEMPRE en la misma esquina, en todos los estados.
+   Es intencionado: el cliente aprende dónde mirar. */
+.es-qr-mini {
+  position: absolute; z-index: 5; right: 1.8cqw; bottom: 6cqh;
+  display: flex; flex-direction: column; align-items: flex-end; gap: .6cqw;
+}
+.es-qr-mini-card { background: #fff; border-radius: .7cqw; padding: .4cqw; box-shadow: 0 .6cqw 1.8cqw rgba(0,0,0,.55); line-height: 0; }
+.es-qr-mini-card img, .es-qr-mini-card canvas { width: 6.5cqw; height: 6.5cqw; display: block; }
+.es-qr-label {
+  display: inline-flex; align-items: center; gap: .5cqw; font-size: .85cqw; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+  padding: .55cqw 1cqw; background: rgba(0,0,0,.6);
+  border: 1px solid rgba(255,255,255,.18); border-radius: var(--es-radius-pill);
+}
+.es-qr-label.pink { background: rgba(255,39,187,.85); border-color: transparent; box-shadow: 0 .4cqw 1.2cqw rgba(255,39,187,.4); }
+
+/* Barra de tiempo: cuánto le queda en pantalla. Los tramos altos duran más. */
+.es-timebar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; height: .45cqh; background: rgba(255,255,255,.1); }
+.es-timebar > span {
+  display: block; height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--es-color-primary), var(--es-color-accent));
+  animation: es-time-grow linear forwards;
+}
+@keyframes es-time-grow { from{width:0%} to{width:100%} }
+
+/* --- 4.7 TARJETA COMPACTA: la misma petición, pequeña -------------------
+   Se usa en modo transparente (para no tapar los visuales del local) y en
+   club cuando el local apaga las carátulas. Se ancla a una de las 9 celdas. */
+.es-npc {
+  position: absolute; z-index: 6; max-width: min(92%, 760px);
+  display: flex; align-items: center; gap: 1.1cqw;
+  padding: 1cqw 1.2cqw 1.2cqw; background: rgba(8,3,12,.86);
+  border: 1px solid var(--es-color-border); border-radius: var(--es-radius-lg);
+  box-shadow: 0 1.4cqw 3.8cqw rgba(0,0,0,.6); overflow: hidden;
+  animation: es-fade-in .4s var(--es-ease) both;
+}
+.es-npc.card  { border-color: rgba(255,39,187,.4); }
+.es-npc.toast { max-width: 30cqw; align-items: flex-start; }
+.es-npc.toast.wide { max-width: 60cqw; }
+.es-npc-thumb { width: 4cqw; height: 4cqw; border-radius: .7cqw; object-fit: cover; flex-shrink: 0; }
+.es-npc-cover { width: 12cqw; height: 12cqw; border-radius: var(--es-radius-md); object-fit: cover; flex-shrink: 0; }
+.es-npc-cover.sm { width: 6cqw; height: 6cqw; }
+.es-npc-cover.photo { object-fit: contain; background: #000; }
+.es-npc-body { min-width: 0; display: flex; flex-direction: column; gap: .6cqw; }
+.es-npc-song { margin: 0; font-size: 1.5cqw; font-weight: 700; line-height: 1.15; }
+.es-npc-artist { margin-left: .35em; color: var(--es-color-text-muted); font-weight: 300; }
+.es-npc-req { margin: 0; font-size: 1.1cqw; color: var(--es-color-secondary); line-height: 1.25; }
+.es-npc-ded { margin: 0; font-size: 1.4cqw; font-weight: 600; line-height: 1.25; }
+.es-npc-bar { position: absolute; left: 0; right: 0; bottom: 0; height: .4cqh; background: rgba(255,255,255,.1); }
+.es-npc-bar > span {
+  display: block; height: 100%; width: 100%; transform-origin: left center;
+  background: linear-gradient(90deg, var(--es-color-primary), var(--es-color-accent));
+  animation: es-shrink linear forwards;
+}
+.es-npc.tier-highlight { border-color: rgba(225,255,0,.5); }
+.es-npc.tier-premium   { border-color: rgba(255,39,187,.6); }
+.es-npc.tier-platinum  { background: #08030c; border-color: var(--es-color-accent); box-shadow: 0 0 3.4cqw rgba(251,135,60,.42), 0 1.4cqw 4cqw rgba(0,0,0,.7); }
+.es-plat-avatar {
+  flex-shrink: 0; width: 6cqw; height: 6cqw; border-radius: 50%; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; background: #000;
+  border: 2px solid var(--es-color-accent); box-shadow: 0 0 2.2cqw rgba(251,135,60,.45);
+}
+.es-plat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.es-plat-name { font-size: 2.6cqw; font-weight: 700; line-height: 1.05; text-shadow: 0 0 2.2cqw rgba(251,135,60,.5); }
+@keyframes es-fade-in { from{opacity:0} to{opacity:1} }
+@keyframes es-shrink { from{transform:scaleX(1)} to{transform:scaleX(0)} }
+
+/* --- 4.8 LATERAL "MÁS PEDIDAS" + avisos de petición nueva ---------------
+   La barra entra sola cada ~30s durante 8s y se va. Es el motor de la puja:
+   el cliente ve que su canción va 2ª y paga por adelantarla. */
+.es-ranking {
+  position: absolute; top: 0; right: 0; width: 26cqw; height: 100%;
+  background: rgba(23,25,29,.97); border-left: 1px solid var(--es-color-border); z-index: 15;
+  display: flex; flex-direction: column; padding: 1.8cqw 1.5cqw;
+  gap: .7cqw; transform: translateX(100%); transition: transform .6s var(--es-ease);
+}
+.es-ranking.open { transform: translateX(0); }
+.es-rank-head { display: flex; align-items: center; gap: .7cqw; }
+.es-rank-head h4 { margin: 0; font-size: 1.8cqw; font-weight: 700; }
+.es-rank-sub { margin: 0 0 .6cqw; font-size: 1cqw; color: var(--es-color-text-muted); }
+.es-rank-list { display: flex; flex-direction: column; gap: .7cqw; flex: 1; min-height: 0; overflow: hidden; }
+.es-rank-card {
+  display: grid; grid-template-columns: 1.6cqw 3.4cqw 1fr auto; gap: .8cqw; align-items: center;
+  padding: .7cqw; border-radius: .7cqw; background: rgba(35,31,39,.5);
+  border: 1px solid rgba(255,255,255,.06);
+  opacity: 0; transform: translateX(20px); transition: opacity .4s ease var(--es-d), transform .4s ease var(--es-d);
+}
+.es-ranking.open .es-rank-card { opacity: 1; transform: translateX(0); }
+.es-rank-card.top { background: rgba(255,39,187,.1); border-color: rgba(255,39,187,.3); }
+.es-rank-num { font-size: 1.5cqw; font-weight: 700; text-align: center; color: var(--es-color-text-muted); }
+.es-rank-card.top .es-rank-num { color: var(--es-color-primary); }
+.es-rank-cover { width: 3.4cqw; height: 3.4cqw; border-radius: .6cqw; object-fit: cover; background: linear-gradient(135deg, var(--es-color-primary), #7c00ff); }
+.es-rank-info { display: flex; flex-direction: column; gap: .2cqw; min-width: 0; }
+.es-rank-song { font-size: 1.35cqw; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.es-rank-artist { font-size: 1.05cqw; font-weight: 300; color: var(--es-color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.es-rank-bar { height: .4cqh; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; margin-top: .4cqw; }
+.es-rank-fill { height: 100%; width: 0; background: rgba(255,255,255,.4); border-radius: 2px; transition: width .8s ease .4s; }
+.es-ranking.open .es-rank-fill { width: var(--es-w); }
+.es-rank-card.top .es-rank-fill { background: var(--es-color-primary); }
+.es-rank-votes { font-size: 1.5cqw; font-weight: 700; color: var(--es-color-text-muted); }
+.es-rank-card.top .es-rank-votes { color: var(--es-color-primary); }
+
+/* Aviso de petición nueva (abajo a la derecha, se aparta si abre el lateral) */
+.es-toasts {
+  position: absolute; bottom: 1.6cqw; right: 1.6cqw; z-index: 12;
+  display: flex; flex-direction: column; gap: 1cqw; align-items: flex-end;
+  transition: right .5s var(--es-ease), bottom .5s var(--es-ease);
+}
+.es-toasts.shift  { right: calc(26cqw + 1.6cqw); }
+.es-toasts.raised { bottom: 23cqh; }
+.es-toast {
+  position: relative; display: flex; align-items: center; gap: 1cqw; width: 26cqw;
+  padding: 1.1cqw 1.3cqw 1.2cqw; background: var(--es-color-bg-alt);
+  border: 1px solid rgba(255,39,187,.3); border-radius: 1.1cqw;
+  box-shadow: 0 1.4cqw 3.2cqw rgba(0,0,0,.7); overflow: hidden;
+  animation: es-toast-in .28s var(--es-ease) both;
+}
+.es-toast-thumb { width: 3.6cqw; height: 3.6cqw; border-radius: .7cqw; object-fit: cover; flex-shrink: 0; background: linear-gradient(135deg, var(--es-color-primary), #7c00ff); }
+.es-toast-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .3cqw; }
+.es-toast-title { margin: 0; font-size: 1.4cqw; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+.es-toast-title span { color: var(--es-color-text-muted); font-weight: 300; }
+.es-toast-cta { margin: 0; font-size: 1cqw; color: var(--es-color-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.es-toast-bar { position: absolute; bottom: 0; left: 1.3cqw; right: 1.3cqw; height: .35cqh; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; }
+.es-toast-bar > span { display: block; height: 100%; width: 100%; background: var(--es-color-primary); transform-origin: left center; animation: es-shrink linear forwards; }
+@keyframes es-toast-in { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+
+/* --- 4.9 Aviso de precio --------------------------------------------------
+   Sube el precio cuando hay cola; baja cuando no. El cartel lo anuncia solo. */
+.es-price {
+  position: absolute; z-index: 18; max-width: 92%;
+  padding: .8cqw 1.6cqw; background: rgba(8,3,12,.72); color: var(--es-color-secondary);
+  border: .12cqw solid var(--es-color-secondary); font-weight: 700; font-size: 1.3cqw;
+  border-radius: var(--es-radius-pill); box-shadow: 0 1cqw 3cqw rgba(0,0,0,.45); white-space: nowrap;
+}
+.es-price.down { color: #8ef0a0; border-color: #8ef0a0; }
+.es-price.top  { top: 6cqh; left: 50%; animation: es-price-flash 7s var(--es-ease) forwards; }
+.es-price.positioned { padding: .5cqw 1cqw; font-size: 1cqw; animation: es-fade-hold 7s var(--es-ease) forwards; }
+@keyframes es-price-flash {
+  0%{opacity:0;transform:translate(-50%,-16px)} 5%{opacity:1;transform:translate(-50%,0)}
+  88%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0;transform:translate(-50%,-8px)}
+}
+@keyframes es-fade-hold { 0%{opacity:0} 5%{opacity:1} 88%{opacity:1} 100%{opacity:0} }
+
+/* --- 4.10 Marcadores cuando aún no hay assets --------------------------- */
+.es-ph {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background: linear-gradient(135deg, #2a0b3d, #0d0318 60%, #1a0520);
+  color: rgba(255,255,255,.42); font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; font-size: 1cqw; padding: 1cqw;
+}
+.es-np-img.es-ph { font-size: 2.4cqw; }

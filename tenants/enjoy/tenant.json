@@ -94,6 +94,70 @@
   "admins": [],
   "catalog": [
     {
+      "key": "pantalla-en-vivo",
+      "block_type": "live-screen",
+      "name": "Pantalla en vivo",
+      "description": "La pantalla del local, interactiva: reclamo, canción, foto, dedicatoria y modo transparente.",
+      "default_price": null,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Pantalla en vivo",
+        "title": "Así se verá en {company}",
+        "lede": "Toca cada pantalla: es la misma que se proyecta en el local.",
+        "venueName": "{company}",
+        "djName": "DJ ARIA",
+        "qrImage": "asset:img/tabs/qr.webp",
+        "photos": [
+          "asset:img/live/background.webp"
+        ],
+        "phone": {
+          "song": "asset:img/live/request-mobile-2.webp",
+          "photo": "asset:img/live/kisscam-mobile.webp",
+          "message": "asset:img/live/kisscam-mobile.webp"
+        },
+        "scenes": [
+          {
+            "scene": "club.idle",
+            "label": "Reclamo",
+            "says": "Lo que se ve el 90 % de la noche: un QR gigante. El anzuelo: sin esto no entra nadie."
+          },
+          {
+            "scene": "club.song",
+            "label": "Canción",
+            "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
+          },
+          {
+            "scene": "club.photo",
+            "label": "Foto",
+            "says": "Su foto en grande y entera (nunca se recorta una cara). Es lo que más se comparte.",
+            "amount": 20
+          },
+          {
+            "scene": "club.message",
+            "label": "Dedicatoria",
+            "says": "Un mensaje delante de toda la sala. Se cobra aparte y funciona solo."
+          },
+          {
+            "scene": "club.song",
+            "label": "Platino · 100 €",
+            "says": "Cuanto más paga, más grande sale: el tramo Platino se ve desde la otra punta del local.",
+            "amount": 100
+          },
+          {
+            "scene": "tp.idle",
+            "label": "Encima de tus visuales",
+            "says": "¿Ya tienes visuales y VJ? Nos ponemos encima sin tocarlos: el QR va en una tarjeta."
+          },
+          {
+            "scene": "tp.photo",
+            "label": "Foto en tarjeta",
+            "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
+          }
+        ],
+        "autoplay": true
+      }
+    },
+    {
       "key": "tabs-experiencias",
       "block_type": "tabs-showcase",
       "name": "Experiencias en directo",
@@ -265,6 +329,11 @@
       "sales_cycle": "Días: en persona, miércoles por la mañana, y prueba el mismo día",
       "modules": [
         {
+          "module_key": "pantalla-en-vivo",
+          "priority": 1,
+          "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
+        },
+        {
           "module_key": "tabs-experiencias",
           "priority": 1,
           "fit": "Canciones con menú cerrado, mensajes y fotos a pantalla, álbum descargable."
@@ -425,6 +494,11 @@
       "sales_cycle": "Días; se pierden en el seguimiento",
       "modules": [
         {
+          "module_key": "pantalla-en-vivo",
+          "priority": 1,
+          "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
+        },
+        {
           "module_key": "tabs-experiencias",
           "priority": 1,
           "fit": "Fotos y mensajes del público en pantalla, temporizadores y dinámicas; contenido para sus redes."
@@ -472,6 +546,11 @@
       "deal_size": "600–2.500 € por fecha (supuesto, sin validar)",
       "sales_cycle": "Días con charangas; meses con promotores y marcas",
       "modules": [
+        {
+          "module_key": "pantalla-en-vivo",
+          "priority": 1,
+          "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
+        },
         {
           "module_key": "tabs-experiencias",
           "priority": 1,
@@ -679,6 +758,11 @@
       "deal_size": "3.000–20.000 € (ejemplo)",
       "sales_cycle": "3–9 meses (se cierra antes de la temporada)",
       "modules": [
+        {
+          "module_key": "pantalla-en-vivo",
+          "priority": 1,
+          "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
+        },
         {
           "module_key": "tabs-experiencias",
           "priority": 1,

@@ -1,0 +1,87 @@
+---
+/**
+ * live-screen ← carcasa real de la pantalla del local (kit de Enjoy) + el móvil que escanea el QR y pide.
+ * Pensado para enseñarlo en la tablet: el vendedor toca cada pantalla y cuenta qué vende; si no toca, va solo.
+ * El motor (engine.js) es el del producto, por instancia; los assets salen de las props (los del espacio).
+ */
+import Section from '~/components/Section.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { LiveScreenProps } from './schema';
+import './engine.css';
+
+type Props = LiveScreenProps & ModuleBaseProps;
+const { eyebrow, title, lede, venueName, djName, qrImage, photos, covers, phone, scenes, autoplay, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const config = {
+  assets: { venueName: t(venueName).toUpperCase().slice(0, 40), venueLogo: '', djName, showEnjoyLogo: true, qrImage: qrImage ?? '', photos, covers, avatars: [], videos: [] },
+  phone, autoplay,
+  scenes: scenes.map((s) => ({ scene: s.scene, amount: s.amount ?? 0 })),
+};
+---
+<div data-module="live-screen" class="live-screen">
+  <Section tone="surface">
+    {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+    {lede && <p class="mt-3 max-w-2xl text-lg text-muted">{t(lede)}</p>}
+
+    <div class="live-screen__frame mt-8">
+      <div class="live-screen__stage" data-stage aria-label={t(title)} role="img"></div>
+      <div class="live-screen__phone" data-phone aria-hidden="true">
+        <div class="live-screen__phone-screen">
+          <div class="live-screen__scan" data-phone-scan><span class="live-screen__scan-line"></span></div>
+          <img data-phone-img alt="" loading="lazy" decoding="async" />
+          <span class="live-screen__sent" data-phone-sent>✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="live-screen__controls mt-5" role="tablist" aria-label={t(title)}>
+      {scenes.map((s, i) => (
+        <button type="button" role="tab" class="live-screen__chip" data-scene-btn={i} aria-selected={i === 0 ? 'true' : 'false'}>{s.label}</button>
+      ))}
+      {autoplay && <button type="button" class="live-screen__chip live-screen__chip--play" data-play aria-pressed="true">▶︎ Solo</button>}
+    </div>
+    <p class="live-screen__says mt-3 min-h-[3.2em] max-w-3xl text-lg" data-says aria-live="polite">{scenes[0].says}</p>
+    <template data-says-list>{JSON.stringify(scenes.map((s) => s.says))}</template>
+    <script type="application/json" data-config set:html={JSON.stringify(config).replace(/</g, '\\u003c')}></script>
+  </Section>
+</div>
+
+<style>
+  .live-screen__frame { position: relative; }
+  .live-screen__stage { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #08030c; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+  /* El móvil del cliente: pequeño, abajo a la derecha, como en la web. */
+  .live-screen__phone {
+    position: absolute; right: 2.5%; bottom: 4%; width: clamp(46px, 8.5%, 110px); aspect-ratio: 9 / 19.5;
+    border-radius: 18% / 8.5%; background: #111; padding: 3.5%; box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12);
+    transform: translateY(25%) rotate(8deg); opacity: 0; transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .4s ease; pointer-events: none; z-index: 2;
+  }
+  .live-screen__phone.is-in { transform: translateY(0) rotate(-4deg); opacity: 1; }
+  /* Las capturas del móvil ya traen su marco: al enseñarlas, fuera el nuestro. */
+  .live-screen__phone.is-app { background: transparent; box-shadow: none; padding: 0; width: clamp(60px, 11%, 140px); }
+  .live-screen__phone.is-app .live-screen__phone-screen { background: transparent; border-radius: 0; overflow: visible; }
+  .live-screen__phone-screen { position: relative; width: 100%; height: 100%; border-radius: 14% / 6.5%; overflow: hidden; background: #08030c; }
+  .live-screen__phone-screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .3s ease; filter: drop-shadow(0 14px 28px rgba(0,0,0,.6)); }
+  .live-screen__phone.is-app img { opacity: 1; }
+  .live-screen__scan { position: absolute; inset: 18% 12%; border: 2px solid rgba(255,255,255,.85); border-radius: 10%; opacity: 0; transition: opacity .25s; }
+  .live-screen__phone.is-scan .live-screen__scan { opacity: 1; }
+  .live-screen__scan-line { position: absolute; left: 6%; right: 6%; height: 2px; background: #ff27bb; box-shadow: 0 0 10px #ff27bb; top: 10%; }
+  .live-screen__phone.is-scan .live-screen__scan-line { animation: ls-scan 0.9s ease-in-out infinite alternate; }
+  @keyframes ls-scan { to { top: 88%; } }
+  .live-screen__sent { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 38%; aspect-ratio: 1; border-radius: 999px; display: grid; place-items: center;
+    background: #e1ff00; color: #111; font-weight: 800; font-size: clamp(14px, 2vw, 22px); scale: 0; transition: scale .3s cubic-bezier(.2,1.6,.4,1); }
+  .live-screen__phone.is-sent .live-screen__sent { scale: 1; }
+  .live-screen__controls { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .live-screen__chip { min-height: 44px; border-radius: 999px; padding: .55rem 1.1rem; font-weight: 700; font-size: .95rem; border: 1px solid rgb(var(--color-line, 42 36 48)); background: rgb(var(--color-bg, 8 3 12)); color: inherit; cursor: pointer; }
+  .live-screen__chip[aria-selected='true'] { background: rgb(var(--color-primary, 255 39 187)); border-color: transparent; color: rgb(var(--color-primary-contrast, 255 255 255)); }
+  .live-screen__chip--play { opacity: .75; }
+  .live-screen__chip--play[aria-pressed='true'] { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .live-screen__phone { transition: none; } .live-screen__scan-line { animation: none !important; } }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('live-screen', init);
+</script>

@@ -137,7 +137,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
         playCount: off.filter((p) => p.moduleId === v.moduleId).length,
         tipCount: contributions.filter((c) => visibleTip(c) && c.moduleId === v.moduleId).length,
         learned: mine.has(v.moduleId),
-        cover: coverOf.get(v.versionId) ?? null,
+        // Las pantallas en vivo se enseñan en marcha (vista previa), no con una foto fija.
+        cover: v.blockType === 'live-screen' ? null : coverOf.get(v.versionId) ?? null,
       }))
       .sort((a, b) => rankOf(a.moduleId) - rankOf(b.moduleId) || b.playCount - a.playCount || a.name.localeCompare(b.name));
     const revisions = await pdb.listRevisions(s.tenantId, { since: seenAt, limit: 20 });
