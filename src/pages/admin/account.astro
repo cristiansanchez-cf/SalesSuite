@@ -3,10 +3,13 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import { demoDb } from '~/lib/data/store';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
+import { i18n, LOCALES, LOCALE_NAME, isLocale, LOCALE_COOKIE } from '~/lib/i18n';
+import { shellMessages } from '~/lib/i18n/messages/shell';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const setup = Astro.url.searchParams.get('setup') === '1';
+let { m, locale } = i18n(Astro, shellMessages);
 // Colaboradores: siempre sin contraseña (código por email).
 const showPassword = admin.session.role !== 'partner';
 
@@ -21,7 +24,17 @@ let phone = await readPhone();
 
 const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null;
 let notifyOk = false;
-if (form?.get('action') === 'notify') {
+let localeOk = false;
+if (form?.get('action') === 'locale') {
+  const l = String(form.get('locale') ?? '');
+  if (isLocale(l)) {
+    await admin.notifications.setLocale(l);
+    Astro.cookies.set(LOCALE_COOKIE, l, { path: '/', httpOnly: true, sameSite: 'lax', secure: Astro.url.protocol === 'https:', maxAge: 60 * 60 * 24 * 365 });
+    Astro.locals.locale = l;
+    ({ m, locale } = i18n(Astro, shellMessages));
+    localeOk = true;
+  }
+} else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
   notifyOk = true;
 } else if (form) {
@@ -29,54 +42,71 @@ if (form?.get('action') === 'notify') {
   phone = String(form.get('phone') ?? '').trim().slice(0, 40);
   const password = showPassword ? String(form.get('password') ?? '') : '';
   const confirm = String(form.get('confirm') ?? '');
-  if (phone && !/^\+?[\d\s().-]{6,39}$/.test(phone)) error = 'Escribe el teléfono solo con números (puedes empezar por +34)';
-  else if (password && password.length < 10) error = 'La contraseña debe tener al menos 10 caracteres';
-  else if (password !== confirm) error = 'Las contraseñas no coinciden';
+  if (phone && !/^\+?[\d\s().-]{6,39}$/.test(phone)) error = m.account.errPhone;
+  else if (password && password.length < 10) error = m.account.errShort;
+  else if (password !== confirm) error = m.account.errMismatch;
   else if (admin.mode === 'supabase' && admin.supabase) {
     const sb = admin.supabase;
     const { error: e } = await sb.auth.updateUser({ ...(password ? { password } : {}), data: { name } });
-    if (e) error = e.message.includes('should be different') ? 'La nueva contraseña debe ser distinta de la anterior' : 'No se pudo guardar';
+    if (e) error = e.message.includes('should be different') ? m.account.errSame : m.account.errSave;
     else {
       await sb.from('users').update({ display_name: name || null, phone: phone || null }).eq('id', admin.session.userId);
       if (setup) return Astro.redirect('/admin', 303);
-      ok = 'Guardado';
+      ok = m.account.saved;
     }
   } else {
     const u = demoDb().users.find((x) => x.id === admin.session.userId);
     if (u) { u.display_name = name; u.phone = phone || null; }
-    ok = password ? 'Guardado (en demo no hay contraseñas)' : 'Guardado';
+    ok = password ? m.account.savedDemo : m.account.saved;
   }
 }
 const emailOn = await admin.notifications.emailPref();
 ---
-<AdminLayout title="Mi cuenta">
-  <PageHeader eyebrow="Tu perfil" title={setup ? 'Bienvenido/a.' : 'Mi cuenta'} lede={setup ? 'Dinos cómo te llamas. La contraseña es opcional: siempre puedes entrar con un código por email.' : admin.session.email} />
+<AdminLayout title={m.account.title}>
+  <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
   <form method="post" class="co-card grid max-w-lg gap-4">
     {error && <Alert kind="rejection" title={error} />}
     {ok && <Alert kind="success" title={ok} />}
-    <label class="co-field">Nombre<input class="co-input" name="name" value={name} maxlength="80" autocomplete="name" /></label>
+    <label class="co-field">{m.account.name}<input class="co-input" name="name" value={name} maxlength="80" autocomplete="name" /></label>
     {admin.session.role !== 'partner' && (
-      <label class="co-field">Teléfono <span class="co-help">Opcional. Lo ven tus compañeros de zona para llamarte o escribirte por WhatsApp.</span>
+      <label class="co-field">{m.account.phone} <span class="co-help">{m.account.phoneHelp}</span>
         <input class="co-input" type="tel" name="phone" value={phone} maxlength="40" autocomplete="tel" placeholder="+34 600 000 000" data-testid="phone" /></label>
     )}
     {showPassword && <>
-      <label class="co-field">Contraseña <span class="co-help">Opcional, mínimo 10 caracteres</span>
+      <label class="co-field">{m.account.password} <span class="co-help">{m.account.passwordHelp}</span>
         <input class="co-input" type="password" name="password" minlength="10" autocomplete="new-password" />
       </label>
-      <label class="co-field">Repite la contraseña<input class="co-input" type="password" name="confirm" autocomplete="new-password" /></label>
+      <label class="co-field">{m.account.repeat}<input class="co-input" type="password" name="confirm" autocomplete="new-password" /></label>
     </>}
-    <button class="co-btn co-btn--primary w-fit" type="submit">Guardar</button>
+    <button class="co-btn co-btn--primary w-fit" type="submit">{m.account.save}</button>
   </form>
   {!setup && (
     <form method="post" id="avisos" class="co-card mt-6 grid max-w-lg gap-4" data-testid="notify-pref">
       <input type="hidden" name="action" value="notify" />
-      <div><p class="text-eyebrow mb-1">Avisos</p><h2 class="co-entity">Emails</h2></div>
-      {notifyOk && <Alert kind="success" title="Preferencia guardada." />}
+      <div><p class="text-eyebrow mb-1">{m.account.notifyEyebrow}</p><h2 class="co-entity">{m.account.notifyTitle}</h2></div>
+      {notifyOk && <Alert kind="success" title={m.account.notifySaved} />}
       <label class="co-check">
         <input type="checkbox" name="notifyEmail" checked={emailOn} />
-        <span>Avisarme por email<span class="co-help block">Solo cuando algo necesita tu acción (agrupado en un email) y, los lunes, un resumen de lo que sigue abierto. Lo informativo nunca llega suelto.</span></span>
+        <span>{m.account.notifyLabel}<span class="co-help block">{m.account.notifyHelp}</span></span>
       </label>
-      <button class="co-btn co-btn--ghost w-fit" type="submit">Guardar preferencia</button>
+      <button class="co-btn co-btn--ghost w-fit" type="submit">{m.account.notifySave}</button>
+    </form>
+  )}
+  {!setup && (
+    <form method="post" id="idioma" class="co-card mt-6 grid max-w-lg gap-4" data-testid="locale-pref">
+      <input type="hidden" name="action" value="locale" />
+      <h2 class="co-entity">{m.account.language}</h2>
+      {localeOk && <Alert kind="success" title={m.account.languageSaved} />}
+      <div class="grid gap-2 sm:grid-cols-2">
+        {LOCALES.map((l) => (
+          <label class="co-option !flex-row !items-center !gap-3 !p-3" lang={l}>
+            <input type="radio" name="locale" value={l} checked={l === locale} />
+            <span class="co-row-title">{LOCALE_NAME[l]}</span>
+          </label>
+        ))}
+      </div>
+      <p class="co-help">{m.account.languageHelp}</p>
+      <button class="co-btn co-btn--ghost w-fit" type="submit">{m.account.save}</button>
     </form>
   )}
 </AdminLayout>

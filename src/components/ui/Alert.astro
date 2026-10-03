@@ -4,18 +4,21 @@
  * no se parecen: el rechazo es una frase llana; el fallo lo admite y lleva su código (guía Lumbra §14).
  */
 import Icon from './Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { shellMessages } from '~/lib/i18n/messages/shell';
 type Props =
   | { kind: 'rejection'; title: string; details?: string[] }
   | { kind: 'failure'; title?: string; code: string }
   | { kind: 'success' | 'info'; title: string };
 const p = Astro.props;
+const { m } = i18n(Astro, shellMessages);
 const icon = { rejection: 'triangle-alert', failure: 'circle-x', success: 'circle-check', info: 'info' } as const;
 ---
 <div class:list={['co-alert', `co-alert--${p.kind}`]} role={p.kind === 'success' || p.kind === 'info' ? 'status' : 'alert'} data-testid={`alert-${p.kind}`}>
   <Icon name={icon[p.kind]} size={18} />
   <div class="min-w-0">
     {p.kind === 'failure'
-      ? <p><strong>{p.title ?? 'Fallo inesperado de la aplicación.'}</strong> Es un error nuestro, no tuyo. Si se repite, pásanos el código <code>{p.code}</code>.</p>
+      ? <p><strong>{p.title ?? m.ui.failureTitle}</strong> {m.ui.failureBody} <code>{p.code}</code>.</p>
       : <p class="font-semibold">{p.title}</p>}
     {p.kind === 'rejection' && p.details && p.details.length > 0 && <ul>{p.details.map((d) => <li>{d}</li>)}</ul>}
     <slot />

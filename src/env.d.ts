@@ -17,5 +17,7 @@ declare namespace App {
     forbiddenEmail?: string;
     /** Motivo explicable del 403 (p. ej. acceso de colaborador caducado). */
     forbiddenReason?: { kind: 'partner-expired'; expiresAt: string | null };
+    /** Idioma de la consola para esta petición (docs/I18N.md). */
+    locale?: import('./lib/i18n/core').Locale;
   }
 }

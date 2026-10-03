@@ -78,6 +78,8 @@ export function demoNotifyDb(): NotifyDb {
     },
     async getEmailPref(u) { return db().users.find((x) => x.id === u)?.notify_email ?? true; },
     async setEmailPref(u, on) { const x = db().users.find((y) => y.id === u); if (x) x.notify_email = on; },
+    async getLocale(u) { return db().users.find((x) => x.id === u)?.locale ?? null; },
+    async setLocale(u, l) { const x = db().users.find((y) => y.id === u); if (x) x.locale = l ?? undefined; },
   };
 }
 
@@ -92,7 +94,7 @@ export function demoNotifyJobDb(): NotifyJobDb {
     },
     async recipients(ids) {
       return db().users.filter((u) => ids.includes(u.id)).map((u) => ({
-        userId: u.id, email: u.email, name: u.display_name || null, notifyEmail: u.notify_email ?? true, digestSentAt: u.digest_sent_at ?? null,
+        userId: u.id, email: u.email, name: u.display_name || null, notifyEmail: u.notify_email ?? true, digestSentAt: u.digest_sent_at ?? null, locale: u.locale ?? null,
       }));
     },
     async digestDue(before) {

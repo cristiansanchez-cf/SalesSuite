@@ -32,9 +32,9 @@
   --co-signal-ink: #2a1066;    /* texto sobre el badge */
   --co-inset: #f6f6f3;         /* superficie anidada dentro de una tarjeta */
 
-  --co-font-impact: 'Big Shoulders Variable', 'Big Shoulders', 'Big Shoulders Display', 'Oswald', 'Arial Narrow', Impact, sans-serif;
+  --co-font-impact: 'Big Shoulders Variable', 'Big Shoulders', 'Big Shoulders Display', 'Oswald', 'Arial Narrow', Impact, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
   --co-font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-serif, Georgia, serif;
-  --co-font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --co-font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
   --co-font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', monospace;
 
   --co-ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
@@ -134,6 +134,9 @@ html.console {
 }
 
 /* ------------------------------------------------------------------ tipografía */
+/* Coreano: sin mayúsculas ni tracking ancho (no existen en hangul) y algo más de interlineado. */
+html.console:lang(ko) .text-eyebrow, html.console:lang(ko) .co-badge { letter-spacing: 0.02em; }
+html.console:lang(ko) .co-page-title { letter-spacing: 0; line-height: 1.1; }
 .text-eyebrow {
   font-size: var(--console-fs-micro); font-weight: 500; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--co-ink-dim);

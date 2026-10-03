@@ -8,10 +8,13 @@ export interface NotifyDb {
   dismiss(tenantId: string, userId: string, id: string): Promise<boolean>;
   getEmailPref(userId: string): Promise<boolean>;
   setEmailPref(userId: string, on: boolean): Promise<void>;
+  /** Idioma preferido (docs/I18N.md). */
+  getLocale(userId: string): Promise<string | null>;
+  setLocale(userId: string, locale: string | null): Promise<void>;
 }
 
 /** Destinatario de un email, con el contexto del espacio de trabajo. */
-export interface Recipient { userId: string; email: string; name: string | null; notifyEmail: boolean; digestSentAt: string | null }
+export interface Recipient { userId: string; email: string; name: string | null; notifyEmail: boolean; digestSentAt: string | null; locale?: string | null }
 export interface TenantInfo { id: string; name: string; hostname: string | null }
 
 /**

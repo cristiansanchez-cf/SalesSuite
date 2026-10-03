@@ -10,10 +10,13 @@ import { ROLE_LABEL } from '~/lib/admin/permissions';
 import type { AdminContext } from '~/lib/admin/auth';
 import type { NotificationFeed } from '~/lib/notify/service';
 import NotificationBell from './NotificationBell.astro';
+import { i18n, LOCALES, LOCALE_NAME } from '~/lib/i18n';
+import { shellMessages } from '~/lib/i18n/messages/shell';
 
 interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean; feed: NotificationFeed; back: string }
 const { admin, tenantName, path, pending, primary = false, feed, back } = Astro.props;
-const nav = navFor(admin.session.role, path, { pendingPlaybook: pending });
+const { m, locale } = i18n(Astro, shellMessages);
+const nav = navFor(admin.session.role, path, { pendingPlaybook: pending }, m.nav);
 
 const name = admin.session.displayName || admin.session.email;
 const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
@@ -26,35 +29,42 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
 </div>
 
 {nav.canSwitch && (
-  <nav class="co-segmented" aria-label="Modo">
-    {nav.modes.map((m) => <a href={m.href} aria-current={nav.mode === m.key ? 'page' : undefined} data-testid={primary ? `mode-${m.key}` : undefined}><Icon name={m.icon} size={14} />{m.label}{m.key === 'setup' && pending > 0 && nav.mode !== 'setup' ? <span class="co-nav__count !ml-1" aria-label={`${pending} pendientes de revisar`}>{pending}</span> : null}</a>)}
+  <nav class="co-segmented" aria-label={m.nav.modes}>
+    {nav.modes.map((md) => <a href={md.href} aria-current={nav.mode === md.key ? 'page' : undefined} data-testid={primary ? `mode-${md.key}` : undefined}><Icon name={md.icon} size={14} />{md.label}{md.key === 'setup' && pending > 0 && nav.mode !== 'setup' ? <span class="co-nav__count !ml-1" aria-label={m.nav.pendingReview(pending)}>{pending}</span> : null}</a>)}
   </nav>
 )}
 
-<nav class="co-nav" aria-label="Secciones">
+<nav class="co-nav" aria-label={m.nav.sections}>
   {nav.items.map((n) => (
     <a href={n.href} class="co-nav__item" aria-current={n.on ? 'page' : undefined}>
-      <Icon name={n.icon} size={18} />{n.label}{n.count ? <span class="co-nav__count" aria-label={`${n.count} pendientes`}>{n.count}</span> : null}
+      <Icon name={n.icon} size={18} />{n.label}{n.count ? <span class="co-nav__count" aria-label={m.nav.pending(n.count)}>{n.count}</span> : null}
     </a>
   ))}
 </nav>
 
 <div class="co-sidebar__anchors">
-  <div class="co-anchor" title="Espacio en el que trabajas">
+  <div class="co-anchor" title={m.shell.workspaceHint}>
     <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="building2" size={16} /></span>
-    <span class="co-anchor__text"><span class="co-row-title">{tenantName}</span><span class="co-meta">Espacio de trabajo</span></span>
+    <span class="co-anchor__text"><span class="co-row-title">{tenantName}</span><span class="co-meta">{m.shell.workspace}</span></span>
   </div>
   <details class="co-popover">
     <summary class="co-anchor" data-testid={primary ? 'profile' : undefined}>
       <span class="co-anchor__avatar">{initials}</span>
-      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{ROLE_LABEL[admin.session.role]}</span></span>
+      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{m.role[admin.session.role]}</span></span>
       <Icon name="chevron-down" size={16} />
     </summary>
     <div class="co-popover__menu">
       <p class="co-meta px-2 pb-2">{admin.session.email}</p>
+      <form method="post" action="/admin/locale" class="mb-2 px-2" data-testid={primary ? 'locale-switch' : undefined}>
+        <input type="hidden" name="back" value={back} />
+        <p class="text-eyebrow mb-1.5">{m.shell.language}</p>
+        <div class="co-chips !gap-1.5">
+          {LOCALES.map((l) => <button type="submit" name="locale" value={l} class="co-chip !min-h-[28px] !px-2.5 !text-xs" aria-pressed={l === locale ? 'true' : 'false'} lang={l} data-testid={primary ? `locale-${l}` : undefined}>{LOCALE_NAME[l]}</button>)}
+        </div>
+      </form>
       <div class="co-actions">
-        <a class="co-action" href="/admin/account"><Icon name="user" /><span class="co-action__label">Mi cuenta</span><Icon name="chevron-right" size={16} /></a>
-        <form method="post" action="/admin/logout"><button class="co-action" type="submit"><Icon name="log-out" /><span class="co-action__label">Salir</span><Icon name="chevron-right" size={16} /></button></form>
+        <a class="co-action" href="/admin/account"><Icon name="user" /><span class="co-action__label">{m.shell.myAccount}</span><Icon name="chevron-right" size={16} /></a>
+        <form method="post" action="/admin/logout"><button class="co-action" type="submit"><Icon name="log-out" /><span class="co-action__label">{m.shell.logout}</span><Icon name="chevron-right" size={16} /></button></form>
       </div>
     </div>
   </details>

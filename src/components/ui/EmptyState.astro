@@ -7,6 +7,8 @@
  *  - none:   vacío y es lo que queríamos → sin acción, con motivo, en el tono «bueno».
  */
 import Icon from './Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { shellMessages } from '~/lib/i18n/messages/shell';
 type Props =
   | { kind: 'filter'; title: string; clearHref: string; clearLabel?: string }
   | { kind: 'create'; title: string; detail?: string; action: { href: string; label: string } }
@@ -19,7 +21,7 @@ const p = Astro.props;
   <p class="co-empty__title">{p.title}</p>
   {p.kind === 'none' && <p class="co-body">{p.because}</p>}
   {p.kind === 'create' && p.detail && <p class="co-body max-w-[52ch]">{p.detail}</p>}
-  {p.kind === 'filter' && <a class="co-btn co-btn--ghost co-btn--sm" href={p.clearHref}>{p.clearLabel ?? 'Quitar filtros'}</a>}
+  {p.kind === 'filter' && <a class="co-btn co-btn--ghost co-btn--sm" href={p.clearHref}>{p.clearLabel ?? i18n(Astro, shellMessages).m.ui.clearFilters}</a>}
   {p.kind === 'create' && ('href' in p.action
     ? <a class="co-btn co-btn--primary co-btn--sm" href={p.action.href}><Icon name="plus" size={16} />{p.action.label}</a>
     : <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open={p.action.dialog}><Icon name="plus" size={16} />{p.action.label}</button>)}

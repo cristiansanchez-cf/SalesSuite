@@ -1,3 +1,5 @@
+import { LOCALE_COOKIE } from './lib/i18n';
+import { resolveLocale } from './lib/i18n/core';
 import { defineMiddleware } from 'astro:middleware';
 import { authenticate } from './lib/admin/auth';
 import { publicRepository } from './lib/data';
@@ -53,6 +55,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return context.rewrite('/admin/forbidden');
     }
     context.locals.admin = auth.admin;
+  }
+
+  // Idioma (docs/I18N.md): preferencia guardada → cookie → navegador → idioma del espacio → español.
+  if (isAdmin) {
+    const saved = context.locals.admin ? await context.locals.admin.notifications.locale().catch(() => null) : null;
+    context.locals.locale = resolveLocale({
+      user: saved, cookie: context.cookies.get(LOCALE_COOKIE)?.value, tenant: context.locals.tenant?.defaultLocale, accept: context.request.headers.get('accept-language'),
+    });
   }
 
   const res = await next();

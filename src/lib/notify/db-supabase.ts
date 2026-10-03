@@ -36,6 +36,11 @@ export function supabaseNotifyDb(sb: SupabaseClient): NotifyDb {
       return r?.notify_email ?? true;
     },
     async setEmailPref(u, on) { check(await sb.from('users').update({ notify_email: on }).eq('id', u)); },
+    async getLocale(u) {
+      const r = check(await sb.from('users').select('locale').eq('id', u).maybeSingle()) as { locale: string | null } | null;
+      return r?.locale ?? null;
+    },
+    async setLocale(u, l) { check(await sb.from('users').update({ locale: l }).eq('id', u)); },
   };
 }
 
@@ -52,9 +57,9 @@ export function supabaseNotifyJobDb(sb: SupabaseClient): NotifyJobDb {
     },
     async recipients(ids) {
       if (!ids.length) return [];
-      return (check(await sb.from('users').select('id, email, display_name, notify_email, digest_sent_at').in('id', ids)) ?? []).map((r: Row) => ({
+      return (check(await sb.from('users').select('id, email, display_name, notify_email, digest_sent_at, locale').in('id', ids)) ?? []).map((r: Row) => ({
         userId: r.id as string, email: r.email as string, name: (r.display_name as string) || null,
-        notifyEmail: (r.notify_email as boolean) ?? true, digestSentAt: (r.digest_sent_at as string) ?? null,
+        notifyEmail: (r.notify_email as boolean) ?? true, digestSentAt: (r.digest_sent_at as string) ?? null, locale: (r.locale as string) ?? null,
       }));
     },
     async digestDue(before) {

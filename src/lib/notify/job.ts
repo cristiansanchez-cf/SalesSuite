@@ -7,6 +7,8 @@
 import type { NotifyJobDb, Recipient, TenantInfo } from './db';
 import type { Email, Mailer } from './mailer';
 import { isOpen, renderNotification } from './render';
+import { isLocale, type Locale } from '../i18n/core';
+import { notifyMessages } from '../i18n/messages/notify';
 import type { Notification, NotificationView } from './types';
 
 const MIN = 60_000;
@@ -21,16 +23,18 @@ export interface JobResult { immediate: number; digests: number; skipped: number
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const origin = (t: TenantInfo | undefined, fallback: string) => (t?.hostname ? `https://${t.hostname}` : fallback);
-const hello = (r: Recipient) => (r.name ? `Hola, ${r.name.split(' ')[0]}:` : 'Hola:');
+const loc = (r: Recipient): Locale => (isLocale(r.locale) ? r.locale : 'es');
+const hello = (r: Recipient) => notifyMessages[loc(r)].email.hello(r.name ? r.name.split(' ')[0] : null);
 
-function layout(title: string, intro: string, sections: Array<{ heading: string; items: NotificationView[] }>, base: string, footer: string) {
+function layout(title: string, intro: string, sections: Array<{ heading: string; items: NotificationView[] }>, base: string, footer: string, locale: Locale) {
+  const E = notifyMessages[locale].email;
   const li = (n: NotificationView) => `<li style="margin:0 0 12px"><a href="${esc(base + '/admin/notifications/' + n.id)}" style="color:#0a0a0a;font-weight:600">${esc(n.title)}</a>${n.detail ? `<br><span style="color:#555">${esc(n.detail)}</span>` : ''}</li>`;
-  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f5f2;font-family:Inter,Arial,sans-serif;color:#0a0a0a">
+  const html = `<!doctype html><html lang="${locale}"><body style="margin:0;padding:24px;background:#f6f5f2;font-family:Inter,Arial,sans-serif;color:#0a0a0a">
 <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e7e5e0;border-radius:16px;padding:28px">
 <h1 style="font-size:20px;margin:0 0 12px">${esc(title)}</h1><p style="margin:0 0 20px;line-height:1.5">${esc(intro)}</p>
 ${sections.filter((s) => s.items.length).map((s) => `<h2 style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#555;margin:20px 0 10px">${esc(s.heading)}</h2><ul style="padding-left:18px;margin:0">${s.items.map(li).join('')}</ul>`).join('')}
-<p style="margin:24px 0 0"><a href="${esc(base)}/admin/notifications" style="display:inline-block;background:#0a0a0a;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">Ver avisos</a></p>
-<p style="margin:24px 0 0;font-size:12px;color:#777">${esc(footer)} <a href="${esc(base)}/admin/account" style="color:#777">Cambiar en Mi cuenta</a>.</p>
+<p style="margin:24px 0 0"><a href="${esc(base)}/admin/notifications" style="display:inline-block;background:#0a0a0a;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${esc(E.viewAll)}</a></p>
+<p style="margin:24px 0 0;font-size:12px;color:#777">${esc(footer)} <a href="${esc(base)}/admin/account" style="color:#777">${esc(E.change)}</a>.</p>
 </div></body></html>`;
   const text = [title, '', intro, ...sections.filter((s) => s.items.length).flatMap((s) => ['', s.heading.toUpperCase(), ...s.items.map((n) => `- ${n.title}${n.detail ? ` (${n.detail})` : ''}: ${base}/admin/notifications/${n.id}`)]),
     '', `${footer} ${base}/admin/account`].join('\n');
@@ -51,17 +55,18 @@ export async function runNotificationJob(db: NotifyJobDb, mailer: Mailer, o: Job
     const [userId, tenantId] = key.split('|');
     const who = people.get(userId);
     // Ya visto en la app, ya resuelto o sin emails: no se envía, pero queda marcado para no reconsiderarlo.
-    const send = ns.filter((n) => isOpen(n) && !n.readAt).map(renderNotification);
+    const L = who ? loc(who) : 'es';
+    const E = notifyMessages[L].email;
+    const send = ns.filter((n) => isOpen(n) && !n.readAt).map((n) => renderNotification(n, L));
     if (!who?.notifyEmail || !send.length) { await db.markEmailed(ns.map((n) => n.id), nowIso); r.skipped += ns.length; continue; }
     const t = tenants.get(tenantId);
     const { html, text } = layout(
-      send.length === 1 ? send[0].title : `${send.length} cosas esperan tu respuesta en ${t?.name ?? 'tu espacio'}`,
-      `${hello(who)} esto necesita que hagas algo.`,
-      [{ heading: 'Pide tu acción', items: send }], origin(t, o.fallbackOrigin),
-      'Te escribimos solo cuando algo necesita tu acción y, los lunes, un resumen.',
+      send.length === 1 ? send[0].title : E.oneThing(send.length, t?.name ?? 'Ventas'),
+      `${hello(who)} ${E.needsAction}`,
+      [{ heading: E.actionHeading, items: send }], origin(t, o.fallbackOrigin), E.immediateFooter, L,
     );
     try {
-      await mailer.send({ to: who.email, subject: send.length === 1 ? `${t?.name ?? 'Ventas'}: ${send[0].title}` : `${t?.name ?? 'Ventas'}: ${send.length} cosas esperan tu respuesta`, html, text, tag: 'immediate' });
+      await mailer.send({ to: who.email, subject: send.length === 1 ? `${t?.name ?? 'Ventas'}: ${send[0].title}` : E.subjectMany(t?.name ?? 'Ventas', send.length), html, text, tag: 'immediate' });
       await db.markEmailed(ns.map((n) => n.id), nowIso);
       r.immediate++;
     } catch { r.failed++; }
@@ -82,20 +87,21 @@ export async function runNotificationJob(db: NotifyJobDb, mailer: Mailer, o: Job
     if (!who) continue;
     if (!who.notifyEmail) { await db.markDigest(userId, nowIso); continue; }
     let ok = true;
+    const L = loc(who);
+    const E = notifyMessages[L].email;
     for (const [tenantId, ns] of groupBy(mine, (n: Notification) => n.tenantId)) {
-      const views = ns.map(renderNotification);
+      const views = ns.map((n) => renderNotification(n, L));
       const pending = views.filter((n) => n.open && n.severity === 'action' && o.now.getTime() - Date.parse(n.createdAt) >= STALE_MS);
       const news = views.filter((n) => n.severity === 'info' && n.createdAt >= since && !n.readAt);
       if (!pending.length && !news.length) continue;
       const t = ten2.get(tenantId);
       const { html, text } = layout(
-        `Tu resumen semanal de ${t?.name ?? 'Ventas'}`,
-        `${hello(who)} ${pending.length ? `ya lo has visto, pero te lo recuerdo: ${pending.length === 1 ? 'hay 1 cosa abierta' : `hay ${pending.length} cosas abiertas`}.` : 'esto es lo nuevo de la semana.'}`,
-        [{ heading: 'Sigue pendiente', items: pending }, { heading: 'Novedades de la semana', items: news }], origin(t, o.fallbackOrigin),
-        'Te enviamos este resumen los lunes, solo si hay algo.',
+        E.digestTitle(t?.name ?? 'Ventas'),
+        `${hello(who)} ${E.digestIntro(pending.length)}`,
+        [{ heading: E.pendingHeading, items: pending }, { heading: E.newsHeading, items: news }], origin(t, o.fallbackOrigin), E.digestFooter, L,
       );
       try {
-        await mailer.send({ to: who.email, subject: `${t?.name ?? 'Ventas'}: tu resumen semanal${pending.length ? ` (${pending.length} pendiente${pending.length === 1 ? '' : 's'})` : ''}`, html, text, tag: 'digest' });
+        await mailer.send({ to: who.email, subject: E.digestSubject(t?.name ?? 'Ventas', pending.length), html, text, tag: 'digest' });
         r.digests++;
       } catch { r.failed++; ok = false; }
     }

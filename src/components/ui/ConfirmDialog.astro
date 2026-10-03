@@ -15,17 +15,20 @@ interface Props {
   testid?: string;
 }
 const { id, title, does, doesNot, confirmLabel, danger = false, action, testid } = Astro.props;
+import { i18n } from '~/lib/i18n';
+import { shellMessages } from '~/lib/i18n/messages/shell';
+const { m } = i18n(Astro, shellMessages);
 ---
 <dialog id={id} class="co-dialog" aria-labelledby={`${id}-title`} data-testid={testid}>
   <form method="post" action={action}>
     <div class="co-dialog__body">
       <h2 id={`${id}-title`} class="co-entity">{title}</h2>
       <p class="co-body">{does}</p>
-      <p class="co-dialog__not"><strong>Lo que no hace:</strong> {doesNot}</p>
+      <p class="co-dialog__not"><strong>{m.ui.doesNot}</strong> {doesNot}</p>
       <slot />
     </div>
     <div class="co-dialog__foot">
-      <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
+      <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{m.ui.cancel}</button>
       <button type="submit" class:list={['co-btn', danger ? 'co-btn--danger' : 'co-btn--primary']} data-testid={testid ? `${testid}-confirm` : undefined}>{confirmLabel}</button>
     </div>
   </form>
