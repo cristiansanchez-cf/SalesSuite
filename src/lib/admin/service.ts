@@ -10,6 +10,7 @@ import type { PublicDossier, RenderItem } from '../types';
 import { resolveItem } from '../../modules/resolve';
 import type { AdminDb } from './db';
 import { can } from './permissions';
+import { paymentUrl } from './payment';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
@@ -69,6 +70,9 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
   const now = opts.now ?? (() => new Date());
   const canEdit = (d: DossierRecord) => can(s.role).editAllDossiers || d.authorId === s.userId;
   const isPartner = s.role === 'partner';
+  /** Comercial y jefe/a de ventas: el precio sale de una tarifa (docs/COMMISSIONS.md §Tarifas). */
+  const pricesFromOptions = s.role === 'rep' || s.role === 'lead';
+  const PRICE_FROM_OPTIONS = 'El precio lo fija tu empresa: elige una tarifa';
   const PRICES_LOCKED = 'Los precios de tus cuentas los gestiona la empresa';
 
   /** Cuenta de colaborador del dossier (el admin ve la política; el colaborador, la suya). */
@@ -109,9 +113,15 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   async function getState(id: string): Promise<BuilderState> {
     const d = await load(id);
-    const [list, catalog, links, contacts, partnerAccount] = await Promise.all([
+    const [list, catalog, links, contacts, partnerAccount, options] = await Promise.all([
       items(id), db.listCatalog(s.tenantId), db.listLinks([id]), db.listContacts([id]), partnerAccountOf(d),
+      isPartner ? Promise.resolve([]) : db.listPriceOptions(s.tenantId).catch(() => []),
     ]);
+    // Las del sector de la propuesta, primero.
+    const priceOptions = options.filter((o) => o.active || o.id === d.priceOptionId)
+      .sort((a, b) => Number(b.segmentId === d.segmentId && !!d.segmentId) - Number(a.segmentId === d.segmentId && !!d.segmentId) || a.position - b.position);
+    const chosen = d.priceOptionId ? options.find((o) => o.id === d.priceOptionId) : undefined;
+    const payUrl = chosen?.paymentLink ? paymentUrl(chosen.paymentLink, { dossierId: d.id, couponCode: d.discount?.code ?? null }) : null;
     const latest = latestByModule(catalog);
     const pub = toPublicDossier(d, list);
     const total = resolveTotal(pub);
@@ -149,6 +159,9 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       publishBlockers: blockers,
       partnerAccount,
       pricesLocked: isPartner,
+      priceOptions,
+      payment: payUrl && chosen ? { url: payUrl, label: chosen.label } : null,
+      customPrices: !isPartner && !pricesFromOptions,
     };
   }
 
@@ -186,21 +199,22 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       prospectName: input.prospectName ?? null,
       prospectCompany: input.prospectCompany ?? null,
       locale: tpl?.locale ?? opts.defaultLocale ?? 'es-ES',
-      priceMode: tpl?.priceMode ?? 'none',
-      totalPrice: tpl?.totalPrice ?? null,
+      priceMode: tpl && !(pricesFromOptions && tpl.priceMode === 'total' && !tpl.priceOptionId) ? tpl.priceMode : 'none',
+      totalPrice: tpl && !(pricesFromOptions && !tpl.priceOptionId) ? tpl.totalPrice : null,
       currency: tpl?.currency ?? 'EUR',
       partnerAccountId: account?.id ?? null,
       accountId: input.accountId ?? null,
     });
     const segmentId = account?.segmentId ?? tpl?.segmentId;
     if (segmentId) await db.updateDossier(d.id, { segmentId });
+    if (tpl?.priceOptionId) await db.updateDossier(d.id, { priceOptionId: tpl.priceOptionId });
     if (tpl) {
       const src = await items(tpl.id);
       const pos = rebalance(src.length);
       for (const [k, i] of src.entries()) {
         await db.insertItem({
           dossierId: d.id, moduleVersionId: i.moduleVersionId, position: pos[k],
-          visible: i.visible, priceOverride: i.priceOverride, propOverrides: i.propOverrides,
+          visible: i.visible, priceOverride: pricesFromOptions ? null : i.priceOverride, propOverrides: i.propOverrides,
         });
       }
     }
@@ -219,13 +233,28 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     const op = parsed.data;
     const d = await loadEditable(id);
 
-    if (isPartner && (op.op === 'setPrice' || (op.op === 'update' && ['priceMode', 'totalPrice', 'currency'].some((k) => k in op.patch)))) {
+    if (isPartner && (op.op === 'setPrice' || op.op === 'setPriceOption' || (op.op === 'update' && ['priceMode', 'totalPrice', 'currency'].some((k) => k in op.patch)))) {
       throw new AdminError(403, PRICES_LOCKED);
+    }
+    if (pricesFromOptions && (op.op === 'setPrice' || (op.op === 'update' && ('totalPrice' in op.patch || 'currency' in op.patch || op.patch.priceMode === 'total')))) {
+      throw new AdminError(403, PRICE_FROM_OPTIONS);
     }
 
     switch (op.op) {
       case 'update': {
-        await assertWrote(await db.updateDossier(id, op.patch));
+        // Un precio a medida (admin) deja de ser la tarifa.
+        const custom = 'totalPrice' in op.patch || 'priceMode' in op.patch;
+        await assertWrote(await db.updateDossier(id, custom && d.priceOptionId ? { ...op.patch, priceOptionId: null } : op.patch));
+        break;
+      }
+      case 'setPriceOption': {
+        if (!op.priceOptionId) {
+          await assertWrote(await db.updateDossier(id, { priceOptionId: null, priceMode: 'none', totalPrice: null }));
+          break;
+        }
+        const o = (await db.listPriceOptions(s.tenantId)).find((x) => x.id === op.priceOptionId && x.active);
+        if (!o) throw new AdminError(404, 'Tarifa no disponible');
+        await assertWrote(await db.updateDossier(id, { priceOptionId: o.id, priceMode: 'total', totalPrice: o.amount, currency: o.currency }));
         break;
       }
       case 'addItem': {

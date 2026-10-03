@@ -167,7 +167,7 @@ export function commissionsContract(name: string, env: () => CommissionsEnv) {
       expect(c).toMatchObject({ code: 'LANZA30', value: 3000, uses: 0 });
 
       const d = await rep.service.createDossier({ title: 'Con cupón' });
-      await rep.service.apply(d, { op: 'update', patch: { priceMode: 'total', totalPrice: 1000 } });
+      await admin.service.apply(d, { op: 'update', patch: { priceMode: 'total', totalPrice: 1000 } });  // precio a medida: solo admin
       await rep.service.apply(d, { op: 'setCoupon', couponId: c.id });
       const st = await rep.service.getState(d);
       expect(st.dossier.discount).toEqual({ code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000 });
@@ -187,6 +187,28 @@ export function commissionsContract(name: string, env: () => CommissionsEnv) {
       const dj = await ctx(U.dj);
       const dd = await dj.service.createDossier({ title: 'DJ', partnerAccountId: dj.session.partner!.accounts[0].id });
       await rejects(dj.service.apply(dd, { op: 'setCoupon', couponId: c.id }), 403);
+    });
+
+    test('tarifas: el admin las fija, el comercial elige una y tiene el enlace de pago', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      await rejects(rep.tenantAdmin.savePriceOption({ label: 'Mía', amount: '1', period: 'once' }), 403);
+      await rejects(admin.tenantAdmin.savePriceOption({ label: 'X', amount: '1', period: 'once', paymentLink: 'http://no-https' }), 422);
+      const oid = await admin.tenantAdmin.savePriceOption({ label: 'Local mediano', amount: '249', period: 'month', paymentLink: 'https://buy.stripe.com/test_m' });
+      const d = await rep.service.createDossier({ title: 'Con tarifa' });
+      let st = await rep.service.apply(d, { op: 'setPriceOption', priceOptionId: oid });
+      expect(st.dossier).toMatchObject({ priceOptionId: oid, priceMode: 'total', totalPrice: 249 });
+      const pay = new URL(st.payment!.url);
+      expect(pay.searchParams.get('client_reference_id')).toBe(`dossier_${d}`);
+      await admin.commissions.saveCoupon({ code: 'TARIFA10', label: '10 %', kind: 'percent', value: '10' });
+      const c = (await rep.commissions.coupons()).find((x) => x.code === 'TARIFA10')!;
+      st = await rep.service.apply(d, { op: 'setCoupon', couponId: c.id });
+      expect(new URL(st.payment!.url).searchParams.get('prefilled_promo_code')).toBe(c.code);
+      await rejects(rep.service.apply(d, { op: 'update', patch: { totalPrice: 1 } }), 403);
+      await admin.tenantAdmin.setPriceOptionActive(oid, false);
+      await rejects(rep.service.apply(d, { op: 'setPriceOption', priceOptionId: oid }), 404);
+      st = await rep.service.apply(d, { op: 'setPriceOption', priceOptionId: null });
+      expect(st.dossier).toMatchObject({ priceOptionId: null, priceMode: 'none' });
     });
 
     test('condiciones opcionales: invisibles hasta que se acuerdan; cada uno ve las suyas', async () => {

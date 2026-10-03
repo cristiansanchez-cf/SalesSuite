@@ -370,7 +370,40 @@ export function createTenantAdminService(
     return (await db.listMembers(s.tenantId)).filter((m) => m.invitedBy === s.userId && m.role === 'partner');
   }
 
+  // ---------------------------------------------------------------- tarifas (docs/COMMISSIONS.md §Tarifas)
+  const PERIODS = ['once', 'event', 'month', 'year'] as const;
+  async function listPriceOptions() { requireAdmin(); return db.listPriceOptions(s.tenantId); }
+  async function savePriceOption(input: { label: unknown; amount: unknown; currency?: unknown; period: unknown; paymentLink?: unknown; segmentId?: unknown }, id?: string) {
+    requireAdmin();
+    const label = String(input.label ?? '').trim();
+    if (!label || label.length > 80) throw new AdminError(422, 'Ponle un nombre corto (p. ej. «Local mediano»)');
+    const amount = Math.round(Number(String(input.amount ?? '').replace(/\s/g, '').replace(',', '.')) * 100) / 100;
+    if (!Number.isFinite(amount) || amount < 0 || amount > 10_000_000) throw new AdminError(422, 'Importe no válido');
+    const period = String(input.period ?? 'once') as (typeof PERIODS)[number];
+    if (!PERIODS.includes(period)) throw new AdminError(422, 'Periodo no válido');
+    const currency = String(input.currency || 'EUR').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) throw new AdminError(422, 'Moneda no válida');
+    const link = String(input.paymentLink ?? '').trim();
+    if (link && (!/^https:\/\/[^\s"'<>]+$/.test(link) || link.length > 500)) throw new AdminError(422, 'El enlace de pago tiene que empezar por https:// (el Payment Link de Stripe)');
+    const segmentId = String(input.segmentId ?? '') || null;
+    const all = await db.listPriceOptions(s.tenantId);
+    const cur = id ? all.find((o) => o.id === id) : undefined;
+    if (id && !cur) throw new AdminError(404, 'Tarifa no encontrada');
+    return db.savePriceOption(s.tenantId, {
+      label, amount, currency, period, paymentLink: link || null, segmentId,
+      position: cur?.position ?? Math.max(0, ...all.map((o) => o.position)) + 1, active: cur?.active ?? true,
+    }, id);
+  }
+  async function setPriceOptionActive(id: string, active: boolean) {
+    requireAdmin();
+    const cur = (await db.listPriceOptions(s.tenantId)).find((o) => o.id === id);
+    if (!cur) throw new AdminError(404, 'Tarifa no encontrada');
+    const { id: _id, ...rest } = cur;
+    await db.savePriceOption(s.tenantId, { ...rest, active }, id);
+  }
+
   return {
+    listPriceOptions, savePriceOption, setPriceOptionActive,
     partnerInvite, myInvitees,
     listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
     listMembers, invite, setRole, removeMember,

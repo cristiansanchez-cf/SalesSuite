@@ -113,7 +113,7 @@ const euros = (s) => Number(String(s).replace(/[^\d,-]/g, '').replace(/\./g, '')
   await admin.goto(`${BASE}/admin/dossiers/00000000-0000-4000-8000-000000d05501`);
   await admin.click('[role=tab]:visible >> text=Editar').catch(() => {});
   const before = euros(await admin.textContent('[data-testid=total]'));
-  await admin.selectOption('[data-testid=coupon]', { label: `10 % por pago anual ${RUN} (${`ANUAL${RUN}`.toUpperCase().slice(0, 30)})` });
+  await admin.click(`[data-testid=coupon-${`ANUAL${RUN}`.toUpperCase().slice(0, 30)}]`);  // descuento: un seleccionable, no un desplegable
   await admin.waitForFunction(() => !document.querySelector('[data-testid=builder][data-busy]'));
   await admin.waitForTimeout(300);
   const after = euros(await admin.textContent('[data-testid=total]'));
@@ -123,7 +123,7 @@ const euros = (s) => Number(String(s).replace(/[^\d,-]/g, '').replace(/\./g, '')
   assert((await pub.textContent('[data-testid=pricing-discount]').catch(() => '')).includes('10 % por pago anual'), 'el cliente ve el cupón aplicado');
   assert(await pub.isVisible('[data-testid=pricing-before]'), 'y el precio anterior tachado');
   if (OUT) await pub.screenshot({ path: `${OUT}/coupon-public.png`, fullPage: true });
-  await admin.selectOption('[data-testid=coupon]', '');
+  await admin.click('[data-testid=coupon-none]');
 
   // ---- Inicio: el CEO ve el negocio; el comercial, su día
   await admin.goto(`${BASE}/admin/inicio`);

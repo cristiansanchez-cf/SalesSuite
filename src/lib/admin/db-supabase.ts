@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AdminDb, AssetStore, Identity } from './db';
-import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role } from './types';
+import type { CatalogVersion, DossierRecord, PriceOption, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -8,12 +8,21 @@ type Row = Record<string, any>;
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
 const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at, coupon_id, discount, outcome_at';
-/** view_mode: migración 20261021. Hasta aplicarla se lee y se escribe sin ella (los despliegues van antes que las migraciones). */
-let viewModeCol = true;
-const dossierCols = () => (viewModeCol ? `${DOSSIER_COLS}, view_mode` : DOSSIER_COLS);
+/**
+ * Columnas de migraciones recientes (view_mode: 20261021; price_option_id: 20261022). Hasta aplicarlas se lee y se
+ * escribe sin ellas: los despliegues de Vercel van antes que las migraciones.
+ */
+const optionalCols = new Set(['view_mode', 'price_option_id']);
+const dossierCols = () => [DOSSIER_COLS, ...optionalCols].join(', ');
+const hasCol = (c: string) => optionalCols.has(c);
 async function tolerant<R extends { error: any }>(q: (cols: string) => PromiseLike<R>): Promise<R> {
-  const res = await q(dossierCols());
-  if (res.error && viewModeCol && /view_mode/.test(String(res.error.message ?? ''))) { viewModeCol = false; return q(dossierCols()); }
+  let res = await q(dossierCols());
+  for (let i = 0; i < 2 && res.error; i++) {
+    const missing = [...optionalCols].find((c) => String(res.error.message ?? '').includes(c));
+    if (!missing) break;
+    optionalCols.delete(missing);
+    res = await q(dossierCols());
+  }
   return res;
 }
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
@@ -36,6 +45,12 @@ const toDossier = (r: Row): DossierRecord => ({
   couponId: r.coupon_id ?? null,
   discount: r.discount ?? null,
   viewMode: r.view_mode === 'test' ? 'test' : 'live',
+  priceOptionId: r.price_option_id ?? null,
+});
+
+const toPriceOption = (r: Row): PriceOption => ({
+  id: r.id, label: r.label, amount: Number(r.amount), currency: r.currency, period: r.period, paymentLink: r.payment_link ?? null,
+  segmentId: r.segment_id ?? null, position: Number(r.position), active: !!r.active,
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';
@@ -123,6 +138,21 @@ function full(sb: SupabaseClient): AdminDb {
       return new Map(rows.map((u: Row) => [u.id, u.display_name || u.email]));
     },
 
+    async listPriceOptions(tenantId) {
+      const { data, error } = await sb.from('price_option').select('*').eq('tenant_id', tenantId);
+      if (error) { if (/price_option/.test(error.message)) return []; throw new Error(error.message); }
+      return (data ?? []).map(toPriceOption).sort((a, b) => a.position - b.position || a.amount - b.amount);
+    },
+    async savePriceOption(tenantId, o, id) {
+      const row = {
+        tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink,
+        segment_id: o.segmentId, position: o.position, active: o.active,
+      };
+      const r = id
+        ? checkOne(await sb.from('price_option').update(row).eq('id', id).eq('tenant_id', tenantId).select('id').single())
+        : checkOne(await sb.from('price_option').insert(row).select('id').single());
+      return r.id as string;
+    },
     async listDossiers(tenantId) {
       return (check(await tolerant((c) => sb.from('dossier').select(c).eq('tenant_id', tenantId))) ?? []).map(toDossier);
     },
@@ -136,7 +166,7 @@ function full(sb: SupabaseClient): AdminDb {
         prospect_company: n.prospectCompany, locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
         partner_account_id: n.partnerAccountId ?? null, account_id: n.accountId ?? null,
         // Toda propuesta nueva empieza en modo prueba: tus aperturas no cuentan hasta que la pasas a real.
-        ...(viewModeCol ? { view_mode: 'test' } : {}),
+        ...(hasCol('view_mode') ? { view_mode: 'test' } : {}),
       }).select(c).single()));
       return toDossier(r);
     },
@@ -161,6 +191,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.accountId !== undefined) patch.account_id = p.accountId;
       if (p.couponId !== undefined) patch.coupon_id = p.couponId;
       if (p.viewMode !== undefined) patch.view_mode = p.viewMode;
+      if (p.priceOptionId !== undefined) patch.price_option_id = p.priceOptionId;
       const rows = check(await tolerant((c) => sb.from('dossier').update(patch).eq('id', id).select(c))) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },

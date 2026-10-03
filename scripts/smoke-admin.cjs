@@ -82,11 +82,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // El precio está a mano pero plegado: no es lo primero.
   assert((await p.getAttribute('[data-testid=price-panel]', 'open')) === null, 'precio plegado mientras no hay precio');
   await p.click('[data-testid=price-panel] summary');
-  await p.click('[data-testid=price-mode-per_module]'); await settle();
-  const priceInput = (await p.$$('[data-testid=item-price-input]'))[0];
-  await priceInput.fill('250');
-  await priceInput.press('Tab'); await settle();
-  assert((await p.textContent('[data-testid=total]')).replace(/\s/g, ' ') === '700 €', 'total per_module 250 + 450 = 700 €');
+  assert(!(await p.$('[data-testid=item-price-input]')) && !(await p.$('[data-testid=price-mode-total]')), 'el comercial no escribe precios: elige tarifa');
+  await p.locator('[data-testid=price-option]', { hasText: 'Boda completa' }).click(); await settle();
+  assert((await p.textContent('[data-testid=total]')).replace(/\s/g, ' ') === '700 €', 'tarifa «Boda completa» → 700 €');
+  const pay = new URL((await p.textContent('[data-testid=payment-url]')).trim());
+  assert(pay.hostname === 'buy.stripe.com' && pay.searchParams.get('client_reference_id') === `dossier_${p.url().split('/').pop()}`, 'enlace de pago con la propuesta (el vendedor)');
 
   // 4. Publicar + enlace
   await p.click('[data-testid=publish]'); await settle(); await settle();
@@ -107,16 +107,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(r.status() === 200, 'enlace público 200 sin login');
   const types = await v.$$eval('[data-block-type]', (els) => els.map((e) => e.dataset.blockType));
   assert(JSON.stringify(types) === JSON.stringify(['tabs-showcase', 'tabs-showcase', 'pricing-card']), `orden público + oculto ausente ${types}`);
-  const prices = await v.$$eval('[data-testid=item-price] strong', (els) => els.map((e) => e.textContent.replace(/\s/g, ' ')));
-  assert(JSON.stringify(prices) === JSON.stringify(['250 €', '450 €']), `precios públicos ${prices}`);
+  assert((await v.textContent('body')).replace(/\s/g, ' ').includes('700 €'), 'precio de la tarifa en el enlace público');
   assert((await v.$eval('.ds-root', (e) => getComputedStyle(e).getPropertyValue('--color-primary').trim())) === '255 39 187', 'tema Enjoy');
   if (OUT) await v.screenshot({ path: `${OUT}/public-tablet.png`, fullPage: true });
 
   // edición en vivo: cambio de precio se ve en el enlace sin republicar
-  await priceInput.fill('300'); await priceInput.press('Tab'); await settle();
+  await p.locator('[data-testid=price-option]', { hasText: 'Evento suelto' }).click(); await settle();
   await v.reload();
-  const prices2 = await v.$$eval('[data-testid=item-price] strong', (els) => els.map((e) => e.textContent.replace(/\s/g, ' ')));
-  assert(prices2[0] === '300 €', 'cambio en vivo reflejado en el enlace');
+  assert((await v.textContent('body')).replace(/\s/g, ' ').includes('150 €'), 'cambio de tarifa reflejado en vivo en el enlace');
 
   // 6. Negativos: revocar → 404; despublicar → 404
   await p.click('text=Revocar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();

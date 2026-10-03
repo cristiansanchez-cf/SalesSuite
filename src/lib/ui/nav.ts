@@ -12,7 +12,7 @@ import { shellMessages } from '../i18n/messages/shell';
 export interface NavItem { href: string; label: string; icon: IconName; on: boolean; count?: number; testid?: string }
 export type NavMode = 'sell' | 'setup';
 
-const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/territory', '/admin/commissions/team', '/admin/brand'];
+const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/territory', '/admin/commissions/team', '/admin/prices', '/admin/brand'];
 
 export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number } = {}, L = shellMessages.es.nav) {
   const on = (p: string) => path === p || path.startsWith(`${p}/`);
@@ -38,6 +38,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     { href: '/admin/team', label: L.team, icon: 'users', on: on('/admin/team') },
     ...(perms.manageAccounts ? [{ href: '/admin/territory', label: L.territory, icon: 'map' as IconName, on: on('/admin/territory') }] : []),
     { href: '/admin/commissions/team', label: L.commissions, icon: 'wallet', on: on('/admin/commissions/team') },
+    ...(perms.manageTenant ? [{ href: '/admin/prices', label: L.prices, icon: 'tag' as IconName, on: on('/admin/prices'), testid: 'nav-prices' }] : []),
     ...(perms.manageTenant ? [{ href: '/admin/brand', label: L.brand, icon: 'palette' as IconName, on: on('/admin/brand') }] : []),
   ];
   return {

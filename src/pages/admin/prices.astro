@@ -1,0 +1,91 @@
+---
+/**
+ * Tarifas y pagos (docs/COMMISSIONS.md §Tarifas): el admin fija lo que el equipo puede elegir como precio, con su
+ * enlace de pago de Stripe. Los descuentos son cupones (Comisiones → Cupones).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import Alert from '~/components/ui/Alert.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { pricesMessages } from '~/lib/i18n/messages/prices';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const t = admin.tenantAdmin;
+const { m, f } = i18n(Astro, pricesMessages);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const str = (k: string) => String(fd.get(k) ?? '');
+  let ok = '';
+  result = await formAction(async () => {
+    if (str('action') === 'create') {
+      await t.savePriceOption({ label: str('label'), amount: str('amount'), currency: str('currency'), period: str('period'), paymentLink: str('paymentLink'), segmentId: str('segmentId') });
+      ok = 'created';
+    } else if (str('action') === 'toggle') {
+      await t.setPriceOptionActive(str('id'), str('active') === '1');
+      ok = str('active') === '1' ? 'on' : 'off';
+    }
+  });
+  if (!result.error) return Astro.redirect(`/admin/prices${ok ? `?ok=${ok}` : ''}`, 303);
+}
+const okMsg = flash(Astro.url, m.ok);
+const [options, market] = await Promise.all([t.listPriceOptions(), admin.playbook.market().catch(() => [])]);
+const sectorName = new Map(market.map((s) => [s.id, s.name]));
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-10 pb-10">
+    <header class="grid gap-2">
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{m.title}</h1>
+      <p class="co-lede !text-lg max-w-2xl">{m.lede}</p>
+    </header>
+    {okMsg && <p class="co-alert co-alert--success w-fit" role="status">{okMsg}</p>}
+    {result.error && <Alert kind="rejection" title={result.error} details={result.details} />}
+
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <section class="grid content-start gap-3" data-testid="price-options">
+        {options.length === 0 ? <p class="co-meta">{m.empty}</p> : options.map((o) => (
+          <article class:list={['co-card flex flex-wrap items-center gap-4 !p-5', !o.active && 'opacity-60']} data-testid="price-option" data-label={o.label}>
+            <span class="grid min-w-0 flex-1 gap-1">
+              <span class="co-entity">{o.label}</span>
+              <span class="co-meta">{o.segmentId ? sectorName.get(o.segmentId) ?? '' : m.anySegment} · {m.periods[o.period]}</span>
+              {o.paymentLink
+                ? <span class="flex items-center gap-1 truncate text-xs text-muted"><Icon name="link" size={12} /><span class="truncate">{o.paymentLink}</span></span>
+                : <span class="text-xs text-[color:var(--console-attention,#b42318)]">{m.noLink}</span>}
+            </span>
+            <span class="co-figure text-3xl">{f.money(Math.round(o.amount * 100), o.currency)}</span>
+            <form method="post">
+              <input type="hidden" name="action" value="toggle" /><input type="hidden" name="id" value={o.id} /><input type="hidden" name="active" value={o.active ? '0' : '1'} />
+              <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{o.active ? m.deactivate : m.activate}</button>
+            </form>
+          </article>
+        ))}
+        <p class="co-meta mt-2">{m.couponsHint} <a class="underline" href="/admin/commissions/team?tab=cupones">{m.coupons}</a></p>
+      </section>
+
+      <form method="post" class="co-card grid content-start gap-3 !p-6" data-testid="price-option-form">
+        <input type="hidden" name="action" value="create" />
+        <h2 class="co-entity">{m.newTitle}</h2>
+        <label class="co-field">{m.label}<input class="co-input" name="label" required maxlength="80" placeholder={m.labelPlaceholder} /></label>
+        <div class="grid grid-cols-[1fr_6rem] gap-2">
+          <label class="co-field">{m.amount}<input class="co-input" name="amount" required inputmode="decimal" placeholder="249" /></label>
+          <label class="co-field">{m.currency}<select class="co-select" name="currency"><option>EUR</option><option>USD</option><option>GBP</option><option>MXN</option><option>KRW</option></select></label>
+        </div>
+        <fieldset class="grid gap-2"><legend class="co-field mb-1">{m.period}</legend>
+          <div class="co-chips">{Object.entries(m.periods).map(([k, v], i) => (
+            <label class="co-chip cursor-pointer has-[:checked]:bg-[var(--console-ink)] has-[:checked]:text-[var(--console-bg)]"><input class="sr-only" type="radio" name="period" value={k} checked={i === 0} />{v}</label>))}
+          </div>
+        </fieldset>
+        <label class="co-field">{m.link}<input class="co-input" name="paymentLink" type="url" maxlength="500" placeholder="https://buy.stripe.com/…" /><span class="co-help">{m.linkHelp}</span></label>
+        {market.length > 0 && (
+          <label class="co-field">{m.segment}<select class="co-select" name="segmentId"><option value="">{m.anySegment}</option>{market.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select></label>
+        )}
+        <button class="co-btn co-btn--primary w-fit" type="submit">{m.create}</button>
+      </form>
+    </div>
+  </div>
+</AdminLayout>

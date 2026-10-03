@@ -122,5 +122,16 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await p.screenshot({ path: `${OUT}/setup.png`, fullPage: true });
 
   assert(errors.length === 0, `sin errores JS ${errors}`);
+  // ---- Tarifas y pagos: el admin fija lo que el equipo puede elegir como precio
+  await p.goto(`${BASE}/admin/prices`);
+  await p.fill('[data-testid=price-option-form] [name=label]', `Local grande ${RUN}`);
+  await p.fill('[data-testid=price-option-form] [name=amount]', '499');
+  await p.click('[data-testid=price-option-form] label:has-text("Al mes")');
+  await p.fill('[data-testid=price-option-form] [name=paymentLink]', 'https://buy.stripe.com/test_grande');
+  await p.click('[data-testid=price-option-form] button[type=submit]');
+  await p.waitForURL(/ok=created/);
+  assert((await p.textContent('[data-testid=price-options]')).includes(`Local grande ${RUN}`), 'tarifa creada con su enlace de pago');
+  if (OUT) await p.screenshot({ path: `${OUT}/prices-admin.png`, fullPage: true });
+
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

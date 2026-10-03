@@ -25,6 +25,7 @@ export interface DossierRow {
   segment_id?: string | null; next_step?: string | null; next_step_at?: string | null;
   partner_account_id?: string | null;
   view_mode?: 'test' | 'live';
+  price_option_id?: string | null;
   situation?: Record<string, string[]>;
   account_id?: string | null; account_eligibility?: string | null; account_decision?: 'approved' | 'rejected' | null;
   account_decided_by?: string | null; account_decided_at?: string | null;
@@ -122,6 +123,10 @@ export interface DossierViewRow {
   started_at: string; last_seen_at: string; duration_ms: number; max_scroll: number; sections: Record<string, number>;
   internal?: 'test' | 'member' | 'team' | null;
 }
+export interface PriceOptionRow {
+  id: string; tenant_id: string; label: string; amount: number; currency: string; period: 'once' | 'event' | 'month' | 'year';
+  payment_link: string | null; segment_id: string | null; position: number; active: boolean;
+}
 export interface TeamIpRow { tenant_id: string; ip_hash: string; last_seen_at: string }
 
 export interface DemoDb {
@@ -162,6 +167,7 @@ export interface DemoDb {
   api_key: ApiKeyRow[];
   connector: ConnectorRow[];
   coupon: CouponRow[];
+  price_option: PriceOptionRow[];
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
   dossier_view: DossierViewRow[];
   team_ip: TeamIpRow[];
@@ -334,6 +340,12 @@ export function freshDemoDb(): DemoDb {
     coupon: [
       { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },
       { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },
+    ],
+    // Tarifas de ejemplo (docs/COMMISSIONS.md §Tarifas); los enlaces son de prueba de Stripe.
+    price_option: [
+      { id: '00000000-0000-4000-8000-0000000f0001', tenant_id: ENJOY, label: 'Boda completa', amount: 700, currency: 'EUR', period: 'event', payment_link: 'https://buy.stripe.com/test_boda', segment_id: '00000000-0000-4000-8000-0000005e0001', position: 1, active: true },
+      { id: '00000000-0000-4000-8000-0000000f0002', tenant_id: ENJOY, label: 'Local mediano', amount: 249, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_mediano', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 2, active: true },
+      { id: '00000000-0000-4000-8000-0000000f0003', tenant_id: ENJOY, label: 'Evento suelto', amount: 150, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 3, active: true },
     ],
   };
 }

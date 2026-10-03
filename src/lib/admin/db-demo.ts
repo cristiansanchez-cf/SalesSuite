@@ -24,6 +24,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   couponId: r.coupon_id ?? null,
   discount: r.discount ?? null,
   viewMode: r.view_mode ?? 'live',
+  priceOptionId: r.price_option_id ?? null,
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -97,6 +98,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.situation !== undefined) d.situation = p.situation;
       if (p.accountId !== undefined) d.account_id = p.accountId;
       if (p.viewMode !== undefined) d.view_mode = p.viewMode;
+      if (p.priceOptionId !== undefined) d.price_option_id = p.priceOptionId;
       if (p.couponId !== undefined) demoApplyCoupon(d, p.couponId);  // = trigger dossier_coupon_apply
       demoAccountsOnDossier(prev, d);
       d.updated_at = new Date().toISOString();
@@ -160,6 +162,18 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       return true;
     },
 
+    async listPriceOptions(tenantId) {
+      return db().price_option.filter((o) => o.tenant_id === tenantId)
+        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active }))
+        .sort((a, b) => a.position - b.position || a.amount - b.amount);
+    },
+    async savePriceOption(tenantId, o, id) {
+      const s = db();
+      const row = { id: id ?? randomUUID(), tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink, segment_id: o.segmentId, position: o.position, active: o.active };
+      if (id && !s.price_option.some((x) => x.id === id && x.tenant_id === tenantId)) throw new Error('Tarifa no encontrada');
+      s.price_option = [...s.price_option.filter((x) => x.id !== row.id), row];
+      return row.id;
+    },
     async listCatalog(tenantId) {
       const s = db();
       return s.module

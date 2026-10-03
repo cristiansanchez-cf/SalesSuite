@@ -39,6 +39,8 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('move'), itemId: id, toIndex: z.number().int().min(0) }),
   z.object({ op: z.literal('setVisible'), itemId: id, visible: z.boolean() }),
   z.object({ op: z.literal('setPrice'), itemId: id, priceOverride: money.nullable() }),
+  /** Tarifa del admin (null = sin precio). */
+  z.object({ op: z.literal('setPriceOption'), priceOptionId: id.nullable() }),
   z.object({ op: z.literal('setProps'), itemId: id, propOverrides: z.record(z.unknown()) }),
   z.object({ op: z.literal('removeItem'), itemId: id }),
   z.object({ op: z.literal('upgradeItem'), itemId: id }),

@@ -1,5 +1,5 @@
 import type {
-  CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role, TenantSettings,
+  CatalogVersion, PriceOption, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role, TenantSettings,
 } from './types';
 import type { DossierPatch } from './ops';
 
@@ -34,6 +34,7 @@ export type DossierDbPatch = DossierPatch & {
   outcomeNote?: string | null;
   outcomeAt?: string | null;
   segmentId?: string | null;
+  priceOptionId?: string | null;
   nextStep?: string | null;
   nextStepAt?: string | null;
   situation?: import('../evidence/types').Situation;
@@ -66,6 +67,9 @@ export interface AdminDb {
   deleteItem(id: string): Promise<boolean>;
 
   listCatalog(tenantId: string): Promise<CatalogVersion[]>;
+  /** Tarifas (migración 20261022; sin ella, lista vacía). */
+  listPriceOptions(tenantId: string): Promise<PriceOption[]>;
+  savePriceOption(tenantId: string, row: Omit<PriceOption, 'id'>, id?: string): Promise<string>;
 
   listLinks(dossierIds: string[]): Promise<LinkRecord[]>;
   insertLink(dossierId: string, expiresAt: string | null): Promise<LinkRecord>;

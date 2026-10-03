@@ -87,6 +87,23 @@ export interface DossierRecord {
   discount: import('../types').Discount | null;
   /** «Prueba»: las aperturas del enlace no cuentan ni avisan (para enviártelo a ti o a un compañero). «Real»: cuentan. */
   viewMode?: 'test' | 'live';
+  /** Tarifa elegida (la fija la empresa); el precio sale de ella. */
+  priceOptionId?: string | null;
+}
+
+export type PricePeriod = 'once' | 'event' | 'month' | 'year';
+/** Tarifa que configura el admin: lo único que puede elegir un comercial como precio. */
+export interface PriceOption {
+  id: string;
+  label: string;
+  amount: number;
+  currency: string;
+  period: PricePeriod;
+  /** Enlace de pago de Stripe (Payment Link). */
+  paymentLink: string | null;
+  segmentId: string | null;
+  position: number;
+  active: boolean;
 }
 
 export interface DossierSummary extends DossierRecord {
@@ -161,6 +178,12 @@ export interface BuilderState {
   partnerAccount: { id: string; name: string; pricePolicy: PricePolicy; priceAdjustPct: number | null; notes: string | null } | null;
   /** true para el colaborador: no ve la tarifa ni toca precios. */
   pricesLocked: boolean;
+  /** Tarifas activas (las del sector de la propuesta, primero). */
+  priceOptions: PriceOption[];
+  /** Enlace de pago de la tarifa elegida, ya con la propuesta (vendedor) y el cupón. */
+  payment: { url: string; label: string } | null;
+  /** Solo admins escriben un precio a medida. */
+  customPrices: boolean;
 }
 
 // ---------------------------------------------------------------- gestión del tenant (admins)

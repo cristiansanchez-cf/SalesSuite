@@ -103,6 +103,13 @@ const es = {
     uncovered: (list: string) => `Sin jugadas para: ${list}.`, compose: 'Preparar mensaje', team: 'Equipo',
     used: (used: number, won: number) => `Usada en ${used} cierres documentados · ganó ${won}`, noEvidence: 'Sin cierres documentados todavía',
   },
+  tariff: {
+    title: 'Precio', none: 'Sin precio', custom: 'A medida', discount: 'Descuento', noDiscount: 'Sin descuento',
+    period: { once: '', event: ' / evento', month: ' / mes', year: ' / año' } as Record<string, string>,
+    empty: 'Tu empresa aún no ha puesto tarifas: pídeselas a tu responsable.',
+    payment: 'Enlace de pago', paymentHelp: 'Va con tu propuesta y el cupón: el pago queda a tu nombre.',
+    noLink: 'Esta tarifa aún no tiene enlace de pago.',
+  },
   share: {
     title: 'Compartir', publishAndLink: 'Publicar y crear el enlace', draftHelp: 'Cuando la tengas, publícala: el enlace sale al momento.',
     mode: 'Modo', test: 'Prueba', live: 'Real',
@@ -233,6 +240,13 @@ export const builderMessages = defineMessages({
       uncovered: (list) => `No plays for: ${list}.`, compose: 'Write a message', team: 'Team',
       used: (used, won) => `Used in ${used} documented deals · won ${won}`, noEvidence: 'No documented deals yet',
     },
+    tariff: {
+      title: 'Price', none: 'No price', custom: 'Custom', discount: 'Discount', noDiscount: 'No discount',
+      period: { once: '', event: ' / event', month: ' / month', year: ' / year' },
+      empty: 'Your company has not set price options yet: ask your manager.',
+      payment: 'Payment link', paymentHelp: 'It carries your proposal and the coupon: the payment is credited to you.',
+      noLink: 'This price option has no payment link yet.',
+    },
     share: {
       title: 'Share', publishAndLink: 'Publish and create the link', draftHelp: 'When it is ready, publish it: the link is ready straight away.',
       mode: 'Mode', test: 'Test', live: 'Live',
@@ -360,6 +374,13 @@ export const builderMessages = defineMessages({
       uncovered: (list) => `Sem jogadas para: ${list}.`, compose: 'Preparar mensagem', team: 'Equipe',
       used: (used, won) => `Usada em ${used} fechamentos documentados · ganhou ${won}`, noEvidence: 'Ainda sem fechamentos documentados',
     },
+    tariff: {
+      title: 'Preço', none: 'Sem preço', custom: 'Sob medida', discount: 'Desconto', noDiscount: 'Sem desconto',
+      period: { once: '', event: ' / evento', month: ' / mês', year: ' / ano' },
+      empty: 'Sua empresa ainda não definiu tarifas: peça ao seu responsável.',
+      payment: 'Link de pagamento', paymentHelp: 'Leva sua proposta e o cupom: o pagamento fica no seu nome.',
+      noLink: 'Esta tarifa ainda não tem link de pagamento.',
+    },
     share: {
       title: 'Compartilhar', publishAndLink: 'Publicar e criar o link', draftHelp: 'Quando estiver pronta, publique: o link sai na hora.',
       mode: 'Modo', test: 'Teste', live: 'Real',
@@ -486,6 +507,13 @@ export const builderMessages = defineMessages({
       noPlaybook: '회사에 아직 플레이북이 없습니다. 리더에게 요청하거나(“플레이북” 섹션) 효과 있었던 방법을 “학습”에서 공유하세요.',
       uncovered: (list) => `플레이가 없는 항목: ${list}.`, compose: '메시지 작성', team: '팀',
       used: (used, won) => `기록된 거래 ${used}건에서 사용 · ${won}건 성사`, noEvidence: '아직 기록된 거래가 없습니다',
+    },
+    tariff: {
+      title: '가격', none: '가격 없음', custom: '맞춤', discount: '할인', noDiscount: '할인 없음',
+      period: { once: '', event: ' / 이벤트', month: ' / 월', year: ' / 년' },
+      empty: '아직 회사에서 요금을 정하지 않았어요. 담당자에게 요청하세요.',
+      payment: '결제 링크', paymentHelp: '제안서와 쿠폰이 함께 들어가 결제가 내 실적으로 잡혀요.',
+      noLink: '이 요금에는 아직 결제 링크가 없어요.',
     },
     share: {
       title: '공유', publishAndLink: '게시하고 링크 만들기', draftHelp: '준비되면 게시하세요. 링크가 바로 만들어집니다.',

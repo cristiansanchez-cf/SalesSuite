@@ -180,6 +180,16 @@
     if (!(await run({ op: 'setStatus', status: 'published' }))) return;
     if (!s.links.some((l) => l.state === 'active')) await run({ op: 'createLink', expiresAt: null });
   }
+  let customOpen = $state(false);
+  let payCopied = $state(false);
+  async function copyPay() {
+    if (!s.payment) return;
+    try { await navigator.clipboard.writeText(s.payment.url); } catch {
+      const x = document.createElement('textarea'); x.value = s.payment.url; document.body.append(x); x.select(); document.execCommand('copy'); x.remove();
+    }
+    payCopied = true;
+    setTimeout(() => (payCopied = false), 1800);
+  }
   function setMode(m: 'test' | 'live') { if (viewMode !== m) run({ op: 'update', patch: { viewMode: m } }); }
 
   // ---------- confirmación (guía Lumbra §9–11: dice lo que hace y lo que NO hace; nada de confirm() nativo)
@@ -388,6 +398,19 @@
             <p class="co-meta">{viewMode === 'test' ? t.share.testHelp : t.share.liveHelp}</p>
           </div>
         {/if}
+        {#if s.payment}
+          <div class="mt-4 grid gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="payment">
+            <p class="text-sm font-semibold">{t.tariff.payment} · {s.payment.label}</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <code class="min-w-0 flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs" data-testid="payment-url">{s.payment.url}</code>
+              <button class="co-btn co-btn--primary co-btn--sm" onclick={copyPay} data-testid="payment-copy">{payCopied ? t.links.copied : t.links.copy}</button>
+              <a class={btn} href={s.payment.url} target="_blank" rel="noopener noreferrer">{t.links.open}</a>
+            </div>
+            <p class="co-meta">{t.tariff.paymentHelp}</p>
+          </div>
+        {:else if d.priceOptionId}
+          <p class="co-meta mt-4">{t.tariff.noLink}</p>
+        {/if}
         <details class="mt-4 border-t border-[var(--console-divider)] pt-3" open={d.status === 'published'}>
           <summary class="cursor-pointer text-sm font-semibold text-muted">{t.share.moreLinks(s.links.length)}</summary>
           <div class="mt-3">
@@ -471,7 +494,7 @@
               </div>
               {#if item.error}<p class="co-alert co-alert--rejection mx-3 mb-2 text-xs">{t.modules.invalid} {item.error}</p>{/if}
               <div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
-                {#if d.priceMode === 'per_module' && !s.pricesLocked}
+                {#if d.priceMode === 'per_module' && s.customPrices}
                   <label class="flex items-center gap-2">
                     <span class="text-muted">{t.modules.price}</span>
                     <input class="co-input !w-28 !min-h-[32px] !py-1" inputmode="decimal" value={item.priceOverride ?? ''} disabled={!editable}
@@ -644,12 +667,12 @@
         <p class="mt-2 text-xs text-muted">{t.prospect.tokensPre}<code>{'{company}'}</code>{t.prospect.tokensMid}<code>{'{prospect}'}</code>{t.prospect.tokensPost}</p>
       </details>
 
-      <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount}>
+      <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount || !!d.priceOptionId}>
         <summary class="flex cursor-pointer items-center justify-between gap-3">
           <span class="co-card-title">{t.price.title}</span>
           <span class="text-sm">{#if s.total}{#if s.total.before}<s class="text-muted">{s.total.before.formatted}</s> {/if}<strong data-testid="total">{s.total.formatted}</strong>{:else}<span class="text-muted">{t.price.modeNone}</span>{/if}</span>
         </summary>
-        <div class="mt-3">
+        <div class="mt-3 grid gap-5">
         {#if s.partnerAccount}
           <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
             {t.price.account} <strong>{s.partnerAccount.name}</strong> · {t.policy[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? t.price.overList(`${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct}`) : ''}
@@ -661,6 +684,19 @@
           </p>
         {/if}
         {#if !s.pricesLocked}
+          <!-- Tarifas: las fija la empresa; aquí solo se eligen -->
+          <div class="grid gap-2">
+            {#if s.priceOptions.length === 0 && !s.customPrices}<p class="co-meta">{t.tariff.empty}</p>{/if}
+            <div class="co-chips" data-testid="price-options">
+              <button type="button" class="co-chip" aria-pressed={!d.priceOptionId && d.priceMode === 'none'} disabled={!editable} onclick={() => run({ op: 'setPriceOption', priceOptionId: null })} data-testid="price-option-none">{t.tariff.none}</button>
+              {#each s.priceOptions as o (o.id)}
+                <button type="button" class="co-chip" aria-pressed={d.priceOptionId === o.id} disabled={!editable} onclick={() => d.priceOptionId !== o.id && run({ op: 'setPriceOption', priceOptionId: o.id })} data-testid="price-option" data-label={o.label}>{o.label} · <strong>{money(o.amount, o.currency)}{t.tariff.period[o.period] ?? ''}</strong></button>
+              {/each}
+              {#if s.customPrices}<button type="button" class="co-chip" aria-pressed={customOpen || (!d.priceOptionId && d.priceMode !== 'none')} disabled={!editable} onclick={() => (customOpen = !customOpen)} data-testid="price-custom">{t.tariff.custom}</button>{/if}
+            </div>
+          </div>
+          {#if s.customPrices && (customOpen || (!d.priceOptionId && d.priceMode !== 'none'))}
+            <div class="grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-3">
         <div class="co-segmented" role="radiogroup" aria-label={t.price.mode}>
           {#each [['none', t.price.modeNone], ['total', t.price.modeTotal], ['per_module', t.price.modePerModule]] as [mode, label]}
             <button
@@ -685,15 +721,20 @@
           {/if}
         </div>
         {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">{t.price.perModuleHelp}</p>{/if}
-        {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
-          <label class="mt-3 block text-sm font-medium">{t.price.coupon} <span class="font-normal text-muted">{t.price.couponHint}</span>
-            <select class={field} value={d.couponId ?? ''} disabled={!editable} onchange={(e) => run({ op: 'setCoupon', couponId: e.currentTarget.value || null })} data-testid="coupon">
-              <option value="">{t.price.noCoupon}</option>
-              {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<option value={d.couponId}>{d.discount.label} ({d.discount.code})</option>{/if}
-              {#each coupons as c}<option value={c.id}>{c.label} ({c.code})</option>{/each}
-            </select>
-          </label>
-        {/if}
+            </div>
+          {/if}
+          {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
+            <div class="grid gap-2">
+              <p class="co-field">{t.tariff.discount}</p>
+              <div class="co-chips" data-testid="coupons">
+                <button type="button" class="co-chip" aria-pressed={!d.couponId} disabled={!editable} onclick={() => d.couponId && run({ op: 'setCoupon', couponId: null })} data-testid="coupon-none">{t.tariff.noDiscount}</button>
+                {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<button type="button" class="co-chip" aria-pressed="true" disabled>{d.discount.label}</button>{/if}
+                {#each coupons as c (c.id)}
+                  <button type="button" class="co-chip" aria-pressed={d.couponId === c.id} disabled={!editable} onclick={() => d.couponId !== c.id && run({ op: 'setCoupon', couponId: c.id })} data-testid="coupon-{c.code}">{c.label}</button>
+                {/each}
+              </div>
+            </div>
+          {/if}
         {/if}
         </div>
       </details>

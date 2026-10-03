@@ -125,3 +125,15 @@ Catálogo de cupones del espacio (30 %, 10 %, mes gratis…) que el admin crea c
   - RLS (cada uno ve lo suyo);
   - importes enteros.
 - Contrato en demo y en Postgres + PostgREST.
+
+## Tarifas y enlaces de pago
+
+**El precio lo fija la empresa, no el comercial.** En *Configurar → Tarifas y pagos* (`/admin/prices`) el admin crea las tarifas: nombre, importe (sin IVA), cómo se cobra (pago único, por evento, al mes, al año), sector opcional y el **Payment Link de Stripe**.
+
+En el editor de la propuesta, el comercial (rep) y el jefe/a de ventas (lead) **solo eligen**: «Sin precio», una tarifa o (solo admin) «A medida». El descuento es un **cupón** (también un seleccionable). No hay campos de precio libres; la base de datos lo impide también fuera de la consola (`dossier_price_guard`, `dossier_item_price_guard`, migración `20261022000000_price_options.sql`).
+
+**Enlace de pago.** Al elegir una tarifa con Payment Link, «Compartir» muestra el enlace listo para copiar, con:
+- `client_reference_id=dossier_<id>`: la propuesta, y por ella el vendedor. Stripe lo devuelve en el checkout y en el webhook (`checkout.session.completed`), así cada pago se atribuye a quien lo vendió.
+- `prefilled_promo_code=<CÓDIGO>`: el cupón elegido. **En Stripe tiene que existir un promotion code con el mismo código** que el cupón de la consola.
+
+Pendiente en Stripe (Cristian): crear un Payment Link por tarifa, activar «Permitir códigos promocionales» en cada uno y crear los promotion codes con los mismos códigos que los cupones.

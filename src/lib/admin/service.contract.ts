@@ -91,7 +91,9 @@ export function serviceContract(name: string, env: () => ContractEnv) {
 
       st = await s.apply(id, { op: 'setVisible', itemId: st.items[1].id, visible: false });
       st = await s.apply(id, { op: 'update', patch: { priceMode: 'per_module' } });
-      st = await s.apply(id, { op: 'setPrice', itemId: st.items[0].id, priceOverride: 250 });
+      // El comercial no escribe precios (docs/COMMISSIONS.md §Tarifas); un admin sí puede ajustar a medida.
+      await rejects(s.apply(id, { op: 'setPrice', itemId: st.items[0].id, priceOverride: 250 }), 403);
+      st = await svc(USERS.admin).apply(id, { op: 'setPrice', itemId: st.items[0].id, priceOverride: 250 });
       expect(st.items[0].price?.amount).toBe(250);
       expect(st.items[2].price?.amount).toBe(450);
       expect(st.total?.amount).toBe(700);
@@ -157,7 +159,8 @@ export function serviceContract(name: string, env: () => ContractEnv) {
     });
 
     test('precio total obligatorio para publicar en modo total', async () => {
-      const s = svc(USERS.rep);
+      await rejects(svc(USERS.rep).apply(await svc(USERS.rep).createDossier({ title: 'R' }), { op: 'update', patch: { priceMode: 'total' } }), 403);
+      const s = svc(USERS.admin);
       const id = await s.createDossier({ title: 'T' });
       await s.apply(id, { op: 'addItem', moduleVersionId: V.pricing });
       await s.apply(id, { op: 'update', patch: { priceMode: 'total' } });
@@ -186,8 +189,11 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       expect(st.dossier.priceMode).toBe('per_module');
       expect(st.items.length).toBe(5);
       expect(st.items.filter((i) => !i.visible).length).toBe(1);
-      expect(st.items.find((i) => i.priceOverride === 250)).toBeTruthy();
+      // El comercial no hereda precios a mano: salen del catálogo o de una tarifa.
+      expect(st.items.some((i) => i.priceOverride != null)).toBe(false);
       expect(st.canEdit).toBe(true);
+      const byAdmin = await svc(USERS.admin).getState(await svc(USERS.admin).createDossier({ title: 'Copia admin', fromDossierId: SALA_X }));
+      expect(byAdmin.items.find((i) => i.priceOverride === 250)).toBeTruthy();
     });
 
     test('reordenar muchas veces en el mismo hueco mantiene el orden (rebalanceo)', async () => {
