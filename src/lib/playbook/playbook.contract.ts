@@ -148,8 +148,8 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       expect(apertura[0].text).toContain('Hola Laura');
       expect(apertura[0].text).toContain('de Sala X');
       const pres = t.sections.find((s) => s.id === 'presentacion')!.blocks.map((b) => b.title);
-      expect(pres).toEqual(['1. Hero · Bodas', '2. Tabs · Locales', '3. Tabs · Experiencias', '4. Tarjeta de precio']);
-      expect(t.uncovered).toEqual(['Hero · Bodas']);
+      expect(pres).toEqual(['1. Portada para bodas', '2. Enjoy para tu sala', '3. Experiencias en directo', '4. Precio de la propuesta']);
+      expect(t.uncovered).toEqual(['Portada para bodas']);
       expect(t.sections.find((s) => s.id === 'precio')!.blocks[0].note?.replace(/\s/g, ' ')).toMatch(/700 €/);
       const obj = t.sections.find((s) => s.id === 'objeciones')!.blocks[0].lines.map((l) => l.title);
       expect(obj).toEqual(expect.arrayContaining(['"Es caro"', '"Ya trabajamos con un DJ que hace cosas parecidas"', '"Mis invitados son mayores, no van a participar"']));
@@ -182,7 +182,7 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       const m = await svc(U.admin).metrics();
       expect(m.best[0].id).toBe(pid);
       expect(m.outcomes.won).toBe(1);
-      expect(m.uncoveredModules).toContain('Hero · Bodas');
+      expect(m.uncoveredModules).toContain('Portada para bodas');
       expect(m.team.find((x) => x.role === 'rep')?.done).toBe(1);
 
       const x = await svc(U.admin).exportCards();

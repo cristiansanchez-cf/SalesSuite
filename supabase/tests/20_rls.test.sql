@@ -73,7 +73,7 @@ update public.dossier_item set visible = false where id = '00000000-0000-4000-80
 select pg_temp.assert((select visible from public.dossier_item where id = '00000000-0000-4000-8000-00000017e002'), 'rep no edita items ajenos');
 -- Ni el catálogo.
 update public.module set name = 'hack' where id = '00000000-0000-4000-8000-00000000e101';
-select pg_temp.assert((select name from public.module where id = '00000000-0000-4000-8000-00000000e101') = 'Hero · Bodas', 'rep no edita catálogo');
+select pg_temp.assert((select name from public.module where id = '00000000-0000-4000-8000-00000000e101') = 'Portada para bodas', 'rep no edita catálogo');
 -- Ni el tema del tenant.
 update public.tenant set name = 'hack';
 select pg_temp.assert((select name from public.tenant where slug = 'enjoy') = 'Enjoy the Club', 'rep no edita tenant');

@@ -87,7 +87,7 @@ do $$ begin
   update public.dossier set partner_account_id = '99999999-0000-4000-8000-000000000001' where id = '99999999-1111-4000-8000-000000000002';
   raise exception 'ASSERT FAILED: partner cambió la cuenta';
 exception when insufficient_privilege then null; end $$;
--- Módulo no permitido (Hero · Bodas) → no.
+-- Módulo no permitido (Portada para bodas) → no.
 do $$ begin
   insert into public.dossier_item (dossier_id, module_version_id, position) values ('99999999-1111-4000-8000-000000000002', '00000000-0000-4000-8000-0000000e1011', 2048);
   raise exception 'ASSERT FAILED: módulo no permitido';

@@ -29,7 +29,7 @@ async function login(b, email, mobile = false) {
   for (let i = 0; i < 10; i++) {
     const step = await p.getAttribute('[data-testid=welcome]', 'data-step');
     seen.push(step);
-    if (OUT && ['hello', 'how', 'first'].includes(step)) await p.screenshot({ path: `${OUT}/welcome-${step}.png`, fullPage: true });
+    if (OUT && ['hello', 'sell', 'who', 'how', 'first'].includes(step)) await p.screenshot({ path: `${OUT}/welcome-${step}.png`, fullPage: true });
     const w = await p.evaluate(() => document.documentElement.scrollWidth);
     if (w > 390) assert(false, `paso ${step} cabe en el móvil (mide ${w})`);
     if (step === 'first') break;
@@ -42,6 +42,15 @@ async function login(b, email, mobile = false) {
   await p.click('[data-testid=welcome-back]');
   await p.waitForLoadState();
   assert(await p.isVisible('[data-testid=welcome-terms-pending]'), 'condiciones sin acordar: mensaje humilde');
+
+  // «Qué vendemos»: primero el recorrido del producto (y vuelve aquí), después los módulos con su imagen.
+  await p.goto(`${BASE}/admin/welcome?step=2`);
+  assert((await p.locator('[data-testid=welcome-module]').count()) > 0, 'qué vendemos: módulos en tarjetas visuales');
+  await p.click('[data-testid=welcome-tour]');
+  await p.waitForURL(/\/admin\/learn\/tour\?from=welcome/);
+  await p.click('[data-testid=tour-got]');
+  await p.waitForURL(/\/admin\/welcome\?step=2/);
+  assert(true, 'recorrido desde la bienvenida y vuelta');
 
   // «A quién»: cada sector abre su ficha y se vuelve a la bienvenida.
   await p.goto(`${BASE}/admin/welcome?step=3`);

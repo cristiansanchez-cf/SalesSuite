@@ -97,7 +97,7 @@
       "key": "hero-bodas",
       "block_type": "hero-pitch",
       "name": "Portada para bodas",
-      "description": "Portada del dossier con titular personalizado y palabras rotando.",
+      "description": "La portada de la propuesta, con el nombre de los novios.",
       "default_price": null,
       "currency": "EUR",
       "props": {
@@ -123,7 +123,7 @@
       "key": "tabs-experiencias",
       "block_type": "tabs-showcase",
       "name": "Experiencias en directo",
-      "description": "Servicios en pestañas con mock de chat animado.",
+      "description": "Kiss-cam, dedicatorias, peticiones y álbum: lo que vive cada invitado.",
       "default_price": 450,
       "currency": "EUR",
       "props": {
@@ -180,7 +180,7 @@
       "key": "tabs-locales",
       "block_type": "tabs-showcase",
       "name": "Enjoy para tu sala",
-      "description": "Propuesta para salas y locales.",
+      "description": "Enjoy dentro de la oferta de la sala: un extra que vende o regala.",
       "default_price": 300,
       "currency": "EUR",
       "props": {
@@ -231,7 +231,7 @@
       "key": "pricing",
       "block_type": "pricing-card",
       "name": "Precio de la propuesta",
-      "description": "Cifra según price_mode del dossier.",
+      "description": "El precio de la propuesta, claro y sin sorpresas.",
       "default_price": null,
       "currency": "EUR",
       "props": {

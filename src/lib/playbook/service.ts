@@ -141,11 +141,15 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       .sort((a, b) => b.playCount - a.playCount || a.name.localeCompare(b.name));
     const revisions = await pdb.listRevisions(s.tenantId, { since: seenAt, limit: 20 });
     const byId = new Map(off.map((p) => [p.id, p]));
-    const news = revisions.filter((r) => byId.has(r.playId)).map((r) => {
+    // Novedades = cambios de verdad: en la primera visita todo sería «nuevo», así que solo cuentan las mejoras (v2+);
+    // una jugada aparece una vez (su cambio más reciente) y las notas técnicas del alta del espacio no se enseñan.
+    const seenPlay = new Set<string>();
+    const news = revisions.filter((r) => byId.has(r.playId) && (seenAt || r.version > 1) && !seenPlay.has(r.playId) && seenPlay.add(r.playId)).map((r) => {
       const p = byId.get(r.playId)!;
       return {
         playId: p.id, title: p.title, topic: p.moduleId ?? 'general',
-        topicName: p.moduleId ? latest.get(p.moduleId)?.moduleName ?? 'Módulo' : 'General', note: r.changeNote, at: r.createdAt,
+        topicName: p.moduleId ? latest.get(p.moduleId)?.moduleName ?? 'Módulo' : 'General',
+        note: r.changeNote && !/tenant\.json/i.test(r.changeNote) ? r.changeNote : null, at: r.createdAt,
       };
     });
     const tour = { steps: tourOf(tenant?.tour), learned: mine.has('tour') };

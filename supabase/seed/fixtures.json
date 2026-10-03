@@ -160,8 +160,8 @@
       "tenant_id": "00000000-0000-4000-8000-000000000e01",
       "key": "hero-bodas",
       "block_type": "hero-pitch",
-      "name": "Hero · Bodas",
-      "description": "Portada del dossier con titular personalizado y palabras rotando.",
+      "name": "Portada para bodas",
+      "description": "La portada de la propuesta, con el nombre de los novios.",
       "is_catalog": true
     },
     {
@@ -169,8 +169,8 @@
       "tenant_id": "00000000-0000-4000-8000-000000000e01",
       "key": "tabs-experiencias",
       "block_type": "tabs-showcase",
-      "name": "Tabs · Experiencias",
-      "description": "Servicios en pestañas con mock de chat animado.",
+      "name": "Experiencias en directo",
+      "description": "Kiss-cam, dedicatorias, peticiones y álbum: lo que vive cada invitado.",
       "is_catalog": true
     },
     {
@@ -178,8 +178,8 @@
       "tenant_id": "00000000-0000-4000-8000-000000000e01",
       "key": "tabs-locales",
       "block_type": "tabs-showcase",
-      "name": "Tabs · Locales",
-      "description": "Propuesta para salas y locales.",
+      "name": "Enjoy para tu sala",
+      "description": "Enjoy dentro de la oferta de la sala: un extra que vende o regala.",
       "is_catalog": true
     },
     {
@@ -187,8 +187,8 @@
       "tenant_id": "00000000-0000-4000-8000-000000000e01",
       "key": "pricing",
       "block_type": "pricing-card",
-      "name": "Tarjeta de precio",
-      "description": "Cifra según price_mode del dossier.",
+      "name": "Precio de la propuesta",
+      "description": "El precio de la propuesta, claro y sin sorpresas.",
       "is_catalog": true
     },
     {

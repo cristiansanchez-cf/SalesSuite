@@ -56,12 +56,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(JSON.stringify(await order()) === JSON.stringify(['tabs-locales', 'hero-bodas', 'tabs-experiencias', 'pricing']), 'orden persistido tras recargar');
 
   // botones ↓ (accesible / tablet): bajar hero bajo tabs-experiencias y volver a subirlo
-  await p.click('[aria-label="Bajar Hero · Bodas"]'); await settle();
+  await p.click('[aria-label="Bajar Portada para bodas"]'); await settle();
   assert((await order())[2] === 'hero-bodas', 'botón bajar');
-  await p.click('[aria-label="Subir Hero · Bodas"]'); await settle();
+  await p.click('[aria-label="Subir Portada para bodas"]'); await settle();
 
   // ocultar uno (hero)
-  await p.click('[aria-label="Ocultar Hero · Bodas"]'); await settle();
+  await p.click('[aria-label="Ocultar Portada para bodas"]'); await settle();
 
   // per_module + override
   await p.click('[data-testid=price-mode-per_module]'); await settle();

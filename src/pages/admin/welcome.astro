@@ -54,8 +54,9 @@ if (Astro.request.method === 'POST') {
 }
 
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
-const [catalog, segments, plays, terms] = await Promise.all([
+const [catalog, learn, segments, plays, terms] = await Promise.all([
   key === 'sell' ? admin.service.catalog().catch(() => []) : [],
+  key === 'sell' ? admin.playbook.learnIndex().catch(() => null) : null,
   key === 'who' ? admin.playbook.market().catch(() => []) : [],
   key === 'how' ? admin.playbook.listAllVisible().catch(() => []) : [],
   key === 'terms' ? admin.commissions.myConditions().catch(() => null) : null,
@@ -64,6 +65,10 @@ const sectors = segments.filter((s) => s.status !== 'archived').slice(0, 4);
 const topPlays = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 3);
 const href = (i: number) => `/admin/welcome?step=${i}`;
 const sectorIcon = (i: string | null) => (i && i in ICONS ? i : 'target') as IconName;
+const priceOf = new Map(catalog.map((c) => [c.moduleId, c]));
+const offer = (learn?.modules ?? []).filter((x) => priceOf.has(x.moduleId)).slice(0, 4);
+const tourSteps = learn?.tour.steps.filter((x) => x.image) ?? [];
+const tourCover = tourSteps[Math.floor(tourSteps.length / 2)]?.image ?? null;
 const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slice(0, 140) ?? '';
 ---
 <AdminLayout title={m.title} bare>
@@ -90,13 +95,33 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
       {key === 'sell' && <>
         <h1 class="co-page-title">{m.sell.title}</h1>
         <p class="co-lede">{m.sell.lede}</p>
-        {catalog.length === 0 ? <p class="co-help">{m.sell.empty}</p> : (
-          <ul class="co-rows">{catalog.slice(0, 6).map((c) => (
-            <li><a class="co-row" href={`/admin/learn/preview/${c.moduleId}`} target="_blank" rel="noopener">
-              <span class="co-row__main"><span class="co-row-title">{c.moduleName}</span>
-                {(c.description || (!partner && c.defaultPrice != null)) && <span class="co-meta">{[c.description, !partner && c.defaultPrice != null ? m.sell.from(f.money(c.defaultPrice, c.currency)) : null].filter(Boolean).join(' · ')}</span>}</span>
-              <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
-          </ul>
+        {learn && learn.tour.steps.length > 0 && (
+          <a href="/admin/learn/tour?from=welcome" class="learn-card min-h-[13rem]" data-testid="welcome-tour">
+            {tourCover && <img src={tourCover} alt="" class="learn-card__bg" />}
+            <span class="learn-card__shade"></span>
+            <span class="learn-card__body !p-5">
+              <span class="text-2xl font-bold leading-tight">{m.sell.tour}</span>
+              <span class="text-sm text-white/80">{m.sell.tourMeta(learn.tour.steps.length)}</span>
+              <span class="learn-cta !mt-1 !py-2 text-sm">{m.sell.tourGo} <span aria-hidden="true">→</span></span>
+            </span>
+          </a>
+        )}
+        {offer.length === 0 ? (catalog.length === 0 && <p class="co-help">{m.sell.empty}</p>) : (
+          <div class="grid grid-cols-2 gap-3">{offer.map((x) => {
+            const c = priceOf.get(x.moduleId)!;
+            return (
+              <a href={`/admin/learn/preview/${x.moduleId}`} target="_blank" rel="noopener" class="learn-card min-h-[9rem]" data-testid="welcome-module">
+                {x.cover
+                  ? <img src={x.cover} alt="" class="learn-card__bg" loading="lazy" />
+                  : <iframe src={`/admin/learn/preview/${x.moduleId}`} title="" aria-hidden="true" tabindex="-1" loading="lazy" class="learn-card__bg learn-card__ui"></iframe>}
+                <span class="learn-card__shade"></span>
+                <span class="learn-card__body !gap-1 !p-4">
+                  <span class="font-bold leading-tight">{x.name}</span>
+                  {!partner && c.defaultPrice != null && <span class="text-xs text-white/80">{m.sell.from(f.money(c.defaultPrice, c.currency))}</span>}
+                </span>
+              </a>
+            );
+          })}</div>
         )}
       </>}
 
@@ -104,12 +129,16 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
         <h1 class="co-page-title">{m.who.title}</h1>
         <p class="co-lede">{m.who.lede}</p>
         {sectors.length === 0 ? <p class="co-help">{m.who.empty}</p> : (
-          <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0">{sectors.map((s) => (
-            <li class="list-none"><a class="co-row !items-center" href={`/admin/learn/sector/${s.key}?from=welcome`} data-testid="welcome-sector">
-              <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={sectorIcon(s.icon)} size={22} /></span>
-              <span class="co-row__main"><span class="co-row-title">{s.name}</span>{s.description && <span class="co-meta">{s.description}</span>}</span>
-              <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
-          </ul>
+          <div class="grid grid-cols-2 gap-3">{sectors.map((s) => (
+            <a class="learn-card min-h-[10rem]" href={`/admin/learn/sector/${s.key}?from=welcome`} data-testid="welcome-sector">
+              {s.image ? <img src={s.image} alt="" class="learn-card__bg" loading="lazy" /> : null}
+              <span class="learn-card__shade"></span>
+              <span class="learn-card__body !gap-1 !p-4">
+                {!s.image && <Icon name={sectorIcon(s.icon)} size={22} />}
+                <span class="text-lg font-bold leading-tight">{s.name}</span>
+              </span>
+            </a>))}
+          </div>
         )}
         <p class="co-help">{m.who.tap}</p>
       </>}

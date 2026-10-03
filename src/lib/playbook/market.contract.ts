@@ -49,7 +49,7 @@ export function marketContract(name: string, env: () => PlaybookEnv) {
       ]);
       const dj = noche.personas.find((p) => p.key === 'dj-residente')!;
       expect(dj.canBlock).toMatch(/sabotea/);
-      expect(dj.angles[0]).toMatchObject({ moduleId: EXP, moduleName: 'Tabs · Experiencias' });
+      expect(dj.angles[0]).toMatchObject({ moduleId: EXP, moduleName: 'Experiencias en directo' });
       expect(noche.modules[0]).toMatchObject({ moduleId: EXP, priority: 1 });
 
       const v = await ctx(U.rep).pb.segmentView('ocio-nocturno');
@@ -140,7 +140,7 @@ export function marketContract(name: string, env: () => PlaybookEnv) {
       expect(c.brief).toContain('DESTINATARIO: DJ Toni (DJ de la boda)');
       expect(c.brief).toContain('Postura actual: Bloqueador');
       expect(c.brief).toContain('Cómo puede tumbarlo: No cede pantalla');
-      expect(c.brief).toContain('Tabs · Experiencias: Le da momentos para animar');
+      expect(c.brief).toContain('Experiencias en directo: Le da momentos para animar');
       expect(c.brief).toContain('Precio: 700');
       expect(c.brief).toMatch(/Enlace a la propuesta: https:\/\/pitch\.enjoytheclub\.es\/d\//);
       expect(c.cerebro).toMatchObject({ etapa: 'Primer contacto', objecion: null });

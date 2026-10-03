@@ -490,3 +490,16 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 /* Texto de jugadas (markdown mínimo) dentro de la consola. */
 .console .prose-play { color: var(--co-ink-soft); }
 .console .prose-play strong { color: var(--co-ink); font-weight: 600; }
+
+/* ---- Aprende: tarjeta grande con foto o UI del producto de fondo (learn, bienvenida, empieza aquí) */
+/* Tarjeta grande con foto o UI del producto de fondo: siempre texto claro sobre sombra oscura, sea cual sea el tema. */
+  .learn-card { position: relative; isolation: isolate; display: flex; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; color: #fff; text-decoration: none; }
+  .learn-card__bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; filter: blur(3px) saturate(1.1); transform: scale(1.06); transition: transform .6s ease, filter .6s ease; border: 0; }
+  .learn-card__ui { pointer-events: none; filter: blur(1.5px); transform: scale(1.02); transform-origin: top center; background: #fff; }
+  .learn-card:hover .learn-card__bg { transform: scale(1.1); filter: blur(1px) saturate(1.15); }
+  .learn-card__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.1) 100%); }
+  .learn-card__body { display: flex; flex: 1; flex-direction: column; justify-content: flex-end; gap: .6rem; padding: 1.75rem; min-width: 0; }
+  .learn-pill { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; background: rgba(255,255,255,.16); backdrop-filter: blur(6px); padding: .25rem .7rem; font-size: .8rem; font-weight: 600; }
+  .learn-pill--signal { background: var(--co-signal-badge, #fff); color: var(--co-signal-ink, #000); }
+  .learn-cta { margin-top: .5rem; display: inline-flex; width: fit-content; align-items: center; gap: .4rem; border-radius: 999px; background: #fff; color: #000; padding: .6rem 1.2rem; font-weight: 700; }
+  .learn-card:focus-visible { outline: 3px solid var(--co-signal, #fff); outline-offset: 3px; }

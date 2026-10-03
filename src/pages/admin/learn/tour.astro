@@ -13,17 +13,19 @@ const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const pb = admin.playbook;
 const { m } = i18n(Astro, learnMessages);
+const fromWelcome = Astro.url.searchParams.get('from') === 'welcome';
 if (Astro.request.method === 'POST') {
   await pb.markLearned('tour', true);
-  return Astro.redirect('/admin/learn?ok=tour#offer', 303);
+  return Astro.redirect(fromWelcome ? '/admin/welcome?step=2' : '/admin/learn?ok=tour#offer', 303);
 }
+const back = fromWelcome ? { href: '/admin/welcome?step=2', label: m.tour.backWelcome } : { href: '/admin/learn', label: m.tour.back };
 const { tour } = await pb.learnIndex();
 const steps = tour.steps;
 ---
 <AdminLayout title={m.tourCard.title} wide>
   <div class="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-14 pb-10" data-testid="tour">
     <div class="grid gap-6">
-      <a href="/admin/learn" class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{m.tour.back}</a>
+      <a href={back.href} class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{back.label}</a>
       <header class="grid gap-3">
         <p class="text-eyebrow">{m.tour.eyebrow}</p>
         <h1 class="co-page-title !text-5xl">{m.tour.title}</h1>
@@ -57,7 +59,7 @@ const steps = tour.steps;
 
       <form method="post" class="grid justify-items-center gap-3 text-center">
         <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="sparkles" size={30} /></span>
-        <button class="co-btn co-btn--primary" type="submit" data-testid="tour-got">{m.tour.gotNext} <span aria-hidden="true">→</span></button>
+        <button class="co-btn co-btn--primary" type="submit" data-testid="tour-got">{fromWelcome ? m.tour.got : m.tour.gotNext} <span aria-hidden="true">→</span></button>
       </form>
     </>}
   </div>

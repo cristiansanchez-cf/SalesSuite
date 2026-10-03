@@ -31,7 +31,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const segs = await rep.$$eval('[data-testid=segment]', (els) => els.map((e) => e.textContent));
   assert(['Bodas', 'Locales de ocio nocturno', 'Conciertos', 'Festivales'].every((n) => segs.some((t) => t.includes(n))), 'Aprende: los 4 sectores de Enjoy');
   await rep.locator('[data-testid=segment]', { hasText: 'ocio nocturno' }).click();
-  assert((await rep.textContent('[data-testid=segment-modules]')).includes('Tabs · Experiencias'), 'módulos que encajan en el sector');
+  assert((await rep.textContent('[data-testid=segment-modules]')).includes('Experiencias en directo'), 'módulos que encajan en el sector');
   assert((await rep.locator('[data-testid=sector-room] .text-eyebrow').allTextContents()).some((t) => /Deciden/.test(t)), 'mapa de la sala: quién decide');
   if (OUT) await rep.screenshot({ path: `${OUT}/sector.png`, fullPage: true });
   // Cada persona tiene su pantalla (el detalle no se amontona en la ficha del sector).

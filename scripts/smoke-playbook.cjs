@@ -56,7 +56,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await rep.textContent('[data-testid=progress]')).includes('Ya has completado'), 'progreso en positivo («Ya has completado…»)');
 
   // ficha de módulo con vista previa en vivo
-  await rep.locator('[data-testid=topic]', { hasText: 'Tabs · Experiencias' }).click();
+  await rep.locator('[data-testid=topic]', { hasText: 'Experiencias en directo' }).click();
   const frame = rep.frameLocator('iframe[title^="Vista previa"]');
   assert(await frame.locator('[data-block-type=tabs-showcase]').isVisible(), 'ficha de módulo: vista previa en vivo del módulo');
   if (OUT) await rep.screenshot({ path: `${OUT}/learn-module.png`, fullPage: false });
@@ -67,7 +67,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.waitForSelector('[data-testid=track-line]');
   const track = await rep.textContent('[data-testid=talk-track]');
   assert(track.includes('Hola Laura') && track.includes('Sala X'), 'guion personalizado con el prospecto');
-  assert(track.includes('2. Tabs · Locales') && track.includes('3. Tabs · Experiencias'), 'guion sigue el orden del dossier');
+  assert(track.includes('2. Enjoy para tu sala') && track.includes('3. Experiencias en directo'), 'guion sigue el orden del dossier');
   assert(track.includes('700') && track.includes('"Es caro"'), 'guion incluye precio del dossier y objeciones');
   if (OUT) await rep.screenshot({ path: `${OUT}/builder-script.png`, fullPage: false });
   const sp = await rep.context().newPage();

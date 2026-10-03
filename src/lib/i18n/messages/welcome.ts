@@ -8,8 +8,8 @@ const es = {
   step: (n: number, total: number) => `Paso ${n} de ${total}`,
   next: 'Siguiente', back: 'Atrás', skip: 'Saltar la bienvenida', start: 'Empezar',
   hello: { title: (name: string) => `Hola, ${name}`, lede: (tenant: string) => `En dos minutos sabrás qué vendes con ${tenant}, a quién, cómo y qué ganas.` },
-  sell: { title: 'Qué vendemos', lede: 'Lo que puedes ofrecer. Toca uno para ver su ficha.', empty: 'El catálogo está en preparación: te avisaremos.', from: (p: string) => `desde ${p}` },
-  who: { title: 'A quién', lede: 'Dónde encaja mejor. Empieza por aquí.', tap: 'Toca un sector para ver su ficha completa: cliente ideal, quién decide y cómo tratar a cada persona.', icp: 'Cliente ideal', avoid: 'Mejor no', empty: 'Aún no hay sectores definidos.' },
+  sell: { title: 'Qué vendemos', lede: 'Primero, míralo funcionar. Después, lo que puedes ofrecer.', tour: 'Mira lo que vendes', tourMeta: (n: number) => `${n} pasos · 1 minuto`, tourGo: 'Verlo ahora', empty: 'El catálogo está en preparación: te avisaremos.', from: (p: string) => `desde ${p}` },
+  who: { title: 'A quién', lede: 'Dónde encaja mejor. Empieza por aquí.', tap: 'Toca un sector: cliente ideal, quién decide y cómo queda su propuesta.', icp: 'Cliente ideal', avoid: 'Mejor no', empty: 'Aún no hay sectores definidos.' },
   how: {
     title: 'Cómo se vende', lede: 'Lo que ya ha funcionado, y lo que todavía es una idea del equipo.',
     proven: (n: number) => `Comprobado · ganó en ${n}`, hypothesis: 'Hipótesis: pruébala y cuéntanos', empty: 'El equipo está preparando el playbook.',
@@ -42,7 +42,7 @@ export const welcomeMessages = defineMessages({
     step: (n, total) => `Step ${n} of ${total}`,
     next: 'Next', back: 'Back', skip: 'Skip the welcome', start: 'Start',
     hello: { title: (name) => `Hi, ${name}`, lede: (tenant) => `In two minutes you will know what you sell with ${tenant}, to whom, how, and what you earn.` },
-    sell: { title: 'What we sell', lede: 'What you can offer. Tap one to see its sheet.', empty: 'The catalog is being prepared: we will let you know.', from: (p) => `from ${p}` },
+    sell: { title: 'What we sell', lede: 'First, see it in action. Then, what you can offer.', tour: 'See what you sell', tourMeta: (n) => `${n} steps · 1 minute`, tourGo: 'Watch now', empty: 'The catalog is being prepared: we will let you know.', from: (p) => `from ${p}` },
     who: { title: 'Who to', lede: 'Where it fits best. Start here.', tap: 'Tap a sector to see its full sheet: ideal customer, who decides and how to handle each person.', icp: 'Ideal customer', avoid: 'Better not', empty: 'No sectors defined yet.' },
     how: {
       title: 'How it sells', lede: 'What has already worked, and what is still a team idea.',
@@ -73,7 +73,7 @@ export const welcomeMessages = defineMessages({
     step: (n, total) => `Passo ${n} de ${total}`,
     next: 'Seguinte', back: 'Voltar', skip: 'Pular as boas-vindas', start: 'Começar',
     hello: { title: (name) => `Olá, ${name}`, lede: (tenant) => `Em dois minutos você saberá o que vende com ${tenant}, para quem, como e quanto ganha.` },
-    sell: { title: 'O que vendemos', lede: 'O que você pode oferecer. Toque em um para ver a ficha.', empty: 'O catálogo está em preparação: avisaremos.', from: (p) => `a partir de ${p}` },
+    sell: { title: 'O que vendemos', lede: 'Primeiro, veja funcionando. Depois, o que você pode oferecer.', tour: 'Veja o que você vende', tourMeta: (n) => `${n} passos · 1 minuto`, tourGo: 'Ver agora', empty: 'O catálogo está em preparação: avisaremos.', from: (p) => `a partir de ${p}` },
     who: { title: 'Para quem', lede: 'Onde encaixa melhor. Comece por aqui.', tap: 'Toque em um setor para ver a ficha completa: cliente ideal, quem decide e como tratar cada pessoa.', icp: 'Cliente ideal', avoid: 'Melhor não', empty: 'Ainda não há setores definidos.' },
     how: {
       title: 'Como se vende', lede: 'O que já funcionou e o que ainda é uma ideia da equipe.',
@@ -104,7 +104,7 @@ export const welcomeMessages = defineMessages({
     step: (n, total) => `${total}단계 중 ${n}단계`,
     next: '다음', back: '이전', skip: '건너뛰기', start: '시작하기',
     hello: { title: (name) => `${name}님, 안녕하세요`, lede: (tenant) => `2분이면 ${tenant}에서 무엇을, 누구에게, 어떻게 팔고 무엇을 얻는지 알 수 있어요.` },
-    sell: { title: '무엇을 파나요', lede: '제안할 수 있는 것들입니다. 눌러서 자세히 보세요.', empty: '카탈로그를 준비하고 있습니다. 준비되면 알려 드릴게요.', from: (p) => `${p}부터` },
+    sell: { title: '무엇을 파나요', lede: '먼저 작동하는 모습을 보세요. 그다음 제안할 수 있는 것들입니다.', tour: '무엇을 파는지 보세요', tourMeta: (n) => `${n}단계 · 1분`, tourGo: '지금 보기', empty: '카탈로그를 준비하고 있습니다. 준비되면 알려 드릴게요.', from: (p) => `${p}부터` },
     who: { title: '누구에게', lede: '가장 잘 맞는 곳입니다. 여기서 시작하세요.', tap: '업종을 눌러 전체 정보를 보세요: 이상적인 고객, 결정권자, 사람마다 대하는 방법.', icp: '이상적인 고객', avoid: '피하는 게 좋은 경우', empty: '아직 정의된 업종이 없습니다.' },
     how: {
       title: '어떻게 파나요', lede: '이미 효과가 있었던 것과 아직 팀의 아이디어인 것입니다.',
