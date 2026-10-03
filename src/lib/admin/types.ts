@@ -26,6 +26,9 @@ export interface DossierRecord {
   currency: string;
   publishedAt: string | null;
   updatedAt: string | null;
+  /** Resultado comercial (para medir qué jugadas funcionan). */
+  outcome: 'open' | 'won' | 'lost';
+  outcomeNote: string | null;
 }
 
 export interface DossierSummary extends DossierRecord {

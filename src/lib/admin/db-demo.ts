@@ -10,6 +10,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   prospectName: r.prospect_name, prospectCompany: r.prospect_company, status: r.status, locale: r.locale,
   priceMode: r.price_mode, totalPrice: r.total_price, currency: r.currency,
   publishedAt: r.published_at ?? null, updatedAt: r.updated_at ?? null,
+  outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
 });
 
 const toLink = (l: ShareLinkRow): LinkRecord => ({
@@ -62,6 +63,9 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.currency !== undefined) d.currency = p.currency;
       if (p.status !== undefined) d.status = p.status;
       if (p.publishedAt !== undefined) d.published_at = p.publishedAt;
+      if (p.outcome !== undefined) d.outcome = p.outcome;
+      if (p.outcomeNote !== undefined) d.outcome_note = p.outcomeNote;
+      if (p.outcomeAt !== undefined) d.outcome_at = p.outcomeAt;
       d.updated_at = new Date().toISOString();
       return toDossier(d);
     },

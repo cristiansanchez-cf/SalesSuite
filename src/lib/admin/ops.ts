@@ -30,6 +30,7 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('setStatus'), status: z.enum(['draft', 'published', 'archived']) }),
   z.object({ op: z.literal('createLink'), expiresAt: z.string().datetime({ offset: true }).nullable().optional() }),
   z.object({ op: z.literal('revokeLink'), linkId: id }),
+  z.object({ op: z.literal('setOutcome'), outcome: z.enum(['open', 'won', 'lost']), note: optText(500).optional() }),
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;

@@ -7,7 +7,7 @@ type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -17,6 +17,7 @@ const toDossier = (r: Row): DossierRecord => ({
   prospectName: r.prospect_name, prospectCompany: r.prospect_company, status: r.status, locale: r.locale,
   priceMode: r.price_mode, totalPrice: num(r.total_price), currency: r.currency,
   publishedAt: r.published_at, updatedAt: r.updated_at,
+  outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
 });
 
 const toItem = (r: Row): ItemRecord => {
@@ -83,6 +84,9 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       if (p.currency !== undefined) patch.currency = p.currency;
       if (p.status !== undefined) patch.status = p.status;
       if (p.publishedAt !== undefined) patch.published_at = p.publishedAt;
+      if (p.outcome !== undefined) patch.outcome = p.outcome;
+      if (p.outcomeNote !== undefined) patch.outcome_note = p.outcomeNote;
+      if (p.outcomeAt !== undefined) patch.outcome_at = p.outcomeAt;
       const rows = check(await sb.from('dossier').update(patch).eq('id', id).select(DOSSIER_COLS)) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },

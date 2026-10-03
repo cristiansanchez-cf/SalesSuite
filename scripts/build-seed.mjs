@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const fx = JSON.parse(readFileSync(`${root}supabase/seed/fixtures.json`, 'utf8'));
 
-const ORDER = ['tenant', 'domain', 'module', 'module_version', 'dossier', 'dossier_item', 'share_link'];
-const JSON_COLS = new Set(['brand', 'theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification']);
+const ORDER = ['tenant', 'domain', 'module', 'module_version', 'dossier', 'dossier_item', 'share_link', 'play'];
+const JSON_COLS = new Set(['technique_refs', 'brand', 'theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification']);
 const DERIVED = new Set(['tenant_id']);
 const derivedTables = new Set(['module_version', 'dossier_item', 'share_link']);
 
@@ -23,6 +23,7 @@ const lit = (col, v) => {
     return `$json$${s}$json$::jsonb`;
   }
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (Array.isArray(v)) return `ARRAY[${v.map((x) => `'${String(x).replaceAll("'", "''")}'`).join(', ')}]::text[]`;
   return `'${String(v).replaceAll("'", "''")}'`;
 };
 

@@ -25,7 +25,13 @@ export interface NewItem {
 }
 
 export type ItemPatch = Partial<Pick<ItemRecord, 'position' | 'visible' | 'priceOverride' | 'propOverrides' | 'moduleVersionId'>>;
-export type DossierDbPatch = DossierPatch & { status?: DossierRecord['status']; publishedAt?: string | null };
+export type DossierDbPatch = DossierPatch & {
+  status?: DossierRecord['status'];
+  publishedAt?: string | null;
+  outcome?: DossierRecord['outcome'];
+  outcomeNote?: string | null;
+  outcomeAt?: string | null;
+};
 
 /**
  * Acceso a datos de la consola, ligado a UN usuario.

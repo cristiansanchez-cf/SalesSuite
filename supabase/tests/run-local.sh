@@ -14,4 +14,5 @@ run supabase/tests/10_grants.sql
 run supabase/seed.sql
 run supabase/tests/20_rls.test.sql
 run supabase/tests/25_brand_team_storage.test.sql
+run supabase/tests/26_playbook.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

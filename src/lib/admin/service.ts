@@ -274,6 +274,12 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         await db.insertLink(id, exp);
         break;
       }
+      case 'setOutcome': {
+        await assertWrote(await db.updateDossier(id, {
+          outcome: op.outcome, outcomeNote: op.note ?? null, outcomeAt: op.outcome === 'open' ? null : now().toISOString(),
+        }));
+        break;
+      }
       case 'revokeLink': {
         const links = await db.listLinks([id]);
         if (!links.some((l) => l.id === op.linkId)) throw new AdminError(404, 'Enlace no encontrado');
