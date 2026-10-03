@@ -16,6 +16,7 @@ import Icon from '~/components/ui/Icon.astro';
 import { analyticsMessages } from '~/lib/i18n/messages/analytics';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
+import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -186,7 +187,7 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
         {error && <Alert kind="rejection" title={error} />}
         <label class="co-field">{m.dossiers.company}<input class="co-input" name="prospectCompany" maxlength="120" autofocus data-company /></label>
         <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" /></label>
-        <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title /></label>
+        <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title data-template={welcomeMessages[locale].first.proposalTitle('{c}')} /></label>
         <label class="co-field">{m.common.startFrom}
           <select class="co-select" name="fromDossierId">
             <option value="">{m.dossiers.emptyDossier}</option>
@@ -220,6 +221,6 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
     const title = dlg.querySelector<HTMLInputElement>('[data-title]');
     let touched = false;
     title?.addEventListener('input', () => { touched = true; });
-    company?.addEventListener('input', () => { if (title && !touched) title.value = company.value ? `${company.value} · ` : ''; });
+    company?.addEventListener('input', () => { if (title && !touched) title.value = company.value.trim() ? (title.dataset.template ?? '{c}').replace('{c}', company.value.trim()) : ''; });
   }
 </script>

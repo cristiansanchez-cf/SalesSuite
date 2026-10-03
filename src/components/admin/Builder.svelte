@@ -399,7 +399,7 @@
           </div>
         {/if}
         {#if s.payment}
-          <div class="mt-4 grid gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="payment">
+          <div class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="payment">
             <p class="text-sm font-semibold">{t.tariff.payment} · {s.payment.label}</p>
             <div class="flex flex-wrap items-center gap-2">
               <code class="min-w-0 flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs" data-testid="payment-url">{s.payment.url}</code>
