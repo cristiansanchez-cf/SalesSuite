@@ -17,3 +17,8 @@
   p { margin: 0; }
   :focus-visible { outline: 2px solid rgb(var(--color-primary)); outline-offset: 3px; }
 }
+
+/* Texto de jugadas del playbook (markdown mínimo). */
+.prose-play p + p, .prose-play p + ul, .prose-play ul + p { margin-top: 0.6em; }
+.prose-play ul { margin: 0.4em 0 0; padding-left: 1.2em; list-style: disc; }
+.prose-play li + li { margin-top: 0.2em; }

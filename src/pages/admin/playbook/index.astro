@@ -1,0 +1,175 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Badges from '~/components/playbook/Badges.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { renderMarkdown } from '~/lib/playbook/markdown';
+import { KIND_LABEL } from '~/lib/playbook/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const pb = admin.playbook;
+const tab = (Astro.url.searchParams.get('tab') ?? 'inbox') as 'inbox' | 'plays' | 'metrics';
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const action = String(f.get('action')) as 'accept' | 'reject' | 'promote' | 'hide';
+  result = await formAction(() => pb.review(String(f.get('id')), action, String(f.get('note') ?? '')));
+  if (!result.error) return Astro.redirect(`/admin/playbook?tab=inbox&ok=${action}`, 303);
+}
+const okMsg = flash(Astro.url, {
+  accept: 'Mejora aplicada: la jugada oficial tiene nueva versión y el equipo lo verá en Novedades.',
+  reject: 'Propuesta rechazada; su autor verá tu nota.', promote: 'Truco ascendido a jugada oficial.', hide: 'Truco ocultado.',
+  saved: 'Jugada guardada.', created: 'Jugada creada.',
+});
+
+const inbox = await pb.inbox();
+const all = tab === 'plays' ? await pb.listAll() : null;
+const m = tab === 'metrics' ? await pb.metrics() : null;
+const moduleName = (id: string | null) => (id ? all?.modules.find((x) => x.id === id)?.name ?? 'Módulo retirado' : 'General (empresa)');
+const tabs = [
+  { id: 'inbox', label: `Bandeja${inbox.pending.length ? ` (${inbox.pending.length})` : ''}` },
+  { id: 'plays', label: 'Jugadas' },
+  { id: 'metrics', label: 'Qué funciona' },
+];
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
+const btn = 'rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface';
+const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso));
+---
+<AdminLayout title="Playbook" wide>
+  <div class="flex flex-wrap items-end gap-3">
+    <div class="min-w-0 flex-1">
+      <h1 class="text-3xl font-extrabold">Playbook de ventas</h1>
+      <p class="text-sm text-muted">Lo oficial lo mantienes tú; el equipo propone y comparte. Cada cambio queda versionado y avisa al equipo.</p>
+    </div>
+    <a class={btn} href="/admin/api/playbook/export" download="playbook.json">Exportar (formato Cerebro)</a>
+    <a class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" href="/admin/playbook/new">Nueva jugada</a>
+  </div>
+  <nav class="mt-5 flex gap-1 border-b border-line" aria-label="Secciones del playbook">
+    {tabs.map((t) => <a href={`?tab=${t.id}`} class:list={['-mb-px border-b-2 px-4 py-2 text-sm font-semibold', tab === t.id ? 'border-ink' : 'border-transparent text-muted hover:text-ink']}>{t.label}</a>)}
+  </nav>
+  {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+  {result.error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">{result.error} {result.details.join(' · ')}</p>}
+
+  {tab === 'inbox' && (
+    <div class="mt-6 space-y-8" data-testid="inbox">
+      <section>
+        <h2 class="text-lg font-bold">Mejoras propuestas</h2>
+        {inbox.pending.length === 0 && <p class="mt-2 text-sm text-muted">Nada pendiente.</p>}
+        <div class="mt-3 space-y-4">
+          {inbox.pending.map((c) => (
+            <article class="rounded-2xl border border-line bg-bg p-5" data-testid="pending">
+              <p class="text-sm"><strong>{c.authorName ?? 'Alguien'}</strong> propone en <a class="underline" href={`/admin/playbook/${c.playId}`}>«{c.current?.title}»</a> · {date(c.createdAt)}</p>
+              <p class="mt-1 font-semibold">“{c.title}”</p>
+              <div class="mt-3 grid gap-3 md:grid-cols-2">
+                <div class="rounded-xl bg-surface p-3"><p class="mb-1 text-xs font-semibold text-muted">Actual (v{c.current?.version})</p><div class="prose-play text-sm" set:html={renderMarkdown(c.current?.body ?? '')} /></div>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3"><p class="mb-1 text-xs font-semibold text-emerald-800">Propuesta</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
+              </div>
+              <form method="post" class="mt-3 flex flex-wrap items-center gap-2">
+                <input type="hidden" name="id" value={c.id} />
+                <input class={`${field} max-w-md`} name="note" placeholder="Nota para el autor (obligatoria si rechazas)" maxlength="500" />
+                <button class="rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-bg" name="action" value="accept" type="submit" data-testid="accept">Aceptar y publicar</button>
+                <button class={btn} name="action" value="reject" type="submit">Rechazar</button>
+              </form>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold">Trucos del equipo <span class="text-sm font-normal text-muted">· ordenados por «me funcionó»</span></h2>
+        {inbox.tips.length === 0 && <p class="mt-2 text-sm text-muted">El equipo aún no ha compartido trucos.</p>}
+        <div class="mt-3 grid gap-3 lg:grid-cols-2">
+          {inbox.tips.map((t) => (
+            <article class="rounded-2xl border border-violet-200 bg-bg p-4" data-testid="team-tip">
+              <div class="flex flex-wrap items-center gap-2"><Badges team kind={t.kind === 'tip' ? undefined : t.kind} />
+                <span class="text-xs text-muted">{t.authorName} · 👍 {t.score.worked} · 👎 {t.score.didnt}</span></div>
+              <h3 class="mt-1 font-bold">{t.title}</h3>
+              <div class="prose-play mt-1 text-sm" set:html={renderMarkdown(t.body)} />
+              <form method="post" class="mt-3 flex gap-2">
+                <input type="hidden" name="id" value={t.id} />
+                <button class="rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-bg" name="action" value="promote" type="submit" data-testid="promote">Hacer oficial</button>
+                <button class={btn} name="action" value="hide" type="submit">Ocultar</button>
+              </form>
+            </article>
+          ))}
+        </div>
+      </section>
+      {inbox.reviewed.length > 0 && (
+        <section>
+          <h2 class="text-lg font-bold">Revisado recientemente</h2>
+          <ul class="mt-2 space-y-1 p-0 text-sm">
+            {inbox.reviewed.map((c) => <li class="list-none"><span class="font-semibold">{{ accepted: '✓', rejected: '✕', hidden: '◌' }[c.status as 'accepted']}</span> {c.title} <span class="text-muted">· {c.authorName}{c.reviewNote && ` · ${c.reviewNote}`}</span></li>)}
+          </ul>
+        </section>
+      )}
+    </div>
+  )}
+
+  {all && (
+    <div class="mt-6 space-y-6" data-testid="plays-admin">
+      {[null, ...all.modules.map((x) => x.id)].map((mid) => {
+        const list = all.plays.filter((p) => p.moduleId === mid);
+        return (
+          <section>
+            <h2 class="text-lg font-bold">{moduleName(mid)} <span class="text-sm font-normal text-muted">· {list.filter((p) => p.status === 'official').length} oficiales</span></h2>
+            {list.length === 0 && <p class="mt-1 text-sm text-amber-700">Sin jugadas: los comerciales no tendrán guion para este módulo.</p>}
+            <ul class="mt-2 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0">
+              {list.map((p) => (
+                <li class="list-none">
+                  <a href={`/admin/playbook/${p.id}`} class="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-surface">
+                    <span class="w-40 shrink-0 text-xs text-muted">{KIND_LABEL[p.kind]}</span>
+                    <span class="min-w-0 flex-1 truncate font-semibold">{p.title}</span>
+                    {p.status !== 'official' && <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold">{p.status === 'draft' ? 'Borrador' : 'Archivada'}</span>}
+                    {p.techniqueRefs.length > 0 && <span class="text-xs" title="Enlaza fichas del Cerebro">🧠 {p.techniqueRefs.length}</span>}
+                    <span class="text-xs text-muted">👍 {p.score.worked} · 👎 {p.score.didnt} · v{p.version}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  )}
+
+  {m && (
+    <div class="mt-6 grid gap-5 lg:grid-cols-2" data-testid="metrics">
+      <section class="rounded-2xl border border-line bg-bg p-5">
+        <h2 class="font-bold">Lo que más funciona</h2>
+        <ol class="mt-2 space-y-1 pl-5 text-sm">{m.best.map((p) => <li><a class="underline-offset-2 hover:underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="text-muted">· 👍 {p.score.worked} / 👎 {p.score.didnt}</span></li>)}</ol>
+        {m.best.length === 0 && <p class="text-sm text-muted">Aún no hay votos. Los comerciales votan desde «Aprende» y desde el guion de cada dossier.</p>}
+      </section>
+      <section class="rounded-2xl border border-line bg-bg p-5">
+        <h2 class="font-bold">A revisar <span class="text-sm font-normal text-muted">(más 👎 que 👍)</span></h2>
+        <ul class="mt-2 space-y-1 p-0 text-sm">{m.struggling.map((p) => <li class="list-none"><a class="underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="text-muted">· 👍 {p.score.worked} / 👎 {p.score.didnt}</span></li>)}</ul>
+        {m.struggling.length === 0 && <p class="text-sm text-muted">Nada que revisar por ahora.</p>}
+      </section>
+      <section class="rounded-2xl border border-line bg-bg p-5">
+        <h2 class="font-bold">Trucos del equipo candidatos a oficial</h2>
+        <ul class="mt-2 space-y-1 p-0 text-sm">{m.topTips.map((t) => <li class="list-none">{t.title} <span class="text-muted">· {t.authorName} · 👍 {t.score.worked}</span></li>)}</ul>
+        {m.topTips.length === 0 && <p class="text-sm text-muted">Sin votos todavía.</p>}
+      </section>
+      <section class="rounded-2xl border border-line bg-bg p-5">
+        <h2 class="font-bold">Formación del equipo</h2>
+        <ul class="mt-2 space-y-2 p-0 text-sm">
+          {m.team.map((x) => (
+            <li class="list-none">
+              <div class="flex justify-between"><span>{x.name}</span><span class="text-muted">{x.done}/{x.total}</span></div>
+              <div class="mt-1 h-1.5 rounded-full bg-line"><div class="h-full rounded-full bg-emerald-500" style={`width:${Math.round((x.done / x.total) * 100)}%`}></div></div>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section class="rounded-2xl border border-line bg-bg p-5">
+        <h2 class="font-bold">Resultado de dossiers</h2>
+        <p class="mt-2 text-sm">Ganados <strong>{m.outcomes.won}</strong> · Perdidos <strong>{m.outcomes.lost}</strong> · Publicados abiertos <strong>{m.outcomes.open}</strong></p>
+        <p class="mt-1 text-xs text-muted">Con la analítica de visionado (Fase 2) esto se cruzará con las jugadas usadas para medir tasa de cierre por jugada.</p>
+      </section>
+      <section class="rounded-2xl border border-line bg-bg p-5">
+        <h2 class="font-bold">Módulos sin jugadas</h2>
+        <p class="mt-2 text-sm">{m.uncoveredModules.length ? m.uncoveredModules.join(', ') : 'Todos los módulos tienen jugadas ✓'}</p>
+      </section>
+    </div>
+  )}
+</AdminLayout>

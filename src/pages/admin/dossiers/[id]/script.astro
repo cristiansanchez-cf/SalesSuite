@@ -1,0 +1,55 @@
+---
+/** Guion de venta imprimible del dossier (para llevar a la reunión). */
+import '~/styles/global.css';
+import { AdminError } from '~/lib/admin/service';
+import { renderMarkdown } from '~/lib/playbook/markdown';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+let track, state;
+try {
+  state = await admin.service.getState(Astro.params.id ?? '');
+  track = await admin.playbook.talkTrack(state.dossier.id);
+} catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+const d = state.dossier;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+    <title>Guion · {d.title}</title>
+    <style>@media print { .no-print { display: none } body { font-size: 11pt } section { break-inside: avoid-page } }</style>
+  </head>
+  <body class="bg-bg text-ink">
+    <main class="mx-auto max-w-3xl px-6 py-10">
+      <p class="no-print mb-6 flex gap-3 text-sm"><button onclick="print()" class="rounded-lg bg-ink px-3 py-1.5 font-semibold text-bg">Imprimir / PDF</button><a class="underline" href={`/admin/dossiers/${d.id}`}>← Volver al dossier</a></p>
+      <p class="text-sm text-muted">{tenant.name} · Guion de venta</p>
+      <h1 class="text-3xl font-extrabold">{d.title}</h1>
+      <p class="mt-1 text-muted">{[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ')}</p>
+      {track.sections.filter((s) => s.blocks.some((b) => b.lines.length || b.note)).map((s) => (
+        <section class="mt-8">
+          <h2 class="border-b border-line pb-1 text-xl font-extrabold">{s.title}</h2>
+          <p class="mt-1 text-xs text-muted">{s.hint}</p>
+          {s.blocks.map((b) => (
+            <div class="mt-3">
+              {b.title && <h3 class="font-bold">{b.title}</h3>}
+              {b.note && <p class="mt-1 text-sm italic">{b.note}</p>}
+              <ul class="mt-2 space-y-2 pl-5">
+                {b.lines.map((l) => (
+                  <li class="list-disc">
+                    <strong>{l.title}</strong>{l.source === 'team' && <span class="text-xs text-muted"> (del equipo)</span>}
+                    {l.text && <div class="prose-play text-sm" set:html={renderMarkdown(l.text)} />}
+                    {l.refs.length > 0 && <p class="text-xs text-muted">Técnica: {l.refs.map((r) => `${r.title}${r.creator ? ` (${r.creator})` : ''}`).join(' · ')}</p>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      ))}
+    </main>
+  </body>
+</html>

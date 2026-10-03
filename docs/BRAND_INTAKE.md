@@ -65,11 +65,16 @@ Para que los módulos sean **la UI real de Enjoy** y no una aproximación, neces
 
 Con eso se portan `hero-pitch` y `tabs-showcase` al diseño exacto, y se añaden `logo-marquee`, `testimonials`, `steps-howitworks` (y `faq`, `final-cta`, `compare-before-after`), siguiendo [`MODULE_AUTHORING.md`](./MODULE_AUTHORING.md).
 
-## 5. Checklist de entrega
+## 5. Playbook de ventas → `playbook` en `tenant.json`
+
+Cómo se vende cada módulo: pitch, para quién, preguntas, objeciones con respuesta, pruebas, precio/upsell, guiones y consejos. El de `tenant.json` es **contenido de ejemplo** escrito para la demo; sustituidlo por el real (formato y tipos en [`PLAYBOOK.md`](./PLAYBOOK.md)). Cada jugada lleva `key` estable, `module_key` (o `null` para general), `kind`, y opcionalmente `stage`/`objection` (taxonomía del Cerebro de Ventas) y `technique_refs` (fichas del Cerebro por id, título, creador y enlace; **sin copiar guiones literales**). Reimportar actualiza solo lo que cambió y deja versión con nota.
+
+## 6. Checklist de entrega
 
 - [ ] `theme_tokens` confirmados con el design system
 - [ ] `assets/`: logo, favicon, og, fuente (+ licencia web confirmada)
 - [ ] `brand.contact` (WhatsApp como mínimo) y `admins`
 - [ ] `catalog` con textos y precios reales
+- [ ] `playbook` con cómo se vende de verdad cada módulo (lo puede redactar el CEO/líder; luego se mantiene desde la consola)
 - [ ] Código `nh-*` de EnjoyWeb (acceso al repo o archivos de §4.2)
 - [ ] `npm run tenant:bootstrap -- tenants/enjoy --dry-run` termina sin errores

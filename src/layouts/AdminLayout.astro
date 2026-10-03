@@ -7,10 +7,13 @@ const { title, wide = false } = Astro.props;
 const { tenant, admin } = Astro.locals;
 const roleLabel = { admin: 'Admin', rep: 'Comercial' } as const;
 const path = Astro.url.pathname;
+const pending = admin ? await admin.playbook.pendingCount() : 0;
 const nav = [
   { href: '/admin', label: 'Dossiers', on: path === '/admin' || path.startsWith('/admin/dossiers') },
+  { href: '/admin/learn', label: 'Aprende', on: path.startsWith('/admin/learn') },
   ...(admin?.session.role === 'admin'
     ? [
+        { href: '/admin/playbook', label: pending ? `Playbook (${pending})` : 'Playbook', on: path.startsWith('/admin/playbook') },
         { href: '/admin/catalog', label: 'Catálogo', on: path.startsWith('/admin/catalog') },
         { href: '/admin/team', label: 'Equipo', on: path.startsWith('/admin/team') },
         { href: '/admin/brand', label: 'Marca', on: path.startsWith('/admin/brand') },

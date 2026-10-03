@@ -3,7 +3,8 @@
 Producto multi-tenant de Cofundo: un comercial compone un **dossier vivo** por prospecto (módulos de UI animados, orden, ocultos, precio) y lo comparte como enlace bajo la marca de su empresa (`pitch.<tenant>/d/<token>`). Enjoy the Club es el primer tenant.
 
 - **Puesta en marcha (Supabase, Vercel, dominio) paso a paso: [`docs/SETUP.md`](docs/SETUP.md)**
-- Qué debe aportar Enjoy (marca, copys, código `nh-*`): [`docs/BRAND_INTAKE.md`](docs/BRAND_INTAKE.md)
+- Qué debe aportar Enjoy (marca, copys, playbook, código `nh-*`): [`docs/BRAND_INTAKE.md`](docs/BRAND_INTAKE.md)
+- **Playbook de ventas** (cómo vender cada módulo, capa de equipo, Cerebro de Ventas): [`docs/PLAYBOOK.md`](docs/PLAYBOOK.md)
 - Plan y contexto de negocio (incl. §15 huecos detectados): [`docs/PLAN.md`](docs/PLAN.md)
 - Decisiones de stack (cierra las preguntas abiertas del plan): [`docs/ADR-0001-stack.md`](docs/ADR-0001-stack.md)
 - Cómo añadir un módulo: [`docs/MODULE_AUTHORING.md`](docs/MODULE_AUTHORING.md)
@@ -54,6 +55,9 @@ Producción: sigue [`docs/SETUP.md`](docs/SETUP.md). En local con la CLI (`supab
 | `/admin/catalog` *(admin)* | Módulos y versiones: crear variante, borrador → publicar → archivar, preview, uso por dossiers |
 | `/admin/team` *(admin)* | Invitar por email, cambiar rol, quitar (nunca sin al menos un admin) |
 | `/admin/brand` *(admin)* | Colores, radios, tipografía (fuente propia), logos/favicon/imagen OG (subida a Storage), contacto (WhatsApp…), con vista previa |
+| `/admin/learn` | **Aprende a vender**: formación por módulo (jugadas oficiales, vista previa del módulo, trucos del equipo, votos, proponer mejoras), progreso y novedades |
+| `/admin/playbook` *(admin)* | Bandeja de propuestas, jugadas (crear/editar con versión y nota), «qué funciona», exportación con formato del Cerebro |
+| `/admin/dossiers/:id` → «Guion de venta» | Guion de la reunión generado del playbook para ese dossier (orden, precio, objeciones); imprimible en `/script` |
 | `/admin/account` | Nombre y contraseña (también destino de invitación y recuperación) |
 | `/admin/auth/confirm` | Destino de los emails de Auth (`token_hash` o `code`) |
 | `/api/health` | Estado y diagnóstico de configuración (sin secretos) |
@@ -74,6 +78,7 @@ Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/op
 | `node scripts/smoke-e2e.cjs` | Smoke Playwright del enlace público (orden, precios, 404s, tema, multi-instancia) |
 | `node scripts/smoke-admin.cjs` | Smoke Playwright de la consola: plan §13 pasos 2–7 por la UI (login, crear, drag & drop, ocultar, precio, publicar, enlace, revocar, RBAC, móvil) |
 | `node scripts/smoke-tenant-admin.cjs` | Smoke Playwright de catálogo, equipo y marca (incl. reflejo en el enlace público) |
+| `node scripts/smoke-playbook.cjs` | Smoke Playwright del playbook: aprender, votar, compartir, proponer, bandeja del líder, guion en el builder |
 
 Los smokes van contra un servidor en modo demo: `npm run build && npm run start:demo`.
 
@@ -125,6 +130,12 @@ supabase/
 - [x] Marca en el dossier (logo, CTA WhatsApp, pie, favicon, OG para compartir)
 - [x] Storage por tenant con RLS; permisos por columna; nunca sin admin
 - [x] Script de alta idempotente + `tenants/enjoy` prerrellenado; despliegue Vercel/Docker; guía SETUP
+
+**Playbook de ventas — propuesta implementada para revisar** ([`docs/PLAYBOOK.md`](docs/PLAYBOOK.md))
+- [x] Jugadas tipadas por módulo con la taxonomía del Cerebro (etapa/objeción) y referencias a sus fichas
+- [x] «Aprende» (formación con progreso y novedades), capa de equipo (trucos y mejoras), bandeja del líder con versiones
+- [x] Guion de venta por dossier en el builder + imprimible; «me funcionó»; resultado del dossier; métricas; export
+- [x] Import del playbook en `tenant.json`; contenido de **ejemplo** para Enjoy
 
 **Pendiente — necesita a otra persona**
 - [ ] **Tú:** crear el proyecto Supabase, SMTP, Vercel y DNS → [`docs/SETUP.md`](docs/SETUP.md)

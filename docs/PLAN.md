@@ -328,6 +328,7 @@ Al construir el MVP aparecieron necesidades que el plan original no cubría. Est
 | **Permisos finos en `tenant`** | Un admin de tenant podía cambiar `slug`/`status` | ✅ Permisos por columna |
 | **Alta reproducible de tenants** | Onboarding = SQL manual propenso a errores | ✅ `npm run tenant:bootstrap` (idempotente, valida con los schemas de la app) |
 | **Despliegue y salud** | Sin target ni healthcheck | ✅ Vercel (auto) o Docker; `/api/health` |
+| **Cómo vender (playbook)** | El producto debe ser *ready to go* para un comercial nuevo; el conocimiento comercial envejece igual que los PDFs | ✅ Primera versión para revisar: [`PLAYBOOK.md`](./PLAYBOOK.md) |
 | **Diseño real de Enjoy (`nh-*`)** | Los módulos siguen la estructura, no el diseño exacto | ⏳ Bloqueado: falta acceso a EnjoyWeb (ver BRAND_INTAKE §4.2) |
 | **Datos reales de Enjoy** | Copys, precios, logo, fuente, contacto, admins | ⏳ Bloqueado: los aporta el agente de Enjoy (BRAND_INTAKE) |
 | **Proyecto Supabase, dominio y despliegue** | Requieren tus cuentas | 📋 [`SETUP.md`](./SETUP.md) |

@@ -3,12 +3,74 @@
   "slug": "acme-it",
   "name": "ACME IT",
   "default_locale": "es-ES",
-  "theme_tokens": { "colors": { "primary": "#123456" } },
-  "brand": { "logoUrl": "asset:logo.svg", "contact": { "email": "ventas@example.com" } },
-  "domains": [{ "hostname": "pitch.acme-it.test", "is_primary": true }, { "hostname": "acme-it.cofundo.app" }],
-  "admins": ["rep@enjoy.test", "nadie@acme-it.test"],
+  "theme_tokens": {
+    "colors": {
+      "primary": "#123456"
+    }
+  },
+  "brand": {
+    "logoUrl": "asset:logo.svg",
+    "contact": {
+      "email": "ventas@example.com"
+    }
+  },
+  "domains": [
+    {
+      "hostname": "pitch.acme-it.test",
+      "is_primary": true
+    },
+    {
+      "hostname": "acme-it.cofundo.app"
+    }
+  ],
+  "admins": [
+    "rep@enjoy.test",
+    "nadie@acme-it.test"
+  ],
   "catalog": [
-    { "key": "hero", "block_type": "hero-pitch", "name": "Hero", "props": { "title": "Hola {company}" } },
-    { "key": "precio", "block_type": "pricing-card", "name": "Precio", "default_price": 990, "props": { "title": "Precio" } }
+    {
+      "key": "hero",
+      "block_type": "hero-pitch",
+      "name": "Hero",
+      "props": {
+        "title": "Hola {company}"
+      }
+    },
+    {
+      "key": "precio",
+      "block_type": "pricing-card",
+      "name": "Precio",
+      "default_price": 990,
+      "props": {
+        "title": "Precio"
+      }
+    }
+  ],
+  "playbook": [
+    {
+      "key": "pitch-general",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "title": "ACME en una frase",
+      "body": "Hacemos X para {company}."
+    },
+    {
+      "key": "obj-precio",
+      "module_key": "precio",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "precio",
+      "title": "\"Es caro\"",
+      "body": "Pregunta con qué lo comparan.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "id": 707,
+          "title": "El cliente dice 'caro' porque traduce precio a horas trabajadas, no a valor",
+          "creator": "Alfonso y Cristian"
+        }
+      ]
+    }
   ]
 }

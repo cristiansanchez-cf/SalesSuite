@@ -19,6 +19,7 @@ import { extname, join, relative, resolve } from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { brandSchema } from '../src/lib/brand';
+import { playInputSchema } from '../src/lib/playbook/schema';
 import { themeTokensSchema } from '../src/lib/theme';
 import { REGISTRY, isBlockType } from '../src/modules/registry';
 
@@ -45,6 +46,17 @@ const tenantFile = z.object({
     default_price: z.number().min(0).nullable().default(null),
     currency: z.string().regex(/^[A-Z]{3}$/).default('EUR'),
     props: z.record(z.unknown()),
+  })).default([]),
+  /** Playbook de ventas (docs/PLAYBOOK.md). `module_key` null = jugada general. */
+  playbook: z.array(z.object({
+    key: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
+    module_key: z.string().nullable().default(null),
+    kind: z.string(), stage: z.string().nullable().default(null), objection: z.string().nullable().default(null),
+    segments: z.array(z.string()).default([]),
+    title: z.string(), body: z.string().default(''),
+    when_to_use: z.string().nullable().default(null), why_it_works: z.string().nullable().default(null),
+    technique_refs: z.array(z.unknown()).default([]),
+    status: z.enum(['official', 'draft']).default('official'),
   })).default([]),
 }).strict();
 
@@ -104,6 +116,13 @@ async function listFiles(root: string): Promise<string[]> {
   return out;
 }
 
+function toPlayInput(p: TenantFile['playbook'][number], moduleId: string | null) {
+  return {
+    moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, title: p.title, body: p.body,
+    whenToUse: p.when_to_use ?? '', whyItWorks: p.why_it_works ?? '', techniqueRefs: p.technique_refs, status: p.status,
+  };
+}
+
 /** Valida todo lo que la app validaría (con URLs de assets simuladas). */
 function validate(t: TenantFile, assetKeys: string[]) {
   const missing = new Set<string>();
@@ -124,6 +143,14 @@ function validate(t: TenantFile, assetKeys: string[]) {
     const r = REGISTRY[m.block_type].schema.safeParse(replaceAssets(m.props, fake, missing));
     if (!r.success) errors.push(...r.error.issues.map((i) => `catalog.${m.key}.props.${i.path.join('.')}: ${i.message}`));
   }
+  const pkeys = new Set<string>();
+  for (const p of t.playbook) {
+    if (pkeys.has(p.key)) errors.push(`playbook: clave duplicada ${p.key}`);
+    pkeys.add(p.key);
+    if (p.module_key && !keys.has(p.module_key)) errors.push(`playbook.${p.key}: module_key "${p.module_key}" no está en catalog`);
+    const r = playInputSchema.safeParse(toPlayInput(p, p.module_key ? '00000000-0000-4000-8000-000000000000' : null));
+    if (!r.success) errors.push(...r.error.issues.map((i) => `playbook.${p.key}.${i.path.join('.')}: ${i.message}`));
+  }
   for (const k of missing) errors.push(`asset:${k} no existe en ${'assets/'} (ver assets/README.md)`);
   return errors;
 }
@@ -142,7 +169,7 @@ async function main() {
   const files = (await listFiles(assetsDir)).map((p) => relative(assetsDir, p).split('\\').join('/')).filter((f) => MIME[extname(f).toLowerCase()]);
   const errors = validate(t, files);
   if (errors.length) fail(`Validación:\n  ${errors.join('\n  ')}`);
-  log(`tenant.json válido: ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
+  log(`tenant.json válido: ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
   if (DRY) { log('Nada escrito (--dry-run).'); return; }
 
   const url = process.env.PUBLIC_SUPABASE_URL;
@@ -216,7 +243,35 @@ async function main() {
     log(`módulo ${m.key}: publicada v${next}`);
   }
 
-  // 5. admins
+  // 5. playbook (upsert por key; si cambia el contenido → nueva versión con revisión)
+  const moduleIds = new Map<string, string>(
+    (must(await sb.from('module').select('id, key').eq('tenant_id', tenantId), 'leer módulos') ?? []).map((r: { id: string; key: string }) => [r.key, r.id]),
+  );
+  for (const [i, raw] of t.playbook.entries()) {
+    const p = playInputSchema.parse(toPlayInput(raw, raw.module_key ? moduleIds.get(raw.module_key)! : null));
+    const row = {
+      module_id: p.moduleId, key: raw.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments,
+      title: p.title, body: p.body, when_to_use: p.whenToUse ?? null, why_it_works: p.whyItWorks ?? null, technique_refs: p.techniqueRefs,
+      status: p.status, position: (i + 1) * 1024,
+    };
+    const cur = must(await sb.from('play').select('id, version, module_id, kind, stage, objection, segments, title, body, when_to_use, why_it_works, technique_refs, status').eq('tenant_id', tenantId).eq('key', raw.key).maybeSingle(), `leer jugada ${raw.key}`);
+    const content = (x: Record<string, unknown>) => canonical({ ...x, position: undefined, key: undefined, id: undefined, version: undefined });
+    if (!cur) {
+      const id = mustOne(await sb.from('play').insert({ tenant_id: tenantId, ...row, version: 1 }).select('id').single(), `crear jugada ${raw.key}`).id;
+      must(await sb.from('play_revision').insert({ tenant_id: tenantId, play_id: id, version: 1, snapshot: row, change_note: 'Importada (tenant.json)' }), `revisión ${raw.key}`);
+      log(`jugada ${raw.key}: creada`);
+    } else if (content(cur) !== content(row)) {
+      const version = cur.version + 1;
+      must(await sb.from('play').update({ ...row, version }).eq('id', cur.id), `actualizar jugada ${raw.key}`);
+      must(await sb.from('play_revision').insert({ tenant_id: tenantId, play_id: cur.id, version, snapshot: row, change_note: 'Actualizada por importación (tenant.json)' }), `revisión ${raw.key}`);
+      log(`jugada ${raw.key}: v${version}`);
+    } else {
+      must(await sb.from('play').update({ position: row.position }).eq('id', cur.id), `orden ${raw.key}`);
+    }
+  }
+  if (t.playbook.length) log(`playbook: ${t.playbook.length} jugadas sincronizadas`);
+
+  // 6. admins
   const redirectTo = `https://${primary.hostname}/admin/auth/confirm?next=/admin/account`;
   for (const email of t.admins.map((e) => e.toLowerCase())) {
     let user = must(await sb.from('users').select('id').ilike('email', email).maybeSingle(), `buscar ${email}`);

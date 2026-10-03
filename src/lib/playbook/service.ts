@@ -149,6 +149,25 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   async function markSeen() { await pdb.setSeen(s.tenantId, s.userId, now()); }
 
+  /** Vista previa del módulo (última versión publicada) para cualquier miembro: "lo que verá el cliente". */
+  async function modulePreview(moduleId: string, locale: string) {
+    const [modules, versions] = await Promise.all([adb.listModules(s.tenantId), adb.listModuleVersions(s.tenantId)]);
+    const m = modules.find((x) => x.id === moduleId && x.isCatalog);
+    const v = versions.filter((x) => x.moduleId === moduleId && x.status === 'published').sort((a, b) => b.version - a.version)[0];
+    if (!m || !v) throw new AdminError(404, 'Módulo no encontrado');
+    return {
+      id: `learn-${v.id}`, tenantId: s.tenantId, title: m.name, prospectName: 'Laura', prospectCompany: 'Empresa Ejemplo', locale,
+      priceMode: v.defaultPrice != null ? 'per_module' as const : 'none' as const, totalPrice: null, currency: v.currency, themeOverride: null,
+      items: [{ id: v.id, position: 1, blockType: m.blockType, moduleKey: m.key, defaultProps: v.defaultProps, propOverrides: {}, defaultPrice: v.defaultPrice, priceOverride: null, currency: v.currency }],
+    };
+  }
+
+  /** Nº de mejoras pendientes (badge del menú para el líder). */
+  async function pendingCount(): Promise<number> {
+    if (!isAdmin) return 0;
+    return (await pdb.listContributions(s.tenantId)).filter((c) => c.type === 'change' && c.status === 'pending').length;
+  }
+
   // ------------------------------------------------------------ equipo
   async function shareTip(input: unknown): Promise<string> {
     const t = parse(tipInputSchema, input);
@@ -259,6 +278,13 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     });
   }
 
+  async function history(playId: string) {
+    requireAdmin();
+    const revs = await pdb.listRevisions(s.tenantId, { playId, limit: 50 });
+    const names = await adb.userNames([...new Set(revs.map((r) => r.changedBy).filter((x): x is string => !!x))]);
+    return revs.map((r) => ({ ...r, changedByName: r.changedBy ? names.get(r.changedBy) ?? null : null }));
+  }
+
   async function inbox() {
     requireAdmin();
     const { plays, contributions } = await load();
@@ -354,8 +380,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   return {
-    isAdmin, learnIndex, topic, markLearned, markSeen, shareTip, proposeChange, withdraw, vote, talkTrack,
-    listAll, createPlay, updatePlay, setPlayStatus, inbox, review, metrics, exportCards,
+    isAdmin, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen, shareTip, proposeChange, withdraw, vote, talkTrack,
+    listAll, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };
 }
 

@@ -1,0 +1,145 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { KIND_LABEL, OBJECTION_LABEL, OBJECTIONS, PLAY_KINDS, STAGE_LABEL, STAGES, type PlayView, type TechniqueRef } from '~/lib/playbook/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const pb = admin.playbook;
+const id = Astro.params.playId ?? '';
+const isNew = id === 'new';
+
+const all = await pb.listAll();
+const current: PlayView | undefined = isNew ? undefined : all.plays.find((p) => p.id === id);
+if (!isNew && !current) return Astro.rewrite('/404');
+
+/** "707 | Título | Creador | https://…" por línea → TechniqueRef[] */
+function parseRefs(src: string): TechniqueRef[] {
+  return src.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+    const [num, title, creator, url] = l.split('|').map((x) => x.trim());
+    const n = Number(num);
+    if (!Number.isInteger(n) || n <= 0 || !title) throw new AdminError(422, `Referencia no válida: «${l}». Formato: id | título | creador | url`);
+    return { source: 'cerebro' as const, id: n, title, ...(creator ? { creator } : {}), ...(url ? { url } : {}) };
+  });
+}
+const refsText = (refs: TechniqueRef[]) => refs.map((r) => [r.id, r.title, r.creator ?? '', r.url ?? ''].join(' | ').replace(/( \| )+$/, '')).join('\n');
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let draft: Record<string, string> | null = null;
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  draft = Object.fromEntries([...f.entries()].map(([k, v]) => [k, String(v)]));
+  const action = str('action');
+  let to = '';
+  result = await formAction(async () => {
+    if (action === 'archive' || action === 'restore') {
+      await pb.setPlayStatus(id, action === 'archive' ? 'archived' : 'official');
+      to = `/admin/playbook/${id}`;
+      return;
+    }
+    const input = {
+      moduleId: str('moduleId') || null, kind: str('kind'), stage: str('stage') || null, objection: str('objection') || null,
+      segments: str('segments').split(',').map((x) => x.trim()).filter(Boolean),
+      title: str('title'), body: str('body'), whenToUse: str('whenToUse'), whyItWorks: str('whyItWorks'),
+      techniqueRefs: parseRefs(str('refs')), status: str('status') || 'official', key: str('key') || null,
+    };
+    if (isNew) { to = `/admin/playbook/${await pb.createPlay(input, str('note') || undefined)}?ok=created`; }
+    else {
+      if (!str('note').trim()) throw new AdminError(422, 'Escribe una nota de cambio: el equipo la verá en Novedades');
+      await pb.updatePlay(id, input, str('note'));
+      to = `/admin/playbook/${id}?ok=saved`;
+    }
+  });
+  if (!result.error) return Astro.redirect(to, 303);
+}
+
+const v = (k: string, fallback: string) => draft?.[k] ?? fallback;
+const cur = current;
+const history = cur ? await pb.history(cur.id) : [];
+const saved = Astro.url.searchParams.get('ok');
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+---
+<AdminLayout title={isNew ? 'Nueva jugada' : cur!.title} wide>
+  <a href="/admin/playbook?tab=plays" class="text-sm text-muted hover:text-ink">← Playbook</a>
+  <h1 class="mt-1 text-2xl font-extrabold">{isNew ? 'Nueva jugada' : cur!.title}</h1>
+  {cur && <p class="text-sm text-muted">v{cur.version} · {cur.status === 'official' ? 'Oficial' : cur.status === 'draft' ? 'Borrador' : 'Archivada'} · 👍 {cur.score.worked} · 👎 {cur.score.didnt}</p>}
+  {saved && <p class="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{saved === 'created' ? 'Jugada creada.' : 'Guardado: nueva versión publicada.'}</p>}
+  {result.error && (
+    <div class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error">
+      <p class="font-semibold">{result.error}</p>
+      {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
+    </div>
+  )}
+
+  <div class="mt-5 grid gap-6 xl:grid-cols-[minmax(0,44rem)_minmax(0,1fr)]">
+    <form method="post" class="space-y-4 rounded-2xl border border-line bg-bg p-5" data-testid="play-form">
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="text-sm font-medium">Módulo
+          <select class={field} name="moduleId">
+            <option value="">General (empresa)</option>
+            {all.modules.map((m) => <option value={m.id} selected={v('moduleId', cur?.moduleId ?? '') === m.id}>{m.name}</option>)}
+          </select>
+        </label>
+        <label class="text-sm font-medium">Tipo
+          <select class={field} name="kind">{PLAY_KINDS.map((k) => <option value={k} selected={v('kind', cur?.kind ?? 'pitch') === k}>{KIND_LABEL[k]}</option>)}</select>
+        </label>
+        <label class="text-sm font-medium">Etapa <span class="font-normal text-muted">(como el Cerebro)</span>
+          <select class={field} name="stage"><option value="">—</option>{STAGES.map((k) => <option value={k} selected={v('stage', cur?.stage ?? '') === k}>{STAGE_LABEL[k]}</option>)}</select>
+        </label>
+        <label class="text-sm font-medium">Objeción
+          <select class={field} name="objection"><option value="">—</option>{OBJECTIONS.map((k) => <option value={k} selected={v('objection', cur?.objection ?? '') === k}>{OBJECTION_LABEL[k]}</option>)}</select>
+        </label>
+      </div>
+      <label class="block text-sm font-medium">Título<input class={field} name="title" required maxlength="200" value={v('title', cur?.title ?? '')} /></label>
+      <label class="block text-sm font-medium">Texto <span class="font-normal text-muted">(**negrita**, *cursiva*, listas con «- »; admite {'{company}'} y {'{prospect}'})</span>
+        <textarea class={`${field} h-48`} name="body" maxlength="8000">{v('body', cur?.body ?? '')}</textarea>
+      </label>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="text-sm font-medium">Cuándo usarla<textarea class={`${field} h-24`} name="whenToUse" maxlength="1000">{v('whenToUse', cur?.whenToUse ?? '')}</textarea></label>
+        <label class="text-sm font-medium">Por qué funciona<textarea class={`${field} h-24`} name="whyItWorks" maxlength="2000">{v('whyItWorks', cur?.whyItWorks ?? '')}</textarea></label>
+      </div>
+      <label class="block text-sm font-medium">🧠 Fichas del Cerebro de Ventas <span class="font-normal text-muted">(una por línea: id | título | creador | url)</span>
+        <textarea class={`${field} h-20 font-mono text-xs`} name="refs" placeholder="707 | El cliente dice 'caro' porque… | Alfonso y Cristian | https://…">{v('refs', refsText(cur?.techniqueRefs ?? []))}</textarea>
+      </label>
+      <p class="text-xs text-muted">Se enlaza y atribuye la ficha; no copies aquí el guion literal del creador.</p>
+      <div class="grid gap-3 sm:grid-cols-3">
+        <label class="text-sm font-medium">Segmentos<input class={field} name="segments" value={v('segments', (cur?.segments ?? []).join(', '))} placeholder="bodas, locales" /></label>
+        <label class="text-sm font-medium">Clave (import)<input class={field} name="key" value={v('key', cur?.key ?? '')} placeholder="opcional" /></label>
+        <label class="text-sm font-medium">Estado
+          <select class={field} name="status"><option value="official" selected={v('status', cur?.status ?? 'official') === 'official'}>Oficial</option><option value="draft" selected={v('status', cur?.status ?? '') === 'draft'}>Borrador</option></select>
+        </label>
+      </div>
+      <label class="block text-sm font-medium">Nota del cambio {!isNew && <span class="font-normal text-muted">(obligatoria: la verá el equipo en Novedades)</span>}
+        <input class={field} name="note" maxlength="500" value={v('note', '')} placeholder={isNew ? 'opcional' : 'p. ej. Nuevo dato tras las bodas de septiembre'} />
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg" type="submit" name="action" value="save">{isNew ? 'Crear jugada' : 'Guardar nueva versión'}</button>
+        {cur && cur.status !== 'archived' && <button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit" name="action" value="archive" formnovalidate>Archivar</button>}
+        {cur && cur.status === 'archived' && <button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit" name="action" value="restore" formnovalidate>Restaurar</button>}
+      </div>
+    </form>
+
+    {cur && (
+      <aside class="space-y-4">
+        <a href={`/admin/learn/${cur.moduleId ?? 'general'}#play-${cur.id}`} class="block text-sm underline">Ver como la ve el equipo →</a>
+        <section class="rounded-2xl border border-line bg-bg p-5" data-testid="history">
+          <h2 class="font-bold">Historial</h2>
+          <ol class="mt-3 space-y-3 p-0">
+            {history.map((h) => (
+              <li class="list-none border-l-2 border-line pl-3 text-sm">
+                <p><strong>v{h.version}</strong> · {date(h.createdAt)} · {h.changedByName ?? '—'}</p>
+                {h.changeNote && <p class="text-muted">{h.changeNote}</p>}
+                {h.contributionId && <p class="text-xs text-violet-800">Desde una propuesta del equipo</p>}
+              </li>
+            ))}
+          </ol>
+          {history.length === 0 && <p class="text-sm text-muted">Sin cambios registrados (importada o de ejemplo).</p>}
+        </section>
+      </aside>
+    )}
+  </div>
+</AdminLayout>

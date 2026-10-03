@@ -6,6 +6,11 @@ KEY=$(node -e "
 const c=require('crypto');const b=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
 const h=b({alg:'HS256',typ:'JWT'})+'.'+b({role:'service_role',exp:Math.floor(Date.now()/1000)+3600});
 console.log(h+'.'+c.createHmac('sha256',process.argv[1]).update(h).digest('base64url'))" "$SECRET")
+FIX=supabase/tests/tenant-fixture/tenant.json
+BK=$(mktemp)
+cp "$FIX" "$BK"
+trap 'cp "$BK" "$FIX"; rm -f "$BK"' EXIT   # el JSON de prueba siempre vuelve a su estado original
+restore() { cp "$BK" "$FIX"; }
 q() { psql "$DB_URL" -Atqc "$1"; }
 run() { PUBLIC_SUPABASE_URL="$API" SUPABASE_SERVICE_ROLE_KEY="$KEY" npx tsx scripts/tenant-bootstrap.ts supabase/tests/tenant-fixture --skip-assets --skip-invites "$@"; }
 check() { [ "$1" = "$2" ] && echo "ok: $3" || { echo "FAIL: $3 (esperado '$2', obtenido '$1')"; exit 1; }; }
@@ -25,12 +30,22 @@ check "$(q "select count(*) from public.module_version where tenant_id='$T'")" "
 
 sed -i 's/"Hola {company}"/"Hola de nuevo {company}"/' supabase/tests/tenant-fixture/tenant.json
 run > /dev/null
-git checkout -q supabase/tests/tenant-fixture/tenant.json 2>/dev/null || sed -i 's/"Hola de nuevo {company}"/"Hola {company}"/' supabase/tests/tenant-fixture/tenant.json
+restore
 check "$(q "select max(version) from public.module_version v join public.module m on m.id=v.module_id where m.tenant_id='$T' and m.key='hero'")" "2" "cambio de contenido → v2 publicada"
 
 # dominio de otro tenant → error
-cp supabase/tests/tenant-fixture/tenant.json /tmp/tenant-it.json
-sed -i 's/acme-it.cofundo.app/enjoy.cofundo.app/' supabase/tests/tenant-fixture/tenant.json
-if run > /dev/null 2>&1; then echo "FAIL: robar dominio de otro tenant"; cp /tmp/tenant-it.json supabase/tests/tenant-fixture/tenant.json; exit 1; fi
-cp /tmp/tenant-it.json supabase/tests/tenant-fixture/tenant.json
+sed -i 's/acme-it.cofundo.app/enjoy.cofundo.app/' "$FIX"
+if run > /dev/null 2>&1; then echo "FAIL: robar dominio de otro tenant"; exit 1; fi
+restore
 echo "ok: no se puede asignar un dominio de otro tenant"
+
+# playbook importado
+check "$(q "select count(*) from public.play where tenant_id='$T'")" "2" "playbook importado (2 jugadas)"
+check "$(q "select technique_refs->0->>'id' from public.play where tenant_id='$T' and key='obj-precio'")" "707" "referencia al Cerebro importada"
+check "$(q "select count(*) from public.play_revision where tenant_id='$T'")" "2" "revisión inicial por jugada"
+run > /dev/null
+check "$(q "select max(version) from public.play where tenant_id='$T'")" "1" "idempotente: reimportar sin cambios no versiona"
+sed -i 's/Pregunta con qué lo comparan./Pregunta con qué lo comparan y calla./' "$FIX"
+run > /dev/null
+restore
+check "$(q "select version from public.play where tenant_id='$T' and key='obj-precio'")" "2" "cambio de texto → v2 con revisión"

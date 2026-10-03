@@ -1,0 +1,13 @@
+---
+import { KIND_LABEL, OBJECTION_LABEL, STAGE_LABEL, type Objection, type PlayKind, type Stage } from '~/lib/playbook/types';
+interface Props { kind?: PlayKind; stage?: Stage | null; objection?: Objection | null; segments?: string[]; team?: boolean }
+const { kind, stage, objection, segments = [], team = false } = Astro.props;
+const chip = 'rounded-full px-2 py-0.5 text-[11px] font-semibold';
+---
+<span class="flex flex-wrap gap-1">
+  {team && <span class={`${chip} bg-violet-100 text-violet-900`}>Del equipo</span>}
+  {kind && <span class={`${chip} bg-surface text-ink`}>{KIND_LABEL[kind]}</span>}
+  {stage && <span class={`${chip} bg-sky-100 text-sky-900`} title="Etapa (misma taxonomía que el Cerebro de Ventas)">{STAGE_LABEL[stage]}</span>}
+  {objection && <span class={`${chip} bg-amber-100 text-amber-900`} title="Tipo de objeción">Objeción: {OBJECTION_LABEL[objection]}</span>}
+  {segments.map((s) => <span class={`${chip} border border-line text-muted`}>{s}</span>)}
+</span>

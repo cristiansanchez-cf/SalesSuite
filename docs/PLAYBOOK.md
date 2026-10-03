@@ -1,6 +1,8 @@
 # Playbook de ventas: el "cerebro de la empresa" dentro de SalesSuite
 
-> Propuesta para revisar juntos. Lo marcado ✅ está implementado (en modo demo y con su esquema Supabase + RLS); lo marcado 🔜 queda diseñado pero no construido.
+> Propuesta para revisar juntos. Lo marcado ✅ está implementado y probado: en modo demo, contra Postgres + PostgREST + RLS y en navegador (`scripts/smoke-playbook.cjs`). Lo marcado 🔜 queda diseñado pero no construido.
+>
+> **Dónde verlo (modo demo):** `/admin/learn` como comercial · `/admin/playbook` como admin · pestaña «🎯 Guion de venta» en cualquier dossier.
 
 ## El problema
 

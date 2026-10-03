@@ -1,0 +1,13 @@
+---
+import DossierView from '~/components/dossier/DossierView.astro';
+import { AdminError } from '~/lib/admin/service';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+let dossier;
+try { dossier = await admin.playbook.modulePreview(Astro.params.moduleId ?? '', tenant.defaultLocale); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+---
+<DossierView tenant={tenant} dossier={dossier} banner="Vista previa · prospecto de ejemplo" />

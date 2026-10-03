@@ -8,6 +8,8 @@
   import { flip } from 'svelte/animate';
   import type { BuilderItem, BuilderState } from '~/lib/admin/types';
   import type { BuilderOp } from '~/lib/admin/ops';
+  import type { TalkTrack, TrackLine } from '~/lib/playbook/talk-track';
+  import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
 
   let { initial, publicOrigin }: { initial: BuilderState; publicOrigin: string } = $props();
 
@@ -19,6 +21,11 @@
   let previewKey = $state(0);
   let device = $state<'mobile' | 'tablet' | 'desktop'>('desktop');
   let tab = $state<'edit' | 'preview'>('edit');
+  /** Panel derecho: vista previa del dossier o guion de venta (playbook). */
+  let pane = $state<'preview' | 'script'>('preview');
+  let track = $state<TalkTrack | null>(null);
+  let trackError = $state<string | null>(null);
+  let trackCopied = $state(false);
   let openProps = $state<string | null>(null);
   let propsDraft = $state('');
   let propsError = $state<string | null>(null);
@@ -157,6 +164,36 @@
     else error = (await res.json().catch(() => ({}))).error ?? 'No se pudo borrar';
   }
 
+  // ---------- guion de venta (playbook)
+  async function loadTrack() {
+    try {
+      const res = await fetch(`${api}/talk-track`);
+      if (!res.ok) { trackError = (await res.json().catch(() => ({}))).error ?? 'No se pudo cargar el guion'; return; }
+      track = await res.json();
+      trackError = null;
+    } catch { trackError = 'Sin conexión'; }
+  }
+  $effect(() => {
+    if (pane === 'script') { void previewKey; loadTrack(); }
+  });
+  async function voteLine(l: TrackLine, verdict: 'worked' | 'didnt') {
+    const next = l.score.mine === verdict ? null : verdict;
+    const res = await fetch('/admin/api/playbook/vote', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ targetType: l.source === 'official' ? 'play' : 'contribution', targetId: l.id, verdict: next, dossierId: d.id }),
+    });
+    if (res.ok) loadTrack(); else error = (await res.json().catch(() => ({}))).error ?? 'No se pudo votar';
+  }
+  async function copyTrack() {
+    if (!track) return;
+    const txt = track.sections.map((sec) => [`## ${sec.title}`, ...sec.blocks.flatMap((b) => [
+      ...(b.title ? [`### ${b.title}`] : []), ...(b.note ? [b.note] : []),
+      ...b.lines.map((l) => `- ${stripMarkdown(l.title)}: ${stripMarkdown(l.text)}`),
+    ])].join('\n')).join('\n\n');
+    try { await navigator.clipboard.writeText(txt); trackCopied = true; setTimeout(() => (trackCopied = false), 1800); } catch { error = 'No se pudo copiar'; }
+  }
+  const OUTCOME = { open: 'En curso', won: 'Ganado 🎉', lost: 'Perdido' } as const;
+
   const money = (n: number | null, cur: string) =>
     n == null ? '—' : new Intl.NumberFormat(d.locale, { style: 'currency', currency: cur, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n);
   const fmtDate = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso)) : '');
@@ -191,7 +228,8 @@
 
   <div class="mb-4 flex rounded-xl bg-bg p-1 xl:hidden" role="tablist">
     <button role="tab" aria-selected={tab === 'edit'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'edit' ? 'bg-ink text-bg' : ''}" onclick={() => (tab = 'edit')}>Editar</button>
-    <button role="tab" aria-selected={tab === 'preview'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'preview' ? 'bg-ink text-bg' : ''}" onclick={() => (tab = 'preview')}>Vista previa</button>
+    <button role="tab" aria-selected={tab === 'preview' && pane === 'preview'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'preview' && pane === 'preview' ? 'bg-ink text-bg' : ''}" onclick={() => { tab = 'preview'; pane = 'preview'; }}>Vista previa</button>
+    <button role="tab" aria-selected={tab === 'preview' && pane === 'script'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'preview' && pane === 'script' ? 'bg-ink text-bg' : ''}" onclick={() => { tab = 'preview'; pane = 'script'; }}>Guion</button>
   </div>
 
   <div class="grid gap-5 xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
@@ -346,6 +384,14 @@
           {#if d.status !== 'published'}<button class="{btn} text-red-700" disabled={!editable} onclick={destroy}>Borrar</button>{/if}
         </div>
         {#if d.publishedAt && d.status === 'published'}<p class="mt-2 text-xs text-muted">Publicado el {fmtDate(d.publishedAt)}. Los cambios se ven al instante en los enlaces.</p>{/if}
+        <label class="mt-4 flex items-center gap-2 text-sm">
+          <span class="font-semibold">Resultado</span>
+          <select class="rounded-lg border border-line px-2 py-1.5" value={d.outcome} disabled={!editable}
+            onchange={(e) => run({ op: 'setOutcome', outcome: e.currentTarget.value as 'open' | 'won' | 'lost' })} data-testid="outcome">
+            {#each Object.entries(OUTCOME) as [k, v]}<option value={k}>{v}</option>{/each}
+          </select>
+          <span class="text-xs text-muted">Ayuda a saber qué jugadas funcionan.</span>
+        </label>
       </section>
 
       <!-- enlaces -->
@@ -385,6 +431,54 @@
     <!-- ============ preview ============ -->
     <div class="{tab === 'preview' ? '' : 'hidden xl:block'}">
       <div class="xl:sticky xl:top-4">
+        <div class="mb-3 hidden rounded-xl bg-bg p-1 xl:flex" role="tablist" aria-label="Panel">
+          <button role="tab" aria-selected={pane === 'preview'} class="flex-1 rounded-lg py-1.5 text-sm font-semibold {pane === 'preview' ? 'bg-ink text-bg' : 'text-muted'}" onclick={() => (pane = 'preview')}>Vista previa</button>
+          <button role="tab" aria-selected={pane === 'script'} class="flex-1 rounded-lg py-1.5 text-sm font-semibold {pane === 'script' ? 'bg-ink text-bg' : 'text-muted'}" onclick={() => (pane = 'script')} data-testid="tab-script">🎯 Guion de venta</button>
+        </div>
+        {#if pane === 'script'}
+          <div class="rounded-2xl border border-line bg-bg p-4" data-testid="talk-track">
+            <div class="mb-3 flex flex-wrap items-center gap-2">
+              <p class="min-w-0 flex-1 text-sm text-muted">Generado con el playbook de tu empresa para <strong>este</strong> dossier, en su orden.</p>
+              <button class={btn} onclick={copyTrack}>{trackCopied ? '¡Copiado!' : 'Copiar'}</button>
+              <a class={btn} href="/admin/dossiers/{d.id}/script" target="_blank" rel="noopener">Imprimir</a>
+            </div>
+            {#if trackError}<p class="text-sm text-red-700">{trackError}</p>{/if}
+            {#if !track && !trackError}<p class="text-sm text-muted">Cargando…</p>{/if}
+            {#if track}
+              {#if track.empty}<p class="rounded-xl bg-surface p-3 text-sm">Tu empresa aún no tiene playbook. Pídeselo a tu líder (sección «Playbook») o comparte lo que te funciona en «Aprende».</p>{/if}
+              {#if track.uncovered.length}<p class="mb-3 rounded-xl bg-amber-50 p-2 text-xs text-amber-900">Sin jugadas para: {track.uncovered.join(', ')}.</p>{/if}
+              <div class="max-h-[72vh] space-y-5 overflow-auto pr-1">
+                {#each track.sections as sec (sec.id)}
+                  {#if sec.blocks.some((b) => b.lines.length || b.note)}
+                    <section>
+                      <h3 class="text-base font-extrabold">{sec.title}</h3>
+                      <p class="text-xs text-muted">{sec.hint}</p>
+                      {#each sec.blocks as b}
+                        {#if b.title}<h4 class="mt-3 text-sm font-bold">{b.title}</h4>{/if}
+                        {#if b.note}<p class="mt-1 rounded-lg bg-surface p-2 text-xs">{b.note}</p>{/if}
+                        <ul class="mt-2 space-y-2 p-0">
+                          {#each b.lines as l (l.source + l.id)}
+                            <li class="list-none rounded-xl border p-3 text-sm {l.source === 'team' ? 'border-violet-200 bg-violet-50/40' : 'border-line'}" data-testid="track-line">
+                              <p class="font-semibold">{#if l.source === 'team'}<span class="mr-1 rounded-full bg-violet-100 px-1.5 text-[10px] text-violet-900">Equipo</span>{/if}{l.title}</p>
+                              {#if l.text}<div class="prose-play mt-1 text-muted">{@html renderMarkdown(l.text)}</div>{/if}
+                              {#if l.refs.length}
+                                <p class="mt-1 text-xs">🧠 {#each l.refs as r, i}{#if i} · {/if}{#if r.url}<a class="underline" href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>{:else}{r.title}{/if}{#if r.creator} ({r.creator}){/if}{/each}</p>
+                              {/if}
+                              <div class="mt-2 flex gap-1">
+                                <button class="rounded-md border px-2 py-0.5 text-xs {l.score.mine === 'worked' ? 'border-ink bg-ink text-bg' : 'border-line'}" onclick={() => voteLine(l, 'worked')} aria-pressed={l.score.mine === 'worked'}>👍 {l.score.worked || ''}</button>
+                                <button class="rounded-md border px-2 py-0.5 text-xs {l.score.mine === 'didnt' ? 'border-ink bg-ink text-bg' : 'border-line'}" onclick={() => voteLine(l, 'didnt')} aria-pressed={l.score.mine === 'didnt'}>👎 {l.score.didnt || ''}</button>
+                              </div>
+                            </li>
+                          {/each}
+                        </ul>
+                      {/each}
+                    </section>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {:else}
         <div class="mb-2 flex items-center gap-2">
           <span class="text-sm font-bold">Vista previa</span>
           <div class="ml-auto hidden rounded-lg bg-bg p-0.5 text-xs md:flex">
@@ -403,6 +497,7 @@
             data-testid="preview"
           ></iframe>
         </div>
+        {/if}
       </div>
     </div>
   </div>
