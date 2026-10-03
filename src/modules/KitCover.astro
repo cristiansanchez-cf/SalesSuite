@@ -1,0 +1,28 @@
+---
+/**
+ * Portada «así funciona»: la pantalla del local pasando sola y, delante, el móvil del invitado (como en la web).
+ * Rellena su contenedor (position: absolute). Sin módulos de pantalla ni de móvil, no pinta nada.
+ */
+import Phone from './phone-tour/Phone.astro';
+import ScreenMini from './live-screen/ScreenMini.astro';
+import { phoneTourSchema } from './phone-tour/schema';
+import type { UiKit } from '~/lib/playbook/service';
+
+interface Props { kit: UiKit; venue?: string; class?: string }
+const { kit, venue = 'Tu local', class: cls } = Astro.props;
+const phone = kit.phone ? phoneTourSchema.safeParse(kit.phone) : null;
+---
+{(kit.screen || phone?.success) && (
+  <div class:list={['kc', cls]} aria-hidden="true">
+    <span class="kc__glow"></span>
+    {kit.screen && <div class="kc__screen"><ScreenMini props={kit.screen} scenes={['club.photo', 'club.message', 'club.song']} venue={venue} /></div>}
+    {phone?.success && <div class="kc__phone"><Phone {...phone.data} venue={venue} only="sheet" zoom={0.5} float /></div>}
+  </div>
+)}
+
+<style>
+  .kc { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #0d0a12; }
+  .kc__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 20%, rgba(255,39,187,.3), transparent 55%); }
+  .kc__screen { position: absolute; right: 8%; top: 7%; width: 76%; }
+  .kc__phone { position: absolute; right: 3%; top: 22%; transform: rotate(5deg); }
+</style>

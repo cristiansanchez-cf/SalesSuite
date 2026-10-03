@@ -104,3 +104,6 @@ export const contextInputSchema = z.object({
   notes: optText(1500),
 });
 export type ContextInput = z.infer<typeof contextInputSchema>;
+
+/** Recorrido del producto (tenant.tour): UI en lugar de foto — «phone:<pantalla>», «screen:<escena>[,<escena>…]» o «report». */
+export const TOUR_UI = /^(phone:[a-z]+|screen:[a-z]+\.[a-z]+(,[a-z]+\.[a-z]+)*|report)$/;

@@ -1,0 +1,82 @@
+---
+/**
+ * La miniatura de un módulo, hecha con la UI de verdad (no con una foto que se repite en todas las tarjetas):
+ * la pantalla en vivo pasando sola, el móvil del invitado, la tarjeta de precio, la portada, las pestañas.
+ * Rellena su contenedor (position: absolute); el texto de la tarjeta va encima, abajo a la izquierda.
+ */
+import Phone from './phone-tour/Phone.astro';
+import ScreenMini from './live-screen/ScreenMini.astro';
+import { REGISTRY, isBlockType } from './registry';
+
+/** small: tarjetas pequeñas (bienvenida), todo a escala. */
+interface Props { blockType: string; props: unknown; price?: string | null; venue?: string; small?: boolean; class?: string }
+const { blockType, props, price, venue = 'Tu local', small = false, class: cls } = Astro.props;
+const parsed = isBlockType(blockType) ? REGISTRY[blockType].schema.safeParse(props) : null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const p: any = parsed?.success ? parsed.data : null;
+const fill = (s: string | undefined) => (s ?? '').replace(/\{(company|prospect)\}/g, venue);
+const firstChat = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind === 'chat')?.mock ?? null;
+const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind === 'image')?.mock?.src ?? null;
+---
+<div class:list={['thumb', `thumb--${blockType}`, small && 'thumb--sm', cls]} aria-hidden="true">
+  <span class="thumb__glow"></span>
+  {!p ? null
+  : blockType === 'live-screen' ? (
+    <div class="thumb__screen"><ScreenMini props={props} scenes={['club.song', 'club.photo', 'club.message', 'tp.idle']} venue={venue} /></div>
+  ) : blockType === 'phone-tour' ? (
+    <div class="thumb__phones">
+      <Phone {...p} venue={venue} only="sheet" zoom={0.46} class="thumb__phone thumb__phone--back" />
+      <Phone {...p} venue={venue} only="home" zoom={0.52} float class="thumb__phone" />
+    </div>
+  ) : blockType === 'pricing-card' ? (
+    <div class="thumb__price">
+      <small>{fill(p.eyebrow) || 'Inversión'}</small>
+      {price ? <b>{price}<em>{p.priceSuffix}</em></b> : <b class="thumb__price-title">{fill(p.title)}</b>}
+      <ul>{p.features.slice(0, 3).map((x: string) => <li>✓ {x}</li>)}</ul>
+      {p.cta && <span class="thumb__btn">{p.cta.label}</span>}
+    </div>
+  ) : blockType === 'hero-pitch' ? (
+    <div class="thumb__hero">
+      {p.eyebrow && <span class="thumb__chip">{fill(p.eyebrow)}</span>}
+      <b>{fill(p.title)} {p.rotatingWords.length > 0 && <span class="thumb__words">{p.rotatingWords.slice(0, 3).map((w: string, i: number) => <i style={`--i:${i};--n:${Math.min(3, p.rotatingWords.length)}`}>{w}</i>)}</span>}</b>
+    </div>
+  ) : blockType === 'tabs-showcase' ? (
+    <div class="thumb__tabs">
+      <span class="thumb__pills">{p.tabs.slice(0, 3).map((t: { label: string }, i: number) => <i class:list={[i === 0 && 'on']}>{t.label}</i>)}</span>
+      {firstChat ? (
+        <span class="thumb__chat">{firstChat.messages.slice(0, 3).map((m: { from: string; text: string }, i: number) => <i class:list={[m.from === 'me' && 'me']} style={`--k:${i}`}>{fill(m.text)}</i>)}</span>
+      ) : firstImg ? <img src={firstImg} alt="" loading="lazy" decoding="async" /> : null}
+    </div>
+  ) : null}
+</div>
+
+<style>
+  .thumb { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #0d0a12; }
+  .thumb__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 22%, rgba(255,39,187,.35), transparent 55%), radial-gradient(ellipse at 18% 90%, rgba(225,255,0,.12), transparent 50%); }
+  .thumb__screen { position: absolute; right: -4%; top: 7%; width: 74%; transform: rotate(-3deg); }
+  .thumb__phones { position: absolute; right: 4%; top: 6%; display: flex; align-items: flex-start; }
+  .thumb__phones :global(.thumb__phone--back) { margin-right: -60px; margin-top: 40px; opacity: .55; transform: rotate(-8deg); }
+  .thumb__price { position: absolute; right: 6%; top: 8%; width: 58%; max-width: 260px; display: grid; gap: 6px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(6px); transform: rotate(2deg); font-size: 12px; }
+  .thumb__price small { color: #ff27bb; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; }
+  .thumb__price b { font-size: 30px; font-weight: 800; line-height: 1; } .thumb__price em { font-style: normal; font-size: 12px; font-weight: 400; opacity: .7; margin-left: 4px; }
+  .thumb__price ul { display: grid; gap: 3px; padding: 0; margin: 0; list-style: none; opacity: .85; }
+  .thumb__btn { justify-self: start; margin-top: 4px; background: #ff27bb; border-radius: 99px; padding: 6px 12px; font-weight: 800; }
+  .thumb__hero { position: absolute; left: 7%; right: 7%; top: 9%; display: grid; gap: 10px; }
+  .thumb__chip { justify-self: start; background: #e1ff00; color: #08030c; font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 99px; padding: 4px 10px; }
+  .thumb__price-title { font-size: 18px !important; line-height: 1.15 !important; }
+  .thumb--sm > :not(.thumb__glow) { zoom: .58; }
+  .thumb__hero b { font-size: 32px; line-height: 1.05; font-weight: 800; letter-spacing: -.02em; }
+  .thumb__words { position: relative; display: inline-grid; color: #ff27bb; }
+  .thumb__words i { grid-area: 1 / 1; font-style: normal; opacity: 0; animation: thumb-word calc(var(--n) * 2.2s) infinite; animation-delay: calc(var(--i) * 2.2s); }
+  @keyframes thumb-word { 0%, 4% { opacity: 0; transform: translateY(40%); } 8%, 30% { opacity: 1; transform: none; } 34%, 100% { opacity: 0; transform: translateY(-40%); } }
+  .thumb__tabs { position: absolute; right: 6%; top: 8%; width: 62%; display: grid; gap: 10px; }
+  .thumb__pills { display: flex; gap: 6px; flex-wrap: wrap; } .thumb__pills i { font-style: normal; font-size: 11px; font-weight: 700; border: 1px solid rgba(255,255,255,.3); border-radius: 99px; padding: 4px 10px; }
+  .thumb__pills i.on { background: #fff; color: #111; border-color: #fff; }
+  .thumb__chat { display: grid; gap: 6px; padding: 12px; border-radius: 18px; border: 2px solid rgba(255,255,255,.2); background: #17191d; }
+  .thumb__chat i { justify-self: start; max-width: 85%; font-style: normal; font-size: 11px; border-radius: 12px; padding: 6px 9px; background: #2a2630; animation: thumb-msg .5s ease-out calc(var(--k) * 500ms + 200ms) both; }
+  .thumb__chat i.me { justify-self: end; background: #ff27bb; }
+  @keyframes thumb-msg { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+  .thumb__tabs img { width: 100%; max-height: 11rem; object-fit: contain; border-radius: 12px; }
+  @media (prefers-reduced-motion: reduce) { .thumb__words i:first-child { opacity: 1; } .thumb__words i { animation: none; } .thumb__chat i { animation: none; } }
+</style>

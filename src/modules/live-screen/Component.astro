@@ -9,14 +9,14 @@ import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { LiveScreenProps } from './schema';
 import './engine.css';
-import { DEFAULT_STYLE, MUSIC_STYLES, featuresOf } from './music';
+import { featuresOf } from './music';
+import { screenConfig } from './config';
 
 type Props = LiveScreenProps & ModuleBaseProps;
 const { eyebrow, title, lede, venueName, djName, qrImage, photos, covers, phone, scenes: baseScenes, videoScene, venueVideo, autoplay, ctx } = Astro.props;
 const t = (s: string) => interpolate(s, ctx);
 // Lo personalizado del cliente (Personalizar) manda sobre lo de ejemplo: su logo, sus fotos, su vídeo.
 const media = ctx.media ?? {};
-const ownPhotos = (media.photos ?? []).filter(Boolean);
 // Lo que el cliente no tiene, no se enseña: sin canciones, ninguna pantalla de canciones; igual con fotos y mensajes.
 const feat = featuresOf(media.features);
 const needs = (sc: string) => (/song|toast/.test(sc) ? feat.songs : /photo|full/.test(sc) ? feat.photos : /message/.test(sc) ? feat.messages : true);
@@ -25,22 +25,10 @@ const visible = shown.length ? shown : baseScenes.slice(0, 1);
 const scenes = media.video
   ? [visible[0], { scene: 'tp.idle' as const, label: videoScene.label, says: videoScene.says, video: true }, ...visible.slice(1)]
   : visible;
-// Canciones del estilo de SU local (Personalizar → estilo musical).
-const styles = Astro.props.musicStyles ?? MUSIC_STYLES;
-const style = styles[media.musicStyle ?? ''] ?? styles[DEFAULT_STYLE] ?? Object.values(styles)[0];
-const songs = style.songs;
-const covered = songs.every((x) => 'cover' in x && x.cover);
-const config = {
-  assets: {
-    venueName: t(venueName).toUpperCase().slice(0, 40), venueLogo: media.logo ?? '', djName, showEnjoyLogo: true, qrImage: qrImage ?? '',
-    photos: ownPhotos.length ? ownPhotos : photos, covers: covered ? songs.map((x) => (x as { cover: string }).cover) : covers, avatars: [], videos: [],
-  },
-  songs: songs.map((x) => ({ song: x.song, artist: x.artist })),
-  // Sus visuales: su vídeo si lo han subido; si no, uno de ejemplo de un local (el navegador elige el formato).
-  video: media.video ? { own: media.video } : { webm: venueVideo?.webm, mp4: venueVideo?.mp4 },
-  phone, ownPhoto: ownPhotos[0] ?? null, autoplay,
-  scenes: scenes.map((s) => ({ scene: s.scene, video: 'video' in s && !!s.video })),
-};
+const config = screenConfig(
+  { venueName: t(venueName), djName, qrImage, photos, covers, phone, musicStyles: Astro.props.musicStyles, venueVideo, autoplay },
+  media, scenes.map((s) => ({ scene: s.scene, video: 'video' in s && !!s.video })),
+);
 ---
 <div data-module="live-screen" class="live-screen">
   <Section tone="surface">

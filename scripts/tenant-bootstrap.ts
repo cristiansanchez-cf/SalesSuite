@@ -21,7 +21,7 @@ import { extname, join, relative, resolve } from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { brandSchema } from '../src/lib/brand';
-import { personaInputSchema, playInputSchema, segmentInputSchema } from '../src/lib/playbook/schema';
+import { TOUR_UI, personaInputSchema, playInputSchema, segmentInputSchema } from '../src/lib/playbook/schema';
 import { facetInputSchema } from '../src/lib/evidence/schema';
 import { themeTokensSchema } from '../src/lib/theme';
 import { REGISTRY, isBlockType } from '../src/modules/registry';
@@ -40,7 +40,7 @@ const tenantFile = z.object({
   theme_tokens: z.unknown(),
   brand: z.unknown().default({}),
   /** «Lo que vendes, en 1 minuto» (Aprende): pasos con imagen, de arriba abajo. image admite "asset:<ruta>". */
-  tour: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().max(240).nullable().default(null), image: z.string().nullable().default(null) })).max(8).default([]),
+  tour: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().max(240).nullable().default(null), image: z.string().nullable().default(null), ui: z.string().regex(TOUR_UI).nullable().optional() })).max(8).default([]),
   domains: z.array(z.object({ hostname: z.string().regex(/^[a-z0-9.-]+$/), is_primary: z.boolean().default(false) })).min(1),
   admins: z.array(z.string().email()).default([]),
   catalog: z.array(z.object({

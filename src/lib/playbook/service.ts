@@ -8,7 +8,7 @@ import type { AdminDb } from '../admin/db';
 import { latestByModule, AdminError, type AdminService } from '../admin/service';
 import type { AdminSession, CatalogVersion } from '../admin/types';
 import type { PlaybookDb } from './db';
-import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema } from './schema';
+import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema, TOUR_UI } from './schema';
 import { buildContext, type ContextBrief } from './context';
 import { sectorRank, type PersonaView, type SegmentView } from './market';
 import { buildTalkTrack, type TalkTrack } from './talk-track';
@@ -43,20 +43,26 @@ export function tourOf(raw: unknown): TourStep[] {
     const o = x as Record<string, unknown>;
     if (typeof o.title !== 'string' || !o.title.trim()) return [];
     const image = typeof o.image === 'string' && /^(https:\/\/|\/)[^\s"'()]+$/.test(o.image) ? o.image : null;
-    return [{ title: o.title.slice(0, 80), body: typeof o.body === 'string' ? o.body.slice(0, 240) : null, image }];
+    const ui = typeof o.ui === 'string' && TOUR_UI.test(o.ui) ? o.ui : null;
+    return [{ title: o.title.slice(0, 80), body: typeof o.body === 'string' ? o.body.slice(0, 240) : null, image, ui }];
   });
 }
 
 export interface TopicModule { moduleId: string; name: string; description: string | null; blockType: string; versionId: string }
 
-export interface TourStep { title: string; body: string | null; image: string | null }
+export interface TourStep { title: string; body: string | null; image: string | null; ui?: string | null }
+
+/** Props del módulo (las de su última versión) para pintar su UI: miniaturas y recorrido. */
+export interface UiKit { phone: Record<string, unknown> | null; screen: Record<string, unknown> | null; photo: string | null }
 
 export interface LearnIndex {
   /** «Lo que vendes, en 1 minuto» (tenant.tour). Vacío = la empresa aún no lo ha preparado. */
   tour: { steps: TourStep[]; learned: boolean };
   general: { playCount: number; learned: boolean };
   /** cover: primera imagen de producto del módulo (para el fondo de su tarjeta). */
-  modules: Array<TopicModule & { playCount: number; tipCount: number; learned: boolean; cover: string | null }>;
+  modules: Array<TopicModule & { playCount: number; tipCount: number; learned: boolean; cover: string | null; props: Record<string, unknown>; price: string | null }>;
+  /** Para la UI de Enjoy fuera de las propuestas (recorrido, bienvenida). */
+  kit: UiKit;
   /** Sectores que esta persona ya ha repasado (claves). */
   sectorsLearned: string[];
   progress: { done: number; total: number };
@@ -128,6 +134,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       load(), pdb.listProgress(s.tenantId), pdb.getSeen(s.tenantId, s.userId), adb.listModuleVersions(s.tenantId), adb.getTenant(s.tenantId), loadMarket(),
     ]);
     const coverOf = new Map(versions.map((v) => [v.id, firstImage(v.defaultProps)]));
+    const vById = new Map(versions.map((v) => [v.id, v]));
+    const eur = (n: number | null | undefined) => (n == null ? null : `${new Intl.NumberFormat('es-ES').format(n)} €`);
     const mine = new Set(progress.filter((p) => p.userId === s.userId).map((p) => p.topic));
     const off = plays.filter(official);
     const rankOf = sectorRank(segs.segments);
@@ -139,6 +147,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
         learned: mine.has(v.moduleId),
         // Las pantallas en vivo se enseñan en marcha (vista previa), no con una foto fija.
         cover: v.blockType === 'live-screen' ? null : coverOf.get(v.versionId) ?? null,
+        props: vById.get(v.versionId)?.defaultProps ?? {},
+        price: eur(vById.get(v.versionId)?.defaultPrice),
       }))
       .sort((a, b) => rankOf(a.moduleId) - rankOf(b.moduleId) || b.playCount - a.playCount || a.name.localeCompare(b.name));
     const revisions = await pdb.listRevisions(s.tenantId, { since: seenAt, limit: 20 });
@@ -157,8 +167,12 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const tour = { steps: tourOf(tenant?.tour), learned: mine.has('tour') };
     const sectorKeys = segs.segments.filter((x) => x.status !== 'archived').map((x) => x.key);
     const sectorsLearned = sectorKeys.filter((k) => mine.has(`sector:${k}`));
+    const propsOf = (type: string) => modules.find((x) => x.blockType === type)?.props ?? null;
+    const phone = propsOf('phone-tour');
+    const kit: UiKit = { phone, screen: propsOf('live-screen'), photo: (phone?.photos as string[] | undefined)?.[0] ?? null };
     return {
       tour,
+      kit,
       general: { playCount: off.filter((p) => p.moduleId === null).length, learned: mine.has('general') },
       modules,
       sectorsLearned,

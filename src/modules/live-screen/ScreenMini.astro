@@ -1,0 +1,36 @@
+---
+/**
+ * La pantalla en vivo en pequeño, sin botonera: para enseñar el producto fuera de una propuesta (Aprende, bienvenida,
+ * «Así funciona»). `scenes`: qué pantallas, en orden (una sola = fija).
+ */
+import type { ClientMedia } from '~/lib/types';
+import { liveScreenSchema } from './schema';
+import { screenConfig } from './config';
+import './engine.css';
+
+interface Props { props: unknown; scenes?: string[]; media?: ClientMedia; venue?: string; class?: string }
+const { props, scenes, media = {}, venue = 'Tu local', class: cls } = Astro.props;
+const parsed = liveScreenSchema.safeParse(props);
+const p = parsed.success ? parsed.data : null;
+const list = scenes?.length ? scenes : p?.scenes.map((s) => s.scene) ?? [];
+const config = p && list.length
+  ? screenConfig({ ...p, venueName: p.venueName.replace('{company}', venue), autoplay: true }, media, list.map((scene) => ({ scene })))
+  : null;
+---
+{config && (
+  <div data-module="live-screen-mini" class:list={['ls-mini', cls]} aria-hidden="true">
+    <div class="ls-mini__stage" data-stage></div>
+    <script type="application/json" data-config set:html={JSON.stringify(config).replace(/</g, '\\u003c')}></script>
+  </div>
+)}
+
+<style>
+  .ls-mini { width: 100%; }
+  .ls-mini__stage { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #08030c; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { initMini } from './client';
+  mountAll('live-screen-mini', initMini);
+</script>

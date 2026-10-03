@@ -6,6 +6,10 @@
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
+import Phone from '~/modules/phone-tour/Phone.astro';
+import ScreenMini from '~/modules/live-screen/ScreenMini.astro';
+import ReportMini from '~/modules/live-screen/ReportMini.astro';
+import { phoneTourSchema } from '~/modules/phone-tour/schema';
 import { i18n } from '~/lib/i18n';
 import { learnMessages } from '~/lib/i18n/messages/learn';
 
@@ -19,8 +23,17 @@ if (Astro.request.method === 'POST') {
   return Astro.redirect(fromWelcome ? '/admin/welcome?step=2' : '/admin/learn?ok=tour#offer', 303);
 }
 const back = fromWelcome ? { href: '/admin/welcome?step=2', label: m.tour.backWelcome } : { href: '/admin/learn', label: m.tour.back };
-const { tour } = await pb.learnIndex();
+const { tour, kit } = await pb.learnIndex();
 const steps = tour.steps;
+// Cada paso, con la UI de verdad cuando la hay (móvil, pantalla, informe); si no, su foto.
+const phoneProps = kit.phone ? phoneTourSchema.safeParse(kit.phone) : null;
+const uiOf = (ui: string | null | undefined) => {
+  if (!ui) return null;
+  if (ui.startsWith('phone:') && phoneProps?.success) return { kind: 'phone' as const, only: ui.slice(6) };
+  if (ui.startsWith('screen:') && kit.screen) return { kind: 'screen' as const, scenes: ui.slice(7).split(',') };
+  if (ui === 'report') return { kind: 'report' as const };
+  return null;
+};
 ---
 <AdminLayout title={m.tourCard.title} wide>
   <div class="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-14 pb-10" data-testid="tour">
@@ -42,7 +55,14 @@ const steps = tour.steps;
       <ol class="tour grid gap-16 p-0">
         {steps.map((s, i) => (
           <li class="tour__step grid list-none items-center gap-6 md:grid-cols-2 md:gap-12" data-testid="tour-step">
-            {s.image ? (
+            {uiOf(s.ui) ? (() => { const u = uiOf(s.ui)!; return (
+              <figure class:list={['tour__frame tour__frame--ui', i % 2 === 1 && 'md:order-2']} data-testid="tour-ui" data-ui={u.kind}>
+                <span class="tour__glow" aria-hidden="true"></span>
+                {u.kind === 'phone' && phoneProps?.success && <Phone {...phoneProps.data} only={u.only} zoom={0.78} float />}
+                {u.kind === 'screen' && <div class="tour__screen"><ScreenMini props={kit.screen} scenes={u.scenes} /></div>}
+                {u.kind === 'report' && <ReportMini photo={kit.photo} />}
+              </figure>
+            ); })() : s.image ? (
               <figure class:list={['tour__frame', i % 2 === 1 && 'md:order-2']}>
                 <img src={s.image} alt="" class="tour__blur" loading={i < 2 ? 'eager' : 'lazy'} />
                 <img src={s.image} alt={s.title} class="tour__img co-img" decoding="async" loading={i < 2 ? 'eager' : 'lazy'} />
@@ -69,5 +89,9 @@ const steps = tour.steps;
   /* Marco de imagen: la misma foto, difuminada, rellena el fondo; delante, entera. Sirve para móvil vertical y pantalla. */
   .tour__frame { position: relative; isolation: isolate; margin: 0; display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; }
   .tour__blur { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; filter: blur(24px) saturate(1.2); opacity: .7; transform: scale(1.2); }
+  /* Con UI: el producto de verdad, sobre un brillo de su color. */
+  .tour__frame--ui { aspect-ratio: auto; min-height: 22rem; padding: 1.5rem; background: #0d0a12; }
+  .tour__glow { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 35%, rgba(255,39,187,.32), transparent 60%), radial-gradient(ellipse at 20% 90%, rgba(225,255,0,.12), transparent 50%); }
+  .tour__screen { width: 100%; }
   .tour__img { max-width: 88%; max-height: 88%; object-fit: contain; border-radius: .75rem; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
 </style>

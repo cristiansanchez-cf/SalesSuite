@@ -11,6 +11,7 @@ import { i18n } from '~/lib/i18n';
 import { startMessages } from '~/lib/i18n/messages/start';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 import { demoDb } from '~/lib/data/store';
+import KitCover from '~/modules/KitCover.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -85,7 +86,7 @@ const next = steps.find((s) => !s.done)?.key;
       <section class="grid content-start gap-4" data-testid="start-what">
         <h2 class="text-eyebrow">{m.what.title}</h2>
         <div class="learn-card min-h-[20rem]">
-          {cover && <img src={cover} alt="" class="learn-card__bg co-img" decoding="async" />}
+          {learn && (learn.kit.screen || learn.kit.phone) ? <KitCover kit={learn.kit} /> : cover && <img src={cover} alt="" class="learn-card__bg co-img" decoding="async" />}
           <span class="learn-card__shade"></span>
           <div class="learn-card__body">
             {catalog.length === 0 ? <p class="text-white/80">{m.what.empty}</p> : (

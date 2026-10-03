@@ -24,7 +24,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // ---------------- comercial: aprende
   const rep = await login('rep@enjoy.test');
   await rep.click('a[href="/admin/learn"]');
-  assert(await rep.isVisible('[data-testid=progress]'), 'Aprende: barra de progreso');
+  // Aprende llega en una server island: se espera a que pinte.
+  assert(await rep.waitForSelector('[data-testid=progress]', { timeout: 15000 }).then(() => true, () => false), 'Aprende: barra de progreso');
   assert((await rep.$$('[data-testid=topic]')).length >= 3, 'Aprende: fichas por módulo');
   if (OUT) await rep.screenshot({ path: `${OUT}/learn-index.png`, fullPage: true });
 

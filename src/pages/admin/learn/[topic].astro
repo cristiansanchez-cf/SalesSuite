@@ -15,6 +15,8 @@ import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { learnMessages } from '~/lib/i18n/messages/learn';
 import Icon from '~/components/ui/Icon.astro';
+import Thumb from '~/modules/Thumb.astro';
+import { isBlockType } from '~/modules/registry';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -45,7 +47,8 @@ const partner = admin.session.partner ?? null;
 const field = 'co-input';
 const lm = learnMessages[locale];
 // Portada: la captura del módulo; si no tiene, su propia propuesta en vivo, difuminada.
-const cover = view.module ? (await pb.learnIndex().catch(() => null))?.modules.find((x) => x.moduleId === topicId)?.cover ?? null : null;
+const card = view.module ? (await pb.learnIndex().catch(() => null))?.modules.find((x) => x.moduleId === topicId) ?? null : null;
+const cover = card?.cover ?? null;
 const firstTab = view.sections[0]?.kind ?? 'team';
 ---
 <AdminLayout title={view.name} wide>
@@ -53,7 +56,9 @@ const firstTab = view.sections[0]?.kind ?? 'team';
     <a href="/admin/learn" class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{msg.common.backLearn.replace(/^←\s*/, '')}</a>
 
     <header class="learn-card min-h-[18rem] sm:min-h-[22rem]" data-testid="topic-hero">
-      {view.module && (cover
+      {view.module && (card && isBlockType(card.blockType)
+        ? <Thumb blockType={card.blockType} props={card.props} price={partner ? null : card.price} />
+        : cover
         ? <img src={cover} alt="" class="learn-card__bg co-img" decoding="async" />
         : <iframe src={`/admin/learn/preview/${view.module.moduleId}`} title="" aria-hidden="true" tabindex="-1" class="learn-card__bg learn-card__ui"></iframe>)}
       {!view.module && <span class="learn-card__bg topic-general-bg" aria-hidden="true"></span>}

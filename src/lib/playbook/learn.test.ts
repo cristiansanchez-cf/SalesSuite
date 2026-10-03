@@ -17,10 +17,13 @@ describe('Aprende: recorrido y portadas', () => {
       'basura',
       ...Array.from({ length: 10 }, (_, i) => ({ title: `Paso ${i}` })),
     ]);
-    expect(t[0]).toEqual({ title: 'Escanea', body: 'Sin app', image: '/img/qr.webp' });
-    expect(t[1]).toEqual({ title: 'Pantalla', body: null, image: null });
+    expect(t[0]).toEqual({ title: 'Escanea', body: 'Sin app', image: '/img/qr.webp', ui: null });
+    expect(t[1]).toEqual({ title: 'Pantalla', body: null, image: null, ui: null });
     expect(t.length).toBeLessThanOrEqual(8);
     expect(tourOf(null)).toEqual([]);
+    // UI en vez de foto: solo las formas conocidas.
+    const u = tourOf([{ title: 'a', ui: 'phone:scan' }, { title: 'b', ui: 'screen:club.photo,tp.photo' }, { title: 'c', ui: 'report' }, { title: 'd', ui: '<script>' }]);
+    expect(u.map((x) => x.ui)).toEqual(['phone:scan', 'screen:club.photo,tp.photo', 'report', null]);
     expect(tourOf({ title: 'x' })).toEqual([]);
   });
 });

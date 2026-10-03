@@ -53,32 +53,38 @@
     {
       "title": "El invitado escanea el QR",
       "body": "Sin descargar nada. Lo abre con la cámara y ya está dentro.",
-      "image": "asset:img/tabs/qr.webp"
+      "image": "asset:img/tabs/qr.webp",
+      "ui": "phone:scan"
     },
     {
       "title": "Pide una canción o manda un mensaje",
       "body": "Desde su móvil: una dedicatoria, una foto, la canción que quiere bailar.",
-      "image": "asset:img/tabs/request-mobile-1.webp"
+      "image": "asset:img/tabs/request-mobile-1.webp",
+      "ui": "phone:sheet"
     },
     {
       "title": "Aparece en la pantalla",
       "body": "Lo que manda se ve en grande, en directo. Todo el mundo lo mira.",
-      "image": "asset:img/tabs/messages-screen.webp"
+      "image": "asset:img/tabs/messages-screen.webp",
+      "ui": "screen:club.message,club.song"
     },
     {
       "title": "La kiss-cam lo convierte en espectáculo",
       "body": "El momento que nadie olvida, en la pantalla gigante.",
-      "image": "asset:img/tabs/kisscam-screen.webp"
+      "image": "asset:img/tabs/kisscam-screen.webp",
+      "ui": "screen:club.photo,tp.photo"
     },
     {
       "title": "Todo queda en el álbum",
       "body": "Fotos y mensajes de la noche, guardados para quien lo contrata.",
-      "image": "asset:img/tabs/album-mobile.webp"
+      "image": "asset:img/tabs/album-mobile.webp",
+      "ui": "phone:album"
     },
     {
       "title": "Quien contrata ve el resultado",
       "body": "Participación, momentos y su marca en cada pantalla. Por eso repite.",
-      "image": "asset:img/tabs/album-grid.webp"
+      "image": "asset:img/tabs/album-grid.webp",
+      "ui": "report"
     }
   ],
   "domains": [
@@ -322,7 +328,7 @@
           "acordarse",
           "presumir"
         ],
-        "subtitle": "v2 del módulo: los dossiers ya publicados siguen en v1 hasta que el comercial actualice.",
+        "subtitle": "Enjoy convierte cada momento de la boda en algo compartido: mensajes, fotos y canciones de los invitados, en la pantalla y en un álbum para siempre.",
         "ctas": [
           {
             "label": "Ver la propuesta",

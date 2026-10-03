@@ -36,7 +36,12 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }) {
   await p.waitForURL(/\/admin\/learn\/tour/);
   const steps = await p.locator('[data-testid=tour-step]').count();
   assert(steps >= 4, `recorrido con ${steps} pasos`);
-  assert((await p.locator('[data-testid=tour-step] img.tour__img').first().evaluate((i) => i.naturalWidth)) > 0, 'las imágenes del recorrido cargan');
+  // Cada paso con la UI de verdad: el móvil, la pantalla en marcha y el informe de quien contrata.
+  const uis = await p.$$eval('[data-testid=tour-ui]', (els) => els.map((e) => e.dataset.ui));
+  assert(uis.includes('phone') && uis.includes('screen') && uis.includes('report'), `recorrido con UI de Enjoy (${uis.join(', ')})`);
+  await p.locator('[data-testid=tour-ui][data-ui=screen]').first().scrollIntoViewIfNeeded();
+  await p.waitForSelector('[data-testid=tour-ui][data-ui=screen] .es-stage', { timeout: 10000 });
+  assert(true, 'la pantalla del recorrido arranca');
   if (OUT) await p.screenshot({ path: `${OUT}/learn-tour.png`, fullPage: true });
   await p.click('[data-testid=tour-got]');
   await p.waitForURL(/ok=tour/);

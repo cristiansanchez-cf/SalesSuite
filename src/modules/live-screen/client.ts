@@ -142,3 +142,35 @@ export function init(root: HTMLElement): () => void {
 
   return () => { alive = false; clear(); stopVis(); screen?.destroy(); };
 }
+
+/**
+ * Miniatura (Aprende, bienvenida, recorrido del producto): la misma pantalla, sin botonera ni móvil, pasando sola por
+ * sus escenas mientras se ve. Con una sola escena, se queda fija.
+ */
+export function initMini(root: HTMLElement): () => void {
+  const cfgEl = root.querySelector<HTMLScriptElement>('script[data-config]');
+  const stage = root.querySelector<HTMLElement>('[data-stage]');
+  if (!cfgEl || !stage) return () => {};
+  const cfg = JSON.parse(cfgEl.textContent || '{}') as Config;
+  const reduced = prefersReducedMotion();
+  let screen: Screen | null = null;
+  let idx = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const stop = () => { if (timer) clearTimeout(timer); timer = null; };
+  const step = () => {
+    stop();
+    if (!screen) return;
+    screen.set('amount', 0);
+    screen.show(cfg.scenes[idx % cfg.scenes.length].scene);
+    if (cfg.scenes.length > 1 && !reduced) timer = setTimeout(() => { idx++; step(); }, 4500);
+  };
+  let alive = true;
+  let visible = false;
+  loadEngine(cfg).then((EnjoyScreen) => {
+    if (!alive) return;
+    screen = EnjoyScreen(stage, { scene: cfg.scenes[0].scene });
+    if (visible) step(); else screen.show(cfg.scenes[0].scene);
+  });
+  const stopVis = onVisibility(root, (v) => { visible = v; if (v) step(); else stop(); });
+  return () => { alive = false; stop(); stopVis(); screen?.destroy(); };
+}

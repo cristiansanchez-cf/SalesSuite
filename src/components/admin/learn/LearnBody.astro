@@ -7,6 +7,9 @@
  * El progreso se cuenta en positivo y siempre hay un «sigue por aquí».
  */
 import Icon from '~/components/ui/Icon.astro';
+import Thumb from '~/modules/Thumb.astro';
+import KitCover from '~/modules/KitCover.astro';
+import { isBlockType } from '~/modules/registry';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { learnMessages } from '~/lib/i18n/messages/learn';
@@ -88,7 +91,7 @@ const step = () => `0${++n}`;
       <section class="grid gap-5">
         <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.tour}</h2>
         <a href="/admin/learn/tour" class="learn-card group min-h-[18rem] sm:min-h-[24rem]" data-testid="tour-card">
-          {tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
+          {idx.kit.screen || idx.kit.phone ? <KitCover kit={idx.kit} /> : tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
           <span class="learn-card__shade"></span>
           <span class="learn-card__body">
             <span class="flex flex-wrap gap-2">
@@ -112,7 +115,9 @@ const step = () => `0${++n}`;
         <div class="grid gap-4 sm:grid-cols-2" data-testid="topics">
           {idx.modules.map((x) => (
             <a href={`/admin/learn/${x.moduleId}`} class="learn-card group min-h-[16rem] sm:min-h-[20rem]" data-testid="topic">
-              {x.cover
+              {isBlockType(x.blockType)
+                ? <Thumb blockType={x.blockType} props={x.props} price={x.price} />
+                : x.cover
                 ? <img src={x.cover} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />
                 : <iframe src={`/admin/learn/preview/${x.moduleId}`} title="" aria-hidden="true" tabindex="-1" loading="lazy" class="learn-card__bg learn-card__ui"></iframe>}
               <span class="learn-card__shade"></span>

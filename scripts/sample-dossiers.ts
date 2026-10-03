@@ -74,12 +74,15 @@ async function main() {
     if (existing.length) {
       // Ya existía: se le añaden (delante) los recomendados que le falten (p. ej. un módulo nuevo del catálogo).
       const id = existing[0].id;
-      const items = (must(await sb.from('dossier_item').select('position, module_version(module_id)').eq('dossier_id', id), 'módulos del ejemplo') ?? []) as unknown as Array<{ position: number; module_version: { module_id: string } | null }>;
+      const items = (must(await sb.from('dossier_item').select('id, position, module_version_id, module_version(module_id)').eq('dossier_id', id), 'módulos del ejemplo') ?? []) as unknown as Array<{ id: string; position: number; module_version_id: string; module_version: { module_id: string } | null }>;
+      // Y los que tiene, a la última versión publicada (un ejemplo enseña siempre lo de ahora).
+      const stale = items.filter((x) => x.module_version && latest.get(x.module_version.module_id) && latest.get(x.module_version.module_id)!.id !== x.module_version_id);
+      if (!dry) for (const x of stale) must(await sb.from('dossier_item').update({ module_version_id: latest.get(x.module_version!.module_id)!.id }).eq('id', x.id), `actualizar módulo ${s.key}`);
       const have = new Set(items.map((x) => x.module_version?.module_id));
       const missing = segMods.filter((m) => m.segment_id === seg.id).sort((a, b) => a.priority - b.priority).filter((m) => !have.has(m.module_id)).map((m) => latest.get(m.module_id)).filter((v): v is { id: string; version: number } => !!v);
       const first = Math.min(1024, ...items.map((x) => Number(x.position)));
       if (missing.length && !dry) must(await sb.from('dossier_item').insert(missing.map((v, i) => ({ dossier_id: id, module_version_id: v.id, position: (first * (i + 1)) / (missing.length + 1) }))), `añadir módulos ${s.key}`);
-      console.log(`• ${s.key}: ya existía${missing.length ? ` (+${missing.length} módulo${missing.length > 1 ? 's' : ''} nuevo${missing.length > 1 ? 's' : ''})` : ''} → ${origin}/admin/dossiers/${id}`);
+      console.log(`• ${s.key}: ya existía${missing.length ? ` (+${missing.length} módulo${missing.length > 1 ? 's' : ''} nuevo${missing.length > 1 ? 's' : ''})` : ''}${stale.length ? ` (${stale.length} a la última versión)` : ''} → ${origin}/admin/dossiers/${id}`);
       continue;
     }
     if (dry) { console.log(`• ${s.key}: se crearía con ${mods.length} módulos, tarifa ${option ? '✓' : '✗'}${s.coupon ? `, cupón ${coupon ? '✓' : '✗'}` : ''}`); continue; }

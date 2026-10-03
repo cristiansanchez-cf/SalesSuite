@@ -1,0 +1,46 @@
+---
+/**
+ * Lo que recibe quien contrata al terminar (UI del panel de Enjoy recreada): participación, fotos, mensajes, canciones,
+ * el momento top y las reseñas. Datos de ejemplo: ilustra, no mide.
+ */
+import { featuresOf } from './music';
+import type { ClientMedia } from '~/lib/types';
+
+interface Props { venue?: string; photo?: string | null; media?: ClientMedia; class?: string }
+const { venue = 'Tu local', photo, media = {}, class: cls } = Astro.props;
+const f = featuresOf(media.features);
+const tiles = [
+  { v: '92 %', l: 'participan', on: true },
+  { v: '148', l: 'fotos', on: f.photos || f.album },
+  { v: '63', l: 'mensajes', on: f.messages },
+  { v: '41', l: 'canciones', on: f.songs },
+].filter((x) => x.on).slice(0, 4);
+---
+<div class:list={['rp', cls]} aria-hidden="true">
+  <div class="rp__top"><span class="rp__live">● Terminado</span><b>{venue.slice(0, 22)}</b><small>Sábado · 23:00–05:30</small></div>
+  <div class="rp__tiles">{tiles.map((t, i) => <span class="rp__tile" style={`--d:${i}`}><b>{t.v}</b><small>{t.l}</small></span>)}</div>
+  <div class="rp__row">
+    <span class="rp__pic">{photo ? <img src={photo} alt="" loading="lazy" decoding="async" /> : <i></i>}</span>
+    <span class="rp__txt"><small>Momento top</small><b>Kiss-cam · mesa 4</b><span class="rp__bar"><i></i></span></span>
+  </div>
+  <div class="rp__stars"><span>★★★★★</span><b>4,9</b><small>32 reseñas nuevas</small></div>
+</div>
+
+<style>
+  .rp { --pk: #ff27bb; --lm: #e1ff00; width: 300px; display: grid; gap: 10px; padding: 16px; border-radius: 22px; background: #17191d; color: #fff; font-size: 12px; line-height: 1.3;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 30px 70px rgba(0,0,0,.5); }
+  .rp__top { display: grid; gap: 2px; } .rp__top b { font-size: 18px; font-weight: 800; } .rp__top small { color: #a7a5a9; }
+  .rp__live { justify-self: start; font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--lm); background: rgba(225,255,0,.1); border-radius: 99px; padding: 3px 8px; }
+  .rp__tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .rp__tile { display: grid; background: #231f27; border-radius: 12px; padding: 10px; animation: rp-in .5s ease-out calc(var(--d) * 120ms) both; }
+  .rp__tile b { font-size: 22px; font-weight: 800; } .rp__tile:first-child b { color: var(--lm); } .rp__tile small { color: #a7a5a9; }
+  .rp__row { display: flex; gap: 10px; align-items: center; background: #231f27; border-radius: 12px; padding: 8px; }
+  .rp__pic { width: 46px; height: 46px; flex-shrink: 0; border-radius: 9px; overflow: hidden; }
+  .rp__pic img, .rp__pic i { display: block; width: 100%; height: 100%; object-fit: cover; background: radial-gradient(circle at 30% 30%, var(--pk), #2a1238); }
+  .rp__txt { display: grid; gap: 2px; flex: 1; min-width: 0; } .rp__txt small { color: #a7a5a9; font-size: 10px; } .rp__txt b { font-size: 13px; }
+  .rp__bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; } .rp__bar i { display: block; height: 100%; width: 86%; background: var(--pk); animation: rp-bar 1.4s ease-out both; }
+  .rp__stars { display: flex; align-items: baseline; gap: 6px; } .rp__stars span { color: var(--lm); letter-spacing: 1px; } .rp__stars b { font-size: 15px; } .rp__stars small { color: #a7a5a9; }
+  @keyframes rp-in { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes rp-bar { from { width: 0; } }
+  @media (prefers-reduced-motion: reduce) { .rp__tile, .rp__bar i { animation: none; } }
+</style>

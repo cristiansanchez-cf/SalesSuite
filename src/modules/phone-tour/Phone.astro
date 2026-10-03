@@ -1,0 +1,300 @@
+---
+/**
+ * El móvil del invitado (UI de la app de Enjoy recreada): todas sus pantallas. Lo usa el recorrido (phone-tour) y,
+ * fuera de las propuestas, Aprende, la bienvenida y el recorrido del producto: `only` deja una pantalla fija y `zoom`
+ * lo encoge. Se adapta a lo que tiene el cliente (media.features) y usa sus fotos, su nombre y su estilo musical.
+ */
+import type { ClientMedia } from '~/lib/types';
+import { DEFAULT_STYLE, MUSIC_STYLES, featuresOf, type MusicStyle } from '../live-screen/music';
+
+interface Props {
+  djName?: string; price?: number; photos?: string[]; qrImage?: string; musicStyles?: Record<string, MusicStyle>;
+  media?: ClientMedia; venue?: string | null;
+  /** Una sola pantalla, fija (scan, home, sheet, form, pending, live, album, songs). */
+  only?: string;
+  zoom?: number; float?: boolean; class?: string;
+}
+const { djName = 'DJ Mikel', price = 2, photos = [], qrImage, musicStyles, media: mediaIn, venue: venueIn, only, zoom = 1, float = false, class: cls } = Astro.props;
+const media = mediaIn ?? {};
+const f = featuresOf(media.features);
+const venue = (venueIn || 'Tu local').slice(0, 24);
+const own = (media.photos ?? []).filter(Boolean);
+const pics = own.length ? own : photos;
+const pic = (i: number) => pics.length ? pics[i % pics.length] : null;
+const styles = musicStyles ?? MUSIC_STYLES;
+const style = styles[media.musicStyle ?? ''] ?? styles[DEFAULT_STYLE] ?? Object.values(styles)[0];
+const songs = style.songs.slice(0, 3);
+const GRAD = [
+  'radial-gradient(ellipse at 25% 35%, rgba(255,39,187,.7), transparent 35%), radial-gradient(ellipse at 70% 65%, rgba(225,255,0,.35), transparent 40%), linear-gradient(135deg,#2A1238,#08030C)',
+  'radial-gradient(ellipse at 60% 40%, rgba(251,135,60,.6), transparent 40%), radial-gradient(ellipse at 30% 70%, rgba(255,39,187,.4), transparent 40%), linear-gradient(160deg,#38152A,#0C0408)',
+  'radial-gradient(ellipse at 50% 50%, rgba(225,255,0,.55), transparent 40%), radial-gradient(ellipse at 80% 80%, rgba(255,39,187,.35), transparent 35%), linear-gradient(135deg,#1A2812,#08030C)',
+];
+const action = f.photos ? 'photo' : f.messages ? 'message' : null;
+---
+<div class:list={['pt-phone', float && 'pt-phone--float', cls]} style={zoom !== 1 ? `zoom:${zoom}` : undefined} aria-hidden="true">
+  <div class="pt-notch"></div>
+  <div class="pt-status"><span>9:41</span><span class="pt-status__icons">▂▄▆ ◔ ▭</span></div>
+
+  <!-- 1 · escanear -->
+  <div class:list={['pt-screen pt-scan', only === 'scan' && 'is-on']} data-step="scan">
+    <div class="pt-cam">
+      <div class="pt-qr">{qrImage ? <img src={qrImage} alt="" /> : <div class="pt-qr__fake"></div>}</div>
+      <div class="pt-finder"><span class="pt-finder__line"></span></div>
+      <p class="pt-cam__hint">enjoy.club/{venue.toLowerCase().replace(/[^a-z0-9]+/g, '')}</p>
+    </div>
+    <div class="pt-toast">Sin descargar nada</div>
+  </div>
+
+  <!-- 2 · página del evento -->
+  <div class:list={['pt-screen', only === 'home' && 'is-on']} data-step="home">
+    <div class="pt-top"><span class="pt-burger">☰</span>{media.logo ? <img class="pt-venue-logo" src={media.logo} alt="" /> : <span class="pt-venue">{venue}</span>}<span class="pt-sign">Entrar</span></div>
+    <h3 class="pt-h1">Aparece en pantalla</h3>
+    <p class="pt-sub">Y únete al álbum de todos</p>
+    {f.album && (
+      <div class="pt-thumbs">
+        {[0, 1, 2].map((i) => pic(i) ? <img src={pic(i)!} alt="" /> : <span style={`background:${GRAD[i]}`}></span>)}
+        <span class="pt-thumbs__add">◎</span>
+      </div>
+    )}
+    {f.album && <p class="pt-row"><b class="pt-lime">Ver todo el álbum</b> <small>{Math.max(3, pics.length)} fotos</small><span class="pt-lime ml-auto">›</span></p>}
+    <div class="pt-dj"><span class="pt-dj__av"></span><span><b>{djName}</b><small>Ver perfil y redes</small></span><span class="ml-auto">›</span></div>
+    {f.songs && (<>
+      <p class="pt-divider"><span>También puedes pedir música</span></p>
+      <div class="pt-search"><span class="pt-lime">⌕</span> Busca una canción…</div>
+      {songs.map((s, i) => (
+        <div class="pt-song">
+          {s.cover ? <img src={s.cover} alt="" /> : <span style={`background:${GRAD[i]}`}></span>}
+          <span class="pt-song__t"><b>{s.song}</b><small>{s.artist} · {[15, 7, 2][i]} peticiones</small></span>
+          <span class:list={['pt-pill', i === 1 && 'pt-pill--pending']}>{i === 1 ? 'PENDIENTE' : 'PEDIR'}</span>
+        </div>
+      ))}
+    </>)}
+    {(f.photos || f.messages || f.album) && <span class="pt-cta" data-tap>▣ Comparte tu momento</span>}
+  </div>
+
+  <!-- 3 · ¿qué quieres hacer? -->
+  <div class:list={['pt-screen pt-dim', only === 'sheet' && 'is-on']} data-step="sheet">
+    <div class="pt-top"><span class="pt-burger">☰</span><span class="pt-venue">{venue}</span><span class="pt-sign">Entrar</span></div>
+    <h3 class="pt-h1 opacity-40">Aparece en pantalla</h3>
+    <div class="pt-sheet">
+      <span class="pt-grab"></span>
+      <h3 class="pt-h2">¿Qué quieres hacer?</h3>
+      <p class="pt-sub">Elige y te llevo directo.</p>
+      {f.photos && <div class="pt-opt pt-opt--lime" data-tap><span class="pt-opt__ic">▣</span><span><b>Foto en pantalla</b><small>Tu foto con dedicatoria, en la tele</small></span>›</div>}
+      {f.messages && <div class="pt-opt pt-opt--pink" data-tap={!f.photos ? '' : undefined}><span class="pt-opt__ic">▭</span><span><b>Mensaje en pantalla</b><small>Tu nombre y dedicatoria, en la tele</small></span>›</div>}
+      {f.album && <div class="pt-opt pt-opt--peach"><span class="pt-opt__ic pt-opt__ic--grid"></span><span><b>Subir fotos al álbum</b><small>Todos las ven en la fiesta</small></span>›</div>}
+    </div>
+  </div>
+
+  <!-- 4 · su foto / su mensaje -->
+  {action && (
+    <div class:list={['pt-screen', only === 'form' && 'is-on']} data-step="form">
+      <div class="pt-top"><span>‹ {action === 'photo' ? 'Foto en pantalla' : 'Mensaje en pantalla'}</span><span class="pt-sign">Entrar</span></div>
+      {action === 'photo' && (<>
+        <p class="pt-label">Foto</p>
+        <div class="pt-photo">{pic(0) ? <img src={pic(0)!} alt="" /> : <span style={`background:${GRAD[0]}`}></span>}</div>
+      </>)}
+      <p class="pt-label">Tu nombre</p>
+      <div class="pt-input">Carlos R.</div>
+      <p class="pt-label">Mensaje <small>opcional</small></p>
+      <div class="pt-input pt-input--area"><span data-type="¡Felicidades Amaia, vaya noche! Te queremos 🎉">¡Felicidades Amaia, vaya noche! Te queremos 🎉</span><i class="pt-caret"></i></div>
+      <div class="pt-info">ⓘ Saldrá a pantalla completa. El organizador lo revisa antes de publicarlo.</div>
+      <div class="pt-bottom">
+        <span class="pt-share" data-tap>Compartir</span>
+        <p class="pt-legal"><mark>Al enviar confirmas que eres mayor de 18 y que tienes permiso de quien aparece.</mark> Aceptas los términos.</p>
+      </div>
+    </div>
+  )}
+
+  <!-- 5 · pendiente -->
+  {action && (
+    <div class:list={['pt-screen', only === 'pending' && 'is-on']} data-step="pending">
+      <div class="pt-top"><span>←</span><span class="pt-sign">Entrar</span></div>
+      <div class="pt-card pt-status-card">
+        <div class="pt-clock"><span class="pt-clock__hand"></span></div>
+        <div class="pt-timer"><span>30</span>:<span>00</span><small>Has pagado <b>{price} €</b></small></div>
+        <div class="pt-track"><i class="on"></i><b></b><i></i></div>
+        <p class="pt-st"><b>Petición</b><small>El DJ tiene 30 minutos para ponerla.</small></p>
+      </div>
+      {action === 'photo' && <><p class="pt-label pt-label--w">Tu foto:</p><div class="pt-photo pt-photo--wide">{pic(0) ? <img src={pic(0)!} alt="" /> : <span style={`background:${GRAD[0]}`}></span>}</div></>}
+      <p class="pt-label pt-label--w">Tu mensaje:</p><p class="pt-msg">¡Felicidades Amaia, vaya noche! Te queremos 🎉</p>
+      <div class="pt-note">ⓘ Solo se cobra si se acepta. Rechazada = devolución.</div>
+    </div>
+  )}
+
+  <!-- 6 · en directo -->
+  {action && (
+    <div class:list={['pt-screen', only === 'live' && 'is-on']} data-step="live">
+      <div class="pt-top"><span>←</span><span class="pt-sign">Entrar</span></div>
+      <div class="pt-card pt-status-card pt-live">
+        <div class="pt-confetti">{Array.from({ length: 14 }).map((_, i) => <i style={`--i:${i}`}></i>)}🎉</div>
+        <h3 class="pt-h2">¡Tu {action === 'photo' ? 'foto' : 'mensaje'} está en pantalla!</h3>
+        <div class="pt-track pt-track--done"><i class="on">✓</i><b></b><i class="on"></i></div>
+        <p class="pt-st"><b>En directo</b><small>El DJ lo está enseñando ahora.</small></p>
+      </div>
+      {action === 'photo' && <div class="pt-photo pt-photo--wide">{pic(0) ? <img src={pic(0)!} alt="" /> : <span style={`background:${GRAD[0]}`}></span>}</div>}
+      <div class="pt-card pt-done">
+        {f.album && <p><span class="pt-ok">✓</span><span><b>Guardada en el álbum</b><small>Todo el evento puede verla</small></span><b class="pt-lime ml-auto">Ver →</b></p>}
+        <p><span class="pt-ok pt-ok--grey">▤</span><span><b>Cobrado {price} €</b><small>Pago completado</small></span><span class="pt-receipt">Recibo</span></p>
+      </div>
+    </div>
+  )}
+
+  <!-- 7 · álbum -->
+  {f.album && (
+    <div class:list={['pt-screen', only === 'album' && 'is-on']} data-step="album">
+      <div class="pt-top"><span>‹ <b>Álbum</b> <small>· {53 + own.length} fotos</small></span></div>
+      <div class="pt-tabs"><span class="on">Todas</span><span>Mías · {Math.max(1, Math.min(3, pics.length))}</span></div>
+      <div class="pt-grid">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <span class="pt-grid__c" style={`--d:${i}`}>
+            {pic(i) && i % 3 !== 1 ? <img src={pic(i)!} alt="" /> : <em style={`background:${GRAD[i % 3]}`}></em>}
+            {i % 4 === 0 && <b class="pt-mine">MÍA</b>}
+          </span>
+        ))}
+      </div>
+      <span class="pt-cta pt-cta--sm">＋ Añadir foto</span>
+    </div>
+  )}
+
+  <!-- 8 · pedir canción -->
+  {f.songs && (
+    <div class:list={['pt-screen', only === 'songs' && 'is-on']} data-step="songs">
+      <div class="pt-top"><span>‹ Pide tu canción</span></div>
+      <div class="pt-search pt-search--typing"><span class="pt-lime">⌕</span> <span data-type={songs[0].song}>{songs[0].song}</span><i class="pt-caret"></i></div>
+      {songs.map((s, i) => (
+        <div class="pt-song">
+          {s.cover ? <img src={s.cover} alt="" /> : <span style={`background:${GRAD[i]}`}></span>}
+          <span class="pt-song__t"><b>{s.song}</b><small>{s.artist} · {[15, 7, 2][i]} peticiones</small></span>
+          <span class="pt-pill" data-tap={i === 0 ? '' : undefined} data-pending="PENDIENTE">PEDIR</span>
+        </div>
+      ))}
+      <div class="pt-note pt-note--pink">Sube en la lista: <b>«{songs[0].song}»</b> va la 2.ª</div>
+    </div>
+  )}
+  <span class="pt-finger" data-finger></span>
+</div>
+
+<style>
+  /* El móvil: la app de Enjoy (oscura, rosa y lima) dentro de un marco. Medidas fijas: es un dibujo, no la página. */
+  .pt-phone { --pk: #ff27bb; --lm: #e1ff00; --pc: #fb873c; --mu: #a7a5a9; --bd: #3b3540; --in: #363b44; --bg: #17191d;
+    position: relative; width: 300px; height: 620px; margin-inline: auto; border-radius: 44px; padding: 10px; background: #0b0b0e;
+    box-shadow: 0 0 0 2px #2a2a30, 0 40px 90px rgba(0,0,0,.55); color: #fff; font-size: 12px; line-height: 1.3; overflow: hidden; }
+  .pt-notch { position: absolute; top: 14px; left: 50%; translate: -50% 0; width: 92px; height: 24px; border-radius: 99px; background: #000; z-index: 5; }
+  .pt-status { position: absolute; inset: 10px 10px auto; height: 40px; padding: 14px 22px 0; display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; z-index: 4; }
+  .pt-status__icons { letter-spacing: 2px; font-size: 9px; }
+  .pt-screen { position: absolute; inset: 10px; border-radius: 34px; background: var(--bg); padding: 46px 14px 14px; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 8px;
+    opacity: 0; transform: translateX(18px); transition: opacity .35s ease, transform .35s ease; overflow: hidden; }
+  .pt-screen.is-on { opacity: 1; transform: none; z-index: 2; }
+  .pt-top { display: flex; align-items: center; gap: 10px; font-size: 14px; color: rgba(255,255,255,.85); }
+  .pt-top small { color: var(--mu); font-weight: 400; }
+  .pt-burger { font-size: 16px; }
+  .pt-venue { font-weight: 700; color: rgba(255,255,255,.7); font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pt-venue-logo { height: 20px; max-width: 110px; object-fit: contain; }
+  .pt-sign { flex-shrink: 0; margin-left: auto; border: 1px solid #6c798b; border-radius: 99px; padding: 4px 10px; font-size: 11px; }
+  .pt-h1 { font-size: 21px; font-weight: 800; margin-top: 6px; }
+  .pt-h2 { font-size: 18px; font-weight: 800; }
+  .pt-sub { color: var(--mu); font-size: 12px; margin-top: -6px; }
+  .pt-lime { color: var(--lm); }
+  .pt-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .pt-thumbs img, .pt-thumbs span { aspect-ratio: 1; border-radius: 8px; object-fit: cover; width: 100%; }
+  .pt-thumbs__add { display: grid; place-items: center; border: 1px dashed var(--bd); color: var(--mu); font-size: 18px; }
+  .pt-row { display: flex; align-items: baseline; gap: 6px; font-size: 12px; } .pt-row small { color: var(--mu); }
+  .pt-dj { display: flex; align-items: center; gap: 10px; background: #231f27; border-radius: 12px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(184,52,234,.12); }
+  .pt-dj__av { width: 30px; height: 30px; border-radius: 99px; background: radial-gradient(circle at 30% 30%, var(--pk), #5e1a4d 60%); }
+  .pt-dj b, .pt-dj small, .pt-song__t b, .pt-song__t small, .pt-opt b, .pt-opt small, .pt-st b, .pt-st small, .pt-done b, .pt-done small { display: block; }
+  .pt-dj small, .pt-song__t small, .pt-opt small, .pt-st small, .pt-done small { color: var(--mu); font-size: 10px; }
+  .pt-divider { display: flex; align-items: center; gap: 8px; color: var(--mu); font-size: 8px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .pt-divider::before, .pt-divider::after { content: ''; flex: 1; height: 1px; background: #363b44; }
+  .pt-search { display: flex; align-items: center; gap: 8px; border: 1px solid #6c798b; background: #1c1f25; border-radius: 99px; padding: 8px 12px; color: var(--mu); }
+  .pt-song { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bd); background: rgba(35,31,39,.4); border-radius: 8px; padding: 4px 10px 4px 6px; }
+  .pt-song img, .pt-song > span:first-child { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; flex-shrink: 0; }
+  .pt-song__t { min-width: 0; flex: 1; } .pt-song__t b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+  .pt-pill { flex-shrink: 0; background: var(--pk); border-radius: 99px; padding: 4px 9px; font-size: 9px; font-weight: 800; transition: background .3s; }
+  .pt-pill--pending, .pt-pill.is-pending { background: #363b44; }
+  .pt-cta { position: absolute; bottom: 18px; left: 50%; translate: -50% 0; white-space: nowrap; background: var(--lm); color: #08030c; font-weight: 800; font-size: 13px; border-radius: 99px; padding: 10px 18px; box-shadow: 0 8px 32px rgba(225,255,0,.25); }
+  .pt-cta--sm { font-size: 12px; padding: 9px 16px; }
+  .pt-dim::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.6); z-index: 0; }
+  .pt-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; background: var(--bg); border-radius: 22px 22px 0 0; padding: 12px 14px 18px; display: grid; gap: 8px;
+    transform: translateY(100%); transition: transform .45s cubic-bezier(.2,.8,.2,1) .15s; }
+  .is-on .pt-sheet { transform: none; }
+  .pt-grab { width: 34px; height: 4px; border-radius: 2px; background: #6c798b; justify-self: center; }
+  .pt-opt { display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 10px; border: 1px solid; color: var(--mu); }
+  .pt-opt b { color: #fff; font-size: 13px; }
+  .pt-opt--lime { border-color: rgba(225,255,0,.25); } .pt-opt--pink { border-color: rgba(255,39,187,.25); } .pt-opt--peach { border-color: rgba(251,135,60,.22); }
+  .pt-opt__ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+  .pt-opt--lime .pt-opt__ic { background: rgba(225,255,0,.12); color: var(--lm); } .pt-opt--pink .pt-opt__ic { background: rgba(255,39,187,.14); color: var(--pk); }
+  .pt-opt__ic--grid { background: conic-gradient(#ff27bb 0 25%, #7a4a9a 0 50%, #2a8a5a 0 75%, #e8a23c 0); }
+  .pt-opt span:nth-child(2) { flex: 1; }
+  .pt-label { color: var(--mu); font-weight: 700; font-size: 11px; margin-top: 2px; } .pt-label small { font-weight: 400; color: #888; }
+  .pt-label--w { color: #fff; font-weight: 400; font-size: 13px; }
+  .pt-photo { height: 96px; border-radius: 12px; overflow: hidden; } .pt-photo img, .pt-photo span { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .pt-photo--wide { height: 84px; }
+  .pt-input { background: var(--in); border: 1px solid var(--bd); border-radius: 10px; padding: 9px 11px; }
+  .pt-input--area { min-height: 54px; }
+  .pt-caret { display: inline-block; width: 1px; height: 13px; background: #fff; vertical-align: middle; animation: pt-blink 1s steps(1) infinite; }
+  @keyframes pt-blink { 50% { opacity: 0; } }
+  .pt-info { border: 1px solid var(--in); border-radius: 8px; padding: 8px; color: var(--mu); font-size: 10px; }
+  .pt-bottom { position: absolute; left: 12px; right: 12px; bottom: 12px; display: grid; gap: 6px; }
+  .pt-share { background: var(--pk); border-radius: 99px; padding: 11px; text-align: center; font-weight: 800; font-size: 14px; box-shadow: 0 8px 32px rgba(255,39,187,.25); }
+  .pt-legal { color: #888; font-size: 8px; text-align: center; } .pt-legal mark { background: rgba(225,255,0,.18); color: #ddd; border-radius: 3px; }
+  .pt-card { background: #231f27; border-radius: 12px; padding: 12px; }
+  .pt-status-card { display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; align-items: center; }
+  .pt-clock { width: 62px; height: 62px; border-radius: 99px; background: #ffc6f2; border: 4px solid var(--pk); position: relative; box-shadow: 0 0 30px rgba(184,52,234,.35); }
+  .pt-clock__hand { position: absolute; inset: 0; border-radius: 99px; background: conic-gradient(#fff 0 var(--p, 0%), transparent 0); }
+  .is-on .pt-clock__hand { animation: pt-clock 3s linear forwards; }
+  @keyframes pt-clock { from { --p: 0%; } to { --p: 18%; } }
+  @property --p { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+  .pt-timer { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-weight: 800; }
+  .pt-timer span { background: #fff; color: #ef308f; border-radius: 8px; padding: 6px 7px; font-size: 14px; }
+  .pt-timer small { width: 100%; font-weight: 400; font-size: 10px; } .pt-timer small b { font-weight: 800; }
+  .pt-track { grid-column: 1 / -1; display: flex; align-items: center; } .pt-track b { flex: 1; height: 2px; background: #5f0030; }
+  .pt-track i { width: 12px; height: 12px; border-radius: 99px; background: #5f0030; font-style: normal; font-size: 8px; display: grid; place-items: center; } .pt-track i.on { background: var(--pk); }
+  .pt-track--done b { background: var(--pk); }
+  .pt-st { grid-column: 1 / -1; } .pt-st b { font-weight: 400; font-size: 13px; }
+  .pt-msg { color: #d1d1d1; font-size: 11px; margin-top: -4px; }
+  .pt-note { border: 1px solid #f1ff50; background: rgba(241,255,80,.1); border-radius: 8px; padding: 8px; color: #d1d1d1; font-size: 10px; }
+  .pt-note--pink { border-color: rgba(255,39,187,.5); background: rgba(255,39,187,.1); }
+  .pt-live { grid-template-columns: 70px 1fr; }
+  .pt-confetti { position: relative; font-size: 40px; text-align: center; }
+  .pt-confetti i { position: absolute; left: 50%; top: 50%; width: 5px; height: 9px; background: var(--pk); border-radius: 2px; opacity: 0; }
+  .is-on .pt-confetti i { animation: pt-pop 1.2s ease-out calc(var(--i) * 40ms) forwards; }
+  .pt-confetti i:nth-child(3n) { background: var(--lm); } .pt-confetti i:nth-child(3n+1) { background: #ffc6f2; }
+  @keyframes pt-pop { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(0); } 100% { opacity: 0; transform: translate(calc(-50% + (var(--i) - 7) * 9px), calc(-50% - 40px + var(--i) * 3px)) rotate(calc(var(--i) * 40deg)); } }
+  .pt-done { display: grid; gap: 10px; } .pt-done p { display: flex; align-items: center; gap: 10px; }
+  .pt-ok { width: 28px; height: 28px; border-radius: 99px; display: grid; place-items: center; background: rgba(225,255,0,.12); color: var(--lm); flex-shrink: 0; } .pt-ok--grey { background: rgba(255,255,255,.06); color: #eee; }
+  .pt-receipt { margin-left: auto; border: 1.5px solid #6c798b; border-radius: 99px; padding: 5px 10px; font-size: 10px; }
+  .pt-tabs { display: flex; gap: 6px; } .pt-tabs span { border: 1px solid var(--bd); border-radius: 99px; padding: 5px 11px; font-size: 10px; font-weight: 700; color: var(--mu); }
+  .pt-tabs .on { background: var(--pk); border-color: var(--pk); color: #fff; }
+  .pt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .pt-grid__c { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; opacity: 0; transform: translateY(-14px); }
+  .is-on .pt-grid__c { animation: pt-drop .45s ease-out calc(var(--d) * 70ms) forwards; }
+  @keyframes pt-drop { to { opacity: 1; transform: none; } }
+  .pt-grid__c img, .pt-grid__c em { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .pt-mine { position: absolute; top: 4px; left: 4px; background: var(--lm); color: #08030c; font-size: 7px; font-weight: 800; border-radius: 4px; padding: 2px 4px; }
+  /* Escanear: la cámara apunta al QR. */
+  .pt-scan { background: #000; padding: 0; }
+  .pt-cam { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 40% 30%, #2a1238, #000 70%); }
+  .pt-qr { width: 120px; height: 120px; background: #fff; border-radius: 12px; padding: 8px; filter: blur(.4px); transform: scale(.92); }
+  .is-on .pt-qr { animation: pt-focus 1.4s ease-out forwards; }
+  @keyframes pt-focus { 60% { filter: blur(0); transform: scale(1.04); } 100% { filter: blur(0); transform: scale(1); } }
+  .pt-qr img { width: 100%; height: 100%; object-fit: contain; }
+  .pt-qr__fake { width: 100%; height: 100%; background: repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 14px 14px; }
+  .pt-finder { position: absolute; width: 170px; height: 170px; border-radius: 22px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); outline: 3px solid rgba(255,255,255,.9); outline-offset: -3px; }
+  .pt-finder__line { position: absolute; left: 10px; right: 10px; top: 10%; height: 2px; background: var(--pk); box-shadow: 0 0 10px var(--pk); }
+  .is-on .pt-finder__line { animation: pt-scanline 1s ease-in-out infinite alternate; }
+  @keyframes pt-scanline { to { top: 88%; } }
+  .pt-cam__hint { position: absolute; bottom: 90px; background: rgba(255,255,255,.9); color: #111; border-radius: 99px; padding: 6px 12px; font-size: 11px; font-weight: 700; opacity: 0; }
+  .is-on .pt-cam__hint { animation: pt-in .3s ease-out 1.3s forwards; }
+  .pt-toast { position: absolute; bottom: 40px; left: 50%; translate: -50% 0; background: var(--lm); color: #08030c; font-weight: 800; border-radius: 99px; padding: 7px 14px; opacity: 0; white-space: nowrap; }
+  .is-on .pt-toast { animation: pt-in .3s ease-out 1.8s forwards; }
+  @keyframes pt-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  /* El dedo que toca. */
+  .pt-finger { position: absolute; width: 34px; height: 34px; border-radius: 99px; background: rgba(255,255,255,.35); border: 2px solid rgba(255,255,255,.8); z-index: 6; opacity: 0; pointer-events: none; transition: left .5s ease, top .5s ease, opacity .25s; }
+  .pt-finger.is-tap { animation: pt-tap .5s ease-out; }
+  @keyframes pt-tap { 50% { transform: scale(.75); } }
+  @media (prefers-reduced-motion: reduce) { .pt-screen, .pt-sheet { transition: none; } .pt-finger { display: none; } .pt-phone { animation: none !important; } }
+  /* Flota un poco (presentación y miniaturas). */
+  .pt-phone--float { animation: pt-float 5s ease-in-out infinite; }
+  @keyframes pt-float { 50% { transform: translateY(-8px) rotate(-1deg); } }
+</style>
