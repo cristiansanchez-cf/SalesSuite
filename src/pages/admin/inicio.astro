@@ -10,10 +10,16 @@ import HomeBody from '~/components/admin/home/HomeBody.astro';
 import { can } from '~/lib/admin/permissions';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
+import { needsCompanySetup } from '~/lib/onboarding';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role === 'partner') return Astro.redirect('/admin');
+// Admin de un espacio vacío → preparar la empresa primero. Una vez preparado, no se vuelve a mirar (cookie de un día).
+if (admin.session.role === 'admin' && Astro.cookies.get('ss_ready')?.value !== admin.session.tenantId) {
+  if (await needsCompanySetup(admin)) return Astro.redirect('/admin/setup/ia?first=1');
+  Astro.cookies.set('ss_ready', admin.session.tenantId, { path: '/admin', maxAge: 86_400, httpOnly: true, sameSite: 'lax', secure: Astro.url.protocol === 'https:' });
+}
 const manager = can(admin.session.role).manageTeam;
 const { m } = i18n(Astro, sellMessages);
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];

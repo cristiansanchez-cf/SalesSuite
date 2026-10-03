@@ -15,6 +15,7 @@ import { slug } from '~/lib/evidence/schema';
 import { PERSONA_ROLES } from '~/lib/playbook/market';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
+import { setupAiMessages } from '~/lib/i18n/messages/setupAi';
 import { PRESETS, ROLE_ICON, SEGMENT_ICONS } from '~/lib/setup/presets';
 import { createSetupService } from '~/lib/setup/service';
 import { isIconName } from '~/lib/ui/icons';
@@ -22,7 +23,8 @@ import { isIconName } from '~/lib/ui/icons';
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
-const { m: msg } = i18n(Astro, playbookMessages);
+const { m: msg, locale } = i18n(Astro, playbookMessages);
+const sai = setupAiMessages[locale];
 const setup = createSetupService(admin.session, { playbook: admin.playbook, evidence: admin.evidence });
 const STEPS = [
   { n: 1, title: msg.setup.steps.start, icon: 'wand-sparkles' },
@@ -98,6 +100,11 @@ const SCOPE = msg.setup.scope;
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
   {step === 1 && (
+    <a class="co-card co-card--link !flex items-center gap-5 !p-6" href="/admin/setup/ia" data-testid="setup-ai">
+      <span class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="sparkles" size={26} /></span>
+      <span class="grid flex-1 gap-1"><span class="co-entity text-lg">{sai.title}</span><span class="co-meta">{sai.lede}</span></span>
+      <span class="co-btn co-btn--primary co-btn--sm">{sai.blocks.empresa} →</span>
+    </a>
     <section class="grid gap-4" data-testid="setup-presets">
       <p class="co-lede">{msg.setup.start.lede}</p>
       <div class="co-grid co-grid--3">

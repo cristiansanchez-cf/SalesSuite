@@ -26,3 +26,13 @@ export async function markOnboarded(admin: AdminContext): Promise<void> {
   const u = demoDb().users.find((x) => x.id === userId);
   if (u) u.onboarding = { ...(u.onboarding ?? {}), [tenantId]: at };
 }
+
+/**
+ * ¿Es el admin de un espacio todavía vacío (sin clientes ni actores)? Entonces lo primero no es la bienvenida
+ * de comercial sino preparar la empresa (/admin/setup/ia). docs/SETUP_WIZARD.md §Con IA.
+ */
+export async function needsCompanySetup(admin: AdminContext): Promise<boolean> {
+  if (admin.session.role !== 'admin') return false;
+  const market = await admin.playbook.market().catch(() => [{}]);
+  return market.length === 0;
+}

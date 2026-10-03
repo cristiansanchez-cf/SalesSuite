@@ -10,7 +10,7 @@ import Alert from '~/components/ui/Alert.astro';
 import { BRAND } from '~/lib/site';
 import { AdminError } from '~/lib/admin/service';
 import { createDossierSchema } from '~/lib/admin/ops';
-import { markOnboarded } from '~/lib/onboarding';
+import { markOnboarded, needsCompanySetup } from '~/lib/onboarding';
 import { i18n } from '~/lib/i18n';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 import { ICONS, type IconName } from '~/lib/ui/icons';
@@ -18,6 +18,8 @@ import { stripMarkdown } from '~/lib/playbook/markdown';
 
 const { admin, tenant } = Astro.locals;
 if (!admin || !tenant) return Astro.redirect('/admin/login');
+// Primer admin de un espacio vacío: antes que la bienvenida de comercial, preparar la empresa.
+if (Astro.request.method === 'GET' && await needsCompanySetup(admin)) return Astro.redirect('/admin/setup/ia?first=1');
 const { m, f } = i18n(Astro, welcomeMessages);
 const partner = admin.session.role === 'partner';
 const KEYS = ['hello', 'sell', 'who', 'how', 'terms', 'first'] as const;

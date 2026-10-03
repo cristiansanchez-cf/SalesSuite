@@ -1,0 +1,187 @@
+---
+/**
+ * Configuración con IA (docs/SETUP_WIZARD.md §Con IA): cinco bloques, uno cada vez. Copiar prompt → contestar a su IA →
+ * pegar lo que devuelva → revisar → importar (solo añade). Al final, «comprueba que está bien» y el primer comercial.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { i18n } from '~/lib/i18n';
+import { setupAiMessages } from '~/lib/i18n/messages/setupAi';
+import { AI_BLOCKS, importBlock, parseBlock, preview, promptFor, type AiBlock, type Preview } from '~/lib/setup/ai-import';
+
+const { admin, tenant } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
+const { m } = i18n(Astro, setupAiMessages);
+const perms = can(admin.session.role);
+
+const STEPS = [...AI_BLOCKS, 'listo'] as const;
+type Step = (typeof STEPS)[number];
+const ICON: Record<Step, 'building2' | 'users' | 'layers' | 'book-open' | 'wallet' | 'circle-check'> = {
+  empresa: 'building2', mercado: 'users', situaciones: 'layers', jugadas: 'book-open', precios: 'wallet', listo: 'circle-check',
+};
+const asked = Astro.url.searchParams.get('b') as Step | null;
+const first = Astro.url.searchParams.get('first') === '1';
+
+const deps = {
+  playbook: admin.playbook,
+  evidence: admin.evidence,
+  prices: { list: () => (perms.manageTenant ? admin.tenantAdmin.listPriceOptions() : Promise.resolve([])), save: (i: Record<string, unknown>) => admin.tenantAdmin.savePriceOption(i as never) },
+  coupons: { list: () => admin.commissions.coupons({ all: true }).catch(() => []), save: (i: { code: string; label: string; kind: string; value: string; note?: string }) => admin.commissions.saveCoupon(i) },
+};
+
+let answer = '';
+const st: { pv: Preview | null; redirect: string | null } = { pv: null, redirect: null };
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const block = String(f.get('block') ?? '') as AiBlock;
+  answer = String(f.get('answer') ?? '');
+  result = await formAction(async () => {
+    if (!AI_BLOCKS.includes(block)) throw new AdminError(422, 'Bloque no válido');
+    const data = parseBlock(block, answer);
+    if (f.get('action') === 'import') {
+      const r = await importBlock(block, data, deps);
+      st.redirect = `/admin/setup/ia?b=${STEPS[STEPS.indexOf(block) + 1]}&n=${r.add.length}`;
+      return;
+    }
+    st.pv = await preview(block, data, deps);
+  });
+  if (st.redirect) return Astro.redirect(st.redirect, 303);
+}
+const pv = st.pv;
+
+// Qué bloques están hechos (por lo que ya hay en el espacio).
+const [market, facets, all, prices] = await Promise.all([
+  admin.playbook.market(), admin.evidence.facets({ all: true }), admin.playbook.listAll(), deps.prices.list().catch(() => []),
+]);
+const general = all.plays.filter((p) => p.status === 'official' && !p.moduleId);
+const doneOf: Record<AiBlock, boolean> = {
+  empresa: general.some((p) => p.key === 'ia-que-vendemos' || p.kind === 'pitch'),
+  mercado: market.some((x) => x.personas.length > 0),
+  situaciones: facets.some((f) => f.status === 'official'),
+  jugadas: general.length >= 5,
+  precios: prices.length > 0,
+};
+const step: Step = asked && STEPS.includes(asked) ? asked : (AI_BLOCKS.find((b) => !doneOf[b]) ?? 'listo');
+const block = step === 'listo' ? null : step;
+const who = { person: (admin.session.displayName || admin.session.email.split('@')[0]).split(' ')[0], company: tenant?.name ?? 'tu empresa' };
+const prompt = block ? promptFor(block, who) : '';
+const imported = Number(Astro.url.searchParams.get('n') ?? '');
+const nextOf = (b: Step) => STEPS[STEPS.indexOf(b) + 1] ?? 'listo';
+const CHECK: Array<{ b: AiBlock; href: string; count: number }> = [
+  { b: 'empresa', href: '/admin/learn/general', count: general.filter((p) => p.key?.startsWith('ia-')).length },
+  { b: 'mercado', href: '/admin/setup?step=2', count: market.length },
+  { b: 'situaciones', href: '/admin/setup?step=4', count: facets.length },
+  { b: 'jugadas', href: '/admin/playbook', count: general.length },
+  { b: 'precios', href: '/admin/prices', count: prices.length },
+];
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-10 pb-10">
+    <header class="grid gap-3">
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{m.title}</h1>
+      <p class="co-lede !text-lg">{first ? m.first : m.lede}</p>
+    </header>
+
+    <nav class="co-chips" aria-label={m.title} data-testid="ai-steps">
+      {STEPS.map((b, i) => (
+        <a href={`/admin/setup/ia?b=${b}`} class="co-chip !inline-flex items-center gap-2" aria-current={b === step ? 'step' : undefined} aria-pressed={b === step}>
+          {b !== 'listo' && doneOf[b] ? <Icon name="circle-check" size={16} /> : <span class="co-figure text-sm">{i + 1}</span>}{m.blocks[b]}
+        </a>
+      ))}
+    </nav>
+
+    {imported > 0 && <p class="co-alert co-alert--success w-fit" role="status">{m.imported(imported)}</p>}
+    {result.error && <Alert kind="rejection" title={result.error} />}
+
+    {block ? (
+      <section class="co-card grid gap-8 !p-8" data-testid="ai-block" data-block={block}>
+        <div class="flex items-start gap-4">
+          <span class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={ICON[block]} size={26} /></span>
+          <div class="grid gap-1"><h2 class="co-page-title !text-3xl">{m.blocks[block]}</h2><p class="co-lede">{m.why[block]}</p></div>
+        </div>
+
+        {!pv && (
+          <div class="grid gap-3">
+            <p class="co-entity"><span class="co-figure mr-2 text-[color:var(--co-signal)]">1</span>{m.step1}</p>
+            <p class="co-meta">{m.step1Hint}</p>
+            <textarea class="co-textarea h-56 font-mono text-xs" readonly data-prompt data-testid="ai-prompt">{prompt}</textarea>
+            <button type="button" class="co-btn co-btn--primary w-fit" data-copy data-copied={m.copied}><Icon name="copy" size={16} />{m.copy}</button>
+          </div>
+        )}
+
+        <form method="post" class="grid gap-3" data-testid="ai-form">
+          <input type="hidden" name="block" value={block} />
+          {pv ? (
+            <>
+              <input type="hidden" name="answer" value={answer} />
+              <div class="grid gap-3" data-testid="ai-preview">
+                {pv.add.length ? <p class="co-entity">{m.willAdd(pv.add.length)}</p> : <p class="co-meta">{m.nothing}</p>}
+                <ul class="grid gap-1 p-0">{pv.add.map((x) => <li class="list-none flex gap-2"><span class="font-bold text-[color:var(--co-signal)]">+</span>{x}</li>)}</ul>
+                {pv.skip.length > 0 && <details><summary class="co-meta cursor-pointer">{m.already(pv.skip.length)}</summary><ul class="mt-1 grid gap-1 p-0 co-meta">{pv.skip.map((x) => <li class="list-none">· {x}</li>)}</ul></details>}
+              </div>
+              <div class="flex flex-wrap gap-2">
+                {pv.add.length > 0 && <button class="co-btn co-btn--primary" name="action" value="import" data-testid="ai-import">{m.import(pv.add.length)} <span aria-hidden="true">→</span></button>}
+                <a class="co-btn co-btn--ghost" href={`/admin/setup/ia?b=${block}`}>{m.change}</a>
+                {pv.add.length === 0 && <a class="co-btn co-btn--primary" href={`/admin/setup/ia?b=${nextOf(block)}`}>{m.done} →</a>}
+              </div>
+            </>
+          ) : (
+            <>
+              <p class="co-entity"><span class="co-figure mr-2 text-[color:var(--co-signal)]">2</span>{m.step2}</p>
+              <p class="co-meta">{m.step2Hint}</p>
+              <textarea class="co-textarea h-40 font-mono text-xs" name="answer" required data-testid="ai-answer">{answer}</textarea>
+              <div class="flex flex-wrap items-center gap-3">
+                <button class="co-btn co-btn--primary" name="action" value="preview" data-testid="ai-review">{m.review} <span aria-hidden="true">→</span></button>
+                <a class="co-meta underline" href={`/admin/setup/ia?b=${nextOf(block)}`}>{m.skip}</a>
+              </div>
+            </>
+          )}
+        </form>
+      </section>
+    ) : (
+      <>
+        <section class="grid gap-4" data-testid="ai-check">
+          <div class="grid gap-1"><h2 class="co-page-title !text-3xl">{m.check.title}</h2><p class="co-lede">{m.check.lede}</p></div>
+          <div class="grid gap-3 sm:grid-cols-2">{CHECK.map((c) => (
+            <a class="co-card co-card--link !flex items-center gap-4 !p-5" href={c.href}>
+              <span class:list={['inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full', doneOf[c.b] ? 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]' : 'bg-[var(--console-chip-bg)]']} aria-hidden="true"><Icon name={doneOf[c.b] ? 'circle-check' : ICON[c.b]} size={20} /></span>
+              <span class="grid flex-1"><span class="co-entity">{m.check[c.b]}</span><span class="co-meta">{c.count}</span></span>
+              <span class="co-btn co-btn--ghost co-btn--sm">{m.check.open}</span>
+            </a>))}
+          </div>
+        </section>
+        <section class="home-next grid gap-3 rounded-[var(--console-radius-card,1.25rem)] p-8" data-testid="ai-next">
+          <h2 class="text-3xl font-bold">{m.next.title}</h2>
+          <p class="text-lg opacity-80">{m.next.lede}</p>
+          <div class="flex flex-wrap gap-2">
+            <a class="co-btn co-btn--primary" href="/admin/team">{m.next.invite} <span aria-hidden="true">→</span></a>
+            <a class="co-btn co-btn--ghost" href="/admin/territory">{m.next.zones}</a>
+          </div>
+        </section>
+      </>
+    )}
+
+    <a class="co-meta underline w-fit" href="/admin/setup">{m.manual}</a>
+  </div>
+</AdminLayout>
+
+<style>
+  .home-next { background: var(--console-ink, #111); color: var(--console-bg, #fff); }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    const t = document.querySelector<HTMLTextAreaElement>('[data-prompt]');
+    if (!t) return;
+    try { await navigator.clipboard.writeText(t.value); } catch { t.select(); document.execCommand('copy'); }
+    const label = b.lastChild;
+    if (label) { const old = label.textContent; label.textContent = b.dataset.copied ?? old; setTimeout(() => { label.textContent = old; }, 1600); }
+  }));
+</script>

@@ -373,7 +373,7 @@ export function createTenantAdminService(
   // ---------------------------------------------------------------- tarifas (docs/COMMISSIONS.md §Tarifas)
   const PERIODS = ['once', 'event', 'month', 'year'] as const;
   async function listPriceOptions() { requireAdmin(); return db.listPriceOptions(s.tenantId); }
-  async function savePriceOption(input: { label: unknown; amount: unknown; currency?: unknown; period: unknown; paymentLink?: unknown; segmentId?: unknown }, id?: string) {
+  async function savePriceOption(input: { label: unknown; amount: unknown; currency?: unknown; period: unknown; paymentLink?: unknown; segmentId?: unknown; kind?: unknown; isDefault?: unknown }, id?: string) {
     requireAdmin();
     const label = String(input.label ?? '').trim();
     if (!label || label.length > 80) throw new AdminError(422, 'Ponle un nombre corto (p. ej. «Local mediano»)');
@@ -391,6 +391,8 @@ export function createTenantAdminService(
     if (id && !cur) throw new AdminError(404, 'Tarifa no encontrada');
     return db.savePriceOption(s.tenantId, {
       label, amount, currency, period, paymentLink: link || null, segmentId,
+      ...(input.kind !== undefined ? { kind: String(input.kind ?? '').trim().slice(0, 60) || null } : {}),
+      ...(input.isDefault !== undefined ? { isDefault: !!input.isDefault } : {}),
       position: cur?.position ?? Math.max(0, ...all.map((o) => o.position)) + 1, active: cur?.active ?? true,
     }, id);
   }
