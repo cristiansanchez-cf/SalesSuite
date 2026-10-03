@@ -5,6 +5,9 @@ import { renderNotification } from './render';
 import type { Locale } from '../i18n/core';
 import type { NotificationView } from './types';
 
+/** Zonas horarias que se ofrecen en Mi cuenta (las de los equipos actuales; se amplía si hace falta). */
+export const TIMEZONES = ['Europe/Madrid', 'Atlantic/Canary', 'Europe/Lisbon', 'Europe/London', 'America/Mexico_City', 'America/Bogota', 'America/Sao_Paulo', 'America/New_York', 'Asia/Seoul'];
+
 export interface NotificationFeed { items: NotificationView[]; open: number }
 
 export function createNotifyService(db: NotifyDb, s: Pick<AdminSession, 'tenantId' | 'userId'>) {
@@ -32,6 +35,8 @@ export function createNotifyService(db: NotifyDb, s: Pick<AdminSession, 'tenantI
     setEmailPref: (on: boolean) => db.setEmailPref(s.userId, on),
     locale: () => db.getLocale(s.userId),
     setLocale: (l: string | null) => db.setLocale(s.userId, l),
+    dailyPref: () => db.getDailyPref(s.userId),
+    setDailyPref: (p: { daily: boolean; timezone: string }) => db.setDailyPref(s.userId, { daily: p.daily, timezone: TIMEZONES.includes(p.timezone) ? p.timezone : 'Europe/Madrid' }),
   };
 }
 export type NotifyService = ReturnType<typeof createNotifyService>;
@@ -39,5 +44,5 @@ export type NotifyService = ReturnType<typeof createNotifyService>;
 /** Para contextos sin avisos (tests de otros módulos). */
 export const emptyNotifyDb: NotifyDb = {
   async list() { return []; }, async markRead() {}, async dismiss() { return false; },
-  async getEmailPref() { return true; }, async setEmailPref() {}, async getLocale() { return null; }, async setLocale() {},
+  async getEmailPref() { return true; }, async setEmailPref() {}, async getLocale() { return null; }, async setLocale() {}, async getDailyPref() { return { daily: true, timezone: 'Europe/Madrid' }; }, async setDailyPref() {},
 };

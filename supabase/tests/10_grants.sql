@@ -12,3 +12,5 @@ grant update (read_at, dismissed_at) on public.notification to authenticated;
 -- Historial de condiciones y visitas a dossiers: solo los escriben triggers y RPC.
 revoke insert, update, delete on public.member_conditions_history from authenticated;
 revoke insert, update, delete on public.dossier_view from authenticated;
+-- Registro del resumen diario: solo el cron (service role).
+revoke all on public.daily_digest_log from authenticated;

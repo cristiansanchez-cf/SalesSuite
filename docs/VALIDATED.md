@@ -20,5 +20,6 @@ Método (docs/FOUNDATIONS.md §7): cuando el fundador prueba un recorrido y dice
 | Comisiones (plan, venta declarada, liquidación, API, cupones) | `scripts/smoke-commissions.cjs`, `src/lib/commissions/*.test.ts`, `supabase/tests/34_commissions.test.sql` | Pendiente | |
 | Idiomas | `scripts/smoke-i18n.cjs` | Pendiente | |
 | Empieza aquí (onboarding del vendedor) e historial de condiciones | `scripts/smoke-start.cjs`, `supabase/tests/36_conditions.test.sql`, `src/lib/commissions/commissions.contract.ts` | Pendiente | Prueba guiada: docs/PUESTA_EN_MARCHA.md §G |
+| Resumen diario de seguimientos (email a las 7:00, preferencia y zona horaria) | `scripts/smoke-daily.cjs`, `src/lib/notify/daily.test.ts`, `supabase/tests/38_daily_digest.test.sql` | Pendiente | |
 | Analítica de dossiers (aperturas, secciones, aviso al autor) | `scripts/smoke-analytics.cjs`, `src/lib/analytics/analytics.test.ts`, `supabase/tests/37_dossier_views.test.sql` | Pendiente | |
 | Móvil sin desbordes | `scripts/smoke-mobile.cjs` | Pendiente | |

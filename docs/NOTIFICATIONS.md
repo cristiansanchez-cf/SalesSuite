@@ -45,9 +45,27 @@ Lo informativo nunca llega suelto. Cada persona puede desactivar los emails en *
 
 `/api/health` indica `emailConfigured` y `cronConfigured` sin mostrar valores.
 
+### Resumen diario de seguimientos
+
+Cada mañana, a cada persona y por cada espacio:
+
+- **Cuándo:** entre las **7:00 y las 12:00 de su zona horaria** (la elige en *Mi cuenta*; por defecto, Madrid). Una sola vez al día.
+- **Qué:** cada propuesta suya aparece **una sola vez**, en su motivo más urgente:
+  1. **Vencidos:** el próximo paso ya pasó.
+  2. **Para hoy:** el próximo paso es hoy, en su hora local.
+  3. **Te han abierto la propuesta:** aperturas de las últimas 24 h (docs/ANALYTICS.md).
+  4. **Sin próximo paso:** publicada hace más de un día y sin nada apuntado. Como mucho 5.
+- **Cada línea** lleva dos botones: *Preparar mensaje* (abre «Preparar mensaje» con la propuesta y el tipo de mensaje ya elegidos, y el contexto listo) y *Abrir*.
+- **Admins y jefes/as** reciben además **cómo va el equipo:** seguimientos vencidos por persona y propuestas abiertas sin próximo paso.
+- **Solo si hay algo que mover.** Si no hay nada, no sale email.
+- **Se desactiva** en *Mi cuenta → Avisos*. También deja de llegar si se desactivan los emails.
+- **Registro:** `daily_digest_log` (un envío por persona, espacio y día). Código: `src/lib/notify/daily.ts` (qué entra y cuándo) y `daily-job.ts` (email y envío).
+
 ### Cron
 
-`GET /api/cron/notifications` hace las dos cosas. El resumen solo sale los lunes (UTC); se puede forzar con `?digest=force` u omitir con `?digest=skip`.
+`GET /api/cron/notifications` hace las tres cosas: avisos inmediatos, resumen diario y resumen semanal. El semanal solo sale los lunes (UTC); se puede forzar con `?digest=force` u omitir con `?digest=skip`. El diario respeta la hora local de cada persona; `?daily=force` lo envía ya (sin repetir en el mismo día) y `?daily=skip` lo omite.
+
+**En modo demo**, `/api/dev/outbox?tag=daily&to=rep@enjoy.test` enseña el último email tal cual (en producción, 404).
 
 - **Vercel Pro:** Cron Job cada 10 minutos (`*/10 * * * *`) a `/api/cron/notifications`. Vercel envía la cabecera con `CRON_SECRET` sola.
 - **Vercel Hobby** (cron como mucho diario): usa un planificador externo cada 10 minutos, por ejemplo Supabase `pg_cron` + `pg_net` o un workflow programado de GitHub Actions, con la cabecera `Authorization`.

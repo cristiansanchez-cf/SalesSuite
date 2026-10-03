@@ -80,5 +80,6 @@ jobs:
           node scripts/smoke-i18n.cjs
           node scripts/smoke-start.cjs
           node scripts/smoke-analytics.cjs
+          node scripts/smoke-daily.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

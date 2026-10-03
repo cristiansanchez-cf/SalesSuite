@@ -70,6 +70,8 @@ export function demoEmitStory(w: { id: string; tenant_id: string; status: string
 export function demoNotifyDb(): NotifyDb {
   const mine = (t: string, u: string) => db().notification.filter((n) => n.tenant_id === t && n.user_id === u);
   return {
+    async getDailyPref(u) { const x = db().users.find((y) => y.id === u); return { daily: x?.daily_digest ?? true, timezone: x?.timezone ?? 'Europe/Madrid' }; },
+    async setDailyPref(u, p) { const x = db().users.find((y) => y.id === u); if (x) { x.daily_digest = p.daily; x.timezone = p.timezone; } },
     async list(t, u, { limit }) {
       return mine(t, u).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit).map(toN);
     },
@@ -116,5 +118,29 @@ export function demoNotifyJobDb(): NotifyJobDb {
     },
     async markEmailed(ids, at) { for (const n of db().notification) if (ids.includes(n.id)) n.emailed_at ??= at; },
     async markDigest(userId, at) { const u = db().users.find((x) => x.id === userId); if (u) u.digest_sent_at = at; },
+    async dailyMembers() {
+      return db().users.flatMap((u) => u.memberships.map((m) => ({
+        userId: u.id, tenantId: m.tenant_id, role: m.role, email: u.email, name: u.display_name || null, locale: u.locale ?? null,
+        timezone: u.timezone ?? 'Europe/Madrid', daily: (u.notify_email ?? true) && (u.daily_digest ?? true),
+      })));
+    },
+    async dailyLogged(days) {
+      return new Set(db().daily_digest_log.filter((l) => days.includes(l.day)).map((l) => `${l.user_id}|${l.tenant_id}|${l.day}`));
+    },
+    async dailyDossiers(tenantIds) {
+      return db().dossier.filter((d) => tenantIds.includes(d.tenant_id) && (d.outcome ?? 'open') === 'open' && d.status !== 'archived').map((d) => ({
+        id: d.id, tenantId: d.tenant_id, authorId: d.author_id, title: d.title, company: d.prospect_company, status: d.status, outcome: d.outcome ?? 'open',
+        nextStep: d.next_step ?? null, nextStepAt: d.next_step_at ?? null, publishedAt: d.published_at ?? null,
+      }));
+    },
+    async dailyOpens(tenantIds, since) {
+      return db().dossier_view.filter((v) => tenantIds.includes(v.tenant_id) && v.started_at >= since).map((v) => ({ dossierId: v.dossier_id, lastSeenAt: v.last_seen_at }));
+    },
+    async markDaily(userId, tenantId, day, emailed) {
+      const s = db();
+      if (!s.daily_digest_log.some((l) => l.user_id === userId && l.tenant_id === tenantId && l.day === day)) {
+        s.daily_digest_log.push({ user_id: userId, tenant_id: tenantId, day, emailed, sent_at: new Date().toISOString() });
+      }
+    },
   };
 }

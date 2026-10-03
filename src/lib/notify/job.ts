@@ -1,12 +1,14 @@
 /**
  * Trabajo de emails (cron, docs/NOTIFICATIONS.md). Dos reglas para no llenar la bandeja:
  * 1. Inmediato: lo que pide una acción y es nuevo, agrupado en UN email por persona y espacio.
- * 2. Resumen semanal: lo que sigue abierto aunque ya lo vieras («te lo recuerdo») + las novedades de la semana.
+ * 2. Resumen diario: seguimientos vencidos y de hoy, propuestas abiertas y sin próximo paso (daily-job.ts).
+ * 3. Resumen semanal: lo que sigue abierto aunque ya lo vieras («te lo recuerdo») + las novedades de la semana.
  * Lo informativo nunca se envía suelto. Quien desactiva los emails solo ve la campana.
  */
 import type { NotifyJobDb, Recipient, TenantInfo } from './db';
 import type { Email, Mailer } from './mailer';
 import { isOpen, renderNotification } from './render';
+import { runDailyDigest } from './daily-job';
 import { isLocale, type Locale } from '../i18n/core';
 import { notifyMessages } from '../i18n/messages/notify';
 import type { Notification, NotificationView } from './types';
@@ -18,8 +20,8 @@ export const GRACE_MS = 5 * MIN;
 /** Lo que lleva abierto más de esto se repite en el resumen. */
 export const STALE_MS = 2 * DAY;
 
-export interface JobOptions { now: Date; fallbackOrigin: string; digest?: 'auto' | 'force' | 'skip' }
-export interface JobResult { immediate: number; digests: number; skipped: number; failed: number }
+export interface JobOptions { now: Date; fallbackOrigin: string; digest?: 'auto' | 'force' | 'skip'; daily?: 'auto' | 'force' | 'skip' }
+export interface JobResult { immediate: number; digests: number; daily: number; skipped: number; failed: number }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const origin = (t: TenantInfo | undefined, fallback: string) => (t?.hostname ? `https://${t.hostname}` : fallback);
@@ -44,7 +46,7 @@ ${sections.filter((s) => s.items.length).map((s) => `<h2 style="font-size:13px;l
 const groupBy = <T, K>(xs: T[], key: (x: T) => K) => xs.reduce((m, x) => m.set(key(x), [...(m.get(key(x)) ?? []), x]), new Map<K, T[]>());
 
 export async function runNotificationJob(db: NotifyJobDb, mailer: Mailer, o: JobOptions): Promise<JobResult> {
-  const r: JobResult = { immediate: 0, digests: 0, skipped: 0, failed: 0 };
+  const r: JobResult = { immediate: 0, digests: 0, daily: 0, skipped: 0, failed: 0 };
   const nowIso = o.now.toISOString();
 
   // ---- 1. inmediato
@@ -72,7 +74,17 @@ export async function runNotificationJob(db: NotifyJobDb, mailer: Mailer, o: Job
     } catch { r.failed++; }
   }
 
-  // ---- 2. resumen semanal (lunes, o forzado)
+  // ---- 2. resumen diario de seguimientos (7:00 hora local de cada persona; docs/NOTIFICATIONS.md)
+  if (o.daily !== 'skip') {
+    // Un fallo aquí (p. ej. migración pendiente) no debe tumbar los avisos inmediatos ni el resumen semanal.
+    try {
+      const d = await runDailyDigest(db, mailer, { now: o.now, fallbackOrigin: o.fallbackOrigin, force: o.daily === 'force' });
+      r.daily += d.sent;
+      r.failed += d.failed;
+    } catch (e) { console.error('[daily]', (e as Error).message); r.failed++; }
+  }
+
+  // ---- 3. resumen semanal (lunes, o forzado)
   const due = o.digest === 'force' || (o.digest !== 'skip' && o.now.getUTCDay() === 1);
   if (!due) return r;
   const ids = await db.digestDue(new Date(o.now.getTime() - 6 * DAY).toISOString());

@@ -11,6 +11,9 @@ export interface NotifyDb {
   /** Idioma preferido (docs/I18N.md). */
   getLocale(userId: string): Promise<string | null>;
   setLocale(userId: string, locale: string | null): Promise<void>;
+  /** Resumen diario y zona horaria (docs/NOTIFICATIONS.md). */
+  getDailyPref(userId: string): Promise<{ daily: boolean; timezone: string }>;
+  setDailyPref(userId: string, p: { daily: boolean; timezone: string }): Promise<void>;
 }
 
 /** Destinatario de un email, con el contexto del espacio de trabajo. */
@@ -32,4 +35,17 @@ export interface NotifyJobDb {
   tenants(ids: string[]): Promise<TenantInfo[]>;
   markEmailed(ids: string[], at: string): Promise<void>;
   markDigest(userId: string, at: string): Promise<void>;
+  // ---- resumen diario (docs/NOTIFICATIONS.md)
+  /** Todas las personas de cada espacio; `daily` = quiere el resumen (emails activos y resumen diario activo). */
+  dailyMembers(): Promise<DailyMember[]>;
+  /** Claves «usuario|espacio|día» ya registradas en esos días. */
+  dailyLogged(days: string[]): Promise<Set<string>>;
+  dailyDossiers(tenantIds: string[]): Promise<import('./daily').DailyDossier[]>;
+  /** Visitas a propuestas desde `since` (para «te han abierto la propuesta»). */
+  dailyOpens(tenantIds: string[], since: string): Promise<Array<{ dossierId: string; lastSeenAt: string }>>;
+  markDaily(userId: string, tenantId: string, day: string, emailed: boolean): Promise<void>;
+}
+
+export interface DailyMember {
+  userId: string; tenantId: string; role: string; email: string; name: string | null; locale: string | null; timezone: string; daily: boolean;
 }

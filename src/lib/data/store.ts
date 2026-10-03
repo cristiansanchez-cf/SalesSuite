@@ -81,7 +81,7 @@ export interface PartnerAccountRow {
   id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
-export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null }
+export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string }
 export interface ZoneRow { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number }
 export interface MembershipZoneRow { tenant_id: string; user_id: string; zone_id: string }
 export interface AccountRulesRow { tenant_id: string; claim_days: number; strict_zones: boolean; require_account: boolean }
@@ -161,6 +161,7 @@ export interface DemoDb {
   coupon: CouponRow[];
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
   dossier_view: DossierViewRow[];
+  daily_digest_log: Array<{ user_id: string; tenant_id: string; day: string; emailed: boolean; sent_at: string }>;
   member_conditions_history: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; plan: import('../commissions/types').ConditionsChange['plan']; changed_by: string | null; changed_at: string; seq: number }>;
 }
 
@@ -324,6 +325,7 @@ export function freshDemoDb(): DemoDb {
     member_conditions: [],
     member_conditions_history: [],
     dossier_view: demoVisits(f.dossier_item),
+    daily_digest_log: [],
     coupon: [
       { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },
       { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },

@@ -41,6 +41,16 @@ export function supabaseNotifyDb(sb: SupabaseClient): NotifyDb {
       return r?.locale ?? null;
     },
     async setLocale(u, l) { check(await sb.from('users').update({ locale: l }).eq('id', u)); },
+    async getDailyPref(u) {
+      // Tolerante: si la migración 20261018 aún no se ha aplicado, valores por defecto (no rompe Mi cuenta).
+      const { data: r, error } = await sb.from('users').select('daily_digest, timezone').eq('id', u).maybeSingle();
+      if (error) return { daily: true, timezone: 'Europe/Madrid' };
+      return { daily: (r?.daily_digest as boolean) ?? true, timezone: (r?.timezone as string) ?? 'Europe/Madrid' };
+    },
+    async setDailyPref(u, p) {
+      const { error } = await sb.from('users').update({ daily_digest: p.daily, timezone: p.timezone }).eq('id', u);
+      if (error) console.error('[daily-pref]', error.message);  // migración pendiente: no rompe el guardado del resto
+    },
   };
 }
 
@@ -79,5 +89,42 @@ export function supabaseNotifyJobDb(sb: SupabaseClient): NotifyJobDb {
       for (let i = 0; i < ids.length; i += 200) check(await sb.from('notification').update({ emailed_at: at }).in('id', ids.slice(i, i + 200)).is('emailed_at', null));
     },
     async markDigest(userId, at) { check(await sb.from('users').update({ digest_sent_at: at }).eq('id', userId)); },
+    async dailyMembers() {
+      const ms = check(await sb.from('membership').select('user_id, tenant_id, role').limit(20000)) ?? [];
+      const ids = [...new Set(ms.map((m: Row) => m.user_id as string))];
+      const users = new Map<string, Row>();
+      for (let i = 0; i < ids.length; i += 200) {
+        for (const u of check(await sb.from('users').select('id, email, display_name, locale, notify_email, daily_digest, timezone').in('id', ids.slice(i, i + 200))) ?? []) users.set(u.id as string, u);
+      }
+      return ms.flatMap((m: Row) => {
+        const u = users.get(m.user_id as string);
+        return u ? [{
+          userId: m.user_id as string, tenantId: m.tenant_id as string, role: m.role as string, email: u.email as string, name: (u.display_name as string) || null,
+          locale: (u.locale as string) ?? null, timezone: (u.timezone as string) ?? 'Europe/Madrid', daily: (u.notify_email as boolean ?? true) && (u.daily_digest as boolean ?? true),
+        }] : [];
+      });
+    },
+    async dailyLogged(days) {
+      if (!days.length) return new Set();
+      const rows = check(await sb.from('daily_digest_log').select('user_id, tenant_id, day').in('day', days).limit(20000)) ?? [];
+      return new Set(rows.map((r: Row) => `${r.user_id}|${r.tenant_id}|${r.day}`));
+    },
+    async dailyDossiers(tenantIds) {
+      if (!tenantIds.length) return [];
+      const rows = check(await sb.from('dossier').select('id, tenant_id, author_id, title, prospect_company, status, outcome, next_step, next_step_at, published_at')
+        .in('tenant_id', tenantIds).eq('outcome', 'open').neq('status', 'archived').limit(20000)) ?? [];
+      return rows.map((r: Row) => ({
+        id: r.id as string, tenantId: r.tenant_id as string, authorId: (r.author_id as string) ?? null, title: r.title as string, company: (r.prospect_company as string) ?? null,
+        status: r.status as string, outcome: r.outcome as 'open', nextStep: (r.next_step as string) ?? null, nextStepAt: (r.next_step_at as string) ?? null, publishedAt: (r.published_at as string) ?? null,
+      }));
+    },
+    async dailyOpens(tenantIds, since) {
+      if (!tenantIds.length) return [];
+      return (check(await sb.from('dossier_view').select('dossier_id, last_seen_at').in('tenant_id', tenantIds).gte('started_at', since).limit(20000)) ?? [])
+        .map((r: Row) => ({ dossierId: r.dossier_id as string, lastSeenAt: r.last_seen_at as string }));
+    },
+    async markDaily(userId, tenantId, day, emailed) {
+      check(await sb.from('daily_digest_log').upsert({ user_id: userId, tenant_id: tenantId, day, emailed }, { onConflict: 'user_id,tenant_id,day', ignoreDuplicates: true }));
+    },
   };
 }

@@ -5,6 +5,7 @@ import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import { i18n, LOCALES, LOCALE_NAME, isLocale, LOCALE_COOKIE } from '~/lib/i18n';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { TIMEZONES } from '~/lib/notify/service';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -37,6 +38,7 @@ if (form?.get('action') === 'locale') {
   }
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
+  await admin.notifications.setDailyPref({ daily: form.get('daily') === 'on', timezone: String(form.get('timezone') ?? '') });
   notifyOk = true;
 } else if (form) {
   name = String(form.get('name') ?? '').trim().slice(0, 80);
@@ -62,6 +64,8 @@ if (form?.get('action') === 'locale') {
   }
 }
 const emailOn = await admin.notifications.emailPref();
+const dailyPref = await admin.notifications.dailyPref();
+const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
 ---
 <AdminLayout title={m.account.title}>
   <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
@@ -89,6 +93,15 @@ const emailOn = await admin.notifications.emailPref();
       <label class="co-check">
         <input type="checkbox" name="notifyEmail" checked={emailOn} />
         <span>{m.account.notifyLabel}<span class="co-help block">{m.account.notifyHelp}</span></span>
+      </label>
+      <label class="co-check">
+        <input type="checkbox" name="daily" checked={dailyPref.daily} data-testid="daily-pref" />
+        <span>{m.account.dailyLabel}<span class="co-help block">{m.account.dailyHelp}</span></span>
+      </label>
+      <label class="co-field">{m.account.timezone}
+        <select class="co-select" name="timezone" data-testid="timezone">
+          {TIMEZONES.map((tz) => <option value={tz} selected={tz === dailyPref.timezone}>{tzLabel(tz)} · {tz}</option>)}
+        </select>
       </label>
       <button class="co-btn co-btn--ghost w-fit" type="submit">{m.account.notifySave}</button>
     </form>
