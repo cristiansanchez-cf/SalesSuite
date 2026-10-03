@@ -22,6 +22,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return new Response(MISCONFIGURED_HTML, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '300' } });
   }
 
+  // API pública de ingresos: se autentica con clave (Bearer), no con cookies; el CSRF no aplica (docs/COMMISSIONS.md).
+  if (context.url.pathname.startsWith('/api/v1/')) return next();
+
   const host = requestHost(context.request, context.url.host);
   if (!isSameOriginWrite(context.request, host)) {
     return new Response('Origen no permitido', { status: 403 });

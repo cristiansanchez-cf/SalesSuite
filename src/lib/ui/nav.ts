@@ -11,7 +11,7 @@ import { can } from '../admin/permissions';
 export interface NavItem { href: string; label: string; icon: IconName; on: boolean; count?: number; testid?: string }
 export type NavMode = 'sell' | 'setup';
 
-const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/territory', '/admin/brand'];
+const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/territory', '/admin/commissions/team', '/admin/brand'];
 
 export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number } = {}) {
   const on = (p: string) => path === p || path.startsWith(`${p}/`);
@@ -25,6 +25,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     { href: '/admin/compose', label: 'Preparar mensaje', icon: 'message-square-text', on: on('/admin/compose') },
     { href: '/admin/wins', label: 'Qué ha funcionado', icon: 'trophy', on: on('/admin/wins') },
     { href: '/admin/learn', label: 'Aprende', icon: 'graduation-cap', on: on('/admin/learn') },
+    { href: '/admin/commissions', label: 'Mis comisiones', icon: 'wallet', on: path === '/admin/commissions' },
   ];
   const setup: NavItem[] = [
     { href: '/admin/setup', label: 'Configuración guiada', icon: 'wand-sparkles', on: on('/admin/setup') },
@@ -32,6 +33,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     ...(perms.manageTenant ? [{ href: '/admin/catalog', label: 'Catálogo', icon: 'boxes' as IconName, on: on('/admin/catalog') }] : []),
     { href: '/admin/team', label: 'Equipo', icon: 'users', on: on('/admin/team') },
     ...(perms.manageAccounts ? [{ href: '/admin/territory', label: 'Territorio', icon: 'map' as IconName, on: on('/admin/territory') }] : []),
+    { href: '/admin/commissions/team', label: 'Comisiones', icon: 'wallet', on: on('/admin/commissions/team') },
     ...(perms.manageTenant ? [{ href: '/admin/brand', label: 'Marca', icon: 'palette' as IconName, on: on('/admin/brand') }] : []),
   ];
   return {

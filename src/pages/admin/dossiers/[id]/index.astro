@@ -7,6 +7,7 @@ import { AdminError } from '~/lib/admin/service';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
 import { ELIGIBILITY_LABEL } from '~/lib/accounts/rules';
+import { formatMoney } from '~/lib/commissions/money';
 import type { BuilderState } from '~/lib/admin/types';
 import { requestOrigin } from '~/lib/http';
 
@@ -23,6 +24,7 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     if (str('action') === 'link') await admin.service.apply(id, { op: 'setAccount', accountId: str('accountId') || null });
     if (str('action') === 'decide') await admin.accounts.decide(id, str('decision') === 'approved' ? 'approved' : 'rejected');
+    if (str('action') === 'declare') await admin.commissions.declareSale(id, { amount: str('amount'), offer: str('offer'), occurredAt: str('occurredAt'), kind: str('kind') || 'sale' });
   });
   if (!result.error) return Astro.redirect(`/admin/dossiers/${id}`, 303);
 }
@@ -48,6 +50,9 @@ const d = state.dossier;
 const crm = perms.useAccounts;
 const linked = crm && d.accountId ? await admin.accounts.get(d.accountId).then((x) => x.account).catch(() => null) : null;
 const mine = crm && !d.accountId && state.canEdit ? await admin.accounts.mine() : [];
+// Venta declarada (docs/COMMISSIONS.md): quien ganó la propuesta declara el importe; un admin lo confirma.
+const canDeclare = d.outcome === 'won' && d.authorId === admin.session.userId;
+const declared = d.outcome === 'won' ? (await admin.commissions.events()).filter((e) => e.dossierId === d.id) : [];
 const conflict = d.outcome === 'won' && d.accountEligibility && d.accountEligibility !== 'eligible';
 // El enlace público vive en el mismo host del tenant que la consola.
 const origin = requestOrigin(Astro.request, Astro.url);
@@ -69,6 +74,34 @@ const origin = requestOrigin(Astro.request, Astro.url);
         </form>
       )}
     </div>
+  )}
+  {(canDeclare || declared.length > 0) && (
+    <section class="co-card mb-4 grid gap-3" data-testid="declare-sale">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="co-card-title flex items-center gap-2"><Icon name="wallet" size={18} />Venta</h2>
+        <a class="co-meta underline" href="/admin/commissions">Mis comisiones</a>
+      </div>
+      {declared.length > 0 && (
+        <ul class="grid gap-1 p-0">{declared.map((e) => (
+          <li class="flex list-none flex-wrap items-center gap-2 text-sm" data-testid="declared">
+            <strong>{formatMoney(e.amountCents, e.currency)}</strong>{e.offer && <span class="co-meta">{e.offer}</span>}
+            <span class="co-meta">· {new Date(e.occurredAt).toLocaleDateString('es-ES')}</span>
+            <span class={e.status === 'confirmed' ? 'co-badge co-badge--signal' : e.status === 'void' ? 'co-badge' : 'co-badge co-badge--soft'}>{e.status === 'confirmed' ? 'Confirmada' : e.status === 'void' ? 'Anulada' : 'Pendiente de confirmar'}</span>
+          </li>))}
+        </ul>
+      )}
+      {canDeclare && (
+        <form method="post" class="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="action" value="declare" />
+          <label class="co-field">Importe cobrado (€)<input class="co-input max-w-[9rem]" name="amount" required inputmode="decimal" placeholder="1.000" /></label>
+          <label class="co-field">Tipo<select class="co-select" name="kind"><option value="sale">Pago único</option><option value="recurring">Cuota (suscripción)</option></select></label>
+          <label class="co-field">Paquete <span class="co-help">Opcional</span><input class="co-input max-w-[10rem]" name="offer" maxlength="80" placeholder="pack-1000" /></label>
+          <label class="co-field">Fecha<input class="co-input" type="date" name="occurredAt" required value={new Date().toISOString().slice(0, 10)} /></label>
+          <button class="co-btn co-btn--primary" type="submit">{declared.length ? 'Declarar otro cobro' : 'Declarar la venta'}</button>
+        </form>
+      )}
+      {canDeclare && declared.length === 0 && <p class="co-help">Cuenta para tus comisiones cuando la empresa la confirme.</p>}
+    </section>
   )}
   {crm && (linked || mine.length > 0) && (
     <div class="co-inset mb-4 flex flex-wrap items-center gap-3 !py-2.5" data-testid="crm-account">

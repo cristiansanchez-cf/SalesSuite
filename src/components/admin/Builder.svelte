@@ -278,10 +278,11 @@
     if (!c) return;
     run({ op: 'updateContact', contactId, contact: { traits: { ...(c.traits ?? {}), [f.key]: value ? [value] : [] } } });
   }
-  function onOutcome(value: string) {
-    // Ganado o perdido → se documenta el cierre (es lo que alimenta «Qué ha funcionado»).
-    if (value === 'open') run({ op: 'setOutcome', outcome: 'open' });
-    else location.href = `/admin/dossiers/${d.id}/debrief?outcome=${value}`;
+  async function onOutcome(value: string) {
+    // El resultado se guarda YA (cuenta, comisión y conflictos dependen de él); después se documenta el cierre,
+    // que es lo que alimenta «Qué ha funcionado».
+    const ok = await run({ op: 'setOutcome', outcome: value as 'open' | 'won' | 'lost' });
+    if (ok && value !== 'open') location.href = `/admin/dossiers/${d.id}/debrief?outcome=${value}`;
   }
 
   // ---------- «en situaciones parecidas» (cierres documentados del equipo)

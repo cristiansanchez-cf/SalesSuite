@@ -48,18 +48,18 @@ export const KINDS: Record<string, KindDef> = {
     icon: 'wallet', resolvesOnRead: false,
     title: (p) => `${p.seller || 'Alguien'} declara una venta de ${money(p.amount, p.currency)}${p.offer ? ` (${p.offer})` : ''}`,
     detail: () => 'Confírmala para que cuente en las comisiones.',
-    href: () => '/admin/commissions?tab=ingresos',
+    href: () => '/admin/commissions/team?tab=ingresos',
   },
   payout_ready: {
     icon: 'wallet', resolvesOnRead: true,
     title: (p) => `Tu liquidación de ${p.period}: ${money(p.amount, p.currency)}`,
     detail: () => 'Está lista para pago.',
-    href: () => '/admin/commissions/mine',
+    href: () => '/admin/commissions',
   },
   payout_paid: {
     icon: 'circle-check', resolvesOnRead: true,
     title: (p) => `Pagado: ${money(p.amount, p.currency)} de ${p.period}`,
-    href: () => '/admin/commissions/mine',
+    href: () => '/admin/commissions',
   },
   story_shared: {
     icon: 'trophy', resolvesOnRead: true,
