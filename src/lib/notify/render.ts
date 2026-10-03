@@ -14,6 +14,7 @@ interface KindDef {
   href(n: Notification): string;
 }
 
+const money = (cents: string, currency: string) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: currency || 'EUR' }).format(Number(cents || 0) / 100);
 const REASON: Record<string, string> = {
   claimed_by_other: 'la trabajaba otra persona', blocked: 'la cuenta está bloqueada', out_of_zone: 'está fuera de su zona', no_account: 'no tiene cuenta del CRM',
 };
@@ -42,6 +43,23 @@ export const KINDS: Record<string, KindDef> = {
     title: (p) => `${p.seller || 'Alguien'} ha ganado ${p.account ? `«${p.account}»` : 'una venta'}, pero ${REASON[p.reason] ?? 'no cumple las reglas'}`,
     detail: (p) => `Sin comisión hasta que decidas${p.holder && p.reason === 'claimed_by_other' ? ` · la trabajaba ${p.holder}` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,
     href: (n) => `/admin/dossiers/${n.entityKey}`,
+  },
+  sale_to_confirm: {
+    icon: 'wallet', resolvesOnRead: false,
+    title: (p) => `${p.seller || 'Alguien'} declara una venta de ${money(p.amount, p.currency)}${p.offer ? ` (${p.offer})` : ''}`,
+    detail: () => 'Confírmala para que cuente en las comisiones.',
+    href: () => '/admin/commissions?tab=ingresos',
+  },
+  payout_ready: {
+    icon: 'wallet', resolvesOnRead: true,
+    title: (p) => `Tu liquidación de ${p.period}: ${money(p.amount, p.currency)}`,
+    detail: () => 'Está lista para pago.',
+    href: () => '/admin/commissions/mine',
+  },
+  payout_paid: {
+    icon: 'circle-check', resolvesOnRead: true,
+    title: (p) => `Pagado: ${money(p.amount, p.currency)} de ${p.period}`,
+    href: () => '/admin/commissions/mine',
   },
   story_shared: {
     icon: 'trophy', resolvesOnRead: true,

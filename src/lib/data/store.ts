@@ -91,6 +91,21 @@ export interface AccountRow {
   created_by: string | null; created_at: string;
 }
 export interface AccountTouchRow { id: string; tenant_id: string; account_id: string; user_id: string | null; kind: string; note: string | null; created_at: string }
+export interface RevenueEventRow {
+  id: string; tenant_id: string; source: string; external_id: string; kind: string; status: string; occurred_at: string; amount_cents: number;
+  revenue_cents: number; currency: string; account_id: string | null; dossier_id: string | null; seller_id: string | null; offer: string | null;
+  metric: string | null; quantity: number | null; refunds_event_id: string | null; note: string | null; created_by: string | null; created_at: string;
+  confirmed_by: string | null; confirmed_at: string | null;
+}
+export interface CommissionPlanRow { id: string; tenant_id: string; name: string; is_default: boolean; rules: unknown[]; referral: unknown; updated_at: string }
+export interface CommissionEntryRow {
+  id: string; tenant_id: string; user_id: string; event_id: string | null; dedupe_key: string; kind: string; rule_id: string | null; rule_label: string | null;
+  base_cents: number; amount_cents: number; currency: string; period: string; status: string; reason: string | null; account_id: string | null;
+  payout_id: string | null; created_by: string | null; created_at: string; approved_by: string | null; approved_at: string | null;
+}
+export interface PayoutRow { id: string; tenant_id: string; user_id: string; period: string; total_cents: number; currency: string; status: 'open' | 'paid'; paid_at: string | null; created_by: string | null; created_at: string }
+export interface ApiKeyRow { id: string; tenant_id: string; name: string; key_hash: string; prefix: string; created_by: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface ConnectorRow { id: string; tenant_id: string; key: string; name: string; mapping: Record<string, unknown>; active: boolean }
 export interface NotificationRow {
   id: string; tenant_id: string; user_id: string; kind: string; severity: 'action' | 'info'; entity_key: string; params: Record<string, unknown>;
   created_at: string; read_at: string | null; dismissed_at: string | null; emailed_at: string | null; resolved_at: string | null;
@@ -126,6 +141,13 @@ export interface DemoDb {
   account_rules: AccountRulesRow[];
   account: AccountRow[];
   account_touch: AccountTouchRow[];
+  revenue_event: RevenueEventRow[];
+  commission_plan: CommissionPlanRow[];
+  commission_plan_member: Array<{ tenant_id: string; user_id: string; plan_id: string }>;
+  commission_entry: CommissionEntryRow[];
+  payout: PayoutRow[];
+  api_key: ApiKeyRow[];
+  connector: ConnectorRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -238,6 +260,15 @@ export function freshDemoDb(): DemoDb {
       demoAccount('00000000-0000-4000-8000-0000000ac005', 'Sala Gran Vía', Z.mad, { status: 'blocked', blocked_reason: 'El dueño ha pedido no recibir más comerciales.' }),
     ],
     account_touch: [],
+    // Comisiones de ejemplo (docs/COMMISSIONS.md): «todo igual, 30 %».
+    commission_plan: [{ id: '00000000-0000-4000-8000-0000000cc001', tenant_id: ENJOY, name: 'General', is_default: true, updated_at: ago(30),
+      rules: [{ id: 'todo-igual', label: 'Todo igual: 30 %', when: {}, pay: { type: 'percent', bps: 3000 } }], referral: null }],
+    commission_plan_member: [],
+    revenue_event: [],
+    commission_entry: [],
+    payout: [],
+    api_key: [],
+    connector: [],
   };
 }
 

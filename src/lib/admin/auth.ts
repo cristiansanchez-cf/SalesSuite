@@ -30,6 +30,10 @@ import type { AccountsDb } from '../accounts/db';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { supabaseAccountsDb } from '../accounts/db-supabase';
 import { createAccountsService, emptyAccountsDb, type AccountsService } from '../accounts/service';
+import type { CommissionsDb } from '../commissions/db';
+import { demoCommissionsDb } from '../commissions/db-demo';
+import { supabaseCommissionsDb } from '../commissions/db-supabase';
+import { createCommissionsService, emptyCommissionsDb, type CommissionsService } from '../commissions/service';
 import type { NotifyDb } from '../notify/db';
 import { demoNotifyDb } from '../notify/db-demo';
 import { supabaseNotifyDb } from '../notify/db-supabase';
@@ -57,6 +61,8 @@ export interface AdminContext {
   notifications: NotifyService;
   /** Cuentas del CRM y territorio (docs/ACCOUNTS.md). */
   accounts: AccountsService;
+  /** Comisiones (docs/COMMISSIONS.md). */
+  commissions: CommissionsService;
   /** Cliente Supabase con la sesión del usuario (solo modo supabase). */
   supabase: SupabaseClient | null;
 }
@@ -87,6 +93,8 @@ export interface Deps {
   notifyDb?: NotifyDb;
   /** Cuentas (opcional, igual que los avisos). Recibe el usuario: en demo replica auth.uid(). */
   accountsDb?: (userId: string) => AccountsDb;
+  /** Comisiones (opcional). Recibe el usuario: en demo replica auth.uid(). */
+  commissionsDb?: (userId: string) => CommissionsDb;
 }
 
 /** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
@@ -121,6 +129,8 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service }),
       notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
       accounts: createAccountsService(deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
+      commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
+        { admin: db, accounts: deps.accountsDb?.(user.id) ?? emptyAccountsDb }, session),
     },
   };
 }
@@ -136,14 +146,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {
