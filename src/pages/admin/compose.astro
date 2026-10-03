@@ -57,6 +57,11 @@ if (q.has('go') || sel.persona || sel.contact) {
       messageType: sel.type, channel: sel.channel, objection: sel.type === 'objecion' ? sel.objection : null, notes: sel.notes,
     }, {
       publicOrigin: requestOrigin(Astro.request, Astro.url),
+      reading: state?.dossier.status === 'published' ? await admin.analytics.forDossier(state.dossier.id).then((a) => {
+        const top = a.sections.find((x) => x.top) ?? null;
+        const priceIds = new Set(state!.items.filter((i) => i.blockType === 'pricing-card').map((i) => i.id));
+        return { opens: a.stats.opens, visitors: a.stats.visitors, lastAt: a.stats.lastAt, topSection: top?.name ?? null, priceFocus: !!top && priceIds.has(top.id) };
+      }).catch(() => null) : null,
       evidence: {
         situation: situationLabels,
         stories: rec.stories.filter((m) => m.score > 0).map((m) => ({

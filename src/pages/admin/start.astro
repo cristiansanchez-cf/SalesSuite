@@ -37,7 +37,7 @@ const steps = [
   { key: 'profile', label: m.steps.profile, done: !!admin.session.displayName && (partner || !!phone), href: '/admin/account' },
   { key: 'dossier', label: m.steps.firstDossier, done: mine.length > 0, href: '/admin' },
   { key: 'publish', label: m.steps.publish, done: mine.some((d) => d.publishedAt), href: '/admin' },
-  { key: 'cerebro', label: m.steps.cerebro, done: false, href: 'https://cerebro.cofundo.io', external: true },
+  { key: 'cerebro', label: m.steps.cerebro, done: false, href: 'https://cofundo.io/tutorial', external: true },
 ];
 ---
 <AdminLayout title={m.title}>

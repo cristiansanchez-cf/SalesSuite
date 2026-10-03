@@ -36,6 +36,8 @@ export interface ContextData {
   plays: PlayView[];
   /** Situación descrita (etiquetas de facetas) y cierres parecidos del equipo (docs/EVIDENCE.md). */
   evidence?: { situation: string[]; stories: Array<{ outcome: 'won' | 'lost'; title: string; labels: string[]; text: string }> };
+  /** Lo que el cliente ha leído de la propuesta (docs/ANALYTICS.md). priceFocus: la sección más leída es la del precio. */
+  reading?: { opens: number; visitors: number; lastAt: string | null; topSection: string | null; priceFocus: boolean } | null;
 }
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
@@ -96,7 +98,10 @@ export function buildContext(d: ContextData): ContextBrief {
     parts.push('', `PROPUESTA: «${dossier.title}»${dossier.prospectCompany ? ` para ${dossier.prospectCompany}` : ''}`);
     parts.push(line('Módulos incluidos', mods.join(', ')),
       line('Precio', st.total ? `${st.total.formatted}${dossier.priceMode === 'per_module' ? ' (suma de módulos)' : ''}, sin IVA` : dossier.priceMode === 'none' ? 'no se muestra en el dossier' : null),
-      line('Enlace a la propuesta', d.publicUrl), line('Próximo paso acordado', dossier.nextStep));
+      line('Enlace a la propuesta', d.publicUrl), line('Próximo paso acordado', dossier.nextStep),
+      line('Cómo la ha leído', d.reading ? (d.reading.opens
+        ? `abierta ${d.reading.opens === 1 ? '1 vez' : `${d.reading.opens} veces`} por ${d.reading.visitors === 1 ? '1 persona' : `${d.reading.visitors} personas`}${d.reading.topSection ? `; lo más leído: ${d.reading.topSection}` : ''}`
+        : dossier.status === 'published' ? 'aún no la ha abierto' : null) : null));
     const others = st.contacts.filter((c) => c.id !== d.contact?.id);
     if (others.length) parts.push(line('Otras personas en la cuenta', others.map((c) => `${c.name} (${STANCE_LABEL[c.stance].replace(/^\S+\s/, '').toLowerCase()})`).join(', ')));
   }
@@ -118,12 +123,19 @@ export function buildContext(d: ContextData): ContextBrief {
 
   const brief = parts.filter((x) => x !== null).join('\n').replace(/\n{3,}/g, '\n\n');
   const objecion = d.messageType === 'objecion' && d.objection ? OBJECTION_LABEL[d.objection] : null;
-  const roleBit = d.persona ? `${d.persona.name}${d.segment ? ` (${d.segment.name})` : ''}` : who;
-  const situacion = `${mt.ask} a ${roleBit}${objecion ? `, que pone la objeción «${objecion}»` : ''}`;
+  // Para el Cerebro, el PAPEL y nunca el nombre (ni de la persona, ni de la empresa, ni del producto): su texto se guarda
+  // y sale fuera de la UE (respuesta del Cerebro, 3/10/2026). Persona y sector son tipos definidos por la empresa.
+  const roleBit = d.persona ? `${d.persona.name}${d.segment ? ` (${d.segment.name})` : ''}` : d.segment ? `un cliente de ${d.segment.name}` : 'el cliente';
+  const r = d.reading;
+  const readingBit = r && r.opens > 0
+    ? `; ha abierto la propuesta ${r.opens === 1 ? 'una vez' : `${r.opens} veces`}${r.priceFocus ? ' y donde más se ha parado es en el precio' : ''}`
+    : d.state?.dossier.status === 'published' && r ? '; aún no ha abierto la propuesta' : '';
+  const situacion = `${mt.ask} a ${roleBit}${objecion ? `, que pone la objeción «${objecion}»` : ''}${readingBit}`;
 
   const prompt = [
     `Quiero preparar ${mt.ask} para ${who}${d.persona && !d.contact ? '' : d.persona ? `, ${d.persona.name}` : ''} por ${CHANNELS[d.channel]}.`,
     `Usa el Cerebro de Ventas: busca la técnica con buscar_tecnica (situación: «${situacion}», etapa: «${mt.etapa}»${objecion ? `, objeción: «${objecion}»` : ''}).`,
+    'Al llamar a buscar_tecnica no pongas nombres propios (ni de personas, ni de la empresa, ni de productos): describe el papel, como en la situación que te paso.',
     'Dime qué ficha y qué creador usas, respeta su guion si lo tiene y sigue sus reglas de redacción. Si el Cerebro no cubre el caso, dilo antes de proponer nada tuyo.',
     'No inventes datos: usa solo lo que hay en este contexto y deja entre corchetes lo que tenga que completar yo.',
     ...(d.evidence?.stories.length ? ['Ten en cuenta lo que le ha funcionado al equipo en situaciones parecidas, pero sepáralo de lo que venga del Cerebro: es experiencia nuestra, no del creador.'] : []),

@@ -174,12 +174,21 @@ Parámetros configurables para empresas que ya los conocen (duración media, con
 
 ### 5.7 Integración con el Cerebro de Ventas
 
-- **Proyecto de Supabase propio** para esta app, como recomienda la guía de acceso.
-- **Mismo correo** como identidad común.
-- El Cerebro aporta las fichas y los fallos habituales de cada vendedor.
-- Esta app aporta ventas, cierres y contexto de cada cuenta.
-- Se comunican por API y eventos firmados.
-- El panel de rendimiento de equipos grandes junta ambas fuentes.
+Actualizado con la respuesta del Cerebro (`docs/RESPUESTA_CEREBRO.md`, 3/10/2026):
+
+- **Bases de datos separadas.** El Cerebro sirve todo a través de la vista `fichas_servibles`, que aplica sus reglas: creador autorizado, ficha publicada y guion solo si el acuerdo lo permite. Si otro producto leyera sus tablas directamente, esas reglas dejarían de aplicarse sin que nada avisara. Por eso Ventas tiene su propio proyecto (`cofundo-ventas`).
+- **Identidad:** la misma persona es el mismo correo en los dos productos. Compartir solo el proveedor de identidad queda como mejora futura, en la fase Escala: el Cerebro ya usa el servidor OAuth de Supabase y Ventas podría entrar con él. Hasta entonces, cada producto tiene su acceso por código y se enlazan por email.
+- **Cada producto es invisible para quien no lo usa.** Nada de Ventas aparece en el Cerebro a quien no tenga Ventas, y al revés.
+- **Al Cerebro, el papel y nunca el nombre.** El texto de cada consulta se guarda 30 días y se envía a OpenAI, en EE. UU., sin acuerdo de transferencia firmado. Ventas compone la situación sin nombres propios («un DJ de ocio nocturno», no «DJ Toni de Sala X») e incluye lo que ha leído el cliente («ha abierto la propuesta 3 veces y donde más se ha parado es en el precio»). Hecho; lo protegen tests (`src/lib/playbook/context.test.ts`).
+- **Etapa y objeción** solo con los valores exactos del Cerebro. Ya coinciden: 9 etapas y 7 objeciones.
+- **El MCP es por persona** (token OAuth de cada vendedor): el servidor de Ventas no puede llamarlo. La integración servidor a servidor será una **API HTTP del Cerebro con clave de servidor**, que construirán contra un contrato cerrado que hay que acordar antes de programar nada.
+- **Qué mandará Ventas:** el resultado de cada venta con las fichas usadas (`{ ficha_ids, resultado: ganada | perdida, cuándo }`), sin cliente ni importe, y las consultas que no encuentran nada.
+- **Qué podrá dar el Cerebro**, con permiso del vendedor: patrones de fallo (diseñados, aún no construidos), en qué etapas consulta, cuánto consulta y qué búsquedas no encuentran nada. El cruce con los resultados lo hace Ventas.
+- **Sin «+5 % de ventas desde que usa el Cerebro».** Con pocos usuarios y sin grupo de control sería una correlación presentada como causa. Se enseña lo defendible: cuánto consulta, qué patrones repite, si bajan y qué técnicas aparecen en las ventas ganadas.
+- **Privacidad ante el CEO.** Ve patrones («seguimiento pasivo 7 veces este mes»), nunca la frase literal de su vendedor. Si Ventas enseña datos del Cerebro a un jefe, necesita una pantalla de transparencia donde el vendedor vea lo mismo que ve su jefe.
+- **Marca de los creadores.** Atribuir siempre, con el creador y el enlace al vídeo original en su minuto (`fuente_url` + `fuente_timestamp`). Nunca usar su nombre como reclamo: ningún creador lo autoriza hoy (`puede_usar_marca = false`).
+- **Enlace para vendedores:** el Cerebro se usa dentro de Claude o ChatGPT; la guía para conectarlo está en `https://cofundo.io/tutorial`. `cerebro.cofundo.io` es solo la pantalla de autorización. Corregido en «Empieza aquí».
+- **Bloqueo del lado del Cerebro:** todavía no guardan qué fichas devolvió cada consulta. Lo añaden en su cola corta, porque también lo necesitan para el reparto con los formadores. Sin ese dato no se puede atribuir «qué técnicas usa este vendedor».
 
 ### 5.8 Seguridad, en su medida
 
@@ -221,7 +230,7 @@ Estado a 3 de octubre de 2026: ✅ Empieza aquí (`/admin/start`, condiciones op
 | Fase | Contenido | Para |
 |---|---|---|
 | **MVP ya** (los 3 vendedores que esperan) | Empieza aquí (§4.1) con condiciones opcionales · acceso con código según la guía · Inicio con seguimientos · «Añadir» + modales en Configurar | O1, O2 |
-| **Cimientos** | Una sola implementación de datos (§5.2) · oportunidades y tareas (§5.1) · cuentas unificadas · outbox de eventos | Velocidad y O2/O4 |
+| **Cimientos** | Una sola implementación de datos (§5.2, `docs/SPIKE_DATA.md`) · entorno de desarrollo `cofundo-ventas-dev` · desarrollo local en un comando · oportunidades y tareas (§5.1) · cuentas unificadas · outbox de eventos | Velocidad y O2/O4 |
 | **Dinero real** | Stripe (enlaces con atribución, webhooks, suscripciones) · analítica por vendedor | O5, O6 |
 | **Escala** | Delegaciones y roles por ámbito · analítica consolidada · precios por zona | O8, O6 |
 | **Inteligencia** | WhatsApp con mensajes propuestos · integración con el Cerebro (rendimiento y fallos) · gastos por CSV con mapeo por IA → CAC | O2, O6, O7 |
@@ -238,7 +247,7 @@ Las preguntas para decidir están al final de la respuesta de cada checkpoint. A
 |---|---|---|
 | Una sola implementación de datos | **Sí**, con una prueba de un día primero | Resultado en `docs/SPIKE_DATA.md` |
 | Dossier frente a oportunidad | **Sí, separarlos.** Antes, una analítica de dossiers para ver cómo se usan | Hecho: analítica de dossiers (`docs/ANALYTICS.md`) |
-| Identidad con el Cerebro | Habrá usuarios solo del Cerebro, solo de Ventas y de los dos. Abierto a migrar ya | Propuesta: un proyecto Supabase `cofundo` como identidad común y un esquema por producto. Pendiente de las respuestas del agente del Cerebro (`docs/PREGUNTAS_CEREBRO.md`) |
+| Identidad con el Cerebro | Habrá usuarios solo del Cerebro, solo de Ventas y de los dos | **Resuelto con el Cerebro:** bases de datos separadas, mismo email como identidad y proveedor de identidad común como mejora futura (§5.7). Proyecto de Ventas: `cofundo-ventas` |
 | Historial de condiciones | **Sí**, registrado y accesible, no escondido ni a la vista todo el rato | Hecho: historial automático y desplegable en «Empieza aquí» y en Comisiones → Plan |
 | Primeros vendedores | Amrit (Enjoy · conciertos y artistas), Ángel (Enjoy · Results) y Uyong (Oquea · Corea, empezando por el QR gratuito). Emails más adelante | Falta el espacio de Oquea y el catálogo real de cada uno |
 | Delegaciones y empresas | Un vendedor puede estar en **varias delegaciones y varias empresas**. Los vendedores pueden acabar vendiendo también este software | `membership_unit` (§5.5) y acceso único entre empresas |
@@ -246,6 +255,8 @@ Las preguntas para decidir están al final de la respuesta de cada checkpoint. A
 | LTV, CAC y vida media | Calcular todo lo que se pueda **automáticamente**. Los parámetros manuales son opcionales; las startups probablemente no los sepan | Las cifras salen de los datos; un campo vacío dice «aún no lo sabemos» |
 | Gastos por vendedor | Cofundo empieza a usar **Holded** | Conector de Holded como primera fuente de gastos (CSV como respaldo) |
 | WhatsApp | La integración más rápida y sencilla, con coste razonable: **API oficial de Meta** | Cloud API de Meta con plantillas aprobadas para los avisos |
-| Cerebro de Ventas | Lo explicará su propio agente | Preguntas enviadas: `docs/PREGUNTAS_CEREBRO.md` |
+| Cerebro de Ventas | Respondido por su agente (`docs/RESPUESTA_CEREBRO.md`) | Cambios aplicados y plan en §5.7 |
+| Desarrollo local | Vale que requiera Postgres. Empaquetarlo en un solo comando, en la hoja de ruta y no ahora | Fase Cimientos: `npm run dev:local` (Postgres + PostgREST) o Docker |
+| Segundo proyecto | Primero el MVP de los tres vendedores | Fase Cimientos: proyecto `cofundo-ventas-dev`, copia de producción con datos de prueba (`docs/PUESTA_EN_MARCHA.md` §10) |
 | Validación | Primero «Empieza aquí» y el acceso con código | Prueba guiada en `docs/PUESTA_EN_MARCHA.md` §G |
 | Dominio | Subdominio de Cofundo | `*.ventas.cofundo.io` y `demo.ventas.cofundo.io` (`docs/PUESTA_EN_MARCHA.md`) |

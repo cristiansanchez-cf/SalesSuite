@@ -39,7 +39,7 @@ Cristian siguió una versión anterior hasta el paso «A4». Lo que probablement
 
 | Pieza | Dónde | Para qué |
 |---|---|---|
-| Base de datos y acceso | Supabase, proyecto `cofundo` (Frankfurt) | Datos, usuarios y acceso con código por email. Pensado para ser también la identidad común con el Cerebro. |
+| Base de datos y acceso | Supabase, proyecto `cofundo-ventas` (Frankfurt) | Datos, usuarios y acceso con código por email. Separado del Cerebro: así lo acordamos con su equipo |
 | Emails | Resend, dominio `correo.cofundo.io`, remitente `hola@correo.cofundo.io` | Códigos de acceso, invitaciones y avisos |
 | Web | Vercel, proyecto `ventas`, dominio `enjoy.ventas.cofundo.io` | La consola y los enlaces de las propuestas |
 | Botón de mantenimiento | GitHub → Actions → «Producción» | Aplica cambios de la base de datos y da de alta espacios sin terminal |
@@ -53,7 +53,7 @@ Cristian siguió una versión anterior hasta el paso «A4». Lo que probablement
 
 - [ ] **1.1** https://supabase.com/dashboard → **New project**.
   - Organización: la de Cofundo.
-  - Nombre: **`cofundo`**.
+  - Nombre: **`cofundo-ventas`**. Si ya se creó como `cofundo`, déjalo así: el nombre no cambia nada.
   - Región: **Central EU (Frankfurt)**.
   - Database password: pulsa *Generate* y guárdala **en el gestor de contraseñas** (se usa en el paso 3).
   - Plan: Free sirve para empezar. Ojo: se pausa tras 7 días sin uso. Cuando entren los vendedores, pasar a Pro.
@@ -229,7 +229,7 @@ Cuando 9.1 a 9.4 salgan bien, Cristian dice **«validado: acceso, Empieza aquí 
 
 Cuando toque empezar con la gente de verdad (no ahora). Lo preparará el agente de desarrollo con su propio botón; aquí solo el plan:
 
-1. Crear un segundo proyecto de Supabase, `cofundo-dev`, y un segundo proyecto de Vercel con su dominio, por ejemplo `dev.ventas.cofundo.io`. Será la copia donde se prueba.
+1. Crear un segundo proyecto de Supabase, `cofundo-ventas-dev`, y un segundo proyecto de Vercel con su dominio, por ejemplo `dev.ventas.cofundo.io`. Será la copia donde se prueba.
 2. Copiar a desarrollo la estructura y el contenido de ejemplo.
 3. En producción, borrar las propuestas, los usuarios de prueba y el contenido de ejemplo. Dejar solo la marca y el catálogo real de cada empresa.
 4. Dar de alta a Amrit y Ángel (Enjoy) y, cuando exista su espacio, a Uyong (Oquea).

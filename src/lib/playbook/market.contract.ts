@@ -144,6 +144,10 @@ export function marketContract(name: string, env: () => PlaybookEnv) {
       expect(c.brief).toContain('Precio: 700');
       expect(c.brief).toMatch(/Enlace a la propuesta: https:\/\/pitch\.enjoytheclub\.es\/d\//);
       expect(c.cerebro).toMatchObject({ etapa: 'Primer contacto', objecion: null });
+      // Al Cerebro, el papel y nunca el nombre (respuesta del Cerebro, 3/10/2026).
+      expect(c.cerebro.situacion).toContain('DJ de la boda');
+      expect(c.cerebro.situacion).not.toMatch(/Toni|Sala X|Laura/);
+      expect(c.prompt).toContain('no pongas nombres propios');
       expect(c.prompt).toMatch(/buscar_tecnica/);
       expect(c.prompt).toContain('por WhatsApp');
     });

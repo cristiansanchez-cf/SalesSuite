@@ -344,7 +344,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   /** Contexto + petición para el Cerebro de Ventas (o Claude/ChatGPT) a partir de lo que ya sabe la app. */
-  async function contextBrief(input: unknown, opts: { publicOrigin?: string; evidence?: import('./context').ContextData['evidence'] } = {}): Promise<ContextBrief> {
+  async function contextBrief(input: unknown, opts: { publicOrigin?: string; evidence?: import('./context').ContextData['evidence']; reading?: import('./context').ContextData['reading'] } = {}): Promise<ContextBrief> {
     const v = parse(contextInputSchema, input);
     if (v.messageType === 'objecion' && !v.objection) throw new AdminError(422, 'Elige qué objeción te han puesto');
     const [m, { plays }] = await Promise.all([loadMarket(), load()]);
@@ -363,7 +363,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       messageType: v.messageType, channel: v.channel, objection: v.objection ?? null, notes: v.notes ?? null,
       segment, persona, contact, state, plays,
       publicUrl: link && opts.publicOrigin ? `${opts.publicOrigin}/d/${link.token}` : null,
-      evidence: opts.evidence,
+      evidence: opts.evidence, reading: opts.reading ?? null,
     });
   }
 
