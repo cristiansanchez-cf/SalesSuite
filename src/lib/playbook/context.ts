@@ -117,7 +117,7 @@ export function buildContext(d: ContextData): ContextBrief {
     parts.push('', 'PLAYBOOK DE LA EMPRESA (lo que nos funciona):');
     for (const pl of picked) {
       parts.push(`- ${p(pl.title)}: ${clip(stripMarkdown(p(pl.body)).replace(/\n+/g, ' '), 320)}`);
-      for (const r of pl.techniqueRefs) parts.push(`  · Técnica relacionada del Cerebro: [${r.id}] ${r.title}${r.creator ? ` (${r.creator})` : ''}`);
+      for (const r of pl.techniqueRefs) parts.push(`  · Técnica relacionada del Cerebro: ${r.id ? `[${r.id}] ` : ''}${r.title}${r.creator ? ` (${r.creator})` : ''}`);
     }
   }
 

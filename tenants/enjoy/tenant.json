@@ -513,19 +513,26 @@
     },
     {
       "key": "conciertos",
-      "name": "Conciertos",
-      "description": "Promotoras y salas de conciertos (giras y fechas sueltas).",
-      "value_prop": "Interacción del público con el artista y datos de asistentes para la promotora y las marcas.",
-      "icp": "- Salas de 500+ personas con pantalla\n- Giras con varias fechas\n- Patrocinadores activos",
-      "disqualifiers": "Conciertos íntimos o acústicos donde la pantalla distrae.",
-      "buying_process": "Decide la promotora; el manager del artista puede vetar por imagen; la marca patrocinadora puede pagar la activación.",
-      "deal_size": "500–3.000 € por fecha (ejemplo)",
-      "sales_cycle": "1–3 meses",
+      "name": "Conciertos y artistas",
+      "icon": "mic",
+      "image": "asset:img/usecases/djs.webp",
+      "description": "Promotores, salas y giras. Y la puerta de entrada: charangas, orquestas y tributos.",
+      "value_prop": "La hora antes del artista no la monetiza nadie: el público ya está dentro, esperando, con el móvil en la mano. La llenamos con sus fotos y mensajes en pantalla y con un espacio que las marcas pueden patrocinar. Nos ponemos encima de sus visuales, sin tocar la producción, y lo que sube el público se puede usar porque lo ha consentido.",
+      "icp": "- Promotor o sala que programa a menudo en recintos de 1.000 a 10.000 personas, con pantallas propias y patrocinadores a los que rendir cuentas\n- Salas y recintos de 500 a 20.000 personas\n- Charangas, orquestas, bandas de pueblo y tributos: deciden ellos y se cierra en días\n- Promotores con varias fechas al año\n- Eventos con patrocinador ya cerrado\n- Giras de teatros y salas medianas\n- Artistas con comunidad activa en redes",
+      "disqualifiers": "- Estadios y aforos de más de 40.000 (sin prueba de carga)\n- Giras internacionales de artistas top\n- Clásica, ópera y jazz de concierto\n- Shows cuyo discurso es «guarda el móvil»\n- Recintos sin cobertura ni wifi: nunca se vende ahí",
+      "buying_process": "Se decide en el advance: la reunión previa al show entre la producción del artista y la del promotor o la sala. Si lo que necesitamos (un ordenador en la señal de vídeo, o una pantalla) no está en el rider y el contra-rider, el día del show no existe. Vendido el concepto al promotor o al manager, pide entrar en esa conversación.",
+      "deal_size": "600–2.500 € por fecha (supuesto, sin validar)",
+      "sales_cycle": "Días con charangas; meses con promotores y marcas",
       "modules": [
         {
           "module_key": "tabs-experiencias",
           "priority": 1,
-          "fit": "Interacción en pantalla antes y entre canciones."
+          "fit": "Pre-show, álbum con backstage, mensajes y kiss cam voluntaria, encima de sus visuales."
+        },
+        {
+          "module_key": "pricing",
+          "priority": 2,
+          "fit": "Precio por aforo, con el ancla de la kiss cam clásica delante."
         }
       ],
       "personas": [
@@ -533,21 +540,21 @@
           "key": "promotor",
           "name": "Promotor/a",
           "role": "decisor",
-          "goals": "Una experiencia diferencial y más ingresos por patrocinio.",
-          "pains": "Márgenes ajustados y no conocer a su público.",
-          "kpis": "Entradas vendidas, ingresos por patrocinio.",
+          "goals": "Rentabilizar el evento: que el patrocinio pague más y se justifique.",
+          "pains": "Asume el riesgo económico del concierto. Las marcas le piden medición y no la tiene.",
+          "kpis": "Entradas, ingresos por patrocinio, renovaciones.",
           "objections": [
             "precio",
-            "tiempo"
+            "no_decido_yo"
           ],
-          "how_to_approach": "Ofrece un piloto en una fecha con una marca que lo cofinancie.",
-          "avoid": "Pedirle compromiso para toda la gira de entrada.",
-          "can_help": "Lo extiende a la gira y a otros artistas.",
-          "can_block": "Si no hay patrocinio, el precio lo frena.",
+          "how_to_approach": "Véndele **inventario patrocinable**: un espacio en pantalla que la gente mira de verdad, porque busca su foto. Y datos de participación para sus marcas. Si tiene varias fechas, piensa en pack o suscripción.",
+          "avoid": "Hablarle de peticiones de canciones.",
+          "can_help": "Lo lleva a todas sus fechas y te presenta a sus patrocinadores.",
+          "can_block": "Sin patrocinador que lo pague, el precio lo frena.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Datos del público y un activo que vender a patrocinadores."
+              "angle": "Espacio patrocinable que se mira de verdad y datos para sus marcas."
             }
           ]
         },
@@ -555,19 +562,99 @@
           "key": "manager-artista",
           "name": "Manager del artista",
           "role": "guardian",
-          "goals": "Proteger la imagen del artista y el show.",
-          "pains": "Cosas que distraen o mensajes inapropiados en pantalla.",
+          "goals": "Proteger la imagen del artista y acercarlo a su público.",
+          "pains": "Que el móvil distraiga o que salga algo inapropiado en pantalla.",
           "objections": [
             "desconfianza"
           ],
-          "how_to_approach": "Enséñale la moderación previa y el control total de lo que sale en pantalla.",
-          "avoid": "Que se entere por el promotor el día del concierto.",
-          "can_help": "Si al artista le gusta, lo pide en otras fechas.",
-          "can_block": "Veto directo: \"esto no sale en nuestro show\".",
+          "how_to_approach": "Habla de **conexión, no de distracción**: hoy el artista solo ve las tres primeras filas; con esto, un mensaje desde la grada de arriba le llega y puede leerlo en directo. Empieza por el pre-show: el artista aún no ha salido, así que no compite con él.",
+          "avoid": "Hablar de monetización.",
+          "can_help": "Si el artista lo hace suyo, lo pide en toda la gira.",
+          "can_block": "Si cree que el móvil daña la imagen del artista, se acabó.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Moderación previa: nada sale en pantalla sin aprobar."
+              "angle": "Conexión con la grada y backstage exclusivo en el álbum."
+            }
+          ]
+        },
+        {
+          "key": "artista",
+          "name": "Artista",
+          "role": "guardian",
+          "goals": "Un show con su comunidad dentro.",
+          "pains": "Una pancarta a sesenta metros no la ve nadie.",
+          "objections": [
+            "desconfianza"
+          ],
+          "how_to_approach": "Que suba la primera foto del álbum: backstage que no está en ningún otro sitio.",
+          "avoid": "Proponer cosas que le quiten protagonismo durante el show.",
+          "can_help": "Lo convierte en parte del show.",
+          "can_block": "Si predica contra los móviles en conciertos, veta.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Le llegan mensajes de toda la sala, no solo de las primeras filas."
+            }
+          ]
+        },
+        {
+          "key": "tour-manager",
+          "name": "Tour manager",
+          "role": "guardian",
+          "goals": "Que cada show salga sin problemas y a su hora.",
+          "pains": "Todo lo nuevo es riesgo y tiempo.",
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Cero montaje y cero dependencia de su equipo. Que lo valide alguien del promotor desde el móvil.",
+          "avoid": "Proponer subir gente al escenario: es seguridad y seguro de responsabilidad civil.",
+          "can_help": "Lo deja fijo en el advance de toda la gira.",
+          "can_block": "Lo mata por agenda.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Nada que montar ni nadie de su equipo pendiente."
+            }
+          ]
+        },
+        {
+          "key": "direccion-produccion",
+          "name": "Director/a de producción",
+          "role": "guardian",
+          "goals": "Sonido, luces y vídeo bajo control.",
+          "pains": "Que alguien le toque la señal o los visuales.",
+          "objections": [
+            "ya_tengo_proveedor",
+            "tiempo"
+          ],
+          "how_to_approach": "Enséñale **NDI**: entramos por encima de sus visuales, en un lateral, sin sustituir al VJ. Si no hay ordenador en la señal, se abre en un navegador.",
+          "avoid": "Todo lo comercial.",
+          "can_help": "Te deja entrar en la señal de vídeo.",
+          "can_block": "Veto técnico: si dice que no entramos en la señal, no hay venta.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "NDI: no tocamos sus visuales, nos superponemos."
+            }
+          ]
+        },
+        {
+          "key": "recinto-sala",
+          "name": "Recinto o sala",
+          "role": "influenciador",
+          "goals": "Llenar fechas y que el público vuelva.",
+          "pains": "Pantallas propias que solo enseñan un logo.",
+          "objections": [
+            "no_decido_yo"
+          ],
+          "how_to_approach": "En sala propia, es el dueño de las pantallas: véndele algo que ofrecer a todos los que programan allí.",
+          "can_help": "Lo ofrece a cada promotor que programa en su sala.",
+          "can_block": "Si sus técnicos no lo quieren en su pantalla.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Sus pantallas, con contenido del público en cada fecha."
             }
           ]
         },
@@ -575,26 +662,63 @@
           "key": "marca-patrocinadora",
           "name": "Marca patrocinadora",
           "role": "pagador",
-          "goals": "Visibilidad entre el público objetivo con métricas.",
-          "pains": "Logos en una lona que nadie mira.",
-          "kpis": "Impactos, participación, leads.",
+          "goals": "Una experiencia medible, no un logo en una lona.",
+          "pains": "Tiene que justificar lo que invierte.",
+          "kpis": "Participación, contenido, canjes.",
           "objections": [
             "comparar"
           ],
-          "how_to_approach": "Propuesta de activación con KPIs: participaciones, datos captados, contenido.",
-          "avoid": "Venderle \"visibilidad\" sin números.",
+          "how_to_approach": "Medición, contenido consentido y retos: la marca no solo aparece, participa. Llama en su ventana de presupuesto (ver «Calendario»).",
+          "avoid": "Cualquier cosa técnica.",
           "can_help": "Paga la activación.",
           "can_block": "Sin datos, no renueva.",
           "angles": [
             {
               "module_key": "tabs-experiencias",
-              "angle": "Activación medible con su marca en el momento de máxima atención."
+              "angle": "Reto medible («sube 5 fotos y te llevas una bebida») con canje verificable."
+            }
+          ]
+        },
+        {
+          "key": "agencia-patrocinio",
+          "name": "Agencia de patrocinio",
+          "role": "influenciador",
+          "goals": "Paquetes de patrocinio que se vendan y se renueven.",
+          "pains": "Activaciones que no entregan datos.",
+          "objections": [
+            "comparar"
+          ],
+          "how_to_approach": "Es la puerta a varios eventos a la vez: ofrécele un formato de activación con datos que pueda meter en sus paquetes.",
+          "can_help": "Lo mete en todos sus eventos.",
+          "can_block": "Si no lo ve en su catálogo, no lo propone.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Un formato de activación con datos para sus paquetes."
+            }
+          ]
+        },
+        {
+          "key": "charanga-orquesta",
+          "name": "Charanga u orquesta",
+          "role": "decisor",
+          "goals": "Que la gente se vuelque con la banda.",
+          "pains": "Repertorio que no conecta con todos.",
+          "objections": [
+            "precio"
+          ],
+          "how_to_approach": "**Menú cerrado**: la banda mete su repertorio, la gente vota y tocan lo más votado. Deciden ellos y se cierra en días: aquí sale el primer caso con nombre.",
+          "avoid": "Contarle todo lo demás.",
+          "can_help": "Primer caso con nombre del segmento.",
+          "can_block": "Si cree que le tocan el repertorio.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "El público elige la siguiente canción de su repertorio."
             }
           ]
         }
-      ],
-      "icon": "mic",
-      "image": "asset:img/usecases/djs.webp"
+      ]
     },
     {
       "key": "festivales",
@@ -1074,6 +1198,629 @@
       "title": "Cierre con piloto",
       "body": "¿Lo probamos en una noche (o una fecha) piloto? Te propongo el jueves 14: lo montamos nosotros y el viernes vemos juntos los datos de participación.",
       "why_it_works": "Un piloto con fecha baja el riesgo percibido y deja una decisión concreta."
+    },
+    {
+      "key": "conc-sin-validar",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "conciertos"
+      ],
+      "audience": "team",
+      "title": "Segmento sin validar: entra a aprender",
+      "body": "Cero ventas cerradas a día de hoy. Lo que sabemos de actores, calendarios y presupuestos viene de investigación, no de clientes nuestros.\n\n- **Entra a aprender, no solo a cerrar.** Cada conversación trae de vuelta quién decide y cuándo.\n- **No prometas nada que no exista hoy.** Mira «Lo que no se dice»."
+    },
+    {
+      "key": "conc-ndi",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "direccion-produccion",
+        "tour-manager"
+      ],
+      "title": "Nos ponemos encima de sus visuales (NDI)",
+      "body": "Un concierto ya tiene visuales y un VJ. No los sustituimos: entramos en un lateral, por encima de lo que ya hay, sin tocar su producción.\n\n- **Lite:** se abre en un navegador o una Smart TV. QR fijo y vídeos de fondo.\n- **Desktop:** se instala en el ordenador de la señal. Con NDI (Resolume Arena, Virtual DJ…) y modo transparente sobre sus visuales.\n\nQuien no entienda esto no puede vender aquí: la primera objeción técnica siempre es «ya tenemos pantallas».",
+      "when_to_use": "En cuanto aparezca producción o alguien diga «ya tenemos pantallas».",
+      "why_it_works": "Quita el miedo número uno: que les toquemos el show."
+    },
+    {
+      "key": "conc-consentimiento",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "marca-patrocinadora",
+        "manager-artista"
+      ],
+      "title": "El activo es legal: contenido consentido",
+      "body": "Quien sube una foto acepta los términos de uso. El organizador puede usar ese contenido en su comunicación.\n\nNinguna cámara, kiss cam ni fotomatón da eso.",
+      "why_it_works": "Es lo único que nadie más ofrece y responde a «¿y los derechos de imagen?» antes de que salga."
+    },
+    {
+      "key": "conc-sin-video",
+      "module_key": "tabs-experiencias",
+      "kind": "tip",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "No hay vídeo en directo: dilo tú antes",
+      "body": "Una kiss cam clásica hace la pedida de mano en directo; nosotros no. Sí se puede subir una foto con el mensaje y sacarla en grande.\n\nDilo antes de que lo pregunten.",
+      "why_it_works": "Si lo descubren ellos, se pierde la confianza en todo lo demás."
+    },
+    {
+      "key": "conc-preshow",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "manager-artista",
+        "marca-patrocinadora"
+      ],
+      "title": "Pre-show: la hora que no monetiza nadie",
+      "body": "Público dentro, esperando, con el móvil en la mano. En pantalla, una playlist y un logo. Para una marca es la ventana de más atención de todo el evento.\n\n- **Álbum con backstage exclusivo.** El equipo del artista sube fotos de camerino y el público las ve mientras espera. La primera la sube el artista. La gente entra a ver y se queda subiendo las suyas.\n- **«Contadme cómo estáis viviendo esto».** Muro de fotos del público durante la espera.\n- **Reto de marca.** «Sube 5 fotos al álbum y te llevas una bebida». El staff ve cuántas ha subido cada persona y valida en barra en dos segundos.\n- **Mensajes a la grada.** «Dinos por qué quieres que hoy te hable a ti». El staff elige los mejores.",
+      "when_to_use": "Siempre como primera propuesta: es lo más fácil de aprobar y de patrocinar.",
+      "why_it_works": "Desactiva la objeción del manager: el artista aún no ha salido, no compite con él. Y no toca la producción del show."
+    },
+    {
+      "key": "conc-durante",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "manager-artista",
+        "artista"
+      ],
+      "title": "Durante el show: momentos que se cuentan",
+      "body": "- **Kiss cam voluntaria.** Sale quien sube su foto. El formato de Coldplay, sin el problema de Coldplay.\n- **Match.** «Hoy encuentras el amor en mi concierto»: dos fotos en pantalla, emparejadas por el staff.\n- **Mensajes en los cortes.** Dedicatorias, declaraciones, felicitaciones.\n- **Momento selfie.** «Sube un selfie y el motivo por el que sería contigo»."
+    },
+    {
+      "key": "conc-menu-cerrado",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "charanga-orquesta",
+        "artista"
+      ],
+      "title": "Cierre: el público elige la canción",
+      "body": "El buscador de canciones se limita a un menú fijo: cinco o seis temas, o varias listas. Solo se puede pedir lo que está dentro.\n\n- Nadie le toca el repertorio al músico o al DJ.\n- Crea el momento: el público elige la canción del cierre, o la siguiente.\n\nPara charangas y orquestas es el producto entero: la banda mete su repertorio, la gente vota y tocan lo más votado.",
+      "why_it_works": "Quita al músico como bloqueante y le da al público algo que contar."
+    },
+    {
+      "key": "conc-moderacion",
+      "module_key": "tabs-experiencias",
+      "kind": "tip",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "manager-artista",
+        "tour-manager"
+      ],
+      "title": "Regla de moderación: nunca señalar a nadie",
+      "body": "**Nada que identifique o localice a una persona que no se haya identificado ella misma.**\n\nQuien sube un mensaje aceptó los términos; no aceptó que 3.000 personas le busquen con la mirada. Si sale mal una vez, se cae el argumento del consentimiento.\n\nY en la primera reunión **no propongas subir gente al escenario**: es seguridad y seguro, y el tour manager frena en seco. Si lo propone el cliente, perfecto.",
+      "why_it_works": "Forma parte de lo que vendes: protege al artista y al público."
+    },
+    {
+      "key": "conc-quien-que",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Qué decir a cada uno",
+      "body": "- **Promotor o sala:** inventario patrocinable y datos. Después, álbum y fotos. No hables de peticiones de canciones.\n- **Manager o artista:** conexión con la grada y backstage en el álbum. Después, kiss cam voluntaria. No hables de monetización.\n- **Marca:** medición, contenido consentido y retos. Nada técnico.\n- **Producción:** NDI, no tocamos sus visuales, cero montaje. Nada comercial.\n- **Charanga u orquesta:** menú cerrado, el público elige la siguiente. Después, el álbum de la verbena. Nada más."
+    },
+    {
+      "key": "conc-promotor",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "recinto-sala"
+      ],
+      "title": "Al promotor: un espacio que se mira de verdad",
+      "body": "Su problema es rentabilizar el evento. Le damos un espacio en pantalla que la gente mira de verdad, porque está esperando a ver si sale su foto.\n\nY el cierre: las marcas piden medición, y nosotros damos datos de participación. Una activación física no entrega nada de eso."
+    },
+    {
+      "key": "conc-manager",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "manager-artista",
+        "artista"
+      ],
+      "title": "Al manager: conexión, no distracción",
+      "body": "«Enjoy no quiere que la gente esté pegada al móvil. Quiere que con el móvil se creen conexiones reales en la sala».\n\nHoy un artista solo interactúa con las tres primeras filas. Con esto, un mensaje desde la grada de arriba le llega al panel y puede leerlo en directo. Para un artista que trabaja la cercanía, es material de show."
+    },
+    {
+      "key": "conc-marca",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "marca-patrocinadora",
+        "agencia-patrocinio"
+      ],
+      "title": "A la marca: medición y contenido",
+      "body": "Lo que compra una marca hoy es experiencia medible. Somos un canal de ida y vuelta: la marca no solo aparece, participa. Reta, regala, pregunta.\n\nY se lleva datos y contenido consentido."
+    },
+    {
+      "key": "conc-advance",
+      "module_key": null,
+      "kind": "script",
+      "stage": "cierre",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "manager-artista",
+        "tour-manager",
+        "direccion-produccion"
+      ],
+      "title": "Entra en el advance",
+      "body": "Vendido el concepto al promotor o al manager, pide esto:\n\n«¿Quién lleva el advance? Que me meta a mí en esa conversación y lo dejamos cerrado con producción, para que el día del show no tengáis que hablar de esto».\n\n- **Advance:** la preparación del show entre la producción del artista y la del promotor o la sala. Horarios, técnica, logística, accesos. Queda por escrito.\n- **Rider:** lo que pide el artista, dentro del contrato.\n- **Contra-rider:** lo que responde el promotor o la sala. Se cierra cuando lo aprueban los dos.\n\nSi lo que necesitamos (un ordenador en la señal de vídeo, o una pantalla) no está en esos papeles, el día del show no existe.",
+      "when_to_use": "Justo después de que el promotor o el manager digan que sí al concepto.",
+      "why_it_works": "Es el momento real en que se decide si entramos."
+    },
+    {
+      "key": "conc-calendario",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "marca-patrocinadora",
+        "promotor"
+      ],
+      "title": "Calendario: cuándo llamar a cada uno",
+      "body": "Equivocar la fecha es perder el año entero.\n\n- **Grandes marcas nacionales:** cierran su plan anual entre septiembre y noviembre del año anterior.\n- **Marcas medianas y regionales:** por trimestres, con 4–6 meses de margen.\n- **Presupuesto sobrante:** noviembre y diciembre. Una propuesta corta, barata y rápida se cierra con una facilidad que no se ve el resto del año.\n- **Festivales:** temporada de mayo a septiembre; se venden meses antes.\n- **Promotores y salas:** fuera de temporada alta, cuando tienen cabeza.\n- **Producción técnica:** en el advance, ni antes ni después.\n\n**Ahora mismo** estamos en la ventana de presupuestos del año que viene y en la de partidas sobrantes: el mejor momento para llamar a marcas."
+    },
+    {
+      "key": "conc-precios",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "agencia-patrocinio"
+      ],
+      "title": "Precios por aforo (supuestos)",
+      "body": "Sin validar. Sin IVA.\n\n- Hasta 1.000 personas: **600 €**\n- De 1.000 a 5.000: **1.200 €**\n- De 5.000 a 20.000: **2.500 €**\n- Más de 20.000: a medida, y solo tras prueba de carga\n\n**Recurrencia:**\n- Pack de 5 fechas: 20 % sobre la suma de fechas sueltas\n- Suscripción de agencia o promotora, fechas ilimitadas: desde 1.500 €/mes, 6 meses de permanencia\n\nLa suscripción de agencia es lo que más nos interesa: una venta, muchos eventos."
+    },
+    {
+      "key": "conc-ancla",
+      "module_key": "pricing",
+      "kind": "script",
+      "stage": "negociacion",
+      "objection": "precio",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "El ancla, siempre antes del precio",
+      "body": "Una kiss cam clásica —pantalla, cámara, realizador y operario— no baja de 8.000 € por evento. Nosotros, de 5.000 a 20.000 personas, 2.500 €. Más barato, con consentimiento, y además se queda el contenido y los datos.\n\n**El ancla va delante del precio. Siempre. Y después del precio, silencio.**",
+      "why_it_works": "El precio no se argumenta: se compara con algo que ya conocen.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Silencio después del precio y no justificarlo",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=DShgDzY-iy8&t=3661"
+        },
+        {
+          "source": "cerebro",
+          "title": "El precio no es argumentable + pedido de prueba",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/0qeNfVC9WdspykfNqHClJ8"
+        },
+        {
+          "source": "cerebro",
+          "title": "No etiquetes tu producto de caro",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/2je9ntQrYOLo0OIwXwU6da"
+        },
+        {
+          "source": "cerebro",
+          "title": "Fraccionamiento del precio por unidad",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/38CehSqxvha2Zv6lYk4irf"
+        }
+      ]
+    },
+    {
+      "key": "conc-descuentos",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "conciertos"
+      ],
+      "audience": "team",
+      "title": "Descuentos: siempre a cambio de algo",
+      "body": "- **Primera fecha de gira (piloto):** hasta 50 %, a cambio de caso con nombre, testimonio a cámara y derecho sobre las siguientes fechas.\n- **Ciudad de menos poder adquisitivo:** hasta 20 %. Es ajuste de mercado.\n- **Pack de 5 o más fechas:** hasta 20 %, con las fechas por escrito.\n- **Patrocinador confirmado:** 0 %. Ahí hay presupuesto.\n\n**Suelo: 500 € por evento.** Por debajo, consulta.\n\nTodo descuento es un intercambio, nunca un regalo."
+    },
+    {
+      "key": "conc-obj-pantallas",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "ya_tengo_proveedor",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "direccion-produccion",
+        "promotor"
+      ],
+      "title": "«Ya tenemos pantallas y un VJ»",
+      "body": "«Claro, y si tenéis buen VJ mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales con NDI, en un lateral, y él sigue haciendo lo suyo. Pero dime: si pudiera resolveros una o dos cosas concretas del show, ¿cuáles serían?»"
+    },
+    {
+      "key": "conc-obj-moviles",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "manager-artista",
+        "artista"
+      ],
+      "title": "«El artista no quiere móviles en el concierto»",
+      "body": "«Nosotros tampoco. La gente ya está con el móvil, eso no lo decidimos ni tú ni yo. Lo que hacemos es que ese rato sirva para algo que pasa en la sala. Y la parte fuerte ni siquiera es durante el show: es la hora de antes, cuando están esperando y no hay nada que mirar»."
+    },
+    {
+      "key": "conc-obj-cobertura",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "direccion-produccion",
+        "promotor"
+      ],
+      "title": "«No hay cobertura en el recinto»",
+      "body": "La más peligrosa, porque muchas veces es verdad.\n\n«Es lo único que nos puede estropear la noche, y te lo digo yo antes de que lo descubras tú. Por eso lo primero que miramos es la cobertura y el wifi del recinto. Si no hay, te lo digo y no lo hacemos».\n\n**Nunca vendas donde sabes que no hay cobertura.** Un evento fallido se cuenta entre promotores."
+    },
+    {
+      "key": "conc-obj-validar",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "tour-manager"
+      ],
+      "title": "«¿Quién valida las fotos? No tengo a nadie»",
+      "body": "«Quien tú digas, y desde el móvil. Alguien de tu equipo, de sala, o automático. No hace falta producción ni el VJ»."
+    },
+    {
+      "key": "conc-obj-tiempo",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "tour-manager",
+        "direccion-produccion"
+      ],
+      "title": "«No tenemos tiempo en producción»",
+      "body": "«Cero montaje. Si tenéis ordenador en la señal de vídeo, es instalar y conectar. Si no, se abre en un navegador. El día del show no pedimos nada a tu equipo»."
+    },
+    {
+      "key": "conc-obj-patrocinador",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "no_decido_yo",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor"
+      ],
+      "title": "«Esto nos lo tiene que dar el patrocinador»",
+      "body": "Buena señal, no es un no.\n\n«Tiene todo el sentido que lo pague él, porque es quien más se lleva. ¿Me presentas a quien lleva el patrocinio y se lo planteo yo?»"
+    },
+    {
+      "key": "conc-obj-derechos",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "manager-artista",
+        "marca-patrocinadora"
+      ],
+      "title": "«¿Y los derechos de imagen?»",
+      "body": "Nuestro mejor terreno.\n\n«Es lo que mejor tenemos resuelto. Sube la foto quien quiere, y al subirla acepta los términos que permiten usarla en comunicación. No grabamos a nadie sin que lo sepa. Esa es la diferencia con una kiss cam»."
+    },
+    {
+      "key": "conc-obj-pedida",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "«¿Podéis hacer una pedida de mano en directo?»",
+      "body": "«En vídeo en directo no, eso no lo tenemos. Lo que sí: puede subir una foto con el mensaje y la sacamos en grande cuando toque»."
+    },
+    {
+      "key": "conc-obj-caro",
+      "module_key": "pricing",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "precio",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "«Es caro»",
+      "body": "El precio no se argumenta. Cambia de línea: el ancla de los 8.000 € de una kiss cam clásica y, si hace falta, un piloto con contrapartidas (caso con nombre, testimonio, siguientes fechas).",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "El precio no es argumentable + pedido de prueba",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/0qeNfVC9WdspykfNqHClJ8"
+        },
+        {
+          "source": "cerebro",
+          "title": "No etiquetes tu producto de caro",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/2je9ntQrYOLo0OIwXwU6da"
+        }
+      ]
+    },
+    {
+      "key": "conc-obj-pensar",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "«Me lo tengo que pensar»",
+      "body": "«Perfecto. Lo que tienes que pensar, ¿tiene que ver más con la propuesta, con la inversión, o más con el resultado?»",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Desglose del «déjame pensarlo»",
+          "creator": "Manuel Trejo",
+          "url": "https://www.tiktok.com/@manueltrejove/video/7648050248446790933"
+        }
+      ]
+    },
+    {
+      "key": "conc-no-decir",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Lo que no se dice (y lo que sí)",
+      "body": "**No se dice:**\n- Cifras de monetización o retorno. Mecanismo sí, resultado no.\n- Que el patrocinio se va a duplicar.\n- Pie de foto en el álbum: aún no existe.\n- CRM de fidelización, remarketing por WhatsApp, peticiones patrocinadas por discográficas. No existen, ni como «próximamente».\n- Soporte 24 h o SLA.\n- El plan gratuito para DJs: sale en semanas, hasta entonces no se menciona.\n- Nombres de clientes anteriores sin confirmarlo antes.\n\n**Sí se puede usar:**\n- En 2025, cerca de 30.000 peticiones de canciones con muy pocos eventos: el público sí escanea un QR.\n- Dinámicas que ya han funcionado: mesas numeradas mandándose mensajes, chupito a cambio de fotos en el álbum, sorteos por participación."
+    },
+    {
+      "key": "conc-traer",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "seguimiento",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Qué traer de vuelta de cada conversación",
+      "body": "- ¿Quién decidió de verdad? ¿Promotor, manager, producción, marca?\n- ¿En qué momento del calendario se decide una compra así?\n- ¿Quién puso la primera objeción y cuál fue?\n- ¿Qué presupuesto manejan para activaciones de público?\n- ¿Tienen patrocinador? ¿Quién lo lleva?\n- La reacción exacta al precio: cara, silencio, contraoferta.",
+      "why_it_works": "El segmento está sin validar: cada conversación es investigación."
+    },
+    {
+      "key": "conc-pendiente",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "conciertos"
+      ],
+      "audience": "team",
+      "title": "Lo que falta para vender sin miedo",
+      "body": "- **Prueba de carga:** sin ella no se vende por encima de 20.000.\n- **% que paga y ticket medio:** sin esto no se habla de monetización.\n- **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.\n- **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.\n- **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.\n- **Pie de foto en el álbum:** hasta que esté, no se vende."
+    },
+    {
+      "key": "conc-video-fundamentos",
+      "module_key": null,
+      "kind": "script",
+      "stage": "prospeccion",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Manda el vídeo antes de la llamada",
+      "body": "Técnica del Cerebro: pre-encuadre de la llamada por posicionamiento (Alfonso y Cristian). Guion literal:\n\n«Una de las claves del posicionamiento: nunca recibas una llamada sin estar agendada. Si alguien te dice 'oye, ¿podemos hablar? tengo cinco minutitos', no. Agenda la llamada y prepárate bien para ella: haz una investigación previa. O dile a la persona: 'antes de que hablemos y veamos si te puedo ayudar, necesito que veas este vídeo de diez minutos donde explico los fundamentos, para que después en la llamada tú y yo hablemos el mismo lenguaje, porque yo uso unos términos concretos y, si no los entiendes, probablemente no nos sirva de nada esta llamada'. Cuanto mejor posicionado estés, menos venta tendrás que hacer: la persona llega ya en un 80-90% convencida».",
+      "when_to_use": "Antes de cada primera llamada.",
+      "why_it_works": "Aportación de Enjoy: Enjoy es abstracto y cada uno se imagina una cosa. Un vídeo corto de la pantalla funcionando en una sala real quita media conversación: dejas de describir y pasas a preguntar. Prioridad: grabarlo antes de que el vendedor empiece a llamar.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Pre-encuadre de la llamada con vídeo de fundamentos",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/14KepcZYdwbA2bGrNYkaPe"
+        }
+      ]
+    },
+    {
+      "key": "conc-precalificar",
+      "module_key": null,
+      "kind": "script",
+      "stage": "descubrimiento",
+      "objection": "no_decido_yo",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Pregunta quién decide, al principio",
+      "body": "Adaptado a conciertos:\n\n«Antes de empezar: si esto os encaja, ¿lo decides tú o tendría que estar también producción o el manager en la conversación?»\n\nGuion literal del creador (Alfonso y Cristian): «Oye, una pregunta, Juan, simplemente antes de empezar: si tuviéramos que tomar hoy una decisión, ¿es algo que podrías tomar tú al 100% o tendría que estar en esta conversación también tu socio Sergio? Si me dices que no está tu socio: hagamos una cosa, como el tiempo es algo muy escaso porque no lo podemos comprar, ¿te parece bien que hagamos una reunión donde esté Sergio y así, si tenéis que tomar una decisión los dos, lo tengáis 100% claro? ¿Te parece bien?»",
+      "why_it_works": "En un concierto hay cinco actores y casi nunca decide el primero que te atiende. La objeción previsible se saca al principio, no al final.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Precalificación del decisor",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=_kevP_Tlfgg&t=1567"
+        }
+      ]
+    },
+    {
+      "key": "conc-gatekeeper",
+      "module_key": null,
+      "kind": "script",
+      "stage": "prospeccion",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Convierte a quien coge el teléfono en aliado",
+      "body": "Adaptado a una oficina de management o una promotora:\n\n«Una pregunta y te dejo: ¿crees que les interesaría que el público pudiera participar en pantalla durante la espera previa al show? ¿Es algo que os estéis planteando?»\n\nGuion literal del creador (Alfonso y Cristian): «Solo una pregunta: ¿tú crees que le interesaría tener productos que de verdad cuiden el cabello de vuestros clientes? ¿Podría ser algo que le interese?»",
+      "why_it_works": "Te dice si tu beneficio encaja antes de llegar al decisor.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Validación de interés indirecta (gatekeeper)",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=zF4M8ZRuXIk&t=70"
+        }
+      ]
+    },
+    {
+      "key": "conc-frio",
+      "module_key": null,
+      "kind": "script",
+      "stage": "primer_contacto",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Apertura en frío sin sonar a comercial",
+      "body": "**Pattern interrupt** (Alfonso y Cristian), guion literal: «Oye, Jaime. — ¿Sí? ¿Quién es? — Soy Cristian. — ¿Cristian? ¿Qué Cristian? — Oye, una pregunta: si esta fuera una llamada comercial, ¿me matarías directamente?»\n\nEl «hola, buenos días, ¿hablo con el señor X?» te delata en cuatro segundos.\n\n**Llamada en frío por relación** (Alfonso y Cristian), guion literal: «Adriá, soy Cristian, ¿qué tal, cómo va tu día? — 'Perdona, es que no te ubico'. — No, ya lo sé, no te preocupes. De hecho, estaba entre llamarte y no llamarte, porque últimamente hay tantos bots y emails que no sabes si es verdad o no. Te llamo para darte la enhorabuena por el premio que he visto que te han dado en LinkedIn por ser el mejor comunicador del año. He dicho: chapó, escucho tu podcast, he visto tus vídeos y he sentido la necesidad de darte la enhorabuena, pero en persona, no de una forma fría como hace todo el mundo. Simplemente eso, y que disfrutes de la semana. Espero que no te haya molestado».\n\n**Requisito:** algo real con lo que conectar (una gira, un premio, una sala nueva). Si no hay dato real, no se usa.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Pattern interrupt en llamada en frío",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=AtXtBpR-fuI&t=1462"
+        },
+        {
+          "source": "cerebro",
+          "title": "Llamada en frío por relación",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=byXpCoddWoE&t=4903"
+        }
+      ]
+    },
+    {
+      "key": "conc-inbound",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "primer_contacto",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "promotor",
+        "manager-artista"
+      ],
+      "title": "Si el decisor te escribe él",
+      "body": "Guion literal del creador (Alfonso y Cristian): «Claro que sí, no se preocupe. Dígame cuál es la persona indicada de su equipo para que los pongamos en contacto: mi persona con la suya».\n\nÚtil cuando escribe el dueño de una promotora o un manager con agenda imposible: no le quemas el tiempo y bajas la operativa un nivel sin perder posición.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Emparejamiento de equipos ante decisor inbound",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/1gqrGaBTfYEO7R1Ry4J4tq"
+        }
+      ]
+    },
+    {
+      "key": "conc-lenguaje",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "primer_contacto",
+      "segments": [
+        "conciertos"
+      ],
+      "title": "Filtro de lenguaje antes de enviar",
+      "body": "- **Verbos de lo que hiciste, no de lo que sentiste.** «He mirado vuestro cartel», no «me quedé pensando en vuestro proyecto».\n- **Si lo averiguaste después, dilo así.** Fingir familiaridad se detecta.\n- **No niegues para plantar la idea.** Nada de «no vengo a venderte nada».\n- **Adjetivos solo con el dato detrás.** «Muy potente» no dice nada.\n- **Una sola fecha concreta.** «Hablamos la semana que viene» no es un cierre.\n\n**Dos pruebas antes de enviar:** si el mensaje vale para otro cambiando solo el nombre, no está terminado. Y todo lo que dice que hiciste o sabes tiene que ser cierto."
+    },
+    {
+      "key": "conc-no-vender-por",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "segments": [
+        "conciertos"
+      ],
+      "audience": "team",
+      "title": "Si acompañas al vendedor: no vendas por él",
+      "body": "Guion literal del creador (Alfonso y Cristian): «No vendas tú, por favor. Tenemos la tendencia... 'joder, que se le va la operación, prefiero que se le vaya', porque si no, no va a aprender nunca. No puedes crear la dependencia absoluta del director. El director llega, se saca la calculadora y da el precio más barato: ahí no hay habilidad, y el comercial se queda diciendo 'esto no lo hagas'. El proveedor luego ya no quiere hablar con el vendedor, quiere hablar contigo. Si hay que conceder algo, dile al vendedor: 'venga, véndeselo a 0,15 y dile tú que TÚ lo has conseguido'. Que la medalla se la cuelgue el vendedor. Si no, lo ninguneas, no es feliz, y no vende».\n\nAplica al DJ colaborador y a cualquier vendedor nuevo: si hay margen que conceder, se decide aparte y lo comunica el vendedor como logro suyo.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "No vender por el comercial",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/6v6B2Cizpozb34m0eZot3I"
+        }
+      ]
     }
   ]
 }

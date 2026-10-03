@@ -7,7 +7,7 @@ const uuid = z.string().uuid();
 
 export const techniqueRefSchema = z.object({
   source: z.literal('cerebro'),
-  id: z.number().int().positive(),
+  id: z.number().int().positive().optional(),  // id de ficha del Cerebro, si se conoce (los manuales a veces solo traen el enlace)
   title: z.string().trim().min(1).max(300),
   creator: z.string().trim().max(120).optional(),
   url: z.string().url().refine((u) => /^https:\/\//.test(u), 'https').optional(),

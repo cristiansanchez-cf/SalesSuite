@@ -40,7 +40,7 @@ export type Topic = string;
 /** Referencia a una ficha del Cerebro de Ventas: se enlaza y atribuye, nunca se copia su guion. */
 export interface TechniqueRef {
   source: 'cerebro';
-  id: number;
+  id?: number;
   title: string;
   creator?: string;
   url?: string;

@@ -35,7 +35,7 @@ const lm = learnMessages[locale];
           <ul class="mt-1 space-y-1 p-0">
             {play.techniqueRefs.map((r) => (
               <li class="list-none">
-                {r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">[{r.id}] {r.title}</a> : <span>[{r.id}] {r.title}</span>}
+                {r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">{r.id ? `[${r.id}] ` : ''}{r.title}</a> : <span>{r.id ? `[${r.id}] ` : ''}{r.title}</span>}
                 {r.creator && <span class="text-muted"> · {r.creator}</span>}
               </li>
             ))}
