@@ -37,7 +37,7 @@ const PAGES = {
         return { sw: document.documentElement.scrollWidth, w, worst };
       });
       assert(m.sw <= m.w, `${user} ${u} cabe en ${m.w}px${m.sw > m.w ? ` (mide ${m.sw}: ${m.worst.join(' | ')})` : ''}`);
-      if (u.startsWith('/admin/dossiers/')) {
+      if (/^\/admin\/dossiers\/[0-9a-f-]{36}$/.test(u)) {
         for (const pane of ['Vista previa', 'Guion']) {
           await p.locator('[role=tab]:visible', { hasText: pane }).first().click();
           await p.waitForTimeout(200);
