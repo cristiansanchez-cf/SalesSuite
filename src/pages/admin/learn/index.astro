@@ -1,50 +1,22 @@
 ---
 /**
- * Aprende (docs/PLAYBOOK.md §Aprender): cuatro pasos en orden, cada uno una fila de tarjetas grandes con la foto o la
- * propia UI del producto de fondo. 01 Lo que vendes (recorrido) → 02 Qué ofrecemos (módulos) → 03 A quién (sectores)
- * → 04 Cómo se vende (jugadas generales). Primero se le vende el producto al comercial; luego, a quién se lo vende él.
- * El progreso se cuenta en positivo y siempre hay un «sigue por aquí».
+ * Aprende (docs/PLAYBOOK.md §Aprender). El título sale al momento; el progreso y los cuatro pasos llegan en un bloque
+ * aparte con su shimmer (docs/UX_REVIEW.md §Carga).
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
-import Icon from '~/components/ui/Icon.astro';
+import Shimmer from '~/components/ui/Shimmer.astro';
+import LearnBody from '~/components/admin/learn/LearnBody.astro';
 import { i18n } from '~/lib/i18n';
-import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { learnMessages } from '~/lib/i18n/messages/learn';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-const pb = admin.playbook;
 if (Astro.request.method === 'POST') {
-  await pb.markSeen();
+  await admin.playbook.markSeen();
   return Astro.redirect('/admin/learn', 303);
 }
-const [idx, market] = await Promise.all([pb.learnIndex(), pb.market()]);
-const { m: pm, f, locale } = i18n(Astro, playbookMessages);
+const { locale } = i18n(Astro, learnMessages);
 const m = learnMessages[locale];
-const date = (iso: string) => f.date(iso, { day: 'numeric', month: 'short' });
-const sectors = market.filter((s) => s.status !== 'archived');
-const learnedSectors = new Set(idx.sectorsLearned);
-const { done, total } = idx.progress;
-const pct = Math.round((done / Math.max(1, total)) * 100);
-
-// Lo siguiente que toca, en el mismo orden que la página.
-const queue = [
-  ...(idx.tour.steps.length ? [{ id: 'tour', name: m.tourCard.title, href: '/admin/learn/tour', done: idx.tour.learned }] : []),
-  ...idx.modules.map((x) => ({ id: x.moduleId, name: x.name, href: `/admin/learn/${x.moduleId}`, done: x.learned })),
-  ...sectors.map((x) => ({ id: `sector:${x.key}`, name: x.name, href: `/admin/learn/sector/${x.key}`, done: learnedSectors.has(x.key) })),
-  { id: 'general', name: m.howCard.title, href: '/admin/learn/general', done: idx.general.learned },
-];
-const next = queue.find((x) => !x.done) ?? null;
-const nextLabel = done === 0 ? m.startHere : m.here;
-const ok = Astro.url.searchParams.get('ok');
-const okMsg = ok === 'tour' ? m.tour.flash : ok === 'sector' ? m.sector.flash : null;
-// Portada del recorrido: la imagen del paso central (el momento «wow»; la primera suele ser el QR).
-const withImage = idx.tour.steps.filter((s) => s.image);
-const tourCover = withImage[Math.floor(withImage.length / 2)]?.image ?? null;
-// Novedades: tres a la vista; el resto, desplegable.
-const NEWS = 3;
-let n = 0;
-const step = () => `0${++n}`;
 ---
 <AdminLayout title={m.title} wide>
   <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-14 pb-10">
@@ -54,129 +26,10 @@ const step = () => `0${++n}`;
         <h1 class="co-page-title !text-5xl">{m.title}</h1>
         <p class="co-lede !text-lg">{m.lede}</p>
       </div>
-      <div class="grid max-w-xl gap-3" data-testid="progress" data-done={done} data-total={total}>
-        <p class="text-lg font-semibold">{done === 0 ? m.none : done >= total ? m.all : m.done(done, total)}</p>
-        <div class="co-progress"><span style={`width:${pct}%`}></span></div>
-        {next && <a class="co-btn co-btn--primary w-fit" href={next.href} data-testid="learn-next">{done === 0 ? m.startHere : m.next(next.name)} <span aria-hidden="true">→</span></a>}
-      </div>
-      {okMsg && <p class="co-alert co-alert--success w-fit" role="status">{okMsg}</p>}
     </header>
 
-    {(idx.news.length > 0 || idx.newTips > 0) && (
-      <section class="co-card co-card--soft" data-testid="news">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="co-card-title">{pm.learn.news}</h2>
-          <form method="post"><button class="text-xs font-semibold underline" type="submit">{pm.learn.markSeen}</button></form>
-        </div>
-        <ul class="mt-2 space-y-1 p-0 text-sm">
-          {idx.news.slice(0, NEWS).map((x) => (
-            <li class="list-none">
-              <a class="font-semibold underline-offset-2 hover:underline" href={`/admin/learn/${x.topic}#play-${x.playId}`}>{x.title}</a>
-              <span class="text-muted"> · {x.topicName} · {date(x.at)}</span>
-              {x.note && <span class="text-muted"> — {x.note}</span>}
-            </li>
-          ))}
-          {idx.newTips > 0 && <li class="list-none">{pm.learn.newTips(idx.newTips)}</li>}
-        </ul>
-        {idx.news.length > NEWS && (
-          <details class="mt-2" data-testid="news-more">
-            <summary class="cursor-pointer text-sm font-semibold underline">{m.newsMore(idx.news.length)}</summary>
-            <ul class="mt-2 space-y-1 p-0 text-sm">{idx.news.slice(NEWS).map((x) => (
-            <li class="list-none">
-              <a class="font-semibold underline-offset-2 hover:underline" href={`/admin/learn/${x.topic}#play-${x.playId}`}>{x.title}</a>
-              <span class="text-muted"> · {x.topicName} · {date(x.at)}</span>
-              {x.note && <span class="text-muted"> — {x.note}</span>}
-            </li>
-          ))}</ul>
-          </details>
-        )}
-      </section>
-    )}
-
-    {idx.tour.steps.length > 0 && (
-      <section class="grid gap-5">
-        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.tour}</h2>
-        <a href="/admin/learn/tour" class="learn-card group min-h-[18rem] sm:min-h-[24rem]" data-testid="tour-card">
-          {tourCover && <img src={tourCover} alt="" class="learn-card__bg" loading="lazy" />}
-          <span class="learn-card__shade"></span>
-          <span class="learn-card__body">
-            <span class="flex flex-wrap gap-2">
-              {idx.tour.learned && <span class="learn-pill"><Icon name="circle-check" size={14} />{m.learned}</span>}
-              {next?.id === 'tour' && <span class="learn-pill learn-pill--signal">{nextLabel}</span>}
-            </span>
-            <span class="text-4xl font-bold leading-tight sm:text-5xl">{m.tourCard.title}</span>
-            <span class="text-white/80">{m.tourCard.meta(idx.tour.steps.length)}</span>
-            <span class="learn-cta">{idx.tour.learned ? m.tourCard.again : m.tourCard.go} <span aria-hidden="true">→</span></span>
-          </span>
-        </a>
-      </section>
-    )}
-
-    {idx.modules.length > 0 && (
-      <section class="grid gap-5" id="offer">
-        <div class="grid gap-1">
-          <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.offer}</h2>
-          <p class="co-meta">{m.offerLede}</p>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2" data-testid="topics">
-          {idx.modules.map((x) => (
-            <a href={`/admin/learn/${x.moduleId}`} class="learn-card group min-h-[16rem] sm:min-h-[20rem]" data-testid="topic">
-              {x.cover
-                ? <img src={x.cover} alt="" class="learn-card__bg" loading="lazy" />
-                : <iframe src={`/admin/learn/preview/${x.moduleId}`} title="" aria-hidden="true" tabindex="-1" loading="lazy" class="learn-card__bg learn-card__ui"></iframe>}
-              <span class="learn-card__shade"></span>
-              <span class="learn-card__body">
-                <span class="flex flex-wrap gap-2">
-                  {x.learned && <span class="learn-pill"><Icon name="circle-check" size={14} />{m.learned}</span>}
-                  {next?.id === x.moduleId && <span class="learn-pill learn-pill--signal">{nextLabel}</span>}
-                </span>
-                <span class="text-3xl font-bold leading-tight">{x.name}</span>
-                {x.description && <span class="line-clamp-2 text-white/80">{x.description}</span>}
-              </span>
-            </a>
-          ))}
-        </div>
-      </section>
-    )}
-
-    {sectors.length > 0 && (
-      <section class="grid gap-5">
-        <div class="grid gap-1">
-          <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.who}</h2>
-          <p class="co-meta">{m.whoLede}</p>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2" data-testid="segments">
-          {sectors.map((sg) => (
-            <a href={`/admin/learn/sector/${sg.key}`} class="learn-card group min-h-[16rem] sm:min-h-[20rem]" data-testid="segment">
-              {sg.image && <img src={sg.image} alt="" class="learn-card__bg" loading="lazy" />}
-              <span class="learn-card__shade"></span>
-              <span class="learn-card__body">
-                <span class="flex flex-wrap gap-2">
-                  {learnedSectors.has(sg.key) && <span class="learn-pill"><Icon name="circle-check" size={14} />{m.sector.learned}</span>}
-                  {next?.id === `sector:${sg.key}` && <span class="learn-pill learn-pill--signal">{nextLabel}</span>}
-                </span>
-                <span class="text-3xl font-bold leading-tight">{sg.name}</span>
-                {sg.description && <span class="line-clamp-2 text-white/80">{sg.description}</span>}
-              </span>
-            </a>
-          ))}
-        </div>
-      </section>
-    )}
-
-    <section class="grid gap-5">
-      <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.how}</h2>
-      <a href="/admin/learn/general" class="co-card co-card--link !flex items-center gap-5 !p-6" data-testid="topic-general">
-        <span class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="book-open" size={26} /></span>
-        <span class="min-w-0 flex-1">
-          <span class="co-entity block text-lg">{m.howCard.title}</span>
-          <span class="co-meta">{m.howCard.meta(idx.general.playCount)}</span>
-        </span>
-        {idx.general.learned && <span class="co-badge co-badge--ink">{m.learned}</span>}
-        {next?.id === 'general' && <span class="co-badge co-badge--signal">{nextLabel}</span>}
-        <Icon name="chevron-right" />
-      </a>
-    </section>
+    <LearnBody server:defer ok={Astro.url.searchParams.get('ok')}>
+      <Shimmer slot="fallback" variant="cards" count={6} />
+    </LearnBody>
   </div>
 </AdminLayout>
-

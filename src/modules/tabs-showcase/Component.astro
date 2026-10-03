@@ -69,7 +69,7 @@ const t = (s: string) => interpolate(s, ctx);
           </div>
         )}
         {tab.mock?.kind === 'image' && (
-          <img src={tab.mock.src} alt={tab.mock.alt} loading="lazy" class="w-full rounded-card" />
+          <img src={tab.mock.src} alt={tab.mock.alt} loading="lazy" decoding="async" class="w-full rounded-card" />
         )}
       </div>
     ))}

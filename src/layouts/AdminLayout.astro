@@ -10,6 +10,7 @@ import '@fontsource-variable/bricolage-grotesque/wdth.css';
 import '~/styles/global.css';
 import '~/styles/console.css';
 import ConsoleNav from '~/components/ui/ConsoleNav.astro';
+import Shimmer from '~/components/ui/Shimmer.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { BRAND } from '~/lib/site';
 import { i18n } from '~/lib/i18n';
@@ -46,6 +47,7 @@ const shell = !!admin && !bare;
     <title>{title} · {tenantName}</title>
   </head>
   <body>
+    <div class="co-progress" aria-hidden="true"></div>
     {shell ? (
       <div class="co-shell">
         <aside class="co-sidebar" aria-label={m.shell.navigation}>
@@ -59,7 +61,7 @@ const shell = !!admin && !bare;
             <a href="/admin/notifications" class="co-bell" aria-label={m.bell.label(feed.open)} data-testid="bell-mobile"><Icon name="bell" size={18} />{feed.open > 0 && <span class="co-bell__count">{feed.open > 9 ? '9+' : feed.open}</span>}</a>
           </div>
           {admin?.mode === 'demo' && <p class="co-demo-banner">{m.shell.demo}</p>}
-          <main class:list={['co-page', `co-page--${width}`]}><slot /></main>
+          <main class:list={['co-page', `co-page--${width}`]}><Shimmer variant="page" class="co-nav-skeleton" label={m.shell.loading} /><slot /></main>
         </div>
       </div>
       <dialog id="co-drawer" class="co-dialog co-drawer" aria-label={m.shell.menu}>
@@ -72,6 +74,29 @@ const shell = !!admin && !bare;
       <main class="co-page co-page--content"><slot /></main>
     )}
     <script is:inline>
+      // Carga (docs/UX_REVIEW.md §Carga): al ir a otra página, barra arriba al momento y, si tarda, la forma de una página.
+      (() => {
+        const root = document.documentElement;
+        let slow = 0;
+        const start = () => { root.classList.add('is-navigating'); clearTimeout(slow); slow = setTimeout(() => root.classList.add('is-navigating-slow'), 350); };
+        const stop = () => { clearTimeout(slow); root.classList.remove('is-navigating', 'is-navigating-slow'); };
+        document.addEventListener('click', (e) => {
+          if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+          if (!a || a.target || a.hasAttribute('download') || a.hasAttribute('data-no-progress')) return;
+          const u = new URL(a.href, location.href);
+          if (u.origin !== location.origin || (u.pathname === location.pathname && u.search === location.search)) return;
+          // Lo que la propia página resuelve sin navegar (p. ej. «Nueva propuesta» en ventana) no muestra la carga.
+          setTimeout(() => { if (!e.defaultPrevented) start(); }, 0);
+        });
+        document.addEventListener('submit', (e) => { if (!e.defaultPrevented && !(e.target instanceof HTMLFormElement && e.target.method === 'dialog')) setTimeout(() => { if (!e.defaultPrevented) start(); }, 0); });
+        addEventListener('pageshow', stop);
+        // Fotos: el hueco brilla hasta que llegan.
+        const loaded = (img) => img.classList.add('is-loaded');
+        const watch = () => document.querySelectorAll('img.co-img:not(.is-loaded)').forEach((img) => { if (img.complete && img.naturalWidth) loaded(img); else img.addEventListener('load', () => loaded(img), { once: true }); img.addEventListener('error', () => loaded(img), { once: true }); });
+        watch();
+        new MutationObserver(watch).observe(document.body, { childList: true, subtree: true });
+      })();
       // <dialog> nativo para modales y cajón: abrir con data-dialog-open="id", cerrar con data-dialog-close.
       document.addEventListener('click', (e) => {
         const t = e.target instanceof Element ? e.target : null;

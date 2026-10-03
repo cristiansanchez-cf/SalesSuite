@@ -511,3 +511,33 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 .share-card { border-color: var(--co-signal, currentColor); }
 /* Lista vacía: una zona grande donde soltar módulos */
 .drop-empty { min-height: 6rem; border: 2px dashed var(--console-border, rgba(127,127,127,.35)); border-radius: var(--console-radius-control, 12px); }
+
+/* ---------- Carga: shimmer (docs/UX_REVIEW.md §Carga). Nunca una pantalla vacía: primero la forma, luego el dato. */
+@keyframes co-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.co-shimmer {
+  display: block; border-radius: .75rem;
+  background: linear-gradient(90deg, var(--console-chip-bg, rgba(127,127,127,.12)) 0%, rgba(127,127,127,.22) 40%, var(--console-chip-bg, rgba(127,127,127,.12)) 80%);
+  background-size: 200% 100%; animation: co-shimmer 1.3s ease-in-out infinite;
+}
+.co-shimmer--line { height: .9rem; }
+.co-shimmer--title { height: 2.6rem; max-width: 26rem; }
+.co-shimmer--card { height: 7.5rem; border-radius: var(--console-radius-card, 1.25rem); }
+.co-shimmer--hero { height: 12rem; border-radius: var(--console-radius-card, 1.25rem); }
+.co-shimmer--row { height: 3.75rem; }
+.co-shimmer--circle { border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) { .co-shimmer { animation: none; } }
+
+/* Imágenes: el hueco brilla hasta que llega la foto. */
+img.co-img { background: var(--console-chip-bg, rgba(127,127,127,.12)); }
+img.co-img:not(.is-loaded) {
+  background-image: linear-gradient(90deg, transparent 0%, rgba(127,127,127,.18) 40%, transparent 80%);
+  background-size: 200% 100%; animation: co-shimmer 1.3s ease-in-out infinite;
+}
+
+/* Al navegar: barra arriba y, si tarda, la forma de una página en lugar de la anterior. */
+.co-progress { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 100; pointer-events: none; opacity: 0; transform-origin: left; transform: scaleX(0); background: var(--co-signal, #6d28d9); }
+html.is-navigating .co-progress { opacity: 1; animation: co-progress 8s cubic-bezier(.1,.7,.2,1) forwards; }
+@keyframes co-progress { from { transform: scaleX(0); } 10% { transform: scaleX(.35); } to { transform: scaleX(.92); } }
+.co-nav-skeleton { display: none !important; }
+html.is-navigating-slow .co-page > :not(.co-nav-skeleton) { display: none !important; }
+html.is-navigating-slow .co-nav-skeleton { display: grid !important; }

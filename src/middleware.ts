@@ -44,18 +44,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
   timing.mark('tenant');
 
   const path = context.url.pathname.replace(/\/$/, '') || '/';
-  const isAdmin = path === '/admin' || path.startsWith('/admin/');
+  // Bloques que la consola carga después (server islands, con su shimmer): misma sesión y mismo idioma que la consola.
+  const isIsland = path.startsWith('/_server-islands/');
+  const isAdmin = path === '/admin' || path.startsWith('/admin/') || isIsland;
 
   if (isAdmin && !context.locals.tenant) return context.rewrite('/404');
 
   if (isAdmin && !ADMIN_PUBLIC.has(path) && context.locals.tenant && !context.locals.admin) {
     const auth = await authenticate(context, context.locals.tenant);
     if (auth.kind === 'anonymous') {
-      if (path.startsWith('/admin/api/')) return Response.json({ error: 'No autenticado' }, { status: 401 });
+      if (path.startsWith('/admin/api/') || isIsland) return Response.json({ error: 'No autenticado' }, { status: 401 });
       return context.redirect(`/admin/login?next=${encodeURIComponent(context.url.pathname + context.url.search)}`);
     }
     if (auth.kind === 'forbidden') {
-      if (path.startsWith('/admin/api/')) return Response.json({ error: 'Sin acceso a este tenant' }, { status: 403 });
+      if (path.startsWith('/admin/api/') || isIsland) return Response.json({ error: 'Sin acceso a este tenant' }, { status: 403 });
       context.locals.forbiddenEmail = auth.email;
       if (auth.reason === 'partner-expired') context.locals.forbiddenReason = { kind: 'partner-expired', expiresAt: auth.expiresAt ?? null };
       return context.rewrite('/admin/forbidden');

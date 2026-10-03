@@ -54,7 +54,7 @@ const firstTab = view.sections[0]?.kind ?? 'team';
 
     <header class="learn-card min-h-[18rem] sm:min-h-[22rem]" data-testid="topic-hero">
       {view.module && (cover
-        ? <img src={cover} alt="" class="learn-card__bg" />
+        ? <img src={cover} alt="" class="learn-card__bg co-img" decoding="async" />
         : <iframe src={`/admin/learn/preview/${view.module.moduleId}`} title="" aria-hidden="true" tabindex="-1" class="learn-card__bg learn-card__ui"></iframe>)}
       {!view.module && <span class="learn-card__bg topic-general-bg" aria-hidden="true"></span>}
       <span class="learn-card__shade"></span>
@@ -88,7 +88,7 @@ const firstTab = view.sections[0]?.kind ?? 'team';
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {fit.map((x) => (
             <a class="learn-card min-h-[11rem]" href={`/admin/learn/sector/${x.segment.key}`}>
-              {x.segment.image && <img src={x.segment.image} alt="" class="learn-card__bg" loading="lazy" />}
+              {x.segment.image && <img src={x.segment.image} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
               <span class="learn-card__shade"></span>
               <span class="learn-card__body !gap-1 !p-4">
                 {x.fit?.priority === 1 && <span class="learn-pill learn-pill--signal w-fit !text-xs">★ {lm.topic.star}</span>}

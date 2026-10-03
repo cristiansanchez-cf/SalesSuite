@@ -65,7 +65,7 @@ const step = () => ++n;
       </div>
       {sg.image ? (
         <header class="sector-hero" data-testid="sector-hero">
-          <img src={sg.image} alt="" class="sector-hero__bg" />
+          <img src={sg.image} alt="" class="sector-hero__bg co-img" decoding="async" />
           <span class="sector-hero__shade"></span>
           <div class="grid gap-4 p-7 sm:p-10">
             {v.learned && <span class="sector-hero__pill w-fit"><Icon name="circle-check" size={14} />{lm.sector.learned}</span>}

@@ -45,7 +45,7 @@ const steps = tour.steps;
             {s.image ? (
               <figure class:list={['tour__frame', i % 2 === 1 && 'md:order-2']}>
                 <img src={s.image} alt="" class="tour__blur" loading={i < 2 ? 'eager' : 'lazy'} />
-                <img src={s.image} alt={s.title} class="tour__img" loading={i < 2 ? 'eager' : 'lazy'} />
+                <img src={s.image} alt={s.title} class="tour__img co-img" decoding="async" loading={i < 2 ? 'eager' : 'lazy'} />
               </figure>
             ) : <span class:list={['hidden md:block', i % 2 === 1 && 'md:order-2']}></span>}
             <div class="grid content-center gap-4">

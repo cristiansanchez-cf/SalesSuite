@@ -34,3 +34,12 @@ Un subagente recorrió las diez tareas reales con Playwright, a 1440×900 y a 39
 3. **Configurar:** Primeros pasos (asistente, hasta completarlo) → Mercado y actores (un solo editor) → Playbook → Catálogo, Equipo y Marca.
 4. **Preparar mensaje** sobre todo dentro del dossier.
 5. **Móvil primero** para los flujos de calle; Configurar puede ser solo de escritorio, pero sin romperse.
+
+## Carga
+
+Nunca una pantalla en blanco: primero la forma de lo que viene, luego el dato.
+
+- **Al navegar** (toda la consola, `AdminLayout`): barra de progreso arriba al hacer clic; si la página tarda más de 350 ms, la anterior se sustituye por el shimmer de una página (`<Shimmer variant="page">`). Los enlaces con `data-no-progress` no lo activan.
+- **Por bloques** (server islands de Astro): la cabecera sale al momento y el cuerpo con datos llega en una segunda petición, con su shimmer como `slot="fallback"`. Hoy: Inicio (`components/admin/home/HomeBody.astro`) y Aprende (`components/admin/learn/LearnBody.astro`). El middleware autentica `/_server-islands/*` como la consola (sin sesión: 401, no redirige). Ojo: dentro de un bloque, `Astro.url` es la URL del bloque, no la de la página; los parámetros que necesite se le pasan como props.
+- **Fotos**: `class="co-img"` + `loading="lazy"` + `decoding="async"`; el hueco brilla hasta que la foto llega.
+- **Patrón para una página nueva**: cabecera (título, botones) en la página; todo lo que consulte la base de datos, en un componente con `server:defer` y `<Shimmer slot="fallback" variant="…" />` con la silueta que tendrá (`home`, `cards`, `rows`, `hero`, `page`).

@@ -1,74 +1,22 @@
 ---
 /**
- * Inicio (docs/UX_REVIEW.md #2). Primero UNA cosa: «Lo siguiente» (vencido → hoy → alguien mirando tu propuesta →
- * sin próximo paso → crear). Después tu día en tres números, quién te está mirando y, para quien dirige, el equipo.
+ * Inicio (docs/UX_REVIEW.md #2). La cabecera sale al momento; el resto (lo siguiente, tu día, el equipo, quién mira)
+ * llega en un bloque aparte con su shimmer (docs/UX_REVIEW.md §Carga).
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
+import Shimmer from '~/components/ui/Shimmer.astro';
+import HomeBody from '~/components/admin/home/HomeBody.astro';
 import { can } from '~/lib/admin/permissions';
-import { relativeTime } from '~/lib/admin/format';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
-import { myDay, teamKpis } from '~/lib/home/kpis';
-import { onboardedAt } from '~/lib/onboarding';
-import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role === 'partner') return Astro.redirect('/admin');
-const perms = can(admin.session.role);
-const { m, f, locale } = i18n(Astro, sellMessages);
-const formatMoney = (cents: number, currency?: string) => f.money(cents, currency);
-const rel = (iso: string | null) => relativeTime(iso, undefined, locale);
-const manager = perms.manageTeam;
-const now = new Date();
+const manager = can(admin.session.role).manageTeam;
+const { m } = i18n(Astro, sellMessages);
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
-
-// Todo lo independiente, a la vez: cada consulta en serie es un viaje más a la base de datos.
-const [dossiers, events, feed, members, team, mine, myAccounts, onboarded] = await Promise.all([
-  admin.service.listDossiers(), admin.commissions.events().catch(() => []), admin.notifications.feed({ onlyOpen: true, limit: 6 }),
-  manager ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
-  manager ? admin.commissions.team().catch(() => null) : Promise.resolve(null),
-  admin.commissions.mine(),
-  perms.useAccounts ? admin.accounts.mine() : Promise.resolve([]),
-  onboardedAt(admin),
-]);
-const names = new Map(members.map((m) => [m.userId, m.displayName || m.email]));
-const k = manager ? teamKpis(dossiers, events, names, now) : null;
-const day = myDay(dossiers, admin.session.userId, now);
-const expiring = myAccounts.filter((a) => a.state === 'mine' && a.claimedUntil && Date.parse(a.claimedUntil) - now.getTime() < 7 * 86_400_000);
-const actions = feed.items.filter((n) => n.severity === 'action');
-const when = (iso: string | null) => f.date(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const pct = (x: number | null) => (x == null ? '—' : m.home.pct(Math.round(x * 100)));
-const trend = k ? k.wonMonth - k.wonPrevMonth : 0;
-const welcomePending = !onboarded;
-// Preparar el espacio es tarea de admin, no de la bienvenida: se recuerda mientras no haya nadie más en el equipo.
-const setupPending = perms.manageTenant && members.length <= 1;
-
-const wm = welcomeMessages[locale];
-const SETUP = [
-  { label: wm.team.catalog, href: '/admin/catalog', icon: 'boxes' as const }, { label: wm.team.market, href: '/admin/setup', icon: 'wand-sparkles' as const },
-  { label: wm.team.invite, href: '/admin/team', icon: 'user-plus' as const }, { label: wm.team.terms, href: '/admin/commissions/team?tab=plan', icon: 'wallet' as const },
-];
-// Quién está mirando tus propuestas (aperturas del enlace público, lo más reciente primero).
-const minePublished = dossiers.filter((d) => d.authorId === admin.session.userId && d.status === 'published' && d.outcome === 'open');
-const stats = minePublished.length ? await admin.analytics.statsFor(minePublished.map((d) => d.id)).catch(() => new Map()) : new Map();
-const hot = minePublished
-  .map((d) => ({ d, s: stats.get(d.id) }))
-  .filter((x) => x.s?.opens && x.s.lastAt && now.getTime() - Date.parse(x.s.lastAt) < 7 * 86_400_000)
-  .sort((a, b) => (b.s!.lastAt ?? '').localeCompare(a.s!.lastAt ?? ''));
-const who = (d: { prospectCompany: string | null; title: string }) => d.prospectCompany || d.title;
-const focus = day.overdue[0]
-  ? { kind: 'attention', title: m.home.focusOverdue(who(day.overdue[0])), detail: `${day.overdue[0].nextStep ?? m.common.nextStep} · ${when(day.overdue[0].nextStepAt)}`, href: `/admin/dossiers/${day.overdue[0].id}`, cta: m.home.open }
-  : day.today[0]
-    ? { kind: 'today', title: m.home.focusToday(who(day.today[0])), detail: `${day.today[0].nextStep ?? m.common.nextStep} · ${when(day.today[0].nextStepAt)}`, href: `/admin/dossiers/${day.today[0].id}`, cta: m.home.open }
-    : hot[0]
-      ? { kind: 'hot', title: m.home.focusHot(who(hot[0].d)), detail: m.home.hotDetail(hot[0].s!.opens, rel(hot[0].s!.lastAt)), href: `/admin/dossiers/${hot[0].d.id}/analytics`, cta: m.home.open }
-      : day.noNextStep[0]
-        ? { kind: 'today', title: m.home.focusNoStep(who(day.noNextStep[0])), detail: m.home.focusNoStepDetail, href: `/admin/dossiers/${day.noNextStep[0].id}`, cta: m.home.open }
-        : { kind: 'create', title: m.home.focusEmpty, detail: m.home.focusEmptyDetail, href: '/admin#nuevo', cta: m.home.create };
-const rest = [...day.overdue, ...day.today, ...day.upcoming, ...day.noNextStep.slice(0, 5)].filter((d) => !focus.href.endsWith(d.id));
-const initials = (n: string) => n.split(/\s+/).map((x) => x[0]).slice(0, 2).join('').toUpperCase();
 ---
 <AdminLayout title={m.home.title} wide>
   <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-12 pb-10">
@@ -83,146 +31,8 @@ const initials = (n: string) => n.split(/\s+/).map((x) => x[0]).slice(0, 2).join
       </div>
     </header>
 
-    {welcomePending && (
-      <a class="co-card co-card--link !flex items-center gap-4 !p-5" href="/admin/welcome" data-testid="welcome-resume">
-        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="sparkles" size={20} /></span>
-        <span class="grid flex-1 gap-0.5"><span class="co-entity">{wm.resume.title}</span><span class="co-meta">{wm.resume.lede}</span></span>
-        <span class="co-btn co-btn--primary co-btn--sm">{wm.resume.go} <span aria-hidden="true">→</span></span>
-      </a>
-    )}
-
-    {setupPending && (
-      <section class="grid gap-4" data-testid="setup-space">
-        <div class="grid gap-1"><h2 class="text-eyebrow">{wm.team.title}</h2><p class="co-meta">{wm.team.lede}</p></div>
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">{SETUP.map((t) => (
-          <a class="co-card co-card--link !grid content-start gap-3 !p-5" href={t.href}>
-            <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={t.icon} size={20} /></span>
-            <span class="co-entity">{t.label}</span>
-          </a>))}
-        </div>
-      </section>
-    )}
-
-    <a href={focus.href} class:list={['home-focus', `home-focus--${focus.kind}`]} data-testid="home-focus">
-      <span class="text-xs font-semibold uppercase tracking-wider opacity-70">{m.home.focus}</span>
-      <span class="text-3xl font-bold leading-tight sm:text-4xl">{focus.title}</span>
-      <span class="max-w-2xl text-lg opacity-80">{focus.detail}</span>
-      <span class="home-focus__cta">{focus.cta} <span aria-hidden="true">→</span></span>
-    </a>
-
-    {k && (
-      <section class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="kpis">
-        <a class="co-card co-card--link !grid gap-1 !p-6" href="/admin/wins">
-          <span class="text-eyebrow">{m.home.wonMonth}</span>
-          <span class="co-figure text-5xl" data-testid="kpi-won">{k.wonMonth}</span>
-          <span class="co-meta">{trend === 0 ? m.home.trendSame : m.home.trendDiff(trend, k.wonPrevMonth)}</span></a>
-        <div class="co-card grid gap-1 !p-6">
-          <span class="text-eyebrow">{m.home.closeRate}</span>
-          <span class="co-figure text-5xl" data-testid="kpi-rate">{pct(k.closeRate)}</span>
-          <span class="co-meta">{k.closedLast90 ? m.home.closed(k.closedLast90) : m.home.noClosed}</span></div>
-        <a class="co-card co-card--link !grid gap-1 !p-6" href="/admin?status=published">
-          <span class="text-eyebrow">{m.home.inPlay}</span>
-          <span class="co-figure text-5xl" data-testid="kpi-open">{k.openPipeline}</span>
-          <span class="co-meta">{m.home.sent(k.publishedOpen)}</span></a>
-        <a class="co-card co-card--link !grid gap-1 !p-6" href="/admin/commissions/team?tab=ingresos">
-          <span class="text-eyebrow">{m.home.revenue}</span>
-          <span class="co-figure text-4xl" data-testid="kpi-revenue">{formatMoney(k.revenueMonthCents, k.revenueCurrency)}</span>
-          <span class="co-meta">{team ? m.home.pendingCommissions(formatMoney(team.totals.pending)) : m.home.revenueSource}</span></a>
-      </section>
-    )}
-
-    <div class="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <div class="grid content-start gap-10">
-        <section class="grid gap-4" data-testid="my-day">
-          <div class="flex items-baseline justify-between gap-3"><h2 class="text-eyebrow">{manager ? m.home.yourFollowups : m.home.today}</h2><a class="co-meta underline" href="/admin?follow=1&mine=1">{m.common.all}</a></div>
-          <div class="grid grid-cols-3 gap-3">
-            <div class:list={['co-card grid gap-1 !p-5', day.overdue.length > 0 && 'home-count--attention']}><span class="co-figure text-4xl">{day.overdue.length}</span><span class="co-meta">{m.home.dayOverdue}</span></div>
-            <div class="co-card grid gap-1 !p-5"><span class="co-figure text-4xl">{day.today.length}</span><span class="co-meta">{m.home.dayToday}</span></div>
-            <div class="co-card grid gap-1 !p-5"><span class="co-figure text-4xl">{day.upcoming.length}</span><span class="co-meta">{m.home.dayWeek}</span></div>
-          </div>
-          {rest.length === 0
-            ? (day.overdue.length + day.today.length + day.upcoming.length + day.noNextStep.length === 0 && <p class="co-meta">{m.home.emptyBecause}</p>)
-            : <ul class="co-rows">
-                {rest.map((d) => {
-                  const late = !!d.nextStepAt && Date.parse(d.nextStepAt) < now.getTime();
-                  return <li><a class:list={['co-row', late && 'co-row--attention']} href={`/admin/dossiers/${d.id}`}>
-                    <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.nextStepAt ? `${d.nextStep ?? m.common.nextStep} · ${when(d.nextStepAt)}` : m.home.noNextStep}</span></span>
-                    {late ? <span class="co-badge co-badge--attention">{m.home.overdue}</span> : <span class="co-row__chevron"><Icon name="chevron-right" /></span>}
-                  </a></li>;
-                })}
-              </ul>}
-        </section>
-
-        {actions.length > 0 && (
-          <section class="grid gap-4" data-testid="home-actions">
-            <div class="flex items-baseline justify-between gap-3"><h2 class="text-eyebrow">{m.home.waiting} · {actions.length}</h2><a class="co-meta underline" href="/admin/notifications">{m.home.allNotifications}</a></div>
-            <ul class="co-rows">{actions.map((n) => (
-              <li><a class="co-row co-row--attention" href={`/admin/notifications/${n.id}`}>
-                <span class="co-row__lead"><Icon name={n.icon as never} /></span>
-                <span class="co-row__main"><span class="co-row-title">{n.title}</span>{n.detail && <span class="co-meta">{n.detail}</span>}</span>
-                <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
-            </ul>
-          </section>
-        )}
-
-        {k && k.overdue.length > 0 && (
-          <section class="grid gap-4" data-testid="team-overdue">
-            <h2 class="text-eyebrow">{m.home.teamOverdue} · {k.overdue.length}</h2>
-            <ul class="co-rows">{k.overdue.slice(0, 8).map((d) => (
-              <li><a class="co-row co-row--attention" href={`/admin/dossiers/${d.id}`}>
-                <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName} · {d.nextStep ?? m.common.nextStep} · {m.home.overdueSince(rel(d.nextStepAt))}</span></span>
-                <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
-            </ul>
-          </section>
-        )}
-
-        {k && k.people.length > 0 && (
-          <section class="grid gap-4" data-testid="team-people">
-            <h2 class="text-eyebrow">{m.common.team}</h2>
-            <div class="grid gap-3">{k.people.map((p) => (
-              <div class="co-card flex items-center gap-4 !p-5">
-                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--console-chip-bg)] font-bold" aria-hidden="true">{initials(p.name)}</span>
-                <span class="grid min-w-0 flex-1"><span class="co-entity truncate">{p.name}</span><span class="co-meta">{m.home.personInPlay(p.open)}{p.overdue ? m.common.overdueN(p.overdue) : ''}</span></span>
-                <span class="grid justify-items-end"><span class="co-figure text-3xl">{p.wonMonth}</span><span class="co-meta">{m.home.wonMonth}</span></span>
-              </div>))}
-            </div>
-          </section>
-        )}
-      </div>
-
-      <aside class="grid content-start gap-6">
-        {hot.length > 0 && (
-          <section class="grid gap-4" data-testid="home-hot">
-            <h2 class="text-eyebrow">{m.home.hot}</h2>
-            <ul class="grid gap-3 p-0">{hot.slice(0, 4).map((x) => (
-              <li class="list-none"><a class="co-card co-card--link !flex items-center gap-4 !p-5" href={`/admin/dossiers/${x.d.id}/analytics`}>
-                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="eye" size={20} /></span>
-                <span class="grid min-w-0"><span class="co-entity truncate">{who(x.d)}</span><span class="co-meta">{m.home.hotDetail(x.s!.opens, rel(x.s!.lastAt))}</span></span>
-              </a></li>))}
-            </ul>
-          </section>
-        )}
-        <a class="co-card co-card--link !grid gap-1 !p-6" href="/admin/commissions" data-testid="home-commissions">
-          <span class="text-eyebrow">{m.home.myCommissions}</span>
-          <span class="co-figure text-4xl">{formatMoney(mine.totals.approved + mine.totals.settled + mine.totals.pending)}</span>
-          <span class="co-meta">{m.home.commissionsMeta(formatMoney(mine.totals.pending), formatMoney(mine.totals.paid))}</span></a>
-        {expiring.length > 0 && (
-          <section class="co-card grid gap-2 !p-6" data-testid="home-expiring">
-            <h2 class="co-entity">{m.home.expiringTitle}</h2>
-            <p class="co-meta">{m.home.expiringBody}</p>
-            <ul class="grid gap-1 p-0">{expiring.map((a) => <li class="list-none text-sm"><a class="font-semibold underline" href={`/admin/accounts/${a.id}`}>{a.name}</a> <span class="co-meta">· {rel(a.claimedUntil)}</span></li>)}</ul>
-          </section>
-        )}
-      </aside>
-    </div>
+    <HomeBody server:defer>
+      <Shimmer slot="fallback" variant="home" count={4} />
+    </HomeBody>
   </div>
 </AdminLayout>
-
-<style>
-  .home-focus { display: grid; gap: .75rem; border-radius: var(--console-radius-card, 1.25rem); padding: 2.25rem; background: var(--console-ink, #111); color: var(--console-bg, #fff); text-decoration: none; transition: transform .2s ease; }
-  .home-focus:hover { transform: translateY(-2px); }
-  .home-focus--attention { background: linear-gradient(135deg, #7a1f1f, #2a0f12); color: #fff; }
-  .home-focus--hot { background: linear-gradient(135deg, var(--co-signal, #6d28d9), #1a1033); color: #fff; }
-  .home-focus__cta { margin-top: .5rem; display: inline-flex; width: fit-content; align-items: center; gap: .4rem; border-radius: 999px; background: #fff; color: #000; padding: .65rem 1.3rem; font-weight: 700; }
-  .home-count--attention { border-color: var(--console-attention, #b42318); }
-</style>

@@ -85,7 +85,7 @@ const next = steps.find((s) => !s.done)?.key;
       <section class="grid content-start gap-4" data-testid="start-what">
         <h2 class="text-eyebrow">{m.what.title}</h2>
         <div class="learn-card min-h-[20rem]">
-          {cover && <img src={cover} alt="" class="learn-card__bg" />}
+          {cover && <img src={cover} alt="" class="learn-card__bg co-img" decoding="async" />}
           <span class="learn-card__shade"></span>
           <div class="learn-card__body">
             {catalog.length === 0 ? <p class="text-white/80">{m.what.empty}</p> : (
@@ -109,7 +109,7 @@ const next = steps.find((s) => !s.done)?.key;
           <div class="grid min-h-[20rem] grid-cols-2 gap-3">
             {sectors.map((s) => (
               <a class="learn-card min-h-[9rem]" href={`/admin/learn/sector/${s.key}`} data-testid="start-sector">
-                {s.image && <img src={s.image} alt="" class="learn-card__bg" loading="lazy" />}
+                {s.image && <img src={s.image} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
                 <span class="learn-card__shade"></span>
                 <span class="learn-card__body !gap-1 !p-4">
                   {!s.image && <Icon name={sectorIcon(s.icon)} size={22} />}

@@ -97,7 +97,7 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
         <p class="co-lede">{m.sell.lede}</p>
         {learn && learn.tour.steps.length > 0 && (
           <a href="/admin/learn/tour?from=welcome" class="learn-card min-h-[13rem]" data-testid="welcome-tour">
-            {tourCover && <img src={tourCover} alt="" class="learn-card__bg" />}
+            {tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" />}
             <span class="learn-card__shade"></span>
             <span class="learn-card__body !p-5">
               <span class="text-2xl font-bold leading-tight">{m.sell.tour}</span>
@@ -112,7 +112,7 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
             return (
               <a href={`/admin/learn/preview/${x.moduleId}`} target="_blank" rel="noopener" class="learn-card min-h-[9rem]" data-testid="welcome-module">
                 {x.cover
-                  ? <img src={x.cover} alt="" class="learn-card__bg" loading="lazy" />
+                  ? <img src={x.cover} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />
                   : <iframe src={`/admin/learn/preview/${x.moduleId}`} title="" aria-hidden="true" tabindex="-1" loading="lazy" class="learn-card__bg learn-card__ui"></iframe>}
                 <span class="learn-card__shade"></span>
                 <span class="learn-card__body !gap-1 !p-4">
@@ -131,7 +131,7 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
         {sectors.length === 0 ? <p class="co-help">{m.who.empty}</p> : (
           <div class="grid grid-cols-2 gap-3">{sectors.map((s) => (
             <a class="learn-card min-h-[10rem]" href={`/admin/learn/sector/${s.key}?from=welcome`} data-testid="welcome-sector">
-              {s.image ? <img src={s.image} alt="" class="learn-card__bg" loading="lazy" /> : null}
+              {s.image ? <img src={s.image} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" /> : null}
               <span class="learn-card__shade"></span>
               <span class="learn-card__body !gap-1 !p-4">
                 {!s.image && <Icon name={sectorIcon(s.icon)} size={22} />}

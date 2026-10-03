@@ -1,0 +1,31 @@
+---
+/**
+ * Forma de lo que va a llegar (docs/UX_REVIEW.md §Carga). Variantes con la silueta de cada tipo de bloque:
+ * page (título + tarjetas + filas), cards, rows, hero. Solo decorativo: los lectores de pantalla oyen «Cargando».
+ */
+interface Props { variant?: 'page' | 'cards' | 'rows' | 'hero' | 'home'; count?: number; label?: string; class?: string }
+const { variant = 'rows', count = 3, label = 'Cargando…', class: cls } = Astro.props;
+const n = Array.from({ length: count });
+---
+<div class:list={['grid gap-4', cls]} role="status" aria-live="polite" data-shimmer={variant}>
+  <span class="sr-only">{label}</span>
+  {variant === 'page' && (<>
+    <span class="co-shimmer co-shimmer--title" aria-hidden="true"></span>
+    <span class="co-shimmer co-shimmer--line w-2/3 max-w-md" aria-hidden="true"></span>
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-3" aria-hidden="true">{n.map(() => <span class="co-shimmer co-shimmer--card"></span>)}</div>
+    <div class="grid gap-2" aria-hidden="true">{n.map(() => <span class="co-shimmer co-shimmer--row"></span>)}</div>
+  </>)}
+  {variant === 'home' && (<>
+    <span class="co-shimmer co-shimmer--hero" aria-hidden="true"></span>
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" aria-hidden="true">
+      <div class="grid content-start gap-3">
+        <div class="grid grid-cols-3 gap-3">{[0, 1, 2].map(() => <span class="co-shimmer co-shimmer--card"></span>)}</div>
+        {n.map(() => <span class="co-shimmer co-shimmer--row"></span>)}
+      </div>
+      <div class="grid content-start gap-3"><span class="co-shimmer co-shimmer--card"></span><span class="co-shimmer co-shimmer--card"></span></div>
+    </div>
+  </>)}
+  {variant === 'cards' && <div class="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3" aria-hidden="true">{n.map(() => <span class="co-shimmer co-shimmer--card"></span>)}</div>}
+  {variant === 'rows' && <div class="grid gap-2" aria-hidden="true">{n.map(() => <span class="co-shimmer co-shimmer--row"></span>)}</div>}
+  {variant === 'hero' && <span class="co-shimmer co-shimmer--hero" aria-hidden="true"></span>}
+</div>
