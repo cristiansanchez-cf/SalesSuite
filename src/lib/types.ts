@@ -29,7 +29,13 @@ export interface RenderItem {
 
 /** Payload público del dossier (lo que devuelve el RPC token-gated). */
 /** Lo personalizado del cliente en una propuesta (docs/PERSONALIZE.md). */
-export interface ClientMedia { logo?: string | null; photos?: string[]; video?: string | null }
+export interface ClientMedia {
+  logo?: string | null; photos?: string[]; video?: string | null;
+  /** Lo que el cliente tiene (lo que no, no se enseña). Sin definir = todo. */
+  features?: { songs?: boolean; photos?: boolean; messages?: boolean; album?: boolean };
+  /** Estilo musical de los ejemplos (clave de MUSIC_STYLES). */
+  musicStyle?: string | null;
+}
 
 export interface PublicDossier {
   id: string;

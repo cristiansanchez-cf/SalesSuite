@@ -320,8 +320,12 @@ async function main() {
   log(`dominios: ${t.domains.map((d) => d.hostname + (d.is_primary ? ' (primario)' : '')).join(', ')}`);
 
   // 4. catálogo
+  // Carátulas de las canciones de ejemplo (pantalla en vivo y móvil del invitado): una vez, a Storage; URLs fijas.
+  const needsMusic = t.catalog.some((m) => (m.block_type === 'live-screen' || m.block_type === 'phone-tour') && !(m.props as Record<string, unknown>).musicStyles);
+  const musicStyles = needsMusic && !SKIP_ASSETS ? await resolveCovers(sb, tenantId) : null;
   for (const m of t.catalog) {
-    const props = replaceAssets(m.props, urls, missing);
+    let props = replaceAssets(m.props, urls, missing);
+    if (musicStyles && (m.block_type === 'live-screen' || m.block_type === 'phone-tour') && !(props as Record<string, unknown>).musicStyles) props = { ...(props as object), musicStyles };
     const found = must(await sb.from('module').select('id, block_type').eq('tenant_id', tenantId).eq('key', m.key).maybeSingle(), `leer módulo ${m.key}`);
     if (found && found.block_type !== m.block_type) fail(`módulo ${m.key}: block_type no se puede cambiar (${found.block_type} → ${m.block_type}); usa otra clave`);
     let mod: { id: string; block_type: string };
@@ -444,3 +448,52 @@ async function main() {
 }
 
 main().catch((e) => fail(e instanceof Error ? e.message : String(e)));
+
+/**
+ * Carátulas por canción (MUSIC_STYLES) desde la API pública de iTunes, subidas a tenant-assets/<espacio>/music/.
+ * Si ya están subidas, no se descargan otra vez. Si una no aparece, esa canción va sin carátula (vinilo de color).
+ */
+async function resolveCovers(sb: SupabaseClient, tenantId: string) {
+  const { MUSIC_STYLES } = await import('../src/modules/live-screen/music');
+  const have = new Set(((await sb.storage.from('tenant-assets').list(`${tenantId}/music`, { limit: 1000 })).data ?? []).map((o) => o.name));
+  const out: Record<string, { label: string; songs: Array<{ song: string; artist: string; cover: string | null }> }> = {};
+  let found = 0;
+  let total = 0;
+  for (const [key, st] of Object.entries(MUSIC_STYLES)) {
+    const songs = [];
+    for (const sg of st.songs) {
+      total++;
+      const file = `${slugify(`${sg.artist}-${sg.song}`)}.jpg`;
+      const path = `${tenantId}/music/${file}`;
+      let cover: string | null = null;
+      if (have.has(file)) cover = sb.storage.from('tenant-assets').getPublicUrl(path).data.publicUrl;
+      else {
+        try {
+          const country = key === 'francia' ? 'fr' : key === 'internacional' || key === 'rock' ? 'us' : 'es';
+          const q = new URL('https://itunes.apple.com/search');
+          q.searchParams.set('term', `${sg.artist} ${sg.song}`); q.searchParams.set('entity', 'song'); q.searchParams.set('limit', '1'); q.searchParams.set('country', country);
+          const r = await fetch(q, { signal: AbortSignal.timeout(8000) });
+          const art = ((await r.json()) as { results?: Array<{ artworkUrl100?: string }> }).results?.[0]?.artworkUrl100;
+          if (art) {
+            const img = await fetch(art.replace('100x100bb', '600x600bb'), { signal: AbortSignal.timeout(8000) });
+            if (img.ok) {
+              const bytes = new Uint8Array(await img.arrayBuffer());
+              const up = await sb.storage.from('tenant-assets').upload(path, bytes, { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' });
+              if (!up.error) cover = sb.storage.from('tenant-assets').getPublicUrl(path).data.publicUrl;
+            }
+          }
+        } catch { /* sin carátula: vinilo de color */ }
+      }
+      if (cover) found++;
+      songs.push({ song: sg.song, artist: sg.artist, cover });
+    }
+    out[key] = { label: st.label, songs };
+  }
+  log(`carátulas: ${found}/${total} (iTunes → tenant-assets/${tenantId}/music/)`);
+  return out;
+}
+
+function slugify(x: string) {
+  return x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+}
+

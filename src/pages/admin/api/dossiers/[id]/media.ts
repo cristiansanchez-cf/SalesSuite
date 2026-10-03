@@ -21,6 +21,10 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   try {
     if (body.step === 'sign') return json(await admin.service.media.sign(params.id!, body as never));
+    if (body.step === 'options') {
+      await admin.service.media.options(params.id!, body as never);
+      return json(await admin.service.getState(params.id!));
+    }
     await admin.service.media.attach(params.id!, body as never);
     return json(await admin.service.getState(params.id!));
   } catch (e) { return fail(e); }

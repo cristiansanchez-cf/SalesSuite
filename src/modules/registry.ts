@@ -3,6 +3,7 @@ import { heroPitchSchema } from './hero-pitch/schema';
 import { tabsShowcaseSchema } from './tabs-showcase/schema';
 import { pricingCardSchema } from './pricing-card/schema';
 import { liveScreenSchema } from './live-screen/schema';
+import { phoneTourSchema } from './phone-tour/schema';
 
 /**
  * Registry build-time: block_type → { schema de props, componente (lazy) }.
@@ -32,6 +33,12 @@ export const REGISTRY = {
     schema: liveScreenSchema,
     example: { title: 'Así se ve en tu local', scenes: [{ scene: 'club.idle', label: 'Reclamo', says: 'Lo que se ve el 90 % de la noche: el QR.' }] },
     load: () => import('./live-screen/Component.astro'),
+  },
+  'phone-tour': {
+    label: 'Móvil del invitado (recorrido)',
+    schema: phoneTourSchema,
+    example: { title: 'Así lo vive cada invitado' },
+    load: () => import('./phone-tour/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

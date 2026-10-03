@@ -226,6 +226,15 @@
       "name": "Pantalla en vivo",
       "description": "La pantalla del local, interactiva: reclamo, canción, foto, dedicatoria y modo transparente.",
       "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000e106",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "movil-invitado",
+      "block_type": "phone-tour",
+      "name": "Móvil del invitado",
+      "description": "El recorrido del invitado en su móvil: escanea, pide, sube su foto y sale en pantalla.",
+      "is_catalog": true
     }
   ],
   "module_version": [
@@ -589,6 +598,26 @@
             "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
           }
         ],
+        "autoplay": true
+      }
+    },
+    {
+      "default_currency": "EUR",
+      "id": "00000000-0000-4000-8000-0000000e1061",
+      "module_id": "00000000-0000-4000-8000-00000000e106",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_props": {
+        "eyebrow": "Cómo lo vive el invitado",
+        "title": "Sin descargar nada, desde su móvil",
+        "lede": "Toca cada paso: así pide, sube su foto y sale en la pantalla de {company}.",
+        "djName": "DJ Mikel",
+        "price": 2,
+        "photos": [
+          "/demo/enjoy/img/live/background.webp"
+        ],
+        "qrImage": "/demo/enjoy/img/qr.webp",
         "autoplay": true
       }
     }
@@ -1781,6 +1810,13 @@
       "segment_id": "00000000-0000-4000-8000-0000005e0002",
       "module_id": "00000000-0000-4000-8000-00000000e105",
       "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando.",
+      "priority": 1
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "module_id": "00000000-0000-4000-8000-00000000e106",
+      "fit": "Cómo lo vive cada invitado: sin descargar nada, desde su móvil.",
       "priority": 1
     }
   ],

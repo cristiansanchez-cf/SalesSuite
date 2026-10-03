@@ -11,6 +11,7 @@
   import type { TalkTrack, TrackLine } from '~/lib/playbook/talk-track';
   import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
   import { sectorRank } from '~/lib/playbook/market';
+  import { DEFAULT_STYLE, MUSIC_STYLES } from '~/modules/live-screen/music';
   import { INTL_LOCALE, type Locale } from '~/lib/i18n/core';
   import { builderMessages } from '~/lib/i18n/messages/builder';
 
@@ -82,6 +83,15 @@
         s = st; error = null; previewKey++;
       } catch { error = t.offline; break; } finally { uploading = null; }
     }
+  }
+  const feat = $derived({ songs: true, photos: true, messages: true, album: true, ...(media.features ?? {}) });
+  async function setFeature(k: 'songs' | 'photos' | 'messages' | 'album') {
+    const st = await postMedia({ step: 'options', features: { ...feat, [k]: !feat[k] } });
+    if (st) { s = st; previewKey++; }
+  }
+  async function setStyle(k: string) {
+    const st = await postMedia({ step: 'options', musicStyle: k });
+    if (st) { s = st; previewKey++; }
   }
   async function removeMedia(url: string) {
     const st = await postMedia({ url }, 'DELETE');
@@ -531,6 +541,22 @@
             </div>
           </div>
           <p class="co-help mt-3">{t.media.where}</p>
+          <div class="mt-5 grid gap-2 border-t border-[var(--console-divider)] pt-4">
+            <p class="media-tile__label">{t.media.has}</p>
+            <div class="co-chips" data-testid="media-features">
+              {#each Object.entries(t.media.features) as [k, label] (k)}
+                <button type="button" class="co-chip" aria-pressed={feat[k as 'songs']} onclick={() => setFeature(k as 'songs')} data-testid="feature-{k}">{label}</button>
+              {/each}
+            </div>
+            {#if feat.songs}
+              <p class="media-tile__label mt-2">{t.media.style}</p>
+              <div class="co-chips" data-testid="media-style">
+                {#each Object.entries(MUSIC_STYLES) as [k, st] (k)}
+                  <button type="button" class="co-chip" aria-pressed={(media.musicStyle || DEFAULT_STYLE) === k} onclick={() => setStyle(k)} data-testid="style-{k}">{st.label}</button>
+                {/each}
+              </div>
+            {/if}
+          </div>
         </section>
       {/if}
 

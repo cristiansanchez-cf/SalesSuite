@@ -9,6 +9,7 @@ import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { LiveScreenProps } from './schema';
 import './engine.css';
+import { DEFAULT_STYLE, MUSIC_STYLES, featuresOf } from './music';
 
 type Props = LiveScreenProps & ModuleBaseProps;
 const { eyebrow, title, lede, venueName, djName, qrImage, photos, covers, phone, scenes: baseScenes, videoScene, autoplay, ctx } = Astro.props;
@@ -16,14 +17,25 @@ const t = (s: string) => interpolate(s, ctx);
 // Lo personalizado del cliente (Personalizar) manda sobre lo de ejemplo: su logo, sus fotos, su vídeo.
 const media = ctx.media ?? {};
 const ownPhotos = (media.photos ?? []).filter(Boolean);
+// Lo que el cliente no tiene, no se enseña: sin canciones, ninguna pantalla de canciones; igual con fotos y mensajes.
+const feat = featuresOf(media.features);
+const needs = (sc: string) => (/song|toast/.test(sc) ? feat.songs : /photo|full/.test(sc) ? feat.photos : /message/.test(sc) ? feat.messages : true);
+const shown = baseScenes.filter((s) => needs(s.scene));
+const visible = shown.length ? shown : baseScenes.slice(0, 1);
 const scenes = media.video
-  ? [baseScenes[0], { scene: 'tp.idle' as const, label: videoScene.label, says: videoScene.says, amount: 0, video: true }, ...baseScenes.slice(1)]
-  : baseScenes;
+  ? [visible[0], { scene: 'tp.idle' as const, label: videoScene.label, says: videoScene.says, amount: 0, video: true }, ...visible.slice(1)]
+  : visible;
+// Canciones del estilo de SU local (Personalizar → estilo musical).
+const styles = Astro.props.musicStyles ?? MUSIC_STYLES;
+const style = styles[media.musicStyle ?? ''] ?? styles[DEFAULT_STYLE] ?? Object.values(styles)[0];
+const songs = style.songs;
+const covered = songs.every((x) => 'cover' in x && x.cover);
 const config = {
   assets: {
     venueName: t(venueName).toUpperCase().slice(0, 40), venueLogo: media.logo ?? '', djName, showEnjoyLogo: true, qrImage: qrImage ?? '',
-    photos: ownPhotos.length ? ownPhotos : photos, covers, avatars: [], videos: media.video ? [media.video] : [],
+    photos: ownPhotos.length ? ownPhotos : photos, covers: covered ? songs.map((x) => (x as { cover: string }).cover) : covers, avatars: [], videos: media.video ? [media.video] : [],
   },
+  songs: songs.map((x) => ({ song: x.song, artist: x.artist })),
   phone, ownPhoto: ownPhotos[0] ?? null, autoplay,
   scenes: scenes.map((s) => ({ scene: s.scene, amount: s.amount ?? 0, video: 'video' in s && !!s.video })),
 };

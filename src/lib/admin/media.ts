@@ -68,5 +68,22 @@ export function createMediaService(db: AdminDb, s: AdminSession, assets: AssetSt
     return m;
   }
 
-  return { sign, attach, remove };
+  /** Qué tiene el cliente (canciones, fotos, mensajes, álbum) y el estilo musical de los ejemplos. */
+  async function options(id: string, input: { features?: unknown; musicStyle?: unknown }) {
+    const d = await editable(id);
+    const m: ClientMedia = { ...(d.clientMedia ?? {}) };
+    if (input.features && typeof input.features === 'object') {
+      const f = input.features as Record<string, unknown>;
+      m.features = Object.fromEntries((['songs', 'photos', 'messages', 'album'] as const).map((k) => [k, f[k] !== false])) as ClientMedia['features'];
+    }
+    if (input.musicStyle !== undefined) {
+      const st = String(input.musicStyle ?? '');
+      if (st && !/^[a-z0-9-]{1,40}$/.test(st)) throw new AdminError(422, 'Estilo no válido');
+      m.musicStyle = st || null;
+    }
+    await db.updateDossier(id, { clientMedia: m });
+    return m;
+  }
+
+  return { sign, attach, remove, options };
 }

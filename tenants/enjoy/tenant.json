@@ -158,6 +158,26 @@
       }
     },
     {
+      "key": "movil-invitado",
+      "block_type": "phone-tour",
+      "name": "Móvil del invitado",
+      "description": "El recorrido del invitado en su móvil: escanea, pide, sube su foto y sale en pantalla.",
+      "default_price": null,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Cómo lo vive el invitado",
+        "title": "Sin descargar nada, desde su móvil",
+        "lede": "Toca cada paso: así pide, sube su foto y sale en la pantalla de {company}.",
+        "djName": "DJ Mikel",
+        "price": 2,
+        "photos": [
+          "asset:img/live/background.webp"
+        ],
+        "qrImage": "asset:img/tabs/qr.webp",
+        "autoplay": true
+      }
+    },
+    {
       "key": "tabs-experiencias",
       "block_type": "tabs-showcase",
       "name": "Experiencias en directo",
@@ -334,6 +354,11 @@
           "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
         },
         {
+          "module_key": "movil-invitado",
+          "priority": 1,
+          "fit": "Cómo lo vive cada invitado: sin descargar nada, desde su móvil."
+        },
+        {
           "module_key": "tabs-experiencias",
           "priority": 1,
           "fit": "Canciones con menú cerrado, mensajes y fotos a pantalla, álbum descargable."
@@ -499,6 +524,11 @@
           "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
         },
         {
+          "module_key": "movil-invitado",
+          "priority": 1,
+          "fit": "Cómo lo vive cada invitado: sin descargar nada, desde su móvil."
+        },
+        {
           "module_key": "tabs-experiencias",
           "priority": 1,
           "fit": "Fotos y mensajes del público en pantalla, temporizadores y dinámicas; contenido para sus redes."
@@ -550,6 +580,11 @@
           "module_key": "pantalla-en-vivo",
           "priority": 1,
           "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
+        },
+        {
+          "module_key": "movil-invitado",
+          "priority": 1,
+          "fit": "Cómo lo vive cada invitado: sin descargar nada, desde su móvil."
         },
         {
           "module_key": "tabs-experiencias",
@@ -762,6 +797,11 @@
           "module_key": "pantalla-en-vivo",
           "priority": 1,
           "fit": "Lo primero que tiene que ver: su pantalla, con su nombre, funcionando."
+        },
+        {
+          "module_key": "movil-invitado",
+          "priority": 1,
+          "fit": "Cómo lo vive cada invitado: sin descargar nada, desde su móvil."
         },
         {
           "module_key": "tabs-experiencias",

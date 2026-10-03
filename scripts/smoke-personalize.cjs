@@ -62,6 +62,23 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await pub.$eval('[data-module=live-screen] .es-stage img.es-np-img, [data-module=live-screen] .es-stage .es-np-img', (i) => i.getAttribute('src') || '').catch(() => '')).startsWith('/demo-media/'), 'su foto en «Foto»');
   if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/personalize-photo.png` });
 
+  // lo que no tiene, no se enseña: sin canciones → ni pantalla «Canción» ni paso «Pide su canción»
+  await p.click('[data-testid=add-movil-invitado]'); await settle();
+  await p.click('[data-testid=feature-songs]');
+  await p.waitForFunction(() => document.querySelector('[data-testid=feature-songs]')?.getAttribute('aria-pressed') === 'false');
+  assert(!(await p.isVisible('[data-testid=media-style]')), 'sin canciones, no se pregunta el estilo musical');
+  await pub.reload({ waitUntil: 'networkidle' });
+  const labels2 = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => e.textContent.trim()));
+  const steps2 = await pub.$$eval('[data-step-btn]', (els) => els.map((e) => e.dataset.stepBtn));
+  assert(!labels2.includes('Canción') && !steps2.includes('songs') && steps2.includes('scan'), `sin canciones: ${labels2.join(', ')} · ${steps2.join(', ')}`);
+  await p.click('[data-testid=feature-songs]');
+  await p.waitForSelector('[data-testid=media-style]');
+  await p.click('[data-testid=style-rock]');
+  await p.waitForFunction(() => document.querySelector('[data-testid=style-rock]')?.getAttribute('aria-pressed') === 'true');
+  await pub.reload({ waitUntil: 'networkidle' });
+  assert((await pub.textContent('[data-module=phone-tour]')).includes('Bon Jovi'), 'estilo rock: canciones de rock en el móvil');
+  if (OUT) await pub.locator('[data-module=phone-tour]').screenshot({ path: `${OUT}/personalize-phone-tour.png` });
+
   // quitar
   await p.click('[data-testid=media-photos] .media-x');
   await p.waitForFunction(() => !document.querySelector('[data-testid=media-photos] img'));

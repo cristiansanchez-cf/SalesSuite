@@ -34,6 +34,11 @@ export const liveScreenSchema = z.object({
     label: 'Su vídeo',
     says: 'Sus visuales de fondo y la pantalla encima. Lo cambian desde el móvil cuando quieran, y sale cada pocos minutos.',
   }),
+  /** Canciones por estilo (con carátulas resueltas por el alta del espacio). Sin esto, las de music.ts sin carátula. */
+  musicStyles: z.record(z.string().regex(/^[a-z0-9-]{1,40}$/), z.object({
+    label: z.string().min(1).max(40),
+    songs: z.array(z.object({ song: z.string().min(1).max(80), artist: z.string().max(80), cover: url.nullable().optional() })).min(1).max(12),
+  })).optional(),
   /** Recorrido solo en bucle (se para en cuanto alguien toca una pantalla). */
   autoplay: z.boolean().default(true),
 });
