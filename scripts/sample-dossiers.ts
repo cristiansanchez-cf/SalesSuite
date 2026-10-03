@@ -67,14 +67,21 @@ async function main() {
     const seg = segments.find((x) => x.key === s.segment);
     if (!seg) { console.log(`• ${s.key}: sin sector «${s.segment}», se salta`); continue; }
     const existing = (must(await sb.from('dossier').select('id').eq('tenant_id', tid).eq('author_id', author.user_id).contains('prospect_meta', { sample: s.key }).limit(1), 'buscar ejemplo') ?? []) as Array<{ id: string }>;
-    if (existing.length) {
-      console.log(`• ${s.key}: ya existía → ${origin}/admin/dossiers/${existing[0].id}`);
-      continue;
-    }
     const mods = segMods.filter((m) => m.segment_id === seg.id).sort((a, b) => a.priority - b.priority).map((m) => latest.get(m.module_id)).filter((v): v is { id: string; version: number } => !!v);
     const option = options.find((o) => o.label === s.tariff && o.active);
     const coupon = s.coupon ? coupons.find((c) => c.code === s.coupon && c.active) : undefined;
     if (!mods.length) { console.log(`• ${s.key}: el sector no tiene módulos recomendados, se salta`); continue; }
+    if (existing.length) {
+      // Ya existía: se le añaden (delante) los recomendados que le falten (p. ej. un módulo nuevo del catálogo).
+      const id = existing[0].id;
+      const items = (must(await sb.from('dossier_item').select('position, module_version(module_id)').eq('dossier_id', id), 'módulos del ejemplo') ?? []) as unknown as Array<{ position: number; module_version: { module_id: string } | null }>;
+      const have = new Set(items.map((x) => x.module_version?.module_id));
+      const missing = segMods.filter((m) => m.segment_id === seg.id).sort((a, b) => a.priority - b.priority).filter((m) => !have.has(m.module_id)).map((m) => latest.get(m.module_id)).filter((v): v is { id: string; version: number } => !!v);
+      const first = Math.min(1024, ...items.map((x) => Number(x.position)));
+      if (missing.length && !dry) must(await sb.from('dossier_item').insert(missing.map((v, i) => ({ dossier_id: id, module_version_id: v.id, position: (first * (i + 1)) / (missing.length + 1) }))), `añadir módulos ${s.key}`);
+      console.log(`• ${s.key}: ya existía${missing.length ? ` (+${missing.length} módulo${missing.length > 1 ? 's' : ''} nuevo${missing.length > 1 ? 's' : ''})` : ''} → ${origin}/admin/dossiers/${id}`);
+      continue;
+    }
     if (dry) { console.log(`• ${s.key}: se crearía con ${mods.length} módulos, tarifa ${option ? '✓' : '✗'}${s.coupon ? `, cupón ${coupon ? '✓' : '✗'}` : ''}`); continue; }
 
     const d = must(await sb.from('dossier').insert({
