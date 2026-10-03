@@ -254,152 +254,6 @@
   ],
   "market": [
     {
-      "key": "bodas",
-      "name": "Bodas",
-      "description": "Novios que celebran su boda y las fincas/salas que la acogen.",
-      "value_prop": "El banquete se convierte en algo que los invitados hacen, no que miran: recuerdos compartidos sin descargar ninguna app.",
-      "icp": "- Bodas de 100+ invitados\n- Finca o sala con pantalla/proyector\n- Novios que buscan \"algo diferente\" y temen los tiempos muertos",
-      "disqualifiers": "Menos de 40 invitados, sin pantalla ni cobertura, o novios que quieren una boda muy clásica y sin interacción.",
-      "buying_process": "Deciden los dos novios, a menudo con la familia. La finca y el wedding planner prescriben (o vetan) proveedores. Suele cerrarse tras ver una demo.",
-      "deal_size": "300–900 € por boda (ejemplo)",
-      "sales_cycle": "2–8 semanas",
-      "modules": [
-        {
-          "module_key": "tabs-experiencias",
-          "priority": 1,
-          "fit": "El módulo estrella: kiss-cam, dedicatorias y retos en el banquete."
-        },
-        {
-          "module_key": "tabs-locales",
-          "priority": 1,
-          "fit": "Para la finca: lo incluye en su oferta y gana margen y diferenciación."
-        },
-        {
-          "module_key": "hero-bodas",
-          "priority": 2,
-          "fit": "Portada personalizada con el nombre de los novios."
-        },
-        {
-          "module_key": "pricing",
-          "priority": 2,
-          "fit": "Cierra la propuesta con la cifra."
-        }
-      ],
-      "personas": [
-        {
-          "key": "novios",
-          "name": "Novios",
-          "role": "decisor",
-          "goals": "Una boda que los invitados recuerden y en la que todos participen.",
-          "pains": "Tiempos muertos en el banquete, mesas que no se mezclan, invitados mayores que no participan.",
-          "objections": [
-            "precio",
-            "tiempo"
-          ],
-          "how_to_approach": "Reunión o videollamada con los DOS. Haz la demo en su propio móvil: que envíen una kiss-cam y la vean en pantalla.",
-          "avoid": "Tecnicismos y hablar de \"plataforma\". Hablar solo con uno de los dos.",
-          "can_help": "Si les encanta, lo enseñan a la finca y a sus amigos que se casan (referidos).",
-          "can_block": "Si no lo entienden en 2 minutos, lo descartan como \"otra cosa más que pagar\".",
-          "angles": [
-            {
-              "module_key": "tabs-experiencias",
-              "angle": "Convierte su banquete en un juego para todos: lo que más les preocupa (tiempos muertos) desaparece."
-            },
-            {
-              "module_key": "hero-bodas",
-              "angle": "Ven su propuesta con su nombre en portada: se sienten únicos."
-            }
-          ]
-        },
-        {
-          "key": "coordinadora-finca",
-          "name": "Coordinador/a de la finca",
-          "role": "guardian",
-          "goals": "Que el día salga perfecto y sin problemas técnicos.",
-          "pains": "Proveedores externos que llegan tarde, ocupan espacio o fallan.",
-          "objections": [
-            "desconfianza",
-            "ya_tengo_proveedor"
-          ],
-          "how_to_approach": "Preséntate antes del evento, pásale la ficha técnica y ofrece montaje sin trabajo para su equipo.",
-          "avoid": "Saltártela hablando solo con los novios: lo vivirá como una imposición.",
-          "can_help": "Si confía en ti, te mete en su lista de proveedores recomendados (canal recurrente).",
-          "can_block": "Puede decir \"aquí no se puede montar\" y tumbarlo en un minuto.",
-          "angles": [
-            {
-              "module_key": "tabs-locales",
-              "angle": "Un extra para la oferta de la finca que no le da trabajo: lo montamos y lo operamos nosotros."
-            }
-          ]
-        },
-        {
-          "key": "gerente-finca",
-          "name": "Gerente de la finca/sala",
-          "role": "decisor",
-          "goals": "Llenar fechas y diferenciarse de las fincas de alrededor.",
-          "pains": "Competencia en precio, bodas que se pierden contra otra finca.",
-          "kpis": "Bodas al año, ticket medio por boda.",
-          "objections": [
-            "precio",
-            "no_lo_necesito"
-          ],
-          "how_to_approach": "Con números: \"si ganas 3 bodas más al año por diferenciación, Enjoy se paga varias veces\". Propón una boda piloto.",
-          "avoid": "Venderle a los novios saltándote a la finca.",
-          "can_help": "Lo incluye en su pack de bodas: volumen recurrente.",
-          "can_block": "Prohíbe proveedores externos o exige exclusividad con los suyos.",
-          "angles": [
-            {
-              "module_key": "tabs-locales",
-              "angle": "Margen por boda + argumento diferencial frente a la competencia."
-            }
-          ]
-        },
-        {
-          "key": "dj-boda",
-          "name": "DJ de la boda",
-          "role": "influenciador",
-          "goals": "Que la pista se llene y quedar como el que lo hizo posible.",
-          "pains": "Que otro proveedor le quite protagonismo o le complique el directo.",
-          "objections": [
-            "ya_tengo_proveedor",
-            "desconfianza"
-          ],
-          "how_to_approach": "Plantéalo como SU herramienta: él lanza los retos desde el micro. Llámale antes del evento.",
-          "avoid": "Venderlo como \"algo que anima la boda\" (eso es su trabajo).",
-          "can_help": "Lo anima en directo y dispara la participación.",
-          "can_block": "No cede pantalla ni micro, o lo ignora durante la fiesta.",
-          "angles": [
-            {
-              "module_key": "tabs-experiencias",
-              "angle": "Le da momentos para animar (retos, kiss-cam) que él controla desde el micro."
-            }
-          ]
-        },
-        {
-          "key": "wedding-planner",
-          "name": "Wedding planner",
-          "role": "campeon",
-          "goals": "Sorprender a sus novios y diferenciar su servicio.",
-          "pains": "Repetir las mismas ideas en todas las bodas.",
-          "objections": [
-            "comparar"
-          ],
-          "how_to_approach": "Propón un acuerdo de recomendación y una demo para su cartera de novios.",
-          "avoid": "Tratarle como un intermediario más.",
-          "can_help": "Prescribe a varias parejas por temporada.",
-          "can_block": "Si una boda sale mal, no te vuelve a recomendar.",
-          "angles": [
-            {
-              "module_key": "tabs-experiencias",
-              "angle": "Una idea nueva que vender a sus parejas."
-            }
-          ]
-        }
-      ],
-      "icon": "heart",
-      "image": "asset:img/usecases/bodas.webp"
-    },
-    {
       "key": "ocio-nocturno",
       "name": "Locales de ocio nocturno",
       "description": "Pubs, discotecas y salas que abren varias noches por semana. Y casetas de feria.",
@@ -893,6 +747,310 @@
       ],
       "icon": "party-popper",
       "image": "asset:img/usecases/festivales.webp"
+    },
+    {
+      "key": "bodas",
+      "name": "Bodas",
+      "description": "Para 2027 (Q2–Q3). Hoy es el sector del que menos sabemos: no es prioridad.",
+      "value_prop": "El banquete se convierte en algo que los invitados hacen, no que miran: recuerdos compartidos sin descargar ninguna app.",
+      "icp": "- Bodas de 100+ invitados\n- Finca o sala con pantalla/proyector\n- Novios que buscan \"algo diferente\" y temen los tiempos muertos",
+      "disqualifiers": "Menos de 40 invitados, sin pantalla ni cobertura, o novios que quieren una boda muy clásica y sin interacción.",
+      "buying_process": "Deciden los dos novios, a menudo con la familia. La finca y el wedding planner prescriben (o vetan) proveedores. Suele cerrarse tras ver una demo.",
+      "deal_size": "300–900 € por boda (ejemplo)",
+      "sales_cycle": "2–8 semanas",
+      "modules": [
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "El módulo estrella: kiss-cam, dedicatorias y retos en el banquete."
+        },
+        {
+          "module_key": "tabs-locales",
+          "priority": 1,
+          "fit": "Para la finca: lo incluye en su oferta y gana margen y diferenciación."
+        },
+        {
+          "module_key": "hero-bodas",
+          "priority": 2,
+          "fit": "Portada personalizada con el nombre de los novios."
+        },
+        {
+          "module_key": "pricing",
+          "priority": 2,
+          "fit": "Cierra la propuesta con la cifra."
+        }
+      ],
+      "personas": [
+        {
+          "key": "novios",
+          "name": "Novios",
+          "role": "decisor",
+          "goals": "Una boda que los invitados recuerden y en la que todos participen.",
+          "pains": "Tiempos muertos en el banquete, mesas que no se mezclan, invitados mayores que no participan.",
+          "objections": [
+            "precio",
+            "tiempo"
+          ],
+          "how_to_approach": "Reunión o videollamada con los DOS. Haz la demo en su propio móvil: que envíen una kiss-cam y la vean en pantalla.",
+          "avoid": "Tecnicismos y hablar de \"plataforma\". Hablar solo con uno de los dos.",
+          "can_help": "Si les encanta, lo enseñan a la finca y a sus amigos que se casan (referidos).",
+          "can_block": "Si no lo entienden en 2 minutos, lo descartan como \"otra cosa más que pagar\".",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Convierte su banquete en un juego para todos: lo que más les preocupa (tiempos muertos) desaparece."
+            },
+            {
+              "module_key": "hero-bodas",
+              "angle": "Ven su propuesta con su nombre en portada: se sienten únicos."
+            }
+          ]
+        },
+        {
+          "key": "coordinadora-finca",
+          "name": "Coordinador/a de la finca",
+          "role": "guardian",
+          "goals": "Que el día salga perfecto y sin problemas técnicos.",
+          "pains": "Proveedores externos que llegan tarde, ocupan espacio o fallan.",
+          "objections": [
+            "desconfianza",
+            "ya_tengo_proveedor"
+          ],
+          "how_to_approach": "Preséntate antes del evento, pásale la ficha técnica y ofrece montaje sin trabajo para su equipo.",
+          "avoid": "Saltártela hablando solo con los novios: lo vivirá como una imposición.",
+          "can_help": "Si confía en ti, te mete en su lista de proveedores recomendados (canal recurrente).",
+          "can_block": "Puede decir \"aquí no se puede montar\" y tumbarlo en un minuto.",
+          "angles": [
+            {
+              "module_key": "tabs-locales",
+              "angle": "Un extra para la oferta de la finca que no le da trabajo: lo montamos y lo operamos nosotros."
+            }
+          ]
+        },
+        {
+          "key": "gerente-finca",
+          "name": "Gerente de la finca/sala",
+          "role": "decisor",
+          "goals": "Llenar fechas y diferenciarse de las fincas de alrededor.",
+          "pains": "Competencia en precio, bodas que se pierden contra otra finca.",
+          "kpis": "Bodas al año, ticket medio por boda.",
+          "objections": [
+            "precio",
+            "no_lo_necesito"
+          ],
+          "how_to_approach": "Con números: \"si ganas 3 bodas más al año por diferenciación, Enjoy se paga varias veces\". Propón una boda piloto.",
+          "avoid": "Venderle a los novios saltándote a la finca.",
+          "can_help": "Lo incluye en su pack de bodas: volumen recurrente.",
+          "can_block": "Prohíbe proveedores externos o exige exclusividad con los suyos.",
+          "angles": [
+            {
+              "module_key": "tabs-locales",
+              "angle": "Margen por boda + argumento diferencial frente a la competencia."
+            }
+          ]
+        },
+        {
+          "key": "dj-boda",
+          "name": "DJ de la boda",
+          "role": "influenciador",
+          "goals": "Que la pista se llene y quedar como el que lo hizo posible.",
+          "pains": "Que otro proveedor le quite protagonismo o le complique el directo.",
+          "objections": [
+            "ya_tengo_proveedor",
+            "desconfianza"
+          ],
+          "how_to_approach": "Plantéalo como SU herramienta: él lanza los retos desde el micro. Llámale antes del evento.",
+          "avoid": "Venderlo como \"algo que anima la boda\" (eso es su trabajo).",
+          "can_help": "Lo anima en directo y dispara la participación.",
+          "can_block": "No cede pantalla ni micro, o lo ignora durante la fiesta.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Le da momentos para animar (retos, kiss-cam) que él controla desde el micro."
+            }
+          ]
+        },
+        {
+          "key": "wedding-planner",
+          "name": "Wedding planner",
+          "role": "campeon",
+          "goals": "Sorprender a sus novios y diferenciar su servicio.",
+          "pains": "Repetir las mismas ideas en todas las bodas.",
+          "objections": [
+            "comparar"
+          ],
+          "how_to_approach": "Propón un acuerdo de recomendación y una demo para su cartera de novios.",
+          "avoid": "Tratarle como un intermediario más.",
+          "can_help": "Prescribe a varias parejas por temporada.",
+          "can_block": "Si una boda sale mal, no te vuelve a recomendar.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Una idea nueva que vender a sus parejas."
+            }
+          ]
+        }
+      ],
+      "icon": "heart",
+      "image": "asset:img/usecases/bodas.webp"
+    }
+  ],
+  "price_options": [
+    {
+      "label": "Local pequeño (hasta 150)",
+      "amount": 99,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Local mediano (150–500)",
+      "amount": 249,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Local grande (más de 500)",
+      "amount": 499,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Validación · 5 primeros locales",
+      "amount": 99,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Noche suelta en local",
+      "amount": 150,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Caseta · feria completa (hasta 7 días)",
+      "amount": 290,
+      "currency": "EUR",
+      "period": "once",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Caseta · día suelto",
+      "amount": 90,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "ocio-nocturno"
+    },
+    {
+      "label": "Evento de promotora",
+      "amount": 150,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "promotoras"
+    },
+    {
+      "label": "Promotora · eventos ilimitados",
+      "amount": 390,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "promotoras"
+    },
+    {
+      "label": "Charanga u orquesta · evento",
+      "amount": 120,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "conciertos"
+    },
+    {
+      "label": "Charanga u orquesta · temporada (mayo–septiembre)",
+      "amount": 390,
+      "currency": "EUR",
+      "period": "once",
+      "segment": "conciertos"
+    },
+    {
+      "label": "Sala hasta 1.000",
+      "amount": 600,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "conciertos"
+    },
+    {
+      "label": "Sala 1.000–5.000",
+      "amount": 1200,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "conciertos"
+    },
+    {
+      "label": "Sala 5.000–20.000",
+      "amount": 2500,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "conciertos"
+    },
+    {
+      "label": "Agencia o promotora · fechas ilimitadas",
+      "amount": 1500,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "conciertos"
+    },
+    {
+      "label": "Festival hasta 5.000",
+      "amount": 1200,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "festivales"
+    },
+    {
+      "label": "Festival 5.000–20.000",
+      "amount": 2500,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "festivales"
+    },
+    {
+      "label": "Infraestructura de temporada",
+      "amount": 1500,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "festivales"
+    }
+  ],
+  "coupons": [
+    {
+      "code": "PACK5",
+      "label": "Pack de 5 o más fechas (−20 %)",
+      "kind": "percent",
+      "value": 2000,
+      "note": "Contrapartida: fechas comprometidas por escrito."
+    },
+    {
+      "code": "GRUPO25",
+      "label": "Grupo con varios locales (−25 %)",
+      "kind": "percent",
+      "value": 2500,
+      "note": "Contrapartida: todos los locales, no uno de prueba."
+    },
+    {
+      "code": "CIUDAD20",
+      "label": "Ajuste de ciudad (−20 %)",
+      "kind": "percent",
+      "value": 2000,
+      "note": "Sin contrapartida: es ajuste de mercado."
+    },
+    {
+      "code": "PRIMERA50",
+      "label": "Primera fecha o primer año (−50 %)",
+      "kind": "percent",
+      "value": 5000,
+      "note": "Contrapartida: caso con nombre, testimonio a cámara y derecho de tanteo en la siguiente edición."
     }
   ],
   "facets": [
@@ -1531,8 +1689,8 @@
         "promotor",
         "agencia-patrocinio"
       ],
-      "title": "Precios por aforo (supuestos)",
-      "body": "Sin validar. Sin IVA.\n\n- Hasta 1.000 personas: **600 €**\n- De 1.000 a 5.000: **1.200 €**\n- De 5.000 a 20.000: **2.500 €**\n- Más de 20.000: a medida, y solo tras prueba de carga\n\n**Recurrencia:**\n- Pack de 5 fechas: 20 % sobre la suma de fechas sueltas\n- Suscripción de agencia o promotora, fechas ilimitadas: desde 1.500 €/mes, 6 meses de permanencia\n\nLa suscripción de agencia es lo que más nos interesa: una venta, muchos eventos."
+      "title": "Precios de conciertos y artistas",
+      "body": "Sin IVA. Propuesta sin validar en campo.\n\n**Charangas, orquestas, bandas y tributos:**\n- Evento suelto: **120 €**\n- Temporada completa (mayo–septiembre), fechas ilimitadas: **390 €**. Es lo que hay que empujar: a veinte bolos, menos de 20 € la fecha.\n\n**Salas y recintos (evento único):**\n- Hasta 1.000: **600 €**\n- 1.000–5.000: **1.200 €**\n- 5.000–20.000: **2.500 €**\n- Más de 20.000: a medida, **solo tras prueba de carga**\n\n**Recurrencia:**\n- Pack 5 fechas (mismo artista o promotor): −20 % (cupón PACK5)\n- Agencia o promotora, fechas ilimitadas: **desde 1.500 €/mes**, permanencia 6 meses. El mejor formato del sector: una venta, muchos eventos."
     },
     {
       "key": "conc-ancla",
@@ -1583,7 +1741,7 @@
       ],
       "audience": "team",
       "title": "Descuentos: siempre a cambio de algo",
-      "body": "- **Primera fecha de gira (piloto):** hasta 50 %, a cambio de caso con nombre, testimonio a cámara y derecho sobre las siguientes fechas.\n- **Ciudad de menos poder adquisitivo:** hasta 20 %. Es ajuste de mercado.\n- **Pack de 5 o más fechas:** hasta 20 %, con las fechas por escrito.\n- **Patrocinador confirmado:** 0 %. Ahí hay presupuesto.\n\n**Suelo: 500 € por evento.** Por debajo, consulta.\n\nTodo descuento es un intercambio, nunca un regalo."
+      "body": "- **Primera fecha de gira:** −50 % (cupón PRIMERA50), a cambio de caso con nombre, testimonio a cámara y derecho de tanteo.\n- **Pack de 5 o más fechas:** −20 % (cupón PACK5), con las fechas por escrito.\n- **Ciudad de menos poder adquisitivo:** −20 % (cupón CIUDAD20).\n- **Patrocinador confirmado:** 0 %. Ahí hay presupuesto.\n\n**Suelos:** salas 500 €/evento; charangas y orquestas 90 €/evento. Por debajo, solo con autorización del fundador."
     },
     {
       "key": "conc-obj-pantallas",
@@ -2029,7 +2187,7 @@
         "ocio-nocturno"
       ],
       "title": "Casetas de feria: se venden allí, en mitad del follón",
-      "body": "Dos de nuestros tres mejores casos:\n\n- **El Andén:** pantalla gigante, funcionó muy bien.\n- **Batiq Málaga Fest (caseta):** sin pantalla, y funcionó muy bien, con peticiones de pago incluidas.\n- **El Portón (Córdoba):** falló por cobertura en plena calle de la feria.\n\nSe vendieron presentándose allí durante la feria: lo vieron y al día siguiente estaban funcionando. La decisión es inmediata y la toma quien está allí. Funciona sin pantalla porque la gracia son las canciones y la impaciencia. Y se repiten cada año: una venta bien hecha es un cliente anual.\n\nEl Andén y Batiq autorizan su caso con nombre.",
+      "body": "Dos de nuestros tres mejores casos:\n\n- **El Andén:** pantalla gigante, funcionó muy bien.\n- **Batiq Málaga Fest (caseta):** sin pantalla, y funcionó muy bien, con peticiones de pago incluidas.\n- **El Portón (Córdoba):** falló por cobertura en plena calle de la feria.\n\nSe vendieron presentándose allí durante la feria: lo vieron y al día siguiente estaban funcionando. La decisión es inmediata y la toma quien está allí. Funciona sin pantalla porque la gracia son las canciones y la impaciencia. Y se repiten cada año: una venta bien hecha es un cliente anual.\n\n**Precio** (sin validar): feria completa (hasta 7 días) **290 €**; día suelto **90 €**. Se tiene que poder defender de palabra, sin dossier.\n\nEl Andén y Batiq autorizan su caso con nombre.",
       "why_it_works": "La cobertura es el único riesgo real, y en feria de calle es el peor escenario: compruébala antes."
     },
     {
@@ -2071,8 +2229,8 @@
         "propietario-local",
         "dueno-oficina"
       ],
-      "title": "Precios: lo que pagan y lo que proponemos",
-      "body": "**Hechos:** La Biblioteca paga 70 €/mes. Máximo sostenido en otros locales, 67 €/mes. Un local de grupo llegó a 100 €. Una promotora pequeña, 70 € por evento. Todo con el producto antiguo, solo canciones.\n\n**Propuesta (sin validar, sin IVA):**\n- Pequeño (hasta 150): **99 €/mes** · hasta 500 interacciones\n- Mediano (150–500): **249 €/mes** · hasta 2.500\n- Grande (más de 500): **499 €/mes** · hasta 7.000\n- Evento suelto: **150 €**\n\n**Los 5 primeros clientes nuevos:** 99 €/mes sin permanencia los dos primeros meses, a cambio de feedback mensual, permiso para grabar una noche y usarlos de referencia. Sin contrapartida, tarifa.\n\n**Clientes antiguos:** mantienen su precio; no se sube sin una conversación aparte.\n\nCuentan como interacción canciones, mensajes, fotos a pantalla y subidas al álbum. El techo no es argumento de venta: es protección. Aviso al 80 % y subida de tramo en la revisión trimestral; nunca se corta el servicio ni se factura el exceso."
+      "title": "Precios de locales",
+      "body": "Sin IVA. Propuesta sin validar en campo.\n\n- **Pequeño** (hasta 150): **99 €/mes** · hasta 500 interacciones\n- **Mediano** (150–500): **249 €/mes** · hasta 2.500\n- **Grande** (más de 500): **499 €/mes** · hasta 7.000\n- **Noche suelta en local:** 150 €\n\n**Permanencia estándar:** 6 meses.\n\n**Los 5 primeros clientes del producto nuevo:** 99 €/mes sin permanencia los dos primeros meses, a cambio de una llamada de feedback al mes, permiso para grabar una noche y usarlos como referencia con nombre. Sin contrapartida, tarifa.\n\n**El tramo** se asigna por aforo y noches que abre, en la primera conversación. El techo de interacciones no se menciona: es protección del contrato. Si se pasan: aviso al 80 % y subida de tramo en la revisión trimestral, con conversación. **Nunca se corta el servicio ni se factura el exceso.**\n\n**Clientes antiguos** mantienen su precio (La Biblioteca, 70 €/mes)."
     },
     {
       "key": "noche-descuentos",
@@ -2084,7 +2242,7 @@
       ],
       "audience": "team",
       "title": "Descuentos: siempre a cambio de algo",
-      "body": "- **Primeros 5 clientes del producto nuevo:** hasta 99 €, a cambio de feedback, grabación y referencia.\n- **Ciudad de menos poder adquisitivo:** hasta 20 %.\n- **Grupo con varios locales:** hasta 25 %, con todos los locales, no uno.\n\n**Suelo: 99 €.** Todo descuento es un intercambio, nunca un regalo."
+      "body": "- **5 primeros clientes del producto nuevo:** hasta 99 €/mes, a cambio de feedback mensual, grabación y referencia con nombre.\n- **Grupo con varios locales:** −25 % (cupón GRUPO25), con todos los locales, no uno de prueba.\n- **Ciudad de menos poder adquisitivo:** −20 % (cupón CIUDAD20).\n\n**Suelo: 99 €/mes.** Por debajo, solo con autorización del fundador."
     },
     {
       "key": "noche-dinero-peticiones",
@@ -2428,7 +2586,7 @@
       "stage": "mentalidad",
       "audience": "team",
       "title": "Pendientes que bloquean ventas",
-      "body": "- **Vídeo corto de la pantalla en una sala real:** a todos; resuelve media reunión.\n- **% de asistentes que pagan y ticket medio:** a todos; sin él no se habla de monetización.\n- **Techos de interacciones reales:** locales; hoy están estimados.\n- **Prueba de carga:** conciertos y festivales de más de 20.000.\n- **Precio para charangas y orquestas:** conciertos, tramo de entrada.\n- **Un caso de éxito en concierto o festival:** no hay ninguno."
+      "body": "- **Vídeo corto de la pantalla en una sala real:** a todos; resuelve media reunión.\n- **% de asistentes que pagan y ticket medio:** a todos; sin él no se habla de monetización.\n- **Techos de interacciones reales:** locales; hoy están estimados.\n- **Prueba de carga:** conciertos y festivales de más de 20.000.\n- **Un caso de éxito en concierto o festival:** no hay ninguno."
     },
     {
       "key": "conc-multipantalla",
@@ -2456,9 +2614,9 @@
       "personas": [
         "charanga-orquesta"
       ],
-      "audience": "team",
-      "title": "Charangas y orquestas: aún sin precio",
-      "body": "Son la mejor puerta de entrada del sector, pero el tramo más bajo (600 € hasta 1.000 personas) no encaja con ese mercado. **Hasta que se defina, no se cotiza por escrito a una banda de pueblo.**"
+      "audience": "all",
+      "title": "Charangas y orquestas: empuja la temporada",
+      "body": "Propuesta nueva, sin validar: evento suelto **120 €**, temporada completa (mayo–septiembre) **390 €**.\n\nUna charanga encadena muchas fechas en verano y, por evento suelto, la fricción se repite cada semana. A veinte bolos, la temporada sale a menos de 20 € la fecha."
     },
     {
       "key": "fest-sano",
@@ -2482,6 +2640,67 @@
       "audience": "team",
       "title": "Festivales: qué hace el equipo comercial",
       "body": "- **Modelo A, completo:** el festival paga.\n- **Infraestructuras de temporada** (tipo Selvatic).\n- **Detectar qué marcas patrocinan cada festival y pasarlas al fundador.**\n\nEl modelo B (entrar con una marca ya detrás) implica venderle primero a la marca: eso lo lleva el fundador."
+    },
+    {
+      "key": "gen-precio-reglas",
+      "module_key": "pricing",
+      "kind": "tip",
+      "stage": "negociacion",
+      "title": "Antes de dar un precio",
+      "body": "1. **El ancla va siempre antes.** Una kiss cam clásica —pantalla, cámara, realizador y operario— cuesta del orden de 8.000 € por evento. Esa cifra, antes de la nuestra.\n2. **Después del precio, silencio.** Nada de «y además incluye» ni «comparado con».\n3. **Ni caro ni barato.** Ni «es muy económico» ni «desde X»: que lo valore el cliente.\n4. **Todo descuento es un intercambio.** Sin contrapartida no hay descuento.\n5. **La monetización nunca entra en la cuenta del precio.** Ni «se paga solo» ni cifras de retorno.",
+      "why_it_works": "El precio no se argumenta: se ancla, se dice y se calla."
+    },
+    {
+      "key": "gen-descuentos",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "audience": "team",
+      "title": "Descuentos: los de la tabla, y siempre a cambio de algo",
+      "body": "Un comercial aplica estos; no inventa otros. En la propuesta son cupones.\n\n- **5 primeros clientes del producto nuevo (locales):** hasta 99 €/mes · feedback mensual, grabación, referencia con nombre.\n- **Primera fecha de gira o primer año de festival:** −50 % (PRIMERA50) · caso con nombre, testimonio a cámara, derecho de tanteo.\n- **Ciudad de menos poder adquisitivo:** −20 % (CIUDAD20) · sin contrapartida, es ajuste de mercado.\n- **Pack de 5 o más fechas:** −20 % (PACK5) · fechas por escrito.\n- **Grupo con varios locales:** −25 % (GRUPO25) · todos los locales.\n- **Patrocinador ya confirmado:** 0 % · ahí hay presupuesto."
+    },
+    {
+      "key": "gen-suelos",
+      "module_key": "pricing",
+      "kind": "tip",
+      "stage": "negociacion",
+      "audience": "team",
+      "title": "Suelos: por debajo, solo el fundador",
+      "body": "- Locales: **99 €/mes**\n- Conciertos (salas): **500 €/evento**\n- Charangas y orquestas: **90 €/evento**\n- Festivales: **800 €/evento**\n- Casetas: **200 €/feria**\n\nPor debajo del suelo, solo con autorización del fundador."
+    },
+    {
+      "key": "gen-precio-validado",
+      "module_key": "pricing",
+      "kind": "tip",
+      "stage": "mentalidad",
+      "audience": "team",
+      "title": "Qué precio está validado y cuál no",
+      "body": "**Cobrado de verdad** (producto antiguo, solo canciones): La Biblioteca 70 €/mes; tres locales 67 €/mes; un local de grupo 100 €/mes; una promotora pequeña 70 €/evento; casetas unos 100 €/evento.\n\n**Todo lo demás es supuesto.** Las tarifas nuevas son entre 1,5 y 3 veces el histórico porque el producto es otro (fotos, álbum con descarga, mensajes, pantalla desde el móvil, consentimiento), pero no están validadas.\n\n**Cómo se validan:** con los cinco primeros clientes a 99 €. Si firman tres de cinco, el precio está bajo y el siguiente lote va a tarifa. Si no firma ninguno, el problema es el argumento, no el precio."
+    },
+    {
+      "key": "promo-precios",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [
+        "promotor-eventos"
+      ],
+      "title": "Precios de promotoras",
+      "body": "Sin IVA. Propuesta sin validar en campo.\n\n- Evento suelto: **150 €**\n- Pack 5 eventos: −20 % sobre la suma (cupón PACK5)\n- Eventos ilimitados: **390 €/mes**, permanencia 6 meses\n\nReferencia: una promotora pequeña aceptó 70 €/evento con el producto antiguo (solo canciones).\n\n**Canal:** cuando una promotora lleve Enjoy a un local, apunta el nombre del local: es un lead cualificado gratis."
+    },
+    {
+      "key": "fest-precios",
+      "module_key": "pricing",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "festivales"
+      ],
+      "title": "Precios de festivales",
+      "body": "Sin IVA. Propuesta sin validar en campo.\n\n- Pequeño o de un día (hasta 5.000): **1.200 €**\n- Mediano (5.000–20.000): **2.500 €**\n- Grande (más de 20.000): a medida, **solo tras prueba de carga**\n- Infraestructura de temporada (tipo Selvatic): **desde 1.500 €/mes**\n\n**Modelo B, paga la marca:** activación desde 3.000 €. Lo lleva el fundador: se compara con otras activaciones de marca, no con software.\n\n**Suelo:** 800 €/evento."
     }
   ]
 }

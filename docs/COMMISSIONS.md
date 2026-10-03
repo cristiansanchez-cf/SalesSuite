@@ -136,4 +136,6 @@ En el editor de la propuesta, el comercial (rep) y el jefe/a de ventas (lead) **
 - `client_reference_id=dossier_<id>`: la propuesta, y por ella el vendedor. Stripe lo devuelve en el checkout y en el webhook (`checkout.session.completed`), así cada pago se atribuye a quien lo vendió.
 - `prefilled_promo_code=<CÓDIGO>`: el cupón elegido. **En Stripe tiene que existir un promotion code con el mismo código** que el cupón de la consola.
 
+**Desde `tenant.json`.** Las tarifas (`price_options`) y los cupones (`coupons`) también se cargan con el alta del espacio (`scripts/tenant-bootstrap.ts`): se sincronizan por nombre (tarifas) y por código (cupones). Si el JSON no trae `payment_link`, se conserva el que el admin pegó en la consola. Enjoy carga el *Pricing general* (manual 05): 18 tarifas por sector y 4 cupones (PACK5, GRUPO25, CIUDAD20, PRIMERA50), cada cupón con su contrapartida.
+
 Pendiente en Stripe (Cristian): crear un Payment Link por tarifa, activar «Permitir códigos promocionales» en cada uno y crear los promotion codes con los mismos códigos que los cupones.

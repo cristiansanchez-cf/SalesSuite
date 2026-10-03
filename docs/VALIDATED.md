@@ -28,4 +28,5 @@ Método (docs/FOUNDATIONS.md §7): cuando el fundador prueba un recorrido y dice
 | Inicio («Lo siguiente», tu día en tres números, quién te está mirando) y Dossiers (tarjetas agrupadas, «Nueva propuesta» en ventana) | `scripts/smoke-admin.cjs`, `scripts/smoke-commissions.cjs` | Pendiente | |
 | Editor del dossier (compartir arriba: publicar + enlace en un paso, prueba/real; arrastrar módulos y desde «Añadir»; empieza rápido por sector; precio plegado) | `scripts/smoke-admin.cjs` | Pendiente | |
 | Tarifas y enlace de pago (el comercial elige tarifa y cupón; enlace con la propuesta y el cupón) | `scripts/smoke-admin.cjs`, `scripts/smoke-tenant-admin.cjs`, `src/lib/commissions/commissions.contract.ts`, `src/lib/admin/payment.test.ts`, `supabase/tests/41_price_options.test.sql` | Pendiente | |
+| Pricing de Enjoy desde `tenant.json` (tarifas por sector, cupones; sectores en orden Locales → Promotoras → Conciertos → Festivales → Bodas) | `npm run tenant:bootstrap -- --dry-run` | Pendiente | |
 | Móvil sin desbordes | `scripts/smoke-mobile.cjs` | Pendiente | |

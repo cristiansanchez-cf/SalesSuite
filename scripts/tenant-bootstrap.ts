@@ -66,6 +66,20 @@ const tenantFile = z.object({
       angles: z.array(z.object({ module_key: z.string(), angle: z.string() })).default([]),
     })).default([]),
   })).default([]),
+  /**
+   * Tarifas (docs/COMMISSIONS.md §Tarifas). Upsert por nombre; payment_link null = conservar el que haya puesto el admin
+   * en la consola (los enlaces de Stripe se pegan allí). Las que no están en el JSON se quedan como estén.
+   */
+  price_options: z.array(z.object({
+    label: z.string().min(1).max(80), amount: z.number().min(0), currency: z.string().regex(/^[A-Z]{3}$/).default('EUR'),
+    period: z.enum(['once', 'event', 'month', 'year']).default('once'), segment: z.string().nullable().default(null),
+    payment_link: z.string().regex(/^https:\/\/\S+$/).nullable().default(null), active: z.boolean().default(true),
+  })).default([]),
+  /** Cupones (descuentos con contrapartida). Upsert por código; el mismo código tiene que existir en Stripe. */
+  coupons: z.array(z.object({
+    code: z.string().regex(/^[A-Z0-9][A-Z0-9-]{1,31}$/), label: z.string().min(1).max(80), kind: z.enum(['percent', 'fixed', 'free_months']),
+    value: z.number().int().positive(), note: z.string().max(300).nullable().default(null), active: z.boolean().default(true),
+  })).default([]),
   /** Situaciones (docs/EVIDENCE.md): tipo de personalidad, región, rasgos de la cuenta… Upsert por key. */
   facets: z.array(z.unknown()).default([]),
   /** Playbook de ventas (docs/PLAYBOOK.md). `module_key` null = jugada general. */
@@ -214,6 +228,8 @@ function validate(t: TenantFile, assetKeys: string[]) {
     const r = playInputSchema.safeParse(toPlayInput(p, p.module_key ? '00000000-0000-4000-8000-000000000000' : null));
     if (!r.success) errors.push(...r.error.issues.map((i) => `playbook.${p.key}.${i.path.join('.')}: ${i.message}`));
   }
+  for (const o of t.price_options) if (o.segment && !segKeys.has(o.segment)) errors.push(`price_options.${o.label}: sector "${o.segment}" no está en market`);
+
   const facetKeys = new Set<string>();
   for (const [i, raw] of t.facets.entries()) {
     const r = facetInputSchema.safeParse(raw);
@@ -249,7 +265,7 @@ async function main() {
 
   const errors = validate(t, files);
   if (errors.length) fail(`Validación:\n  ${errors.join('\n  ')}`);
-  log(`tenant.json válido: ${t.market.length} sectores, ${t.facets.length} situaciones, ${t.market.reduce((n, s) => n + s.personas.length, 0)} actores, ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
+  log(`tenant.json válido: ${t.market.length} sectores, ${t.facets.length} situaciones, ${t.market.reduce((n, s) => n + s.personas.length, 0)} actores, ${t.playbook.length} jugadas, ${t.price_options.length} tarifas, ${t.coupons.length} cupones, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
   if (DRY) { log('Nada escrito (--dry-run).'); return; }
 
   const url = process.env.PUBLIC_SUPABASE_URL;
@@ -360,6 +376,26 @@ async function main() {
     }, { onConflict: 'tenant_id,key' }), `situación ${f.key}`);
   }
   if (t.facets.length) log(`situaciones: ${t.facets.length} sincronizadas`);
+
+  // 5c. tarifas (por nombre) y cupones (por código)
+  const segIds = new Map<string, string>(
+    (must(await sb.from('segment').select('id, key').eq('tenant_id', tenantId), 'leer sectores') ?? []).map((r: { id: string; key: string }) => [r.key, r.id]),
+  );
+  for (const [i, o] of t.price_options.entries()) {
+    const row: Record<string, unknown> = {
+      tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period,
+      segment_id: o.segment ? segIds.get(o.segment) ?? null : null, position: i + 1, active: o.active,
+    };
+    if (o.payment_link) row.payment_link = o.payment_link;
+    const cur = must(await sb.from('price_option').select('id').eq('tenant_id', tenantId).eq('label', o.label).maybeSingle(), `leer tarifa ${o.label}`);
+    if (cur) must(await sb.from('price_option').update(row).eq('id', cur.id), `tarifa ${o.label}`);
+    else must(await sb.from('price_option').insert(row), `tarifa ${o.label}`);
+  }
+  if (t.price_options.length) log(`tarifas: ${t.price_options.length} sincronizadas (los enlaces de pago se conservan)`);
+  for (const c of t.coupons) {
+    must(await sb.from('coupon').upsert({ tenant_id: tenantId, code: c.code, label: c.label, kind: c.kind, value: c.value, note: c.note, active: c.active }, { onConflict: 'tenant_id,code' }), `cupón ${c.code}`);
+  }
+  if (t.coupons.length) log(`cupones: ${t.coupons.length} sincronizados`);
 
   // 6. playbook (upsert por key; si cambia el contenido → nueva versión con revisión)
   for (const [i, raw] of t.playbook.entries()) {
