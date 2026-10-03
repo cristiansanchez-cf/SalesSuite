@@ -5,6 +5,7 @@ Producto multi-tenant de Cofundo: un comercial compone un **dossier vivo** por p
 - **Puesta en marcha (Supabase, Vercel, dominio) paso a paso: [`docs/SETUP.md`](docs/SETUP.md)**
 - Qué debe aportar Enjoy (marca, copys, playbook, código `nh-*`): [`docs/BRAND_INTAKE.md`](docs/BRAND_INTAKE.md)
 - **Playbook de ventas** (cómo vender cada módulo, capa de equipo, Cerebro de Ventas): [`docs/PLAYBOOK.md`](docs/PLAYBOOK.md)
+- **Colaboradores** (DJ, monitor…: acceso por código, solo sus módulos y cuentas, precio fijado por el admin): [`docs/PARTNERS.md`](docs/PARTNERS.md)
 - Plan y contexto de negocio (incl. §15 huecos detectados): [`docs/PLAN.md`](docs/PLAN.md)
 - Decisiones de stack (cierra las preguntas abiertas del plan): [`docs/ADR-0001-stack.md`](docs/ADR-0001-stack.md)
 - Cómo añadir un módulo: [`docs/MODULE_AUTHORING.md`](docs/MODULE_AUTHORING.md)
@@ -145,6 +146,12 @@ supabase/
 - [x] Cuenta del dossier (personas reales con postura) y guion «Con quién hablas»
 - [x] «Preparar mensaje»: contexto + petición para el Cerebro de Ventas (Claude/ChatGPT)
 - [x] Seguimiento fase A: próximo paso con fecha, vencidos, filtro; diseño de fases B–E
+
+**Colaboradores — propuesta implementada para revisar** ([`docs/PARTNERS.md`](docs/PARTNERS.md))
+- [x] Rol `partner` con RLS propia: solo sus dossiers, sus módulos y los sectores de sus cuentas; nunca lee la tarifa (RPC sin precios)
+- [x] Cuentas por colaborador con política de precio (sin precios / tarifa / especial ±%) aplicada por triggers; cambios del admin se re-aplican
+- [x] Acceso sin contraseña (email → código) para todos; caducidad del acceso; guía e indicaciones solo para él
+- [x] «Mis cuentas», gestión en Equipo → colaborador, jugadas con audiencia (todos / equipo / colaboradores)
 
 **Pendiente — necesita a otra persona**
 - [ ] **Tú:** crear el proyecto Supabase, SMTP, Vercel y DNS → [`docs/SETUP.md`](docs/SETUP.md)

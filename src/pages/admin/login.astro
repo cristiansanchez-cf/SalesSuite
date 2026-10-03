@@ -1,6 +1,11 @@
 ---
+/**
+ * Entrar sin contraseña: email → código de 6 dígitos (o el enlace del mismo correo).
+ * Contraseña opcional para quien la prefiera. Colaboradores: solo código (docs/PARTNERS.md).
+ */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { authMode, demoLogin, safeNext, supabaseServerClient } from '~/lib/admin/auth';
+import { demoSendCode, demoVerifyCode } from '~/lib/admin/otp-demo';
 import { demoDb } from '~/lib/data/store';
 import { requestOrigin } from '~/lib/http';
 
@@ -9,86 +14,127 @@ if (!tenant) return Astro.rewrite('/404');
 
 const mode = authMode();
 const next = safeNext(Astro.url.searchParams.get('next'));
-let error: string | null = Astro.url.searchParams.get('error') === 'link' ? 'El enlace ha caducado o ya se usó. Pide uno nuevo.' : null;
+let error: string | null = Astro.url.searchParams.get('error') === 'link' ? 'El enlace ha caducado o ya se usó. Pide un código nuevo.' : null;
 let info: string | null = null;
+/** Paso 2 del acceso por código: email al que se envió. */
+let codeEmail: string | null = null;
+let demoCode: string | null = null;
 const origin = requestOrigin(Astro.request, Astro.url);
+const SENT = 'Si el email tiene acceso, te hemos enviado un código de 6 dígitos (y un enlace) para entrar.';
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const action = String(form.get('action') ?? '');
-  if (mode === 'demo' && action === 'demo') {
+  const email = String(form.get('email') ?? '').trim().toLowerCase();
+  const code = String(form.get('code') ?? '').replace(/\s/g, '');
+
+  if (action === 'demo' && mode === 'demo') {
     if (demoLogin(Astro, String(form.get('userId') ?? ''))) return Astro.redirect(next, 303);
     error = 'Usuario de demo no válido';
-  } else if (mode === 'supabase') {
-    const email = String(form.get('email') ?? '').trim();
-    const sb = supabaseServerClient(Astro);
-    if (action === 'password') {
-      const { error: e } = await sb.auth.signInWithPassword({ email, password: String(form.get('password') ?? '') });
-      if (!e) return Astro.redirect(next, 303);
-      error = 'Email o contraseña incorrectos';
-    } else if (action === 'magic') {
+  } else if (action === 'code-send') {
+    if (!/^\S+@\S+\.\S+$/.test(email)) error = 'Escribe un email válido';
+    else if (mode === 'demo') {
+      demoCode = demoSendCode(email);
+      codeEmail = email;
+      info = SENT;
+    } else {
+      const sb = supabaseServerClient(Astro);
       const redirectTo = `${origin}/admin/auth/confirm?next=${encodeURIComponent(next)}`;
       const { error: e } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
       // Mismo mensaje exista o no la cuenta (no enumerar usuarios).
-      info = e && e.status !== 400 && e.status !== 422 ? null : 'Si el email tiene acceso, recibirás un enlace para entrar.';
-      if (!info) error = 'No se pudo enviar el enlace. Inténtalo de nuevo.';
-    } else if (action === 'reset') {
-      await sb.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/admin/auth/confirm?next=/admin/account` });
-      info = 'Si el email tiene acceso, recibirás un enlace para elegir una contraseña nueva.';
+      if (e && e.status !== 400 && e.status !== 422) error = e.status === 429 ? 'Has pedido varios códigos seguidos. Espera un minuto.' : 'No se pudo enviar el código. Inténtalo de nuevo.';
+      else { codeEmail = email; info = SENT; }
     }
+  } else if (action === 'code-verify') {
+    codeEmail = email;
+    if (!/^\d{6,10}$/.test(code)) error = 'El código son los números del correo';
+    else if (mode === 'demo') {
+      const userId = demoVerifyCode(email, code);
+      if (userId && demoLogin(Astro, userId)) return Astro.redirect(next, 303);
+      error = 'Código incorrecto o caducado';
+    } else {
+      const { error: e } = await supabaseServerClient(Astro).auth.verifyOtp({ email, token: code, type: 'email' });
+      if (!e) return Astro.redirect(next, 303);
+      error = 'Código incorrecto o caducado';
+    }
+  } else if (action === 'password' && mode === 'supabase') {
+    const { error: e } = await supabaseServerClient(Astro).auth.signInWithPassword({ email, password: String(form.get('password') ?? '') });
+    if (!e) return Astro.redirect(next, 303);
+    error = 'Email o contraseña incorrectos';
+  } else if (action === 'reset' && mode === 'supabase') {
+    await supabaseServerClient(Astro).auth.resetPasswordForEmail(email, { redirectTo: `${origin}/admin/auth/confirm?next=/admin/account` });
+    info = 'Si el email tiene acceso, recibirás un enlace para elegir una contraseña nueva.';
   }
 }
 
 const tenantName = (id: string) => demoDb().tenant.find((t) => t.id === id)?.name ?? id;
+const roleName = { admin: 'admin', rep: 'comercial', partner: 'colaborador' } as const;
 const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2.5 outline-none focus:border-ink';
 const btn = 'w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg hover:opacity-90';
+const btn2 = 'w-full rounded-lg border border-line px-4 py-2.5 font-semibold hover:bg-surface';
 ---
 <AdminLayout title="Entrar">
   <div class="mx-auto mt-6 max-w-sm rounded-2xl border border-line bg-bg p-6 shadow-sm sm:mt-16">
     <h1 class="text-2xl font-extrabold">Entrar</h1>
-    <p class="mt-1 text-sm text-muted">Consola de dossiers de {tenant.name}</p>
+    <p class="mt-1 text-sm text-muted">Consola de {tenant.name}</p>
     {error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
     {info && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{info}</p>}
+    {demoCode && <p class="mt-2 rounded-lg bg-amber-100 p-3 text-sm" data-testid="demo-code">Modo demo (sin correo): tu código es <strong>{demoCode}</strong></p>}
+
+    {codeEmail ? (
+      <form method="post" class="mt-6 space-y-3" data-testid="code-verify">
+        <input type="hidden" name="action" value="code-verify" />
+        <input type="hidden" name="email" value={codeEmail} />
+        <p class="text-sm">Código enviado a <strong>{codeEmail}</strong></p>
+        <label class="block text-sm font-medium">Código
+          <input class={`${input} text-center text-2xl tracking-[0.4em]`} name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,12}" maxlength="12" required autofocus />
+        </label>
+        <button class={btn} type="submit">Entrar</button>
+        <a class="block text-center text-sm text-muted underline" href={`/admin/login?next=${encodeURIComponent(next)}`}>Usar otro email</a>
+      </form>
+    ) : (
+      <form method="post" class="mt-6 space-y-3" data-testid="code-send">
+        <input type="hidden" name="action" value="code-send" />
+        <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
+        <button class={btn} type="submit">Enviarme un código</button>
+        <p class="text-xs text-muted">Sin contraseña: te llega un código al correo y entras.</p>
+      </form>
+    )}
 
     {mode === 'demo' ? (
-      <div class="mt-6 space-y-2">
-        <p class="text-sm text-muted">Modo demo: elige un usuario.</p>
-        {demoDb().users.map((u) => (
-          <form method="post">
-            <input type="hidden" name="action" value="demo" />
-            <input type="hidden" name="userId" value={u.id} />
-            <button type="submit" class="w-full rounded-lg border border-line px-4 py-3 text-left hover:bg-surface" data-testid={`demo-${u.email}`}>
-              <span class="block font-semibold">{u.display_name}</span>
-              <span class="block text-xs text-muted">
-                {u.email} · {u.memberships.map((m) => `${m.role} en ${tenantName(m.tenant_id)}`).join(', ') || 'sin acceso'}
-              </span>
-            </button>
-          </form>
-        ))}
-      </div>
-    ) : (
-      <>
-        <form method="post" class="mt-6 space-y-3">
+      <details class="mt-6" open={!codeEmail}>
+        <summary class="cursor-pointer text-sm text-muted">Modo demo: entrar como…</summary>
+        <div class="mt-3 space-y-2">
+          {demoDb().users.map((u) => (
+            <form method="post">
+              <input type="hidden" name="action" value="demo" />
+              <input type="hidden" name="userId" value={u.id} />
+              <button type="submit" class="w-full rounded-lg border border-line px-4 py-3 text-left hover:bg-surface" data-testid={`demo-${u.email}`}>
+                <span class="block font-semibold">{u.display_name}</span>
+                <span class="block text-xs text-muted">
+                  {u.email} · {u.memberships.map((m) => `${roleName[m.role]} en ${tenantName(m.tenant_id)}`).join(', ') || 'sin acceso'}
+                </span>
+              </button>
+            </form>
+          ))}
+        </div>
+      </details>
+    ) : !codeEmail && (
+      <details class="mt-6 text-sm">
+        <summary class="cursor-pointer text-muted">Entrar con contraseña</summary>
+        <form method="post" class="mt-3 space-y-3">
           <input type="hidden" name="action" value="password" />
           <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
           <label class="block text-sm font-medium">Contraseña<input class={input} type="password" name="password" required autocomplete="current-password" /></label>
-          <button class={btn} type="submit">Entrar</button>
+          <button class={btn2} type="submit">Entrar</button>
         </form>
-        <div class="my-5 flex items-center gap-3 text-xs text-muted"><span class="h-px flex-1 bg-line"></span>o<span class="h-px flex-1 bg-line"></span></div>
-        <form method="post" class="space-y-3">
-          <input type="hidden" name="action" value="magic" />
+        <form method="post" class="mt-4 space-y-2">
+          <input type="hidden" name="action" value="reset" />
+          <p class="text-xs text-muted">¿La olvidaste? Pon tu email arriba en «Enviarme un código» o pide un enlace para elegir otra:</p>
           <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
-          <button class="w-full rounded-lg border border-line px-4 py-2.5 font-semibold hover:bg-surface" type="submit">Enviarme un enlace mágico</button>
+          <button class={btn2} type="submit">Enviarme enlace de recuperación</button>
         </form>
-        <details class="mt-5 text-sm">
-          <summary class="cursor-pointer text-muted">¿Olvidaste tu contraseña?</summary>
-          <form method="post" class="mt-3 space-y-3">
-            <input type="hidden" name="action" value="reset" />
-            <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
-            <button class="w-full rounded-lg border border-line px-4 py-2.5 font-semibold hover:bg-surface" type="submit">Enviarme enlace de recuperación</button>
-          </form>
-        </details>
-      </>
+      </details>
     )}
   </div>
 </AdminLayout>

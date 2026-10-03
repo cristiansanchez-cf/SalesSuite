@@ -366,9 +366,9 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   // ------------------------------------------------------------ líder (admin)
-  const snapshot = (p: Pick<Play, 'title' | 'body' | 'kind' | 'stage' | 'objection' | 'whenToUse' | 'whyItWorks' | 'techniqueRefs' | 'moduleId' | 'status'>) => ({
+  const snapshot = (p: Pick<Play, 'title' | 'body' | 'kind' | 'stage' | 'objection' | 'whenToUse' | 'whyItWorks' | 'techniqueRefs' | 'moduleId' | 'status' | 'audience'>) => ({
     title: p.title, body: p.body, kind: p.kind, stage: p.stage, objection: p.objection, whenToUse: p.whenToUse,
-    whyItWorks: p.whyItWorks, techniqueRefs: p.techniqueRefs, moduleId: p.moduleId, status: p.status,
+    whyItWorks: p.whyItWorks, techniqueRefs: p.techniqueRefs, moduleId: p.moduleId, status: p.status, audience: p.audience,
   });
 
   async function listAll() {
@@ -389,7 +389,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const position = Math.max(0, ...plays.filter((x) => x.moduleId === p.moduleId).map((x) => x.position)) + 1024;
     const row = {
       moduleId: p.moduleId, key: p.key ?? null, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
-      title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
+      audience: p.audience, title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
       position, status: p.status, authorId: s.userId, updatedBy: s.userId,
     };
     const id = await pdb.insertPlay(s.tenantId, row);
@@ -407,7 +407,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (p.key && plays.some((x) => x.key === p.key && x.id !== id)) throw new AdminError(409, 'Ya existe una jugada con esa clave');
     const next = {
       moduleId: p.moduleId, key: p.key ?? cur.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
-      title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
+      audience: p.audience, title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
       status: p.status, version: cur.version + 1, updatedBy: s.userId,
     };
     wrote(await pdb.updatePlay(id, next));

@@ -5,9 +5,10 @@
 import { REGISTRY, isBlockType } from '../../modules/registry';
 import type { PublicDossier } from '../types';
 import type { AdminDb, AssetStore, Identity } from './db';
-import { draftSchema, inviteSchema, moduleCreateSchema, moduleUpdateSchema, roleSchema, settingsSchema } from './ops';
+import { draftSchema, inviteSchema, moduleCreateSchema, moduleUpdateSchema, partnerAccountSchema, partnerInviteSchema, partnerProfileSchema, roleSchema, settingsSchema } from './ops';
 import { AdminError } from './service';
-import type { AdminSession, CatalogModuleView, MemberRecord, Role, TenantSettings } from './types';
+import type { AdminSession, CatalogModuleView, DossierRecord, MemberRecord, PartnerView, Role, TenantSettings } from './types';
+import { partnerPrice, priceModeFor } from '../partner/scope';
 import type { z } from 'zod';
 
 const MAX_PROPS_BYTES = 50_000;
@@ -55,7 +56,8 @@ export function createTenantAdminService(
   // ------------------------------------------------------------ equipo
   async function listMembers(): Promise<MemberRecord[]> {
     requireAdmin();
-    const list = await db.listMembers(s.tenantId);
+    // Equipo interno; los colaboradores se gestionan aparte (listPartners).
+    const list = (await db.listMembers(s.tenantId)).filter((m) => m.role !== 'partner');
     return list.sort((a, b) => (a.role === b.role ? a.email.localeCompare(b.email) : a.role === 'admin' ? -1 : 1));
   }
 
@@ -74,6 +76,9 @@ export function createTenantAdminService(
     const members = await db.listMembers(s.tenantId);
     const target = members.find((m) => m.userId === userId);
     if (!target) throw new AdminError(404, 'Miembro no encontrado');
+    if (target.role === 'partner' && nextRole !== null) {
+      throw new AdminError(409, 'Un colaborador no cambia de rol: quítale el acceso e invítalo al equipo');
+    }
     if (target.role === 'admin' && nextRole !== 'admin' && !members.some((m) => m.role === 'admin' && m.userId !== userId)) {
       throw new AdminError(409, 'El equipo debe conservar al menos un admin');
     }
@@ -238,7 +243,98 @@ export function createTenantAdminService(
     try { return (await deps.assets.upload(s.tenantId, file, kind)).url; } catch (e) { mapDbError(e); }
   }
 
+  // ------------------------------------------------------------ colaboradores (docs/PARTNERS.md)
+  async function listPartners(): Promise<PartnerView[]> {
+    requireAdmin();
+    const [members, profiles, accounts, dossiers] = await Promise.all([
+      db.listMembers(s.tenantId), db.listPartnerProfiles(s.tenantId), db.listPartnerAccounts(s.tenantId), db.listDossiers(s.tenantId),
+    ]);
+    const t = Date.now();
+    return members.filter((m) => m.role === 'partner').map((m) => {
+      const profile = profiles.find((p) => p.userId === m.userId) ?? null;
+      return {
+        ...m, profile,
+        accounts: accounts.filter((a) => a.userId === m.userId).sort((a, b) => a.position - b.position),
+        dossierCount: dossiers.filter((d) => d.authorId === m.userId).length,
+        expired: !!profile?.expiresAt && new Date(profile.expiresAt).getTime() <= t,
+      };
+    }).sort((a, b) => (a.displayName || a.email).localeCompare(b.displayName || b.email));
+  }
+
+  async function partner(userId: string): Promise<PartnerView & { dossiers: DossierRecord[] }> {
+    const p = (await listPartners()).find((x) => x.userId === userId);
+    if (!p) throw new AdminError(404, 'Colaborador no encontrado');
+    const dossiers = (await db.listDossiers(s.tenantId)).filter((d) => d.authorId === userId)
+      .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+    return { ...p, dossiers };
+  }
+
+  async function assertModules(ids: string[]) {
+    const known = new Set((await db.listModules(s.tenantId)).map((m) => m.id));
+    if (ids.some((x) => !known.has(x))) throw new AdminError(404, 'Módulo no encontrado');
+  }
+
+  /** Invita a un colaborador: entra con su email (código o enlace), sin contraseña, y solo ve lo permitido. */
+  async function invitePartner(input: unknown, redirectTo: string): Promise<{ userId: string; invited: boolean }> {
+    requireAdmin();
+    const v = parse(partnerInviteSchema, input);
+    if (!deps.identity) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
+    await assertModules(v.moduleIds);
+    const members = await db.listMembers(s.tenantId);
+    if (members.some((m) => m.email.toLowerCase() === v.email)) throw new AdminError(409, 'Esa persona ya tiene acceso a este espacio');
+    const { userId, invited } = await deps.identity.findOrInvite(v.email, { redirectTo });
+    try {
+      wrote(await db.addMember(s.tenantId, userId, 'partner'));
+      wrote(await db.upsertPartnerProfile({
+        tenantId: s.tenantId, userId, moduleIds: v.moduleIds, seeTeamTips: v.seeTeamTips, welcomeNote: v.welcomeNote, expiresAt: v.expiresAt,
+      }));
+    } catch (e) { mapDbError(e); }
+    return { userId, invited };
+  }
+
+  async function updatePartner(userId: string, input: unknown) {
+    requireAdmin();
+    const v = parse(partnerProfileSchema, input);
+    await partner(userId);
+    await assertModules(v.moduleIds);
+    try { wrote(await db.upsertPartnerProfile({ tenantId: s.tenantId, userId, ...v })); } catch (e) { mapDbError(e); }
+  }
+
+  /** Crea o edita una cuenta del colaborador. Si cambia la política de precio, se aplica a sus propuestas (también publicadas). */
+  async function savePartnerAccount(userId: string, input: unknown, accountId?: string): Promise<string> {
+    requireAdmin();
+    const v = parse(partnerAccountSchema, input);
+    const p = await partner(userId);
+    const cur = accountId ? p.accounts.find((a) => a.id === accountId) : undefined;
+    if (accountId && !cur) throw new AdminError(404, 'Cuenta no encontrada');
+    if (v.segmentId && !(await db.segmentExists(s.tenantId, v.segmentId))) throw new AdminError(404, 'Sector no encontrado');
+    const priceAdjustPct = v.pricePolicy === 'adjusted' ? v.priceAdjustPct : 0;
+    let id: string;
+    try {
+      id = await db.savePartnerAccount({
+        id: accountId, tenantId: s.tenantId, userId, name: v.name, segmentId: v.segmentId, pricePolicy: v.pricePolicy, priceAdjustPct, notes: v.notes,
+        position: cur?.position ?? Math.max(0, ...p.accounts.map((a) => a.position)) + 1024,
+      });
+    } catch (e) { mapDbError(e); }
+    if (cur && (cur.pricePolicy !== v.pricePolicy || cur.priceAdjustPct !== priceAdjustPct)) {
+      // En Supabase lo hace también el trigger partner_account_reprice; aquí cubre la demo (mismo cálculo).
+      const ds = p.dossiers.filter((d) => d.partnerAccountId === id);
+      const items = ds.length ? await db.listItems(ds.map((d) => d.id)) : [];
+      for (const d of ds) await db.updateDossier(d.id, { priceMode: priceModeFor(v.pricePolicy), totalPrice: null });
+      for (const i of items) await db.updateItem(i.id, { priceOverride: partnerPrice(v.pricePolicy, priceAdjustPct, i.defaultPrice) });
+    }
+    return id;
+  }
+
+  async function deletePartnerAccount(userId: string, accountId: string) {
+    requireAdmin();
+    const p = await partner(userId);
+    if (!p.accounts.some((a) => a.id === accountId)) throw new AdminError(404, 'Cuenta no encontrada');
+    wrote(await db.deletePartnerAccount(accountId));
+  }
+
   return {
+    listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
     listMembers, invite, setRole, removeMember,
     listCatalog, createModule, updateModule, newDraft, saveDraft, publish, archive, previewVersion, previewSample,
     getSettings, saveSettings, uploadAsset,

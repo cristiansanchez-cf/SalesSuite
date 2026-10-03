@@ -1,5 +1,5 @@
 import type {
-  CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, Role, TenantSettings,
+  CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role, TenantSettings,
 } from './types';
 import type { DossierPatch } from './ops';
 
@@ -13,6 +13,7 @@ export interface NewDossier {
   priceMode: DossierRecord['priceMode'];
   totalPrice: number | null;
   currency: string;
+  partnerAccountId?: string | null;
 }
 
 export interface NewItem {
@@ -92,6 +93,16 @@ export interface AdminDb {
   updateModule(id: string, patch: Partial<Pick<ModuleRecord, 'name' | 'description' | 'isCatalog'>>): Promise<boolean>;
   insertModuleVersion(row: Omit<ModuleVersionRecord, 'id'>): Promise<string>;
   updateModuleVersion(id: string, patch: Partial<Pick<ModuleVersionRecord, 'defaultProps' | 'defaultPrice' | 'currency' | 'status'>>): Promise<boolean>;
+
+  // ---- colaboradores (escritura: admins; el propio colaborador solo lee lo suyo)
+  getPartnerProfile(tenantId: string, userId: string): Promise<PartnerProfile | null>;
+  listPartnerProfiles(tenantId: string): Promise<PartnerProfile[]>;
+  upsertPartnerProfile(row: PartnerProfile): Promise<boolean>;
+  /** userId omitido = todas las del tenant (admin). */
+  listPartnerAccounts(tenantId: string, userId?: string): Promise<PartnerAccount[]>;
+  /** Inserta (sin id) o actualiza (con id). Devuelve el id. */
+  savePartnerAccount(row: Omit<PartnerAccount, 'id'> & { id?: string }): Promise<string>;
+  deletePartnerAccount(id: string): Promise<boolean>;
 }
 
 /**

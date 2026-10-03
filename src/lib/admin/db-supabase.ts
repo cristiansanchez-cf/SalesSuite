@@ -1,13 +1,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AdminDb, AssetStore, Identity } from './db';
-import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, Role } from './types';
+import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -19,6 +19,25 @@ const toDossier = (r: Row): DossierRecord => ({
   publishedAt: r.published_at, updatedAt: r.updated_at,
   outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
+  partnerAccountId: r.partner_account_id ?? null,
+});
+
+const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at';
+const ACCOUNT_COLS = 'id, tenant_id, user_id, name, segment_id, price_policy, price_adjust_pct, notes, position';
+const toProfile = (r: Row): PartnerProfile => ({
+  tenantId: r.tenant_id, userId: r.user_id, moduleIds: r.module_ids ?? [], seeTeamTips: r.see_team_tips, welcomeNote: r.welcome_note, expiresAt: r.expires_at,
+});
+const toAccount = (r: Row): PartnerAccount => ({
+  id: r.id, tenantId: r.tenant_id, userId: r.user_id, name: r.name, segmentId: r.segment_id, pricePolicy: r.price_policy,
+  priceAdjustPct: Number(r.price_adjust_pct), notes: r.notes, position: Number(r.position),
+});
+
+/** Fila de partner_items(): como dossier_item + versión, pero sin tarifa. */
+const toPartnerItem = (r: Row): ItemRecord => ({
+  id: r.id, dossierId: r.dossier_id, position: Number(r.position), visible: r.visible,
+  priceOverride: num(r.price_override), propOverrides: r.prop_overrides ?? {},
+  moduleVersionId: r.module_version_id, version: r.version, defaultProps: r.default_props ?? {}, defaultPrice: null,
+  currency: r.currency, moduleId: r.module_id, moduleKey: r.module_key, moduleName: r.module_name, blockType: r.block_type,
 });
 
 const toItem = (r: Row): ItemRecord => {
@@ -47,8 +66,35 @@ function checkOne<T>(res: { data: T; error: { message: string } | null }): NonNu
   return d as NonNullable<T>;
 }
 
-/** `sb` DEBE ser un cliente con la sesión del usuario (no service role): la RLS es la última barrera. */
-export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
+/**
+ * `sb` DEBE ser un cliente con la sesión del usuario (no service role): la RLS es la última barrera.
+ * `partner`: el colaborador no puede leer module_version (contiene la tarifa); catálogo e items van por RPC sin precios.
+ */
+export function supabaseAdminDb(sb: SupabaseClient, opts: { partner?: boolean } = {}): AdminDb {
+  const base = full(sb);
+  if (!opts.partner) return base;
+  return {
+    ...base,
+    async listItems(dossierIds) {
+      if (!dossierIds.length) return [];
+      return (check(await sb.rpc('partner_items', { p_dossier_ids: dossierIds })) as Row[] ?? []).map(toPartnerItem);
+    },
+    async listCatalog(tenantId) {
+      return (check(await sb.rpc('partner_catalog', { p_tenant: tenantId })) as Row[] ?? []).map((r): CatalogVersion => ({
+        moduleId: r.module_id, moduleKey: r.module_key, moduleName: r.module_name, description: r.description, blockType: r.block_type,
+        versionId: r.version_id, version: r.version, defaultPrice: null, currency: r.currency,
+      }));
+    },
+    async listModuleVersions(tenantId) {
+      return (check(await sb.rpc('partner_catalog', { p_tenant: tenantId })) as Row[] ?? []).map((r): ModuleVersionRecord => ({
+        id: r.version_id, moduleId: r.module_id, version: r.version, status: 'published', defaultProps: r.default_props ?? {}, defaultPrice: null, currency: r.currency,
+      }));
+    },
+    async versionUsage() { return new Map(); },
+  };
+}
+
+function full(sb: SupabaseClient): AdminDb {
   return {
     async membershipRole(userId, tenantId) {
       const r = check(await sb.from('membership').select('role').eq('user_id', userId).eq('tenant_id', tenantId).maybeSingle());
@@ -71,6 +117,7 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       const r = checkOne(await sb.from('dossier').insert({
         tenant_id: n.tenantId, author_id: n.authorId, title: n.title, prospect_name: n.prospectName,
         prospect_company: n.prospectCompany, locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
+        partner_account_id: n.partnerAccountId ?? null,
       }).select(DOSSIER_COLS).single());
       return toDossier(r);
     },
@@ -260,6 +307,42 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       if (p.currency !== undefined) patch.default_currency = p.currency;
       if (p.status !== undefined) patch.status = p.status;
       const rows = check(await sb.from('module_version').update(patch).eq('id', id).select('id')) ?? [];
+      return rows.length > 0;
+    },
+
+    // ---- colaboradores
+    async getPartnerProfile(tenantId, userId) {
+      const r = check(await sb.from('partner_profile').select(PROFILE_COLS).eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle());
+      return r ? toProfile(r) : null;
+    },
+    async listPartnerProfiles(tenantId) {
+      return (check(await sb.from('partner_profile').select(PROFILE_COLS).eq('tenant_id', tenantId)) ?? []).map(toProfile);
+    },
+    async upsertPartnerProfile(p) {
+      const rows = check(await sb.from('partner_profile').upsert({
+        tenant_id: p.tenantId, user_id: p.userId, module_ids: p.moduleIds, see_team_tips: p.seeTeamTips, welcome_note: p.welcomeNote, expires_at: p.expiresAt,
+      }).select('user_id')) ?? [];
+      return rows.length > 0;
+    },
+    async listPartnerAccounts(tenantId, userId) {
+      let q = sb.from('partner_account').select(ACCOUNT_COLS).eq('tenant_id', tenantId);
+      if (userId) q = q.eq('user_id', userId);
+      return (check(await q) ?? []).map(toAccount);
+    },
+    async savePartnerAccount(a) {
+      const row = {
+        tenant_id: a.tenantId, user_id: a.userId, name: a.name, segment_id: a.segmentId, price_policy: a.pricePolicy,
+        price_adjust_pct: a.priceAdjustPct, notes: a.notes, position: a.position,
+      };
+      if (a.id) {
+        const rows = check(await sb.from('partner_account').update(row).eq('id', a.id).select('id')) ?? [];
+        if (!rows.length) throw new Error('[supabase] la escritura no devolvió fila (¿RLS?)');
+        return a.id;
+      }
+      return (checkOne(await sb.from('partner_account').insert(row).select('id').single())).id as string;
+    },
+    async deletePartnerAccount(id) {
+      const rows = check(await sb.from('partner_account').delete().eq('id', id).select('id')) ?? [];
       return rows.length > 0;
     },
   };

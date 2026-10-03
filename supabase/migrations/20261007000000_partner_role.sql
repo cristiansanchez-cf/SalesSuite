@@ -1,0 +1,3 @@
+-- Rol de colaborador puntual (partner): un DJ que vende en sus locales, un monitor de buceo autónomo…
+-- Va en su propia migración: un valor nuevo de enum no se puede usar en la misma transacción que lo crea.
+alter type public.member_role add value if not exists 'partner';

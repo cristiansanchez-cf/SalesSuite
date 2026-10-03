@@ -1,7 +1,40 @@
 import type { ResolvedPrice } from '../pricing';
 import type { DossierStatus, PriceMode } from '../types';
 
-export type Role = 'admin' | 'rep';
+/** admin y rep = equipo interno; partner = colaborador puntual invitado (docs/PARTNERS.md). */
+export type Role = 'admin' | 'rep' | 'partner';
+export type TeamRole = Exclude<Role, 'partner'>;
+
+/** Cómo se cotiza una cuenta de colaborador: lo decide el admin, nunca el colaborador. */
+export type PricePolicy = 'hidden' | 'list' | 'adjusted';
+
+export interface PartnerProfile {
+  tenantId: string;
+  userId: string;
+  /** Módulos que puede ver, aprender y vender. */
+  moduleIds: string[];
+  /** ¿Ve los trucos que comparte el equipo interno? */
+  seeTeamTips: boolean;
+  /** Guía solo para él (markdown). */
+  welcomeNote: string | null;
+  /** null = sin caducidad. */
+  expiresAt: string | null;
+}
+
+/** Cuenta (local, centro…) que el admin asigna a un colaborador, con su política de precio. */
+export interface PartnerAccount {
+  id: string;
+  tenantId: string;
+  userId: string;
+  name: string;
+  segmentId: string | null;
+  pricePolicy: PricePolicy;
+  /** Solo con 'adjusted': −90 … +200 sobre la tarifa. */
+  priceAdjustPct: number;
+  /** Indicaciones del admin para esta cuenta (solo las ve el colaborador y el equipo admin). */
+  notes: string | null;
+  position: number;
+}
 
 /** Usuario autenticado + su rol en el tenant del Host. */
 export interface AdminSession {
@@ -10,6 +43,8 @@ export interface AdminSession {
   displayName: string | null;
   tenantId: string;
   role: Role;
+  /** Solo si role === 'partner': su perfil y sus cuentas. */
+  partner?: PartnerProfile & { accounts: PartnerAccount[] };
 }
 
 export interface DossierRecord {
@@ -34,6 +69,8 @@ export interface DossierRecord {
   /** Seguimiento: próximo paso acordado y cuándo. */
   nextStep: string | null;
   nextStepAt: string | null;
+  /** Cuenta de colaborador a la que pertenece (fija la política de precio). */
+  partnerAccountId: string | null;
 }
 
 export interface DossierSummary extends DossierRecord {
@@ -104,6 +141,10 @@ export interface BuilderState {
   contacts: import('../playbook/market').DossierContact[];
   /** Problemas que impiden publicar. */
   publishBlockers: string[];
+  /** Dossier de una cuenta de colaborador: quién, qué cuenta y cómo se cotiza. */
+  partnerAccount: { id: string; name: string; pricePolicy: PricePolicy; priceAdjustPct: number | null; notes: string | null } | null;
+  /** true para el colaborador: no ve la tarifa ni toca precios. */
+  pricesLocked: boolean;
 }
 
 // ---------------------------------------------------------------- gestión del tenant (admins)
@@ -113,6 +154,13 @@ export interface MemberRecord {
   email: string;
   displayName: string | null;
   role: Role;
+}
+
+export interface PartnerView extends MemberRecord {
+  profile: PartnerProfile | null;
+  accounts: PartnerAccount[];
+  dossierCount: number;
+  expired: boolean;
 }
 
 export interface ModuleRecord {

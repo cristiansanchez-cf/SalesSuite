@@ -15,5 +15,7 @@ declare namespace App {
     admin: import('./lib/admin/auth').AdminContext | null;
     /** Email autenticado sin membership en este tenant (página 403). */
     forbiddenEmail?: string;
+    /** Motivo explicable del 403 (p. ej. acceso de colaborador caducado). */
+    forbiddenReason?: { kind: 'partner-expired'; expiresAt: string | null };
   }
 }

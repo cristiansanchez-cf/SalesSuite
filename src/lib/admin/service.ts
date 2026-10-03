@@ -66,6 +66,16 @@ export function latestByModule(catalog: CatalogVersion[]): Map<string, CatalogVe
 export function createAdminService(db: AdminDb, s: AdminSession, opts: { defaultLocale?: string; now?: () => Date } = {}) {
   const now = opts.now ?? (() => new Date());
   const canEdit = (d: DossierRecord) => s.role === 'admin' || d.authorId === s.userId;
+  const isPartner = s.role === 'partner';
+  const PRICES_LOCKED = 'Los precios de tus cuentas los gestiona la empresa';
+
+  /** Cuenta de colaborador del dossier (el admin ve la política; el colaborador, la suya). */
+  async function partnerAccountOf(d: DossierRecord): Promise<BuilderState['partnerAccount']> {
+    if (!d.partnerAccountId) return null;
+    const list = isPartner ? s.partner?.accounts ?? [] : s.role === 'admin' ? await db.listPartnerAccounts(s.tenantId) : [];
+    const a = list.find((x) => x.id === d.partnerAccountId);
+    return a ? { id: a.id, name: a.name, pricePolicy: a.pricePolicy, priceAdjustPct: isPartner ? null : a.priceAdjustPct, notes: a.notes } : null;
+  }
 
   async function load(id: string): Promise<DossierRecord> {
     const d = await db.getDossier(id);
@@ -97,7 +107,9 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   async function getState(id: string): Promise<BuilderState> {
     const d = await load(id);
-    const [list, catalog, links, contacts] = await Promise.all([items(id), db.listCatalog(s.tenantId), db.listLinks([id]), db.listContacts([id])]);
+    const [list, catalog, links, contacts, partnerAccount] = await Promise.all([
+      items(id), db.listCatalog(s.tenantId), db.listLinks([id]), db.listContacts([id]), partnerAccountOf(d),
+    ]);
     const latest = latestByModule(catalog);
     const pub = toPublicDossier(d, list);
     const total = resolveTotal(pub);
@@ -133,6 +145,8 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       canEdit: canEdit(d),
       contacts: contacts.sort((a, b) => a.position - b.position),
       publishBlockers: blockers,
+      partnerAccount,
+      pricesLocked: isPartner,
     };
   }
 
@@ -157,6 +171,10 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   async function createDossier(input: CreateDossierInput): Promise<string> {
     const tpl = input.fromDossierId ? await load(input.fromDossierId) : null;
+    const account = isPartner ? s.partner?.accounts.find((a) => a.id === input.partnerAccountId) ?? null : null;
+    if (isPartner && !account) throw new AdminError(422, 'Elige para qué cuenta es la propuesta');
+    if (!isPartner && input.partnerAccountId) throw new AdminError(422, 'Solo los colaboradores crean propuestas de sus cuentas');
+    if (account && tpl && tpl.partnerAccountId !== account.id) throw new AdminError(422, 'Solo puedes duplicar propuestas de la misma cuenta');
     const d = await db.insertDossier({
       tenantId: s.tenantId,
       authorId: s.userId,
@@ -167,8 +185,10 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       priceMode: tpl?.priceMode ?? 'none',
       totalPrice: tpl?.totalPrice ?? null,
       currency: tpl?.currency ?? 'EUR',
+      partnerAccountId: account?.id ?? null,
     });
-    if (tpl?.segmentId) await db.updateDossier(d.id, { segmentId: tpl.segmentId });
+    const segmentId = account?.segmentId ?? tpl?.segmentId;
+    if (segmentId) await db.updateDossier(d.id, { segmentId });
     if (tpl) {
       const src = await items(tpl.id);
       const pos = rebalance(src.length);
@@ -193,6 +213,10 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     if (!parsed.success) throw new AdminError(422, 'Datos no válidos', parsed.error.issues.map((i) => `${i.path.join('.') || 'op'}: ${i.message}`));
     const op = parsed.data;
     const d = await loadEditable(id);
+
+    if (isPartner && (op.op === 'setPrice' || (op.op === 'update' && ['priceMode', 'totalPrice', 'currency'].some((k) => k in op.patch)))) {
+      throw new AdminError(403, PRICES_LOCKED);
+    }
 
     switch (op.op) {
       case 'update': {

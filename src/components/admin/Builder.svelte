@@ -10,6 +10,7 @@
   import type { BuilderOpInput as BuilderOp } from '~/lib/admin/ops';
   import type { TalkTrack, TrackLine } from '~/lib/playbook/talk-track';
   import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
+  import { PRICE_POLICY_LABEL as POLICY_LABEL } from '~/lib/partner/labels';
 
   interface MarketLite {
     segments: Array<{ id: string; key: string; name: string }>;
@@ -297,6 +298,17 @@
           <h2 class="font-bold">Precio</h2>
           {#if s.total}<span class="text-sm">Total: <strong data-testid="total">{s.total.formatted}</strong></span>{/if}
         </div>
+        {#if s.partnerAccount}
+          <p class="mb-3 rounded-xl bg-surface p-3 text-sm" data-testid="partner-account">
+            Cuenta <strong>{s.partnerAccount.name}</strong> · {POLICY_LABEL[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? ` (${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct} % sobre tarifa)` : ''}
+            {#if s.pricesLocked}
+              <span class="mt-1 block text-muted">Los precios de esta cuenta los gestiona la empresa: se aplican solos al añadir módulos.{s.partnerAccount.pricePolicy === 'hidden' ? ' Esta propuesta se envía sin precios.' : ''}</span>
+            {:else}
+              <span class="mt-1 block text-muted">Propuesta de un colaborador. Puedes ajustar precios a mano; si cambias la política de la cuenta (Equipo → colaborador) se recalculan.</span>
+            {/if}
+          </p>
+        {/if}
+        {#if !s.pricesLocked}
         <div class="grid grid-cols-3 gap-1 rounded-xl bg-surface p-1" role="radiogroup" aria-label="Modo de precio">
           {#each [['none', 'Sin precio'], ['total', 'Total'], ['per_module', 'Por módulo']] as [mode, label]}
             <button
@@ -322,6 +334,7 @@
           {/if}
         </div>
         {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">Cada módulo usa su precio de catálogo salvo que lo sobrescribas abajo. El total suma los módulos visibles. Importes sin IVA.</p>{/if}
+        {/if}
       </section>
 
       <!-- módulos -->
@@ -356,7 +369,7 @@
               </div>
               {#if item.error}<p class="mx-3 mb-2 rounded-lg bg-red-50 p-2 text-xs text-red-800">Contenido inválido: {item.error}</p>{/if}
               <div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
-                {#if d.priceMode === 'per_module'}
+                {#if d.priceMode === 'per_module' && !s.pricesLocked}
                   <label class="flex items-center gap-2">
                     <span class="text-muted">Precio</span>
                     <input class="w-28 rounded-lg border border-line px-2 py-1" inputmode="decimal" value={item.priceOverride ?? ''} disabled={!editable}

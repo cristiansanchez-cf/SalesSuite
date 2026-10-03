@@ -2,7 +2,7 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
-import { KIND_LABEL, OBJECTION_LABEL, OBJECTIONS, PLAY_KINDS, STAGE_LABEL, STAGES, type PlayView, type TechniqueRef } from '~/lib/playbook/types';
+import { AUDIENCE_LABEL, AUDIENCES, KIND_LABEL, OBJECTION_LABEL, OBJECTIONS, PLAY_KINDS, STAGE_LABEL, STAGES, type PlayView, type TechniqueRef } from '~/lib/playbook/types';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -43,6 +43,8 @@ if (Astro.request.method === 'POST') {
     const input = {
       moduleId: str('moduleId') || null, kind: str('kind'), stage: str('stage') || null, objection: str('objection') || null,
       segments: str('segments').split(',').map((x) => x.trim()).filter(Boolean),
+      personas: str('personas').split(',').map((x) => x.trim()).filter(Boolean),
+      audience: str('audience') || 'all',
       title: str('title'), body: str('body'), whenToUse: str('whenToUse'), whyItWorks: str('whyItWorks'),
       techniqueRefs: parseRefs(str('refs')), status: str('status') || 'official', key: str('key') || null,
     };
@@ -106,6 +108,15 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         <textarea class={`${field} h-20 font-mono text-xs`} name="refs" placeholder="707 | El cliente dice 'caro' porque… | Alfonso y Cristian | https://…">{v('refs', refsText(cur?.techniqueRefs ?? []))}</textarea>
       </label>
       <p class="text-xs text-muted">Se enlaza y atribuye la ficha; no copies aquí el guion literal del creador.</p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="text-sm font-medium">Actores <span class="font-normal text-muted">(claves, separadas por comas)</span><input class={field} name="personas" value={v('personas', (cur?.personas ?? []).join(', '))} placeholder="propietario-local, dj-residente" /></label>
+        <label class="text-sm font-medium">Quién la ve
+          <select class={field} name="audience" data-testid="play-audience">
+            {AUDIENCES.map((a) => <option value={a} selected={v('audience', cur?.audience ?? 'all') === a}>{AUDIENCE_LABEL[a]}</option>)}
+          </select>
+          <span class="text-xs font-normal text-muted">Los colaboradores nunca ven «Precio y monetización».</span>
+        </label>
+      </div>
       <div class="grid gap-3 sm:grid-cols-3">
         <label class="text-sm font-medium">Segmentos<input class={field} name="segments" value={v('segments', (cur?.segments ?? []).join(', '))} placeholder="bodas, locales" /></label>
         <label class="text-sm font-medium">Clave (import)<input class={field} name="key" value={v('key', cur?.key ?? '')} placeholder="opcional" /></label>

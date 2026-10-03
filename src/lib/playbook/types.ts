@@ -26,6 +26,10 @@ export const OBJECTION_LABEL: Record<Objection, string> = {
 };
 
 export type PlayStatus = 'draft' | 'official' | 'archived';
+/** Quién ve la jugada: todos, solo el equipo interno o solo los colaboradores (docs/PARTNERS.md). */
+export const AUDIENCES = ['all', 'team', 'partners'] as const;
+export type Audience = (typeof AUDIENCES)[number];
+export const AUDIENCE_LABEL: Record<Audience, string> = { all: 'Todos', team: 'Solo equipo interno', partners: 'Solo colaboradores' };
 export type ContributionType = 'tip' | 'change';
 export type ContributionStatus = 'shared' | 'pending' | 'accepted' | 'rejected' | 'hidden';
 export type Verdict = 'worked' | 'didnt';
@@ -53,6 +57,8 @@ export interface Play {
   segments: string[];
   /** Claves de actores a los que va dirigida (vacío = cualquiera). */
   personas: string[];
+  /** Por defecto 'all'. */
+  audience: Audience;
   title: string;
   body: string;
   whenToUse: string | null;

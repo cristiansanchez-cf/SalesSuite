@@ -21,6 +21,7 @@ import { demoPlaybookDb } from '../playbook/db-demo';
 import { supabasePlaybookDb } from '../playbook/db-supabase';
 import { createPlaybookService, type PlaybookService } from '../playbook/service';
 import type { AdminSession } from './types';
+import { scopeAdminDb, scopePlaybookDb } from '../partner/scope';
 
 export const DEMO_COOKIE = 'ss_demo_user';
 
@@ -45,7 +46,7 @@ export interface AdminContext {
 export type AuthResult =
   | { kind: 'ok'; admin: AdminContext }
   | { kind: 'anonymous' }
-  | { kind: 'forbidden'; email: string };
+  | { kind: 'forbidden'; email: string; reason?: 'partner-expired'; expiresAt?: string | null };
 
 export const authMode = (): 'supabase' | 'demo' => (appMode() === 'supabase' ? 'supabase' : 'demo');
 
@@ -60,19 +61,39 @@ export function supabaseServerClient(ctx: RequestLike): SupabaseClient {
   });
 }
 
-interface Deps { identity: Identity | null; assets: AssetStore; supabase: SupabaseClient | null; playbookDb: PlaybookDb }
+export interface Deps {
+  identity: Identity | null; assets: AssetStore; supabase: SupabaseClient | null; playbookDb: PlaybookDb;
+  /** AdminDb para colaboradores (en Supabase: catálogo e items por RPC, sin tarifa). */
+  partnerDb: () => AdminDb;
+}
 
-async function build(db: AdminDb, user: { id: string; email: string; name: string | null }, tenant: TenantContext, mode: AdminContext['mode'], deps: Deps): Promise<AuthResult> {
-  const role = await db.membershipRole(user.id, tenant.id);
+/** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
+export async function buildAdminContext(baseDb: AdminDb, user: { id: string; email: string; name: string | null }, tenant: TenantContext, mode: AdminContext['mode'], deps: Deps): Promise<AuthResult> {
+  const role = await baseDb.membershipRole(user.id, tenant.id);
   if (!role) return { kind: 'forbidden', email: user.email };
   const session: AdminSession = { userId: user.id, email: user.email, displayName: user.name, tenantId: tenant.id, role };
+  let db = baseDb;
+  let playbookDb = deps.playbookDb;
+  if (role === 'partner') {
+    const profile = await baseDb.getPartnerProfile(tenant.id, user.id);
+    if (!profile) return { kind: 'forbidden', email: user.email };
+    if (profile.expiresAt && new Date(profile.expiresAt).getTime() <= Date.now()) {
+      return { kind: 'forbidden', email: user.email, reason: 'partner-expired', expiresAt: profile.expiresAt };
+    }
+    const pdb = deps.partnerDb();
+    const accounts = (await pdb.listPartnerAccounts(tenant.id, user.id)).sort((a, b) => a.position - b.position);
+    const scoped = { ...session, partner: { ...profile, accounts } };
+    session.partner = scoped.partner;
+    db = scopeAdminDb(pdb, scoped);
+    playbookDb = scopePlaybookDb(deps.playbookDb, scoped);
+  }
   const service = createAdminService(db, session, { defaultLocale: tenant.defaultLocale });
   return {
     kind: 'ok',
     admin: {
       mode, session, supabase: deps.supabase, service,
       tenantAdmin: createTenantAdminService(db, session, { identity: deps.identity, assets: deps.assets }),
-      playbook: createPlaybookService(deps.playbookDb, db, session, { admin: service }),
+      playbook: createPlaybookService(playbookDb, db, session, { admin: service }),
     },
   };
 }
@@ -87,15 +108,15 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
   if (authMode() === 'demo') {
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
-    return build(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb() });
+    return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), partnerDb: () => demoAdminDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
-  return build(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb) });
+  return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

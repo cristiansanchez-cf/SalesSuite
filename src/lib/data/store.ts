@@ -5,7 +5,7 @@
  */
 import fixtures from '../../../supabase/seed/fixtures.json';
 
-export type Role = 'admin' | 'rep';
+export type Role = 'admin' | 'rep' | 'partner';
 export type DossierStatus = 'draft' | 'published' | 'archived';
 export type PriceModeRow = 'none' | 'total' | 'per_module';
 
@@ -23,6 +23,7 @@ export interface DossierRow {
   theme_override: unknown; published_at?: string | null; created_at?: string; updated_at?: string;
   outcome?: 'open' | 'won' | 'lost'; outcome_note?: string | null; outcome_at?: string | null;
   segment_id?: string | null; next_step?: string | null; next_step_at?: string | null;
+  partner_account_id?: string | null;
 }
 export interface DossierItemRow {
   id: string; dossier_id: string; module_version_id: string; position: number; visible: boolean;
@@ -33,6 +34,7 @@ export interface PlayRow {
   id: string; tenant_id: string; module_id: string | null; key: string | null; kind: string; stage: string | null; objection: string | null;
   segments: string[]; personas?: string[]; title: string; body: string; when_to_use: string | null; why_it_works: string | null; technique_refs: unknown[];
   position: number; status: string; version: number; author_id: string | null; updated_by?: string | null; created_at?: string; updated_at?: string;
+  audience?: 'all' | 'team' | 'partners';
 }
 export interface PlayRevisionRow { id: string; tenant_id: string; play_id: string; version: number; snapshot: Record<string, unknown>; change_note: string | null; changed_by: string | null; contribution_id: string | null; created_at: string }
 export interface ContributionRow {
@@ -56,6 +58,13 @@ export interface DossierContactRow {
   id: string; tenant_id: string; dossier_id: string; persona_id: string | null; name: string; stance: string;
   email: string | null; phone: string | null; notes: string | null; position: number;
 }
+export interface PartnerProfileRow {
+  tenant_id: string; user_id: string; module_ids: string[]; see_team_tips: boolean; welcome_note: string | null; expires_at: string | null;
+}
+export interface PartnerAccountRow {
+  id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
+  price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
+}
 export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role }> }
 
 export interface DemoDb {
@@ -78,6 +87,8 @@ export interface DemoDb {
   segment_module: SegmentModuleRow[];
   persona_module: PersonaModuleRow[];
   dossier_contact: DossierContactRow[];
+  partner_profile: PartnerProfileRow[];
+  partner_account: PartnerAccountRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -88,7 +99,27 @@ export const DEMO_USERS: DemoUser[] = [
   { id: '11111111-1111-4111-8111-111111111111', email: 'rep@enjoy.test', display_name: 'Comercial Enjoy', memberships: [{ tenant_id: ENJOY, role: 'rep' }] },
   { id: '22222222-2222-4222-8222-222222222222', email: 'admin@enjoy.test', display_name: 'Admin Enjoy', memberships: [{ tenant_id: ENJOY, role: 'admin' }] },
   { id: '33333333-3333-4333-8333-333333333333', email: 'rep@retheme.test', display_name: 'Comercial Re-tema', memberships: [{ tenant_id: ALT, role: 'rep' }] },
+  { id: '55555555-5555-4555-8555-555555555555', email: 'dj@enjoy.test', display_name: 'DJ Dani (colaborador)', memberships: [{ tenant_id: ENJOY, role: 'partner' }] },
 ];
+
+/** Colaborador de demo: DJ que vende en sus tres locales (docs/PARTNERS.md). */
+const NIGHTLIFE = '00000000-0000-4000-8000-0000005e0002';
+export const DEMO_PARTNER = {
+  profile: {
+    tenant_id: ENJOY, user_id: '55555555-5555-4555-8555-555555555555',
+    module_ids: ['00000000-0000-4000-8000-00000000e102', '00000000-0000-4000-8000-00000000e103'],
+    see_team_tips: false, expires_at: null,
+    welcome_note: '¡Hola, Dani! Aquí tienes tus tres locales.\n\n- Ofrece **Experiencias** y **Locales**; el resto lo llevamos nosotros.\n- Los precios los fijamos desde Enjoy: tú no tienes que negociarlos.\n- Si el dueño quiere hablar de dinero, pásale el enlace y avísanos.',
+  } satisfies PartnerProfileRow,
+  accounts: [
+    { id: '00000000-0000-4000-8000-0000009a0001', tenant_id: ENJOY, user_id: '55555555-5555-4555-8555-555555555555', name: 'Sala Luna', segment_id: NIGHTLIFE,
+      price_policy: 'hidden', price_adjust_pct: 0, notes: 'El dueño (Marcos) negocia directamente con Enjoy: presenta la experiencia y deja el precio para nosotros.', position: 1024 },
+    { id: '00000000-0000-4000-8000-0000009a0002', tenant_id: ENJOY, user_id: '55555555-5555-4555-8555-555555555555', name: 'Club Neón', segment_id: NIGHTLIFE,
+      price_policy: 'adjusted', price_adjust_pct: -10, notes: 'Precio especial de lanzamiento. Habla con la jefa de sala.', position: 2048 },
+    { id: '00000000-0000-4000-8000-0000009a0003', tenant_id: ENJOY, user_id: '55555555-5555-4555-8555-555555555555', name: 'Terraza Sur', segment_id: NIGHTLIFE,
+      price_policy: 'list', price_adjust_pct: 0, notes: null, position: 3072 },
+  ] satisfies PartnerAccountRow[],
+};
 
 export function freshDemoDb(): DemoDb {
   const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'
@@ -127,6 +158,8 @@ export function freshDemoDb(): DemoDb {
     play_feedback: [],
     learning_progress: [],
     playbook_seen: [],
+    partner_profile: [structuredClone(DEMO_PARTNER.profile)],
+    partner_account: structuredClone(DEMO_PARTNER.accounts),
   };
 }
 

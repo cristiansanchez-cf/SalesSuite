@@ -4,19 +4,23 @@ import { createDossierSchema } from '~/lib/admin/ops';
 import { AdminError } from '~/lib/admin/service';
 import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
 import type { DossierStatus } from '~/lib/types';
+import PartnerHome from '~/components/admin/PartnerHome.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const { service, session } = admin;
 
 let error: string | null = null;
+let errorAccount: string | null = null;
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
+  errorAccount = String(form.get('partnerAccountId') ?? '') || null;
   const parsed = createDossierSchema.safeParse({
     title: form.get('title') ?? '',
     prospectName: form.get('prospectName') ?? '',
     prospectCompany: form.get('prospectCompany') ?? '',
     fromDossierId: form.get('fromDossierId') || undefined,
+    partnerAccountId: errorAccount ?? undefined,
   });
   if (!parsed.success) error = parsed.error.issues[0]?.message ?? 'Datos no válidos';
   else {
@@ -30,7 +34,8 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-const all = await service.listDossiers();
+const isPartner = session.role === 'partner';
+const all = isPartner ? [] : await service.listDossiers();
 const status = Astro.url.searchParams.get('status') as DossierStatus | null;
 const mine = Astro.url.searchParams.get('mine') === '1';
 const follow = Astro.url.searchParams.get('follow') === '1';
@@ -55,7 +60,8 @@ const filterHref = (p: Record<string, string | null>) => {
 const chip = (on: boolean) => ['rounded-full border px-3 py-1 text-sm', on ? 'border-ink bg-ink text-bg' : 'border-line bg-bg hover:bg-surface'];
 const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
 ---
-<AdminLayout title="Dossiers">
+<AdminLayout title={isPartner ? 'Mis cuentas' : 'Dossiers'}>
+  {isPartner ? <PartnerHome admin={admin} error={error} errorAccount={errorAccount} /> : (
   <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
     <section>
       {myOverdue > 0 && !follow && (
@@ -128,4 +134,5 @@ const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none
       </form>
     </aside>
   </div>
+  )}
 </AdminLayout>

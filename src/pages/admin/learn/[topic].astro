@@ -31,6 +31,7 @@ try {
   throw e;
 }
 const okMsg = flash(Astro.url, LEARN_FLASH);
+const partner = admin.session.partner ?? null;
 const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
 ---
 <AdminLayout title={view.name} wide>
@@ -78,17 +79,17 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
       {view.sections.map((sec) => (
         <section>
           <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-muted">{sec.label}</h2>
-          <div class="space-y-3">{sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} />)}</div>
+          <div class="space-y-3">{sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose={!partner} />)}</div>
         </section>
       ))}
 
-      <section data-testid="team">
+      {(!partner || partner.seeTeamTips) && <section data-testid="team">
         <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Lo que le funciona al equipo</h2>
         <div class="space-y-3">
           {view.tips.map((t) => <TipCard tip={t} mine={t.authorId === admin.session.userId} />)}
-          {view.tips.length === 0 && <p class="text-sm text-muted">Aún nadie ha compartido nada aquí. ¡Sé el primero!</p>}
+          {view.tips.length === 0 && <p class="text-sm text-muted">{partner ? 'El equipo aún no ha compartido trucos sobre esto.' : 'Aún nadie ha compartido nada aquí. ¡Sé el primero!'}</p>}
         </div>
-        <form method="post" class="mt-4 space-y-2 rounded-2xl border border-line bg-bg p-4" data-testid="tip-form">
+        {!partner && <form method="post" class="mt-4 space-y-2 rounded-2xl border border-line bg-bg p-4" data-testid="tip-form">
           <input type="hidden" name="action" value="tip" />
           <h3 class="font-bold">💬 Comparte lo que te funciona</h3>
           <p class="text-xs text-muted">Visible al momento para tu equipo, marcado como «del equipo». Tu líder puede convertirlo en oficial.</p>
@@ -100,8 +101,8 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
           </div>
           <textarea class={`${field} h-24`} name="body" required maxlength="4000" placeholder="Cuéntalo con un ejemplo real: qué dijiste, a quién y qué pasó."></textarea>
           <button class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" type="submit">Compartir con el equipo</button>
-        </form>
-      </section>
+        </form>}
+      </section>}
 
       {view.myOpen.length > 0 && (
         <section>

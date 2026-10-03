@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { demoDb, type DemoDb, type DossierRow, type ShareLinkRow } from '../data/store';
+import { demoDb, type DemoDb, type DossierRow, type PartnerAccountRow, type PartnerProfileRow, type ShareLinkRow } from '../data/store';
 import type { AdminDb, AssetStore, Identity } from './db';
-import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord } from './types';
+import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
 
 export const newToken = () => randomBytes(24).toString('base64url');
 
@@ -12,6 +12,15 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   publishedAt: r.published_at ?? null, updatedAt: r.updated_at ?? null,
   outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
+  partnerAccountId: r.partner_account_id ?? null,
+});
+
+const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
+  tenantId: r.tenant_id, userId: r.user_id, moduleIds: [...r.module_ids], seeTeamTips: r.see_team_tips, welcomeNote: r.welcome_note, expiresAt: r.expires_at,
+});
+const toAccount = (r: PartnerAccountRow): PartnerAccount => ({
+  id: r.id, tenantId: r.tenant_id, userId: r.user_id, name: r.name, segmentId: r.segment_id, pricePolicy: r.price_policy,
+  priceAdjustPct: r.price_adjust_pct, notes: r.notes, position: r.position,
 });
 
 const toLink = (l: ShareLinkRow): LinkRecord => ({
@@ -47,7 +56,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
         id: randomUUID(), tenant_id: n.tenantId, author_id: n.authorId, title: n.title,
         prospect_name: n.prospectName, prospect_company: n.prospectCompany, prospect_meta: {},
         status: 'draft', locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
-        theme_override: null, published_at: null, created_at: now, updated_at: now,
+        theme_override: null, published_at: null, created_at: now, updated_at: now, partner_account_id: n.partnerAccountId ?? null,
       };
       db().dossier.push(row);
       return toDossier(row);
@@ -235,6 +244,12 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (!u) return false;
       const before = u.memberships.length;
       u.memberships = u.memberships.filter((m) => m.tenant_id !== tenantId);
+      // cascada membership → partner_profile → partner_account (dossier.partner_account_id → null)
+      const s = db();
+      const gone = new Set(s.partner_account.filter((a) => a.tenant_id === tenantId && a.user_id === userId).map((a) => a.id));
+      s.partner_account = s.partner_account.filter((a) => !gone.has(a.id));
+      s.partner_profile = s.partner_profile.filter((p) => !(p.tenant_id === tenantId && p.user_id === userId));
+      for (const d of s.dossier) if (d.partner_account_id && gone.has(d.partner_account_id)) d.partner_account_id = null;
       return u.memberships.length < before;
     },
 
@@ -290,6 +305,48 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.currency !== undefined) v.default_currency = p.currency;
       if (p.status !== undefined) v.status = p.status;
       return true;
+    },
+
+    // ---- colaboradores
+    async getPartnerProfile(tenantId, userId) {
+      const r = db().partner_profile.find((x) => x.tenant_id === tenantId && x.user_id === userId);
+      return r ? toProfile(r) : null;
+    },
+    async listPartnerProfiles(tenantId) {
+      return db().partner_profile.filter((x) => x.tenant_id === tenantId).map(toProfile);
+    },
+    async upsertPartnerProfile(p) {
+      const s = db();
+      // Misma regla que el trigger partner_profile_check.
+      const role = s.users.find((u) => u.id === p.userId)?.memberships.find((m) => m.tenant_id === p.tenantId)?.role;
+      if (role !== 'partner') throw new Error('El perfil de colaborador requiere rol partner');
+      const row: PartnerProfileRow = {
+        tenant_id: p.tenantId, user_id: p.userId, module_ids: [...p.moduleIds], see_team_tips: p.seeTeamTips, welcome_note: p.welcomeNote, expires_at: p.expiresAt,
+      };
+      const i = s.partner_profile.findIndex((x) => x.tenant_id === p.tenantId && x.user_id === p.userId);
+      if (i >= 0) s.partner_profile[i] = row; else s.partner_profile.push(row);
+      return true;
+    },
+    async listPartnerAccounts(tenantId, userId) {
+      return db().partner_account.filter((x) => x.tenant_id === tenantId && (!userId || x.user_id === userId)).map(toAccount);
+    },
+    async savePartnerAccount(a) {
+      const s = db();
+      if (!s.partner_profile.some((x) => x.tenant_id === a.tenantId && x.user_id === a.userId)) throw new Error('violates foreign key: partner_account → partner_profile');
+      const row: PartnerAccountRow = {
+        id: a.id ?? randomUUID(), tenant_id: a.tenantId, user_id: a.userId, name: a.name, segment_id: a.segmentId,
+        price_policy: a.pricePolicy, price_adjust_pct: a.priceAdjustPct, notes: a.notes, position: a.position,
+      };
+      const i = s.partner_account.findIndex((x) => x.id === row.id);
+      if (i >= 0) s.partner_account[i] = row; else s.partner_account.push(row);
+      return row.id;
+    },
+    async deletePartnerAccount(id) {
+      const s = db();
+      const before = s.partner_account.length;
+      s.partner_account = s.partner_account.filter((x) => x.id !== id);
+      for (const d of s.dossier) if (d.partner_account_id === id) d.partner_account_id = null;  // on delete set null
+      return s.partner_account.length < before;
     },
   };
 }

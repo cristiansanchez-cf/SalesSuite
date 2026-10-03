@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { OBJECTIONS, PLAY_KINDS, STAGES } from './types';
+import { AUDIENCES, OBJECTIONS, PLAY_KINDS, STAGES } from './types';
 
 const text = (max: number) => z.string().trim().max(max);
 const optText = (max: number) => z.string().trim().max(max).transform((s) => (s === '' ? null : s)).nullable().optional();
@@ -21,6 +21,7 @@ export const playInputSchema = z.object({
   objection: z.enum(OBJECTIONS).nullable().optional(),
   segments: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,63}$/)).max(10).default([]),
   personas: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,63}$/)).max(20).default([]),
+  audience: z.enum(AUDIENCES).default('all'),
   title: text(200).min(1, 'El título es obligatorio'),
   body: text(8000).default(''),
   whenToUse: optText(1000),

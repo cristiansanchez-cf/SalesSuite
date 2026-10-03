@@ -66,10 +66,12 @@ Copia el contenido de cada archivo de `supabase/templates/`:
 | Plantilla | Archivo | Asunto |
 |---|---|---|
 | Invite user | `invite.html` | Te han invitado a la consola de dossiers |
-| Magic Link | `magic_link.html` | Tu enlace para entrar |
+| Magic Link | `magic_link.html` | Tu código para entrar |
 | Reset Password | `recovery.html` | Elige una contraseña nueva |
 
 **Este paso es obligatorio.** Las invitaciones con la plantilla por defecto no inician sesión en la app, que funciona en servidor. Las nuestras llevan al dominio del tenant (`/admin/auth/confirm`) y funcionan aunque el email se abra en otro dispositivo.
+
+El acceso habitual es **sin contraseña: email → código de 6 dígitos**. Lo usan sobre todo los colaboradores ([`PARTNERS.md`](PARTNERS.md)). La plantilla *Magic Link* lleva el código (`{{ .Token }}`) y además el botón. En *Authentication → Sign In / Providers → Email*, deja **Email OTP Length = 6** y **Email OTP Expiration = 3600**.
 
 ### 3.4 SMTP propio (*Project Settings → Authentication → SMTP Settings*)
 El email integrado de Supabase **solo envía a los miembros del equipo del proyecto** y tiene un límite muy bajo, así que las invitaciones a los comerciales de Enjoy no llegarían. Configura un SMTP:

@@ -222,7 +222,7 @@ Entregar un `MODULE_AUTHORING.md`: (1) copiar una carpeta starter; (2) pegar los
 
 - **Supabase Auth** (magic-link o email+password) solo para la consola admin.
 - **Scoping + RBAC** vía `membership(user_id, tenant_id, role)`. En MVP, normalmente un tenant por usuario.
-- **RLS**: cada fila con `tenant_id` legible/escribible solo si `auth.uid()` tiene `membership` en ese tenant. `rep` → CRUD de sus dossiers; `admin` → gestiona módulos, todos los dossiers, miembros.
+- **RLS**: cada fila con `tenant_id` legible/escribible solo si `auth.uid()` tiene `membership` en ese tenant. `rep` → CRUD de sus dossiers; `admin` → gestiona módulos, todos los dossiers, miembros. *(Añadido)* `partner` → colaborador puntual: solo sus dossiers, sus módulos y sus cuentas, sin tarifa ni control de precios ([`PARTNERS.md`](PARTNERS.md)).
 - **Renderer público sin auth**: lee vía un RPC `security definer` (o endpoint server con service-role) que recibe el `share_link.token`, valida `is_active`/`expires_at` y `dossier.status='published'`, y devuelve solo campos seguros para render. **Única ruta que salta RLS** — revisarla con cuidado.
 
 ---

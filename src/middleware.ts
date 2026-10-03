@@ -46,6 +46,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (auth.kind === 'forbidden') {
       if (path.startsWith('/admin/api/')) return Response.json({ error: 'Sin acceso a este tenant' }, { status: 403 });
       context.locals.forbiddenEmail = auth.email;
+      if (auth.reason === 'partner-expired') context.locals.forbiddenReason = { kind: 'partner-expired', expiresAt: auth.expiresAt ?? null };
       return context.rewrite('/admin/forbidden');
     }
     context.locals.admin = auth.admin;

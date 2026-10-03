@@ -11,11 +11,11 @@ function check<T>(res: { data: T; error: { message: string } | null }): T {
   return res.data;
 }
 
-const PLAY_COLS = 'id, tenant_id, module_id, key, kind, stage, objection, segments, personas, title, body, when_to_use, why_it_works, technique_refs, position, status, version, author_id, updated_by, created_at, updated_at';
+const PLAY_COLS = 'id, tenant_id, module_id, key, kind, stage, objection, segments, personas, audience, title, body, when_to_use, why_it_works, technique_refs, position, status, version, author_id, updated_by, created_at, updated_at';
 
 const toPlay = (r: Row): Play => ({
   id: r.id, tenantId: r.tenant_id, moduleId: r.module_id, key: r.key, kind: r.kind, stage: r.stage, objection: r.objection,
-  segments: r.segments ?? [], personas: r.personas ?? [], title: r.title, body: r.body, whenToUse: r.when_to_use, whyItWorks: r.why_it_works,
+  segments: r.segments ?? [], personas: r.personas ?? [], audience: r.audience ?? 'all', title: r.title, body: r.body, whenToUse: r.when_to_use, whyItWorks: r.why_it_works,
   techniqueRefs: (r.technique_refs ?? []) as TechniqueRef[], position: Number(r.position), status: r.status, version: r.version,
   authorId: r.author_id, updatedBy: r.updated_by, createdAt: r.created_at, updatedAt: r.updated_at,
 });
@@ -26,7 +26,7 @@ const toContribution = (r: Row): Contribution => ({
 });
 
 const PLAY_FIELDS: Record<string, string> = {
-  moduleId: 'module_id', key: 'key', kind: 'kind', stage: 'stage', objection: 'objection', segments: 'segments', personas: 'personas', title: 'title', body: 'body',
+  moduleId: 'module_id', key: 'key', kind: 'kind', stage: 'stage', objection: 'objection', segments: 'segments', personas: 'personas', audience: 'audience', title: 'title', body: 'body',
   whenToUse: 'when_to_use', whyItWorks: 'why_it_works', techniqueRefs: 'technique_refs', position: 'position', status: 'status',
   version: 'version', authorId: 'author_id', updatedBy: 'updated_by',
 };

@@ -14,7 +14,7 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
     <h3 class="min-w-0 flex-1 text-lg font-bold">{play.title}</h3>
     {adminEdit && <a href={`/admin/playbook/${play.id}`} class="text-xs text-muted underline">Editar</a>}
   </div>
-  <div class="mt-1"><Badges stage={play.stage} objection={play.objection} segments={play.segments} /></div>
+  <div class="mt-1"><Badges stage={play.stage} objection={play.objection} segments={play.segments} />{play.audience !== 'all' && <span class="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-900" data-testid="audience">{play.audience === 'team' ? 'Solo equipo interno' : 'Para colaboradores'}</span>}</div>
   {play.body && <div class="prose-play mt-3 text-[15px] leading-relaxed" set:html={renderMarkdown(play.body)} />}
   {(play.whenToUse || play.whyItWorks) && (
     <dl class:list={['mt-3 grid gap-2 rounded-xl bg-surface p-3 text-sm', play.whenToUse && play.whyItWorks && 'sm:grid-cols-2']}>

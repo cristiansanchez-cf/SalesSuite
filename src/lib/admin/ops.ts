@@ -58,6 +58,8 @@ export const createDossierSchema = z.object({
   prospectCompany: optText(120).optional(),
   /** Copiar módulos/precio de otro dossier del tenant (plantilla). */
   fromDossierId: id.optional(),
+  /** Colaborador: cuenta asignada (obligatoria para él; fija sector y política de precio). */
+  partnerAccountId: id.optional(),
 });
 export type CreateDossierInput = z.infer<typeof createDossierSchema>;
 
@@ -71,6 +73,35 @@ export const inviteSchema = z.object({
 });
 
 const blockTypes = Object.keys(REGISTRY) as [keyof typeof REGISTRY, ...(keyof typeof REGISTRY)[]];
+
+// ---------------------------------------------------------------- colaboradores (docs/PARTNERS.md)
+
+/** "AAAA-MM-DD" (input date) → fin de ese día; vacío → sin caducidad. */
+const expiryDate = z.union([
+  z.literal('').transform(() => null),
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha AAAA-MM-DD').transform((d) => `${d}T23:59:59.000Z`),
+  z.string().datetime({ offset: true }),
+]).nullable().default(null);
+
+export const partnerProfileSchema = z.object({
+  moduleIds: z.array(id).max(100).default([]),
+  seeTeamTips: z.boolean().default(false),
+  welcomeNote: optText(4000).default(null),
+  expiresAt: expiryDate,
+});
+
+export const partnerInviteSchema = partnerProfileSchema.extend({
+  email: z.string().trim().toLowerCase().email('Email no válido').max(200),
+});
+
+export const PRICE_POLICIES = ['hidden', 'list', 'adjusted'] as const;
+export const partnerAccountSchema = z.object({
+  name: z.string().trim().min(1, 'Pon el nombre de la cuenta (local, centro…)').max(120),
+  segmentId: id.nullable().or(z.literal('').transform(() => null)).default(null),
+  pricePolicy: z.enum(PRICE_POLICIES).default('hidden'),
+  priceAdjustPct: z.coerce.number().finite().min(-90, 'Mínimo −90 %').max(200, 'Máximo +200 %').multipleOf(0.01).default(0),
+  notes: optText(2000).default(null),
+});
 
 export const moduleCreateSchema = z.object({
   key: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/, 'Clave: minúsculas, números y guiones (2-63)'),

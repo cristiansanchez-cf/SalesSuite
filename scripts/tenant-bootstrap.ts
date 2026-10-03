@@ -67,6 +67,7 @@ const tenantFile = z.object({
     kind: z.string(), stage: z.string().nullable().default(null), objection: z.string().nullable().default(null),
     segments: z.array(z.string()).default([]),
     personas: z.array(z.string()).default([]),
+    audience: z.enum(['all', 'team', 'partners']).default('all'),
     title: z.string(), body: z.string().default(''),
     when_to_use: z.string().nullable().default(null), why_it_works: z.string().nullable().default(null),
     technique_refs: z.array(z.unknown()).default([]),
@@ -132,7 +133,7 @@ async function listFiles(root: string): Promise<string[]> {
 
 function toPlayInput(p: TenantFile['playbook'][number], moduleId: string | null) {
   return {
-    moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, personas: p.personas, title: p.title, body: p.body,
+    moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, personas: p.personas, audience: p.audience, title: p.title, body: p.body,
     whenToUse: p.when_to_use ?? '', whyItWorks: p.why_it_works ?? '', techniqueRefs: p.technique_refs, status: p.status,
   };
 }
@@ -305,11 +306,11 @@ async function main() {
   for (const [i, raw] of t.playbook.entries()) {
     const p = playInputSchema.parse(toPlayInput(raw, raw.module_key ? moduleIds.get(raw.module_key)! : null));
     const row = {
-      module_id: p.moduleId, key: raw.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
+      module_id: p.moduleId, key: raw.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas, audience: p.audience,
       title: p.title, body: p.body, when_to_use: p.whenToUse ?? null, why_it_works: p.whyItWorks ?? null, technique_refs: p.techniqueRefs,
       status: p.status, position: (i + 1) * 1024,
     };
-    const cur = must(await sb.from('play').select('id, version, module_id, kind, stage, objection, segments, personas, title, body, when_to_use, why_it_works, technique_refs, status').eq('tenant_id', tenantId).eq('key', raw.key).maybeSingle(), `leer jugada ${raw.key}`);
+    const cur = must(await sb.from('play').select('id, version, module_id, kind, stage, objection, segments, personas, audience, title, body, when_to_use, why_it_works, technique_refs, status').eq('tenant_id', tenantId).eq('key', raw.key).maybeSingle(), `leer jugada ${raw.key}`);
     const content = (x: Record<string, unknown>) => canonical({ ...x, position: undefined, key: undefined, id: undefined, version: undefined });
     if (!cur) {
       const id = mustOne(await sb.from('play').insert({ tenant_id: tenantId, ...row, version: 1 }).select('id').single(), `crear jugada ${raw.key}`).id;

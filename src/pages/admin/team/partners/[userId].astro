@@ -1,0 +1,217 @@
+---
+/** Ficha de un colaborador (docs/PARTNERS.md): qué ve, sus cuentas y cómo se cotiza cada una. Solo admins. */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
+import { PRICE_POLICY_HELP, PRICE_POLICY_LABEL } from '~/lib/partner/labels';
+import { partnerPrice } from '~/lib/partner/scope';
+import type { PartnerAccount } from '~/lib/admin/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const t = admin.tenantAdmin;
+const userId = Astro.params.userId ?? '';
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const action = String(f.get('action'));
+  const accountId = String(f.get('accountId') ?? '') || undefined;
+  const accountInput = () => ({
+    name: f.get('name'), segmentId: String(f.get('segmentId') ?? ''), pricePolicy: f.get('pricePolicy'),
+    priceAdjustPct: String(f.get('priceAdjustPct') ?? '0') || '0', notes: String(f.get('notes') ?? ''),
+  });
+  let ok = '';
+  result = await formAction(async () => {
+    if (action === 'profile') {
+      await t.updatePartner(userId, {
+        moduleIds: f.getAll('moduleIds').map(String), seeTeamTips: f.get('seeTeamTips') === 'on',
+        welcomeNote: String(f.get('welcomeNote') ?? ''), expiresAt: String(f.get('expiresAt') ?? ''),
+      });
+      ok = 'profile';
+    } else if (action === 'account') {
+      await t.savePartnerAccount(userId, accountInput(), accountId);
+      ok = accountId ? 'account-saved' : 'account-added';
+    } else if (action === 'account-delete' && accountId) {
+      await t.deletePartnerAccount(userId, accountId);
+      ok = 'account-deleted';
+    } else if (action === 'remove') {
+      await t.removeMember(userId);
+      ok = 'removed';
+    }
+  });
+  if (!result.error) return Astro.redirect(ok === 'removed' ? '/admin/team?ok=removed' : `/admin/team/partners/${userId}?ok=${ok}`, 303);
+}
+
+let p;
+try { p = await t.partner(userId); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+const [catalog, segments] = await Promise.all([t.listCatalog(), admin.playbook.market()]);
+const modules = catalog.filter((m) => m.isCatalog && m.versions.some((v) => v.status === 'published'));
+const listPrice = (moduleId: string) => modules.find((m) => m.id === moduleId)?.versions.find((v) => v.status === 'published') ?? null;
+const allowed = modules.filter((m) => p.profile?.moduleIds.includes(m.id));
+const money = (n: number, c: string) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: c }).format(n);
+/** Lo que vería el cliente de esta cuenta en cada módulo permitido. */
+const preview = (a: PartnerAccount) => allowed.map((m) => {
+  const v = listPrice(m.id);
+  const price = v ? partnerPrice(a.pricePolicy, a.priceAdjustPct, v.defaultPrice) : null;
+  return { name: m.name, list: v?.defaultPrice ?? null, price, currency: v?.currency ?? 'EUR' };
+});
+const okMsg = flash(Astro.url, {
+  'partner-invited': 'Invitación enviada. Ahora asígnale sus cuentas.',
+  'partner-added': 'Ya tenía cuenta: tiene acceso como colaborador. Ahora asígnale sus cuentas.',
+  profile: 'Permisos guardados.',
+  'account-added': 'Cuenta añadida.',
+  'account-saved': 'Cuenta guardada. Si cambiaste el precio, ya se aplica a sus propuestas.',
+  'account-deleted': 'Cuenta eliminada. Sus propuestas se conservan, sin cuenta asignada.',
+});
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
+const card = 'rounded-2xl border border-line bg-bg p-5';
+const dateInput = p.profile?.expiresAt ? p.profile.expiresAt.slice(0, 10) : '';
+---
+<AdminLayout title={p.displayName || p.email}>
+  <a href="/admin/team" class="text-sm text-muted hover:text-ink">← Equipo</a>
+  <div class="mt-1 flex flex-wrap items-center gap-3">
+    <h1 class="min-w-0 flex-1 text-3xl font-extrabold">{p.displayName || p.email}</h1>
+    {p.expired && <span class="rounded-full bg-zinc-200 px-3 py-1 text-sm font-semibold text-zinc-700" data-testid="expired">Acceso caducado</span>}
+  </div>
+  <p class="text-sm text-muted">{p.email} · Colaborador · {p.dossierCount} propuestas</p>
+  {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+  {result.error && (
+    <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+      <p class="font-semibold">{result.error}</p>
+      {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
+    </div>
+  )}
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_24rem]">
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold">Cuentas</h2>
+      <p class="-mt-3 text-sm text-muted">Los locales o centros donde vende. Para cada uno decides el precio que verá el cliente; él no ve la tarifa ni puede cambiarlo.</p>
+      {p.accounts.map((a) => (
+        <article class={card} data-testid="partner-account" data-account={a.name}>
+          <form method="post" class="grid gap-3 sm:grid-cols-2">
+            <input type="hidden" name="action" value="account" />
+            <input type="hidden" name="accountId" value={a.id} />
+            <label class="text-sm font-medium">Nombre<input class={field} name="name" value={a.name} required maxlength="120" /></label>
+            <label class="text-sm font-medium">Sector
+              <select class={field} name="segmentId">
+                <option value="">—</option>
+                {segments.map((sg) => <option value={sg.id} selected={sg.id === a.segmentId}>{sg.name}</option>)}
+              </select>
+            </label>
+            <label class="text-sm font-medium">Precio para el cliente
+              <select class={field} name="pricePolicy" data-testid="price-policy">
+                {(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k} selected={k === a.pricePolicy}>{PRICE_POLICY_LABEL[k]}</option>)}
+              </select>
+            </label>
+            <label class="text-sm font-medium">Ajuste sobre tarifa (%)
+              <input class={field} name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value={a.priceAdjustPct} data-testid="price-adjust" />
+              <span class="text-xs font-normal text-muted">Solo con «Precio especial». −10 = 10 % más barato.</span>
+            </label>
+            <label class="text-sm font-medium sm:col-span-2">Indicaciones para él (solo las ve él)
+              <textarea class={`${field} h-16`} name="notes" maxlength="2000">{a.notes ?? ''}</textarea>
+            </label>
+            <p class="text-xs text-muted sm:col-span-2">{PRICE_POLICY_HELP[a.pricePolicy]}</p>
+            {allowed.length > 0 && (
+              <ul class="flex flex-wrap gap-2 p-0 text-xs sm:col-span-2" data-testid="price-preview">
+                {preview(a).map((x) => (
+                  <li class="list-none rounded-lg bg-surface px-2 py-1">
+                    {x.name}: {x.price != null ? money(x.price, x.currency) : 'sin precio'}
+                    {x.list != null && x.price != null && x.price !== x.list && <span class="text-muted"> (tarifa {money(x.list, x.currency)})</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div class="flex gap-2 sm:col-span-2">
+              <button class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" type="submit">Guardar cuenta</button>
+            </div>
+          </form>
+          <form method="post" class="mt-2" onsubmit="return confirm('¿Eliminar esta cuenta? Sus propuestas se conservan pero quedan sin cuenta.')">
+            <input type="hidden" name="action" value="account-delete" />
+            <input type="hidden" name="accountId" value={a.id} />
+            <button class="text-xs font-semibold text-red-700 underline" type="submit">Eliminar cuenta</button>
+          </form>
+        </article>
+      ))}
+
+      <form method="post" class={`${card} grid gap-3 sm:grid-cols-2`} data-testid="add-account">
+        <input type="hidden" name="action" value="account" />
+        <h3 class="font-bold sm:col-span-2">＋ Añadir cuenta</h3>
+        <label class="text-sm font-medium">Nombre<input class={field} name="name" required maxlength="120" placeholder="Sala Luna" /></label>
+        <label class="text-sm font-medium">Sector
+          <select class={field} name="segmentId">
+            <option value="">—</option>
+            {segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}
+          </select>
+        </label>
+        <label class="text-sm font-medium">Precio para el cliente
+          <select class={field} name="pricePolicy">
+            {(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k}>{PRICE_POLICY_LABEL[k]}</option>)}
+          </select>
+        </label>
+        <label class="text-sm font-medium">Ajuste sobre tarifa (%)<input class={field} name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value="0" /></label>
+        <label class="text-sm font-medium sm:col-span-2">Indicaciones para él (opcional)
+          <textarea class={`${field} h-16`} name="notes" maxlength="2000" placeholder="El dueño es Marcos; no hables de precio, lo cerramos nosotros."></textarea>
+        </label>
+        <button class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg sm:col-span-2" type="submit">Añadir cuenta</button>
+      </form>
+
+      {p.dossiers.length > 0 && (
+        <>
+          <h2 class="pt-4 text-xl font-bold">Sus propuestas</h2>
+          <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0">
+            {p.dossiers.map((d) => (
+              <li class="list-none">
+                <a href={`/admin/dossiers/${d.id}`} class="flex flex-wrap items-center gap-3 px-4 py-3 text-sm hover:bg-surface">
+                  <span class="min-w-0 flex-1 truncate font-semibold">{d.title}</span>
+                  <span class="text-xs text-muted">{p.accounts.find((a) => a.id === d.partnerAccountId)?.name ?? 'Sin cuenta'} · {relativeTime(d.updatedAt)}</span>
+                  <span class:list={['rounded-full px-2.5 py-0.5 text-xs font-semibold', STATUS_CLASS[d.status]]}>{STATUS_LABEL[d.status]}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+
+    <aside class="space-y-4">
+      <form method="post" class={`${card} space-y-3`} data-testid="partner-profile">
+        <input type="hidden" name="action" value="profile" />
+        <h2 class="text-xl font-bold">Acceso</h2>
+        <fieldset>
+          <legend class="text-sm font-medium">Módulos que puede ver y vender</legend>
+          <div class="mt-1 space-y-1">
+            {modules.map((m) => (
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="moduleIds" value={m.id} checked={p.profile?.moduleIds.includes(m.id)} /> {m.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label class="flex items-start gap-2 text-sm">
+          <input class="mt-1" type="checkbox" name="seeTeamTips" checked={p.profile?.seeTeamTips} />
+          <span>Ve los trucos que comparte el equipo interno <span class="block text-xs text-muted">Nunca ve lo de precios y monetización, ni los dossiers, votos o notas de otros vendedores.</span></span>
+        </label>
+        <label class="block text-sm font-medium">Acceso hasta<input class={field} type="date" name="expiresAt" value={dateInput} />
+          <span class="text-xs font-normal text-muted">Vacío = sin caducidad. Al caducar no entra, pero sus propuestas se conservan.</span>
+        </label>
+        <label class="block text-sm font-medium">Su guía (solo la ve él)
+          <textarea class={`${field} h-32`} name="welcomeNote" maxlength="4000">{p.profile?.welcomeNote ?? ''}</textarea>
+          <span class="text-xs font-normal text-muted">Admite **negrita** y listas con «- ». Para guiones de venta específicos para colaboradores, crea jugadas con audiencia «Solo colaboradores» en Playbook.</span>
+        </label>
+        <button class="w-full rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" type="submit">Guardar acceso</button>
+      </form>
+      <form method="post" class={card} onsubmit="return confirm('¿Quitarle el acceso? Sus propuestas se conservan; sus cuentas se eliminan.')">
+        <input type="hidden" name="action" value="remove" />
+        <h2 class="font-bold">Quitar acceso</h2>
+        <p class="mt-1 text-xs text-muted">Para una pausa temporal, mejor pon una fecha de fin de acceso.</p>
+        <button class="mt-3 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-red-700 hover:bg-surface" type="submit">Quitar acceso</button>
+      </form>
+    </aside>
+  </div>
+</AdminLayout>
