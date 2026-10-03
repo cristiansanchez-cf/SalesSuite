@@ -1,6 +1,7 @@
 # Producción sin terminal (docs/PUESTA_EN_MARCHA.md): GitHub → Actions → «Producción» → Run workflow.
 # Secretos (Settings → Secrets and variables → Actions): SUPABASE_DB_URL, PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 name: Producción
+run-name: "Producción · ${{ inputs.what }} · ${{ inputs.tenant }} · ${{ inputs.dry_run && 'PRUEBA (no escribe)' || 'REAL' }}"
 
 on:
   workflow_dispatch:
@@ -58,7 +59,9 @@ jobs:
         if: ${{ inputs.what != 'alta-espacio' && inputs.dry_run }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+        run: |
+          supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+          echo "::notice::Era una PRUEBA: no se ha aplicado ninguna migración."
 
       - name: Migraciones (aplicar)
         if: ${{ inputs.what != 'alta-espacio' && !inputs.dry_run }}
@@ -87,4 +90,10 @@ jobs:
         run: |
           case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
           # Si faltan archivos de marca (logo, fuente…), el alta sigue sin ellos y lo avisa; se añaden después y se repite.
-          if [ "$DRY" = "true" ]; then npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets --dry-run; else npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets; fi
+          if [ "$DRY" = "true" ]; then
+            npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets --dry-run
+            echo "::notice::Era una PRUEBA: no se ha escrito nada. Para dar de alta de verdad, repite con «Solo comprobar» desmarcado."
+          else
+            npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets
+            echo "::notice::Alta REAL hecha: espacio $TENANT creado o actualizado."
+          fi
