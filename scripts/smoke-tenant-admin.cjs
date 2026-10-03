@@ -133,5 +133,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.textContent('[data-testid=price-options]')).includes(`Local grande ${RUN}`), 'tarifa creada con su enlace de pago');
   if (OUT) await p.screenshot({ path: `${OUT}/prices-admin.png`, fullPage: true });
 
+  // Stripe → comisiones: URL del webhook de este espacio, el secreto se guarda y no se vuelve a enseñar.
+  assert((await p.getAttribute('[data-testid=stripe-webhook]', 'data-connected')) === '0', 'Stripe sin conectar al principio');
+  assert(/\/api\/v1\/stripe\/[0-9a-f-]{36}$/.test((await p.textContent('[data-hook-url]')).trim()), 'URL del webhook del espacio');
+  await p.fill('[data-testid=stripe-webhook] [name=secret]', 'whsec_SmokeTestSecret123');
+  await p.click('[data-testid=stripe-save]');
+  await p.waitForURL(/ok=stripe/);
+  assert((await p.getAttribute('[data-testid=stripe-webhook]', 'data-connected')) === '1', 'Stripe conectado');
+  assert(!(await p.content()).includes('whsec_SmokeTestSecret123'), 'el secreto no vuelve a la página');
+
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

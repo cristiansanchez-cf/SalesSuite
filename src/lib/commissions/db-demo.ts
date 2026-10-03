@@ -330,5 +330,16 @@ export function demoIngestDb(): IngestDb {
       const u = db().users.find((x) => x.email.toLowerCase() === email.toLowerCase() && x.memberships.some((m) => m.tenant_id === t));
       return u?.id ?? null;
     },
+    async dossierInTenant(t, id) { return db().dossier.some((d) => d.tenant_id === t && d.id === id); },
+    async webhookSecret(t) { return demoStripe.secrets.get(t)?.secret ?? null; },
+    async subscriptionDossier(t, sub) { return demoStripe.subs.get(`${t}|${sub}`) ?? null; },
+    async linkSubscription(t, sub, dossierId) { if (!demoStripe.subs.has(`${t}|${sub}`)) demoStripe.subs.set(`${t}|${sub}`, dossierId); },
+    async attachDossier(t, source, externalId, dossierId) {
+      const e = db().revenue_event.find((x) => x.tenant_id === t && x.source === source && x.external_id === externalId);
+      if (e && !e.dossier_id) e.dossier_id = dossierId;
+    },
   };
 }
+
+/** Stripe en demo: en memoria (como el resto), se pierde al reiniciar. */
+export const demoStripe = { secrets: new Map<string, { secret: string; at: string }>(), subs: new Map<string, string>() };

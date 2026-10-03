@@ -14,6 +14,8 @@ export interface ModuleContext {
   total: ResolvedPrice | null;
   /** Logo, fotos y vídeo del cliente (Personalizar). Los módulos que sepan usarlos los ponen en lugar de los de ejemplo. */
   media?: import('~/lib/types').ClientMedia;
+  /** «Pagar»: enlace de pago de la tarifa elegida, ya con la propuesta y el cupón (null = sin botón). */
+  payUrl?: string | null;
 }
 
 export interface ModuleBaseProps {

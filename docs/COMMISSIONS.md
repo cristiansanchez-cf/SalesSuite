@@ -139,3 +139,14 @@ En el editor de la propuesta, el comercial (rep) y el jefe/a de ventas (lead) **
 **Desde `tenant.json`.** Las tarifas (`price_options`) y los cupones (`coupons`) también se cargan con el alta del espacio (`scripts/tenant-bootstrap.ts`): se sincronizan por nombre (tarifas) y por código (cupones). Si el JSON no trae `payment_link`, se conserva el que el admin pegó en la consola. Enjoy carga el *Pricing general* (manual 05): 18 tarifas por sector y 4 cupones (PACK5, GRUPO25, CIUDAD20, PRIMERA50), cada cupón con su contrapartida.
 
 Pendiente en Stripe (Cristian): crear un Payment Link por tarifa, activar «Permitir códigos promocionales» en cada uno y crear los promotion codes con los mismos códigos que los cupones.
+
+## Stripe: «Pagar» en la propuesta y comisión automática
+
+1. **El botón.** Si la tarifa elegida en la propuesta tiene enlace de pago (Payment Link de Stripe) y la propuesta enseña precio, la tarjeta de precio muestra **«Pagar ahora»**. El enlace lleva `client_reference_id=dossier_<id>` (la propuesta → quien la vendió) y `prefilled_promo_code` (el cupón). Tarifa desactivada o sin enlace = sin botón (`get_public_dossier` devuelve `payment_link` solo de tarifas activas).
+2. **Conectar Stripe** (una vez por espacio, en **Tarifas y pagos**): en Stripe → Desarrolladores → Webhooks → «Añadir destino» con la URL que enseña la página (`/api/v1/stripe/<id del espacio>`) y los eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid` y `charge.refunded`. Se pega el **secreto de firma** (`whsec_…`): lo guarda `set_stripe_webhook_secret` (solo admin) en `tenant_secret`, que no lee nadie con sesión (ni el admin: solo se ve «conectado desde…»). Migración `20261025000000_stripe_payments.sql`, test `supabase/tests/43_stripe.test.sql`.
+3. **Qué entra** (`src/lib/commissions/stripe.ts`, origen `stripe`, idempotente; se verifica la firma con 5 min de margen):
+   - pago único → `sale` con clave el `payment_intent`; ingreso de la empresa = total − impuestos;
+   - suscripción → el checkout recuerda suscripción → propuesta (`stripe_subscription`) y cada `invoice.paid` es un `recurring` con clave la factura (si la primera factura llega antes que el checkout, se le pone la propuesta después, sin tocar importes);
+   - `charge.refunded` → `refund` del ingreso original (por factura o `payment_intent`).
+   Respuestas: 2xx si no hay que reintentar (incluido «evento que no nos toca»), 400 firma no válida, 404 espacio sin Stripe, 500 fallo nuestro (Stripe reintenta).
+4. **Cálculo.** Como cualquier ingreso: «Calcular» en Comisiones → equipo, atribuido al autor de la propuesta (§2), y se aprueba en el libro. Tests: `stripe.test.ts` (firma, venta, duplicados, suscripción con factura adelantada, devolución).

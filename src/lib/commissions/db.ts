@@ -57,4 +57,11 @@ export interface IngestDb {
   insertEvent(tenantId: string, e: EventInsert): Promise<string>;
   accountByRef(tenantId: string, ref: string): Promise<string | null>;
   userByEmail(tenantId: string, email: string): Promise<string | null>;
+  dossierInTenant(tenantId: string, dossierId: string): Promise<boolean>;
+  /** Stripe (lib/commissions/stripe.ts): secreto de firma del webhook del espacio, y suscripción → propuesta. */
+  webhookSecret(tenantId: string): Promise<string | null>;
+  subscriptionDossier(tenantId: string, subscriptionId: string): Promise<string | null>;
+  linkSubscription(tenantId: string, subscriptionId: string, dossierId: string): Promise<void>;
+  /** Pone la propuesta a un ingreso que llegó sin ella (solo si no tenía): no toca importes. */
+  attachDossier(tenantId: string, source: string, externalId: string, dossierId: string): Promise<void>;
 }

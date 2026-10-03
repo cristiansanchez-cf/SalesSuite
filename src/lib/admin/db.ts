@@ -71,6 +71,9 @@ export interface AdminDb {
   /** Tarifas (migración 20261022; sin ella, lista vacía). */
   listPriceOptions(tenantId: string): Promise<PriceOption[]>;
   savePriceOption(tenantId: string, row: Omit<PriceOption, 'id'>, id?: string): Promise<string>;
+  /** Webhook de Stripe del espacio: desde cuándo está conectado (nunca el secreto) y guardarlo (null = desconectar). */
+  stripeWebhookStatus(tenantId: string): Promise<string | null>;
+  setStripeWebhookSecret(tenantId: string, secret: string | null): Promise<void>;
 
   listLinks(dossierIds: string[]): Promise<LinkRecord[]>;
   insertLink(dossierId: string, expiresAt: string | null): Promise<LinkRecord>;

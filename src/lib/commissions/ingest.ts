@@ -35,9 +35,11 @@ export async function normalize(db: IngestDb, tenantId: string, source: string, 
   if (e.account_ref && !accountId) throw new Error(`No hay ninguna cuenta con la referencia ${e.account_ref}`);
   const sellerId = e.seller_email ? await db.userByEmail(tenantId, e.seller_email) : null;
   if (e.seller_email && !sellerId) throw new Error(`${e.seller_email} no está en el equipo`);
+  const dossierId = e.dossier_id && (await db.dossierInTenant(tenantId, e.dossier_id)) ? e.dossier_id : null;
+  if (e.dossier_id && !dossierId) throw new Error(`No hay ninguna propuesta ${e.dossier_id} en este espacio`);
   return {
     source, externalId: e.external_id, kind: e.kind, status, occurredAt: new Date(e.occurred_at).toISOString(), amountCents: amount,
-    revenueCents: revenue ?? amount, currency: e.currency, accountId, dossierId: null, sellerId, offer: e.offer ?? null, metric: e.metric ?? null,
+    revenueCents: revenue ?? amount, currency: e.currency, accountId, dossierId, sellerId, offer: e.offer ?? null, metric: e.metric ?? null,
     quantity: e.quantity ?? null, refundsEventId, note: e.note ?? null,
   };
 }

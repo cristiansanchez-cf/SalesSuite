@@ -54,6 +54,8 @@ export interface PublicDossier {
   discount?: Discount | null;
   /** Logo, fotos y vídeo del cliente (los usa la pantalla en vivo). */
   media?: ClientMedia;
+  /** «Pagar»: enlace de pago de la tarifa con la propuesta y el cupón ya puestos (docs/COMMISSIONS.md §Stripe). */
+  payUrl?: string | null;
   /** Solo items visibles, ordenados por position. */
   items: RenderItem[];
 }

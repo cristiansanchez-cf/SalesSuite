@@ -412,7 +412,11 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   async function previewDossier(id: string): Promise<PublicDossier> {
     const d = await load(id);
-    return toPublicDossier(d, await items(id));
+    const [list, options] = await Promise.all([items(id), d.priceOptionId ? db.listPriceOptions(s.tenantId).catch(() => []) : Promise.resolve([])]);
+    const chosen = options.find((o) => o.id === d.priceOptionId && o.active);
+    // Igual que la pública: con la tarifa activa y precio a la vista, botón «Pagar».
+    const payUrl = chosen?.paymentLink && d.priceMode !== 'none' ? paymentUrl(chosen.paymentLink, { dossierId: d.id, couponCode: d.discount?.code ?? null }) : null;
+    return { ...toPublicDossier(d, list), payUrl };
   }
 
   /** Lo que se vende: la última versión publicada de cada módulo (al colaborador, solo los suyos y sin tarifa). */

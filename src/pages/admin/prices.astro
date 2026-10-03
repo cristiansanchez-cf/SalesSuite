@@ -9,6 +9,7 @@ import Alert from '~/components/ui/Alert.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { pricesMessages } from '~/lib/i18n/messages/prices';
+import { STRIPE_EVENTS } from '~/lib/commissions/stripe';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -25,6 +26,9 @@ if (Astro.request.method === 'POST') {
     if (str('action') === 'create') {
       await t.savePriceOption({ label: str('label'), amount: str('amount'), currency: str('currency'), period: str('period'), paymentLink: str('paymentLink'), segmentId: str('segmentId') });
       ok = 'created';
+    } else if (str('action') === 'stripe') {
+      await t.setStripeSecret(str('secret'));
+      ok = str('secret') ? 'stripe' : 'nostripe';
     } else if (str('action') === 'toggle') {
       await t.setPriceOptionActive(str('id'), str('active') === '1');
       ok = str('active') === '1' ? 'on' : 'off';
@@ -33,7 +37,9 @@ if (Astro.request.method === 'POST') {
   if (!result.error) return Astro.redirect(`/admin/prices${ok ? `?ok=${ok}` : ''}`, 303);
 }
 const okMsg = flash(Astro.url, m.ok);
-const [options, market] = await Promise.all([t.listPriceOptions(), admin.playbook.market().catch(() => [])]);
+const [options, market, stripeSince] = await Promise.all([t.listPriceOptions(), admin.playbook.market().catch(() => []), t.stripeStatus().catch(() => null)]);
+// La URL que se da de alta en Stripe: la de este espacio (el dominio por el que entra el admin).
+const hookUrl = `${Astro.url.origin}/api/v1/stripe/${admin.session.tenantId}`;
 const sectorName = new Map(market.map((s) => [s.id, s.name]));
 ---
 <AdminLayout title={m.title} wide>
@@ -87,5 +93,36 @@ const sectorName = new Map(market.map((s) => [s.id, s.name]));
         <button class="co-btn co-btn--primary w-fit" type="submit">{m.create}</button>
       </form>
     </div>
+
+    <!-- Stripe → comisiones: cada pago desde el botón «Pagar» de una propuesta cuenta para quien la vendió -->
+    <section class="co-card grid gap-4 !p-6" data-testid="stripe-webhook" data-connected={stripeSince ? '1' : '0'}>
+      <div class="flex items-start gap-3">
+        <span class:list={['inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full', stripeSince ? 'bg-[var(--console-good-bg)] text-[color:var(--console-good,#15803d)]' : 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]']} aria-hidden="true"><Icon name={stripeSince ? 'circle-check' : 'wallet'} size={20} /></span>
+        <div class="grid gap-1"><h2 class="co-entity">{m.stripe.title}</h2><p class="co-meta">{stripeSince ? m.stripe.on(f.date(stripeSince, { day: 'numeric', month: 'long', year: 'numeric' })) : m.stripe.off}</p></div>
+      </div>
+      {!stripeSince && (
+        <ol class="grid gap-3 p-0">
+          <li class="list-none grid gap-1"><span class="co-meta">1 · {m.stripe.step1}</span>
+            <span class="flex flex-wrap items-center gap-2"><code class="co-input !w-auto flex-1 truncate font-mono text-xs" data-hook-url>{hookUrl}</code><button type="button" class="co-btn co-btn--ghost co-btn--sm" data-copy-hook>{m.stripe.copy}</button></span></li>
+          <li class="list-none grid gap-1"><span class="co-meta">2 · {m.stripe.step2}</span><span class="flex flex-wrap gap-1.5">{STRIPE_EVENTS.map((e) => <code class="co-chip !text-xs">{e}</code>)}</span></li>
+          <li class="list-none co-meta">3 · {m.stripe.step3}</li>
+        </ol>
+      )}
+      <form method="post" class="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="action" value="stripe" />
+        <label class="co-field min-w-[16rem] flex-1">{m.stripe.secret}<input class="co-input font-mono" name="secret" type="password" autocomplete="off" placeholder="whsec_…" pattern="whsec_[A-Za-z0-9]{10,190}" required /></label>
+        <button class="co-btn co-btn--primary" type="submit" data-testid="stripe-save">{stripeSince ? m.stripe.change : m.stripe.save}</button>
+      </form>
+      {stripeSince && (
+        <form method="post"><input type="hidden" name="action" value="stripe" /><input type="hidden" name="secret" value="" /><button class="co-btn co-btn--quiet co-btn--sm" type="submit">{m.stripe.disconnect}</button></form>
+      )}
+    </section>
   </div>
 </AdminLayout>
+
+<script>
+  document.querySelector('[data-copy-hook]')?.addEventListener('click', async (e) => {
+    const url = document.querySelector('[data-hook-url]')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(url); (e.currentTarget as HTMLButtonElement).textContent = '✓'; } catch { /* se puede seleccionar a mano */ }
+  });
+</script>

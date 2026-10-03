@@ -4,7 +4,7 @@ import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
 import { demoEmitMembership } from '../notify/db-demo';
 import { demoAccountsOnDossier } from '../accounts/db-demo';
-import { demoApplyCoupon } from '../commissions/db-demo';
+import { demoApplyCoupon, demoStripe } from '../commissions/db-demo';
 
 export const newToken = () => randomBytes(24).toString('base64url');
 
@@ -168,6 +168,10 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       return db().price_option.filter((o) => o.tenant_id === tenantId)
         .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default }))
         .sort((a, b) => a.position - b.position || a.amount - b.amount);
+    },
+    async stripeWebhookStatus(tenantId) { return demoStripe.secrets.get(tenantId)?.at ?? null; },
+    async setStripeWebhookSecret(tenantId, secret) {
+      if (secret) demoStripe.secrets.set(tenantId, { secret, at: new Date().toISOString() }); else demoStripe.secrets.delete(tenantId);
     },
     async savePriceOption(tenantId, o, id) {
       const s = db();

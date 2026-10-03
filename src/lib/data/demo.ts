@@ -8,7 +8,7 @@ import type { PublicRepository } from './index';
 import { toPublicDossier, toTenant, type PublicDossierRow } from './mappers';
 import { demoDb, type DemoDb } from './store';
 
-export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossier' | 'dossier_item' | 'module_version' | 'module'>, token: string, tenantId: string, now = new Date()): PublicDossierRow | null {
+export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossier' | 'dossier_item' | 'module_version' | 'module'> & Partial<Pick<DemoDb, 'price_option'>>, token: string, tenantId: string, now = new Date()): PublicDossierRow | null {
   const link = db.share_link.find((l) => l.token === token);
   if (!link || !link.is_active || (link.expires_at && new Date(link.expires_at) <= now)) return null;
   const d = db.dossier.find((x) => x.id === link.dossier_id);
@@ -29,7 +29,9 @@ export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossie
   return {
     id: d.id, tenant_id: d.tenant_id, title: d.title, prospect_name: d.prospect_name, prospect_company: d.prospect_company,
     locale: d.locale, price_mode: d.price_mode, total_price: d.total_price,
-    currency: d.currency, theme_override: d.theme_override, discount: (d.discount as PublicDossierRow['discount']) ?? null, media: (d as { client_media?: PublicDossierRow['media'] }).client_media ?? {}, items,
+    currency: d.currency, theme_override: d.theme_override, discount: (d.discount as PublicDossierRow['discount']) ?? null, media: (d as { client_media?: PublicDossierRow['media'] }).client_media ?? {},
+    payment_link: (db.price_option ?? []).find((o) => o.id === d.price_option_id && o.tenant_id === d.tenant_id && o.active)?.payment_link ?? null,
+    items,
   };
 }
 

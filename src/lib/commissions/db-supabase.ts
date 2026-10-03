@@ -198,5 +198,20 @@ export function supabaseIngestDb(sb: SupabaseClient): IngestDb {
       const rows = check(await sb.from('membership').select('user_id, users!membership_user_id_fkey!inner(email)').eq('tenant_id', t).ilike('users.email', email.replace(/[%_\\]/g, (c) => `\\${c}`))) ?? [];
       return (rows[0] as Row | undefined)?.user_id ?? null;
     },
+    async dossierInTenant(t, id) { return !!check(await sb.from('dossier').select('id').eq('tenant_id', t).eq('id', id).maybeSingle()); },
+    async webhookSecret(t) {
+      const r = check(await sb.from('tenant_secret').select('secret').eq('tenant_id', t).eq('kind', 'stripe_webhook').maybeSingle()) as Row | null;
+      return r?.secret ?? null;
+    },
+    async subscriptionDossier(t, sub) {
+      const r = check(await sb.from('stripe_subscription').select('dossier_id').eq('tenant_id', t).eq('subscription_id', sub).maybeSingle()) as Row | null;
+      return r?.dossier_id ?? null;
+    },
+    async linkSubscription(t, sub, dossierId) {
+      check(await sb.from('stripe_subscription').upsert({ tenant_id: t, subscription_id: sub, dossier_id: dossierId }, { onConflict: 'tenant_id,subscription_id', ignoreDuplicates: true }));
+    },
+    async attachDossier(t, source, externalId, dossierId) {
+      check(await sb.from('revenue_event').update({ dossier_id: dossierId }).eq('tenant_id', t).eq('source', source).eq('external_id', externalId).is('dossier_id', null));
+    },
   };
 }

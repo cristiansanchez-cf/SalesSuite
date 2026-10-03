@@ -146,6 +146,12 @@ function full(sb: SupabaseClient): AdminDb {
       if (error) { if (/price_option/.test(error.message)) return []; throw new Error(error.message); }
       return (data ?? []).map(toPriceOption).sort((a, b) => a.position - b.position || a.amount - b.amount);
     },
+    async stripeWebhookStatus(tenantId) {
+      return (check(await sb.rpc('stripe_webhook_status', { p_tenant: tenantId })) as string | null) ?? null;
+    },
+    async setStripeWebhookSecret(tenantId, secret) {
+      check(await sb.rpc('set_stripe_webhook_secret', { p_tenant: tenantId, p_secret: secret ?? '' }));
+    },
     async savePriceOption(tenantId, o, id) {
       const row = {
         tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink,

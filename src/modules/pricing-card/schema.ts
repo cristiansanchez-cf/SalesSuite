@@ -10,6 +10,8 @@ export const pricingCardSchema = z.object({
   /** Texto cuando el dossier no muestra precio (price_mode = none). */
   noPriceLabel: z.string().max(60).default('Precio a medida'),
   taxNote: z.string().max(80).default('IVA no incluido'),
+  /** Botón de pago (sale solo si la tarifa tiene enlace de pago de Stripe). */
+  payLabel: z.string().min(1).max(40).default('Pagar ahora'),
   cta: z.object({
     label: z.string().min(1).max(40),
     href: z.string().max(500).refine((h) => /^(https:\/\/|mailto:|tel:|#|\/)/.test(h), 'href https/mailto/tel/#/ruta'),

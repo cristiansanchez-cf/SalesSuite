@@ -1,5 +1,6 @@
 import { parseBrand } from '../brand';
 import { parseTheme } from '../theme';
+import { paymentUrl } from '../admin/payment';
 import type { PublicDossier, RenderItem, TenantContext } from '../types';
 
 /** Filas snake_case (Postgres / fixtures) → modelos de la app. Compartido por demo y supabase. */
@@ -22,6 +23,8 @@ export interface PublicDossierRow {
   theme_override: unknown;
   discount?: PublicDossier['discount'];
   media?: PublicDossier['media'] | null;
+  /** Enlace de pago de la tarifa elegida (si está activa). */
+  payment_link?: string | null;
   items: Array<{
     id: string; position: number | string; block_type: string; module_key: string;
     default_props: Record<string, unknown> | null; prop_overrides: Record<string, unknown> | null;
@@ -42,6 +45,8 @@ export const toPublicDossier = (r: PublicDossierRow): PublicDossier => ({
   themeOverride: r.theme_override == null ? null : parseTheme(r.theme_override),
   discount: r.discount ?? null,
   media: r.media ?? {},
+  // «Pagar»: la tarifa + la propuesta (→ quien la vendió) + el cupón. Sin precio a la vista, no hay botón.
+  payUrl: r.payment_link && r.price_mode !== 'none' ? paymentUrl(r.payment_link, { dossierId: r.id, couponCode: r.discount?.code ?? null }) : null,
   items: r.items
     .map((i): RenderItem => ({
       id: i.id,

@@ -110,6 +110,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const types = await v.$$eval('[data-block-type]', (els) => els.map((e) => e.dataset.blockType));
   assert(JSON.stringify(types) === JSON.stringify(['tabs-showcase', 'tabs-showcase', 'pricing-card']), `orden público + oculto ausente ${types}`);
   assert((await v.textContent('body')).replace(/\s/g, ' ').includes('700 €'), 'precio de la tarifa en el enlace público');
+  const payHref = await v.getAttribute('[data-testid=pricing-pay]', 'href');
+  assert(payHref?.startsWith('https://buy.stripe.com/test_boda') && /client_reference_id=dossier_[0-9a-f-]{36}/.test(payHref), `«Pagar» lleva la tarifa y la propuesta (→ comisión de quien vende): ${payHref}`);
   assert((await v.$eval('.ds-root', (e) => getComputedStyle(e).getPropertyValue('--color-primary').trim())) === '255 39 187', 'tema Enjoy');
   if (OUT) await v.screenshot({ path: `${OUT}/public-tablet.png`, fullPage: true });
 
@@ -118,6 +120,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.locator('[data-testid=price-kind]', { hasText: 'Evento suelto' }).click(); await settle();
   await v.reload();
   assert((await v.textContent('body')).replace(/\s/g, ' ').includes('150 €'), 'cambio de tarifa reflejado en vivo en el enlace');
+  assert(!(await v.$('[data-testid=pricing-pay]')), 'tarifa sin enlace de pago: sin botón «Pagar»');
 
   // 6. Negativos: revocar → 404; despublicar → 404
   await p.click('text=Revocar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();

@@ -1,19 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { applyMapping, ingest } from './ingest';
-import type { IngestDb } from './db';
-import type { RevenueEvent } from './types';
-
-function memDb(): IngestDb & { rows: RevenueEvent[] } {
-  const rows: RevenueEvent[] = [];
-  return {
-    rows,
-    async tenantForKey() { return null; }, async touchKey() {}, async connector() { return null; },
-    async findEvent(t, s, x) { return rows.find((r) => r.tenantId === t && r.source === s && r.externalId === x) ?? null; },
-    async insertEvent(t, e) { const id = `id${rows.length + 1}`; rows.push({ ...e, id, tenantId: t, createdAt: '' }); return id; },
-    async accountByRef(_t, ref) { return ref === 'oquea:c1' ? 'acc-1' : null; },
-    async userByEmail(_t, email) { return email === 'ana@x.es' ? 'ana' : null; },
-  };
-}
+import { memDb } from './testing';
 
 describe('entrada de ingresos', () => {
   test('Oquea: volumen con take rate → ingreso de la empresa', async () => {

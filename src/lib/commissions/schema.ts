@@ -61,6 +61,8 @@ export const eventInput = z.object({
   metric: z.string().regex(/^[a-z0-9_]{1,60}$/).optional(),
   quantity: z.coerce.number().min(0).optional(),
   refunds_external_id: z.string().trim().max(200).optional(),
+  /** La propuesta que generó el ingreso (→ quien la vendió). */
+  dossier_id: z.string().uuid().optional(),
   note: z.string().max(500).optional(),
 }).superRefine((e, ctx) => {
   if (e.kind === 'metric' && (!e.metric || e.quantity == null)) ctx.addIssue({ code: 'custom', message: 'Una métrica necesita metric y quantity' });

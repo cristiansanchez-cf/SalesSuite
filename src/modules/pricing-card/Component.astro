@@ -8,8 +8,10 @@ import type { ModuleBaseProps } from '../types';
 import { pricingFigure, type PricingCardProps } from './schema';
 
 type Props = PricingCardProps & ModuleBaseProps;
-const { eyebrow, title, subtitle, features, priceSuffix, noPriceLabel, taxNote, cta, ctx } = Astro.props;
+const { eyebrow, title, subtitle, features, priceSuffix, noPriceLabel, taxNote, cta, payLabel, ctx } = Astro.props;
 const figure = pricingFigure(ctx);
+// «Pagar»: la tarifa elegida, con la propuesta (→ comisión de quien la vendió) y el cupón ya puestos.
+const pay = figure ? ctx.payUrl ?? null : null;
 const t = (s: string) => interpolate(s, ctx);
 ---
 <div data-module="pricing-card">
@@ -28,6 +30,12 @@ const t = (s: string) => interpolate(s, ctx);
             : <span class="font-display text-3xl font-extrabold">{noPriceLabel}</span>}
         </p>
         {figure && taxNote && <p class="mt-1 text-sm opacity-75">{taxNote}</p>}
+        {pay && (
+          <div class="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <a href={pay} class="pricing-card__pay" rel="noopener" data-testid="pricing-pay"><Icon name="check" size={18} />{payLabel}</a>
+            <span class="text-sm opacity-80">Pago seguro con Stripe</span>
+          </div>
+        )}
       </div>
       {(features.length > 0 || cta) && (
         <div class="p-8 sm:p-10">
@@ -41,9 +49,17 @@ const t = (s: string) => interpolate(s, ctx);
               ))}
             </ul>
           )}
-          {cta && <div class="mt-8"><Button href={cta.href} variant="primary">{cta.label} <Icon name="arrow" size={16} /></Button></div>}
+          {cta && <div class="mt-8"><Button href={cta.href} variant={pay ? 'ghost' : 'primary'}>{cta.label} <Icon name="arrow" size={16} /></Button></div>}
         </div>
       )}
     </div>
   </Section>
 </div>
+
+<style>
+  /* Pagar: el botón más visible de la propuesta (sobre el color de marca, en su contraste). */
+  .pricing-card__pay { display: inline-flex; align-items: center; gap: .5rem; min-height: 52px; padding: .8rem 1.6rem; border-radius: var(--radius-button, 999px);
+    background: rgb(var(--color-primary-contrast)); color: rgb(var(--color-primary)); font-weight: 800; font-size: 1.1rem; box-shadow: 0 12px 30px -10px rgb(0 0 0 / .45);
+    transition: transform .15s ease; }
+  .pricing-card__pay:hover { transform: translateY(-1px) scale(1.02); }
+</style>

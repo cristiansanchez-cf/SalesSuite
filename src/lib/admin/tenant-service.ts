@@ -404,8 +404,17 @@ export function createTenantAdminService(
     await db.savePriceOption(s.tenantId, { ...rest, active }, id);
   }
 
+  // Stripe → comisiones: el admin pega el secreto de firma de su webhook (whsec_…). No se vuelve a mostrar.
+  async function stripeStatus() { requireAdmin(); return db.stripeWebhookStatus(s.tenantId); }
+  async function setStripeSecret(raw: unknown) {
+    requireAdmin();
+    const secret = String(raw ?? '').trim();
+    if (secret && !/^whsec_[A-Za-z0-9]{10,190}$/.test(secret)) throw new AdminError(422, 'Pega el «Secreto de firma» del webhook: empieza por whsec_');
+    await db.setStripeWebhookSecret(s.tenantId, secret || null);
+  }
+
   return {
-    listPriceOptions, savePriceOption, setPriceOptionActive,
+    listPriceOptions, savePriceOption, setPriceOptionActive, stripeStatus, setStripeSecret,
     partnerInvite, myInvitees,
     listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
     listMembers, invite, setRole, removeMember,
