@@ -35,6 +35,8 @@ export interface ClientMedia {
   features?: { songs?: boolean; photos?: boolean; messages?: boolean; album?: boolean };
   /** Estilo musical de los ejemplos (clave de MUSIC_STYLES). */
   musicStyle?: string | null;
+  /** Cómo se ve: diapositivas horizontales (por defecto, como una presentación) o todo hacia abajo. */
+  layout?: 'slides' | 'scroll';
 }
 
 export interface PublicDossier {

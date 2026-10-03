@@ -72,10 +72,12 @@ En desarrollo, añade lo mismo a `supabase/seed/fixtures.json` y ejecuta `npm ru
 
 ## Caso: `live-screen` (Pantalla en vivo de Enjoy)
 
-La pantalla real del local, interactiva, para enseñarla en la tablet: botonera de estados (Reclamo, Canción, Foto, Dedicatoria, Platino, Encima de tus visuales…) con una frase de qué vende cada uno, el móvil pequeño que escanea el QR abajo a la derecha antes de cada petición y un recorrido solo (▶︎) que se para en cuanto el vendedor toca una pantalla.
+La pantalla real del local, interactiva, para enseñarla en la tablet: botonera de estados (Reclamo, Canción, Foto, Dedicatoria, Encima de tus visuales…; sin tramos de pago ni importes) con una frase de qué vende cada uno, el móvil pequeño que escanea el QR abajo a la derecha antes de cada petición y un recorrido solo (▶︎) que se para en cuanto el vendedor toca una pantalla.
 
 - `engine.js` / `engine.css` son el motor del kit de Enjoy (`enjoy-screen-ui-kit.html`) **casi verbatim**. Únicos cambios: variables con prefijo `--es-` (las del dossier, `--color-*`, son tripletas RGB) y la rotación del reclamo se limpia en `destroy`. Por eso es la excepción a «no CSS global»: todo va bajo clases `es-*`.
 - No tocar (decisiones de producto, ver el BRIEF del kit): unidades `cqw/cqh/cqmin`, fotos `contain` y carátulas `cover`, la paleta, el QR siempre en la misma esquina, el chip «GRATIS» pequeño.
 - La configuración viaja en `<script type="application/json">` con `<` escapado (otra excepción acotada a `set:html`: es JSON, nunca HTML).
 - Assets (QR real, fotos del público, capturas del móvil) son props: los del espacio. Sin carátulas, el cliente dibuja un vinilo de color.
 - La pantalla **solo muestra**: no cobra ni gestiona la cola. No venderla como si lo hiciera.
+- Sin importes: la propuesta nunca enseña tramos de pago (nada de «Platino 100 €»: asusta al cliente). `client.ts` fuerza `amount: 0`.
+- `venueVideo` ({webm, mp4, poster}): visuales de ejemplo para el modo transparente cuando no hay vídeo del cliente.

@@ -129,19 +129,12 @@
           {
             "scene": "club.photo",
             "label": "Foto",
-            "says": "Su foto en grande y entera (nunca se recorta una cara). Es lo que más se comparte.",
-            "amount": 20
+            "says": "Su foto en grande y entera (nunca se recorta una cara). Es lo que más se comparte."
           },
           {
             "scene": "club.message",
             "label": "Dedicatoria",
             "says": "Un mensaje delante de toda la sala. Se cobra aparte y funciona solo."
-          },
-          {
-            "scene": "club.song",
-            "label": "Platino · 100 €",
-            "says": "Cuanto más paga, más grande sale: el tramo Platino se ve desde la otra punta del local.",
-            "amount": 100
           },
           {
             "scene": "tp.idle",
@@ -154,7 +147,12 @@
             "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
           }
         ],
-        "autoplay": true
+        "autoplay": true,
+        "venueVideo": {
+          "webm": "asset:img/live/venue.webm",
+          "mp4": "asset:img/live/venue.mp4",
+          "poster": "asset:img/live/venue-poster.webp"
+        }
       }
     },
     {

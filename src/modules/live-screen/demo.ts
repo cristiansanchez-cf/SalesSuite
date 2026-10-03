@@ -7,7 +7,7 @@ export const DEMO = {
   ],
   photos: [
     { by: 'Lucía Sáaz', dedication: '¡Las chicxs!!! 🔥' },
-    { by: 'Dani',       dedication: 'Cumple de Nerea 🎂' }
+    { by: 'Dani',       dedication: 'La mejor noche del año ✨' }
   ],
   messages: [
     { by: '',      dedication: 'A alguien de la mesa 5 le gusta la chica de la mesa 1, su insta es @mikimo…' },

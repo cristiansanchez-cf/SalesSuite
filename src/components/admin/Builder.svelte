@@ -89,6 +89,10 @@
     const st = await postMedia({ step: 'options', features: { ...feat, [k]: !feat[k] } });
     if (st) { s = st; previewKey++; }
   }
+  async function setLayout(k: 'slides' | 'scroll') {
+    const st = await postMedia({ step: 'options', layout: k });
+    if (st) { s = st; previewKey++; }
+  }
   async function setStyle(k: string) {
     const st = await postMedia({ step: 'options', musicStyle: k });
     if (st) { s = st; previewKey++; }
@@ -542,7 +546,13 @@
           </div>
           <p class="co-help mt-3">{t.media.where}</p>
           <div class="mt-5 grid gap-2 border-t border-[var(--console-divider)] pt-4">
-            <p class="media-tile__label">{t.media.has}</p>
+            <p class="media-tile__label">{t.media.layout}</p>
+            <div class="co-chips" data-testid="media-layout">
+              {#each Object.entries(t.media.layouts) as [k, label] (k)}
+                <button type="button" class="co-chip" aria-pressed={(media.layout ?? 'slides') === k} onclick={() => setLayout(k as 'slides')} data-testid="layout-{k}">{label}</button>
+              {/each}
+            </div>
+            <p class="media-tile__label mt-2">{t.media.has}</p>
             <div class="co-chips" data-testid="media-features">
               {#each Object.entries(t.media.features) as [k, label] (k)}
                 <button type="button" class="co-chip" aria-pressed={feat[k as 'songs']} onclick={() => setFeature(k as 'songs')} data-testid="feature-{k}">{label}</button>

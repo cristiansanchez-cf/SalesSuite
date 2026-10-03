@@ -16,3 +16,16 @@ Idea de venta: con su logo, un generador de vídeo (Gemini, Runway…) hace en 5
 - Permisos (migración `20261024000000_client_media.sql`): solo el autor de la propuesta, un admin o el jefe/a de ventas, y solo en `<espacio>/dossiers/<propuesta>/…` (`can_edit_dossier_media`). Test: `supabase/tests/42_client_media.test.sql`.
 - Se guarda en `dossier.client_media` (`{logo, photos[], video}`), la propuesta pública lo devuelve (`media`) y llega a los módulos en `ctx.media`. Hoy lo usa la pantalla en vivo; cualquier módulo puede.
 - En demo no hay Storage: los archivos van a memoria (`/demo-media/…`) y se pierden al reiniciar.
+
+## Cómo se ve: presentación o hacia abajo
+
+En la misma tarjeta, **Cómo se ve**: «Presentación» (por defecto) o «Hacia abajo». Se guarda en `client_media.layout` (`'slides' | 'scroll'`, sin migración: va dentro del jsonb).
+
+- **Presentación** (`DossierView.astro`): una sección por pantalla, en horizontal, como pasar páginas. Flechas a los lados (abajo en el móvil), deslizar con el dedo (scroll-snap), teclado (← → / RePág AvPág), puntos y «3 / 8». La diapositiva actual entra con un pequeño zoom; `#4` en la URL guarda dónde estás. Lo que no cabe se baja dentro de la diapositiva.
+- Un módulo puede partirse en varias diapositivas con `parts` en el registro. Hoy, el móvil del invitado: 1–3 «Escanea y entra», 4–6 «Y sale en pantalla», álbum y canciones (lo que el cliente no tenga, fuera). Cada trozo va solo con una barra que dice cuánto falta para el siguiente paso.
+- El destinatario puede cambiarlo con «Ver hacia abajo» / «Ver como presentación» (`?ver=scroll|slides`).
+- Analítica: el tiempo por sección sigue igual (`data-item-id` en cada diapositiva); «hasta dónde ha llegado» es la diapositiva más lejana vista.
+
+## Vídeo del local de ejemplo
+
+Las pantallas «Encima de tus visuales» y «Foto en tarjeta» necesitan unos visuales de fondo. Si el comercial no ha subido el vídeo del cliente, sale uno de ejemplo (`venueVideo` en la pantalla en vivo: `img/live/venue.webm` y `.mp4`, luces de club generadas, sin derechos de terceros). El navegador elige el formato que reproduce.

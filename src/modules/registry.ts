@@ -4,6 +4,8 @@ import { tabsShowcaseSchema } from './tabs-showcase/schema';
 import { pricingCardSchema } from './pricing-card/schema';
 import { liveScreenSchema } from './live-screen/schema';
 import { phoneTourSchema } from './phone-tour/schema';
+import { partsFor } from './phone-tour/steps';
+import type { ModuleContext } from './types';
 
 /**
  * Registry build-time: block_type → { schema de props, componente (lazy) }.
@@ -39,6 +41,8 @@ export const REGISTRY = {
     schema: phoneTourSchema,
     example: { title: 'Así lo vive cada invitado' },
     load: () => import('./phone-tour/Component.astro'),
+    // En presentación, una diapositiva por trozo del recorrido (no un recorrido de 8 pasos en una).
+    parts: (props: Record<string, unknown>, ctx: ModuleContext) => partsFor(ctx.media, '', Number(props.price ?? 2)).map((part) => ({ part })),
   },
 } as const satisfies Record<string, {
   label: string;
@@ -46,6 +50,8 @@ export const REGISTRY = {
   /** Props mínimas válidas: punto de partida al crear un módulo desde la consola. */
   example: Record<string, unknown>;
   load: () => Promise<{ default: unknown }>;
+  /** Modo presentación: si el módulo se parte en varias diapositivas, las props extra de cada una. */
+  parts?: (props: Record<string, unknown>, ctx: ModuleContext) => Array<Record<string, unknown>>;
 }>;
 
 export type BlockType = keyof typeof REGISTRY;

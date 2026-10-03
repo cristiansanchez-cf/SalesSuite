@@ -26,9 +26,9 @@ export const liveScreenSchema = z.object({
     scene: z.enum(LIVE_SCENES),
     label: z.string().min(1).max(30),
     says: z.string().max(220).default(''),
-    /** € de la puja: cuanto más paga, más grande sale. */
-    amount: z.number().min(0).max(1000).optional(),
   })).min(1).max(10),
+  /** Vídeo del local de ejemplo (los visuales sobre los que va el modo transparente). webm y mp4: cada navegador coge el suyo. */
+  venueVideo: z.object({ webm: url.optional(), mp4: url.optional(), poster: url.optional() }).optional(),
   /** Pantalla extra cuando el comercial sube un vídeo del cliente (Personalizar): sus visuales de fondo. */
   videoScene: z.object({ label: z.string().min(1).max(30), says: z.string().max(220) }).default({
     label: 'Su vídeo',

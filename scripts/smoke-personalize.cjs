@@ -77,7 +77,21 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForFunction(() => document.querySelector('[data-testid=style-rock]')?.getAttribute('aria-pressed') === 'true');
   await pub.reload({ waitUntil: 'networkidle' });
   assert((await pub.textContent('[data-module=phone-tour]')).includes('Bon Jovi'), 'estilo rock: canciones de rock en el móvil');
-  if (OUT) await pub.locator('[data-module=phone-tour]').screenshot({ path: `${OUT}/personalize-phone-tour.png` });
+  if (OUT) await pub.locator('[data-module=phone-tour]').first().screenshot({ path: `${OUT}/personalize-phone-tour.png` });
+
+  // presentación (por defecto): diapositivas en horizontal; el móvil del invitado, partido en trozos
+  assert(await pub.isVisible('[data-testid=deck]'), 'por defecto, modo presentación');
+  assert((await pub.locator('[data-module=phone-tour]').count()) === 3, 'móvil del invitado en 3 diapositivas');
+  const count = async () => (await pub.textContent('[data-count]')).trim();
+  const before = await count();
+  await pub.click('[data-next]'); await pub.waitForTimeout(900);
+  assert((await count()) !== before, `flecha → siguiente diapositiva (${before} → ${await count()})`);
+  await pub.keyboard.press('ArrowLeft'); await pub.waitForTimeout(900);
+  assert((await count()) === before, 'teclado ← vuelve');
+  await p.click('[data-testid=layout-scroll]');
+  await p.waitForFunction(() => document.querySelector('[data-testid=layout-scroll]')?.getAttribute('aria-pressed') === 'true');
+  await pub.reload({ waitUntil: 'networkidle' });
+  assert(!(await pub.isVisible('[data-testid=deck]')) && (await pub.locator('[data-module=phone-tour]').count()) === 1, '«Hacia abajo»: todo seguido, un solo recorrido');
 
   // quitar
   await p.click('[data-testid=media-photos] .media-x');

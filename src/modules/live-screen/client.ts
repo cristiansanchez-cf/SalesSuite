@@ -5,12 +5,13 @@ import { DEMO } from './demo';
  * Por instancia: una pantalla (motor del producto) + el móvil que escanea y pide + la botonera del vendedor.
  * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla, se queda en ella (▶︎ lo reanuda).
  */
-type Scene = { scene: string; amount: number; video?: boolean };
+type Scene = { scene: string; video?: boolean };
 interface Config {
   assets: Record<string, unknown> & { covers: string[] };
   phone: { song?: string; photo?: string; message?: string };
   /** Canciones del estilo del local (sustituyen a las de ejemplo del kit, en el mismo orden que las carátulas). */
   songs?: Array<{ song: string; artist: string }>;
+  video?: { own?: string; webm?: string; mp4?: string };
   /** Su propia foto (Personalizar): el móvil la enseña al enviarla. */
   ownPhoto?: string | null;
   autoplay: boolean;
@@ -27,6 +28,15 @@ function coverFor(title: string, i: number): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+/** Su vídeo, o el de ejemplo en el formato que este navegador reproduzca (webm/VP9 o mp4/H.264). */
+function pickVideo(v: Config['video']): string[] {
+  if (!v) return [];
+  if (v.own) return [v.own];
+  const probe = document.createElement('video');
+  const src = v.webm && probe.canPlayType('video/webm; codecs="vp9"') ? v.webm : v.mp4 && probe.canPlayType('video/mp4; codecs="avc1.4D401E"') ? v.mp4 : v.webm ?? v.mp4;
+  return src ? [src] : [];
+}
+
 let engineReady: Promise<(el: HTMLElement, o?: Record<string, unknown>) => Screen> | null = null;
 function loadEngine(cfg: Config) {
   // El motor lee ASSETS/DEMO al cargarse: se ponen antes (los del espacio; mismas para todas las pantallas de la página).
@@ -38,7 +48,7 @@ function loadEngine(cfg: Config) {
       ? cfg.songs.map((x, i) => ({ ...x, by: BY[i % BY.length], dedication: DED[i % DED.length] }))
       : DEMO.songs;
     const ranking = cfg.songs?.length ? cfg.songs.map((x, i) => ({ ...x, votes: [12, 8, 5, 3, 2, 1][i] ?? 1 })) : DEMO.ranking;
-    w.ASSETS = { ...cfg.assets, covers: cfg.assets.covers.length ? cfg.assets.covers : songs.map((s, i) => coverFor(s.song, i)) };
+    w.ASSETS = { ...cfg.assets, videos: pickVideo(cfg.video), covers: cfg.assets.covers.length ? cfg.assets.covers : songs.map((s, i) => coverFor(s.song, i)) };
     w.DEMO = { ...DEMO, songs, ranking };
     engineReady = import('./engine.js').then(() => w.EnjoyScreen as (el: HTMLElement, o?: Record<string, unknown>) => Screen);
   }
@@ -81,7 +91,8 @@ export function init(root: HTMLElement): () => void {
     idx = (i + cfg.scenes.length) % cfg.scenes.length;
     const s = cfg.scenes[idx];
     mark(idx);
-    const show = () => { screen?.set('amount', s.amount); screen?.show(s.scene); };
+    // Sin tramos de pago en la propuesta: nunca se enseñan importes.
+    const show = () => { screen?.set('amount', 0); screen?.show(s.scene); };
     if (s.video && withPhone && !reduced && phone) {
       // Su vídeo: el móvil lo sube (barra), desaparece y el vídeo aparece de fondo en la pantalla.
       phoneState('is-in', 'is-upload');

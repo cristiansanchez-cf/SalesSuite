@@ -6,7 +6,7 @@
 import ThemedShell from '~/layouts/ThemedShell.astro';
 import ItemPrice from '~/components/ItemPrice.astro';
 import BrandBar from './BrandBar.astro';
-import { contactLinks } from '~/lib/contact';
+import DossierFooter from './DossierFooter.astro';
 import { requestOrigin } from '~/lib/http';
 import { resolveTotal } from '~/lib/pricing';
 import type { PublicDossier, TenantContext } from '~/lib/types';
@@ -25,10 +25,21 @@ const blocks = await Promise.all(
       console.error(`[dossier ${dossier.id}] item ${r.item.id} omitido: ${r.reason}`);
       return null;
     }
-    const mod = await REGISTRY[r.blockType].load();
-    return { ...r, Comp: mod.default as unknown as (props: Record<string, unknown>) => unknown };
+    const entry = REGISTRY[r.blockType] as (typeof REGISTRY)[keyof typeof REGISTRY] & { parts?: (p: Record<string, unknown>, c: import('~/modules/types').ModuleContext) => Array<Record<string, unknown>> };
+    const mod = await entry.load();
+    return { ...r, parts: entry.parts, Comp: mod.default as unknown as (props: Record<string, unknown>) => unknown };
   }),
 );
+// Cómo se ve: presentación (diapositivas en horizontal, por defecto) o todo hacia abajo. El destinatario puede cambiarlo (?ver=).
+const asked = Astro.url.searchParams.get('ver');
+const layout: 'slides' | 'scroll' = asked === 'scroll' || asked === 'slides' ? asked : (dossier.media?.layout ?? 'slides');
+const slides = blocks.flatMap((b) => {
+  if (!b) return [];
+  const parts = layout === 'slides' && b.parts ? b.parts(b.props as Record<string, unknown>, b.ctx) : [];
+  const list = parts.length ? parts : [{}];
+  return list.map((extra, i) => ({ b, extra, last: i === list.length - 1 }));
+});
+const verUrl = (v: 'slides' | 'scroll') => { const u = new URL(Astro.url); u.searchParams.set('ver', v); u.hash = ''; return `${u.pathname}${u.search}`; };
 const prospect = dossier.prospectCompany ?? dossier.prospectName;
 const og = {
   title: dossier.title,
@@ -36,7 +47,6 @@ const og = {
   // og:image debe ser absoluta para WhatsApp/Slack.
   image: tenant.brand.ogImageUrl && new URL(tenant.brand.ogImageUrl, requestOrigin(Astro.request, Astro.url)).toString(),
 };
-const contacts = contactLinks(tenant.brand, dossier.title);
 ---
 <ThemedShell
   title={dossier.title}
@@ -49,24 +59,43 @@ const contacts = contactLinks(tenant.brand, dossier.title);
 >
   {banner && <div class="sticky top-0 z-50 bg-ink py-2 text-center text-xs font-semibold text-bg">{banner}</div>}
   <BrandBar brand={tenant.brand} tenantName={tenant.name} dossierTitle={dossier.title} />
-  <main>
-    {blocks.map((b) => b && (
-      <div data-item-id={b.item.id} data-block-type={b.blockType}>
-        <b.Comp {...b.props} ctx={b.ctx} />
-        {b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
+  {layout === 'slides' ? (
+    <main class="deck" data-deck data-testid="deck" aria-roledescription="presentación">
+      <div class="deck__track" data-track tabindex="-1">
+        {slides.map(({ b, extra, last }, i) => (
+          <section class="deck__slide" data-item-id={b.item.id} data-block-type={b.blockType} data-slide={i} aria-roledescription="diapositiva" aria-label={`${i + 1} / ${slides.length}`}>
+            <div class="deck__inner">
+              <b.Comp {...b.props} {...extra} ctx={b.ctx} />
+              {last && b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
+              {i === slides.length - 1 && <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} />}
+            </div>
+          </section>
+        ))}
       </div>
-    ))}
-  </main>
-  <footer class="border-t border-line py-10 text-center text-sm text-muted" data-testid="brand-footer">
-    {tenant.brand.logoUrl && <img src={tenant.brand.logoUrl} alt={tenant.brand.logoAlt ?? tenant.name} class="mx-auto mb-4 h-7 w-auto opacity-80" loading="lazy" />}
-    <p>{tenant.name} · Propuesta para {prospect ?? dossier.title}</p>
-    {contacts.length > 0 && (
-      <p class="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1">
-        {contacts.map((c) => <a class="underline-offset-4 hover:underline" href={c.href} target={c.external ? '_blank' : undefined} rel="noopener noreferrer">{c.label}</a>)}
-      </p>
-    )}
-    {tenant.brand.legal && <p class="mt-3 text-xs">{tenant.brand.legal}</p>}
-  </footer>
+      <button type="button" class="deck__arrow deck__arrow--prev" data-prev aria-label="Anterior" disabled>‹</button>
+      <button type="button" class="deck__arrow deck__arrow--next" data-next aria-label="Siguiente">›</button>
+      <nav class="deck__bar" aria-label="Diapositivas">
+        <div class="deck__dots">
+          {slides.map((_, i) => <button type="button" class="deck__dot" data-dot={i} aria-label={`Ir a ${i + 1}`} aria-current={i === 0 ? 'step' : undefined}></button>)}
+        </div>
+        <span class="deck__count" data-count>1 / {slides.length}</span>
+        <a class="deck__switch" href={verUrl('scroll')} data-testid="layout-scroll">Ver hacia abajo</a>
+      </nav>
+    </main>
+  ) : (
+    <>
+      <main>
+        {blocks.map((b) => b && (
+          <div data-item-id={b.item.id} data-block-type={b.blockType}>
+            <b.Comp {...b.props} ctx={b.ctx} />
+            {b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
+          </div>
+        ))}
+      </main>
+      <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} />
+      <a class="deck__switch deck__switch--float" href={verUrl('slides')} data-testid="layout-slides">▸ Ver como presentación</a>
+    </>
+  )}
   {track && (
     <script is:inline data-track={track}>
       (() => {
@@ -84,7 +113,9 @@ const contacts = contactLinks(tenant.brand, dossier.title);
         let visibleMs = 0, last = performance.now(), scroll = 0;
         const io = new IntersectionObserver((es) => es.forEach((e) => { const id = e.target.dataset.itemId; if (e.isIntersecting && e.intersectionRatio >= 0.3) inView.add(id); else inView.delete(id); }), { threshold: [0, 0.3, 0.6] });
         document.querySelectorAll('[data-item-id]').forEach((n) => io.observe(n));
-        const measureScroll = () => { const h = document.documentElement; const p = Math.round((100 * (h.scrollTop + innerHeight)) / Math.max(h.scrollHeight, 1)); if (p > scroll) scroll = Math.min(100, p); };
+        const measureScroll = () => { const h = document.documentElement;
+          // En presentación, «hasta dónde ha llegado» es la diapositiva más lejana vista.
+          if (h.dataset.deckProgress) { const p = Number(h.dataset.deckProgress); if (p > scroll) scroll = Math.min(100, p); return; } const p = Math.round((100 * (h.scrollTop + innerHeight)) / Math.max(h.scrollHeight, 1)); if (p > scroll) scroll = Math.min(100, p); };
         const tick = () => { const t = performance.now(); const dt = Math.min(t - last, 5000); last = t; if (document.visibilityState === 'visible') { visibleMs += dt; inView.forEach((id) => { sections[id] = (sections[id] || 0) + dt; }); } };
         const send = () => {
           tick(); measureScroll();
@@ -95,6 +126,7 @@ const contacts = contactLinks(tenant.brand, dossier.title);
           }
         };
         addEventListener('scroll', measureScroll, { passive: true });
+        addEventListener('deck:slide', measureScroll);
         setInterval(tick, 1000);
         setInterval(send, 15000);
         addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') send(); });
@@ -104,3 +136,102 @@ const contacts = contactLinks(tenant.brand, dossier.title);
     </script>
   )}
 </ThemedShell>
+
+<style is:global>
+  /* Presentación: una sección por pantalla, en horizontal, como pasar páginas. Se desliza con el dedo, con las
+     flechas o con el teclado; lo que no cabe, se baja dentro de la diapositiva. */
+  .deck { position: relative; height: var(--deck-h, calc(100dvh - 4rem)); overflow: hidden; display: flex; flex-direction: column; --space-section: clamp(1.5rem, 3.5vh, 3rem); }
+  .deck__track { flex: 1; min-height: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none; outline: none; }
+  .deck__track::-webkit-scrollbar { display: none; }
+  .deck__slide { flex: 0 0 100%; height: 100%; overflow-y: auto; scroll-snap-align: start; scroll-snap-stop: always; }
+  /* Las flechas van en el margen: el contenido no se mete debajo (el fondo del módulo sí llega al borde). */
+  @media (min-width: 641px) { .deck__inner .max-w-container { padding-inline: 4.5rem; } }
+  .deck__inner { min-height: 100%; display: flex; flex-direction: column; justify-content: center; transition: transform .6s cubic-bezier(.2,.8,.2,1), opacity .5s ease; transform-origin: center; }
+  .deck__slide:not(.is-current) .deck__inner { opacity: .35; transform: scale(.94); }
+  .deck__inner > * { flex-shrink: 0; }
+  /* El fondo del módulo llena la diapositiva (sin franjas) y su contenido va centrado en vertical. */
+  .deck__inner > [data-module] { flex: 1 0 auto; display: flex; flex-direction: column; }
+  .deck__inner > [data-module] > section, .deck__inner > section[data-module] { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; }
+  .deck__arrow { position: absolute; top: 50%; translate: 0 -50%; z-index: 20; width: 3.25rem; height: 3.25rem; border-radius: 999px; display: grid; place-items: center;
+    font-size: 2rem; line-height: 1; padding-bottom: .2rem; background: rgb(var(--color-surface) / .85); color: rgb(var(--color-text)); border: 1px solid rgb(var(--color-text) / .18);
+    backdrop-filter: blur(6px); cursor: pointer; transition: opacity .2s, transform .2s; }
+  .deck__arrow:hover { transform: scale(1.06); } .deck__arrow:disabled { opacity: 0; pointer-events: none; }
+  .deck__arrow--prev { left: max(.75rem, 1.5vw); } .deck__arrow--next { right: max(.75rem, 1.5vw); }
+  .deck__bar { flex-shrink: 0; align-self: center; margin: .5rem auto .6rem; z-index: 20; display: flex; align-items: center; gap: .9rem; max-width: calc(100% - 8rem);
+    padding: .45rem .9rem; border-radius: 999px; background: rgb(var(--color-surface)); color: rgb(var(--color-text)); border: 1px solid rgb(var(--color-text) / .12); font-size: .85rem; }
+  .deck__dots { display: flex; gap: .4rem; overflow: hidden; }
+  .deck__dot { width: .55rem; height: .55rem; border-radius: 999px; background: rgb(var(--color-text) / .3); border: 0; padding: 0; cursor: pointer; transition: width .3s, background .3s; flex-shrink: 0; }
+  .deck__dot[aria-current] { width: 1.6rem; background: rgb(var(--color-primary)); }
+  .deck__count { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+  .deck__switch { white-space: nowrap; opacity: .75; text-decoration: underline; text-underline-offset: 3px; }
+  .deck__switch--float { position: fixed; left: 1rem; bottom: 1rem; z-index: 40; opacity: 1; text-decoration: none; padding: .55rem 1rem; border-radius: 999px; font-size: .85rem; font-weight: 700;
+    background: rgb(var(--color-surface) / .92); color: rgb(var(--color-text)); border: 1px solid rgb(var(--color-text) / .18); backdrop-filter: blur(6px); }
+  /* Lo grande, a la altura de la pantalla: la pantalla en vivo y el móvil caben sin bajar. */
+  .deck .live-screen__frame { max-width: max(18rem, calc((var(--deck-h, 100dvh) - 25rem) * 16 / 9)); margin-inline: auto; margin-top: 1.25rem; }
+  .deck .live-screen__controls, .deck .live-screen__says { margin-inline: auto; justify-content: center; text-align: center; max-width: max(18rem, calc((var(--deck-h, 100dvh) - 14rem) * 16 / 9)); }
+  .deck .live-screen__says { margin-top: .5rem; min-height: 2.6em; }
+  .deck .pt-phone { zoom: var(--phone-zoom, 1); }
+  .deck .tabs-showcase__panel img { max-height: max(14rem, calc(var(--deck-h, 100dvh) - 22rem)); }
+  .deck .tabs-showcase__panel { margin-top: 1.25rem; }
+  .deck .pt-layout { margin-top: 1.5rem; align-items: center; }
+  @media (max-width: 640px) {
+    .deck__arrow { top: auto; bottom: .35rem; translate: none; width: 2.6rem; height: 2.6rem; font-size: 1.6rem; }
+    .deck__bar { gap: .6rem; padding: .45rem .8rem; } .deck__dots { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .deck__track { scroll-behavior: auto; } .deck__inner { transition: none; } .deck__slide:not(.is-current) .deck__inner { transform: none; } }
+</style>
+
+{layout === 'slides' && (
+  <script>
+    const deck = document.querySelector<HTMLElement>('[data-deck]');
+    const track = deck?.querySelector<HTMLElement>('[data-track]');
+    if (deck && track) {
+      const slides = Array.from(track.querySelectorAll<HTMLElement>('.deck__slide'));
+      const dots = Array.from(deck.querySelectorAll<HTMLButtonElement>('[data-dot]'));
+      const prev = deck.querySelector<HTMLButtonElement>('[data-prev]');
+      const next = deck.querySelector<HTMLButtonElement>('[data-next]');
+      const count = deck.querySelector<HTMLElement>('[data-count]');
+      let cur = -1, far = 0;
+      // La presentación ocupa lo que queda de pantalla debajo de la cabecera.
+      const size = () => {
+        const h = Math.max(420, innerHeight - deck.getBoundingClientRect().top - scrollY);
+        deck.style.setProperty('--deck-h', `${h}px`);
+        // El móvil del recorrido cabe con su título (y, apilado en móvil, con el paso debajo).
+        const stacked = innerWidth < 900;
+        deck.style.setProperty('--phone-zoom', String(Math.min(1, Math.max(.5, (h - (stacked ? 430 : 330)) / 640))));
+      };
+      const set = (i: number) => {
+        if (i === cur) return;
+        cur = i; far = Math.max(far, i);
+        slides.forEach((s, j) => { s.classList.toggle('is-current', j === i); s.inert = j !== i; });
+        dots.forEach((d, j) => (j === i ? d.setAttribute('aria-current', 'step') : d.removeAttribute('aria-current')));
+        if (prev) prev.disabled = i === 0;
+        if (next) next.disabled = i === slides.length - 1;
+        if (count) count.textContent = `${i + 1} / ${slides.length}`;
+        document.documentElement.dataset.deckProgress = String(Math.round((100 * (far + 1)) / slides.length));
+        dispatchEvent(new Event('deck:slide'));
+        history.replaceState(null, '', i ? `#${i + 1}` : location.pathname + location.search);
+      };
+      const go = (i: number) => {
+        const j = Math.max(0, Math.min(slides.length - 1, i));
+        track.scrollTo({ left: slides[j].offsetLeft });
+      };
+      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) set(slides.indexOf(e.target as HTMLElement)); }), { root: track, threshold: 0.6 });
+      slides.forEach((s) => io.observe(s));
+      prev?.addEventListener('click', () => go(cur - 1));
+      next?.addEventListener('click', () => go(cur + 1));
+      dots.forEach((d, i) => d.addEventListener('click', () => go(i)));
+      addEventListener('keydown', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('input, textarea, select, [contenteditable]')) return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+      });
+      addEventListener('resize', () => { size(); go(cur); });
+      size();
+      const start = Number(location.hash.slice(1)) - 1;
+      if (start > 0 && start < slides.length) { track.style.scrollBehavior = 'auto'; go(start); track.style.scrollBehavior = ''; }
+      set(Math.max(0, start > 0 && start < slides.length ? start : 0));
+    }
+  </script>
+)}

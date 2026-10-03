@@ -55,10 +55,13 @@ export function init(root: HTMLElement): () => void {
       if (key === 'songs') tap(target, 1600, () => { if (target) { target.classList.add('is-pending'); target.textContent = target.dataset.pending ?? ''; } });
       else tap(target, dur - 1300);
     }
-    if (auto && visible) later(DURATION[key] ?? 3500, () => show(idx + 1));
+    const dur = DURATION[key] ?? 3500;
+    btns[idx].style.setProperty('--dur', `${dur}ms`);
+    root.classList.toggle('is-auto', auto && visible);
+    if (auto && visible) later(dur, () => show(idx + 1));
   }
 
-  btns.forEach((b, i) => b.addEventListener('click', () => { auto = false; show(i); }));
+  btns.forEach((b, i) => b.addEventListener('click', () => { auto = false; root.classList.remove('is-auto'); show(i); }));
   const stopVis = onVisibility(root, (v) => { visible = v; if (v) show(idx); else clear(); });
   show(0);
   return () => { clear(); stopVis(); };
