@@ -1,15 +1,22 @@
 ---
 /**
- * Preparar mensaje: junta el contexto que ya sabe la app (empresa, sector, actor, cuenta, propuesta, playbook)
- * y lo entrega listo para el Cerebro de Ventas en Claude/ChatGPT. La técnica y la redacción las pone el Cerebro.
+ * Preparar mensaje: asistente de cuatro pasos (cuenta → con quién → cómo es → qué necesitas). Junta lo que ya sabe
+ * la app (empresa, sector, actor, cuenta, propuesta, playbook y cierres parecidos del equipo) y lo entrega listo
+ * para el Cerebro de Ventas en Claude/ChatGPT. La técnica y la redacción las pone el Cerebro.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
 import { AdminError } from '~/lib/admin/service';
 import { requestOrigin } from '~/lib/http';
 import { ROLE_LABEL, STANCE_LABEL } from '~/lib/playbook/market';
 import { CHANNELS, MESSAGE_TYPES } from '~/lib/playbook/schema';
 import { OBJECTIONS, OBJECTION_LABEL } from '~/lib/playbook/types';
 import type { ContextBrief } from '~/lib/playbook/context';
+import { mergeSituation } from '~/lib/evidence/similarity';
+import { isIconName } from '~/lib/ui/icons';
+import type { Situation } from '~/lib/evidence/types';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -22,17 +29,38 @@ const sel = {
   objection: val('objection'), notes: q.get('notes') ?? '',
 };
 
-const [market, dossiers] = await Promise.all([pb.market(), admin.service.listDossiers()]);
+const [market, dossiers, facets] = await Promise.all([pb.market(), admin.service.listDossiers(), admin.evidence.facets()]);
 const state = sel.dossier ? await admin.service.getState(sel.dossier).catch(() => null) : null;
+const contact = state?.contacts.find((c) => c.id === sel.contact) ?? null;
+// Situación: lo marcado en el formulario; si no se ha tocado, lo que ya sabemos de la cuenta y de la persona.
+const touched = [...q.keys()].some((k) => k.startsWith('facet:')) || q.has('sit');
+const situation: Situation = touched
+  ? Object.fromEntries(facets.map((f) => [f.key, q.getAll(`facet:${f.key}`).filter(Boolean)]).filter(([, v]) => v.length))
+  : mergeSituation(state?.dossier.situation ?? {}, contact?.traits ?? {});
+const personaId = contact?.personaId ?? sel.persona;
+const segmentId = state?.dossier.segmentId ?? sel.segment ?? market.find((sg) => sg.personas.some((p) => p.id === personaId))?.id ?? null;
 
 let brief: ContextBrief | null = null;
 let error: string | null = null;
+let rec: Awaited<ReturnType<typeof admin.evidence.recommend>> | null = null;
 if (q.has('go') || sel.persona || sel.contact) {
   try {
+    rec = await admin.evidence.recommend({ segmentId, personaIds: personaId ? [personaId] : [], situation }, { excludeDossierId: state?.dossier.id ?? null, limit: 3 });
+    const label = (key: string, opt: string) => facets.find((f) => f.key === key)?.options.find((o) => o.key === opt)?.label ?? opt;
+    const situationLabels = Object.entries(rec.query.situation).flatMap(([k, v]) => v.map((o) => `${facets.find((f) => f.key === k)?.label ?? k}: ${label(k, o)}`));
     brief = await pb.contextBrief({
       dossierId: state?.dossier.id ?? null, contactId: state ? sel.contact : null, segmentId: sel.segment, personaId: sel.contact ? null : sel.persona,
       messageType: sel.type, channel: sel.channel, objection: sel.type === 'objecion' ? sel.objection : null, notes: sel.notes,
-    }, { publicOrigin: requestOrigin(Astro.request, Astro.url) });
+    }, {
+      publicOrigin: requestOrigin(Astro.request, Astro.url),
+      evidence: {
+        situation: situationLabels,
+        stories: rec.stories.filter((m) => m.score > 0).map((m) => ({
+          outcome: m.story.outcome, title: m.story.title, labels: m.matches.map((x) => x.label),
+          text: (m.story.outcome === 'won' ? m.story.whatWorked : m.story.whatFailed ?? m.story.whatWorked) ?? '',
+        })),
+      },
+    });
   } catch (e) {
     if (!(e instanceof AdminError)) throw e;
     error = [e.message, ...(e.details ?? [])].join(' · ');
@@ -43,94 +71,130 @@ const MAX_URL = 7000;
 const enc = brief ? encodeURIComponent(brief.prompt) : '';
 const claudeUrl = brief && enc.length < MAX_URL ? `https://claude.ai/new?q=${enc}` : null;
 const chatgptUrl = brief && enc.length < MAX_URL ? `https://chatgpt.com/?q=${enc}` : null;
-const field = 'co-input';
+const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
 ---
 <AdminLayout title="Preparar mensaje" wide>
-  <h1 class="co-page-title">Preparar mensaje</h1>
-  <p class="text-sm text-muted">Dime a quién escribes y para qué: preparo todo el contexto (empresa, sector, actor, tu propuesta y lo que nos funciona) para que el <strong>Cerebro de Ventas</strong> elija la técnica y redacte contigo en Claude o ChatGPT.</p>
+  <PageHeader eyebrow="Vender" title="Preparar mensaje" lede="Cuatro pasos y te preparo todo el contexto (tu propuesta, el actor, la situación y lo que le ha funcionado al equipo) para que el Cerebro de Ventas elija la técnica y redacte contigo en Claude o ChatGPT." />
 
-  <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
-    <form method="get" class="space-y-4 co-card" data-testid="compose-form">
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
+    <form method="get" class="co-card grid content-start gap-5" data-testid="compose-form">
       <input type="hidden" name="go" value="1" />
-      <label class="block text-sm font-medium">Cuenta (opcional)
-        <select class={field} name="dossier" onchange="this.form.contact && (this.form.contact.value=''); this.form.submit()">
-          <option value="">— Sin dossier —</option>
-          {dossiers.map((d) => <option value={d.id} selected={d.id === sel.dossier}>{d.title}{d.prospectCompany ? ` · ${d.prospectCompany}` : ''}</option>)}
-        </select>
-      </label>
-      {state && state.contacts.length > 0 && (
-        <label class="block text-sm font-medium">Persona de la cuenta
-          <select class={field} name="contact">
-            <option value="">— Elegir un tipo de actor —</option>
-            {state.contacts.map((c) => <option value={c.id} selected={c.id === sel.contact}>{c.name} · {STANCE_LABEL[c.stance]}</option>)}
+      <input type="hidden" name="sit" value="1" />
+      <section class="grid gap-3">
+        <p class="text-eyebrow">01 · ¿Para qué cuenta?</p>
+        <label class="co-field">Dossier <span class="co-help">Opcional: con dossier incluyo tu propuesta, su precio y el enlace</span>
+          <select class="co-select" name="dossier" onchange="this.form.contact && (this.form.contact.value=''); this.form.sit.value=''; this.form.submit()">
+            <option value="">Sin dossier</option>
+            {dossiers.map((d) => <option value={d.id} selected={d.id === sel.dossier}>{d.title}{d.prospectCompany ? ` · ${d.prospectCompany}` : ''}</option>)}
           </select>
         </label>
-      )}
-      <label class="block text-sm font-medium">{state?.contacts.length ? '…o un tipo de actor' : 'Tipo de actor'}
-        <select class={field} name="persona" data-testid="persona-select">
-          <option value="">—</option>
-          {market.map((sg) => (
-            <optgroup label={sg.name}>
-              {sg.personas.map((p) => <option value={p.id} selected={p.id === sel.persona}>{p.name} ({ROLE_LABEL[p.role].toLowerCase()})</option>)}
-            </optgroup>
+        {!state && (
+          <label class="co-field">Sector
+            <select class="co-select" name="segment"><option value="">El del actor</option>{market.map((sg) => <option value={sg.id} selected={sg.id === sel.segment}>{sg.name}</option>)}</select>
+          </label>
+        )}
+      </section>
+
+      <section class="grid gap-3">
+        <p class="text-eyebrow">02 · ¿Con quién hablas?</p>
+        {state && state.contacts.length > 0 && (
+          <label class="co-field">Persona de la cuenta
+            <select class="co-select" name="contact" onchange="this.form.sit.value=''; this.form.submit()">
+              <option value="">Elegir un tipo de actor</option>
+              {state.contacts.map((c) => <option value={c.id} selected={c.id === sel.contact}>{c.name} · {STANCE_LABEL[c.stance]}</option>)}
+            </select>
+          </label>
+        )}
+        <label class="co-field">{state?.contacts.length ? 'O un tipo de actor' : 'Tipo de actor'}
+          <select class="co-select" name="persona" data-testid="persona-select">
+            <option value="">Sin concretar</option>
+            {market.map((sg) => (
+              <optgroup label={sg.name}>
+                {sg.personas.map((p) => <option value={p.id} selected={p.id === sel.persona}>{p.name} ({ROLE_LABEL[p.role].toLowerCase()})</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+      </section>
+
+      {facets.length > 0 && (
+        <section class="grid gap-3" data-testid="compose-situation">
+          <p class="text-eyebrow">03 · ¿Cómo es? <span class="normal-case tracking-normal">· opcional, afina las recomendaciones</span></p>
+          {facets.map((f) => (
+            <fieldset class="grid gap-2">
+              <legend class="co-field mb-1">{f.question ?? f.label}</legend>
+              <div class="co-chips">
+                {f.options.map((o) => <label class="co-chip" title={o.hint ?? ''}>{icon(o.icon) && <Icon name={icon(o.icon)!} size={14} />}<input type="checkbox" name={`facet:${f.key}`} value={o.key} checked={(situation[f.key] ?? []).includes(o.key)} />{o.label}</label>)}
+              </div>
+            </fieldset>
           ))}
-        </select>
-      </label>
-      {!state && (
-        <label class="block text-sm font-medium">Sector
-          <select class={field} name="segment"><option value="">— El del actor —</option>{market.map((sg) => <option value={sg.id} selected={sg.id === sel.segment}>{sg.name}</option>)}</select>
-        </label>
+        </section>
       )}
-      <div class="grid grid-cols-2 gap-3">
-        <label class="text-sm font-medium">Para qué
-          <select class={field} name="type" data-testid="type-select">{Object.entries(MESSAGE_TYPES).map(([k, v]) => <option value={k} selected={k === sel.type}>{v.label}</option>)}</select>
+
+      <section class="grid gap-3">
+        <p class="text-eyebrow">{facets.length ? '04' : '03'} · ¿Qué necesitas?</p>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="co-field">Para qué
+            <select class="co-select" name="type" data-testid="type-select">{Object.entries(MESSAGE_TYPES).map(([k, v]) => <option value={k} selected={k === sel.type}>{v.label}</option>)}</select>
+          </label>
+          <label class="co-field">Canal
+            <select class="co-select" name="channel">{Object.entries(CHANNELS).map(([k, v]) => <option value={k} selected={k === sel.channel}>{v}</option>)}</select>
+          </label>
+        </div>
+        <label class="co-field">Objeción <span class="co-help">Si respondes a una</span>
+          <select class="co-select" name="objection"><option value="">Ninguna</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{OBJECTION_LABEL[o]}</option>)}</select>
         </label>
-        <label class="text-sm font-medium">Canal
-          <select class={field} name="channel">{Object.entries(CHANNELS).map(([k, v]) => <option value={k} selected={k === sel.channel}>{v}</option>)}</select>
+        <label class="co-field">Lo que sabes de este caso
+          <textarea class="co-textarea" name="notes" maxlength="1500" placeholder="Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…">{sel.notes}</textarea>
         </label>
-      </div>
-      <label class="block text-sm font-medium">Objeción <span class="font-normal text-muted">(si respondes a una)</span>
-        <select class={field} name="objection"><option value="">—</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{OBJECTION_LABEL[o]}</option>)}</select>
-      </label>
-      <label class="block text-sm font-medium">Lo que sabes de este caso
-        <textarea class={`${field} h-24`} name="notes" maxlength="1500" placeholder="Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…">{sel.notes}</textarea>
-      </label>
-      <button class="co-btn co-btn--primary" type="submit" data-testid="compose-go">Preparar contexto</button>
+      </section>
+      <button class="co-btn co-btn--primary" type="submit" data-testid="compose-go">Preparar contexto <span aria-hidden="true">→</span></button>
     </form>
 
-    <section>
-      {error && <p class="co-alert co-alert--rejection" role="alert">{error}</p>}
+    <section class="grid content-start gap-4">
+      {error && <Alert kind="rejection" title={error} />}
       {!brief && !error && (
-        <div class="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
-          <p class="text-lg font-semibold text-ink">Elige a quién escribes</p>
-          <p class="mt-1 text-sm">Ej.: «DJ residente · ocio nocturno · primer contacto». Desde un dossier, elige a una persona de la cuenta: el contexto incluirá tu propuesta, su precio y el enlace.</p>
+        <div class="co-empty co-aurora-soft !border-transparent">
+          <Icon name="message-square-text" size={22} />
+          <p class="co-empty__title">Elige a quién escribes</p>
+          <p class="co-body max-w-[52ch]">Por ejemplo: «DJ residente · ocio nocturno · primer contacto». Desde un dossier, elige a una persona de la cuenta y el contexto incluirá tu propuesta, su precio y el enlace.</p>
+        </div>
+      )}
+      {rec && rec.stories.some((m) => m.score > 0) && (
+        <div class="co-card co-card--soft grid gap-2" data-testid="compose-evidence">
+          <p class="text-eyebrow">Al equipo le funcionó en situaciones parecidas</p>
+          {rec.plays.length > 0 && <p class="text-sm"><strong>Jugadas que más ganan:</strong> {rec.plays.slice(0, 3).map((p) => `${p.title} (${p.wonIn})`).join(' · ')}</p>}
+          {rec.stories.filter((m) => m.score > 0).map((m) => (
+            <p class="text-sm"><span class:list={['co-badge mr-1', m.story.outcome === 'won' ? 'co-badge--ink' : 'co-badge--attention']}>{m.story.outcome === 'won' ? 'Ganado' : 'Perdido'}</span><strong>{m.story.title}</strong> <span class="co-meta">· {m.matches.map((x) => x.label).join(' · ')}</span><span class="co-body block">«{m.story.outcome === 'won' ? m.story.whatWorked : m.story.whatFailed ?? m.story.whatWorked}»</span></p>
+          ))}
+          <p class="co-meta">Ya va incluido en la petición, separado de lo que proponga el Cerebro.</p>
         </div>
       )}
       {brief && (
-        <div class="space-y-4" data-testid="brief">
-          <div class="co-card">
-            <h2 class="text-xl font-extrabold">{brief.title}</h2>
-            <p class="mt-1 flex flex-wrap gap-1.5 text-xs">
+        <div class="grid gap-4" data-testid="brief">
+          <div class="co-card grid gap-3">
+            <h2 class="co-entity">{brief.title}</h2>
+            <p class="flex flex-wrap gap-1.5">
               <span class="co-badge co-badge--soft">Cerebro · etapa: {brief.cerebro.etapa}</span>
               {brief.cerebro.objecion && <span class="co-badge co-badge--attention">objeción: {brief.cerebro.objecion}</span>}
-              {brief.plays.length > 0 && <span class="rounded-full bg-surface px-2 py-0.5">{brief.plays.length} jugadas del playbook incluidas</span>}
+              {brief.plays.length > 0 && <span class="co-badge">{brief.plays.length} jugadas del playbook</span>}
             </p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <button type="button" class="co-btn co-btn--primary" data-copy="prompt" data-testid="copy-prompt">Copiar para Claude / ChatGPT</button>
-              {claudeUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">Abrir en Claude ↗</a>}
-              {chatgptUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={chatgptUrl} target="_blank" rel="noopener noreferrer">Abrir en ChatGPT ↗</a>}
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="co-btn co-btn--primary" data-copy="prompt" data-testid="copy-prompt"><Icon name="copy" size={16} />Copiar para Claude / ChatGPT</button>
+              {claudeUrl && <a class="co-btn co-btn--ghost" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">Abrir en Claude <Icon name="external-link" size={14} /></a>}
+              {chatgptUrl && <a class="co-btn co-btn--ghost" href={chatgptUrl} target="_blank" rel="noopener noreferrer">Abrir en ChatGPT <Icon name="external-link" size={14} /></a>}
             </div>
-            <p class="mt-2 text-xs text-muted">Con el Cerebro de Ventas conectado (MCP), el asistente buscará la técnica adecuada, te dirá de qué creador sale y redactará el mensaje con tu contexto. Revisa siempre lo que aparece entre [corchetes].</p>
+            <p class="co-meta">Con el Cerebro de Ventas conectado, el asistente buscará la técnica, te dirá de qué creador sale y redactará el mensaje con tu contexto. Revisa siempre lo que aparece entre [corchetes].</p>
           </div>
-          <label class="block text-sm font-semibold">Petición completa
-            <textarea id="prompt" class={`${field} h-72 font-mono text-xs`} readonly data-testid="prompt">{brief.prompt}</textarea>
+          <label class="co-field">Petición completa
+            <textarea id="prompt" class="co-textarea h-72 font-mono !text-xs" readonly data-testid="prompt">{brief.prompt}</textarea>
           </label>
-          <details class="co-card text-sm">
-            <summary class="cursor-pointer font-semibold">Solo el contexto (sin instrucciones)</summary>
-            <textarea id="brief" class={`${field} mt-2 h-64 font-mono text-xs`} readonly>{brief.brief}</textarea>
-            <button type="button" class="mt-2 rounded-lg border border-line px-3 py-1.5 font-semibold" data-copy="brief">Copiar contexto</button>
+          <details class="co-card">
+            <summary class="cursor-pointer co-row-title">Solo el contexto, sin instrucciones</summary>
+            <textarea id="brief" class="co-textarea mt-2 h-64 font-mono !text-xs" readonly>{brief.brief}</textarea>
+            <button type="button" class="co-btn co-btn--ghost co-btn--sm mt-2" data-copy="brief">Copiar contexto</button>
           </details>
-          {state && <a class="inline-block text-sm underline" href={`/admin/dossiers/${state.dossier.id}`}>← Volver al dossier</a>}
+          {state && <a class="co-btn co-btn--quiet w-fit" href={`/admin/dossiers/${state.dossier.id}`}>← Volver al dossier</a>}
         </div>
       )}
     </section>

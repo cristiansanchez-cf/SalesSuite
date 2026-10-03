@@ -21,7 +21,7 @@ const rowToContribution = (r: ContributionRow): Contribution => ({
 
 const rowToSegment = (r: SegmentRow): Segment => ({
   id: r.id, key: r.key, name: r.name, description: r.description, valueProp: r.value_prop, icp: r.icp, disqualifiers: r.disqualifiers,
-  buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status as Segment['status'],
+  buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status as Segment['status'], icon: r.icon ?? null,
 });
 const rowToPersona = (r: PersonaRow): Persona => ({
   id: r.id, segmentId: r.segment_id, key: r.key, name: r.name, role: r.role as Persona['role'], goals: r.goals, pains: r.pains, kpis: r.kpis,
@@ -128,7 +128,7 @@ export function demoPlaybookDb(getDb: () => DemoDb = demoDb): PlaybookDb {
       if (s.segment.some((x) => x.tenant_id === t && x.key === r.key && x.id !== r.id)) throw new Error('duplicate key: segment (tenant_id, key)');
       const row: SegmentRow = {
         id: r.id ?? randomUUID(), tenant_id: t, key: r.key, name: r.name, description: r.description, value_prop: r.valueProp, icp: r.icp,
-        disqualifiers: r.disqualifiers, buying_process: r.buyingProcess, deal_size: r.dealSize, sales_cycle: r.salesCycle, position: r.position, status: r.status,
+        disqualifiers: r.disqualifiers, buying_process: r.buyingProcess, deal_size: r.dealSize, sales_cycle: r.salesCycle, position: r.position, status: r.status, icon: r.icon,
       };
       s.segment = [...s.segment.filter((x) => x.id !== row.id), row];
       return row.id;

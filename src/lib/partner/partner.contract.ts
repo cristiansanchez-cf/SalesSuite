@@ -25,6 +25,7 @@ export interface PartnerEnv {
   /** AdminDb del colaborador (en Supabase: catálogo e items por RPC). */
   partnerDbFor(userId: string): AdminDb;
   playbookDbFor(userId: string): PlaybookDb;
+  evidenceDbFor(userId: string): import('../evidence/db').EvidenceDb;
   identity(): Identity;
   publicGet(token: string, tenantId: string): Promise<{ priceMode: string; items: Array<{ moduleKey: string; priceOverride: number | null; defaultPrice: number | null }> } | null>;
   enforcesRls: boolean;
@@ -42,7 +43,7 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
     let E: PartnerEnv;
     const login = async (u: { id: string; email: string }): Promise<AuthResult> => buildAdminContext(
       E.adminDbFor(u.id), { id: u.id, email: u.email, name: null }, TENANT, 'demo',
-      { identity: E.identity(), assets: { async upload() { throw new Error('x'); } }, supabase: null, playbookDb: E.playbookDbFor(u.id), partnerDb: () => E.partnerDbFor(u.id) },
+      { identity: E.identity(), assets: { async upload() { throw new Error('x'); } }, supabase: null, playbookDb: E.playbookDbFor(u.id), evidenceDb: E.evidenceDbFor(u.id), partnerDb: () => E.partnerDbFor(u.id) },
     );
     const ctx = async (u: { id: string; email: string }) => {
       const r = await login(u);

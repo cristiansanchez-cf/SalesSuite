@@ -58,7 +58,7 @@ const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<numbe
     </aside>
 
     <section>
-      <h2 class="text-lg font-bold">Actores: quién decide, quién paga, quién puede tumbarlo</h2>
+      <h2 class="co-card-title">Actores: quién decide, quién paga, quién puede tumbarlo</h2>
       <p class="text-sm text-muted">En cada cuenta, mapea a estas personas (en el dossier → «Cuenta y actores»). Vender solo al decisor y olvidar al que puede vetar es la forma más rápida de perder.</p>
       <div class="mt-4 grid gap-4 2xl:grid-cols-2" data-testid="personas">
         {personas.map((p) => <PersonaCard persona={p} plays={v.byPersona[p.key]} adminEdit={admin.playbook.isAdmin} />)}

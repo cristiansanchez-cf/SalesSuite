@@ -34,6 +34,8 @@ export interface ContextData {
   state: BuilderState | null;
   publicUrl: string | null;
   plays: PlayView[];
+  /** Situación descrita (etiquetas de facetas) y cierres parecidos del equipo (docs/EVIDENCE.md). */
+  evidence?: { situation: string[]; stories: Array<{ outcome: 'won' | 'lost'; title: string; labels: string[]; text: string }> };
 }
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
@@ -98,7 +100,12 @@ export function buildContext(d: ContextData): ContextBrief {
     const others = st.contacts.filter((c) => c.id !== d.contact?.id);
     if (others.length) parts.push(line('Otras personas en la cuenta', others.map((c) => `${c.name} (${STANCE_LABEL[c.stance].replace(/^\S+\s/, '').toLowerCase()})`).join(', ')));
   }
+  if (d.evidence?.situation.length) parts.push('', `SITUACIÓN: ${d.evidence.situation.join(' · ')}`);
   if (d.notes) parts.push('', `LO QUE SÉ DE ESTE CASO: ${d.notes}`);
+  if (d.evidence?.stories.length) {
+    parts.push('', 'LO QUE LE HA FUNCIONADO AL EQUIPO EN SITUACIONES PARECIDAS (cierres reales, no del Cerebro):');
+    for (const s of d.evidence.stories) parts.push(`- ${s.outcome === 'won' ? 'Ganado' : 'Perdido'} · ${s.title}${s.labels.length ? ` (${s.labels.join(', ')})` : ''}: ${clip(s.text.replace(/\n+/g, ' '), 300)}`);
+  }
 
   const picked = pickPlays(d.plays, d);
   if (picked.length) {
@@ -119,6 +126,7 @@ export function buildContext(d: ContextData): ContextBrief {
     `Usa el Cerebro de Ventas: busca la técnica con buscar_tecnica (situación: «${situacion}», etapa: «${mt.etapa}»${objecion ? `, objeción: «${objecion}»` : ''}).`,
     'Dime qué ficha y qué creador usas, respeta su guion si lo tiene y sigue sus reglas de redacción. Si el Cerebro no cubre el caso, dilo antes de proponer nada tuyo.',
     'No inventes datos: usa solo lo que hay en este contexto y deja entre corchetes lo que tenga que completar yo.',
+    ...(d.evidence?.stories.length ? ['Ten en cuenta lo que le ha funcionado al equipo en situaciones parecidas, pero sepáralo de lo que venga del Cerebro: es experiencia nuestra, no del creador.'] : []),
     '',
     brief,
   ].join('\n');

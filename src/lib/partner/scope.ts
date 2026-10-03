@@ -11,6 +11,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, ItemRecord, PartnerAccount, PricePolicy } from '../admin/types';
 import type { PlaybookDb } from '../playbook/db';
 import type { Play } from '../playbook/types';
+import type { EvidenceDb } from '../evidence/db';
 
 export { PRICE_POLICY_LABEL } from './labels';
 
@@ -176,5 +177,22 @@ export function scopePlaybookDb(inner: PlaybookDb, s: AdminSession & { partner: 
     async deletePersona() { return false; },
     async setSegmentModule() { throw new PartnerDenied('Sin permiso'); },
     async setPersonaModule() { throw new PartnerDenied('Sin permiso'); },
+  };
+}
+
+/** Cierres: los suyos y, si el admin se lo permite, los compartidos del equipo (= story_select_partner). */
+export function scopeEvidenceDb(inner: EvidenceDb, s: AdminSession & { partner: Partner }): EvidenceDb {
+  const me = s.userId;
+  return {
+    ...inner,
+    async listStories(t) {
+      return (await inner.listStories(t)).filter((x) => x.authorId === me || (x.status === 'shared' && s.partner.seeTeamTips));
+    },
+    async saveStory(t, w) {
+      if (w.authorId !== me) throw new PartnerDenied('Solo puedes documentar tus cierres');
+      return inner.saveStory(t, w);
+    },
+    async saveFacet() { throw new PartnerDenied('Sin permiso'); },
+    async setStoryStatus() { return false; },
   };
 }

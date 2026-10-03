@@ -7,7 +7,7 @@ type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -20,6 +20,7 @@ const toDossier = (r: Row): DossierRecord => ({
   outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
   partnerAccountId: r.partner_account_id ?? null,
+  situation: r.situation ?? {},
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at';
@@ -138,6 +139,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.segmentId !== undefined) patch.segment_id = p.segmentId;
       if (p.nextStep !== undefined) patch.next_step = p.nextStep;
       if (p.nextStepAt !== undefined) patch.next_step_at = p.nextStepAt;
+      if (p.situation !== undefined) patch.situation = p.situation;
       const rows = check(await sb.from('dossier').update(patch).eq('id', id).select(DOSSIER_COLS)) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },
@@ -201,12 +203,12 @@ function full(sb: SupabaseClient): AdminDb {
     // ---- cuenta del dossier
     async listContacts(ids) {
       if (!ids.length) return [];
-      const rows = check(await sb.from('dossier_contact').select('id, dossier_id, persona_id, name, stance, email, phone, notes, position').in('dossier_id', ids)) ?? [];
-      return rows.map((c: Row) => ({ id: c.id, dossierId: c.dossier_id, personaId: c.persona_id, name: c.name, stance: c.stance, email: c.email, phone: c.phone, notes: c.notes, position: Number(c.position) }));
+      const rows = check(await sb.from('dossier_contact').select('id, dossier_id, persona_id, name, stance, email, phone, notes, position, traits').in('dossier_id', ids)) ?? [];
+      return rows.map((c: Row) => ({ id: c.id, dossierId: c.dossier_id, personaId: c.persona_id, name: c.name, stance: c.stance, email: c.email, phone: c.phone, notes: c.notes, position: Number(c.position), traits: c.traits ?? {} }));
     },
     async insertContact(dossierId, r) {
       const row = checkOne(await sb.from('dossier_contact').insert({
-        dossier_id: dossierId, persona_id: r.personaId, name: r.name, stance: r.stance, email: r.email, phone: r.phone, notes: r.notes, position: r.position,
+        dossier_id: dossierId, persona_id: r.personaId, name: r.name, stance: r.stance, email: r.email, phone: r.phone, notes: r.notes, position: r.position, traits: r.traits ?? {},
       }).select('id').single());
       return row.id as string;
     },
@@ -218,6 +220,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.email !== undefined) patch.email = p.email;
       if (p.phone !== undefined) patch.phone = p.phone;
       if (p.notes !== undefined) patch.notes = p.notes;
+      if (p.traits !== undefined) patch.traits = p.traits;
       const rows = check(await sb.from('dossier_contact').update(patch).eq('id', id).select('id')) ?? [];
       return rows.length > 0;
     },

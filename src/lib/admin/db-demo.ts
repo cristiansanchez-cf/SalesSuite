@@ -13,6 +13,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
   partnerAccountId: r.partner_account_id ?? null,
+  situation: r.situation ?? {},
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -79,6 +80,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.segmentId !== undefined) d.segment_id = p.segmentId;
       if (p.nextStep !== undefined) d.next_step = p.nextStep;
       if (p.nextStepAt !== undefined) d.next_step_at = p.nextStepAt;
+      if (p.situation !== undefined) d.situation = p.situation;
       d.updated_at = new Date().toISOString();
       return toDossier(d);
     },
@@ -175,13 +177,13 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     async listContacts(ids) {
       return db().dossier_contact.filter((c) => ids.includes(c.dossier_id)).map((c) => ({
         id: c.id, dossierId: c.dossier_id, personaId: c.persona_id, name: c.name, stance: c.stance as 'aliado',
-        email: c.email, phone: c.phone, notes: c.notes, position: Number(c.position),
+        email: c.email, phone: c.phone, notes: c.notes, position: Number(c.position), traits: c.traits ?? {},
       }));
     },
     async insertContact(dossierId, r) {
       const d = db().dossier.find((x) => x.id === dossierId)!;
       const id = randomUUID();
-      db().dossier_contact.push({ id, tenant_id: d.tenant_id, dossier_id: dossierId, persona_id: r.personaId, name: r.name, stance: r.stance, email: r.email, phone: r.phone, notes: r.notes, position: r.position });
+      db().dossier_contact.push({ id, tenant_id: d.tenant_id, dossier_id: dossierId, persona_id: r.personaId, name: r.name, stance: r.stance, email: r.email, phone: r.phone, notes: r.notes, position: r.position, traits: r.traits ?? {} });
       touch(dossierId);
       return id;
     },
@@ -194,6 +196,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.email !== undefined) c.email = p.email;
       if (p.phone !== undefined) c.phone = p.phone;
       if (p.notes !== undefined) c.notes = p.notes;
+      if (p.traits !== undefined) c.traits = p.traits;
       touch(c.dossier_id);
       return true;
     },

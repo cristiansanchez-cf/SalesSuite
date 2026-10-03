@@ -24,6 +24,7 @@ export interface DossierRow {
   outcome?: 'open' | 'won' | 'lost'; outcome_note?: string | null; outcome_at?: string | null;
   segment_id?: string | null; next_step?: string | null; next_step_at?: string | null;
   partner_account_id?: string | null;
+  situation?: Record<string, string[]>;
 }
 export interface DossierItemRow {
   id: string; dossier_id: string; module_version_id: string; position: number; visible: boolean;
@@ -47,6 +48,7 @@ export interface SeenRow { tenant_id: string; user_id: string; seen_at: string }
 export interface SegmentRow {
   id: string; tenant_id: string; key: string; name: string; description: string | null; value_prop: string | null; icp: string | null;
   disqualifiers: string | null; buying_process: string | null; deal_size: string | null; sales_cycle: string | null; position: number; status: string;
+  icon?: string | null;
 }
 export interface PersonaRow {
   id: string; tenant_id: string; segment_id: string; key: string; name: string; role: string; goals: string | null; pains: string | null;
@@ -57,6 +59,16 @@ export interface PersonaModuleRow { tenant_id: string; persona_id: string; modul
 export interface DossierContactRow {
   id: string; tenant_id: string; dossier_id: string; persona_id: string | null; name: string; stance: string;
   email: string | null; phone: string | null; notes: string | null; position: number;
+  traits?: Record<string, string[]>;
+}
+export interface SituationFacetRow {
+  id: string; tenant_id: string; key: string; label: string; question: string | null; icon: string | null; scope: 'account' | 'contact';
+  multi: boolean; weight: number; options: Array<{ key: string; label: string; icon?: string; hint?: string }>; position: number; status: string;
+}
+export interface WinStoryRow {
+  id: string; tenant_id: string; dossier_id: string | null; author_id: string | null; outcome: 'won' | 'lost'; segment_id: string | null;
+  persona_ids: string[]; situation: Record<string, string[]>; play_ids: string[]; what_worked: string | null; what_failed: string | null;
+  key_stage: string | null; objection: string | null; title: string; status: 'shared' | 'hidden'; created_at?: string; updated_at?: string;
 }
 export interface PartnerProfileRow {
   tenant_id: string; user_id: string; module_ids: string[]; see_team_tips: boolean; welcome_note: string | null; expires_at: string | null;
@@ -89,6 +101,8 @@ export interface DemoDb {
   dossier_contact: DossierContactRow[];
   partner_profile: PartnerProfileRow[];
   partner_account: PartnerAccountRow[];
+  situation_facet: SituationFacetRow[];
+  win_story: WinStoryRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -123,12 +137,13 @@ export const DEMO_PARTNER = {
 
 export function freshDemoDb(): DemoDb {
   const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'
-    | 'segment' | 'persona' | 'segment_module' | 'persona_module' | 'dossier_contact'>;
+    | 'segment' | 'persona' | 'segment_module' | 'persona_module' | 'dossier_contact' | 'situation_facet' | 'win_story'>;
   const now = new Date().toISOString();
   const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
   f.dossier.forEach((d) => { d.created_at ??= now; d.updated_at ??= now; d.published_at ??= d.status === 'published' ? now : null; });
   f.share_link.forEach((l) => { l.created_at ??= now; });
   f.play.forEach((p) => { p.created_at ??= ago(30); p.updated_at ??= ago(30); });
+  f.win_story.forEach((w, i) => { w.created_at ??= ago(40 - i * 6); w.updated_at ??= w.created_at; });
   const REP = DEMO_USERS[0].id;
   const pricePlay = f.play.find((p) => p.key === 'empresa-obj-precio');
   const expPitch = f.play.find((p) => p.key === 'exp-pitch');

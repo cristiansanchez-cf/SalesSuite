@@ -10,9 +10,13 @@ if (!admin) return Astro.redirect('/admin/login');
 
 let state: BuilderState;
 let market;
+let facets;
+let hasStory = false;
 try {
   state = await admin.service.getState(Astro.params.id ?? '');
-  const m = await admin.playbook.market();
+  const [m, fs, story] = await Promise.all([admin.playbook.market(), admin.evidence.facets(), admin.evidence.storyForDossier(state.dossier.id)]);
+  facets = fs.map((f) => ({ key: f.key, label: f.label, question: f.question, scope: f.scope, multi: f.multi, options: f.options }));
+  hasStory = !!story;
   market = {
     segments: m.map((x) => ({ id: x.id, key: x.key, name: x.name })),
     personas: m.flatMap((x) => x.personas.map((p) => ({ id: p.id, segmentId: p.segmentId, name: p.name, role: p.role }))),
@@ -25,5 +29,5 @@ try {
 const origin = requestOrigin(Astro.request, Astro.url);
 ---
 <AdminLayout title={state.dossier.title} wide>
-  <Builder client:load initial={state} publicOrigin={origin} market={market} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} />
 </AdminLayout>

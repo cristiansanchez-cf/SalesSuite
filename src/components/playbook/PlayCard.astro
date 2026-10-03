@@ -1,6 +1,5 @@
 ---
 import Badges from './Badges.astro';
-import Votes from './Votes.astro';
 import { renderMarkdown } from '~/lib/playbook/markdown';
 import type { PlayView } from '~/lib/playbook/types';
 
@@ -36,8 +35,7 @@ const field = 'co-input';
     </div>
   )}
   <div class="mt-4 flex flex-wrap items-center gap-3">
-    <Votes targetType="play" targetId={play.id} score={play.score} anchor={anchor} />
-    <span class="text-xs text-muted">v{play.version}</span>
+    <span class="co-meta" data-testid="play-evidence">{play.evidence.used ? `Usada en ${play.evidence.used} ${play.evidence.used === 1 ? 'cierre documentado' : 'cierres documentados'} · ganó ${play.evidence.won}` : 'Sin cierres documentados todavía'} · v{play.version}</span>
     {canPropose && (
       <details class="w-full text-sm">
         <summary class="cursor-pointer text-muted hover:text-ink">Proponer una mejora</summary>

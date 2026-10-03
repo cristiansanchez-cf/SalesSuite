@@ -27,7 +27,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric',
   {(idx.news.length > 0 || idx.newTips > 0) && (
     <section class="mt-6 co-card co-card--soft" data-testid="news">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-bold">Novedades desde tu última visita</h2>
+        <h2 class="co-card-title">Novedades desde tu última visita</h2>
         <form method="post"><button class="text-xs font-semibold underline" type="submit">Marcar como vistas</button></form>
       </div>
       <ul class="mt-2 space-y-1 p-0 text-sm">

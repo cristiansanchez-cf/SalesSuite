@@ -7,9 +7,6 @@ import type { PlaybookService } from './service';
 export async function learnAction(pb: PlaybookService, f: FormData, ctx: { moduleId: string | null; topic: string }): Promise<string> {
   const str = (k: string) => String(f.get(k) ?? '');
   switch (str('action')) {
-    case 'vote':
-      await pb.vote({ targetType: str('targetType'), targetId: str('targetId'), verdict: str('verdict') || null });
-      return 'vote';
     case 'change':
       await pb.proposeChange({ playId: str('playId'), title: str('title'), body: str('body') });
       return 'change';

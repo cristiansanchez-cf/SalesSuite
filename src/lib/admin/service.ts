@@ -339,6 +339,12 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         await assertWrote(await db.deleteContact(op.contactId));
         break;
       }
+      case 'setSituation': {
+        // Se guardan solo las facetas con valor (las vacías = «no lo sé»).
+        const clean = Object.fromEntries(Object.entries(op.situation).filter(([, v]) => v.length));
+        await assertWrote(await db.updateDossier(id, { situation: clean }));
+        break;
+      }
       case 'revokeLink': {
         const links = await db.listLinks([id]);
         if (!links.some((l) => l.id === op.linkId)) throw new AdminError(404, 'Enlace no encontrado');

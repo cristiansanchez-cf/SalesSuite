@@ -20,6 +20,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
       ? { href: '/admin', label: 'Mis cuentas', icon: 'store', on: path === '/admin' || on('/admin/dossiers') }
       : { href: '/admin', label: 'Dossiers', icon: 'file-text', on: path === '/admin' || on('/admin/dossiers') },
     { href: '/admin/compose', label: 'Preparar mensaje', icon: 'message-square-text', on: on('/admin/compose') },
+    { href: '/admin/wins', label: 'Qué ha funcionado', icon: 'trophy', on: on('/admin/wins') },
     { href: '/admin/learn', label: 'Aprende', icon: 'graduation-cap', on: on('/admin/learn') },
   ];
   const setup: NavItem[] = [

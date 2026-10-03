@@ -1,6 +1,5 @@
 ---
 import Badges from './Badges.astro';
-import Votes from './Votes.astro';
 import { renderMarkdown } from '~/lib/playbook/markdown';
 import type { ContributionView } from '~/lib/playbook/types';
 
@@ -21,7 +20,6 @@ const date = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(ne
   <div class="mt-1 text-sm leading-relaxed" set:html={renderMarkdown(tip.body)} />
   {tip.reviewNote && <p class="mt-2 rounded-lg bg-bg p-2 text-xs"><strong>Nota del líder:</strong> {tip.reviewNote}</p>}
   <div class="mt-3 flex flex-wrap items-center gap-3">
-    {tip.type === 'tip' && tip.status !== 'hidden' && <Votes targetType="contribution" targetId={tip.id} score={tip.score} anchor={anchor} />}
     {mine && ['shared', 'pending'].includes(tip.status) && (
       <form method="post"><input type="hidden" name="action" value="withdraw" /><input type="hidden" name="id" value={tip.id} />
         <button class="text-xs text-muted underline" type="submit">Retirar</button></form>

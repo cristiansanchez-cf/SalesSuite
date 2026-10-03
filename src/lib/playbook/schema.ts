@@ -47,13 +47,6 @@ export const changeInputSchema = z.object({
   body: text(8000).min(1, 'Escribe el texto propuesto'),
 });
 
-export const voteSchema = z.object({
-  targetType: z.enum(['play', 'contribution']),
-  targetId: uuid,
-  verdict: z.enum(['worked', 'didnt']).nullable(),
-  dossierId: uuid.nullable().optional(),
-  note: optText(500),
-});
 
 // ---------------------------------------------------------------- mapa de mercado
 import { PERSONA_ROLES } from './market';
@@ -61,6 +54,7 @@ import { PERSONA_ROLES } from './market';
 const key = z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/, 'Clave: minúsculas, números y guiones');
 
 export const segmentInputSchema = z.object({
+  icon: z.string().regex(/^[a-z0-9-]{1,40}$/).nullable().optional(),
   key,
   name: text(80).min(1, 'Nombre obligatorio'),
   description: optText(1000),

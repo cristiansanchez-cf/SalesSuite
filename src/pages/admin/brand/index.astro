@@ -83,7 +83,7 @@ const card = 'space-y-3 co-card';
   <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
     <form method="post" enctype="multipart/form-data" class="space-y-5" data-testid="brand-form">
       <section class={card}>
-        <h2 class="font-bold">General</h2>
+        <h2 class="co-card-title">General</h2>
         <label class="block text-sm font-medium">Nombre comercial<input class={field} name="name" value={settings.name} required maxlength="80" /></label>
         <label class="block text-sm font-medium">Idioma por defecto
           <select class={field} name="defaultLocale">{LOCALES.map((l) => <option selected={l === settings.defaultLocale}>{l}</option>)}</select>
@@ -91,7 +91,7 @@ const card = 'space-y-3 co-card';
       </section>
 
       <section class={card}>
-        <h2 class="font-bold">Colores</h2>
+        <h2 class="co-card-title">Colores</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           {COLOR_KEYS.map((k) => (
             <label class="flex items-center gap-2 text-sm">
@@ -109,7 +109,7 @@ const card = 'space-y-3 co-card';
       </section>
 
       <section class={card}>
-        <h2 class="font-bold">Tipografía</h2>
+        <h2 class="co-card-title">Tipografía</h2>
         <label class="block text-sm font-medium">Titulares (font-family)<input class={field} name="fontDisplay" value={theme.font?.display ?? ''} placeholder="'YWFTKul', ui-sans-serif, sans-serif" /></label>
         <label class="block text-sm font-medium">Texto (font-family)<input class={field} name="fontSans" value={theme.font?.sans ?? ''} placeholder="ui-sans-serif, system-ui, sans-serif" /></label>
         <fieldset class="rounded-xl border border-line p-3">
@@ -124,7 +124,7 @@ const card = 'space-y-3 co-card';
       </section>
 
       <section class={card}>
-        <h2 class="font-bold">Logos e imágenes</h2>
+        <h2 class="co-card-title">Logos e imágenes</h2>
         {ASSETS.map((a) => (
           <div>
             <label class="block text-sm font-medium">{a.label}<input class={field} name={a.field} value={brand[a.field] ?? ''} placeholder="https://…" /></label>
@@ -136,7 +136,7 @@ const card = 'space-y-3 co-card';
       </section>
 
       <section class={card}>
-        <h2 class="font-bold">Contacto en los dossiers</h2>
+        <h2 class="co-card-title">Contacto en los dossiers</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="text-sm font-medium">WhatsApp (con prefijo)<input class={field} name="whatsapp" value={brand.contact?.whatsapp ?? ''} placeholder="34600111222" inputmode="numeric" /></label>
           <label class="text-sm font-medium">Email<input class={field} type="email" name="email" value={brand.contact?.email ?? ''} /></label>

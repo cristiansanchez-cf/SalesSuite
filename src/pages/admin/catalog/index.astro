@@ -52,7 +52,7 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
           <article class="co-card" data-module-key={m.key}>
             <div class="flex flex-wrap items-start gap-3">
               <div class="min-w-0 flex-1">
-                <h2 class="font-bold">{m.name} {!m.isCatalog && <span class="ml-1 co-badge co-badge--soft">Oculto</span>}</h2>
+                <h2 class="co-card-title">{m.name} {!m.isCatalog && <span class="ml-1 co-badge co-badge--soft">Oculto</span>}</h2>
                 <p class="text-xs text-muted"><code>{m.key}</code> · {m.blockLabel}</p>
                 {m.description && <p class="mt-1 text-sm text-muted">{m.description}</p>}
               </div>
@@ -103,7 +103,7 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
     <aside>
       <form method="post" class="space-y-3 co-card lg:sticky lg:top-6" data-testid="create-module">
         <input type="hidden" name="action" value="create" />
-        <h2 class="text-lg font-bold">Nuevo módulo</h2>
+        <h2 class="co-card-title">Nuevo módulo</h2>
         <p class="text-xs text-muted">Variante de un tipo de bloque existente (p. ej. «Hero · Locales»). Tipos de bloque nuevos = desarrollo (ver MODULE_AUTHORING).</p>
         <label class="block text-sm font-medium">Tipo de bloque
           <select class={field} name="blockType">{Object.entries(REGISTRY).map(([k, v]) => <option value={k}>{v.label}</option>)}</select>

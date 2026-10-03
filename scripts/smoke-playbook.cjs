@@ -32,12 +32,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const caro = rep.locator('[data-testid=play]', { hasText: '"Es caro"' });
   assert((await caro.locator('[data-testid=cerebro-refs]').textContent()).includes('[707]'), 'jugada enlaza ficha del Cerebro con atribución');
   // El voto es un interruptor: comprobamos que cambia (el script se puede repetir).
-  const voteBtn = () => rep.locator('[data-testid=play]').first().locator('[data-testid=vote-worked]');
-  const before = await voteBtn().getAttribute('aria-pressed');
-  await Promise.all([rep.waitForNavigation(), voteBtn().click()]);
-  const after = await voteBtn().getAttribute('aria-pressed');
-  assert(before !== after, `voto «me funcionó» registrado (${before} → ${after})`);
-  if (after === 'false') await Promise.all([rep.waitForNavigation(), voteBtn().click()]);  // deja el voto puesto
+  const evid = await rep.locator('[data-testid=play]').first().locator('[data-testid=play-evidence]').textContent();
+  assert(/cierres documentados|Sin cierres documentados/.test(evid), `evidencia de cierres reales en vez de «me gusta» (${evid.trim()})`);
 
   await caro.locator('summary', { hasText: 'Proponer una mejora' }).click();
   await caro.locator('[name=title]').fill(`Coste por invitado ${RUN}`);
@@ -102,7 +98,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await adm.waitForURL(/ok=saved/);
   assert((await adm.textContent('[data-testid=history]')).includes('Afinado tras reunión de equipo'), 'historial de versiones');
   await adm.goto(`${BASE}/admin/playbook?tab=metrics`);
-  assert((await adm.textContent('[data-testid=metrics]')).includes('Lo que más funciona'), 'métricas');
+  assert((await adm.textContent('[data-testid=metrics]')).includes('Lo que más gana'), 'métricas por cierres reales');
   const exp = await adm.request.get(`${BASE}/admin/api/playbook/export`);
   const json = await exp.json();
   assert(json.formato === 'salessuite.playbook/v1' && json.jugadas.length > 10, 'export con formato de ficha');

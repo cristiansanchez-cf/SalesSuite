@@ -20,6 +20,7 @@ export interface PlaybookEnv {
   reset(): Promise<void>;
   adminDbFor(userId: string): AdminDb;
   playbookDbFor(userId: string): PlaybookDb;
+  evidenceDbFor(userId: string): import('../evidence/db').EvidenceDb;
   enforcesRls: boolean;
 }
 
@@ -38,7 +39,7 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
     const svc = (u: (typeof U)[keyof typeof U], over: Partial<AdminSession> = {}) => {
       const s = sess(u, over);
       const adb = E.adminDbFor(u.id);
-      return createPlaybookService(E.playbookDbFor(u.id), adb, s, { admin: createAdminService(adb, s) });
+      return createPlaybookService(E.playbookDbFor(u.id), adb, s, { admin: createAdminService(adb, s), evidence: E.evidenceDbFor(u.id) });
     };
     const playId = async (key: string) => (await svc(U.admin).listAll()).plays.find((p) => p.key === key)!.id;
 
@@ -120,16 +121,13 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       expect(mine).toMatchObject({ status: 'rejected', reviewNote: 'Preferimos mantener el ejemplo del móvil' });
     });
 
-    test('votos: me funcionó / no, por jugada y desde un dossier', async () => {
-      const pid = await playId('exp-pitch');
-      await svc(U.rep).vote({ targetType: 'play', targetId: pid, verdict: 'worked', dossierId: SALA_X });
-      await svc(U.admin).vote({ targetType: 'play', targetId: pid, verdict: 'didnt' });
-      let p = (await svc(U.rep).topic(EXP)).sections.flatMap((s) => s.plays).find((x) => x.id === pid)!;
-      expect(p.score).toEqual({ worked: 1, didnt: 1, mine: 'worked' });
-      await svc(U.rep).vote({ targetType: 'play', targetId: pid, verdict: null });
-      p = (await svc(U.rep).topic(EXP)).sections.flatMap((s) => s.plays).find((x) => x.id === pid)!;
-      expect(p.score).toEqual({ worked: 0, didnt: 1, mine: null });
-      await rejects(svc(U.altRep).vote({ targetType: 'play', targetId: pid, verdict: 'worked' }), 404);
+    test('evidencia: cada jugada muestra en cuántos cierres reales se usó y cuántos ganó (no «me gusta»)', async () => {
+      const plays = (await svc(U.rep).listAllVisible());
+      const ev = (k: string) => plays.find((p) => p.key === k)!.evidence;
+      expect(ev('exp-pitch')).toEqual({ used: 1, won: 1, lost: 0 });
+      expect(ev('loc-pitch')).toEqual({ used: 2, won: 1, lost: 1 });
+      expect(ev('noche-pitch-propietario')).toEqual({ used: 2, won: 2, lost: 0 });
+      expect(ev('empresa-pitch')).toEqual({ used: 0, won: 0, lost: 0 });
     });
 
     test('guion de venta del dossier Sala X: orden, personalización, precio y objeciones', async () => {
@@ -163,8 +161,7 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
     });
 
     test('métricas, resultado de dossiers y exportación con formato de ficha', async () => {
-      const pid = await playId('exp-pitch');
-      await svc(U.rep).vote({ targetType: 'play', targetId: pid, verdict: 'worked' });
+      const pid = await playId('noche-pitch-propietario');
       await svc(U.rep).markLearned('general', true);
       const admin = createAdminService(E.adminDbFor(U.admin.id), sess(U.admin));
       await admin.apply(SALA_X, { op: 'setOutcome', outcome: 'won', note: 'Firmado' });

@@ -35,6 +35,7 @@ export type DossierDbPatch = DossierPatch & {
   segmentId?: string | null;
   nextStep?: string | null;
   nextStepAt?: string | null;
+  situation?: import('../evidence/types').Situation;
 };
 
 export type ContactInput = Omit<import('../playbook/market').DossierContact, 'id' | 'dossierId' | 'position'>;

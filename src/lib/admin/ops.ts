@@ -5,6 +5,9 @@ import { themeTokensSchema } from '../theme';
 
 /** Operaciones del builder (contrato compartido cliente/servidor). Cada op devuelve el BuilderState completo. */
 const id = z.string().uuid();
+/** Situación: { clave de faceta: [claves de opción] } (src/lib/evidence). */
+export const situationSchema = z.record(z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/), z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/)).max(20))
+  .refine((o) => Object.keys(o).length <= 30, 'Demasiadas facetas');
 const money = z.number().finite().min(0).max(10_000_000).multipleOf(0.01);
 const optText = (max: number) => z.string().trim().max(max).transform((s) => (s === '' ? null : s)).nullable();
 
@@ -25,6 +28,7 @@ const contactSchema = z.object({
   email: z.string().trim().email().max(200).nullable().or(z.literal('').transform(() => null)).default(null),
   phone: z.string().trim().max(40).regex(/^[+\d\s()-]*$/, 'teléfono').nullable().transform((v) => v || null).default(null),
   notes: optText(1000).default(null),
+  traits: situationSchema.default({}),
 });
 
 export const builderOpSchema = z.discriminatedUnion('op', [
@@ -45,6 +49,7 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('addContact'), contact: contactSchema }),
   z.object({ op: z.literal('updateContact'), contactId: id, contact: contactSchema.partial() }),
   z.object({ op: z.literal('removeContact'), contactId: id }),
+  z.object({ op: z.literal('setSituation'), situation: situationSchema }),
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;

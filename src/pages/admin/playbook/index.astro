@@ -57,7 +57,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   {tab === 'inbox' && (
     <div class="mt-6 space-y-8" data-testid="inbox">
       <section>
-        <h2 class="text-lg font-bold">Mejoras propuestas</h2>
+        <h2 class="co-card-title">Mejoras propuestas</h2>
         {inbox.pending.length === 0 && <p class="mt-2 text-sm text-muted">Nada pendiente.</p>}
         <div class="mt-3 space-y-4">
           {inbox.pending.map((c) => (
@@ -79,13 +79,13 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         </div>
       </section>
       <section>
-        <h2 class="text-lg font-bold">Trucos del equipo <span class="text-sm font-normal text-muted">· ordenados por «me funcionó»</span></h2>
+        <h2 class="co-card-title">Trucos del equipo <span class="text-sm font-normal text-muted">· ordenados por «me funcionó»</span></h2>
         {inbox.tips.length === 0 && <p class="mt-2 text-sm text-muted">El equipo aún no ha compartido trucos.</p>}
         <div class="mt-3 grid gap-3 lg:grid-cols-2">
           {inbox.tips.map((t) => (
             <article class="rounded-2xl border border-violet-200 bg-bg p-4" data-testid="team-tip">
               <div class="flex flex-wrap items-center gap-2"><Badges team kind={t.kind === 'tip' ? undefined : t.kind} />
-                <span class="text-xs text-muted">{t.authorName} · 👍 {t.score.worked} · 👎 {t.score.didnt}</span></div>
+                <span class="co-meta">{t.authorName}</span></div>
               <h3 class="mt-1 font-bold">{t.title}</h3>
               <div class="prose-play mt-1 text-sm" set:html={renderMarkdown(t.body)} />
               <form method="post" class="mt-3 flex gap-2">
@@ -99,7 +99,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
       </section>
       {inbox.reviewed.length > 0 && (
         <section>
-          <h2 class="text-lg font-bold">Revisado recientemente</h2>
+          <h2 class="co-card-title">Revisado recientemente</h2>
           <ul class="mt-2 space-y-1 p-0 text-sm">
             {inbox.reviewed.map((c) => <li class="list-none"><span class="font-semibold">{{ accepted: '✓', rejected: '✕', hidden: '◌' }[c.status as 'accepted']}</span> {c.title} <span class="text-muted">· {c.authorName}{c.reviewNote && ` · ${c.reviewNote}`}</span></li>)}
           </ul>
@@ -114,7 +114,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         const list = all.plays.filter((p) => p.moduleId === mid);
         return (
           <section>
-            <h2 class="text-lg font-bold">{moduleName(mid)} <span class="text-sm font-normal text-muted">· {list.filter((p) => p.status === 'official').length} oficiales</span></h2>
+            <h2 class="co-card-title">{moduleName(mid)} <span class="text-sm font-normal text-muted">· {list.filter((p) => p.status === 'official').length} oficiales</span></h2>
             {list.length === 0 && <p class="mt-1 text-sm text-amber-700">Sin jugadas: los comerciales no tendrán guion para este módulo.</p>}
             <ul class="mt-2 divide-y divide-line overflow-hidden co-card">
               {list.map((p) => (
@@ -124,7 +124,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
                     <span class="min-w-0 flex-1 truncate font-semibold">{p.title}</span>
                     {p.status !== 'official' && <span class="co-badge co-badge--soft">{p.status === 'draft' ? 'Borrador' : 'Archivada'}</span>}
                     {p.techniqueRefs.length > 0 && <span class="text-xs" title="Enlaza fichas del Cerebro">{p.techniqueRefs.length}</span>}
-                    <span class="text-xs text-muted">👍 {p.score.worked} · 👎 {p.score.didnt} · v{p.version}</span>
+                    <span class="co-meta">{p.score.worked + p.score.didnt} cierres · ganó {p.score.worked} · v{p.version}</span>
                   </a>
                 </li>
               ))}
@@ -162,22 +162,22 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   {m && (
     <div class="mt-6 grid gap-5 lg:grid-cols-2" data-testid="metrics">
       <section class="co-card">
-        <h2 class="font-bold">Lo que más funciona</h2>
-        <ol class="mt-2 space-y-1 pl-5 text-sm">{m.best.map((p) => <li><a class="underline-offset-2 hover:underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="text-muted">· 👍 {p.score.worked} / 👎 {p.score.didnt}</span></li>)}</ol>
-        {m.best.length === 0 && <p class="text-sm text-muted">Aún no hay votos. Los comerciales votan desde «Aprende» y desde el guion de cada dossier.</p>}
+        <h2 class="co-card-title">Lo que más gana</h2><p class="co-meta">Según los cierres documentados (ganados frente a perdidos), no según opiniones.</p>
+        <ol class="mt-2 space-y-1 pl-5 text-sm">{m.best.map((p) => <li><a class="underline-offset-2 hover:underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="co-meta">· {p.score.worked + p.score.didnt} cierres · ganó {p.score.worked}</span></li>)}</ol>
+        {m.best.length === 0 && <p class="co-meta">Todavía no hay cierres documentados. Se piden al marcar un dossier como ganado o perdido.</p>}
       </section>
       <section class="co-card">
-        <h2 class="font-bold">A revisar <span class="text-sm font-normal text-muted">(más 👎 que 👍)</span></h2>
-        <ul class="mt-2 space-y-1 p-0 text-sm">{m.struggling.map((p) => <li class="list-none"><a class="underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="text-muted">· 👍 {p.score.worked} / 👎 {p.score.didnt}</span></li>)}</ul>
+        <h2 class="co-card-title">A revisar</h2><p class="co-meta">Jugadas usadas en más cierres perdidos que ganados.</p>
+        <ul class="mt-2 space-y-1 p-0 text-sm">{m.struggling.map((p) => <li class="list-none"><a class="underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="co-meta">· {p.score.worked + p.score.didnt} cierres · ganó {p.score.worked}</span></li>)}</ul>
         {m.struggling.length === 0 && <p class="text-sm text-muted">Nada que revisar por ahora.</p>}
       </section>
       <section class="co-card">
-        <h2 class="font-bold">Trucos del equipo candidatos a oficial</h2>
-        <ul class="mt-2 space-y-1 p-0 text-sm">{m.topTips.map((t) => <li class="list-none">{t.title} <span class="text-muted">· {t.authorName} · 👍 {t.score.worked}</span></li>)}</ul>
-        {m.topTips.length === 0 && <p class="text-sm text-muted">Sin votos todavía.</p>}
+        <h2 class="co-card-title">Trucos recientes del equipo</h2><p class="co-meta">Candidatos a oficial: asciéndelos desde la bandeja.</p>
+        <ul class="mt-2 space-y-1 p-0 text-sm">{m.topTips.map((t) => <li class="list-none">{t.title} <span class="co-meta">· {t.authorName}</span></li>)}</ul>
+        {m.topTips.length === 0 && <p class="co-meta">El equipo aún no ha compartido trucos.</p>}
       </section>
       <section class="co-card">
-        <h2 class="font-bold">Formación del equipo</h2>
+        <h2 class="co-card-title">Formación del equipo</h2>
         <ul class="mt-2 space-y-2 p-0 text-sm">
           {m.team.map((x) => (
             <li class="list-none">
@@ -188,12 +188,12 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         </ul>
       </section>
       <section class="co-card">
-        <h2 class="font-bold">Resultado de dossiers</h2>
+        <h2 class="co-card-title">Resultado de dossiers</h2>
         <p class="mt-2 text-sm">Ganados <strong>{m.outcomes.won}</strong> · Perdidos <strong>{m.outcomes.lost}</strong> · Publicados abiertos <strong>{m.outcomes.open}</strong></p>
         <p class="mt-1 text-xs text-muted">Con la analítica de visionado (Fase 2) esto se cruzará con las jugadas usadas para medir tasa de cierre por jugada.</p>
       </section>
       <section class="co-card">
-        <h2 class="font-bold">Módulos sin jugadas</h2>
+        <h2 class="co-card-title">Módulos sin jugadas</h2>
         <p class="mt-2 text-sm">{m.uncoveredModules.length ? m.uncoveredModules.join(', ') : 'Todos los módulos tienen jugadas ✓'}</p>
       </section>
     </div>

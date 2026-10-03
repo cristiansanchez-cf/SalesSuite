@@ -34,6 +34,8 @@ export interface Segment {
   salesCycle: string | null;
   position: number;
   status: 'draft' | 'official' | 'archived';
+  /** Icono de línea (src/lib/ui/icons.ts). */
+  icon: string | null;
 }
 
 export interface Persona {
@@ -66,6 +68,8 @@ export interface DossierContact {
   phone: string | null;
   notes: string | null;
   position: number;
+  /** Rasgos de la persona según las facetas de ámbito «persona» (p. ej. tipo de personalidad). */
+  traits: import('../evidence/types').Situation;
 }
 
 export type PersonaView = Persona & { angles: Array<PersonaModule & { moduleName: string }> };

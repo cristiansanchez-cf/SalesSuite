@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { describe, test } from 'vitest';
 import { supabaseAdminDb } from '../admin/db-supabase';
 import { supabasePlaybookDb } from './db-supabase';
+import { supabaseEvidenceDb } from '../evidence/db-supabase';
 import { playbookContract } from './playbook.contract';
 
 const URL = process.env.SUPABASE_IT_URL;
@@ -33,6 +34,7 @@ if (!URL || !SECRET || !DB_URL) {
     },
     adminDbFor: (u) => supabaseAdminDb(client(u)),
     playbookDbFor: (u) => supabasePlaybookDb(client(u)),
+    evidenceDbFor: (u) => supabaseEvidenceDb(client(u)),
   }));
 }
 
@@ -47,5 +49,6 @@ if (URL && SECRET && DB_URL) {
     },
     adminDbFor: (u) => supabaseAdminDb(client(u)),
     playbookDbFor: (u) => supabasePlaybookDb(client(u)),
+    evidenceDbFor: (u) => supabaseEvidenceDb(client(u)),
   }));
 }

@@ -486,7 +486,16 @@
       "theme_override": null,
       "segment_id": "00000000-0000-4000-8000-0000005e0001",
       "next_step": "Llamar a Laura para cerrar la fecha",
-      "next_step_at": "2026-10-10T16:00:00Z"
+      "next_step_at": "2026-10-10T16:00:00Z",
+      "situation": {
+        "region": [
+          "madrid"
+        ],
+        "rasgos-local": [
+          "pantalla",
+          "bodas"
+        ]
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000d05502",
@@ -1235,7 +1244,8 @@
       "deal_size": "300–900 € por boda (ejemplo)",
       "sales_cycle": "2–8 semanas",
       "position": 1024,
-      "status": "official"
+      "status": "official",
+      "icon": "heart"
     },
     {
       "id": "00000000-0000-4000-8000-0000005e0002",
@@ -1250,7 +1260,8 @@
       "deal_size": "Suscripción mensual (ejemplo: 150–400 €/mes)",
       "sales_cycle": "1–4 semanas",
       "position": 2048,
-      "status": "official"
+      "status": "official",
+      "icon": "music"
     },
     {
       "id": "00000000-0000-4000-8000-0000005e0003",
@@ -1265,7 +1276,8 @@
       "deal_size": "500–3.000 € por fecha (ejemplo)",
       "sales_cycle": "1–3 meses",
       "position": 3072,
-      "status": "official"
+      "status": "official",
+      "icon": "mic"
     },
     {
       "id": "00000000-0000-4000-8000-0000005e0004",
@@ -1280,7 +1292,8 @@
       "deal_size": "3.000–20.000 € (ejemplo)",
       "sales_cycle": "3–9 meses (se cierra antes de la temporada)",
       "position": 4096,
-      "status": "official"
+      "status": "official",
+      "icon": "party-popper"
     }
   ],
   "persona": [
@@ -1745,7 +1758,12 @@
       "email": null,
       "phone": null,
       "notes": "Le encantó la kiss-cam en la demo.",
-      "position": 1024
+      "position": 1024,
+      "traits": {
+        "personalidad": [
+          "expresivo"
+        ]
+      }
     },
     {
       "id": "00000000-0000-4000-8000-0000000c0002",
@@ -1757,7 +1775,8 @@
       "email": null,
       "phone": null,
       "notes": null,
-      "position": 2048
+      "position": 2048,
+      "traits": {}
     },
     {
       "id": "00000000-0000-4000-8000-0000000c0003",
@@ -1769,7 +1788,289 @@
       "email": null,
       "phone": null,
       "notes": "Cree que le quitamos protagonismo.",
-      "position": 3072
+      "position": 3072,
+      "traits": {
+        "personalidad": [
+          "analitico"
+        ]
+      }
+    }
+  ],
+  "situation_facet": [
+    {
+      "id": "00000000-0000-4000-8000-0000000f0001",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "personalidad",
+      "label": "Tipo de personalidad",
+      "question": "¿Cómo es la persona con la que hablas?",
+      "icon": "smile",
+      "scope": "contact",
+      "multi": false,
+      "weight": 2,
+      "position": 1024,
+      "options": [
+        {
+          "key": "analitico",
+          "label": "Analítico",
+          "icon": "chart-column",
+          "hint": "Quiere datos, pruebas y detalle. Dale tiempo y números."
+        },
+        {
+          "key": "directo",
+          "label": "Directo",
+          "icon": "zap",
+          "hint": "Va al resultado. Sé breve y ve al grano."
+        },
+        {
+          "key": "expresivo",
+          "label": "Expresivo",
+          "icon": "sparkles",
+          "hint": "Se mueve por la idea y la emoción. Cuéntale la experiencia."
+        },
+        {
+          "key": "afable",
+          "label": "Afable",
+          "icon": "heart-handshake",
+          "hint": "Valora la relación y la confianza. No le presiones."
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000f0002",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "region",
+      "label": "Región",
+      "question": "¿En qué región está la cuenta?",
+      "icon": "map-pin",
+      "scope": "account",
+      "multi": false,
+      "weight": 2,
+      "position": 2048,
+      "options": [
+        {
+          "key": "madrid",
+          "label": "Madrid"
+        },
+        {
+          "key": "barcelona",
+          "label": "Barcelona"
+        },
+        {
+          "key": "valencia",
+          "label": "Valencia"
+        },
+        {
+          "key": "costa",
+          "label": "Costa (temporada)"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000f0003",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "rasgos-local",
+      "label": "Cómo es el sitio",
+      "question": "¿Qué tiene la cuenta?",
+      "icon": "store",
+      "scope": "account",
+      "multi": true,
+      "weight": 1,
+      "position": 3072,
+      "options": [
+        {
+          "key": "pantalla",
+          "label": "Tiene pantalla",
+          "icon": "monitor"
+        },
+        {
+          "key": "dj",
+          "label": "DJ residente",
+          "icon": "music"
+        },
+        {
+          "key": "aforo-grande",
+          "label": "Aforo de más de 500",
+          "icon": "users"
+        },
+        {
+          "key": "bodas",
+          "label": "Celebra bodas",
+          "icon": "heart"
+        },
+        {
+          "key": "marca-bebidas",
+          "label": "Patrocinio de bebidas",
+          "icon": "wine"
+        }
+      ],
+      "status": "official"
+    }
+  ],
+  "win_story": [
+    {
+      "id": "00000000-0000-4000-8000-000000050001",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Club Aurora (ejemplo)",
+      "outcome": "won",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "persona_ids": [
+        "00000000-0000-4000-8000-0000009e0006",
+        "00000000-0000-4000-8000-0000009e0008"
+      ],
+      "situation": {
+        "personalidad": [
+          "analitico"
+        ],
+        "region": [
+          "madrid"
+        ],
+        "rasgos-local": [
+          "pantalla",
+          "dj"
+        ]
+      },
+      "play_ids": [
+        "00000000-0000-4000-8000-0000009a0021",
+        "00000000-0000-4000-8000-0000009a0020",
+        "00000000-0000-4000-8000-0000009a0015"
+      ],
+      "what_worked": "Hablé antes con el DJ: le enseñé que las peticiones pasan por su filtro antes de sonar y dejó de verlo como amenaza. Al dueño le llevé la caja de una noche piloto.",
+      "what_failed": null,
+      "key_stage": "objeciones",
+      "objection": "desconfianza",
+      "status": "shared",
+      "dossier_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000050002",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Sala Faro (ejemplo)",
+      "outcome": "won",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "persona_ids": [
+        "00000000-0000-4000-8000-0000009e0006"
+      ],
+      "situation": {
+        "personalidad": [
+          "directo"
+        ],
+        "region": [
+          "barcelona"
+        ],
+        "rasgos-local": [
+          "pantalla"
+        ]
+      },
+      "play_ids": [
+        "00000000-0000-4000-8000-0000009a0021",
+        "00000000-0000-4000-8000-0000009a0006",
+        "00000000-0000-4000-8000-0000009a0008"
+      ],
+      "what_worked": "Fui directo a números: coste por noche frente a una botella más vendida. Cerró en la primera reunión.",
+      "what_failed": null,
+      "key_stage": "cierre",
+      "objection": "precio",
+      "status": "shared",
+      "dossier_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000050003",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Bar Nocturno (ejemplo)",
+      "outcome": "lost",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "persona_ids": [
+        "00000000-0000-4000-8000-0000009e0008"
+      ],
+      "situation": {
+        "personalidad": [
+          "analitico"
+        ],
+        "region": [
+          "madrid"
+        ],
+        "rasgos-local": [
+          "dj"
+        ]
+      },
+      "play_ids": [
+        "00000000-0000-4000-8000-0000009a0015"
+      ],
+      "what_worked": null,
+      "what_failed": "Presenté al dueño sin hablar antes con el DJ residente, y el DJ lo vetó.",
+      "key_stage": "objeciones",
+      "objection": "desconfianza",
+      "status": "shared",
+      "dossier_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000050004",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Finca Olivar (ejemplo)",
+      "outcome": "won",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "persona_ids": [
+        "00000000-0000-4000-8000-0000009e0001",
+        "00000000-0000-4000-8000-0000009e0002"
+      ],
+      "situation": {
+        "personalidad": [
+          "expresivo"
+        ],
+        "region": [
+          "madrid"
+        ],
+        "rasgos-local": [
+          "pantalla",
+          "bodas"
+        ]
+      },
+      "play_ids": [
+        "00000000-0000-4000-8000-0000009a0009",
+        "00000000-0000-4000-8000-0000009a0011",
+        "00000000-0000-4000-8000-0000009a0012"
+      ],
+      "what_worked": "La novia probó la kiss-cam en su móvil durante la reunión y se vio en la vista previa.",
+      "what_failed": null,
+      "key_stage": "pitch_demo",
+      "objection": null,
+      "status": "shared",
+      "dossier_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000050005",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "author_id": null,
+      "title": "Gira Verano (ejemplo)",
+      "outcome": "won",
+      "segment_id": "00000000-0000-4000-8000-0000005e0003",
+      "persona_ids": [
+        "00000000-0000-4000-8000-0000009e0010"
+      ],
+      "situation": {
+        "personalidad": [
+          "directo"
+        ],
+        "region": [
+          "valencia"
+        ]
+      },
+      "play_ids": [
+        "00000000-0000-4000-8000-0000009a0024",
+        "00000000-0000-4000-8000-0000009a0025"
+      ],
+      "what_worked": "Le llevé el dato de participación de otro concierto de su tamaño.",
+      "what_failed": null,
+      "key_stage": "cierre",
+      "objection": null,
+      "status": "shared",
+      "dossier_id": null
     }
   ]
 }

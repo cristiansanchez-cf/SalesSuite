@@ -1,0 +1,145 @@
+---
+/**
+ * Documentar un cierre (docs/EVIDENCE.md): dos minutos, todo lo que ya sabemos viene marcado.
+ * Ganado o perdido, el cierre enseña al equipo qué funcionó y en qué situación.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { isIconName } from '~/lib/ui/icons';
+import { OBJECTION_LABEL, OBJECTIONS, STAGE_LABEL, STAGES } from '~/lib/playbook/types';
+import { ROLE_LABEL } from '~/lib/playbook/market';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(id)) return Astro.rewrite('/404');
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let posted: FormData | null = null;
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  posted = f;
+  const facetKeys = [...new Set([...f.keys()].filter((k) => k.startsWith('facet:')))];
+  const situation = Object.fromEntries(facetKeys.map((k) => [k.slice(6), f.getAll(k).map(String).filter(Boolean)]));
+  result = await formAction(() => admin.evidence.recordStory(id, {
+    outcome: f.get('outcome'), segmentId: String(f.get('segmentId') ?? '') || null,
+    personaIds: f.getAll('personaIds').map(String), playIds: f.getAll('playIds').map(String), situation,
+    whatWorked: String(f.get('whatWorked') ?? ''), whatFailed: String(f.get('whatFailed') ?? ''),
+    keyStage: String(f.get('keyStage') ?? '') || null, objection: String(f.get('objection') ?? '') || null,
+  }));
+  if (!result.error) return Astro.redirect(`/admin/wins?ok=story&dossier=${id}`, 303);
+}
+
+let d;
+try { d = await admin.evidence.debrief(id); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  if (e instanceof AdminError && e.status === 403) return Astro.rewrite('/admin/forbidden');
+  throw e;
+}
+const def = d.defaults;
+const pick = <T,>(k: string, fallback: T): T | string[] => (posted ? posted.getAll(k).map(String) : fallback);
+const outcome = (posted?.get('outcome') as string | null) ?? Astro.url.searchParams.get('outcome') ?? def.outcome;
+const segmentId = (posted?.get('segmentId') as string | null) ?? def.segmentId ?? '';
+const personaIds = pick('personaIds', def.personaIds) as string[];
+const playIds = pick('playIds', def.playIds) as string[];
+const facetVal = (key: string) => (posted ? posted.getAll(`facet:${key}`).map(String) : def.situation[key] ?? []);
+const text = (k: 'whatWorked' | 'whatFailed') => (posted ? String(posted.get(k) ?? '') : def[k] ?? '');
+const segPersonas = d.personas.filter((p) => p.segmentId === segmentId);
+const otherPersonas = d.personas.filter((p) => p.segmentId !== segmentId);
+const moduleName = new Map(d.state.items.map((i) => [i.moduleId, i.moduleName]));
+const groups = [...new Set(d.plays.map((p) => p.moduleId))].map((m) => ({ title: m ? moduleName.get(m) ?? 'Módulo' : 'De la empresa', plays: d.plays.filter((p) => p.moduleId === m) }));
+const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
+---
+<AdminLayout title="Documentar cierre">
+  <PageHeader eyebrow="Qué ha funcionado" title={d.existing ? 'Revisa lo que funcionó.' : 'Documenta este cierre.'} back={{ href: `/admin/dossiers/${id}`, label: d.state.dossier.title }}
+    lede="Dos minutos. Lo que ya sabemos viene marcado: corrige lo que haga falta. Ganado o perdido, esto es lo que convierte tu venta en una recomendación para el equipo." />
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  <ol class="co-steps mb-6" aria-label="Pasos"><li aria-current="step">Resultado</li><li>Situación</li><li>Qué funcionó</li></ol>
+
+  <form method="post" class="grid gap-4" data-testid="debrief-form">
+    <section class="co-card grid gap-3">
+      <p class="text-eyebrow">01 · Resultado</p>
+      <div class="co-grid co-grid--2">
+        <label class="co-option"><input type="radio" name="outcome" value="won" checked={outcome === 'won'} required />
+          <span class="co-option__icon"><Icon name="trophy" /></span><span class="co-card-title">Ganado</span><span class="co-meta">Firmó, o hay fecha cerrada</span></label>
+        <label class="co-option"><input type="radio" name="outcome" value="lost" checked={outcome === 'lost'} />
+          <span class="co-option__icon"><Icon name="circle-x" /></span><span class="co-card-title">Perdido</span><span class="co-meta">Dijo que no, o se enfrió</span></label>
+      </div>
+    </section>
+
+    <section class="co-card grid gap-4">
+      <p class="text-eyebrow">02 · Situación <span class="normal-case tracking-normal">· lo que no sepas, déjalo sin marcar</span></p>
+      <label class="co-field">Sector
+        <select class="co-select" name="segmentId">
+          <option value="">Sin sector</option>
+          {d.segments.map((sg) => <option value={sg.id} selected={sg.id === segmentId}>{sg.name}</option>)}
+        </select>
+      </label>
+      <fieldset class="grid gap-2">
+        <legend class="co-field mb-1">¿Con quién se decidió? <span class="co-help">Las personas clave de la venta</span></legend>
+        <div class="co-chips">
+          {segPersonas.map((p) => <label class="co-chip" title={ROLE_LABEL[p.role]}><input type="checkbox" name="personaIds" value={p.id} checked={personaIds.includes(p.id)} />{p.name}</label>)}
+        </div>
+        {otherPersonas.length > 0 && (
+          <details>
+            <summary class="co-meta cursor-pointer">Actores de otros sectores</summary>
+            <div class="co-chips mt-2">{otherPersonas.map((p) => <label class="co-chip"><input type="checkbox" name="personaIds" value={p.id} checked={personaIds.includes(p.id)} />{p.name}</label>)}</div>
+          </details>
+        )}
+      </fieldset>
+      {d.facets.map((f) => (
+        <fieldset class="grid gap-2" data-testid={`debrief-facet-${f.key}`}>
+          <legend class="co-field mb-1">{f.question ?? f.label} <span class="co-help">{f.scope === 'contact' ? 'De la persona clave' : 'De la cuenta'}{f.multi ? ' · varias' : ''}</span></legend>
+          <div class="co-chips">
+            {f.options.map((o) => (
+              <label class="co-chip" title={o.hint ?? ''}>
+                <input type={f.multi ? 'checkbox' : 'radio'} name={`facet:${f.key}`} value={o.key} checked={facetVal(f.key).includes(o.key)} />
+                {icon(o.icon) && <Icon name={icon(o.icon)!} size={14} />}{o.label}
+              </label>
+            ))}
+            {!f.multi && <label class="co-chip"><input type="radio" name={`facet:${f.key}`} value="" checked={facetVal(f.key).length === 0} />No lo sé</label>}
+          </div>
+        </fieldset>
+      ))}
+    </section>
+
+    <section class="co-card grid gap-4">
+      <p class="text-eyebrow">03 · Qué funcionó</p>
+      <label class="co-field">Lo que dijiste o hiciste que marcó la diferencia <span class="co-help">Obligatorio si lo ganaste. Con un ejemplo real: a quién, qué y qué pasó.</span>
+        <textarea class="co-textarea" name="whatWorked" maxlength="2000" placeholder="Hablé antes con el DJ y le enseñé que las peticiones pasan por su filtro…">{text('whatWorked')}</textarea>
+      </label>
+      <label class="co-field">Lo que no funcionó <span class="co-help">Opcional si ganaste. Si lo perdiste, es lo más útil para el equipo.</span>
+        <textarea class="co-textarea" name="whatFailed" maxlength="2000">{text('whatFailed')}</textarea>
+      </label>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="co-field">Momento clave
+          <select class="co-select" name="keyStage"><option value="">No lo tengo claro</option>{STAGES.map((x) => <option value={x} selected={(posted?.get('keyStage') ?? def.keyStage) === x}>{STAGE_LABEL[x]}</option>)}</select>
+        </label>
+        <label class="co-field">Objeción principal
+          <select class="co-select" name="objection"><option value="">Ninguna</option>{OBJECTIONS.map((x) => <option value={x} selected={(posted?.get('objection') ?? def.objection) === x}>{OBJECTION_LABEL[x]}</option>)}</select>
+        </label>
+      </div>
+      <fieldset class="grid gap-3">
+        <legend class="co-field mb-1">Jugadas del playbook que usaste <span class="co-help">Así sabemos cuáles ganan de verdad</span></legend>
+        {groups.map((g) => (
+          <div>
+            <p class="co-meta mb-1">{g.title}</p>
+            <div class="grid gap-1">
+              {g.plays.map((p) => <label class="co-check"><input type="checkbox" name="playIds" value={p.id} checked={playIds.includes(p.id)} /><span>{p.title}</span></label>)}
+            </div>
+          </div>
+        ))}
+      </fieldset>
+    </section>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button class="co-btn co-btn--primary" type="submit">{d.existing ? 'Guardar cambios' : 'Guardar y compartir con el equipo'} <span aria-hidden="true">→</span></button>
+      <a class="co-btn co-btn--quiet" href={`/admin/dossiers/${id}`}>Ahora no</a>
+      <span class="co-meta">Lo verán tus compañeros en «Qué ha funcionado». El cliente no ve nada de esto.</span>
+    </div>
+  </form>
+</AdminLayout>

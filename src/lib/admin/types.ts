@@ -71,6 +71,8 @@ export interface DossierRecord {
   nextStepAt: string | null;
   /** Cuenta de colaborador a la que pertenece (fija la política de precio). */
   partnerAccountId: string | null;
+  /** Situación de la cuenta según las facetas del tenant (región, rasgos…). */
+  situation: import('../evidence/types').Situation;
 }
 
 export interface DossierSummary extends DossierRecord {

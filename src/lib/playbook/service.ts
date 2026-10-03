@@ -8,7 +8,7 @@ import type { AdminDb } from '../admin/db';
 import { latestByModule, AdminError, type AdminService } from '../admin/service';
 import type { AdminSession, CatalogVersion } from '../admin/types';
 import type { PlaybookDb } from './db';
-import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema, voteSchema } from './schema';
+import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema } from './schema';
 import { buildContext, type ContextBrief } from './context';
 import type { PersonaView, SegmentView } from './market';
 import { buildTalkTrack, type TalkTrack } from './talk-track';
@@ -17,6 +17,8 @@ import {
   type Contribution, type ContributionView, type Feedback, type Play, type PlayKind, type PlayView, type Score, type TargetType,
 } from './types';
 import type { z } from 'zod';
+import type { EvidenceDb } from '../evidence/db';
+import { evidenceByPlay } from '../evidence/service';
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -44,7 +46,7 @@ export interface TopicView {
   learned: boolean;
 }
 
-export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService }) {
+export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService; evidence?: EvidenceDb }) {
   const isAdmin = s.role === 'admin';
   const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo el líder (admin) puede editar el playbook oficial'); };
   const wrote = (ok: boolean) => { if (!ok) throw new AdminError(403, 'Sin permiso para esta operación'); };
@@ -63,13 +65,19 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   async function load() {
-    const [plays, contributions, feedback, catalog] = await Promise.all([
+    const [plays, contributions, feedback, catalog, stories] = await Promise.all([
       pdb.listPlays(s.tenantId), pdb.listContributions(s.tenantId), pdb.listFeedback(s.tenantId), adb.listCatalog(s.tenantId),
+      deps.evidence ? deps.evidence.listStories(s.tenantId) : Promise.resolve([]),
     ]);
     const score = scores(feedback);
+    // Evidencia objetiva: cierres ganados/perdidos en los que se usó cada jugada (docs/EVIDENCE.md).
+    const ev = evidenceByPlay(stories);
     const names = await adb.userNames([...new Set(contributions.map((c) => c.authorId))]);
     const playTitle = new Map(plays.map((p) => [p.id, p.title]));
-    const pv: PlayView[] = plays.map((p) => ({ ...p, score: score('play', p.id) }));
+    const pv: PlayView[] = plays.map((p) => {
+      const e = ev.get(p.id) ?? { used: 0, won: 0, lost: 0 };
+      return { ...p, score: { worked: e.won, didnt: e.lost, mine: null }, evidence: e };
+    });
     const cv: ContributionView[] = contributions.map((c) => ({
       ...c, score: score('contribution', c.id), authorName: names.get(c.authorId) ?? null, playTitle: c.playId ? playTitle.get(c.playId) ?? null : null,
     }));
@@ -200,18 +208,6 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     wrote(await pdb.deleteContribution(contributionId));
   }
 
-  async function vote(input: unknown) {
-    const v = parse(voteSchema, input);
-    const { plays, contributions } = await load();
-    const exists = v.targetType === 'play'
-      ? plays.some((p) => p.id === v.targetId && official(p))
-      : contributions.some((c) => c.id === v.targetId && visibleTip(c));
-    if (!exists) throw new AdminError(404, 'No encontrado');
-    if (v.dossierId) await deps.admin.getState(v.dossierId); // 404 si no es del tenant
-    if (v.verdict === null) await pdb.deleteFeedback(s.userId, v.targetType, v.targetId);
-    else await pdb.upsertFeedback(s.tenantId, { userId: s.userId, targetType: v.targetType, targetId: v.targetId, verdict: v.verdict, note: v.note ?? null, dossierId: v.dossierId ?? null });
-  }
-
   // ------------------------------------------------------------ mapa de mercado
   async function loadMarket() {
     const [segments, personas, segMods, perMods, catalog] = await Promise.all([
@@ -282,6 +278,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       id, key: v.key, name: v.name, description: v.description ?? null, valueProp: v.valueProp ?? null, icp: v.icp ?? null,
       disqualifiers: v.disqualifiers ?? null, buyingProcess: v.buyingProcess ?? null, dealSize: v.dealSize ?? null, salesCycle: v.salesCycle ?? null,
       position: cur?.position ?? Math.max(0, ...segs.map((x) => x.position)) + 1024, status: v.status,
+      icon: v.icon ?? cur?.icon ?? null,
     });
   }
 
@@ -343,7 +340,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   /** Contexto + petición para el Cerebro de Ventas (o Claude/ChatGPT) a partir de lo que ya sabe la app. */
-  async function contextBrief(input: unknown, opts: { publicOrigin?: string } = {}): Promise<ContextBrief> {
+  async function contextBrief(input: unknown, opts: { publicOrigin?: string; evidence?: import('./context').ContextData['evidence'] } = {}): Promise<ContextBrief> {
     const v = parse(contextInputSchema, input);
     if (v.messageType === 'objecion' && !v.objection) throw new AdminError(422, 'Elige qué objeción te han puesto');
     const [m, { plays }] = await Promise.all([loadMarket(), load()]);
@@ -362,6 +359,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       messageType: v.messageType, channel: v.channel, objection: v.objection ?? null, notes: v.notes ?? null,
       segment, persona, contact, state, plays,
       publicUrl: link && opts.publicOrigin ? `${opts.publicOrigin}/d/${link.token}` : null,
+      evidence: opts.evidence,
     });
   }
 
@@ -370,6 +368,11 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     title: p.title, body: p.body, kind: p.kind, stage: p.stage, objection: p.objection, whenToUse: p.whenToUse,
     whyItWorks: p.whyItWorks, techniqueRefs: p.techniqueRefs, moduleId: p.moduleId, status: p.status, audience: p.audience,
   });
+
+  /** Jugadas oficiales que puede ver este usuario, con su evidencia. */
+  async function listAllVisible() {
+    return (await load()).plays.filter(official).sort((a, b) => a.position - b.position);
+  }
 
   async function listAll() {
     requireAdmin();
@@ -487,7 +490,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     return {
       best: off.filter((p) => p.score.worked > 0).sort((a, b) => (b.score.worked - b.score.didnt) - (a.score.worked - a.score.didnt)).slice(0, 8),
       struggling: off.filter((p) => votes(p) >= 2 && p.score.didnt >= p.score.worked).sort((a, b) => b.score.didnt - a.score.didnt),
-      topTips: contributions.filter((c) => c.type === 'tip' && c.status === 'shared' && c.score.worked > 0).sort((a, b) => b.score.worked - a.score.worked).slice(0, 8),
+      topTips: contributions.filter((c) => c.type === 'tip' && c.status === 'shared').sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)).slice(0, 8),
       uncoveredModules: [...latest.values()].filter((v) => !off.some((p) => p.moduleId === v.moduleId)).map((v) => v.moduleName),
       team: members.map((m) => {
         const done = progress.filter((p) => p.userId === m.userId).length;
@@ -539,8 +542,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   return {
     isAdmin, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen,
-    market, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, vote, talkTrack,
-    listAll, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
+    market, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
+    listAll, listAllVisible, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };
 }
 

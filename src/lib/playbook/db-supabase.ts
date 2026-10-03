@@ -35,7 +35,7 @@ const toRow = (p: Record<string, unknown>) =>
 
 const toSegment = (r: Row): Segment => ({
   id: r.id, key: r.key, name: r.name, description: r.description, valueProp: r.value_prop, icp: r.icp, disqualifiers: r.disqualifiers,
-  buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status,
+  buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status, icon: r.icon ?? null,
 });
 const toPersona = (r: Row): Persona => ({
   id: r.id, segmentId: r.segment_id, key: r.key, name: r.name, role: r.role, goals: r.goals, pains: r.pains, kpis: r.kpis,
@@ -126,7 +126,7 @@ export function supabasePlaybookDb(sb: SupabaseClient): PlaybookDb {
     async saveSegment(t, r) {
       const row = {
         tenant_id: t, key: r.key, name: r.name, description: r.description, value_prop: r.valueProp, icp: r.icp, disqualifiers: r.disqualifiers,
-        buying_process: r.buyingProcess, deal_size: r.dealSize, sales_cycle: r.salesCycle, position: r.position, status: r.status,
+        buying_process: r.buyingProcess, deal_size: r.dealSize, sales_cycle: r.salesCycle, position: r.position, status: r.status, icon: r.icon,
       };
       const res = r.id
         ? check(await sb.from('segment').update(row).eq('id', r.id).select('id'))

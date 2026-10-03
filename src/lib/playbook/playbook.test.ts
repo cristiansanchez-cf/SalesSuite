@@ -1,6 +1,7 @@
 import { resetDemoDb } from '../data/store';
 import { demoAdminDb } from '../admin/db-demo';
 import { demoPlaybookDb } from './db-demo';
+import { demoEvidenceDb } from '../evidence/db-demo';
 import { playbookContract } from './playbook.contract';
 
 playbookContract('demo', () => ({
@@ -13,6 +14,7 @@ playbookContract('demo', () => ({
   },
   adminDbFor: () => demoAdminDb(),
   playbookDbFor: () => demoPlaybookDb(),
+  evidenceDbFor: () => demoEvidenceDb(),
 }));
 
 import { marketContract } from './market.contract';
@@ -25,4 +27,5 @@ marketContract('demo', () => ({
   },
   adminDbFor: () => demoAdminDb(),
   playbookDbFor: () => demoPlaybookDb(),
+  evidenceDbFor: () => demoEvidenceDb(),
 }));

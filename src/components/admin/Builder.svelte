@@ -16,13 +16,17 @@
     segments: Array<{ id: string; key: string; name: string }>;
     personas: Array<{ id: string; segmentId: string; name: string; role: string }>;
   }
-  let { initial, publicOrigin, market = { segments: [], personas: [] } }: { initial: BuilderState; publicOrigin: string; market?: MarketLite } = $props();
+  interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
+  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false }:
+    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean } = $props();
 
   // Copia JSON: las props llegan como proxies y structuredClone no puede clonarlas.
   let s = $state<BuilderState>(JSON.parse(JSON.stringify(initial)));
   let busy = $state(false);
   let error = $state<string | null>(null);
   let details = $state<string[]>([]);
+  /** Fallo nuestro (5xx o red) ≠ rechazo de negocio (4xx): se pintan distinto y el fallo lleva código. */
+  let failure = $state<string | null>(null);
   let previewKey = $state(0);
   let device = $state<'mobile' | 'tablet' | 'desktop'>('desktop');
   let tab = $state<'edit' | 'preview'>('edit');
@@ -46,7 +50,7 @@
   const editable = $derived(s.canEdit);
   const api = `/admin/api/dossiers/${initial.dossier.id}`;
   const STATUS = { draft: 'Borrador', published: 'Publicado', archived: 'Archivado' } as const;
-  const STATUS_CLASS = { draft: 'bg-amber-100 text-amber-900', published: 'bg-emerald-100 text-emerald-900', archived: 'bg-zinc-200 text-zinc-700' } as const;
+  const STATUS_CLASS = { draft: 'co-badge', published: 'co-badge co-badge--ink', archived: 'co-badge co-badge--soft' } as const;
   const LOCALES = { 'es-ES': 'Español', 'en-GB': 'English', 'ca-ES': 'Català', 'pt-PT': 'Português', 'fr-FR': 'Français' } as const;
   const CURRENCIES = ['EUR', 'USD', 'GBP', 'MXN'];
   const DEVICE_W = { mobile: '390px', tablet: '820px', desktop: '100%' } as const;
@@ -60,6 +64,7 @@
         const body = await res.json().catch(() => ({ error: `Error ${res.status}` }));
         if (res.status === 401) { location.href = `/admin/login?next=${encodeURIComponent(location.pathname)}`; return false; }
         if (!res.ok) {
+          failure = res.status >= 500 ? `E${res.status}-${Date.now().toString(36)}` : null;
           error = body.error ?? `Error ${res.status}`;
           details = body.details ?? [];
           list = snapshot(); // deshace el movimiento optimista
@@ -68,10 +73,12 @@
         s = body;
         list = snapshot();
         error = null;
+        failure = null;
         details = [];
         previewKey++;
         return true;
       } catch {
+        failure = `NET-${Date.now().toString(36)}`;
         error = 'Sin conexión. El cambio no se ha guardado.';
         return false;
       } finally {
@@ -179,16 +186,8 @@
     } catch { trackError = 'Sin conexión'; }
   }
   $effect(() => {
-    if (pane === 'script') { void previewKey; loadTrack(); }
+    if (pane === 'script') { void previewKey; loadTrack(); loadSimilar(); }
   });
-  async function voteLine(l: TrackLine, verdict: 'worked' | 'didnt') {
-    const next = l.score.mine === verdict ? null : verdict;
-    const res = await fetch('/admin/api/playbook/vote', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ targetType: l.source === 'official' ? 'play' : 'contribution', targetId: l.id, verdict: next, dossierId: d.id }),
-    });
-    if (res.ok) loadTrack(); else error = (await res.json().catch(() => ({}))).error ?? 'No se pudo votar';
-  }
   async function copyTrack() {
     if (!track) return;
     const txt = track.sections.map((sec) => [`## ${sec.title}`, ...sec.blocks.flatMap((b) => [
@@ -233,38 +232,72 @@
     n == null ? '—' : new Intl.NumberFormat(d.locale, { style: 'currency', currency: cur, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n);
   const fmtDate = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso)) : '');
 
-  const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink disabled:bg-surface disabled:text-muted';
-  const card = 'rounded-2xl border border-line bg-bg p-4 sm:p-5';
-  const btn = 'rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface disabled:opacity-40 disabled:hover:bg-transparent';
-  const iconBtn = 'grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:opacity-30';
+  // Clases del design system (src/styles/console.css).
+  const field = 'co-input';
+  const card = 'co-card';
+  const btn = 'co-btn co-btn--ghost co-btn--sm';
+  const iconBtn = 'co-btn co-btn--quiet co-btn--icon co-btn--sm';
+  const smallSelect = 'co-select !w-auto !min-h-[32px] !py-1 text-xs';
+
+  // ---------- situación de la cuenta (facetas del tenant) y rasgos de cada persona
+  const accountFacets = $derived(facets.filter((f) => f.scope === 'account'));
+  const contactFacets = $derived(facets.filter((f) => f.scope === 'contact'));
+  function toggleSituation(f: FacetLite, opt: string) {
+    const cur = d.situation[f.key] ?? [];
+    const next = cur.includes(opt) ? cur.filter((x) => x !== opt) : f.multi ? [...cur, opt] : [opt];
+    run({ op: 'setSituation', situation: { ...d.situation, [f.key]: next } });
+  }
+  function setTrait(contactId: string, f: FacetLite, value: string) {
+    const c = s.contacts.find((x) => x.id === contactId);
+    if (!c) return;
+    run({ op: 'updateContact', contactId, contact: { traits: { ...(c.traits ?? {}), [f.key]: value ? [value] : [] } } });
+  }
+  function onOutcome(value: string) {
+    // Ganado o perdido → se documenta el cierre (es lo que alimenta «Qué ha funcionado»).
+    if (value === 'open') run({ op: 'setOutcome', outcome: 'open' });
+    else location.href = `/admin/dossiers/${d.id}/debrief?outcome=${value}`;
+  }
+
+  // ---------- «en situaciones parecidas» (cierres documentados del equipo)
+  interface Similar { described: boolean; total: number; stories: Array<{ story: { id: string; title: string; outcome: 'won' | 'lost'; whatWorked: string | null; whatFailed: string | null }; matches: Array<{ label: string }>; differs: Array<{ label: string }>; authorName: string | null }>; plays: Array<{ playId: string; title: string; wonIn: number; lostIn: number }> }
+  let similar = $state<Similar | null>(null);
+  async function loadSimilar() {
+    try {
+      const res = await fetch(`${api}/similar`);
+      if (res.ok) similar = await res.json();
+    } catch { /* el guion sigue funcionando sin esto */ }
+  }
 </script>
 
 <div class="builder" data-testid="builder" data-busy={busy ? '' : undefined}>
   <!-- cabecera -->
-  <div class="mb-5 flex flex-wrap items-center gap-3">
-    <a href="/admin" class="text-sm text-muted hover:text-ink">← Dossiers</a>
-    <h1 class="min-w-0 flex-1 truncate text-2xl font-extrabold">{d.title}</h1>
-    <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold {STATUS_CLASS[d.status]}" data-testid="status">{STATUS[d.status]}</span>
-    <span class="text-xs text-muted" aria-live="polite">{busy ? 'Guardando…' : 'Guardado'}</span>
+  <div class="mb-5 flex flex-wrap items-end gap-3">
+    <div class="min-w-0 flex-1">
+      <a href="/admin" class="co-meta hover:text-ink">← {s.pricesLocked ? 'Mis cuentas' : 'Dossiers'}</a>
+      <p class="text-eyebrow mb-2 mt-3">Dossier</p>
+      <h1 class="co-page-title truncate">{d.title}</h1>
+    </div>
+    <span class={STATUS_CLASS[d.status]} data-testid="status">{STATUS[d.status]}</span>
+    <span class="co-meta" aria-live="polite">{busy ? 'Guardando…' : 'Guardado'}</span>
   </div>
 
   {#if !editable}
-    <p class="mb-4 rounded-xl bg-surface p-3 text-sm">Solo lectura: este dossier es de otro comercial. Puedes usarlo como plantilla desde el listado.</p>
+    <p class="co-alert co-alert--info mb-4">Solo lectura: este dossier es de otro comercial. Puedes usarlo como plantilla desde el listado.</p>
   {/if}
   {#if error}
-    <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error">
+    <div class="co-alert mb-4 {failure ? 'co-alert--failure' : 'co-alert--rejection'} block" role="alert" data-testid="error">
       <div class="flex items-start gap-3">
-        <p class="flex-1 font-semibold">{error}</p>
-        <button class="text-red-700" onclick={() => { error = null; details = []; }} aria-label="Cerrar">✕</button>
+        <p class="flex-1 font-semibold">{error}{#if failure}<span class="block font-normal">Es un fallo nuestro, no tuyo. Si se repite, pásanos el código <code>{failure}</code>.</span>{/if}</p>
+        <button class={iconBtn} onclick={() => { error = null; failure = null; details = []; }} aria-label="Cerrar aviso">✕</button>
       </div>
       {#if details.length}<ul class="mt-1 list-disc pl-5">{#each details as x}<li>{x}</li>{/each}</ul>{/if}
     </div>
   {/if}
 
-  <div class="mb-4 flex rounded-xl bg-bg p-1 xl:hidden" role="tablist">
-    <button role="tab" aria-selected={tab === 'edit'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'edit' ? 'bg-ink text-bg' : ''}" onclick={() => (tab = 'edit')}>Editar</button>
-    <button role="tab" aria-selected={tab === 'preview' && pane === 'preview'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'preview' && pane === 'preview' ? 'bg-ink text-bg' : ''}" onclick={() => { tab = 'preview'; pane = 'preview'; }}>Vista previa</button>
-    <button role="tab" aria-selected={tab === 'preview' && pane === 'script'} class="flex-1 rounded-lg py-2 text-sm font-semibold {tab === 'preview' && pane === 'script' ? 'bg-ink text-bg' : ''}" onclick={() => { tab = 'preview'; pane = 'script'; }}>Guion</button>
+  <div class="co-segmented mb-4 xl:hidden" role="tablist">
+    <button role="tab" aria-selected={tab === 'edit'} aria-pressed={tab === 'edit'} onclick={() => (tab = 'edit')}>Editar</button>
+    <button role="tab" aria-selected={tab === 'preview' && pane === 'preview'} aria-pressed={tab === 'preview' && pane === 'preview'} onclick={() => { tab = 'preview'; pane = 'preview'; }}>Vista previa</button>
+    <button role="tab" aria-selected={tab === 'preview' && pane === 'script'} aria-pressed={tab === 'preview' && pane === 'script'} onclick={() => { tab = 'preview'; pane = 'script'; }}>Guion</button>
   </div>
 
   <div class="grid gap-5 xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
@@ -272,7 +305,7 @@
     <div class="space-y-5 {tab === 'edit' ? '' : 'hidden xl:block'}">
       <!-- datos -->
       <section class={card}>
-        <h2 class="mb-3 font-bold">Prospecto</h2>
+        <h2 class="mb-3 co-card-title">Prospecto</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="text-sm font-medium sm:col-span-2">Título
             <input class={field} value={d.title} disabled={!editable} maxlength="140" onchange={(e) => saveField('title', e.currentTarget.value)} data-testid="title" />
@@ -295,11 +328,11 @@
       <!-- precio -->
       <section class={card}>
         <div class="mb-3 flex items-center justify-between gap-3">
-          <h2 class="font-bold">Precio</h2>
+          <h2 class="co-card-title">Precio</h2>
           {#if s.total}<span class="text-sm">Total: <strong data-testid="total">{s.total.formatted}</strong></span>{/if}
         </div>
         {#if s.partnerAccount}
-          <p class="mb-3 rounded-xl bg-surface p-3 text-sm" data-testid="partner-account">
+          <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
             Cuenta <strong>{s.partnerAccount.name}</strong> · {POLICY_LABEL[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? ` (${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct} % sobre tarifa)` : ''}
             {#if s.pricesLocked}
               <span class="mt-1 block text-muted">Los precios de esta cuenta los gestiona la empresa: se aplican solos al añadir módulos.{s.partnerAccount.pricePolicy === 'hidden' ? ' Esta propuesta se envía sin precios.' : ''}</span>
@@ -309,11 +342,10 @@
           </p>
         {/if}
         {#if !s.pricesLocked}
-        <div class="grid grid-cols-3 gap-1 rounded-xl bg-surface p-1" role="radiogroup" aria-label="Modo de precio">
+        <div class="co-segmented" role="radiogroup" aria-label="Modo de precio">
           {#each [['none', 'Sin precio'], ['total', 'Total'], ['per_module', 'Por módulo']] as [mode, label]}
             <button
               role="radio" aria-checked={d.priceMode === mode} disabled={!editable}
-              class="rounded-lg py-2 text-sm font-semibold {d.priceMode === mode ? 'bg-bg shadow-sm' : 'text-muted'}"
               onclick={() => d.priceMode !== mode && run({ op: 'update', patch: { priceMode: mode as 'none' | 'total' | 'per_module' } })}
               data-testid={`price-mode-${mode}`}
             >{label}</button>
@@ -339,9 +371,9 @@
 
       <!-- módulos -->
       <section class={card}>
-        <h2 class="mb-3 font-bold">Módulos <span class="font-normal text-muted">· arrastra para ordenar</span></h2>
+        <h2 class="mb-3 co-card-title">Módulos <span class="font-normal text-muted">· arrastra para ordenar</span></h2>
         {#if list.length === 0}
-          <p class="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">Añade módulos desde el catálogo.</p>
+          <p class="co-empty co-meta">Añade módulos desde el catálogo: cada uno es una sección de la propuesta.</p>
         {/if}
         <ol
           class="space-y-2 p-0"
@@ -351,7 +383,7 @@
           data-testid="items"
         >
           {#each list as item, idx (item.id)}
-            <li class="list-none rounded-xl border border-line bg-bg {item.visible ? '' : 'opacity-60'}" animate:flip={{ duration: 150 }} data-testid="item" data-item-key={item.moduleKey}>
+            <li class="list-none rounded-[var(--console-radius-control)] border border-[var(--console-card-border)] bg-[var(--console-surface)] {item.visible ? '' : 'opacity-60'}" animate:flip={{ duration: 150 }} data-testid="item" data-item-key={item.moduleKey}>
               <div class="flex items-center gap-2 p-2 pl-3">
                 <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
                 <div class="min-w-0 flex-1">
@@ -367,12 +399,12 @@
                 <button class={iconBtn} disabled={!editable} onclick={() => run({ op: 'setVisible', itemId: item.id, visible: !item.visible })} aria-label={item.visible ? `Ocultar ${item.moduleName}` : `Mostrar ${item.moduleName}`} aria-pressed={!item.visible} data-testid="toggle-visible">{item.visible ? '👁' : '◌'}</button>
                 <button class={iconBtn} disabled={!editable} onclick={() => remove(item)} aria-label="Quitar {item.moduleName}">✕</button>
               </div>
-              {#if item.error}<p class="mx-3 mb-2 rounded-lg bg-red-50 p-2 text-xs text-red-800">Contenido inválido: {item.error}</p>{/if}
+              {#if item.error}<p class="co-alert co-alert--rejection mx-3 mb-2 text-xs">Contenido inválido: {item.error}</p>{/if}
               <div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
                 {#if d.priceMode === 'per_module' && !s.pricesLocked}
                   <label class="flex items-center gap-2">
                     <span class="text-muted">Precio</span>
-                    <input class="w-28 rounded-lg border border-line px-2 py-1" inputmode="decimal" value={item.priceOverride ?? ''} disabled={!editable}
+                    <input class="co-input !w-28 !min-h-[32px] !py-1" inputmode="decimal" value={item.priceOverride ?? ''} disabled={!editable}
                       placeholder={item.defaultPrice != null ? String(item.defaultPrice) : '—'} onchange={(e) => saveItemPrice(item, e.currentTarget.value)}
                       aria-label="Precio de {item.moduleName}" data-testid="item-price-input" />
                   </label>
@@ -386,9 +418,9 @@
                 <div class="space-y-2 border-t border-line p-3 text-sm">
                   <p class="text-xs text-muted">Sobrescribe textos del módulo (JSON). Lo que no pongas usa el valor del catálogo.</p>
                   <textarea class="{field} h-40 font-mono text-xs" bind:value={propsDraft} disabled={!editable} spellcheck="false"></textarea>
-                  {#if propsError}<p class="text-xs text-red-700">{propsError}</p>{/if}
+                  {#if propsError}<p class="co-alert co-alert--rejection text-xs">{propsError}</p>{/if}
                   <details class="text-xs"><summary class="cursor-pointer text-muted">Valores del catálogo</summary><pre class="mt-1 max-h-48 overflow-auto rounded-lg bg-surface p-2">{JSON.stringify(item.defaultProps, null, 2)}</pre></details>
-                  {#if editable}<button class="rounded-lg bg-ink px-3 py-1.5 font-semibold text-bg" onclick={() => saveProps(item)}>Guardar personalización</button>{/if}
+                  {#if editable}<button class="co-btn co-btn--primary co-btn--sm" onclick={() => saveProps(item)}>Guardar personalización</button>{/if}
                 </div>
               {/if}
             </li>
@@ -399,10 +431,10 @@
       <!-- catálogo -->
       {#if editable}
         <section class={card}>
-          <h2 class="mb-3 font-bold">Catálogo</h2>
+          <h2 class="mb-3 co-card-title">Catálogo</h2>
           <ul class="grid gap-2 p-0 sm:grid-cols-2" data-testid="catalog">
             {#each s.catalog as c (c.versionId)}
-              <li class="flex list-none items-start gap-2 rounded-xl border border-line p-3">
+              <li class="co-row list-none !items-start !p-3">
                 <div class="min-w-0 flex-1">
                   <p class="font-semibold">{c.moduleName}</p>
                   <p class="text-xs text-muted">{c.blockType} · v{c.version}{c.defaultPrice != null ? ` · ${money(c.defaultPrice, c.currency)}` : ''}</p>
@@ -418,30 +450,51 @@
       <!-- cuenta y actores -->
       <section class={card} data-testid="account">
         <div class="mb-3 flex flex-wrap items-center gap-2">
-          <h2 class="flex-1 font-bold">Cuenta y actores</h2>
-          <select class="rounded-lg border border-line px-2 py-1.5 text-sm" value={d.segmentId ?? ''} disabled={!editable}
+          <h2 class="flex-1 co-card-title">Cuenta y actores</h2>
+          <select class="co-select !w-auto" value={d.segmentId ?? ''} disabled={!editable}
             onchange={(e) => run({ op: 'setSegment', segmentId: e.currentTarget.value || null })} aria-label="Sector" data-testid="segment">
             <option value="">Sector…</option>
             {#each market.segments as sg}<option value={sg.id}>{sg.name}</option>{/each}
           </select>
           {#if d.segmentId}<a class="text-xs underline" href="/admin/learn/sector/{market.segments.find((x) => x.id === d.segmentId)?.key}" target="_blank" rel="noopener">Ver sector ↗</a>{/if}
         </div>
-        <p class="mb-3 text-xs text-muted">¿Quién decide, quién paga y quién puede tumbarlo? Mapéalos: el guion y los mensajes se adaptan a cada uno.</p>
+        <p class="co-help mb-3">¿Quién decide, quién paga y quién puede tumbarlo? Mapéalos: el guion, los mensajes y las recomendaciones se adaptan a cada uno.</p>
+        {#if accountFacets.length}
+          <div class="mb-4 grid gap-3" data-testid="situation">
+            {#each accountFacets as f (f.key)}
+              <div>
+                <p class="co-field mb-1">{f.question ?? f.label} <span class="co-help">{f.multi ? 'Marca todas las que apliquen' : 'Una opción'} · opcional</span></p>
+                <div class="co-chips">
+                  {#each f.options as o (o.key)}
+                    <button type="button" class="co-chip" aria-pressed={(d.situation[f.key] ?? []).includes(o.key)} disabled={!editable} title={o.hint ?? ''}
+                      onclick={() => toggleSituation(f, o.key)} data-testid="facet-{f.key}-{o.key}">{o.label}</button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
         <ul class="space-y-2 p-0" data-testid="contacts">
           {#each s.contacts as c (c.id)}
-            <li class="list-none rounded-xl border p-3 text-sm {c.stance === 'bloqueador' ? 'border-red-200 bg-red-50/40' : c.stance === 'aliado' ? 'border-emerald-200 bg-emerald-50/40' : 'border-line'}" data-testid="contact">
+            <li class="co-row list-none !block !p-3 text-sm {c.stance === 'bloqueador' ? 'co-row--attention' : ''}" data-testid="contact">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="min-w-0 flex-1"><strong>{c.name}</strong>{#if personaName(c.personaId)}<span class="text-muted"> · {personaName(c.personaId)}</span>{/if}</span>
-                <select class="rounded-md border border-line px-1.5 py-1 text-xs" value={c.stance} disabled={!editable}
+                <span class="w-full"><strong>{c.name}</strong>{#if personaName(c.personaId)}<span class="text-muted"> · {personaName(c.personaId)}</span>{/if}</span>
+                <select class={smallSelect} value={c.stance} disabled={!editable}
                   onchange={(e) => run({ op: 'updateContact', contactId: c.id, contact: { stance: e.currentTarget.value as keyof typeof STANCE } })} aria-label="Postura de {c.name}">
                   {#each Object.entries(STANCE) as [k, v]}<option value={k}>{v}</option>{/each}
                 </select>
-                <a class="rounded-md border border-line px-2 py-1 text-xs font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&contact={c.id}&type=primer_contacto">Mensaje</a>
+                {#each contactFacets as f (f.key)}
+                  <select class={smallSelect} value={(c.traits?.[f.key] ?? [])[0] ?? ''} disabled={!editable} onchange={(e) => setTrait(c.id, f, e.currentTarget.value)} aria-label="{f.label} de {c.name}" data-testid="trait-{f.key}">
+                    <option value="">{f.label}: no lo sé</option>
+                    {#each f.options as o}<option value={o.key}>{o.label}</option>{/each}
+                  </select>
+                {/each}
+                <a class="co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&contact={c.id}&type=primer_contacto">Mensaje</a>
                 {#if editable}<button class={iconBtn} onclick={() => confirm(`¿Quitar a ${c.name}?`) && run({ op: 'removeContact', contactId: c.id })} aria-label="Quitar {c.name}">✕</button>{/if}
               </div>
             </li>
           {:else}
-            <li class="list-none text-sm text-muted">Nadie mapeado todavía.</li>
+            <li class="co-meta list-none">Nadie mapeado todavía: añade abajo a la primera persona.</li>
           {/each}
         </ul>
         {#if editable}
@@ -454,14 +507,14 @@
             <select class={field} bind:value={newContact.stance} aria-label="Postura">
               {#each Object.entries(STANCE) as [k, v]}<option value={k}>{v}</option>{/each}
             </select>
-            <button class="rounded-lg bg-ink px-3 py-2 text-sm font-semibold text-bg" onclick={addContact} data-testid="add-contact">Añadir</button>
+            <button class="co-btn co-btn--primary" onclick={addContact} data-testid="add-contact">Añadir</button>
           </div>
         {/if}
       </section>
 
       <!-- seguimiento -->
       <section class={card} data-testid="followup">
-        <h2 class="mb-3 font-bold">Seguimiento {#if overdue}<span class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Vencido</span>{/if}</h2>
+        <h2 class="mb-3 co-card-title">Seguimiento {#if overdue}<span class="co-badge co-badge--attention ml-1">Vencido</span>{/if}</h2>
         <div class="grid gap-2 sm:grid-cols-[1fr_13rem]">
           <input class={field} placeholder="Próximo paso (p. ej. Llamar para cerrar fecha)" bind:value={nextText} maxlength="300" disabled={!editable}
             onchange={() => saveNext()} aria-label="Próximo paso" data-testid="next-step" />
@@ -475,50 +528,58 @@
             {#if d.nextStepAt}<button class={btn} onclick={() => { nextText = ''; saveNext(''); }}>Hecho / quitar</button>{/if}
           </div>
         {/if}
-        <a class="mt-3 inline-flex rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&type=seguimiento">Preparar mensaje de seguimiento</a>
+        <a class="mt-3 co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&type=seguimiento">Preparar mensaje de seguimiento →</a>
       </section>
 
       <!-- publicación -->
       <section class={card}>
-        <h2 class="mb-3 font-bold">Publicación</h2>
+        <h2 class="mb-3 co-card-title">Publicación</h2>
         {#if s.publishBlockers.length && d.status !== 'published'}
-          <ul class="mb-3 list-disc space-y-1 rounded-xl bg-amber-50 p-3 pl-7 text-sm text-amber-900">{#each s.publishBlockers as b}<li>{b}</li>{/each}</ul>
+          <div class="co-alert co-alert--rejection mb-3 block"><p class="font-semibold">Antes de publicar:</p><ul>{#each s.publishBlockers as b}<li>{b}</li>{/each}</ul></div>
         {/if}
         <div class="flex flex-wrap gap-2">
           {#if d.status !== 'published'}
-            <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg disabled:opacity-40" disabled={!editable || s.publishBlockers.length > 0} onclick={() => setStatus('published')} data-testid="publish">Publicar</button>
+            <button class="co-btn co-btn--primary" disabled={!editable || s.publishBlockers.length > 0} onclick={() => setStatus('published')} data-testid="publish">Publicar</button>
           {:else}
             <button class={btn} disabled={!editable} onclick={() => setStatus('draft')}>Despublicar</button>
           {/if}
           {#if d.status !== 'archived'}<button class={btn} disabled={!editable} onclick={() => setStatus('archived')}>Archivar</button>{/if}
-          {#if d.status !== 'published'}<button class="{btn} text-red-700" disabled={!editable} onclick={destroy}>Borrar</button>{/if}
+          {#if d.status !== 'published'}<button class="co-btn co-btn--danger co-btn--sm ml-auto" disabled={!editable} onclick={destroy}>Borrar</button>{/if}
         </div>
         {#if d.publishedAt && d.status === 'published'}<p class="mt-2 text-xs text-muted">Publicado el {fmtDate(d.publishedAt)}. Los cambios se ven al instante en los enlaces.</p>{/if}
-        <label class="mt-4 flex items-center gap-2 text-sm">
-          <span class="font-semibold">Resultado</span>
-          <select class="rounded-lg border border-line px-2 py-1.5" value={d.outcome} disabled={!editable}
-            onchange={(e) => run({ op: 'setOutcome', outcome: e.currentTarget.value as 'open' | 'won' | 'lost' })} data-testid="outcome">
-            {#each Object.entries(OUTCOME) as [k, v]}<option value={k}>{v}</option>{/each}
-          </select>
-          <span class="text-xs text-muted">Ayuda a saber qué jugadas funcionan.</span>
-        </label>
+        <div class="mt-4 grid gap-2 border-t border-[var(--console-divider)] pt-4">
+          <label class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="font-semibold">Resultado</span>
+            <select class="co-select !w-auto" value={d.outcome} disabled={!editable} onchange={(e) => onOutcome(e.currentTarget.value)} data-testid="outcome">
+              {#each Object.entries(OUTCOME) as [k, v]}<option value={k}>{v}</option>{/each}
+            </select>
+          </label>
+          {#if d.outcome !== 'open' && editable}
+            <a class="co-action" href="/admin/dossiers/{d.id}/debrief" data-testid="debrief-cta">
+              <span class="co-action__label">{hasStory ? 'Revisar lo que funcionó' : 'Documenta qué funcionó (2 minutos)'}<small>{hasStory ? 'Ya cuenta para el equipo' : 'Es lo que convierte esta venta en una recomendación para tus compañeros'}</small></span>
+              <span aria-hidden="true">→</span>
+            </a>
+          {:else}
+            <p class="co-meta">Al marcarlo como ganado o perdido documentarás qué funcionó: así el equipo aprende de ventas reales.</p>
+          {/if}
+        </div>
       </section>
 
       <!-- enlaces -->
       <section class={card}>
-        <h2 class="mb-3 font-bold">Enlaces</h2>
+        <h2 class="mb-3 co-card-title">Enlaces</h2>
         {#if d.status !== 'published'}<p class="mb-3 text-sm text-muted">Los enlaces muestran 404 hasta que publiques el dossier.</p>{/if}
         {#if editable}
           <div class="mb-3 flex flex-wrap gap-2">
-            <select class="rounded-lg border border-line px-2 py-1.5 text-sm" bind:value={linkExpiry} aria-label="Caducidad">
+            <select class="co-select !w-auto" bind:value={linkExpiry} aria-label="Caducidad">
               <option value="">Sin caducidad</option><option value="7">Caduca en 7 días</option><option value="30">Caduca en 30 días</option>
             </select>
-            <button class="rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-bg" onclick={createLink} data-testid="create-link">Generar enlace</button>
+            <button class="co-btn co-btn--primary co-btn--sm" onclick={createLink} data-testid="create-link">Generar enlace</button>
           </div>
         {/if}
         <ul class="space-y-2 p-0" data-testid="links">
           {#each s.links as l (l.id)}
-            <li class="list-none rounded-xl border border-line p-3 text-sm {l.state === 'active' ? '' : 'opacity-60'}" data-state={l.state}>
+            <li class="co-card list-none !p-3 text-sm {l.state === 'active' ? '' : 'opacity-60'}" data-state={l.state}>
               <div class="flex flex-wrap items-center gap-2">
                 <code class="min-w-0 flex-1 truncate text-xs" data-testid="link-url">{linkUrl(l.token)}</code>
                 <span class="text-xs font-semibold">{l.state === 'active' ? (l.expiresAt ? `Caduca ${fmtDate(l.expiresAt)}` : 'Activo') : l.state === 'revoked' ? 'Revocado' : 'Caducado'}</span>
@@ -527,12 +588,12 @@
                 <div class="mt-2 flex gap-2">
                   <button class={btn} onclick={() => copy(l.token)}>{copied === l.token ? '¡Copiado!' : 'Copiar'}</button>
                   <a class={btn} href={linkUrl(l.token)} target="_blank" rel="noopener noreferrer">Abrir</a>
-                  {#if editable}<button class="{btn} ml-auto text-red-700" onclick={() => revoke(l.id)}>Revocar</button>{/if}
+                  {#if editable}<button class="co-btn co-btn--danger co-btn--sm ml-auto" onclick={() => revoke(l.id)}>Revocar</button>{/if}
                 </div>
               {/if}
             </li>
           {:else}
-            <li class="list-none text-sm text-muted">Aún no hay enlaces.</li>
+            <li class="co-meta list-none">{editable ? 'Genera el primero con «Generar enlace».' : 'Sin enlaces.'}</li>
           {/each}
         </ul>
       </section>
@@ -541,32 +602,48 @@
     <!-- ============ preview ============ -->
     <div class="{tab === 'preview' ? '' : 'hidden xl:block'}">
       <div class="xl:sticky xl:top-4">
-        <div class="mb-3 hidden rounded-xl bg-bg p-1 xl:flex" role="tablist" aria-label="Panel">
-          <button role="tab" aria-selected={pane === 'preview'} class="flex-1 rounded-lg py-1.5 text-sm font-semibold {pane === 'preview' ? 'bg-ink text-bg' : 'text-muted'}" onclick={() => (pane = 'preview')}>Vista previa</button>
-          <button role="tab" aria-selected={pane === 'script'} class="flex-1 rounded-lg py-1.5 text-sm font-semibold {pane === 'script' ? 'bg-ink text-bg' : 'text-muted'}" onclick={() => (pane = 'script')} data-testid="tab-script">🎯 Guion de venta</button>
+        <div class="co-segmented mb-3 hidden xl:grid" role="tablist" aria-label="Panel">
+          <button role="tab" aria-selected={pane === 'preview'} aria-pressed={pane === 'preview'} onclick={() => (pane = 'preview')}>Vista previa</button>
+          <button role="tab" aria-selected={pane === 'script'} aria-pressed={pane === 'script'} onclick={() => (pane = 'script')} data-testid="tab-script">Guion de venta</button>
         </div>
         {#if pane === 'script'}
-          <div class="rounded-2xl border border-line bg-bg p-4" data-testid="talk-track">
+          <div class="co-card" data-testid="talk-track">
+            {#if similar && similar.total > 0}
+              <section class="co-card co-card--soft mb-4 grid gap-2" data-testid="similar">
+                <p class="text-eyebrow">En situaciones parecidas</p>
+                {#if similar.plays.length}
+                  <p class="text-sm"><strong>Lo que más ha ganado:</strong> {#each similar.plays.slice(0, 3) as p, i}{#if i} · {/if}{p.title} <span class="co-meta">({p.wonIn} {p.wonIn === 1 ? 'cierre ganado' : 'cierres ganados'})</span>{/each}</p>
+                {/if}
+                {#each similar.stories.slice(0, 2) as m (m.story.id)}
+                  <div class="text-sm">
+                    <span class="co-badge {m.story.outcome === 'won' ? 'co-badge--ink' : 'co-badge--attention'}">{m.story.outcome === 'won' ? 'Ganado' : 'Perdido'}</span>
+                    <strong>{m.story.title}</strong> <span class="co-meta">· {m.matches.map((x) => x.label).join(' · ')}{m.differs.length ? ` · ojo: ${m.differs.map((x) => x.label).join(', ')}` : ''}</span>
+                    <p class="co-body mt-1">«{m.story.outcome === 'won' ? m.story.whatWorked : m.story.whatFailed ?? m.story.whatWorked}»</p>
+                  </div>
+                {/each}
+                <a class="co-meta underline" href="/admin/wins?dossier={d.id}">Ver todo lo que ha funcionado →</a>
+              </section>
+            {/if}
             <div class="mb-3 flex flex-wrap items-center gap-2">
               <p class="min-w-0 flex-1 text-sm text-muted">Generado con el playbook de tu empresa para <strong>este</strong> dossier, en su orden.</p>
               <button class={btn} onclick={copyTrack}>{trackCopied ? '¡Copiado!' : 'Copiar'}</button>
               <a class={btn} href="/admin/dossiers/{d.id}/script" target="_blank" rel="noopener">Imprimir</a>
             </div>
-            {#if trackError}<p class="text-sm text-red-700">{trackError}</p>{/if}
+            {#if trackError}<p class="co-alert co-alert--failure">{trackError}</p>{/if}
             {#if !track && !trackError}<p class="text-sm text-muted">Cargando…</p>{/if}
             {#if track}
-              {#if track.empty}<p class="rounded-xl bg-surface p-3 text-sm">Tu empresa aún no tiene playbook. Pídeselo a tu líder (sección «Playbook») o comparte lo que te funciona en «Aprende».</p>{/if}
-              {#if track.uncovered.length}<p class="mb-3 rounded-xl bg-amber-50 p-2 text-xs text-amber-900">Sin jugadas para: {track.uncovered.join(', ')}.</p>{/if}
+              {#if track.empty}<p class="co-alert co-alert--info">Tu empresa aún no tiene playbook. Pídeselo a tu líder (sección «Playbook») o comparte lo que te funciona en «Aprende».</p>{/if}
+              {#if track.uncovered.length}<p class="co-alert co-alert--info mb-3 text-xs">Sin jugadas para: {track.uncovered.join(', ')}.</p>{/if}
               <div class="max-h-[72vh] space-y-5 overflow-auto pr-1">
                 {#each track.sections as sec (sec.id)}
                   {#if sec.blocks.some((b) => b.lines.length || b.note)}
                     <section>
-                      <h3 class="text-base font-extrabold">{sec.title}</h3>
+                      <h3 class="co-card-title">{sec.title}</h3>
                       <p class="text-xs text-muted">{sec.hint}</p>
                       {#each sec.blocks as b}
-                        {#if b.title}<h4 class="mt-3 text-sm font-bold">{b.title}</h4>{/if}
+                        {#if b.title}<h4 class="co-row-title mt-3">{b.title}</h4>{/if}
                         {#if b.facts?.length}
-                          <dl class="mt-2 space-y-1 rounded-xl border p-3 text-xs {b.tone === 'risk' ? 'border-red-200 bg-red-50/40' : b.tone === 'ally' ? 'border-emerald-200 bg-emerald-50/40' : 'border-line'}" data-testid="account-block">
+                          <dl class="co-row !block mt-2 space-y-1 !p-3 text-xs {b.tone === 'risk' ? 'co-row--attention' : ''}" data-testid="account-block">
                             {#each b.facts as f}<div><dt class="inline font-semibold">{f.label}:</dt> <dd class="inline">{f.text}</dd></div>{/each}
                             {#if b.contactId}<a class="mt-1 inline-block font-semibold underline" href="/admin/compose?dossier={d.id}&contact={b.contactId}">Preparar mensaje</a>{/if}
                           </dl>
@@ -574,16 +651,15 @@
                         {#if b.note}<p class="mt-1 rounded-lg bg-surface p-2 text-xs">{b.note}</p>{/if}
                         <ul class="mt-2 space-y-2 p-0">
                           {#each b.lines as l (l.source + l.id)}
-                            <li class="list-none rounded-xl border p-3 text-sm {l.source === 'team' ? 'border-violet-200 bg-violet-50/40' : 'border-line'}" data-testid="track-line">
-                              <p class="font-semibold">{#if l.source === 'team'}<span class="mr-1 rounded-full bg-violet-100 px-1.5 text-[10px] text-violet-900">Equipo</span>{/if}{l.title}</p>
+                            <li class="co-card list-none !p-3 text-sm" data-testid="track-line">
+                              <p class="font-semibold">{#if l.source === 'team'}<span class="co-badge co-badge--soft mr-1">Equipo</span>{/if}{l.title}</p>
                               {#if l.text}<div class="prose-play mt-1 text-muted">{@html renderMarkdown(l.text)}</div>{/if}
                               {#if l.refs.length}
                                 <p class="mt-1 text-xs">{#each l.refs as r, i}{#if i} · {/if}{#if r.url}<a class="underline" href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>{:else}{r.title}{/if}{#if r.creator} ({r.creator}){/if}{/each}</p>
                               {/if}
-                              <div class="mt-2 flex gap-1">
-                                <button class="rounded-md border px-2 py-0.5 text-xs {l.score.mine === 'worked' ? 'border-ink bg-ink text-bg' : 'border-line'}" onclick={() => voteLine(l, 'worked')} aria-pressed={l.score.mine === 'worked'}>👍 {l.score.worked || ''}</button>
-                                <button class="rounded-md border px-2 py-0.5 text-xs {l.score.mine === 'didnt' ? 'border-ink bg-ink text-bg' : 'border-line'}" onclick={() => voteLine(l, 'didnt')} aria-pressed={l.score.mine === 'didnt'}>👎 {l.score.didnt || ''}</button>
-                              </div>
+                              {#if l.source === 'official'}
+                                <p class="co-meta mt-2" data-testid="line-evidence">{l.score.worked || l.score.didnt ? `Usada en ${l.score.worked + l.score.didnt} cierres documentados · ganó ${l.score.worked}` : 'Sin cierres documentados todavía'}</p>
+                              {/if}
                             </li>
                           {/each}
                         </ul>
@@ -596,10 +672,10 @@
           </div>
         {:else}
         <div class="mb-2 flex items-center gap-2">
-          <span class="text-sm font-bold">Vista previa</span>
-          <div class="ml-auto hidden rounded-lg bg-bg p-0.5 text-xs md:flex">
+          <span class="co-row-title">Vista previa</span>
+          <div class="co-segmented ml-auto hidden md:grid">
             {#each [['mobile', 'Móvil'], ['tablet', 'Tablet'], ['desktop', 'Escritorio']] as [k, label]}
-              <button class="rounded-md px-2.5 py-1 font-semibold {device === k ? 'bg-ink text-bg' : 'text-muted'}" onclick={() => (device = k as typeof device)}>{label}</button>
+              <button class="!min-h-[28px] px-3" aria-pressed={device === k} onclick={() => (device = k as typeof device)}>{label}</button>
             {/each}
           </div>
           <a class="ml-auto text-xs text-muted underline md:ml-0" href="/admin/dossiers/{d.id}/preview" target="_blank" rel="noopener">Abrir ↗</a>

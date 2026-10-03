@@ -1,0 +1,158 @@
+---
+/**
+ * Qué ha funcionado (docs/EVIDENCE.md): cierres reales del equipo ordenados por lo que se parecen a tu situación.
+ * Sustituye a los «me gusta»: aquí solo cuenta lo que cerró (o lo que hizo perder) una venta.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { isIconName } from '~/lib/ui/icons';
+import { OBJECTION_LABEL, STAGE_LABEL } from '~/lib/playbook/types';
+import type { Situation } from '~/lib/evidence/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const ev = admin.evidence;
+const isAdmin = admin.session.role === 'admin';
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  result = await formAction(() => ev.setStoryHidden(String(f.get('id') ?? ''), f.get('action') === 'hide'));
+  if (!result.error) return Astro.redirect(`/admin/wins${Astro.url.search}`, 303);
+}
+
+const u = Astro.url.searchParams;
+const facets = await ev.facets();
+const market = await admin.playbook.market();
+let segmentId = u.get('segment') || null;
+let personaIds = u.getAll('persona').filter(Boolean);
+let situation: Situation = Object.fromEntries(facets.map((f) => [f.key, u.getAll(`facet:${f.key}`).filter(Boolean)]).filter(([, v]) => v.length));
+const fromDossier = u.get('dossier');
+let dossierTitle: string | null = null;
+if (fromDossier && !u.has('segment') && !u.has('persona') && ![...u.keys()].some((k) => k.startsWith('facet:'))) {
+  try {
+    const st = await admin.service.getState(fromDossier);
+    const q = ev.queryOf(st, facets);
+    ({ segmentId, personaIds, situation } = q);
+    dossierTitle = st.dossier.title;
+  } catch (e) { if (!(e instanceof AdminError)) throw e; }
+}
+const outcome = u.get('outcome') === 'won' || u.get('outcome') === 'lost' ? (u.get('outcome') as 'won' | 'lost') : null;
+const r = await ev.recommend({ segmentId, personaIds, situation, outcome }, { limit: 30 });
+const anyStories = r.described || outcome ? (await ev.recommend({})).total > 0 : r.total > 0;
+const okMsg = flash(Astro.url, { story: 'Gracias: tu cierre ya cuenta para el equipo. Estos son los que más se le parecen.' });
+const personas = market.flatMap((sg) => sg.personas.map((p) => ({ ...p, segmentName: sg.name })));
+const shownPersonas = segmentId ? personas.filter((p) => p.segmentId === segmentId || personaIds.includes(p.id)) : personas;
+const date = (iso: string) => (iso ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '');
+const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
+const sel = (key: string, v: string) => (situation[key] ?? []).includes(v);
+---
+<AdminLayout title="Qué ha funcionado">
+  <PageHeader eyebrow="Vender" title="Qué ha funcionado" lede="Ventas reales del equipo, ganadas y perdidas, ordenadas por lo que se parecen a tu situación. Cuanto más concretes, mejor la recomendación; lo que no sepas, déjalo sin marcar." />
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} /></div>}
+
+  <div class="co-split">
+    <section class="grid content-start gap-4">
+      {r.plays.length > 0 && (
+        <div class="co-card co-card--soft grid gap-3" data-testid="win-plays">
+          <p class="text-eyebrow">{r.described ? 'Lo que más ha ganado en situaciones así' : 'Lo que más ha ganado'}</p>
+          <ol class="grid gap-2 p-0">
+            {r.plays.map((p, i) => (
+              <li class="flex items-baseline gap-3">
+                <span class="co-num text-xl">{String(i + 1).padStart(2, '0')}</span>
+                <a class="min-w-0 flex-1 co-row-title hover:underline" href={`/admin/learn/${p.moduleId ?? 'general'}#play-${p.playId}`}>{p.title}</a>
+                <span class="co-meta">{p.wonIn} {p.wonIn === 1 ? 'ganada' : 'ganadas'}{p.lostIn ? ` · ${p.lostIn} ${p.lostIn === 1 ? 'perdida' : 'perdidas'}` : ''}</span>
+              </li>
+            ))}
+          </ol>
+          {r.won < 3 && <p class="co-meta">Con {r.won} {r.won === 1 ? 'cierre parecido' : 'cierres parecidos'} es una pista, no una regla.</p>}
+        </div>
+      )}
+
+      <div class="co-section__head !mb-0">
+        <h2 class="text-eyebrow">{r.described ? `Cierres parecidos · ${r.total}` : `Todos los cierres · ${r.total}`}{dossierTitle ? ` · situación de «${dossierTitle}»` : ''}</h2>
+        <nav class="co-chips" aria-label="Resultado">
+          {([[null, 'Todos'], ['won', 'Ganados'], ['lost', 'Perdidos']] as const).map(([k, label]) => {
+            const x = new URL(Astro.url); k ? x.searchParams.set('outcome', k) : x.searchParams.delete('outcome');
+            return <a class="co-chip" href={x.pathname + x.search} aria-current={outcome === k ? 'true' : undefined}>{label}</a>;
+          })}
+        </nav>
+      </div>
+
+      {r.stories.length === 0 ? (
+        anyStories
+          ? <EmptyState kind="filter" title="Ningún cierre se parece todavía a esta situación" clearHref="/admin/wins" clearLabel="Ver todos los cierres" />
+          : <EmptyState kind="create" title="Todavía no hay cierres documentados" detail="Cuando marques un dossier como ganado o perdido te pediremos dos minutos para contar qué funcionó. Aquí aparecerá para todo el equipo." action={{ href: '/admin', label: 'Ir a mis dossiers' }} />
+      ) : (
+        <ul class="co-rows" data-testid="stories">
+          {r.stories.map((m) => (
+            <li class:list={['co-card grid gap-2', m.story.status === 'hidden' && 'opacity-60']} data-testid="story" data-outcome={m.story.outcome}>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class:list={['co-badge', m.story.outcome === 'won' ? 'co-badge--ink' : 'co-badge--attention']}>{m.story.outcome === 'won' ? 'Ganado' : 'Perdido'}</span>
+                <h3 class="co-card-title min-w-0 flex-1">{m.story.title}</h3>
+                <span class="co-meta">{m.authorName ?? 'Equipo'} · {date(m.story.createdAt)}</span>
+              </div>
+              <div class="flex flex-wrap gap-1">
+                {m.segmentName && !m.matches.some((x) => x.kind === 'segment') && <span class="co-tag">{m.segmentName}</span>}
+                {m.matches.map((x) => <span class="co-tag co-tag--match" title="Coincide con tu situación"><Icon name="check" size={12} />{x.label}</span>)}
+                {m.differs.map((x) => <span class="co-tag" title="Diferente a tu situación">{x.label}</span>)}
+                {m.story.keyStage && <span class="co-tag">Momento clave: {STAGE_LABEL[m.story.keyStage]}</span>}
+                {m.story.objection && <span class="co-tag">Objeción: {OBJECTION_LABEL[m.story.objection]}</span>}
+              </div>
+              {m.story.whatWorked && <p class="co-body"><strong class="text-ink">Funcionó:</strong> {m.story.whatWorked}</p>}
+              {m.story.whatFailed && <p class="co-body"><strong class="text-ink">No funcionó:</strong> {m.story.whatFailed}</p>}
+              {isAdmin && (
+                <div class="flex justify-end">
+                  <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-dialog-open={`hide-${m.story.id}`}>{m.story.status === 'hidden' ? 'Volver a compartir' : 'Ocultar'}</button>
+                  <ConfirmDialog id={`hide-${m.story.id}`} title={m.story.status === 'hidden' ? 'Volver a compartir este cierre' : 'Ocultar este cierre'} confirmLabel={m.story.status === 'hidden' ? 'Compartir' : 'Ocultar'}
+                    does={m.story.status === 'hidden' ? 'Vuelve a contar en las recomendaciones y en la evidencia de las jugadas.' : 'Deja de contar en las recomendaciones y en la evidencia de las jugadas (p. ej. si está mal documentado).'}
+                    doesNot="No borra el cierre ni cambia el resultado del dossier; su autor lo sigue viendo.">
+                    <input type="hidden" name="action" value={m.story.status === 'hidden' ? 'show' : 'hide'} />
+                    <input type="hidden" name="id" value={m.story.id} />
+                  </ConfirmDialog>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <aside class="co-split__aside--sticky">
+      <form method="get" class="co-card grid gap-4" data-testid="situation-form">
+        <div><p class="text-eyebrow mb-1">Tu situación</p><h2 class="co-entity">¿Con qué estás?</h2></div>
+        {outcome && <input type="hidden" name="outcome" value={outcome} />}
+        <fieldset class="grid gap-2">
+          <legend class="co-field mb-1">Sector</legend>
+          <div class="co-chips">
+            {market.map((sg) => <label class="co-chip">{icon(sg.icon) && <Icon name={icon(sg.icon)!} size={14} />}<input type="radio" name="segment" value={sg.id} checked={segmentId === sg.id} />{sg.name}</label>)}
+            <label class="co-chip"><input type="radio" name="segment" value="" checked={!segmentId} />Cualquiera</label>
+          </div>
+        </fieldset>
+        <fieldset class="grid gap-2">
+          <legend class="co-field mb-1">¿Con quién hablas? <span class="co-help">Opcional</span></legend>
+          <div class="co-chips">{shownPersonas.map((p) => <label class="co-chip" title={p.segmentName}><input type="checkbox" name="persona" value={p.id} checked={personaIds.includes(p.id)} />{p.name}</label>)}</div>
+        </fieldset>
+        {facets.map((f) => (
+          <fieldset class="grid gap-2">
+            <legend class="co-field mb-1">{f.question ?? f.label} <span class="co-help">Opcional</span></legend>
+            <div class="co-chips">
+              {f.options.map((o) => <label class="co-chip" title={o.hint ?? ''}>{icon(o.icon) && <Icon name={icon(o.icon)!} size={14} />}<input type="checkbox" name={`facet:${f.key}`} value={o.key} checked={sel(f.key, o.key)} />{o.label}</label>)}
+            </div>
+          </fieldset>
+        ))}
+        <div class="flex flex-wrap gap-2">
+          <button class="co-btn co-btn--primary" type="submit" data-testid="situation-go">Ver lo que funcionó <span aria-hidden="true">→</span></button>
+          <a class="co-btn co-btn--quiet" href="/admin/wins">Limpiar</a>
+        </div>
+      </form>
+    </aside>
+  </div>
+</AdminLayout>

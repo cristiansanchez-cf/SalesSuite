@@ -7,6 +7,7 @@ import { supabaseAdminDb } from '../admin/db-supabase';
 import { toPublicDossier, type PublicDossierRow } from '../data/mappers';
 import { supabasePlaybookDb } from '../playbook/db-supabase';
 import { partnerContract } from './partner.contract';
+import { supabaseEvidenceDb } from '../evidence/db-supabase';
 
 const URL = process.env.SUPABASE_IT_URL;
 const SECRET = process.env.SUPABASE_IT_JWT_SECRET;
@@ -36,6 +37,7 @@ if (!URL || !SECRET || !DB_URL) {
     adminDbFor: (u) => supabaseAdminDb(user(u)),
     partnerDbFor: (u) => supabaseAdminDb(user(u), { partner: true }),
     playbookDbFor: (u) => supabasePlaybookDb(user(u)),
+    evidenceDbFor: (u) => supabaseEvidenceDb(user(u)),
     identity: () => ({
       async findOrInvite(email) {
         const e = email.trim().toLowerCase();

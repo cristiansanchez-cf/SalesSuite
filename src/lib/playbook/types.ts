@@ -122,5 +122,6 @@ export interface Score {
   mine: Verdict | null;
 }
 
-export type PlayView = Play & { score: Score };
+/** score.worked/didnt = cierres ganados/perdidos en los que se usó (docs/EVIDENCE.md). */
+export type PlayView = Play & { score: Score; evidence: import('../evidence/types').PlayEvidence };
 export type ContributionView = Contribution & { score: Score; authorName: string | null; playTitle: string | null };
