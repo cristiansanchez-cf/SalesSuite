@@ -43,14 +43,14 @@ const MAX_URL = 7000;
 const enc = brief ? encodeURIComponent(brief.prompt) : '';
 const claudeUrl = brief && enc.length < MAX_URL ? `https://claude.ai/new?q=${enc}` : null;
 const chatgptUrl = brief && enc.length < MAX_URL ? `https://chatgpt.com/?q=${enc}` : null;
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+const field = 'co-input';
 ---
 <AdminLayout title="Preparar mensaje" wide>
-  <h1 class="text-3xl font-extrabold">Preparar mensaje</h1>
+  <h1 class="co-page-title">Preparar mensaje</h1>
   <p class="text-sm text-muted">Dime a quién escribes y para qué: preparo todo el contexto (empresa, sector, actor, tu propuesta y lo que nos funciona) para que el <strong>Cerebro de Ventas</strong> elija la técnica y redacte contigo en Claude o ChatGPT.</p>
 
   <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
-    <form method="get" class="space-y-4 rounded-2xl border border-line bg-bg p-5" data-testid="compose-form">
+    <form method="get" class="space-y-4 co-card" data-testid="compose-form">
       <input type="hidden" name="go" value="1" />
       <label class="block text-sm font-medium">Cuenta (opcional)
         <select class={field} name="dossier" onchange="this.form.contact && (this.form.contact.value=''); this.form.submit()">
@@ -95,11 +95,11 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none
       <label class="block text-sm font-medium">Lo que sabes de este caso
         <textarea class={`${field} h-24`} name="notes" maxlength="1500" placeholder="Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…">{sel.notes}</textarea>
       </label>
-      <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg" type="submit" data-testid="compose-go">Preparar contexto</button>
+      <button class="co-btn co-btn--primary" type="submit" data-testid="compose-go">Preparar contexto</button>
     </form>
 
     <section>
-      {error && <p class="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</p>}
+      {error && <p class="co-alert co-alert--rejection" role="alert">{error}</p>}
       {!brief && !error && (
         <div class="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
           <p class="text-lg font-semibold text-ink">Elige a quién escribes</p>
@@ -108,24 +108,24 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none
       )}
       {brief && (
         <div class="space-y-4" data-testid="brief">
-          <div class="rounded-2xl border border-line bg-bg p-5">
+          <div class="co-card">
             <h2 class="text-xl font-extrabold">{brief.title}</h2>
             <p class="mt-1 flex flex-wrap gap-1.5 text-xs">
-              <span class="rounded-full bg-sky-100 px-2 py-0.5 font-semibold text-sky-900">Cerebro · etapa: {brief.cerebro.etapa}</span>
-              {brief.cerebro.objecion && <span class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-900">objeción: {brief.cerebro.objecion}</span>}
+              <span class="co-badge co-badge--soft">Cerebro · etapa: {brief.cerebro.etapa}</span>
+              {brief.cerebro.objecion && <span class="co-badge co-badge--attention">objeción: {brief.cerebro.objecion}</span>}
               {brief.plays.length > 0 && <span class="rounded-full bg-surface px-2 py-0.5">{brief.plays.length} jugadas del playbook incluidas</span>}
             </p>
             <div class="mt-4 flex flex-wrap gap-2">
-              <button type="button" class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" data-copy="prompt" data-testid="copy-prompt">📋 Copiar para Claude / ChatGPT</button>
-              {claudeUrl && <a class="rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:bg-surface" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">Abrir en Claude ↗</a>}
-              {chatgptUrl && <a class="rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:bg-surface" href={chatgptUrl} target="_blank" rel="noopener noreferrer">Abrir en ChatGPT ↗</a>}
+              <button type="button" class="co-btn co-btn--primary" data-copy="prompt" data-testid="copy-prompt">Copiar para Claude / ChatGPT</button>
+              {claudeUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">Abrir en Claude ↗</a>}
+              {chatgptUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={chatgptUrl} target="_blank" rel="noopener noreferrer">Abrir en ChatGPT ↗</a>}
             </div>
             <p class="mt-2 text-xs text-muted">Con el Cerebro de Ventas conectado (MCP), el asistente buscará la técnica adecuada, te dirá de qué creador sale y redactará el mensaje con tu contexto. Revisa siempre lo que aparece entre [corchetes].</p>
           </div>
           <label class="block text-sm font-semibold">Petición completa
             <textarea id="prompt" class={`${field} h-72 font-mono text-xs`} readonly data-testid="prompt">{brief.prompt}</textarea>
           </label>
-          <details class="rounded-2xl border border-line bg-bg p-4 text-sm">
+          <details class="co-card text-sm">
             <summary class="cursor-pointer font-semibold">Solo el contexto (sin instrucciones)</summary>
             <textarea id="brief" class={`${field} mt-2 h-64 font-mono text-xs`} readonly>{brief.brief}</textarea>
             <button type="button" class="mt-2 rounded-lg border border-line px-3 py-1.5 font-semibold" data-copy="brief">Copiar contexto</button>

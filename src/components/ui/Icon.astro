@@ -1,0 +1,7 @@
+---
+/** Icono de línea del design system (src/lib/ui/icons.ts). Decorativo salvo que lleve `label`. */
+import { iconSvg, type IconName } from '~/lib/ui/icons';
+interface Props { name: IconName; size?: number; label?: string }
+const { name, size = 18, label } = Astro.props;
+---
+<Fragment set:html={iconSvg(name, size, label)} />

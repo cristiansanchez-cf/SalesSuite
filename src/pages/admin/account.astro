@@ -1,6 +1,8 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { demoDb } from '~/lib/data/store';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -34,23 +36,19 @@ if (Astro.request.method === 'POST') {
     ok = password ? 'Guardado (en demo no hay contraseñas)' : 'Guardado';
   }
 }
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2.5 outline-none focus:border-ink';
 ---
 <AdminLayout title="Mi cuenta">
-  <div class="mx-auto max-w-md rounded-2xl border border-line bg-bg p-6">
-    <h1 class="text-2xl font-extrabold">{setup ? 'Bienvenido/a' : 'Mi cuenta'}</h1>
-    <p class="mt-1 text-sm text-muted">{setup ? 'Dinos cómo te llamas. La contraseña es opcional: siempre puedes entrar con un código por email.' : admin.session.email}</p>
-    {error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-    {ok && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{ok}</p>}
-    <form method="post" class="mt-6 space-y-3">
-      <label class="block text-sm font-medium">Nombre<input class={field} name="name" value={name} maxlength="80" autocomplete="name" /></label>
-      {showPassword && <>
-        <label class="block text-sm font-medium">Contraseña (opcional)
-          <input class={field} type="password" name="password" minlength="10" autocomplete="new-password" />
-        </label>
-        <label class="block text-sm font-medium">Repite la contraseña<input class={field} type="password" name="confirm" autocomplete="new-password" /></label>
-      </>}
-      <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg" type="submit">Guardar</button>
-    </form>
-  </div>
+  <PageHeader eyebrow="Tu perfil" title={setup ? 'Bienvenido/a.' : 'Mi cuenta'} lede={setup ? 'Dinos cómo te llamas. La contraseña es opcional: siempre puedes entrar con un código por email.' : admin.session.email} />
+  <form method="post" class="co-card grid max-w-lg gap-4">
+    {error && <Alert kind="rejection" title={error} />}
+    {ok && <Alert kind="success" title={ok} />}
+    <label class="co-field">Nombre<input class="co-input" name="name" value={name} maxlength="80" autocomplete="name" /></label>
+    {showPassword && <>
+      <label class="co-field">Contraseña <span class="co-help">Opcional, mínimo 10 caracteres</span>
+        <input class="co-input" type="password" name="password" minlength="10" autocomplete="new-password" />
+      </label>
+      <label class="co-field">Repite la contraseña<input class="co-input" type="password" name="confirm" autocomplete="new-password" /></label>
+    </>}
+    <button class="co-btn co-btn--primary w-fit" type="submit">Guardar</button>
+  </form>
 </AdminLayout>

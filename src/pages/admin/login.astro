@@ -8,6 +8,8 @@ import { authMode, demoLogin, safeNext, supabaseServerClient } from '~/lib/admin
 import { demoSendCode, demoVerifyCode } from '~/lib/admin/otp-demo';
 import { demoDb } from '~/lib/data/store';
 import { requestOrigin } from '~/lib/http';
+import Alert from '~/components/ui/Alert.astro';
+import { BRAND } from '~/lib/site';
 
 const { tenant } = Astro.locals;
 if (!tenant) return Astro.rewrite('/404');
@@ -69,70 +71,69 @@ if (Astro.request.method === 'POST') {
 
 const tenantName = (id: string) => demoDb().tenant.find((t) => t.id === id)?.name ?? id;
 const roleName = { admin: 'admin', rep: 'comercial', partner: 'colaborador' } as const;
-const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2.5 outline-none focus:border-ink';
-const btn = 'w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg hover:opacity-90';
-const btn2 = 'w-full rounded-lg border border-line px-4 py-2.5 font-semibold hover:bg-surface';
 ---
-<AdminLayout title="Entrar">
-  <div class="mx-auto mt-6 max-w-sm rounded-2xl border border-line bg-bg p-6 shadow-sm sm:mt-16">
-    <h1 class="text-2xl font-extrabold">Entrar</h1>
-    <p class="mt-1 text-sm text-muted">Consola de {tenant.name}</p>
-    {error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-    {info && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{info}</p>}
-    {demoCode && <p class="mt-2 rounded-lg bg-amber-100 p-3 text-sm" data-testid="demo-code">Modo demo (sin correo): tu código es <strong>{demoCode}</strong></p>}
+<AdminLayout title="Entrar" bare>
+  <div class="mx-auto mt-4 grid max-w-sm gap-6 sm:mt-14">
+    <p class="text-center"><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {BRAND.app}</span></p>
+    <div class="co-card grid gap-4 !p-6">
+      <div>
+        <p class="text-eyebrow mb-2">{tenant.name}</p>
+        <h1 class="co-page-title">Entrar.</h1>
+        <p class="co-lede mt-2">Sin contraseña: te llega un código al correo y entras.</p>
+      </div>
+      {error && <Alert kind="rejection" title={error} />}
+      {info && <Alert kind="success" title={info} />}
+      {demoCode && <p class="co-alert co-alert--info" data-testid="demo-code">Modo demo (sin correo): tu código es <strong>{demoCode}</strong></p>}
 
-    {codeEmail ? (
-      <form method="post" class="mt-6 space-y-3" data-testid="code-verify">
-        <input type="hidden" name="action" value="code-verify" />
-        <input type="hidden" name="email" value={codeEmail} />
-        <p class="text-sm">Código enviado a <strong>{codeEmail}</strong></p>
-        <label class="block text-sm font-medium">Código
-          <input class={`${input} text-center text-2xl tracking-[0.4em]`} name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,12}" maxlength="12" required autofocus />
-        </label>
-        <button class={btn} type="submit">Entrar</button>
-        <a class="block text-center text-sm text-muted underline" href={`/admin/login?next=${encodeURIComponent(next)}`}>Usar otro email</a>
-      </form>
-    ) : (
-      <form method="post" class="mt-6 space-y-3" data-testid="code-send">
-        <input type="hidden" name="action" value="code-send" />
-        <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
-        <button class={btn} type="submit">Enviarme un código</button>
-        <p class="text-xs text-muted">Sin contraseña: te llega un código al correo y entras.</p>
-      </form>
-    )}
+      {codeEmail ? (
+        <form method="post" class="grid gap-3" data-testid="code-verify">
+          <input type="hidden" name="action" value="code-verify" />
+          <input type="hidden" name="email" value={codeEmail} />
+          <p class="co-body">Código enviado a <strong class="text-ink">{codeEmail}</strong></p>
+          <label class="co-field">Código
+            <input class="co-input text-center !text-2xl tracking-[0.4em]" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,12}" maxlength="12" required autofocus />
+          </label>
+          <button class="co-btn co-btn--primary co-btn--block" type="submit">Entrar <span aria-hidden="true">→</span></button>
+          <a class="co-btn co-btn--quiet" href={`/admin/login?next=${encodeURIComponent(next)}`}>Usar otro email</a>
+        </form>
+      ) : (
+        <form method="post" class="grid gap-3" data-testid="code-send">
+          <input type="hidden" name="action" value="code-send" />
+          <label class="co-field">Email<input class="co-input" type="email" name="email" required autocomplete="email" /></label>
+          <button class="co-btn co-btn--primary co-btn--block" type="submit">Enviarme un código <span aria-hidden="true">→</span></button>
+        </form>
+      )}
+    </div>
 
     {mode === 'demo' ? (
-      <details class="mt-6" open={!codeEmail}>
-        <summary class="cursor-pointer text-sm text-muted">Modo demo: entrar como…</summary>
-        <div class="mt-3 space-y-2">
+      <details class="co-card" open={!codeEmail}>
+        <summary class="cursor-pointer co-row-title">Modo demo: entrar como…</summary>
+        <div class="mt-3 grid gap-2">
           {demoDb().users.map((u) => (
             <form method="post">
               <input type="hidden" name="action" value="demo" />
               <input type="hidden" name="userId" value={u.id} />
-              <button type="submit" class="w-full rounded-lg border border-line px-4 py-3 text-left hover:bg-surface" data-testid={`demo-${u.email}`}>
-                <span class="block font-semibold">{u.display_name}</span>
-                <span class="block text-xs text-muted">
-                  {u.email} · {u.memberships.map((m) => `${roleName[m.role]} en ${tenantName(m.tenant_id)}`).join(', ') || 'sin acceso'}
-                </span>
+              <button type="submit" class="co-action !min-h-[56px]" data-testid={`demo-${u.email}`}>
+                <span class="co-action__label">{u.display_name}<small>{u.email} · {u.memberships.map((m) => `${roleName[m.role]} en ${tenantName(m.tenant_id)}`).join(', ') || 'sin acceso'}</small></span>
               </button>
             </form>
           ))}
         </div>
       </details>
     ) : !codeEmail && (
-      <details class="mt-6 text-sm">
-        <summary class="cursor-pointer text-muted">Entrar con contraseña</summary>
-        <form method="post" class="mt-3 space-y-3">
+      <details class="co-card">
+        <summary class="cursor-pointer co-row-title">Entrar con contraseña</summary>
+        <form method="post" class="mt-3 grid gap-3">
           <input type="hidden" name="action" value="password" />
-          <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
-          <label class="block text-sm font-medium">Contraseña<input class={input} type="password" name="password" required autocomplete="current-password" /></label>
-          <button class={btn2} type="submit">Entrar</button>
+          <label class="co-field">Email<input class="co-input" type="email" name="email" required autocomplete="email" /></label>
+          <label class="co-field">Contraseña<input class="co-input" type="password" name="password" required autocomplete="current-password" /></label>
+          <button class="co-btn co-btn--ghost co-btn--block" type="submit">Entrar</button>
         </form>
-        <form method="post" class="mt-4 space-y-2">
+        <form method="post" class="mt-4 grid gap-2">
           <input type="hidden" name="action" value="reset" />
-          <p class="text-xs text-muted">¿La olvidaste? Pon tu email arriba en «Enviarme un código» o pide un enlace para elegir otra:</p>
-          <label class="block text-sm font-medium">Email<input class={input} type="email" name="email" required autocomplete="email" /></label>
-          <button class={btn2} type="submit">Enviarme enlace de recuperación</button>
+          <p class="co-help">¿No la recuerdas? Entra con un código o pide un enlace para elegir otra:</p>
+          <label class="co-field">Email<input class="co-input" type="email" name="email" required autocomplete="email" /></label>
+          <button class="co-btn co-btn--ghost co-btn--block" type="submit">Enviarme enlace de recuperación</button>
         </form>
       </details>
     )}

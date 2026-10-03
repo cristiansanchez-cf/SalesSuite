@@ -12,13 +12,14 @@ export const ROLE_HINT: Record<PersonaRole, string> = {
   usuario: 'Lo usará en el día a día.', guardian: 'No decide, pero puede tumbarlo.',
 };
 export const ROLE_CLASS: Record<PersonaRole, string> = {
-  decisor: 'bg-ink text-bg', pagador: 'bg-emerald-100 text-emerald-900', influenciador: 'bg-sky-100 text-sky-900',
-  campeon: 'bg-violet-100 text-violet-900', usuario: 'bg-surface text-ink', guardian: 'bg-amber-100 text-amber-900',
+  // Monocromo (design system Cofundo): el peso visual marca la importancia, no el color.
+  decisor: 'co-badge co-badge--ink', pagador: 'co-badge co-badge--ink', influenciador: 'co-badge',
+  campeon: 'co-badge co-badge--soft', usuario: 'co-badge', guardian: 'co-badge co-badge--attention',
 };
 
 export const STANCES = ['aliado', 'neutral', 'bloqueador', 'desconocido'] as const;
 export type Stance = (typeof STANCES)[number];
-export const STANCE_LABEL: Record<Stance, string> = { aliado: '🟢 Aliado', neutral: '⚪ Neutral', bloqueador: '🔴 Bloqueador', desconocido: '❔ Sin saber' };
+export const STANCE_LABEL: Record<Stance, string> = { aliado: 'Aliado', neutral: 'Neutral', bloqueador: 'Bloqueador', desconocido: 'Sin saber' };
 
 export interface Segment {
   id: string;

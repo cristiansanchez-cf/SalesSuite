@@ -1,18 +1,26 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { BRAND } from '~/lib/site';
 Astro.response.status = 403;
 const email = Astro.locals.forbiddenEmail;
 const reason = Astro.locals.forbiddenReason;
 const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 ---
-<AdminLayout title="Sin acceso">
-  <div class="mx-auto mt-16 max-w-md rounded-2xl border border-line bg-bg p-6 text-center">
-    <h1 class="text-2xl font-extrabold">Sin acceso</h1>
-    {reason?.kind === 'partner-expired' ? (
-      <p class="mt-2 text-muted" data-testid="partner-expired">Tu acceso como colaborador de {Astro.locals.tenant?.name ?? 'este espacio'} terminó{reason.expiresAt ? ` el ${date(reason.expiresAt)}` : ''}. Tus propuestas siguen guardadas: pide a tu contacto en la empresa que lo renueve.</p>
-    ) : (
-      <p class="mt-2 text-muted">{email ? `${email} no pertenece` : 'Tu cuenta no pertenece'} a {Astro.locals.tenant?.name ?? 'este espacio'}.</p>
-    )}
-    <form method="post" action="/admin/logout" class="mt-6"><button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit">Cambiar de cuenta</button></form>
+<AdminLayout title="Sin acceso" bare>
+  <div class="mx-auto mt-4 grid max-w-md gap-6 sm:mt-14">
+    <p class="text-center"><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {BRAND.app}</span></p>
+    <div class="co-card grid gap-3 !p-6">
+      <p class="text-eyebrow">{Astro.locals.tenant?.name ?? 'Este espacio'}</p>
+      <h1 class="co-page-title">Sin acceso.</h1>
+      {reason?.kind === 'partner-expired' ? (
+        <p class="co-body" data-testid="partner-expired">Tu acceso como colaborador terminó{reason.expiresAt ? ` el ${date(reason.expiresAt)}` : ''}. Tus propuestas siguen guardadas: pide a tu contacto en la empresa que lo renueve.</p>
+      ) : (
+        <p class="co-body">{email ? `${email} no tiene acceso` : 'Tu cuenta no tiene acceso'} a este espacio o a esta sección. Si crees que debería, pídeselo a un admin.</p>
+      )}
+      <div class="flex flex-wrap gap-2">
+        {Astro.locals.admin && <a class="co-btn co-btn--primary" href="/admin">Volver al inicio</a>}
+        <form method="post" action="/admin/logout"><button class="co-btn co-btn--ghost" type="submit">Cambiar de cuenta</button></form>
+      </div>
+    </div>
   </div>
 </AdminLayout>

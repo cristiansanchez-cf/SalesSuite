@@ -1,0 +1,55 @@
+---
+/**
+ * Contenido de la barra lateral (también se reutiliza en el cajón móvil).
+ * Orden vertical (guía §8): marca → conmutador → destinos → [anclas abajo: espacio activo, perfil].
+ */
+import Icon from './Icon.astro';
+import { BRAND } from '~/lib/site';
+import { navFor } from '~/lib/ui/nav';
+import type { AdminContext } from '~/lib/admin/auth';
+
+interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean }
+const { admin, tenantName, path, pending, primary = false } = Astro.props;
+const nav = navFor(admin.session.role, path, { pendingPlaybook: pending });
+const roleLabel = { admin: 'Admin', rep: 'Comercial', partner: 'Colaborador' } as const;
+const name = admin.session.displayName || admin.session.email;
+const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
+---
+<a href="/admin" class="co-sidebar__brand" aria-label={`${BRAND.company} · ${BRAND.app}`}>
+  <span class="co-wordmark">{BRAND.wordmark}</span><span class="co-sidebar__app">· {BRAND.app}</span>
+</a>
+
+{nav.canSwitch && (
+  <nav class="co-segmented" aria-label="Modo">
+    {nav.modes.map((m) => <a href={m.href} aria-current={nav.mode === m.key ? 'page' : undefined} data-testid={primary ? `mode-${m.key}` : undefined}><Icon name={m.icon} size={14} />{m.label}{m.key === 'setup' && pending > 0 && nav.mode !== 'setup' ? <span class="co-nav__count !ml-1" aria-label={`${pending} pendientes de revisar`}>{pending}</span> : null}</a>)}
+  </nav>
+)}
+
+<nav class="co-nav" aria-label="Secciones">
+  {nav.items.map((n) => (
+    <a href={n.href} class="co-nav__item" aria-current={n.on ? 'page' : undefined}>
+      <Icon name={n.icon} size={18} />{n.label}{n.count ? <span class="co-nav__count" aria-label={`${n.count} pendientes`}>{n.count}</span> : null}
+    </a>
+  ))}
+</nav>
+
+<div class="co-sidebar__anchors">
+  <div class="co-anchor" title="Espacio en el que trabajas">
+    <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="building2" size={16} /></span>
+    <span class="co-anchor__text"><span class="co-row-title">{tenantName}</span><span class="co-meta">Espacio de trabajo</span></span>
+  </div>
+  <details class="co-popover">
+    <summary class="co-anchor" data-testid={primary ? 'profile' : undefined}>
+      <span class="co-anchor__avatar">{initials}</span>
+      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{roleLabel[admin.session.role]}</span></span>
+      <Icon name="chevron-down" size={16} />
+    </summary>
+    <div class="co-popover__menu">
+      <p class="co-meta px-2 pb-2">{admin.session.email}</p>
+      <div class="co-actions">
+        <a class="co-action" href="/admin/account"><Icon name="user" /><span class="co-action__label">Mi cuenta</span><Icon name="chevron-right" size={16} /></a>
+        <form method="post" action="/admin/logout"><button class="co-action" type="submit"><Icon name="log-out" /><span class="co-action__label">Salir</span><Icon name="chevron-right" size={16} /></button></form>
+      </div>
+    </div>
+  </details>
+</div>

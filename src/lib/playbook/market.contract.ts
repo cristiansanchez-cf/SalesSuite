@@ -121,7 +121,7 @@ export function marketContract(name: string, env: () => PlaybookEnv) {
       const t = await ctx(U.rep).pb.talkTrack(SALA_X);
       const cuenta = t.sections.find((s) => s.id === 'cuenta')!;
       expect(cuenta.blocks.filter((b) => b.title).map((b) => b.title)).toEqual([
-        'Laura (novia) · Novios · 🟢 Aliado', 'Marta (coordinadora Sala X) · Coordinador/a de la finca · ⚪ Neutral', 'DJ Toni · DJ de la boda · 🔴 Bloqueador',
+        'Laura (novia) · Novios · Aliado', 'Marta (coordinadora Sala X) · Coordinador/a de la finca · Neutral', 'DJ Toni · DJ de la boda · Bloqueador',
       ]);
       const toni = cuenta.blocks[2];
       expect(toni.tone).toBe('risk');

@@ -2,6 +2,11 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { requestOrigin } from '~/lib/http';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -40,100 +45,122 @@ const okMsg = flash(Astro.url, {
 const [members, partners, catalog] = await Promise.all([t.listMembers(), t.listPartners(), t.listCatalog()]);
 const modules = catalog.filter((m) => m.isCatalog && m.versions.some((v) => v.status === 'published'));
 const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
-const field = 'rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+const roleLabel = { admin: 'Admin', rep: 'Comercial' } as const;
+const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 ---
 <AdminLayout title="Equipo">
-  <h1 class="text-3xl font-extrabold">Equipo</h1>
-  <p class="text-sm text-muted">Admins: gestionan catálogo, marca, equipo y todos los dossiers. Comerciales: crean y editan sus dossiers. Colaboradores: venden solo lo que les permitas, en las cuentas que les asignes.</p>
-  {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
-  {result.error && (
-    <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
-      <p class="font-semibold">{result.error}</p>
-      {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
-    </div>
-  )}
+  <PageHeader eyebrow="Configurar" title="Equipo" lede="Admins: catálogo, marca, equipo y todos los dossiers. Comerciales: sus dossiers. Colaboradores: solo los módulos y las cuentas que les asignes.">
+    <button type="button" class="co-btn co-btn--ghost" data-dialog-open="invite-partner"><Icon name="handshake" size={16} />Invitar colaborador</button>
+    <button type="button" class="co-btn co-btn--primary" data-dialog-open="invite"><Icon name="user-plus" size={16} />Invitar al equipo</button>
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
-  <form method="post" class="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-bg p-4" data-testid="invite-form">
-    <input type="hidden" name="action" value="invite" />
-    <label class="min-w-[16rem] flex-1 text-sm font-medium">Email<input class={`${field} w-full`} type="email" name="email" required /></label>
-    <label class="text-sm font-medium">Rol
-      <select class={`${field} block`} name="role"><option value="rep">Comercial</option><option value="admin">Admin</option></select>
-    </label>
-    <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg" type="submit">Invitar</button>
-  </form>
-
-  <ul class="mt-6 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0" data-testid="members">
-    {members.map((m) => (
-      <li class="flex list-none flex-wrap items-center gap-3 px-4 py-3">
-        <div class="min-w-0 flex-1">
-          <p class="truncate font-semibold">{m.displayName || m.email}{m.userId === admin.session.userId && <span class="ml-2 text-xs font-normal text-muted">(tú)</span>}</p>
-          {m.displayName && <p class="truncate text-sm text-muted">{m.email}</p>}
-        </div>
-        <form method="post" class="flex items-center gap-2">
-          <input type="hidden" name="action" value="role" />
-          <input type="hidden" name="userId" value={m.userId} />
-          <select class={field} name="role" aria-label={`Rol de ${m.email}`}>
-            <option value="rep" selected={m.role === 'rep'}>Comercial</option>
-            <option value="admin" selected={m.role === 'admin'}>Admin</option>
-          </select>
-          <button class="rounded-lg border border-line px-3 py-2 text-sm font-semibold hover:bg-surface" type="submit">Cambiar</button>
-        </form>
-        <form method="post" onsubmit="return confirm('¿Quitar a esta persona del equipo? Sus dossiers se conservan.')">
-          <input type="hidden" name="action" value="remove" />
-          <input type="hidden" name="userId" value={m.userId} />
-          <button class="rounded-lg border border-line px-3 py-2 text-sm font-semibold text-red-700 hover:bg-surface" type="submit">Quitar</button>
-        </form>
-      </li>
-    ))}
-  </ul>
-
-  <section class="mt-10" data-testid="partners">
-    <h2 class="text-2xl font-extrabold">Colaboradores</h2>
-    <p class="text-sm text-muted">Vendedores puntuales (un DJ en sus locales, un monitor en sus centros…). Entran con un código por email, solo ven los módulos y las cuentas que elijas, nunca ven la tarifa y no tocan precios.</p>
-
-    {partners.length > 0 && (
-      <ul class="mt-4 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0" data-testid="partner-list">
-        {partners.map((p) => (
-          <li class="list-none">
-            <a href={`/admin/team/partners/${p.userId}`} class="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-surface" data-testid="partner-row">
-              <span class="min-w-0 flex-1">
-                <span class="block truncate font-semibold">{p.displayName || p.email}</span>
-                <span class="block truncate text-sm text-muted">
-                  {p.accounts.length} {p.accounts.length === 1 ? 'cuenta' : 'cuentas'} · {p.profile?.moduleIds.length ?? 0} módulos · {p.dossierCount} propuestas
-                </span>
-              </span>
-              {p.expired
-                ? <span class="rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-700">Caducado</span>
-                : p.profile?.expiresAt && <span class="text-xs text-muted">hasta {dateFmt(p.profile.expiresAt)}</span>}
-              <span class="text-sm font-semibold">Gestionar →</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    )}
-
-    <form method="post" class="mt-4 space-y-3 rounded-2xl border border-line bg-bg p-4" data-testid="invite-partner-form">
-      <input type="hidden" name="action" value="invite-partner" />
-      <h3 class="font-bold">Invitar colaborador</h3>
-      <div class="grid gap-3 sm:grid-cols-[1fr_12rem]">
-        <label class="text-sm font-medium">Email<input class={`${field} w-full`} type="email" name="email" required /></label>
-        <label class="text-sm font-medium">Acceso hasta (opcional)<input class={`${field} w-full`} type="date" name="expiresAt" /></label>
-      </div>
-      <fieldset>
-        <legend class="text-sm font-medium">Qué puede ver y vender</legend>
-        <div class="mt-1 flex flex-wrap gap-2">
-          {modules.map((m) => (
-            <label class="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm">
-              <input type="checkbox" name="moduleIds" value={m.id} /> {m.name}
+  <section class="co-section">
+    <div class="co-section__head"><h2 class="text-eyebrow">Equipo interno · {members.length}</h2></div>
+    <ul class="co-rows" data-testid="members">
+      {members.map((m) => (
+        <li class="co-row">
+          <span class="co-anchor__avatar co-anchor__avatar--soft">{initials(m.displayName || m.email)}</span>
+          <span class="co-row__main">
+            <span class="co-row-title">{m.displayName || m.email}{m.userId === admin.session.userId && <span class="co-meta"> (tú)</span>}</span>
+            <span class="co-meta">{m.email}</span>
+          </span>
+          <span class:list={['co-badge', m.role === 'admin' && 'co-badge--ink']}>{roleLabel[m.role as 'admin' | 'rep']}</span>
+          <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`role-${m.userId}`}>Cambiar rol</button>
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-dialog-open={`remove-${m.userId}`} data-testid="remove-open">Quitar</button>
+          <ConfirmDialog id={`role-${m.userId}`} title={`Rol de ${m.displayName || m.email}`} confirmLabel="Guardar rol"
+            does="Cambia lo que puede hacer en la consola desde su próxima página."
+            doesNot="No le avisa por email ni cambia de autor sus dossiers.">
+            <input type="hidden" name="action" value="role" />
+            <input type="hidden" name="userId" value={m.userId} />
+            <label class="co-field">Rol
+              <select class="co-select" name="role" aria-label={`Rol de ${m.email}`}>
+                <option value="rep" selected={m.role === 'rep'}>Comercial</option>
+                <option value="admin" selected={m.role === 'admin'}>Admin</option>
+              </select>
             </label>
-          ))}
-        </div>
-      </fieldset>
-      <label class="block text-sm font-medium">Nota de bienvenida (opcional, solo la ve él)
-        <textarea class={`${field} h-20 w-full`} name="welcomeNote" maxlength="4000" placeholder="Hola Dani: ofrece Experiencias en tus tres locales. Del precio nos encargamos nosotros."></textarea>
-      </label>
-      <p class="text-xs text-muted">Después de invitarlo le asignas sus cuentas (locales, centros…) y decides cómo se cotiza cada una.</p>
-      <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg" type="submit">Invitar colaborador</button>
-    </form>
+          </ConfirmDialog>
+          <ConfirmDialog id={`remove-${m.userId}`} title={`Quitar a ${m.displayName || m.email}`} confirmLabel="Quitar del equipo" danger testid="remove"
+            does="Deja de poder entrar en la consola de este espacio."
+            doesNot="No borra sus dossiers ni desactiva los enlaces que ya ha enviado: siguen funcionando hasta que los revoques.">
+            <input type="hidden" name="action" value="remove" />
+            <input type="hidden" name="userId" value={m.userId} />
+          </ConfirmDialog>
+        </li>
+      ))}
+    </ul>
   </section>
+
+  <section class="co-section" data-testid="partners">
+    <div class="co-section__head">
+      <h2 class="text-eyebrow">Colaboradores · {partners.length}</h2>
+      <span class="co-meta">Entran con un código por email. Nunca ven la tarifa ni tocan precios.</span>
+    </div>
+    {partners.length === 0
+      ? <EmptyState kind="create" title="Todavía no hay colaboradores" detail="Un DJ que vende en sus locales, un monitor que vende en sus centros… Solo verán lo que les permitas." action={{ dialog: 'invite-partner', label: 'Invitar colaborador' }} />
+      : (
+        <ul class="co-rows" data-testid="partner-list">
+          {partners.map((p) => (
+            <li>
+              <a href={`/admin/team/partners/${p.userId}`} class:list={['co-row', p.expired && 'co-row--attention']} data-testid="partner-row">
+                <span class="co-anchor__avatar co-anchor__avatar--soft">{initials(p.displayName || p.email)}</span>
+                <span class="co-row__main">
+                  <span class="co-row-title">{p.displayName || p.email}</span>
+                  <span class="co-meta">{p.accounts.length} {p.accounts.length === 1 ? 'cuenta' : 'cuentas'} · {p.profile?.moduleIds.length ?? 0} módulos · {p.dossierCount} propuestas{p.expired ? ' · Acceso caducado: no puede entrar' : p.profile?.expiresAt ? ` · Acceso hasta ${dateFmt(p.profile.expiresAt)}` : ''}</span>
+                </span>
+                <span class="co-badge">Colaborador</span>
+                <span class="co-row__chevron"><Icon name="chevron-right" /></span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+  </section>
+
+  <dialog id="invite" class="co-dialog" aria-labelledby="invite-title">
+    <form method="post" data-testid="invite-form">
+      <input type="hidden" name="action" value="invite" />
+      <div class="co-dialog__body">
+        <h2 id="invite-title" class="co-entity">Invitar al equipo</h2>
+        <p class="co-body">Le llega un email para entrar. Después entra con su email y un código, sin contraseña.</p>
+        <label class="co-field">Email<input class="co-input" type="email" name="email" required /></label>
+        <label class="co-field">Rol
+          <select class="co-select" name="role"><option value="rep">Comercial</option><option value="admin">Admin</option></select>
+        </label>
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
+        <button class="co-btn co-btn--primary" type="submit">Enviar invitación</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="invite-partner" class="co-dialog" aria-labelledby="invite-partner-title" style="width:min(40rem,calc(100vw - 32px))">
+    <form method="post" data-testid="invite-partner-form">
+      <input type="hidden" name="action" value="invite-partner" />
+      <div class="co-dialog__body">
+        <h2 id="invite-partner-title" class="co-entity">Invitar colaborador</h2>
+        <p class="co-body">Después de invitarlo le asignas sus cuentas (locales, centros…) y decides cómo se cotiza cada una.</p>
+        <div class="grid gap-3 sm:grid-cols-[1fr_12rem]">
+          <label class="co-field">Email<input class="co-input" type="email" name="email" required /></label>
+          <label class="co-field">Acceso hasta<input class="co-input" type="date" name="expiresAt" /><span class="co-help">Vacío = sin fecha de fin</span></label>
+        </div>
+        <fieldset class="grid gap-2">
+          <legend class="co-field mb-2">Qué puede ver y vender</legend>
+          <div class="co-chips">
+            {modules.map((m) => <label class="co-chip"><input type="checkbox" name="moduleIds" value={m.id} />{m.name}</label>)}
+          </div>
+        </fieldset>
+        <label class="co-field">Nota de bienvenida <span class="co-help">Solo la ve él</span>
+          <textarea class="co-textarea" name="welcomeNote" maxlength="4000" placeholder="Hola Dani: ofrece Experiencias en tus tres locales. Del precio nos encargamos nosotros."></textarea>
+        </label>
+        <p class="co-dialog__not"><strong>Lo que no hace:</strong> no le da acceso a la tarifa, a los dossiers del equipo ni a la configuración.</p>
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
+        <button class="co-btn co-btn--primary" type="submit">Invitar colaborador</button>
+      </div>
+    </form>
+  </dialog>
 </AdminLayout>

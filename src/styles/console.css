@@ -1,0 +1,412 @@
+/*
+ * Consola /admin — design system Cofundo (docs/DESIGN_SYSTEM.md).
+ *
+ * Tres capas, de abajo arriba:
+ *   1. --co-*       Paleta, tipografía y movimiento de Cofundo (cofundo.io: monocromo + aurora).
+ *   2. --console-*  Capa SEMÁNTICA de la consola (guía de consolas): densidad, radios, anchos.
+ *                   Referencia la capa 1; ningún componente escribe un color a pelo.
+ *   3. --color-*    Puente con las utilidades Tailwind existentes (bg-bg, text-ink, border-line…),
+ *                   redefinido SOLO dentro de .console: los dossiers públicos siguen con el tema del tenant.
+ */
+
+/* ------------------------------------------------------------------ 1 · Cofundo */
+.console {
+  --co-canvas: #fafaf7;
+  --co-canvas-elevated: #ffffff;
+  --co-ink: #0a0a0a;
+  --co-ink-soft: #4a4a4a;
+  --co-ink-dim: #8a8a8a;
+  --co-rule: rgba(10, 10, 10, 0.08);
+  --co-aurora-cyan: #6ec8ff;
+  --co-aurora-violet: #b89aff;
+  --co-aurora-pink: #ff9ec4;
+  --co-aurora-coral: #ff8a5b;
+  --co-aurora-amber: #ffb56b;
+  --co-accent: #0a0a0a;
+  --co-accent-soft: #1a1a1a;
+
+  --co-font-impact: 'Big Shoulders Variable', 'Big Shoulders', 'Big Shoulders Display', 'Oswald', 'Arial Narrow', Impact, sans-serif;
+  --co-font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-serif, Georgia, serif;
+  --co-font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --co-font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', monospace;
+
+  --co-ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --co-duration-quick: 200ms;
+  --co-duration-normal: 400ms;
+
+  /* ---------------------------------------------------------------- 2 · consola */
+  /* Un solo sitio decide el ancho (guía §1). Las recetas se eligen con <AdminLayout width=…>. */
+  --console-page-max: 1120px;
+  --console-workspace-max: 1680px;
+  --console-gutter: 24px;
+  --console-page-pad: 32px;
+  --console-sidebar: 264px;
+  --console-sidebar-pad: 16px;
+
+  /* Tres radios, ni uno más (guía «deriva de radios»). */
+  --console-radius-card: 16px;
+  --console-radius-control: 12px;
+  --console-radius-pill: 999px;
+
+  /* Densidad de escritorio: más margen exterior, menos aire interior (guía §10). */
+  --console-gap: 12px;
+  --console-card-pad: 20px;
+  --console-row-pad-x: 16px;
+  --console-row-pad-y: 14px;
+  --console-control-h: 40px;
+
+  /* Seis tamaños + el titular de pantalla. La jerarquía la hace el peso (guía §4). */
+  --console-fs-title: 2.25rem;   /* titular de pantalla · Big Shoulders 600 */
+  --console-fs-entity: 1.25rem;  /* nombre de entidad / panel · 700 */
+  --console-fs-card: 1rem;       /* título de tarjeta · 600 */
+  --console-fs-body: 0.875rem;   /* cuerpo 14 (13 se leía apretado) · fila 600 */
+  --console-fs-meta: 0.75rem;    /* metadato */
+  --console-fs-micro: 0.6875rem; /* eyebrow, badge */
+
+  /* Superficies y estados, por función. */
+  --console-surface: var(--co-canvas-elevated);
+  --console-page-bg: var(--co-canvas);
+  --console-card-border: var(--co-rule);
+  --console-card-border-hover: color-mix(in oklch, var(--co-ink) 25%, transparent);
+  --console-divider: var(--co-rule);
+  --console-chip-bg: color-mix(in oklch, var(--co-ink) 5%, transparent);
+  --console-nav-active-bg: color-mix(in oklch, var(--co-ink) 7%, transparent);
+  --console-focus-ring: color-mix(in oklch, var(--co-ink) 20%, transparent);
+  --console-attention: var(--co-aurora-coral);                                   /* acento (borde/regla), nunca texto */
+  --console-attention-bg: color-mix(in oklch, var(--co-aurora-coral) 10%, var(--co-canvas-elevated));
+  --console-danger: #a8401c;                                                     /* coral oscurecido: texto con contraste AA */
+  --console-good-bg: color-mix(in oklch, var(--co-aurora-cyan) 14%, var(--co-canvas-elevated));
+  --console-cerebro-bg: color-mix(in oklch, var(--co-aurora-violet) 22%, transparent);
+  --console-progress-track: color-mix(in oklch, var(--co-ink) 8%, transparent);
+  --console-overlay-shadow: 0 24px 48px -24px rgba(10, 10, 10, 0.28);
+  --console-backdrop: color-mix(in oklch, var(--co-ink) 40%, transparent);
+
+  /* ---------------------------------------------------------------- 3 · puente Tailwind */
+  --color-bg: 255 255 255;
+  --color-surface: 250 250 247;
+  --color-text: 10 10 10;
+  --color-muted: 74 74 74;
+  --color-border: 232 232 229;
+  --color-primary: 10 10 10;
+  --color-primary-contrast: 255 255 255;
+  --color-accent: 10 10 10;
+  --color-accent-contrast: 255 255 255;
+  --font-sans: var(--co-font-sans);
+  --font-display: var(--co-font-impact);
+  --radius-card: var(--console-radius-card);
+  --radius-button: var(--console-radius-pill);
+}
+
+/* ------------------------------------------------------------------ base */
+html.console {
+  background: var(--console-page-bg);
+  color: var(--co-ink);
+  font-family: var(--co-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+.console body {
+  background: var(--console-page-bg);
+  font-size: var(--console-fs-body);
+  line-height: 1.45;
+  font-feature-settings: 'ss01', 'ss02', 'cv11';
+}
+.console h1 { font-family: var(--co-font-impact); font-weight: 600; letter-spacing: -0.01em; line-height: 0.95; }
+.console h2, .console h3, .console h4 { font-family: var(--co-font-sans); line-height: 1.2; letter-spacing: -0.005em; }
+.console ::selection { background: var(--co-aurora-coral); color: var(--co-ink); }
+.console :focus-visible { outline: 2px solid var(--co-ink); outline-offset: 2px; }
+.console .co-icon { flex: none; }
+.console [hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .console *, .console *::before, .console *::after {
+    animation-duration: 0ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ tipografía */
+.text-eyebrow {
+  font-size: var(--console-fs-micro); font-weight: 500; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--co-ink-dim);
+}
+.co-wordmark {
+  font-family: var(--co-font-display); font-weight: 500; letter-spacing: -0.015em; line-height: 1;
+  font-variation-settings: 'wdth' 100, 'wght' 500; font-size: 1.375rem; color: var(--co-ink);
+}
+.co-page-title { font-family: var(--co-font-impact); font-weight: 600; font-size: var(--console-fs-title); line-height: 0.95; letter-spacing: -0.01em; }
+.co-impact { font-family: var(--co-font-impact); font-weight: 600; line-height: 0.95; letter-spacing: -0.01em; }
+.co-entity { font-size: var(--console-fs-entity); font-weight: 700; line-height: 1.15; }
+.co-card-title { font-size: var(--console-fs-card); font-weight: 600; line-height: 1.2; }
+.co-row-title { font-size: var(--console-fs-body); font-weight: 600; line-height: 1.25; }
+.co-body { font-size: var(--console-fs-body); line-height: 1.45; color: var(--co-ink-soft); }
+.co-meta { font-size: var(--console-fs-meta); line-height: 1.35; color: var(--co-ink-dim); }
+.co-lede { font-size: var(--console-fs-body); color: var(--co-ink-soft); max-width: 64ch; line-height: 1.5; }
+.co-num { font-family: var(--co-font-impact); font-weight: 600; color: var(--co-ink-dim); }
+
+/* ------------------------------------------------------------------ shell */
+.co-shell { display: grid; grid-template-columns: var(--console-sidebar) minmax(0, 1fr); min-height: 100vh; }
+.co-sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 20px;
+  padding: var(--console-sidebar-pad); border-right: 1px solid var(--console-divider);
+}
+.co-sidebar__brand { display: flex; align-items: baseline; gap: 0.4rem; padding: 6px 8px 0; text-decoration: none; }
+.co-sidebar__app { font-size: var(--console-fs-body); color: var(--co-ink-soft); }
+.co-sidebar__anchors { margin-top: auto; display: grid; gap: 8px; }
+/* El chrome resta su espacio y lo declara: las pantallas miden contra el panel (guía §2). */
+.co-main { min-width: 0; container-type: inline-size; container-name: pane; }
+.co-page { margin: 0 auto; padding: var(--console-page-pad) var(--console-page-pad) 64px; }
+.co-page--content { max-width: calc(var(--console-page-max) + 2 * var(--console-page-pad)); }
+.co-page--workspace { max-width: calc(var(--console-workspace-max) + 2 * var(--console-page-pad)); }
+.co-topbar { display: none; }
+.co-demo-banner {
+  padding: 6px var(--console-gutter); font-size: var(--console-fs-meta); color: var(--co-ink);
+  border-bottom: 1px solid var(--console-divider);
+  background: radial-gradient(at 10% 50%, color-mix(in oklch, var(--co-aurora-amber) 35%, transparent), transparent 60%), var(--co-canvas);
+}
+
+@media (max-width: 1023px) {
+  .co-shell { display: block; }
+  .co-sidebar { display: none; }
+  .co-topbar {
+    display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 20;
+    padding: 10px 16px; background: var(--co-canvas); border-bottom: 1px solid var(--console-divider);
+  }
+  .co-page { padding: 20px 16px 48px; }
+}
+
+/* Navegación: dos mundos y un conmutador (guía §7); activo con tres señales (guía §5). */
+.co-segmented {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0;
+  padding: 4px; border-radius: var(--console-radius-pill); background: var(--console-chip-bg);
+}
+.co-segmented a, .co-segmented button {
+  display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px;
+  border-radius: var(--console-radius-pill); font-size: var(--console-fs-meta); font-weight: 500;
+  color: var(--co-ink-soft); text-decoration: none; border: 0; background: transparent; cursor: pointer;
+}
+.co-segmented [aria-current='page'], .co-segmented [aria-pressed='true'], .co-segmented [aria-checked='true'] {
+  background: var(--console-surface); color: var(--co-ink); font-weight: 600; border: 1px solid var(--console-card-border);
+}
+.co-nav { display: grid; gap: 2px; }
+.co-nav__group { margin: 14px 8px 6px; }
+.co-nav__item {
+  display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px;
+  border-radius: var(--console-radius-control); font-size: var(--console-fs-body); font-weight: 500;
+  color: var(--co-ink-soft); text-decoration: none;
+  transition: background-color var(--co-duration-quick) var(--co-ease-out-soft), color var(--co-duration-quick) var(--co-ease-out-soft);
+}
+.co-nav__item:hover { color: var(--co-ink); background: var(--console-chip-bg); }
+.co-nav__item[aria-current='page'] { background: var(--console-nav-active-bg); color: var(--co-ink); font-weight: 600; }
+.co-nav__count {
+  margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: var(--console-radius-pill);
+  background: var(--co-ink); color: #fff; font-size: var(--console-fs-micro); font-weight: 600; text-align: center; line-height: 20px;
+}
+
+/* Anclas de identidad y contexto (guía §8). */
+.co-anchor {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px;
+  border: 1px solid var(--console-card-border); border-radius: var(--console-radius-control);
+  background: var(--console-surface); text-align: left; color: var(--co-ink); cursor: pointer; text-decoration: none;
+}
+.co-anchor:hover { border-color: var(--console-card-border-hover); }
+.co-anchor__avatar {
+  display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--console-radius-control);
+  background: var(--co-ink); color: #fff; font-size: var(--console-fs-meta); font-weight: 600;
+}
+.co-anchor__avatar--soft { background: var(--console-chip-bg); color: var(--co-ink); }
+.co-anchor__text { min-width: 0; flex: 1; }
+.co-anchor__text > * { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-popover { position: relative; }
+.co-popover > summary { list-style: none; }
+.co-popover > summary::-webkit-details-marker { display: none; }
+.co-popover__menu {
+  position: absolute; bottom: calc(100% + 8px); left: 0; width: 280px; max-width: calc(100vw - 32px); z-index: 30;
+  padding: 8px; border: 1px solid var(--console-card-border-hover); border-radius: var(--console-radius-card);
+  background: var(--console-surface); box-shadow: var(--console-overlay-shadow);
+}
+
+/* ------------------------------------------------------------------ superficies */
+.co-card {
+  background: var(--console-surface); border: 1px solid var(--console-card-border);
+  border-radius: var(--console-radius-card); padding: var(--console-card-pad);
+}
+.co-card--flush { padding: 0; overflow: hidden; }
+a.co-card, .co-card--link { display: block; color: inherit; text-decoration: none; transition: border-color var(--co-duration-quick) var(--co-ease-out-soft); }
+a.co-card:hover, .co-card--link:hover { border-color: var(--console-card-border-hover); }
+.co-card--soft { background: radial-gradient(at 90% 0%, color-mix(in oklch, var(--co-aurora-violet) 22%, transparent), transparent 55%),
+  radial-gradient(at 0% 100%, color-mix(in oklch, var(--co-aurora-coral) 16%, transparent), transparent 55%), var(--console-surface); }
+.co-aurora-soft {
+  background:
+    radial-gradient(at 80% 10%, color-mix(in oklch, var(--co-aurora-violet) 40%, transparent) 0%, transparent 60%),
+    radial-gradient(at 10% 90%, color-mix(in oklch, var(--co-aurora-coral) 35%, transparent) 0%, transparent 55%),
+    var(--co-canvas);
+}
+.co-section + .co-section { margin-top: 32px; }
+.co-section__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+
+/* Listas accionables = tarjetas; la fila entera es el enlace (guía §6). */
+.co-rows { display: grid; gap: var(--console-gap); margin: 0; padding: 0; list-style: none; }
+.co-row {
+  display: flex; align-items: center; gap: 14px; padding: var(--console-row-pad-y) var(--console-row-pad-x);
+  border: 1px solid var(--console-card-border); border-radius: var(--console-radius-card);
+  background: var(--console-surface); color: inherit; text-decoration: none;
+  transition: border-color var(--co-duration-quick) var(--co-ease-out-soft);
+}
+a.co-row:hover { border-color: var(--console-card-border-hover); }
+a.co-row:hover .co-row__chevron { transform: translateX(3px); }
+.co-row__main { min-width: 0; flex: 1; }
+.co-row__main > * { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-row__chevron { color: var(--co-ink-dim); transition: transform var(--co-duration-quick) var(--co-ease-out-soft); }
+.co-row__lead {
+  display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: var(--console-radius-control);
+  background: var(--console-chip-bg); color: var(--co-ink);
+}
+/* Fila que pide atención: relleno suave + regla lateral, y el motivo en texto (guía Lumbra §3 y §15). */
+.co-row--attention { background: var(--console-attention-bg); box-shadow: inset 3px 0 0 var(--console-attention); }
+
+/* Columnas medidas contra el panel: ≥720 → 2, ≥1100 → 3 (guía §9). */
+.co-grid { display: grid; gap: var(--console-gap); grid-template-columns: minmax(0, 1fr); }
+@container pane (min-width: 720px) { .co-grid--2, .co-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container pane (min-width: 1100px) { .co-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.co-split { display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); }
+@container pane (min-width: 1000px) {
+  .co-split { grid-template-columns: minmax(0, 1fr) clamp(340px, 36%, 380px); }
+  .co-split__aside--sticky { position: sticky; top: 24px; align-self: start; }
+}
+
+/* ------------------------------------------------------------------ controles */
+.co-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--console-control-h);
+  padding: 0 18px; border-radius: var(--console-radius-pill); border: 1px solid transparent;
+  font: 500 var(--console-fs-body) / 1 var(--co-font-sans); text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--co-duration-quick) var(--co-ease-out-soft), color var(--co-duration-quick) var(--co-ease-out-soft), border-color var(--co-duration-quick) var(--co-ease-out-soft);
+}
+.co-btn:focus-visible { outline: 2px solid var(--co-ink); outline-offset: 2px; }
+.co-btn:disabled, .co-btn[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+.co-btn--primary { background: var(--co-accent); color: #fff; }
+.co-btn--primary:hover:not(:disabled) { background: var(--co-accent-soft); }
+.co-btn--ghost { border-color: var(--console-card-border-hover); color: var(--co-ink); background: var(--console-surface); }
+.co-btn--ghost:hover:not(:disabled) { background: var(--co-ink); color: #fff; }
+.co-btn--quiet { padding: 0 6px; color: var(--co-ink-soft); background: transparent; }
+.co-btn--quiet:hover { color: var(--co-ink); }
+.co-btn--danger { border-color: color-mix(in oklch, var(--console-danger) 40%, transparent); color: var(--console-danger); background: var(--console-surface); }
+.co-btn--danger:hover:not(:disabled) { background: var(--console-danger); color: #fff; }
+.co-btn--sm { min-height: 32px; padding: 0 12px; font-size: var(--console-fs-meta); }
+.co-btn--block { width: 100%; }
+.co-btn--icon { width: var(--console-control-h); padding: 0; }
+.co-btn--icon.co-btn--sm { width: 32px; }
+
+.co-field { display: grid; gap: 6px; font-size: var(--console-fs-meta); font-weight: 500; color: var(--co-ink); }
+.co-field > .co-help, .co-help { font-weight: 400; color: var(--co-ink-dim); font-size: var(--console-fs-meta); }
+.co-input, .co-select, .co-textarea {
+  width: 100%; min-height: var(--console-control-h); padding: 8px 12px;
+  border: 1px solid var(--console-card-border-hover); border-radius: var(--console-radius-control);
+  background: var(--console-surface); color: var(--co-ink); font: 400 var(--console-fs-body) / 1.4 var(--co-font-sans);
+  transition: border-color var(--co-duration-quick) var(--co-ease-out-soft), box-shadow var(--co-duration-quick) var(--co-ease-out-soft);
+}
+.co-input::placeholder, .co-textarea::placeholder { color: var(--co-ink-dim); }
+.co-input:focus, .co-select:focus, .co-textarea:focus { outline: none; border-color: var(--co-ink); box-shadow: 0 0 0 3px var(--console-focus-ring); }
+.co-input:disabled, .co-select:disabled, .co-textarea:disabled { background: var(--co-canvas); color: var(--co-ink-dim); }
+.co-textarea { min-height: 96px; resize: vertical; }
+.co-check { display: flex; align-items: flex-start; gap: 10px; font-size: var(--console-fs-body); }
+.co-check input { margin-top: 3px; accent-color: var(--co-ink); width: 16px; height: 16px; }
+
+/* Chips (filtros) y badges (estado). */
+.co-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.co-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px;
+  border: 1px solid var(--console-card-border-hover); border-radius: var(--console-radius-pill);
+  font-size: var(--console-fs-meta); font-weight: 500; color: var(--co-ink-soft); background: var(--console-surface); text-decoration: none; cursor: pointer;
+}
+.co-chip:hover { color: var(--co-ink); border-color: var(--co-ink); }
+.co-chip[aria-current='true'], .co-chip[aria-pressed='true'], .co-chip:has(input:checked) { background: var(--co-ink); border-color: var(--co-ink); color: #fff; }
+.co-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.co-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--console-radius-pill);
+  border: 1px solid var(--console-card-border-hover); font-size: var(--console-fs-micro); font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--co-ink-soft); white-space: nowrap;
+}
+.co-badge--ink { background: var(--co-ink); border-color: var(--co-ink); color: #fff; }
+.co-badge--attention { border-color: var(--console-attention); color: var(--co-ink); background: var(--console-attention-bg); }
+.co-badge--soft { border-color: transparent; background: var(--console-chip-bg); color: var(--co-ink); }
+
+/* Opción grande con icono (wizards). */
+.co-option {
+  position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px;
+  border: 1px solid var(--console-card-border); border-radius: var(--console-radius-card); background: var(--console-surface); cursor: pointer;
+  transition: border-color var(--co-duration-quick) var(--co-ease-out-soft);
+}
+.co-option:hover { border-color: var(--console-card-border-hover); }
+.co-option:has(input:checked) { border-color: var(--co-ink); box-shadow: inset 0 0 0 1px var(--co-ink); }
+.co-option input { position: absolute; opacity: 0; pointer-events: none; }
+.co-option__icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--console-radius-control); background: var(--console-chip-bg); }
+.co-option:has(input:checked) .co-option__icon { background: var(--co-ink); color: #fff; }
+
+.co-progress { height: 6px; border-radius: var(--console-radius-pill); background: var(--console-progress-track); overflow: hidden; }
+.co-progress > span { display: block; height: 100%; background: var(--co-ink); border-radius: inherit; }
+
+/* Pasos de wizard. */
+.co-steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.co-steps li { display: flex; align-items: center; gap: 8px; font-size: var(--console-fs-meta); color: var(--co-ink-dim); }
+.co-steps li::before {
+  counter-increment: step; content: counter(step, decimal-leading-zero);
+  font-family: var(--co-font-impact); font-weight: 600; font-size: 1rem;
+}
+.co-steps li[aria-current='step'] { color: var(--co-ink); font-weight: 600; }
+.co-steps li + li::after { order: -1; content: ''; width: 16px; height: 1px; background: var(--console-divider); }
+
+/* ------------------------------------------------------------------ acciones (guía Lumbra §9–10) */
+.co-actions { display: grid; gap: 8px; }
+.co-action {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 14px;
+  border: 1px solid var(--console-card-border); border-radius: var(--console-radius-control);
+  background: var(--console-surface); color: var(--co-ink); text-align: left; text-decoration: none; cursor: pointer;
+  font: 500 var(--console-fs-body) / 1.2 var(--co-font-sans);
+}
+.co-action:hover { border-color: var(--console-card-border-hover); }
+.co-action__label { flex: 1; min-width: 0; }
+.co-action__label small { display: block; font-weight: 400; color: var(--co-ink-dim); font-size: var(--console-fs-meta); margin-top: 2px; }
+.co-action .co-icon:last-child { color: var(--co-ink-dim); }
+.co-actions--danger .co-action { color: var(--console-danger); }
+
+/* ------------------------------------------------------------------ mensajes */
+.co-alert {
+  display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--console-radius-control);
+  border: 1px solid var(--console-card-border); background: var(--console-surface); font-size: var(--console-fs-body); color: var(--co-ink);
+}
+.co-alert ul { margin: 4px 0 0; padding-left: 1.1em; }
+/* Rechazo: el producto dice que no. Frase llana, sin código (guía Lumbra §14). */
+.co-alert--rejection { box-shadow: inset 3px 0 0 var(--console-attention); background: var(--console-attention-bg); border-color: transparent; }
+/* Fallo: es un bug nuestro. Se lee distinto y lleva su código. */
+.co-alert--failure { border: 1px dashed var(--console-danger); color: var(--console-danger); }
+.co-alert--success { background: var(--console-good-bg); border-color: transparent; }
+.co-alert--info { background: var(--console-chip-bg); border-color: transparent; }
+
+/* Estados vacíos tipados (src/components/ui/EmptyState.astro). */
+.co-empty {
+  display: grid; justify-items: center; gap: 8px; padding: 32px 20px; text-align: center;
+  border: 1px dashed var(--console-card-border-hover); border-radius: var(--console-radius-card);
+}
+.co-empty--good { border-style: solid; border-color: transparent; background: var(--console-good-bg); }
+.co-empty__title { font-weight: 600; font-size: var(--console-fs-card); }
+
+/* ------------------------------------------------------------------ overlays */
+.co-dialog {
+  width: min(32rem, calc(100vw - 32px)); padding: 0; border: 1px solid var(--console-card-border-hover);
+  border-radius: var(--console-radius-card); background: var(--console-surface); color: var(--co-ink);
+  box-shadow: var(--console-overlay-shadow);
+}
+.co-dialog::backdrop { background: var(--console-backdrop); backdrop-filter: blur(4px); }
+.co-dialog[open] { animation: co-pop 100ms var(--co-ease-out-soft); }
+.co-dialog__body { display: grid; gap: 12px; padding: 24px; }
+.co-dialog__foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--console-divider); }
+.co-dialog__not { padding: 10px 12px; border-radius: var(--console-radius-control); background: var(--console-attention-bg); font-size: var(--console-fs-meta); }
+.co-drawer { margin: 0 auto 0 0; height: 100vh; max-height: 100vh; width: min(320px, 86vw); border-radius: 0 var(--console-radius-card) var(--console-radius-card) 0; }
+@keyframes co-pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* Texto de jugadas (markdown mínimo) dentro de la consola. */
+.console .prose-play { color: var(--co-ink-soft); }
+.console .prose-play strong { color: var(--co-ink); font-weight: 600; }

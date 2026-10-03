@@ -5,6 +5,10 @@ import { AdminError } from '~/lib/admin/service';
 import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
 import type { DossierStatus } from '~/lib/types';
 import PartnerHome from '~/components/admin/PartnerHome.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -57,82 +61,91 @@ const filterHref = (p: Record<string, string | null>) => {
   for (const [k, v] of Object.entries(p)) v == null ? u.searchParams.delete(k) : u.searchParams.set(k, v);
   return u.pathname + u.search;
 };
-const chip = (on: boolean) => ['rounded-full border px-3 py-1 text-sm', on ? 'border-ink bg-ink text-bg' : 'border-line bg-bg hover:bg-surface'];
-const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+const filtered = !!(status || mine || follow || q);
+const published = all.filter((d) => d.status === 'published').length;
 ---
 <AdminLayout title={isPartner ? 'Mis cuentas' : 'Dossiers'}>
   {isPartner ? <PartnerHome admin={admin} error={error} errorAccount={errorAccount} /> : (
-  <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
-    <section>
-      {myOverdue > 0 && !follow && (
-        <a href="?follow=1&mine=1" class="mb-4 block rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900" data-testid="overdue-banner">
-          ⏰ Tienes <strong>{myOverdue}</strong> {myOverdue === 1 ? 'seguimiento vencido' : 'seguimientos vencidos'}. Ver →
-        </a>
-      )}
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 class="text-3xl font-extrabold">Dossiers</h1>
-          <p class="text-sm text-muted">{all.length} en total · {all.filter((d) => d.status === 'published').length} publicados</p>
-        </div>
-        <form method="get" class="flex gap-2">
-          {status && <input type="hidden" name="status" value={status} />}
-          {mine && <input type="hidden" name="mine" value="1" />}
-          <input class="rounded-lg border border-line bg-bg px-3 py-1.5 text-sm" type="search" name="q" value={q} placeholder="Buscar prospecto…" aria-label="Buscar" />
-        </form>
-      </div>
-
-      <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtros">
-        <a href={filterHref({ status: null })} class:list={chip(!status)}>Todos</a>
-        {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class:list={chip(status === s)}>{STATUS_LABEL[s]}</a>)}
-        <span class="mx-1 w-px bg-line"></span>
-        <a href={filterHref({ mine: mine ? null : '1' })} class:list={chip(mine)}>Solo míos</a>
-        <a href={filterHref({ follow: follow ? null : '1' })} class:list={chip(follow)} data-testid="filter-follow">⏰ Seguimientos{myOverdue ? ` · ${myOverdue} vencidos` : ''}</a>
-      </nav>
-
-      {list.length === 0 ? (
-        <p class="mt-10 rounded-2xl border border-dashed border-line p-10 text-center text-muted">No hay dossiers con estos filtros.</p>
-      ) : (
-        <ul class="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0" data-testid="dossier-list">
-          {list.map((d) => (
-            <li class="list-none">
-              <a href={`/admin/dossiers/${d.id}`} class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface">
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate font-semibold">{d.title}</span>
-                  <span class="block truncate text-sm text-muted">
-                    {[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ') || 'Sin prospecto'}
-                    {' · '}{d.itemCount} módulos{d.activeLinks ? ` · ${d.activeLinks} enlace${d.activeLinks > 1 ? 's' : ''}` : ''}
-                  </span>
-                </span>
-                {d.nextStepAt && (
-                  <span class:list={['rounded-lg px-2 py-0.5 text-xs', isOverdue(d.nextStepAt) ? 'bg-red-100 font-semibold text-red-800' : 'bg-surface']} title={d.nextStep ?? ''} data-testid="next-step-chip">
-                    ⏰ {when(d.nextStepAt)}{d.nextStep ? ` · ${d.nextStep.length > 40 ? `${d.nextStep.slice(0, 39)}…` : d.nextStep}` : ''}
-                  </span>
-                )}
-                <span class="text-xs text-muted">{d.authorName ?? '—'} · {relativeTime(d.updatedAt)}</span>
-                <span class:list={['rounded-full px-2.5 py-0.5 text-xs font-semibold', STATUS_CLASS[d.status]]}>{STATUS_LABEL[d.status]}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-
-    <aside>
-      <form method="post" class="space-y-3 rounded-2xl border border-line bg-bg p-5 lg:sticky lg:top-6" data-testid="create-form">
-        <h2 class="text-lg font-bold">Nuevo dossier</h2>
-        {error && <p class="rounded-lg bg-red-50 p-2 text-sm text-red-700" role="alert">{error}</p>}
-        <label class="block text-sm font-medium">Título<input class={input} name="title" required maxlength="140" placeholder="Sala X · Bodas 2027" /></label>
-        <label class="block text-sm font-medium">Empresa del prospecto<input class={input} name="prospectCompany" maxlength="120" /></label>
-        <label class="block text-sm font-medium">Persona de contacto<input class={input} name="prospectName" maxlength="120" /></label>
-        <label class="block text-sm font-medium">Partir de
-          <select class={input} name="fromDossierId">
-            <option value="">Dossier vacío</option>
-            {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
-          </select>
-        </label>
-        <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg hover:opacity-90" type="submit">Crear y editar</button>
+  <>
+    <PageHeader eyebrow="Vender" title="Dossiers" lede={`${all.length} en total · ${published} publicados. Un dossier es la propuesta viva que envías a cada prospecto.`}>
+      <form method="get" class="relative" role="search">
+        {status && <input type="hidden" name="status" value={status} />}
+        {mine && <input type="hidden" name="mine" value="1" />}
+        {follow && <input type="hidden" name="follow" value="1" />}
+        <label class="sr-only" for="q">Buscar prospecto</label>
+        <input id="q" class="co-input w-64 pl-9" type="search" name="q" value={q} placeholder="Buscar prospecto" />
+        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--co-ink-dim)]"><Icon name="search" size={16} /></span>
       </form>
-    </aside>
-  </div>
+    </PageHeader>
+
+    <div class="co-split">
+      <section>
+        {myOverdue > 0 && !follow && (
+          <a href="?follow=1&mine=1" class="co-row co-row--attention mb-3" data-testid="overdue-banner">
+            <span class="co-row__lead"><Icon name="clock" /></span>
+            <span class="co-row__main"><span class="co-row-title">Tienes {myOverdue} {myOverdue === 1 ? 'seguimiento vencido' : 'seguimientos vencidos'}</span><span class="co-meta">Ver tus seguimientos, del más antiguo al más reciente</span></span>
+            <span class="co-row__chevron"><Icon name="chevron-right" /></span>
+          </a>
+        )}
+        <nav class="co-chips mb-4" aria-label="Filtros">
+          <a href={filterHref({ status: null })} class="co-chip" aria-current={!status ? 'true' : undefined}>Todos</a>
+          {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class="co-chip" aria-current={status === s ? 'true' : undefined}>{STATUS_LABEL[s]}</a>)}
+          <a href={filterHref({ mine: mine ? null : '1' })} class="co-chip" aria-current={mine ? 'true' : undefined}>Solo míos</a>
+          <a href={filterHref({ follow: follow ? null : '1' })} class="co-chip" aria-current={follow ? 'true' : undefined} data-testid="filter-follow"><Icon name="clock" size={14} />Seguimientos{myOverdue ? ` · ${myOverdue} vencidos` : ''}</a>
+        </nav>
+
+        {list.length === 0 ? (
+          filtered
+            ? <EmptyState kind="filter" title="Ningún dossier coincide con estos filtros" clearHref="/admin" />
+            : <EmptyState kind="create" title="Todavía no hay dossiers" detail="Crea el primero con el formulario «Nuevo dossier»: eliges los módulos, lo publicas y envías el enlace." action={{ href: '#create-title', label: 'Crear el primero' }} />
+        ) : (
+          <ul class="co-rows" data-testid="dossier-list">
+            {list.map((d) => {
+              const late = isOverdue(d.nextStepAt);
+              return (
+                <li>
+                  <a href={`/admin/dossiers/${d.id}`} class:list={['co-row', late && 'co-row--attention']}>
+                    <span class="co-row__main">
+                      <span class="co-row-title">{d.title}</span>
+                      <span class="co-meta">
+                        {[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ') || 'Sin prospecto'}
+                        {' · '}{d.itemCount} {d.itemCount === 1 ? 'módulo' : 'módulos'}{d.activeLinks ? ` · ${d.activeLinks} ${d.activeLinks > 1 ? 'enlaces' : 'enlace'}` : ''}
+                        {' · '}{d.authorName ?? 'Sin autor'} · {relativeTime(d.updatedAt)}
+                      </span>
+                      {d.nextStepAt && (
+                        <span class="co-meta mt-1 !text-[var(--co-ink)]" title={d.nextStep ?? ''} data-testid="next-step-chip">
+                          {late ? 'Seguimiento vencido' : 'Próximo paso'}: {when(d.nextStepAt)}{d.nextStep ? ` · ${d.nextStep}` : ''}
+                        </span>
+                      )}
+                    </span>
+                    <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
+                    <span class="co-row__chevron"><Icon name="chevron-right" /></span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <aside class="co-split__aside--sticky">
+        <form method="post" class="co-card grid gap-3" data-testid="create-form">
+          <p class="text-eyebrow">Nuevo</p>
+          <h2 class="co-entity">Nuevo dossier</h2>
+          {error && <Alert kind="rejection" title={error} />}
+          <label class="co-field">Título<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder="Sala X · Bodas 2027" /></label>
+          <label class="co-field">Empresa del prospecto<input class="co-input" name="prospectCompany" maxlength="120" /></label>
+          <label class="co-field">Persona de contacto<input class="co-input" name="prospectName" maxlength="120" /></label>
+          <label class="co-field">Partir de
+            <select class="co-select" name="fromDossierId">
+              <option value="">Dossier vacío</option>
+              {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
+            </select>
+          </label>
+          <button class="co-btn co-btn--primary co-btn--block" type="submit">Crear y editar <span aria-hidden="true">→</span></button>
+        </form>
+      </aside>
+    </div>
+  </>
   )}
 </AdminLayout>

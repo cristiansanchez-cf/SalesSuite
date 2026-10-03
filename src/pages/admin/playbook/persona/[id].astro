@@ -38,21 +38,21 @@ if (Astro.request.method === 'POST') {
   if (!result.error) return Astro.redirect(to, 303);
 }
 const v = (k: string, fb: string | null | undefined) => (draft && draft[k] !== undefined ? draft[k] : fb ?? '');
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
+const field = 'co-input';
 const areas: Array<[string, string, string]> = [
   ['goals', 'Qué quiere conseguir', v('goals', p?.goals)], ['pains', 'Qué le duele', v('pains', p?.pains)],
   ['kpis', 'Qué mide / le hace quedar bien', v('kpis', p?.kpis)], ['howToApproach', 'Cómo abordarle (canal, gancho, momento)', v('howToApproach', p?.howToApproach)],
-  ['avoid', 'Qué evitar', v('avoid', p?.avoid)], ['canHelp', '🟢 Cómo puede ayudarte', v('canHelp', p?.canHelp)], ['canBlock', '🔴 Cómo puede tumbarlo', v('canBlock', p?.canBlock)],
+  ['avoid', 'Qué evitar', v('avoid', p?.avoid)], ['canHelp', 'Cómo puede ayudarte', v('canHelp', p?.canHelp)], ['canBlock', 'Cómo puede tumbarlo', v('canBlock', p?.canBlock)],
 ];
 ---
 <AdminLayout title={isNew ? 'Nuevo actor' : p!.name} wide>
   <a href={`/admin/playbook/segment/${segmentId}`} class="text-sm text-muted hover:text-ink">← {seg?.name ?? 'Sector'}</a>
   <h1 class="mt-1 text-2xl font-extrabold">{isNew ? 'Nuevo actor' : p!.name}</h1>
-  {Astro.url.searchParams.get('ok') && <p class="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">Guardado.</p>}
-  {result.error && <div class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error"><p class="font-semibold">{result.error}</p>{result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}</div>}
+  {Astro.url.searchParams.get('ok') && <p class="mt-3 co-alert co-alert--success" role="status">Guardado.</p>}
+  {result.error && <div class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error"><p class="font-semibold">{result.error}</p>{result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}</div>}
 
   <div class="mt-5 grid gap-6 xl:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]">
-    <form method="post" class="space-y-3 rounded-2xl border border-line bg-bg p-5" data-testid="persona-form">
+    <form method="post" class="space-y-3 co-card" data-testid="persona-form">
       <input type="hidden" name="action" value="save" />
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="text-sm font-medium">Nombre / cargo<input class={field} name="name" required maxlength="80" value={v('name', p?.name)} placeholder="DJ residente" /></label>
@@ -72,13 +72,13 @@ const areas: Array<[string, string, string]> = [
         </div>
       </fieldset>
       <div class="flex gap-2">
-        <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg" type="submit">{isNew ? 'Crear actor' : 'Guardar'}</button>
+        <button class="co-btn co-btn--primary" type="submit">{isNew ? 'Crear actor' : 'Guardar'}</button>
         {!isNew && <button class="rounded-lg border border-line px-4 py-2 font-semibold text-red-700" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('¿Borrar este actor? Los contactos que lo usen quedarán sin tipo.')">Borrar</button>}
       </div>
     </form>
 
     {p && (
-      <section id="angles" class="rounded-2xl border border-line bg-bg p-5" data-testid="angles">
+      <section id="angles" class="co-card" data-testid="angles">
         <h2 class="font-bold">Qué le aporta cada módulo</h2>
         <p class="text-sm text-muted">El ángulo con el que presentar cada módulo a este actor. Vacío = no le importa.</p>
         <div class="mt-3 space-y-3">
@@ -89,7 +89,7 @@ const areas: Array<[string, string, string]> = [
                 <input type="hidden" name="action" value="angle" /><input type="hidden" name="moduleId" value={m.id} />
                 <span class="self-center text-sm font-semibold">{m.name}</span>
                 <input class={field} name="angle" value={a?.angle ?? ''} maxlength="1000" placeholder="Qué le resuelve…" />
-                <button class="rounded-lg border border-line px-3 py-2 text-sm font-semibold hover:bg-surface" type="submit">Guardar</button>
+                <button class="co-btn co-btn--ghost co-btn--sm" type="submit">Guardar</button>
               </form>
             );
           })}

@@ -166,7 +166,8 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         itemCount: its.filter((i) => i.dossierId === d.id && i.visible).length,
         activeLinks: links.filter((l) => l.dossierId === d.id && l.isActive && (!l.expiresAt || new Date(l.expiresAt).getTime() > t)).length,
       }))
-      .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+      // Orden determinista: sin empates (el id desempata).
+      .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '') || a.id.localeCompare(b.id));
   }
 
   async function createDossier(input: CreateDossierInput): Promise<string> {

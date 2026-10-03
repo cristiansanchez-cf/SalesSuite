@@ -197,10 +197,10 @@
     ])].join('\n')).join('\n\n');
     try { await navigator.clipboard.writeText(txt); trackCopied = true; setTimeout(() => (trackCopied = false), 1800); } catch { error = 'No se pudo copiar'; }
   }
-  const OUTCOME = { open: 'En curso', won: 'Ganado 🎉', lost: 'Perdido' } as const;
+  const OUTCOME = { open: 'En curso', won: 'Ganado', lost: 'Perdido' } as const;
 
   // ---------- cuenta y seguimiento
-  const STANCE = { aliado: '🟢 Aliado', neutral: '⚪ Neutral', bloqueador: '🔴 Bloqueador', desconocido: '❔ Sin saber' } as const;
+  const STANCE = { aliado: 'Aliado', neutral: 'Neutral', bloqueador: 'Bloqueador', desconocido: 'Sin saber' } as const;
   const ROLE = { decisor: 'decide', pagador: 'paga', influenciador: 'influye', campeon: 'aliado interno', usuario: 'lo usa', guardian: 'puede vetar' } as Record<string, string>;
   let newContact = $state({ name: '', personaId: '', stance: 'desconocido' as keyof typeof STANCE });
   const personaName = (id: string | null) => market.personas.find((p) => p.id === id)?.name ?? null;
@@ -436,7 +436,7 @@
                   onchange={(e) => run({ op: 'updateContact', contactId: c.id, contact: { stance: e.currentTarget.value as keyof typeof STANCE } })} aria-label="Postura de {c.name}">
                   {#each Object.entries(STANCE) as [k, v]}<option value={k}>{v}</option>{/each}
                 </select>
-                <a class="rounded-md border border-line px-2 py-1 text-xs font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&contact={c.id}&type=primer_contacto">✉️ Mensaje</a>
+                <a class="rounded-md border border-line px-2 py-1 text-xs font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&contact={c.id}&type=primer_contacto">Mensaje</a>
                 {#if editable}<button class={iconBtn} onclick={() => confirm(`¿Quitar a ${c.name}?`) && run({ op: 'removeContact', contactId: c.id })} aria-label="Quitar {c.name}">✕</button>{/if}
               </div>
             </li>
@@ -475,7 +475,7 @@
             {#if d.nextStepAt}<button class={btn} onclick={() => { nextText = ''; saveNext(''); }}>Hecho / quitar</button>{/if}
           </div>
         {/if}
-        <a class="mt-3 inline-flex rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&type=seguimiento">✉️ Preparar mensaje de seguimiento</a>
+        <a class="mt-3 inline-flex rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&type=seguimiento">Preparar mensaje de seguimiento</a>
       </section>
 
       <!-- publicación -->
@@ -568,7 +568,7 @@
                         {#if b.facts?.length}
                           <dl class="mt-2 space-y-1 rounded-xl border p-3 text-xs {b.tone === 'risk' ? 'border-red-200 bg-red-50/40' : b.tone === 'ally' ? 'border-emerald-200 bg-emerald-50/40' : 'border-line'}" data-testid="account-block">
                             {#each b.facts as f}<div><dt class="inline font-semibold">{f.label}:</dt> <dd class="inline">{f.text}</dd></div>{/each}
-                            {#if b.contactId}<a class="mt-1 inline-block font-semibold underline" href="/admin/compose?dossier={d.id}&contact={b.contactId}">✉️ Preparar mensaje</a>{/if}
+                            {#if b.contactId}<a class="mt-1 inline-block font-semibold underline" href="/admin/compose?dossier={d.id}&contact={b.contactId}">Preparar mensaje</a>{/if}
                           </dl>
                         {/if}
                         {#if b.note}<p class="mt-1 rounded-lg bg-surface p-2 text-xs">{b.note}</p>{/if}
@@ -578,7 +578,7 @@
                               <p class="font-semibold">{#if l.source === 'team'}<span class="mr-1 rounded-full bg-violet-100 px-1.5 text-[10px] text-violet-900">Equipo</span>{/if}{l.title}</p>
                               {#if l.text}<div class="prose-play mt-1 text-muted">{@html renderMarkdown(l.text)}</div>{/if}
                               {#if l.refs.length}
-                                <p class="mt-1 text-xs">🧠 {#each l.refs as r, i}{#if i} · {/if}{#if r.url}<a class="underline" href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>{:else}{r.title}{/if}{#if r.creator} ({r.creator}){/if}{/each}</p>
+                                <p class="mt-1 text-xs">{#each l.refs as r, i}{#if i} · {/if}{#if r.url}<a class="underline" href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>{:else}{r.title}{/if}{#if r.creator} ({r.creator}){/if}{/each}</p>
                               {/if}
                               <div class="mt-2 flex gap-1">
                                 <button class="rounded-md border px-2 py-0.5 text-xs {l.score.mine === 'worked' ? 'border-ink bg-ink text-bg' : 'border-line'}" onclick={() => voteLine(l, 'worked')} aria-pressed={l.score.mine === 'worked'}>👍 {l.score.worked || ''}</button>

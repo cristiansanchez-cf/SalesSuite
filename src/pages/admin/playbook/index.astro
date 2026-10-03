@@ -35,24 +35,24 @@ const tabs = [
   { id: 'market', label: 'Mercado y actores' },
   { id: 'metrics', label: 'Qué funciona' },
 ];
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
-const btn = 'rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface';
+const field = 'co-input';
+const btn = 'co-btn co-btn--ghost co-btn--sm';
 const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso));
 ---
 <AdminLayout title="Playbook" wide>
   <div class="flex flex-wrap items-end gap-3">
     <div class="min-w-0 flex-1">
-      <h1 class="text-3xl font-extrabold">Playbook de ventas</h1>
+      <h1 class="co-page-title">Playbook de ventas</h1>
       <p class="text-sm text-muted">Lo oficial lo mantienes tú; el equipo propone y comparte. Cada cambio queda versionado y avisa al equipo.</p>
     </div>
     <a class={btn} href="/admin/api/playbook/export" download="playbook.json">Exportar (formato Cerebro)</a>
-    <a class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" href="/admin/playbook/new">Nueva jugada</a>
+    <a class="co-btn co-btn--primary" href="/admin/playbook/new">Nueva jugada</a>
   </div>
   <nav class="mt-5 flex gap-1 border-b border-line" aria-label="Secciones del playbook">
     {tabs.map((t) => <a href={`?tab=${t.id}`} class:list={['-mb-px border-b-2 px-4 py-2 text-sm font-semibold', tab === t.id ? 'border-ink' : 'border-transparent text-muted hover:text-ink']}>{t.label}</a>)}
   </nav>
-  {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
-  {result.error && <p class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">{result.error} {result.details.join(' · ')}</p>}
+  {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
+  {result.error && <p class="mt-4 co-alert co-alert--rejection" role="alert">{result.error} {result.details.join(' · ')}</p>}
 
   {tab === 'inbox' && (
     <div class="mt-6 space-y-8" data-testid="inbox">
@@ -61,17 +61,17 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         {inbox.pending.length === 0 && <p class="mt-2 text-sm text-muted">Nada pendiente.</p>}
         <div class="mt-3 space-y-4">
           {inbox.pending.map((c) => (
-            <article class="rounded-2xl border border-line bg-bg p-5" data-testid="pending">
+            <article class="co-card" data-testid="pending">
               <p class="text-sm"><strong>{c.authorName ?? 'Alguien'}</strong> propone en <a class="underline" href={`/admin/playbook/${c.playId}`}>«{c.current?.title}»</a> · {date(c.createdAt)}</p>
               <p class="mt-1 font-semibold">“{c.title}”</p>
               <div class="mt-3 grid gap-3 md:grid-cols-2">
                 <div class="rounded-xl bg-surface p-3"><p class="mb-1 text-xs font-semibold text-muted">Actual (v{c.current?.version})</p><div class="prose-play text-sm" set:html={renderMarkdown(c.current?.body ?? '')} /></div>
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3"><p class="mb-1 text-xs font-semibold text-emerald-800">Propuesta</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
+                <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">Propuesta</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
               </div>
               <form method="post" class="mt-3 flex flex-wrap items-center gap-2">
                 <input type="hidden" name="id" value={c.id} />
                 <input class={`${field} max-w-md`} name="note" placeholder="Nota para el autor (obligatoria si rechazas)" maxlength="500" />
-                <button class="rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-bg" name="action" value="accept" type="submit" data-testid="accept">Aceptar y publicar</button>
+                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="accept" type="submit" data-testid="accept">Aceptar y publicar</button>
                 <button class={btn} name="action" value="reject" type="submit">Rechazar</button>
               </form>
             </article>
@@ -90,7 +90,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
               <div class="prose-play mt-1 text-sm" set:html={renderMarkdown(t.body)} />
               <form method="post" class="mt-3 flex gap-2">
                 <input type="hidden" name="id" value={t.id} />
-                <button class="rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-bg" name="action" value="promote" type="submit" data-testid="promote">Hacer oficial</button>
+                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="promote" type="submit" data-testid="promote">Hacer oficial</button>
                 <button class={btn} name="action" value="hide" type="submit">Ocultar</button>
               </form>
             </article>
@@ -116,14 +116,14 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
           <section>
             <h2 class="text-lg font-bold">{moduleName(mid)} <span class="text-sm font-normal text-muted">· {list.filter((p) => p.status === 'official').length} oficiales</span></h2>
             {list.length === 0 && <p class="mt-1 text-sm text-amber-700">Sin jugadas: los comerciales no tendrán guion para este módulo.</p>}
-            <ul class="mt-2 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-bg p-0">
+            <ul class="mt-2 divide-y divide-line overflow-hidden co-card">
               {list.map((p) => (
                 <li class="list-none">
                   <a href={`/admin/playbook/${p.id}`} class="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-surface">
                     <span class="w-40 shrink-0 text-xs text-muted">{KIND_LABEL[p.kind]}</span>
                     <span class="min-w-0 flex-1 truncate font-semibold">{p.title}</span>
-                    {p.status !== 'official' && <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold">{p.status === 'draft' ? 'Borrador' : 'Archivada'}</span>}
-                    {p.techniqueRefs.length > 0 && <span class="text-xs" title="Enlaza fichas del Cerebro">🧠 {p.techniqueRefs.length}</span>}
+                    {p.status !== 'official' && <span class="co-badge co-badge--soft">{p.status === 'draft' ? 'Borrador' : 'Archivada'}</span>}
+                    {p.techniqueRefs.length > 0 && <span class="text-xs" title="Enlaza fichas del Cerebro">{p.techniqueRefs.length}</span>}
                     <span class="text-xs text-muted">👍 {p.score.worked} · 👎 {p.score.didnt} · v{p.version}</span>
                   </a>
                 </li>
@@ -139,14 +139,14 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
     <div class="mt-6" data-testid="market-admin">
       <div class="flex items-center gap-2">
         <p class="flex-1 text-sm text-muted">Sectores (cliente ideal) y actores de cada uno. Lo ven los comerciales en «Aprende» y alimenta el guion y «Preparar mensaje».</p>
-        <a class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" href="/admin/playbook/segment/new">Nuevo sector</a>
+        <a class="co-btn co-btn--primary" href="/admin/playbook/segment/new">Nuevo sector</a>
       </div>
       <div class="mt-4 grid gap-4 lg:grid-cols-2">
         {mk.map((sg) => (
-          <section class="rounded-2xl border border-line bg-bg p-5">
+          <section class="co-card">
             <div class="flex items-center gap-2">
               <h2 class="flex-1 text-lg font-bold"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/segment/${sg.id}`}>{sg.name}</a></h2>
-              {sg.status !== 'official' && <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold">{sg.status === 'draft' ? 'Borrador' : 'Archivado'}</span>}
+              {sg.status !== 'official' && <span class="co-badge co-badge--soft">{sg.status === 'draft' ? 'Borrador' : 'Archivado'}</span>}
               <a class="text-xs underline" href={`/admin/playbook/persona/new?segment=${sg.id}`}>+ actor</a>
             </div>
             <p class="text-xs text-muted">{sg.modules.length} módulos encajan · {sg.playCount} jugadas</p>
@@ -161,38 +161,38 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
 
   {m && (
     <div class="mt-6 grid gap-5 lg:grid-cols-2" data-testid="metrics">
-      <section class="rounded-2xl border border-line bg-bg p-5">
+      <section class="co-card">
         <h2 class="font-bold">Lo que más funciona</h2>
         <ol class="mt-2 space-y-1 pl-5 text-sm">{m.best.map((p) => <li><a class="underline-offset-2 hover:underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="text-muted">· 👍 {p.score.worked} / 👎 {p.score.didnt}</span></li>)}</ol>
         {m.best.length === 0 && <p class="text-sm text-muted">Aún no hay votos. Los comerciales votan desde «Aprende» y desde el guion de cada dossier.</p>}
       </section>
-      <section class="rounded-2xl border border-line bg-bg p-5">
+      <section class="co-card">
         <h2 class="font-bold">A revisar <span class="text-sm font-normal text-muted">(más 👎 que 👍)</span></h2>
         <ul class="mt-2 space-y-1 p-0 text-sm">{m.struggling.map((p) => <li class="list-none"><a class="underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="text-muted">· 👍 {p.score.worked} / 👎 {p.score.didnt}</span></li>)}</ul>
         {m.struggling.length === 0 && <p class="text-sm text-muted">Nada que revisar por ahora.</p>}
       </section>
-      <section class="rounded-2xl border border-line bg-bg p-5">
+      <section class="co-card">
         <h2 class="font-bold">Trucos del equipo candidatos a oficial</h2>
         <ul class="mt-2 space-y-1 p-0 text-sm">{m.topTips.map((t) => <li class="list-none">{t.title} <span class="text-muted">· {t.authorName} · 👍 {t.score.worked}</span></li>)}</ul>
         {m.topTips.length === 0 && <p class="text-sm text-muted">Sin votos todavía.</p>}
       </section>
-      <section class="rounded-2xl border border-line bg-bg p-5">
+      <section class="co-card">
         <h2 class="font-bold">Formación del equipo</h2>
         <ul class="mt-2 space-y-2 p-0 text-sm">
           {m.team.map((x) => (
             <li class="list-none">
               <div class="flex justify-between"><span>{x.name}</span><span class="text-muted">{x.done}/{x.total}</span></div>
-              <div class="mt-1 h-1.5 rounded-full bg-line"><div class="h-full rounded-full bg-emerald-500" style={`width:${Math.round((x.done / x.total) * 100)}%`}></div></div>
+              <div class="co-progress mt-1"><span style={`width:${Math.round((x.done / x.total) * 100)}%`}></span></div>
             </li>
           ))}
         </ul>
       </section>
-      <section class="rounded-2xl border border-line bg-bg p-5">
+      <section class="co-card">
         <h2 class="font-bold">Resultado de dossiers</h2>
         <p class="mt-2 text-sm">Ganados <strong>{m.outcomes.won}</strong> · Perdidos <strong>{m.outcomes.lost}</strong> · Publicados abiertos <strong>{m.outcomes.open}</strong></p>
         <p class="mt-1 text-xs text-muted">Con la analítica de visionado (Fase 2) esto se cruzará con las jugadas usadas para medir tasa de cierre por jugada.</p>
       </section>
-      <section class="rounded-2xl border border-line bg-bg p-5">
+      <section class="co-card">
         <h2 class="font-bold">Módulos sin jugadas</h2>
         <p class="mt-2 text-sm">{m.uncoveredModules.length ? m.uncoveredModules.join(', ') : 'Todos los módulos tienen jugadas ✓'}</p>
       </section>

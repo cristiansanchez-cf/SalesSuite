@@ -79,8 +79,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---------------- líder: bandeja, ascenso, edición, métricas, export
   const adm = await login('admin@enjoy.test');
-  assert((await adm.textContent('a[href="/admin/playbook"]')).match(/Playbook \(\d+\)/), 'menú del líder con propuestas pendientes');
-  await adm.click('a[href="/admin/playbook"]');
+  assert((await adm.textContent('[data-testid=mode-setup]')).match(/\d+/), 'menú del líder con propuestas pendientes (en «Configurar»)');
+  await adm.click('[data-testid=mode-setup]');
+  await adm.waitForURL(/\/admin\/playbook/);
+  assert((await adm.textContent('.co-sidebar .co-nav a[href="/admin/playbook"]')).match(/\d+/), 'contador en «Playbook y mercado»');
+  await adm.click('.co-sidebar .co-nav a[href="/admin/playbook"]');
   const prop = adm.locator('[data-testid=pending]', { hasText: `Coste por invitado ${RUN}` });
   await prop.locator('[data-testid=accept]').click();
   await adm.waitForURL(/ok=accept/);

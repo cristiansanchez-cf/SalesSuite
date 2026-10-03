@@ -87,6 +87,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await admin.goto(`${BASE}/admin/team/partners/${DJ_ID}`);
   const acc = admin.locator('[data-testid=partner-account][data-account="Club Neón"]');
   assert((await acc.locator('[data-testid=price-preview]').textContent()).includes('405'), 'vista previa del precio por cuenta');
+  await acc.locator('[data-testid=edit-account]').click();
   await acc.locator('[data-testid=price-policy]').selectOption('list');
   await acc.locator('button[type=submit]', { hasText: 'Guardar cuenta' }).click();
   await admin.waitForURL(/ok=account-saved/);
@@ -98,12 +99,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---- invitar otro colaborador
   await admin.goto(`${BASE}/admin/team`);
+  await admin.click('[data-dialog-open=invite-partner] >> nth=0');
   const inv = admin.locator('[data-testid=invite-partner-form]');
   await inv.locator('[name=email]').fill(`monitor-${RUN}@buceo.test`);
-  await inv.locator('[name=moduleIds]').first().check();
+  await inv.locator('label.co-chip').first().click();
   await inv.locator('button[type=submit]').click();
   await admin.waitForURL(/\/admin\/team\/partners\/.+ok=partner-invited/);
   assert((await admin.textContent('[role=status]')).includes('asígnale sus cuentas'), 'invitado → ficha para asignarle cuentas');
+  await admin.click('[data-dialog-open=add-account-dialog] >> nth=0');
   await admin.fill('[data-testid=add-account] [name=name]', 'Centro Azul');
   await admin.click('[data-testid=add-account] button[type=submit]');
   await admin.waitForURL(/ok=account-added/);

@@ -23,13 +23,13 @@ const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<numbe
 <AdminLayout title={sg.name} wide>
   <a href="/admin/learn" class="text-sm text-muted hover:text-ink">← Aprende</a>
   <div class="mt-1 flex flex-wrap items-end gap-3">
-    <h1 class="min-w-0 flex-1 text-3xl font-extrabold">{sg.name}</h1>
+    <h1 class="min-w-0 flex-1 co-page-title">{sg.name}</h1>
     {admin.playbook.isAdmin && <a class="text-sm underline" href={`/admin/playbook/segment/${sg.id}`}>Editar sector</a>}
   </div>
   {sg.description && <p class="text-muted">{sg.description}</p>}
   {(sg.dealSize || sg.salesCycle) && (
     <p class="mt-2 flex flex-wrap gap-2 text-sm">
-      {sg.dealSize && <span class="rounded-full bg-bg px-3 py-1">💶 Ticket: <strong>{sg.dealSize}</strong></span>}
+      {sg.dealSize && <span class="rounded-full bg-bg px-3 py-1">Ticket: <strong>{sg.dealSize}</strong></span>}
       {sg.salesCycle && <span class="rounded-full bg-bg px-3 py-1">⏱ Ciclo: <strong>{sg.salesCycle}</strong></span>}
     </p>
   )}
@@ -37,14 +37,14 @@ const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<numbe
   <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
     <aside class="space-y-4">
       {facts.map(([label, text]) => (
-        <section class="rounded-2xl border border-line bg-bg p-4">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-muted">{label}</h2>
+        <section class="co-card">
+          <h2 class="text-eyebrow">{label}</h2>
           <div class="prose-play mt-1 text-sm" set:html={renderMarkdown(text)} />
         </section>
       ))}
       {sg.modules.length > 0 && (
-        <section class="rounded-2xl border border-line bg-bg p-4" data-testid="segment-modules">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-muted">Qué módulos vender aquí</h2>
+        <section class="co-card" data-testid="segment-modules">
+          <h2 class="text-eyebrow">Qué módulos vender aquí</h2>
           <ul class="mt-2 space-y-2 p-0 text-sm">
             {sg.modules.map((m) => (
               <li class="list-none"><a class="font-semibold underline-offset-2 hover:underline" href={`/admin/learn/${m.moduleId}`}>{m.moduleName}</a>
@@ -54,7 +54,7 @@ const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<numbe
           </ul>
         </section>
       )}
-      <a class="block rounded-2xl bg-ink p-4 text-center font-semibold text-bg" href={`/admin/compose?segment=${sg.id}`}>✉️ Preparar un mensaje para {sg.name.toLowerCase()}</a>
+      <a class="block rounded-2xl bg-ink p-4 text-center font-semibold text-bg" href={`/admin/compose?segment=${sg.id}`}>Preparar un mensaje para {sg.name.toLowerCase()}</a>
     </aside>
 
     <section>

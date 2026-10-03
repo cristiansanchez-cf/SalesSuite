@@ -29,19 +29,19 @@ if (Astro.request.method === 'POST') {
 }
 const okMsg = flash(Astro.url, { published: 'Versión publicada: ya aparece en el builder.', archived: 'Versión archivada. Los dossiers que la usan siguen funcionando.', visibility: 'Visibilidad actualizada.' });
 const catalog = await t.listCatalog();
-const STATUS = { draft: ['Borrador', 'bg-amber-100 text-amber-900'], published: ['Publicada', 'bg-emerald-100 text-emerald-900'], archived: ['Archivada', 'bg-zinc-200 text-zinc-700'] } as const;
+const STATUS = { draft: ['Borrador', 'co-badge'], published: ['Publicada', 'co-badge co-badge--ink'], archived: ['Archivada', 'co-badge co-badge--soft'] } as const;
 const money = (n: number | null, c: string) => (n == null ? '—' : new Intl.NumberFormat('es-ES', { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(n));
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
-const btn = 'rounded-lg border border-line px-2.5 py-1 text-xs font-semibold hover:bg-surface';
+const field = 'co-input';
+const btn = 'co-btn co-btn--ghost co-btn--sm';
 ---
 <AdminLayout title="Catálogo">
   <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
     <section>
-      <h1 class="text-3xl font-extrabold">Catálogo</h1>
+      <h1 class="co-page-title">Catálogo</h1>
       <p class="text-sm text-muted">Los comerciales solo ven la última versión <strong>publicada</strong> de cada módulo visible. Una versión publicada no se modifica: se crea otra.</p>
-      {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+      {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
       {result.error && (
-        <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+        <div class="mt-4 co-alert co-alert--rejection" role="alert">
           <p class="font-semibold">{result.error}</p>
           {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
         </div>
@@ -49,10 +49,10 @@ const btn = 'rounded-lg border border-line px-2.5 py-1 text-xs font-semibold hov
 
       <div class="mt-5 space-y-4" data-testid="catalog-admin">
         {catalog.map((m) => (
-          <article class="rounded-2xl border border-line bg-bg p-4" data-module-key={m.key}>
+          <article class="co-card" data-module-key={m.key}>
             <div class="flex flex-wrap items-start gap-3">
               <div class="min-w-0 flex-1">
-                <h2 class="font-bold">{m.name} {!m.isCatalog && <span class="ml-1 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold">Oculto</span>}</h2>
+                <h2 class="font-bold">{m.name} {!m.isCatalog && <span class="ml-1 co-badge co-badge--soft">Oculto</span>}</h2>
                 <p class="text-xs text-muted"><code>{m.key}</code> · {m.blockLabel}</p>
                 {m.description && <p class="mt-1 text-sm text-muted">{m.description}</p>}
               </div>
@@ -63,7 +63,7 @@ const btn = 'rounded-lg border border-line px-2.5 py-1 text-xs font-semibold hov
               </form>
               <form method="post">
                 <input type="hidden" name="action" value="draft" /><input type="hidden" name="moduleId" value={m.id} />
-                <button class="rounded-lg bg-ink px-3 py-1 text-xs font-semibold text-bg" type="submit">
+                <button class="co-btn co-btn--primary co-btn--sm" type="submit">
                   {m.versions.some((v) => v.status === 'draft') ? 'Editar borrador' : 'Nueva versión'}
                 </button>
               </form>
@@ -74,8 +74,8 @@ const btn = 'rounded-lg border border-line px-2.5 py-1 text-xs font-semibold hov
                 {m.versions.map((v) => (
                   <tr class="border-t border-line">
                     <td class="py-2 font-semibold">v{v.version}</td>
-                    <td><span class:list={['rounded-full px-2 py-0.5 text-xs font-semibold', STATUS[v.status][1]]}>{STATUS[v.status][0]}</span>
-                      {v.error && <span class="ml-1 text-xs text-red-700" title={v.error}>⚠ inválida</span>}</td>
+                    <td><span class={STATUS[v.status][1]}>{STATUS[v.status][0]}</span>
+                      {v.error && <span class="ml-1 text-xs text-red-700" title={v.error}>inválida</span>}</td>
                     <td>{money(v.defaultPrice, v.currency)}</td>
                     <td class="text-muted">{v.usage} {v.usage === 1 ? 'item' : 'items'}</td>
                     <td class="py-2 text-right">
@@ -101,7 +101,7 @@ const btn = 'rounded-lg border border-line px-2.5 py-1 text-xs font-semibold hov
     </section>
 
     <aside>
-      <form method="post" class="space-y-3 rounded-2xl border border-line bg-bg p-5 lg:sticky lg:top-6" data-testid="create-module">
+      <form method="post" class="space-y-3 co-card lg:sticky lg:top-6" data-testid="create-module">
         <input type="hidden" name="action" value="create" />
         <h2 class="text-lg font-bold">Nuevo módulo</h2>
         <p class="text-xs text-muted">Variante de un tipo de bloque existente (p. ej. «Hero · Locales»). Tipos de bloque nuevos = desarrollo (ver MODULE_AUTHORING).</p>
@@ -111,7 +111,7 @@ const btn = 'rounded-lg border border-line px-2.5 py-1 text-xs font-semibold hov
         <label class="block text-sm font-medium">Nombre<input class={field} name="name" required maxlength="80" placeholder="Hero · Locales" /></label>
         <label class="block text-sm font-medium">Clave<input class={field} name="key" required pattern="[a-z0-9][a-z0-9\-]{1,62}" placeholder="hero-locales" /></label>
         <label class="block text-sm font-medium">Descripción<input class={field} name="description" maxlength="240" /></label>
-        <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg" type="submit">Crear borrador</button>
+        <button class="co-btn co-btn--primary" type="submit">Crear borrador</button>
       </form>
     </aside>
   </div>

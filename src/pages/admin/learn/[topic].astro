@@ -32,23 +32,23 @@ try {
 }
 const okMsg = flash(Astro.url, LEARN_FLASH);
 const partner = admin.session.partner ?? null;
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
+const field = 'co-input';
 ---
 <AdminLayout title={view.name} wide>
   <a href="/admin/learn" class="text-sm text-muted hover:text-ink">← Aprende</a>
   <div class="mt-1 flex flex-wrap items-center gap-3">
-    <h1 class="min-w-0 flex-1 text-3xl font-extrabold">{view.name}</h1>
+    <h1 class="min-w-0 flex-1 co-page-title">{view.name}</h1>
     <form method="post">
       <input type="hidden" name="action" value="learned" /><input type="hidden" name="done" value={view.learned ? '0' : '1'} />
-      <button class:list={['rounded-lg px-4 py-2 text-sm font-semibold', view.learned ? 'bg-emerald-100 text-emerald-900' : 'bg-ink text-bg']} type="submit" data-testid="learned">
+      <button class:list={['co-btn', view.learned ? 'co-btn--ghost' : 'co-btn--primary']} type="submit" data-testid="learned">
         {view.learned ? '✓ Aprendido' : 'Marcar como aprendido'}
       </button>
     </form>
   </div>
   {view.module?.description && <p class="text-muted">{view.module.description}</p>}
-  {okMsg && <p class="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+  {okMsg && <p class="mt-3 co-alert co-alert--success" role="status">{okMsg}</p>}
   {result.error && (
-    <div class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+    <div class="mt-3 co-alert co-alert--rejection" role="alert">
       <p class="font-semibold">{result.error}</p>
       {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
     </div>
@@ -57,8 +57,8 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
   <div class:list={['mt-6 grid gap-6', view.module && 'xl:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]']}>
     <div class="space-y-8">
       {fit.length > 0 && (
-        <section class="rounded-2xl border border-line bg-bg p-5" data-testid="module-fit">
-          <h2 class="text-sm font-bold uppercase tracking-wider text-muted">Dónde encaja y a quién le importa</h2>
+        <section class="co-card" data-testid="module-fit">
+          <h2 class="text-eyebrow">Dónde encaja y a quién le importa</h2>
           <div class="mt-3 grid gap-3 md:grid-cols-2">
             {fit.map((f) => (
               <div class="rounded-xl bg-surface p-3 text-sm">
@@ -78,20 +78,20 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
       )}
       {view.sections.map((sec) => (
         <section>
-          <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-muted">{sec.label}</h2>
+          <h2 class="mb-3 text-eyebrow">{sec.label}</h2>
           <div class="space-y-3">{sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose={!partner} />)}</div>
         </section>
       ))}
 
       {(!partner || partner.seeTeamTips) && <section data-testid="team">
-        <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Lo que le funciona al equipo</h2>
+        <h2 class="mb-3 text-eyebrow">Lo que le funciona al equipo</h2>
         <div class="space-y-3">
           {view.tips.map((t) => <TipCard tip={t} mine={t.authorId === admin.session.userId} />)}
           {view.tips.length === 0 && <p class="text-sm text-muted">{partner ? 'El equipo aún no ha compartido trucos sobre esto.' : 'Aún nadie ha compartido nada aquí. ¡Sé el primero!'}</p>}
         </div>
-        {!partner && <form method="post" class="mt-4 space-y-2 rounded-2xl border border-line bg-bg p-4" data-testid="tip-form">
+        {!partner && <form method="post" class="mt-4 space-y-2 co-card" data-testid="tip-form">
           <input type="hidden" name="action" value="tip" />
-          <h3 class="font-bold">💬 Comparte lo que te funciona</h3>
+          <h3 class="font-bold">Comparte lo que te funciona</h3>
           <p class="text-xs text-muted">Visible al momento para tu equipo, marcado como «del equipo». Tu líder puede convertirlo en oficial.</p>
           <div class="grid gap-2 sm:grid-cols-[1fr_12rem]">
             <input class={field} name="title" required maxlength="200" placeholder="Qué haces (una línea)" />
@@ -100,13 +100,13 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
             </select>
           </div>
           <textarea class={`${field} h-24`} name="body" required maxlength="4000" placeholder="Cuéntalo con un ejemplo real: qué dijiste, a quién y qué pasó."></textarea>
-          <button class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" type="submit">Compartir con el equipo</button>
+          <button class="co-btn co-btn--primary" type="submit">Compartir con el equipo</button>
         </form>}
       </section>}
 
       {view.myOpen.length > 0 && (
         <section>
-          <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Tus propuestas</h2>
+          <h2 class="mb-3 text-eyebrow">Tus propuestas</h2>
           <div class="space-y-3">{view.myOpen.map((t) => <TipCard tip={t} mine />)}</div>
         </section>
       )}
@@ -116,7 +116,7 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
       <aside>
         <div class="xl:sticky xl:top-4">
           <p class="mb-2 text-sm font-bold">Así lo verá tu cliente</p>
-          <iframe title={`Vista previa de ${view.name}`} src={`/admin/learn/preview/${view.module.moduleId}`} class="h-[70vh] w-full rounded-2xl border border-line bg-bg" loading="lazy"></iframe>
+          <iframe title={`Vista previa de ${view.name}`} src={`/admin/learn/preview/${view.module.moduleId}`} class="h-[70vh] w-full co-card" loading="lazy"></iframe>
         </div>
       </aside>
     )}

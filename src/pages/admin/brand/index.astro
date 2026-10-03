@@ -66,15 +66,15 @@ const theme: ThemeTokens = parseTheme(settings.themeTokens);
 const brand: Brand = parseBrand(settings.brand);
 const face = theme.font?.faces?.[0];
 const okMsg = flash(Astro.url, { saved: 'Marca guardada. Los dossiers ya la muestran.' });
-const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
-const card = 'space-y-3 rounded-2xl border border-line bg-bg p-5';
+const field = 'co-input';
+const card = 'space-y-3 co-card';
 ---
 <AdminLayout title="Marca" wide>
-  <h1 class="text-3xl font-extrabold">Marca y tema</h1>
+  <h1 class="co-page-title">Marca y tema</h1>
   <p class="text-sm text-muted">Se aplica a todos los dossiers de <code>{settings.slug}</code> sin tocar código.{admin.mode === 'demo' && ' En demo no hay subida de archivos: usa URLs.'}</p>
-  {okMsg && <p class="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{okMsg}</p>}
+  {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
   {result.error && (
-    <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error">
+    <div class="mt-4 co-alert co-alert--rejection" role="alert" data-testid="error">
       <p class="font-semibold">{result.error}</p>
       {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
     </div>
@@ -146,13 +146,13 @@ const card = 'space-y-3 rounded-2xl border border-line bg-bg p-5';
         <label class="block text-sm font-medium">Texto legal del pie<input class={field} name="legal" value={brand.legal ?? ''} maxlength="200" /></label>
       </section>
 
-      <button class="w-full rounded-lg bg-ink px-4 py-3 font-semibold text-bg" type="submit">Guardar marca</button>
+      <button class="co-btn co-btn--primary" type="submit">Guardar marca</button>
     </form>
 
     <div>
       <div class="xl:sticky xl:top-4">
         <p class="mb-2 text-sm font-bold">Vista previa <span class="font-normal text-muted">· tras guardar</span></p>
-        <iframe title="Vista previa de la marca" src={`/admin/brand/preview?t=${Date.now()}`} class="h-[80vh] w-full rounded-2xl border border-line bg-bg" data-testid="brand-preview"></iframe>
+        <iframe title="Vista previa de la marca" src={`/admin/brand/preview?t=${Date.now()}`} class="h-[80vh] w-full co-card" data-testid="brand-preview"></iframe>
       </div>
     </div>
   </div>

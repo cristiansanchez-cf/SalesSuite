@@ -1,10 +1,11 @@
 import type { DossierStatus } from '../types';
 
 export const STATUS_LABEL: Record<DossierStatus, string> = { draft: 'Borrador', published: 'Publicado', archived: 'Archivado' };
+/** Badges del design system (console.css). Publicado = tinta; borrador = borde; archivado = apagado. */
 export const STATUS_CLASS: Record<DossierStatus, string> = {
-  draft: 'bg-amber-100 text-amber-900',
-  published: 'bg-emerald-100 text-emerald-900',
-  archived: 'bg-zinc-200 text-zinc-700',
+  draft: 'co-badge',
+  published: 'co-badge co-badge--ink',
+  archived: 'co-badge co-badge--soft',
 };
 
 export function relativeTime(iso: string | null, now = Date.now()): string {

@@ -25,9 +25,9 @@ const d = state.dossier;
   </head>
   <body class="bg-bg text-ink">
     <main class="mx-auto max-w-3xl px-6 py-10">
-      <p class="no-print mb-6 flex gap-3 text-sm"><button onclick="print()" class="rounded-lg bg-ink px-3 py-1.5 font-semibold text-bg">Imprimir / PDF</button><a class="underline" href={`/admin/dossiers/${d.id}`}>← Volver al dossier</a></p>
+      <p class="no-print mb-6 flex gap-3 text-sm"><button onclick="print()" class="co-btn co-btn--primary">Imprimir / PDF</button><a class="underline" href={`/admin/dossiers/${d.id}`}>← Volver al dossier</a></p>
       <p class="text-sm text-muted">{tenant.name} · Guion de venta</p>
-      <h1 class="text-3xl font-extrabold">{d.title}</h1>
+      <h1 class="co-page-title">{d.title}</h1>
       <p class="mt-1 text-muted">{[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ')}</p>
       {track.sections.filter((s) => s.blocks.some((b) => b.lines.length || b.note)).map((s) => (
         <section class="mt-8">

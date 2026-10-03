@@ -34,7 +34,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   p.on('pageerror', (e) => errors.push(e.message));
 
   // ---- catálogo: crear módulo, JSON inválido, válido, publicar
-  await p.click('a[href="/admin/catalog"]');
+  await p.click('[data-testid=mode-setup]');
+  await p.click('.co-sidebar .co-nav a[href="/admin/catalog"]');
   await p.fill('[data-testid=create-module] [name=name]', `Hero · Locales ${RUN}`);
   await p.fill('[data-testid=create-module] [name=key]', KEY);
   await p.click('[data-testid=create-module] button[type=submit]');
@@ -58,13 +59,15 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---- equipo: invitar
   await p.goto(`${BASE}/admin/team`);
+  await p.click('[data-dialog-open=invite]');
   await p.fill('[data-testid=invite-form] [name=email]', INVITE);
-  await p.click('[data-testid=invite-form] button');
+  await p.click('[data-testid=invite-form] button[type=submit]');
   await p.waitForURL(`${BASE}/admin/team?ok=invited`);
   assert((await p.textContent('[data-testid=members]')).includes(INVITE), 'invitada aparece en el equipo');
   // no se puede quitar el último admin
   const adminRow = p.locator('[data-testid=members] li', { hasText: 'admin@enjoy.test' });
-  await adminRow.locator('button', { hasText: 'Quitar' }).click();
+  await adminRow.locator('[data-testid=remove-open]').click();
+  await adminRow.locator('[data-testid=remove-confirm]').click();
   assert((await p.textContent('[role=alert]')).includes('al menos un admin'), 'no se quita al último admin');
   // la invitada puede entrar (demo) como comercial
   const nueva = await login(INVITE);

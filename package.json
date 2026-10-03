@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Constructor de dossiers din\u00e1micos white-label multi-tenant (Cofundo).",
+  "description": "Constructor de dossiers dinámicos white-label multi-tenant (Cofundo).",
   "engines": {
     "node": ">=20.3"
   },
@@ -25,9 +25,13 @@
     "@astrojs/svelte": "^7.2.5",
     "@astrojs/tailwind": "^6.0.2",
     "@astrojs/vercel": "^8.2.11",
+    "@fontsource-variable/big-shoulders": "^5.3.0",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "astro": "^5.18.2",
+    "lucide-static": "^1.51.0",
     "svelte": "^5.57.1",
     "svelte-dnd-action": "^0.9.79",
     "tailwindcss": "^3.4.19",
