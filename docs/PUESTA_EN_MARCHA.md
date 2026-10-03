@@ -1,105 +1,95 @@
-# Puesta en marcha: lo que tienes que hacer tú
+# Puesta en marcha en producción
 
-Lista ordenada para dejar Ventas funcionando en un subdominio de Cofundo. Marca cada casilla al terminar. Si algo no sale como dice aquí, para y dime en qué paso estás: no hace falta que entiendas el porqué de cada cosa.
+Esta guía deja Cofundo Ventas funcionando en `enjoy.ventas.cofundo.io`, conectado a su base de datos real, con el espacio de Enjoy dado de alta y su contenido de ejemplo. Todo se hace **desde el navegador**: no hace falta terminal.
 
-**Tiempo estimado:** 15 minutos para la demo (parte A) y unas 2 horas para producción (partes B a H), repartibles en varios días.
-
-**Reglas de oro**
-- Las claves (Supabase, Resend, Vercel) **nunca** por el chat ni en el repositorio. Van en el panel de cada servicio y en tu `.env` local.
-- Cada vez que te diga «comprueba», la comprobación está escrita: si da otra cosa, me lo dices tal cual.
-
-**Nombres que vamos a usar** (cámbialos solo si tienes un motivo):
-
-| Qué | Dirección |
-|---|---|
-| Demo con datos de prueba | `demo.ventas.cofundo.io` |
-| Enjoy the Club | `enjoy.ventas.cofundo.io` |
-| Oquea | `oquea.ventas.cofundo.io` (cuando me pases su material) |
-| Emails de acceso y avisos | `hola@correo.cofundo.io` |
-
-Usamos `*.ventas.cofundo.io` por una razón: más adelante, un vendedor que trabaje para Enjoy y para Oquea podrá entrar una sola vez y saltar de una empresa a otra.
+**Decisión de Cristian (3 de octubre):**
+- Se trabaja directamente en producción. Nadie más sabe que existe, así que de momento puede tener datos de prueba.
+- No se monta una demo aparte.
+- Más adelante (paso 9): producción se vacía de datos de prueba, se crea un entorno de desarrollo que sea copia de producción, y entonces se da de alta a la gente de verdad.
 
 ---
 
-## A. La demo, para verlo ya (15 min, sin Supabase)
+## Para el agente que acompaña a Cristian
 
-Sirve para ver la consola, la analítica de dossiers y «Empieza aquí» con los datos de prueba. Los datos viven en memoria: se reinician cuando Vercel recicla el servidor, y si algo que acabas de hacer no aparece, recarga.
+Lee esto antes de tocar nada.
 
-- [ ] **A1.** En https://vercel.com/new importa el repositorio `cristiansanchez-cf/SalesSuite`. Nombre del proyecto: `ventas-demo`.
-- [ ] **A2.** Antes de pulsar *Deploy*, abre **Environment Variables** y añade solo estas dos:
+1. **Primero mira, después actúa.** Antes de cada paso, comprueba en la pantalla si ya está hecho, a medias o hecho de otra manera. Sigue la tabla «Estado de partida». Si está bien, márcalo y sigue. Si está distinto, corrígelo como dice la tabla. Si no sabes qué es, para y pregunta a Cristian.
+2. **Las claves no se escriben en ningún chat ni documento.** Se copian de una pestaña y se pegan directamente en el campo donde van: Vercel, GitHub o Supabase. Esto vale para la contraseña de la base de datos, la clave `service_role`, la clave de Resend y el `CRON_SECRET`. Si hay que guardarlas, va en el gestor de contraseñas de Cristian.
+3. **No borres nada que no diga esta guía.** En el DNS de `cofundo.io` hay más registros (web, correo…): solo se tocan los que aparecen aquí.
+4. **Al acabar cada paso, ejecuta su «Comprobación».** Si el resultado no coincide, para y apúntalo tal cual (texto exacto del error o captura).
+5. **Al final**, rellena la tabla «Informe para el agente de desarrollo» (último apartado) y dásela a Cristian.
 
-  | Nombre | Valor |
-  |---|---|
-  | `DEMO_MODE` | `1` |
-  | `DEV_TENANT_SLUG` | `enjoy` |
+### Estado de partida (lo que ya se hizo con la guía anterior)
 
-  No pongas ninguna variable de Supabase en este proyecto.
-- [ ] **A3.** En *Settings → Git → Production Branch*, pon `claude/dreamy-dijkstra-a4xm1g` (es la rama donde está todo; cuando lo fusionemos, la cambias a `main`). Pulsa *Deploy*.
-- [ ] **A4.** *Settings → Domains → Add* → `demo.ventas.cofundo.io`. Vercel te dirá qué registro DNS crear. En el DNS de `cofundo.io` (donde lo tengas: Cloudflare, el registrador…):
-  ```
-  demo.ventas   CNAME   cname.vercel-dns.com.
-  ```
-  Si usas Cloudflare, pon la nube en **gris** (solo DNS) para ese registro.
-- [ ] **A5. Comprueba:** `https://demo.ventas.cofundo.io/api/health` responde con `"mode": "demo"`.
-- [ ] **A6. Mira la demo:**
-  1. `https://demo.ventas.cofundo.io/admin/login` → abre «Modo demo: entrar como…» → **Comercial Enjoy**.
-  2. Menú **Analítica**: «Club Sol» sale en «Escríbele hoy» y «Hotel Mar Azul» en «Nadie la ha abierto».
-  3. En otra pestaña de incógnito (o en el móvil) abre `https://demo.ventas.cofundo.io/d/demo-mar-azul-9Lw2`, baja hasta el final y ciérrala.
-  4. Vuelve a Analítica y recarga: Mar Azul ya tiene una apertura, con tiempo y secciones. La campana te avisa.
-  5. Menú **Empieza aquí**: lo que verá Amrit, Ángel o Uyong al entrar.
-  6. Sal y entra como **Admin Enjoy** → *Configurar → Comisiones → Plan → Condiciones acordadas* para probar lo de enseñar las condiciones.
+Cristian siguió una versión anterior hasta el paso «A4». Lo que probablemente exista:
 
-Con esto ya puedes enseñarlo. Lo que sigue es para que entren las personas de verdad.
+| Dónde | Qué puede haber | Qué hacer |
+|---|---|---|
+| Vercel | Un proyecto (se llamó `ventas-demo`) conectado a `cristiansanchez-cf/SalesSuite` | **Se reutiliza.** Opcional: *Settings → General → Project Name* → `ventas`. |
+| Vercel → Settings → Environment Variables | `DEMO_MODE = 1` y `DEV_TENANT_SLUG = enjoy` | **Borrar las dos** (menú ⋯ de cada una → *Remove*). En producción no se usan. |
+| Vercel → Settings → Domains | `demo.ventas.cofundo.io` | **Quitarlo** (*Remove*) y añadir `enjoy.ventas.cofundo.io` (paso 6). |
+| DNS de `cofundo.io` | Registro `CNAME` con nombre `demo.ventas` → `cname.vercel-dns.com` (u otro valor que diera Vercel) | **Editarlo**: cambia el nombre a `enjoy.ventas` y deja el valor. Si no se puede editar el nombre, bórralo y crea el nuevo (paso 6). |
+| Vercel → rama de producción | `claude/dreamy-dijkstra-a4xm1g` | Correcto: es la rama principal del repositorio. Si pone otra cosa, cámbialo a esta. |
+| Supabase | Probablemente nada todavía | Si ya existe un proyecto creado para esto, dime su nombre antes de seguir. |
+| Resend | Probablemente nada todavía | Si ya hay un dominio verificado, dime cuál. |
 
 ---
 
-## B. Supabase: la base de datos y el acceso (30 min)
+## Mapa de lo que habrá al terminar
 
-**Decisión que te propongo:** un proyecto llamado **`cofundo`**, no `salessuite`. Hoy lo usa Ventas; mañana puede ser también la identidad común con el Cerebro (ver «Cerebro y Ventas: una sola identidad», más abajo). Como el acceso es sin contraseña, mover usuarios de un proyecto a otro más tarde es solo volver a dar de alta sus emails: no hay contraseñas que migrar.
+| Pieza | Dónde | Para qué |
+|---|---|---|
+| Base de datos y acceso | Supabase, proyecto `cofundo` (Frankfurt) | Datos, usuarios y acceso con código por email. Pensado para ser también la identidad común con el Cerebro. |
+| Emails | Resend, dominio `correo.cofundo.io`, remitente `hola@correo.cofundo.io` | Códigos de acceso, invitaciones y avisos |
+| Web | Vercel, proyecto `ventas`, dominio `enjoy.ventas.cofundo.io` | La consola y los enlaces de las propuestas |
+| Botón de mantenimiento | GitHub → Actions → «Producción» | Aplica cambios de la base de datos y da de alta espacios sin terminal |
+| Avisos automáticos | Supabase (pg_cron) llamando a la web cada 10 min | Emails de avisos y resumen de los lunes |
 
-- [ ] **B1.** https://supabase.com/dashboard → **New project**:
-  - Organización: la de Cofundo. Nombre: `cofundo`.
-  - **Región: Central EU (Frankfurt).**
-  - Contraseña de base de datos: genérala y guárdala en tu gestor de contraseñas.
-  - Plan: **Pro** en cuanto entren clientes reales (copias diarias y no se pausa). Para empezar con los 3 vendedores, Free vale, pero se pausa tras una semana sin uso.
-- [ ] **B2.** Apunta el **Project ref**: es el trozo de la URL del panel `…/project/<ref>`.
-- [ ] **B3. Migraciones.** En tu ordenador, dentro del repositorio (rama `claude/dreamy-dijkstra-a4xm1g`):
-  ```bash
-  npx supabase login
-  npx supabase link --project-ref <ref>     # pide la contraseña de la base de datos
-  npx supabase db push                      # crea todas las tablas
-  ```
-  ⚠️ **No** ejecutes `supabase/seed.sql`: son los datos de la demo.
-- [ ] **B4. Comprueba:** en *Table Editor* aparecen `tenant`, `dossier`, `dossier_view`, `member_conditions_history`… todas con candado (RLS). En *Storage* existe el bucket `tenant-assets`.
-- [ ] **B5. URLs** (*Authentication → URL Configuration*):
-  - **Site URL:** `https://enjoy.ventas.cofundo.io`
-  - **Redirect URLs** (una por línea):
-    ```
-    https://enjoy.ventas.cofundo.io/**
-    https://oquea.ventas.cofundo.io/**
-    http://localhost:4321/**
-    ```
-- [ ] **B6. Alta cerrada** (*Authentication → Sign In / Providers*): **Allow new users to sign up: OFF**. Provider Email: ON. En Email: **Email OTP Length = 6** y **Email OTP Expiration = 3600**.
-- [ ] **B7. Plantillas** (*Authentication → Emails → Templates*). Copia el contenido de cada archivo de `supabase/templates/`:
+**Tiempo estimado:** unas 2 horas, repartibles. Los pasos 1 y 2 tienen esperas (DNS): se pueden dejar en marcha y seguir con otros.
 
-  | Plantilla | Archivo | Asunto |
+---
+
+## Paso 1 · Supabase: crear el proyecto (10 min)
+
+- [ ] **1.1** https://supabase.com/dashboard → **New project**.
+  - Organización: la de Cofundo.
+  - Nombre: **`cofundo`**.
+  - Región: **Central EU (Frankfurt)**.
+  - Database password: pulsa *Generate* y guárdala **en el gestor de contraseñas** (se usa en el paso 3).
+  - Plan: Free sirve para empezar. Ojo: se pausa tras 7 días sin uso. Cuando entren los vendedores, pasar a Pro.
+- [ ] **1.2** Espera a que termine de crearse (2–3 min).
+- [ ] **1.3** **Authentication → Sign In / Providers:**
+  - *Allow new users to sign up*: **OFF**.
+  - *Email* (provider): ON. Dentro: **Email OTP Length = 6**, **Email OTP Expiration = 3600**. Guarda.
+- [ ] **1.4** **Authentication → URL Configuration:**
+  - Site URL: `https://enjoy.ventas.cofundo.io`
+  - Redirect URLs: añade, una a una:
+    - `https://enjoy.ventas.cofundo.io/**`
+    - `https://oquea.ventas.cofundo.io/**`
+    - `http://localhost:4321/**`
+- [ ] **1.5** **Authentication → Emails → Templates.** Para cada plantilla, pega el asunto y el contenido del archivo indicado. Los archivos están en el repositorio, en `supabase/templates/`: ábrelos en GitHub, pulsa *Raw* y copia todo.
+
+  | Plantilla | Asunto | Archivo |
   |---|---|---|
-  | Invite user | `invite.html` | Te han invitado |
-  | Magic Link | `magic_link.html` | Tu código para entrar |
-  | Confirm signup | `confirm_signup.html` | Confirma tu email |
-  | Reset Password | `recovery.html` | Elige una contraseña nueva |
+  | Invite user | `Te han invitado` | `invite.html` |
+  | Magic Link | `Tu código para entrar` | `magic_link.html` |
+  | Confirm signup | `Confirma tu email` | `confirm_signup.html` |
+  | Reset Password | `Elige una contraseña nueva` | `recovery.html` |
 
-- [ ] **B8. Claves** (*Project Settings → API Keys*): ten a mano, sin pegarlas en ningún chat:
-  - la **Project URL** (`https://<ref>.supabase.co`);
-  - la clave **anon / publishable**;
-  - la clave **service_role / secret** (es la peligrosa: solo en Vercel y en tu `.env`).
+- [ ] **Comprobación 1:** en *Authentication → Emails → Templates → Magic Link*, la vista previa muestra «Tu código para entrar» con `{{ .Token }}` en grande.
 
-## C. Resend: los emails (20 min)
+## Paso 2 · Resend: el dominio de envío (15 min + espera de DNS)
 
-- [ ] **C1.** En https://resend.com → *Domains → Add domain* → `correo.cofundo.io`, región EU.
-- [ ] **C2.** Resend te da 3 o 4 registros DNS (SPF, DKIM y MX de retorno). Créalos en el DNS de `cofundo.io` **tal cual** (nombre y valor). Espera a que salgan en verde (de minutos a una hora).
-- [ ] **C3.** *API Keys → Create*: nombre `ventas-envio`, permiso **Sending access**, dominio `correo.cofundo.io`. Cópiala una sola vez a tu gestor de contraseñas. Es exclusiva de esta app: si se filtra, se revoca sin tocar nada más.
-- [ ] **C4. SMTP de Supabase** (*Project Settings → Authentication → SMTP Settings → Enable custom SMTP*):
+- [ ] **2.1** https://resend.com → *Domains → Add domain* → `correo.cofundo.io`, región **EU (Ireland)**.
+- [ ] **2.2** Resend muestra 3 o 4 registros (MX, TXT de SPF, TXT de DKIM). Créalos en el DNS de `cofundo.io` **copiando nombre, tipo y valor exactos**. En Cloudflare: nube **gris** (solo DNS).
+- [ ] **2.3** En Resend pulsa *Verify*. Puede tardar de minutos a una hora: sigue con el paso 3 mientras tanto.
+- [ ] **2.4** Cuando el dominio esté en verde: *API Keys → Create API key*:
+  - Nombre: `ventas-envio`.
+  - Permission: **Sending access**.
+  - Domain: `correo.cofundo.io`.
+
+  Se muestra una sola vez: **cópiala directamente** al campo del paso 2.5 y guárdala en el gestor de contraseñas.
+- [ ] **2.5** En Supabase: **Project Settings → Authentication → SMTP Settings → Enable custom SMTP**:
 
   | Campo | Valor |
   |---|---|
@@ -108,102 +98,163 @@ Con esto ya puedes enseñarlo. Lo que sigue es para que entren las personas de v
   | Host | `smtp.resend.com` |
   | Port | `465` |
   | Username | `resend` |
-  | Password | la clave `ventas-envio` |
+  | Password | la API key `ventas-envio` |
 
-- [ ] **C5.** Ojo con el límite del plan gratuito de Resend: **100 emails al día**. Cada inicio de sesión gasta uno. Con 3 vendedores sobra; vigila el panel de Resend si entra más gente.
+- [ ] **Comprobación 2:** Resend muestra `correo.cofundo.io` como **Verified** y Supabase guarda el SMTP sin error.
 
-## D. Vercel: la app de verdad (20 min)
+Ten en cuenta que el plan gratuito de Resend permite **100 emails al día**. Cada inicio de sesión gasta uno: de sobra para empezar.
 
-- [ ] **D1.** https://vercel.com/new → importa de nuevo el repositorio, ahora como proyecto `ventas`. Rama de producción: `claude/dreamy-dijkstra-a4xm1g` (como en A3).
-- [ ] **D2. Environment Variables** (Production):
+## Paso 3 · GitHub: los secretos del botón de mantenimiento (10 min)
 
-  | Nombre | Valor | Notas |
+El repositorio tiene un botón (*Actions → Producción*) que aplica la base de datos y da de alta espacios. Necesita tres secretos.
+
+- [ ] **3.1** En Supabase, botón **Connect** (arriba) → pestaña de cadenas de conexión → **Session pooler** → copia la URI. Tiene esta forma:
+  `postgresql://postgres.<ref>:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`
+
+  Sustituye `[YOUR-PASSWORD]` (corchetes incluidos) por la contraseña del paso 1.1.
+
+  Usa la **Session pooler**, no la «Direct connection»: GitHub no llega a la directa.
+- [ ] **3.2** En Supabase: **Project Settings → API Keys**. Necesitas:
+  - la **Project URL** (`https://<ref>.supabase.co`);
+  - la clave **`service_role`** (o *secret*; pulsa *Reveal*).
+- [ ] **3.3** En GitHub: `cristiansanchez-cf/SalesSuite` → **Settings → Secrets and variables → Actions → New repository secret**. Crea estos tres:
+
+  | Name | Secret |
+  |---|---|
+  | `SUPABASE_DB_URL` | la URI del 3.1, con la contraseña ya puesta |
+  | `PUBLIC_SUPABASE_URL` | la Project URL |
+  | `SUPABASE_SERVICE_ROLE_KEY` | la clave service_role |
+
+- [ ] **Comprobación 3:** en *Settings → Secrets and variables → Actions* aparecen los tres nombres. Los valores no se ven, y es normal.
+
+## Paso 4 · Crear las tablas (5 min)
+
+- [ ] **4.1** GitHub → pestaña **Actions** → en la izquierda, **Producción** → botón **Run workflow**:
+  - What: `migraciones`.
+  - Dry run: **marcado**.
+  - *Run workflow*.
+- [ ] **4.2** Abre la ejecución. En el paso «Migraciones (qué se aplicaría)» debe salir la lista de migraciones, desde `20261002000000_init.sql` hasta `20261017000000_dossier_views.sql`.
+- [ ] **4.3** Repite el 4.1 con **Dry run desmarcado**. Debe acabar en verde.
+- [ ] **Comprobación 4:** en Supabase → *Table Editor* aparecen, entre otras, `tenant`, `dossier`, `dossier_view` y `member_conditions_history`, con el candado de seguridad activado. En *Storage* existe el bucket `tenant-assets`.
+
+Si falla con «Faltan secretos», revisa el paso 3. Si falla con un error de conexión, la URI del 3.1 no es la de *Session pooler* o la contraseña está mal.
+
+## Paso 5 · Vercel: conectar la web a la base de datos (10 min)
+
+- [ ] **5.1** Vercel → el proyecto → **Settings → Environment Variables.** Primero, si existen, **borra** `DEMO_MODE` y `DEV_TENANT_SLUG`.
+- [ ] **5.2** Añade estas variables (entorno **Production**; también Preview si lo ofrece):
+
+  | Key | Value | ¿Sensitive? |
   |---|---|---|
-  | `PUBLIC_SUPABASE_URL` | la Project URL de B8 | |
-  | `PUBLIC_SUPABASE_ANON_KEY` | la clave anon de B8 | |
-  | `SUPABASE_SERVICE_ROLE_KEY` | la clave service_role de B8 | Márcala **Sensitive** |
-  | `RESEND_API_KEY` | la clave `ventas-envio` de C3 | Márcala **Sensitive** |
-  | `RESEND_FROM` | `Cofundo Ventas <hola@correo.cofundo.io>` | |
-  | `CRON_SECRET` | una cadena larga aleatoria (por ejemplo, genera 40 caracteres en tu gestor) | Márcala **Sensitive** |
+  | `PUBLIC_SUPABASE_URL` | la Project URL (paso 3.2) | No |
+  | `PUBLIC_SUPABASE_ANON_KEY` | Supabase → *Project Settings → API Keys* → clave **anon** / *publishable* | No |
+  | `SUPABASE_SERVICE_ROLE_KEY` | la clave service_role | **Sí** |
+  | `RESEND_API_KEY` | la API key `ventas-envio` | **Sí** |
+  | `RESEND_FROM` | `Cofundo Ventas <hola@correo.cofundo.io>` | No |
+  | `CRON_SECRET` | una cadena aleatoria de 40 caracteres (genérala en el gestor de contraseñas y guárdala ahí: se usa en el paso 8) | **Sí** |
 
-  **No** pongas `DEMO_MODE` en este proyecto.
-- [ ] **D3.** Deploy.
-- [ ] **D4. Dominios** (*Settings → Domains*): añade `enjoy.ventas.cofundo.io` (y `oquea.ventas.cofundo.io` cuando toque). En el DNS de `cofundo.io`:
+- [ ] **5.3** **Deployments** → el último despliegue → menú **⋯** → **Redeploy**. Las variables solo se aplican a despliegues nuevos.
+- [ ] **Comprobación 5:** `https://<proyecto>.vercel.app/api/health` responde con `"status": "ok"`, `"mode": "supabase"` y `"database": "ok"`. Si dice `"misconfigured"`, el campo `problems` dice qué falta.
+
+## Paso 6 · El dominio `enjoy.ventas.cofundo.io` (5 min + espera)
+
+- [ ] **6.1** Vercel → **Settings → Domains**: si está `demo.ventas.cofundo.io`, **Remove**. Después, **Add** → `enjoy.ventas.cofundo.io`.
+- [ ] **6.2** En el DNS de `cofundo.io`: si existe el registro `demo.ventas`, **cámbiale el nombre** a `enjoy.ventas`. Si no existe, créalo:
   ```
-  enjoy.ventas   CNAME   cname.vercel-dns.com.
-  oquea.ventas   CNAME   cname.vercel-dns.com.
+  Tipo: CNAME    Nombre: enjoy.ventas    Valor: (el que indique Vercel, normalmente cname.vercel-dns.com)
   ```
-- [ ] **D5. Comprueba:** `https://enjoy.ventas.cofundo.io/api/health` responde `"status": "ok"`, `"mode": "supabase"`, `"database": "ok"`. Hasta que hagas el paso E, la página de la consola dará 404: es normal (aún no existe el espacio Enjoy).
+  En Cloudflare: nube **gris**.
+- [ ] **Comprobación 6:** Vercel muestra el dominio con el check azul («Valid Configuration»), y `https://enjoy.ventas.cofundo.io/api/health` responde igual que en la comprobación 5.
 
-## E. Dar de alta el espacio de Enjoy (15 min)
+Hasta el paso 7, `https://enjoy.ventas.cofundo.io/admin` da 404. Es lo esperado: aún no existe el espacio Enjoy.
 
-- [ ] **E1.** En tu ordenador, en el repositorio:
-  ```bash
-  cp .env.example .env
-  ```
-  Abre `.env` y rellena `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (las de B8).
-- [ ] **E2.** Abre `tenants/enjoy/tenant.json` y en `"admins": []` pon tu email entre comillas: `"admins": ["tu@email"]`. (No lo subas al repositorio si prefieres que no quede ahí; sirve igual en local.)
-- [ ] **E3.** Primero en prueba, luego de verdad:
-  ```bash
-  set -a && . ./.env && set +a
-  npm run tenant:bootstrap -- tenants/enjoy --dry-run
-  npm run tenant:bootstrap -- tenants/enjoy
-  ```
-- [ ] **E4. Comprueba:** te llega «Te han invitado» desde `hola@correo.cofundo.io` → *Aceptar invitación* → entras como admin en `https://enjoy.ventas.cofundo.io/admin`.
+## Paso 7 · Dar de alta el espacio de Enjoy (5 min)
 
-## F. Avisos automáticos (10 min)
+Crea Enjoy con su marca y con el **catálogo, el mercado y el playbook de ejemplo** (son los datos de prueba), y te invita como admin.
 
-Los avisos por email y el resumen de los lunes necesitan que alguien llame a la app cada 10 minutos. Lo más sencillo, sin pagar Vercel Pro, es que lo haga la propia base de datos:
+- [ ] **7.1** GitHub → **Actions → Producción → Run workflow**:
+  - What: `alta-espacio`.
+  - Tenant: `enjoy`.
+  - Admin email: **el email de Cristian**.
+  - Dry run: **marcado**.
 
-- [ ] **F1.** Supabase → *Database → Extensions*: activa **pg_cron** y **pg_net**.
-- [ ] **F2.** *SQL Editor → New query*, sustituye `<CRON_SECRET>` por el valor de D2 y ejecuta:
+  Debe acabar en verde con una línea del tipo «tenant.json válido: … 1 admins». El email no aparece en el registro: GitHub lo oculta.
+- [ ] **7.2** Repite con **Dry run desmarcado**.
+- [ ] **Comprobación 7:** a Cristian le llega «Te han invitado» desde `hola@correo.cofundo.io`. Al pulsar *Aceptar invitación* entra en `https://enjoy.ventas.cofundo.io`, completa su nombre y aterriza en **Empieza aquí**.
+
+Si no llega el email: mira en Resend → *Emails* si salió. Si no salió, revisa el SMTP del paso 2.5. Si salió y el enlace da error, revisa las Redirect URLs del 1.4.
+
+## Paso 8 · Avisos automáticos (5 min)
+
+- [ ] **8.1** Supabase → **Database → Extensions**: activa **pg_cron** y **pg_net**.
+- [ ] **8.2** Supabase → **SQL Editor → New query**. Pega esto, sustituye `PEGA_AQUI_EL_CRON_SECRET` por el valor del paso 5.2 (directamente desde el gestor) y pulsa *Run*:
   ```sql
   select cron.schedule('ventas-avisos', '*/10 * * * *', $$
     select net.http_get(
       url := 'https://enjoy.ventas.cofundo.io/api/cron/notifications',
-      headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
+      headers := jsonb_build_object('Authorization', 'Bearer PEGA_AQUI_EL_CRON_SECRET')
     );
   $$);
   ```
-  Una sola llamada atiende a todas las empresas.
-- [ ] **F3. Comprueba:** `https://enjoy.ventas.cofundo.io/api/health` dice `"cronConfigured": true` y `"emailConfigured": true`.
+  Una sola tarea sirve para todas las empresas.
+- [ ] **Comprobación 8:**
+  - `https://enjoy.ventas.cofundo.io/api/health` muestra `"emailConfigured": true` y `"cronConfigured": true`. Esto solo dice que las claves están puestas.
+  - Para saber que funciona: pasados 10 minutos, ejecuta en el SQL Editor:
+    ```sql
+    select status_code, created from net._http_response order by created desc limit 3;
+    ```
+    Debe salir `200`. Si sale `401`, el `CRON_SECRET` del SQL no coincide con el de Vercel. Para corregirlo, borra la tarea con `select cron.unschedule('ventas-avisos');` y repite el 8.2.
 
-## G. Prueba de acceso (10 min, una vez)
+## Paso 9 · Probar el recorrido completo (15 min)
 
-- [ ] **G1.** Desde *Equipo*, invita a un segundo email tuyo como **Comercial** → llega «Te han invitado» → aceptas → aterrizas en **Empieza aquí**.
-- [ ] **G2.** Sal. En `/admin/login` pon ese email → llega «Tu código para entrar» con el código arriba → lo escribes → entras.
-- [ ] **G3.** Pide dos códigos seguidos → la pantalla dice «espera N segundos».
-- [ ] **G4.** Recarga la pantalla del código → ofrece «Ya tengo un código para…».
-- [ ] **G5.** Crea una propuesta, publícala, abre el enlace en el móvil → en *Analítica* aparece la apertura y la campana te avisa.
+Lo hace Cristian. El agente solo apunta lo que no salga como se describe.
 
-Cuando G1 a G5 salgan bien, dime **«validado: acceso y Empieza aquí»** y los congelo como tests (docs/VALIDATED.md).
+- [ ] **9.1 Acceso con código:**
+  - Sal de la consola. En `/admin/login`, pon tu email → llega «Tu código para entrar» con el código arriba → lo escribes → entras.
+  - Pide dos códigos seguidos: la pantalla dice «espera N segundos».
+  - Recarga la pantalla del código: ofrece «Ya tengo un código para…».
+- [ ] **9.2 Un vendedor de prueba:** en *Configurar → Equipo*, invita a un segundo email tuyo como **Comercial**. Acepta desde ese correo (mejor en una ventana de incógnito): aterriza en **Empieza aquí**.
+- [ ] **9.3 Condiciones:** como admin, *Configurar → Comisiones → Plan → Condiciones acordadas*:
+  - escribe algo para el comercial de prueba y marca «Ya están acordadas»;
+  - como comercial, recarga «Empieza aquí»: se ven;
+  - cámbialas otra vez: aparece «Historial de mis condiciones».
+- [ ] **9.4 Analítica:**
+  - Como comercial, crea una propuesta, publícala y copia el enlace.
+  - Ábrelo en el móvil, baja hasta el final y ciérralo.
+  - En **Analítica** aparece la apertura con su tiempo y sus secciones, y la campana avisa «… ha abierto tu propuesta».
 
-## H. Los tres vendedores
+Cuando 9.1 a 9.4 salgan bien, Cristian dice **«validado: acceso, Empieza aquí y analítica»** y quedan congelados como tests (`docs/VALIDATED.md`).
 
-- [ ] **H1.** Para cada uno, desde *Equipo → Invitar*: email, rol (**Comercial** si es del equipo, **Colaborador** si va por su cuenta con cuentas asignadas) y su zona si aplica.
-  - **Amrit** (Enjoy · conciertos y artistas).
-  - **Ángel** (Enjoy · Results).
-  - **Uyong** (Oquea · Corea, empezando por el QR gratuito): **espera** a que montemos el espacio de Oquea (ver «Lo que necesito de ti»).
-- [ ] **H2.** Condiciones: *Configurar → Comisiones → Plan → Condiciones acordadas*. Para quien aún no las tiene acordadas, no toques nada: verá «Las acordaremos contigo cuando hayas probado». Para quien sí, escribe sus condiciones en palabras sencillas y marca «Ya están acordadas». Cada cambio queda en el historial.
+## Paso 10 · Más adelante: producción limpia + entorno de desarrollo
+
+Cuando toque empezar con la gente de verdad (no ahora). Lo preparará el agente de desarrollo con su propio botón; aquí solo el plan:
+
+1. Crear un segundo proyecto de Supabase, `cofundo-dev`, y un segundo proyecto de Vercel con su dominio, por ejemplo `dev.ventas.cofundo.io`. Será la copia donde se prueba.
+2. Copiar a desarrollo la estructura y el contenido de ejemplo.
+3. En producción, borrar las propuestas, los usuarios de prueba y el contenido de ejemplo. Dejar solo la marca y el catálogo real de cada empresa.
+4. Dar de alta a Amrit y Ángel (Enjoy) y, cuando exista su espacio, a Uyong (Oquea).
 
 ---
 
-## Lo que necesito de ti para seguir
+## Informe para el agente de desarrollo
 
-| Qué | Para qué | Cuándo |
+Al terminar (o al quedarse bloqueado), rellenar y pasar a Cristian. **Sin claves.**
+
+| Paso | Estado (hecho / a medias / no) | Notas o error exacto |
 |---|---|---|
-| «Demo vista» y lo que no te cuadre | Ajustar antes de que entren los vendedores | Tras A6 |
-| `/api/health` de producción en `ok` | Saber que B, C y D están bien | Tras D5 |
-| Material de Oquea: logo (SVG), colores, tipografía si tienen, y qué incluye el QR gratuito | Preparar `tenants/oquea` como el de Enjoy | Cuando puedas |
-| Qué vende exactamente cada uno (Amrit: conciertos/artistas; Ángel: Results) | Rellenar el catálogo y el «Qué vendemos» de Empieza aquí con lo real | Antes de invitarlos |
-| Los emails de los tres | Solo si quieres que los invite yo con el script (si no, desde *Equipo*) | Cuando los tengas |
-| Respuestas del agente del Cerebro (docs/PREGUNTAS_CEREBRO.md) | Decidir la identidad común y la integración | Cuando las tengas |
+| Estado de partida corregido (variables demo borradas, dominio demo quitado, DNS renombrado) | | |
+| 1 · Supabase (nombre del proyecto y región) | | |
+| 2 · Resend (dominio verificado, SMTP en Supabase) | | |
+| 3 · Secretos de GitHub | | |
+| 4 · Migraciones (última migración aplicada) | | |
+| 5 · Vercel (resultado de `/api/health`) | | |
+| 6 · Dominio `enjoy.ventas.cofundo.io` | | |
+| 7 · Alta de Enjoy (¿llegó la invitación?) | | |
+| 8 · Avisos automáticos (`cronConfigured`) | | |
+| 9 · Recorrido completo (qué falló, si algo) | | |
 
-## Cerebro y Ventas: una sola identidad
+## Lo que necesita el agente de desarrollo de Cristian (no del agente que acompaña)
 
-Lo que te recomiendo (detalle en docs/FOUNDATIONS.md §5.7 y §9):
-
-1. **Un solo sitio de identidad** (el proyecto `cofundo` de Supabase): cada persona es un email y puede tener acceso al Cerebro, a Ventas o a los dos.
-2. **Cada producto guarda lo suyo** en su propio espacio de la base de datos, sin pisarse.
-3. **No hace falta un tercer servicio** de autenticación: Supabase ya hace ese papel, y añadir otro sería más piezas que mantener.
-4. **Cuándo:** con el Cerebro en 3 o 4 usuarios, el cambio es barato ahora. Pero espera a las respuestas de su agente: si su base de datos ya tiene tablas con los mismos nombres que las de Ventas, decidiremos quién se muda de espacio y lo haremos en una tarde.
+- Material de **Oquea** (logo en SVG, colores, tipografía si la hay, y qué incluye el QR gratuito) para crear su espacio en `oquea.ventas.cofundo.io`.
+- **Qué vende exactamente** Amrit (conciertos y artistas) y Ángel (Results), para cambiar el catálogo de ejemplo por el real.
+- Las respuestas del agente del Cerebro a `docs/PREGUNTAS_CEREBRO.md`.

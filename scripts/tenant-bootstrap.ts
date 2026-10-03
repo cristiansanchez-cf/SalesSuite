@@ -5,6 +5,7 @@
  *   npm run tenant:bootstrap -- tenants/enjoy --dry-run  # solo valida y muestra el plan
  *
  * Env: PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (service role: SOLO en tu máquina o CI, nunca en el cliente).
+ * Variables: ADMIN_EMAILS=a@x.com,b@y.com añade admins sin tocar tenant.json.
  * Flags: --skip-assets (no sube a Storage), --skip-invites (no envía invitaciones; solo da rol a usuarios existentes).
  *
  * Qué hace:
@@ -203,6 +204,9 @@ async function main() {
   const root = resolve(dir);
   const raw = JSON.parse(await readFile(join(root, 'tenant.json'), 'utf8'));
   delete raw.$comment;
+  // ADMIN_EMAILS (separados por comas) se suman a "admins": así no hace falta guardar emails en el repositorio.
+  const extraAdmins = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean);
+  if (extraAdmins.length) raw.admins = [...new Set([...(raw.admins ?? []), ...extraAdmins])];
   const parsed = tenantFile.safeParse(raw);
   if (!parsed.success) fail(`tenant.json inválido:\n  ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n  ')}`);
   const t = parsed.data;

@@ -41,6 +41,8 @@ npx supabase db push                       # aplica supabase/migrations/*.sql en
 
 **Opción B: SQL Editor.** Abre cada archivo de `supabase/migrations/`, **en orden de nombre**, pégalo en *SQL Editor → New query* y ejecútalo.
 
+> La guía paso a paso vigente es [`PUESTA_EN_MARCHA.md`](PUESTA_EN_MARCHA.md); este documento es la referencia detallada.
+
 > ⚠️ **No ejecutes `supabase/seed.sql` en producción.** Son datos de demo con dossiers y dominios de ejemplo. El tenant real se crea en el paso 7.
 
 Comprobación: en *Table Editor* deben aparecer `tenant`, `domain`, `users`, `membership`, `module`, `module_version`, `dossier`, `dossier_item` y `share_link`, todas con RLS activado (candado). En *Storage* debe existir el bucket **`tenant-assets`**, marcado como público.

@@ -1,0 +1,89 @@
+# Producción sin terminal (docs/PUESTA_EN_MARCHA.md): GitHub → Actions → «Producción» → Run workflow.
+# Secretos (Settings → Secrets and variables → Actions): SUPABASE_DB_URL, PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+name: Producción
+
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: Qué hacer
+        type: choice
+        options: [migraciones, alta-espacio, las-dos]
+        default: migraciones
+      tenant:
+        description: Espacio (carpeta de tenants/)
+        type: string
+        default: enjoy
+      admin_email:
+        description: Email del admin al que invitar (opcional)
+        type: string
+        default: ''
+      dry_run:
+        description: Solo comprobar, sin escribir nada
+        type: boolean
+        default: true
+
+concurrency: production
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ocultar el email en los registros
+        if: ${{ inputs.admin_email != '' }}
+        run: echo "::add-mask::${{ inputs.admin_email }}"
+
+      - name: Comprobar secretos
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WHAT: ${{ inputs.what }}
+        run: |
+          missing=""
+          if [ "$WHAT" != "alta-espacio" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
+          if [ "$WHAT" != "migraciones" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
+          if [ "$WHAT" != "migraciones" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
+          if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
+
+      - uses: supabase/setup-cli@v1
+        if: ${{ inputs.what != 'alta-espacio' }}
+        with:
+          version: latest
+
+      - name: Migraciones (qué se aplicaría)
+        if: ${{ inputs.what != 'alta-espacio' && inputs.dry_run }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+
+      - name: Migraciones (aplicar)
+        if: ${{ inputs.what != 'alta-espacio' && !inputs.dry_run }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
+
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.what != 'migraciones' }}
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        if: ${{ inputs.what != 'migraciones' }}
+        run: npm ci
+
+      - name: Alta del espacio
+        if: ${{ inputs.what != 'migraciones' }}
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ inputs.admin_email }}
+          TENANT: ${{ inputs.tenant }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          if [ "$DRY" = "true" ]; then npm run tenant:bootstrap -- "tenants/$TENANT" --dry-run; else npm run tenant:bootstrap -- "tenants/$TENANT"; fi
