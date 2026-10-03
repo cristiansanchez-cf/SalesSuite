@@ -60,6 +60,34 @@
   const CURRENCIES = ['EUR', 'USD', 'GBP', 'MXN'];
   const DEVICE_W = { mobile: '390px', tablet: '820px', desktop: '100%' } as const;
 
+  // ---------- Personalizar: logo, fotos y vídeo del cliente (docs/PERSONALIZE.md). Subida directa a Storage.
+  let uploading = $state<string | null>(null);
+  const media = $derived(d.clientMedia ?? {});
+  async function postMedia(body: Record<string, unknown>, method = 'POST') {
+    const res = await fetch(`${api}/media`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const out = await res.json().catch(() => ({ error: t.errStatus(res.status) }));
+    if (!res.ok) { error = out.error ?? t.errStatus(res.status); return null; }
+    return out;
+  }
+  async function uploadMedia(kind: 'logo' | 'photo' | 'video', files: FileList | null) {
+    for (const file of Array.from(files ?? []).slice(0, kind === 'photo' ? 8 : 1)) {
+      uploading = kind;
+      try {
+        const signed = await postMedia({ step: 'sign', kind, type: file.type, size: file.size });
+        if (!signed) break;
+        const up = await fetch(signed.uploadUrl, { method: 'PUT', headers: { 'content-type': file.type, ...(signed.headers ?? {}) }, body: file });
+        if (!up.ok) { error = t.media.uploadFail; break; }
+        const st = await postMedia({ step: 'attach', kind, url: signed.publicUrl });
+        if (!st) break;
+        s = st; error = null; previewKey++;
+      } catch { error = t.offline; break; } finally { uploading = null; }
+    }
+  }
+  async function removeMedia(url: string) {
+    const st = await postMedia({ url }, 'DELETE');
+    if (st) { s = st; previewKey++; }
+  }
+
   let queue: Promise<unknown> = Promise.resolve();
   function run(op: BuilderOp): Promise<boolean> {
     const p = queue.then(async () => {
@@ -465,6 +493,46 @@
           {#if d.status === 'published'}<button class="{btn} mt-3" disabled={!editable} onclick={() => setStatus('draft')}>{t.publish.unpublish}</button>{/if}
         </details>
       </section>
+
+      <!-- personalizar: lo que hace que el cliente diga «wow, es mi local» -->
+      {#if editable}
+        <section class="{card} media-card" data-testid="personalize">
+          <div class="flex items-start gap-3">
+            <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true">✦</span>
+            <div class="grid gap-0.5"><h2 class="co-card-title">{t.media.title(d.prospectCompany || t.media.client)}</h2><p class="co-help">{t.media.lede}</p></div>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+            <div class="media-tile" data-testid="media-logo">
+              <p class="media-tile__label">{t.media.logo}</p>
+              {#if media.logo}
+                <div class="media-thumb media-thumb--logo"><img src={media.logo} alt="" /><button type="button" class="media-x" onclick={() => removeMedia(media.logo!)} aria-label={t.media.remove}>✕</button></div>
+              {:else}
+                <label class="media-add">{uploading === 'logo' ? t.media.uploading : t.media.addLogo}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="sr-only" disabled={!!uploading} onchange={(e) => uploadMedia('logo', e.currentTarget.files)} data-testid="media-logo-input" /></label>
+              {/if}
+            </div>
+            <div class="media-tile" data-testid="media-photos">
+              <p class="media-tile__label">{t.media.photos}</p>
+              <div class="grid grid-cols-3 gap-1.5">
+                {#each media.photos ?? [] as url (url)}
+                  <div class="media-thumb"><img src={url} alt="" /><button type="button" class="media-x" onclick={() => removeMedia(url)} aria-label={t.media.remove}>✕</button></div>
+                {/each}
+                {#if (media.photos?.length ?? 0) < 8}
+                  <label class="media-add media-add--sm">{uploading === 'photo' ? '…' : '＋'}<input type="file" accept="image/png,image/jpeg,image/webp" multiple class="sr-only" disabled={!!uploading} onchange={(e) => uploadMedia('photo', e.currentTarget.files)} data-testid="media-photo-input" /></label>
+                {/if}
+              </div>
+            </div>
+            <div class="media-tile" data-testid="media-video">
+              <p class="media-tile__label">{t.media.video}</p>
+              {#if media.video}
+                <div class="media-thumb media-thumb--video"><video src={media.video} muted loop playsinline autoplay></video><button type="button" class="media-x" onclick={() => removeMedia(media.video!)} aria-label={t.media.remove}>✕</button></div>
+              {:else}
+                <label class="media-add">{uploading === 'video' ? t.media.uploading : t.media.addVideo}<input type="file" accept="video/mp4,video/webm" class="sr-only" disabled={!!uploading} onchange={(e) => uploadMedia('video', e.currentTarget.files)} data-testid="media-video-input" /></label>
+              {/if}
+            </div>
+          </div>
+          <p class="co-help mt-3">{t.media.where}</p>
+        </section>
+      {/if}
 
       <!-- módulos: arrastrar para ordenar o desde «Añadir» -->
       <section class={card}>
@@ -888,3 +956,18 @@
     {/if}
   </dialog>
 </div>
+
+<style>
+  .media-card { border-color: color-mix(in srgb, var(--co-signal, #6d28d9) 35%, transparent); }
+  .media-tile { display: grid; align-content: start; gap: .5rem; }
+  .media-tile__label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--co-ink-dim); }
+  .media-add { display: grid; place-items: center; min-height: 6.5rem; border: 2px dashed var(--console-card-border-hover); border-radius: .9rem; cursor: pointer; font-weight: 700; text-align: center; padding: .5rem; }
+  .media-add:hover { border-color: var(--co-signal, #6d28d9); color: var(--co-signal, #6d28d9); }
+  .media-add--sm { min-height: 0; aspect-ratio: 1; font-size: 1.4rem; }
+  .media-thumb { position: relative; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; background: #111; }
+  .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+  .media-thumb--logo { aspect-ratio: 16 / 9; background: var(--console-chip-bg); }
+  .media-thumb--logo img { object-fit: contain; padding: .5rem; }
+  .media-thumb--video { aspect-ratio: 16 / 9; }
+  .media-x { position: absolute; top: .25rem; right: .25rem; width: 1.6rem; height: 1.6rem; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font-size: .75rem; }
+</style>

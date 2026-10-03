@@ -41,6 +41,7 @@ export function resolveItem(item: RenderItem, dossier: PublicDossier, total: Res
       priceMode: dossier.priceMode,
       price: resolveItemPrice(item, dossier.priceMode, dossier.currency, dossier.locale),
       total,
+      media: dossier.media ?? {},
     },
   };
 }

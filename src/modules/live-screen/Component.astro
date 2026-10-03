@@ -11,12 +11,21 @@ import type { LiveScreenProps } from './schema';
 import './engine.css';
 
 type Props = LiveScreenProps & ModuleBaseProps;
-const { eyebrow, title, lede, venueName, djName, qrImage, photos, covers, phone, scenes, autoplay, ctx } = Astro.props;
+const { eyebrow, title, lede, venueName, djName, qrImage, photos, covers, phone, scenes: baseScenes, videoScene, autoplay, ctx } = Astro.props;
 const t = (s: string) => interpolate(s, ctx);
+// Lo personalizado del cliente (Personalizar) manda sobre lo de ejemplo: su logo, sus fotos, su vídeo.
+const media = ctx.media ?? {};
+const ownPhotos = (media.photos ?? []).filter(Boolean);
+const scenes = media.video
+  ? [baseScenes[0], { scene: 'tp.idle' as const, label: videoScene.label, says: videoScene.says, amount: 0, video: true }, ...baseScenes.slice(1)]
+  : baseScenes;
 const config = {
-  assets: { venueName: t(venueName).toUpperCase().slice(0, 40), venueLogo: '', djName, showEnjoyLogo: true, qrImage: qrImage ?? '', photos, covers, avatars: [], videos: [] },
-  phone, autoplay,
-  scenes: scenes.map((s) => ({ scene: s.scene, amount: s.amount ?? 0 })),
+  assets: {
+    venueName: t(venueName).toUpperCase().slice(0, 40), venueLogo: media.logo ?? '', djName, showEnjoyLogo: true, qrImage: qrImage ?? '',
+    photos: ownPhotos.length ? ownPhotos : photos, covers, avatars: [], videos: media.video ? [media.video] : [],
+  },
+  phone, ownPhoto: ownPhotos[0] ?? null, autoplay,
+  scenes: scenes.map((s) => ({ scene: s.scene, amount: s.amount ?? 0, video: 'video' in s && !!s.video })),
 };
 ---
 <div data-module="live-screen" class="live-screen">
@@ -31,6 +40,7 @@ const config = {
         <div class="live-screen__phone-screen">
           <div class="live-screen__scan" data-phone-scan><span class="live-screen__scan-line"></span></div>
           <img data-phone-img alt="" loading="lazy" decoding="async" />
+          <div class="live-screen__upload" data-phone-upload><span class="live-screen__upload-icon">▲</span><span class="live-screen__upload-bar"><span></span></span></div>
           <span class="live-screen__sent" data-phone-sent>✓</span>
         </div>
       </div>
@@ -54,7 +64,7 @@ const config = {
   /* El móvil del cliente: pequeño, abajo a la derecha, como en la web. */
   .live-screen__phone {
     position: absolute; right: 2.5%; bottom: 4%; width: clamp(46px, 8.5%, 110px); aspect-ratio: 9 / 19.5;
-    border-radius: 18% / 8.5%; background: #111; padding: 3.5%; box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12);
+    border-radius: 18% / 8.5%; background: #111; padding: clamp(3px, .4vw, 6px); box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12);
     transform: translateY(25%) rotate(8deg); opacity: 0; transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .4s ease; pointer-events: none; z-index: 2;
   }
   .live-screen__phone.is-in { transform: translateY(0) rotate(-4deg); opacity: 1; }
@@ -72,6 +82,16 @@ const config = {
   .live-screen__sent { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 38%; aspect-ratio: 1; border-radius: 999px; display: grid; place-items: center;
     background: #e1ff00; color: #111; font-weight: 800; font-size: clamp(14px, 2vw, 22px); scale: 0; transition: scale .3s cubic-bezier(.2,1.6,.4,1); }
   .live-screen__phone.is-sent .live-screen__sent { scale: 1; }
+  /* Su propia foto dentro del móvil (Personalizar): el marco se queda. */
+  .live-screen__phone.is-own img { opacity: 1; object-fit: cover; filter: none; }
+  /* Subiendo su vídeo desde el móvil. */
+  .live-screen__upload { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12%; opacity: 0; transition: opacity .25s; color: #fff; }
+  .live-screen__phone.is-upload .live-screen__upload { opacity: 1; }
+  .live-screen__upload-icon { font-size: clamp(12px, 2vw, 22px); color: #ff27bb; }
+  .live-screen__upload-bar { width: 70%; height: 4px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; }
+  .live-screen__upload-bar span { display: block; height: 100%; width: 0; background: #e1ff00; }
+  .live-screen__phone.is-upload .live-screen__upload-bar span { animation: ls-up 1.6s ease-out forwards; }
+  @keyframes ls-up { to { width: 100%; } }
   .live-screen__controls { display: flex; flex-wrap: wrap; gap: .5rem; }
   .live-screen__chip { min-height: 44px; border-radius: 999px; padding: .55rem 1.1rem; font-weight: 700; font-size: .95rem; border: 1px solid rgb(var(--color-line, 42 36 48)); background: rgb(var(--color-bg, 8 3 12)); color: inherit; cursor: pointer; }
   .live-screen__chip[aria-selected='true'] { background: rgb(var(--color-primary, 255 39 187)); border-color: transparent; color: rgb(var(--color-primary-contrast, 255 255 255)); }

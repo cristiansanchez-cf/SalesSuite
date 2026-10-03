@@ -28,6 +28,9 @@ export interface RenderItem {
 }
 
 /** Payload público del dossier (lo que devuelve el RPC token-gated). */
+/** Lo personalizado del cliente en una propuesta (docs/PERSONALIZE.md). */
+export interface ClientMedia { logo?: string | null; photos?: string[]; video?: string | null }
+
 export interface PublicDossier {
   id: string;
   tenantId: string;
@@ -41,6 +44,8 @@ export interface PublicDossier {
   themeOverride: ThemeTokens | null;
   /** Cupón aplicado (copia guardada al aplicarlo). */
   discount?: Discount | null;
+  /** Logo, fotos y vídeo del cliente (los usa la pantalla en vivo). */
+  media?: ClientMedia;
   /** Solo items visibles, ordenados por position. */
   items: RenderItem[];
 }

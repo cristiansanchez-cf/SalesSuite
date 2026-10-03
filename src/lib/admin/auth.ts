@@ -127,7 +127,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
     playbookDb = scopePlaybookDb(deps.playbookDb, scoped);
     evidenceDb = scopeEvidenceDb(deps.evidenceDb, scoped);
   }
-  const service = createAdminService(db, session, { defaultLocale: tenant.defaultLocale });
+  const service = createAdminService(db, session, { defaultLocale: tenant.defaultLocale, assets: deps.assets });
   return {
     kind: 'ok',
     admin: {

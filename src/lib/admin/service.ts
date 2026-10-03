@@ -8,7 +8,8 @@ import { resolveItemPrice, resolveTotal } from '../pricing';
 import { needsRebalance, rankBetween, rankForMove, rebalance } from '../rank';
 import type { PublicDossier, RenderItem } from '../types';
 import { resolveItem } from '../../modules/resolve';
-import type { AdminDb } from './db';
+import type { AdminDb, AssetStore } from './db';
+import { createMediaService } from './media';
 import { can } from './permissions';
 import { paymentUrl } from './payment';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
@@ -53,6 +54,7 @@ export function toPublicDossier(d: DossierRecord, items: ItemRecord[]): PublicDo
     currency: d.currency,
     themeOverride: null,
     discount: d.discount,
+    media: d.clientMedia ?? {},
     items: items.filter((i) => i.visible).sort((a, b) => a.position - b.position).map(toRenderItem),
   };
 }
@@ -66,7 +68,7 @@ export function latestByModule(catalog: CatalogVersion[]): Map<string, CatalogVe
   return m;
 }
 
-export function createAdminService(db: AdminDb, s: AdminSession, opts: { defaultLocale?: string; now?: () => Date } = {}) {
+export function createAdminService(db: AdminDb, s: AdminSession, opts: { defaultLocale?: string; now?: () => Date; assets?: AssetStore } = {}) {
   const now = opts.now ?? (() => new Date());
   const canEdit = (d: DossierRecord) => can(s.role).editAllDossiers || d.authorId === s.userId;
   const isPartner = s.role === 'partner';
@@ -418,7 +420,8 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     return [...latestByModule(await db.listCatalog(s.tenantId)).values()].sort((a, b) => a.moduleName.localeCompare(b.moduleName, 'es'));
   }
 
-  return { getState, listDossiers, createDossier, deleteDossier, apply, previewDossier, canEdit, catalog };
+  const media = createMediaService(db, s, opts.assets, canEdit);
+  return { getState, listDossiers, createDossier, deleteDossier, apply, previewDossier, canEdit, catalog, media };
 }
 
 export type AdminService = ReturnType<typeof createAdminService>;

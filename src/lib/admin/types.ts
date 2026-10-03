@@ -50,6 +50,8 @@ export interface AdminSession {
 }
 
 export interface DossierRecord {
+  /** Logo, fotos y vídeo del cliente (migración 20261024). */
+  clientMedia?: import('../types').ClientMedia;
   id: string;
   tenantId: string;
   authorId: string | null;

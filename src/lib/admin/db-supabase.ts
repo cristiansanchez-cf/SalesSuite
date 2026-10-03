@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { env } from '../env';
 import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, PriceOption, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role } from './types';
 
@@ -12,7 +13,7 @@ const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_c
  * Columnas de migraciones recientes (view_mode: 20261021; price_option_id: 20261022). Hasta aplicarlas se lee y se
  * escribe sin ellas: los despliegues de Vercel van antes que las migraciones.
  */
-const optionalCols = new Set(['view_mode', 'price_option_id']);
+const optionalCols = new Set(['view_mode', 'price_option_id', 'client_media']);
 const dossierCols = () => [DOSSIER_COLS, ...optionalCols].join(', ');
 const hasCol = (c: string) => optionalCols.has(c);
 async function tolerant<R extends { error: any }>(q: (cols: string) => PromiseLike<R>): Promise<R> {
@@ -46,6 +47,7 @@ const toDossier = (r: Row): DossierRecord => ({
   discount: r.discount ?? null,
   viewMode: r.view_mode === 'test' ? 'test' : 'live',
   priceOptionId: r.price_option_id ?? null,
+  clientMedia: r.client_media ?? {},
 });
 
 const toPriceOption = (r: Row): PriceOption => ({
@@ -195,6 +197,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.couponId !== undefined) patch.coupon_id = p.couponId;
       if (p.viewMode !== undefined) patch.view_mode = p.viewMode;
       if (p.priceOptionId !== undefined) patch.price_option_id = p.priceOptionId;
+      if (p.clientMedia !== undefined) patch.client_media = p.clientMedia;
       const rows = check(await tolerant((c) => sb.from('dossier').update(patch).eq('id', id).select(c))) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },
@@ -435,6 +438,7 @@ export function supabaseIdentity(url: string, serviceRoleKey: string): Identity 
 const EXT: Record<string, string> = {
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/svg+xml': 'svg',
   'image/x-icon': 'ico', 'image/vnd.microsoft.icon': 'ico', 'font/woff2': 'woff2', 'font/woff': 'woff',
+  'video/mp4': 'mp4', 'video/webm': 'webm',
 };
 
 /** Storage con la sesión del usuario: la política de storage.objects exige admin del tenant. */
@@ -447,6 +451,21 @@ export function supabaseAssets(sb: SupabaseClient): AssetStore {
       const { error } = await sb.storage.from('tenant-assets').upload(path, file.bytes, { contentType: file.type, upsert: false, cacheControl: '31536000' });
       if (error) throw new Error(`[supabase] storage: ${error.message}`);
       return { url: sb.storage.from('tenant-assets').getPublicUrl(path).data.publicUrl };
+    },
+    async signUpload(tenantId, path, type) {
+      if (!EXT[type]) throw new Error('TIPO_NO_PERMITIDO');
+      const full = `${tenantId}/${path}.${EXT[type]}`;
+      // Con la sesión del usuario: la política tenant_assets_insert_dossier decide (autor de la propuesta, admin o lead).
+      const { data, error } = await sb.storage.from('tenant-assets').createSignedUploadUrl(full);
+      if (error || !data) throw new Error(`[supabase] storage: ${error?.message ?? 'sin URL'}`);
+      const anon = env('PUBLIC_SUPABASE_ANON_KEY');
+      return {
+        uploadUrl: data.signedUrl, publicUrl: sb.storage.from('tenant-assets').getPublicUrl(full).data.publicUrl,
+        headers: { 'x-upsert': 'false', 'cache-control': 'max-age=31536000', ...(anon ? { apikey: anon } : {}) },
+      };
+    },
+    publicPrefix(tenantId) {
+      return sb.storage.from('tenant-assets').getPublicUrl(`${tenantId}/`).data.publicUrl;
     },
   };
 }

@@ -29,6 +29,11 @@ export const liveScreenSchema = z.object({
     /** € de la puja: cuanto más paga, más grande sale. */
     amount: z.number().min(0).max(1000).optional(),
   })).min(1).max(10),
+  /** Pantalla extra cuando el comercial sube un vídeo del cliente (Personalizar): sus visuales de fondo. */
+  videoScene: z.object({ label: z.string().min(1).max(30), says: z.string().max(220) }).default({
+    label: 'Su vídeo',
+    says: 'Sus visuales de fondo y la pantalla encima. Lo cambian desde el móvil cuando quieran, y sale cada pocos minutos.',
+  }),
   /** Recorrido solo en bucle (se para en cuanto alguien toca una pantalla). */
   autoplay: z.boolean().default(true),
 });

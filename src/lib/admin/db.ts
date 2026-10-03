@@ -35,6 +35,7 @@ export type DossierDbPatch = DossierPatch & {
   outcomeAt?: string | null;
   segmentId?: string | null;
   priceOptionId?: string | null;
+  clientMedia?: import('../types').ClientMedia;
   nextStep?: string | null;
   nextStepAt?: string | null;
   situation?: import('../evidence/types').Situation;
@@ -128,4 +129,11 @@ export interface Identity {
 /** Subida de assets (logos, fuentes, imágenes) al almacenamiento del tenant. */
 export interface AssetStore {
   upload(tenantId: string, file: { name: string; type: string; bytes: Uint8Array }, kind: string): Promise<{ url: string }>;
+  /**
+   * Subida directa del navegador a Storage (vídeos de hasta 30 MB: no caben por el servidor de Vercel).
+   * Devuelve dónde subir y la URL pública que tendrá. La RLS de Storage decide si esta persona puede.
+   */
+  signUpload?(tenantId: string, path: string, type: string): Promise<{ uploadUrl: string; publicUrl: string; headers?: Record<string, string> }>;
+  /** Prefijo público de los archivos del espacio (para aceptar solo URLs nuestras al adjuntar). */
+  publicPrefix?(tenantId: string): string;
 }

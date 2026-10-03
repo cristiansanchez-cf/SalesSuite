@@ -121,6 +121,13 @@ const es = {
     title: 'Empieza rápido', sector: '¿Para qué sector es?', recommended: (n: number) => `Añadir los ${n} recomendados`,
     all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
   },
+  media: {
+    title: (c: string) => `Personaliza para ${c}`, client: 'tu cliente',
+    lede: 'Su logo, fotos de su local (o de su Instagram) y un vídeo con sus visuales. Salen en la pantalla de la propuesta: «wow, es mi local».',
+    logo: 'Logo', photos: 'Fotos', video: 'Vídeo', addLogo: '＋ Su logo', addVideo: '＋ Su vídeo (MP4, hasta 30 MB)',
+    uploading: 'Subiendo…', remove: 'Quitar', uploadFail: 'No se ha podido subir el archivo. Prueba otra vez.',
+    where: 'Se ven en «Pantalla en vivo»: su logo arriba, sus fotos en «Foto» y su vídeo de fondo.',
+  },
   clientData: 'Datos del cliente', advanced: 'Avanzado', moreActions: 'Más acciones',
   preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa de la propuesta' },
   page: {
@@ -258,6 +265,13 @@ export const builderMessages = defineMessages({
       title: 'Quick start', sector: 'Which sector is it for?', recommended: (n) => `Add the ${n} recommended`,
       all: (n) => `Add the whole catalog (${n})`, add: 'Add', dragHint: 'Drag to reorder, or drag in from «Add».',
     },
+    media: {
+      title: (c) => `Personalise for ${c}`, client: 'your customer',
+      lede: 'Their logo, photos of their venue (or from their Instagram) and a video with their visuals. They show up on the proposal screen: “wow, that is my place”.',
+      logo: 'Logo', photos: 'Photos', video: 'Video', addLogo: '＋ Their logo', addVideo: '＋ Their video (MP4, up to 30 MB)',
+      uploading: 'Uploading…', remove: 'Remove', uploadFail: 'The file could not be uploaded. Try again.',
+      where: 'They appear in “Live screen”: their logo on top, their photos in “Photo” and their video as background.',
+    },
     clientData: 'Customer details', advanced: 'Advanced', moreActions: 'More actions',
     preview: { title: 'Preview', mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop', open: 'Open ↗', frame: 'Proposal preview' },
     page: {
@@ -392,6 +406,13 @@ export const builderMessages = defineMessages({
       title: 'Comece rápido', sector: 'Para qual setor é?', recommended: (n) => `Adicionar os ${n} recomendados`,
       all: (n) => `Adicionar todo o catálogo (${n})`, add: 'Adicionar', dragHint: 'Arraste para ordenar, ou arraste de «Adicionar».',
     },
+    media: {
+      title: (c) => `Personalize para ${c}`, client: 'seu cliente',
+      lede: 'O logo, fotos do local (ou do Instagram) e um vídeo com os visuais dele. Aparecem na tela da proposta: «uau, é o meu local».',
+      logo: 'Logo', photos: 'Fotos', video: 'Vídeo', addLogo: '＋ Logo dele', addVideo: '＋ Vídeo dele (MP4, até 30 MB)',
+      uploading: 'Enviando…', remove: 'Remover', uploadFail: 'Não foi possível enviar o arquivo. Tente de novo.',
+      where: 'Aparecem em «Tela ao vivo»: o logo em cima, as fotos em «Foto» e o vídeo de fundo.',
+    },
     clientData: 'Dados do cliente', advanced: 'Avançado', moreActions: 'Mais ações',
     preview: { title: 'Pré-visualização', mobile: 'Celular', tablet: 'Tablet', desktop: 'Desktop', open: 'Abrir ↗', frame: 'Pré-visualização da proposta' },
     page: {
@@ -525,6 +546,13 @@ export const builderMessages = defineMessages({
     quick: {
       title: '빠르게 시작', sector: '어떤 업종인가요?', recommended: (n) => `추천 ${n}개 추가`,
       all: (n) => `카탈로그 전체 추가 (${n})`, add: '추가', dragHint: '끌어서 순서를 바꾸거나 «추가»에서 끌어오세요.',
+    },
+    media: {
+      title: (c) => `${c} 맞춤 설정`, client: '고객',
+      lede: '로고, 매장 사진(또는 인스타그램 사진), 고객의 영상을 넣으세요. 제안서 화면에 나와 «와, 우리 매장이다»라고 느끼게 합니다.',
+      logo: '로고', photos: '사진', video: '영상', addLogo: '＋ 로고', addVideo: '＋ 영상 (MP4, 최대 30MB)',
+      uploading: '업로드 중…', remove: '삭제', uploadFail: '파일을 올리지 못했어요. 다시 시도하세요.',
+      where: '«라이브 화면»에 표시됩니다: 위쪽에 로고, «사진»에 사진, 배경에 영상.',
     },
     clientData: '고객 정보', advanced: '고급', moreActions: '더 보기',
     preview: { title: '미리보기', mobile: '모바일', tablet: '태블릿', desktop: '데스크톱', open: '열기 ↗', frame: '제안서 미리보기' },

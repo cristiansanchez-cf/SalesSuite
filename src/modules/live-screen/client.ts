@@ -5,10 +5,12 @@ import { DEMO } from './demo';
  * Por instancia: una pantalla (motor del producto) + el móvil que escanea y pide + la botonera del vendedor.
  * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla, se queda en ella (▶︎ lo reanuda).
  */
-type Scene = { scene: string; amount: number };
+type Scene = { scene: string; amount: number; video?: boolean };
 interface Config {
   assets: Record<string, unknown> & { covers: string[] };
   phone: { song?: string; photo?: string; message?: string };
+  /** Su propia foto (Personalizar): el móvil la enseña al enviarla. */
+  ownPhoto?: string | null;
   autoplay: boolean;
   scenes: Scene[];
 }
@@ -72,8 +74,20 @@ export function init(root: HTMLElement): () => void {
     const s = cfg.scenes[idx];
     mark(idx);
     const show = () => { screen?.set('amount', s.amount); screen?.show(s.scene); };
-    if (!withPhone || reduced || !phone || !isRequest(s.scene)) { phoneState(); show(); }
-    else {
+    if (s.video && withPhone && !reduced && phone) {
+      // Su vídeo: el móvil lo sube (barra), desaparece y el vídeo aparece de fondo en la pantalla.
+      phoneState('is-in', 'is-upload');
+      later(1800, () => phoneState('is-in', 'is-upload', 'is-sent'));
+      later(2300, () => { phoneState(); show(); });
+    } else if (!withPhone || reduced || !phone || !isRequest(s.scene)) { phoneState(); show(); }
+    else if (phoneKey(s.scene) === 'photo' && cfg.ownPhoto) {
+      if (phoneImg) phoneImg.src = cfg.ownPhoto;
+      phoneState('is-in', 'is-scan');
+      later(1100, () => phoneState('is-in', 'is-own'));
+      later(2200, () => phoneState('is-in', 'is-own', 'is-sent'));
+      later(2700, show);
+      later(4200, () => phoneState());
+    } else {
       const src = cfg.phone[phoneKey(s.scene)];
       if (phoneImg && src) phoneImg.src = src;
       phoneState('is-in', 'is-scan');
@@ -82,7 +96,8 @@ export function init(root: HTMLElement): () => void {
       later(2700, show);
       later(4200, () => phoneState());
     }
-    if (auto && visible) later((isRequest(s.scene) ? 2700 : 0) + (s.scene.endsWith('idle') ? 4500 : 6000), () => go(idx + 1, true));
+    const lead = s.video ? 2300 : isRequest(s.scene) ? 2700 : 0;
+    if (auto && visible) later(lead + (s.video ? 7000 : s.scene.endsWith('idle') ? 4500 : 6000), () => go(idx + 1, true));
   }
 
   function setAuto(on: boolean) {

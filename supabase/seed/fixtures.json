@@ -1996,8 +1996,12 @@
           "label": "Valencia"
         },
         {
+          "key": "andalucia",
+          "label": "Andalucía"
+        },
+        {
           "key": "costa",
-          "label": "Costa (temporada)"
+          "label": "Costa e islas"
         }
       ],
       "status": "official"

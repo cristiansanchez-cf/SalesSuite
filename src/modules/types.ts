@@ -12,6 +12,8 @@ export interface ModuleContext {
   price: ResolvedPrice | null;
   /** Total del dossier (total o suma per_module). */
   total: ResolvedPrice | null;
+  /** Logo, fotos y vídeo del cliente (Personalizar). Los módulos que sepan usarlos los ponen en lugar de los de ejemplo. */
+  media?: import('~/lib/types').ClientMedia;
 }
 
 export interface ModuleBaseProps {

@@ -25,6 +25,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   discount: r.discount ?? null,
   viewMode: r.view_mode ?? 'live',
   priceOptionId: r.price_option_id ?? null,
+  clientMedia: r.client_media ?? {},
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -99,6 +100,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.accountId !== undefined) d.account_id = p.accountId;
       if (p.viewMode !== undefined) d.view_mode = p.viewMode;
       if (p.priceOptionId !== undefined) d.price_option_id = p.priceOptionId;
+      if (p.clientMedia !== undefined) d.client_media = p.clientMedia;
       if (p.couponId !== undefined) demoApplyCoupon(d, p.couponId);  // = trigger dossier_coupon_apply
       demoAccountsOnDossier(prev, d);
       d.updated_at = new Date().toISOString();
@@ -413,9 +415,28 @@ export function demoIdentity(getDb: () => DemoDb = demoDb): Identity {
   };
 }
 
-/** En demo no hay almacenamiento: se usan URLs. */
+/**
+ * En demo no hay Storage: la marca usa URLs; lo personalizado de una propuesta (logo, fotos, vídeo) va a memoria
+ * y se sirve en /demo-media/<clave> (solo en modo demo; se pierde al reiniciar, como todo lo demás).
+ */
+const DEMO_MEDIA = new Map<string, { type: string; bytes: Uint8Array }>();
+let demoMediaBytes = 0;
+export function demoMediaGet(key: string) { return DEMO_MEDIA.get(key) ?? null; }
+export function demoMediaPut(key: string, type: string, bytes: Uint8Array): boolean {
+  if (!/^[a-z0-9-]{8,80}$/.test(key) || !DEMO_MEDIA.has(key) || DEMO_MEDIA.get(key)!.type !== type) return false;
+  if (demoMediaBytes + bytes.length > 200 * 1024 * 1024) return false;
+  demoMediaBytes += bytes.length;
+  DEMO_MEDIA.set(key, { type, bytes });
+  return true;
+}
 export const demoAssets: AssetStore = {
   async upload() {
     throw new Error('DEMO_NO_STORAGE');
   },
+  async signUpload(_tenantId, _path, type) {
+    const key = randomUUID();
+    DEMO_MEDIA.set(key, { type, bytes: new Uint8Array() });
+    return { uploadUrl: `/demo-media/${key}`, publicUrl: `/demo-media/${key}` };
+  },
+  publicPrefix() { return '/demo-media/'; },
 };

@@ -26,6 +26,7 @@ export interface DossierRow {
   partner_account_id?: string | null;
   view_mode?: 'test' | 'live';
   price_option_id?: string | null;
+  client_media?: import('../types').ClientMedia;
   situation?: Record<string, string[]>;
   account_id?: string | null; account_eligibility?: string | null; account_decision?: 'approved' | 'rejected' | null;
   account_decided_by?: string | null; account_decided_at?: string | null;
