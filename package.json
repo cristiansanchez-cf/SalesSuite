@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Constructor de dossiers dinámicos white-label multi-tenant (Cofundo).",
+  "description": "Constructor de dossiers din\u00e1micos white-label multi-tenant (Cofundo).",
   "engines": {
     "node": ">=20.3"
   },
@@ -16,12 +16,15 @@
     "test": "vitest run",
     "db:test": "bash supabase/tests/run-local.sh",
     "db:seed:build": "node scripts/build-seed.mjs",
-    "db:it": "bash supabase/tests/run-it.sh"
+    "db:it": "bash supabase/tests/run-it.sh",
+    "tenant:bootstrap": "tsx scripts/tenant-bootstrap.ts",
+    "start:demo": "DEMO_MODE=1 DEV_TENANT_SLUG=enjoy node ./dist/server/entry.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.5",
     "@astrojs/svelte": "^7.2.5",
     "@astrojs/tailwind": "^6.0.2",
+    "@astrojs/vercel": "^8.2.11",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "astro": "^5.18.2",
@@ -34,6 +37,7 @@
     "@astrojs/check": "^0.9.10",
     "@types/node": "^22.20.5",
     "svelte-check": "^4.7.6",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"
   }

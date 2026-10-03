@@ -38,6 +38,8 @@ jobs:
       - run: npm ci
       - name: seed.sql al día con fixtures.json
         run: node scripts/build-seed.mjs && git diff --exit-code supabase/seed.sql
+      - name: tenants/* válidos (estructura; los assets pendientes se avisan)
+        run: npx tsx scripts/tenant-bootstrap.ts supabase/tests/tenant-fixture --dry-run
       - name: Migraciones + aserciones RLS/RPC
         run: bash supabase/tests/run-local.sh
       - name: PostgREST
@@ -54,9 +56,17 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm i --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: Guardia de producción (sin Supabase ni DEMO_MODE → 503)
+        run: |
+          PORT=4322 HOST=127.0.0.1 node dist/server/entry.mjs &
+          for _ in $(seq 1 30); do curl -s http://127.0.0.1:4322/api/health >/dev/null && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4322/admin/login)" = 503
       - name: Smoke E2E (modo DEMO)
         run: |
-          DEV_TENANT_SLUG=enjoy PORT=4321 HOST=127.0.0.1 node dist/server/entry.mjs &
+          DEMO_MODE=1 DEV_TENANT_SLUG=enjoy PORT=4321 HOST=127.0.0.1 node dist/server/entry.mjs &
           for _ in $(seq 1 30); do curl -sf http://127.0.0.1:4321/admin/login >/dev/null && break; sleep 1; done
           node scripts/smoke-e2e.cjs
           node scripts/smoke-admin.cjs
+          node scripts/smoke-tenant-admin.cjs
+      - name: Build para Vercel
+        run: DEPLOY_TARGET=vercel npm run build

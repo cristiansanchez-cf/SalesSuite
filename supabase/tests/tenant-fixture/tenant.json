@@ -1,0 +1,14 @@
+{
+  "$comment": "Tenant de prueba para tests de integración del script de alta.",
+  "slug": "acme-it",
+  "name": "ACME IT",
+  "default_locale": "es-ES",
+  "theme_tokens": { "colors": { "primary": "#123456" } },
+  "brand": { "logoUrl": "asset:logo.svg", "contact": { "email": "ventas@example.com" } },
+  "domains": [{ "hostname": "pitch.acme-it.test", "is_primary": true }, { "hostname": "acme-it.cofundo.app" }],
+  "admins": ["rep@enjoy.test", "nadie@acme-it.test"],
+  "catalog": [
+    { "key": "hero", "block_type": "hero-pitch", "name": "Hero", "props": { "title": "Hola {company}" } },
+    { "key": "precio", "block_type": "pricing-card", "name": "Precio", "default_price": 990, "props": { "title": "Precio" } }
+  ]
+}

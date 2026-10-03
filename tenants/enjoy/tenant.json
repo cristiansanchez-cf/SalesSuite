@@ -1,0 +1,224 @@
+{
+  "$comment": "Alta de Enjoy en SalesSuite. Lo rellena el agente/equipo de Enjoy (ver docs/BRAND_INTAKE.md). Los textos de 'catalog' son PROVISIONALES (copy de ejemplo): sustituir por los reales. Aplicar con: npm run tenant:bootstrap -- tenants/enjoy",
+  "slug": "enjoy",
+  "name": "Enjoy the Club",
+  "default_locale": "es-ES",
+  "theme_tokens": {
+    "colors": {
+      "bg": "#ffffff",
+      "surface": "#f7f4f6",
+      "text": "#0d0d0d",
+      "muted": "#5c5660",
+      "border": "#ece6ea",
+      "primary": "#ff27bb",
+      "primary-contrast": "#ffffff",
+      "accent": "#e1ff00",
+      "accent-contrast": "#0d0d0d"
+    },
+    "radius": {
+      "card": "28px",
+      "button": "999px"
+    },
+    "font": {
+      "display": "'YWFTKul', ui-sans-serif, system-ui, sans-serif",
+      "sans": "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "faces": [
+        {
+          "family": "YWFTKul",
+          "src": "asset:fonts/YWFTKul.woff2",
+          "weight": "400 900"
+        }
+      ]
+    }
+  },
+  "brand": {
+    "logoUrl": "asset:logo.svg",
+    "logoAlt": "Enjoy the Club",
+    "faviconUrl": "asset:favicon.png",
+    "ogImageUrl": "asset:og.png",
+    "contact": {}
+  },
+  "domains": [
+    {
+      "hostname": "pitch.enjoytheclub.es",
+      "is_primary": true
+    },
+    {
+      "hostname": "enjoy.cofundo.app",
+      "is_primary": false
+    }
+  ],
+  "admins": [],
+  "catalog": [
+    {
+      "key": "hero-bodas",
+      "block_type": "hero-pitch",
+      "name": "Hero · Bodas",
+      "description": "Portada del dossier con titular personalizado y palabras rotando.",
+      "default_price": null,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Propuesta para {company}",
+        "title": "La boda de la que todos van a",
+        "rotatingWords": [
+          "hablar",
+          "acordarse",
+          "presumir"
+        ],
+        "subtitle": "v2 del módulo: los dossiers ya publicados siguen en v1 hasta que el comercial actualice.",
+        "ctas": [
+          {
+            "label": "Ver la propuesta",
+            "href": "#propuesta",
+            "variant": "primary"
+          }
+        ],
+        "stats": []
+      }
+    },
+    {
+      "key": "tabs-experiencias",
+      "block_type": "tabs-showcase",
+      "name": "Tabs · Experiencias",
+      "description": "Servicios en pestañas con mock de chat animado.",
+      "default_price": 450,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Experiencias",
+        "title": "Todo lo que pasa en tu evento, en el móvil de cada invitado",
+        "autoAdvanceMs": 6000,
+        "tabs": [
+          {
+            "label": "Kiss-cam",
+            "title": "Kiss-cam en pantalla gigante",
+            "body": "Los invitados envían su momento y aparece en directo.",
+            "bullets": [
+              "Moderación previa",
+              "Branding del evento"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Enjoy · Kiss-cam",
+              "messages": [
+                {
+                  "from": "them",
+                  "text": "¡Mesa 4 lista! 💋"
+                },
+                {
+                  "from": "me",
+                  "text": "En pantalla en 3, 2, 1…"
+                },
+                {
+                  "from": "them",
+                  "text": "😍😍😍"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Dedicatorias",
+            "title": "Dedicatorias que se leen en voz alta",
+            "body": "Mensajes desde el móvil, proyectados en el momento justo.",
+            "bullets": [
+              "Sin descargar app",
+              "Exportables al final"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Dedicatorias",
+              "messages": [
+                {
+                  "from": "them",
+                  "text": "Para los novios: ¡que viva el amor!"
+                },
+                {
+                  "from": "me",
+                  "text": "Recibido ✨ sale tras el brindis"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Retos",
+            "title": "Retos y votaciones por mesa",
+            "body": "Gamificación ligera para que nadie se quede sentado.",
+            "bullets": [
+              "Ranking en directo",
+              "Premios del local"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "tabs-locales",
+      "block_type": "tabs-showcase",
+      "name": "Tabs · Locales",
+      "description": "Propuesta para salas y locales.",
+      "default_price": 300,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Para {company}",
+        "title": "Tu sala, con algo que la competencia no tiene",
+        "autoAdvanceMs": 4500,
+        "tabs": [
+          {
+            "label": "Pack sala",
+            "title": "Enjoy incluido en tu oferta de bodas",
+            "body": "Un extra diferencial que puedes vender o regalar.",
+            "bullets": [
+              "Margen para el local",
+              "Formación en 1 hora"
+            ],
+            "mock": {
+              "kind": "chat",
+              "header": "Coordinación sala",
+              "messages": [
+                {
+                  "from": "me",
+                  "text": "Sábado: 180 invitados confirmados"
+                },
+                {
+                  "from": "them",
+                  "text": "Perfecto, pantalla montada a las 19h"
+                }
+              ]
+            }
+          },
+          {
+            "label": "Datos",
+            "title": "Datos de cada evento",
+            "body": "Participación, momentos top y reseñas al terminar.",
+            "bullets": [
+              "Informe automático"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "pricing",
+      "block_type": "pricing-card",
+      "name": "Tarjeta de precio",
+      "description": "Cifra según price_mode del dossier.",
+      "default_price": null,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Inversión",
+        "title": "Propuesta para {company}",
+        "subtitle": "Todo lo necesario para el día del evento, sin sorpresas.",
+        "features": [
+          "Montaje y soporte en directo",
+          "Personalización con vuestra marca",
+          "Informe post-evento",
+          "Sin permanencia"
+        ],
+        "priceSuffix": "/ evento",
+        "cta": {
+          "label": "Reservar fecha",
+          "href": "mailto:hola@enjoytheclub.es"
+        }
+      }
+    }
+  ]
+}

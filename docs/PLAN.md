@@ -306,3 +306,30 @@ Repo substrato: `…/Enjoy/Repos/EnjoyWeb/WEB/ComingSoon`
 - **Nosotros (Claude) somos proveedores del código de la UI de módulos**: a partir del repo de Enjoy, entregaremos los 4–6 módulos de arranque (`Component.astro` + `schema.ts` + `client.ts`) y el `MODULE_AUTHORING.md`, para que Enjoy sea el **primer caso de UI con código** en la app white-label.
 - **Repo**: nuevo, independiente, asociado a Cofundo; Enjoy = primer tenant servido en subdominio.
 - Siguiente paso tras aprobar este plan: arrancar **Fase 0** (scaffold del repo + portado de tokens + primer módulo `hero-pitch` escopado como prueba del patrón), y en paralelo preparar el esquema Supabase + RLS.
+
+---
+
+## 15. Huecos del plan detectados durante la implementación (añadido)
+
+Al construir el MVP aparecieron necesidades que el plan original no cubría. Estado a 2026-10-03:
+
+| Hueco | Por qué importa | Estado |
+|---|---|---|
+| **Modo demo activable por error en producción** | Sin variables de Supabase, la app entraba en demo: login sin contraseña como admin | ✅ En producción, sin Supabase → 503 con diagnóstico (`/api/health`); demo solo con `DEMO_MODE=1` |
+| **CSRF con dominios por tenant** | El `checkOrigin` de Astro compara con el host interno: habría rechazado todos los formularios en `pitch.<tenant>` | ✅ Comprobación propia Origin ↔ host real |
+| **Gestión de equipo** (§8 "admin gestiona miembros") | Sin ella, cada alta de comercial era SQL a mano | ✅ `/admin/team`: invitar, cambiar rol, quitar; nunca sin admin (BD + app) |
+| **Flujos de cuenta** | Aceptar invitación, recuperar contraseña, fijar contraseña | ✅ `/admin/auth/confirm` + `/admin/account` + plantillas de email (`supabase/templates`) |
+| **SMTP propio** | El email de Supabase solo envía al equipo del proyecto: las invitaciones no llegarían | 📋 Paso de configuración (SETUP §3.4) |
+| **Gestión de catálogo** (§8 "admin gestiona módulos") | Crear variantes y versiones sin SQL | ✅ `/admin/catalog`: módulos, borrador → publicar → archivar, preview, uso por dossiers |
+| **Marca más allá del tema** | Logo, favicon, contacto y pie no estaban en el modelo | ✅ `tenant.brand` + `/admin/brand` con subida a Storage |
+| **Previsualización al compartir** | El enlace se comparte por WhatsApp: sin OG se ve un enlace pelado | ✅ `og:title/description/image` por dossier |
+| **CTA de contacto en el dossier** | El objetivo es que el prospecto conteste | ✅ Cabecera con WhatsApp/email del tenant |
+| **Storage de assets** (riesgo §12.6) | Fuentes y logos necesitan hosting por tenant | ✅ Bucket `tenant-assets`, escritura solo para admins y solo en su carpeta |
+| **Permisos finos en `tenant`** | Un admin de tenant podía cambiar `slug`/`status` | ✅ Permisos por columna |
+| **Alta reproducible de tenants** | Onboarding = SQL manual propenso a errores | ✅ `npm run tenant:bootstrap` (idempotente, valida con los schemas de la app) |
+| **Despliegue y salud** | Sin target ni healthcheck | ✅ Vercel (auto) o Docker; `/api/health` |
+| **Diseño real de Enjoy (`nh-*`)** | Los módulos siguen la estructura, no el diseño exacto | ⏳ Bloqueado: falta acceso a EnjoyWeb (ver BRAND_INTAKE §4.2) |
+| **Datos reales de Enjoy** | Copys, precios, logo, fuente, contacto, admins | ⏳ Bloqueado: los aporta el agente de Enjoy (BRAND_INTAKE) |
+| **Proyecto Supabase, dominio y despliegue** | Requieren tus cuentas | 📋 [`SETUP.md`](./SETUP.md) |
+
+Siguientes candidatos (no MVP): editor de personalización por formulario generado desde los schemas Zod (hoy JSON validado), tema por dossier desde el builder (`theme_override` ya existe), y Fase 2 (analítica).

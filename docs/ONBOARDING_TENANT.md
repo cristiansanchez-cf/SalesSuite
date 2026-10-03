@@ -1,29 +1,37 @@
 # Alta de un tenant
 
-Todo como **service role / SQL editor** de Supabase (el alta de tenants no está expuesta a usuarios).
+**Forma recomendada:** carpeta `tenants/<slug>/` + script idempotente.
 
-```sql
--- 1. Tenant + tema
-insert into public.tenant (slug, name, default_locale, theme_tokens) values (
-  'enjoy', 'Enjoy the Club', 'es-ES',
-  '{"colors":{"primary":"#ff27bb","accent":"#e1ff00","accent-contrast":"#0d0d0d"},
-    "font":{"display":"''YWFTKul'', ui-sans-serif, system-ui, sans-serif",
-            "faces":[{"family":"YWFTKul","src":"https://<proyecto>.supabase.co/storage/v1/object/public/tenant-assets/<tenant_id>/YWFTKul.woff2"}]}}'
-) returning id;
-
--- 2. Dominios (el primario + el wildcard de plataforma)
-insert into public.domain (tenant_id, hostname, is_primary) values
-  ('<tenant_id>', 'pitch.enjoytheclub.es', true),
-  ('<tenant_id>', 'enjoy.cofundo.app', false);
-
--- 3. Primer admin (el usuario debe haberse registrado antes en Supabase Auth;
---    el trigger on_auth_user_created ya creó su fila en public.users)
-insert into public.membership (user_id, tenant_id, role)
-select id, '<tenant_id>', 'admin' from public.users where email = 'admin@enjoytheclub.es';
-
--- 4. Catálogo: module + module_version publicadas (ver MODULE_AUTHORING.md §6)
+```bash
+cp -r tenants/enjoy tenants/<slug>          # y edita tenant.json + assets/
+npm run tenant:bootstrap -- tenants/<slug> --dry-run
+PUBLIC_SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run tenant:bootstrap -- tenants/<slug>
 ```
 
-5. DNS del tenant: `CNAME pitch → <host de la plataforma>`. Provisionar el certificado (Vercel Domains API o Cloudflare for SaaS) y marcar `domain.ssl_status = 'active'`.
+El script crea o actualiza el tenant, sus dominios, la marca (sube los assets a Storage), el catálogo (versiona solo lo que cambió) e invita a los admins. Formato y requisitos: [`BRAND_INTAKE.md`](./BRAND_INTAKE.md). Configuración previa de Supabase: [`SETUP.md`](./SETUP.md).
 
-Las claves de `theme_tokens` válidas están en `src/lib/theme.ts` (`themeTokensSchema`). Tokens inválidos se ignoran (tema por defecto) y se avisa en logs.
+Después, en `SETUP.md`:
+- **Redirect URL** del dominio nuevo en Supabase Auth (§3.1);
+- **dominio** en Vercel + CNAME del tenant (§6).
+
+A partir de ahí los admins del tenant gestionan **equipo, catálogo y marca desde `/admin`**, sin SQL.
+
+## Referencia: equivalente en SQL
+
+Solo como referencia o para emergencias. Ejecutar como service role / SQL Editor.
+
+```sql
+insert into public.tenant (slug, name, default_locale, theme_tokens, brand) values (
+  'enjoy', 'Enjoy the Club', 'es-ES',
+  '{"colors":{"primary":"#ff27bb","accent":"#e1ff00"}}',
+  '{"logoUrl":"https://<ref>.supabase.co/storage/v1/object/public/tenant-assets/<tenant_id>/brand/logo.svg"}'
+) returning id;
+
+insert into public.domain (tenant_id, hostname, is_primary) values ('<tenant_id>', 'pitch.enjoytheclub.es', true);
+
+-- El usuario debe existir en Auth (invitado desde el panel: Authentication → Users → Invite)
+insert into public.membership (user_id, tenant_id, role)
+select id, '<tenant_id>', 'admin' from public.users where email = 'admin@enjoytheclub.es';
+```
+
+Claves válidas de `theme_tokens` y `brand`: `src/lib/theme.ts` y `src/lib/brand.ts`.

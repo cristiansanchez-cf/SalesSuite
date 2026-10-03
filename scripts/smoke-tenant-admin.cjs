@@ -6,6 +6,10 @@
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
+// Sufijo por ejecución: el script se puede repetir contra el mismo servidor.
+const RUN = Date.now().toString(36);
+const KEY = `hero-locales-${RUN}`;
+const INVITE = `nueva.${RUN}@enjoy.test`;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
 
 (async () => {
@@ -31,8 +35,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---- catálogo: crear módulo, JSON inválido, válido, publicar
   await p.click('a[href="/admin/catalog"]');
-  await p.fill('[data-testid=create-module] [name=name]', 'Hero · Locales');
-  await p.fill('[data-testid=create-module] [name=key]', 'hero-locales');
+  await p.fill('[data-testid=create-module] [name=name]', `Hero · Locales ${RUN}`);
+  await p.fill('[data-testid=create-module] [name=key]', KEY);
   await p.click('[data-testid=create-module] button[type=submit]');
   await p.waitForURL(/\/admin\/catalog\/[0-9a-f-]{36}\?ok=created/);
   await p.fill('[data-testid=props]', '{"title": ""}');
@@ -42,7 +46,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.fill('[name=defaultPrice]', '199');
   await p.click('[data-testid=publish-version]');
   await p.waitForURL(`${BASE}/admin/catalog?ok=published`);
-  const row = await p.textContent('[data-module-key=hero-locales]');
+  const row = await p.textContent(`[data-module-key=${KEY}]`);
   assert(row.includes('Publicada') && row.includes('199'), 'módulo publicado con precio');
 
   // aparece en el builder
@@ -50,20 +54,20 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.fill('[data-testid=create-form] [name=title]', 'Prueba catálogo');
   await p.click('[data-testid=create-form] button[type=submit]');
   await p.waitForURL(/\/admin\/dossiers\//);
-  assert(await p.isVisible('[data-testid=add-hero-locales]'), 'nuevo módulo disponible en el builder');
+  assert(await p.isVisible(`[data-testid=add-${KEY}]`), 'nuevo módulo disponible en el builder');
 
   // ---- equipo: invitar
   await p.goto(`${BASE}/admin/team`);
-  await p.fill('[data-testid=invite-form] [name=email]', 'nueva.comercial@enjoy.test');
+  await p.fill('[data-testid=invite-form] [name=email]', INVITE);
   await p.click('[data-testid=invite-form] button');
   await p.waitForURL(`${BASE}/admin/team?ok=invited`);
-  assert((await p.textContent('[data-testid=members]')).includes('nueva.comercial@enjoy.test'), 'invitada aparece en el equipo');
+  assert((await p.textContent('[data-testid=members]')).includes(INVITE), 'invitada aparece en el equipo');
   // no se puede quitar el último admin
   const adminRow = p.locator('[data-testid=members] li', { hasText: 'admin@enjoy.test' });
   await adminRow.locator('button', { hasText: 'Quitar' }).click();
   assert((await p.textContent('[role=alert]')).includes('al menos un admin'), 'no se quita al último admin');
   // la invitada puede entrar (demo) como comercial
-  const nueva = await login('nueva.comercial@enjoy.test');
+  const nueva = await login(INVITE);
   assert((await nueva.textContent('[data-testid=role]')).includes('Comercial'), 'invitada entra como comercial');
 
   // ---- marca: color + WhatsApp + logo → visible en enlace público

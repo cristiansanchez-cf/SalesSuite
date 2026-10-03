@@ -21,7 +21,7 @@ run supabase/tests/30_it_users.sql
 psql "$ADMIN_URL" -qc "do \$\$ begin
   if not exists (select from pg_roles where rolname='authenticator') then
     create role authenticator login password 'authenticator' noinherit; end if; end \$\$;" \
-  -c "grant anon, authenticated to authenticator"
+  -c "grant anon, authenticated, service_role to authenticator"
 
 PGRST_DB_URI="$PGHOST_URI/$DB" PGRST_DB_SCHEMAS=public PGRST_DB_ANON_ROLE=anon \
   PGRST_JWT_SECRET="$SECRET" PGRST_SERVER_PORT=3000 PGRST_SERVER_HOST=127.0.0.1 PGRST_LOG_LEVEL=crit \
@@ -34,3 +34,6 @@ for _ in $(seq 1 50); do curl -sf http://127.0.0.1:3000/ >/dev/null && break; sl
 
 SUPABASE_IT_URL=http://127.0.0.1:54321 SUPABASE_IT_JWT_SECRET="$SECRET" SUPABASE_IT_DB_URL="$DB_URL" \
   npx vitest run src/lib/admin/service.supabase.test.ts
+
+# Script de alta de tenants (service role) contra la misma API.
+bash supabase/tests/bootstrap-it.sh "$DB_URL" http://127.0.0.1:54321 "$SECRET"

@@ -2,12 +2,14 @@
 
 Producto multi-tenant de Cofundo: un comercial compone un **dossier vivo** por prospecto (módulos de UI animados, orden, ocultos, precio) y lo comparte como enlace bajo la marca de su empresa (`pitch.<tenant>/d/<token>`). Enjoy the Club es el primer tenant.
 
-- Plan y contexto de negocio: [`docs/PLAN.md`](docs/PLAN.md)
+- **Puesta en marcha (Supabase, Vercel, dominio) paso a paso: [`docs/SETUP.md`](docs/SETUP.md)**
+- Qué debe aportar Enjoy (marca, copys, código `nh-*`): [`docs/BRAND_INTAKE.md`](docs/BRAND_INTAKE.md)
+- Plan y contexto de negocio (incl. §15 huecos detectados): [`docs/PLAN.md`](docs/PLAN.md)
 - Decisiones de stack (cierra las preguntas abiertas del plan): [`docs/ADR-0001-stack.md`](docs/ADR-0001-stack.md)
 - Cómo añadir un módulo: [`docs/MODULE_AUTHORING.md`](docs/MODULE_AUTHORING.md)
 - Alta de un tenant: [`docs/ONBOARDING_TENANT.md`](docs/ONBOARDING_TENANT.md)
 
-**Stack:** Astro 5 SSR (adapter Node) · Tailwind 3 sobre CSS vars · Zod · Svelte 5 (builder) · Supabase (Postgres + Auth + RLS).
+**Stack:** Astro 5 SSR (Vercel o Node/Docker) · Tailwind 3 sobre CSS vars · Zod · Svelte 5 (builder) · Supabase (Postgres + Auth + RLS).
 
 ## Arrancar en local (modo DEMO, sin Supabase)
 
@@ -15,7 +17,10 @@ Producto multi-tenant de Cofundo: un comercial compone un **dossier vivo** por p
 npm install
 cp .env.example .env        # deja vacías las claves de Supabase → modo DEMO con supabase/seed/fixtures.json
 npm run dev                 # http://localhost:4321
+# o con el build de producción:  npm run build && npm run start:demo
 ```
+
+> En un build de producción **sin** Supabase la app responde 503 (no entra en demo salvo `DEMO_MODE=1`).
 
 | URL | Qué demuestra |
 |---|---|
@@ -31,13 +36,11 @@ En modo demo los cambios hechos en `/admin` se ven al momento en `/d/<token>` (B
 
 ## Con Supabase
 
-```bash
-supabase db reset                      # aplica supabase/migrations + supabase/seed.sql
-# .env: PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY
-```
+Producción: sigue [`docs/SETUP.md`](docs/SETUP.md). En local con la CLI (`supabase start` aplica migraciones, seed de demo y plantillas de email de `supabase/config.toml`).
+
 - El renderer público solo usa la clave **anon** y dos RPC `security definer` (`resolve_tenant`, `get_public_dossier`).
-- La consola usa **Supabase Auth** (email+contraseña o magic link) con cookies httpOnly (`@supabase/ssr`); cada consulta va con el JWT del usuario, así que la **RLS** aplica siempre. En Auth → URL Configuration añade `https://<host-del-tenant>/admin/auth/callback` a las Redirect URLs.
-- Alta de usuarios/membresías: [`docs/ONBOARDING_TENANT.md`](docs/ONBOARDING_TENANT.md).
+- La consola usa **Supabase Auth** (contraseña, enlace mágico, invitaciones, recuperación) con cookies httpOnly (`@supabase/ssr`); cada consulta va con el JWT del usuario → la **RLS** aplica siempre. La `service_role` solo se usa para **invitar** usuarios y en el script de alta.
+- Alta de tenants: `npm run tenant:bootstrap -- tenants/<slug>` ([`docs/ONBOARDING_TENANT.md`](docs/ONBOARDING_TENANT.md)).
 
 ## Consola `/admin`
 
@@ -48,6 +51,12 @@ supabase db reset                      # aplica supabase/migrations + supabase/s
 | `/admin/dossiers/:id` | **Builder**: datos del prospecto, modo de precio (`none`/`total`/`per_module`), catálogo, reordenar (drag & drop + botones ↑↓), ocultar, precio por módulo, personalizar textos (JSON validado contra el schema), actualizar a la última versión del módulo, publicar/despublicar/archivar/borrar, generar/copiar/revocar enlaces con caducidad, vista previa móvil/tablet/escritorio |
 | `/admin/dossiers/:id/preview` | Vista previa autenticada (cualquier estado) |
 | `/admin/api/dossiers/:id` | API JSON del builder: `GET` estado · `POST {op}` → estado · `DELETE` |
+| `/admin/catalog` *(admin)* | Módulos y versiones: crear variante, borrador → publicar → archivar, preview, uso por dossiers |
+| `/admin/team` *(admin)* | Invitar por email, cambiar rol, quitar (nunca sin al menos un admin) |
+| `/admin/brand` *(admin)* | Colores, radios, tipografía (fuente propia), logos/favicon/imagen OG (subida a Storage), contacto (WhatsApp…), con vista previa |
+| `/admin/account` | Nombre y contraseña (también destino de invitación y recuperación) |
+| `/admin/auth/confirm` | Destino de los emails de Auth (`token_hash` o `code`) |
+| `/api/health` | Estado y diagnóstico de configuración (sin secretos) |
 
 Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/ops.ts`); las reglas viven en un único servicio (`src/lib/admin/service.ts`) sobre la interfaz `AdminDb`, con dos implementaciones: memoria (demo) y Supabase con la sesión del usuario. La misma batería de tests de contrato (`service.contract.ts`) se ejecuta contra ambas.
 
@@ -55,14 +64,18 @@ Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/op
 
 | Script | |
 |---|---|
-| `npm run dev` / `build` / `start` | Desarrollo / build SSR / servidor Node (`dist/server/entry.mjs`) |
+| `npm run dev` / `build` / `start` / `start:demo` | Desarrollo / build SSR / servidor Node / servidor Node en demo |
+| `npm run tenant:bootstrap -- tenants/<slug> [--dry-run]` | Alta/actualización idempotente de un tenant en Supabase (service role) |
 | `npm run check` | `astro check` (tipos) |
 | `npm test` | Vitest: tema (incl. inyección CSS), precios, rank fraccional, resolución de props, gates del repo demo, resolución de tenant |
 | `npm run db:test` | Migración + seed + **aserciones de RLS/RPC** sobre un Postgres pelado (stub de `auth`), sin Supabase CLI |
-| `npm run db:it` | Tests de contrato del servicio de la consola contra **Postgres + PostgREST + RLS** reales con `supabase-js` (`POSTGREST_BIN=/ruta/postgrest`) |
+| `npm run db:it` | Contrato del servicio de la consola (dossiers, equipo, catálogo, marca) y script de alta contra **Postgres + PostgREST + RLS** reales con `supabase-js` (`POSTGREST_BIN=/ruta/postgrest`) |
 | `npm run db:seed:build` | Regenera `supabase/seed.sql` desde `fixtures.json` (CI comprueba que está al día) |
 | `node scripts/smoke-e2e.cjs` | Smoke Playwright del enlace público (orden, precios, 404s, tema, multi-instancia) |
 | `node scripts/smoke-admin.cjs` | Smoke Playwright de la consola: plan §13 pasos 2–7 por la UI (login, crear, drag & drop, ocultar, precio, publicar, enlace, revocar, RBAC, móvil) |
+| `node scripts/smoke-tenant-admin.cjs` | Smoke Playwright de catálogo, equipo y marca (incl. reflejo en el enlace público) |
+
+Los smokes van contra un servidor en modo demo: `npm run build && npm run start:demo`.
 
 ## Estructura
 
@@ -106,9 +119,17 @@ supabase/
 - [x] CSRF propio (Origin vs host del tenant) — ver ADR-0001
 - [x] Tests: contrato del servicio en demo **y** en Postgres+PostgREST+RLS; E2E de consola en navegador
 
-**Pendiente**
-- [ ] **Portar el markup/CSS real `nh-*` de EnjoyWeb** a los módulos (el repo de Enjoy no estaba accesible desde esta sesión: los módulos actuales siguen la estructura del plan con copys placeholder) + `logo-marquee`, `testimonials`, `steps-howitworks`
-- [ ] Subir la fuente YWFTKul a Storage y añadir `font.faces` al tema de Enjoy
-- [ ] Gestión de miembros y del catálogo/tema desde la consola (hoy por SQL, ver ONBOARDING)
+**Fase 1.5 — listo para producción (salvo cuentas y datos de Enjoy)**
+- [x] Guardia de producción (sin config → 503, nunca demo), `/api/health`
+- [x] Equipo, catálogo y marca desde la consola; invitaciones, recuperación y cuenta
+- [x] Marca en el dossier (logo, CTA WhatsApp, pie, favicon, OG para compartir)
+- [x] Storage por tenant con RLS; permisos por columna; nunca sin admin
+- [x] Script de alta idempotente + `tenants/enjoy` prerrellenado; despliegue Vercel/Docker; guía SETUP
+
+**Pendiente — necesita a otra persona**
+- [ ] **Tú:** crear el proyecto Supabase, SMTP, Vercel y DNS → [`docs/SETUP.md`](docs/SETUP.md)
+- [ ] **Agente de Enjoy:** rellenar `tenants/enjoy/` (marca, assets, copys, admins) → [`docs/BRAND_INTAKE.md`](docs/BRAND_INTAKE.md)
+- [ ] **Acceso a EnjoyWeb** para portar el diseño real `nh-*` y añadir `logo-marquee`, `testimonials`, `steps-howitworks`
+
+**Pendiente — siguiente iteración**
 - [ ] Editor de personalización por formulario (hoy JSON validado) a partir de los schemas Zod
-- [ ] Despliegue (ver ADR-0001) + dominio `pitch.enjoytheclub.es`

@@ -42,3 +42,16 @@ Estado: **aceptado (Fase 0)** · Fecha: 2026-10-02 · Contexto: [`PLAN.md`](./PL
 | Drag & drop | `svelte-dnd-action` (ratón, táctil y teclado) + botones ↑↓ explícitos. | Tablet y accesibilidad. |
 | Personalización | JSON de `prop_overrides` validado en servidor contra el `schema.ts` del módulo (422 con el motivo). Formulario generado desde Zod: pendiente. | Valor inmediato sin bloquear la fase. |
 | Ediciones en vivo | Editar un dossier publicado se refleja al instante en sus enlaces (es el objetivo del producto). Despublicar o revocar → 404. | — |
+
+## Fase 1.5 (producción) — decisiones
+
+| Tema | Decisión | Por qué |
+|---|---|---|
+| Despliegue | **Vercel** por defecto: el adapter se elige solo con la variable `VERCEL`. Alternativa: **Docker** (Node standalone, puerto 8080). `DEPLOY_TARGET` lo fuerza. | Dominios y SSL por API en Vercel; Docker para Cloud Run/Fly sin cambiar código. |
+| Modo demo | Solo en desarrollo o con `DEMO_MODE=1`. Build de producción sin Supabase → **503** + `/api/health`. | El demo tiene login sin contraseña: no puede activarse por olvido. |
+| Emails de Auth | Plantillas propias con `{{ .RedirectTo }}&token_hash=…`; destino `/admin/auth/confirm` (`verifyOtp`). SMTP propio obligatorio. | Funciona multi-dominio y en otro dispositivo; las invitaciones por defecto (implícitas) no crean sesión de servidor. |
+| Service role | Solo para **invitar** (`/admin/team`) y en el script de alta. Datos siempre con el JWT del usuario. | Superficie mínima de bypass de RLS. |
+| Marca | `tenant.brand` (logo, favicon, OG, contacto, legal) separado de `theme_tokens`; ambos validados con Zod antes de renderizar. | Responsabilidades distintas; lista blanca de claves. |
+| Assets | Bucket público `tenant-assets`; escritura solo por admins del tenant y solo en `<tenant_id>/…`; 5 MB; tipos de imagen y fuente. | Lectura pública para el dossier; escritura aislada por tenant. |
+| Alta de tenants | `tenants/<slug>/tenant.json` + `assets/` + script idempotente que valida con los schemas de la app. | Reproducible, revisable en PR, sin SQL manual. |
+| Caché de tenant | 60 s en memoria por instancia; se limpia en la instancia que guarda la marca. | Otras instancias tardan ≤ 60 s en ver el cambio: aceptable. |
