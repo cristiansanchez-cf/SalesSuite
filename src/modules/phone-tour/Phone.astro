@@ -148,7 +148,7 @@ const action = f.photos ? 'photo' : f.messages ? 'message' : null;
       <div class="pt-grid">
         {Array.from({ length: 12 }).map((_, i) => (
           <span class="pt-grid__c" style={`--d:${i}`}>
-            {pic(i) && i % 3 !== 1 ? <img src={pic(i)!} alt="" /> : <em style={`background:${GRAD[i % 3]}`}></em>}
+            {pic(i) && (pics.length >= 6 || i % 3 !== 1) ? <img src={pic(i)!} alt="" /> : <em style={`background:${GRAD[i % 3]}`}></em>}
             {i % 4 === 0 && <b class="pt-mine">MÍA</b>}
           </span>
         ))}

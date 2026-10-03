@@ -558,7 +558,14 @@
         "djName": "DJ ARIA",
         "qrImage": "/demo/enjoy/img/qr.webp",
         "photos": [
-          "/demo/enjoy/img/live/background.webp"
+          "/demo/enjoy/img/live/background.webp",
+          "/demo/enjoy/img/album/album-01.webp",
+          "/demo/enjoy/img/album/album-03.webp",
+          "/demo/enjoy/img/album/album-02.webp",
+          "/demo/enjoy/img/album/album-04.webp",
+          "/demo/enjoy/img/album/album-07.webp",
+          "/demo/enjoy/img/album/album-05.webp",
+          "/demo/enjoy/img/album/album-08.webp"
         ],
         "phone": {
           "song": "/demo/enjoy/img/live/request-mobile-2.webp",
@@ -619,7 +626,12 @@
         "djName": "DJ Mikel",
         "price": 2,
         "photos": [
-          "/demo/enjoy/img/live/background.webp"
+          "/demo/enjoy/img/album/album-01.webp",
+          "/demo/enjoy/img/album/album-02.webp",
+          "/demo/enjoy/img/album/album-03.webp",
+          "/demo/enjoy/img/album/album-04.webp",
+          "/demo/enjoy/img/album/album-05.webp",
+          "/demo/enjoy/img/album/album-06.webp"
         ],
         "qrImage": "/demo/enjoy/img/qr.webp",
         "autoplay": true

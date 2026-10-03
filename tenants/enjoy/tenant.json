@@ -114,7 +114,14 @@
         "djName": "DJ ARIA",
         "qrImage": "asset:img/tabs/qr.webp",
         "photos": [
-          "asset:img/live/background.webp"
+          "asset:img/live/background.webp",
+          "asset:img/album/album-01.webp",
+          "asset:img/album/album-03.webp",
+          "asset:img/album/album-02.webp",
+          "asset:img/album/album-04.webp",
+          "asset:img/album/album-07.webp",
+          "asset:img/album/album-05.webp",
+          "asset:img/album/album-08.webp"
         ],
         "phone": {
           "song": "asset:img/live/request-mobile-2.webp",
@@ -175,7 +182,12 @@
         "djName": "DJ Mikel",
         "price": 2,
         "photos": [
-          "asset:img/live/background.webp"
+          "asset:img/album/album-01.webp",
+          "asset:img/album/album-02.webp",
+          "asset:img/album/album-03.webp",
+          "asset:img/album/album-04.webp",
+          "asset:img/album/album-05.webp",
+          "asset:img/album/album-06.webp"
         ],
         "qrImage": "asset:img/tabs/qr.webp",
         "autoplay": true
