@@ -36,7 +36,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await rep.textContent('[data-testid=segment-modules]')).includes('Tabs · Experiencias'), 'módulos que encajan en el sector');
   if (OUT) await rep.screenshot({ path: `${OUT}/sector.png`, fullPage: false });
 
-  // ---- preparar mensaje: «tipo DJ»
+  // ---- preparar mensaje: «tipo DJ» (el detalle de cada persona va plegado en «Cómo tratarle»)
+  await dj.locator('[data-testid=persona-more] summary').click();
   await dj.locator('[data-testid=compose-persona]').click();
   await rep.waitForSelector('[data-testid=brief]');
   assert((await rep.inputValue('[data-testid=prompt]')).includes('SECTOR: Locales de ocio nocturno'), 'contexto del sector y del actor sin escribir nada');

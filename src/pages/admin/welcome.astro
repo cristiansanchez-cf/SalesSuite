@@ -1,29 +1,28 @@
 ---
 /**
  * Bienvenida paso a paso (docs/FOUNDATIONS.md §4.1 y §6): una idea por pantalla, poco texto, y se termina HACIENDO algo
- * (la primera propuesta). Admins y jefes/as tienen además un paso para preparar al equipo.
+ * (la primera propuesta). Es igual para todos (el CEO también vende); preparar el espacio es otra cosa: tarjeta en Inicio.
  * «Empieza aquí» (/admin/start) queda como resumen para volver a consultar.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import Alert from '~/components/ui/Alert.astro';
 import { BRAND } from '~/lib/site';
-import { can } from '~/lib/admin/permissions';
 import { AdminError } from '~/lib/admin/service';
 import { createDossierSchema } from '~/lib/admin/ops';
 import { markOnboarded } from '~/lib/onboarding';
 import { i18n } from '~/lib/i18n';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
-import type { IconName } from '~/lib/ui/icons';
+import { ICONS, type IconName } from '~/lib/ui/icons';
+import { stripMarkdown } from '~/lib/playbook/markdown';
 
 const { admin, tenant } = Astro.locals;
 if (!admin || !tenant) return Astro.redirect('/admin/login');
 const { m, f } = i18n(Astro, welcomeMessages);
 const partner = admin.session.role === 'partner';
-const manager = can(admin.session.role).manageTeam;
-const KEYS = ['hello', 'sell', 'who', 'how', 'terms', ...(manager ? ['team'] : []), 'first'] as const;
+const KEYS = ['hello', 'sell', 'who', 'how', 'terms', 'first'] as const;
 type Key = (typeof KEYS)[number];
-const ICON: Record<Key, IconName> = { hello: 'sparkles', sell: 'boxes', who: 'target', how: 'book-open', terms: 'wallet', team: 'users', first: 'file-text' };
+const ICON: Record<Key, IconName> = { hello: 'sparkles', sell: 'boxes', who: 'target', how: 'book-open', terms: 'wallet', first: 'file-text' };
 const total = KEYS.length;
 const n = Math.min(total, Math.max(1, Number(Astro.url.searchParams.get('step') ?? '1') || 1));
 const key = KEYS[n - 1] as Key;
@@ -64,15 +63,11 @@ const [catalog, segments, plays, terms] = await Promise.all([
 const sectors = segments.filter((s) => s.status !== 'archived').slice(0, 4);
 const topPlays = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 3);
 const href = (i: number) => `/admin/welcome?step=${i}`;
-const TEAM = [
-  { label: m.team.catalog, href: '/admin/catalog', icon: 'boxes' as IconName },
-  { label: m.team.market, href: '/admin/setup', icon: 'wand-sparkles' as IconName },
-  { label: m.team.invite, href: '/admin/team', icon: 'user-plus' as IconName },
-  { label: m.team.terms, href: '/admin/commissions/team?tab=plan', icon: 'wallet' as IconName },
-];
+const sectorIcon = (i: string | null) => (i && i in ICONS ? i : 'target') as IconName;
+const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slice(0, 140) ?? '';
 ---
 <AdminLayout title={m.title} bare>
-  <div class="mx-auto mt-4 grid max-w-xl gap-6 sm:mt-10" data-testid="welcome" data-step={key}>
+  <div class="mx-auto mt-4 grid max-w-xl grid-cols-[minmax(0,1fr)] gap-6 sm:mt-10" data-testid="welcome" data-step={key}>
     <div class="flex items-center justify-between gap-3">
       <span><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {tenant.name}</span></span>
       <form method="post"><input type="hidden" name="action" value="skip" /><button class="co-btn co-btn--quiet co-btn--sm" type="submit" data-testid="welcome-skip">{m.skip}</button></form>
@@ -83,7 +78,7 @@ const TEAM = [
       <div class="co-progress" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={n}><span style={`width:${Math.round((n / total) * 100)}%`}></span></div>
     </div>
 
-    <section class="co-card grid gap-5 !p-6 sm:!p-8">
+    <section class="co-card grid grid-cols-[minmax(0,1fr)] gap-5 !p-6 sm:!p-8">
       <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--co-signal-soft,#efe9ff)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={ICON[key]} size={24} /></span>
       {error && <Alert kind="rejection" title={error} />}
 
@@ -109,23 +104,24 @@ const TEAM = [
         <h1 class="co-page-title">{m.who.title}</h1>
         <p class="co-lede">{m.who.lede}</p>
         {sectors.length === 0 ? <p class="co-help">{m.who.empty}</p> : (
-          <ul class="grid gap-3">{sectors.map((s) => (
-            <li class="co-inset grid gap-1">
-              <span class="co-row-title">{s.name}</span>
-              {s.icp && <span class="co-help"><strong>{m.who.icp}:</strong> {s.icp}</span>}
-              {s.disqualifiers && <span class="co-help"><strong>{m.who.avoid}:</strong> {s.disqualifiers}</span>}
-            </li>))}
+          <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0">{sectors.map((s) => (
+            <li class="list-none"><a class="co-row !items-center" href={`/admin/learn/sector/${s.key}?from=welcome`} data-testid="welcome-sector">
+              <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={sectorIcon(s.icon)} size={22} /></span>
+              <span class="co-row__main"><span class="co-row-title">{s.name}</span>{s.description && <span class="co-meta">{s.description}</span>}</span>
+              <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
           </ul>
         )}
+        <p class="co-help">{m.who.tap}</p>
       </>}
 
       {key === 'how' && <>
         <h1 class="co-page-title">{m.how.title}</h1>
         <p class="co-lede">{m.how.lede}</p>
         {topPlays.length === 0 ? <p class="co-help">{m.how.empty}</p> : (
-          <ul class="grid gap-3">{topPlays.map((p) => (
-            <li class="co-inset grid gap-2" data-testid="welcome-play">
-              <span class="co-row-title">{p.title}</span>
+          <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0">{topPlays.map((p) => (
+            <li class="co-inset grid list-none gap-2" data-testid="welcome-play">
+              <a class="co-row-title underline-offset-2 hover:underline" href={`/admin/learn/${p.moduleId ?? 'general'}#play-${p.id}`}>{p.title}</a>
+              <span class="co-meta">{firstLine(p.body)}</span>
               {p.evidence.won > 0
                 ? <span class="co-badge co-badge--signal w-fit">{m.how.proven(p.evidence.won)}</span>
                 : <span class="co-badge w-fit">{m.how.hypothesis}</span>}
@@ -145,17 +141,6 @@ const TEAM = [
           <p class="co-lede" data-testid="welcome-terms-pending">{m.terms.pending}</p>
         </>}
         <p class="co-help">{m.terms.more}</p>
-      </>}
-
-      {key === 'team' && <>
-        <h1 class="co-page-title">{m.team.title}</h1>
-        <p class="co-lede">{m.team.lede}</p>
-        <ul class="co-rows">{TEAM.map((t) => (
-          <li><a class="co-row" href={t.href} target="_blank" rel="noopener">
-            <span class="co-row__lead"><Icon name={t.icon} /></span>
-            <span class="co-row__main co-row-title">{t.label}</span>
-            <span class="co-meta">{m.team.go}</span></a></li>))}
-        </ul>
       </>}
 
       {key === 'first' && <>

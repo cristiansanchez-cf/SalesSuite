@@ -42,8 +42,16 @@ async function login(b, email, mobile = false) {
   await p.click('[data-testid=welcome-back]');
   await p.waitForLoadState();
   assert(await p.isVisible('[data-testid=welcome-terms-pending]'), 'condiciones sin acordar: mensaje humilde');
-  await p.click('[data-testid=welcome-next]');
-  await p.waitForLoadState();
+
+  // «A quién»: cada sector abre su ficha y se vuelve a la bienvenida.
+  await p.goto(`${BASE}/admin/welcome?step=3`);
+  await p.click('[data-testid=welcome-sector] >> nth=0');
+  await p.waitForURL(/\/admin\/learn\/sector\/[^?]+\?from=welcome/);
+  assert(await p.isVisible('[data-testid=sector-hero]') && (await p.locator('[data-testid=persona]').count()) > 0, 'ficha del sector: cabecera y quién está en la sala');
+  if (OUT) await p.screenshot({ path: `${OUT}/welcome-sector.png`, fullPage: true });
+  await p.click('[data-testid=sector-back]');
+  await p.waitForURL(/\/admin\/welcome\?step=3/);
+  await p.goto(`${BASE}/admin/welcome?step=6`);
 
   // Termina haciendo algo: la primera propuesta.
   await p.fill('[data-testid=welcome-create] [name=company]', 'Sala Luna');
@@ -55,11 +63,10 @@ async function login(b, email, mobile = false) {
   await p.goto(`${BASE}/admin/start`);
   assert(await p.isVisible('[data-testid=welcome-again]'), '«Empieza aquí» permite volver a verla');
 
-  // Admin: paso extra para preparar al equipo; saltarla también cuenta como vista.
+  // Admin: la misma bienvenida (el CEO también vende); preparar el espacio va aparte, en Inicio. Saltarla cuenta como vista.
   const a = await login(b, 'admin@enjoy.test');
   await a.goto(`${BASE}/admin/welcome?step=6`);
-  assert((await a.getAttribute('[data-testid=welcome]', 'data-step')) === 'team', 'admin: paso «Prepara a tu equipo»');
-  assert((await a.textContent('[data-testid=welcome-progress]')).includes('de 7'), 'admin: 7 pasos');
+  assert((await a.getAttribute('[data-testid=welcome]', 'data-step')) === 'first', 'admin: los mismos 6 pasos, sin mezclar la preparación del espacio');
   await a.click('[data-testid=welcome-skip]');
   await a.waitForURL(/\/admin\/inicio/);
   assert(!(await a.isVisible('[data-testid=welcome-resume]')), 'saltar la bienvenida la da por vista');

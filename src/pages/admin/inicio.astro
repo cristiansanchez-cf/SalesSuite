@@ -41,7 +41,14 @@ const when = (iso: string | null) => f.date(iso, { weekday: 'short', day: 'numer
 const pct = (x: number | null) => (x == null ? '—' : m.home.pct(Math.round(x * 100)));
 const trend = k ? k.wonMonth - k.wonPrevMonth : 0;
 const welcomePending = !(await onboardedAt(admin));
+// Preparar el espacio es tarea de admin, no de la bienvenida: se recuerda mientras no haya nadie más en el equipo.
+const setupPending = perms.manageTenant && members.length <= 1;
+
 const wm = welcomeMessages[locale];
+const SETUP = [
+  { label: wm.team.catalog, href: '/admin/catalog', icon: 'boxes' as const }, { label: wm.team.market, href: '/admin/setup', icon: 'wand-sparkles' as const },
+  { label: wm.team.invite, href: '/admin/team', icon: 'user-plus' as const }, { label: wm.team.terms, href: '/admin/commissions/team?tab=plan', icon: 'wallet' as const },
+];
 ---
 <AdminLayout title={m.home.title}>
   <PageHeader eyebrow={m.common.eyebrow} title={m.home.hello(first)} tail={manager ? m.home.tailManager : m.home.tailRep}>
@@ -49,6 +56,14 @@ const wm = welcomeMessages[locale];
     <a class="co-btn co-btn--primary" href="/admin#nuevo" data-testid="home-new">{m.home.newProposal} <span aria-hidden="true">→</span></a>
   </PageHeader>
 
+  {setupPending && (
+    <section class="co-card mb-6 grid gap-3" data-testid="setup-space">
+      <div><h2 class="co-entity">{wm.team.title}</h2><p class="co-meta">{wm.team.lede}</p></div>
+      <ul class="co-rows">{SETUP.map((t) => (
+        <li><a class="co-row" href={t.href}><span class="co-row__lead"><Icon name={t.icon} /></span><span class="co-row__main co-row-title">{t.label}</span><span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
+      </ul>
+    </section>
+  )}
   {welcomePending && (
     <a class="co-card co-card--link mb-6 flex items-center gap-4" href="/admin/welcome" data-testid="welcome-resume">
       <Icon name="sparkles" size={22} />

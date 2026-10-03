@@ -225,7 +225,7 @@ Actualizado con la respuesta del Cerebro (`docs/RESPUESTA_CEREBRO.md`, 3/10/2026
 
 ## 8. Fases
 
-Estado a 3 de octubre de 2026: ✅ Empieza aquí (`/admin/start`, condiciones opcionales desde Comisiones → Plan → «Condiciones acordadas») · ✅ acceso con código según la guía (código primero, «espera N segundos», email pendiente 1 h, plantillas con el estilo de la guía). ✅ Resumen diario de seguimientos (email a las 7:00 hora local, con el mensaje preparado). ✅ Bienvenida paso a paso (`/admin/welcome`): una idea por pantalla, termina creando la primera propuesta; los admins tienen además «Prepara a tu equipo». Pendiente del MVP: «Añadir» + modales en Configurar y el espacio de Oquea.
+Estado a 3 de octubre de 2026: ✅ Empieza aquí (`/admin/start`, condiciones opcionales desde Comisiones → Plan → «Condiciones acordadas») · ✅ acceso con código según la guía (código primero, «espera N segundos», email pendiente 1 h, plantillas con el estilo de la guía). ✅ Resumen diario de seguimientos (email a las 7:00 hora local, con el mensaje preparado). ✅ Bienvenida paso a paso (`/admin/welcome`): una idea por pantalla, termina creando la primera propuesta; igual para todos; la preparación del espacio es una tarjeta de admin en Inicio; cada sector abre una ficha completa. Pendiente del MVP: «Añadir» + modales en Configurar y el espacio de Oquea.
 
 | Fase | Contenido | Para |
 |---|---|---|

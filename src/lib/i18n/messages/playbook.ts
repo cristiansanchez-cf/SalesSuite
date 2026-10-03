@@ -158,6 +158,7 @@ const es = {
     actorsTitle: 'Actores: quién decide, quién paga, quién puede tumbarlo',
     actorsLede: 'En cada cuenta, mapea a estas personas (en el dossier → «Cuenta y actores»). Vender solo al decisor y olvidar al que puede vetar es la forma más rápida de perder.',
     noActors: 'Este sector aún no tiene actores definidos.',
+    room: 'Quién está en la sala', roomLede: 'En cada venta de este sector intervienen estas personas. Toca una para ver cómo tratarla.', more: 'Cómo tratarle', backWelcome: 'Volver a la bienvenida', playsHere: 'Jugadas para este sector', yes: 'Sí', no: 'Mejor no',
   },
   preview: { banner: 'Vista previa · prospecto de ejemplo' },
   setup: {
@@ -374,6 +375,7 @@ export const playbookMessages = defineMessages({
       actorsTitle: 'Stakeholders: who decides, who pays, who can block it',
       actorsLede: 'In every account, map these people (in the proposal → “Account and stakeholders”). Selling only to the decision-maker and forgetting whoever can veto is the fastest way to lose.',
       noActors: 'This sector has no stakeholders defined yet.',
+      room: 'Who is in the room', roomLede: 'These people take part in every sale in this sector. Tap one to see how to handle them.', more: 'How to handle them', backWelcome: 'Back to the welcome', playsHere: 'Plays for this sector', yes: 'Yes', no: 'Better not',
     },
     preview: { banner: 'Preview · sample prospect' },
     setup: {
@@ -587,6 +589,7 @@ export const playbookMessages = defineMessages({
       actorsTitle: 'Stakeholders: quem decide, quem paga, quem pode barrar',
       actorsLede: 'Em cada conta, mapeie essas pessoas (na proposta → “Conta e envolvidos”). Vender só para quem decide e esquecer quem pode vetar é o caminho mais rápido para perder.',
       noActors: 'Este setor ainda não tem stakeholders definidos.',
+      room: 'Quem está na sala', roomLede: 'Estas pessoas participam de cada venda neste setor. Toque em uma para ver como tratá-la.', more: 'Como tratá-la', backWelcome: 'Voltar às boas-vindas', playsHere: 'Jogadas para este setor', yes: 'Sim', no: 'Melhor não',
     },
     preview: { banner: 'Prévia · prospect de exemplo' },
     setup: {
@@ -800,6 +803,7 @@ export const playbookMessages = defineMessages({
       actorsTitle: '이해관계자: 누가 결정하고, 누가 비용을 내며, 누가 무산시킬 수 있는지',
       actorsLede: '계정마다 이 사람들을 파악하세요 (제안서 → “계정과 관계자”). 결정권자에게만 판매하고 거부권자를 잊는 것이 가장 빨리 거래를 놓치는 길입니다.',
       noActors: '이 업종에는 아직 정의된 이해관계자가 없습니다.',
+      room: '누가 참여하나요', roomLede: '이 업종의 모든 거래에 이 사람들이 참여합니다. 눌러서 대하는 방법을 보세요.', more: '대하는 방법', backWelcome: '환영 안내로 돌아가기', playsHere: '이 업종의 플레이', yes: '좋아요', no: '피하세요',
     },
     preview: { banner: '미리보기 · 예시 잠재 고객' },
     setup: {
