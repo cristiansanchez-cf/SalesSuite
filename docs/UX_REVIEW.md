@@ -9,7 +9,7 @@ Un subagente recorrió las diez tareas reales con Playwright, a 1440×900 y a 39
 | # | Problema | Dónde | Solución | Esfuerzo | Estado |
 |---|---|---|---|---|---|
 | 1 | Desbordamiento horizontal en el móvil: la portada mide 754 px en un viewport de 390 | `.co-rows`, `PageHeader`, builder, pestañas del Playbook | `minmax(0,1fr)`, cabecera que se apila, pestañas con scroll y un test `scrollWidth <= innerWidth` | S | Hecho |
-| 2 | El CEO no tiene inicio: lo único agregado son tres números escondidos en Playbook → «Qué funciona» | `/admin` | Página **Inicio** por rol: KPIs, vencidos del equipo, cierres, pendientes y comisiones | M | Pendiente |
+| 2 | El CEO no tiene inicio: lo único agregado son tres números escondidos en Playbook → «Qué funciona» | `/admin` | Página **Inicio** por rol: KPIs, vencidos del equipo, cierres, pendientes y comisiones | M | Hecho |
 | 3 | El builder es un muro de 8 tarjetas: publicar, enlace y resultado están al final, y aparece JSON y jerga | `Builder.svelte` | Cabecera fija con «Publicar y copiar enlace», próximo paso y Ganado/Perdido; pestañas Propuesta / Cuenta / Enlaces; sector al crear | L | Pendiente |
 | 4 | Configuración guiada, paso 3: actores en lista de texto (la queja del dueño) | `setup.astro` | Tarjetas de actor por sector, tarjeta «+ Añadir actor» con el sector puesto | M | Hecho |
 | 5 | «Preparar mensaje» ignoraba la objeción elegida si el tipo no era «objeción» | `compose.astro` | Elegir objeción pasa el tipo a «Responder a una objeción» | S | Hecho |

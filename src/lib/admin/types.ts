@@ -66,6 +66,8 @@ export interface DossierRecord {
   /** Resultado comercial (para medir qué jugadas funcionan). */
   outcome: 'open' | 'won' | 'lost';
   outcomeNote: string | null;
+  /** Cuándo se ganó o se perdió. */
+  outcomeAt?: string | null;
   /** Sector del prospecto (mapa de mercado). */
   segmentId: string | null;
   /** Seguimiento: próximo paso acordado y cuándo. */

@@ -13,7 +13,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   prospectName: r.prospect_name, prospectCompany: r.prospect_company, status: r.status, locale: r.locale,
   priceMode: r.price_mode, totalPrice: r.total_price, currency: r.currency,
   publishedAt: r.published_at ?? null, updatedAt: r.updated_at ?? null,
-  outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
+  outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null, outcomeAt: r.outcome_at ?? null,
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
   partnerAccountId: r.partner_account_id ?? null,
   situation: r.situation ?? {},

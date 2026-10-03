@@ -1,0 +1,137 @@
+---
+/**
+ * Inicio (docs/UX_REVIEW.md #2). CEO o jefe/a: el negocio en diez segundos (cierres, pipeline, ingresos,
+ * lo que te espera, el equipo). Comercial: «Hoy» (seguimientos, cuentas que caducan, comisiones).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import { can } from '~/lib/admin/permissions';
+import { relativeTime } from '~/lib/admin/format';
+import { formatMoney } from '~/lib/commissions/money';
+import { myDay, teamKpis } from '~/lib/home/kpis';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role === 'partner') return Astro.redirect('/admin');
+const perms = can(admin.session.role);
+const manager = perms.manageTeam;
+const now = new Date();
+const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
+
+const [dossiers, events, feed, members] = await Promise.all([
+  admin.service.listDossiers(), admin.commissions.events().catch(() => []), admin.notifications.feed({ onlyOpen: true, limit: 6 }),
+  manager ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
+]);
+const names = new Map(members.map((m) => [m.userId, m.displayName || m.email]));
+const k = manager ? teamKpis(dossiers, events, names, now) : null;
+const team = manager ? await admin.commissions.team().catch(() => null) : null;
+const mine = await admin.commissions.mine();
+const day = myDay(dossiers, admin.session.userId, now);
+const expiring = perms.useAccounts ? (await admin.accounts.mine()).filter((a) => a.state === 'mine' && a.claimedUntil && Date.parse(a.claimedUntil) - now.getTime() < 7 * 86_400_000) : [];
+const actions = feed.items.filter((n) => n.severity === 'action');
+const when = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) : '');
+const pct = (x: number | null) => (x == null ? '—' : `${Math.round(x * 100)} %`);
+const trend = k ? k.wonMonth - k.wonPrevMonth : 0;
+---
+<AdminLayout title="Inicio">
+  <PageHeader eyebrow="Vender" title={`Hola, ${first}.`} tail={manager ? 'Así va el equipo.' : 'Esto es lo de hoy.'}>
+    <a class="co-btn co-btn--ghost" href="/admin/compose"><Icon name="message-square-text" size={16} />Preparar mensaje</a>
+    <a class="co-btn co-btn--primary" href="/admin#nuevo" data-testid="home-new">Nueva propuesta <span aria-hidden="true">→</span></a>
+  </PageHeader>
+
+  {k && (
+    <section class="co-grid co-grid--2 mb-6 lg:!grid-cols-4" data-testid="kpis">
+      <a class="co-card co-card--link" href="/admin/wins"><span class="grid gap-1">
+        <span class="text-eyebrow">Ganadas este mes</span>
+        <span class="co-figure text-4xl" data-testid="kpi-won">{k.wonMonth}</span>
+        <span class="co-meta">{trend === 0 ? 'Igual que el mes pasado' : `${trend > 0 ? '+' : ''}${trend} frente al mes pasado (${k.wonPrevMonth})`}</span></span></a>
+      <div class="co-card grid gap-1">
+        <span class="text-eyebrow">Tasa de cierre · 90 días</span>
+        <span class="co-figure text-4xl" data-testid="kpi-rate">{pct(k.closeRate)}</span>
+        <span class="co-meta">{k.closedLast90 ? `${k.closedLast90} ${k.closedLast90 === 1 ? 'cierre' : 'cierres'} (ganadas y perdidas)` : 'Aún sin cierres'}</span></div>
+      <a class="co-card co-card--link" href="/admin?status=published"><span class="grid gap-1">
+        <span class="text-eyebrow">En juego</span>
+        <span class="co-figure text-4xl" data-testid="kpi-open">{k.openPipeline}</span>
+        <span class="co-meta">{k.publishedOpen} enviadas al cliente</span></span></a>
+      <a class="co-card co-card--link" href="/admin/commissions/team?tab=ingresos"><span class="grid gap-1">
+        <span class="text-eyebrow">Ingresos confirmados · mes</span>
+        <span class="co-figure text-4xl" data-testid="kpi-revenue">{formatMoney(k.revenueMonthCents, k.revenueCurrency)}</span>
+        <span class="co-meta">{team ? `${formatMoney(team.totals.pending)} en comisiones por aprobar` : 'De ventas confirmadas y API'}</span></span></a>
+    </section>
+  )}
+
+  <div class="co-split">
+    <div class="grid content-start gap-6">
+      {actions.length > 0 && (
+        <section class="co-section !mt-0" data-testid="home-actions">
+          <div class="co-section__head"><h2 class="text-eyebrow">Te espera · {actions.length}</h2><a class="co-meta underline" href="/admin/notifications">Todos los avisos</a></div>
+          <ul class="co-rows">{actions.map((n) => (
+            <li><a class="co-row co-row--attention" href={`/admin/notifications/${n.id}`}>
+              <span class="co-row__lead"><Icon name={n.icon as never} /></span>
+              <span class="co-row__main"><span class="co-row-title">{n.title}</span>{n.detail && <span class="co-meta">{n.detail}</span>}</span>
+              <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
+          </ul>
+        </section>
+      )}
+
+      {k && (
+        <section class="co-section !mt-0" data-testid="team-overdue">
+          <div class="co-section__head"><h2 class="text-eyebrow">Seguimientos vencidos del equipo · {k.overdue.length}</h2></div>
+          {k.overdue.length === 0 ? <p class="co-meta">Nadie tiene seguimientos vencidos.</p> : (
+            <ul class="co-rows">{k.overdue.slice(0, 8).map((d) => (
+              <li><a class="co-row" href={`/admin/dossiers/${d.id}`}>
+                <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName} · {d.nextStep ?? 'Próximo paso'} · vencido {relativeTime(d.nextStepAt)}</span></span>
+                <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <section class="co-section !mt-0" data-testid="my-day">
+        <div class="co-section__head"><h2 class="text-eyebrow">{manager ? 'Tus seguimientos' : 'Hoy'}</h2><a class="co-meta underline" href="/admin?follow=1&mine=1">Todos</a></div>
+        {[...day.overdue, ...day.today, ...day.upcoming].length === 0 && day.noNextStep.length === 0
+          ? <EmptyState kind="none" title="Nada pendiente" because="Cuando acuerdes un próximo paso en una propuesta, aparecerá aquí el día que toca." />
+          : <ul class="co-rows">
+              {day.overdue.map((d) => <li><a class="co-row co-row--attention" href={`/admin/dossiers/${d.id}`}><span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">Vencido: {d.nextStep ?? 'próximo paso'} · {when(d.nextStepAt)}</span></span><span class="co-badge co-badge--attention">Vencido</span></a></li>)}
+              {day.today.map((d) => <li><a class="co-row" href={`/admin/dossiers/${d.id}`}><span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">Hoy: {d.nextStep ?? 'próximo paso'} · {when(d.nextStepAt)}</span></span><span class="co-badge co-badge--ink">Hoy</span></a></li>)}
+              {day.upcoming.map((d) => <li><a class="co-row" href={`/admin/dossiers/${d.id}`}><span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.nextStep ?? 'Próximo paso'} · {when(d.nextStepAt)}</span></span></a></li>)}
+              {day.noNextStep.slice(0, 5).map((d) => <li><a class="co-row" href={`/admin/dossiers/${d.id}`}><span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">Enviada sin próximo paso: acuerda uno</span></span><span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>)}
+            </ul>}
+      </section>
+
+      {k && k.people.length > 0 && (
+        <section class="co-section !mt-0" data-testid="team-people">
+          <div class="co-section__head"><h2 class="text-eyebrow">Equipo</h2></div>
+          <ul class="co-rows">{k.people.map((p) => (
+            <li class="co-row"><span class="co-row__main"><span class="co-row-title">{p.name}</span><span class="co-meta">{p.open} en juego{p.overdue ? ` · ${p.overdue} vencidos` : ''}</span></span>
+              <span class="co-row-title tabular-nums">{p.wonMonth} {p.wonMonth === 1 ? 'ganada' : 'ganadas'} este mes</span></li>))}
+          </ul>
+        </section>
+      )}
+    </div>
+
+    <aside class="grid content-start gap-4">
+      <a class="co-card co-card--link" href="/admin/commissions" data-testid="home-commissions"><span class="grid gap-1">
+        <span class="text-eyebrow">Mis comisiones</span>
+        <span class="co-figure text-3xl">{formatMoney(mine.totals.approved + mine.totals.settled + mine.totals.pending)}</span>
+        <span class="co-meta">{formatMoney(mine.totals.pending)} por aprobar · {formatMoney(mine.totals.paid)} pagado</span></span></a>
+      {expiring.length > 0 && (
+        <section class="co-card grid gap-2" data-testid="home-expiring">
+          <h2 class="co-card-title">Cuentas que vas a perder</h2>
+          <p class="co-meta">Tu reserva caduca esta semana: regístrales un contacto o quedarán libres.</p>
+          <ul class="grid gap-1 p-0">{expiring.map((a) => <li class="list-none text-sm"><a class="font-semibold underline" href={`/admin/accounts/${a.id}`}>{a.name}</a> <span class="co-meta">· {relativeTime(a.claimedUntil)}</span></li>)}</ul>
+        </section>
+      )}
+      <section class="co-card grid gap-2">
+        <h2 class="co-card-title">Atajos</h2>
+        <div class="co-actions">
+          <a class="co-action" href="/admin/accounts"><Icon name="map-pin" /><span class="co-action__label">Cuentas de mi zona</span><Icon name="chevron-right" size={16} /></a>
+          <a class="co-action" href="/admin/wins"><Icon name="trophy" /><span class="co-action__label">Qué ha funcionado</span><Icon name="chevron-right" size={16} /></a>
+          {manager && <a class="co-action" href="/admin/commissions/team"><Icon name="wallet" /><span class="co-action__label">Comisiones del equipo</span><Icon name="chevron-right" size={16} /></a>}
+        </div>
+      </section>
+    </aside>
+  </div>
+</AdminLayout>

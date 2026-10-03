@@ -7,7 +7,7 @@ type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at, coupon_id, discount';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at, coupon_id, discount, outcome_at';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -17,7 +17,7 @@ const toDossier = (r: Row): DossierRecord => ({
   prospectName: r.prospect_name, prospectCompany: r.prospect_company, status: r.status, locale: r.locale,
   priceMode: r.price_mode, totalPrice: num(r.total_price), currency: r.currency,
   publishedAt: r.published_at, updatedAt: r.updated_at,
-  outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
+  outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null, outcomeAt: r.outcome_at ?? null,
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
   partnerAccountId: r.partner_account_id ?? null,
   situation: r.situation ?? {},

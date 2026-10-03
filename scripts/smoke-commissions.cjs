@@ -123,5 +123,14 @@ const euros = (s) => Number(String(s).replace(/[^\d,-]/g, '').replace(/\./g, '')
   assert(await pub.isVisible('[data-testid=pricing-before]'), 'y el precio anterior tachado');
   if (OUT) await pub.screenshot({ path: `${OUT}/coupon-public.png`, fullPage: true });
   await admin.selectOption('[data-testid=coupon]', '');
+
+  // ---- Inicio: el CEO ve el negocio; el comercial, su día
+  await admin.goto(`${BASE}/admin/inicio`);
+  assert(Number(await admin.textContent('[data-testid=kpi-won]')) >= 1, 'Inicio: ganadas este mes');
+  assert(euros(await admin.textContent('[data-testid=kpi-revenue]')) >= 1000, 'Inicio: ingresos confirmados del mes');
+  assert(await admin.isVisible('[data-testid=team-people]'), 'Inicio: el equipo');
+  if (OUT) await admin.screenshot({ path: `${OUT}/home-ceo.png`, fullPage: true });
+  await rep.goto(`${BASE}/admin/inicio`);
+  assert(!(await rep.isVisible('[data-testid=kpis]')) && await rep.isVisible('[data-testid=my-day]'), 'Inicio del comercial: su día, sin KPIs del equipo');
   await b.close();
 })();

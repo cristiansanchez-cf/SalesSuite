@@ -140,7 +140,7 @@ const published = all.filter((d) => d.status === 'published').length;
       </section>
 
       <aside class="co-split__aside--sticky">
-        <form method="post" class="co-card grid gap-3" data-testid="create-form">
+        <form method="post" id="nuevo" class="co-card grid gap-3" data-testid="create-form">
           <p class="text-eyebrow">Nuevo</p>
           <h2 class="co-entity">Nuevo dossier</h2>
           {error && <Alert kind="rejection" title={error} />}
