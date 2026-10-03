@@ -4,6 +4,7 @@
  * Sustituye a los «me gusta»: aquí solo cuenta lo que cerró (o lo que hizo perder) una venta.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { can } from '~/lib/admin/permissions';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
@@ -18,7 +19,7 @@ import type { Situation } from '~/lib/evidence/types';
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const ev = admin.evidence;
-const isAdmin = admin.session.role === 'admin';
+const isAdmin = can(admin.session.role).managePlaybook;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {

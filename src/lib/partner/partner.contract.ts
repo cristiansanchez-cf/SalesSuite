@@ -129,14 +129,22 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
       expect((await ctx(DJ)).session.partner?.accounts.map((a) => a.name)).toContain('Bar Nuevo');
     });
 
-    test('playbook guiado: sus módulos, sin monetización, sin aportar, con audiencia', async () => {
+    test('playbook guiado: sus módulos, sin monetización, aportes con aprobación, con audiencia', async () => {
       const dj = await ctx(DJ);
       const idx = await dj.playbook.learnIndex();
       expect(idx.modules.map((m) => m.moduleId).sort()).toEqual([MOD.exp, MOD.locales]);
       const exp = await dj.playbook.topic(MOD.exp);
       expect(exp.sections.map((x) => x.kind)).not.toContain('monetization');
       await rejects(dj.playbook.topic(MOD.hero), 404);
-      await rejects(dj.playbook.shareTip({ moduleId: MOD.exp, title: 't', body: 'b' }), 403);
+      // Aporta, pero su truco espera aprobación: nadie lo ve hasta que el admin o el jefe/a lo aprueba.
+      const tipId = await dj.playbook.shareTip({ moduleId: MOD.exp, title: 'Truco del DJ', body: 'Pon el QR en cabina' });
+      await rejects(dj.playbook.shareTip({ moduleId: MOD.hero, title: 't', body: 'b' }), 404);
+      expect((await (await ctx(REP)).playbook.topic(MOD.exp)).tips.some((t) => t.id === tipId)).toBe(false);
+      expect((await dj.playbook.topic(MOD.exp)).myOpen.map((t) => t.id)).toContain(tipId);
+      const adm = await ctx(ADMIN);
+      expect((await adm.playbook.inbox()).pending.map((c) => c.id)).toContain(tipId);
+      await adm.playbook.review(tipId, 'accept');
+      expect((await (await ctx(REP)).playbook.topic(MOD.exp)).tips.some((t) => t.id === tipId)).toBe(true);
       const mk = await dj.playbook.market();
       expect(mk.map((x) => x.key)).toEqual(['ocio-nocturno']);
       expect(mk[0].modules.every((m) => [MOD.exp, MOD.locales].includes(m.moduleId))).toBe(true);
@@ -156,9 +164,9 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
       // Trucos del equipo: solo si el admin lo permite.
       const rep = await ctx(REP);
       await rep.playbook.shareTip({ moduleId: MOD.exp, title: 'Truco interno', body: 'cuerpo' });
-      expect((await (await ctx(DJ)).playbook.topic(MOD.exp)).tips).toEqual([]);
+      expect((await (await ctx(DJ)).playbook.topic(MOD.exp)).tips.map((t) => t.title)).toEqual(['Truco del DJ']);   // solo el suyo
       await admin.tenantAdmin.updatePartner(DJ.id, { moduleIds: [MOD.exp, MOD.locales], seeTeamTips: true });
-      expect((await (await ctx(DJ)).playbook.topic(MOD.exp)).tips.map((t) => t.title)).toEqual(['Truco interno']);
+      expect((await (await ctx(DJ)).playbook.topic(MOD.exp)).tips.map((t) => t.title).sort()).toEqual(['Truco del DJ', 'Truco interno']);
     });
 
     test('invitar, caducar y no cambiar de rol', async () => {
@@ -182,6 +190,45 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
       expect((await login(DJ)).kind).toBe('forbidden');
     });
 
+    test('jefe/a de ventas: gestiona equipo y colaboradores, pero no precios ni marca', async () => {
+      const admin = await ctx(ADMIN);
+      await admin.tenantAdmin.invite({ email: 'jefa@enjoy.test', role: 'lead' }, 'https://x/admin');
+      const leadId = (await admin.tenantAdmin.listMembers()).find((m) => m.email === 'jefa@enjoy.test')!.userId;
+      const lead = await ctx({ id: leadId, email: 'jefa@enjoy.test' });
+      expect(lead.session.role).toBe('lead');
+      await rejects(lead.tenantAdmin.listCatalog(), 403);
+      await rejects(lead.tenantAdmin.invite({ email: 'otro-admin@enjoy.test', role: 'admin' }, 'https://x'), 403);
+      await lead.tenantAdmin.invite({ email: 'nuevo-rep@enjoy.test', role: 'rep' }, 'https://x');
+      const members = await lead.tenantAdmin.listMembers();
+      expect(members.find((m) => m.email === 'nuevo-rep@enjoy.test')?.invitedBy).toBe(leadId);
+      // Asigna cuentas, pero el precio no lo toca: una cuenta nueva nace sin precios y editar no cambia la política.
+      const acc = await lead.tenantAdmin.savePartnerAccount(DJ.id, { name: 'Sala del jefe', pricePolicy: 'adjusted', priceAdjustPct: -50 });
+      expect((await lead.tenantAdmin.partner(DJ.id)).accounts.find((a) => a.id === acc)).toMatchObject({ pricePolicy: 'hidden', priceAdjustPct: 0 });
+      await lead.tenantAdmin.savePartnerAccount(DJ.id, { name: 'Club Neón', pricePolicy: 'list' }, ACC.neon);
+      expect((await admin.tenantAdmin.partner(DJ.id)).accounts.find((a) => a.id === ACC.neon)).toMatchObject({ pricePolicy: 'adjusted', priceAdjustPct: -10 });
+      // Playbook y dossiers del equipo, como el admin.
+      await lead.playbook.createPlay({ moduleId: null, kind: 'tip', title: 'Del jefe', body: 'x' });
+      expect((await lead.service.getState(SALA_X)).canEdit).toBe(true);
+      await rejects(lead.tenantAdmin.removeMember(ADMIN.id), 403);
+    });
+
+    test('red de colaboradores: invita quien tiene permiso y el equipo sabe quién invitó a quién', async () => {
+      const dj = await ctx(DJ);
+      await rejects(dj.tenantAdmin.partnerInvite({ email: 'dj-sebastian@enjoy.test' }, 'https://x'), 403);
+      const admin = await ctx(ADMIN);
+      await admin.tenantAdmin.updatePartner(DJ.id, { moduleIds: [MOD.exp, MOD.locales], canInvite: true });
+      const { userId } = await (await ctx(DJ)).tenantAdmin.partnerInvite({ email: 'DJ-Sebastian@enjoy.test' }, 'https://x');
+      await rejects((await ctx(DJ)).tenantAdmin.partnerInvite({ email: 'dj-sebastian@enjoy.test' }, 'https://x'), 409);
+      const seb = (await admin.tenantAdmin.listPartners()).find((p) => p.userId === userId)!;
+      expect(seb.invitedBy).toBe(DJ.id);
+      expect(seb.profile).toMatchObject({ moduleIds: [MOD.exp, MOD.locales], canInvite: false, seeTeamTips: false });
+      expect(seb.accounts).toEqual([]);
+      expect((await (await ctx(DJ)).tenantAdmin.myInvitees()).map((m) => m.userId)).toEqual([userId]);
+      const sebCtx = await ctx({ id: userId, email: 'dj-sebastian@enjoy.test' });
+      expect(sebCtx.session.role).toBe('partner');
+      await rejects(sebCtx.tenantAdmin.partnerInvite({ email: 'x@y.test' }, 'https://x'), 403);
+    });
+
     test('defensa en profundidad: la BD repite las reglas aunque el servicio no las aplicara', async () => {
       if (!E.enforcesRls) return;
       // AdminDb "crudo" del colaborador (sin el filtro de la app): la RLS/RPC es la que filtra.
@@ -195,7 +242,7 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
       await raw.insertItem({ dossierId: d.id, moduleVersionId: V.tabsLocales, position: 1, priceOverride: 1 });
       expect((await raw.listItems([d.id]))[0].priceOverride).toBe(300);
       await expect(raw.insertItem({ dossierId: d.id, moduleVersionId: V.heroV1, position: 2 })).rejects.toThrow();
-      expect(await raw.upsertPartnerProfile({ tenantId: ENJOY, userId: DJ.id, moduleIds: [MOD.hero], seeTeamTips: true, welcomeNote: null, expiresAt: null }).catch(() => false)).toBe(false);
+      expect(await raw.upsertPartnerProfile({ tenantId: ENJOY, userId: DJ.id, moduleIds: [MOD.hero], seeTeamTips: true, welcomeNote: null, expiresAt: null, canInvite: true }).catch(() => false)).toBe(false);
     expect((await raw.getPartnerProfile(ENJOY, DJ.id))?.moduleIds).not.toContain(MOD.hero);
     });
   });

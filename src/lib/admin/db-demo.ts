@@ -18,6 +18,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
   tenantId: r.tenant_id, userId: r.user_id, moduleIds: [...r.module_ids], seeTeamTips: r.see_team_tips, welcomeNote: r.welcome_note, expiresAt: r.expires_at,
+  canInvite: r.can_invite ?? false,
 });
 const toAccount = (r: PartnerAccountRow): PartnerAccount => ({
   id: r.id, tenantId: r.tenant_id, userId: r.user_id, name: r.name, segmentId: r.segment_id, pricePolicy: r.price_policy,
@@ -228,12 +229,12 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     async listMembers(tenantId) {
       return db().users.flatMap((u) => u.memberships
         .filter((m) => m.tenant_id === tenantId)
-        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role })));
+        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role, invitedBy: m.invited_by ?? null, joinedAt: m.created_at ?? null })));
     },
-    async addMember(tenantId, userId, role) {
+    async addMember(tenantId, userId, role, inviter) {
       const u = db().users.find((x) => x.id === userId);
       if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) return false;
-      u.memberships.push({ tenant_id: tenantId, role });
+      u.memberships.push({ tenant_id: tenantId, role, invited_by: inviter ?? null, created_at: new Date().toISOString() });
       return true;
     },
     async setMemberRole(tenantId, userId, role) {
@@ -325,6 +326,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (role !== 'partner') throw new Error('El perfil de colaborador requiere rol partner');
       const row: PartnerProfileRow = {
         tenant_id: p.tenantId, user_id: p.userId, module_ids: [...p.moduleIds], see_team_tips: p.seeTeamTips, welcome_note: p.welcomeNote, expires_at: p.expiresAt,
+        can_invite: p.canInvite,
       };
       const i = s.partner_profile.findIndex((x) => x.tenant_id === p.tenantId && x.user_id === p.userId);
       if (i >= 0) s.partner_profile[i] = row; else s.partner_profile.push(row);
@@ -343,6 +345,16 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       const i = s.partner_account.findIndex((x) => x.id === row.id);
       if (i >= 0) s.partner_account[i] = row; else s.partner_account.push(row);
       return row.id;
+    },
+    async partnerInvitePartner(tenantId, inviterId, userId) {
+      // Misma regla que la RPC public.partner_invite_partner.
+      const s = db();
+      const me = s.partner_profile.find((x) => x.tenant_id === tenantId && x.user_id === inviterId);
+      if (!me?.can_invite) throw new Error('No tienes permiso para invitar colaboradores');
+      const u = s.users.find((x) => x.id === userId);
+      if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) throw new Error('duplicate key: Esa persona ya tiene acceso');
+      u.memberships.push({ tenant_id: tenantId, role: 'partner', invited_by: inviterId, created_at: new Date().toISOString() });
+      s.partner_profile.push({ tenant_id: tenantId, user_id: userId, module_ids: [...me.module_ids], see_team_tips: false, welcome_note: null, expires_at: me.expires_at, can_invite: false });
     },
     async deletePartnerAccount(id) {
       const s = db();

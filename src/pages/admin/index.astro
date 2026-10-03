@@ -5,6 +5,7 @@ import { AdminError } from '~/lib/admin/service';
 import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
 import type { DossierStatus } from '~/lib/types';
 import PartnerHome from '~/components/admin/PartnerHome.astro';
+import { requestOrigin } from '~/lib/http';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Alert from '~/components/ui/Alert.astro';
@@ -16,7 +17,17 @@ const { service, session } = admin;
 
 let error: string | null = null;
 let errorAccount: string | null = null;
-if (Astro.request.method === 'POST') {
+let inviteMsg: string | null = null;
+if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).get('action') === 'invite-colleague') {
+  const form = await Astro.request.formData();
+  try {
+    const r = await admin.tenantAdmin.partnerInvite({ email: form.get('email') }, `${requestOrigin(Astro.request, Astro.url)}/admin/auth/confirm?next=/admin`);
+    return Astro.redirect(`/admin?ok=${r.invited ? 'invited' : 'added'}`, 303);
+  } catch (e) {
+    if (!(e instanceof AdminError)) throw e;
+    inviteMsg = e.message;
+  }
+} else if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   errorAccount = String(form.get('partnerAccountId') ?? '') || null;
   const parsed = createDossierSchema.safeParse({
@@ -65,7 +76,7 @@ const filtered = !!(status || mine || follow || q);
 const published = all.filter((d) => d.status === 'published').length;
 ---
 <AdminLayout title={isPartner ? 'Mis cuentas' : 'Dossiers'}>
-  {isPartner ? <PartnerHome admin={admin} error={error} errorAccount={errorAccount} /> : (
+  {isPartner ? <PartnerHome admin={admin} error={error} errorAccount={errorAccount} inviteError={inviteMsg} /> : (
   <>
     <PageHeader eyebrow="Vender" title="Dossiers" lede={`${all.length} en total · ${published} publicados. Un dossier es la propuesta viva que envías a cada prospecto.`}>
       <form method="get" class="relative" role="search">

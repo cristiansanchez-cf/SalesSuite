@@ -70,7 +70,7 @@ if (Astro.request.method === 'POST') {
 }
 
 const tenantName = (id: string) => demoDb().tenant.find((t) => t.id === id)?.name ?? id;
-const roleName = { admin: 'admin', rep: 'comercial', partner: 'colaborador' } as const;
+const roleName = { admin: 'admin', lead: 'jefe/a de ventas', rep: 'comercial', partner: 'colaborador' } as const;
 ---
 <AdminLayout title="Entrar" bare>
   <div class="mx-auto mt-4 grid max-w-sm gap-6 sm:mt-14">

@@ -7,6 +7,7 @@
  * Cuando haya CRM (WhatsApp/n8n), los cierres se rellenarán solos con la interacción registrada.
  */
 import type { AdminDb } from '../admin/db';
+import { can } from '../admin/permissions';
 import { AdminError, type AdminService } from '../admin/service';
 import type { AdminSession, BuilderState } from '../admin/types';
 import type { PlaybookDb } from '../playbook/db';
@@ -38,7 +39,7 @@ export function evidenceByPlay(stories: WinStory[]): Map<string, PlayEvidence> {
 }
 
 export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService }) {
-  const isAdmin = s.role === 'admin';
+  const isAdmin = can(s.role).managePlaybook;
   const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo el líder (admin) configura las situaciones'); };
 
   async function facets(opts: { all?: boolean } = {}): Promise<Facet[]> {

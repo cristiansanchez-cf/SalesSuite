@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { can, ROLE_LABEL } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { requestOrigin } from '~/lib/http';
 import PageHeader from '~/components/ui/PageHeader.astro';
@@ -10,7 +11,7 @@ import EmptyState from '~/components/ui/EmptyState.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+if (!can(admin.session.role).manageTeam) return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -45,11 +46,13 @@ const okMsg = flash(Astro.url, {
 const [members, partners, catalog] = await Promise.all([t.listMembers(), t.listPartners(), t.listCatalog()]);
 const modules = catalog.filter((m) => m.isCatalog && m.versions.some((v) => v.status === 'published'));
 const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
-const roleLabel = { admin: 'Admin', rep: 'Comercial' } as const;
+const perms = can(admin.session.role);
+const nameOf = (id: string | null) => { const m = [...members, ...partners].find((x) => x.userId === id); return m ? m.displayName || m.email : null; };
+const dateShort = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
 const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 ---
 <AdminLayout title="Equipo">
-  <PageHeader eyebrow="Configurar" title="Equipo" lede="Admins: catálogo, marca, equipo y todos los dossiers. Comerciales: sus dossiers. Colaboradores: solo los módulos y las cuentas que les asignes.">
+  <PageHeader eyebrow="Configurar" title="Equipo" lede="Admins: todo. Jefes de ventas: equipo, colaboradores, playbook y todos los dossiers (no marca, catálogo ni precios). Comerciales: sus dossiers. Colaboradores: solo sus módulos y cuentas.">
     <button type="button" class="co-btn co-btn--ghost" data-dialog-open="invite-partner"><Icon name="handshake" size={16} />Invitar colaborador</button>
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="invite"><Icon name="user-plus" size={16} />Invitar al equipo</button>
   </PageHeader>
@@ -64,10 +67,10 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
           <span class="co-anchor__avatar co-anchor__avatar--soft">{initials(m.displayName || m.email)}</span>
           <span class="co-row__main">
             <span class="co-row-title">{m.displayName || m.email}{m.userId === admin.session.userId && <span class="co-meta"> (tú)</span>}</span>
-            <span class="co-meta">{m.email}</span>
+            <span class="co-meta">{m.email}{m.invitedBy && nameOf(m.invitedBy) ? ` · invitado por ${nameOf(m.invitedBy)}` : ''}</span>
           </span>
-          <span class:list={['co-badge', m.role === 'admin' && 'co-badge--ink']}>{roleLabel[m.role as 'admin' | 'rep']}</span>
-          <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`role-${m.userId}`}>Cambiar rol</button>
+          <span class:list={['co-badge', m.role !== 'rep' && 'co-badge--ink']}>{ROLE_LABEL[m.role]}</span>
+          {perms.manageTenant && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`role-${m.userId}`}>Cambiar rol</button>}
           <button type="button" class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-dialog-open={`remove-${m.userId}`} data-testid="remove-open">Quitar</button>
           <ConfirmDialog id={`role-${m.userId}`} title={`Rol de ${m.displayName || m.email}`} confirmLabel="Guardar rol"
             does="Cambia lo que puede hacer en la consola desde su próxima página."
@@ -77,6 +80,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
             <label class="co-field">Rol
               <select class="co-select" name="role" aria-label={`Rol de ${m.email}`}>
                 <option value="rep" selected={m.role === 'rep'}>Comercial</option>
+                <option value="lead" selected={m.role === 'lead'}>Jefe/a de ventas</option>
                 <option value="admin" selected={m.role === 'admin'}>Admin</option>
               </select>
             </label>
@@ -107,7 +111,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
                 <span class="co-anchor__avatar co-anchor__avatar--soft">{initials(p.displayName || p.email)}</span>
                 <span class="co-row__main">
                   <span class="co-row-title">{p.displayName || p.email}</span>
-                  <span class="co-meta">{p.accounts.length} {p.accounts.length === 1 ? 'cuenta' : 'cuentas'} · {p.profile?.moduleIds.length ?? 0} módulos · {p.dossierCount} propuestas{p.expired ? ' · Acceso caducado: no puede entrar' : p.profile?.expiresAt ? ` · Acceso hasta ${dateFmt(p.profile.expiresAt)}` : ''}</span>
+                  <span class="co-meta">{p.invitedBy && nameOf(p.invitedBy) ? `Invitado por ${nameOf(p.invitedBy)}${p.joinedAt ? ` el ${dateShort(p.joinedAt)}` : ''} · ` : ''}{p.accounts.length} {p.accounts.length === 1 ? 'cuenta' : 'cuentas'} · {p.profile?.moduleIds.length ?? 0} módulos · {p.dossierCount} propuestas{p.expired ? ' · Acceso caducado: no puede entrar' : p.profile?.expiresAt ? ` · Acceso hasta ${dateFmt(p.profile.expiresAt)}` : ''}</span>
                 </span>
                 <span class="co-badge">Colaborador</span>
                 <span class="co-row__chevron"><Icon name="chevron-right" /></span>
@@ -126,7 +130,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
         <p class="co-body">Le llega un email para entrar. Después entra con su email y un código, sin contraseña.</p>
         <label class="co-field">Email<input class="co-input" type="email" name="email" required /></label>
         <label class="co-field">Rol
-          <select class="co-select" name="role"><option value="rep">Comercial</option><option value="admin">Admin</option></select>
+          <select class="co-select" name="role"><option value="rep">Comercial</option>{perms.manageTenant && <option value="lead">Jefe/a de ventas</option>}{perms.manageTenant && <option value="admin">Admin</option>}</select>
         </label>
       </div>
       <div class="co-dialog__foot">

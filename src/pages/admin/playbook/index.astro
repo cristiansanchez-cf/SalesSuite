@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { can } from '~/lib/admin/permissions';
 import Badges from '~/components/playbook/Badges.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { renderMarkdown } from '~/lib/playbook/markdown';
@@ -7,7 +8,7 @@ import { KIND_LABEL } from '~/lib/playbook/types';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const pb = admin.playbook;
 const tab = (Astro.url.searchParams.get('tab') ?? 'inbox') as 'inbox' | 'plays' | 'market' | 'metrics';
 
@@ -58,21 +59,31 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   {tab === 'inbox' && (
     <div class="mt-6 space-y-8" data-testid="inbox">
       <section>
-        <h2 class="co-card-title">Mejoras propuestas</h2>
+        <h2 class="co-card-title">Pendiente de aprobar</h2><p class="co-meta">Mejoras de jugadas del equipo y trucos de colaboradores.</p>
         {inbox.pending.length === 0 && <p class="mt-2 text-sm text-muted">Nada pendiente.</p>}
         <div class="mt-3 space-y-4">
           {inbox.pending.map((c) => (
             <article class="co-card" data-testid="pending">
-              <p class="text-sm"><strong>{c.authorName ?? 'Alguien'}</strong> propone en <a class="underline" href={`/admin/playbook/${c.playId}`}>«{c.current?.title}»</a> · {date(c.createdAt)}</p>
-              <p class="mt-1 font-semibold">“{c.title}”</p>
-              <div class="mt-3 grid gap-3 md:grid-cols-2">
-                <div class="rounded-xl bg-surface p-3"><p class="mb-1 text-xs font-semibold text-muted">Actual (v{c.current?.version})</p><div class="prose-play text-sm" set:html={renderMarkdown(c.current?.body ?? '')} /></div>
-                <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">Propuesta</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
-              </div>
+              {c.type === 'tip' ? (
+                <>
+                  <p class="text-sm"><strong>{c.authorName ?? 'Un colaborador'}</strong> comparte un truco · {date(c.createdAt)} <span class="co-badge co-badge--attention ml-1">Colaborador</span></p>
+                  <p class="mt-1 font-semibold">“{c.title}”</p>
+                  <div class="mt-3 rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
+                </>
+              ) : (
+                <>
+                  <p class="text-sm"><strong>{c.authorName ?? 'Alguien'}</strong> propone en <a class="underline" href={`/admin/playbook/${c.playId}`}>«{c.current?.title}»</a> · {date(c.createdAt)}</p>
+                  <p class="mt-1 font-semibold">“{c.title}”</p>
+                  <div class="mt-3 grid gap-3 md:grid-cols-2">
+                    <div class="rounded-[var(--console-radius-control)] bg-[var(--console-chip-bg)] p-3"><p class="text-eyebrow mb-1">Actual (v{c.current?.version})</p><div class="prose-play text-sm" set:html={renderMarkdown(c.current?.body ?? '')} /></div>
+                    <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">Propuesta</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
+                  </div>
+                </>
+              )}
               <form method="post" class="mt-3 flex flex-wrap items-center gap-2">
                 <input type="hidden" name="id" value={c.id} />
                 <input class={`${field} max-w-md`} name="note" placeholder="Nota para el autor (obligatoria si rechazas)" maxlength="500" />
-                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="accept" type="submit" data-testid="accept">Aceptar y publicar</button>
+                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="accept" type="submit" data-testid="accept">{c.type === 'tip' ? 'Aprobar: visible para el equipo' : 'Aceptar y publicar'}</button>
                 <button class={btn} name="action" value="reject" type="submit">Rechazar</button>
               </form>
             </article>

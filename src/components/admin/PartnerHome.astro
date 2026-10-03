@@ -12,10 +12,11 @@ import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 
-interface Props { admin: AdminContext; error: string | null; errorAccount: string | null }
-const { admin, error, errorAccount } = Astro.props;
+interface Props { admin: AdminContext; error: string | null; errorAccount: string | null; inviteError?: string | null }
+const { admin, error, errorAccount, inviteError = null } = Astro.props;
 const partner = admin.session.partner!;
-const [dossiers, idx, market] = await Promise.all([admin.service.listDossiers(), admin.playbook.learnIndex(), admin.playbook.market()]);
+const [dossiers, idx, market, invitees] = await Promise.all([admin.service.listDossiers(), admin.playbook.learnIndex(), admin.playbook.market(), partner.canInvite ? admin.tenantAdmin.myInvitees() : Promise.resolve([])]);
+const invitedOk = Astro.url.searchParams.get('ok');
 const segName = new Map(market.map((s) => [s.id, s.name]));
 const nowMs = Date.now();
 const overdue = dossiers.filter((d) => d.nextStepAt && new Date(d.nextStepAt).getTime() < nowMs).length;
@@ -104,6 +105,20 @@ const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeri
         ))}
       </ul>
     </section>
+    {partner.canInvite && (
+      <section class="co-card grid gap-3" data-testid="invite-colleague">
+        <p class="text-eyebrow">Invita a un colega</p>
+        <p class="co-body">¿Conoces a alguien que podría vender esto? Invítale: tendrá tus mismos módulos y la empresa sabrá que viene de tu parte.</p>
+        {inviteError && <Alert kind="rejection" title={inviteError} />}
+        {(invitedOk === 'invited' || invitedOk === 'added') && <Alert kind="success" title="Invitación enviada. Le llegará un email para entrar." />}
+        <form method="post" class="grid gap-2">
+          <input type="hidden" name="action" value="invite-colleague" />
+          <label class="co-field">Su email<input class="co-input" type="email" name="email" required /></label>
+          <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">Enviar invitación</button>
+        </form>
+        {invitees.length > 0 && <p class="co-meta">Has invitado a: {invitees.map((m) => m.displayName || m.email).join(', ')}</p>}
+      </section>
+    )}
     {partner.expiresAt && <p class="co-meta px-1" data-testid="partner-expiry">Tu acceso está activo hasta el {dateFmt(partner.expiresAt)}.</p>}
   </aside>
 </div>

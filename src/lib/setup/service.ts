@@ -2,6 +2,7 @@
  * Asistente de configuración (docs/SETUP_WIZARD.md): el CEO o líder prepara el mercado y las situaciones de su empresa.
  * Solo AÑADE lo que falta (por clave): aplicar un punto de partida nunca borra ni cambia lo que ya existe.
  */
+import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession } from '../admin/types';
 import type { EvidenceService } from '../evidence/service';
@@ -10,7 +11,7 @@ import { slug } from '../evidence/schema';
 import { PRESETS } from './presets';
 
 export function createSetupService(s: AdminSession, deps: { playbook: PlaybookService; evidence: EvidenceService }) {
-  const requireAdmin = () => { if (s.role !== 'admin') throw new AdminError(403, 'Solo un admin configura la empresa'); };
+  const requireAdmin = () => { if (!can(s.role).managePlaybook) throw new AdminError(403, 'Solo un admin o el jefe/a de ventas configura la empresa'); };
 
   async function status() {
     requireAdmin();

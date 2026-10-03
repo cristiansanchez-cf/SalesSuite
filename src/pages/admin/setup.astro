@@ -4,6 +4,7 @@
  * Iconos, explicaciones y valores por defecto; nada se borra al aplicar un punto de partida.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { can } from '~/lib/admin/permissions';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
@@ -18,7 +19,7 @@ import { isIconName } from '~/lib/ui/icons';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const setup = createSetupService(admin.session, { playbook: admin.playbook, evidence: admin.evidence });
 const STEPS = [
   { n: 1, title: 'Punto de partida', icon: 'wand-sparkles' },

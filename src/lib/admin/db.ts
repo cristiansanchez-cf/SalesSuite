@@ -82,7 +82,8 @@ export interface AdminDb {
   updateTenant(id: string, patch: Partial<Pick<TenantSettings, 'name' | 'defaultLocale' | 'themeTokens' | 'brand'>>): Promise<boolean>;
 
   listMembers(tenantId: string): Promise<MemberRecord[]>;
-  addMember(tenantId: string, userId: string, role: Role): Promise<boolean>;
+  /** inviter: quién invita (en Supabase lo fija el trigger con la sesión). */
+  addMember(tenantId: string, userId: string, role: Role, inviter?: string): Promise<boolean>;
   setMemberRole(tenantId: string, userId: string, role: Role): Promise<boolean>;
   removeMember(tenantId: string, userId: string): Promise<boolean>;
 
@@ -104,6 +105,8 @@ export interface AdminDb {
   /** Inserta (sin id) o actualiza (con id). Devuelve el id. */
   savePartnerAccount(row: Omit<PartnerAccount, 'id'> & { id?: string }): Promise<string>;
   deletePartnerAccount(id: string): Promise<boolean>;
+  /** Un colaborador con permiso invita a otro (hereda módulos y caducidad). */
+  partnerInvitePartner(tenantId: string, inviterId: string, userId: string): Promise<void>;
 }
 
 /**

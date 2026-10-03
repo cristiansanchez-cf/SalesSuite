@@ -1,6 +1,7 @@
 ---
 /** Ficha de un colaborador (docs/PARTNERS.md): qué ve, sus cuentas y cómo se cotiza cada una. Solo admins. */
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
 import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
@@ -15,8 +16,9 @@ import EmptyState from '~/components/ui/EmptyState.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+if (!can(admin.session.role).manageTeam) return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
+const canPrice = can(admin.session.role).setPrices;
 const userId = Astro.params.userId ?? '';
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -33,7 +35,7 @@ if (Astro.request.method === 'POST') {
     if (action === 'profile') {
       await t.updatePartner(userId, {
         moduleIds: f.getAll('moduleIds').map(String), seeTeamTips: f.get('seeTeamTips') === 'on',
-        welcomeNote: String(f.get('welcomeNote') ?? ''), expiresAt: String(f.get('expiresAt') ?? ''),
+        welcomeNote: String(f.get('welcomeNote') ?? ''), expiresAt: String(f.get('expiresAt') ?? ''), canInvite: f.get('canInvite') === 'on',
       });
       ok = 'profile';
     } else if (action === 'account') {
@@ -129,15 +131,15 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
                     </label>
                     <div class="grid gap-3 sm:grid-cols-2">
                       <label class="co-field">Precio para el cliente
-                        <select class="co-select" name="pricePolicy" data-testid="price-policy">{(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k} selected={k === a.pricePolicy}>{PRICE_POLICY_LABEL[k]}</option>)}</select>
+                        <select class="co-select" name="pricePolicy" data-testid="price-policy" disabled={!canPrice}>{(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k} selected={k === a.pricePolicy}>{PRICE_POLICY_LABEL[k]}</option>)}</select>
                       </label>
                       <label class="co-field">Ajuste sobre tarifa (%)
-                        <input class="co-input" name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value={a.priceAdjustPct} data-testid="price-adjust" />
+                        <input class="co-input" name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value={a.priceAdjustPct} data-testid="price-adjust" disabled={!canPrice} />
                         <span class="co-help">Solo con «Precio especial». −10 = 10 % más barato.</span>
                       </label>
                     </div>
                     <label class="co-field">Indicaciones para él<textarea class="co-textarea" name="notes" maxlength="2000">{a.notes ?? ''}</textarea></label>
-                    <p class="co-help">{PRICE_POLICY_HELP[a.pricePolicy]}</p>
+                    <p class="co-help">{canPrice ? PRICE_POLICY_HELP[a.pricePolicy] : 'El precio de cada cuenta lo decide un admin.'}</p>
                     <p class="co-dialog__not"><strong>Ojo:</strong> si cambias el precio se recalculan sus propuestas de esta cuenta, también las ya enviadas. <strong>Lo que no hace:</strong> no avisa ni al colaborador ni al cliente.</p>
                   </div>
                   <div class="co-dialog__foot">
@@ -188,6 +190,10 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
           <input type="checkbox" name="seeTeamTips" checked={p.profile?.seeTeamTips} />
           <span>Ve lo que comparte el equipo interno<span class="co-help block">Nunca ve precio y monetización, ni dossiers o notas de otros vendedores.</span></span>
         </label>
+        <label class="co-check">
+          <input type="checkbox" name="canInvite" checked={p.profile?.canInvite} />
+          <span>Puede invitar a otros colaboradores<span class="co-help block">Heredan sus módulos, sin cuentas. Verás siempre quién invitó a quién y te avisaremos.</span></span>
+        </label>
         <label class="co-field">Acceso hasta<input class="co-input" type="date" name="expiresAt" value={dateInput} /><span class="co-help">Vacío = sin fecha de fin. Al caducar no entra; sus propuestas se conservan.</span></label>
         <label class="co-field">Su guía <span class="co-help">Solo la ve él. Admite **negrita** y listas con «- ».</span>
           <textarea class="co-textarea min-h-[8rem]" name="welcomeNote" maxlength="4000">{p.profile?.welcomeNote ?? ''}</textarea>
@@ -217,7 +223,7 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
         <label class="co-field">Nombre<input class="co-input" name="name" required maxlength="120" placeholder="Sala Luna" /></label>
         <label class="co-field">Sector<select class="co-select" name="segmentId"><option value="">Sin sector</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="co-field">Precio para el cliente<select class="co-select" name="pricePolicy">{(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k}>{PRICE_POLICY_LABEL[k]}</option>)}</select></label>
+          <label class="co-field">Precio para el cliente<select class="co-select" name="pricePolicy" disabled={!canPrice}>{(['hidden', 'list', 'adjusted'] as const).map((k) => <option value={k}>{PRICE_POLICY_LABEL[k]}</option>)}</select></label>
           <label class="co-field">Ajuste sobre tarifa (%)<input class="co-input" name="priceAdjustPct" type="number" step="0.01" min="-90" max="200" value="0" /></label>
         </div>
         <label class="co-field">Indicaciones para él<textarea class="co-textarea" name="notes" maxlength="2000" placeholder="El dueño es Marcos; no hables de precio, lo cerramos nosotros."></textarea></label>

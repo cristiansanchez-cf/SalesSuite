@@ -5,7 +5,7 @@
  */
 import fixtures from '../../../supabase/seed/fixtures.json';
 
-export type Role = 'admin' | 'rep' | 'partner';
+export type Role = 'admin' | 'lead' | 'rep' | 'partner';
 export type DossierStatus = 'draft' | 'published' | 'archived';
 export type PriceModeRow = 'none' | 'total' | 'per_module';
 
@@ -72,12 +72,13 @@ export interface WinStoryRow {
 }
 export interface PartnerProfileRow {
   tenant_id: string; user_id: string; module_ids: string[]; see_team_tips: boolean; welcome_note: string | null; expires_at: string | null;
+  can_invite?: boolean;
 }
 export interface PartnerAccountRow {
   id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
-export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role }> }
+export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean }
 
 export interface DemoDb {
   tenant: TenantRow[];

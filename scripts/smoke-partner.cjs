@@ -73,7 +73,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await dj.$$('[data-testid=topic]')).length === 2, 'Aprende: solo sus 2 módulos');
   assert((await dj.$$('[data-testid=segment]')).length === 1, 'Aprende: solo el sector de sus cuentas');
   await dj.click('[data-testid=topic] >> nth=0');
-  assert(!(await dj.$('[data-testid=tip-form]')), 'no aporta al playbook');
+  assert((await dj.textContent('[data-testid=tip-form]')).includes('Enviar para revisión'), 'aporta al playbook, pendiente de aprobación');
   assert(!(await dj.textContent('main')).includes('Precio y monetización'), 'sin jugadas de monetización');
 
   // ---- admin: gestiona al colaborador

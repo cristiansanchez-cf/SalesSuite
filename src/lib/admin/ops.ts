@@ -70,7 +70,7 @@ export type CreateDossierInput = z.infer<typeof createDossierSchema>;
 
 // ---------------------------------------------------------------- gestión del tenant (admins)
 
-export const roleSchema = z.enum(['admin', 'rep']);
+export const roleSchema = z.enum(['admin', 'lead', 'rep']);
 
 export const inviteSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email no válido').max(200),
@@ -91,6 +91,7 @@ const expiryDate = z.union([
 export const partnerProfileSchema = z.object({
   moduleIds: z.array(id).max(100).default([]),
   seeTeamTips: z.boolean().default(false),
+  canInvite: z.boolean().default(false),
   welcomeNote: optText(4000).default(null),
   expiresAt: expiryDate,
 });

@@ -1,12 +1,13 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
 import { PERSONA_ROLES, ROLE_HINT, ROLE_LABEL, type PersonaView } from '~/lib/playbook/market';
 import { OBJECTIONS, OBJECTION_LABEL } from '~/lib/playbook/types';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const pb = admin.playbook;
 const id = Astro.params.id ?? '';
 const isNew = id === 'new';

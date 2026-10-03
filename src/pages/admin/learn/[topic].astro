@@ -80,30 +80,30 @@ const field = 'co-input';
       {view.sections.map((sec) => (
         <section>
           <h2 class="mb-3 text-eyebrow">{sec.label}</h2>
-          <div class="space-y-3">{sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose={!partner} />)}</div>
+          <div class="space-y-3">{sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose />)}</div>
         </section>
       ))}
 
-      {(!partner || partner.seeTeamTips) && <section data-testid="team">
+      <section data-testid="team">
         <h2 class="mb-3 text-eyebrow">Lo que le funciona al equipo</h2>
         <div class="space-y-3">
           {view.tips.map((t) => <TipCard tip={t} mine={t.authorId === admin.session.userId} />)}
           {view.tips.length === 0 && <p class="text-sm text-muted">{partner ? 'El equipo aún no ha compartido trucos sobre esto.' : 'Aún nadie ha compartido nada aquí. ¡Sé el primero!'}</p>}
         </div>
-        {!partner && <form method="post" class="mt-4 space-y-2 co-card" data-testid="tip-form">
+        <form method="post" class="mt-4 space-y-2 co-card" data-testid="tip-form">
           <input type="hidden" name="action" value="tip" />
           <h3 class="font-bold">Comparte lo que te funciona</h3>
-          <p class="text-xs text-muted">Visible al momento para tu equipo, marcado como «del equipo». Tu líder puede convertirlo en oficial.</p>
+          <p class="text-xs text-muted">{partner ? 'Lo revisa el equipo antes de publicarlo; te avisaremos aquí.' : 'Visible al momento para tu equipo, marcado como «del equipo». Tu líder puede convertirlo en oficial.'}</p>
           <div class="grid gap-2 sm:grid-cols-[1fr_12rem]">
             <input class={field} name="title" required maxlength="200" placeholder="Qué haces (una línea)" />
             <select class={field} name="kind" aria-label="Tipo">
-              {PLAY_KINDS.map((k) => <option value={k} selected={k === 'tip'}>{KIND_LABEL[k]}</option>)}
+              {PLAY_KINDS.filter((k) => !partner || k !== 'monetization').map((k) => <option value={k} selected={k === 'tip'}>{KIND_LABEL[k]}</option>)}
             </select>
           </div>
           <textarea class={`${field} h-24`} name="body" required maxlength="4000" placeholder="Cuéntalo con un ejemplo real: qué dijiste, a quién y qué pasó."></textarea>
-          <button class="co-btn co-btn--primary" type="submit">Compartir con el equipo</button>
-        </form>}
-      </section>}
+          <button class="co-btn co-btn--primary" type="submit">{partner ? 'Enviar para revisión' : 'Compartir con el equipo'}</button>
+        </form>
+      </section>
 
       {view.myOpen.length > 0 && (
         <section>

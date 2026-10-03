@@ -6,12 +6,13 @@
 import Icon from './Icon.astro';
 import { BRAND } from '~/lib/site';
 import { navFor } from '~/lib/ui/nav';
+import { ROLE_LABEL } from '~/lib/admin/permissions';
 import type { AdminContext } from '~/lib/admin/auth';
 
 interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean }
 const { admin, tenantName, path, pending, primary = false } = Astro.props;
 const nav = navFor(admin.session.role, path, { pendingPlaybook: pending });
-const roleLabel = { admin: 'Admin', rep: 'Comercial', partner: 'Colaborador' } as const;
+
 const name = admin.session.displayName || admin.session.email;
 const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 ---
@@ -41,7 +42,7 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
   <details class="co-popover">
     <summary class="co-anchor" data-testid={primary ? 'profile' : undefined}>
       <span class="co-anchor__avatar">{initials}</span>
-      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{roleLabel[admin.session.role]}</span></span>
+      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{ROLE_LABEL[admin.session.role]}</span></span>
       <Icon name="chevron-down" size={16} />
     </summary>
     <div class="co-popover__menu">

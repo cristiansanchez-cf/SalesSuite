@@ -17,6 +17,7 @@ import {
   type Contribution, type ContributionView, type Feedback, type Play, type PlayKind, type PlayView, type Score, type TargetType,
 } from './types';
 import type { z } from 'zod';
+import { can } from '../admin/permissions';
 import type { EvidenceDb } from '../evidence/db';
 import { evidenceByPlay } from '../evidence/service';
 
@@ -47,8 +48,10 @@ export interface TopicView {
 }
 
 export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService; evidence?: EvidenceDb }) {
-  const isAdmin = s.role === 'admin';
-  const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo el líder (admin) puede editar el playbook oficial'); };
+  /** Admin o jefe/a de ventas (src/lib/admin/permissions.ts). */
+  const isAdmin = can(s.role).managePlaybook;
+  const isPartner = s.role === 'partner';
+  const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo un admin o el jefe/a de ventas puede editar el playbook oficial'); };
   const wrote = (ok: boolean) => { if (!ok) throw new AdminError(403, 'Sin permiso para esta operación'); };
   const now = () => new Date().toISOString();
 
@@ -175,7 +178,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   /** Nº de mejoras pendientes (badge del menú para el líder). */
   async function pendingCount(): Promise<number> {
     if (!isAdmin) return 0;
-    return (await pdb.listContributions(s.tenantId)).filter((c) => c.type === 'change' && c.status === 'pending').length;
+    return (await pdb.listContributions(s.tenantId)).filter((c) => c.status === 'pending').length;
   }
 
   // ------------------------------------------------------------ equipo
@@ -185,7 +188,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (t.moduleId && !latest.has(t.moduleId)) throw new AdminError(404, 'Módulo no encontrado');
     if (t.playId && !plays.some((p) => p.id === t.playId && official(p))) throw new AdminError(404, 'Jugada no encontrada');
     return pdb.insertContribution(s.tenantId, {
-      type: 'tip', playId: t.playId ?? null, moduleId: t.moduleId, kind: t.kind, title: t.title, body: t.body, status: 'shared', authorId: s.userId,
+      // Los colaboradores aportan, pero su truco espera a que el admin o el jefe/a de ventas lo apruebe.
+      type: 'tip', playId: t.playId ?? null, moduleId: t.moduleId, kind: t.kind, title: t.title, body: t.body, status: isPartner ? 'pending' : 'shared', authorId: s.userId,
     });
   }
 
@@ -441,7 +445,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const { plays, contributions } = await load();
     const byId = new Map(plays.map((p) => [p.id, p]));
     return {
-      pending: contributions.filter((c) => c.type === 'change' && c.status === 'pending')
+      // Mejoras de jugadas y trucos de colaboradores que esperan aprobación.
+      pending: contributions.filter((c) => c.status === 'pending')
         .map((c) => ({ ...c, current: c.playId ? byId.get(c.playId) ?? null : null }))
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
       tips: contributions.filter((c) => c.type === 'tip' && c.status === 'shared')
@@ -459,7 +464,11 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const reviewed = { reviewedBy: s.userId, reviewedAt: now(), reviewNote: note?.trim() || null };
     const credit = `${c.authorName ?? 'el equipo'}`;
 
-    if (action === 'accept') {
+    if (action === 'accept' && c.type === 'tip') {
+      // Truco de un colaborador: aprobarlo lo hace visible para el equipo.
+      if (c.status !== 'pending') throw new AdminError(409, 'Solo se aprueban trucos pendientes');
+      wrote(await pdb.updateContribution(c.id, { status: 'shared', ...reviewed }));
+    } else if (action === 'accept') {
       if (c.type !== 'change' || c.status !== 'pending') throw new AdminError(409, 'Solo se aceptan mejoras pendientes');
       const play = plays.find((p) => p.id === c.playId);
       if (!play) throw new AdminError(404, 'La jugada ya no existe');
@@ -541,7 +550,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   return {
-    isAdmin, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen,
+    isAdmin, isPartner, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen,
     market, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
     listAll, listAllVisible, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };

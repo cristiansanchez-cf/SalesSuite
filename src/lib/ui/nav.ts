@@ -6,6 +6,7 @@
  */
 import type { Role } from '../admin/types';
 import type { IconName } from './icons';
+import { can } from '../admin/permissions';
 
 export interface NavItem { href: string; label: string; icon: IconName; on: boolean; count?: number; testid?: string }
 export type NavMode = 'sell' | 'setup';
@@ -14,7 +15,8 @@ const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/a
 
 export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number } = {}) {
   const on = (p: string) => path === p || path.startsWith(`${p}/`);
-  const mode: NavMode = role === 'admin' && SETUP_PREFIXES.some(on) ? 'setup' : 'sell';
+  const perms = can(role);
+  const mode: NavMode = perms.configure && SETUP_PREFIXES.some(on) ? 'setup' : 'sell';
   const sell: NavItem[] = [
     role === 'partner'
       ? { href: '/admin', label: 'Mis cuentas', icon: 'store', on: path === '/admin' || on('/admin/dossiers') }
@@ -26,13 +28,13 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
   const setup: NavItem[] = [
     { href: '/admin/setup', label: 'Configuración guiada', icon: 'wand-sparkles', on: on('/admin/setup') },
     { href: '/admin/playbook', label: 'Playbook y mercado', icon: 'book-open', on: on('/admin/playbook'), count: counts.pendingPlaybook || undefined },
-    { href: '/admin/catalog', label: 'Catálogo', icon: 'boxes', on: on('/admin/catalog') },
+    ...(perms.manageTenant ? [{ href: '/admin/catalog', label: 'Catálogo', icon: 'boxes' as IconName, on: on('/admin/catalog') }] : []),
     { href: '/admin/team', label: 'Equipo', icon: 'users', on: on('/admin/team') },
-    { href: '/admin/brand', label: 'Marca', icon: 'palette', on: on('/admin/brand') },
+    ...(perms.manageTenant ? [{ href: '/admin/brand', label: 'Marca', icon: 'palette' as IconName, on: on('/admin/brand') }] : []),
   ];
   return {
     mode,
-    canSwitch: role === 'admin',
+    canSwitch: perms.configure,
     modes: [
       { key: 'sell' as const, label: 'Vender', href: '/admin', icon: 'target' as IconName },
       { key: 'setup' as const, label: 'Configurar', href: '/admin/setup', icon: 'settings' as IconName },

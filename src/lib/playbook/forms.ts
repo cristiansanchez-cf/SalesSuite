@@ -12,7 +12,7 @@ export async function learnAction(pb: PlaybookService, f: FormData, ctx: { modul
       return 'change';
     case 'tip':
       await pb.shareTip({ moduleId: ctx.moduleId, kind: str('kind') || 'tip', title: str('title'), body: str('body') });
-      return 'tip';
+      return pb.isPartner ? 'tip-pending' : 'tip';
     case 'withdraw':
       await pb.withdraw(str('id'));
       return 'withdraw';
@@ -27,6 +27,7 @@ export async function learnAction(pb: PlaybookService, f: FormData, ctx: { modul
 export const LEARN_FLASH: Record<string, string> = {
   change: 'Mejora enviada al líder. Te avisaremos en esta ficha cuando la revise.',
   tip: '¡Gracias! Tu truco ya es visible para el equipo.',
+  'tip-pending': '¡Gracias! El equipo lo revisará antes de publicarlo.',
   withdraw: 'Aporte retirado.',
   learned: 'Marcado como aprendido.',
   unlearned: 'Desmarcado.',

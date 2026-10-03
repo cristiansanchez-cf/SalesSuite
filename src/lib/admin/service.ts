@@ -9,6 +9,7 @@ import { needsRebalance, rankBetween, rankForMove, rebalance } from '../rank';
 import type { PublicDossier, RenderItem } from '../types';
 import { resolveItem } from '../../modules/resolve';
 import type { AdminDb } from './db';
+import { can } from './permissions';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
@@ -65,14 +66,14 @@ export function latestByModule(catalog: CatalogVersion[]): Map<string, CatalogVe
 
 export function createAdminService(db: AdminDb, s: AdminSession, opts: { defaultLocale?: string; now?: () => Date } = {}) {
   const now = opts.now ?? (() => new Date());
-  const canEdit = (d: DossierRecord) => s.role === 'admin' || d.authorId === s.userId;
+  const canEdit = (d: DossierRecord) => can(s.role).editAllDossiers || d.authorId === s.userId;
   const isPartner = s.role === 'partner';
   const PRICES_LOCKED = 'Los precios de tus cuentas los gestiona la empresa';
 
   /** Cuenta de colaborador del dossier (el admin ve la política; el colaborador, la suya). */
   async function partnerAccountOf(d: DossierRecord): Promise<BuilderState['partnerAccount']> {
     if (!d.partnerAccountId) return null;
-    const list = isPartner ? s.partner?.accounts ?? [] : s.role === 'admin' ? await db.listPartnerAccounts(s.tenantId) : [];
+    const list = isPartner ? s.partner?.accounts ?? [] : can(s.role).manageTeam ? await db.listPartnerAccounts(s.tenantId) : [];
     const a = list.find((x) => x.id === d.partnerAccountId);
     return a ? { id: a.id, name: a.name, pricePolicy: a.pricePolicy, priceAdjustPct: isPartner ? null : a.priceAdjustPct, notes: a.notes } : null;
   }

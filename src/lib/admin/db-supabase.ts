@@ -23,10 +23,11 @@ const toDossier = (r: Row): DossierRecord => ({
   situation: r.situation ?? {},
 });
 
-const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at';
+const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';
 const ACCOUNT_COLS = 'id, tenant_id, user_id, name, segment_id, price_policy, price_adjust_pct, notes, position';
 const toProfile = (r: Row): PartnerProfile => ({
   tenantId: r.tenant_id, userId: r.user_id, moduleIds: r.module_ids ?? [], seeTeamTips: r.see_team_tips, welcomeNote: r.welcome_note, expiresAt: r.expires_at,
+  canInvite: r.can_invite ?? false,
 });
 const toAccount = (r: Row): PartnerAccount => ({
   id: r.id, tenantId: r.tenant_id, userId: r.user_id, name: r.name, segmentId: r.segment_id, pricePolicy: r.price_policy,
@@ -247,10 +248,11 @@ function full(sb: SupabaseClient): AdminDb {
     },
 
     async listMembers(tenantId) {
-      const rows = check(await sb.from('membership').select('user_id, role, users!inner(email, display_name)').eq('tenant_id', tenantId)) ?? [];
-      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role }));
+      const rows = check(await sb.from('membership').select('user_id, role, invited_by, created_at, users!membership_user_id_fkey!inner(email, display_name)').eq('tenant_id', tenantId)) ?? [];
+      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role, invitedBy: r.invited_by ?? null, joinedAt: r.created_at ?? null }));
     },
     async addMember(tenantId, userId, role) {
+      // invited_by lo pone el trigger membership_set_inviter con la sesión.
       const rows = check(await sb.from('membership').insert({ tenant_id: tenantId, user_id: userId, role }).select('user_id')) ?? [];
       return rows.length > 0;
     },
@@ -324,6 +326,7 @@ function full(sb: SupabaseClient): AdminDb {
     async upsertPartnerProfile(p) {
       const rows = check(await sb.from('partner_profile').upsert({
         tenant_id: p.tenantId, user_id: p.userId, module_ids: p.moduleIds, see_team_tips: p.seeTeamTips, welcome_note: p.welcomeNote, expires_at: p.expiresAt,
+        can_invite: p.canInvite,
       }).select('user_id')) ?? [];
       return rows.length > 0;
     },
@@ -343,6 +346,9 @@ function full(sb: SupabaseClient): AdminDb {
         return a.id;
       }
       return (checkOne(await sb.from('partner_account').insert(row).select('id').single())).id as string;
+    },
+    async partnerInvitePartner(tenantId, _inviterId, userId) {
+      check(await sb.rpc('partner_invite_partner', { p_tenant: tenantId, p_user: userId }));
     },
     async deletePartnerAccount(id) {
       const rows = check(await sb.from('partner_account').delete().eq('id', id).select('id')) ?? [];

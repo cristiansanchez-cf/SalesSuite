@@ -2,7 +2,7 @@ import type { ResolvedPrice } from '../pricing';
 import type { DossierStatus, PriceMode } from '../types';
 
 /** admin y rep = equipo interno; partner = colaborador puntual invitado (docs/PARTNERS.md). */
-export type Role = 'admin' | 'rep' | 'partner';
+export type Role = 'admin' | 'lead' | 'rep' | 'partner';
 export type TeamRole = Exclude<Role, 'partner'>;
 
 /** Cómo se cotiza una cuenta de colaborador: lo decide el admin, nunca el colaborador. */
@@ -19,6 +19,8 @@ export interface PartnerProfile {
   welcomeNote: string | null;
   /** null = sin caducidad. */
   expiresAt: string | null;
+  /** Puede invitar a otros colaboradores (red de referidos). */
+  canInvite: boolean;
 }
 
 /** Cuenta (local, centro…) que el admin asigna a un colaborador, con su política de precio. */
@@ -156,6 +158,9 @@ export interface MemberRecord {
   email: string;
   displayName: string | null;
   role: Role;
+  /** Quién le invitó (trazabilidad de la red de colaboradores). */
+  invitedBy: string | null;
+  joinedAt: string | null;
 }
 
 export interface PartnerView extends MemberRecord {

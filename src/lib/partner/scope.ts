@@ -119,7 +119,8 @@ export function scopeAdminDb(inner: AdminDb, s: AdminSession & { partner: Partne
     async segmentExists(t, id) { return accounts().some((a) => a.segmentId === id) && inner.segmentExists(t, id); },
 
     // Gestión del tenant y de colaboradores: nunca.
-    async listMembers() { return []; },
+    // Solo a quién ha invitado él (= membership_partner_invited).
+    async listMembers(t) { return (await inner.listMembers(t)).filter((m) => m.invitedBy === me && m.role === 'partner'); },
     async addMember() { return false; },
     async setMemberRole() { return false; },
     async removeMember() { return false; },
@@ -155,13 +156,21 @@ export function scopePlaybookDb(inner: PlaybookDb, s: AdminSession & { partner: 
     },
     async insertRevision() { throw new PartnerDenied('Sin permiso'); },
     async listContributions(t) {
-      if (!s.partner.seeTeamTips) return [];
-      return (await inner.listContributions(t)).filter((c) => c.type === 'tip' && ['shared', 'accepted'].includes(c.status)
-        && c.kind !== 'monetization' && (c.moduleId === null || mods.includes(c.moduleId)));
+      // Los suyos siempre; los del equipo, si el admin lo permite (= contribution_partner_select / _own).
+      return (await inner.listContributions(t)).filter((c) => c.authorId === me || (s.partner.seeTeamTips && c.type === 'tip'
+        && ['shared', 'accepted'].includes(c.status) && c.kind !== 'monetization' && (c.moduleId === null || mods.includes(c.moduleId))));
     },
-    async insertContribution() { throw new PartnerDenied('Los colaboradores no aportan al playbook (de momento)'); },
+    async insertContribution(t, row) {
+      // Aporta, pero siempre pendiente de aprobación (= contribution_partner_insert).
+      if (row.authorId !== me || row.status !== 'pending') throw new PartnerDenied('Tus aportes los revisa el equipo antes de publicarse');
+      if (row.moduleId && !mods.includes(row.moduleId)) throw new PartnerDenied('Ese módulo no está disponible para ti');
+      return inner.insertContribution(t, row);
+    },
     async updateContribution() { return false; },
-    async deleteContribution() { return false; },
+    async deleteContribution(id) {
+      const c = (await inner.listContributions(s.tenantId)).find((x) => x.id === id);
+      return c && c.authorId === me && c.status === 'pending' ? inner.deleteContribution(id) : false;
+    },
     async listFeedback(t) { return (await inner.listFeedback(t)).filter((f) => f.userId === me); },
     async listProgress(t) { return (await inner.listProgress(t)).filter((p) => p.userId === me); },
 

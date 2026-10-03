@@ -9,6 +9,9 @@ import { draftSchema, inviteSchema, moduleCreateSchema, moduleUpdateSchema, part
 import { AdminError } from './service';
 import type { AdminSession, CatalogModuleView, DossierRecord, MemberRecord, PartnerView, Role, TenantSettings } from './types';
 import { partnerPrice, priceModeFor } from '../partner/scope';
+import { can } from './permissions';
+
+const ROLE_ORDER: Record<Role, number> = { admin: 0, lead: 1, rep: 2, partner: 3 };
 import type { z } from 'zod';
 
 const MAX_PROPS_BYTES = 50_000;
@@ -48,27 +51,32 @@ export function createTenantAdminService(
   s: AdminSession,
   deps: { identity: Identity | null; assets: AssetStore },
 ) {
+  const perms = can(s.role);
   function requireAdmin() {
-    if (s.role !== 'admin') throw new AdminError(403, 'Solo los admins pueden gestionar el tenant');
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo los admins pueden gestionar el tenant');
+  }
+  function requireTeam() {
+    if (!perms.manageTeam) throw new AdminError(403, 'Solo un admin o un jefe/a de ventas gestiona el equipo');
   }
   const wrote = (ok: boolean) => { if (!ok) throw new AdminError(403, 'Sin permiso para esta operación'); };
 
   // ------------------------------------------------------------ equipo
   async function listMembers(): Promise<MemberRecord[]> {
-    requireAdmin();
+    requireTeam();
     // Equipo interno; los colaboradores se gestionan aparte (listPartners).
     const list = (await db.listMembers(s.tenantId)).filter((m) => m.role !== 'partner');
-    return list.sort((a, b) => (a.role === b.role ? a.email.localeCompare(b.email) : a.role === 'admin' ? -1 : 1));
+    return list.sort((a, b) => (a.role === b.role ? a.email.localeCompare(b.email) : ROLE_ORDER[a.role] - ROLE_ORDER[b.role]));
   }
 
   async function invite(input: unknown, redirectTo: string): Promise<{ invited: boolean }> {
-    requireAdmin();
+    requireTeam();
     const { email, role } = parse(inviteSchema, input);
+    if (role !== 'rep' && !perms.manageTenant) throw new AdminError(403, 'Un jefe/a de ventas invita comerciales y colaboradores; los admins y jefes los da de alta un admin');
     if (!deps.identity) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
     const members = await db.listMembers(s.tenantId);
     if (members.some((m) => m.email.toLowerCase() === email)) throw new AdminError(409, 'Esa persona ya está en el equipo');
     const { userId, invited } = await deps.identity.findOrInvite(email, { redirectTo });
-    try { wrote(await db.addMember(s.tenantId, userId, role)); } catch (e) { mapDbError(e); }
+    try { wrote(await db.addMember(s.tenantId, userId, role, s.userId)); } catch (e) { mapDbError(e); }
     return { invited };
   }
 
@@ -92,7 +100,9 @@ export function createTenantAdminService(
   }
 
   async function removeMember(userId: string) {
-    requireAdmin();
+    requireTeam();
+    const target = (await db.listMembers(s.tenantId)).find((m) => m.userId === userId);
+    if (!perms.manageTenant && target && !['rep', 'partner'].includes(target.role)) throw new AdminError(403, 'Solo un admin quita a otros admins o jefes de ventas');
     await assertNotLastAdmin(userId, null);
     try { wrote(await db.removeMember(s.tenantId, userId)); } catch (e) { mapDbError(e); }
   }
@@ -245,7 +255,7 @@ export function createTenantAdminService(
 
   // ------------------------------------------------------------ colaboradores (docs/PARTNERS.md)
   async function listPartners(): Promise<PartnerView[]> {
-    requireAdmin();
+    requireTeam();
     const [members, profiles, accounts, dossiers] = await Promise.all([
       db.listMembers(s.tenantId), db.listPartnerProfiles(s.tenantId), db.listPartnerAccounts(s.tenantId), db.listDossiers(s.tenantId),
     ]);
@@ -276,7 +286,7 @@ export function createTenantAdminService(
 
   /** Invita a un colaborador: entra con su email (código o enlace), sin contraseña, y solo ve lo permitido. */
   async function invitePartner(input: unknown, redirectTo: string): Promise<{ userId: string; invited: boolean }> {
-    requireAdmin();
+    requireTeam();
     const v = parse(partnerInviteSchema, input);
     if (!deps.identity) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
     await assertModules(v.moduleIds);
@@ -284,16 +294,16 @@ export function createTenantAdminService(
     if (members.some((m) => m.email.toLowerCase() === v.email)) throw new AdminError(409, 'Esa persona ya tiene acceso a este espacio');
     const { userId, invited } = await deps.identity.findOrInvite(v.email, { redirectTo });
     try {
-      wrote(await db.addMember(s.tenantId, userId, 'partner'));
+      wrote(await db.addMember(s.tenantId, userId, 'partner', s.userId));
       wrote(await db.upsertPartnerProfile({
-        tenantId: s.tenantId, userId, moduleIds: v.moduleIds, seeTeamTips: v.seeTeamTips, welcomeNote: v.welcomeNote, expiresAt: v.expiresAt,
+        tenantId: s.tenantId, userId, moduleIds: v.moduleIds, seeTeamTips: v.seeTeamTips, welcomeNote: v.welcomeNote, expiresAt: v.expiresAt, canInvite: v.canInvite,
       }));
     } catch (e) { mapDbError(e); }
     return { userId, invited };
   }
 
   async function updatePartner(userId: string, input: unknown) {
-    requireAdmin();
+    requireTeam();
     const v = parse(partnerProfileSchema, input);
     await partner(userId);
     await assertModules(v.moduleIds);
@@ -302,11 +312,13 @@ export function createTenantAdminService(
 
   /** Crea o edita una cuenta del colaborador. Si cambia la política de precio, se aplica a sus propuestas (también publicadas). */
   async function savePartnerAccount(userId: string, input: unknown, accountId?: string): Promise<string> {
-    requireAdmin();
-    const v = parse(partnerAccountSchema, input);
+    requireTeam();
+    const parsed = parse(partnerAccountSchema, input);
     const p = await partner(userId);
     const cur = accountId ? p.accounts.find((a) => a.id === accountId) : undefined;
     if (accountId && !cur) throw new AdminError(404, 'Cuenta no encontrada');
+    // El precio lo decide el admin: un jefe/a de ventas asigna cuentas, pero no toca su precio (= trigger partner_account_price_guard).
+    const v = perms.setPrices ? parsed : { ...parsed, pricePolicy: cur?.pricePolicy ?? 'hidden' as const, priceAdjustPct: cur?.priceAdjustPct ?? 0 };
     if (v.segmentId && !(await db.segmentExists(s.tenantId, v.segmentId))) throw new AdminError(404, 'Sector no encontrado');
     const priceAdjustPct = v.pricePolicy === 'adjusted' ? v.priceAdjustPct : 0;
     let id: string;
@@ -327,13 +339,35 @@ export function createTenantAdminService(
   }
 
   async function deletePartnerAccount(userId: string, accountId: string) {
-    requireAdmin();
+    requireTeam();
     const p = await partner(userId);
     if (!p.accounts.some((a) => a.id === accountId)) throw new AdminError(404, 'Cuenta no encontrada');
     wrote(await db.deletePartnerAccount(accountId));
   }
 
+  // ------------------------------------------------------------ red de colaboradores (un colaborador invita a otro)
+  /** El colaborador invita a un colega: hereda sus módulos y su caducidad. El equipo ve quién invitó a quién. */
+  async function partnerInvite(input: unknown, redirectTo: string): Promise<{ userId: string; invited: boolean }> {
+    if (s.role !== 'partner' || !s.partner?.canInvite) throw new AdminError(403, 'Tu acceso no permite invitar a otros colaboradores');
+    const { email } = parse(inviteSchema.pick({ email: true }), input);
+    if (!deps.identity) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
+    const { userId, invited } = await deps.identity.findOrInvite(email, { redirectTo });
+    try { await db.partnerInvitePartner(s.tenantId, s.userId, userId); } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/ya tiene acceso|duplicate|unique/i.test(msg)) throw new AdminError(409, 'Esa persona ya tiene acceso a este espacio');
+      if (/permiso/i.test(msg)) throw new AdminError(403, 'Tu acceso no permite invitar a otros colaboradores');
+      throw e;
+    }
+    return { userId, invited };
+  }
+
+  /** A quién ha invitado este colaborador (solo los suyos). */
+  async function myInvitees(): Promise<MemberRecord[]> {
+    return (await db.listMembers(s.tenantId)).filter((m) => m.invitedBy === s.userId && m.role === 'partner');
+  }
+
   return {
+    partnerInvite, myInvitees,
     listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
     listMembers, invite, setRole, removeMember,
     listCatalog, createModule, updateModule, newDraft, saveDraft, publish, archive, previewVersion, previewSample,
