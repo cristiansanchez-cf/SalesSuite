@@ -48,6 +48,8 @@ export const builderOpSchema = z.discriminatedUnion('op', [
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;
+/** Forma de entrada (campos con valor por defecto opcionales): lo que envía el cliente. */
+export type BuilderOpInput = z.input<typeof builderOpSchema>;
 export type DossierPatch = z.infer<typeof dossierPatchSchema>;
 
 export const createDossierSchema = z.object({

@@ -49,7 +49,7 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
 
     test('aprende: índice, ficha general y referencias al Cerebro', async () => {
       const idx = await svc(U.rep).learnIndex();
-      expect(idx.general.playCount).toBe(9);
+      expect(idx.general.playCount).toBe(11);
       const exp = idx.modules.find((m) => m.moduleId === EXP)!;
       expect(exp.playCount).toBe(9);
       expect(idx.progress).toEqual({ done: 0, total: 1 + idx.modules.length });

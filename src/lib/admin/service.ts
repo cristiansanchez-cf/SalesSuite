@@ -9,7 +9,7 @@ import { needsRebalance, rankBetween, rankForMove, rebalance } from '../rank';
 import type { PublicDossier, RenderItem } from '../types';
 import { resolveItem } from '../../modules/resolve';
 import type { AdminDb } from './db';
-import type { BuilderOp, CreateDossierInput } from './ops';
+import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
 export class AdminError extends Error {
@@ -188,7 +188,10 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     await assertWrote(await db.deleteDossier(id));
   }
 
-  async function apply(id: string, op: BuilderOp): Promise<BuilderState> {
+  async function apply(id: string, input: BuilderOpInput): Promise<BuilderState> {
+    const parsed = builderOpSchema.safeParse(input);
+    if (!parsed.success) throw new AdminError(422, 'Datos no válidos', parsed.error.issues.map((i) => `${i.path.join('.') || 'op'}: ${i.message}`));
+    const op = parsed.data;
     const d = await loadEditable(id);
 
     switch (op.op) {

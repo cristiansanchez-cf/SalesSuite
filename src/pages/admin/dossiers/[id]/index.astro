@@ -9,8 +9,14 @@ const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 
 let state: BuilderState;
+let market;
 try {
   state = await admin.service.getState(Astro.params.id ?? '');
+  const m = await admin.playbook.market();
+  market = {
+    segments: m.map((x) => ({ id: x.id, key: x.key, name: x.name })),
+    personas: m.flatMap((x) => x.personas.map((p) => ({ id: p.id, segmentId: p.segmentId, name: p.name, role: p.role }))),
+  };
 } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;
@@ -19,5 +25,5 @@ try {
 const origin = requestOrigin(Astro.request, Astro.url);
 ---
 <AdminLayout title={state.dossier.title} wide>
-  <Builder client:load initial={state} publicOrigin={origin} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} />
 </AdminLayout>

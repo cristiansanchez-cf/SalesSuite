@@ -56,7 +56,9 @@ Producción: sigue [`docs/SETUP.md`](docs/SETUP.md). En local con la CLI (`supab
 | `/admin/team` *(admin)* | Invitar por email, cambiar rol, quitar (nunca sin al menos un admin) |
 | `/admin/brand` *(admin)* | Colores, radios, tipografía (fuente propia), logos/favicon/imagen OG (subida a Storage), contacto (WhatsApp…), con vista previa |
 | `/admin/learn` | **Aprende a vender**: formación por módulo (jugadas oficiales, vista previa del módulo, trucos del equipo, votos, proponer mejoras), progreso y novedades |
-| `/admin/playbook` *(admin)* | Bandeja de propuestas, jugadas (crear/editar con versión y nota), «qué funciona», exportación con formato del Cerebro |
+| `/admin/learn/sector/:key` | **Sector**: cliente ideal, cómo compran, módulos que encajan y **actores** (quién decide, paga, puede tumbarlo; cómo abordarles) |
+| `/admin/compose` | **Preparar mensaje**: contexto listo para el Cerebro de Ventas en Claude/ChatGPT («tipo DJ → mensaje») |
+| `/admin/playbook` *(admin)* | Mercado y actores (editor), bandeja de propuestas, jugadas (crear/editar con versión y nota), «qué funciona», exportación con formato del Cerebro |
 | `/admin/dossiers/:id` → «Guion de venta» | Guion de la reunión generado del playbook para ese dossier (orden, precio, objeciones); imprimible en `/script` |
 | `/admin/account` | Nombre y contraseña (también destino de invitación y recuperación) |
 | `/admin/auth/confirm` | Destino de los emails de Auth (`token_hash` o `code`) |
@@ -78,6 +80,7 @@ Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/op
 | `node scripts/smoke-e2e.cjs` | Smoke Playwright del enlace público (orden, precios, 404s, tema, multi-instancia) |
 | `node scripts/smoke-admin.cjs` | Smoke Playwright de la consola: plan §13 pasos 2–7 por la UI (login, crear, drag & drop, ocultar, precio, publicar, enlace, revocar, RBAC, móvil) |
 | `node scripts/smoke-tenant-admin.cjs` | Smoke Playwright de catálogo, equipo y marca (incl. reflejo en el enlace público) |
+| `node scripts/smoke-market.cjs` | Smoke Playwright de sectores/actores, Preparar mensaje, cuenta del dossier, guion «Con quién hablas» y seguimiento |
 | `node scripts/smoke-playbook.cjs` | Smoke Playwright del playbook: aprender, votar, compartir, proponer, bandeja del líder, guion en el builder |
 
 Los smokes van contra un servidor en modo demo: `npm run build && npm run start:demo`.
@@ -136,6 +139,12 @@ supabase/
 - [x] «Aprende» (formación con progreso y novedades), capa de equipo (trucos y mejoras), bandeja del líder con versiones
 - [x] Guion de venta por dossier en el builder + imprimible; «me funcionó»; resultado del dossier; métricas; export
 - [x] Import del playbook en `tenant.json`; contenido de **ejemplo** para Enjoy
+
+**Mercado, contexto y seguimiento** ([`docs/PLAYBOOK.md`](docs/PLAYBOOK.md) §6–7, [`docs/FOLLOWUP.md`](docs/FOLLOWUP.md))
+- [x] Sectores con cliente ideal y módulos que encajan; actores con papel, necesidades, cómo abordarles y quién ayuda o tumba
+- [x] Cuenta del dossier (personas reales con postura) y guion «Con quién hablas»
+- [x] «Preparar mensaje»: contexto + petición para el Cerebro de Ventas (Claude/ChatGPT)
+- [x] Seguimiento fase A: próximo paso con fecha, vencidos, filtro; diseño de fases B–E
 
 **Pendiente — necesita a otra persona**
 - [ ] **Tú:** crear el proyecto Supabase, SMTP, Vercel y DNS → [`docs/SETUP.md`](docs/SETUP.md)

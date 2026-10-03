@@ -1,0 +1,69 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PersonaCard from '~/components/playbook/PersonaCard.astro';
+import { AdminError } from '~/lib/admin/service';
+import { renderMarkdown } from '~/lib/playbook/markdown';
+import { PERSONA_ROLES } from '~/lib/playbook/market';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+let v;
+try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+const sg = v.segment;
+const personas = [...sg.personas].sort((a, b) => PERSONA_ROLES.indexOf(a.role) - PERSONA_ROLES.indexOf(b.role) || a.position - b.position);
+const facts = [
+  ['Por qué nosotros', sg.valueProp], ['Cliente ideal', sg.icp], ['No pierdas el tiempo si…', sg.disqualifiers],
+  ['Cómo compran', sg.buyingProcess],
+].filter(([, x]) => x) as Array<[string, string]>;
+const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<number, string>;
+---
+<AdminLayout title={sg.name} wide>
+  <a href="/admin/learn" class="text-sm text-muted hover:text-ink">← Aprende</a>
+  <div class="mt-1 flex flex-wrap items-end gap-3">
+    <h1 class="min-w-0 flex-1 text-3xl font-extrabold">{sg.name}</h1>
+    {admin.playbook.isAdmin && <a class="text-sm underline" href={`/admin/playbook/segment/${sg.id}`}>Editar sector</a>}
+  </div>
+  {sg.description && <p class="text-muted">{sg.description}</p>}
+  {(sg.dealSize || sg.salesCycle) && (
+    <p class="mt-2 flex flex-wrap gap-2 text-sm">
+      {sg.dealSize && <span class="rounded-full bg-bg px-3 py-1">💶 Ticket: <strong>{sg.dealSize}</strong></span>}
+      {sg.salesCycle && <span class="rounded-full bg-bg px-3 py-1">⏱ Ciclo: <strong>{sg.salesCycle}</strong></span>}
+    </p>
+  )}
+
+  <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+    <aside class="space-y-4">
+      {facts.map(([label, text]) => (
+        <section class="rounded-2xl border border-line bg-bg p-4">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-muted">{label}</h2>
+          <div class="prose-play mt-1 text-sm" set:html={renderMarkdown(text)} />
+        </section>
+      ))}
+      {sg.modules.length > 0 && (
+        <section class="rounded-2xl border border-line bg-bg p-4" data-testid="segment-modules">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-muted">Qué módulos vender aquí</h2>
+          <ul class="mt-2 space-y-2 p-0 text-sm">
+            {sg.modules.map((m) => (
+              <li class="list-none"><a class="font-semibold underline-offset-2 hover:underline" href={`/admin/learn/${m.moduleId}`}>{m.moduleName}</a>
+                <span class="ml-1 rounded-full bg-surface px-2 py-0.5 text-[11px]">{PRIO[m.priority]}</span>
+                {m.fit && <p class="text-muted">{m.fit}</p>}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <a class="block rounded-2xl bg-ink p-4 text-center font-semibold text-bg" href={`/admin/compose?segment=${sg.id}`}>✉️ Preparar un mensaje para {sg.name.toLowerCase()}</a>
+    </aside>
+
+    <section>
+      <h2 class="text-lg font-bold">Actores: quién decide, quién paga, quién puede tumbarlo</h2>
+      <p class="text-sm text-muted">En cada cuenta, mapea a estas personas (en el dossier → «Cuenta y actores»). Vender solo al decisor y olvidar al que puede vetar es la forma más rápida de perder.</p>
+      <div class="mt-4 grid gap-4 2xl:grid-cols-2" data-testid="personas">
+        {personas.map((p) => <PersonaCard persona={p} plays={v.byPersona[p.key]} adminEdit={admin.playbook.isAdmin} />)}
+      </div>
+      {personas.length === 0 && <p class="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-muted">Este sector aún no tiene actores definidos.</p>}
+    </section>
+  </div>
+</AdminLayout>

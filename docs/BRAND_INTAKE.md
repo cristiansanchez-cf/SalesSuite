@@ -65,16 +65,26 @@ Para que los módulos sean **la UI real de Enjoy** y no una aproximación, neces
 
 Con eso se portan `hero-pitch` y `tabs-showcase` al diseño exacto, y se añaden `logo-marquee`, `testimonials`, `steps-howitworks` (y `faq`, `final-cta`, `compare-before-after`), siguiendo [`MODULE_AUTHORING.md`](./MODULE_AUTHORING.md).
 
-## 5. Playbook de ventas → `playbook` en `tenant.json`
+## 5. Mapa de mercado → `market` en `tenant.json`
+
+A quién vende Enjoy: **sectores** (bodas, ocio nocturno, conciertos, festivales…), cada uno con:
+- cliente ideal, cuándo descartarlo, cómo compran, ticket y ciclo;
+- qué módulos encajan (`modules`: `module_key`, prioridad 1–3, por qué);
+- sus **actores** (`personas`): papel (`decisor` | `pagador` | `influenciador` | `campeon` | `usuario` | `guardian`), qué quieren, qué les duele, qué miden, objeciones típicas (taxonomía del Cerebro), cómo abordarles, qué evitar, cómo pueden ayudar o tumbarlo, y qué les aporta cada módulo (`angles`).
+
+El de `tenant.json` es **ejemplo**: validad sectores y actores reales. Es lo que más ayuda a un comercial nuevo y lo que da contexto al Cerebro de Ventas.
+
+## 6. Playbook de ventas → `playbook` en `tenant.json`
 
 Cómo se vende cada módulo: pitch, para quién, preguntas, objeciones con respuesta, pruebas, precio/upsell, guiones y consejos. El de `tenant.json` es **contenido de ejemplo** escrito para la demo; sustituidlo por el real (formato y tipos en [`PLAYBOOK.md`](./PLAYBOOK.md)). Cada jugada lleva `key` estable, `module_key` (o `null` para general), `kind`, y opcionalmente `stage`/`objection` (taxonomía del Cerebro de Ventas) y `technique_refs` (fichas del Cerebro por id, título, creador y enlace; **sin copiar guiones literales**). Reimportar actualiza solo lo que cambió y deja versión con nota.
 
-## 6. Checklist de entrega
+## 7. Checklist de entrega
 
 - [ ] `theme_tokens` confirmados con el design system
 - [ ] `assets/`: logo, favicon, og, fuente (+ licencia web confirmada)
 - [ ] `brand.contact` (WhatsApp como mínimo) y `admins`
 - [ ] `catalog` con textos y precios reales
+- [ ] `market`: sectores y actores reales (quién decide, quién paga, quién puede tumbarlo)
 - [ ] `playbook` con cómo se vende de verdad cada módulo (lo puede redactar el CEO/líder; luego se mantiene desde la consola)
 - [ ] Código `nh-*` de EnjoyWeb (acceso al repo o archivos de §4.2)
 - [ ] `npm run tenant:bootstrap -- tenants/enjoy --dry-run` termina sin errores

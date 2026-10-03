@@ -1,0 +1,150 @@
+---
+/**
+ * Preparar mensaje: junta el contexto que ya sabe la app (empresa, sector, actor, cuenta, propuesta, playbook)
+ * y lo entrega listo para el Cerebro de Ventas en Claude/ChatGPT. La técnica y la redacción las pone el Cerebro.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { AdminError } from '~/lib/admin/service';
+import { requestOrigin } from '~/lib/http';
+import { ROLE_LABEL, STANCE_LABEL } from '~/lib/playbook/market';
+import { CHANNELS, MESSAGE_TYPES } from '~/lib/playbook/schema';
+import { OBJECTIONS, OBJECTION_LABEL } from '~/lib/playbook/types';
+import type { ContextBrief } from '~/lib/playbook/context';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const pb = admin.playbook;
+const q = Astro.url.searchParams;
+const val = (k: string) => q.get(k) || null;
+const sel = {
+  dossier: val('dossier'), contact: val('contact'), segment: val('segment'), persona: val('persona'),
+  type: (val('type') ?? 'primer_contacto') as keyof typeof MESSAGE_TYPES, channel: (val('channel') ?? 'whatsapp') as keyof typeof CHANNELS,
+  objection: val('objection'), notes: q.get('notes') ?? '',
+};
+
+const [market, dossiers] = await Promise.all([pb.market(), admin.service.listDossiers()]);
+const state = sel.dossier ? await admin.service.getState(sel.dossier).catch(() => null) : null;
+
+let brief: ContextBrief | null = null;
+let error: string | null = null;
+if (q.has('go') || sel.persona || sel.contact) {
+  try {
+    brief = await pb.contextBrief({
+      dossierId: state?.dossier.id ?? null, contactId: state ? sel.contact : null, segmentId: sel.segment, personaId: sel.contact ? null : sel.persona,
+      messageType: sel.type, channel: sel.channel, objection: sel.type === 'objecion' ? sel.objection : null, notes: sel.notes,
+    }, { publicOrigin: requestOrigin(Astro.request, Astro.url) });
+  } catch (e) {
+    if (!(e instanceof AdminError)) throw e;
+    error = [e.message, ...(e.details ?? [])].join(' · ');
+  }
+}
+// Las URLs con ?q= tienen límite: si el texto es enorme, se ofrece copiar.
+const MAX_URL = 7000;
+const enc = brief ? encodeURIComponent(brief.prompt) : '';
+const claudeUrl = brief && enc.length < MAX_URL ? `https://claude.ai/new?q=${enc}` : null;
+const chatgptUrl = brief && enc.length < MAX_URL ? `https://chatgpt.com/?q=${enc}` : null;
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none focus:border-ink';
+---
+<AdminLayout title="Preparar mensaje" wide>
+  <h1 class="text-3xl font-extrabold">Preparar mensaje</h1>
+  <p class="text-sm text-muted">Dime a quién escribes y para qué: preparo todo el contexto (empresa, sector, actor, tu propuesta y lo que nos funciona) para que el <strong>Cerebro de Ventas</strong> elija la técnica y redacte contigo en Claude o ChatGPT.</p>
+
+  <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
+    <form method="get" class="space-y-4 rounded-2xl border border-line bg-bg p-5" data-testid="compose-form">
+      <input type="hidden" name="go" value="1" />
+      <label class="block text-sm font-medium">Cuenta (opcional)
+        <select class={field} name="dossier" onchange="this.form.contact && (this.form.contact.value=''); this.form.submit()">
+          <option value="">— Sin dossier —</option>
+          {dossiers.map((d) => <option value={d.id} selected={d.id === sel.dossier}>{d.title}{d.prospectCompany ? ` · ${d.prospectCompany}` : ''}</option>)}
+        </select>
+      </label>
+      {state && state.contacts.length > 0 && (
+        <label class="block text-sm font-medium">Persona de la cuenta
+          <select class={field} name="contact">
+            <option value="">— Elegir un tipo de actor —</option>
+            {state.contacts.map((c) => <option value={c.id} selected={c.id === sel.contact}>{c.name} · {STANCE_LABEL[c.stance]}</option>)}
+          </select>
+        </label>
+      )}
+      <label class="block text-sm font-medium">{state?.contacts.length ? '…o un tipo de actor' : 'Tipo de actor'}
+        <select class={field} name="persona" data-testid="persona-select">
+          <option value="">—</option>
+          {market.map((sg) => (
+            <optgroup label={sg.name}>
+              {sg.personas.map((p) => <option value={p.id} selected={p.id === sel.persona}>{p.name} ({ROLE_LABEL[p.role].toLowerCase()})</option>)}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+      {!state && (
+        <label class="block text-sm font-medium">Sector
+          <select class={field} name="segment"><option value="">— El del actor —</option>{market.map((sg) => <option value={sg.id} selected={sg.id === sel.segment}>{sg.name}</option>)}</select>
+        </label>
+      )}
+      <div class="grid grid-cols-2 gap-3">
+        <label class="text-sm font-medium">Para qué
+          <select class={field} name="type" data-testid="type-select">{Object.entries(MESSAGE_TYPES).map(([k, v]) => <option value={k} selected={k === sel.type}>{v.label}</option>)}</select>
+        </label>
+        <label class="text-sm font-medium">Canal
+          <select class={field} name="channel">{Object.entries(CHANNELS).map(([k, v]) => <option value={k} selected={k === sel.channel}>{v}</option>)}</select>
+        </label>
+      </div>
+      <label class="block text-sm font-medium">Objeción <span class="font-normal text-muted">(si respondes a una)</span>
+        <select class={field} name="objection"><option value="">—</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{OBJECTION_LABEL[o]}</option>)}</select>
+      </label>
+      <label class="block text-sm font-medium">Lo que sabes de este caso
+        <textarea class={`${field} h-24`} name="notes" maxlength="1500" placeholder="Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…">{sel.notes}</textarea>
+      </label>
+      <button class="w-full rounded-lg bg-ink px-4 py-2.5 font-semibold text-bg" type="submit" data-testid="compose-go">Preparar contexto</button>
+    </form>
+
+    <section>
+      {error && <p class="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</p>}
+      {!brief && !error && (
+        <div class="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
+          <p class="text-lg font-semibold text-ink">Elige a quién escribes</p>
+          <p class="mt-1 text-sm">Ej.: «DJ residente · ocio nocturno · primer contacto». Desde un dossier, elige a una persona de la cuenta: el contexto incluirá tu propuesta, su precio y el enlace.</p>
+        </div>
+      )}
+      {brief && (
+        <div class="space-y-4" data-testid="brief">
+          <div class="rounded-2xl border border-line bg-bg p-5">
+            <h2 class="text-xl font-extrabold">{brief.title}</h2>
+            <p class="mt-1 flex flex-wrap gap-1.5 text-xs">
+              <span class="rounded-full bg-sky-100 px-2 py-0.5 font-semibold text-sky-900">Cerebro · etapa: {brief.cerebro.etapa}</span>
+              {brief.cerebro.objecion && <span class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-900">objeción: {brief.cerebro.objecion}</span>}
+              {brief.plays.length > 0 && <span class="rounded-full bg-surface px-2 py-0.5">{brief.plays.length} jugadas del playbook incluidas</span>}
+            </p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button type="button" class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-bg" data-copy="prompt" data-testid="copy-prompt">📋 Copiar para Claude / ChatGPT</button>
+              {claudeUrl && <a class="rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:bg-surface" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">Abrir en Claude ↗</a>}
+              {chatgptUrl && <a class="rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:bg-surface" href={chatgptUrl} target="_blank" rel="noopener noreferrer">Abrir en ChatGPT ↗</a>}
+            </div>
+            <p class="mt-2 text-xs text-muted">Con el Cerebro de Ventas conectado (MCP), el asistente buscará la técnica adecuada, te dirá de qué creador sale y redactará el mensaje con tu contexto. Revisa siempre lo que aparece entre [corchetes].</p>
+          </div>
+          <label class="block text-sm font-semibold">Petición completa
+            <textarea id="prompt" class={`${field} h-72 font-mono text-xs`} readonly data-testid="prompt">{brief.prompt}</textarea>
+          </label>
+          <details class="rounded-2xl border border-line bg-bg p-4 text-sm">
+            <summary class="cursor-pointer font-semibold">Solo el contexto (sin instrucciones)</summary>
+            <textarea id="brief" class={`${field} mt-2 h-64 font-mono text-xs`} readonly>{brief.brief}</textarea>
+            <button type="button" class="mt-2 rounded-lg border border-line px-3 py-1.5 font-semibold" data-copy="brief">Copiar contexto</button>
+          </details>
+          {state && <a class="inline-block text-sm underline" href={`/admin/dossiers/${state.dossier.id}`}>← Volver al dossier</a>}
+        </div>
+      )}
+    </section>
+  </div>
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const el = document.getElementById(b.dataset.copy!) as HTMLTextAreaElement | null;
+        if (!el) return;
+        const prev = b.textContent;
+        try { await navigator.clipboard.writeText(el.value); } catch { el.select(); document.execCommand('copy'); }
+        b.textContent = '¡Copiado!';
+        setTimeout(() => (b.textContent = prev), 1600);
+      });
+    });
+  </script>
+</AdminLayout>

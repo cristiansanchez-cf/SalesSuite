@@ -49,3 +49,12 @@ sed -i 's/Pregunta con qué lo comparan./Pregunta con qué lo comparan y calla./
 run > /dev/null
 restore
 check "$(q "select version from public.play where tenant_id='$T' and key='obj-precio'")" "2" "cambio de texto → v2 con revisión"
+
+# mapa de mercado importado
+check "$(q "select count(*) from public.segment where tenant_id='$T'")" "1" "sector importado"
+check "$(q "select role || '|' || array_to_string(objections, ',') from public.persona where tenant_id='$T' and key='jefe-tienda'")" "guardian|tiempo" "actor con papel y objeciones"
+check "$(q "select angle from public.persona_module pm join public.persona p on p.id=pm.persona_id where p.key='jefe-tienda'")" "Montaje en 10 minutos" "ángulo módulo↔actor"
+check "$(q "select priority from public.segment_module sm join public.segment s on s.id=sm.segment_id where s.key='retail'")" "1" "encaje módulo↔sector"
+check "$(q "select array_to_string(personas, ',') from public.play where tenant_id='$T' and key='obj-precio'")" "jefe-tienda" "jugada dirigida a un actor"
+run > /dev/null
+check "$(q "select count(*) from public.persona_module pm join public.persona p on p.id=pm.persona_id where p.tenant_id='$T'")" "1" "reimportar no duplica ángulos"

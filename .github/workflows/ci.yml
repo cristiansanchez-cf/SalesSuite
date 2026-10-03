@@ -69,5 +69,6 @@ jobs:
           node scripts/smoke-admin.cjs
           node scripts/smoke-tenant-admin.cjs
           node scripts/smoke-playbook.cjs
+          node scripts/smoke-market.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

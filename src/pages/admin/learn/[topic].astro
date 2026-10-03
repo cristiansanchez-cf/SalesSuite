@@ -22,7 +22,11 @@ if (Astro.request.method === 'POST') {
 }
 
 let view;
-try { view = await pb.topic(topicId); } catch (e) {
+let fit: Awaited<ReturnType<typeof pb.moduleFit>> = [];
+try {
+  view = await pb.topic(topicId);
+  if (topicId !== 'general') fit = await pb.moduleFit(topicId);
+} catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;
 }
@@ -51,6 +55,21 @@ const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outl
 
   <div class:list={['mt-6 grid gap-6', view.module && 'xl:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]']}>
     <div class="space-y-8">
+      {fit.length > 0 && (
+        <section class="rounded-2xl border border-line bg-bg p-5" data-testid="module-fit">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-muted">Dónde encaja y a quién le importa</h2>
+          <div class="mt-3 grid gap-3 md:grid-cols-2">
+            {fit.map((f) => (
+              <div class="rounded-xl bg-surface p-3 text-sm">
+                <a class="font-bold underline-offset-2 hover:underline" href={`/admin/learn/sector/${f.segment.key}`}>{f.segment.name}</a>
+                {f.fit?.priority === 1 && <span class="ml-1 text-xs">★</span>}
+                {f.fit?.fit && <p class="text-muted">{f.fit.fit}</p>}
+                {f.angles.length > 0 && <ul class="mt-1 space-y-0.5 p-0">{f.angles.map((a) => <li class="list-none"><strong>{a.persona}:</strong> {a.angle}</li>)}</ul>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {view.sections.length === 0 && (
         <p class="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
           Este módulo aún no tiene jugadas oficiales. Si lo has vendido, comparte abajo lo que te funciona.

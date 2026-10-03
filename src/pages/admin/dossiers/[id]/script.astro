@@ -36,6 +36,7 @@ const d = state.dossier;
           {s.blocks.map((b) => (
             <div class="mt-3">
               {b.title && <h3 class="font-bold">{b.title}</h3>}
+              {b.facts && b.facts.length > 0 && <ul class="mt-1 pl-5 text-sm">{b.facts.map((f) => <li class="list-disc"><strong>{f.label}:</strong> {f.text}</li>)}</ul>}
               {b.note && <p class="mt-1 text-sm italic">{b.note}</p>}
               <ul class="mt-2 space-y-2 pl-5">
                 {b.lines.map((l) => (

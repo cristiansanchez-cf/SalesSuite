@@ -1,5 +1,5 @@
 {
-  "$comment": "Alta de Enjoy en SalesSuite. Lo rellena el agente/equipo de Enjoy (ver docs/BRAND_INTAKE.md). Los textos de 'catalog' son PROVISIONALES (copy de ejemplo): sustituir por los reales. Aplicar con: npm run tenant:bootstrap -- tenants/enjoy El 'playbook' es CONTENIDO DE EJEMPLO redactado para la demo: sustituir por el real de Enjoy (ver docs/PLAYBOOK.md).",
+  "$comment": "Alta de Enjoy en SalesSuite. Lo rellena el agente/equipo de Enjoy (ver docs/BRAND_INTAKE.md). Los textos de 'catalog' son PROVISIONALES (copy de ejemplo): sustituir por los reales. Aplicar con: npm run tenant:bootstrap -- tenants/enjoy El 'market' (sectores y actores) y el 'playbook' son CONTENIDO DE EJEMPLO redactado para la demo: sustituir por el real de Enjoy (ver docs/PLAYBOOK.md).",
   "slug": "enjoy",
   "name": "Enjoy the Club",
   "default_locale": "es-ES",
@@ -221,6 +221,428 @@
       }
     }
   ],
+  "market": [
+    {
+      "key": "bodas",
+      "name": "Bodas",
+      "description": "Novios que celebran su boda y las fincas/salas que la acogen.",
+      "value_prop": "El banquete se convierte en algo que los invitados hacen, no que miran: recuerdos compartidos sin descargar ninguna app.",
+      "icp": "- Bodas de 100+ invitados\n- Finca o sala con pantalla/proyector\n- Novios que buscan \"algo diferente\" y temen los tiempos muertos",
+      "disqualifiers": "Menos de 40 invitados, sin pantalla ni cobertura, o novios que quieren una boda muy clásica y sin interacción.",
+      "buying_process": "Deciden los dos novios, a menudo con la familia. La finca y el wedding planner prescriben (o vetan) proveedores. Suele cerrarse tras ver una demo.",
+      "deal_size": "300–900 € por boda (ejemplo)",
+      "sales_cycle": "2–8 semanas",
+      "modules": [
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "El módulo estrella: kiss-cam, dedicatorias y retos en el banquete."
+        },
+        {
+          "module_key": "tabs-locales",
+          "priority": 1,
+          "fit": "Para la finca: lo incluye en su oferta y gana margen y diferenciación."
+        },
+        {
+          "module_key": "hero-bodas",
+          "priority": 2,
+          "fit": "Portada personalizada con el nombre de los novios."
+        },
+        {
+          "module_key": "pricing",
+          "priority": 2,
+          "fit": "Cierra la propuesta con la cifra."
+        }
+      ],
+      "personas": [
+        {
+          "key": "novios",
+          "name": "Novios",
+          "role": "decisor",
+          "goals": "Una boda que los invitados recuerden y en la que todos participen.",
+          "pains": "Tiempos muertos en el banquete, mesas que no se mezclan, invitados mayores que no participan.",
+          "objections": [
+            "precio",
+            "tiempo"
+          ],
+          "how_to_approach": "Reunión o videollamada con los DOS. Haz la demo en su propio móvil: que envíen una kiss-cam y la vean en pantalla.",
+          "avoid": "Tecnicismos y hablar de \"plataforma\". Hablar solo con uno de los dos.",
+          "can_help": "Si les encanta, lo enseñan a la finca y a sus amigos que se casan (referidos).",
+          "can_block": "Si no lo entienden en 2 minutos, lo descartan como \"otra cosa más que pagar\".",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Convierte su banquete en un juego para todos: lo que más les preocupa (tiempos muertos) desaparece."
+            },
+            {
+              "module_key": "hero-bodas",
+              "angle": "Ven su propuesta con su nombre en portada: se sienten únicos."
+            }
+          ]
+        },
+        {
+          "key": "coordinadora-finca",
+          "name": "Coordinador/a de la finca",
+          "role": "guardian",
+          "goals": "Que el día salga perfecto y sin problemas técnicos.",
+          "pains": "Proveedores externos que llegan tarde, ocupan espacio o fallan.",
+          "objections": [
+            "desconfianza",
+            "ya_tengo_proveedor"
+          ],
+          "how_to_approach": "Preséntate antes del evento, pásale la ficha técnica y ofrece montaje sin trabajo para su equipo.",
+          "avoid": "Saltártela hablando solo con los novios: lo vivirá como una imposición.",
+          "can_help": "Si confía en ti, te mete en su lista de proveedores recomendados (canal recurrente).",
+          "can_block": "Puede decir \"aquí no se puede montar\" y tumbarlo en un minuto.",
+          "angles": [
+            {
+              "module_key": "tabs-locales",
+              "angle": "Un extra para la oferta de la finca que no le da trabajo: lo montamos y lo operamos nosotros."
+            }
+          ]
+        },
+        {
+          "key": "gerente-finca",
+          "name": "Gerente de la finca/sala",
+          "role": "decisor",
+          "goals": "Llenar fechas y diferenciarse de las fincas de alrededor.",
+          "pains": "Competencia en precio, bodas que se pierden contra otra finca.",
+          "kpis": "Bodas al año, ticket medio por boda.",
+          "objections": [
+            "precio",
+            "no_lo_necesito"
+          ],
+          "how_to_approach": "Con números: \"si ganas 3 bodas más al año por diferenciación, Enjoy se paga varias veces\". Propón una boda piloto.",
+          "avoid": "Venderle a los novios saltándote a la finca.",
+          "can_help": "Lo incluye en su pack de bodas: volumen recurrente.",
+          "can_block": "Prohíbe proveedores externos o exige exclusividad con los suyos.",
+          "angles": [
+            {
+              "module_key": "tabs-locales",
+              "angle": "Margen por boda + argumento diferencial frente a la competencia."
+            }
+          ]
+        },
+        {
+          "key": "dj-boda",
+          "name": "DJ de la boda",
+          "role": "influenciador",
+          "goals": "Que la pista se llene y quedar como el que lo hizo posible.",
+          "pains": "Que otro proveedor le quite protagonismo o le complique el directo.",
+          "objections": [
+            "ya_tengo_proveedor",
+            "desconfianza"
+          ],
+          "how_to_approach": "Plantéalo como SU herramienta: él lanza los retos desde el micro. Llámale antes del evento.",
+          "avoid": "Venderlo como \"algo que anima la boda\" (eso es su trabajo).",
+          "can_help": "Lo anima en directo y dispara la participación.",
+          "can_block": "No cede pantalla ni micro, o lo ignora durante la fiesta.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Le da momentos para animar (retos, kiss-cam) que él controla desde el micro."
+            }
+          ]
+        },
+        {
+          "key": "wedding-planner",
+          "name": "Wedding planner",
+          "role": "campeon",
+          "goals": "Sorprender a sus novios y diferenciar su servicio.",
+          "pains": "Repetir las mismas ideas en todas las bodas.",
+          "objections": [
+            "comparar"
+          ],
+          "how_to_approach": "Propón un acuerdo de recomendación y una demo para su cartera de novios.",
+          "avoid": "Tratarle como un intermediario más.",
+          "can_help": "Prescribe a varias parejas por temporada.",
+          "can_block": "Si una boda sale mal, no te vuelve a recomendar.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Una idea nueva que vender a sus parejas."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ocio-nocturno",
+      "name": "Locales de ocio nocturno",
+      "description": "Discotecas, pubs y salas con programación semanal.",
+      "value_prop": "Más tiempo en pista, más consumo y clientes que vuelven: el público interactúa con la pantalla y genera contenido para redes.",
+      "icp": "- Aforo 300+ y pantallas en sala\n- Noches temáticas o eventos semanales\n- Interés en captar datos de clientes",
+      "disqualifiers": "Locales sin pantallas o con público muy de paso (turismo puntual).",
+      "buying_process": "Decide el propietario/gerente. RRPP/marketing lo empuja; el DJ residente puede integrarlo o sabotearlo. Las marcas de bebida pueden cofinanciar.",
+      "deal_size": "Suscripción mensual (ejemplo: 150–400 €/mes)",
+      "sales_cycle": "1–4 semanas",
+      "modules": [
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "Retos y kiss-cam en pantalla durante la sesión."
+        },
+        {
+          "module_key": "pricing",
+          "priority": 2,
+          "fit": "Precio mensual claro."
+        }
+      ],
+      "personas": [
+        {
+          "key": "propietario-local",
+          "name": "Propietario/gerente del local",
+          "role": "decisor",
+          "goals": "Más consumo por cliente y que vuelvan cada semana.",
+          "pains": "Noches flojas entre semana, competencia de otros locales.",
+          "kpis": "Caja por noche, ocupación, repetición.",
+          "objections": [
+            "precio",
+            "no_lo_necesito"
+          ],
+          "how_to_approach": "Visita por la tarde (nunca en plena noche) con datos de otro local y una demo en su pantalla.",
+          "avoid": "Llamarle un sábado por la noche; hablar de \"experiencia\" sin hablar de caja.",
+          "can_help": "Decide rápido si ve el retorno.",
+          "can_block": "El precio mensual si no ve el retorno en caja.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Más tiempo en pista = más consumo; contenido que trae a gente la semana siguiente."
+            }
+          ]
+        },
+        {
+          "key": "rrpp-marketing",
+          "name": "RRPP / marketing del local",
+          "role": "campeon",
+          "goals": "Contenido para redes y base de datos de clientes.",
+          "pains": "No saber quién viene ni cómo volver a llamarlos.",
+          "kpis": "Seguidores, asistentes a eventos, base de datos.",
+          "objections": [
+            "no_decido_yo"
+          ],
+          "how_to_approach": "Enséñale el contenido que genera una noche y la captación de datos de asistentes.",
+          "avoid": "Darle todo el mérito al dueño delante de él.",
+          "can_help": "Lo defiende internamente y lo usa cada semana.",
+          "can_block": "Si no lo ve útil para redes, no lo empuja.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Contenido generado por el público + datos de asistentes."
+            }
+          ]
+        },
+        {
+          "key": "dj-residente",
+          "name": "DJ residente",
+          "role": "guardian",
+          "goals": "Control total de la pista y de la sesión.",
+          "pains": "Interrupciones y cosas que cortan el ritmo.",
+          "objections": [
+            "desconfianza"
+          ],
+          "how_to_approach": "Habla con él ANTES de la demo con el dueño; que decida en qué momentos de la sesión se lanza cada reto.",
+          "avoid": "Imponérselo a través del dueño.",
+          "can_help": "Lo integra en la sesión y lo convierte en parte del show.",
+          "can_block": "Lo ignora o lo sabotea: sin él no hay participación.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Momentos de interacción que él dispara cuando la pista lo pide."
+            }
+          ]
+        },
+        {
+          "key": "marca-bebidas",
+          "name": "Marca de bebidas patrocinadora",
+          "role": "pagador",
+          "goals": "Visibilidad y activaciones medibles en el local.",
+          "pains": "Activaciones caras sin datos de resultado.",
+          "kpis": "Impactos, participación, leads.",
+          "objections": [
+            "comparar",
+            "precio"
+          ],
+          "how_to_approach": "Propón una activación cofinanciada con el local: retos patrocinados con su marca en pantalla.",
+          "avoid": "Pedirle dinero sin enseñar métricas.",
+          "can_help": "Paga parte (o todo) el coste para el local.",
+          "can_block": "Si no hay datos, no repite.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Retos y kiss-cam con su marca, con datos de participación."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "conciertos",
+      "name": "Conciertos",
+      "description": "Promotoras y salas de conciertos (giras y fechas sueltas).",
+      "value_prop": "Interacción del público con el artista y datos de asistentes para la promotora y las marcas.",
+      "icp": "- Salas de 500+ personas con pantalla\n- Giras con varias fechas\n- Patrocinadores activos",
+      "disqualifiers": "Conciertos íntimos o acústicos donde la pantalla distrae.",
+      "buying_process": "Decide la promotora; el manager del artista puede vetar por imagen; la marca patrocinadora puede pagar la activación.",
+      "deal_size": "500–3.000 € por fecha (ejemplo)",
+      "sales_cycle": "1–3 meses",
+      "modules": [
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "Interacción en pantalla antes y entre canciones."
+        }
+      ],
+      "personas": [
+        {
+          "key": "promotor",
+          "name": "Promotor/a",
+          "role": "decisor",
+          "goals": "Una experiencia diferencial y más ingresos por patrocinio.",
+          "pains": "Márgenes ajustados y no conocer a su público.",
+          "kpis": "Entradas vendidas, ingresos por patrocinio.",
+          "objections": [
+            "precio",
+            "tiempo"
+          ],
+          "how_to_approach": "Ofrece un piloto en una fecha con una marca que lo cofinancie.",
+          "avoid": "Pedirle compromiso para toda la gira de entrada.",
+          "can_help": "Lo extiende a la gira y a otros artistas.",
+          "can_block": "Si no hay patrocinio, el precio lo frena.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Datos del público y un activo que vender a patrocinadores."
+            }
+          ]
+        },
+        {
+          "key": "manager-artista",
+          "name": "Manager del artista",
+          "role": "guardian",
+          "goals": "Proteger la imagen del artista y el show.",
+          "pains": "Cosas que distraen o mensajes inapropiados en pantalla.",
+          "objections": [
+            "desconfianza"
+          ],
+          "how_to_approach": "Enséñale la moderación previa y el control total de lo que sale en pantalla.",
+          "avoid": "Que se entere por el promotor el día del concierto.",
+          "can_help": "Si al artista le gusta, lo pide en otras fechas.",
+          "can_block": "Veto directo: \"esto no sale en nuestro show\".",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Moderación previa: nada sale en pantalla sin aprobar."
+            }
+          ]
+        },
+        {
+          "key": "marca-patrocinadora",
+          "name": "Marca patrocinadora",
+          "role": "pagador",
+          "goals": "Visibilidad entre el público objetivo con métricas.",
+          "pains": "Logos en una lona que nadie mira.",
+          "kpis": "Impactos, participación, leads.",
+          "objections": [
+            "comparar"
+          ],
+          "how_to_approach": "Propuesta de activación con KPIs: participaciones, datos captados, contenido.",
+          "avoid": "Venderle \"visibilidad\" sin números.",
+          "can_help": "Paga la activación.",
+          "can_block": "Sin datos, no renueva.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Activación medible con su marca en el momento de máxima atención."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "festivales",
+      "name": "Festivales",
+      "description": "Festivales de música con patrocinadores y zonas comunes.",
+      "value_prop": "Activaciones de marca medibles y experiencia en zonas comunes y entre conciertos.",
+      "icp": "- 5.000+ asistentes\n- Programa de patrocinios\n- Pantallas en escenarios o zonas comunes",
+      "disqualifiers": "Festivales sin patrocinio ni pantallas, o con conectividad muy limitada sin solución.",
+      "buying_process": "Dirección del festival decide; patrocinios lo vende a las marcas; producción técnica valida (y puede vetar).",
+      "deal_size": "3.000–20.000 € (ejemplo)",
+      "sales_cycle": "3–9 meses (se cierra antes de la temporada)",
+      "modules": [
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "Retos y kiss-cam en zonas comunes y entre conciertos."
+        }
+      ],
+      "personas": [
+        {
+          "key": "director-festival",
+          "name": "Dirección del festival",
+          "role": "decisor",
+          "goals": "Diferenciar el festival y aumentar ingresos.",
+          "pains": "Presupuesto cerrado meses antes.",
+          "kpis": "Asistentes, ingresos, prensa.",
+          "objections": [
+            "tiempo",
+            "precio"
+          ],
+          "how_to_approach": "Llega al menos 6 meses antes de la edición con un caso y una propuesta para patrocinios.",
+          "avoid": "Llegar con la temporada empezada.",
+          "can_help": "Lo convierte en seña de identidad del festival.",
+          "can_block": "Si llega tarde, no hay presupuesto.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Experiencia diferencial + nuevo producto para vender a patrocinadores."
+            }
+          ]
+        },
+        {
+          "key": "responsable-patrocinios",
+          "name": "Responsable de patrocinios",
+          "role": "campeon",
+          "goals": "Tener activaciones nuevas y medibles que vender a las marcas.",
+          "pains": "Marcas que no renuevan por falta de resultados.",
+          "kpis": "Ingresos por patrocinio, renovaciones.",
+          "objections": [
+            "no_decido_yo"
+          ],
+          "how_to_approach": "Dale un dossier pensado para que él se lo venda a sus marcas (con métricas de ejemplo).",
+          "avoid": "Competir con sus propios patrocinios.",
+          "can_help": "Lo vende a varias marcas: multiplica el acuerdo.",
+          "can_block": "Si no ve cómo venderlo, no lo mueve.",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Un formato de activación con datos para renovar patrocinios."
+            }
+          ]
+        },
+        {
+          "key": "produccion-tecnica",
+          "name": "Producción técnica",
+          "role": "guardian",
+          "goals": "Que nada técnico falle en directo.",
+          "pains": "Conectividad, pantallas compartidas, riesgos.",
+          "objections": [
+            "desconfianza"
+          ],
+          "how_to_approach": "Ficha técnica, requisitos de red y una prueba previa en el recinto.",
+          "avoid": "Prometer cosas técnicas sin haber visto el recinto.",
+          "can_help": "Facilita el montaje y la red.",
+          "can_block": "Veto técnico: \"no hay red\", \"la pantalla no es vuestra\".",
+          "angles": [
+            {
+              "module_key": "tabs-experiencias",
+              "angle": "Montaje cerrado, plan B sin conexión y prueba previa."
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "playbook": [
     {
       "key": "empresa-pitch",
@@ -237,6 +659,9 @@
       "module_key": null,
       "kind": "fit",
       "stage": "prospeccion",
+      "segments": [
+        "bodas"
+      ],
       "title": "Cliente ideal (y cuándo no)",
       "body": "- **Novios** con 100+ invitados que quieren una boda \"diferente\" y temen los tiempos muertos.\n- **Salas y fincas** que compiten por bodas y buscan un extra vendible.\n- **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.",
       "when_to_use": "Antes de invertir tiempo en un lead: cualifica."
@@ -246,6 +671,9 @@
       "module_key": null,
       "kind": "script",
       "stage": "primer_contacto",
+      "segments": [
+        "bodas"
+      ],
       "title": "Apertura de la reunión",
       "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué es lo que más os importa que recuerden vuestros invitados de {company}?",
       "when_to_use": "Al empezar la llamada o la visita.",
@@ -256,6 +684,9 @@
       "module_key": null,
       "kind": "discovery",
       "stage": "descubrimiento",
+      "segments": [
+        "bodas"
+      ],
       "title": "¿Qué te preocupa que pase en el banquete?",
       "body": "Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo."
     },
@@ -309,6 +740,9 @@
       "module_key": null,
       "kind": "script",
       "stage": "cierre",
+      "segments": [
+        "bodas"
+      ],
       "title": "Cierre con fecha",
       "body": "¿Os parece que dejemos reservada la fecha de vuestra boda y el jueves te llamo a las 18:00 para cerrar los detalles con vosotros dos?",
       "why_it_works": "Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión."
@@ -373,7 +807,7 @@
       "kind": "pitch",
       "stage": "pitch_demo",
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "Un extra que vendes tú y te diferencia de la finca de al lado",
       "body": "La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene."
@@ -384,7 +818,7 @@
       "kind": "discovery",
       "stage": "descubrimiento",
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala?",
       "body": "Si pierden bodas por \"diferenciación\", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces."
@@ -396,7 +830,7 @@
       "stage": "objeciones",
       "objection": "ya_tengo_proveedor",
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "\"Ya trabajamos con un DJ que hace cosas parecidas\"",
       "body": "Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos."
@@ -407,7 +841,7 @@
       "kind": "monetization",
       "stage": "negociacion",
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "Margen para la sala",
       "body": "Precio a la sala por evento + PVP recomendado a los novios. La sala decide si lo regala (diferenciación) o lo cobra (margen). Ejemplo: coste 250 €, PVP 450 €."
@@ -420,6 +854,87 @@
       "objection": "precio",
       "title": "Presenta el precio después del valor",
       "body": "La tarjeta de precio va siempre al final del dossier. Si te piden precio al principio, da una horquilla y vuelve al descubrimiento."
+    },
+    {
+      "key": "noche-obj-dj",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dj-residente"
+      ],
+      "title": "DJ residente: \"Esto me corta la sesión\"",
+      "body": "Él decide cuándo se lanza cada reto: Enjoy no interrumpe, le da munición. Propón probarlo una noche en los momentos que él elija."
+    },
+    {
+      "key": "noche-pitch-propietario",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local"
+      ],
+      "title": "Para el dueño del local: más tiempo en pista, más caja",
+      "body": "Cada reto en pantalla mantiene a la gente en la pista (y en la barra) 10–15 minutos más. Ejemplo para validar con datos reales del local."
+    },
+    {
+      "key": "fest-patrocinios",
+      "module_key": "tabs-experiencias",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "festivales"
+      ],
+      "personas": [
+        "responsable-patrocinios",
+        "marca-patrocinadora"
+      ],
+      "title": "Que lo pague el patrocinador",
+      "body": "En festivales, véndelo como formato de activación para las marcas: el festival no paga, cobra. Prepara métricas de ejemplo (participaciones, datos captados)."
+    },
+    {
+      "key": "seguimiento-48h",
+      "module_key": null,
+      "kind": "script",
+      "stage": "seguimiento",
+      "title": "Seguimiento a las 48 h de enviar el dossier",
+      "body": "Hola {prospect}, ¿pudisteis verlo juntos? Te dejo una idea concreta para {company}: [un detalle del dossier que encaje con lo que te contó]. ¿Te va bien el jueves a las 18:00 y lo cerramos?",
+      "when_to_use": "Si no han respondido 48 h después de enviar el enlace."
+    },
+    {
+      "key": "b2b-apertura",
+      "module_key": null,
+      "kind": "script",
+      "stage": "primer_contacto",
+      "segments": [
+        "ocio-nocturno",
+        "conciertos",
+        "festivales"
+      ],
+      "title": "Apertura (locales, conciertos y festivales)",
+      "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué noche o qué evento os está costando más llenar en {company}, y qué habéis probado ya?",
+      "why_it_works": "Abre con su problema de negocio (llenar, consumo, patrocinio), no con el producto."
+    },
+    {
+      "key": "b2b-cierre",
+      "module_key": null,
+      "kind": "script",
+      "stage": "cierre",
+      "segments": [
+        "ocio-nocturno",
+        "conciertos",
+        "festivales"
+      ],
+      "title": "Cierre con piloto",
+      "body": "¿Lo probamos en una noche (o una fecha) piloto? Te propongo el jueves 14: lo montamos nosotros y el viernes vemos juntos los datos de participación.",
+      "why_it_works": "Un piloto con fecha baja el riesgo percibido y deja una decisión concreta."
     }
   ]
 }

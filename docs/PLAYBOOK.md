@@ -2,7 +2,11 @@
 
 > Propuesta para revisar juntos. Lo marcado ✅ está implementado y probado: en modo demo, contra Postgres + PostgREST + RLS y en navegador (`scripts/smoke-playbook.cjs`). Lo marcado 🔜 queda diseñado pero no construido.
 >
-> **Dónde verlo (modo demo):** `/admin/learn` como comercial · `/admin/playbook` como admin · pestaña «🎯 Guion de venta» en cualquier dossier.
+> **Dónde verlo (modo demo):**
+> - `/admin/learn`, como comercial, con sus sectores y actores;
+> - `/admin/compose`, para preparar un mensaje;
+> - en cualquier dossier, las tarjetas «Cuenta y actores» y «Seguimiento», y la pestaña «🎯 Guion de venta»;
+> - `/admin/playbook`, como admin, incluida la pestaña «Mercado y actores».
 
 ## El problema
 
@@ -58,6 +62,49 @@ Cada jugada lleva los **mismos campos que una ficha del Cerebro de Ventas**: *cu
 
 El comercial ve su progreso y el líder ve el del equipo. Un comercial nuevo puede vender sin depender de nadie, y el contenido se mantiene vivo porque está atado a los módulos que se venden.
 
+## 6. Mapa de mercado: a quién vendemos ✅
+
+"Ready to go" no es solo saber qué vende cada módulo; también es **a quién**, **quién decide** y **quién puede tumbarlo**. Cada empresa define:
+
+- **Sectores** (Enjoy: bodas, ocio nocturno, conciertos, festivales). Cada uno lleva:
+  - por qué nosotros;
+  - **cliente ideal** y cuándo descartarlo;
+  - **cómo compran**, ticket típico y ciclo de venta;
+  - **qué módulos encajan** (★ estrella / encaja / secundario), que es el cliente ideal de cada módulo.
+- **Actores** de cada sector (DJ residente, propietario del local, marca patrocinadora, coordinadora de la finca…). Cada actor tiene:
+  - su **papel** (decide, paga, influye, aliado interno, lo usa, puede vetar);
+  - qué quiere, qué le duele y qué mide;
+  - **cómo abordarle** y qué evitar;
+  - **cómo puede ayudar** y **cómo puede tumbarlo**;
+  - sus objeciones típicas, con la taxonomía del Cerebro;
+  - **qué le aporta cada módulo** (el ángulo con el que presentárselo).
+- Las jugadas pueden dirigirse a sectores y a actores concretos ("DJ residente: «esto me corta la sesión»").
+
+Dónde se usa:
+- **Aprende → sectores**: la ficha del sector con el mapa de actores. Cada actor tiene su botón "✉️ Preparar mensaje".
+- **Dossier → Cuenta y actores**: sector del prospecto y **personas reales** (Álex, DJ residente, 🔴 bloqueador). Es el *mapa de poder* de la cuenta y la semilla del CRM: `dossier_contact` pasará a ser `contact`.
+- **Guion → "Con quién hablas"**:
+  - por persona: su papel, qué quiere, cómo abordarla, el **riesgo** si es bloqueadora y el ángulo de cada módulo del dossier;
+  - un aviso de los actores clave (decide, paga, puede vetar) aún sin mapear;
+  - jugadas filtradas por sector y por los actores presentes.
+- **Preparar mensaje** (`/admin/compose`): ver §7.
+- **Seguimiento**: próximo paso con fecha, vencidos y filtro en el listado. Diseño completo en [`FOLLOWUP.md`](./FOLLOWUP.md).
+
+## 7. "Tipo DJ → creemos mensaje": contexto listo para el Cerebro ✅
+
+El comercial elige **a quién** escribe (un tipo de actor, como "DJ residente · ocio nocturno", o una persona real de la cuenta), **para qué** (primer contacto, tras la reunión, seguimiento, objeción, cierre, reactivar) y el **canal**. La app junta lo que ya sabe:
+- la empresa y el sector (cliente ideal, proceso de compra);
+- el actor (papel, qué quiere, cómo abordarle, qué evitar, cómo puede tumbarlo);
+- la cuenta (postura de esa persona, quién más hay);
+- la propuesta (módulos, precio, enlace, próximo paso);
+- las jugadas del playbook que aplican, con sus fichas del Cerebro.
+
+Con eso genera una **petición** con la etapa y la objeción en la taxonomía del Cerebro, lista para:
+- **Abrir en Claude / ChatGPT** con un clic (o copiar). Con el MCP del Cerebro conectado, el asistente busca la técnica (`buscar_tecnica`), dice de qué creador sale y redacta el mensaje con ese contexto;
+- pegarla en cualquier otro sitio.
+
+No hay IA dentro de la app: no inventa nada ni necesita claves de API. Cuando el Cerebro tenga API de servidor, la misma función alimentará una sugerencia automática.
+
 ## Integración con el Cerebro de Ventas
 
 El Cerebro es conocimiento de **expertos** (técnicas generales y atribuidas). El playbook es conocimiento de **la empresa** (cómo se vende *este* producto). Se complementan:
@@ -67,6 +114,8 @@ El Cerebro es conocimiento de **expertos** (técnicas generales y atribuidas). E
 | Cerebro → Playbook | Una jugada puede **referenciar fichas del Cerebro** (id, título, creador, enlace a la fuente), p. ej. la objeción "es caro" enlaza a *[707] El cliente dice 'caro' porque traduce precio a horas trabajadas*. Se muestra el título con atribución y enlace; **nunca se copia el guion literal del creador**. | ✅ |
 | Cerebro → Playbook | Botón *"Sugerir técnicas"* en el editor de jugadas y en el guion: consulta el Cerebro por etapa y objeción. Necesita que el Cerebro exponga una API de servidor por tenant; la interfaz `TechniqueProvider` ya está prevista. | 🔜 |
 | Playbook → Cerebro | **Exportación** `GET /admin/api/playbook/export` con formato de ficha: técnica, cuándo usarla, por qué funciona, guion, etapa, objeción, evidencia del equipo. Así el Cerebro puede ingerir "el cerebro del equipo Enjoy" y aprender de los fallos y aciertos del equipo. | ✅ export · 🔜 ingesta |
+| Contexto → Cerebro | «Preparar mensaje»: petición con etapa y objeción del Cerebro + todo el contexto de empresa, sector, actor, cuenta y propuesta, para abrir en Claude/ChatGPT con el MCP. | ✅ |
+| Mercado → Cerebro/CRM | La exportación incluye el **mapa de mercado** (sectores, actores, ángulos). | ✅ |
 | Bucle | El Cerebro detecta fallos de un comercial y recomienda jugadas del playbook, o propone una mejora que entra en la bandeja del líder como cualquier otra propuesta. | 🔜 |
 
 ## Modelo de datos (migración `…_playbook.sql`)
@@ -77,6 +126,8 @@ El Cerebro es conocimiento de **expertos** (técnicas generales y atribuidas). E
 - `play_feedback`: "me funcionó / no" por usuario y objetivo, con `dossier_id` opcional.
 - `learning_progress`, `playbook_seen`: progreso y novedades por persona.
 - `dossier.outcome`: open/won/lost.
+- `segment`, `persona`, `segment_module` (cliente ideal de cada módulo), `persona_module` (ángulo por actor); `play.personas`.
+- `dossier.segment_id`, `dossier_contact` (persona real + postura), `dossier.next_step(_at)`.
 
 Permisos (RLS):
 - Cualquier miembro lee lo oficial y lo compartido, comparte trucos, propone mejoras y vota.
@@ -87,6 +138,7 @@ Permisos (RLS):
 
 1. ¿Rol propio de **"líder de ventas"** (edita el playbook pero no la marca ni el equipo), o basta con admin? Hoy: admin.
 2. ¿Los trucos del equipo son visibles **al momento** o pasan antes por el líder? Hoy: al momento, etiquetados como *del equipo*, y el líder puede ocultarlos.
-3. ¿Quién escribe el playbook inicial de Enjoy? El de este repo es **contenido de ejemplo** que yo he redactado; se importa con `tenants/enjoy/tenant.json` → `playbook`.
-4. Cerebro: ¿qué API puede exponer para consulta desde servidor (por tenant), y qué formato quiere para ingerir el export?
-5. ¿Generación con IA del guion personalizado (a partir de las jugadas y el dossier)? Encaja como siguiente paso. El guion actual es determinista y no inventa nada.
+3. ¿Quién valida el **mapa de mercado** de Enjoy? Los 4 sectores y 15 actores son **ejemplo** redactado por mí a partir de lo que me contaste. Se importa con `tenants/enjoy/tenant.json` → `market`.
+4. ¿Quién escribe el playbook inicial de Enjoy? El de este repo es **contenido de ejemplo** que yo he redactado; se importa con `tenants/enjoy/tenant.json` → `playbook`.
+5. Cerebro: ¿qué API puede exponer para consulta desde servidor (por tenant), y qué formato quiere para ingerir el export?
+6. ¿Generación con IA del guion personalizado (a partir de las jugadas y el dossier)? Encaja como siguiente paso. El guion actual es determinista y no inventa nada.

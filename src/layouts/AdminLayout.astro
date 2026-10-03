@@ -11,6 +11,7 @@ const pending = admin ? await admin.playbook.pendingCount() : 0;
 const nav = [
   { href: '/admin', label: 'Dossiers', on: path === '/admin' || path.startsWith('/admin/dossiers') },
   { href: '/admin/learn', label: 'Aprende', on: path.startsWith('/admin/learn') },
+  { href: '/admin/compose', label: 'Preparar mensaje', on: path.startsWith('/admin/compose') },
   ...(admin?.session.role === 'admin'
     ? [
         { href: '/admin/playbook', label: pending ? `Playbook (${pending})` : 'Playbook', on: path.startsWith('/admin/playbook') },

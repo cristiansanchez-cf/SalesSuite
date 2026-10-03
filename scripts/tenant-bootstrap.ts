@@ -19,7 +19,7 @@ import { extname, join, relative, resolve } from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { brandSchema } from '../src/lib/brand';
-import { playInputSchema } from '../src/lib/playbook/schema';
+import { personaInputSchema, playInputSchema, segmentInputSchema } from '../src/lib/playbook/schema';
 import { themeTokensSchema } from '../src/lib/theme';
 import { REGISTRY, isBlockType } from '../src/modules/registry';
 
@@ -47,12 +47,26 @@ const tenantFile = z.object({
     currency: z.string().regex(/^[A-Z]{3}$/).default('EUR'),
     props: z.record(z.unknown()),
   })).default([]),
+  /** Mapa de mercado: sectores con cliente ideal, actores y encaje de módulos (docs/PLAYBOOK.md §Mercado). */
+  market: z.array(z.object({
+    key: z.string(), name: z.string(), description: z.string().nullable().default(null), value_prop: z.string().nullable().default(null),
+    icp: z.string().nullable().default(null), disqualifiers: z.string().nullable().default(null), buying_process: z.string().nullable().default(null),
+    deal_size: z.string().nullable().default(null), sales_cycle: z.string().nullable().default(null),
+    modules: z.array(z.object({ module_key: z.string(), priority: z.number().int().min(1).max(3).default(2), fit: z.string().nullable().default(null) })).default([]),
+    personas: z.array(z.object({
+      key: z.string(), name: z.string(), role: z.string(), goals: z.string().nullable().default(null), pains: z.string().nullable().default(null),
+      kpis: z.string().nullable().default(null), objections: z.array(z.string()).default([]), how_to_approach: z.string().nullable().default(null),
+      avoid: z.string().nullable().default(null), can_help: z.string().nullable().default(null), can_block: z.string().nullable().default(null),
+      angles: z.array(z.object({ module_key: z.string(), angle: z.string() })).default([]),
+    })).default([]),
+  })).default([]),
   /** Playbook de ventas (docs/PLAYBOOK.md). `module_key` null = jugada general. */
   playbook: z.array(z.object({
     key: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
     module_key: z.string().nullable().default(null),
     kind: z.string(), stage: z.string().nullable().default(null), objection: z.string().nullable().default(null),
     segments: z.array(z.string()).default([]),
+    personas: z.array(z.string()).default([]),
     title: z.string(), body: z.string().default(''),
     when_to_use: z.string().nullable().default(null), why_it_works: z.string().nullable().default(null),
     technique_refs: z.array(z.unknown()).default([]),
@@ -118,7 +132,7 @@ async function listFiles(root: string): Promise<string[]> {
 
 function toPlayInput(p: TenantFile['playbook'][number], moduleId: string | null) {
   return {
-    moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, title: p.title, body: p.body,
+    moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, personas: p.personas, title: p.title, body: p.body,
     whenToUse: p.when_to_use ?? '', whyItWorks: p.why_it_works ?? '', techniqueRefs: p.technique_refs, status: p.status,
   };
 }
@@ -143,11 +157,29 @@ function validate(t: TenantFile, assetKeys: string[]) {
     const r = REGISTRY[m.block_type].schema.safeParse(replaceAssets(m.props, fake, missing));
     if (!r.success) errors.push(...r.error.issues.map((i) => `catalog.${m.key}.props.${i.path.join('.')}: ${i.message}`));
   }
+  const segKeys = new Set<string>();
+  const personaKeys = new Set<string>();
+  for (const sg of t.market) {
+    if (segKeys.has(sg.key)) errors.push(`market: sector duplicado ${sg.key}`);
+    segKeys.add(sg.key);
+    const r = segmentInputSchema.safeParse({ key: sg.key, name: sg.name });
+    if (!r.success) errors.push(...r.error.issues.map((i) => `market.${sg.key}.${i.path.join('.')}: ${i.message}`));
+    for (const m of sg.modules) if (!keys.has(m.module_key)) errors.push(`market.${sg.key}.modules: module_key "${m.module_key}" no está en catalog`);
+    for (const p of sg.personas) {
+      if (personaKeys.has(p.key)) errors.push(`market: actor duplicado ${p.key}`);
+      personaKeys.add(p.key);
+      const rp = personaInputSchema.safeParse({ segmentId: '00000000-0000-4000-8000-000000000000', key: p.key, name: p.name, role: p.role, objections: p.objections });
+      if (!rp.success) errors.push(...rp.error.issues.map((i) => `market.${sg.key}.personas.${p.key}.${i.path.join('.')}: ${i.message}`));
+      for (const a of p.angles) if (!keys.has(a.module_key)) errors.push(`market.${sg.key}.personas.${p.key}.angles: module_key "${a.module_key}" no está en catalog`);
+    }
+  }
   const pkeys = new Set<string>();
   for (const p of t.playbook) {
     if (pkeys.has(p.key)) errors.push(`playbook: clave duplicada ${p.key}`);
     pkeys.add(p.key);
     if (p.module_key && !keys.has(p.module_key)) errors.push(`playbook.${p.key}: module_key "${p.module_key}" no está en catalog`);
+    for (const sk of p.segments) if (t.market.length && !segKeys.has(sk)) errors.push(`playbook.${p.key}: sector "${sk}" no está en market`);
+    for (const pk of p.personas ?? []) if (!personaKeys.has(pk)) errors.push(`playbook.${p.key}: actor "${pk}" no está en market`);
     const r = playInputSchema.safeParse(toPlayInput(p, p.module_key ? '00000000-0000-4000-8000-000000000000' : null));
     if (!r.success) errors.push(...r.error.issues.map((i) => `playbook.${p.key}.${i.path.join('.')}: ${i.message}`));
   }
@@ -169,7 +201,7 @@ async function main() {
   const files = (await listFiles(assetsDir)).map((p) => relative(assetsDir, p).split('\\').join('/')).filter((f) => MIME[extname(f).toLowerCase()]);
   const errors = validate(t, files);
   if (errors.length) fail(`Validación:\n  ${errors.join('\n  ')}`);
-  log(`tenant.json válido: ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
+  log(`tenant.json válido: ${t.market.length} sectores, ${t.market.reduce((n, s) => n + s.personas.length, 0)} actores, ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
   if (DRY) { log('Nada escrito (--dry-run).'); return; }
 
   const url = process.env.PUBLIC_SUPABASE_URL;
@@ -243,18 +275,41 @@ async function main() {
     log(`módulo ${m.key}: publicada v${next}`);
   }
 
-  // 5. playbook (upsert por key; si cambia el contenido → nueva versión con revisión)
   const moduleIds = new Map<string, string>(
     (must(await sb.from('module').select('id, key').eq('tenant_id', tenantId), 'leer módulos') ?? []).map((r: { id: string; key: string }) => [r.key, r.id]),
   );
+
+  // 5. mapa de mercado (upsert por key; encajes y ángulos se sincronizan: lo que no está en el JSON se quita)
+  for (const [i, sg] of t.market.entries()) {
+    const segRow = {
+      tenant_id: tenantId, key: sg.key, name: sg.name, description: sg.description, value_prop: sg.value_prop, icp: sg.icp,
+      disqualifiers: sg.disqualifiers, buying_process: sg.buying_process, deal_size: sg.deal_size, sales_cycle: sg.sales_cycle,
+      position: (i + 1) * 1024, status: 'official',
+    };
+    const segId = mustOne(await sb.from('segment').upsert(segRow, { onConflict: 'tenant_id,key' }).select('id').single(), `sector ${sg.key}`).id as string;
+    must(await sb.from('segment_module').delete().eq('segment_id', segId), `limpiar encajes ${sg.key}`);
+    if (sg.modules.length) must(await sb.from('segment_module').insert(sg.modules.map((m) => ({ tenant_id: tenantId, segment_id: segId, module_id: moduleIds.get(m.module_key)!, priority: m.priority, fit: m.fit }))), `encajes ${sg.key}`);
+    for (const [j, p] of sg.personas.entries()) {
+      const pRow = {
+        tenant_id: tenantId, segment_id: segId, key: p.key, name: p.name, role: p.role, goals: p.goals, pains: p.pains, kpis: p.kpis,
+        objections: p.objections, how_to_approach: p.how_to_approach, avoid: p.avoid, can_help: p.can_help, can_block: p.can_block, position: (j + 1) * 1024,
+      };
+      const pid = mustOne(await sb.from('persona').upsert(pRow, { onConflict: 'tenant_id,key' }).select('id').single(), `actor ${p.key}`).id as string;
+      must(await sb.from('persona_module').delete().eq('persona_id', pid), `limpiar ángulos ${p.key}`);
+      if (p.angles.length) must(await sb.from('persona_module').insert(p.angles.map((a) => ({ tenant_id: tenantId, persona_id: pid, module_id: moduleIds.get(a.module_key)!, angle: a.angle }))), `ángulos ${p.key}`);
+    }
+  }
+  if (t.market.length) log(`mercado: ${t.market.length} sectores sincronizados`);
+
+  // 6. playbook (upsert por key; si cambia el contenido → nueva versión con revisión)
   for (const [i, raw] of t.playbook.entries()) {
     const p = playInputSchema.parse(toPlayInput(raw, raw.module_key ? moduleIds.get(raw.module_key)! : null));
     const row = {
-      module_id: p.moduleId, key: raw.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments,
+      module_id: p.moduleId, key: raw.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
       title: p.title, body: p.body, when_to_use: p.whenToUse ?? null, why_it_works: p.whyItWorks ?? null, technique_refs: p.techniqueRefs,
       status: p.status, position: (i + 1) * 1024,
     };
-    const cur = must(await sb.from('play').select('id, version, module_id, kind, stage, objection, segments, title, body, when_to_use, why_it_works, technique_refs, status').eq('tenant_id', tenantId).eq('key', raw.key).maybeSingle(), `leer jugada ${raw.key}`);
+    const cur = must(await sb.from('play').select('id, version, module_id, kind, stage, objection, segments, personas, title, body, when_to_use, why_it_works, technique_refs, status').eq('tenant_id', tenantId).eq('key', raw.key).maybeSingle(), `leer jugada ${raw.key}`);
     const content = (x: Record<string, unknown>) => canonical({ ...x, position: undefined, key: undefined, id: undefined, version: undefined });
     if (!cur) {
       const id = mustOne(await sb.from('play').insert({ tenant_id: tenantId, ...row, version: 1 }).select('id').single(), `crear jugada ${raw.key}`).id;
@@ -271,7 +326,7 @@ async function main() {
   }
   if (t.playbook.length) log(`playbook: ${t.playbook.length} jugadas sincronizadas`);
 
-  // 6. admins
+  // 7. admins
   const redirectTo = `https://${primary.hostname}/admin/auth/confirm?next=/admin/account`;
   for (const email of t.admins.map((e) => e.toLowerCase())) {
     let user = must(await sb.from('users').select('id').ilike('email', email).maybeSingle(), `buscar ${email}`);

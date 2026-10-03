@@ -46,7 +46,8 @@ const byEvidenceThenPosition = (a: PlayView, b: PlayView) => evidence(b.score) -
 export function personalize(text: string, d: { prospectName: string | null; prospectCompany: string | null }): string {
   return text
     .replaceAll('{company}', d.prospectCompany ?? d.prospectName ?? 'vuestra empresa')
-    .replaceAll('{prospect}', d.prospectName ?? '');
+    // Sin nombre de contacto: hueco explícito (el comercial lo completa), nunca "Hola ,".
+    .replaceAll('{prospect}', d.prospectName || '[nombre]');
 }
 
 export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: ContributionView[], account?: TrackAccount): TalkTrack {

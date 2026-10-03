@@ -33,11 +33,19 @@ if (Astro.request.method === 'POST') {
 const all = await service.listDossiers();
 const status = Astro.url.searchParams.get('status') as DossierStatus | null;
 const mine = Astro.url.searchParams.get('mine') === '1';
+const follow = Astro.url.searchParams.get('follow') === '1';
+const nowMs = Date.now();
+const isOverdue = (iso: string | null) => !!iso && new Date(iso).getTime() < nowMs;
+const myFollowups = all.filter((d) => d.nextStepAt && d.authorId === session.userId);
+const myOverdue = myFollowups.filter((d) => isOverdue(d.nextStepAt)).length;
 const q = (Astro.url.searchParams.get('q') ?? '').trim().toLowerCase();
 const list = all.filter((d) =>
-  (!status || d.status === status)
+  (!follow || !!d.nextStepAt)
+  && (!status || d.status === status)
   && (!mine || d.authorId === session.userId)
   && (!q || [d.title, d.prospectName, d.prospectCompany].some((x) => x?.toLowerCase().includes(q))));
+if (follow) list.sort((a, b) => (a.nextStepAt ?? '').localeCompare(b.nextStepAt ?? ''));
+const when = (iso: string) => new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
 const filterHref = (p: Record<string, string | null>) => {
   const u = new URL(Astro.url);
@@ -50,6 +58,11 @@ const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none
 <AdminLayout title="Dossiers">
   <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
     <section>
+      {myOverdue > 0 && !follow && (
+        <a href="?follow=1&mine=1" class="mb-4 block rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900" data-testid="overdue-banner">
+          ⏰ Tienes <strong>{myOverdue}</strong> {myOverdue === 1 ? 'seguimiento vencido' : 'seguimientos vencidos'}. Ver →
+        </a>
+      )}
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 class="text-3xl font-extrabold">Dossiers</h1>
@@ -67,6 +80,7 @@ const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none
         {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class:list={chip(status === s)}>{STATUS_LABEL[s]}</a>)}
         <span class="mx-1 w-px bg-line"></span>
         <a href={filterHref({ mine: mine ? null : '1' })} class:list={chip(mine)}>Solo míos</a>
+        <a href={filterHref({ follow: follow ? null : '1' })} class:list={chip(follow)} data-testid="filter-follow">⏰ Seguimientos{myOverdue ? ` · ${myOverdue} vencidos` : ''}</a>
       </nav>
 
       {list.length === 0 ? (
@@ -83,6 +97,11 @@ const input = 'w-full rounded-lg border border-line bg-bg px-3 py-2 outline-none
                     {' · '}{d.itemCount} módulos{d.activeLinks ? ` · ${d.activeLinks} enlace${d.activeLinks > 1 ? 's' : ''}` : ''}
                   </span>
                 </span>
+                {d.nextStepAt && (
+                  <span class:list={['rounded-lg px-2 py-0.5 text-xs', isOverdue(d.nextStepAt) ? 'bg-red-100 font-semibold text-red-800' : 'bg-surface']} title={d.nextStep ?? ''} data-testid="next-step-chip">
+                    ⏰ {when(d.nextStepAt)}{d.nextStep ? ` · ${d.nextStep.length > 40 ? `${d.nextStep.slice(0, 39)}…` : d.nextStep}` : ''}
+                  </span>
+                )}
                 <span class="text-xs text-muted">{d.authorName ?? '—'} · {relativeTime(d.updatedAt)}</span>
                 <span class:list={['rounded-full px-2.5 py-0.5 text-xs font-semibold', STATUS_CLASS[d.status]]}>{STATUS_LABEL[d.status]}</span>
               </a>

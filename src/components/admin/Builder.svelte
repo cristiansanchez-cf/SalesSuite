@@ -7,11 +7,15 @@
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
   import type { BuilderItem, BuilderState } from '~/lib/admin/types';
-  import type { BuilderOp } from '~/lib/admin/ops';
+  import type { BuilderOpInput as BuilderOp } from '~/lib/admin/ops';
   import type { TalkTrack, TrackLine } from '~/lib/playbook/talk-track';
   import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
 
-  let { initial, publicOrigin }: { initial: BuilderState; publicOrigin: string } = $props();
+  interface MarketLite {
+    segments: Array<{ id: string; key: string; name: string }>;
+    personas: Array<{ id: string; segmentId: string; name: string; role: string }>;
+  }
+  let { initial, publicOrigin, market = { segments: [], personas: [] } }: { initial: BuilderState; publicOrigin: string; market?: MarketLite } = $props();
 
   // Copia JSON: las props llegan como proxies y structuredClone no puede clonarlas.
   let s = $state<BuilderState>(JSON.parse(JSON.stringify(initial)));
@@ -194,6 +198,36 @@
   }
   const OUTCOME = { open: 'En curso', won: 'Ganado 🎉', lost: 'Perdido' } as const;
 
+  // ---------- cuenta y seguimiento
+  const STANCE = { aliado: '🟢 Aliado', neutral: '⚪ Neutral', bloqueador: '🔴 Bloqueador', desconocido: '❔ Sin saber' } as const;
+  const ROLE = { decisor: 'decide', pagador: 'paga', influenciador: 'influye', campeon: 'aliado interno', usuario: 'lo usa', guardian: 'puede vetar' } as Record<string, string>;
+  let newContact = $state({ name: '', personaId: '', stance: 'desconocido' as keyof typeof STANCE });
+  const personaName = (id: string | null) => market.personas.find((p) => p.id === id)?.name ?? null;
+  const segPersonas = $derived(market.personas.filter((p) => !d.segmentId || p.segmentId === d.segmentId));
+  async function addContact() {
+    if (!newContact.name.trim()) { error = 'Pon un nombre (o el cargo)'; return; }
+    if (await run({ op: 'addContact', contact: { name: newContact.name, personaId: newContact.personaId || null, stance: newContact.stance } })) {
+      newContact = { name: '', personaId: '', stance: 'desconocido' };
+    }
+  }
+  const toLocalInput = (iso: string | null) => {
+    if (!iso) return '';
+    const dt = new Date(iso);
+    return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  let nextText = $state(initial.dossier.nextStep ?? '');
+  let nextAt = $state(toLocalInput(initial.dossier.nextStepAt));
+  function saveNext(at = nextAt) {
+    nextAt = at;
+    run({ op: 'setNextStep', text: nextText, at: at ? new Date(at).toISOString() : null });
+  }
+  function preset(days: number) {
+    const dt = new Date(Date.now() + days * 86_400_000);
+    dt.setHours(10, 0, 0, 0);
+    saveNext(toLocalInput(dt.toISOString()));
+  }
+  const overdue = $derived(!!d.nextStepAt && new Date(d.nextStepAt).getTime() < Date.now());
+
   const money = (n: number | null, cur: string) =>
     n == null ? '—' : new Intl.NumberFormat(d.locale, { style: 'currency', currency: cur, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n);
   const fmtDate = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso)) : '');
@@ -368,6 +402,69 @@
         </section>
       {/if}
 
+      <!-- cuenta y actores -->
+      <section class={card} data-testid="account">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          <h2 class="flex-1 font-bold">Cuenta y actores</h2>
+          <select class="rounded-lg border border-line px-2 py-1.5 text-sm" value={d.segmentId ?? ''} disabled={!editable}
+            onchange={(e) => run({ op: 'setSegment', segmentId: e.currentTarget.value || null })} aria-label="Sector" data-testid="segment">
+            <option value="">Sector…</option>
+            {#each market.segments as sg}<option value={sg.id}>{sg.name}</option>{/each}
+          </select>
+          {#if d.segmentId}<a class="text-xs underline" href="/admin/learn/sector/{market.segments.find((x) => x.id === d.segmentId)?.key}" target="_blank" rel="noopener">Ver sector ↗</a>{/if}
+        </div>
+        <p class="mb-3 text-xs text-muted">¿Quién decide, quién paga y quién puede tumbarlo? Mapéalos: el guion y los mensajes se adaptan a cada uno.</p>
+        <ul class="space-y-2 p-0" data-testid="contacts">
+          {#each s.contacts as c (c.id)}
+            <li class="list-none rounded-xl border p-3 text-sm {c.stance === 'bloqueador' ? 'border-red-200 bg-red-50/40' : c.stance === 'aliado' ? 'border-emerald-200 bg-emerald-50/40' : 'border-line'}" data-testid="contact">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="min-w-0 flex-1"><strong>{c.name}</strong>{#if personaName(c.personaId)}<span class="text-muted"> · {personaName(c.personaId)}</span>{/if}</span>
+                <select class="rounded-md border border-line px-1.5 py-1 text-xs" value={c.stance} disabled={!editable}
+                  onchange={(e) => run({ op: 'updateContact', contactId: c.id, contact: { stance: e.currentTarget.value as keyof typeof STANCE } })} aria-label="Postura de {c.name}">
+                  {#each Object.entries(STANCE) as [k, v]}<option value={k}>{v}</option>{/each}
+                </select>
+                <a class="rounded-md border border-line px-2 py-1 text-xs font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&contact={c.id}&type=primer_contacto">✉️ Mensaje</a>
+                {#if editable}<button class={iconBtn} onclick={() => confirm(`¿Quitar a ${c.name}?`) && run({ op: 'removeContact', contactId: c.id })} aria-label="Quitar {c.name}">✕</button>{/if}
+              </div>
+            </li>
+          {:else}
+            <li class="list-none text-sm text-muted">Nadie mapeado todavía.</li>
+          {/each}
+        </ul>
+        {#if editable}
+          <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+            <input class={field} placeholder="Nombre (o cargo)" bind:value={newContact.name} maxlength="120" aria-label="Nombre del contacto" data-testid="contact-name" />
+            <select class={field} bind:value={newContact.personaId} aria-label="Tipo de actor" data-testid="contact-persona">
+              <option value="">Tipo de actor…</option>
+              {#each segPersonas as p}<option value={p.id}>{p.name} ({ROLE[p.role]})</option>{/each}
+            </select>
+            <select class={field} bind:value={newContact.stance} aria-label="Postura">
+              {#each Object.entries(STANCE) as [k, v]}<option value={k}>{v}</option>{/each}
+            </select>
+            <button class="rounded-lg bg-ink px-3 py-2 text-sm font-semibold text-bg" onclick={addContact} data-testid="add-contact">Añadir</button>
+          </div>
+        {/if}
+      </section>
+
+      <!-- seguimiento -->
+      <section class={card} data-testid="followup">
+        <h2 class="mb-3 font-bold">Seguimiento {#if overdue}<span class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Vencido</span>{/if}</h2>
+        <div class="grid gap-2 sm:grid-cols-[1fr_13rem]">
+          <input class={field} placeholder="Próximo paso (p. ej. Llamar para cerrar fecha)" bind:value={nextText} maxlength="300" disabled={!editable}
+            onchange={() => saveNext()} aria-label="Próximo paso" data-testid="next-step" />
+          <input class={field} type="datetime-local" bind:value={nextAt} disabled={!editable} onchange={() => saveNext()} aria-label="Fecha del próximo paso" data-testid="next-at" />
+        </div>
+        {#if editable}
+          <div class="mt-2 flex flex-wrap gap-2 text-xs">
+            <button class={btn} onclick={() => preset(2)}>+2 días</button>
+            <button class={btn} onclick={() => preset(7)}>+1 semana</button>
+            <button class={btn} onclick={() => preset(14)}>+2 semanas</button>
+            {#if d.nextStepAt}<button class={btn} onclick={() => { nextText = ''; saveNext(''); }}>Hecho / quitar</button>{/if}
+          </div>
+        {/if}
+        <a class="mt-3 inline-flex rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface" href="/admin/compose?dossier={d.id}&type=seguimiento">✉️ Preparar mensaje de seguimiento</a>
+      </section>
+
       <!-- publicación -->
       <section class={card}>
         <h2 class="mb-3 font-bold">Publicación</h2>
@@ -455,6 +552,12 @@
                       <p class="text-xs text-muted">{sec.hint}</p>
                       {#each sec.blocks as b}
                         {#if b.title}<h4 class="mt-3 text-sm font-bold">{b.title}</h4>{/if}
+                        {#if b.facts?.length}
+                          <dl class="mt-2 space-y-1 rounded-xl border p-3 text-xs {b.tone === 'risk' ? 'border-red-200 bg-red-50/40' : b.tone === 'ally' ? 'border-emerald-200 bg-emerald-50/40' : 'border-line'}" data-testid="account-block">
+                            {#each b.facts as f}<div><dt class="inline font-semibold">{f.label}:</dt> <dd class="inline">{f.text}</dd></div>{/each}
+                            {#if b.contactId}<a class="mt-1 inline-block font-semibold underline" href="/admin/compose?dossier={d.id}&contact={b.contactId}">✉️ Preparar mensaje</a>{/if}
+                          </dl>
+                        {/if}
                         {#if b.note}<p class="mt-1 rounded-lg bg-surface p-2 text-xs">{b.note}</p>{/if}
                         <ul class="mt-2 space-y-2 p-0">
                           {#each b.lines as l (l.source + l.id)}

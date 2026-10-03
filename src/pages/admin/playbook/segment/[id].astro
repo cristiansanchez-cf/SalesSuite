@@ -1,0 +1,113 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { formAction } from '~/lib/admin/forms';
+import { ROLE_LABEL } from '~/lib/playbook/market';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const pb = admin.playbook;
+const id = Astro.params.id ?? '';
+const isNew = id === 'new';
+const [market, catalog] = await Promise.all([pb.market(), admin.tenantAdmin.listCatalog()]);
+const sg = market.find((x) => x.id === id);
+if (!isNew && !sg) return Astro.rewrite('/404');
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let draft: Record<string, string> | null = null;
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  draft = Object.fromEntries([...f.entries()].map(([k, v]) => [k, String(v)]));
+  let to = '';
+  result = await formAction(async () => {
+    if (str('action') === 'fit') {
+      const prio = str('priority');
+      await pb.setModuleFit(id, str('moduleId'), str('fit'), prio ? Number(prio) : null);
+      to = `/admin/playbook/segment/${id}?ok=fit`;
+      return;
+    }
+    const sid = await pb.saveSegment({
+      key: str('key'), name: str('name'), description: str('description'), valueProp: str('valueProp'), icp: str('icp'),
+      disqualifiers: str('disqualifiers'), buyingProcess: str('buyingProcess'), dealSize: str('dealSize'), salesCycle: str('salesCycle'),
+      status: str('status') || 'official',
+    }, isNew ? undefined : id);
+    to = `/admin/playbook/segment/${sid}?ok=saved`;
+  });
+  if (!result.error) return Astro.redirect(to, 303);
+}
+const v = (k: string, fb: string | null | undefined) => (draft && draft[k] !== undefined ? draft[k] : fb ?? '');
+const ok = Astro.url.searchParams.get('ok');
+const field = 'w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-ink';
+const area = (name: string, label: string, hint: string, value: string, h = 'h-24') => ({ name, label, hint, value, h });
+const areas = [
+  area('description', 'Qué es este sector', 'Una frase.', v('description', sg?.description), 'h-16'),
+  area('valueProp', 'Por qué nosotros aquí', 'Propuesta de valor en este sector.', v('valueProp', sg?.valueProp)),
+  area('icp', 'Cliente ideal', 'Tamaño, señales, situación. Admite listas con «- ».', v('icp', sg?.icp), 'h-28'),
+  area('disqualifiers', 'Descartar si…', 'Cuándo no perder el tiempo.', v('disqualifiers', sg?.disqualifiers), 'h-16'),
+  area('buyingProcess', 'Cómo compran', 'Quién decide, quién influye, qué pasos.', v('buyingProcess', sg?.buyingProcess)),
+];
+---
+<AdminLayout title={isNew ? 'Nuevo sector' : sg!.name} wide>
+  <a href="/admin/playbook?tab=market" class="text-sm text-muted hover:text-ink">← Mercado</a>
+  <h1 class="mt-1 text-2xl font-extrabold">{isNew ? 'Nuevo sector' : sg!.name}</h1>
+  {ok && <p class="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">Guardado.</p>}
+  {result.error && <div class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="error"><p class="font-semibold">{result.error}</p>{result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}</div>}
+
+  <div class="mt-5 grid gap-6 xl:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]">
+    <form method="post" class="space-y-3 rounded-2xl border border-line bg-bg p-5" data-testid="segment-form">
+      <input type="hidden" name="action" value="save" />
+      <div class="grid gap-3 sm:grid-cols-[1fr_12rem]">
+        <label class="text-sm font-medium">Nombre<input class={field} name="name" required maxlength="80" value={v('name', sg?.name)} /></label>
+        <label class="text-sm font-medium">Clave<input class={field} name="key" required value={v('key', sg?.key)} placeholder="ocio-nocturno" /></label>
+      </div>
+      {areas.map((a) => (
+        <label class="block text-sm font-medium">{a.label} <span class="font-normal text-muted">{a.hint}</span>
+          <textarea class={`${field} ${a.h}`} name={a.name}>{a.value}</textarea>
+        </label>
+      ))}
+      <div class="grid gap-3 sm:grid-cols-3">
+        <label class="text-sm font-medium">Ticket típico<input class={field} name="dealSize" value={v('dealSize', sg?.dealSize)} placeholder="300–900 €" /></label>
+        <label class="text-sm font-medium">Ciclo de venta<input class={field} name="salesCycle" value={v('salesCycle', sg?.salesCycle)} placeholder="2–8 semanas" /></label>
+        <label class="text-sm font-medium">Estado
+          <select class={field} name="status">{[['official', 'Visible'], ['draft', 'Borrador'], ['archived', 'Archivado']].map(([k, l]) => <option value={k} selected={v('status', sg?.status ?? 'official') === k}>{l}</option>)}</select>
+        </label>
+      </div>
+      <button class="rounded-lg bg-ink px-4 py-2 font-semibold text-bg" type="submit">{isNew ? 'Crear sector' : 'Guardar'}</button>
+    </form>
+
+    {sg && (
+      <aside class="space-y-5">
+        <section class="rounded-2xl border border-line bg-bg p-5">
+          <div class="flex items-center gap-2"><h2 class="flex-1 font-bold">Actores</h2><a class="rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-bg" href={`/admin/playbook/persona/new?segment=${sg.id}`}>Añadir actor</a></div>
+          <ul class="mt-3 space-y-1 p-0 text-sm">
+            {sg.personas.map((p) => <li class="list-none"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/persona/${p.id}`}>{p.name}</a> <span class="text-muted">· {ROLE_LABEL[p.role]} · {p.angles.length} ángulos</span></li>)}
+          </ul>
+          {sg.personas.length === 0 && <p class="mt-2 text-sm text-muted">Sin actores todavía.</p>}
+        </section>
+        <section class="rounded-2xl border border-line bg-bg p-5" data-testid="fits">
+          <h2 class="font-bold">Qué módulos encajan aquí (ICP por módulo)</h2>
+          <div class="mt-3 space-y-3">
+            {catalog.map((m) => {
+              const f = sg.modules.find((x) => x.moduleId === m.id);
+              return (
+                <form method="post" class="grid gap-2 rounded-xl border border-line p-3 sm:grid-cols-[10rem_1fr_7rem_auto]">
+                  <input type="hidden" name="action" value="fit" /><input type="hidden" name="moduleId" value={m.id} />
+                  <span class="self-center text-sm font-semibold">{m.name}</span>
+                  <input class={field} name="fit" value={f?.fit ?? ''} placeholder="Por qué encaja en este sector" maxlength="1000" />
+                  <select class={field} name="priority" aria-label={`Prioridad de ${m.name}`}>
+                    <option value="" selected={!f}>No encaja</option>
+                    <option value="1" selected={f?.priority === 1}>★ Estrella</option>
+                    <option value="2" selected={f?.priority === 2}>Encaja</option>
+                    <option value="3" selected={f?.priority === 3}>Secundario</option>
+                  </select>
+                  <button class="rounded-lg border border-line px-3 py-2 text-sm font-semibold hover:bg-surface" type="submit">Guardar</button>
+                </form>
+              );
+            })}
+          </div>
+        </section>
+      </aside>
+    )}
+  </div>
+</AdminLayout>

@@ -46,6 +46,37 @@
       }
     }
   ],
+  "market": [
+    {
+      "key": "retail",
+      "name": "Retail",
+      "icp": "Tiendas con 3+ locales",
+      "modules": [
+        {
+          "module_key": "hero",
+          "priority": 1,
+          "fit": "Portada para cadenas"
+        }
+      ],
+      "personas": [
+        {
+          "key": "jefe-tienda",
+          "name": "Jefe/a de tienda",
+          "role": "guardian",
+          "objections": [
+            "tiempo"
+          ],
+          "can_block": "No deja montar en horario",
+          "angles": [
+            {
+              "module_key": "hero",
+              "angle": "Montaje en 10 minutos"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "playbook": [
     {
       "key": "pitch-general",
@@ -70,6 +101,12 @@
           "title": "El cliente dice 'caro' porque traduce precio a horas trabajadas, no a valor",
           "creator": "Alfonso y Cristian"
         }
+      ],
+      "segments": [
+        "retail"
+      ],
+      "personas": [
+        "jefe-tienda"
       ]
     }
   ]

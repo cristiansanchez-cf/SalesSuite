@@ -694,7 +694,9 @@
       "kind": "fit",
       "stage": "prospeccion",
       "objection": null,
-      "segments": [],
+      "segments": [
+        "bodas"
+      ],
       "title": "Cliente ideal (y cuándo no)",
       "body": "- **Novios** con 100+ invitados que quieren una boda \"diferente\" y temen los tiempos muertos.\n- **Salas y fincas** que compiten por bodas y buscan un extra vendible.\n- **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.",
       "when_to_use": "Antes de invertir tiempo en un lead: cualifica.",
@@ -714,7 +716,9 @@
       "kind": "script",
       "stage": "primer_contacto",
       "objection": null,
-      "segments": [],
+      "segments": [
+        "bodas"
+      ],
       "title": "Apertura de la reunión",
       "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué es lo que más os importa que recuerden vuestros invitados de {company}?",
       "when_to_use": "Al empezar la llamada o la visita.",
@@ -734,7 +738,9 @@
       "kind": "discovery",
       "stage": "descubrimiento",
       "objection": null,
-      "segments": [],
+      "segments": [
+        "bodas"
+      ],
       "title": "¿Qué te preocupa que pase en el banquete?",
       "body": "Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo.",
       "when_to_use": null,
@@ -829,7 +835,9 @@
       "kind": "script",
       "stage": "cierre",
       "objection": null,
-      "segments": [],
+      "segments": [
+        "bodas"
+      ],
       "title": "Cierre con fecha",
       "body": "¿Os parece que dejemos reservada la fecha de vuestra boda y el jueves te llamo a las 18:00 para cerrar los detalles con vosotros dos?",
       "when_to_use": null,
@@ -1160,6 +1168,54 @@
       "why_it_works": null,
       "technique_refs": [],
       "position": 23552,
+      "status": "official",
+      "version": 1,
+      "author_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a0024",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": null,
+      "key": "b2b-apertura",
+      "kind": "script",
+      "stage": "primer_contacto",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno",
+        "conciertos",
+        "festivales"
+      ],
+      "personas": [],
+      "title": "Apertura (locales, conciertos y festivales)",
+      "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué noche o qué evento os está costando más llenar en {company}, y qué habéis probado ya?",
+      "when_to_use": null,
+      "why_it_works": "Abre con su problema de negocio (llenar, consumo, patrocinio), no con el producto.",
+      "technique_refs": [],
+      "position": 24576,
+      "status": "official",
+      "version": 1,
+      "author_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a0025",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": null,
+      "key": "b2b-cierre",
+      "kind": "script",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno",
+        "conciertos",
+        "festivales"
+      ],
+      "personas": [],
+      "title": "Cierre con piloto",
+      "body": "¿Lo probamos en una noche (o una fecha) piloto? Te propongo el jueves 14: lo montamos nosotros y el viernes vemos juntos los datos de participación.",
+      "when_to_use": null,
+      "why_it_works": "Un piloto con fecha baja el riesgo percibido y deja una decisión concreta.",
+      "technique_refs": [],
+      "position": 25600,
       "status": "official",
       "version": 1,
       "author_id": null
