@@ -8,11 +8,12 @@ import PageHeader from '~/components/ui/PageHeader.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { i18n } from '~/lib/i18n';
 import { startMessages } from '~/lib/i18n/messages/start';
+import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 import { demoDb } from '~/lib/data/store';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-const { m, f } = i18n(Astro, startMessages);
+const { m, f, locale } = i18n(Astro, startMessages);
 const partner = admin.session.role === 'partner';
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
 
@@ -41,7 +42,9 @@ const steps = [
 ];
 ---
 <AdminLayout title={m.title}>
-  <PageHeader eyebrow={m.eyebrow} title={m.hello(first)} lede={m.lede} />
+  <PageHeader eyebrow={m.eyebrow} title={m.hello(first)} lede={m.lede}>
+    <a class="co-btn co-btn--ghost" href="/admin/welcome" data-testid="welcome-again"><Icon name="sparkles" size={16} />{welcomeMessages[locale].again}</a>
+  </PageHeader>
 
   <div class="grid gap-6 lg:grid-cols-2">
     <section class="co-card grid content-start gap-4" data-testid="start-what">

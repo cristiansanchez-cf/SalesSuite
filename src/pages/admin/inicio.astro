@@ -12,6 +12,8 @@ import { relativeTime } from '~/lib/admin/format';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
 import { myDay, teamKpis } from '~/lib/home/kpis';
+import { onboardedAt } from '~/lib/onboarding';
+import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -38,12 +40,22 @@ const actions = feed.items.filter((n) => n.severity === 'action');
 const when = (iso: string | null) => f.date(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const pct = (x: number | null) => (x == null ? '—' : m.home.pct(Math.round(x * 100)));
 const trend = k ? k.wonMonth - k.wonPrevMonth : 0;
+const welcomePending = !(await onboardedAt(admin));
+const wm = welcomeMessages[locale];
 ---
 <AdminLayout title={m.home.title}>
   <PageHeader eyebrow={m.common.eyebrow} title={m.home.hello(first)} tail={manager ? m.home.tailManager : m.home.tailRep}>
     <a class="co-btn co-btn--ghost" href="/admin/compose"><Icon name="message-square-text" size={16} />{m.home.compose}</a>
     <a class="co-btn co-btn--primary" href="/admin#nuevo" data-testid="home-new">{m.home.newProposal} <span aria-hidden="true">→</span></a>
   </PageHeader>
+
+  {welcomePending && (
+    <a class="co-card co-card--link mb-6 flex items-center gap-4" href="/admin/welcome" data-testid="welcome-resume">
+      <Icon name="sparkles" size={22} />
+      <span class="grid flex-1 gap-1"><span class="co-row-title">{wm.resume.title}</span><span class="co-meta">{wm.resume.lede}</span></span>
+      <span class="co-btn co-btn--primary co-btn--sm">{wm.resume.go} <span aria-hidden="true">→</span></span>
+    </a>
+  )}
 
   {k && (
     <section class="co-grid co-grid--2 mb-6 lg:!grid-cols-4" data-testid="kpis">

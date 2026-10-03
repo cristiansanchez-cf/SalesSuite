@@ -54,7 +54,7 @@ if (form?.get('action') === 'locale') {
     if (e) error = e.message.includes('should be different') ? m.account.errSame : m.account.errSave;
     else {
       await sb.from('users').update({ display_name: name || null, phone: phone || null }).eq('id', admin.session.userId);
-      if (setup) return Astro.redirect(setupParam === '1' ? '/admin/start' : '/admin', 303);
+      if (setup) return Astro.redirect(setupParam === '1' ? '/admin/welcome' : '/admin', 303);
       ok = m.account.saved;
     }
   } else {
