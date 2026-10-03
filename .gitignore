@@ -8,3 +8,6 @@ dist/
 *.log
 .vercel/
 .ux-dist/
+
+# Copias de trabajo de agentes
+.claude/worktrees/
