@@ -56,5 +56,6 @@ check "$(q "select role || '|' || array_to_string(objections, ',') from public.p
 check "$(q "select angle from public.persona_module pm join public.persona p on p.id=pm.persona_id where p.key='jefe-tienda'")" "Montaje en 10 minutos" "ángulo módulo↔actor"
 check "$(q "select priority from public.segment_module sm join public.segment s on s.id=sm.segment_id where s.key='retail'")" "1" "encaje módulo↔sector"
 check "$(q "select array_to_string(personas, ',') from public.play where tenant_id='$T' and key='obj-precio'")" "jefe-tienda" "jugada dirigida a un actor"
+check "$(q "select key || '|' || jsonb_array_length(options) from public.situation_facet where tenant_id='$T'")" "region|2" "situación importada (clave desde el nombre)"
 run > /dev/null
 check "$(q "select count(*) from public.persona_module pm join public.persona p on p.id=pm.persona_id where p.tenant_id='$T'")" "1" "reimportar no duplica ángulos"

@@ -20,6 +20,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { brandSchema } from '../src/lib/brand';
 import { personaInputSchema, playInputSchema, segmentInputSchema } from '../src/lib/playbook/schema';
+import { facetInputSchema } from '../src/lib/evidence/schema';
 import { themeTokensSchema } from '../src/lib/theme';
 import { REGISTRY, isBlockType } from '../src/modules/registry';
 
@@ -49,7 +50,7 @@ const tenantFile = z.object({
   })).default([]),
   /** Mapa de mercado: sectores con cliente ideal, actores y encaje de módulos (docs/PLAYBOOK.md §Mercado). */
   market: z.array(z.object({
-    key: z.string(), name: z.string(), description: z.string().nullable().default(null), value_prop: z.string().nullable().default(null),
+    key: z.string(), name: z.string(), icon: z.string().nullable().default(null), description: z.string().nullable().default(null), value_prop: z.string().nullable().default(null),
     icp: z.string().nullable().default(null), disqualifiers: z.string().nullable().default(null), buying_process: z.string().nullable().default(null),
     deal_size: z.string().nullable().default(null), sales_cycle: z.string().nullable().default(null),
     modules: z.array(z.object({ module_key: z.string(), priority: z.number().int().min(1).max(3).default(2), fit: z.string().nullable().default(null) })).default([]),
@@ -60,6 +61,8 @@ const tenantFile = z.object({
       angles: z.array(z.object({ module_key: z.string(), angle: z.string() })).default([]),
     })).default([]),
   })).default([]),
+  /** Situaciones (docs/EVIDENCE.md): tipo de personalidad, región, rasgos de la cuenta… Upsert por key. */
+  facets: z.array(z.unknown()).default([]),
   /** Playbook de ventas (docs/PLAYBOOK.md). `module_key` null = jugada general. */
   playbook: z.array(z.object({
     key: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
@@ -184,6 +187,13 @@ function validate(t: TenantFile, assetKeys: string[]) {
     const r = playInputSchema.safeParse(toPlayInput(p, p.module_key ? '00000000-0000-4000-8000-000000000000' : null));
     if (!r.success) errors.push(...r.error.issues.map((i) => `playbook.${p.key}.${i.path.join('.')}: ${i.message}`));
   }
+  const facetKeys = new Set<string>();
+  for (const [i, raw] of t.facets.entries()) {
+    const r = facetInputSchema.safeParse(raw);
+    if (!r.success) { errors.push(...r.error.issues.map((x) => `facets[${i}].${x.path.join('.')}: ${x.message}`)); continue; }
+    if (facetKeys.has(r.data.key)) errors.push(`facets: clave duplicada ${r.data.key}`);
+    facetKeys.add(r.data.key);
+  }
   for (const k of missing) errors.push(`asset:${k} no existe en ${'assets/'} (ver assets/README.md)`);
   return errors;
 }
@@ -202,7 +212,7 @@ async function main() {
   const files = (await listFiles(assetsDir)).map((p) => relative(assetsDir, p).split('\\').join('/')).filter((f) => MIME[extname(f).toLowerCase()]);
   const errors = validate(t, files);
   if (errors.length) fail(`Validación:\n  ${errors.join('\n  ')}`);
-  log(`tenant.json válido: ${t.market.length} sectores, ${t.market.reduce((n, s) => n + s.personas.length, 0)} actores, ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
+  log(`tenant.json válido: ${t.market.length} sectores, ${t.facets.length} situaciones, ${t.market.reduce((n, s) => n + s.personas.length, 0)} actores, ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);
   if (DRY) { log('Nada escrito (--dry-run).'); return; }
 
   const url = process.env.PUBLIC_SUPABASE_URL;
@@ -285,7 +295,7 @@ async function main() {
     const segRow = {
       tenant_id: tenantId, key: sg.key, name: sg.name, description: sg.description, value_prop: sg.value_prop, icp: sg.icp,
       disqualifiers: sg.disqualifiers, buying_process: sg.buying_process, deal_size: sg.deal_size, sales_cycle: sg.sales_cycle,
-      position: (i + 1) * 1024, status: 'official',
+      position: (i + 1) * 1024, status: 'official', icon: sg.icon,
     };
     const segId = mustOne(await sb.from('segment').upsert(segRow, { onConflict: 'tenant_id,key' }).select('id').single(), `sector ${sg.key}`).id as string;
     must(await sb.from('segment_module').delete().eq('segment_id', segId), `limpiar encajes ${sg.key}`);
@@ -301,6 +311,16 @@ async function main() {
     }
   }
   if (t.market.length) log(`mercado: ${t.market.length} sectores sincronizados`);
+
+  // 5b. situaciones (upsert por key; las que no están en el JSON se quedan como estén)
+  for (const [i, raw] of t.facets.entries()) {
+    const f = facetInputSchema.parse(raw);
+    must(await sb.from('situation_facet').upsert({
+      tenant_id: tenantId, key: f.key, label: f.label, question: f.question ?? null, icon: f.icon ?? null, scope: f.scope, multi: f.multi,
+      weight: f.weight, options: f.options, status: f.status, position: (i + 1) * 1024,
+    }, { onConflict: 'tenant_id,key' }), `situación ${f.key}`);
+  }
+  if (t.facets.length) log(`situaciones: ${t.facets.length} sincronizadas`);
 
   // 6. playbook (upsert por key; si cambia el contenido → nueva versión con revisión)
   for (const [i, raw] of t.playbook.entries()) {

@@ -13,6 +13,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run check
+      - run: npm run lint:copy
       - run: npm test
       - run: npm run build
 

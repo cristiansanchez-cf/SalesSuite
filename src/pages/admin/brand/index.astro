@@ -70,6 +70,7 @@ const field = 'co-input';
 const card = 'space-y-3 co-card';
 ---
 <AdminLayout title="Marca" wide>
+  <p class="text-eyebrow mb-3">Configurar</p>
   <h1 class="co-page-title">Marca y tema</h1>
   <p class="text-sm text-muted">Se aplica a todos los dossiers de <code>{settings.slug}</code> sin tocar código.{admin.mode === 'demo' && ' En demo no hay subida de archivos: usa URLs.'}</p>
   {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}

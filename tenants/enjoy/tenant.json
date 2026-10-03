@@ -364,7 +364,8 @@
             }
           ]
         }
-      ]
+      ],
+      "icon": "heart"
     },
     {
       "key": "ocio-nocturno",
@@ -474,7 +475,8 @@
             }
           ]
         }
-      ]
+      ],
+      "icon": "music"
     },
     {
       "key": "conciertos",
@@ -557,7 +559,8 @@
             }
           ]
         }
-      ]
+      ],
+      "icon": "mic"
     },
     {
       "key": "festivales",
@@ -639,6 +642,107 @@
               "angle": "Montaje cerrado, plan B sin conexión y prueba previa."
             }
           ]
+        }
+      ],
+      "icon": "party-popper"
+    }
+  ],
+  "facets": [
+    {
+      "key": "personalidad",
+      "label": "Tipo de personalidad",
+      "question": "¿Cómo es la persona con la que hablas?",
+      "icon": "smile",
+      "scope": "contact",
+      "multi": false,
+      "weight": 2,
+      "options": [
+        {
+          "key": "analitico",
+          "label": "Analítico",
+          "icon": "chart-column",
+          "hint": "Quiere datos, pruebas y detalle. Dale tiempo y números."
+        },
+        {
+          "key": "directo",
+          "label": "Directo",
+          "icon": "zap",
+          "hint": "Va al resultado. Sé breve y ve al grano."
+        },
+        {
+          "key": "expresivo",
+          "label": "Expresivo",
+          "icon": "sparkles",
+          "hint": "Se mueve por la idea y la emoción. Cuéntale la experiencia."
+        },
+        {
+          "key": "afable",
+          "label": "Afable",
+          "icon": "heart-handshake",
+          "hint": "Valora la relación y la confianza. No le presiones."
+        }
+      ]
+    },
+    {
+      "key": "region",
+      "label": "Región",
+      "question": "¿En qué región está la cuenta?",
+      "icon": "map-pin",
+      "scope": "account",
+      "multi": false,
+      "weight": 2,
+      "options": [
+        {
+          "key": "madrid",
+          "label": "Madrid"
+        },
+        {
+          "key": "barcelona",
+          "label": "Barcelona"
+        },
+        {
+          "key": "valencia",
+          "label": "Valencia"
+        },
+        {
+          "key": "costa",
+          "label": "Costa (temporada)"
+        }
+      ]
+    },
+    {
+      "key": "rasgos-local",
+      "label": "Cómo es el sitio",
+      "question": "¿Qué tiene la cuenta?",
+      "icon": "store",
+      "scope": "account",
+      "multi": true,
+      "weight": 1,
+      "options": [
+        {
+          "key": "pantalla",
+          "label": "Tiene pantalla",
+          "icon": "monitor"
+        },
+        {
+          "key": "dj",
+          "label": "DJ residente",
+          "icon": "music"
+        },
+        {
+          "key": "aforo-grande",
+          "label": "Aforo de más de 500",
+          "icon": "users"
+        },
+        {
+          "key": "bodas",
+          "label": "Celebra bodas",
+          "icon": "heart"
+        },
+        {
+          "key": "marca-bebidas",
+          "label": "Patrocinio de bebidas",
+          "icon": "wine"
         }
       ]
     }

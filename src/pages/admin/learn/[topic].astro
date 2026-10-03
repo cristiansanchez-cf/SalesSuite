@@ -36,7 +36,8 @@ const field = 'co-input';
 ---
 <AdminLayout title={view.name} wide>
   <a href="/admin/learn" class="text-sm text-muted hover:text-ink">← Aprende</a>
-  <div class="mt-1 flex flex-wrap items-center gap-3">
+  <p class="text-eyebrow mb-3 mt-3">Aprende</p>
+  <div class="flex flex-wrap items-center gap-3">
     <h1 class="min-w-0 flex-1 co-page-title">{view.name}</h1>
     <form method="post">
       <input type="hidden" name="action" value="learned" /><input type="hidden" name="done" value={view.learned ? '0' : '1'} />

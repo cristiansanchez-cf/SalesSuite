@@ -142,3 +142,8 @@ Permisos (RLS):
 4. ¿Quién escribe el playbook inicial de Enjoy? El de este repo es **contenido de ejemplo** que yo he redactado; se importa con `tenants/enjoy/tenant.json` → `playbook`.
 5. Cerebro: ¿qué API puede exponer para consulta desde servidor (por tenant), y qué formato quiere para ingerir el export?
 6. ¿Generación con IA del guion personalizado (a partir de las jugadas y el dossier)? Encaja como siguiente paso. El guion actual es determinista y no inventa nada.
+
+
+## Actualización: de «me gusta» a evidencia
+
+Los votos «me funcionó / no» se han retirado: algo puede sonar bien y no cerrar. Ahora cada jugada muestra en cuántos **cierres documentados** se usó y cuántos ganó, y las métricas del líder se ordenan por ese dato. Detalle en [`EVIDENCE.md`](EVIDENCE.md). La tabla `play_feedback` se conserva, sin uso, para no perder el histórico.

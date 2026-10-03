@@ -74,6 +74,10 @@ A quién vende Enjoy: **sectores** (bodas, ocio nocturno, conciertos, festivales
 
 El de `tenant.json` es **ejemplo**: validad sectores y actores reales. Es lo que más ayuda a un comercial nuevo y lo que da contexto al Cerebro de Ventas.
 
+## 5b. Situaciones → `facets` en `tenant.json`
+
+Cómo se describe una venta para compararla con otras (docs/EVIDENCE.md): tipo de personalidad, región, rasgos del sitio («tiene pantalla», «DJ residente»…). Cada una lleva `label`, `question`, `scope` (`account` o `contact`), `multi`, `weight` (1–5) y `options` (`label`, y opcionalmente `icon` y `hint`). También se puede configurar desde la consola, en *Configurar → Configuración guiada*.
+
 ## 6. Playbook de ventas → `playbook` en `tenant.json`
 
 Cómo se vende cada módulo: pitch, para quién, preguntas, objeciones con respuesta, pruebas, precio/upsell, guiones y consejos. El de `tenant.json` es **contenido de ejemplo** escrito para la demo; sustituidlo por el real (formato y tipos en [`PLAYBOOK.md`](./PLAYBOOK.md)). Cada jugada lleva `key` estable, `module_key` (o `null` para general), `kind`, y opcionalmente `stage`/`objection` (taxonomía del Cerebro de Ventas) y `technique_refs` (fichas del Cerebro por id, título, creador y enlace; **sin copiar guiones literales**). Reimportar actualiza solo lo que cambió y deja versión con nota.

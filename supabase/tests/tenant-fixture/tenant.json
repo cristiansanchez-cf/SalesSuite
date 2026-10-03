@@ -109,5 +109,21 @@
         "jefe-tienda"
       ]
     }
+  ],
+  "facets": [
+    {
+      "label": "Región",
+      "question": "¿En qué región está la tienda?",
+      "scope": "account",
+      "weight": 2,
+      "options": [
+        {
+          "label": "Brasil"
+        },
+        {
+          "label": "Corea"
+        }
+      ]
+    }
   ]
 }

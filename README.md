@@ -5,6 +5,8 @@ Producto multi-tenant de Cofundo: un comercial compone un **dossier vivo** por p
 - **Puesta en marcha (Supabase, Vercel, dominio) paso a paso: [`docs/SETUP.md`](docs/SETUP.md)**
 - Qué debe aportar Enjoy (marca, copys, playbook, código `nh-*`): [`docs/BRAND_INTAKE.md`](docs/BRAND_INTAKE.md)
 - **Playbook de ventas** (cómo vender cada módulo, capa de equipo, Cerebro de Ventas): [`docs/PLAYBOOK.md`](docs/PLAYBOOK.md)
+- **Qué ha funcionado** (cierres reales en vez de «me gusta», situaciones configurables, recomendaciones): [`docs/EVIDENCE.md`](docs/EVIDENCE.md)
+- **Design system de la consola** (Cofundo + guía de consolas): [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)
 - **Colaboradores** (DJ, monitor…: acceso por código, solo sus módulos y cuentas, precio fijado por el admin): [`docs/PARTNERS.md`](docs/PARTNERS.md)
 - Plan y contexto de negocio (incl. §15 huecos detectados): [`docs/PLAN.md`](docs/PLAN.md)
 - Decisiones de stack (cierra las preguntas abiertas del plan): [`docs/ADR-0001-stack.md`](docs/ADR-0001-stack.md)
@@ -152,6 +154,12 @@ supabase/
 - [x] Cuentas por colaborador con política de precio (sin precios / tarifa / especial ±%) aplicada por triggers; cambios del admin se re-aplican
 - [x] Acceso sin contraseña (email → código) para todos; caducidad del acceso; guía e indicaciones solo para él
 - [x] «Mis cuentas», gestión en Equipo → colaborador, jugadas con audiencia (todos / equipo / colaboradores)
+
+**Diseño y evidencia — propuesta implementada para revisar** ([`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md), [`docs/EVIDENCE.md`](docs/EVIDENCE.md))
+- [x] Consola con el design system de Cofundo: shell con dos navegaciones, listas como tarjetas, modales que dicen lo que no hacen, vacíos tipados, `lint:copy` en CI
+- [x] Situaciones configurables por tenant (personalidad, región, rasgos) y cierres documentados ganados o perdidos
+- [x] «Qué ha funcionado» con parecido explicado y ranking por cierres reales; fuera los votos
+- [x] Configuración guiada con iconos y puntos de partida (ocio y eventos, turismo activo y buceo, en blanco)
 
 **Pendiente — necesita a otra persona**
 - [ ] **Tú:** crear el proyecto Supabase, SMTP, Vercel y DNS → [`docs/SETUP.md`](docs/SETUP.md)

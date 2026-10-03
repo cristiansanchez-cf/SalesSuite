@@ -24,6 +24,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     { href: '/admin/learn', label: 'Aprende', icon: 'graduation-cap', on: on('/admin/learn') },
   ];
   const setup: NavItem[] = [
+    { href: '/admin/setup', label: 'Configuración guiada', icon: 'wand-sparkles', on: on('/admin/setup') },
     { href: '/admin/playbook', label: 'Playbook y mercado', icon: 'book-open', on: on('/admin/playbook'), count: counts.pendingPlaybook || undefined },
     { href: '/admin/catalog', label: 'Catálogo', icon: 'boxes', on: on('/admin/catalog') },
     { href: '/admin/team', label: 'Equipo', icon: 'users', on: on('/admin/team') },
@@ -34,7 +35,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     canSwitch: role === 'admin',
     modes: [
       { key: 'sell' as const, label: 'Vender', href: '/admin', icon: 'target' as IconName },
-      { key: 'setup' as const, label: 'Configurar', href: '/admin/playbook', icon: 'settings' as IconName },
+      { key: 'setup' as const, label: 'Configurar', href: '/admin/setup', icon: 'settings' as IconName },
     ],
     items: mode === 'setup' ? setup : sell,
   };

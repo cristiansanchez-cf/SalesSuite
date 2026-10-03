@@ -93,6 +93,25 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await v.getAttribute('meta[property="og:image"]', 'content')) === `${BASE}/demo/enjoy-logo-placeholder.svg`, 'og:image absoluta');
   if (OUT) await v.screenshot({ path: `${OUT}/public-branded.png` });
 
+  // ---- configuración guiada: punto de partida (solo añade) y situación nueva
+  await p.goto(`${BASE}/admin/setup`);
+  await p.click('[data-testid=preset-buceo]');
+  await p.click('[data-testid=preset-buceo-dialog-confirm]');
+  await p.waitForURL(/step=2&ok=preset-3-/);
+  assert((await p.textContent('[role=status]')).includes('Lo que ya tenías no se ha tocado'), 'punto de partida aplicado sin tocar lo existente');
+  assert((await p.textContent('[data-testid=setup-segments]')).includes('Hoteles y posadas con centro de buceo'), 'sectores del punto de partida');
+  await p.goto(`${BASE}/admin/setup?step=3`);
+  assert((await p.textContent('main')).includes('puede tumbarla'), 'actores con quién puede tumbar la venta');
+  await p.goto(`${BASE}/admin/setup?step=4`);
+  await p.fill('[data-testid=setup-facet-form] [name=label]', `Temporada ${RUN}`);
+  await p.fill('[data-testid=setup-facet-form] [name=options]', 'Alta\nBaja');
+  await p.click('[data-testid=setup-facet-form] button[type=submit]');
+  await p.waitForURL(/ok=facet/);
+  assert((await p.textContent('[data-testid=setup-facets]')).includes(`Temporada ${RUN}`), 'situación nueva creada por el líder');
+  await p.goto(`${BASE}/admin/setup?step=5`);
+  assert((await p.$$('[data-testid=setup-done] .co-action')).length === 5, 'revisión final con lo que falta');
+  if (OUT) await p.screenshot({ path: `${OUT}/setup.png`, fullPage: true });
+
   assert(errors.length === 0, `sin errores JS ${errors}`);
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

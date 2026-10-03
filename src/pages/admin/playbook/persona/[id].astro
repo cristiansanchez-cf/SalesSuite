@@ -47,7 +47,8 @@ const areas: Array<[string, string, string]> = [
 ---
 <AdminLayout title={isNew ? 'Nuevo actor' : p!.name} wide>
   <a href={`/admin/playbook/segment/${segmentId}`} class="text-sm text-muted hover:text-ink">← {seg?.name ?? 'Sector'}</a>
-  <h1 class="mt-1 text-2xl font-extrabold">{isNew ? 'Nuevo actor' : p!.name}</h1>
+  <p class="text-eyebrow mb-3">Mercado · actor</p>
+  <h1 class="co-page-title">{isNew ? 'Nuevo actor' : p!.name}</h1>
   {Astro.url.searchParams.get('ok') && <p class="mt-3 co-alert co-alert--success" role="status">Guardado.</p>}
   {result.error && <div class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error"><p class="font-semibold">{result.error}</p>{result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}</div>}
 
