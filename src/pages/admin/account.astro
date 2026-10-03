@@ -14,8 +14,12 @@ let error: string | null = null;
 let ok: string | null = null;
 let name = admin.session.displayName ?? '';
 
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
+const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null;
+let notifyOk = false;
+if (form?.get('action') === 'notify') {
+  await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
+  notifyOk = true;
+} else if (form) {
   name = String(form.get('name') ?? '').trim().slice(0, 80);
   const password = showPassword ? String(form.get('password') ?? '') : '';
   const confirm = String(form.get('confirm') ?? '');
@@ -36,6 +40,7 @@ if (Astro.request.method === 'POST') {
     ok = password ? 'Guardado (en demo no hay contraseñas)' : 'Guardado';
   }
 }
+const emailOn = await admin.notifications.emailPref();
 ---
 <AdminLayout title="Mi cuenta">
   <PageHeader eyebrow="Tu perfil" title={setup ? 'Bienvenido/a.' : 'Mi cuenta'} lede={setup ? 'Dinos cómo te llamas. La contraseña es opcional: siempre puedes entrar con un código por email.' : admin.session.email} />
@@ -51,4 +56,16 @@ if (Astro.request.method === 'POST') {
     </>}
     <button class="co-btn co-btn--primary w-fit" type="submit">Guardar</button>
   </form>
+  {!setup && (
+    <form method="post" id="avisos" class="co-card mt-6 grid max-w-lg gap-4" data-testid="notify-pref">
+      <input type="hidden" name="action" value="notify" />
+      <div><p class="text-eyebrow mb-1">Avisos</p><h2 class="co-entity">Emails</h2></div>
+      {notifyOk && <Alert kind="success" title="Preferencia guardada." />}
+      <label class="co-check">
+        <input type="checkbox" name="notifyEmail" checked={emailOn} />
+        <span>Avisarme por email<span class="co-help block">Solo cuando algo necesita tu acción (agrupado en un email) y, los lunes, un resumen de lo que sigue abierto. Lo informativo nunca llega suelto.</span></span>
+      </label>
+      <button class="co-btn co-btn--ghost w-fit" type="submit">Guardar preferencia</button>
+    </form>
+  )}
 </AdminLayout>

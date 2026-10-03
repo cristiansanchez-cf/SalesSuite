@@ -27,6 +27,8 @@ const width = Astro.props.width ?? (wide ? 'workspace' : 'content');
 const { tenant, admin } = Astro.locals;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const pending = admin ? await admin.playbook.pendingCount() : 0;
+const feed = admin && !bare ? await admin.notifications.feed({ limit: 8 }) : { items: [], open: 0 };
+const back = Astro.url.pathname + Astro.url.search;
 const tenantName = tenant?.name ?? BRAND.app;
 const shell = !!admin && !bare;
 ---
@@ -42,13 +44,14 @@ const shell = !!admin && !bare;
     {shell ? (
       <div class="co-shell">
         <aside class="co-sidebar" aria-label="Navegación">
-          <ConsoleNav admin={admin!} tenantName={tenantName} path={path} pending={pending} primary />
+          <ConsoleNav admin={admin!} tenantName={tenantName} path={path} pending={pending} feed={feed} back={back} primary />
         </aside>
         <div class="co-main">
           <div class="co-topbar">
             <button type="button" class="co-btn co-btn--ghost co-btn--icon co-btn--sm" data-dialog-open="co-drawer" aria-label="Abrir menú"><Icon name="menu" size={18} /></button>
             <a href="/admin" class="co-wordmark" style="font-size:1.125rem">{BRAND.wordmark}</a>
             <span class="co-meta ml-auto truncate">{tenantName}</span>
+            <a href="/admin/notifications" class="co-bell" aria-label={feed.open ? `Avisos: ${feed.open} pendientes` : 'Avisos'} data-testid="bell-mobile"><Icon name="bell" size={18} />{feed.open > 0 && <span class="co-bell__count">{feed.open > 9 ? '9+' : feed.open}</span>}</a>
           </div>
           {admin?.mode === 'demo' && <p class="co-demo-banner">Modo demo: los datos viven en memoria y se pierden al reiniciar el servidor.</p>}
           <main class:list={['co-page', `co-page--${width}`]}><slot /></main>
@@ -56,7 +59,7 @@ const shell = !!admin && !bare;
       </div>
       <dialog id="co-drawer" class="co-dialog co-drawer" aria-label="Menú">
         <div class="flex h-full flex-col gap-5 p-4">
-          <ConsoleNav admin={admin!} tenantName={tenantName} path={path} pending={pending} />
+          <ConsoleNav admin={admin!} tenantName={tenantName} path={path} pending={pending} feed={feed} back={back} />
           <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-close>Cerrar menú</button>
         </div>
       </dialog>

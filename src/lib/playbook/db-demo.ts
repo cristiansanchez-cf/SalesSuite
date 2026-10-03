@@ -4,6 +4,7 @@ import type { PlaybookDb } from './db';
 import type { Contribution, Play, TechniqueRef } from './types';
 import type { Persona, Segment } from './market';
 import type { PersonaRow, SegmentRow } from '../data/store';
+import { demoEmitContribution } from '../notify/db-demo';
 
 export const rowToPlay = (r: PlayRow): Play => ({
   id: r.id, tenantId: r.tenant_id, moduleId: r.module_id, key: r.key, kind: r.kind as Play['kind'],
@@ -75,18 +76,23 @@ export function demoPlaybookDb(getDb: () => DemoDb = demoDb): PlaybookDb {
         id, tenant_id: t, type: c.type, play_id: c.playId, module_id: c.moduleId, kind: c.kind, title: c.title, body: c.body,
         status: c.status, author_id: c.authorId, review_note: null, reviewed_by: null, reviewed_at: null, created_at: now(),
       });
+      demoEmitContribution('insert', { id, tenant_id: t, status: c.status, title: c.title, type: c.type, author_id: c.authorId });
       return id;
     },
     async updateContribution(id, p) {
       const c = db().play_contribution.find((x) => x.id === id);
       if (!c) return false;
+      const oldStatus = c.status;
       if (p.status !== undefined) c.status = p.status;
       if (p.reviewNote !== undefined) c.review_note = p.reviewNote;
       if (p.reviewedBy !== undefined) c.reviewed_by = p.reviewedBy;
       if (p.reviewedAt !== undefined) c.reviewed_at = p.reviewedAt;
+      demoEmitContribution('update', c, oldStatus);
       return true;
     },
     async deleteContribution(id) {
+      const gone = db().play_contribution.find((c) => c.id === id);
+      if (gone) demoEmitContribution('delete', gone);
       const before = db().play_contribution.length;
       db().play_contribution = db().play_contribution.filter((c) => c.id !== id);
       return db().play_contribution.length < before;

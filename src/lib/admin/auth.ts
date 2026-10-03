@@ -26,6 +26,10 @@ import type { EvidenceDb } from '../evidence/db';
 import { demoEvidenceDb } from '../evidence/db-demo';
 import { supabaseEvidenceDb } from '../evidence/db-supabase';
 import { createEvidenceService, type EvidenceService } from '../evidence/service';
+import type { NotifyDb } from '../notify/db';
+import { demoNotifyDb } from '../notify/db-demo';
+import { supabaseNotifyDb } from '../notify/db-supabase';
+import { createNotifyService, emptyNotifyDb, type NotifyService } from '../notify/service';
 
 export const DEMO_COOKIE = 'ss_demo_user';
 
@@ -45,6 +49,8 @@ export interface AdminContext {
   playbook: PlaybookService;
   /** Qué ha funcionado: cierres documentados, situaciones y recomendaciones. */
   evidence: EvidenceService;
+  /** Avisos de esta persona (campana, página y preferencia de email). */
+  notifications: NotifyService;
   /** Cliente Supabase con la sesión del usuario (solo modo supabase). */
   supabase: SupabaseClient | null;
 }
@@ -71,6 +77,8 @@ export interface Deps {
   identity: Identity | null; assets: AssetStore; supabase: SupabaseClient | null; playbookDb: PlaybookDb; evidenceDb: EvidenceDb;
   /** AdminDb para colaboradores (en Supabase: catálogo e items por RPC, sin tarifa). */
   partnerDb: () => AdminDb;
+  /** Avisos (opcional: los contratos de otros módulos no los necesitan). */
+  notifyDb?: NotifyDb;
 }
 
 /** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
@@ -103,6 +111,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       tenantAdmin: createTenantAdminService(db, session, { identity: deps.identity, assets: deps.assets }),
       playbook: createPlaybookService(playbookDb, db, session, { admin: service, evidence: evidenceDb }),
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service }),
+      notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
     },
   };
 }
@@ -118,14 +127,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb() });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

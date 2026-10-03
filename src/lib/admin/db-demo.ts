@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { demoDb, type DemoDb, type DossierRow, type PartnerAccountRow, type PartnerProfileRow, type ShareLinkRow } from '../data/store';
 import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
+import { demoEmitMembership } from '../notify/db-demo';
 
 export const newToken = () => randomBytes(24).toString('base64url');
 
@@ -235,6 +236,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       const u = db().users.find((x) => x.id === userId);
       if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) return false;
       u.memberships.push({ tenant_id: tenantId, role, invited_by: inviter ?? null, created_at: new Date().toISOString() });
+      demoEmitMembership(tenantId, userId, role, inviter);
       return true;
     },
     async setMemberRole(tenantId, userId, role) {
@@ -354,6 +356,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       const u = s.users.find((x) => x.id === userId);
       if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) throw new Error('duplicate key: Esa persona ya tiene acceso');
       u.memberships.push({ tenant_id: tenantId, role: 'partner', invited_by: inviterId, created_at: new Date().toISOString() });
+      demoEmitMembership(tenantId, userId, 'partner', inviterId);
       s.partner_profile.push({ tenant_id: tenantId, user_id: userId, module_ids: [...me.module_ids], see_team_tips: false, welcome_note: null, expires_at: me.expires_at, can_invite: false });
     },
     async deletePartnerAccount(id) {

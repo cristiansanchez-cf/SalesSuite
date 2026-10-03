@@ -8,17 +8,22 @@ import { BRAND } from '~/lib/site';
 import { navFor } from '~/lib/ui/nav';
 import { ROLE_LABEL } from '~/lib/admin/permissions';
 import type { AdminContext } from '~/lib/admin/auth';
+import type { NotificationFeed } from '~/lib/notify/service';
+import NotificationBell from './NotificationBell.astro';
 
-interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean }
-const { admin, tenantName, path, pending, primary = false } = Astro.props;
+interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean; feed: NotificationFeed; back: string }
+const { admin, tenantName, path, pending, primary = false, feed, back } = Astro.props;
 const nav = navFor(admin.session.role, path, { pendingPlaybook: pending });
 
 const name = admin.session.displayName || admin.session.email;
 const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 ---
-<a href="/admin" class="co-sidebar__brand" aria-label={`${BRAND.company} · ${BRAND.app}`}>
-  <span class="co-wordmark">{BRAND.wordmark}</span><span class="co-sidebar__app">· {BRAND.app}</span>
-</a>
+<div class="co-sidebar__head">
+  <a href="/admin" class="co-sidebar__brand" aria-label={`${BRAND.company} · ${BRAND.app}`}>
+    <span class="co-wordmark">{BRAND.wordmark}</span><span class="co-sidebar__app">· {BRAND.app}</span>
+  </a>
+  <NotificationBell feed={feed} id={primary ? 'bell-panel' : 'bell-panel-drawer'} back={back} testid={primary ? 'bell' : undefined} />
+</div>
 
 {nav.canSwitch && (
   <nav class="co-segmented" aria-label="Modo">

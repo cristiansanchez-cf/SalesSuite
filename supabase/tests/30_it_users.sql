@@ -28,3 +28,4 @@ insert into public.partner_account (id, tenant_id, user_id, name, segment_id, pr
   ('00000000-0000-4000-8000-0000009a0002', '00000000-0000-4000-8000-000000000e01', '55555555-5555-4555-8555-555555555555', 'Club Neón', '00000000-0000-4000-8000-0000005e0002', 'adjusted', -10, 'Precio especial de lanzamiento.', 2048),
   ('00000000-0000-4000-8000-0000009a0003', '00000000-0000-4000-8000-000000000e01', '55555555-5555-4555-8555-555555555555', 'Terraza Sur', '00000000-0000-4000-8000-0000005e0002', 'list', 0, null, 3072)
 on conflict do nothing;
+update public.users set notify_email = true, digest_sent_at = null;

@@ -1,0 +1,6 @@
+---
+/** Abrir un aviso (desde la campana o desde el email): lo marca como leído y lleva a lo que pide. */
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect(`/admin/login?next=${encodeURIComponent(Astro.url.pathname)}`);
+return Astro.redirect(await admin.notifications.open(Astro.params.id ?? ''), 303);
+---

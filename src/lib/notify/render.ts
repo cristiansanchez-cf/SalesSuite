@@ -1,0 +1,61 @@
+/**
+ * Texto, enlace e icono de cada tipo de aviso. El aviso guarda el tipo y sus datos, no la frase:
+ * así se pinta en el idioma de quien lo lee (docs/NOTIFICATIONS.md).
+ */
+import type { IconName } from '../ui/icons';
+import type { Notification, NotificationView } from './types';
+
+interface KindDef {
+  icon: IconName;
+  /** Se da por atendido al abrirlo (no hay un hecho posterior que lo resuelva). */
+  resolvesOnRead: boolean;
+  title(p: Record<string, string>): string;
+  detail?(p: Record<string, string>): string | null;
+  href(n: Notification): string;
+}
+
+const ROLE: Record<string, string> = { admin: 'admin', lead: 'jefe/a de ventas', rep: 'comercial', partner: 'colaborador/a' };
+
+export const KINDS: Record<string, KindDef> = {
+  contribution_pending: {
+    icon: 'lightbulb', resolvesOnRead: false,
+    title: (p) => `${p.author || 'Alguien del equipo'} propone ${p.type === 'change' ? 'una mejora' : 'un truco'} para el playbook`,
+    detail: (p) => (p.title ? `«${p.title}»` : null),
+    href: () => '/admin/playbook?tab=inbox',
+  },
+  partner_referred: {
+    icon: 'user-plus', resolvesOnRead: true,
+    title: (p) => `${p.name || 'Un colaborador nuevo'} se ha unido, invitado por ${p.inviter || 'otro colaborador'}`,
+    detail: () => 'Revisa sus módulos y asígnale cuentas.',
+    href: (n) => `/admin/team/partners/${n.entityKey}`,
+  },
+  member_added: {
+    icon: 'users', resolvesOnRead: true,
+    title: (p) => `${p.inviter || 'Tu jefe/a de ventas'} ha añadido a ${p.name || 'alguien'} como ${ROLE[p.role] ?? p.role}`,
+    href: () => '/admin/team',
+  },
+  story_shared: {
+    icon: 'trophy', resolvesOnRead: true,
+    title: (p) => `${p.author || 'El equipo'} ha documentado ${p.outcome === 'lost' ? 'una venta perdida' : 'un cierre ganado'}`,
+    detail: (p) => (p.title ? `«${p.title}»` : null),
+    href: () => '/admin/wins',
+  },
+};
+
+const FALLBACK: KindDef = { icon: 'info', resolvesOnRead: true, title: () => 'Novedad en tu espacio', href: () => '/admin/notifications' };
+
+const str = (p: Record<string, unknown>) => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, v == null ? '' : String(v)]));
+
+/** ¿Sigue pidiendo algo? (campana, email inmediato y resumen semanal usan la misma regla). */
+export function isOpen(n: Notification): boolean {
+  if (n.dismissedAt) return false;
+  const def = KINDS[n.kind] ?? FALLBACK;
+  if (n.severity === 'info' || def.resolvesOnRead) return !n.readAt;
+  return !n.resolvedAt;
+}
+
+export function renderNotification(n: Notification): NotificationView {
+  const def = KINDS[n.kind] ?? FALLBACK;
+  const p = str(n.params);
+  return { ...n, title: def.title(p), detail: def.detail?.(p) ?? null, href: def.href(n), icon: def.icon, open: isOpen(n) };
+}

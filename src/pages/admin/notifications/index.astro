@@ -1,0 +1,62 @@
+---
+/** Todos los avisos de la persona (docs/NOTIFICATIONS.md). También recibe los formularios de la campana. */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { relativeTime } from '~/lib/admin/format';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const n = admin.notifications;
+
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const action = String(f.get('action') ?? '');
+  if (action === 'dismiss') await n.dismiss(String(f.get('id') ?? ''));
+  else if (action === 'read-all') await n.markAllRead();
+  // Volver a donde estaba (solo rutas internas de la consola).
+  const back = String(f.get('back') ?? '');
+  return Astro.redirect(/^\/admin(\/|\?|$)/.test(back) && !back.startsWith('//') ? back : '/admin/notifications', 303);
+}
+
+const view = Astro.url.searchParams.get('ver') === 'todo' ? 'all' : 'open';
+const feed = await n.feed({ limit: 100, onlyOpen: view === 'open' });
+const emailOn = await n.emailPref();
+---
+<AdminLayout title="Avisos">
+  <PageHeader eyebrow="Tu actividad" title="Avisos" lede="Lo que necesita tu acción aparece primero. Lo informativo te llega en el resumen de los lunes, no suelto.">
+    {feed.items.some((x) => !x.readAt) && (
+      <form method="post"><input type="hidden" name="action" value="read-all" /><input type="hidden" name="back" value="/admin/notifications" />
+        <button class="co-btn co-btn--ghost" type="submit">Marcar todo como leído</button></form>
+    )}
+  </PageHeader>
+  <nav class="co-tabs mb-5" aria-label="Filtro" data-scroll-x>
+    <a class="co-tab" href="/admin/notifications" aria-current={view === 'open' ? 'page' : undefined}>Pendientes{feed.open ? ` · ${feed.open}` : ''}</a>
+    <a class="co-tab" href="/admin/notifications?ver=todo" aria-current={view === 'all' ? 'page' : undefined}>Todos</a>
+  </nav>
+  {feed.items.length === 0
+    ? <EmptyState kind="none" title={view === 'open' ? 'Todo al día' : 'Todavía no tienes avisos'} because="Te avisaremos aquí cuando alguien proponga algo para el playbook, documente un cierre o se sume al equipo." />
+    : <ul class="co-rows" data-testid="notifications">
+        {feed.items.map((x) => (
+          <li class:list={['co-row', x.open && x.severity === 'action' && 'co-row--attention']} data-testid="notification" data-kind={x.kind}>
+            <span class="co-row__lead"><Icon name={x.icon as never} /></span>
+            <a class="co-row__main !no-underline text-inherit" href={`/admin/notifications/${x.id}`}>
+              <span class:list={['co-row-title', !x.open && '!font-normal']}>{x.title}</span>
+              <span class="co-meta">{[x.detail, x.open && x.severity === 'action' ? 'Pide tu acción' : x.resolvedAt ? 'Resuelto' : null, relativeTime(x.createdAt)].filter(Boolean).join(' · ')}</span>
+            </a>
+            {!x.dismissedAt && (
+              <form method="post">
+                <input type="hidden" name="action" value="dismiss" /><input type="hidden" name="id" value={x.id} />
+                <input type="hidden" name="back" value={view === 'all' ? '/admin/notifications?ver=todo' : '/admin/notifications'} />
+                <button class="co-btn co-btn--quiet co-btn--sm" type="submit" aria-label={`Descartar: ${x.title}`}>Descartar</button>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>}
+  <p class="co-meta mt-6 flex items-center gap-2"><Icon name={emailOn ? 'mail' : 'bell-off'} size={14} />
+    {emailOn ? 'Te escribimos cuando algo pide tu acción y los lunes un resumen.' : 'Has desactivado los emails: solo verás los avisos aquí.'}
+    <a class="underline" href="/admin/account#avisos">Cambiar</a>
+  </p>
+</AdminLayout>

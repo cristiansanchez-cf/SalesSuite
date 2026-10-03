@@ -24,6 +24,8 @@ export const GET: APIRoute = async () => {
     database,
     problems: configProblems().filter(() => mode !== 'demo'),
     serviceRoleConfigured: Boolean(env('SUPABASE_SERVICE_ROLE_KEY')),
+    emailConfigured: Boolean(env('RESEND_API_KEY') && env('RESEND_FROM')),
+    cronConfigured: Boolean(env('CRON_SECRET')),
     version: env('APP_VERSION') ?? 'dev',
   };
   return Response.json(body, { status: body.status === 'ok' ? 200 : 503, headers: { 'cache-control': 'no-store' } });

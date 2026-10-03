@@ -78,7 +78,11 @@ export interface PartnerAccountRow {
   id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
-export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean }
+export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null }
+export interface NotificationRow {
+  id: string; tenant_id: string; user_id: string; kind: string; severity: 'action' | 'info'; entity_key: string; params: Record<string, unknown>;
+  created_at: string; read_at: string | null; dismissed_at: string | null; emailed_at: string | null; resolved_at: string | null;
+}
 
 export interface DemoDb {
   tenant: TenantRow[];
@@ -104,6 +108,7 @@ export interface DemoDb {
   partner_account: PartnerAccountRow[];
   situation_facet: SituationFacetRow[];
   win_story: WinStoryRow[];
+  notification: NotificationRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -176,6 +181,12 @@ export function freshDemoDb(): DemoDb {
     playbook_seen: [],
     partner_profile: [structuredClone(DEMO_PARTNER.profile)],
     partner_account: structuredClone(DEMO_PARTNER.accounts),
+    // El aporte pendiente de ejemplo ya avisó al admin (lo haría el trigger notify_contribution).
+    notification: pricePlay ? [{
+      id: '00000000-0000-4000-8000-0000009d0001', tenant_id: ENJOY, user_id: DEMO_USERS[1].id, kind: 'contribution_pending', severity: 'action',
+      entity_key: '00000000-0000-4000-8000-0000009c0002', params: { title: 'Añadir el coste por invitado', type: 'change', author: DEMO_USERS[0].display_name },
+      created_at: ago(1), read_at: null, dismissed_at: null, emailed_at: ago(1), resolved_at: null,
+    }] : [],
   };
 }
 

@@ -6,3 +6,6 @@ grant execute on all functions in schema public to service_role;
 -- Tras la migración de marca, authenticated solo puede actualizar ciertas columnas de tenant.
 revoke update on public.tenant from authenticated;
 grant update (name, default_locale, theme_tokens, brand) on public.tenant to authenticated;
+-- Avisos: solo se marcan como leídos o descartados (los crean triggers).
+revoke insert, update, delete on public.notification from authenticated;
+grant update (read_at, dismissed_at) on public.notification to authenticated;

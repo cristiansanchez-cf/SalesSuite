@@ -1,0 +1,47 @@
+---
+/**
+ * Campana junto al logo (docs/NOTIFICATIONS.md): lo que pide algo primero, descartar en un clic.
+ * Panel con la API nativa `popover` (capa superior: no lo recorta la barra lateral con scroll).
+ */
+import Icon from './Icon.astro';
+import { relativeTime } from '~/lib/admin/format';
+import type { NotificationFeed } from '~/lib/notify/service';
+
+interface Props { feed: NotificationFeed; id: string; back: string; testid?: string }
+const { feed, id, back, testid } = Astro.props;
+const label = feed.open ? `Avisos: ${feed.open} ${feed.open === 1 ? 'pendiente' : 'pendientes'}` : 'Avisos';
+---
+<button type="button" class="co-bell" popovertarget={id} aria-label={label} title={label} data-testid={testid}>
+  <Icon name="bell" size={18} />
+  {feed.open > 0 && <span class="co-bell__count" data-testid={testid ? `${testid}-count` : undefined}>{feed.open > 9 ? '9+' : feed.open}</span>}
+</button>
+<div id={id} popover class="co-bell__panel" data-testid={testid ? `${testid}-panel` : undefined}>
+  <div class="co-bell__head">
+    <h2 class="co-card-title">Avisos</h2>
+    {feed.items.some((n) => !n.readAt) && (
+      <form method="post" action="/admin/notifications">
+        <input type="hidden" name="action" value="read-all" /><input type="hidden" name="back" value={back} />
+        <button class="co-btn co-btn--quiet co-btn--sm" type="submit">Marcar todo como leído</button>
+      </form>
+    )}
+  </div>
+  {feed.items.length === 0
+    ? <p class="co-bell__empty">Todo al día. Te avisaremos aquí cuando algo necesite tu atención.</p>
+    : <ul class="co-bell__list">
+        {feed.items.map((n) => (
+          <li class:list={['co-bell__item', n.open && 'co-bell__item--open', n.open && n.severity === 'action' && 'co-bell__item--action']} data-testid="notification" data-kind={n.kind}>
+            <span class="co-row__lead"><Icon name={n.icon as never} size={16} /></span>
+            <a class="co-bell__text" href={`/admin/notifications/${n.id}`}>
+              <span class="co-bell__title">{n.title}</span>
+              {n.detail && <span class="co-meta block">{n.detail}</span>}
+              <span class="co-meta block">{n.open && n.severity === 'action' ? 'Pide tu acción · ' : ''}{relativeTime(n.createdAt)}</span>
+            </a>
+            <form method="post" action="/admin/notifications">
+              <input type="hidden" name="action" value="dismiss" /><input type="hidden" name="id" value={n.id} /><input type="hidden" name="back" value={back} />
+              <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={`Descartar: ${n.title}`} title="Descartar" data-testid="dismiss"><Icon name="x" size={14} /></button>
+            </form>
+          </li>
+        ))}
+      </ul>}
+  <a class="co-bell__all" href="/admin/notifications">Ver todos los avisos</a>
+</div>

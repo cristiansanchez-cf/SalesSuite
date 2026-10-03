@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { demoDb, type DemoDb, type SituationFacetRow, type WinStoryRow } from '../data/store';
 import type { EvidenceDb } from './db';
 import type { Facet, WinStory } from './types';
+import { demoEmitStory } from '../notify/db-demo';
 
 const toFacet = (r: SituationFacetRow): Facet => ({
   id: r.id, key: r.key, label: r.label, question: r.question, icon: r.icon, scope: r.scope, multi: r.multi, weight: r.weight,
@@ -41,6 +42,7 @@ export function demoEvidenceDb(getDb: () => DemoDb = demoDb): EvidenceDb {
       // Misma regla que el check de Postgres.
       if (row.outcome === 'won' && !row.what_worked?.trim()) throw new Error('violates check constraint: win_story what_worked');
       s.win_story = [...s.win_story.filter((x) => x.id !== row.id), row];
+      if (!cur) demoEmitStory(row);
       return row.id;
     },
     async setStoryStatus(id, status) {
