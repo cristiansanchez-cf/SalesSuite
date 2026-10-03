@@ -1,4 +1,5 @@
 import type { Contribution, Feedback, Play, PlayRevision, Progress, TargetType } from './types';
+import type { Persona, PersonaModule, Segment, SegmentModule } from './market';
 
 export type NewPlay = Omit<Play, 'id' | 'tenantId' | 'version' | 'createdAt' | 'updatedAt'> & { version?: number };
 export type PlayPatch = Partial<Omit<Play, 'id' | 'tenantId' | 'createdAt' | 'updatedAt'>>;
@@ -29,4 +30,17 @@ export interface PlaybookDb {
 
   getSeen(tenantId: string, userId: string): Promise<string | null>;
   setSeen(tenantId: string, userId: string, at: string): Promise<void>;
+
+  // ---- mapa de mercado (lectura: miembros; escritura: admins vía RLS)
+  listSegments(tenantId: string): Promise<Segment[]>;
+  /** Inserta (sin id) o actualiza (con id). Devuelve el id. */
+  saveSegment(tenantId: string, row: Omit<Segment, 'id'> & { id?: string }): Promise<string>;
+  listPersonas(tenantId: string): Promise<Persona[]>;
+  savePersona(tenantId: string, row: Omit<Persona, 'id'> & { id?: string }): Promise<string>;
+  deletePersona(id: string): Promise<boolean>;
+  listSegmentModules(tenantId: string): Promise<SegmentModule[]>;
+  /** fit === null y priority === null → elimina el encaje. */
+  setSegmentModule(tenantId: string, row: SegmentModule | { segmentId: string; moduleId: string; remove: true }): Promise<void>;
+  listPersonaModules(tenantId: string): Promise<PersonaModule[]>;
+  setPersonaModule(tenantId: string, row: PersonaModule | { personaId: string; moduleId: string; remove: true }): Promise<void>;
 }

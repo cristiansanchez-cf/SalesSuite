@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const fx = JSON.parse(readFileSync(`${root}supabase/seed/fixtures.json`, 'utf8'));
 
-const ORDER = ['tenant', 'domain', 'module', 'module_version', 'dossier', 'dossier_item', 'share_link', 'play'];
+const ORDER = ['tenant', 'domain', 'module', 'module_version', 'segment', 'persona', 'segment_module', 'persona_module', 'dossier', 'dossier_item', 'share_link', 'play', 'dossier_contact'];
 const JSON_COLS = new Set(['technique_refs', 'brand', 'theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification']);
 const DERIVED = new Set(['tenant_id']);
 const derivedTables = new Set(['module_version', 'dossier_item', 'share_link']);
@@ -23,7 +23,8 @@ const lit = (col, v) => {
     return `$json$${s}$json$::jsonb`;
   }
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  if (Array.isArray(v)) return `ARRAY[${v.map((x) => `'${String(x).replaceAll("'", "''")}'`).join(', ')}]::text[]`;
+  // Literal de array sin tipo ('{"a","b"}'): Postgres lo convierte a text[] o a arrays de enum según la columna.
+  if (Array.isArray(v)) return `'{${v.map((x) => `"${String(x).replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll("'", "''")}"`).join(',')}}'`;
   return `'${String(v).replaceAll("'", "''")}'`;
 };
 

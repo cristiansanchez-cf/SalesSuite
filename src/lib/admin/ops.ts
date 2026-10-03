@@ -18,6 +18,15 @@ export const dossierPatchSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/),
 }).partial().strict();
 
+const contactSchema = z.object({
+  name: z.string().trim().min(1, 'Pon un nombre (o el cargo)').max(120),
+  personaId: id.nullable().default(null),
+  stance: z.enum(['aliado', 'neutral', 'bloqueador', 'desconocido']).default('desconocido'),
+  email: z.string().trim().email().max(200).nullable().or(z.literal('').transform(() => null)).default(null),
+  phone: z.string().trim().max(40).regex(/^[+\d\s()-]*$/, 'teléfono').nullable().transform((v) => v || null).default(null),
+  notes: optText(1000).default(null),
+});
+
 export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('update'), patch: dossierPatchSchema }),
   z.object({ op: z.literal('addItem'), moduleVersionId: id, index: z.number().int().min(0).optional() }),
@@ -31,6 +40,11 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('createLink'), expiresAt: z.string().datetime({ offset: true }).nullable().optional() }),
   z.object({ op: z.literal('revokeLink'), linkId: id }),
   z.object({ op: z.literal('setOutcome'), outcome: z.enum(['open', 'won', 'lost']), note: optText(500).optional() }),
+  z.object({ op: z.literal('setSegment'), segmentId: id.nullable() }),
+  z.object({ op: z.literal('setNextStep'), text: optText(300), at: z.string().datetime({ offset: true }).nullable() }),
+  z.object({ op: z.literal('addContact'), contact: contactSchema }),
+  z.object({ op: z.literal('updateContact'), contactId: id, contact: contactSchema.partial() }),
+  z.object({ op: z.literal('removeContact'), contactId: id }),
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;

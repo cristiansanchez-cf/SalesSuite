@@ -8,7 +8,9 @@ import type { AdminDb } from '../admin/db';
 import { latestByModule, AdminError, type AdminService } from '../admin/service';
 import type { AdminSession, CatalogVersion } from '../admin/types';
 import type { PlaybookDb } from './db';
-import { changeInputSchema, playInputSchema, tipInputSchema, voteSchema } from './schema';
+import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema, voteSchema } from './schema';
+import { buildContext, type ContextBrief } from './context';
+import type { PersonaView, SegmentView } from './market';
 import { buildTalkTrack, type TalkTrack } from './talk-track';
 import {
   KIND_ORDER, KIND_LABEL, OBJECTION_LABEL, STAGE_LABEL,
@@ -210,11 +212,157 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     else await pdb.upsertFeedback(s.tenantId, { userId: s.userId, targetType: v.targetType, targetId: v.targetId, verdict: v.verdict, note: v.note ?? null, dossierId: v.dossierId ?? null });
   }
 
+  // ------------------------------------------------------------ mapa de mercado
+  async function loadMarket() {
+    const [segments, personas, segMods, perMods, catalog] = await Promise.all([
+      pdb.listSegments(s.tenantId), pdb.listPersonas(s.tenantId), pdb.listSegmentModules(s.tenantId),
+      pdb.listPersonaModules(s.tenantId), adb.listModules(s.tenantId),
+    ]);
+    const modName = new Map(catalog.map((m) => [m.id, m.name]));
+    const personaViews: PersonaView[] = personas
+      .map((p) => ({ ...p, angles: perMods.filter((a) => a.personaId === p.id).map((a) => ({ ...a, moduleName: modName.get(a.moduleId) ?? 'Módulo' })) }))
+      .sort((a, b) => a.position - b.position);
+    const views: SegmentView[] = segments
+      .filter((x) => x.status !== 'archived' || isAdmin)
+      .sort((a, b) => a.position - b.position)
+      .map((sg) => ({
+        ...sg,
+        personas: personaViews.filter((p) => p.segmentId === sg.id),
+        modules: segMods.filter((m) => m.segmentId === sg.id).map((m) => ({ ...m, moduleName: modName.get(m.moduleId) ?? 'Módulo' }))
+          .sort((a, b) => a.priority - b.priority),
+      }));
+    return { segments: views, personas: personaViews, moduleNames: modName };
+  }
+
+  async function market() {
+    const m = await loadMarket();
+    const { plays } = await load();
+    const off = plays.filter(official);
+    return m.segments.map((sg) => ({
+      ...sg,
+      playCount: off.filter((p) => p.segments.includes(sg.key) || p.personas.some((k) => sg.personas.some((x) => x.key === k))).length,
+    }));
+  }
+
+  async function segmentView(key: string) {
+    const { segments } = await loadMarket();
+    const sg = segments.find((x) => x.key === key);
+    if (!sg) throw new AdminError(404, 'Sector no encontrado');
+    const { plays, contributions } = await load();
+    const personaKeys = new Set(sg.personas.map((x) => x.key));
+    const forSeg = plays.filter((p) => official(p) && (p.segments.includes(key) || p.personas.some((k) => personaKeys.has(k))));
+    return {
+      segment: sg,
+      plays: forSeg.sort((a, b) => a.position - b.position),
+      byPersona: Object.fromEntries(sg.personas.map((x) => [x.key, forSeg.filter((p) => p.personas.includes(x.key))])),
+      tips: contributions.filter((c) => visibleTip(c) && forSeg.some((p) => p.id === c.playId)),
+    };
+  }
+
+  /** Encaje de un módulo: en qué sectores y qué le aporta a cada actor (ficha de venta del módulo). */
+  async function moduleFit(moduleId: string) {
+    const { segments } = await loadMarket();
+    return segments
+      .map((sg) => ({
+        segment: { key: sg.key, name: sg.name },
+        fit: sg.modules.find((m) => m.moduleId === moduleId) ?? null,
+        angles: sg.personas.flatMap((p) => p.angles.filter((a) => a.moduleId === moduleId).map((a) => ({ persona: p.name, role: p.role, angle: a.angle }))),
+      }))
+      .filter((x) => x.fit || x.angles.length);
+  }
+
+  async function saveSegment(input: unknown, id?: string): Promise<string> {
+    requireAdmin();
+    const v = parse(segmentInputSchema, input);
+    const segs = await pdb.listSegments(s.tenantId);
+    if (id && !segs.some((x) => x.id === id)) throw new AdminError(404, 'Sector no encontrado');
+    if (segs.some((x) => x.key === v.key && x.id !== id)) throw new AdminError(409, 'Ya existe un sector con esa clave');
+    const cur = segs.find((x) => x.id === id);
+    return pdb.saveSegment(s.tenantId, {
+      id, key: v.key, name: v.name, description: v.description ?? null, valueProp: v.valueProp ?? null, icp: v.icp ?? null,
+      disqualifiers: v.disqualifiers ?? null, buyingProcess: v.buyingProcess ?? null, dealSize: v.dealSize ?? null, salesCycle: v.salesCycle ?? null,
+      position: cur?.position ?? Math.max(0, ...segs.map((x) => x.position)) + 1024, status: v.status,
+    });
+  }
+
+  async function savePersona(input: unknown, id?: string): Promise<string> {
+    requireAdmin();
+    const v = parse(personaInputSchema, input);
+    const [segs, pers] = await Promise.all([pdb.listSegments(s.tenantId), pdb.listPersonas(s.tenantId)]);
+    if (!segs.some((x) => x.id === v.segmentId)) throw new AdminError(404, 'Sector no encontrado');
+    if (id && !pers.some((x) => x.id === id)) throw new AdminError(404, 'Actor no encontrado');
+    if (pers.some((x) => x.key === v.key && x.id !== id)) throw new AdminError(409, 'Ya existe un actor con esa clave');
+    const cur = pers.find((x) => x.id === id);
+    return pdb.savePersona(s.tenantId, {
+      id, segmentId: v.segmentId, key: v.key, name: v.name, role: v.role, goals: v.goals ?? null, pains: v.pains ?? null, kpis: v.kpis ?? null,
+      objections: v.objections, howToApproach: v.howToApproach ?? null, avoid: v.avoid ?? null, canHelp: v.canHelp ?? null, canBlock: v.canBlock ?? null,
+      position: cur?.position ?? Math.max(0, ...pers.map((x) => x.position)) + 1024,
+    });
+  }
+
+  async function deletePersona(id: string) {
+    requireAdmin();
+    wrote(await pdb.deletePersona(id));
+  }
+
+  async function setModuleFit(segmentId: string, moduleId: string, fit: string | null, priority: number | null) {
+    requireAdmin();
+    const [segs, mods] = await Promise.all([pdb.listSegments(s.tenantId), adb.listModules(s.tenantId)]);
+    if (!segs.some((x) => x.id === segmentId) || !mods.some((x) => x.id === moduleId)) throw new AdminError(404, 'Sector o módulo no encontrado');
+    if (priority === null) await pdb.setSegmentModule(s.tenantId, { segmentId, moduleId, remove: true });
+    else {
+      if (![1, 2, 3].includes(priority)) throw new AdminError(422, 'Prioridad 1, 2 o 3');
+      await pdb.setSegmentModule(s.tenantId, { segmentId, moduleId, fit: fit?.trim().slice(0, 1000) || null, priority });
+    }
+  }
+
+  async function setPersonaAngle(personaId: string, moduleId: string, angle: string | null) {
+    requireAdmin();
+    const [pers, mods] = await Promise.all([pdb.listPersonas(s.tenantId), adb.listModules(s.tenantId)]);
+    if (!pers.some((x) => x.id === personaId) || !mods.some((x) => x.id === moduleId)) throw new AdminError(404, 'Actor o módulo no encontrado');
+    const a = angle?.trim();
+    if (!a) await pdb.setPersonaModule(s.tenantId, { personaId, moduleId, remove: true });
+    else await pdb.setPersonaModule(s.tenantId, { personaId, moduleId, angle: a.slice(0, 1000) });
+  }
+
   // ------------------------------------------------------------ guion del dossier
+  async function account(state: Awaited<ReturnType<AdminService['getState']>>) {
+    const m = await loadMarket();
+    const segment = m.segments.find((x) => x.id === state.dossier.segmentId) ?? null;
+    return {
+      segment,
+      contacts: state.contacts.map((c) => ({ contact: c, persona: m.personas.find((p) => p.id === c.personaId) ?? null })),
+      segmentPersonas: segment?.personas ?? [],
+    };
+  }
+
   async function talkTrack(dossierId: string): Promise<TalkTrack> {
     const state = await deps.admin.getState(dossierId);
-    const { plays, contributions } = await load();
-    return buildTalkTrack(state, plays, contributions);
+    const [{ plays, contributions }, acc] = await Promise.all([load(), account(state)]);
+    return buildTalkTrack(state, plays, contributions, acc);
+  }
+
+  /** Contexto + petición para el Cerebro de Ventas (o Claude/ChatGPT) a partir de lo que ya sabe la app. */
+  async function contextBrief(input: unknown, opts: { publicOrigin?: string } = {}): Promise<ContextBrief> {
+    const v = parse(contextInputSchema, input);
+    if (v.messageType === 'objecion' && !v.objection) throw new AdminError(422, 'Elige qué objeción te han puesto');
+    const [m, { plays }] = await Promise.all([loadMarket(), load()]);
+    const state = v.dossierId ? await deps.admin.getState(v.dossierId) : null;
+    const contact = v.contactId ? state?.contacts.find((c) => c.id === v.contactId) ?? null : null;
+    if (v.contactId && !contact) throw new AdminError(404, 'Contacto no encontrado en ese dossier');
+    const persona = m.personas.find((p) => p.id === (contact?.personaId ?? v.personaId)) ?? null;
+    if (v.personaId && !contact && !persona) throw new AdminError(404, 'Actor no encontrado');
+    const segment = m.segments.find((x) => x.id === (v.segmentId ?? state?.dossier.segmentId ?? persona?.segmentId)) ?? null;
+    if (v.segmentId && !segment) throw new AdminError(404, 'Sector no encontrado');
+    const link = state?.dossier.status === 'published' ? state.links.find((l) => l.state === 'active') : undefined;
+    const tenant = await adb.getTenant(s.tenantId);
+    const pitch = plays.find((p) => official(p) && p.moduleId === null && p.kind === 'pitch');
+    return buildContext({
+      tenantName: tenant?.name ?? 'nuestra empresa', companyPitch: pitch?.body ?? null,
+      messageType: v.messageType, channel: v.channel, objection: v.objection ?? null, notes: v.notes ?? null,
+      segment, persona, contact, state, plays,
+      publicUrl: link && opts.publicOrigin ? `${opts.publicOrigin}/d/${link.token}` : null,
+    });
   }
 
   // ------------------------------------------------------------ líder (admin)
@@ -240,7 +388,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (p.key && plays.some((x) => x.key === p.key)) throw new AdminError(409, 'Ya existe una jugada con esa clave');
     const position = Math.max(0, ...plays.filter((x) => x.moduleId === p.moduleId).map((x) => x.position)) + 1024;
     const row = {
-      moduleId: p.moduleId, key: p.key ?? null, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments,
+      moduleId: p.moduleId, key: p.key ?? null, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
       title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
       position, status: p.status, authorId: s.userId, updatedBy: s.userId,
     };
@@ -258,7 +406,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (p.moduleId && !latest.has(p.moduleId)) throw new AdminError(404, 'Módulo no encontrado');
     if (p.key && plays.some((x) => x.key === p.key && x.id !== id)) throw new AdminError(409, 'Ya existe una jugada con esa clave');
     const next = {
-      moduleId: p.moduleId, key: p.key ?? cur.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments,
+      moduleId: p.moduleId, key: p.key ?? cur.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
       title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
       status: p.status, version: cur.version + 1, updatedBy: s.userId,
     };
@@ -356,20 +504,30 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   /** Exportación con formato de ficha del Cerebro de Ventas (para ingesta futura). */
   async function exportCards() {
     requireAdmin();
-    const { plays, contributions, latest } = await load();
+    const [{ plays, contributions, latest }, mk] = await Promise.all([load(), loadMarket()]);
     const card = (x: PlayView) => ({
       id: x.id, origen: 'oficial',
       modulo: x.moduleId ? latest.get(x.moduleId)?.moduleName ?? null : null,
       tipo: KIND_LABEL[x.kind], tecnica: x.title, guion: x.body,
       cuando_usarlo: x.whenToUse, por_que_funciona: x.whyItWorks,
       etapa: x.stage ? STAGE_LABEL[x.stage] : null, objecion: x.objection ? OBJECTION_LABEL[x.objection] : null,
-      segmentos: x.segments, referencias_cerebro: x.techniqueRefs,
+      segmentos: x.segments, actores: x.personas, referencias_cerebro: x.techniqueRefs,
       evidencia_equipo: { funciono: x.score.worked, no_funciono: x.score.didnt }, version: x.version, actualizada: x.updatedAt,
     });
     return {
       formato: 'salessuite.playbook/v1',
       tenant: s.tenantId,
       generado: now(),
+      mercado: mk.segments.filter((sg) => sg.status === 'official').map((sg) => ({
+        clave: sg.key, sector: sg.name, descripcion: sg.description, propuesta_de_valor: sg.valueProp, cliente_ideal: sg.icp,
+        descartar_si: sg.disqualifiers, proceso_de_compra: sg.buyingProcess, ticket: sg.dealSize, ciclo: sg.salesCycle,
+        modulos: sg.modules.map((m) => ({ modulo: m.moduleName, prioridad: m.priority, por_que_encaja: m.fit })),
+        actores: sg.personas.map((p) => ({
+          clave: p.key, actor: p.name, papel: p.role, quiere: p.goals, le_duele: p.pains, mide: p.kpis,
+          objeciones: p.objections.map((o) => OBJECTION_LABEL[o]), como_abordarle: p.howToApproach, evitar: p.avoid,
+          puede_ayudar: p.canHelp, puede_tumbarlo: p.canBlock, angulos: p.angles.map((a) => ({ modulo: a.moduleName, angulo: a.angle })),
+        })),
+      })),
       jugadas: plays.filter(official).map(card),
       aportes_equipo: contributions.filter((c) => c.type === 'tip' && c.status === 'shared').map((c) => ({
         id: c.id, origen: 'equipo', modulo: c.moduleId ? latest.get(c.moduleId)?.moduleName ?? null : null,
@@ -380,7 +538,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   return {
-    isAdmin, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen, shareTip, proposeChange, withdraw, vote, talkTrack,
+    isAdmin, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen,
+    market, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, vote, talkTrack,
     listAll, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };
 }

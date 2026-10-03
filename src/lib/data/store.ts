@@ -22,6 +22,7 @@ export interface DossierRow {
   status: DossierStatus; locale: string; price_mode: PriceModeRow; total_price: number | null; currency: string;
   theme_override: unknown; published_at?: string | null; created_at?: string; updated_at?: string;
   outcome?: 'open' | 'won' | 'lost'; outcome_note?: string | null; outcome_at?: string | null;
+  segment_id?: string | null; next_step?: string | null; next_step_at?: string | null;
 }
 export interface DossierItemRow {
   id: string; dossier_id: string; module_version_id: string; position: number; visible: boolean;
@@ -30,7 +31,7 @@ export interface DossierItemRow {
 export interface ShareLinkRow { id: string; dossier_id: string; token: string; is_active: boolean; expires_at: string | null; created_at?: string; revoked_at?: string | null }
 export interface PlayRow {
   id: string; tenant_id: string; module_id: string | null; key: string | null; kind: string; stage: string | null; objection: string | null;
-  segments: string[]; title: string; body: string; when_to_use: string | null; why_it_works: string | null; technique_refs: unknown[];
+  segments: string[]; personas?: string[]; title: string; body: string; when_to_use: string | null; why_it_works: string | null; technique_refs: unknown[];
   position: number; status: string; version: number; author_id: string | null; updated_by?: string | null; created_at?: string; updated_at?: string;
 }
 export interface PlayRevisionRow { id: string; tenant_id: string; play_id: string; version: number; snapshot: Record<string, unknown>; change_note: string | null; changed_by: string | null; contribution_id: string | null; created_at: string }
@@ -41,6 +42,20 @@ export interface ContributionRow {
 export interface FeedbackRow { tenant_id: string; user_id: string; target_type: string; target_id: string; verdict: string; note: string | null; dossier_id: string | null; updated_at: string }
 export interface ProgressRow { tenant_id: string; user_id: string; topic: string; completed_at: string }
 export interface SeenRow { tenant_id: string; user_id: string; seen_at: string }
+export interface SegmentRow {
+  id: string; tenant_id: string; key: string; name: string; description: string | null; value_prop: string | null; icp: string | null;
+  disqualifiers: string | null; buying_process: string | null; deal_size: string | null; sales_cycle: string | null; position: number; status: string;
+}
+export interface PersonaRow {
+  id: string; tenant_id: string; segment_id: string; key: string; name: string; role: string; goals: string | null; pains: string | null;
+  kpis: string | null; objections: string[]; how_to_approach: string | null; avoid: string | null; can_help: string | null; can_block: string | null; position: number;
+}
+export interface SegmentModuleRow { tenant_id: string; segment_id: string; module_id: string; fit: string | null; priority: number }
+export interface PersonaModuleRow { tenant_id: string; persona_id: string; module_id: string; angle: string }
+export interface DossierContactRow {
+  id: string; tenant_id: string; dossier_id: string; persona_id: string | null; name: string; stance: string;
+  email: string | null; phone: string | null; notes: string | null; position: number;
+}
 export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role }> }
 
 export interface DemoDb {
@@ -58,6 +73,11 @@ export interface DemoDb {
   play_feedback: FeedbackRow[];
   learning_progress: ProgressRow[];
   playbook_seen: SeenRow[];
+  segment: SegmentRow[];
+  persona: PersonaRow[];
+  segment_module: SegmentModuleRow[];
+  persona_module: PersonaModuleRow[];
+  dossier_contact: DossierContactRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -71,7 +91,8 @@ export const DEMO_USERS: DemoUser[] = [
 ];
 
 export function freshDemoDb(): DemoDb {
-  const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'>;
+  const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'
+    | 'segment' | 'persona' | 'segment_module' | 'persona_module' | 'dossier_contact'>;
   const now = new Date().toISOString();
   const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
   f.dossier.forEach((d) => { d.created_at ??= now; d.updated_at ??= now; d.published_at ??= d.status === 'published' ? now : null; });

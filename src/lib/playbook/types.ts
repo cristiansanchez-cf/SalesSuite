@@ -51,6 +51,8 @@ export interface Play {
   stage: Stage | null;
   objection: Objection | null;
   segments: string[];
+  /** Claves de actores a los que va dirigida (vacío = cualquiera). */
+  personas: string[];
   title: string;
   body: string;
   whenToUse: string | null;

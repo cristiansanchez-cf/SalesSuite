@@ -31,7 +31,12 @@ export type DossierDbPatch = DossierPatch & {
   outcome?: DossierRecord['outcome'];
   outcomeNote?: string | null;
   outcomeAt?: string | null;
+  segmentId?: string | null;
+  nextStep?: string | null;
+  nextStepAt?: string | null;
 };
+
+export type ContactInput = Omit<import('../playbook/market').DossierContact, 'id' | 'dossierId' | 'position'>;
 
 /**
  * Acceso a datos de la consola, ligado a UN usuario.
@@ -60,6 +65,15 @@ export interface AdminDb {
   listLinks(dossierIds: string[]): Promise<LinkRecord[]>;
   insertLink(dossierId: string, expiresAt: string | null): Promise<LinkRecord>;
   revokeLink(id: string): Promise<boolean>;
+
+  // ---- cuenta del dossier
+  listContacts(dossierIds: string[]): Promise<import('../playbook/market').DossierContact[]>;
+  insertContact(dossierId: string, row: ContactInput & { position: number }): Promise<string>;
+  updateContact(id: string, patch: Partial<ContactInput>): Promise<boolean>;
+  deleteContact(id: string): Promise<boolean>;
+  /** Existencia en el tenant (la demo no tiene FKs; en Supabase además lo garantizan las FKs compuestas). */
+  segmentExists(tenantId: string, segmentId: string): Promise<boolean>;
+  personaExists(tenantId: string, personaId: string): Promise<boolean>;
 
   // ---- gestión del tenant (la RLS exige admin en Supabase; el servicio también)
   getTenant(id: string): Promise<TenantSettings | null>;

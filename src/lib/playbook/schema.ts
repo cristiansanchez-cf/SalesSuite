@@ -19,7 +19,8 @@ export const playInputSchema = z.object({
   kind: z.enum(PLAY_KINDS),
   stage: z.enum(STAGES).nullable().optional(),
   objection: z.enum(OBJECTIONS).nullable().optional(),
-  segments: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,40}$/)).max(10).default([]),
+  segments: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,63}$/)).max(10).default([]),
+  personas: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,63}$/)).max(20).default([]),
   title: text(200).min(1, 'El título es obligatorio'),
   body: text(8000).default(''),
   whenToUse: optText(1000),
@@ -52,3 +53,59 @@ export const voteSchema = z.object({
   dossierId: uuid.nullable().optional(),
   note: optText(500),
 });
+
+// ---------------------------------------------------------------- mapa de mercado
+import { PERSONA_ROLES } from './market';
+
+const key = z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/, 'Clave: minúsculas, números y guiones');
+
+export const segmentInputSchema = z.object({
+  key,
+  name: text(80).min(1, 'Nombre obligatorio'),
+  description: optText(1000),
+  valueProp: optText(1000),
+  icp: optText(2000),
+  disqualifiers: optText(1000),
+  buyingProcess: optText(2000),
+  dealSize: optText(200),
+  salesCycle: optText(200),
+  status: z.enum(['official', 'draft', 'archived']).default('official'),
+});
+
+export const personaInputSchema = z.object({
+  segmentId: uuid,
+  key,
+  name: text(80).min(1, 'Nombre del actor obligatorio'),
+  role: z.enum(PERSONA_ROLES),
+  goals: optText(2000),
+  pains: optText(2000),
+  kpis: optText(1000),
+  objections: z.array(z.enum(OBJECTIONS)).max(7).default([]),
+  howToApproach: optText(2000),
+  avoid: optText(1000),
+  canHelp: optText(1000),
+  canBlock: optText(1000),
+});
+
+export const MESSAGE_TYPES = {
+  primer_contacto: { label: 'Primer contacto', etapa: 'Primer contacto', ask: 'el primer mensaje de contacto' },
+  tras_reunion: { label: 'Después de la reunión o demo', etapa: 'Seguimiento', ask: 'un mensaje de seguimiento tras la reunión, con el enlace a la propuesta' },
+  seguimiento: { label: 'Seguimiento: no ha respondido', etapa: 'Seguimiento', ask: 'un mensaje de seguimiento porque no ha respondido' },
+  objecion: { label: 'Responder a una objeción', etapa: 'Objeciones', ask: 'la respuesta a su objeción' },
+  cierre: { label: 'Pedir la decisión / cerrar', etapa: 'Cierre', ask: 'un mensaje para cerrar y pedir la decisión con una fecha concreta' },
+  reactivar: { label: 'Reactivar una cuenta fría', etapa: 'Seguimiento', ask: 'un mensaje para reactivar el contacto tras semanas sin hablar' },
+} as const;
+export type MessageType = keyof typeof MESSAGE_TYPES;
+export const CHANNELS = { whatsapp: 'WhatsApp', email: 'email', linkedin: 'LinkedIn', llamada: 'llamada (guion hablado)' } as const;
+
+export const contextInputSchema = z.object({
+  segmentId: uuid.nullable().optional(),
+  personaId: uuid.nullable().optional(),
+  dossierId: uuid.nullable().optional(),
+  contactId: uuid.nullable().optional(),
+  messageType: z.enum(Object.keys(MESSAGE_TYPES) as [MessageType, ...MessageType[]]).default('primer_contacto'),
+  channel: z.enum(Object.keys(CHANNELS) as [keyof typeof CHANNELS, ...(keyof typeof CHANNELS)[]]).default('whatsapp'),
+  objection: z.enum(OBJECTIONS).nullable().optional(),
+  notes: optText(1500),
+});
+export type ContextInput = z.infer<typeof contextInputSchema>;

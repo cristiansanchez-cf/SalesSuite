@@ -7,7 +7,7 @@ type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -18,6 +18,7 @@ const toDossier = (r: Row): DossierRecord => ({
   priceMode: r.price_mode, totalPrice: num(r.total_price), currency: r.currency,
   publishedAt: r.published_at, updatedAt: r.updated_at,
   outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
+  segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
 });
 
 const toItem = (r: Row): ItemRecord => {
@@ -87,6 +88,9 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       if (p.outcome !== undefined) patch.outcome = p.outcome;
       if (p.outcomeNote !== undefined) patch.outcome_note = p.outcomeNote;
       if (p.outcomeAt !== undefined) patch.outcome_at = p.outcomeAt;
+      if (p.segmentId !== undefined) patch.segment_id = p.segmentId;
+      if (p.nextStep !== undefined) patch.next_step = p.nextStep;
+      if (p.nextStepAt !== undefined) patch.next_step_at = p.nextStepAt;
       const rows = check(await sb.from('dossier').update(patch).eq('id', id).select(DOSSIER_COLS)) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },
@@ -146,6 +150,36 @@ export function supabaseAdminDb(sb: SupabaseClient): AdminDb {
       const rows = check(await sb.from('share_link').update({ is_active: false, revoked_at: new Date().toISOString() }).eq('id', id).select('id')) ?? [];
       return rows.length > 0;
     },
+
+    // ---- cuenta del dossier
+    async listContacts(ids) {
+      if (!ids.length) return [];
+      const rows = check(await sb.from('dossier_contact').select('id, dossier_id, persona_id, name, stance, email, phone, notes, position').in('dossier_id', ids)) ?? [];
+      return rows.map((c: Row) => ({ id: c.id, dossierId: c.dossier_id, personaId: c.persona_id, name: c.name, stance: c.stance, email: c.email, phone: c.phone, notes: c.notes, position: Number(c.position) }));
+    },
+    async insertContact(dossierId, r) {
+      const row = checkOne(await sb.from('dossier_contact').insert({
+        dossier_id: dossierId, persona_id: r.personaId, name: r.name, stance: r.stance, email: r.email, phone: r.phone, notes: r.notes, position: r.position,
+      }).select('id').single());
+      return row.id as string;
+    },
+    async updateContact(id, p) {
+      const patch: Row = {};
+      if (p.personaId !== undefined) patch.persona_id = p.personaId;
+      if (p.name !== undefined) patch.name = p.name;
+      if (p.stance !== undefined) patch.stance = p.stance;
+      if (p.email !== undefined) patch.email = p.email;
+      if (p.phone !== undefined) patch.phone = p.phone;
+      if (p.notes !== undefined) patch.notes = p.notes;
+      const rows = check(await sb.from('dossier_contact').update(patch).eq('id', id).select('id')) ?? [];
+      return rows.length > 0;
+    },
+    async deleteContact(id) {
+      const rows = check(await sb.from('dossier_contact').delete().eq('id', id).select('id')) ?? [];
+      return rows.length > 0;
+    },
+    async segmentExists(t, id) { return !!check(await sb.from('segment').select('id').eq('tenant_id', t).eq('id', id).maybeSingle()); },
+    async personaExists(t, id) { return !!check(await sb.from('persona').select('id').eq('tenant_id', t).eq('id', id).maybeSingle()); },
 
     // ---- gestión del tenant
     async getTenant(id) {

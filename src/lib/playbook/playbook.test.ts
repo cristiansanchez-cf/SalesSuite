@@ -14,3 +14,15 @@ playbookContract('demo', () => ({
   adminDbFor: () => demoAdminDb(),
   playbookDbFor: () => demoPlaybookDb(),
 }));
+
+import { marketContract } from './market.contract';
+marketContract('demo', () => ({
+  enforcesRls: false,
+  async reset() {
+    const db = resetDemoDb();
+    db.play_revision = [];
+    db.play_contribution = [];
+  },
+  adminDbFor: () => demoAdminDb(),
+  playbookDbFor: () => demoPlaybookDb(),
+}));

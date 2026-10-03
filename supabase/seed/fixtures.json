@@ -483,7 +483,10 @@
       "price_mode": "per_module",
       "total_price": null,
       "currency": "EUR",
-      "theme_override": null
+      "theme_override": null,
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "next_step": "Llamar a Laura para cerrar la fecha",
+      "next_step_at": "2026-10-10T16:00:00Z"
     },
     {
       "id": "00000000-0000-4000-8000-000000d05502",
@@ -498,7 +501,10 @@
       "price_mode": "none",
       "total_price": null,
       "currency": "EUR",
-      "theme_override": null
+      "theme_override": null,
+      "segment_id": null,
+      "next_step": null,
+      "next_step_at": null
     },
     {
       "id": "00000000-0000-4000-8000-000000d05503",
@@ -513,7 +519,10 @@
       "price_mode": "total",
       "total_price": 1500,
       "currency": "EUR",
-      "theme_override": null
+      "theme_override": null,
+      "segment_id": null,
+      "next_step": null,
+      "next_step_at": null
     },
     {
       "id": "00000000-0000-4000-8000-000000d05504",
@@ -528,7 +537,10 @@
       "price_mode": "total",
       "total_price": 2400,
       "currency": "EUR",
-      "theme_override": null
+      "theme_override": null,
+      "segment_id": null,
+      "next_step": null,
+      "next_step_at": null
     }
   ],
   "dossier_item": [
@@ -671,7 +683,8 @@
       "position": 1024,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0002",
@@ -690,7 +703,8 @@
       "position": 2048,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0003",
@@ -709,7 +723,8 @@
       "position": 3072,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0004",
@@ -728,7 +743,8 @@
       "position": 4096,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0005",
@@ -747,7 +763,8 @@
       "position": 5120,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0006",
@@ -781,7 +798,8 @@
       "position": 6144,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0007",
@@ -800,7 +818,8 @@
       "position": 7168,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0008",
@@ -819,7 +838,8 @@
       "position": 8192,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0009",
@@ -838,7 +858,8 @@
       "position": 9216,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0010",
@@ -859,7 +880,8 @@
       "position": 10240,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0011",
@@ -878,7 +900,8 @@
       "position": 11264,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0012",
@@ -897,7 +920,8 @@
       "position": 12288,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0013",
@@ -916,7 +940,8 @@
       "position": 13312,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0014",
@@ -935,7 +960,8 @@
       "position": 14336,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0015",
@@ -946,7 +972,7 @@
       "stage": "pitch_demo",
       "objection": null,
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "Un extra que vendes tú y te diferencia de la finca de al lado",
       "body": "La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene.",
@@ -956,7 +982,8 @@
       "position": 15360,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0016",
@@ -967,7 +994,7 @@
       "stage": "descubrimiento",
       "objection": null,
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala?",
       "body": "Si pierden bodas por \"diferenciación\", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces.",
@@ -977,7 +1004,8 @@
       "position": 16384,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0017",
@@ -988,7 +1016,7 @@
       "stage": "objeciones",
       "objection": "ya_tengo_proveedor",
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "\"Ya trabajamos con un DJ que hace cosas parecidas\"",
       "body": "Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos.",
@@ -998,7 +1026,8 @@
       "position": 17408,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0018",
@@ -1009,7 +1038,7 @@
       "stage": "negociacion",
       "objection": null,
       "segments": [
-        "locales"
+        "bodas"
       ],
       "title": "Margen para la sala",
       "body": "Precio a la sala por evento + PVP recomendado a los novios. La sala decide si lo regala (diferenciación) o lo cobra (margen). Ejemplo: coste 250 €, PVP 450 €.",
@@ -1019,7 +1048,8 @@
       "position": 18432,
       "status": "official",
       "version": 1,
-      "author_id": null
+      "author_id": null,
+      "personas": []
     },
     {
       "id": "00000000-0000-4000-8000-0000009a0019",
@@ -1038,7 +1068,652 @@
       "position": 19456,
       "status": "official",
       "version": 1,
+      "author_id": null,
+      "personas": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a0020",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "key": "noche-obj-dj",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "dj-residente"
+      ],
+      "title": "DJ residente: \"Esto me corta la sesión\"",
+      "body": "Él decide cuándo se lanza cada reto: Enjoy no interrumpe, le da munición. Propón probarlo una noche en los momentos que él elija.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "position": 20480,
+      "status": "official",
+      "version": 1,
       "author_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a0021",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "key": "noche-pitch-propietario",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [
+        "propietario-local"
+      ],
+      "title": "Para el dueño del local: más tiempo en pista, más caja",
+      "body": "Cada reto en pantalla mantiene a la gente en la pista (y en la barra) 10–15 minutos más. Ejemplo para validar con datos reales del local.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "position": 21504,
+      "status": "official",
+      "version": 1,
+      "author_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a0022",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "key": "fest-patrocinios",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [
+        "responsable-patrocinios",
+        "marca-patrocinadora"
+      ],
+      "title": "Que lo pague el patrocinador",
+      "body": "En festivales, véndelo como formato de activación para las marcas: el festival no paga, cobra. Prepara métricas de ejemplo (participaciones, datos captados).",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "position": 22528,
+      "status": "official",
+      "version": 1,
+      "author_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a0023",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": null,
+      "key": "seguimiento-48h",
+      "kind": "script",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "title": "Seguimiento a las 48 h de enviar el dossier",
+      "body": "Hola {prospect}, ¿pudisteis verlo juntos? Te dejo una idea concreta para {company}: [un detalle del dossier que encaje con lo que te contó]. ¿Te va bien el jueves a las 18:00 y lo cerramos?",
+      "when_to_use": "Si no han respondido 48 h después de enviar el enlace.",
+      "why_it_works": null,
+      "technique_refs": [],
+      "position": 23552,
+      "status": "official",
+      "version": 1,
+      "author_id": null
+    }
+  ],
+  "segment": [
+    {
+      "id": "00000000-0000-4000-8000-0000005e0001",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "bodas",
+      "name": "Bodas",
+      "description": "Novios que celebran su boda y las fincas/salas que la acogen.",
+      "value_prop": "El banquete se convierte en algo que los invitados hacen, no que miran: recuerdos compartidos sin descargar ninguna app.",
+      "icp": "- Bodas de 100+ invitados\n- Finca o sala con pantalla/proyector\n- Novios que buscan \"algo diferente\" y temen los tiempos muertos",
+      "disqualifiers": "Menos de 40 invitados, sin pantalla ni cobertura, o novios que quieren una boda muy clásica y sin interacción.",
+      "buying_process": "Deciden los dos novios, a menudo con la familia. La finca y el wedding planner prescriben (o vetan) proveedores. Suele cerrarse tras ver una demo.",
+      "deal_size": "300–900 € por boda (ejemplo)",
+      "sales_cycle": "2–8 semanas",
+      "position": 1024,
+      "status": "official"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005e0002",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "ocio-nocturno",
+      "name": "Locales de ocio nocturno",
+      "description": "Discotecas, pubs y salas con programación semanal.",
+      "value_prop": "Más tiempo en pista, más consumo y clientes que vuelven: el público interactúa con la pantalla y genera contenido para redes.",
+      "icp": "- Aforo 300+ y pantallas en sala\n- Noches temáticas o eventos semanales\n- Interés en captar datos de clientes",
+      "disqualifiers": "Locales sin pantallas o con público muy de paso (turismo puntual).",
+      "buying_process": "Decide el propietario/gerente. RRPP/marketing lo empuja; el DJ residente puede integrarlo o sabotearlo. Las marcas de bebida pueden cofinanciar.",
+      "deal_size": "Suscripción mensual (ejemplo: 150–400 €/mes)",
+      "sales_cycle": "1–4 semanas",
+      "position": 2048,
+      "status": "official"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005e0003",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "conciertos",
+      "name": "Conciertos",
+      "description": "Promotoras y salas de conciertos (giras y fechas sueltas).",
+      "value_prop": "Interacción del público con el artista y datos de asistentes para la promotora y las marcas.",
+      "icp": "- Salas de 500+ personas con pantalla\n- Giras con varias fechas\n- Patrocinadores activos",
+      "disqualifiers": "Conciertos íntimos o acústicos donde la pantalla distrae.",
+      "buying_process": "Decide la promotora; el manager del artista puede vetar por imagen; la marca patrocinadora puede pagar la activación.",
+      "deal_size": "500–3.000 € por fecha (ejemplo)",
+      "sales_cycle": "1–3 meses",
+      "position": 3072,
+      "status": "official"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005e0004",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "festivales",
+      "name": "Festivales",
+      "description": "Festivales de música con patrocinadores y zonas comunes.",
+      "value_prop": "Activaciones de marca medibles y experiencia en zonas comunes y entre conciertos.",
+      "icp": "- 5.000+ asistentes\n- Programa de patrocinios\n- Pantallas en escenarios o zonas comunes",
+      "disqualifiers": "Festivales sin patrocinio ni pantallas, o con conectividad muy limitada sin solución.",
+      "buying_process": "Dirección del festival decide; patrocinios lo vende a las marcas; producción técnica valida (y puede vetar).",
+      "deal_size": "3.000–20.000 € (ejemplo)",
+      "sales_cycle": "3–9 meses (se cierra antes de la temporada)",
+      "position": 4096,
+      "status": "official"
+    }
+  ],
+  "persona": [
+    {
+      "id": "00000000-0000-4000-8000-0000009e0001",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "key": "novios",
+      "name": "Novios",
+      "role": "decisor",
+      "goals": "Una boda que los invitados recuerden y en la que todos participen.",
+      "pains": "Tiempos muertos en el banquete, mesas que no se mezclan, invitados mayores que no participan.",
+      "kpis": null,
+      "objections": [
+        "precio",
+        "tiempo"
+      ],
+      "how_to_approach": "Reunión o videollamada con los DOS. Haz la demo en su propio móvil: que envíen una kiss-cam y la vean en pantalla.",
+      "avoid": "Tecnicismos y hablar de \"plataforma\". Hablar solo con uno de los dos.",
+      "can_help": "Si les encanta, lo enseñan a la finca y a sus amigos que se casan (referidos).",
+      "can_block": "Si no lo entienden en 2 minutos, lo descartan como \"otra cosa más que pagar\".",
+      "position": 1024
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0002",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "key": "coordinadora-finca",
+      "name": "Coordinador/a de la finca",
+      "role": "guardian",
+      "goals": "Que el día salga perfecto y sin problemas técnicos.",
+      "pains": "Proveedores externos que llegan tarde, ocupan espacio o fallan.",
+      "kpis": null,
+      "objections": [
+        "desconfianza",
+        "ya_tengo_proveedor"
+      ],
+      "how_to_approach": "Preséntate antes del evento, pásale la ficha técnica y ofrece montaje sin trabajo para su equipo.",
+      "avoid": "Saltártela hablando solo con los novios: lo vivirá como una imposición.",
+      "can_help": "Si confía en ti, te mete en su lista de proveedores recomendados (canal recurrente).",
+      "can_block": "Puede decir \"aquí no se puede montar\" y tumbarlo en un minuto.",
+      "position": 2048
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0003",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "key": "gerente-finca",
+      "name": "Gerente de la finca/sala",
+      "role": "decisor",
+      "goals": "Llenar fechas y diferenciarse de las fincas de alrededor.",
+      "pains": "Competencia en precio, bodas que se pierden contra otra finca.",
+      "kpis": "Bodas al año, ticket medio por boda.",
+      "objections": [
+        "precio",
+        "no_lo_necesito"
+      ],
+      "how_to_approach": "Con números: \"si ganas 3 bodas más al año por diferenciación, Enjoy se paga varias veces\". Propón una boda piloto.",
+      "avoid": "Venderle a los novios saltándote a la finca.",
+      "can_help": "Lo incluye en su pack de bodas: volumen recurrente.",
+      "can_block": "Prohíbe proveedores externos o exige exclusividad con los suyos.",
+      "position": 3072
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0004",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "key": "dj-boda",
+      "name": "DJ de la boda",
+      "role": "influenciador",
+      "goals": "Que la pista se llene y quedar como el que lo hizo posible.",
+      "pains": "Que otro proveedor le quite protagonismo o le complique el directo.",
+      "kpis": null,
+      "objections": [
+        "ya_tengo_proveedor",
+        "desconfianza"
+      ],
+      "how_to_approach": "Plantéalo como SU herramienta: él lanza los retos desde el micro. Llámale antes del evento.",
+      "avoid": "Venderlo como \"algo que anima la boda\" (eso es su trabajo).",
+      "can_help": "Lo anima en directo y dispara la participación.",
+      "can_block": "No cede pantalla ni micro, o lo ignora durante la fiesta.",
+      "position": 4096
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0005",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "key": "wedding-planner",
+      "name": "Wedding planner",
+      "role": "campeon",
+      "goals": "Sorprender a sus novios y diferenciar su servicio.",
+      "pains": "Repetir las mismas ideas en todas las bodas.",
+      "kpis": null,
+      "objections": [
+        "comparar"
+      ],
+      "how_to_approach": "Propón un acuerdo de recomendación y una demo para su cartera de novios.",
+      "avoid": "Tratarle como un intermediario más.",
+      "can_help": "Prescribe a varias parejas por temporada.",
+      "can_block": "Si una boda sale mal, no te vuelve a recomendar.",
+      "position": 5120
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0006",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "key": "propietario-local",
+      "name": "Propietario/gerente del local",
+      "role": "decisor",
+      "goals": "Más consumo por cliente y que vuelvan cada semana.",
+      "pains": "Noches flojas entre semana, competencia de otros locales.",
+      "kpis": "Caja por noche, ocupación, repetición.",
+      "objections": [
+        "precio",
+        "no_lo_necesito"
+      ],
+      "how_to_approach": "Visita por la tarde (nunca en plena noche) con datos de otro local y una demo en su pantalla.",
+      "avoid": "Llamarle un sábado por la noche; hablar de \"experiencia\" sin hablar de caja.",
+      "can_help": "Decide rápido si ve el retorno.",
+      "can_block": "El precio mensual si no ve el retorno en caja.",
+      "position": 6144
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0007",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "key": "rrpp-marketing",
+      "name": "RRPP / marketing del local",
+      "role": "campeon",
+      "goals": "Contenido para redes y base de datos de clientes.",
+      "pains": "No saber quién viene ni cómo volver a llamarlos.",
+      "kpis": "Seguidores, asistentes a eventos, base de datos.",
+      "objections": [
+        "no_decido_yo"
+      ],
+      "how_to_approach": "Enséñale el contenido que genera una noche y la captación de datos de asistentes.",
+      "avoid": "Darle todo el mérito al dueño delante de él.",
+      "can_help": "Lo defiende internamente y lo usa cada semana.",
+      "can_block": "Si no lo ve útil para redes, no lo empuja.",
+      "position": 7168
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0008",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "key": "dj-residente",
+      "name": "DJ residente",
+      "role": "guardian",
+      "goals": "Control total de la pista y de la sesión.",
+      "pains": "Interrupciones y cosas que cortan el ritmo.",
+      "kpis": null,
+      "objections": [
+        "desconfianza"
+      ],
+      "how_to_approach": "Habla con él ANTES de la demo con el dueño; que decida en qué momentos de la sesión se lanza cada reto.",
+      "avoid": "Imponérselo a través del dueño.",
+      "can_help": "Lo integra en la sesión y lo convierte en parte del show.",
+      "can_block": "Lo ignora o lo sabotea: sin él no hay participación.",
+      "position": 8192
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0009",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "key": "marca-bebidas",
+      "name": "Marca de bebidas patrocinadora",
+      "role": "pagador",
+      "goals": "Visibilidad y activaciones medibles en el local.",
+      "pains": "Activaciones caras sin datos de resultado.",
+      "kpis": "Impactos, participación, leads.",
+      "objections": [
+        "comparar",
+        "precio"
+      ],
+      "how_to_approach": "Propón una activación cofinanciada con el local: retos patrocinados con su marca en pantalla.",
+      "avoid": "Pedirle dinero sin enseñar métricas.",
+      "can_help": "Paga parte (o todo) el coste para el local.",
+      "can_block": "Si no hay datos, no repite.",
+      "position": 9216
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0010",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0003",
+      "key": "promotor",
+      "name": "Promotor/a",
+      "role": "decisor",
+      "goals": "Una experiencia diferencial y más ingresos por patrocinio.",
+      "pains": "Márgenes ajustados y no conocer a su público.",
+      "kpis": "Entradas vendidas, ingresos por patrocinio.",
+      "objections": [
+        "precio",
+        "tiempo"
+      ],
+      "how_to_approach": "Ofrece un piloto en una fecha con una marca que lo cofinancie.",
+      "avoid": "Pedirle compromiso para toda la gira de entrada.",
+      "can_help": "Lo extiende a la gira y a otros artistas.",
+      "can_block": "Si no hay patrocinio, el precio lo frena.",
+      "position": 10240
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0011",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0003",
+      "key": "manager-artista",
+      "name": "Manager del artista",
+      "role": "guardian",
+      "goals": "Proteger la imagen del artista y el show.",
+      "pains": "Cosas que distraen o mensajes inapropiados en pantalla.",
+      "kpis": null,
+      "objections": [
+        "desconfianza"
+      ],
+      "how_to_approach": "Enséñale la moderación previa y el control total de lo que sale en pantalla.",
+      "avoid": "Que se entere por el promotor el día del concierto.",
+      "can_help": "Si al artista le gusta, lo pide en otras fechas.",
+      "can_block": "Veto directo: \"esto no sale en nuestro show\".",
+      "position": 11264
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0012",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0003",
+      "key": "marca-patrocinadora",
+      "name": "Marca patrocinadora",
+      "role": "pagador",
+      "goals": "Visibilidad entre el público objetivo con métricas.",
+      "pains": "Logos en una lona que nadie mira.",
+      "kpis": "Impactos, participación, leads.",
+      "objections": [
+        "comparar"
+      ],
+      "how_to_approach": "Propuesta de activación con KPIs: participaciones, datos captados, contenido.",
+      "avoid": "Venderle \"visibilidad\" sin números.",
+      "can_help": "Paga la activación.",
+      "can_block": "Sin datos, no renueva.",
+      "position": 12288
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0013",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0004",
+      "key": "director-festival",
+      "name": "Dirección del festival",
+      "role": "decisor",
+      "goals": "Diferenciar el festival y aumentar ingresos.",
+      "pains": "Presupuesto cerrado meses antes.",
+      "kpis": "Asistentes, ingresos, prensa.",
+      "objections": [
+        "tiempo",
+        "precio"
+      ],
+      "how_to_approach": "Llega al menos 6 meses antes de la edición con un caso y una propuesta para patrocinios.",
+      "avoid": "Llegar con la temporada empezada.",
+      "can_help": "Lo convierte en seña de identidad del festival.",
+      "can_block": "Si llega tarde, no hay presupuesto.",
+      "position": 13312
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0014",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0004",
+      "key": "responsable-patrocinios",
+      "name": "Responsable de patrocinios",
+      "role": "campeon",
+      "goals": "Tener activaciones nuevas y medibles que vender a las marcas.",
+      "pains": "Marcas que no renuevan por falta de resultados.",
+      "kpis": "Ingresos por patrocinio, renovaciones.",
+      "objections": [
+        "no_decido_yo"
+      ],
+      "how_to_approach": "Dale un dossier pensado para que él se lo venda a sus marcas (con métricas de ejemplo).",
+      "avoid": "Competir con sus propios patrocinios.",
+      "can_help": "Lo vende a varias marcas: multiplica el acuerdo.",
+      "can_block": "Si no ve cómo venderlo, no lo mueve.",
+      "position": 14336
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009e0015",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0004",
+      "key": "produccion-tecnica",
+      "name": "Producción técnica",
+      "role": "guardian",
+      "goals": "Que nada técnico falle en directo.",
+      "pains": "Conectividad, pantallas compartidas, riesgos.",
+      "kpis": null,
+      "objections": [
+        "desconfianza"
+      ],
+      "how_to_approach": "Ficha técnica, requisitos de red y una prueba previa en el recinto.",
+      "avoid": "Prometer cosas técnicas sin haber visto el recinto.",
+      "can_help": "Facilita el montaje y la red.",
+      "can_block": "Veto técnico: \"no hay red\", \"la pantalla no es vuestra\".",
+      "position": 15360
+    }
+  ],
+  "segment_module": [
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "fit": "El módulo estrella: kiss-cam, dedicatorias y retos en el banquete.",
+      "priority": 1
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "module_id": "00000000-0000-4000-8000-00000000e103",
+      "fit": "Para la finca: lo incluye en su oferta y gana margen y diferenciación.",
+      "priority": 1
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "module_id": "00000000-0000-4000-8000-00000000e101",
+      "fit": "Portada personalizada con el nombre de los novios.",
+      "priority": 2
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0001",
+      "module_id": "00000000-0000-4000-8000-00000000e104",
+      "fit": "Cierra la propuesta con la cifra.",
+      "priority": 2
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "fit": "Retos y kiss-cam en pantalla durante la sesión.",
+      "priority": 1
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0002",
+      "module_id": "00000000-0000-4000-8000-00000000e104",
+      "fit": "Precio mensual claro.",
+      "priority": 2
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0003",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "fit": "Interacción en pantalla antes y entre canciones.",
+      "priority": 1
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "segment_id": "00000000-0000-4000-8000-0000005e0004",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "fit": "Retos y kiss-cam en zonas comunes y entre conciertos.",
+      "priority": 1
+    }
+  ],
+  "persona_module": [
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0001",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Convierte su banquete en un juego para todos: lo que más les preocupa (tiempos muertos) desaparece."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0001",
+      "module_id": "00000000-0000-4000-8000-00000000e101",
+      "angle": "Ven su propuesta con su nombre en portada: se sienten únicos."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0002",
+      "module_id": "00000000-0000-4000-8000-00000000e103",
+      "angle": "Un extra para la oferta de la finca que no le da trabajo: lo montamos y lo operamos nosotros."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0003",
+      "module_id": "00000000-0000-4000-8000-00000000e103",
+      "angle": "Margen por boda + argumento diferencial frente a la competencia."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0004",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Le da momentos para animar (retos, kiss-cam) que él controla desde el micro."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0005",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Una idea nueva que vender a sus parejas."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0006",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Más tiempo en pista = más consumo; contenido que trae a gente la semana siguiente."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0007",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Contenido generado por el público + datos de asistentes."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0008",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Momentos de interacción que él dispara cuando la pista lo pide."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0009",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Retos y kiss-cam con su marca, con datos de participación."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0010",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Datos del público y un activo que vender a patrocinadores."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0011",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Moderación previa: nada sale en pantalla sin aprobar."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0012",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Activación medible con su marca en el momento de máxima atención."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0013",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Experiencia diferencial + nuevo producto para vender a patrocinadores."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0014",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Un formato de activación con datos para renovar patrocinios."
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "persona_id": "00000000-0000-4000-8000-0000009e0015",
+      "module_id": "00000000-0000-4000-8000-00000000e102",
+      "angle": "Montaje cerrado, plan B sin conexión y prueba previa."
+    }
+  ],
+  "dossier_contact": [
+    {
+      "id": "00000000-0000-4000-8000-0000000c0001",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "persona_id": "00000000-0000-4000-8000-0000009e0001",
+      "name": "Laura (novia)",
+      "stance": "aliado",
+      "email": null,
+      "phone": null,
+      "notes": "Le encantó la kiss-cam en la demo.",
+      "position": 1024
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000c0002",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "persona_id": "00000000-0000-4000-8000-0000009e0002",
+      "name": "Marta (coordinadora Sala X)",
+      "stance": "neutral",
+      "email": null,
+      "phone": null,
+      "notes": null,
+      "position": 2048
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000c0003",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "dossier_id": "00000000-0000-4000-8000-000000d05501",
+      "persona_id": "00000000-0000-4000-8000-0000009e0004",
+      "name": "DJ Toni",
+      "stance": "bloqueador",
+      "email": null,
+      "phone": null,
+      "notes": "Cree que le quitamos protagonismo.",
+      "position": 3072
     }
   ]
 }

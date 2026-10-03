@@ -97,7 +97,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   async function getState(id: string): Promise<BuilderState> {
     const d = await load(id);
-    const [list, catalog, links] = await Promise.all([items(id), db.listCatalog(s.tenantId), db.listLinks([id])]);
+    const [list, catalog, links, contacts] = await Promise.all([items(id), db.listCatalog(s.tenantId), db.listLinks([id]), db.listContacts([id])]);
     const latest = latestByModule(catalog);
     const pub = toPublicDossier(d, list);
     const total = resolveTotal(pub);
@@ -131,6 +131,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         })),
       total,
       canEdit: canEdit(d),
+      contacts: contacts.sort((a, b) => a.position - b.position),
       publishBlockers: blockers,
     };
   }
@@ -167,6 +168,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       totalPrice: tpl?.totalPrice ?? null,
       currency: tpl?.currency ?? 'EUR',
     });
+    if (tpl?.segmentId) await db.updateDossier(d.id, { segmentId: tpl.segmentId });
     if (tpl) {
       const src = await items(tpl.id);
       const pos = rebalance(src.length);
@@ -278,6 +280,35 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         await assertWrote(await db.updateDossier(id, {
           outcome: op.outcome, outcomeNote: op.note ?? null, outcomeAt: op.outcome === 'open' ? null : now().toISOString(),
         }));
+        break;
+      }
+      case 'setSegment': {
+        if (op.segmentId && !(await db.segmentExists(s.tenantId, op.segmentId))) throw new AdminError(404, 'Sector no encontrado');
+        await assertWrote(await db.updateDossier(id, { segmentId: op.segmentId }));
+        break;
+      }
+      case 'setNextStep': {
+        if (op.at && !op.text) throw new AdminError(422, 'Describe el próximo paso (p. ej. «Llamar para cerrar fecha»)');
+        await assertWrote(await db.updateDossier(id, { nextStep: op.text ?? null, nextStepAt: op.at }));
+        break;
+      }
+      case 'addContact': {
+        const c = op.contact;
+        if (c.personaId && !(await db.personaExists(s.tenantId, c.personaId))) throw new AdminError(404, 'Actor no encontrado');
+        const existing = await db.listContacts([id]);
+        if (existing.length >= 30) throw new AdminError(422, 'Máximo 30 contactos por cuenta');
+        await db.insertContact(id, { ...c, position: Math.max(0, ...existing.map((x) => x.position)) + 1024 });
+        break;
+      }
+      case 'updateContact': {
+        if (!(await db.listContacts([id])).some((x) => x.id === op.contactId)) throw new AdminError(404, 'Contacto no encontrado');
+        if (op.contact.personaId && !(await db.personaExists(s.tenantId, op.contact.personaId))) throw new AdminError(404, 'Actor no encontrado');
+        await assertWrote(await db.updateContact(op.contactId, op.contact));
+        break;
+      }
+      case 'removeContact': {
+        if (!(await db.listContacts([id])).some((x) => x.id === op.contactId)) throw new AdminError(404, 'Contacto no encontrado');
+        await assertWrote(await db.deleteContact(op.contactId));
         break;
       }
       case 'revokeLink': {

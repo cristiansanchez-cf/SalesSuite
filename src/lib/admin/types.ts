@@ -29,6 +29,11 @@ export interface DossierRecord {
   /** Resultado comercial (para medir qué jugadas funcionan). */
   outcome: 'open' | 'won' | 'lost';
   outcomeNote: string | null;
+  /** Sector del prospecto (mapa de mercado). */
+  segmentId: string | null;
+  /** Seguimiento: próximo paso acordado y cuándo. */
+  nextStep: string | null;
+  nextStepAt: string | null;
 }
 
 export interface DossierSummary extends DossierRecord {
@@ -95,6 +100,8 @@ export interface BuilderState {
   links: Array<LinkRecord & { state: 'active' | 'revoked' | 'expired' }>;
   total: ResolvedPrice | null;
   canEdit: boolean;
+  /** Mapa de poder de la cuenta. */
+  contacts: import('../playbook/market').DossierContact[];
   /** Problemas que impiden publicar. */
   publishBlockers: string[];
 }

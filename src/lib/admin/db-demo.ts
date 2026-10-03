@@ -11,6 +11,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   priceMode: r.price_mode, totalPrice: r.total_price, currency: r.currency,
   publishedAt: r.published_at ?? null, updatedAt: r.updated_at ?? null,
   outcome: r.outcome ?? 'open', outcomeNote: r.outcome_note ?? null,
+  segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
 });
 
 const toLink = (l: ShareLinkRow): LinkRecord => ({
@@ -66,6 +67,9 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.outcome !== undefined) d.outcome = p.outcome;
       if (p.outcomeNote !== undefined) d.outcome_note = p.outcomeNote;
       if (p.outcomeAt !== undefined) d.outcome_at = p.outcomeAt;
+      if (p.segmentId !== undefined) d.segment_id = p.segmentId;
+      if (p.nextStep !== undefined) d.next_step = p.nextStep;
+      if (p.nextStepAt !== undefined) d.next_step_at = p.nextStepAt;
       d.updated_at = new Date().toISOString();
       return toDossier(d);
     },
@@ -75,6 +79,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       s.dossier = s.dossier.filter((d) => d.id !== id);
       s.dossier_item = s.dossier_item.filter((i) => i.dossier_id !== id);
       s.share_link = s.share_link.filter((l) => l.dossier_id !== id);
+      s.dossier_contact = s.dossier_contact.filter((c) => c.dossier_id !== id);
       return s.dossier.length < before;
     },
 
@@ -156,6 +161,42 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       l.revoked_at = new Date().toISOString();
       return true;
     },
+
+    // ---- cuenta del dossier
+    async listContacts(ids) {
+      return db().dossier_contact.filter((c) => ids.includes(c.dossier_id)).map((c) => ({
+        id: c.id, dossierId: c.dossier_id, personaId: c.persona_id, name: c.name, stance: c.stance as 'aliado',
+        email: c.email, phone: c.phone, notes: c.notes, position: Number(c.position),
+      }));
+    },
+    async insertContact(dossierId, r) {
+      const d = db().dossier.find((x) => x.id === dossierId)!;
+      const id = randomUUID();
+      db().dossier_contact.push({ id, tenant_id: d.tenant_id, dossier_id: dossierId, persona_id: r.personaId, name: r.name, stance: r.stance, email: r.email, phone: r.phone, notes: r.notes, position: r.position });
+      touch(dossierId);
+      return id;
+    },
+    async updateContact(id, p) {
+      const c = db().dossier_contact.find((x) => x.id === id);
+      if (!c) return false;
+      if (p.personaId !== undefined) c.persona_id = p.personaId;
+      if (p.name !== undefined) c.name = p.name;
+      if (p.stance !== undefined) c.stance = p.stance;
+      if (p.email !== undefined) c.email = p.email;
+      if (p.phone !== undefined) c.phone = p.phone;
+      if (p.notes !== undefined) c.notes = p.notes;
+      touch(c.dossier_id);
+      return true;
+    },
+    async deleteContact(id) {
+      const c = db().dossier_contact.find((x) => x.id === id);
+      if (!c) return false;
+      db().dossier_contact = db().dossier_contact.filter((x) => x.id !== id);
+      touch(c.dossier_id);
+      return true;
+    },
+    async segmentExists(t, id) { return db().segment.some((x) => x.tenant_id === t && x.id === id); },
+    async personaExists(t, id) { return db().persona.some((x) => x.tenant_id === t && x.id === id); },
 
     // ---- gestión del tenant
     async getTenant(id) {

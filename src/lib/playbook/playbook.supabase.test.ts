@@ -35,3 +35,17 @@ if (!URL || !SECRET || !DB_URL) {
     playbookDbFor: (u) => supabasePlaybookDb(client(u)),
   }));
 }
+
+import { marketContract } from './market.contract';
+if (URL && SECRET && DB_URL) {
+  marketContract('supabase (Postgres + PostgREST + RLS)', () => ({
+    enforcesRls: true,
+    async reset() {
+      execFileSync('psql', [DB_URL, '-q', '-v', 'ON_ERROR_STOP=1', '-o', '/dev/null',
+        '-c', 'truncate public.tenant cascade', '-f', 'supabase/seed.sql', '-f', 'supabase/tests/30_it_users.sql'],
+      { env: { ...process.env, PGOPTIONS: '-c client_min_messages=warning' } });
+    },
+    adminDbFor: (u) => supabaseAdminDb(client(u)),
+    playbookDbFor: (u) => supabasePlaybookDb(client(u)),
+  }));
+}
