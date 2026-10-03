@@ -47,6 +47,17 @@ async function login(b, email) {
   assert((await rep.textContent('[data-testid=terms-note]')).includes('70 % del paquete 1'), 'el comercial ve sus condiciones');
   if (OUT) await rep.screenshot({ path: `${OUT}/start-rep-terms.png`, fullPage: true });
 
+  // Historial: un cambio más (nueva nota) y el comercial puede ver lo que se acordó antes.
+  const rowH = admin.locator(`[data-testid=terms-${REP}]`);
+  if ((await rowH.getAttribute('open')) === null) await rowH.locator('summary').click();
+  await rowH.locator('textarea[name=note]').fill('75 % del paquete 1 desde noviembre');
+  await rowH.locator('button[type=submit]').click();
+  await admin.waitForLoadState();
+  assert((await admin.textContent(`[data-testid=terms-history-${REP}]`)).includes('70 % del paquete 1'), 'admin: historial con la versión anterior');
+  await rep.reload();
+  await rep.click('[data-testid=terms-history] summary');
+  assert((await rep.textContent('[data-testid=terms-history]')).includes('70 % del paquete 1'), 'comercial: historial de sus condiciones');
+
   // Volver a ocultarlas para no afectar a otros smokes.
   const row2 = admin.locator(`[data-testid=terms-${REP}]`);
   if ((await row2.getAttribute('open')) === null) await row2.locator('summary').click();

@@ -67,7 +67,7 @@ const es = {
   terms: {
     title: 'Condiciones acordadas', help: 'Cada persona las ve en «Empieza aquí» solo cuando las marques como acordadas.',
     show: 'Ya están acordadas: mostrárselas', note: 'En palabras sencillas', notePlaceholder: '70 % del paquete 1, 50 % del paquete 2',
-    save: 'Guardar', shown: 'Visibles', hidden: 'Sin acordar', saved: 'Condiciones guardadas.',
+    save: 'Guardar', shown: 'Visibles', hidden: 'Sin acordar', saved: 'Condiciones guardadas.', history: 'Historial', hiddenAt: 'Sin mostrar', planLabel: 'Plan',
   },
   plan: {
     step1: 'Paso 1', flatTitle: '¿Comisiones iguales en todo?',
@@ -208,7 +208,7 @@ export const commissionsMessages = defineMessages({
     terms: {
       title: 'Agreed terms', help: 'Each person sees them in “Start here” only once you mark them as agreed.',
       show: 'They are agreed: show them', note: 'In plain words', notePlaceholder: '70 % of package 1, 50 % of package 2',
-      save: 'Save', shown: 'Visible', hidden: 'Not agreed yet', saved: 'Terms saved.',
+      save: 'Save', shown: 'Visible', hidden: 'Not agreed yet', saved: 'Terms saved.', history: 'History', hiddenAt: 'Not shown', planLabel: 'Plan',
     },
     plan: {
       step1: 'Step 1', flatTitle: 'Same commission for everything?',
@@ -346,7 +346,7 @@ export const commissionsMessages = defineMessages({
     terms: {
       title: 'Condições combinadas', help: 'Cada pessoa as vê em “Comece aqui” só depois que você marcá-las como combinadas.',
       show: 'Já estão combinadas: mostrar', note: 'Em palavras simples', notePlaceholder: '70 % do pacote 1, 50 % do pacote 2',
-      save: 'Salvar', shown: 'Visíveis', hidden: 'Ainda não combinadas', saved: 'Condições salvas.',
+      save: 'Salvar', shown: 'Visíveis', hidden: 'Ainda não combinadas', saved: 'Condições salvas.', history: 'Histórico', hiddenAt: 'Não exibidas', planLabel: 'Plano',
     },
     plan: {
       step1: 'Passo 1', flatTitle: 'Comissão igual para tudo?',
@@ -484,7 +484,7 @@ export const commissionsMessages = defineMessages({
     terms: {
       title: '합의된 조건', help: '합의됨으로 표시해야 각자 “여기서 시작하세요”에서 볼 수 있습니다.',
       show: '합의 완료: 보여 주기', note: '쉬운 말로', notePlaceholder: '패키지 1은 70 %, 패키지 2는 50 %',
-      save: '저장', shown: '공개됨', hidden: '아직 합의 전', saved: '조건을 저장했습니다.',
+      save: '저장', shown: '공개됨', hidden: '아직 합의 전', saved: '조건을 저장했습니다.', history: '변경 기록', hiddenAt: '비공개', planLabel: '플랜',
     },
     plan: {
       step1: '1단계', flatTitle: '모든 판매에 같은 커미션을 적용할까요?',

@@ -67,7 +67,9 @@ export function serviceContract(name: string, env: () => ContractEnv) {
     test('lista solo dossiers del tenant del Host', async () => {
       const list = await svc(USERS.rep).listDossiers();
       expect(list.map((d) => d.tenantId).every((t) => t === ENJOY)).toBe(true);
-      expect(list.length).toBe(3);
+      // La demo añade propuestas de ejemplo para la analítica (docs/ANALYTICS.md): lo que importa es que no se cuele otro tenant.
+      expect(list.length).toBeGreaterThanOrEqual(3);
+      expect(list.some((d) => d.id === '00000000-0000-4000-8000-000000d05504')).toBe(false);
       const sala = list.find((d) => d.id === SALA_X)!;
       expect(sala.itemCount).toBe(4);
       expect(sala.activeLinks).toBe(1); // 1 activo + 1 expirado

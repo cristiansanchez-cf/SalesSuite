@@ -3,6 +3,7 @@
  * aplicando EXACTAMENTE los mismos gates que el RPC public.get_public_dossier.
  * Sirve para desarrollo local y para el plan de verificación sin infraestructura.
  */
+import { trackDemoView } from '../analytics/db-demo';
 import type { PublicRepository } from './index';
 import { toPublicDossier, toTenant, type PublicDossierRow } from './mappers';
 import { demoDb, type DemoDb } from './store';
@@ -48,6 +49,9 @@ export function demoRepository(): PublicRepository {
     async getPublicDossier(token, tenantId) {
       const row = getPublicDossierFromRows(demoDb(), token, tenantId);
       return row ? toPublicDossier(row) : null;
+    },
+    async trackView(token, tenantId, input) {
+      return trackDemoView(token, tenantId, input);
     },
   };
 }

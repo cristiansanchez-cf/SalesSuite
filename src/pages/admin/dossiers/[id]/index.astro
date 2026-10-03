@@ -8,6 +8,8 @@ import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { builderMessages } from '~/lib/i18n/messages/builder';
+import { analyticsMessages } from '~/lib/i18n/messages/analytics';
+import { relativeTime } from '~/lib/admin/format';
 import type { BuilderState } from '~/lib/admin/types';
 import { requestOrigin } from '~/lib/http';
 
@@ -48,6 +50,8 @@ try {
   throw e;
 }
 const d = state.dossier;
+const am = analyticsMessages[locale];
+const opened = d.status === 'published' ? (await admin.analytics.statsFor([d.id]).catch(() => new Map())).get(d.id) : undefined;
 const crm = perms.useAccounts;
 const linked = crm && d.accountId ? await admin.accounts.get(d.accountId).then((x) => x.account).catch(() => null) : null;
 const mine = crm && !d.accountId && state.canEdit ? await admin.accounts.mine() : [];
@@ -119,6 +123,13 @@ const origin = requestOrigin(Astro.request, Astro.url);
           </form>
         )}
     </div>
+  )}
+  {state.dossier.status === 'published' && (
+    <a class="co-inset mb-4 flex flex-wrap items-center gap-3 !py-2.5 hover:underline" href={`/admin/dossiers/${state.dossier.id}/analytics`} data-testid="dossier-analytics-link">
+      <Icon name={opened?.opens ? 'eye' : 'eye-off'} size={16} />
+      <span class="text-sm"><strong>{am.badge(opened?.opens ?? 0)}</strong>{opened?.lastAt ? ` · ${am.detail.last.toLowerCase()} ${relativeTime(opened.lastAt, undefined, locale)}` : ''}</span>
+      <span class="co-meta ml-auto">{am.nav} →</span>
+    </a>
   )}
   <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} />
 </AdminLayout>

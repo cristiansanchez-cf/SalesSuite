@@ -16,6 +16,7 @@ const es = {
   sale_to_confirm: { title: (p: P, money: string) => `${p.seller || 'Alguien'} declara una venta de ${money}${p.offer ? ` (${p.offer})` : ''}`, detail: 'Confírmala para que cuente en las comisiones.' },
   payout_ready: { title: (p: P, money: string) => `Tu liquidación de ${p.period}: ${money}`, detail: 'Está lista para pago.' },
   payout_paid: { title: (p: P, money: string) => `Pagado: ${money} de ${p.period}` },
+  dossier_opened: { title: (p: P) => `${p.company || 'Tu cliente'} ha abierto tu propuesta${p.title ? ` «${p.title}»` : ''}`, detail: 'Buen momento para escribirle: mira qué ha leído.' },
   story_shared: { title: (p: P) => `${p.author || 'El equipo'} ha documentado ${p.outcome === 'lost' ? 'una venta perdida' : 'un cierre ganado'}` },
   email: {
     hello: (name: string | null) => (name ? `Hola, ${name}:` : 'Hola:'),
@@ -51,6 +52,7 @@ export const notifyMessages = defineMessages({
     sale_to_confirm: { title: (p, money) => `${p.seller || 'Someone'} reports a ${money} sale${p.offer ? ` (${p.offer})` : ''}`, detail: 'Confirm it so it counts towards commissions.' },
     payout_ready: { title: (p, money) => `Your ${p.period} payout: ${money}`, detail: 'Ready to be paid.' },
     payout_paid: { title: (p, money) => `Paid: ${money} for ${p.period}` },
+    dossier_opened: { title: (p) => `${p.company || 'Your prospect'} opened your proposal${p.title ? ` “${p.title}”` : ''}`, detail: 'Good moment to follow up: see what they read.' },
     story_shared: { title: (p) => `${p.author || 'The team'} documented ${p.outcome === 'lost' ? 'a lost deal' : 'a won deal'}` },
     email: {
       hello: (name) => (name ? `Hi ${name},` : 'Hi,'),
@@ -83,6 +85,7 @@ export const notifyMessages = defineMessages({
     sale_to_confirm: { title: (p, money) => `${p.seller || 'Alguém'} declara uma venda de ${money}${p.offer ? ` (${p.offer})` : ''}`, detail: 'Confirme para que conte nas comissões.' },
     payout_ready: { title: (p, money) => `Seu fechamento de ${p.period}: ${money}`, detail: 'Pronto para pagamento.' },
     payout_paid: { title: (p, money) => `Pago: ${money} de ${p.period}` },
+    dossier_opened: { title: (p) => `${p.company || 'Seu cliente'} abriu sua proposta${p.title ? ` “${p.title}”` : ''}`, detail: 'Bom momento para escrever: veja o que leu.' },
     story_shared: { title: (p) => `${p.author || 'A equipe'} documentou ${p.outcome === 'lost' ? 'uma venda perdida' : 'um fechamento ganho'}` },
     email: {
       hello: (name) => (name ? `Olá, ${name}:` : 'Olá:'),
@@ -115,6 +118,7 @@ export const notifyMessages = defineMessages({
     sale_to_confirm: { title: (p, money) => `${p.seller || '누군가'}님이 ${money} 매출을 신고했습니다${p.offer ? ` (${p.offer})` : ''}`, detail: '커미션에 반영되도록 확인해 주세요.' },
     payout_ready: { title: (p, money) => `${p.period} 정산: ${money}`, detail: '지급 준비가 되었습니다.' },
     payout_paid: { title: (p, money) => `지급 완료: ${p.period} ${money}` },
+    dossier_opened: { title: (p) => `${p.company || '고객'}님이 제안서${p.title ? ` “${p.title}”` : ''}를 열었습니다`, detail: '연락하기 좋은 때입니다. 무엇을 읽었는지 확인하세요.' },
     story_shared: { title: (p) => `${p.author || '팀'}님이 ${p.outcome === 'lost' ? '실패한 거래' : '성사된 거래'}를 기록했습니다` },
     email: {
       hello: (name) => (name ? `${name}님, 안녕하세요.` : '안녕하세요.'),

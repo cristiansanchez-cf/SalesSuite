@@ -38,6 +38,10 @@ import type { NotifyDb } from '../notify/db';
 import { demoNotifyDb } from '../notify/db-demo';
 import { supabaseNotifyDb } from '../notify/db-supabase';
 import { createNotifyService, emptyNotifyDb, type NotifyService } from '../notify/service';
+import { createAnalyticsService, type AnalyticsService } from '../analytics/service';
+import { emptyAnalyticsDb, type AnalyticsDb } from '../analytics/db';
+import { demoAnalyticsDb } from '../analytics/db-demo';
+import { supabaseAnalyticsDb } from '../analytics/db-supabase';
 
 export const DEMO_COOKIE = 'ss_demo_user';
 
@@ -63,6 +67,8 @@ export interface AdminContext {
   accounts: AccountsService;
   /** Comisiones (docs/COMMISSIONS.md). */
   commissions: CommissionsService;
+  /** Analítica de dossiers: aperturas, tiempo y secciones (docs/ANALYTICS.md). */
+  analytics: AnalyticsService;
   /** Cliente Supabase con la sesión del usuario (solo modo supabase). */
   supabase: SupabaseClient | null;
 }
@@ -95,6 +101,8 @@ export interface Deps {
   accountsDb?: (userId: string) => AccountsDb;
   /** Comisiones (opcional). Recibe el usuario: en demo replica auth.uid(). */
   commissionsDb?: (userId: string) => CommissionsDb;
+  /** Visitas a dossiers (opcional). */
+  analyticsDb?: AnalyticsDb;
 }
 
 /** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
@@ -131,6 +139,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       accounts: createAccountsService(deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
         { admin: db, accounts: deps.accountsDb?.(user.id) ?? emptyAccountsDb }, session),
+      analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),
     },
   };
 }
@@ -146,14 +155,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

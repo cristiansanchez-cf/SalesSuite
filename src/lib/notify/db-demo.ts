@@ -29,6 +29,14 @@ export function notifyRoles(tenantId: string, roles: Role[], kind: string, sever
       read_at: null, dismissed_at: null, emailed_at: null, resolved_at: null });
   }
 }
+/** = parte final de public.track_dossier_view: un aviso al autor por propuesta y día. */
+export function notifyAuthorOpened(tenantId: string, userId: string, dossierId: string, params: Record<string, unknown>, at = new Date()) {
+  const s = db();
+  const entity = `${dossierId}:${at.toISOString().slice(0, 10)}`;
+  if (s.notification.some((n) => n.user_id === userId && n.tenant_id === tenantId && n.kind === 'dossier_opened' && n.entity_key === entity)) return;
+  s.notification.push({ id: randomUUID(), tenant_id: tenantId, user_id: userId, kind: 'dossier_opened', severity: 'info', entity_key: entity, params,
+    created_at: at.toISOString(), read_at: null, dismissed_at: null, emailed_at: null, resolved_at: null });
+}
 export function resolveNotifications(tenantId: string, kind: string, entity: string) {
   for (const n of db().notification) if (n.tenant_id === tenantId && n.kind === kind && n.entity_key === entity && !n.resolved_at) n.resolved_at = now();
 }

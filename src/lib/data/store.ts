@@ -116,6 +116,11 @@ export interface NotificationRow {
   created_at: string; read_at: string | null; dismissed_at: string | null; emailed_at: string | null; resolved_at: string | null;
 }
 
+export interface DossierViewRow {
+  id: string; tenant_id: string; dossier_id: string; link_id: string | null; visitor: string; device: 'mobile' | 'tablet' | 'desktop';
+  started_at: string; last_seen_at: string; duration_ms: number; max_scroll: number; sections: Record<string, number>;
+}
+
 export interface DemoDb {
   tenant: TenantRow[];
   domain: DomainRow[];
@@ -155,6 +160,8 @@ export interface DemoDb {
   connector: ConnectorRow[];
   coupon: CouponRow[];
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
+  dossier_view: DossierViewRow[];
+  member_conditions_history: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; plan: import('../commissions/types').ConditionsChange['plan']; changed_by: string | null; changed_at: string; seq: number }>;
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -209,6 +216,43 @@ function demoAccount(id: string, name: string, zone: string, p: Partial<AccountR
   };
 }
 
+// Analítica de ejemplo (docs/ANALYTICS.md): dos propuestas más del comercial y visitas realistas.
+const SALA_X = '00000000-0000-4000-8000-000000d05501';
+const CLUB_SOL = '00000000-0000-4000-8000-000000d05511';
+const MAR_AZUL = '00000000-0000-4000-8000-000000d05512';
+function demoAnalyticsDossiers(f: { dossier: DossierRow[]; dossier_item: DossierItemRow[]; share_link: ShareLinkRow[] }, rep: string, ago: (days: number) => string) {
+  const base = f.dossier.find((d) => d.id === SALA_X);
+  if (!base) return;
+  const items = f.dossier_item.filter((i) => i.dossier_id === SALA_X && i.visible);
+  const add = (id: string, n: number, title: string, company: string, contact: string, publishedDaysAgo: number, token: string) => {
+    f.dossier.push({ ...structuredClone(base), id, author_id: rep, title, prospect_company: company, prospect_name: contact, status: 'published',
+      published_at: ago(publishedDaysAgo), created_at: ago(publishedDaysAgo + 1), updated_at: ago(publishedDaysAgo), next_step: null, next_step_at: null, outcome: 'open' });
+    items.forEach((i, k) => f.dossier_item.push({ ...structuredClone(i), id: `00000000-0000-4000-8000-0000001${n}e00${k + 1}`, dossier_id: id }));
+    f.share_link.push({ id: `00000000-0000-4000-8000-0000005a010${n}`, dossier_id: id, token, is_active: true, expires_at: null, created_at: ago(publishedDaysAgo) });
+  };
+  add(CLUB_SOL, 1, 'Club Sol · Fiesta de verano', 'Club Sol', 'Marta', 4, 'demo-club-sol-4Hq8');
+  add(MAR_AZUL, 2, 'Hotel Mar Azul · Eventos de empresa', 'Hotel Mar Azul', 'Jorge', 6, 'demo-mar-azul-9Lw2');
+}
+function demoVisits(items: DossierItemRow[]): DossierViewRow[] {
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+  const secs = (dossier: string, ms: number[]) => Object.fromEntries(items.filter((i) => i.dossier_id === dossier && i.visible).map((i, k) => [i.id, ms[k] ?? 0]));
+  const v = (n: number, dossier: string, visitor: string, device: DossierViewRow['device'], h: number, dur: number, scroll: number, ms: number[]): DossierViewRow => ({
+    id: `00000000-0000-4000-8000-0000000f${String(n).padStart(4, '0')}`, tenant_id: ENJOY, dossier_id: dossier, link_id: null, visitor, device,
+    started_at: hoursAgo(h), last_seen_at: hoursAgo(h - dur / 3_600_000), duration_ms: dur, max_scroll: scroll, sections: secs(dossier, ms),
+  });
+  return [
+    // Sala X: la novia lo abre en el móvil, vuelve dos días después y lo reenvía (segundo visitante, en ordenador).
+    v(1, SALA_X, 'demo-visitor-laura', 'mobile', 140, 95_000, 70, [20_000, 45_000, 18_000, 12_000]),
+    v(2, SALA_X, 'demo-visitor-laura', 'mobile', 92, 210_000, 100, [15_000, 60_000, 30_000, 105_000]),
+    v(3, SALA_X, 'demo-visitor-padre', 'desktop', 30, 160_000, 100, [10_000, 40_000, 25_000, 85_000]),
+    v(4, SALA_X, 'demo-visitor-laura', 'mobile', 5, 45_000, 100, [3_000, 4_000, 3_000, 35_000]),
+    // Club Sol: abierta tres veces, la última hace 3 h, y sin próximo paso apuntado.
+    v(5, CLUB_SOL, 'demo-visitor-marta', 'desktop', 70, 120_000, 90, [25_000, 50_000, 30_000, 15_000]),
+    v(6, CLUB_SOL, 'demo-visitor-marta', 'mobile', 26, 60_000, 100, [5_000, 20_000, 10_000, 25_000]),
+    v(7, CLUB_SOL, 'demo-visitor-socio', 'desktop', 3, 180_000, 100, [10_000, 70_000, 40_000, 60_000]),
+  ];
+}
+
 export function freshDemoDb(): DemoDb {
   const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'
     | 'segment' | 'persona' | 'segment_module' | 'persona_module' | 'dossier_contact' | 'situation_facet' | 'win_story'>;
@@ -219,6 +263,7 @@ export function freshDemoDb(): DemoDb {
   f.play.forEach((p) => { p.created_at ??= ago(30); p.updated_at ??= ago(30); });
   f.win_story.forEach((w, i) => { w.created_at ??= ago(40 - i * 6); w.updated_at ??= w.created_at; });
   const REP = DEMO_USERS[0].id;
+  demoAnalyticsDossiers(f, REP, ago);
   const pricePlay = f.play.find((p) => p.key === 'empresa-obj-precio');
   const expPitch = f.play.find((p) => p.key === 'exp-pitch');
   return {
@@ -277,6 +322,8 @@ export function freshDemoDb(): DemoDb {
     api_key: [],
     connector: [],
     member_conditions: [],
+    member_conditions_history: [],
+    dossier_view: demoVisits(f.dossier_item),
     coupon: [
       { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },
       { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },

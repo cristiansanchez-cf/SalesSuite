@@ -13,8 +13,9 @@ import type { PublicDossier, TenantContext } from '~/lib/types';
 import { REGISTRY } from '~/modules/registry';
 import { resolveItem } from '~/modules/resolve';
 
-interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string }
-const { tenant, dossier, banner } = Astro.props;
+/** track: token del enlace público → mide la visita (docs/ANALYTICS.md). Las vistas previas internas no lo pasan. */
+interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string; track?: string }
+const { tenant, dossier, banner, track } = Astro.props;
 
 const total = resolveTotal(dossier);
 const blocks = await Promise.all(
@@ -66,4 +67,40 @@ const contacts = contactLinks(tenant.brand, dossier.title);
     )}
     {tenant.brand.legal && <p class="mt-3 text-xs">{tenant.brand.legal}</p>}
   </footer>
+  {track && (
+    <script is:inline data-track={track}>
+      (() => {
+        // Analítica de la propuesta: tiempo con la pestaña visible, hasta dónde se baja y tiempo en cada sección.
+        // Sin datos personales: un id aleatorio guardado en este navegador.
+        const token = document.currentScript.dataset.track;
+        const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 3) | 8).toString(16); }));
+        let visitor;
+        try { visitor = localStorage.getItem('ss_visitor'); if (!visitor) { visitor = uuid().replace(/-/g, ''); localStorage.setItem('ss_visitor', visitor); } } catch { visitor = uuid().replace(/-/g, ''); }
+        const viewId = uuid();
+        const w = Math.min(screen.width || innerWidth, innerWidth);
+        const device = w < 700 ? 'mobile' : w < 1024 && 'ontouchstart' in window ? 'tablet' : 'desktop';
+        const sections = {};
+        const inView = new Set();
+        let visibleMs = 0, last = performance.now(), scroll = 0;
+        const io = new IntersectionObserver((es) => es.forEach((e) => { const id = e.target.dataset.itemId; if (e.isIntersecting && e.intersectionRatio >= 0.3) inView.add(id); else inView.delete(id); }), { threshold: [0, 0.3, 0.6] });
+        document.querySelectorAll('[data-item-id]').forEach((n) => io.observe(n));
+        const measureScroll = () => { const h = document.documentElement; const p = Math.round((100 * (h.scrollTop + innerHeight)) / Math.max(h.scrollHeight, 1)); if (p > scroll) scroll = Math.min(100, p); };
+        const tick = () => { const t = performance.now(); const dt = Math.min(t - last, 5000); last = t; if (document.visibilityState === 'visible') { visibleMs += dt; inView.forEach((id) => { sections[id] = (sections[id] || 0) + dt; }); } };
+        const send = () => {
+          tick(); measureScroll();
+          const body = JSON.stringify({ token, viewId, visitor, device, durationMs: Math.round(visibleMs), scroll,
+            sections: Object.fromEntries(Object.entries(sections).map(([k, v]) => [k, Math.round(v)])) });
+          if (!(navigator.sendBeacon && navigator.sendBeacon('/api/track', new Blob([body], { type: 'application/json' })))) {
+            fetch('/api/track', { method: 'POST', body, keepalive: true, headers: { 'content-type': 'application/json' } }).catch(() => {});
+          }
+        };
+        addEventListener('scroll', measureScroll, { passive: true });
+        setInterval(tick, 1000);
+        setInterval(send, 15000);
+        addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') send(); });
+        addEventListener('pagehide', send);
+        send();
+      })();
+    </script>
+  )}
 </ThemedShell>

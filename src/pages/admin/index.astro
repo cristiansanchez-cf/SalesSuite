@@ -10,6 +10,7 @@ import PageHeader from '~/components/ui/PageHeader.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
+import { analyticsMessages } from '~/lib/i18n/messages/analytics';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
 
@@ -68,6 +69,11 @@ const list = all.filter((d) =>
   && (!status || d.status === status)
   && (!mine || d.authorId === session.userId)
   && (!q || [d.title, d.prospectName, d.prospectCompany].some((x) => x?.toLowerCase().includes(q))));
+// Aperturas del enlace público (docs/ANALYTICS.md).
+const opens = list.some((d) => d.status === 'published')
+  ? await Astro.locals.admin!.analytics.statsFor(list.filter((d) => d.status === 'published').map((d) => d.id)).catch(() => new Map())
+  : new Map();
+const am = analyticsMessages[locale];
 if (follow) list.sort((a, b) => (a.nextStepAt ?? '').localeCompare(b.nextStepAt ?? ''));
 const when = (iso: string) => f.date(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
@@ -133,6 +139,7 @@ const published = all.filter((d) => d.status === 'published').length;
                         </span>
                       )}
                     </span>
+                    {d.status === 'published' && <span class={opens.get(d.id)?.opens ? 'co-badge co-badge--signal' : 'co-badge'} data-testid="opens-badge">{am.badge(opens.get(d.id)?.opens ?? 0)}</span>}
                     <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
                     <span class="co-row__chevron"><Icon name="chevron-right" /></span>
                   </a>

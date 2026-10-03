@@ -156,8 +156,9 @@ Una interfaz `PaymentProvider` (crear enlace de pago con metadatos, recibir webh
 
 ### 5.5 Alcance por unidad (delegaciones)
 
-- `membership.unit_id` (null = toda la empresa).
+- **Una persona puede estar en varias delegaciones y en varias empresas** (decisión del 3/10): en lugar de `membership.unit_id`, una tabla `membership_unit (user, tenant, unit)`; sin filas = toda la empresa.
 - Una función `can_see(unit)` en SQL que usan todas las políticas.
+- Un vendedor de Enjoy y de Oquea entra una vez y cambia de empresa sin volver a identificarse (cookie compartida en `*.ventas.cofundo.io`).
 - El CEO ve todas las unidades consolidadas; el jefe de delegación, la suya.
 - Encaja con la RLS actual si se hace **antes** de que crezcan los datos.
 
@@ -229,4 +230,22 @@ Estado a 3 de octubre de 2026: ✅ Empieza aquí (`/admin/start`, condiciones op
 
 ## 9. Preguntas abiertas
 
-Las preguntas para decidir están al final de la respuesta del checkpoint. Las respuestas se anotarán aquí.
+Las preguntas para decidir están al final de la respuesta de cada checkpoint. Aquí quedan las respuestas.
+
+### Decisiones del 3 de octubre de 2026
+
+| Tema | Decisión | Qué implica |
+|---|---|---|
+| Una sola implementación de datos | **Sí**, con una prueba de un día primero | Resultado en `docs/SPIKE_DATA.md` |
+| Dossier frente a oportunidad | **Sí, separarlos.** Antes, una analítica de dossiers para ver cómo se usan | Hecho: analítica de dossiers (`docs/ANALYTICS.md`) |
+| Identidad con el Cerebro | Habrá usuarios solo del Cerebro, solo de Ventas y de los dos. Abierto a migrar ya | Propuesta: un proyecto Supabase `cofundo` como identidad común y un esquema por producto. Pendiente de las respuestas del agente del Cerebro (`docs/PREGUNTAS_CEREBRO.md`) |
+| Historial de condiciones | **Sí**, registrado y accesible, no escondido ni a la vista todo el rato | Hecho: historial automático y desplegable en «Empieza aquí» y en Comisiones → Plan |
+| Primeros vendedores | Amrit (Enjoy · conciertos y artistas), Ángel (Enjoy · Results) y Uyong (Oquea · Corea, empezando por el QR gratuito). Emails más adelante | Falta el espacio de Oquea y el catálogo real de cada uno |
+| Delegaciones y empresas | Un vendedor puede estar en **varias delegaciones y varias empresas**. Los vendedores pueden acabar vendiendo también este software | `membership_unit` (§5.5) y acceso único entre empresas |
+| Stripe | **Una cuenta por empresa.** Importar el histórico para tener el registro completo. Atribución del vendedor con un identificador en el enlace de pago | §5.4: conexión por empresa, importación inicial y `metadata.seller` en los enlaces |
+| LTV, CAC y vida media | Calcular todo lo que se pueda **automáticamente**. Los parámetros manuales son opcionales; las startups probablemente no los sepan | Las cifras salen de los datos; un campo vacío dice «aún no lo sabemos» |
+| Gastos por vendedor | Cofundo empieza a usar **Holded** | Conector de Holded como primera fuente de gastos (CSV como respaldo) |
+| WhatsApp | La integración más rápida y sencilla, con coste razonable: **API oficial de Meta** | Cloud API de Meta con plantillas aprobadas para los avisos |
+| Cerebro de Ventas | Lo explicará su propio agente | Preguntas enviadas: `docs/PREGUNTAS_CEREBRO.md` |
+| Validación | Primero «Empieza aquí» y el acceso con código | Prueba guiada en `docs/PUESTA_EN_MARCHA.md` §G |
+| Dominio | Subdominio de Cofundo | `*.ventas.cofundo.io` y `demo.ventas.cofundo.io` (`docs/PUESTA_EN_MARCHA.md`) |

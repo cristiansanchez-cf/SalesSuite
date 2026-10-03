@@ -9,3 +9,6 @@ grant update (name, default_locale, theme_tokens, brand) on public.tenant to aut
 -- Avisos: solo se marcan como leídos o descartados (los crean triggers).
 revoke insert, update, delete on public.notification from authenticated;
 grant update (read_at, dismissed_at) on public.notification to authenticated;
+-- Historial de condiciones y visitas a dossiers: solo los escriben triggers y RPC.
+revoke insert, update, delete on public.member_conditions_history from authenticated;
+revoke insert, update, delete on public.dossier_view from authenticated;

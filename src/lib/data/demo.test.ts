@@ -41,4 +41,9 @@ describe('resolución de tenant', () => {
     expect((await resolveTenant(repo, 'localhost:4321', { devTenantSlug: 'enjoy' }))?.slug).toBe('enjoy');
     expect(await resolveTenant(repo, 'evil.example.com', { devTenantSlug: 'enjoy' })).toBeNull();
   });
+
+  test('demo pública (DEMO_MODE=1): cualquier host sirve el espacio de demo', async () => {
+    clearTenantCache();
+    expect((await resolveTenant(repo, 'demo-ventas.cofundo.io', { devTenantSlug: 'enjoy', demoAnyHost: true }))?.slug).toBe('enjoy');
+  });
 });

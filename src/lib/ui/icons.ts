@@ -3,13 +3,15 @@
  * Un único sitio: añadir un icono = una línea aquí. Se guardan solo los trazos internos del SVG.
  */
 import {
-  FileText, Store, GraduationCap, MessageSquareText, Trophy, BookOpen, Map, Boxes, Users, Palette, WandSparkles, Settings, ChevronRight, ChevronDown, ChevronLeft, Plus, Trash2, LogOut, Link, Copy, Eye, EyeOff, Send, Check, X, ArrowUp, ArrowDown, GripVertical, Search, Clock, TriangleAlert, Lock, UserPlus, Pencil, Archive, RotateCcw, ExternalLink, Printer, Building2, User, Globe, Brain, Target, Heart, Zap, Music, Waves, Monitor, PartyPopper, Mic, Briefcase, Handshake, Ban, ShieldAlert, Wallet, Crown, Megaphone, Smile, ChartColumn, Compass, MapPin, Tag, CircleHelp, Lightbulb, Download, Upload, Image, Menu, CircleCheck, CircleX, Info, Sparkles, Ship, Hotel, Utensils, Ticket, Mountain, Fish, Anchor, Wine, Calendar, Star, Flag, Scale, HeartHandshake, Gauge, Repeat, Layers, Filter, KeyRound, Mail, Phone, ListChecks, Route, Camera, Speaker, Gift, Percent, Bell, BellOff,
+  FileText, Store, GraduationCap, MessageSquareText, Trophy, BookOpen, Map, Boxes, Users, Palette, WandSparkles, Settings, ChevronRight, ChevronDown, ChevronLeft, Plus, Trash2, LogOut, Link, Copy, Eye, EyeOff, Send, Check, X, ArrowUp, ArrowDown, GripVertical, Search, Clock, TriangleAlert, Lock, UserPlus, Pencil, Archive, RotateCcw, ExternalLink, Printer, Building2, User, Globe, Brain, Target, Heart, Zap, Music, Waves, Monitor, PartyPopper, Mic, Briefcase, Handshake, Ban, ShieldAlert, Wallet, Crown, Megaphone, Smile, ChartColumn, Compass, MapPin, Tag, CircleHelp, Lightbulb, Download, Upload, Image, Menu, CircleCheck, CircleX, Info, Sparkles, Ship, Hotel, Utensils, Ticket, Mountain, Fish, Anchor, Wine, Calendar, Star, Flag, Scale, HeartHandshake, Gauge, Repeat, Layers, Filter, KeyRound, Mail, Phone, ListChecks, Route, Camera, Speaker, Gift, Percent, Bell, BellOff, Smartphone, Tablet,
 } from 'lucide-static';
 
 const inner = (svg: string) => svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').trim();
 
 export const ICONS = {
   'file-text': inner(FileText),
+  'smartphone': inner(Smartphone),
+  'tablet': inner(Tablet),
   'store': inner(Store),
   'graduation-cap': inner(GraduationCap),
   'message-square-text': inner(MessageSquareText),

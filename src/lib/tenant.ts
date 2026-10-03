@@ -13,11 +13,12 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 /**
  * Host → tenant (tabla `domain`). Fallback a DEV_TENANT_SLUG solo para hosts locales,
  * nunca para un dominio público no mapeado (eso sería servir la marca equivocada).
+ * Excepción: la demo pública (DEMO_MODE=1, datos de prueba en memoria) responde en cualquier host.
  */
 export async function resolveTenant(
   repo: PublicRepository,
   rawHost: string,
-  opts: { devTenantSlug?: string; now?: number } = {},
+  opts: { devTenantSlug?: string; now?: number; demoAnyHost?: boolean } = {},
 ): Promise<TenantContext | null> {
   const host = normalizeHost(rawHost);
   const now = opts.now ?? Date.now();
@@ -25,7 +26,7 @@ export async function resolveTenant(
   if (hit && now - hit.at < TTL_MS) return hit.value;
 
   let value = host ? await repo.resolveTenantByHost(host) : null;
-  if (!value && opts.devTenantSlug && LOCAL_HOSTS.has(host)) value = await repo.resolveTenantBySlug(opts.devTenantSlug);
+  if (!value && opts.devTenantSlug && (LOCAL_HOSTS.has(host) || opts.demoAnyHost)) value = await repo.resolveTenantBySlug(opts.devTenantSlug);
 
   cache.set(host, { at: now, value });
   return value;

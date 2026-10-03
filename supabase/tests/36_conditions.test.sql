@@ -42,6 +42,18 @@ do $$ begin
 exception when insufficient_privilege then null; end $$;
 reset role;
 
+-- Historial: cada cambio quedó registrado con el plan que aplicaba; el comercial no puede escribirlo.
+select pg_temp.assert((select count(*) from public.member_conditions_history where user_id = '11111111-1111-4111-8111-111111111111') >= 1, 'historial del comercial');
+select pg_temp.assert((select plan->>'name' from public.member_conditions_history where user_id = '55555555-5555-4555-8555-555555555555' order by changed_at desc limit 1) = 'Colaboradores', 'foto del plan del colaborador');
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
+select pg_temp.assert((select count(*) from public.member_conditions_history where user_id <> '11111111-1111-4111-8111-111111111111') = 0, 'solo ve su historial');
+do $$ begin
+  insert into public.member_conditions_history (tenant_id, user_id, visible) values ('00000000-0000-4000-8000-000000000e01', '11111111-1111-4111-8111-111111111111', true);
+  raise exception 'ASSERT FAILED: el comercial escribe su historial';
+exception when insufficient_privilege then null; end $$;
+reset role;
+delete from public.member_conditions_history;
 delete from public.member_conditions;
 delete from public.commission_plan_member;
 delete from public.commission_plan;

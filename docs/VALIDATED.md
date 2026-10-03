@@ -19,5 +19,6 @@ Método (docs/FOUNDATIONS.md §7): cuando el fundador prueba un recorrido y dice
 | Zonas y cuentas (reserva, bloqueo, conflictos) | `scripts/smoke-accounts.cjs`, `supabase/tests/33_accounts.test.sql` | Pendiente | |
 | Comisiones (plan, venta declarada, liquidación, API, cupones) | `scripts/smoke-commissions.cjs`, `src/lib/commissions/*.test.ts`, `supabase/tests/34_commissions.test.sql` | Pendiente | |
 | Idiomas | `scripts/smoke-i18n.cjs` | Pendiente | |
-| Empieza aquí (onboarding del vendedor) | `scripts/smoke-start.cjs` | Pendiente | |
+| Empieza aquí (onboarding del vendedor) e historial de condiciones | `scripts/smoke-start.cjs`, `supabase/tests/36_conditions.test.sql`, `src/lib/commissions/commissions.contract.ts` | Pendiente | Prueba guiada: docs/PUESTA_EN_MARCHA.md §G |
+| Analítica de dossiers (aperturas, secciones, aviso al autor) | `scripts/smoke-analytics.cjs`, `src/lib/analytics/analytics.test.ts`, `supabase/tests/37_dossier_views.test.sql` | Pendiente | |
 | Móvil sin desbordes | `scripts/smoke-mobile.cjs` | Pendiente | |

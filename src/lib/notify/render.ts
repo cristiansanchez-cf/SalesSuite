@@ -23,6 +23,7 @@ export const KINDS: Record<string, KindDef> = {
   payout_ready: { icon: 'wallet', resolvesOnRead: true, href: () => '/admin/commissions' },
   payout_paid: { icon: 'circle-check', resolvesOnRead: true, href: () => '/admin/commissions' },
   story_shared: { icon: 'trophy', resolvesOnRead: true, href: () => '/admin/wins' },
+  dossier_opened: { icon: 'eye', resolvesOnRead: true, href: (n) => `/admin/dossiers/${String(n.params.dossierId ?? n.entityKey.split(':')[0])}/analytics` },
 };
 
 const FALLBACK: KindDef = { icon: 'info', resolvesOnRead: true, href: () => '/admin/notifications' };
@@ -42,6 +43,7 @@ function texts(n: Notification, locale: Locale): { title: string; detail: string
     case 'sale_to_confirm': return { title: m.sale_to_confirm.title(p, money), detail: m.sale_to_confirm.detail };
     case 'payout_ready': return { title: m.payout_ready.title(p, money), detail: m.payout_ready.detail };
     case 'payout_paid': return { title: m.payout_paid.title(p, money), detail: null };
+    case 'dossier_opened': return { title: m.dossier_opened.title(p), detail: m.dossier_opened.detail };
     case 'story_shared': return { title: m.story_shared.title(p), detail: p.title ? `«${p.title}»` : null };
     default: return { title: m.fallback, detail: null };
   }

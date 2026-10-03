@@ -207,6 +207,24 @@ export function commissionsContract(name: string, env: () => CommissionsEnv) {
       expect((await rep.commissions.myConditions()).visible).toBe(false);
     });
 
+    test('historial de condiciones: cada cambio y cada cambio de plan quedan registrados', async () => {
+      const admin = await ctx(U.admin);
+      const dj = await ctx(U.dj);
+      await admin.commissions.setFlat(30);
+      await admin.commissions.setConditions(U.dj.id, { visible: false, note: 'Borrador: 25 %' });
+      await admin.commissions.setConditions(U.dj.id, { visible: true, note: '70 % del paquete 1' });
+      await admin.commissions.setConditions(U.dj.id, { visible: true, note: '70 % del paquete 1' }); // sin cambios: no duplica
+      const colab = await admin.commissions.savePlan({ name: 'Colaboradores', rules: [{ label: '20 %', pay: { type: 'percent', pct: 20 } }] });
+      await admin.commissions.assignPlan(U.dj.id, colab);
+      const all = await admin.commissions.conditionsHistory(U.dj.id);
+      expect(all.map((h) => [h.visible, h.note, h.plan?.name])).toEqual([
+        [true, '70 % del paquete 1', 'Colaboradores'], [true, '70 % del paquete 1', 'General'], [false, 'Borrador: 25 %', 'General'],
+      ]);
+      // El vendedor ve lo acordado, no los borradores; nadie más que admins y jefes/as ve el de otros.
+      expect((await dj.commissions.myConditionsHistory()).map((h) => h.plan?.name)).toEqual(['Colaboradores', 'General']);
+      await rejects(dj.commissions.conditionsHistory(U.dj.id), 403);
+    });
+
     test('ajustes con motivo y liquidaciones que no pagan saldos negativos', async () => {
       const admin = await ctx(U.admin);
       await admin.commissions.setFlat(30);

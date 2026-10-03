@@ -36,5 +36,13 @@ export function supabaseRepository(): PublicRepository {
       if (error) throw error;
       return data ? toPublicDossier(data as PublicDossierRow) : null;
     },
+    async trackView(token, tenantId, i) {
+      const { data, error } = await client.rpc('track_dossier_view', {
+        p_token: token, p_tenant_id: tenantId, p_view: i.viewId, p_visitor: i.visitor, p_device: i.device,
+        p_duration_ms: i.durationMs, p_scroll: i.scroll, p_sections: i.sections,
+      });
+      if (error) throw error;
+      return data === true;
+    },
   };
 }

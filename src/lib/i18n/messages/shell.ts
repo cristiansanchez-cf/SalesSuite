@@ -3,7 +3,7 @@ import { defineMessages } from '../core';
 
 const es = {
   nav: {
-    start: 'Empieza aquí', home: 'Inicio', dossiers: 'Dossiers', myAccounts: 'Mis cuentas', accounts: 'Cuentas', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
+    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Dossiers', myAccounts: 'Mis cuentas', accounts: 'Cuentas', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
     learn: 'Aprende', myCommissions: 'Mis comisiones', setup: 'Configuración guiada', playbook: 'Playbook y mercado', catalog: 'Catálogo',
     team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
@@ -46,7 +46,7 @@ export const shellMessages = defineMessages({
   es,
   en: {
     nav: {
-      start: 'Start here', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'Accounts', compose: 'Write a message', wins: 'What worked',
+      start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'Accounts', compose: 'Write a message', wins: 'What worked',
       learn: 'Learn', myCommissions: 'My commissions', setup: 'Guided setup', playbook: 'Playbook & market', catalog: 'Catalog',
       team: 'Team', territory: 'Territory', commissions: 'Commissions', brand: 'Brand', sell: 'Sell', configure: 'Configure',
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
@@ -86,7 +86,7 @@ export const shellMessages = defineMessages({
   },
   pt: {
     nav: {
-      start: 'Comece aqui', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'Contas', compose: 'Preparar mensagem', wins: 'O que funcionou',
+      start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'Contas', compose: 'Preparar mensagem', wins: 'O que funcionou',
       learn: 'Aprenda', myCommissions: 'Minhas comissões', setup: 'Configuração guiada', playbook: 'Playbook e mercado', catalog: 'Catálogo',
       team: 'Equipe', territory: 'Território', commissions: 'Comissões', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
@@ -126,7 +126,7 @@ export const shellMessages = defineMessages({
   },
   ko: {
     nav: {
-      start: '여기서 시작', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: '계정', compose: '메시지 작성', wins: '효과 있었던 것',
+      start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: '계정', compose: '메시지 작성', wins: '효과 있었던 것',
       learn: '학습', myCommissions: '내 커미션', setup: '가이드 설정', playbook: '플레이북과 시장', catalog: '카탈로그',
       team: '팀', territory: '담당 지역', commissions: '커미션', brand: '브랜드', sell: '판매', configure: '설정',
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,

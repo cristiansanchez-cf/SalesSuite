@@ -51,8 +51,9 @@ export function supabaseCommissionsDb(sb: SupabaseClient): CommissionsDb {
       return (check(await sb.from('commission_plan_member').select('user_id, plan_id').eq('tenant_id', t)) ?? []).map((r: Row) => ({ userId: r.user_id, planId: r.plan_id }));
     },
     async setPlanMember(t, userId, planId) {
-      check(await sb.from('commission_plan_member').delete().eq('tenant_id', t).eq('user_id', userId));
-      if (planId) check(await sb.from('commission_plan_member').insert({ tenant_id: t, user_id: userId, plan_id: planId }));
+      // upsert (no borrar + insertar): el historial de condiciones registra un solo cambio.
+      if (planId) check(await sb.from('commission_plan_member').upsert({ tenant_id: t, user_id: userId, plan_id: planId }));
+      else check(await sb.from('commission_plan_member').delete().eq('tenant_id', t).eq('user_id', userId));
     },
 
     async listEvents(t, f = {}) {
@@ -150,6 +151,12 @@ export function supabaseCommissionsDb(sb: SupabaseClient): CommissionsDb {
       check(await sb.from('member_conditions').upsert({
         tenant_id: t, user_id: userId, visible: c.visible, note: c.note, agreed_at: cur?.agreed_at ?? (c.visible ? new Date().toISOString() : null),
       }));
+    },
+    async conditionsHistory(t, userId) {
+      let q = sb.from('member_conditions_history').select('user_id, visible, note, plan, changed_by, changed_at').eq('tenant_id', t);
+      if (userId) q = q.eq('user_id', userId);
+      return (check(await q.order('changed_at', { ascending: false }).limit(200)) ?? [])
+        .map((r: Row) => ({ userId: r.user_id, visible: r.visible, note: r.note, plan: r.plan ?? null, changedBy: r.changed_by, changedAt: r.changed_at }));
     },
     async myConditions(t) {
       const r = check(await sb.rpc('my_conditions', { p_tenant: t })) as Row;

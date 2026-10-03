@@ -96,4 +96,6 @@ export interface Coupon {
 
 /** Condiciones de una persona (opcionales: solo se enseñan cuando el admin las marca como acordadas). */
 export interface MemberConditions { userId: string; visible: boolean; note: string | null; agreedAt: string | null }
+/** Una foto del historial de condiciones (docs/FOUNDATIONS.md §9): qué se acordó y qué plan aplicaba. */
+export interface ConditionsChange { userId: string; visible: boolean; note: string | null; plan: { name: string; rules: Rule[]; referral: Referral | null } | null; changedBy: string | null; changedAt: string }
 export interface MyConditions { visible: boolean; note: string | null; agreedAt: string | null; plan: { name: string; rules: Rule[]; referral: Referral | null } | null }

@@ -34,6 +34,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   context.locals.tenant ??= await resolveTenant(publicRepository(), host, {
     devTenantSlug: env('DEV_TENANT_SLUG'),
+    // Demo pública (p. ej. demo-ventas.cofundo.io): sin Supabase y con DEMO_MODE=1 explícito.
+    demoAnyHost: appMode() === 'demo' && env('DEMO_MODE') === '1',
   });
   context.locals.admin ??= null;
 

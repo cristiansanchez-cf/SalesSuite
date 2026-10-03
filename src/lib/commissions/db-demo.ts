@@ -50,6 +50,19 @@ function insertEventRow(t: string, e: Parameters<CommissionsDb['insertEvent']>[1
 }
 
 export function demoCommissionsDb(actor: string): CommissionsDb {
+  // = public.append_conditions_history (triggers de member_conditions y commission_plan_member).
+  const appendHistory = (t: string, userId: string) => {
+    const s = db();
+    const c = s.member_conditions.find((x) => x.tenant_id === t && x.user_id === userId);
+    if (!c) return;
+    const planId = s.commission_plan_member.find((x) => x.tenant_id === t && x.user_id === userId)?.plan_id;
+    const p = s.commission_plan.find((x) => x.tenant_id === t && (planId ? x.id === planId : x.is_default));
+    const plan = p ? { name: p.name, rules: structuredClone(p.rules) as Plan['rules'], referral: (p.referral as Plan['referral']) ?? null } : null;
+    const last = s.member_conditions_history.filter((h) => h.tenant_id === t && h.user_id === userId).sort((a, b) => b.seq - a.seq)[0];
+    if (last && last.visible === c.visible && last.note === c.note && JSON.stringify(last.plan) === JSON.stringify(plan)) return;
+    s.member_conditions_history.push({ tenant_id: t, user_id: userId, visible: c.visible, note: c.note, plan, changed_by: actor,
+      changed_at: new Date().toISOString(), seq: s.member_conditions_history.length + 1 });
+  };
   const isAdmin = (t: string) => roleOf(t, actor) === 'admin';
   const isManager = (t: string) => ['admin', 'lead'].includes(roleOf(t, actor) ?? '');
   const admin = (t: string) => { if (!isAdmin(t)) deny('solo admin'); };
@@ -82,6 +95,7 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
       const s = db();
       s.commission_plan_member = s.commission_plan_member.filter((x) => !(x.tenant_id === t && x.user_id === userId));
       if (planId) s.commission_plan_member.push({ tenant_id: t, user_id: userId, plan_id: planId });
+      appendHistory(t, userId);
     },
 
     async listEvents(t, f = {}) {
@@ -253,6 +267,13 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
       const cur = s.member_conditions.find((x) => x.tenant_id === t && x.user_id === userId);
       const agreed = c.visible ? (cur?.agreed_at ?? now()) : (cur?.agreed_at ?? null);
       s.member_conditions = [...s.member_conditions.filter((x) => x !== cur), { tenant_id: t, user_id: userId, visible: c.visible, note: c.note, agreed_at: agreed }];
+      appendHistory(t, userId);
+    },
+    async conditionsHistory(t, userId) {
+      return db().member_conditions_history
+        .filter((h) => h.tenant_id === t && (isManager(t) || h.user_id === actor) && (!userId || h.user_id === userId))
+        .sort((a, b) => b.changed_at.localeCompare(a.changed_at) || b.seq - a.seq)
+        .map((h) => ({ userId: h.user_id, visible: h.visible, note: h.note, plan: structuredClone(h.plan), changedBy: h.changed_by, changedAt: h.changed_at }));
     },
     async myConditions(t) {
       // = RPC my_conditions

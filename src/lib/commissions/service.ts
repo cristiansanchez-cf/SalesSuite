@@ -323,6 +323,11 @@ export function createCommissionsService(db: CommissionsDb, deps: { admin: Admin
     coupons, saveCoupon, setCouponActive,
     myConditions: () => db.myConditions(s.tenantId),
     conditions: async () => { requireRead(); return db.listConditions(s.tenantId); },
+    /** Mi historial de condiciones (lo que se acordó y cuándo cambió). */
+    // Solo lo que llegó a acordarse: los borradores del admin no se enseñan.
+    myConditionsHistory: async () => ((await db.myConditions(s.tenantId)).visible ? (await db.conditionsHistory(s.tenantId, s.userId)).filter((h) => h.visible) : []),
+    /** Historial de una persona (admins y jefes/as). */
+    conditionsHistory: async (userId?: string) => { requireRead(); return db.conditionsHistory(s.tenantId, userId); },
     setConditions: async (userId: string, c: { visible: boolean; note?: string | null }) => {
       requireAdmin();
       if (!(await members()).has(userId)) throw new AdminError(404, 'Esa persona no está en el equipo');
@@ -342,5 +347,5 @@ export const emptyCommissionsDb: CommissionsDb = {
   async listApiKeys() { return []; }, async createApiKey() { throw new Error('permission denied: sin comisiones'); }, async revokeApiKey() { return false; },
   async listConnectors() { return []; }, async saveConnector() { throw new Error('permission denied: sin comisiones'); }, async deleteConnector() { return false; },
   async listCoupons() { return []; }, async saveCoupon() { throw new Error('permission denied: sin comisiones'); },
-  async listConditions() { return []; }, async setConditions() {}, async myConditions() { return { visible: false, note: null, agreedAt: null, plan: null }; },
+  async listConditions() { return []; }, async setConditions() {}, async myConditions() { return { visible: false, note: null, agreedAt: null, plan: null }; }, async conditionsHistory() { return []; },
 };

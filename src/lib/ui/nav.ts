@@ -22,10 +22,11 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     { href: '/admin/start', label: L.start, icon: 'compass', on: on('/admin/start'), testid: 'nav-start' },
     ...(role !== 'partner' ? [{ href: '/admin/inicio', label: L.home, icon: 'gauge' as IconName, on: on('/admin/inicio') }] : []),
     role === 'partner'
-      ? { href: '/admin', label: L.myAccounts, icon: 'store', on: path === '/admin' || on('/admin/dossiers') }
-      : { href: '/admin', label: L.dossiers, icon: 'file-text', on: path === '/admin' || on('/admin/dossiers') },
+      ? { href: '/admin', label: L.myAccounts, icon: 'store', on: path === '/admin' || (on('/admin/dossiers') && !path.endsWith('/analytics')) }
+      : { href: '/admin', label: L.dossiers, icon: 'file-text', on: path === '/admin' || (on('/admin/dossiers') && !path.endsWith('/analytics')) },
     ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, on: on('/admin/accounts') }] : []),
     { href: '/admin/compose', label: L.compose, icon: 'message-square-text', on: on('/admin/compose') },
+    { href: '/admin/analytics', label: L.analytics, icon: 'chart-column', on: on('/admin/analytics') || /\/admin\/dossiers\/[^/]+\/analytics$/.test(path), testid: 'nav-analytics' },
     { href: '/admin/wins', label: L.wins, icon: 'trophy', on: on('/admin/wins') },
     { href: '/admin/learn', label: L.learn, icon: 'graduation-cap', on: on('/admin/learn') },
     { href: '/admin/commissions', label: L.myCommissions, icon: 'wallet', on: path === '/admin/commissions' },

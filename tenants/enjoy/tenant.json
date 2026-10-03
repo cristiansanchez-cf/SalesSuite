@@ -40,11 +40,11 @@
   },
   "domains": [
     {
-      "hostname": "pitch.enjoytheclub.es",
+      "hostname": "enjoy.ventas.cofundo.io",
       "is_primary": true
     },
     {
-      "hostname": "enjoy.cofundo.app",
+      "hostname": "pitch.enjoytheclub.es",
       "is_primary": false
     }
   ],

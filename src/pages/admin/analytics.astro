@@ -1,0 +1,84 @@
+---
+/**
+ * Analítica de dossiers (docs/ANALYTICS.md): quién abre, cuánto lee y a quién escribir hoy.
+ * Admins y jefes/as ven el equipo (o solo lo suyo); comerciales y colaboradores, lo suyo.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import { can } from '~/lib/admin/permissions';
+import { relativeTime } from '~/lib/admin/format';
+import { duration } from '~/lib/analytics/format';
+import { i18n } from '~/lib/i18n';
+import { analyticsMessages } from '~/lib/i18n/messages/analytics';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const { m, f, locale } = i18n(Astro, analyticsMessages);
+const manager = can(admin.session.role).manageTeam;
+const mine = !manager || Astro.url.searchParams.get('mine') === '1';
+const o = await admin.analytics.overview({ mine });
+const rel = (iso: string | null) => relativeTime(iso, undefined, locale);
+const dur = (ms: number) => duration(ms, f.tag);
+type Row = (typeof o.rows)[number];
+const who = (r: Row) => r.dossier.prospectCompany || r.dossier.title;
+const LISTS = [
+  { key: 'follow-up', title: m.lists.followUp, hint: m.lists.followUpHint, rows: o.noFollowUp, attention: true },
+  { key: 'hot', title: m.lists.hot, hint: null, rows: o.hot, attention: false },
+  { key: 'never', title: m.lists.never, hint: m.lists.neverHint, rows: o.neverOpened, attention: false },
+];
+---
+<AdminLayout title={m.title}>
+  <PageHeader eyebrow={m.eyebrow} title={m.title} lede={m.lede}>
+    {manager && (
+      <div class="co-tabs !mb-0" role="tablist">
+        <a class="co-tab" href="?" aria-current={!mine ? 'page' : undefined} data-testid="scope-team">{m.scope.team}</a>
+        <a class="co-tab" href="?mine=1" aria-current={mine ? 'page' : undefined} data-testid="scope-mine">{m.scope.mine}</a>
+      </div>
+    )}
+  </PageHeader>
+
+  <section class="co-grid co-grid--2 mb-6 lg:!grid-cols-4" data-testid="analytics-kpis">
+    <div class="co-card grid gap-1"><span class="text-eyebrow">{m.kpi.published}</span><span class="co-figure text-4xl" data-testid="kpi-published">{o.summary.published}</span></div>
+    <div class="co-card grid gap-1"><span class="text-eyebrow">{m.kpi.opened}</span><span class="co-figure text-4xl" data-testid="kpi-opened">{o.summary.opened}</span>
+      <span class="co-meta">{m.kpi.openedHint(Math.round(o.summary.openRate * 100))}</span></div>
+    <div class="co-card grid gap-1"><span class="text-eyebrow">{m.kpi.avg}</span><span class="co-figure text-4xl">{o.summary.opened ? dur(o.summary.avgMs) : '—'}</span></div>
+    <div class="co-card grid gap-1"><span class="text-eyebrow">{m.kpi.firstOpen}</span><span class="co-figure text-4xl">{o.summary.medianHoursToOpen == null ? '—' : m.kpi.inHours(o.summary.medianHoursToOpen)}</span>
+      <span class="co-meta">{m.kpi.firstOpenHint}</span></div>
+  </section>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    {LISTS.map((l) => (
+      <section class="co-section !mt-0" data-testid={`list-${l.key}`}>
+        <div class="co-section__head"><h2 class="text-eyebrow">{l.title} · {l.rows.length}</h2></div>
+        {l.hint && <p class="co-meta mb-2">{l.hint}</p>}
+        {l.rows.length === 0 ? <p class="co-meta">{m.lists.empty}</p> : (
+          <ul class="co-rows">{l.rows.slice(0, 6).map((r) => (
+            <li><a class={l.attention ? 'co-row co-row--attention' : 'co-row'} href={`/admin/dossiers/${r.dossier.id}/analytics`}>
+              <span class="co-row__main"><span class="co-row-title">{who(r)}</span>
+                <span class="co-meta">{r.stats.opens ? `${m.opens(r.stats.opens)} · ${rel(r.stats.lastAt)}` : rel(r.dossier.publishedAt)}</span></span>
+              <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
+          </ul>
+        )}
+      </section>
+    ))}
+  </div>
+
+  <section class="co-section !mt-10" data-testid="analytics-table">
+    <div class="co-section__head"><h2 class="text-eyebrow">{m.table.title}</h2></div>
+    {o.rows.length === 0 ? <EmptyState kind="none" title={m.detail.emptyTitle} because={m.detail.notPublished} /> : (
+      <ul class="co-rows">{o.rows.map((r) => (
+        <li><a class="co-row" href={`/admin/dossiers/${r.dossier.id}/analytics`} aria-label={m.table.see(r.dossier.title)} data-testid="analytics-row">
+          <span class="co-row__lead"><Icon name={r.stats.opens ? 'eye' : 'eye-off'} /></span>
+          <span class="co-row__main"><span class="co-row-title">{r.dossier.title}</span>
+            <span class="co-meta">{[!mine && r.dossier.authorName, r.stats.opens ? `${m.people(r.stats.visitors)} · ${m.table.avg.toLowerCase()} ${dur(r.stats.avgMs)}` : null].filter(Boolean).join(' · ')}</span></span>
+          <span class="flex flex-col items-end gap-1">
+            <span class={r.stats.opens ? 'co-badge co-badge--signal' : 'co-badge'} data-testid="opens">{m.badge(r.stats.opens)}</span>
+            {r.stats.lastAt && <span class="co-meta">{rel(r.stats.lastAt)}</span>}
+          </span></a></li>))}
+      </ul>
+    )}
+    <p class="co-help mt-3">{m.detail.privacy}</p>
+  </section>
+</AdminLayout>

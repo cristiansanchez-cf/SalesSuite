@@ -88,6 +88,8 @@ const [t, events, territory, apiKeys, connectors] = await Promise.all([
 ]);
 const name = (u: string) => t.names.get(u) ?? m.team.someone;
 const terms = tab === 'plan' && canWrite ? new Map((await c.conditions()).map((x) => [x.userId, x])) : new Map();
+const termsHistory = tab === 'plan' && canWrite ? await c.conditionsHistory().catch(() => []) : [];
+const day = (iso: string) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const def = t.plans.plans.find((p) => p.isDefault);
 const flat = def?.rules.find((r) => r.id === 'todo-igual');
 const KINDS = m.team.kinds;
@@ -235,6 +237,14 @@ const origin = Astro.url.origin;
                     <label class="co-check"><input type="checkbox" name="visible" checked={!!x?.visible} /><span>{m.terms.show}</span></label>
                     <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{m.terms.save}</button>
                   </form>
+                  {termsHistory.some((h) => h.userId === p.userId) && (
+                    <div class="mt-3 grid gap-1" data-testid={`terms-history-${p.userId}`}>
+                      <p class="text-eyebrow">{m.terms.history}</p>
+                      <ol class="grid gap-1">{termsHistory.filter((h) => h.userId === p.userId).map((h) => (
+                        <li class="co-meta">{day(h.changedAt)} · {h.visible ? m.terms.shown : m.terms.hiddenAt}{h.note ? ` · ${h.note}` : ''}{h.plan ? ` · ${m.terms.planLabel}: ${h.plan.name}` : ''}</li>
+                      ))}</ol>
+                    </div>
+                  )}
                 </details>
               );
             })}

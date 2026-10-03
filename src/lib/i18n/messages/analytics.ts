@@ -1,0 +1,143 @@
+/** Analítica de dossiers (docs/ANALYTICS.md). */
+import { defineMessages } from '../core';
+
+const es = {
+  nav: 'Analítica',
+  title: 'Analítica',
+  eyebrow: 'Tus propuestas',
+  lede: 'Quién abre, cuánto lee y qué le interesa. Para saber a quién escribir hoy.',
+  scope: { team: 'Todo el equipo', mine: 'Las mías' },
+  kpi: {
+    published: 'Publicadas', opened: 'Abiertas', openedHint: (pct: number) => `${pct} % de las publicadas`,
+    avg: 'Lectura media', firstOpen: 'Primera apertura', firstOpenHint: 'Mediana desde que se publica',
+    inHours: (h: number) => (h < 1 ? 'en menos de 1 h' : h < 48 ? `en ${Math.round(h)} h` : `en ${Math.round(h / 24)} días`),
+  },
+  lists: {
+    followUp: 'Escríbele hoy', followUpHint: 'La han abierto y no tienen próximo paso.',
+    hot: 'Abiertas en las últimas 48 h',
+    never: 'Nadie la ha abierto', neverHint: '¿Le llegó el enlace? Reenvíalo por otro canal.',
+    empty: 'Nada por aquí.',
+  },
+  table: {
+    title: 'Todas las propuestas publicadas', proposal: 'Propuesta', author: 'Autor/a', opens: 'Aperturas', people: 'Personas',
+    avg: 'Lectura media', last: 'Última apertura', never: 'Sin abrir', see: (t: string) => `Ver analítica de ${t}`,
+  },
+  opens: (n: number) => (n === 1 ? '1 apertura' : `${n} aperturas`),
+  people: (n: number) => (n === 1 ? '1 persona' : `${n} personas`),
+  detail: {
+    eyebrow: 'Analítica', back: 'Volver a la propuesta', opens: 'Aperturas', people: 'Personas distintas', peopleHint: 'Cada navegador cuenta una vez',
+    total: 'Tiempo total', reach: 'Hasta dónde lee', reachHint: 'De la propuesta entera', last: 'Última apertura',
+    sections: 'Qué le interesa', sectionsHint: 'Tiempo en pantalla de cada sección, sumando todas las visitas.', top: 'Lo más leído',
+    visits: 'Visitas', device: { mobile: 'Móvil', tablet: 'Tableta', desktop: 'Ordenador' }, read: (pct: number) => `leyó el ${pct} %`,
+    emptyTitle: 'Todavía nadie la ha abierto', emptyBecause: 'Cuando alguien abra el enlace, verás aquí cuándo, cuánto tiempo y qué secciones lee.',
+    notPublished: 'Publica la propuesta y comparte el enlace para empezar a medir.',
+    privacy: 'Sin datos personales: contamos navegadores, no personas con nombre.',
+  },
+  badge: (n: number) => (n ? `${n} ${n === 1 ? 'apertura' : 'aperturas'}` : 'Sin abrir'),
+};
+
+export const analyticsMessages = defineMessages({
+  es,
+  en: {
+    nav: 'Analytics',
+    title: 'Analytics',
+    eyebrow: 'Your proposals',
+    lede: 'Who opens, how much they read and what interests them. So you know who to write to today.',
+    scope: { team: 'Whole team', mine: 'Mine' },
+    kpi: {
+      published: 'Published', opened: 'Opened', openedHint: (pct) => `${pct} % of published`,
+      avg: 'Average read', firstOpen: 'First open', firstOpenHint: 'Median time since publishing',
+      inHours: (h) => (h < 1 ? 'within 1 h' : h < 48 ? `in ${Math.round(h)} h` : `in ${Math.round(h / 24)} days`),
+    },
+    lists: {
+      followUp: 'Write to them today', followUpHint: 'Opened, with no next step.',
+      hot: 'Opened in the last 48 h',
+      never: 'Nobody has opened it', neverHint: 'Did the link arrive? Resend it through another channel.',
+      empty: 'Nothing here.',
+    },
+    table: {
+      title: 'All published proposals', proposal: 'Proposal', author: 'Author', opens: 'Opens', people: 'People',
+      avg: 'Average read', last: 'Last opened', never: 'Not opened', see: (t) => `See analytics for ${t}`,
+    },
+    opens: (n) => (n === 1 ? '1 open' : `${n} opens`),
+    people: (n) => (n === 1 ? '1 person' : `${n} people`),
+    detail: {
+      eyebrow: 'Analytics', back: 'Back to the proposal', opens: 'Opens', people: 'Different people', peopleHint: 'Each browser counts once',
+      total: 'Total time', reach: 'How far they read', reachHint: 'Of the whole proposal', last: 'Last opened',
+      sections: 'What interests them', sectionsHint: 'Time on screen for each section, adding up all visits.', top: 'Most read',
+      visits: 'Visits', device: { mobile: 'Mobile', tablet: 'Tablet', desktop: 'Computer' }, read: (pct) => `read ${pct} %`,
+      emptyTitle: 'Nobody has opened it yet', emptyBecause: 'When someone opens the link, you will see when, for how long and which sections they read.',
+      notPublished: 'Publish the proposal and share the link to start measuring.',
+      privacy: 'No personal data: we count browsers, not named people.',
+    },
+    badge: (n) => (n ? `${n} ${n === 1 ? 'open' : 'opens'}` : 'Not opened'),
+  },
+  pt: {
+    nav: 'Análise',
+    title: 'Análise',
+    eyebrow: 'Suas propostas',
+    lede: 'Quem abre, quanto lê e o que interessa. Para saber a quem escrever hoje.',
+    scope: { team: 'Equipe toda', mine: 'As minhas' },
+    kpi: {
+      published: 'Publicadas', opened: 'Abertas', openedHint: (pct) => `${pct} % das publicadas`,
+      avg: 'Leitura média', firstOpen: 'Primeira abertura', firstOpenHint: 'Mediana desde a publicação',
+      inHours: (h) => (h < 1 ? 'em menos de 1 h' : h < 48 ? `em ${Math.round(h)} h` : `em ${Math.round(h / 24)} dias`),
+    },
+    lists: {
+      followUp: 'Escreva hoje', followUpHint: 'Abriram e não têm próximo passo.',
+      hot: 'Abertas nas últimas 48 h',
+      never: 'Ninguém abriu', neverHint: 'O link chegou? Reenvie por outro canal.',
+      empty: 'Nada por aqui.',
+    },
+    table: {
+      title: 'Todas as propostas publicadas', proposal: 'Proposta', author: 'Autor/a', opens: 'Aberturas', people: 'Pessoas',
+      avg: 'Leitura média', last: 'Última abertura', never: 'Não aberta', see: (t) => `Ver análise de ${t}`,
+    },
+    opens: (n) => (n === 1 ? '1 abertura' : `${n} aberturas`),
+    people: (n) => (n === 1 ? '1 pessoa' : `${n} pessoas`),
+    detail: {
+      eyebrow: 'Análise', back: 'Voltar à proposta', opens: 'Aberturas', people: 'Pessoas diferentes', peopleHint: 'Cada navegador conta uma vez',
+      total: 'Tempo total', reach: 'Até onde lê', reachHint: 'Da proposta inteira', last: 'Última abertura',
+      sections: 'O que interessa', sectionsHint: 'Tempo na tela de cada seção, somando todas as visitas.', top: 'Mais lida',
+      visits: 'Visitas', device: { mobile: 'Celular', tablet: 'Tablet', desktop: 'Computador' }, read: (pct) => `leu ${pct} %`,
+      emptyTitle: 'Ninguém abriu ainda', emptyBecause: 'Quando alguém abrir o link, você verá aqui quando, por quanto tempo e quais seções lê.',
+      notPublished: 'Publique a proposta e compartilhe o link para começar a medir.',
+      privacy: 'Sem dados pessoais: contamos navegadores, não pessoas com nome.',
+    },
+    badge: (n) => (n ? `${n} ${n === 1 ? 'abertura' : 'aberturas'}` : 'Não aberta'),
+  },
+  ko: {
+    nav: '분석',
+    title: '분석',
+    eyebrow: '내 제안서',
+    lede: '누가 열었는지, 얼마나 읽었는지, 무엇에 관심 있는지. 오늘 누구에게 연락할지 알 수 있어요.',
+    scope: { team: '팀 전체', mine: '내 것' },
+    kpi: {
+      published: '게시됨', opened: '열람됨', openedHint: (pct) => `게시된 것의 ${pct} %`,
+      avg: '평균 열람 시간', firstOpen: '첫 열람', firstOpenHint: '게시 후 중앙값',
+      inHours: (h) => (h < 1 ? '1시간 이내' : h < 48 ? `${Math.round(h)}시간 후` : `${Math.round(h / 24)}일 후`),
+    },
+    lists: {
+      followUp: '오늘 연락하세요', followUpHint: '열람했지만 다음 단계가 없습니다.',
+      hot: '최근 48시간 내 열람',
+      never: '아무도 열지 않음', neverHint: '링크가 전달됐나요? 다른 채널로 다시 보내 보세요.',
+      empty: '항목이 없습니다.',
+    },
+    table: {
+      title: '게시된 모든 제안서', proposal: '제안서', author: '작성자', opens: '열람 수', people: '사람 수',
+      avg: '평균 열람 시간', last: '마지막 열람', never: '미열람', see: (t) => `${t} 분석 보기`,
+    },
+    opens: (n) => `열람 ${n}회`,
+    people: (n) => `${n}명`,
+    detail: {
+      eyebrow: '분석', back: '제안서로 돌아가기', opens: '열람 수', people: '서로 다른 사람', peopleHint: '브라우저마다 한 번씩 셉니다',
+      total: '총 시간', reach: '읽은 범위', reachHint: '제안서 전체 기준', last: '마지막 열람',
+      sections: '관심 있는 부분', sectionsHint: '모든 방문을 합산한 섹션별 화면 표시 시간입니다.', top: '가장 많이 읽음',
+      visits: '방문', device: { mobile: '휴대폰', tablet: '태블릿', desktop: '컴퓨터' }, read: (pct) => `${pct} % 읽음`,
+      emptyTitle: '아직 아무도 열지 않았습니다', emptyBecause: '누군가 링크를 열면 언제, 얼마나 오래, 어떤 섹션을 읽었는지 여기에 표시됩니다.',
+      notPublished: '제안서를 게시하고 링크를 공유하면 측정이 시작됩니다.',
+      privacy: '개인정보 없음: 이름이 아닌 브라우저 단위로 셉니다.',
+    },
+    badge: (n) => (n ? `열람 ${n}회` : '미열람'),
+  },
+});

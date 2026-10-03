@@ -1,0 +1,80 @@
+---
+/** Analítica de una propuesta (docs/ANALYTICS.md): aperturas, quién, cuánto lee y qué secciones le interesan. */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import { AdminError } from '~/lib/admin/service';
+import { relativeTime } from '~/lib/admin/format';
+import { duration } from '~/lib/analytics/format';
+import { i18n } from '~/lib/i18n';
+import { analyticsMessages } from '~/lib/i18n/messages/analytics';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const { m, f, locale } = i18n(Astro, analyticsMessages);
+let a;
+try { a = await admin.analytics.forDossier(Astro.params.id ?? ''); } catch (e) {
+  if (e instanceof AdminError && (e.status === 404 || e.status === 403)) return Astro.rewrite('/404');
+  throw e;
+}
+const { dossier, stats, sections, visits } = a;
+const rel = (iso: string | null) => relativeTime(iso, undefined, locale);
+const dur = (ms: number) => duration(ms, f.tag);
+const when = (iso: string) => f.date(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const DEVICE_ICON = { mobile: 'smartphone', tablet: 'tablet', desktop: 'monitor' } as const;
+const KPIS = [
+  { k: 'opens', label: m.detail.opens, v: String(stats.opens), hint: null },
+  { k: 'people', label: m.detail.people, v: String(stats.visitors), hint: m.detail.peopleHint },
+  { k: 'total', label: m.detail.total, v: stats.opens ? dur(stats.totalMs) : '—', hint: null },
+  { k: 'reach', label: m.detail.reach, v: stats.opens ? `${stats.maxScroll} %` : '—', hint: m.detail.reachHint },
+];
+---
+<AdminLayout title={`${m.detail.eyebrow} · ${dossier.title}`}>
+  <PageHeader eyebrow={m.detail.eyebrow} title={dossier.prospectCompany || dossier.title} lede={stats.lastAt ? `${m.detail.last}: ${rel(stats.lastAt)}` : dossier.title}>
+    <a class="co-btn co-btn--ghost" href={`/admin/dossiers/${dossier.id}`} data-testid="back-to-dossier"><Icon name="chevron-left" size={16} />{m.detail.back}</a>
+  </PageHeader>
+
+  {stats.opens === 0 ? (
+    <EmptyState kind="none" title={m.detail.emptyTitle} because={dossier.status === 'published' ? m.detail.emptyBecause : m.detail.notPublished} />
+  ) : <>
+    <section class="co-grid co-grid--2 mb-6 lg:!grid-cols-4" data-testid="dossier-kpis">
+      {KPIS.map((x) => (
+        <div class="co-card grid gap-1"><span class="text-eyebrow">{x.label}</span><span class="co-figure text-4xl" data-testid={`kpi-${x.k}`}>{x.v}</span>{x.hint && <span class="co-meta">{x.hint}</span>}</div>
+      ))}
+    </section>
+
+    <div class="co-split">
+      <section class="co-section !mt-0" data-testid="sections">
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.detail.sections}</h2></div>
+        <p class="co-meta mb-3">{m.detail.sectionsHint}</p>
+        <ul class="grid gap-3">
+          {sections.map((s) => (
+            <li class="grid gap-1" data-testid="section-row">
+              <span class="flex items-center gap-2"><span class="co-row-title min-w-0 flex-1">{s.name}</span>
+                {s.top && <span class="co-badge co-badge--signal" data-testid="top-section">{m.detail.top}</span>}
+                <span class="co-meta tabular-nums">{dur(s.ms)}</span></span>
+              <span class="block h-2 overflow-hidden rounded-full bg-[color:var(--co-line,#e7e5e0)]" aria-hidden="true">
+                <span class="block h-full rounded-full bg-[color:var(--co-signal)]" style={`width:${Math.max(2, Math.round(s.share * 100))}%`}></span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="co-section !mt-0" data-testid="visits">
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.detail.visits} · {visits.length}</h2></div>
+        <ul class="co-rows">
+          {visits.slice(0, 30).map((v) => (
+            <li class="co-row" data-testid="visit-row">
+              <span class="co-row__lead"><Icon name={DEVICE_ICON[v.device]} /></span>
+              <span class="co-row__main"><span class="co-row-title">{when(v.startedAt)}</span>
+                <span class="co-meta">{m.detail.device[v.device]} · {dur(v.durationMs)} · {m.detail.read(v.maxScroll)}</span></span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </>}
+  <p class="co-help mt-6">{m.detail.privacy}</p>
+</AdminLayout>

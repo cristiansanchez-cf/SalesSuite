@@ -23,6 +23,8 @@ const [catalog, segments, plays, terms, dossiers] = await Promise.all([
   admin.commissions.myConditions().catch(() => ({ visible: false, note: null, agreedAt: null, plan: null })),
   admin.service.listDossiers().catch(() => []),
 ]);
+const history = terms.visible ? await admin.commissions.myConditionsHistory().catch(() => []) : [];
+const day = (iso: string) => f.date(iso, { day: 'numeric', month: 'long', year: 'numeric' });
 const sectors = segments.filter((s) => s.status !== 'archived').slice(0, 4);
 // Lo comprobado primero; del resto, unas pocas hipótesis para empezar.
 const ranked = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 5);
@@ -100,6 +102,20 @@ const steps = [
         )}
         {terms.plan?.referral && <p class="co-help">{m.terms.referral(String(terms.plan.referral.bps / 100), terms.plan.referral.months)}</p>}
         {terms.agreedAt && <p class="co-meta">{m.terms.agreed(f.date(terms.agreedAt, { day: 'numeric', month: 'long', year: 'numeric' }))}</p>}
+        {history.length > 1 && (
+          <details data-testid="terms-history">
+            <summary class="co-meta cursor-pointer underline">{m.terms.history}</summary>
+            <ol class="mt-2 grid gap-2">
+              {history.map((h) => (
+                <li class="co-inset !py-2 text-sm">
+                  <span class="co-meta block">{m.terms.since(day(h.changedAt))}</span>
+                  {h.note && <span class="block whitespace-pre-line">{h.note}</span>}
+                  {h.plan && <span class="co-meta block">{h.plan.name}: {h.plan.rules.map((r) => r.label).join(' · ')}</span>}
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
         <a class="co-btn co-btn--ghost w-fit" href="/admin/commissions">{m.terms.see}</a>
       </>}
     </section>

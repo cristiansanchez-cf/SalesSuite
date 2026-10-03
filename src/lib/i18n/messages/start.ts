@@ -22,6 +22,7 @@ const es = {
     agreed: (date: string) => `Acordadas el ${date}`,
     referral: (pct: string, months: number) => `Si traes a otra persona: ${pct} % de sus comisiones durante ${months} meses`,
     see: 'Ver mis comisiones',
+    history: 'Historial de mis condiciones', since: (date: string) => `Desde el ${date}`,
   },
   steps: {
     title: 'Primeros pasos',
@@ -57,6 +58,7 @@ export const startMessages = defineMessages({
       agreed: (date) => `Agreed on ${date}`,
       referral: (pct, months) => `If you bring someone in: ${pct} % of their commissions for ${months} months`,
       see: 'See my commissions',
+      history: 'History of my terms', since: (date) => `Since ${date}`,
     },
     steps: {
       title: 'First steps',
@@ -89,6 +91,7 @@ export const startMessages = defineMessages({
       agreed: (date) => `Combinadas em ${date}`,
       referral: (pct, months) => `Se você trouxer alguém: ${pct} % das comissões dessa pessoa durante ${months} meses`,
       see: 'Ver minhas comissões',
+      history: 'Histórico das minhas condições', since: (date) => `Desde ${date}`,
     },
     steps: {
       title: 'Primeiros passos',
@@ -121,6 +124,7 @@ export const startMessages = defineMessages({
       agreed: (date) => `${date}에 합의`,
       referral: (pct, months) => `다른 사람을 데려오면: ${months}개월 동안 그 사람 커미션의 ${pct} %`,
       see: '내 커미션 보기',
+      history: '내 조건 변경 기록', since: (date) => `${date}부터`,
     },
     steps: {
       title: '첫걸음',

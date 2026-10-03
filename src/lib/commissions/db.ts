@@ -1,4 +1,4 @@
-import type { MemberConditions, MyConditions, Coupon, Entry, EntryDraft, EntryStatus, EventStatus, Payout, Plan, RevenueEvent } from './types';
+import type { MemberConditions, MyConditions, ConditionsChange, Coupon, Entry, EntryDraft, EntryStatus, EventStatus, Payout, Plan, RevenueEvent } from './types';
 
 export type EventInsert = Omit<RevenueEvent, 'id' | 'tenantId' | 'createdAt'>;
 export interface ApiKey { id: string; tenantId: string; name: string; prefix: string; createdAt: string; lastUsedAt: string | null; revokedAt: string | null }
@@ -44,6 +44,8 @@ export interface CommissionsDb {
   setConditions(tenantId: string, userId: string, c: { visible: boolean; note: string | null }): Promise<void>;
   /** RPC my_conditions: el plan que me aplica, solo si está acordado. */
   myConditions(tenantId: string): Promise<MyConditions>;
+  /** Historial (más reciente primero). userId vacío = todo lo que la RLS deja ver. */
+  conditionsHistory(tenantId: string, userId?: string): Promise<ConditionsChange[]>;
 }
 
 /** Entrada por API (servidor con service role): resuelve la clave y escribe eventos de ese tenant. */
