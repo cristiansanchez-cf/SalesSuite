@@ -161,6 +161,7 @@ Si falla con «Faltan secretos», revisa el paso 3. Si falla con un error de con
   | `CRON_SECRET` | una cadena aleatoria de 40 caracteres (genérala en el gestor de contraseñas y guárdala ahí: se usa en el paso 8) | **Sí** |
 
 - [ ] **5.3** **Deployments** → el último despliegue → menú **⋯** → **Redeploy**. Las variables solo se aplican a despliegues nuevos.
+- [ ] **5.4 Velocidad: la web, en la misma región que la base de datos.** Vercel → el proyecto → **Settings → Functions → Function Region** → la región más cercana a la de Supabase (Supabase → *Project Settings → General → Region*; el botón «Producción» también la escribe en su resumen). Ejemplos: Supabase `eu-west-3` (París) → Vercel `cdg1`; `eu-central-1` (Fráncfort) → `fra1`; `eu-west-1` (Irlanda) → `dub1`. Guardar y **Redeploy**. Es lo que más se nota: cada página hace varias consultas y, si la web está en EE. UU. y la base en Europa, cada una cruza el Atlántico.
 - [ ] **Comprobación 5:** `https://<proyecto>.vercel.app/api/health` responde con `"status": "ok"`, `"mode": "supabase"` y `"database": "ok"`. Si dice `"misconfigured"`, el campo `problems` dice qué falta.
 
 ## Paso 6 · El dominio `enjoy.ventas.cofundo.io` (5 min + espera)
@@ -211,6 +212,14 @@ Si no llega el email: mira en Resend → *Emails* si salió. Si no salió, revis
     select status_code, created from net._http_response order by created desc limit 3;
     ```
     Debe salir `200`. Si sale `401`, el `CRON_SECRET` del SQL no coincide con el de Vercel. Para corregirlo, borra la tarea con `select cron.unschedule('ventas-avisos');` y repite el 8.2.
+
+### Dossiers de ejemplo
+
+Para ver propuestas reales en tu cuenta sin crearlas a mano: GitHub → Actions → **Producción** → *Qué hacer* = `dossiers-ejemplo`, *Email* = el tuyo (o vacío: el admin más antiguo), «Solo comprobar» desmarcado. Crea tres propuestas publicadas (Locales, Promotoras, Conciertos) con sus módulos recomendados y una tarifa, **en modo prueba** (tus aperturas no cuentan). Repetirlo no las duplica. El resumen enlaza cada una al editor; el enlace del cliente está en «Compartir».
+
+### Si va lento
+
+Cada respuesta de la consola lleva la cabecera `Server-Timing` (DevTools → Network → la petición → *Timing*): `tenant`, `auth`, `prep` y `page` en milisegundos. Las páginas de más de 1,5 s dejan una línea `[lento]` en los registros de Vercel. Si `auth` y `page` son altos en todas las páginas, revisa el paso 5.4 (región).
 
 ## Paso 9 · Probar el recorrido completo (15 min)
 

@@ -24,21 +24,24 @@ const manager = perms.manageTeam;
 const now = new Date();
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
 
-const [dossiers, events, feed, members] = await Promise.all([
+// Todo lo independiente, a la vez: cada consulta en serie es un viaje más a la base de datos.
+const [dossiers, events, feed, members, team, mine, myAccounts, onboarded] = await Promise.all([
   admin.service.listDossiers(), admin.commissions.events().catch(() => []), admin.notifications.feed({ onlyOpen: true, limit: 6 }),
   manager ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
+  manager ? admin.commissions.team().catch(() => null) : Promise.resolve(null),
+  admin.commissions.mine(),
+  perms.useAccounts ? admin.accounts.mine() : Promise.resolve([]),
+  onboardedAt(admin),
 ]);
 const names = new Map(members.map((m) => [m.userId, m.displayName || m.email]));
 const k = manager ? teamKpis(dossiers, events, names, now) : null;
-const team = manager ? await admin.commissions.team().catch(() => null) : null;
-const mine = await admin.commissions.mine();
 const day = myDay(dossiers, admin.session.userId, now);
-const expiring = perms.useAccounts ? (await admin.accounts.mine()).filter((a) => a.state === 'mine' && a.claimedUntil && Date.parse(a.claimedUntil) - now.getTime() < 7 * 86_400_000) : [];
+const expiring = myAccounts.filter((a) => a.state === 'mine' && a.claimedUntil && Date.parse(a.claimedUntil) - now.getTime() < 7 * 86_400_000);
 const actions = feed.items.filter((n) => n.severity === 'action');
 const when = (iso: string | null) => f.date(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const pct = (x: number | null) => (x == null ? '—' : m.home.pct(Math.round(x * 100)));
 const trend = k ? k.wonMonth - k.wonPrevMonth : 0;
-const welcomePending = !(await onboardedAt(admin));
+const welcomePending = !onboarded;
 // Preparar el espacio es tarea de admin, no de la bienvenida: se recuerda mientras no haya nadie más en el equipo.
 const setupPending = perms.manageTenant && members.length <= 1;
 

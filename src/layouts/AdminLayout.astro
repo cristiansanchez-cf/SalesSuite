@@ -28,9 +28,11 @@ const { title, wide = false, bare = false } = Astro.props;
 const width = Astro.props.width ?? (wide ? 'workspace' : 'content');
 const { tenant, admin } = Astro.locals;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const pending = admin ? await admin.playbook.pendingCount() : 0;
 const { m, locale } = i18n(Astro, shellMessages);
-const feed = admin && !bare ? await admin.notifications.feed({ limit: 8, locale }) : { items: [], open: 0 };
+const [pending, feed] = await Promise.all([
+  admin ? admin.playbook.pendingCount() : 0,
+  admin && !bare ? admin.notifications.feed({ limit: 8, locale }) : { items: [], open: 0 },
+]);
 const back = Astro.url.pathname + Astro.url.search;
 const tenantName = tenant?.name ?? BRAND.app;
 const shell = !!admin && !bare;

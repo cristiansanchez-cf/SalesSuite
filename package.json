@@ -18,6 +18,7 @@
     "db:seed:build": "node scripts/build-seed.mjs",
     "db:it": "bash supabase/tests/run-it.sh",
     "tenant:bootstrap": "tsx scripts/tenant-bootstrap.ts",
+    "tenant:samples": "tsx scripts/sample-dossiers.ts",
     "start:demo": "DEMO_MODE=1 DEV_TENANT_SLUG=enjoy node ./dist/server/entry.mjs",
     "lint:copy": "node scripts/lint-copy.mjs"
   },

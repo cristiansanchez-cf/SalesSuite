@@ -22,7 +22,7 @@ const es = {
     emptyFiltered: 'Ningún dossier coincide con estos filtros', emptyTitle: 'Todavía no hay dossiers',
     emptyDetail: 'Crea el primero con el formulario «Nuevo dossier»: eliges los módulos, lo publicas y envías el enlace.', emptyAction: 'Crear el primero',
     noProspect: 'Sin prospecto', modules: (n: number) => `${n} ${n === 1 ? 'módulo' : 'módulos'}`, links: (n: number) => ` · ${n} ${n > 1 ? 'enlaces' : 'enlace'}`,
-    noAuthor: 'Sin autor', newEyebrow: 'Nuevo', newTitle: 'Nuevo dossier', titlePlaceholder: 'Sala X · Bodas 2027', company: 'Empresa del prospecto', emptyDossier: 'Dossier vacío',
+    noAuthor: 'Sin autor', newEyebrow: 'Nuevo', newTitle: 'Nuevo dossier', titlePlaceholder: 'Sala X · Temporada 2027', company: 'Empresa del prospecto', emptyDossier: 'Dossier vacío',
   },
   home: {
     focus: 'Lo siguiente', open: 'Abrir', create: 'Crear propuesta',
@@ -174,7 +174,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: 'No proposals match these filters', emptyTitle: 'No proposals yet',
       emptyDetail: 'Create the first one with the «New proposal» form: pick the modules, publish it and send the link.', emptyAction: 'Create the first one',
       noProspect: 'No prospect', modules: (n) => `${n} ${n === 1 ? 'module' : 'modules'}`, links: (n) => ` · ${n} ${n > 1 ? 'links' : 'link'}`,
-      noAuthor: 'No author', newEyebrow: 'New', newTitle: 'New proposal', titlePlaceholder: 'Venue X · Weddings 2027', company: 'Prospect company', emptyDossier: 'Blank proposal',
+      noAuthor: 'No author', newEyebrow: 'New', newTitle: 'New proposal', titlePlaceholder: 'Venue X · Season 2027', company: 'Prospect company', emptyDossier: 'Blank proposal',
     },
     home: {
       focus: 'Up next', open: 'Open', create: 'Create proposal',
@@ -323,7 +323,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: 'Nenhuma proposta corresponde a estes filtros', emptyTitle: 'Ainda não há propostas',
       emptyDetail: 'Crie a primeira com o formulário «Nova proposta»: você escolhe os módulos, publica e envia o link.', emptyAction: 'Criar a primeira',
       noProspect: 'Sem prospect', modules: (n) => `${n} ${n === 1 ? 'módulo' : 'módulos'}`, links: (n) => ` · ${n} ${n > 1 ? 'links' : 'link'}`,
-      noAuthor: 'Sem autor', newEyebrow: 'Nova', newTitle: 'Nova proposta', titlePlaceholder: 'Salão X · Casamentos 2027', company: 'Empresa do prospect', emptyDossier: 'Proposta vazia',
+      noAuthor: 'Sem autor', newEyebrow: 'Nova', newTitle: 'Nova proposta', titlePlaceholder: 'Salão X · Temporada 2027', company: 'Empresa do prospect', emptyDossier: 'Proposta vazia',
     },
     home: {
       focus: 'A seguir', open: 'Abrir', create: 'Criar proposta',
@@ -472,7 +472,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: '이 필터에 맞는 제안서가 없습니다', emptyTitle: '아직 제안서가 없습니다',
       emptyDetail: '«새 제안서» 양식으로 첫 제안서를 만드세요. 모듈을 고르고 게시한 뒤 링크를 보내면 됩니다.', emptyAction: '첫 제안서 만들기',
       noProspect: '잠재 고객 없음', modules: (n) => `모듈 ${n}개`, links: (n) => ` · 링크 ${n}개`,
-      noAuthor: '작성자 없음', newEyebrow: '새로 만들기', newTitle: '새 제안서', titlePlaceholder: 'X 홀 · 2027 웨딩', company: '잠재 고객 회사', emptyDossier: '빈 제안서',
+      noAuthor: '작성자 없음', newEyebrow: '새로 만들기', newTitle: '새 제안서', titlePlaceholder: 'X 홀 · 2027 시즌', company: '잠재 고객 회사', emptyDossier: '빈 제안서',
     },
     home: {
       focus: '다음 할 일', open: '열기', create: '제안서 만들기',

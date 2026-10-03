@@ -8,6 +8,7 @@ import { isSameOriginWrite, requestHost } from './lib/http';
 import { appMode } from './lib/mode';
 import { resolveTenant } from './lib/tenant';
 import { noteTeamNetwork } from './lib/analytics/internal';
+import { serverTiming } from './lib/timing';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
 // y la sesión de consola exige membership en ese tenant.
@@ -33,12 +34,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return new Response('Origen no permitido', { status: 403 });
   }
 
+  const timing = serverTiming();
   context.locals.tenant ??= await resolveTenant(publicRepository(), host, {
     devTenantSlug: env('DEV_TENANT_SLUG'),
     // Demo pública (p. ej. demo-ventas.cofundo.io): sin Supabase y con DEMO_MODE=1 explícito.
     demoAnyHost: appMode() === 'demo' && env('DEMO_MODE') === '1',
   });
   context.locals.admin ??= null;
+  timing.mark('tenant');
 
   const path = context.url.pathname.replace(/\/$/, '') || '/';
   const isAdmin = path === '/admin' || path.startsWith('/admin/');
@@ -58,19 +61,28 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return context.rewrite('/admin/forbidden');
     }
     context.locals.admin = auth.admin;
-    // Red del equipo: sus aperturas del enlace público no cuentan (docs/ANALYTICS.md §Internas).
-    if (context.request.method === 'GET') await noteTeamNetwork(auth.admin, context.request, context.locals.tenant.id);
   }
+  timing.mark('auth');
 
   // Idioma (docs/I18N.md): preferencia guardada → cookie → navegador → idioma del espacio → español.
   if (isAdmin) {
-    const saved = context.locals.admin ? await context.locals.admin.notifications.locale().catch(() => null) : null;
+    const admin = context.locals.admin;
+    const [saved] = await Promise.all([
+      admin ? admin.notifications.locale().catch(() => null) : null,
+      // Red del equipo: sus aperturas del enlace público no cuentan (docs/ANALYTICS.md §Internas).
+      admin && context.locals.tenant && context.request.method === 'GET' ? noteTeamNetwork(admin, context.request, context.locals.tenant.id) : null,
+    ]);
     context.locals.locale = resolveLocale({
       user: saved, cookie: context.cookies.get(LOCALE_COOKIE)?.value, tenant: context.locals.tenant?.defaultLocale, accept: context.request.headers.get('accept-language'),
     });
   }
 
+  timing.mark('prep');
   const res = await next();
+  timing.mark('page');
+  // Cuánto tarda cada parte (DevTools → Network → Timing) y aviso en los registros si una página va lenta.
+  res.headers.set('Server-Timing', timing.header());
+  if (timing.total() > 1500) console.warn(`[lento] ${context.request.method} ${path} ${timing.header()}`);
 
   if (path.startsWith('/d/') || isAdmin) {
     res.headers.set('X-Robots-Tag', 'noindex, nofollow');

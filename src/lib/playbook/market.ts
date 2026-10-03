@@ -79,3 +79,19 @@ export type SegmentView = Segment & {
   personas: PersonaView[];
   modules: Array<SegmentModule & { moduleName: string }>;
 };
+
+/**
+ * Orden de los módulos según la prioridad de los sectores (el primero que lo usa, en el orden de los sectores):
+ * lo del sector principal sale antes y lo de un sector despriorizado (p. ej. Bodas en Enjoy), al final.
+ * Los módulos sin sector van detrás de todos. Desempate: el que ya trae el array (estable).
+ */
+export function sectorRank(segments: Array<{ modules: Array<string | { moduleId: string }> }>): (moduleId: string) => number {
+  const rank = new Map<string, number>();
+  segments.forEach((sg, i) => {
+    for (const m of sg.modules) {
+      const id = typeof m === 'string' ? m : m.moduleId;
+      if (!rank.has(id)) rank.set(id, i);
+    }
+  });
+  return (id) => rank.get(id) ?? segments.length;
+}

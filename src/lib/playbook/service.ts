@@ -10,7 +10,7 @@ import type { AdminSession, CatalogVersion } from '../admin/types';
 import type { PlaybookDb } from './db';
 import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema } from './schema';
 import { buildContext, type ContextBrief } from './context';
-import type { PersonaView, SegmentView } from './market';
+import { sectorRank, type PersonaView, type SegmentView } from './market';
 import { buildTalkTrack, type TalkTrack } from './talk-track';
 import {
   KIND_ORDER, KIND_LABEL, OBJECTION_LABEL, STAGE_LABEL,
@@ -130,6 +130,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const coverOf = new Map(versions.map((v) => [v.id, firstImage(v.defaultProps)]));
     const mine = new Set(progress.filter((p) => p.userId === s.userId).map((p) => p.topic));
     const off = plays.filter(official);
+    const rankOf = sectorRank(segs.segments);
     const modules = [...latest.values()]
       .map((v) => ({
         ...topicModule(latest, v.moduleId)!,
@@ -138,7 +139,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
         learned: mine.has(v.moduleId),
         cover: coverOf.get(v.versionId) ?? null,
       }))
-      .sort((a, b) => b.playCount - a.playCount || a.name.localeCompare(b.name));
+      .sort((a, b) => rankOf(a.moduleId) - rankOf(b.moduleId) || b.playCount - a.playCount || a.name.localeCompare(b.name));
     const revisions = await pdb.listRevisions(s.tenantId, { since: seenAt, limit: 20 });
     const byId = new Map(off.map((p) => [p.id, p]));
     // Novedades = cambios de verdad: en la primera visita todo sería «nuevo», así que solo cuentan las mejoras (v2+);

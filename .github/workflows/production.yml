@@ -9,14 +9,14 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
         type: string
         default: enjoy
       admin_email:
-        description: Email del admin al que invitar (opcional)
+        description: Email del admin al que invitar (opcional). En dossiers-ejemplo, su autor (si no, el admin más antiguo)
         type: string
         default: ''
       dry_run:
@@ -45,18 +45,24 @@ jobs:
           WHAT: ${{ inputs.what }}
         run: |
           missing=""
-          if [ "$WHAT" != "alta-espacio" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
+          if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
           if [ "$WHAT" != "migraciones" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
           if [ "$WHAT" != "migraciones" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
+          # Región de la base de datos (para elegir la misma en Vercel: docs/PUESTA_EN_MARCHA.md §Velocidad). Solo el host, nunca la URL.
+          host=$(printf '%s' "$DB" | sed -E 's#^[a-z]+://([^@]*@)?([^:/?]+).*#\2#')
+          case "$host" in
+            *.pooler.supabase.com) echo "::notice::Región de Supabase: $(printf '%s' "$host" | sed -E 's/^aws-[0-9]+-([a-z0-9-]+)\.pooler.*/\1/')";;
+            db.*.supabase.co) echo "::notice::Conexión directa a Supabase (la región se ve en Supabase → Project Settings → General)";;
+          esac
 
       - uses: supabase/setup-cli@v1
-        if: ${{ inputs.what != 'alta-espacio' }}
+        if: ${{ inputs.what == 'migraciones' || inputs.what == 'las-dos' }}
         with:
           version: latest
 
       - name: Migraciones (qué se aplicaría)
-        if: ${{ inputs.what != 'alta-espacio' && inputs.dry_run }}
+        if: ${{ (inputs.what == 'migraciones' || inputs.what == 'las-dos') && inputs.dry_run }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -64,7 +70,7 @@ jobs:
           echo "::notice::Era una PRUEBA: no se ha aplicado ninguna migración."
 
       - name: Migraciones (aplicar)
-        if: ${{ inputs.what != 'alta-espacio' && !inputs.dry_run }}
+        if: ${{ (inputs.what == 'migraciones' || inputs.what == 'las-dos') && !inputs.dry_run }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
@@ -80,7 +86,7 @@ jobs:
         run: npm ci
 
       - name: Alta del espacio
-        if: ${{ inputs.what != 'migraciones' }}
+        if: ${{ inputs.what == 'alta-espacio' || inputs.what == 'las-dos' }}
         env:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -97,3 +103,15 @@ jobs:
             npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets
             echo "::notice::Alta REAL hecha: espacio $TENANT creado o actualizado."
           fi
+
+      - name: Dossiers de ejemplo
+        if: ${{ inputs.what == 'dossiers-ejemplo' }}
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ inputs.admin_email }}
+          TENANT: ${{ inputs.tenant }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          if [ "$DRY" = "true" ]; then npm run tenant:samples -- "$TENANT" --dry-run; else npm run tenant:samples -- "$TENANT"; fi

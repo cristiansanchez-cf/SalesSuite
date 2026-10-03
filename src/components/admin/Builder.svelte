@@ -10,6 +10,7 @@
   import type { BuilderOpInput as BuilderOp } from '~/lib/admin/ops';
   import type { TalkTrack, TrackLine } from '~/lib/playbook/talk-track';
   import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
+  import { sectorRank } from '~/lib/playbook/market';
   import { INTL_LOCALE, type Locale } from '~/lib/i18n/core';
   import { builderMessages } from '~/lib/i18n/messages/builder';
 
@@ -161,7 +162,9 @@
 
   // ---------- «Añadir»: el catálogo también se arrastra a la lista
   type CatItem = BuilderState['catalog'][number] & { id: string; cat: true };
-  const toCat = (): CatItem[] => s.catalog.map((c) => ({ ...c, id: `cat:${c.versionId}`, cat: true as const }));
+  /** Por la prioridad de los sectores (el sector despriorizado, al final). */
+  const rankOf = $derived(sectorRank(market.segments.map((x) => ({ modules: x.modules ?? [] }))));
+  const toCat = (): CatItem[] => [...s.catalog].sort((a, b) => rankOf(a.moduleId) - rankOf(b.moduleId)).map((c) => ({ ...c, id: `cat:${c.versionId}`, cat: true as const }));
   let cat = $state<CatItem[]>(toCat());
   function onCatConsider(e: CustomEvent<DndEvent<CatItem>>) { cat = e.detail.items; }
   function onCatFinalize() { cat = toCat(); }

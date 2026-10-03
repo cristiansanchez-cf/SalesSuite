@@ -94,32 +94,6 @@
   "admins": [],
   "catalog": [
     {
-      "key": "hero-bodas",
-      "block_type": "hero-pitch",
-      "name": "Portada para bodas",
-      "description": "La portada de la propuesta, con el nombre de los novios.",
-      "default_price": null,
-      "currency": "EUR",
-      "props": {
-        "eyebrow": "Propuesta para {company}",
-        "title": "La boda de la que todos van a",
-        "rotatingWords": [
-          "hablar",
-          "acordarse",
-          "presumir"
-        ],
-        "subtitle": "v2 del módulo: los dossiers ya publicados siguen en v1 hasta que el comercial actualice.",
-        "ctas": [
-          {
-            "label": "Ver la propuesta",
-            "href": "#propuesta",
-            "variant": "primary"
-          }
-        ],
-        "stats": []
-      }
-    },
-    {
       "key": "tabs-experiencias",
       "block_type": "tabs-showcase",
       "name": "Experiencias en directo",
@@ -190,7 +164,7 @@
         "tabs": [
           {
             "label": "Pack sala",
-            "title": "Enjoy incluido en tu oferta de bodas",
+            "title": "Enjoy incluido en tu oferta",
             "body": "Un extra diferencial que puedes vender o regalar.",
             "bullets": [
               "Margen para el local",
@@ -250,6 +224,32 @@
           "href": "mailto:hola@enjoytheclub.es"
         }
       }
+    },
+    {
+      "key": "hero-bodas",
+      "block_type": "hero-pitch",
+      "name": "Portada para bodas",
+      "description": "La portada de la propuesta, con el nombre de los novios.",
+      "default_price": null,
+      "currency": "EUR",
+      "props": {
+        "eyebrow": "Propuesta para {company}",
+        "title": "La boda de la que todos van a",
+        "rotatingWords": [
+          "hablar",
+          "acordarse",
+          "presumir"
+        ],
+        "subtitle": "v2 del módulo: los dossiers ya publicados siguen en v1 hasta que el comercial actualice.",
+        "ctas": [
+          {
+            "label": "Ver la propuesta",
+            "href": "#propuesta",
+            "variant": "primary"
+          }
+        ],
+        "stats": []
+      }
     }
   ],
   "market": [
@@ -270,8 +270,13 @@
           "fit": "Canciones con menú cerrado, mensajes y fotos a pantalla, álbum descargable."
         },
         {
-          "module_key": "pricing",
+          "module_key": "tabs-locales",
           "priority": 2,
+          "fit": "Para el local: Enjoy dentro de su oferta, con margen y algo que la competencia no tiene."
+        },
+        {
+          "module_key": "pricing",
+          "priority": 3,
           "fit": "Cuota mensual por tramo de aforo."
         }
       ],
@@ -1141,14 +1146,14 @@
           "icon": "users"
         },
         {
-          "key": "bodas",
-          "label": "Celebra bodas",
-          "icon": "heart"
-        },
-        {
           "key": "marca-bebidas",
           "label": "Patrocinio de bebidas",
           "icon": "wine"
+        },
+        {
+          "key": "bodas",
+          "label": "Celebra bodas",
+          "icon": "heart"
         }
       ]
     }
@@ -1223,42 +1228,6 @@
       ]
     },
     {
-      "key": "empresa-icp",
-      "module_key": null,
-      "kind": "fit",
-      "stage": "prospeccion",
-      "segments": [
-        "bodas"
-      ],
-      "title": "Cliente ideal (y cuándo no)",
-      "body": "- **Novios** con 100+ invitados que quieren una boda \"diferente\" y temen los tiempos muertos.\n- **Salas y fincas** que compiten por bodas y buscan un extra vendible.\n- **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.",
-      "when_to_use": "Antes de invertir tiempo en un lead: cualifica."
-    },
-    {
-      "key": "empresa-apertura",
-      "module_key": null,
-      "kind": "script",
-      "stage": "primer_contacto",
-      "segments": [
-        "bodas"
-      ],
-      "title": "Apertura de la reunión",
-      "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué es lo que más os importa que recuerden vuestros invitados de {company}?",
-      "when_to_use": "Al empezar la llamada o la visita.",
-      "why_it_works": "Abre con su objetivo, no con tu producto: lo que digan es tu guion para el resto de la reunión."
-    },
-    {
-      "key": "empresa-descubrir-1",
-      "module_key": null,
-      "kind": "discovery",
-      "stage": "descubrimiento",
-      "segments": [
-        "bodas"
-      ],
-      "title": "¿Qué te preocupa que pase en el banquete?",
-      "body": "Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo."
-    },
-    {
       "key": "empresa-descubrir-2",
       "module_key": null,
       "kind": "discovery",
@@ -1293,132 +1262,6 @@
           "url": "https://www.tiktok.com/@alfonsoychristian"
         }
       ]
-    },
-    {
-      "key": "empresa-cierre",
-      "module_key": null,
-      "kind": "script",
-      "stage": "cierre",
-      "segments": [
-        "bodas"
-      ],
-      "title": "Cierre con fecha",
-      "body": "¿Os parece que dejemos reservada la fecha de vuestra boda y el jueves te llamo a las 18:00 para cerrar los detalles con vosotros dos?",
-      "why_it_works": "Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión."
-    },
-    {
-      "key": "exp-pitch",
-      "module_key": "tabs-experiencias",
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "title": "Kiss-cam, dedicatorias y retos: el banquete se convierte en juego",
-      "body": "Cada invitado participa desde su móvil (sin app) y lo que envía sale en la pantalla en directo. Nadie se queda mirando el plato.",
-      "when_to_use": "Cuando han mencionado tiempos muertos o mesas que no se mezclan.",
-      "segments": [
-        "bodas"
-      ]
-    },
-    {
-      "key": "exp-fit",
-      "module_key": "tabs-experiencias",
-      "kind": "fit",
-      "stage": "descubrimiento",
-      "segments": [
-        "bodas"
-      ],
-      "title": "Encaja mejor en…",
-      "body": "Bodas de 100+ invitados, con pantalla o proyector en el salón. Con menos de 60 invitados, ofrece solo dedicatorias."
-    },
-    {
-      "key": "exp-demo",
-      "module_key": "tabs-experiencias",
-      "kind": "tip",
-      "stage": "pitch_demo",
-      "title": "Enseña el móvil, no la pantalla",
-      "body": "En la demo, pásale TU móvil con la kiss-cam abierta y que envíe algo: lo ve aparecer en la vista previa del dossier. Vender la experiencia > describirla.",
-      "segments": [
-        "bodas"
-      ]
-    },
-    {
-      "key": "exp-obj-mayores",
-      "module_key": "tabs-experiencias",
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "no_lo_necesito",
-      "title": "\"Mis invitados son mayores, no van a participar\"",
-      "body": "Las dedicatorias son el módulo que más usan los mayores: escribir unas palabras a los novios. Los nietos les ayudan con el móvil y eso también es parte del recuerdo.",
-      "segments": [
-        "bodas"
-      ]
-    },
-    {
-      "key": "exp-prueba",
-      "module_key": "tabs-experiencias",
-      "kind": "proof",
-      "stage": "pitch_demo",
-      "title": "Participación media 92 %",
-      "body": "Dato de ejemplo (sustituir por el real de Enjoy): 9 de cada 10 invitados envían al menos una kiss-cam o dedicatoria.",
-      "segments": [
-        "bodas"
-      ]
-    },
-    {
-      "key": "exp-upsell",
-      "module_key": "tabs-experiencias",
-      "kind": "monetization",
-      "stage": "negociacion",
-      "title": "Pack Kiss-cam + Retos",
-      "body": "Vende las experiencias en pack (no sueltas): el pack completo sube el ticket medio ~30 % y el coste marginal es casi cero. Descuento máximo autorizado: 10 %.",
-      "why_it_works": "El margen está en el pack; las experiencias sueltas compiten con el DJ.",
-      "segments": [
-        "bodas"
-      ]
-    },
-    {
-      "key": "loc-pitch",
-      "module_key": "tabs-locales",
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "segments": [
-        "bodas"
-      ],
-      "title": "Un extra que vendes tú y te diferencia de la finca de al lado",
-      "body": "La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene."
-    },
-    {
-      "key": "loc-discovery",
-      "module_key": "tabs-locales",
-      "kind": "discovery",
-      "stage": "descubrimiento",
-      "segments": [
-        "bodas"
-      ],
-      "title": "¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala?",
-      "body": "Si pierden bodas por \"diferenciación\", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces."
-    },
-    {
-      "key": "loc-obj-proveedor",
-      "module_key": "tabs-locales",
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "ya_tengo_proveedor",
-      "segments": [
-        "bodas"
-      ],
-      "title": "\"Ya trabajamos con un DJ que hace cosas parecidas\"",
-      "body": "Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos."
-    },
-    {
-      "key": "loc-monet",
-      "module_key": "tabs-locales",
-      "kind": "monetization",
-      "stage": "negociacion",
-      "segments": [
-        "bodas"
-      ],
-      "title": "Margen para la sala",
-      "body": "Precio a la sala por evento + PVP recomendado a los novios. La sala decide si lo regala (diferenciación) o lo cobra (margen). Ejemplo: coste 250 €, PVP 450 €."
     },
     {
       "key": "precio-presentar",
@@ -2701,6 +2544,168 @@
       ],
       "title": "Precios de festivales",
       "body": "Sin IVA. Propuesta sin validar en campo.\n\n- Pequeño o de un día (hasta 5.000): **1.200 €**\n- Mediano (5.000–20.000): **2.500 €**\n- Grande (más de 20.000): a medida, **solo tras prueba de carga**\n- Infraestructura de temporada (tipo Selvatic): **desde 1.500 €/mes**\n\n**Modelo B, paga la marca:** activación desde 3.000 €. Lo lleva el fundador: se compara con otras activaciones de marca, no con software.\n\n**Suelo:** 800 €/evento."
+    },
+    {
+      "key": "empresa-icp",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "prospeccion",
+      "segments": [
+        "bodas"
+      ],
+      "title": "Cliente ideal (y cuándo no)",
+      "body": "- **Novios** con 100+ invitados que quieren una boda \"diferente\" y temen los tiempos muertos.\n- **Salas y fincas** que compiten por bodas y buscan un extra vendible.\n- **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.",
+      "when_to_use": "Antes de invertir tiempo en un lead: cualifica."
+    },
+    {
+      "key": "empresa-apertura",
+      "module_key": null,
+      "kind": "script",
+      "stage": "primer_contacto",
+      "segments": [
+        "bodas"
+      ],
+      "title": "Apertura de la reunión",
+      "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué es lo que más os importa que recuerden vuestros invitados de {company}?",
+      "when_to_use": "Al empezar la llamada o la visita.",
+      "why_it_works": "Abre con su objetivo, no con tu producto: lo que digan es tu guion para el resto de la reunión."
+    },
+    {
+      "key": "empresa-descubrir-1",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "segments": [
+        "bodas"
+      ],
+      "title": "¿Qué te preocupa que pase en el banquete?",
+      "body": "Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo."
+    },
+    {
+      "key": "empresa-cierre",
+      "module_key": null,
+      "kind": "script",
+      "stage": "cierre",
+      "segments": [
+        "bodas"
+      ],
+      "title": "Cierre con fecha",
+      "body": "¿Os parece que dejemos reservada la fecha de vuestra boda y el jueves te llamo a las 18:00 para cerrar los detalles con vosotros dos?",
+      "why_it_works": "Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión."
+    },
+    {
+      "key": "exp-pitch",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "title": "Kiss-cam, dedicatorias y retos: el banquete se convierte en juego",
+      "body": "Cada invitado participa desde su móvil (sin app) y lo que envía sale en la pantalla en directo. Nadie se queda mirando el plato.",
+      "when_to_use": "Cuando han mencionado tiempos muertos o mesas que no se mezclan.",
+      "segments": [
+        "bodas"
+      ]
+    },
+    {
+      "key": "exp-fit",
+      "module_key": "tabs-experiencias",
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "segments": [
+        "bodas"
+      ],
+      "title": "Encaja mejor en…",
+      "body": "Bodas de 100+ invitados, con pantalla o proyector en el salón. Con menos de 60 invitados, ofrece solo dedicatorias."
+    },
+    {
+      "key": "exp-demo",
+      "module_key": "tabs-experiencias",
+      "kind": "tip",
+      "stage": "pitch_demo",
+      "title": "Enseña el móvil, no la pantalla",
+      "body": "En la demo, pásale TU móvil con la kiss-cam abierta y que envíe algo: lo ve aparecer en la vista previa del dossier. Vender la experiencia > describirla.",
+      "segments": [
+        "bodas"
+      ]
+    },
+    {
+      "key": "exp-obj-mayores",
+      "module_key": "tabs-experiencias",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "no_lo_necesito",
+      "title": "\"Mis invitados son mayores, no van a participar\"",
+      "body": "Las dedicatorias son el módulo que más usan los mayores: escribir unas palabras a los novios. Los nietos les ayudan con el móvil y eso también es parte del recuerdo.",
+      "segments": [
+        "bodas"
+      ]
+    },
+    {
+      "key": "exp-prueba",
+      "module_key": "tabs-experiencias",
+      "kind": "proof",
+      "stage": "pitch_demo",
+      "title": "Participación media 92 %",
+      "body": "Dato de ejemplo (sustituir por el real de Enjoy): 9 de cada 10 invitados envían al menos una kiss-cam o dedicatoria.",
+      "segments": [
+        "bodas"
+      ]
+    },
+    {
+      "key": "exp-upsell",
+      "module_key": "tabs-experiencias",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "title": "Pack Kiss-cam + Retos",
+      "body": "Vende las experiencias en pack (no sueltas): el pack completo sube el ticket medio ~30 % y el coste marginal es casi cero. Descuento máximo autorizado: 10 %.",
+      "why_it_works": "El margen está en el pack; las experiencias sueltas compiten con el DJ.",
+      "segments": [
+        "bodas"
+      ]
+    },
+    {
+      "key": "loc-pitch",
+      "module_key": "tabs-locales",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "segments": [
+        "bodas"
+      ],
+      "title": "Un extra que vendes tú y te diferencia de la finca de al lado",
+      "body": "La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene."
+    },
+    {
+      "key": "loc-discovery",
+      "module_key": "tabs-locales",
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "segments": [
+        "bodas"
+      ],
+      "title": "¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala?",
+      "body": "Si pierden bodas por \"diferenciación\", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces."
+    },
+    {
+      "key": "loc-obj-proveedor",
+      "module_key": "tabs-locales",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "ya_tengo_proveedor",
+      "segments": [
+        "bodas"
+      ],
+      "title": "\"Ya trabajamos con un DJ que hace cosas parecidas\"",
+      "body": "Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos."
+    },
+    {
+      "key": "loc-monet",
+      "module_key": "tabs-locales",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "segments": [
+        "bodas"
+      ],
+      "title": "Margen para la sala",
+      "body": "Precio a la sala por evento + PVP recomendado a los novios. La sala decide si lo regala (diferenciación) o lo cobra (margen). Ejemplo: coste 250 €, PVP 450 €."
     }
   ]
 }

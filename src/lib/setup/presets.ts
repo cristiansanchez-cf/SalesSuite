@@ -27,7 +27,7 @@ export const PERSONALITY: PresetFacet = {
 export const PRESETS: Preset[] = [
   {
     key: 'ocio', name: 'Ocio nocturno y eventos', icon: 'music',
-    pitch: 'Locales, bodas, conciertos y festivales. Actores típicos: dueño o gerente, responsable de sala, DJ, RRPP, marcas patrocinadoras.',
+    pitch: 'Locales, promotoras, conciertos y festivales (bodas, después). Actores típicos: dueño o gerente, responsable de sala, DJ, RRPP, marcas patrocinadoras.',
     segments: [
       { key: 'ocio-nocturno', name: 'Locales de ocio nocturno', icon: 'music', description: 'Discotecas, salas y bares de copas.', personas: [
         { key: 'propietario-local', name: 'Dueño o gerente del local', role: 'decisor', goals: 'Más caja por noche y fidelizar al público.' },
@@ -35,13 +35,13 @@ export const PRESETS: Preset[] = [
         { key: 'dj-residente', name: 'DJ residente', role: 'guardian', canBlock: 'Puede tumbar las peticiones de canciones si siente que le quitan el control de la sesión.', canHelp: 'Si lo ve como suyo, lo anima en cabina.' },
         { key: 'camareros', name: 'Camareros', role: 'usuario', canBlock: 'Si les da trabajo extra, no lo empujan.' },
       ] },
-      { key: 'bodas', name: 'Bodas', icon: 'heart', description: 'Fincas y novios.', personas: [
-        { key: 'novios', name: 'Novios', role: 'decisor' },
-        { key: 'coordinadora-finca', name: 'Coordinador/a de la finca', role: 'guardian', canBlock: 'Si no encaja con el timing del evento, lo desaconseja.' },
-      ] },
       { key: 'festivales', name: 'Festivales', icon: 'party-popper', description: 'Promotoras y patrocinadores.', personas: [
         { key: 'director-festival', name: 'Director/a del festival', role: 'decisor' },
         { key: 'produccion-tecnica', name: 'Producción técnica', role: 'guardian', canBlock: 'Si no hay pantalla o conectividad garantizada, lo veta.' },
+      ] },
+      { key: 'bodas', name: 'Bodas', icon: 'heart', description: 'Fincas y novios.', personas: [
+        { key: 'novios', name: 'Novios', role: 'decisor' },
+        { key: 'coordinadora-finca', name: 'Coordinador/a de la finca', role: 'guardian', canBlock: 'Si no encaja con el timing del evento, lo desaconseja.' },
       ] },
     ],
     facets: [
