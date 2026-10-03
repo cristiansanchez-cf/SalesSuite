@@ -1,14 +1,14 @@
 ---
 /**
- * Ficha de un sector (docs/FOUNDATIONS.md §4.1): a quién vendemos, explicado para que se entienda de un vistazo.
- * Por qué nosotros → cliente ideal frente a «mejor no» → cómo compran → quién está en la sala (con cómo tratar a cada
- * persona, plegado) → qué ofrecerle → jugadas. Desde la bienvenida se vuelve a ella (?from=welcome).
+ * Ficha de un sector (docs/FOUNDATIONS.md §4.1 y §6): se lee de arriba a abajo como una historia numerada y cada bloque
+ * destaca UNA cosa. 1 Por qué nosotros · 2 A quién sí / no · 3 Quién está en la sala (mapa: deciden → influyen → pueden
+ * vetar; cada persona tiene su pantalla) · 4 Qué ofrecer · 5 Qué decir. Desde la bienvenida se vuelve a ella (?from=welcome).
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { AdminError } from '~/lib/admin/service';
-import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
-import { PERSONA_ROLES, ROLE_CLASS } from '~/lib/playbook/market';
+import { stripMarkdown } from '~/lib/playbook/markdown';
+import { type PersonaRole } from '~/lib/playbook/market';
 import { ROLE_ICON } from '~/lib/setup/presets';
 import { ICONS, type IconName } from '~/lib/ui/icons';
 import { i18n } from '~/lib/i18n';
@@ -24,133 +24,126 @@ try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) 
 }
 const sg = v.segment;
 const fromWelcome = Astro.url.searchParams.get('from') === 'welcome';
-const back = fromWelcome ? { href: '/admin/welcome?step=3', label: msg.sector.backWelcome } : { href: '/admin/learn', label: msg.common.backLearn };
+const qs = fromWelcome ? '?from=welcome' : '';
+const back = fromWelcome ? { href: '/admin/welcome?step=3', label: msg.sector.backWelcome } : { href: '/admin/learn', label: msg.common.backLearn.replace(/^←\s*/, '') };
 const icon = (sg.icon && sg.icon in ICONS ? sg.icon : 'target') as IconName;
-const personas = [...sg.personas].sort((a, b) => PERSONA_ROLES.indexOf(a.role) - PERSONA_ROLES.indexOf(b.role) || a.position - b.position);
 // «- a\n- b» → [a, b]; un texto corrido queda como una sola línea.
 const bullets = (t: string | null) => (t ? t.split('\n').map((l) => l.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean) : []);
 const icp = bullets(sg.icp);
 const avoid = bullets(sg.disqualifiers);
 const PRIO = msg.priority as Record<number, string>;
-const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slice(0, 160) ?? '';
+const GROUPS: Array<{ key: 'decide' | 'influence' | 'veto'; roles: PersonaRole[] }> = [
+  { key: 'decide', roles: ['decisor', 'pagador'] },
+  { key: 'influence', roles: ['influenciador', 'campeon', 'usuario'] },
+  { key: 'veto', roles: ['guardian'] },
+];
+const room = GROUPS.map((g) => ({ ...g, people: sg.personas.filter((p) => g.roles.includes(p.role)).sort((a, b) => a.position - b.position) })).filter((g) => g.people.length);
+const plays = v.plays.slice(0, 6);
+let n = 0;
+const step = () => ++n;
 ---
 <AdminLayout title={sg.name} wide>
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <a href={back.href} class="inline-flex items-center gap-1 text-sm text-muted hover:text-ink" data-testid="sector-back"><Icon name="chevron-left" size={14} />{back.label}</a>
-    {admin.playbook.isAdmin && <a class="text-sm underline" href={`/admin/playbook/segment/${sg.id}`}>{msg.sector.edit}</a>}
-  </div>
-
-  <header class="co-card mt-3 grid gap-5 !p-6 sm:!p-8" data-testid="sector-hero">
-    <div class="flex flex-wrap items-start gap-4">
-      <span class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={icon} size={28} /></span>
-      <div class="min-w-0 flex-1">
-        <h1 class="co-page-title">{sg.name}</h1>
-        {sg.description && <p class="co-lede mt-1">{sg.description}</p>}
+  <div class="mx-auto grid max-w-5xl gap-14 pb-10">
+    <div class="grid gap-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <a href={back.href} class="inline-flex items-center gap-1 text-sm text-muted hover:text-ink" data-testid="sector-back"><Icon name="chevron-left" size={14} />{back.label}</a>
+        {admin.playbook.isAdmin && <a class="text-sm text-muted underline" href={`/admin/playbook/segment/${sg.id}`}>{msg.sector.edit}</a>}
       </div>
+      <header class="grid gap-5" data-testid="sector-hero">
+        <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={icon} size={32} /></span>
+        <h1 class="co-page-title !text-5xl">{sg.name}</h1>
+        {sg.description && <p class="co-lede max-w-2xl !text-lg">{sg.description}</p>}
+        {(sg.dealSize || sg.salesCycle) && (
+          <div class="flex flex-wrap gap-6">
+            {sg.dealSize && <div><p class="text-eyebrow">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.dealSize}</p></div>}
+            {sg.salesCycle && <div><p class="text-eyebrow">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.salesCycle}</p></div>}
+          </div>
+        )}
+      </header>
     </div>
-    {(sg.dealSize || sg.salesCycle) && (
-      <div class="flex flex-wrap gap-2">
-        {sg.dealSize && <span class="co-inset !py-2 text-sm"><span class="co-meta">{msg.sector.ticket}</span> <strong>{sg.dealSize}</strong></span>}
-        {sg.salesCycle && <span class="co-inset !py-2 text-sm"><span class="co-meta">{msg.sector.cycle.replace(/^⏱\s*/, '')}</span> <strong>{sg.salesCycle}</strong></span>}
-      </div>
-    )}
+
     {sg.valueProp && (
-      <blockquote class="m-0 border-l-4 border-[color:var(--co-signal)] pl-4">
-        <p class="text-eyebrow mb-1">{msg.sector.whyUs}</p>
-        <p class="text-lg font-semibold leading-snug">{stripMarkdown(sg.valueProp)}</p>
-      </blockquote>
+      <section class="grid gap-4">
+        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{msg.sector.steps.why}</h2>
+        <p class="max-w-3xl text-2xl font-semibold leading-snug sm:text-3xl">{stripMarkdown(sg.valueProp)}</p>
+      </section>
     )}
-  </header>
 
-  {(icp.length > 0 || avoid.length > 0) && (
-    <div class="mt-6 grid gap-4 md:grid-cols-2" data-testid="sector-fit">
-      {icp.length > 0 && (
-        <section class="co-card grid content-start gap-3">
-          <h2 class="text-eyebrow">{msg.sector.icp}</h2>
-          <ul class="grid gap-2 p-0">{icp.map((x) => (
-            <li class="flex list-none items-start gap-2"><span class="mt-0.5 text-[color:var(--console-good,#15803d)]"><Icon name="circle-check" size={18} /></span><span>{x}</span></li>))}
-          </ul>
-        </section>
-      )}
-      {avoid.length > 0 && (
-        <section class="co-card grid content-start gap-3">
-          <h2 class="text-eyebrow">{msg.sector.disqualifiers}</h2>
-          <ul class="grid gap-2 p-0">{avoid.map((x) => (
-            <li class="flex list-none items-start gap-2"><span class="mt-0.5 text-[color:var(--console-attention,#b42318)]"><Icon name="circle-x" size={18} /></span><span>{x}</span></li>))}
-          </ul>
-        </section>
-      )}
-    </div>
-  )}
-
-  {sg.buyingProcess && (
-    <section class="co-card mt-4 grid gap-2">
-      <h2 class="text-eyebrow">{msg.sector.buyingProcess}</h2>
-      <div class="prose-play" set:html={renderMarkdown(sg.buyingProcess)} />
-    </section>
-  )}
-
-  <section class="co-section" data-testid="sector-room">
-    <div class="co-section__head"><h2 class="co-card-title">{msg.sector.room}</h2></div>
-    <p class="co-meta mb-4">{msg.sector.roomLede}</p>
-    {personas.length === 0 ? <p class="co-help">{msg.sector.noActors}</p> : (
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" data-testid="personas">
-        {personas.map((p) => (
-          <article id={`actor-${p.key}`} class="co-card grid content-start gap-3 scroll-mt-24" data-testid="persona" data-persona-key={p.key}>
-            <div class="flex items-center gap-3">
-              <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--console-chip-bg)]" aria-hidden="true"><Icon name={ROLE_ICON[p.role]} size={20} /></span>
-              <div class="min-w-0 flex-1">
-                <h3 class="co-entity">{p.name}</h3>
-                <span class={ROLE_CLASS[p.role]} title={msg.roleHint[p.role]}>{msg.role[p.role]}</span>
-              </div>
+    {(icp.length > 0 || avoid.length > 0) && (
+      <section class="grid gap-5" data-testid="sector-fit">
+        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{msg.sector.steps.fit}</h2>
+        <div class="grid gap-4 md:grid-cols-2">
+          {icp.length > 0 && (
+            <div class="co-card grid content-start gap-4 !p-7">
+              <p class="flex items-center gap-2 font-semibold text-[color:var(--console-good,#15803d)]"><Icon name="circle-check" size={20} />{msg.sector.yes}</p>
+              <ul class="grid gap-3 p-0">{icp.map((x) => <li class="list-none text-[15px] leading-relaxed">{x}</li>)}</ul>
             </div>
-            {p.goals && <p class="text-sm"><span class="font-semibold">{msg.personaCard.wants}:</span> {p.goals}</p>}
-            {p.pains && <p class="text-sm"><span class="font-semibold">{msg.personaCard.hurts}:</span> {p.pains}</p>}
-            {p.kpis && <p class="text-sm"><span class="font-semibold">{msg.personaCard.measures}:</span> {p.kpis}</p>}
-            <details class="group" data-testid="persona-more">
-              <summary class="cursor-pointer text-sm font-semibold underline-offset-2 hover:underline">{msg.sector.more}</summary>
-              <div class="mt-3 grid gap-3 text-sm">
-                {p.howToApproach && <div class="co-inset"><p class="text-eyebrow mb-1">{msg.personaCard.approach}</p><div class="prose-play" set:html={renderMarkdown(p.howToApproach)} /></div>}
-                {p.avoid && <p><span class="font-semibold">{msg.personaCard.avoid}</span> {p.avoid}</p>}
-                {p.canHelp && <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">{msg.personaCard.canHelp}</p><p>{p.canHelp}</p></div>}
-                {p.canBlock && <div class="rounded-[var(--console-radius-control)] bg-[var(--console-attention-bg)] p-3"><p class="text-eyebrow mb-1">{msg.personaCard.canBlock}</p><p>{p.canBlock}</p></div>}
-                {p.objections.length > 0 && <p><span class="font-semibold">{msg.personaCard.objections}</span> {p.objections.map((o) => msg.objection[o]).join(' · ')}</p>}
-                {p.angles.length > 0 && <div><p class="text-eyebrow mb-1">{msg.personaCard.angles}</p><ul class="grid gap-1 p-0">{p.angles.map((a) => <li class="list-none"><strong>{a.moduleName}:</strong> {a.angle}</li>)}</ul></div>}
-                {(v.byPersona[p.key] ?? []).length > 0 && <div><p class="text-eyebrow mb-1">{msg.personaCard.plays}</p><ul class="grid gap-1 p-0">{v.byPersona[p.key].map((pl) => <li class="list-none">▸ <a class="underline-offset-2 hover:underline" href={`/admin/learn/${pl.moduleId ?? 'general'}#play-${pl.id}`}>{pl.title}</a></li>)}</ul></div>}
-                <a class="co-btn co-btn--primary co-btn--sm w-fit" href={`/admin/compose?persona=${p.id}`} data-testid="compose-persona">{msg.personaCard.compose(p.name)}</a>
-              </div>
-            </details>
-          </article>
-        ))}
-      </div>
+          )}
+          {avoid.length > 0 && (
+            <div class="co-card grid content-start gap-4 !p-7">
+              <p class="flex items-center gap-2 font-semibold text-[color:var(--console-attention,#b42318)]"><Icon name="circle-x" size={20} />{msg.sector.no}</p>
+              <ul class="grid gap-3 p-0">{avoid.map((x) => <li class="list-none text-[15px] leading-relaxed">{x}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      </section>
     )}
-  </section>
 
-  {sg.modules.length > 0 && (
-    <section class="co-section" data-testid="segment-modules">
-      <div class="co-section__head"><h2 class="co-card-title">{msg.sector.modulesHere}</h2></div>
-      <ol class="co-rows">{sg.modules.map((mo, i) => (
-        <li><a class="co-row" href={`/admin/learn/${mo.moduleId}`}>
-          <span class="co-row__lead co-figure text-xl">{i + 1}</span>
-          <span class="co-row__main"><span class="co-row-title">{mo.moduleName} <span class="co-badge ml-1 align-middle">{PRIO[mo.priority]}</span></span>{mo.fit && <span class="co-meta">{mo.fit}</span>}</span>
-          <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
-      </ol>
+    <section class="grid gap-5" data-testid="sector-room">
+      <div class="grid gap-2">
+        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{msg.sector.room}</h2>
+        {sg.buyingProcess && <p class="max-w-3xl text-[15px] leading-relaxed">{stripMarkdown(sg.buyingProcess)}</p>}
+        <p class="co-meta">{msg.sector.roomLede}</p>
+      </div>
+      {room.length === 0 ? <p class="co-help">{msg.sector.noActors}</p> : (
+        <div class="grid gap-6 md:grid-cols-3" data-testid="personas">
+          {room.map((g) => (
+            <div class="grid content-start gap-3">
+              <p class="text-eyebrow">{msg.sector.groups[g.key]}</p>
+              {g.people.map((p) => (
+                <a class="co-card co-card--link !grid gap-3 !p-5" href={`/admin/learn/sector/${sg.key}/${p.key}${qs}`} data-testid="persona" data-persona-key={p.key}>
+                  <span class="flex items-center gap-3">
+                    <span class={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${g.key === 'veto' ? 'bg-[var(--console-attention-bg)]' : 'bg-[var(--console-chip-bg)]'}`} aria-hidden="true"><Icon name={ROLE_ICON[p.role]} size={22} /></span>
+                    <span class="min-w-0"><span class="co-entity block">{p.name}</span><span class="co-meta">{msg.role[p.role]}</span></span>
+                  </span>
+                  {p.goals && <span class="line-clamp-2 text-sm text-muted">{p.goals}</span>}
+                </a>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </section>
-  )}
 
-  {v.plays.length > 0 && (
-    <section class="co-section" data-testid="sector-plays">
-      <div class="co-section__head"><h2 class="co-card-title">{msg.sector.playsHere}</h2></div>
-      <ul class="co-rows">{v.plays.slice(0, 8).map((pl) => (
-        <li><a class="co-row" href={`/admin/learn/${pl.moduleId ?? 'general'}#play-${pl.id}`}>
-          <span class="co-row__main"><span class="co-row-title">{pl.title}</span><span class="co-meta">{firstLine(pl.body)}</span></span>
-          <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
-      </ul>
-    </section>
-  )}
+    {sg.modules.length > 0 && (
+      <section class="grid gap-5" data-testid="segment-modules">
+        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{msg.sector.steps.offer}</h2>
+        <ol class="grid gap-3 p-0">{sg.modules.map((mo, i) => (
+          <li class="list-none"><a class="co-card co-card--link !flex items-center gap-5 !p-5" href={`/admin/learn/${mo.moduleId}`}>
+            <span class="co-figure w-8 text-3xl text-[color:var(--co-signal)]">{i + 1}</span>
+            <span class="min-w-0 flex-1"><span class="co-entity block">{mo.moduleName}</span>{mo.fit && <span class="line-clamp-1 text-sm text-muted">{mo.fit}</span>}</span>
+            <span class="co-badge hidden sm:inline-flex">{PRIO[mo.priority]}</span>
+            <Icon name="chevron-right" /></a></li>))}
+        </ol>
+      </section>
+    )}
 
-  <div class="mt-8 flex flex-wrap gap-3">
-    <a class="co-btn co-btn--primary" href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)} <span aria-hidden="true">→</span></a>
-    {fromWelcome && <a class="co-btn co-btn--ghost" href={back.href}>{back.label}</a>}
+    {plays.length > 0 && (
+      <section class="grid gap-5" data-testid="sector-plays">
+        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{msg.sector.steps.say}</h2>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{plays.map((pl) => (
+          <a class="co-card co-card--link !grid content-start gap-3 !p-5" href={`/admin/learn/${pl.moduleId ?? 'general'}#play-${pl.id}`}>
+            <span class="co-badge w-fit">{msg.kind[pl.kind]}</span>
+            <span class="co-entity">{pl.title}</span>
+          </a>))}
+        </div>
+        {v.plays.length > plays.length && <a class="text-sm font-semibold underline" href="/admin/learn">{msg.sector.seeAll(v.plays.length)}</a>}
+      </section>
+    )}
+
+    <div class="flex flex-wrap gap-3">
+      <a class="co-btn co-btn--primary" href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)} <span aria-hidden="true">→</span></a>
+      {fromWelcome && <a class="co-btn co-btn--ghost" href={back.href}>{back.label}</a>}
+    </div>
   </div>
 </AdminLayout>

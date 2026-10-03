@@ -1,0 +1,101 @@
+---
+/**
+ * Una persona de un sector (p. ej. «Novios» en Bodas): todo lo que hace falta para tratarla, repartido para leerse
+ * de un vistazo. Lo que le importa → cómo ganártelo (destacado) → cómo puede ayudarte / tumbarlo → objeciones →
+ * qué le aporta cada módulo → jugadas → preparar un mensaje.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { AdminError } from '~/lib/admin/service';
+import { renderMarkdown } from '~/lib/playbook/markdown';
+import { ROLE_ICON } from '~/lib/setup/presets';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const { m: msg } = i18n(Astro, playbookMessages);
+let v;
+try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+const p = v.segment.personas.find((x) => x.key === Astro.params.persona);
+if (!p) return Astro.rewrite('/404');
+const qs = Astro.url.searchParams.get('from') === 'welcome' ? '?from=welcome' : '';
+const plays = v.byPersona[p.key] ?? [];
+const veto = p.role === 'guardian';
+---
+<AdminLayout title={`${p.name} · ${v.segment.name}`} wide>
+  <div class="mx-auto grid max-w-4xl gap-12 pb-10" data-testid="persona-page" data-persona-key={p.key}>
+    <div class="grid gap-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <a href={`/admin/learn/sector/${v.segment.key}${qs}`} class="inline-flex items-center gap-1 text-sm text-muted hover:text-ink" data-testid="persona-back"><Icon name="chevron-left" size={14} />{msg.sector.backSector(v.segment.name)}</a>
+        {admin.playbook.isAdmin && <a class="text-sm text-muted underline" href={`/admin/playbook/persona/${p.id}`}>{msg.common.edit}</a>}
+      </div>
+      <header class="flex flex-wrap items-center gap-5">
+        <span class={`inline-flex h-20 w-20 items-center justify-center rounded-full ${veto ? 'bg-[var(--console-attention-bg)]' : 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]'}`} aria-hidden="true"><Icon name={ROLE_ICON[p.role]} size={36} /></span>
+        <div class="grid gap-2">
+          <h1 class="co-page-title !text-5xl">{p.name}</h1>
+          <p class="co-lede">{msg.role[p.role]} · {msg.roleHint[p.role]}</p>
+        </div>
+      </header>
+    </div>
+
+    {(p.goals || p.pains || p.kpis) && (
+      <section class="grid gap-4">
+        <h2 class="text-eyebrow">{msg.sector.facts}</h2>
+        <div class="grid gap-4 md:grid-cols-2">
+          {p.goals && <div class="co-card grid content-start gap-2 !p-7"><p class="text-eyebrow">{msg.personaCard.wants}</p><p class="text-xl font-semibold leading-snug">{p.goals}</p></div>}
+          {p.pains && <div class="co-card grid content-start gap-2 !p-7"><p class="text-eyebrow">{msg.personaCard.hurts}</p><p class="text-xl font-semibold leading-snug">{p.pains}</p></div>}
+        </div>
+        {p.kpis && <p class="text-[15px]"><span class="co-meta">{msg.personaCard.measures}:</span> {p.kpis}</p>}
+      </section>
+    )}
+
+    {(p.howToApproach || p.avoid) && (
+      <section class="grid gap-4" data-testid="persona-approach">
+        <h2 class="text-eyebrow">{msg.sector.howToWin}</h2>
+        {p.howToApproach && <div class="rounded-[var(--console-radius-card)] border-l-4 border-[color:var(--co-signal)] bg-[color:var(--co-signal-soft)] p-7 text-lg leading-relaxed"><div class="prose-play" set:html={renderMarkdown(p.howToApproach)} /></div>}
+        {p.avoid && <p class="flex items-start gap-2 text-[15px]"><span class="mt-0.5 text-[color:var(--console-attention,#b42318)]"><Icon name="ban" size={18} /></span><span><strong>{msg.personaCard.avoid}</strong> {p.avoid}</span></p>}
+      </section>
+    )}
+
+    {(p.canHelp || p.canBlock) && (
+      <section class="grid gap-4 md:grid-cols-2">
+        {p.canHelp && <div class="rounded-[var(--console-radius-card)] bg-[var(--console-good-bg)] p-7"><p class="mb-2 flex items-center gap-2 font-semibold"><Icon name="heart-handshake" size={18} />{msg.personaCard.canHelp}</p><p class="leading-relaxed">{p.canHelp}</p></div>}
+        {p.canBlock && <div class="rounded-[var(--console-radius-card)] bg-[var(--console-attention-bg)] p-7"><p class="mb-2 flex items-center gap-2 font-semibold"><Icon name="shield-alert" size={18} />{msg.personaCard.canBlock}</p><p class="leading-relaxed">{p.canBlock}</p></div>}
+      </section>
+    )}
+
+    {p.objections.length > 0 && (
+      <section class="grid gap-3">
+        <h2 class="text-eyebrow">{msg.personaCard.objections.replace(/:$/, '')}</h2>
+        <div class="flex flex-wrap gap-2">{p.objections.map((o) => <a class="co-chip" href={`/admin/compose?persona=${p.id}&objection=${o}`}>«{msg.objection[o]}»</a>)}</div>
+      </section>
+    )}
+
+    {p.angles.length > 0 && (
+      <section class="grid gap-4">
+        <h2 class="text-eyebrow">{msg.personaCard.angles}</h2>
+        <ul class="grid gap-3 p-0">{p.angles.map((a) => (
+          <li class="co-card grid list-none gap-1 !p-5"><span class="co-entity">{a.moduleName}</span><span class="text-[15px] text-muted">{a.angle}</span></li>))}
+        </ul>
+      </section>
+    )}
+
+    {plays.length > 0 && (
+      <section class="grid gap-4">
+        <h2 class="text-eyebrow">{msg.personaCard.plays}</h2>
+        <div class="grid gap-3 sm:grid-cols-2">{plays.map((pl) => (
+          <a class="co-card co-card--link !grid content-start gap-3 !p-5" href={`/admin/learn/${pl.moduleId ?? 'general'}#play-${pl.id}`}><span class="co-badge w-fit">{msg.kind[pl.kind]}</span><span class="co-entity">{pl.title}</span></a>))}
+        </div>
+      </section>
+    )}
+
+    <div class="flex flex-wrap gap-3">
+      <a class="co-btn co-btn--primary" href={`/admin/compose?persona=${p.id}`} data-testid="compose-persona">{msg.personaCard.compose(p.name)} <span aria-hidden="true">→</span></a>
+      <a class="co-btn co-btn--ghost" href={`/admin/learn/sector/${v.segment.key}${qs}`}>{msg.sector.backSector(v.segment.name)}</a>
+    </div>
+  </div>
+</AdminLayout>

@@ -31,14 +31,17 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const segs = await rep.$$eval('[data-testid=segment]', (els) => els.map((e) => e.textContent));
   assert(['Bodas', 'Locales de ocio nocturno', 'Conciertos', 'Festivales'].every((n) => segs.some((t) => t.includes(n))), 'Aprende: los 4 sectores de Enjoy');
   await rep.locator('[data-testid=segment]', { hasText: 'ocio nocturno' }).click();
-  const dj = rep.locator('[data-testid=persona][data-persona-key=dj-residente]');
-  assert((await dj.textContent()).includes('Cómo puede tumbarlo'), 'actor con «puede ayudar / puede tumbarlo»');
   assert((await rep.textContent('[data-testid=segment-modules]')).includes('Tabs · Experiencias'), 'módulos que encajan en el sector');
-  if (OUT) await rep.screenshot({ path: `${OUT}/sector.png`, fullPage: false });
+  assert((await rep.locator('[data-testid=sector-room] .text-eyebrow').allTextContents()).some((t) => /Deciden/.test(t)), 'mapa de la sala: quién decide');
+  if (OUT) await rep.screenshot({ path: `${OUT}/sector.png`, fullPage: true });
+  // Cada persona tiene su pantalla (el detalle no se amontona en la ficha del sector).
+  await rep.click('[data-testid=persona][data-persona-key=dj-residente]');
+  await rep.waitForURL(/\/admin\/learn\/sector\/ocio-nocturno\/dj-residente/);
+  assert((await rep.textContent('[data-testid=persona-page]')).includes('Cómo puede tumbarlo'), 'actor con «puede ayudar / puede tumbarlo»');
+  if (OUT) await rep.screenshot({ path: `${OUT}/persona.png`, fullPage: true });
 
-  // ---- preparar mensaje: «tipo DJ» (el detalle de cada persona va plegado en «Cómo tratarle»)
-  await dj.locator('[data-testid=persona-more] summary').click();
-  await dj.locator('[data-testid=compose-persona]').click();
+  // ---- preparar mensaje: «tipo DJ»
+  await rep.click('[data-testid=compose-persona]');
   await rep.waitForSelector('[data-testid=brief]');
   assert((await rep.inputValue('[data-testid=prompt]')).includes('SECTOR: Locales de ocio nocturno'), 'contexto del sector y del actor sin escribir nada');
   await rep.selectOption('[data-testid=type-select]', 'objecion');
@@ -102,8 +105,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await adm.fill('[data-testid=persona-form] [name=kpis]', `Pista llena ${RUN}`);
   await adm.click('[data-testid=persona-form] button[type=submit]');
   await adm.waitForURL(/ok=1/);
-  await rep.goto(`${BASE}/admin/learn/sector/ocio-nocturno`);
-  assert((await rep.textContent('[data-persona-key=dj-residente]')).includes(`Pista llena ${RUN}`), 'cambio del líder visible para el equipo');
+  await rep.goto(`${BASE}/admin/learn/sector/ocio-nocturno/dj-residente`);
+  assert((await rep.textContent('[data-testid=persona-page]')).includes(`Pista llena ${RUN}`), 'cambio del líder visible para el equipo');
   assert((await rep.goto(`${BASE}/admin/playbook/segment/new`)).status() === 403, 'comercial no edita el mapa');
 
   assert(errors.length === 0, `sin errores JS ${errors}`);

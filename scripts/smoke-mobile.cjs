@@ -8,7 +8,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
 const PAGES = {
   'admin@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/playbook', '/admin/playbook?tab=market', '/admin/team', '/admin/catalog', '/admin/setup', '/admin/setup?step=3', '/admin/brand', '/admin/accounts', '/admin/territory', '/admin/notifications', '/admin/commissions', '/admin/commissions/team', '/admin/commissions/team?tab=plan', '/admin/commissions/team?tab=api', '/admin/commissions/team?tab=cupones', '/admin/inicio', '/admin/analytics', '/admin/start', '/admin/dossiers/00000000-0000-4000-8000-000000d05501/analytics'],
-  'rep@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/learn', '/admin/accounts', '/admin/accounts/00000000-0000-4000-8000-0000000ac001', '/admin/inicio', '/admin/analytics', '/admin/start'],
+  'rep@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/learn', '/admin/accounts', '/admin/accounts/00000000-0000-4000-8000-0000000ac001', '/admin/inicio', '/admin/analytics', '/admin/start', '/admin/learn/sector/bodas', '/admin/learn/sector/bodas/novios'],
   'dj@enjoy.test': ['/admin'],
 };
 
