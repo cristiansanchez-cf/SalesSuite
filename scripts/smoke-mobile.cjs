@@ -7,8 +7,8 @@ const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
 
 const PAGES = {
-  'admin@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/playbook', '/admin/playbook?tab=market', '/admin/team', '/admin/catalog', '/admin/setup', '/admin/setup?step=3', '/admin/brand'],
-  'rep@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/learn'],
+  'admin@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/playbook', '/admin/playbook?tab=market', '/admin/team', '/admin/catalog', '/admin/setup', '/admin/setup?step=3', '/admin/brand', '/admin/accounts', '/admin/territory', '/admin/notifications'],
+  'rep@enjoy.test': ['/admin', '/admin/wins', '/admin/compose', '/admin/learn', '/admin/accounts', '/admin/accounts/00000000-0000-4000-8000-0000000ac001'],
   'dj@enjoy.test': ['/admin'],
 };
 

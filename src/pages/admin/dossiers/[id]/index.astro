@@ -1,19 +1,38 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Builder from '~/components/admin/Builder.svelte';
+import Icon from '~/components/ui/Icon.astro';
+import Alert from '~/components/ui/Alert.astro';
 import { AdminError } from '~/lib/admin/service';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { ELIGIBILITY_LABEL } from '~/lib/accounts/rules';
 import type { BuilderState } from '~/lib/admin/types';
 import { requestOrigin } from '~/lib/http';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+const id = Astro.params.id ?? '';
+
+// Cuenta del CRM y decisión sobre la comisión (docs/ACCOUNTS.md).
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  result = await formAction(async () => {
+    if (str('action') === 'link') await admin.service.apply(id, { op: 'setAccount', accountId: str('accountId') || null });
+    if (str('action') === 'decide') await admin.accounts.decide(id, str('decision') === 'approved' ? 'approved' : 'rejected');
+  });
+  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}`, 303);
+}
 
 let state: BuilderState;
 let market;
 let facets;
 let hasStory = false;
 try {
-  state = await admin.service.getState(Astro.params.id ?? '');
+  state = await admin.service.getState(id);
   const [m, fs, story] = await Promise.all([admin.playbook.market(), admin.evidence.facets(), admin.evidence.storyForDossier(state.dossier.id)]);
   facets = fs.map((f) => ({ key: f.key, label: f.label, question: f.question, scope: f.scope, multi: f.multi, options: f.options }));
   hasStory = !!story;
@@ -25,9 +44,46 @@ try {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;
 }
+const d = state.dossier;
+const crm = perms.useAccounts;
+const linked = crm && d.accountId ? await admin.accounts.get(d.accountId).then((x) => x.account).catch(() => null) : null;
+const mine = crm && !d.accountId && state.canEdit ? await admin.accounts.mine() : [];
+const conflict = d.outcome === 'won' && d.accountEligibility && d.accountEligibility !== 'eligible';
 // El enlace público vive en el mismo host del tenant que la consola.
 const origin = requestOrigin(Astro.request, Astro.url);
 ---
-<AdminLayout title={state.dossier.title} wide>
+<AdminLayout title={d.title} wide>
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {conflict && (
+    <div class:list={['co-alert mb-4', d.accountDecision === 'approved' ? 'co-alert--success' : 'co-alert--rejection']} data-testid="commission-conflict">
+      <Icon name="shield-alert" size={18} />
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold">{d.accountDecision === 'approved' ? 'Comisión aprobada a pesar del conflicto' : `Esta venta no genera comisión: ${ELIGIBILITY_LABEL[d.accountEligibility!].toLowerCase()}`}</p>
+        <p>{d.accountDecision ? 'Ya está decidido.' : perms.manageAccounts ? 'Decide si se paga. Hasta entonces, no cuenta para comisiones.' : 'Un/a jefe/a de ventas decidirá si se paga.'}</p>
+      </div>
+      {perms.manageAccounts && !d.accountDecision && (
+        <form method="post" class="flex flex-wrap gap-2">
+          <input type="hidden" name="action" value="decide" />
+          <button class="co-btn co-btn--ghost co-btn--sm" type="submit" name="decision" value="approved">Pagar comisión</button>
+          <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="decision" value="rejected">Sin comisión</button>
+        </form>
+      )}
+    </div>
+  )}
+  {crm && (linked || mine.length > 0) && (
+    <div class="co-inset mb-4 flex flex-wrap items-center gap-3 !py-2.5" data-testid="crm-account">
+      <Icon name="map-pin" size={16} />
+      {linked
+        ? <span class="text-sm">Cuenta: <a class="font-semibold underline" href={`/admin/accounts/${linked.id}`}>{linked.name}</a> <span class="co-meta">· {linked.zonePath || 'sin zona'}</span></span>
+        : (
+          <form method="post" class="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="action" value="link" />
+            <label class="text-sm" for="link-account">Vincular a una de tus cuentas</label>
+            <select id="link-account" class="co-select !min-h-[32px] !w-auto !py-0" name="accountId" required>{mine.map((a) => <option value={a.id}>{a.name}</option>)}</select>
+            <button class="co-btn co-btn--ghost co-btn--sm" type="submit">Vincular</button>
+          </form>
+        )}
+    </div>
+  )}
   <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} />
 </AdminLayout>

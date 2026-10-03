@@ -75,5 +75,6 @@ jobs:
           node scripts/smoke-evidence.cjs
           node scripts/smoke-mobile.cjs
           node scripts/smoke-notifications.cjs
+          node scripts/smoke-accounts.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

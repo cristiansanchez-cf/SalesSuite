@@ -1,0 +1,16 @@
+---
+/** Estado de una cuenta para quien la mira: badge + frase corta (docs/ACCOUNTS.md). */
+import type { AccountView } from '~/lib/accounts/service';
+interface Props { a: AccountView; detail?: boolean }
+const { a, detail = false } = Astro.props;
+const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
+const S = {
+  free: { badge: 'co-badge co-badge--soft', label: 'Libre', text: 'Nadie la está trabajando' },
+  mine: { badge: 'co-badge co-badge--ink', label: 'Tuya', text: `Reservada para ti hasta el ${day(a.claimedUntil)}` },
+  taken: { badge: 'co-badge co-badge--attention', label: 'De otra persona', text: `La trabaja ${a.ownerName ?? 'otra persona'} hasta el ${day(a.claimedUntil)}` },
+  my_customer: { badge: 'co-badge co-badge--signal', label: 'Tu cliente', text: `Cliente tuyo desde el ${day(a.wonAt)}` },
+  customer: { badge: 'co-badge co-badge--soft', label: 'Cliente', text: `Cliente de ${a.wonByName ?? 'otra persona'}` },
+  blocked: { badge: 'co-badge co-badge--attention', label: 'Bloqueada', text: a.blockedReason ?? 'No se puede vender' },
+}[a.state];
+---
+{detail ? <span class="co-meta">{S.text}</span> : <span class={S.badge} data-testid="account-state" data-state={a.state}>{S.label}</span>}

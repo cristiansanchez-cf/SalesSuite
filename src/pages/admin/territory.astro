@@ -1,0 +1,170 @@
+---
+/**
+ * Territorio (docs/ACCOUNTS.md): zonas, quién cubre cada una, reglas de reserva, importación de cuentas
+ * y ventas que esperan tu decisión. Zonas y reglas: admin. Asignaciones, importación y decisiones: admin y jefe/a.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { ELIGIBILITY_LABEL } from '~/lib/accounts/rules';
+import type { Zone } from '~/lib/accounts/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.manageAccounts) return Astro.rewrite('/admin/forbidden');
+const acc = admin.accounts;
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let imported: Awaited<ReturnType<typeof acc.importCsv>> | null = null;
+let ok = '';
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  result = await formAction(async () => {
+    switch (str('action')) {
+      case 'rules': await acc.saveRules({ claimDays: str('claimDays'), strictZones: f.get('strictZones') === 'on', requireAccount: f.get('requireAccount') === 'on' }); ok = 'Reglas guardadas.'; break;
+      case 'zone': await acc.saveZone({ name: str('name'), parentId: str('parentId'), kind: str('kind') || 'city' }); ok = 'Zona añadida.'; break;
+      case 'zone-delete': await acc.deleteZone(str('id')); ok = 'Zona eliminada.'; break;
+      case 'assign': await acc.setAssignments(str('userId'), f.getAll('zoneIds').map(String)); ok = 'Zonas asignadas.'; break;
+      case 'import': imported = await acc.importCsv(str('csv')); break;
+      case 'decide': await acc.decide(str('dossierId'), str('decision') === 'approved' ? 'approved' : 'rejected'); ok = 'Decisión guardada.'; break;
+    }
+  });
+}
+
+// TS no ve la asignación dentro del callback de formAction.
+const importedView = imported as Awaited<ReturnType<typeof acc.importCsv>> | null;
+const [t, members, conflicts] = await Promise.all([acc.territory(), admin.tenantAdmin.listMembers(), acc.conflicts()]);
+const team = members.filter((m) => m.role !== 'partner');
+const KIND: Record<Zone['kind'], string> = { country: 'País', region: 'Región', province: 'Provincia', city: 'Ciudad', area: 'Zona' };
+/** Árbol plano con profundidad, en orden. */
+const tree: Array<Zone & { depth: number }> = [];
+const walk = (parent: string | null, depth: number) => {
+  for (const z of t.zones.filter((x) => x.parentId === parent)) { tree.push({ ...z, depth }); walk(z.id, depth + 1); }
+};
+walk(null, 0);
+const zonesOf = (u: string) => t.assignments.filter((a) => a.userId === u).map((a) => a.zoneId);
+---
+<AdminLayout title="Territorio">
+  <PageHeader eyebrow="Configurar" title="Territorio" lede="Quién vende dónde y cuánto tiempo se reserva una cuenta a quien la trabaja. Así nadie bombardea el mismo local y cada venta se paga a quien toca." />
+  {ok && <div class="mb-4"><Alert kind="success" title={ok} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {importedView && (
+    <div class="mb-4" data-testid="import-result"><Alert kind="success" title={`Importadas ${importedView.created} cuentas${importedView.duplicates ? `; ${importedView.duplicates} ya existían (misma referencia)` : ''}.`}>
+      {importedView.unknownZones.length > 0 && <p>Sin zona (no existen todavía): {importedView.unknownZones.join(', ')}. Créalas abajo y asígnalas desde cada cuenta.</p>}
+      {importedView.errors.length > 0 && <ul>{importedView.errors.slice(0, 5).map((e: string) => <li>{e}</li>)}</ul>}
+    </Alert></div>
+  )}
+
+  {conflicts.length > 0 && (
+    <section class="co-section" data-testid="conflicts">
+      <div class="co-section__head"><h2 class="text-eyebrow">Ventas que esperan tu decisión · {conflicts.length}</h2><span class="co-meta">Hasta que decidas, no generan comisión.</span></div>
+      <ul class="co-rows">
+        {conflicts.map((d) => (
+          <li class="co-row co-row--attention">
+            <span class="co-row__lead"><Icon name="shield-alert" /></span>
+            <a class="co-row__main text-inherit !no-underline" href={`/admin/dossiers/${d.id}`}>
+              <span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName ?? 'Sin autor'} · {ELIGIBILITY_LABEL[d.accountEligibility!]}</span>
+            </a>
+            <form method="post" class="flex flex-wrap gap-2">
+              <input type="hidden" name="action" value="decide" /><input type="hidden" name="dossierId" value={d.id} />
+              <button class="co-btn co-btn--ghost co-btn--sm" type="submit" name="decision" value="approved">Pagar comisión</button>
+              <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="decision" value="rejected">Sin comisión</button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <div class="co-split">
+    <div class="grid content-start gap-6">
+      <section class="co-section !mt-0" data-testid="zones">
+        <div class="co-section__head"><h2 class="text-eyebrow">Zonas</h2><span class="co-meta">Una región incluye sus ciudades: quien cubre la Comunidad Valenciana cubre Valencia y Castellón.</span></div>
+        {tree.length === 0
+          ? <EmptyState kind="none" title="Todavía no hay zonas" because="Empieza por el país o la región y añade dentro las ciudades." />
+          : <ul class="co-card co-card--flush m-0 p-0">
+              {tree.map((z) => (
+                <li class="flex list-none flex-wrap items-center gap-2 border-b border-line px-4 py-2.5 last:border-b-0" style={`padding-left:${16 + z.depth * 22}px`} data-testid="zone" data-name={z.name}>
+                  <Icon name={z.depth === 0 ? 'globe' : 'map-pin'} size={16} />
+                  <span class="co-row-title">{z.name}</span><span class="co-meta">{KIND[z.kind]}</span>
+                  <span class="co-meta ml-auto">{team.filter((m) => zonesOf(m.userId).includes(z.id)).map((m) => m.displayName || m.email).join(', ')}</span>
+                  {perms.manageZones && <button type="button" class="co-btn co-btn--quiet co-btn--icon co-btn--sm" data-dialog-open={`zdel-${z.id}`} aria-label={`Eliminar ${z.name}`}><Icon name="trash2" size={14} /></button>}
+                  {perms.manageZones && (
+                    <ConfirmDialog id={`zdel-${z.id}`} title={`Eliminar ${z.name}`} confirmLabel="Eliminar zona" danger
+                      does="Se elimina la zona y las que tiene dentro. Las cuentas de esas zonas se quedan sin zona."
+                      doesNot="No borra cuentas, propuestas ni personas.">
+                      <input type="hidden" name="action" value="zone-delete" /><input type="hidden" name="id" value={z.id} />
+                    </ConfirmDialog>
+                  )}
+                </li>
+              ))}
+            </ul>}
+        {perms.manageZones && (
+          <form method="post" class="co-card mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end" data-testid="zone-form">
+            <input type="hidden" name="action" value="zone" />
+            <label class="co-field">Nueva zona<input class="co-input" name="name" required maxlength="80" placeholder="Valencia" /></label>
+            <label class="co-field">Dentro de<select class="co-select" name="parentId"><option value="">— Nivel superior —</option>{tree.map((z) => <option value={z.id}>{' '.repeat(z.depth * 3)}{z.name}</option>)}</select></label>
+            <label class="co-field">Tipo<select class="co-select" name="kind">{Object.entries(KIND).map(([k, v]) => <option value={k} selected={k === 'city'}>{v}</option>)}</select></label>
+            <button class="co-btn co-btn--primary" type="submit">Añadir</button>
+          </form>
+        )}
+      </section>
+
+      <section class="co-section" data-testid="assignments">
+        <div class="co-section__head"><h2 class="text-eyebrow">Quién cubre qué</h2><span class="co-meta">Ven las cuentas de sus zonas y a los compañeros que comparten zona.</span></div>
+        <div class="grid gap-3">
+          {team.map((m) => (
+            <form method="post" class="co-card grid gap-3" data-testid="assign" data-user={m.email}>
+              <input type="hidden" name="action" value="assign" /><input type="hidden" name="userId" value={m.userId} />
+              <div class="flex flex-wrap items-center gap-2"><span class="co-row-title">{m.displayName || m.email}</span><span class="co-meta">{m.role === 'admin' ? 'Admin' : m.role === 'lead' ? 'Jefe/a de ventas' : 'Comercial'}</span>
+                <button class="co-btn co-btn--ghost co-btn--sm ml-auto" type="submit">Guardar</button></div>
+              {tree.length === 0 ? <p class="co-meta">Crea primero las zonas.</p> : (
+                <div class="co-chips">{tree.map((z) => <label class="co-chip"><input type="checkbox" name="zoneIds" value={z.id} checked={zonesOf(m.userId).includes(z.id)} />{z.name}</label>)}</div>
+              )}
+            </form>
+          ))}
+        </div>
+      </section>
+    </div>
+
+    <aside class="grid content-start gap-4">
+      <form method="post" class="co-card grid gap-4" data-testid="rules">
+        <input type="hidden" name="action" value="rules" />
+        <div><p class="text-eyebrow mb-1">Reglas</p><h2 class="co-entity">Reserva de cuentas</h2></div>
+        <fieldset class="grid gap-4" disabled={!perms.manageZones}>
+          <label class="co-field">Días de reserva
+            <input class="co-input max-w-[8rem]" type="number" name="claimDays" min="1" max="365" value={t.rules.claimDays} />
+            <span class="co-help">Quien contacta una cuenta la tiene para él este tiempo; cada contacto lo renueva. Si otro la vende entretanto, no cobra comisión.</span>
+          </label>
+          <label class="co-check"><input type="checkbox" name="strictZones" checked={t.rules.strictZones} />
+            <span>Solo comisión en su zona<span class="co-help block">Vender fuera de tus zonas no genera comisión (si tienes zonas asignadas).</span></span></label>
+          <label class="co-check"><input type="checkbox" name="requireAccount" checked={t.rules.requireAccount} />
+            <span>Exigir cuenta del CRM<span class="co-help block">Una venta sin cuenta vinculada no genera comisión. Útil cuando ya está todo el mercado importado.</span></span></label>
+          {perms.manageZones ? <button class="co-btn co-btn--primary w-fit" type="submit">Guardar reglas</button> : <p class="co-help">Las reglas las decide un admin.</p>}
+        </fieldset>
+      </form>
+
+      <form method="post" id="importar" class="co-card grid gap-3" data-testid="import">
+        <input type="hidden" name="action" value="import" />
+        <div><p class="text-eyebrow mb-1">Importar</p><h2 class="co-entity">Cuentas desde un CSV</h2></div>
+        <p class="co-body">Columnas: <code>nombre</code> (obligatoria), <code>ciudad</code> o <code>zona</code>, <code>dirección</code>, <code>referencia</code> y <code>notas</code>. Las zonas se buscan por nombre; una referencia repetida no se duplica. Entran libres.</p>
+        <label class="co-field">Archivo<input class="co-input" type="file" accept=".csv,text/csv" data-csv-file /></label>
+        <label class="co-field">O pega el contenido<textarea class="co-textarea font-mono text-xs" name="csv" required data-csv-text placeholder={'nombre;ciudad;referencia\nClub Sol;Valencia;gmaps:123'}></textarea></label>
+        <button class="co-btn co-btn--primary w-fit" type="submit">Importar</button>
+      </form>
+    </aside>
+  </div>
+  <script>
+    // Leer el CSV en el navegador y dejarlo en el textarea (sin subidas de archivos).
+    const file = document.querySelector<HTMLInputElement>('[data-csv-file]');
+    const text = document.querySelector<HTMLTextAreaElement>('[data-csv-text]');
+    file?.addEventListener('change', async () => { const f = file.files?.[0]; if (f && text) text.value = await f.text(); });
+  </script>
+</AdminLayout>

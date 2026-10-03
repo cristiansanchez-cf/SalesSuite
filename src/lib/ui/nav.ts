@@ -11,7 +11,7 @@ import { can } from '../admin/permissions';
 export interface NavItem { href: string; label: string; icon: IconName; on: boolean; count?: number; testid?: string }
 export type NavMode = 'sell' | 'setup';
 
-const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/brand'];
+const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/territory', '/admin/brand'];
 
 export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number } = {}) {
   const on = (p: string) => path === p || path.startsWith(`${p}/`);
@@ -21,6 +21,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     role === 'partner'
       ? { href: '/admin', label: 'Mis cuentas', icon: 'store', on: path === '/admin' || on('/admin/dossiers') }
       : { href: '/admin', label: 'Dossiers', icon: 'file-text', on: path === '/admin' || on('/admin/dossiers') },
+    ...(perms.useAccounts ? [{ href: '/admin/accounts', label: 'Cuentas', icon: 'map-pin' as IconName, on: on('/admin/accounts') }] : []),
     { href: '/admin/compose', label: 'Preparar mensaje', icon: 'message-square-text', on: on('/admin/compose') },
     { href: '/admin/wins', label: 'Qué ha funcionado', icon: 'trophy', on: on('/admin/wins') },
     { href: '/admin/learn', label: 'Aprende', icon: 'graduation-cap', on: on('/admin/learn') },
@@ -30,6 +31,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     { href: '/admin/playbook', label: 'Playbook y mercado', icon: 'book-open', on: on('/admin/playbook'), count: counts.pendingPlaybook || undefined },
     ...(perms.manageTenant ? [{ href: '/admin/catalog', label: 'Catálogo', icon: 'boxes' as IconName, on: on('/admin/catalog') }] : []),
     { href: '/admin/team', label: 'Equipo', icon: 'users', on: on('/admin/team') },
+    ...(perms.manageAccounts ? [{ href: '/admin/territory', label: 'Territorio', icon: 'map' as IconName, on: on('/admin/territory') }] : []),
     ...(perms.manageTenant ? [{ href: '/admin/brand', label: 'Marca', icon: 'palette' as IconName, on: on('/admin/brand') }] : []),
   ];
   return {

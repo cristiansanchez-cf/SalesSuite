@@ -13,6 +13,11 @@ const showPassword = admin.session.role !== 'partner';
 let error: string | null = null;
 let ok: string | null = null;
 let name = admin.session.displayName ?? '';
+// Teléfono: lo ven los compañeros de zona para llamar o escribir por WhatsApp (docs/ACCOUNTS.md).
+const readPhone = async () => (admin.mode === 'supabase' && admin.supabase
+  ? ((await admin.supabase.from('users').select('phone').eq('id', admin.session.userId).maybeSingle()).data?.phone as string | null) ?? ''
+  : demoDb().users.find((x) => x.id === admin.session.userId)?.phone ?? '');
+let phone = await readPhone();
 
 const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null;
 let notifyOk = false;
@@ -21,22 +26,24 @@ if (form?.get('action') === 'notify') {
   notifyOk = true;
 } else if (form) {
   name = String(form.get('name') ?? '').trim().slice(0, 80);
+  phone = String(form.get('phone') ?? '').trim().slice(0, 40);
   const password = showPassword ? String(form.get('password') ?? '') : '';
   const confirm = String(form.get('confirm') ?? '');
-  if (password && password.length < 10) error = 'La contraseña debe tener al menos 10 caracteres';
+  if (phone && !/^\+?[\d\s().-]{6,39}$/.test(phone)) error = 'Escribe el teléfono solo con números (puedes empezar por +34)';
+  else if (password && password.length < 10) error = 'La contraseña debe tener al menos 10 caracteres';
   else if (password !== confirm) error = 'Las contraseñas no coinciden';
   else if (admin.mode === 'supabase' && admin.supabase) {
     const sb = admin.supabase;
     const { error: e } = await sb.auth.updateUser({ ...(password ? { password } : {}), data: { name } });
     if (e) error = e.message.includes('should be different') ? 'La nueva contraseña debe ser distinta de la anterior' : 'No se pudo guardar';
     else {
-      await sb.from('users').update({ display_name: name || null }).eq('id', admin.session.userId);
+      await sb.from('users').update({ display_name: name || null, phone: phone || null }).eq('id', admin.session.userId);
       if (setup) return Astro.redirect('/admin', 303);
       ok = 'Guardado';
     }
   } else {
     const u = demoDb().users.find((x) => x.id === admin.session.userId);
-    if (u) u.display_name = name;
+    if (u) { u.display_name = name; u.phone = phone || null; }
     ok = password ? 'Guardado (en demo no hay contraseñas)' : 'Guardado';
   }
 }
@@ -48,6 +55,10 @@ const emailOn = await admin.notifications.emailPref();
     {error && <Alert kind="rejection" title={error} />}
     {ok && <Alert kind="success" title={ok} />}
     <label class="co-field">Nombre<input class="co-input" name="name" value={name} maxlength="80" autocomplete="name" /></label>
+    {admin.session.role !== 'partner' && (
+      <label class="co-field">Teléfono <span class="co-help">Opcional. Lo ven tus compañeros de zona para llamarte o escribirte por WhatsApp.</span>
+        <input class="co-input" type="tel" name="phone" value={phone} maxlength="40" autocomplete="tel" placeholder="+34 600 000 000" data-testid="phone" /></label>
+    )}
     {showPassword && <>
       <label class="co-field">Contraseña <span class="co-help">Opcional, mínimo 10 caracteres</span>
         <input class="co-input" type="password" name="password" minlength="10" autocomplete="new-password" />

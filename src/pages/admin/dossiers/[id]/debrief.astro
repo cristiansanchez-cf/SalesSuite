@@ -6,6 +6,7 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
+import { ELIGIBILITY_LABEL } from '~/lib/accounts/rules';
 import Icon from '~/components/ui/Icon.astro';
 import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
@@ -58,6 +59,10 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
   <PageHeader eyebrow="Qué ha funcionado" title={d.existing ? 'Revisa lo que funcionó.' : 'Documenta este cierre.'} back={{ href: `/admin/dossiers/${id}`, label: d.state.dossier.title }}
     lede="Dos minutos. Lo que ya sabemos viene marcado: corrige lo que haga falta. Ganado o perdido, esto es lo que convierte tu venta en una recomendación para el equipo." />
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {d.state.dossier.outcome === 'won' && d.state.dossier.accountEligibility && d.state.dossier.accountEligibility !== 'eligible' && !d.state.dossier.accountDecision && (
+    <div class="mb-4" data-testid="commission-conflict"><Alert kind="rejection" title={`Esta venta no genera comisión por ahora: ${ELIGIBILITY_LABEL[d.state.dossier.accountEligibility].toLowerCase()}`}
+      details={['Hemos avisado a tu jefe/a de ventas para que lo decida. Documentar el cierre sigue ayudando al equipo.']} /></div>
+  )}
   <ol class="co-steps mb-6" aria-label="Pasos"><li aria-current="step">Resultado</li><li>Situación</li><li>Qué funcionó</li></ol>
 
   <form method="post" class="grid gap-4" data-testid="debrief-form">
