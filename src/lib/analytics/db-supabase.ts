@@ -11,14 +11,15 @@ export function supabaseAnalyticsDb(sb: SupabaseClient): AnalyticsDb {
       // .in() con muchas ids rompe la URL: por tandas.
       for (let i = 0; i < dossierIds.length; i += 100) {
         const { data, error } = await sb.from('dossier_view')
-          .select('id, dossier_id, visitor, device, started_at, last_seen_at, duration_ms, max_scroll, sections')
+          // '*': así «internal» (migración 20261021) se lee cuando existe sin romper antes de aplicarla.
+          .select('*')
           .eq('tenant_id', tenantId).in('dossier_id', dossierIds.slice(i, i + 100)).order('started_at', { ascending: false }).limit(5000);
         if (error) throw error;
         out.push(...(data ?? []));
       }
       return out.map((r) => ({
         id: r.id, dossierId: r.dossier_id, visitor: r.visitor, device: r.device, startedAt: r.started_at, lastSeenAt: r.last_seen_at,
-        durationMs: r.duration_ms, maxScroll: r.max_scroll, sections: r.sections ?? {},
+        durationMs: r.duration_ms, maxScroll: r.max_scroll, sections: r.sections ?? {}, internal: r.internal ?? null,
       }));
     },
   };

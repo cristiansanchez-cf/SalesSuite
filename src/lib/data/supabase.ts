@@ -37,10 +37,13 @@ export function supabaseRepository(): PublicRepository {
       return data ? toPublicDossier(data as PublicDossierRow) : null;
     },
     async trackView(token, tenantId, i) {
-      const { data, error } = await client.rpc('track_dossier_view', {
+      const base = {
         p_token: token, p_tenant_id: tenantId, p_view: i.viewId, p_visitor: i.visitor, p_device: i.device,
         p_duration_ms: i.durationMs, p_scroll: i.scroll, p_sections: i.sections,
-      });
+      };
+      let { data, error } = await client.rpc('track_dossier_view', { ...base, p_ip_hash: i.ipHash ?? null, p_member: i.member ?? false });
+      // Antes de la migración 20261021 la función no tiene los dos últimos parámetros.
+      if (error && /track_dossier_view/.test(error.message)) ({ data, error } = await client.rpc('track_dossier_view', base));
       if (error) throw error;
       return data === true;
     },

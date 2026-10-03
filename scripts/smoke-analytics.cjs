@@ -45,6 +45,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await rep.locator('[data-testid=section-row]').count()) >= 3, 'tiempo por sección');
   if (OUT) await rep.screenshot({ path: `${OUT}/analytics-dossier.png`, fullPage: true });
 
+  // El comercial abre su propio enlace en su navegador (con sesión de la consola): no cuenta como el cliente.
+  const own = await rep.context().newPage();
+  const ownTracked = own.waitForRequest((r) => r.url().endsWith('/api/track') && r.method() === 'POST');
+  await own.goto(`${BASE}/d/demo-mar-azul-9Lw2`);
+  await ownTracked;
+  await own.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await own.waitForTimeout(500);
+  await own.close();
+  await rep.goto(`${BASE}/admin/dossiers/${MAR_AZUL}/analytics`);
+  assert((await rep.textContent('[data-testid=kpi-opens]')).trim() === '1', 'abrirlo tú no cuenta como apertura del cliente');
+  assert((await rep.textContent('[data-testid=internal-visits]')).includes('1'), 'se ve aparte: 1 visita interna');
+
   await rep.goto(`${BASE}/admin/analytics`);
   assert(!(await rep.textContent('[data-testid=list-never]')).includes('Hotel Mar Azul'), 'después: ya no está en «sin abrir»');
   await rep.goto(`${BASE}/admin?mine=1`);

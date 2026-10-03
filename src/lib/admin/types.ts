@@ -85,6 +85,8 @@ export interface DossierRecord {
   /** Cupón aplicado y su copia (docs/COMMISSIONS.md §6). */
   couponId: string | null;
   discount: import('../types').Discount | null;
+  /** «Prueba»: las aperturas del enlace no cuentan ni avisan (para enviártelo a ti o a un compañero). «Real»: cuentan. */
+  viewMode?: 'test' | 'live';
 }
 
 export interface DossierSummary extends DossierRecord {

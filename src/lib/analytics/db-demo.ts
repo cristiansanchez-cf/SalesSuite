@@ -34,15 +34,25 @@ export function trackDemoView(token: string, tenantId: string, i: TrackInput, no
     for (const [k, v] of Object.entries(sections)) cur.sections[k] = Math.max(cur.sections[k] ?? 0, v);
     return true;
   }
+  // Interna = public.track_dossier_view: modo prueba → sesión de la consola → red del equipo (7 días).
+  const internal = d.view_mode === 'test' ? 'test' as const : i.member ? 'member' as const
+    : i.ipHash && s.team_ip.some((x) => x.tenant_id === d.tenant_id && x.ip_hash === i.ipHash && Date.parse(x.last_seen_at) > now.getTime() - 7 * 86_400_000) ? 'team' as const : null;
   const recent = s.dossier_view.filter((v) => v.dossier_id === d.id && v.visitor === i.visitor && Date.parse(v.started_at) > now.getTime() - 3_600_000).length;
   if (recent >= 20) return false;
   s.dossier_view.push({
     id: i.viewId, tenant_id: d.tenant_id, dossier_id: d.id, link_id: link.id, visitor: i.visitor,
     device: (['mobile', 'tablet', 'desktop'] as const).includes(i.device) ? i.device : 'desktop',
-    started_at: t, last_seen_at: t, duration_ms: clamp(i.durationMs, 0, MAX_MS), max_scroll: clamp(i.scroll, 0, 100), sections,
+    started_at: t, last_seen_at: t, duration_ms: clamp(i.durationMs, 0, MAX_MS), max_scroll: clamp(i.scroll, 0, 100), sections, internal,
   });
-  if (d.author_id) notifyAuthorOpened(d.tenant_id, d.author_id, d.id, { dossierId: d.id, title: d.title, company: d.prospect_company }, now);
+  if (!internal && d.author_id) notifyAuthorOpened(d.tenant_id, d.author_id, d.id, { dossierId: d.id, title: d.title, company: d.prospect_company }, now);
   return true;
+}
+
+/** = public.note_team_ip: la consola anota la red de quien la usa. */
+export function noteDemoTeamIp(tenantId: string, ipHash: string, now = new Date()) {
+  const s = demoDb();
+  const cur = s.team_ip.find((x) => x.tenant_id === tenantId && x.ip_hash === ipHash);
+  if (cur) cur.last_seen_at = now.toISOString(); else s.team_ip.push({ tenant_id: tenantId, ip_hash: ipHash, last_seen_at: now.toISOString() });
 }
 
 /** Lectura: el servicio ya filtra por los dossiers que la persona puede ver (= RLS de dossier_view). */
@@ -54,7 +64,7 @@ export function demoAnalyticsDb(): AnalyticsDb {
         .sort((a, b) => b.started_at.localeCompare(a.started_at))
         .map((v): DossierVisit => ({
           id: v.id, dossierId: v.dossier_id, visitor: v.visitor, device: v.device, startedAt: v.started_at, lastSeenAt: v.last_seen_at,
-          durationMs: v.duration_ms, maxScroll: v.max_scroll, sections: structuredClone(v.sections),
+          durationMs: v.duration_ms, maxScroll: v.max_scroll, sections: structuredClone(v.sections), internal: v.internal ?? null,
         }));
     },
   };

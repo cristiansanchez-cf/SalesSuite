@@ -48,3 +48,16 @@ Las vistas previas internas (desde la consola) no cuentan. Si abres tú el enlac
 - `src/pages/api/track.ts` · `src/components/dossier/DossierView.astro` (script de medición)
 - `src/pages/admin/analytics.astro` · `src/pages/admin/dossiers/[id]/analytics.astro`
 - `scripts/smoke-analytics.cjs`
+
+## Internas: que «te están mirando» sea siempre el cliente
+
+Una apertura del enlace público es **interna** (se guarda marcada en `dossier_view.internal`, pero no cuenta en la analítica, ni en «Te están mirando», ni avisa al autor) si:
+
+| Motivo | Cómo se sabe |
+|---|---|
+| `test` · **Modo prueba** | La propuesta está en prueba (`dossier.view_mode = 'test'`). Toda propuesta nueva empieza así: te la mandas a ti o a un compañero sin ensuciar los datos. Al pasarla a **real**, las aperturas empiezan a contar. |
+| `member` · **Tu navegador** | El navegador tiene sesión de la consola en ese dominio (cookie de Supabase o de la demo). |
+| `team` · **Tu red** | Alguien del equipo ha usado la consola desde esa IP en los últimos 7 días (`team_ip`). La IP nunca se guarda en claro: SHA-256 con sal por espacio y `IP_HASH_SALT` (opcional, recomendable en producción). |
+
+La consola anota la red de quien la usa (`note_team_ip`, como mucho una vez por hora y red). Las redes sin uso en 30 días se borran.
+En la analítica de cada propuesta se ve aparte: «N visitas internas no cuentan». Migración: `20261021000000_internal_views.sql`; tests: `supabase/tests/40_internal_views.test.sql`, `scripts/smoke-analytics.cjs`.

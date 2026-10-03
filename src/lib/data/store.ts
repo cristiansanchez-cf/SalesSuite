@@ -24,6 +24,7 @@ export interface DossierRow {
   outcome?: 'open' | 'won' | 'lost'; outcome_note?: string | null; outcome_at?: string | null;
   segment_id?: string | null; next_step?: string | null; next_step_at?: string | null;
   partner_account_id?: string | null;
+  view_mode?: 'test' | 'live';
   situation?: Record<string, string[]>;
   account_id?: string | null; account_eligibility?: string | null; account_decision?: 'approved' | 'rejected' | null;
   account_decided_by?: string | null; account_decided_at?: string | null;
@@ -119,7 +120,9 @@ export interface NotificationRow {
 export interface DossierViewRow {
   id: string; tenant_id: string; dossier_id: string; link_id: string | null; visitor: string; device: 'mobile' | 'tablet' | 'desktop';
   started_at: string; last_seen_at: string; duration_ms: number; max_scroll: number; sections: Record<string, number>;
+  internal?: 'test' | 'member' | 'team' | null;
 }
+export interface TeamIpRow { tenant_id: string; ip_hash: string; last_seen_at: string }
 
 export interface DemoDb {
   tenant: TenantRow[];
@@ -161,6 +164,7 @@ export interface DemoDb {
   coupon: CouponRow[];
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
   dossier_view: DossierViewRow[];
+  team_ip: TeamIpRow[];
   daily_digest_log: Array<{ user_id: string; tenant_id: string; day: string; emailed: boolean; sent_at: string }>;
   member_conditions_history: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; plan: import('../commissions/types').ConditionsChange['plan']; changed_by: string | null; changed_at: string; seq: number }>;
 }
@@ -325,6 +329,7 @@ export function freshDemoDb(): DemoDb {
     member_conditions: [],
     member_conditions_history: [],
     dossier_view: demoVisits(f.dossier_item),
+    team_ip: [],
     daily_digest_log: [],
     coupon: [
       { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },

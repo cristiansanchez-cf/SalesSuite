@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { publicRepository } from '~/lib/data';
+import { clientIp, hasConsoleSession, ipHash } from '~/lib/analytics/internal';
 
 /**
  * POST /api/track — visita al enlace público de un dossier (docs/ANALYTICS.md).
@@ -17,7 +18,7 @@ const Body = z.object({
   sections: z.record(z.string().max(64), z.number().int().min(0).max(14_400_000)).refine((o) => Object.keys(o).length <= 60),
 });
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, cookies }) => {
   const done = new Response(null, { status: 204 });
   if (!locals.tenant) return done;
   const raw = await request.text().catch(() => '');
@@ -27,6 +28,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const b = Body.safeParse(parsed);
   if (!b.success) return done;
   const { token, ...input } = b.data;
-  try { await publicRepository().trackView(token, locals.tenant.id, input); } catch (e) { console.error('[track]', (e as Error).message); }
+  // Tú (sesión de la consola en este navegador) o tu red no cuentan como el cliente.
+  const internal = { member: hasConsoleSession(cookies, request), ipHash: ipHash(clientIp(request), locals.tenant.id) };
+  try { await publicRepository().trackView(token, locals.tenant.id, { ...input, ...internal }); } catch (e) { console.error('[track]', (e as Error).message); }
   return done;
 };

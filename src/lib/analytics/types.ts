@@ -12,7 +12,11 @@ export interface DossierVisit {
   durationMs: number;
   maxScroll: number;
   sections: Record<string, number>;
+  /** Interna (no cuenta): modo prueba, navegador con sesión de la consola o red del equipo. */
+  internal?: InternalKind | null;
 }
+
+export type InternalKind = 'test' | 'member' | 'team';
 
 /** Lo que manda el navegador (se llama varias veces por visita; la base de datos solo deja subir los valores). */
 export interface TrackInput {
@@ -22,6 +26,9 @@ export interface TrackInput {
   durationMs: number;
   scroll: number;
   sections: Record<string, number>;
+  /** Lo pone el servidor, no el navegador: hash de la IP (con sal) y si hay sesión de la consola en este navegador. */
+  ipHash?: string | null;
+  member?: boolean;
 }
 
 export interface DossierStats {

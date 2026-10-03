@@ -23,6 +23,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   accountDecidedAt: r.account_decided_at ?? null,
   couponId: r.coupon_id ?? null,
   discount: r.discount ?? null,
+  viewMode: r.view_mode ?? 'live',
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -68,7 +69,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
         prospect_name: n.prospectName, prospect_company: n.prospectCompany, prospect_meta: {},
         status: 'draft', locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
         theme_override: null, published_at: null, created_at: now, updated_at: now, partner_account_id: n.partnerAccountId ?? null,
-        account_id: n.accountId ?? null,
+        account_id: n.accountId ?? null, view_mode: 'test',
       };
       demoAccountsOnDossier(null, row);
       db().dossier.push(row);
@@ -95,6 +96,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.nextStepAt !== undefined) d.next_step_at = p.nextStepAt;
       if (p.situation !== undefined) d.situation = p.situation;
       if (p.accountId !== undefined) d.account_id = p.accountId;
+      if (p.viewMode !== undefined) d.view_mode = p.viewMode;
       if (p.couponId !== undefined) demoApplyCoupon(d, p.couponId);  // = trigger dossier_coupon_apply
       demoAccountsOnDossier(prev, d);
       d.updated_at = new Date().toISOString();

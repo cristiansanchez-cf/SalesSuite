@@ -19,6 +19,8 @@ export const dossierPatchSchema = z.object({
   priceMode: z.enum(['none', 'total', 'per_module']),
   totalPrice: money.nullable(),
   currency: z.string().regex(/^[A-Z]{3}$/),
+  /** Prueba (las aperturas no cuentan) o real. */
+  viewMode: z.enum(['test', 'live']),
 }).partial().strict();
 
 const contactSchema = z.object({

@@ -76,5 +76,6 @@ const KPIS = [
       </section>
     </div>
   </>}
-  <p class="co-help mt-6">{m.detail.privacy}</p>
+  {(a.internal.test + a.internal.member + a.internal.team) > 0 && <p class="co-help mt-6" data-testid="internal-visits">{m.detail.internal(a.internal.test + a.internal.member + a.internal.team)}</p>}
+  <p class="co-help mt-2">{m.detail.privacy}</p>
 </AdminLayout>

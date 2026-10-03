@@ -8,6 +8,14 @@ type Row = Record<string, any>;
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
 const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at, coupon_id, discount, outcome_at';
+/** view_mode: migración 20261021. Hasta aplicarla se lee y se escribe sin ella (los despliegues van antes que las migraciones). */
+let viewModeCol = true;
+const dossierCols = () => (viewModeCol ? `${DOSSIER_COLS}, view_mode` : DOSSIER_COLS);
+async function tolerant<R extends { error: any }>(q: (cols: string) => PromiseLike<R>): Promise<R> {
+  const res = await q(dossierCols());
+  if (res.error && viewModeCol && /view_mode/.test(String(res.error.message ?? ''))) { viewModeCol = false; return q(dossierCols()); }
+  return res;
+}
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -27,6 +35,7 @@ const toDossier = (r: Row): DossierRecord => ({
   accountDecidedAt: r.account_decided_at ?? null,
   couponId: r.coupon_id ?? null,
   discount: r.discount ?? null,
+  viewMode: r.view_mode === 'test' ? 'test' : 'live',
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';
@@ -115,18 +124,20 @@ function full(sb: SupabaseClient): AdminDb {
     },
 
     async listDossiers(tenantId) {
-      return (check(await sb.from('dossier').select(DOSSIER_COLS).eq('tenant_id', tenantId)) ?? []).map(toDossier);
+      return (check(await tolerant((c) => sb.from('dossier').select(c).eq('tenant_id', tenantId))) ?? []).map(toDossier);
     },
     async getDossier(id) {
-      const r = check(await sb.from('dossier').select(DOSSIER_COLS).eq('id', id).maybeSingle());
+      const r = check(await tolerant((c) => sb.from('dossier').select(c).eq('id', id).maybeSingle()));
       return r ? toDossier(r) : null;
     },
     async insertDossier(n) {
-      const r = checkOne(await sb.from('dossier').insert({
+      const r = checkOne(await tolerant((c) => sb.from('dossier').insert({
         tenant_id: n.tenantId, author_id: n.authorId, title: n.title, prospect_name: n.prospectName,
         prospect_company: n.prospectCompany, locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
         partner_account_id: n.partnerAccountId ?? null, account_id: n.accountId ?? null,
-      }).select(DOSSIER_COLS).single());
+        // Toda propuesta nueva empieza en modo prueba: tus aperturas no cuentan hasta que la pasas a real.
+        ...(viewModeCol ? { view_mode: 'test' } : {}),
+      }).select(c).single()));
       return toDossier(r);
     },
     async updateDossier(id, p) {
@@ -149,7 +160,8 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.situation !== undefined) patch.situation = p.situation;
       if (p.accountId !== undefined) patch.account_id = p.accountId;
       if (p.couponId !== undefined) patch.coupon_id = p.couponId;
-      const rows = check(await sb.from('dossier').update(patch).eq('id', id).select(DOSSIER_COLS)) ?? [];
+      if (p.viewMode !== undefined) patch.view_mode = p.viewMode;
+      const rows = check(await tolerant((c) => sb.from('dossier').update(patch).eq('id', id).select(c))) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },
     async deleteDossier(id) {
