@@ -7,7 +7,7 @@ import { defineMessages } from '../core';
 
 const es = {
   common: {
-    eyebrow: 'Vender', all: 'Todos', title: 'Título', contactPerson: 'Persona de contacto', startFrom: 'Partir de', createEdit: 'Crear y editar',
+    eyebrow: 'Vender', all: 'Todos', title: 'Título', contactPerson: 'Persona de contacto', startFrom: '¿Copiar una propuesta anterior?', createEdit: 'Crear y editar',
     won: 'Ganado', lost: 'Perdido', none: 'Ninguna', sector: 'Sector', optional: 'Opcional', team: 'Equipo', whoTalk: '¿Con quién hablas?',
     nextStep: 'Próximo paso', overdueFollowup: 'Seguimiento vencido', overdueN: (n: number) => ` · ${n} vencidos`,
     youHaveOverdue: (n: number) => `Tienes ${n} ${n === 1 ? 'seguimiento vencido' : 'seguimientos vencidos'}`,
@@ -16,13 +16,13 @@ const es = {
   dossiers: {
     groups: { attention: 'Necesitan tu atención', sent: 'Enviadas', drafts: 'Borradores', archived: 'Archivadas' }, close: 'Cerrar',
     count: (total: number, published: number) => `${total} propuestas · ${published} enviadas`,
-    title: 'Dossiers', partnerTitle: 'Mis cuentas', invalid: 'Datos no válidos',
-    lede: (total: number, published: number) => `${total} en total · ${published} publicados. Un dossier es la propuesta viva que envías a cada prospecto.`,
+    title: 'Propuestas', partnerTitle: 'Mis cuentas', invalid: 'Datos no válidos',
+    lede: (total: number, published: number) => `${total} en total · ${published} enviadas. Cada propuesta es una página viva que envías a un cliente.`,
     search: 'Buscar prospecto', overdueHint: 'Ver tus seguimientos, del más antiguo al más reciente', filters: 'Filtros', onlyMine: 'Solo míos', followups: 'Seguimientos',
-    emptyFiltered: 'Ningún dossier coincide con estos filtros', emptyTitle: 'Todavía no hay dossiers',
-    emptyDetail: 'Crea el primero con el formulario «Nuevo dossier»: eliges los módulos, lo publicas y envías el enlace.', emptyAction: 'Crear el primero',
+    emptyFiltered: 'Ninguna propuesta coincide con estos filtros', emptyTitle: 'Todavía no hay propuestas',
+    emptyDetail: 'Crea la primera con «Nueva propuesta»: eliges los módulos, la publicas y envías el enlace.', emptyAction: 'Crear la primera',
     noProspect: 'Sin prospecto', modules: (n: number) => `${n} ${n === 1 ? 'módulo' : 'módulos'}`, links: (n: number) => ` · ${n} ${n > 1 ? 'enlaces' : 'enlace'}`,
-    noAuthor: 'Sin autor', newEyebrow: 'Nuevo', newTitle: 'Nuevo dossier', titlePlaceholder: 'Sala X · Temporada 2027', company: 'Empresa del prospecto', emptyDossier: 'Dossier vacío',
+    noAuthor: 'Sin autor', newEyebrow: 'Nueva', newTitle: 'Nueva propuesta', titlePlaceholder: 'Sala X · Temporada 2027', company: 'Empresa del prospecto', emptyDossier: 'No, empezar en blanco',
   },
   home: {
     focus: 'Lo siguiente', open: 'Abrir', create: 'Crear propuesta',
@@ -52,18 +52,18 @@ const es = {
   compose: {
     title: 'Preparar mensaje',
     lede: 'Cuatro pasos y te preparo todo el contexto (tu propuesta, el actor, la situación y lo que le ha funcionado al equipo) para que el Cerebro de Ventas elija la técnica y redacte contigo en Claude o ChatGPT.',
-    step1: '¿Para qué cuenta?', dossier: 'Dossier', dossierHelp: 'Opcional: con dossier incluyo tu propuesta, su precio y el enlace', noDossier: 'Sin dossier',
+    step1: '¿Para qué cuenta?', dossier: 'Propuesta', dossierHelp: 'Opcional: incluyo tu propuesta, su precio y el enlace', noDossier: 'Sin propuesta',
     segmentDefault: 'El del actor', accountPerson: 'Persona de la cuenta', chooseActor: 'Elegir un tipo de actor', orActorType: 'O un tipo de actor', actorType: 'Tipo de actor',
     unspecified: 'Sin concretar', step3: '¿Cómo es?', step3Hint: '· opcional, afina las recomendaciones', step4: '¿Qué necesitas?',
     purpose: 'Para qué', channel: 'Canal', objection: 'Objeción', objectionHelp: 'Si respondes a una',
     notes: 'Lo que sabes de este caso', notesPlaceholder: 'Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…', go: 'Preparar contexto',
     emptyTitle: 'Elige a quién escribes',
-    emptyBody: 'Por ejemplo: «DJ residente · ocio nocturno · primer contacto». Desde un dossier, elige a una persona de la cuenta y el contexto incluirá tu propuesta, su precio y el enlace.',
+    emptyBody: 'Por ejemplo: «DJ residente · ocio nocturno · primer contacto». Desde una propuesta, elige a una persona de la cuenta y el contexto incluirá tu propuesta, su precio y el enlace.',
     evidenceTitle: 'Al equipo le funcionó en situaciones parecidas', topPlays: 'Jugadas que más ganan:', evidenceNote: 'Ya va incluido en la petición, separado de lo que proponga el Cerebro.',
     cerebroStage: (stage: string) => `Cerebro · etapa: ${stage}`, objectionBadge: (o: string) => `objeción: ${o}`, plays: (n: number) => `${n} jugadas del playbook`,
     copyPrompt: 'Copiar para Claude / ChatGPT', openClaude: 'Abrir en Claude', openChatgpt: 'Abrir en ChatGPT',
     briefNote: 'Con el Cerebro de Ventas conectado, el asistente buscará la técnica, te dirá de qué creador sale y redactará el mensaje con tu contexto. Revisa siempre lo que aparece entre [corchetes].',
-    fullPrompt: 'Petición completa', contextOnly: 'Solo el contexto, sin instrucciones', copyContext: 'Copiar contexto', back: '← Volver al dossier', copied: '¡Copiado!',
+    fullPrompt: 'Petición completa', contextOnly: 'Solo el contexto, sin instrucciones', copyContext: 'Copiar contexto', back: '← Volver a la propuesta', copied: '¡Copiado!',
   },
   wins: {
     title: 'Qué ha funcionado',
@@ -76,13 +76,13 @@ const es = {
     outcome: 'Resultado', wonPl: 'Ganados', lostPl: 'Perdidos',
     emptyFiltered: 'Ningún cierre se parece todavía a esta situación', clearAll: 'Ver todos los cierres',
     emptyTitle: 'Todavía no hay cierres documentados',
-    emptyDetail: 'Cuando marques un dossier como ganado o perdido te pediremos dos minutos para contar qué funcionó. Aquí aparecerá para todo el equipo.',
-    emptyAction: 'Ir a mis dossiers', matches: 'Coincide con tu situación', differs: 'Diferente a tu situación',
+    emptyDetail: 'Cuando marques una propuesta como ganada o perdida te pediremos dos minutos para contar qué funcionó. Aquí aparecerá para todo el equipo.',
+    emptyAction: 'Ir a mis propuestas', matches: 'Coincide con tu situación', differs: 'Diferente a tu situación',
     keyStage: (s: string) => `Momento clave: ${s}`, objection: (s: string) => `Objeción: ${s}`, worked: 'Funcionó:', failed: 'No funcionó:',
     share: 'Volver a compartir', hide: 'Ocultar', shareTitle: 'Volver a compartir este cierre', hideTitle: 'Ocultar este cierre', shareConfirm: 'Compartir',
     shareDoes: 'Vuelve a contar en las recomendaciones y en la evidencia de las jugadas.',
     hideDoes: 'Deja de contar en las recomendaciones y en la evidencia de las jugadas (p. ej. si está mal documentado).',
-    doesNot: 'No borra el cierre ni cambia el resultado del dossier; su autor lo sigue viendo.',
+    doesNot: 'No borra el cierre ni cambia el resultado de la propuesta; su autor lo sigue viendo.',
     yourSituation: 'Tu situación', withWhat: '¿Con qué estás?', any: 'Cualquiera', go: 'Ver lo que funcionó', clear: 'Limpiar',
   },
   debrief: {
@@ -159,7 +159,7 @@ export const sellMessages = defineMessages({
   es,
   en: {
     common: {
-      eyebrow: 'Sell', all: 'All', title: 'Title', contactPerson: 'Contact person', startFrom: 'Start from', createEdit: 'Create and edit',
+      eyebrow: 'Sell', all: 'All', title: 'Title', contactPerson: 'Contact person', startFrom: 'Copy an earlier proposal?', createEdit: 'Create and edit',
       won: 'Won', lost: 'Lost', none: 'None', sector: 'Sector', optional: 'Optional', team: 'Team', whoTalk: 'Who are you talking to?',
       nextStep: 'Next step', overdueFollowup: 'Overdue follow-up', overdueN: (n) => ` · ${n} overdue`,
       youHaveOverdue: (n) => `You have ${n} overdue ${n === 1 ? 'follow-up' : 'follow-ups'}`,
@@ -174,7 +174,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: 'No proposals match these filters', emptyTitle: 'No proposals yet',
       emptyDetail: 'Create the first one with the «New proposal» form: pick the modules, publish it and send the link.', emptyAction: 'Create the first one',
       noProspect: 'No prospect', modules: (n) => `${n} ${n === 1 ? 'module' : 'modules'}`, links: (n) => ` · ${n} ${n > 1 ? 'links' : 'link'}`,
-      noAuthor: 'No author', newEyebrow: 'New', newTitle: 'New proposal', titlePlaceholder: 'Venue X · Season 2027', company: 'Prospect company', emptyDossier: 'Blank proposal',
+      noAuthor: 'No author', newEyebrow: 'New', newTitle: 'New proposal', titlePlaceholder: 'Venue X · Season 2027', company: 'Prospect company', emptyDossier: 'No, start blank',
     },
     home: {
       focus: 'Up next', open: 'Open', create: 'Create proposal',
@@ -308,7 +308,7 @@ export const sellMessages = defineMessages({
   },
   pt: {
     common: {
-      eyebrow: 'Vender', all: 'Todos', title: 'Título', contactPerson: 'Pessoa de contato', startFrom: 'Partir de', createEdit: 'Criar e editar',
+      eyebrow: 'Vender', all: 'Todos', title: 'Título', contactPerson: 'Pessoa de contato', startFrom: 'Copiar uma proposta anterior?', createEdit: 'Criar e editar',
       won: 'Ganho', lost: 'Perdido', none: 'Nenhuma', sector: 'Setor', optional: 'Opcional', team: 'Equipe', whoTalk: 'Com quem você está falando?',
       nextStep: 'Próximo passo', overdueFollowup: 'Acompanhamento vencido', overdueN: (n) => ` · ${n} vencidos`,
       youHaveOverdue: (n) => `Você tem ${n} ${n === 1 ? 'acompanhamento vencido' : 'acompanhamentos vencidos'}`,
@@ -323,7 +323,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: 'Nenhuma proposta corresponde a estes filtros', emptyTitle: 'Ainda não há propostas',
       emptyDetail: 'Crie a primeira com o formulário «Nova proposta»: você escolhe os módulos, publica e envia o link.', emptyAction: 'Criar a primeira',
       noProspect: 'Sem prospect', modules: (n) => `${n} ${n === 1 ? 'módulo' : 'módulos'}`, links: (n) => ` · ${n} ${n > 1 ? 'links' : 'link'}`,
-      noAuthor: 'Sem autor', newEyebrow: 'Nova', newTitle: 'Nova proposta', titlePlaceholder: 'Salão X · Temporada 2027', company: 'Empresa do prospect', emptyDossier: 'Proposta vazia',
+      noAuthor: 'Sem autor', newEyebrow: 'Nova', newTitle: 'Nova proposta', titlePlaceholder: 'Salão X · Temporada 2027', company: 'Empresa do prospect', emptyDossier: 'Não, começar em branco',
     },
     home: {
       focus: 'A seguir', open: 'Abrir', create: 'Criar proposta',
@@ -457,7 +457,7 @@ export const sellMessages = defineMessages({
   },
   ko: {
     common: {
-      eyebrow: '판매', all: '전체', title: '제목', contactPerson: '담당자', startFrom: '시작 기준', createEdit: '만들고 편집하기',
+      eyebrow: '판매', all: '전체', title: '제목', contactPerson: '담당자', startFrom: '이전 제안서를 복사할까요?', createEdit: '만들고 편집하기',
       won: '성사', lost: '실패', none: '없음', sector: '업종', optional: '선택 사항', team: '팀', whoTalk: '누구와 이야기하나요?',
       nextStep: '다음 단계', overdueFollowup: '기한 지난 후속 조치', overdueN: (n) => ` · 기한 지남 ${n}건`,
       youHaveOverdue: (n) => `기한이 지난 후속 조치가 ${n}건 있습니다`,
@@ -472,7 +472,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: '이 필터에 맞는 제안서가 없습니다', emptyTitle: '아직 제안서가 없습니다',
       emptyDetail: '«새 제안서» 양식으로 첫 제안서를 만드세요. 모듈을 고르고 게시한 뒤 링크를 보내면 됩니다.', emptyAction: '첫 제안서 만들기',
       noProspect: '잠재 고객 없음', modules: (n) => `모듈 ${n}개`, links: (n) => ` · 링크 ${n}개`,
-      noAuthor: '작성자 없음', newEyebrow: '새로 만들기', newTitle: '새 제안서', titlePlaceholder: 'X 홀 · 2027 시즌', company: '잠재 고객 회사', emptyDossier: '빈 제안서',
+      noAuthor: '작성자 없음', newEyebrow: '새로 만들기', newTitle: '새 제안서', titlePlaceholder: 'X 홀 · 2027 시즌', company: '잠재 고객 회사', emptyDossier: '아니요, 빈 제안서로 시작',
     },
     home: {
       focus: '다음 할 일', open: '열기', create: '제안서 만들기',

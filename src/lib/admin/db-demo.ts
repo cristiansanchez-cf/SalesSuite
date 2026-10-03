@@ -164,12 +164,12 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
 
     async listPriceOptions(tenantId) {
       return db().price_option.filter((o) => o.tenant_id === tenantId)
-        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active }))
+        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default }))
         .sort((a, b) => a.position - b.position || a.amount - b.amount);
     },
     async savePriceOption(tenantId, o, id) {
       const s = db();
-      const row = { id: id ?? randomUUID(), tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink, segment_id: o.segmentId, position: o.position, active: o.active };
+      const row = { id: id ?? randomUUID(), tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink, segment_id: o.segmentId, position: o.position, active: o.active, kind: o.kind ?? null, is_default: !!o.isDefault };
       if (id && !s.price_option.some((x) => x.id === id && x.tenant_id === tenantId)) throw new Error('Tarifa no encontrada');
       s.price_option = [...s.price_option.filter((x) => x.id !== row.id), row];
       return row.id;

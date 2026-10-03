@@ -188,12 +188,14 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
         <label class="co-field">{m.dossiers.company}<input class="co-input" name="prospectCompany" maxlength="120" autofocus data-company /></label>
         <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" /></label>
         <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title data-template={welcomeMessages[locale].first.proposalTitle('{c}')} /></label>
-        <label class="co-field">{m.common.startFrom}
-          <select class="co-select" name="fromDossierId">
-            <option value="">{m.dossiers.emptyDossier}</option>
-            {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
-          </select>
-        </label>
+        {all.some((d) => d.itemCount > 0) && (
+          <label class="co-field">{m.common.startFrom}
+            <select class="co-select" name="fromDossierId">
+              <option value="">{m.dossiers.emptyDossier}</option>
+              {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
+            </select>
+          </label>
+        )}
         <button class="co-btn co-btn--primary co-btn--block" type="submit">{m.common.createEdit} <span aria-hidden="true">→</span></button>
       </form>
     </dialog>

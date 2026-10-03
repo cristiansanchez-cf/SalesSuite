@@ -36,8 +36,8 @@ const es = {
   personaRole: { decisor: 'decide', pagador: 'paga', influenciador: 'influye', campeon: 'aliado interno', usuario: 'lo usa', guardian: 'puede vetar' } as Record<string, string>,
   policy: { hidden: 'Sin precios (los gestiona la empresa)', list: 'Precio de tarifa', adjusted: 'Precio especial' },
   header: {
-    backAccounts: 'Mis cuentas', backDossiers: 'Dossiers', eyebrow: 'Dossier', saving: 'Guardando…', saved: 'Guardado',
-    readOnly: 'Solo lectura: este dossier es de otro comercial. Puedes usarlo como plantilla desde el listado.',
+    backAccounts: 'Mis cuentas', backDossiers: 'Propuestas', eyebrow: 'Propuesta', saving: 'Guardando…', saved: 'Guardado',
+    readOnly: 'Solo lectura: esta propuesta es de otro comercial. Puedes usarla como plantilla desde el listado.',
     failure: 'Es un fallo nuestro, no tuyo. Si se repite, pásanos el código', closeAlert: 'Cerrar aviso',
   },
   tabs: { edit: 'Editar', preview: 'Vista previa', script: 'Guion', scriptLong: 'Guion de venta', panel: 'Panel' },
@@ -76,7 +76,7 @@ const es = {
   },
   followup: {
     title: 'Seguimiento', overdue: 'Vencido', nextPlaceholder: 'Próximo paso (p. ej. Llamar para cerrar fecha)', next: 'Próximo paso',
-    nextAt: 'Fecha del próximo paso', in2d: '+2 días', in1w: '+1 semana', in2w: '+2 semanas', clear: 'Hecho / quitar',
+    nextAt: 'Fecha del próximo paso', in2d: '+2 días', in1w: '+1 semana', in2w: '+2 semanas', clear: 'Hecho / quitar', save: 'Guardar', defaultDraft: 'Enviar la propuesta al cliente', defaultSent: 'Llamar para resolver dudas y cerrar fecha',
     compose: 'Preparar mensaje de seguimiento →',
   },
   publish: {
@@ -87,7 +87,7 @@ const es = {
     outcomeHelp: 'Al marcarlo como ganado o perdido documentarás qué funcionó: así el equipo aprende de ventas reales.',
   },
   links: {
-    title: 'Enlaces', unpublished: 'Los enlaces muestran 404 hasta que publiques el dossier.', expiry: 'Caducidad',
+    title: 'Enlaces', unpublished: 'Los enlaces muestran 404 hasta que publiques la propuesta.', expiry: 'Caducidad',
     noExpiry: 'Sin caducidad', in7: 'Caduca en 7 días', in30: 'Caduca en 30 días', create: 'Generar enlace',
     expiresOn: (date: string) => `Caduca ${date}`, active: 'Activo', revoked: 'Revocado', expired: 'Caducado',
     copied: '¡Copiado!', copy: 'Copiar', open: 'Abrir', revoke: 'Revocar',
@@ -97,14 +97,14 @@ const es = {
     similar: 'En situaciones parecidas', mostWon: 'Lo que más ha ganado:',
     wonCount: (n: number) => `${n} ${n === 1 ? 'cierre ganado' : 'cierres ganados'}`,
     watchOut: (labels: string) => ` · ojo: ${labels}`, quote: (s: string) => `«${s}»`, seeAll: 'Ver todo lo que ha funcionado →',
-    introPre: 'Generado con el playbook de tu empresa para ', introStrong: 'este', introPost: ' dossier, en su orden.',
+    introPre: 'Generado con el playbook de tu empresa para ', introStrong: 'esta', introPost: ' propuesta, en su orden.',
     print: 'Imprimir', loading: 'Cargando…',
     noPlaybook: 'Tu empresa aún no tiene playbook. Pídeselo a tu líder (sección «Playbook») o comparte lo que te funciona en «Aprende».',
     uncovered: (list: string) => `Sin jugadas para: ${list}.`, compose: 'Preparar mensaje', team: 'Equipo',
     used: (used: number, won: number) => `Usada en ${used} cierres documentados · ganó ${won}`, noEvidence: 'Sin cierres documentados todavía',
   },
   tariff: {
-    title: 'Precio', none: 'Sin precio', custom: 'A medida', discount: 'Descuento', noDiscount: 'Sin descuento',
+    title: 'Precio', none: 'Sin precio', custom: 'A medida', what: '¿Qué le ofreces?', otherSectors: 'Otros sectores', discount: 'Descuento', noDiscount: 'Sin descuento',
     period: { once: '', event: ' / evento', month: ' / mes', year: ' / año' } as Record<string, string>,
     empty: 'Tu empresa aún no ha puesto tarifas: pídeselas a tu responsable.',
     payment: 'Enlace de pago', paymentHelp: 'Va con tu propuesta y el cupón: el pago queda a tu nombre.',
@@ -122,7 +122,7 @@ const es = {
     all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
   },
   clientData: 'Datos del cliente', advanced: 'Avanzado', moreActions: 'Más acciones',
-  preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa del dossier' },
+  preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa de la propuesta' },
   page: {
     approved: 'Comisión aprobada a pesar del conflicto', noCommission: (reason: string) => `Esta venta no genera comisión: ${reason}`,
     decided: 'Ya está decidido.', decide: 'Decide si se paga. Hasta entonces, no cuenta para comisiones.', leadDecides: 'Un/a jefe/a de ventas decidirá si se paga.',
@@ -213,7 +213,7 @@ export const builderMessages = defineMessages({
     },
     followup: {
       title: 'Follow-up', overdue: 'Overdue', nextPlaceholder: 'Next step (e.g. Call to agree a date)', next: 'Next step',
-      nextAt: 'Next step date', in2d: '+2 days', in1w: '+1 week', in2w: '+2 weeks', clear: 'Done / clear',
+      nextAt: 'Next step date', in2d: '+2 days', in1w: '+1 week', in2w: '+2 weeks', clear: 'Done / clear', save: 'Save', defaultDraft: 'Send the proposal to the customer', defaultSent: 'Call to answer questions and set a date',
       compose: 'Write a follow-up message →',
     },
     publish: {
@@ -241,7 +241,7 @@ export const builderMessages = defineMessages({
       used: (used, won) => `Used in ${used} documented deals · won ${won}`, noEvidence: 'No documented deals yet',
     },
     tariff: {
-      title: 'Price', none: 'No price', custom: 'Custom', discount: 'Discount', noDiscount: 'No discount',
+      title: 'Price', none: 'No price', custom: 'Custom', what: 'What are you offering?', otherSectors: 'Other sectors', discount: 'Discount', noDiscount: 'No discount',
       period: { once: '', event: ' / event', month: ' / month', year: ' / year' },
       empty: 'Your company has not set price options yet: ask your manager.',
       payment: 'Payment link', paymentHelp: 'It carries your proposal and the coupon: the payment is credited to you.',
@@ -347,7 +347,7 @@ export const builderMessages = defineMessages({
     },
     followup: {
       title: 'Acompanhamento', overdue: 'Atrasado', nextPlaceholder: 'Próximo passo (ex.: Ligar para fechar a data)', next: 'Próximo passo',
-      nextAt: 'Data do próximo passo', in2d: '+2 dias', in1w: '+1 semana', in2w: '+2 semanas', clear: 'Feito / remover',
+      nextAt: 'Data do próximo passo', in2d: '+2 dias', in1w: '+1 semana', in2w: '+2 semanas', clear: 'Feito / remover', save: 'Salvar', defaultDraft: 'Enviar a proposta ao cliente', defaultSent: 'Ligar para tirar dúvidas e fechar a data',
       compose: 'Preparar mensagem de acompanhamento →',
     },
     publish: {
@@ -375,7 +375,7 @@ export const builderMessages = defineMessages({
       used: (used, won) => `Usada em ${used} fechamentos documentados · ganhou ${won}`, noEvidence: 'Ainda sem fechamentos documentados',
     },
     tariff: {
-      title: 'Preço', none: 'Sem preço', custom: 'Sob medida', discount: 'Desconto', noDiscount: 'Sem desconto',
+      title: 'Preço', none: 'Sem preço', custom: 'Sob medida', what: 'O que você oferece?', otherSectors: 'Outros setores', discount: 'Desconto', noDiscount: 'Sem desconto',
       period: { once: '', event: ' / evento', month: ' / mês', year: ' / ano' },
       empty: 'Sua empresa ainda não definiu tarifas: peça ao seu responsável.',
       payment: 'Link de pagamento', paymentHelp: 'Leva sua proposta e o cupom: o pagamento fica no seu nome.',
@@ -481,7 +481,7 @@ export const builderMessages = defineMessages({
     },
     followup: {
       title: '후속 조치', overdue: '기한 지남', nextPlaceholder: '다음 단계 (예: 전화로 날짜 확정)', next: '다음 단계',
-      nextAt: '다음 단계 날짜', in2d: '+2일', in1w: '+1주', in2w: '+2주', clear: '완료 / 지우기',
+      nextAt: '다음 단계 날짜', in2d: '+2일', in1w: '+1주', in2w: '+2주', clear: '완료 / 지우기', save: '저장', defaultDraft: '고객에게 제안서 보내기', defaultSent: '전화로 질문에 답하고 날짜 확정하기',
       compose: '후속 메시지 작성 →',
     },
     publish: {
@@ -509,7 +509,7 @@ export const builderMessages = defineMessages({
       used: (used, won) => `기록된 거래 ${used}건에서 사용 · ${won}건 성사`, noEvidence: '아직 기록된 거래가 없습니다',
     },
     tariff: {
-      title: '가격', none: '가격 없음', custom: '맞춤', discount: '할인', noDiscount: '할인 없음',
+      title: '가격', none: '가격 없음', custom: '맞춤', what: '무엇을 제안하나요?', otherSectors: '다른 업종', discount: '할인', noDiscount: '할인 없음',
       period: { once: '', event: ' / 이벤트', month: ' / 월', year: ' / 년' },
       empty: '아직 회사에서 요금을 정하지 않았어요. 담당자에게 요청하세요.',
       payment: '결제 링크', paymentHelp: '제안서와 쿠폰이 함께 들어가 결제가 내 실적으로 잡혀요.',

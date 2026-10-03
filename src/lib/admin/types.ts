@@ -102,6 +102,10 @@ export interface PriceOption {
   /** Enlace de pago de Stripe (Payment Link). */
   paymentLink: string | null;
   segmentId: string | null;
+  /** Tipo («Charanga u orquesta», «Sala de conciertos»): primer paso al elegir precio. */
+  kind?: string | null;
+  /** La más típica de su tipo: sale marcada al elegir el tipo. */
+  isDefault?: boolean;
   position: number;
   active: boolean;
 }

@@ -51,6 +51,7 @@ const toDossier = (r: Row): DossierRecord => ({
 const toPriceOption = (r: Row): PriceOption => ({
   id: r.id, label: r.label, amount: Number(r.amount), currency: r.currency, period: r.period, paymentLink: r.payment_link ?? null,
   segmentId: r.segment_id ?? null, position: Number(r.position), active: !!r.active,
+  kind: r.kind ?? null, isDefault: !!r.is_default,
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';
@@ -147,6 +148,8 @@ function full(sb: SupabaseClient): AdminDb {
       const row = {
         tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink,
         segment_id: o.segmentId, position: o.position, active: o.active,
+        // Columnas de 20261023: solo si vienen (así se puede guardar antes de la migración).
+        ...(o.kind !== undefined ? { kind: o.kind } : {}), ...(o.isDefault !== undefined ? { is_default: o.isDefault } : {}),
       };
       const r = id
         ? checkOne(await sb.from('price_option').update(row).eq('id', id).eq('tenant_id', tenantId).select('id').single())

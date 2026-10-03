@@ -3,7 +3,7 @@ import { defineMessages } from '../core';
 
 const es = {
   nav: {
-    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Dossiers', myAccounts: 'Mis cuentas', accounts: 'Cuentas', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
+    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'Cuentas', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
     learn: 'Aprende', myCommissions: 'Mis comisiones', setup: 'Configuración guiada', playbook: 'Playbook y mercado', catalog: 'Catálogo',
     team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,

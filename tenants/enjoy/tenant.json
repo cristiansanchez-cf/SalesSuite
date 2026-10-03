@@ -906,126 +906,162 @@
       "amount": 99,
       "currency": "EUR",
       "period": "month",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Local",
+      "default": true
     },
     {
       "label": "Local mediano (150–500)",
       "amount": 249,
       "currency": "EUR",
       "period": "month",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Local",
+      "default": false
     },
     {
       "label": "Local grande (más de 500)",
       "amount": 499,
       "currency": "EUR",
       "period": "month",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Local",
+      "default": false
     },
     {
       "label": "Validación · 5 primeros locales",
       "amount": 99,
       "currency": "EUR",
       "period": "month",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Local",
+      "default": false
     },
     {
       "label": "Noche suelta en local",
       "amount": 150,
       "currency": "EUR",
       "period": "event",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Local",
+      "default": false
     },
     {
       "label": "Caseta · feria completa (hasta 7 días)",
       "amount": 290,
       "currency": "EUR",
       "period": "once",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Caseta de feria",
+      "default": true
     },
     {
       "label": "Caseta · día suelto",
       "amount": 90,
       "currency": "EUR",
       "period": "event",
-      "segment": "ocio-nocturno"
+      "segment": "ocio-nocturno",
+      "kind": "Caseta de feria",
+      "default": false
     },
     {
       "label": "Evento de promotora",
       "amount": 150,
       "currency": "EUR",
       "period": "event",
-      "segment": "promotoras"
+      "segment": "promotoras",
+      "kind": "Promotora",
+      "default": true
     },
     {
       "label": "Promotora · eventos ilimitados",
       "amount": 390,
       "currency": "EUR",
       "period": "month",
-      "segment": "promotoras"
+      "segment": "promotoras",
+      "kind": "Promotora",
+      "default": false
     },
     {
       "label": "Charanga u orquesta · evento",
       "amount": 120,
       "currency": "EUR",
       "period": "event",
-      "segment": "conciertos"
+      "segment": "conciertos",
+      "kind": "Charanga u orquesta",
+      "default": true
     },
     {
       "label": "Charanga u orquesta · temporada (mayo–septiembre)",
       "amount": 390,
       "currency": "EUR",
       "period": "once",
-      "segment": "conciertos"
+      "segment": "conciertos",
+      "kind": "Charanga u orquesta",
+      "default": false
     },
     {
       "label": "Sala hasta 1.000",
       "amount": 600,
       "currency": "EUR",
       "period": "event",
-      "segment": "conciertos"
+      "segment": "conciertos",
+      "kind": "Sala de conciertos",
+      "default": true
     },
     {
       "label": "Sala 1.000–5.000",
       "amount": 1200,
       "currency": "EUR",
       "period": "event",
-      "segment": "conciertos"
+      "segment": "conciertos",
+      "kind": "Sala de conciertos",
+      "default": false
     },
     {
       "label": "Sala 5.000–20.000",
       "amount": 2500,
       "currency": "EUR",
       "period": "event",
-      "segment": "conciertos"
+      "segment": "conciertos",
+      "kind": "Sala de conciertos",
+      "default": false
     },
     {
       "label": "Agencia o promotora · fechas ilimitadas",
       "amount": 1500,
       "currency": "EUR",
       "period": "month",
-      "segment": "conciertos"
+      "segment": "conciertos",
+      "kind": "Agencia de conciertos",
+      "default": true
     },
     {
       "label": "Festival hasta 5.000",
       "amount": 1200,
       "currency": "EUR",
       "period": "event",
-      "segment": "festivales"
+      "segment": "festivales",
+      "kind": "Festival",
+      "default": false
     },
     {
       "label": "Festival 5.000–20.000",
       "amount": 2500,
       "currency": "EUR",
       "period": "event",
-      "segment": "festivales"
+      "segment": "festivales",
+      "kind": "Festival",
+      "default": true
     },
     {
       "label": "Infraestructura de temporada",
       "amount": 1500,
       "currency": "EUR",
       "period": "month",
-      "segment": "festivales"
+      "segment": "festivales",
+      "kind": "Festival",
+      "default": false
     }
   ],
   "coupons": [
@@ -1116,8 +1152,39 @@
           "label": "Valencia"
         },
         {
+          "key": "andalucia",
+          "label": "Andalucía"
+        },
+        {
           "key": "costa",
-          "label": "Costa (temporada)"
+          "label": "Costa e islas"
+        },
+        {
+          "key": "otra",
+          "label": "Otra"
+        }
+      ]
+    },
+    {
+      "key": "temporada",
+      "label": "Temporada",
+      "question": "¿Cuándo trabaja la cuenta?",
+      "icon": "calendar",
+      "scope": "account",
+      "multi": false,
+      "weight": 1,
+      "options": [
+        {
+          "key": "todo-el-ano",
+          "label": "Todo el año"
+        },
+        {
+          "key": "verano",
+          "label": "Solo verano"
+        },
+        {
+          "key": "ferias",
+          "label": "Ferias y fiestas"
         }
       ]
     },

@@ -126,6 +126,7 @@ export interface DossierViewRow {
 export interface PriceOptionRow {
   id: string; tenant_id: string; label: string; amount: number; currency: string; period: 'once' | 'event' | 'month' | 'year';
   payment_link: string | null; segment_id: string | null; position: number; active: boolean;
+  kind?: string | null; is_default?: boolean;
 }
 export interface TeamIpRow { tenant_id: string; ip_hash: string; last_seen_at: string }
 
@@ -343,8 +344,8 @@ export function freshDemoDb(): DemoDb {
     ],
     // Tarifas de ejemplo (docs/COMMISSIONS.md §Tarifas); los enlaces son de prueba de Stripe.
     price_option: [
-      { id: '00000000-0000-4000-8000-0000000f0001', tenant_id: ENJOY, label: 'Boda completa', amount: 700, currency: 'EUR', period: 'event', payment_link: 'https://buy.stripe.com/test_boda', segment_id: '00000000-0000-4000-8000-0000005e0001', position: 1, active: true },
-      { id: '00000000-0000-4000-8000-0000000f0002', tenant_id: ENJOY, label: 'Local mediano', amount: 249, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_mediano', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 2, active: true },
+      { id: '00000000-0000-4000-8000-0000000f0001', tenant_id: ENJOY, label: 'Boda completa', amount: 700, currency: 'EUR', period: 'event', payment_link: 'https://buy.stripe.com/test_boda', segment_id: '00000000-0000-4000-8000-0000005e0001', position: 1, active: true, kind: 'Boda', is_default: true },
+      { id: '00000000-0000-4000-8000-0000000f0002', tenant_id: ENJOY, label: 'Local mediano', amount: 249, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_mediano', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 2, active: true, kind: 'Local', is_default: true },
       { id: '00000000-0000-4000-8000-0000000f0003', tenant_id: ENJOY, label: 'Evento suelto', amount: 150, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 3, active: true },
     ],
   };

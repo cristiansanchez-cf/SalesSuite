@@ -184,6 +184,22 @@
     if (!s.links.some((l) => l.state === 'active')) await run({ op: 'createLink', expiresAt: null });
   }
   let customOpen = $state(false);
+  // Precio en dos pasos: primero QUÉ es (tipo), luego la tarifa; al elegir el tipo se marca la más típica.
+  const kindOf = (o: { kind?: string | null; label: string }) => o.kind || o.label;
+  const kinds = $derived([...new Map(s.priceOptions.map((o) => [kindOf(o), o.segmentId])).entries()].map(([k, seg]) => ({ k, seg })));
+  let allKinds = $state(false);
+  const chosenOption = $derived(s.priceOptions.find((o) => o.id === d.priceOptionId) ?? null);
+  let pickedKind = $state<string | null>(null);
+  const activeKind = $derived(pickedKind ?? (chosenOption ? kindOf(chosenOption) : null));
+  // Con sector elegido, primero los tipos de ese sector; el resto, a un clic.
+  const shownKinds = $derived(!d.segmentId || allKinds || !kinds.some((x) => x.seg === d.segmentId) ? kinds : kinds.filter((x) => x.seg === d.segmentId || x.k === activeKind));
+  function pickKind(k: string) {
+    pickedKind = k;
+    const inKind = s.priceOptions.filter((o) => kindOf(o) === k);
+    if (chosenOption && kindOf(chosenOption) === k) return;
+    const def = inKind.find((o) => o.isDefault) ?? inKind[0];
+    if (def) run({ op: 'setPriceOption', priceOptionId: def.id });
+  }
   let payCopied = $state(false);
   async function copyPay() {
     if (!s.payment) return;
@@ -285,17 +301,17 @@
     const dt = new Date(iso);
     return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   };
-  let nextText = $state(initial.dossier.nextStep ?? '');
-  let nextAt = $state(toLocalInput(initial.dossier.nextStepAt));
+  const inDays = (days: number) => { const dt = new Date(Date.now() + days * 86_400_000); dt.setHours(10, 0, 0, 0); return toLocalInput(dt.toISOString()); };
+  // Sin próximo paso: lo típico ya escrito (en 2 días, a las 10:00). Se guarda con un clic o al cambiarlo.
+  const suggested = !initial.dossier.nextStepAt && !initial.dossier.nextStep;
+  let nextText = $state(initial.dossier.nextStep ?? (suggested ? (initial.dossier.status === 'published' ? t.followup.defaultSent : t.followup.defaultDraft) : ''));
+  let nextAt = $state(suggested ? inDays(2) : toLocalInput(initial.dossier.nextStepAt));
+  const nextDirty = $derived(nextText !== (d.nextStep ?? '') || nextAt !== toLocalInput(d.nextStepAt));
   function saveNext(at = nextAt) {
     nextAt = at;
     run({ op: 'setNextStep', text: nextText, at: at ? new Date(at).toISOString() : null });
   }
-  function preset(days: number) {
-    const dt = new Date(Date.now() + days * 86_400_000);
-    dt.setHours(10, 0, 0, 0);
-    saveNext(toLocalInput(dt.toISOString()));
-  }
+  function preset(days: number) { saveNext(inDays(days)); }
   const overdue = $derived(!!d.nextStepAt && new Date(d.nextStepAt).getTime() < Date.now());
 
   const money = (n: number | null, cur: string) =>
@@ -494,8 +510,11 @@
                 <button class={iconBtn} disabled={!editable || idx === list.length - 1} onclick={() => move(item, 1)} aria-label={t.modules.moveDown(item.moduleName)}>↓</button>
                 <button class={iconBtn} disabled={!editable} onclick={() => run({ op: 'setVisible', itemId: item.id, visible: !item.visible })} aria-label={item.visible ? t.modules.hide(item.moduleName) : t.modules.show(item.moduleName)} aria-pressed={!item.visible} data-testid="toggle-visible">{item.visible ? '👁' : '◌'}</button>
                 <button class={iconBtn} disabled={!editable} onclick={() => remove(item)} aria-label={t.modules.remove(item.moduleName)}>✕</button>
+                {#if s.customPrices}<button class={iconBtn} onclick={() => toggleProps(item)} aria-expanded={openProps === item.id} aria-label="{t.advanced}: {item.moduleName}" title={t.advanced}>⋯</button>{/if}
               </div>
               {#if item.error}<p class="co-alert co-alert--rejection mx-3 mb-2 text-xs">{t.modules.invalid} {item.error}</p>{/if}
+              <!-- Segunda fila solo si tiene algo (precio por módulo o versión nueva): nada de huecos vacíos. -->
+              {#if (d.priceMode === 'per_module' && s.customPrices) || item.upgradeTo}
               <div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
                 {#if d.priceMode === 'per_module' && s.customPrices}
                   <label class="flex items-center gap-2">
@@ -508,8 +527,8 @@
                 {#if item.upgradeTo}
                   <button class={btn} disabled={!editable} onclick={() => run({ op: 'upgradeItem', itemId: item.id })}>{t.modules.upgrade(item.upgradeTo.version)}</button>
                 {/if}
-                <button class="co-btn co-btn--quiet co-btn--sm ml-auto" onclick={() => toggleProps(item)} aria-expanded={openProps === item.id}>{t.advanced}</button>
               </div>
+              {/if}
               {#if openProps === item.id}
                 <div class="space-y-2 border-t border-line p-3 text-sm">
                   <p class="text-xs text-muted">{t.modules.propsHelp}</p>
@@ -560,6 +579,7 @@
             <button class={btn} onclick={() => preset(7)}>{t.followup.in1w}</button>
             <button class={btn} onclick={() => preset(14)}>{t.followup.in2w}</button>
             {#if d.nextStepAt}<button class={btn} onclick={() => { nextText = ''; saveNext(''); }}>{t.followup.clear}</button>{/if}
+            {#if nextDirty && nextText}<button class="co-btn co-btn--primary co-btn--sm ml-auto" onclick={() => saveNext()} data-testid="followup-save">{t.followup.save}</button>{/if}
           </div>
         {/if}
         <a class="mt-3 co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&type=seguimiento">{t.followup.compose}</a>
@@ -690,13 +710,22 @@
           <!-- Tarifas: las fija la empresa; aquí solo se eligen -->
           <div class="grid gap-2">
             {#if s.priceOptions.length === 0 && !s.customPrices}<p class="co-meta">{t.tariff.empty}</p>{/if}
-            <div class="co-chips" data-testid="price-options">
-              <button type="button" class="co-chip" aria-pressed={!d.priceOptionId && d.priceMode === 'none'} disabled={!editable} onclick={() => run({ op: 'setPriceOption', priceOptionId: null })} data-testid="price-option-none">{t.tariff.none}</button>
-              {#each s.priceOptions as o (o.id)}
-                <button type="button" class="co-chip" aria-pressed={d.priceOptionId === o.id} disabled={!editable} onclick={() => d.priceOptionId !== o.id && run({ op: 'setPriceOption', priceOptionId: o.id })} data-testid="price-option" data-label={o.label}>{o.label} · <strong>{money(o.amount, o.currency)}{t.tariff.period[o.period] ?? ''}</strong></button>
+            {#if s.priceOptions.length}<p class="co-field">{t.tariff.what}</p>{/if}
+            <div class="co-chips" data-testid="price-kinds">
+              <button type="button" class="co-chip" aria-pressed={!d.priceOptionId && d.priceMode === 'none' && !customOpen} disabled={!editable} onclick={() => { pickedKind = null; customOpen = false; run({ op: 'setPriceOption', priceOptionId: null }); }} data-testid="price-option-none">{t.tariff.none}</button>
+              {#each shownKinds as x (x.k)}
+                <button type="button" class="co-chip" aria-pressed={activeKind === x.k} disabled={!editable} onclick={() => pickKind(x.k)} data-testid="price-kind" data-kind={x.k}>{x.k}</button>
               {/each}
+              {#if shownKinds.length < kinds.length}<button type="button" class="co-chip co-chip--quiet" onclick={() => (allKinds = true)} data-testid="price-kinds-more">{t.tariff.otherSectors}</button>{/if}
               {#if s.customPrices}<button type="button" class="co-chip" aria-pressed={customOpen || (!d.priceOptionId && d.priceMode !== 'none')} disabled={!editable} onclick={() => (customOpen = !customOpen)} data-testid="price-custom">{t.tariff.custom}</button>{/if}
             </div>
+            {#if activeKind && s.priceOptions.filter((o) => kindOf(o) === activeKind).length > 1}
+              <div class="co-chips mt-1" data-testid="price-options">
+                {#each s.priceOptions.filter((o) => kindOf(o) === activeKind) as o (o.id)}
+                  <button type="button" class="co-chip" aria-pressed={d.priceOptionId === o.id} disabled={!editable} onclick={() => d.priceOptionId !== o.id && run({ op: 'setPriceOption', priceOptionId: o.id })} data-testid="price-option" data-label={o.label}>{o.kind && o.label.startsWith(o.kind + ' · ') ? o.label.slice(o.kind.length + 3) : o.label} · <strong>{money(o.amount, o.currency)}{t.tariff.period[o.period] ?? ''}</strong></button>
+                {/each}
+              </div>
+            {/if}
           </div>
           {#if s.customPrices && (customOpen || (!d.priceOptionId && d.priceMode !== 'none'))}
             <div class="grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-3">

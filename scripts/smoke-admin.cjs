@@ -84,8 +84,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.getAttribute('[data-testid=price-panel]', 'open')) === null, 'precio plegado mientras no hay precio');
   await p.click('[data-testid=price-panel] summary');
   assert(!(await p.$('[data-testid=item-price-input]')) && !(await p.$('[data-testid=price-mode-total]')), 'el comercial no escribe precios: elige tarifa');
-  await p.locator('[data-testid=price-option]', { hasText: 'Boda completa' }).click(); await settle();
-  assert((await p.textContent('[data-testid=total]')).replace(/\s/g, ' ') === '700 €', 'tarifa «Boda completa» → 700 €');
+  // Precio en dos pasos: el tipo marca su tarifa típica.
+  await p.locator('[data-testid=price-kind]', { hasText: 'Boda' }).click(); await settle();
+  assert((await p.textContent('[data-testid=total]')).replace(/\s/g, ' ') === '700 €', 'tipo «Boda» → su tarifa típica, 700 €');
   const pay = new URL((await p.textContent('[data-testid=payment-url]')).trim());
   assert(pay.hostname === 'buy.stripe.com' && pay.searchParams.get('client_reference_id') === `dossier_${p.url().split('/').pop()}`, 'enlace de pago con la propuesta (el vendedor)');
 
@@ -113,7 +114,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await v.screenshot({ path: `${OUT}/public-tablet.png`, fullPage: true });
 
   // edición en vivo: cambio de precio se ve en el enlace sin republicar
-  await p.locator('[data-testid=price-option]', { hasText: 'Evento suelto' }).click(); await settle();
+  await p.click('[data-testid=price-kinds-more]').catch(() => {});
+  await p.locator('[data-testid=price-kind]', { hasText: 'Evento suelto' }).click(); await settle();
   await v.reload();
   assert((await v.textContent('body')).replace(/\s/g, ' ').includes('150 €'), 'cambio de tarifa reflejado en vivo en el enlace');
 
