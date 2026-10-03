@@ -1,0 +1,28 @@
+# Fotos de ejemplo libres de derechos (scripts/fetch-free-photos.mjs). Las sube a la rama desde la que se lanza.
+name: Fotos libres
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Cuántas fotos
+        type: string
+        default: '24'
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts && npm rebuild sharp
+      - run: node scripts/fetch-free-photos.mjs "${{ inputs.count }}"
+      - name: Subir a la rama
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tenants/enjoy/assets/img/album public/demo/enjoy/img/album
+          git diff --cached --quiet && { echo "Sin cambios"; exit 0; }
+          git commit -m "Fotos de ejemplo libres de derechos (CC0 / dominio público, Openverse)"
+          git push
