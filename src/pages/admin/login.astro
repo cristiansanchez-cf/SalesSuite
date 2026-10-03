@@ -10,31 +10,36 @@ import { demoDb } from '~/lib/data/store';
 import { requestOrigin } from '~/lib/http';
 import Alert from '~/components/ui/Alert.astro';
 import { BRAND } from '~/lib/site';
+import { i18n } from '~/lib/i18n';
+import { sellMessages } from '~/lib/i18n/messages/sell';
 
 const { tenant } = Astro.locals;
 if (!tenant) return Astro.rewrite('/404');
 
+const { m } = i18n(Astro, sellMessages);
 const mode = authMode();
 const next = safeNext(Astro.url.searchParams.get('next'));
-let error: string | null = Astro.url.searchParams.get('error') === 'link' ? 'El enlace ha caducado o ya se usó. Pide un código nuevo.' : null;
+let error: string | null = Astro.url.searchParams.get('error') === 'link' ? m.login.errLink : null;
 let info: string | null = null;
 /** Paso 2 del acceso por código: email al que se envió. */
 let codeEmail: string | null = null;
 let demoCode: string | null = null;
 const origin = requestOrigin(Astro.request, Astro.url);
-const SENT = 'Si el email tiene acceso, te hemos enviado un código de 6 dígitos (y un enlace) para entrar.';
+const SENT = m.login.sent;
+/** «…you can only request this after 42 seconds» → «espera 42 segundos». */
+const rateMessage = (msg: string) => { const s = /(\d+)\s*seconds?/i.exec(msg)?.[1]; return s ? m.login.errRateWait(Number(s)) : m.login.errRate; };
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const action = String(form.get('action') ?? '');
   const email = String(form.get('email') ?? '').trim().toLowerCase();
-  const code = String(form.get('code') ?? '').replace(/\s/g, '');
+  const code = String(form.get('code') ?? '').replace(/[\s-]/g, '');
 
   if (action === 'demo' && mode === 'demo') {
     if (demoLogin(Astro, String(form.get('userId') ?? ''))) return Astro.redirect(next, 303);
-    error = 'Usuario de demo no válido';
+    error = m.login.errDemo;
   } else if (action === 'code-send') {
-    if (!/^\S+@\S+\.\S+$/.test(email)) error = 'Escribe un email válido';
+    if (!/^\S+@\S+\.\S+$/.test(email)) error = m.login.errEmail;
     else if (mode === 'demo') {
       demoCode = demoSendCode(email);
       codeEmail = email;
@@ -44,77 +49,83 @@ if (Astro.request.method === 'POST') {
       const redirectTo = `${origin}/admin/auth/confirm?next=${encodeURIComponent(next)}`;
       const { error: e } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
       // Mismo mensaje exista o no la cuenta (no enumerar usuarios).
-      if (e && e.status !== 400 && e.status !== 422) error = e.status === 429 ? 'Has pedido varios códigos seguidos. Espera un minuto.' : 'No se pudo enviar el código. Inténtalo de nuevo.';
+      if (e && e.status !== 400 && e.status !== 422) error = e.status === 429 ? rateMessage(e.message) : m.login.errSend;
       else { codeEmail = email; info = SENT; }
     }
+  } else if (action === 'code-resume' && /^\S+@\S+\.\S+$/.test(email)) {
+    // Volver al paso del código sin pedir otro (evita el límite de envíos).
+    codeEmail = email;
   } else if (action === 'code-verify') {
     codeEmail = email;
-    if (!/^\d{6,10}$/.test(code)) error = 'El código son los números del correo';
+    if (!/^\d{6,12}$/.test(code)) error = m.login.errCodeFormat;
     else if (mode === 'demo') {
       const userId = demoVerifyCode(email, code);
       if (userId && demoLogin(Astro, userId)) return Astro.redirect(next, 303);
-      error = 'Código incorrecto o caducado';
+      error = m.login.errCode;
     } else {
-      const { error: e } = await supabaseServerClient(Astro).auth.verifyOtp({ email, token: code, type: 'email' });
+      // Según la plantilla, Supabase emite el código como «email» o como «magiclink»: se prueban los dos (guía §5).
+      const sb = supabaseServerClient(Astro);
+      let { error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'email' });
+      if (e) ({ error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'magiclink' }));
       if (!e) return Astro.redirect(next, 303);
-      error = 'Código incorrecto o caducado';
+      error = m.login.errCode;
     }
   } else if (action === 'password' && mode === 'supabase') {
     const { error: e } = await supabaseServerClient(Astro).auth.signInWithPassword({ email, password: String(form.get('password') ?? '') });
     if (!e) return Astro.redirect(next, 303);
-    error = 'Email o contraseña incorrectos';
+    error = m.login.errPassword;
   } else if (action === 'reset' && mode === 'supabase') {
     await supabaseServerClient(Astro).auth.resetPasswordForEmail(email, { redirectTo: `${origin}/admin/auth/confirm?next=/admin/account` });
-    info = 'Si el email tiene acceso, recibirás un enlace para elegir una contraseña nueva.';
+    info = m.login.resetSent;
   }
 }
 
 const tenantName = (id: string) => demoDb().tenant.find((t) => t.id === id)?.name ?? id;
-const roleName = { admin: 'admin', lead: 'jefe/a de ventas', rep: 'comercial', partner: 'colaborador' } as const;
+const roleName = m.login.roles;
 ---
-<AdminLayout title="Entrar" bare>
+<AdminLayout title={m.login.title} bare>
   <div class="mx-auto mt-4 grid max-w-sm gap-6 sm:mt-14">
     <p class="text-center"><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {BRAND.app}</span></p>
     <div class="co-card grid gap-4 !p-6">
       <div>
         <p class="text-eyebrow mb-2">{tenant.name}</p>
-        <h1 class="co-page-title">Entrar.</h1>
-        <p class="co-lede mt-2">Sin contraseña: te llega un código al correo y entras.</p>
+        <h1 class="co-page-title">{m.login.heading}</h1>
+        <p class="co-lede mt-2">{m.login.lede}</p>
       </div>
       {error && <Alert kind="rejection" title={error} />}
       {info && <Alert kind="success" title={info} />}
-      {demoCode && <p class="co-alert co-alert--info" data-testid="demo-code">Modo demo (sin correo): tu código es <strong>{demoCode}</strong></p>}
+      {demoCode && <p class="co-alert co-alert--info" data-testid="demo-code">{m.login.demoCode} <strong>{demoCode}</strong></p>}
 
       {codeEmail ? (
-        <form method="post" class="grid gap-3" data-testid="code-verify">
+        <form method="post" class="grid gap-3" data-testid="code-verify" data-pending={codeEmail}>
           <input type="hidden" name="action" value="code-verify" />
           <input type="hidden" name="email" value={codeEmail} />
-          <p class="co-body">Código enviado a <strong class="text-ink">{codeEmail}</strong></p>
-          <label class="co-field">Código
-            <input class="co-input text-center !text-2xl tracking-[0.4em]" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,12}" maxlength="12" required autofocus />
+          <p class="co-body">{m.login.signingInAs} <strong class="text-ink">{codeEmail}</strong> · <a class="co-anchor-link underline" href={`/admin/login?next=${encodeURIComponent(next)}`} data-forget>{m.login.otherAccount}</a></p>
+          <label class="co-field">{m.login.code}
+            <input class="co-input text-center !text-2xl tracking-[0.4em]" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 \-]{6,20}" maxlength="20" required autofocus />
           </label>
-          <button class="co-btn co-btn--primary co-btn--block" type="submit">Entrar <span aria-hidden="true">→</span></button>
-          <a class="co-btn co-btn--quiet" href={`/admin/login?next=${encodeURIComponent(next)}`}>Usar otro email</a>
+          <button class="co-btn co-btn--primary co-btn--block" type="submit">{m.login.enter} <span aria-hidden="true">→</span></button>
         </form>
       ) : (
         <form method="post" class="grid gap-3" data-testid="code-send">
           <input type="hidden" name="action" value="code-send" />
           <label class="co-field">Email<input class="co-input" type="email" name="email" required autocomplete="email" /></label>
-          <button class="co-btn co-btn--primary co-btn--block" type="submit">Enviarme un código <span aria-hidden="true">→</span></button>
+          <button class="co-btn co-btn--primary co-btn--block" type="submit">{m.login.sendCode} <span aria-hidden="true">→</span></button>
+          <button class="co-btn co-btn--quiet hidden" type="button" data-resume data-label={m.login.haveCode('{email}')} data-testid="code-resume"></button>
         </form>
       )}
     </div>
 
     {mode === 'demo' ? (
       <details class="co-card" open={!codeEmail}>
-        <summary class="cursor-pointer co-row-title">Modo demo: entrar como…</summary>
+        <summary class="cursor-pointer co-row-title">{m.login.demoAs}</summary>
         <div class="mt-3 grid gap-2">
           {demoDb().users.map((u) => (
             <form method="post">
               <input type="hidden" name="action" value="demo" />
               <input type="hidden" name="userId" value={u.id} />
               <button type="submit" class="co-action !min-h-[56px]" data-testid={`demo-${u.email}`}>
-                <span class="co-action__label">{u.display_name}<small>{u.email} · {u.memberships.map((m) => `${roleName[m.role]} en ${tenantName(m.tenant_id)}`).join(', ') || 'sin acceso'}</small></span>
+                <span class="co-action__label">{u.display_name}<small>{u.email} · {u.memberships.map((ms) => m.login.roleIn(roleName[ms.role], tenantName(ms.tenant_id))).join(', ') || m.login.noAccess}</small></span>
               </button>
             </form>
           ))}
@@ -122,20 +133,46 @@ const roleName = { admin: 'admin', lead: 'jefe/a de ventas', rep: 'comercial', p
       </details>
     ) : !codeEmail && (
       <details class="co-card">
-        <summary class="cursor-pointer co-row-title">Entrar con contraseña</summary>
+        <summary class="cursor-pointer co-row-title">{m.login.withPassword}</summary>
         <form method="post" class="mt-3 grid gap-3">
           <input type="hidden" name="action" value="password" />
           <label class="co-field">Email<input class="co-input" type="email" name="email" required autocomplete="email" /></label>
-          <label class="co-field">Contraseña<input class="co-input" type="password" name="password" required autocomplete="current-password" /></label>
-          <button class="co-btn co-btn--ghost co-btn--block" type="submit">Entrar</button>
+          <label class="co-field">{m.login.password}<input class="co-input" type="password" name="password" required autocomplete="current-password" /></label>
+          <button class="co-btn co-btn--ghost co-btn--block" type="submit">{m.login.enter}</button>
         </form>
         <form method="post" class="mt-4 grid gap-2">
           <input type="hidden" name="action" value="reset" />
-          <p class="co-help">¿No la recuerdas? Entra con un código o pide un enlace para elegir otra:</p>
+          <p class="co-help">{m.login.forgot}</p>
           <label class="co-field">Email<input class="co-input" type="email" name="email" required autocomplete="email" /></label>
-          <button class="co-btn co-btn--ghost co-btn--block" type="submit">Enviarme enlace de recuperación</button>
+          <button class="co-btn co-btn--ghost co-btn--block" type="submit">{m.login.sendReset}</button>
         </form>
       </details>
     )}
   </div>
 </AdminLayout>
+
+<script>
+  // Email pendiente (guía §5): si recargas o vuelves en menos de una hora, sigues en el paso del código.
+  const KEY = 'ss_pending_email';
+  const TTL = 60 * 60 * 1000;
+  const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); return v && Date.now() - v.at < TTL ? v.email : null; } catch { return null; } };
+  const write = (email: string | null) => { try { email ? localStorage.setItem(KEY, JSON.stringify({ email, at: Date.now() })) : localStorage.removeItem(KEY); } catch {} };
+  const verify = document.querySelector<HTMLFormElement>('[data-testid=code-verify]');
+  if (verify) {
+    write(verify.dataset.pending || null);
+    verify.addEventListener('submit', () => write(null));
+    verify.querySelector('[data-forget]')?.addEventListener('click', () => write(null));
+  }
+  const resume = document.querySelector<HTMLButtonElement>('[data-resume]');
+  const pending = !verify && read();
+  if (resume && pending) {
+    resume.textContent = (resume.dataset.label || '').replace('{email}', pending);
+    resume.classList.remove('hidden');
+    resume.addEventListener('click', () => {
+      const f = resume.form!;
+      (f.querySelector('input[name=email]') as HTMLInputElement).value = pending;
+      (f.querySelector('input[name=action]') as HTMLInputElement).value = 'code-resume';
+      f.requestSubmit();
+    });
+  }
+</script>

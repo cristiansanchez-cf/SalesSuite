@@ -8,7 +8,7 @@ const TYPES = new Set<EmailOtpType>(['invite', 'magiclink', 'recovery', 'email',
  * Destino de TODOS los emails de Auth (invitación, enlace mágico, recuperación).
  * - token_hash + type: plantillas de supabase/templates (recomendado; funciona aunque se abra en otro dispositivo).
  * - code: plantillas por defecto con PKCE (mismo navegador que pidió el enlace).
- * Invitación y recuperación llevan a /admin/account para fijar la contraseña.
+ * Invitación y recuperación llevan a /admin/account para fijar la contraseña (la invitación sigue a /admin/start).
  */
 export const GET: APIRoute = async (ctx) => {
   if (authMode() !== 'supabase') return ctx.redirect('/admin/login', 303);
@@ -23,6 +23,8 @@ export const GET: APIRoute = async (ctx) => {
   else if (code) ok = !(await sb.auth.exchangeCodeForSession(code)).error;
 
   if (!ok) return ctx.redirect('/admin/login?error=link', 303);
-  const needsPassword = type === 'invite' || type === 'recovery';
-  return ctx.redirect(needsPassword ? '/admin/account?setup=1' : safeNext(q.get('next')), 303);
+  // Invitación: tras fijar la contraseña, «Empieza aquí». Recuperación: vuelve al panel.
+  if (type === 'invite') return ctx.redirect('/admin/account?setup=1', 303);
+  if (type === 'recovery') return ctx.redirect('/admin/account?setup=recovery', 303);
+  return ctx.redirect(safeNext(q.get('next')), 303);
 };

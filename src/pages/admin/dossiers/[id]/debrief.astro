@@ -6,17 +6,18 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
-import { ELIGIBILITY_LABEL } from '~/lib/accounts/rules';
 import Icon from '~/components/ui/Icon.astro';
 import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
 import { isIconName } from '~/lib/ui/icons';
-import { OBJECTION_LABEL, OBJECTIONS, STAGE_LABEL, STAGES } from '~/lib/playbook/types';
-import { ROLE_LABEL } from '~/lib/playbook/market';
+import { OBJECTIONS, STAGES } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { sellMessages } from '~/lib/i18n/messages/sell';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const id = Astro.params.id ?? '';
+const { m } = i18n(Astro, sellMessages);
 if (!/^[0-9a-f-]{36}$/i.test(id)) return Astro.rewrite('/404');
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -52,53 +53,53 @@ const text = (k: 'whatWorked' | 'whatFailed') => (posted ? String(posted.get(k) 
 const segPersonas = d.personas.filter((p) => p.segmentId === segmentId);
 const otherPersonas = d.personas.filter((p) => p.segmentId !== segmentId);
 const moduleName = new Map(d.state.items.map((i) => [i.moduleId, i.moduleName]));
-const groups = [...new Set(d.plays.map((p) => p.moduleId))].map((m) => ({ title: m ? moduleName.get(m) ?? 'Módulo' : 'De la empresa', plays: d.plays.filter((p) => p.moduleId === m) }));
+const groups = [...new Set(d.plays.map((p) => p.moduleId))].map((mid) => ({ title: mid ? moduleName.get(mid) ?? m.debrief.module : m.debrief.company, plays: d.plays.filter((p) => p.moduleId === mid) }));
 const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
 ---
-<AdminLayout title="Documentar cierre">
-  <PageHeader eyebrow="Qué ha funcionado" title={d.existing ? 'Revisa lo que funcionó.' : 'Documenta este cierre.'} back={{ href: `/admin/dossiers/${id}`, label: d.state.dossier.title }}
-    lede="Dos minutos. Lo que ya sabemos viene marcado: corrige lo que haga falta. Ganado o perdido, esto es lo que convierte tu venta en una recomendación para el equipo." />
+<AdminLayout title={m.debrief.title}>
+  <PageHeader eyebrow={m.common.wins} title={d.existing ? m.debrief.headingExisting : m.debrief.heading} back={{ href: `/admin/dossiers/${id}`, label: d.state.dossier.title }}
+    lede={m.debrief.lede} />
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
   {d.state.dossier.outcome === 'won' && d.state.dossier.accountEligibility && d.state.dossier.accountEligibility !== 'eligible' && !d.state.dossier.accountDecision && (
-    <div class="mb-4" data-testid="commission-conflict"><Alert kind="rejection" title={`Esta venta no genera comisión por ahora: ${ELIGIBILITY_LABEL[d.state.dossier.accountEligibility].toLowerCase()}`}
-      details={['Hemos avisado a tu jefe/a de ventas para que lo decida. Documentar el cierre sigue ayudando al equipo.']} /></div>
+    <div class="mb-4" data-testid="commission-conflict"><Alert kind="rejection" title={m.debrief.noCommission(m.labels.eligibility[d.state.dossier.accountEligibility].toLowerCase())}
+      details={[m.debrief.noCommissionDetail]} /></div>
   )}
-  <ol class="co-steps mb-6" aria-label="Pasos"><li aria-current="step">Resultado</li><li>Situación</li><li>Qué funcionó</li></ol>
+  <ol class="co-steps mb-6" aria-label={m.debrief.steps}><li aria-current="step">{m.debrief.stepResult}</li><li>{m.debrief.stepSituation}</li><li>{m.debrief.stepWorked}</li></ol>
 
   <form method="post" class="grid gap-4" data-testid="debrief-form">
     <section class="co-card grid gap-3">
-      <p class="text-eyebrow">01 · Resultado</p>
+      <p class="text-eyebrow">01 · {m.debrief.stepResult}</p>
       <div class="co-grid co-grid--2">
         <label class="co-option"><input type="radio" name="outcome" value="won" checked={outcome === 'won'} required />
-          <span class="co-option__icon"><Icon name="trophy" /></span><span class="co-card-title">Ganado</span><span class="co-meta">Firmó, o hay fecha cerrada</span></label>
+          <span class="co-option__icon"><Icon name="trophy" /></span><span class="co-card-title">{m.common.won}</span><span class="co-meta">{m.debrief.wonHint}</span></label>
         <label class="co-option"><input type="radio" name="outcome" value="lost" checked={outcome === 'lost'} />
-          <span class="co-option__icon"><Icon name="circle-x" /></span><span class="co-card-title">Perdido</span><span class="co-meta">Dijo que no, o se enfrió</span></label>
+          <span class="co-option__icon"><Icon name="circle-x" /></span><span class="co-card-title">{m.common.lost}</span><span class="co-meta">{m.debrief.lostHint}</span></label>
       </div>
     </section>
 
     <section class="co-card grid gap-4">
-      <p class="text-eyebrow">02 · Situación <span class="normal-case tracking-normal">· lo que no sepas, déjalo sin marcar</span></p>
-      <label class="co-field">Sector
+      <p class="text-eyebrow">02 · {m.debrief.stepSituation} <span class="normal-case tracking-normal">{m.debrief.situationHint}</span></p>
+      <label class="co-field">{m.common.sector}
         <select class="co-select" name="segmentId">
-          <option value="">Sin sector</option>
+          <option value="">{m.debrief.noSector}</option>
           {d.segments.map((sg) => <option value={sg.id} selected={sg.id === segmentId}>{sg.name}</option>)}
         </select>
       </label>
       <fieldset class="grid gap-2">
-        <legend class="co-field mb-1">¿Con quién se decidió? <span class="co-help">Las personas clave de la venta</span></legend>
+        <legend class="co-field mb-1">{m.debrief.whoDecided} <span class="co-help">{m.debrief.whoDecidedHelp}</span></legend>
         <div class="co-chips">
-          {segPersonas.map((p) => <label class="co-chip" title={ROLE_LABEL[p.role]}><input type="checkbox" name="personaIds" value={p.id} checked={personaIds.includes(p.id)} />{p.name}</label>)}
+          {segPersonas.map((p) => <label class="co-chip" title={m.labels.personaRole[p.role]}><input type="checkbox" name="personaIds" value={p.id} checked={personaIds.includes(p.id)} />{p.name}</label>)}
         </div>
         {otherPersonas.length > 0 && (
           <details>
-            <summary class="co-meta cursor-pointer">Actores de otros sectores</summary>
+            <summary class="co-meta cursor-pointer">{m.debrief.otherSectors}</summary>
             <div class="co-chips mt-2">{otherPersonas.map((p) => <label class="co-chip"><input type="checkbox" name="personaIds" value={p.id} checked={personaIds.includes(p.id)} />{p.name}</label>)}</div>
           </details>
         )}
       </fieldset>
       {d.facets.map((f) => (
         <fieldset class="grid gap-2" data-testid={`debrief-facet-${f.key}`}>
-          <legend class="co-field mb-1">{f.question ?? f.label} <span class="co-help">{f.scope === 'contact' ? 'De la persona clave' : 'De la cuenta'}{f.multi ? ' · varias' : ''}</span></legend>
+          <legend class="co-field mb-1">{f.question ?? f.label} <span class="co-help">{f.scope === 'contact' ? m.debrief.scopeContact : m.debrief.scopeAccount}{f.multi ? m.debrief.multi : ''}</span></legend>
           <div class="co-chips">
             {f.options.map((o) => (
               <label class="co-chip" title={o.hint ?? ''}>
@@ -106,30 +107,30 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
                 {icon(o.icon) && <Icon name={icon(o.icon)!} size={14} />}{o.label}
               </label>
             ))}
-            {!f.multi && <label class="co-chip"><input type="radio" name={`facet:${f.key}`} value="" checked={facetVal(f.key).length === 0} />No lo sé</label>}
+            {!f.multi && <label class="co-chip"><input type="radio" name={`facet:${f.key}`} value="" checked={facetVal(f.key).length === 0} />{m.debrief.unknown}</label>}
           </div>
         </fieldset>
       ))}
     </section>
 
     <section class="co-card grid gap-4">
-      <p class="text-eyebrow">03 · Qué funcionó</p>
-      <label class="co-field">Lo que dijiste o hiciste que marcó la diferencia <span class="co-help">Obligatorio si lo ganaste. Con un ejemplo real: a quién, qué y qué pasó.</span>
-        <textarea class="co-textarea" name="whatWorked" maxlength="2000" placeholder="Hablé antes con el DJ y le enseñé que las peticiones pasan por su filtro…">{text('whatWorked')}</textarea>
+      <p class="text-eyebrow">03 · {m.debrief.stepWorked}</p>
+      <label class="co-field">{m.debrief.workedLabel} <span class="co-help">{m.debrief.workedHelp}</span>
+        <textarea class="co-textarea" name="whatWorked" maxlength="2000" placeholder={m.debrief.workedPlaceholder}>{text('whatWorked')}</textarea>
       </label>
-      <label class="co-field">Lo que no funcionó <span class="co-help">Opcional si ganaste. Si lo perdiste, es lo más útil para el equipo.</span>
+      <label class="co-field">{m.debrief.failedLabel} <span class="co-help">{m.debrief.failedHelp}</span>
         <textarea class="co-textarea" name="whatFailed" maxlength="2000">{text('whatFailed')}</textarea>
       </label>
       <div class="grid gap-3 sm:grid-cols-2">
-        <label class="co-field">Momento clave
-          <select class="co-select" name="keyStage"><option value="">No lo tengo claro</option>{STAGES.map((x) => <option value={x} selected={(posted?.get('keyStage') ?? def.keyStage) === x}>{STAGE_LABEL[x]}</option>)}</select>
+        <label class="co-field">{m.debrief.keyStage}
+          <select class="co-select" name="keyStage"><option value="">{m.debrief.keyStageNone}</option>{STAGES.map((x) => <option value={x} selected={(posted?.get('keyStage') ?? def.keyStage) === x}>{m.labels.stage[x]}</option>)}</select>
         </label>
-        <label class="co-field">Objeción principal
-          <select class="co-select" name="objection"><option value="">Ninguna</option>{OBJECTIONS.map((x) => <option value={x} selected={(posted?.get('objection') ?? def.objection) === x}>{OBJECTION_LABEL[x]}</option>)}</select>
+        <label class="co-field">{m.debrief.mainObjection}
+          <select class="co-select" name="objection"><option value="">{m.common.none}</option>{OBJECTIONS.map((x) => <option value={x} selected={(posted?.get('objection') ?? def.objection) === x}>{m.labels.objection[x]}</option>)}</select>
         </label>
       </div>
       <fieldset class="grid gap-3">
-        <legend class="co-field mb-1">Jugadas del playbook que usaste <span class="co-help">Así sabemos cuáles ganan de verdad</span></legend>
+        <legend class="co-field mb-1">{m.debrief.plays} <span class="co-help">{m.debrief.playsHelp}</span></legend>
         {groups.map((g) => (
           <div>
             <p class="co-meta mb-1">{g.title}</p>
@@ -142,9 +143,9 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
     </section>
 
     <div class="flex flex-wrap items-center gap-3">
-      <button class="co-btn co-btn--primary" type="submit">{d.existing ? 'Guardar cambios' : 'Guardar y compartir con el equipo'} <span aria-hidden="true">→</span></button>
-      <a class="co-btn co-btn--quiet" href={`/admin/dossiers/${id}`}>Ahora no</a>
-      <span class="co-meta">Lo verán tus compañeros en «Qué ha funcionado». El cliente no ve nada de esto.</span>
+      <button class="co-btn co-btn--primary" type="submit">{d.existing ? m.debrief.saveChanges : m.debrief.saveShare} <span aria-hidden="true">→</span></button>
+      <a class="co-btn co-btn--quiet" href={`/admin/dossiers/${id}`}>{m.debrief.notNow}</a>
+      <span class="co-meta">{m.debrief.footer}</span>
     </div>
   </form>
 </AdminLayout>

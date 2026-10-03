@@ -1,16 +1,19 @@
 ---
 /** Estado de una cuenta para quien la mira: badge + frase corta (docs/ACCOUNTS.md). */
 import type { AccountView } from '~/lib/accounts/service';
+import { i18n } from '~/lib/i18n';
+import { accountsMessages } from '~/lib/i18n/messages/accounts';
 interface Props { a: AccountView; detail?: boolean }
 const { a, detail = false } = Astro.props;
-const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
+const { m: { state: m }, f } = i18n(Astro, accountsMessages);
+const day = (iso: string | null) => f.date(iso, { day: 'numeric', month: 'short' });
 const S = {
-  free: { badge: 'co-badge co-badge--soft', label: 'Libre', text: 'Nadie la está trabajando' },
-  mine: { badge: 'co-badge co-badge--ink', label: 'Tuya', text: `Reservada para ti hasta el ${day(a.claimedUntil)}` },
-  taken: { badge: 'co-badge co-badge--attention', label: 'De otra persona', text: `La trabaja ${a.ownerName ?? 'otra persona'} hasta el ${day(a.claimedUntil)}` },
-  my_customer: { badge: 'co-badge co-badge--signal', label: 'Tu cliente', text: `Cliente tuyo desde el ${day(a.wonAt)}` },
-  customer: { badge: 'co-badge co-badge--soft', label: 'Cliente', text: `Cliente de ${a.wonByName ?? 'otra persona'}` },
-  blocked: { badge: 'co-badge co-badge--attention', label: 'Bloqueada', text: a.blockedReason ?? 'No se puede vender' },
+  free: { badge: 'co-badge co-badge--soft', label: m.free, text: m.freeText },
+  mine: { badge: 'co-badge co-badge--ink', label: m.mine, text: m.mineText(day(a.claimedUntil)) },
+  taken: { badge: 'co-badge co-badge--attention', label: m.taken, text: m.takenText(a.ownerName ?? m.someoneElse, day(a.claimedUntil)) },
+  my_customer: { badge: 'co-badge co-badge--signal', label: m.myCustomer, text: m.myCustomerText(day(a.wonAt)) },
+  customer: { badge: 'co-badge co-badge--soft', label: m.customer, text: m.customerText(a.wonByName ?? m.someoneElse) },
+  blocked: { badge: 'co-badge co-badge--attention', label: m.blocked, text: a.blockedReason ?? m.blockedText },
 }[a.state];
 ---
 {detail ? <span class="co-meta">{S.text}</span> : <span class={S.badge} data-testid="account-state" data-state={a.state}>{S.label}</span>}

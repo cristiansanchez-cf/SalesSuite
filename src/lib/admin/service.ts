@@ -384,7 +384,12 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     return toPublicDossier(d, await items(id));
   }
 
-  return { getState, listDossiers, createDossier, deleteDossier, apply, previewDossier, canEdit };
+  /** Lo que se vende: la última versión publicada de cada módulo (al colaborador, solo los suyos y sin tarifa). */
+  async function catalog(): Promise<CatalogVersion[]> {
+    return [...latestByModule(await db.listCatalog(s.tenantId)).values()].sort((a, b) => a.moduleName.localeCompare(b.moduleName, 'es'));
+  }
+
+  return { getState, listDossiers, createDossier, deleteDossier, apply, previewDossier, canEdit, catalog };
 }
 
 export type AdminService = ReturnType<typeof createAdminService>;

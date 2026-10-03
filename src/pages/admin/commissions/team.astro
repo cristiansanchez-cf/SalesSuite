@@ -12,16 +12,19 @@ import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import EntryRow from '~/components/commissions/EntryRow.astro';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
-import { formatMoney } from '~/lib/commissions/money';
+import { i18n } from '~/lib/i18n';
+import { commissionsMessages } from '~/lib/i18n/messages/commissions';
 import { zonePath } from '~/lib/accounts/rules';
 import type { Rule } from '~/lib/commissions/types';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).manageTeam) return Astro.rewrite('/admin/forbidden');
+const { m, f: fmt } = i18n(Astro, commissionsMessages);
+const money = fmt.money;
 const c = admin.commissions;
 const canWrite = c.canManage;
-const TABS = [['resumen', 'Resumen'], ['plan', 'Plan'], ['ingresos', 'Ingresos'], ['libro', 'Libro'], ['liquidaciones', 'Liquidaciones'], ['cupones', 'Cupones'], ...(canWrite ? [['api', 'API']] : [])] as const;
+const TABS = [['resumen', m.team.tabs.resumen], ['plan', m.team.tabs.plan], ['ingresos', m.team.tabs.ingresos], ['libro', m.team.tabs.libro], ['liquidaciones', m.team.tabs.liquidaciones], ['cupones', m.team.tabs.cupones], ...(canWrite ? [['api', m.team.tabs.api]] : [])] as const;
 const tab = (TABS.find(([k]) => k === Astro.url.searchParams.get('tab'))?.[0] ?? 'resumen') as (typeof TABS)[number][0];
 const period = new Date().toISOString().slice(0, 7);
 
@@ -34,16 +37,16 @@ if (Astro.request.method === 'POST') {
   const arr = (k: string) => f.getAll(k).map(String).filter(Boolean);
   result = await formAction(async () => {
     switch (str('action')) {
-      case 'process': { const r = await c.process(); ok = `Calculado: ${r.created} ${r.created === 1 ? 'línea nueva' : 'líneas nuevas'}.${r.skipped.length ? ` Sin calcular: ${r.skipped.map((x) => `${x.count} · ${x.reason.toLowerCase()}`).join('; ')}.` : ''}`; break; }
-      case 'recalc': { const r = await c.recalculate(); ok = `Recalculado: ${r.removed} pendientes rehechas, ${r.created} líneas.`; break; }
-      case 'approve-period': { const n = await c.approvePeriod(str('period') || period); ok = `${n} ${n === 1 ? 'línea aprobada' : 'líneas aprobadas'}.`; break; }
-      case 'approve': await c.approve([str('id')]); ok = 'Línea aprobada.'; break;
-      case 'void': await c.voidEntries([str('id')]); ok = 'Línea anulada.'; break;
-      case 'settle': { const r = await c.settle(str('period') || period); ok = `${r.created} ${r.created === 1 ? 'liquidación creada' : 'liquidaciones creadas'}.${r.held ? ` ${r.held} con saldo negativo: se compensan más adelante.` : ''}`; break; }
-      case 'paid': await c.markPaid(str('id')); ok = 'Liquidación marcada como pagada.'; break;
-      case 'payout-delete': await c.deletePayout(str('id')); ok = 'Liquidación deshecha: sus líneas vuelven a estar por liquidar.'; break;
-      case 'adjust': await c.adjust({ userId: str('userId'), amount: str('amount'), reason: str('reason'), period: str('period') }); ok = 'Ajuste creado (pendiente de aprobar).'; break;
-      case 'flat': await c.setFlat(str('pct')); ok = 'Porcentaje general guardado. Recalcula para aplicarlo a lo pendiente.'; break;
+      case 'process': { const r = await c.process(); ok = `${m.ok.processed(r.created)}${r.skipped.length ? m.ok.skipped(r.skipped.map((x) => `${x.count} · ${x.reason.toLowerCase()}`).join('; ')) : ''}`; break; }
+      case 'recalc': { const r = await c.recalculate(); ok = m.ok.recalculated(r.removed, r.created); break; }
+      case 'approve-period': { const n = await c.approvePeriod(str('period') || period); ok = m.ok.approvedMany(n); break; }
+      case 'approve': await c.approve([str('id')]); ok = m.ok.approved; break;
+      case 'void': await c.voidEntries([str('id')]); ok = m.ok.voided; break;
+      case 'settle': { const r = await c.settle(str('period') || period); ok = `${m.ok.settled(r.created)}${r.held ? m.ok.held(r.held) : ''}`; break; }
+      case 'paid': await c.markPaid(str('id')); ok = m.ok.paid; break;
+      case 'payout-delete': await c.deletePayout(str('id')); ok = m.ok.payoutUndone; break;
+      case 'adjust': await c.adjust({ userId: str('userId'), amount: str('amount'), reason: str('reason'), period: str('period') }); ok = m.ok.adjusted; break;
+      case 'flat': await c.setFlat(str('pct')); ok = m.ok.flat; break;
       case 'rule': {
         const type = str('payType');
         await c.addRule(str('planId'), {
@@ -54,99 +57,101 @@ if (Astro.request.method === 'POST') {
           },
           pay: type === 'fixed' ? { type, amount: str('amount') } : type === 'bounty' ? { type, metric: str('metric'), threshold: str('threshold'), amount: str('amount') } : { type: 'percent', pct: str('pct') },
         });
-        ok = 'Excepción añadida encima de la regla general.';
+        ok = m.ok.ruleAdded;
         break;
       }
       case 'rule-up': await c.moveRule(str('planId'), str('ruleId'), -1); break;
       case 'rule-down': await c.moveRule(str('planId'), str('ruleId'), 1); break;
-      case 'rule-delete': await c.removeRule(str('planId'), str('ruleId')); ok = 'Regla eliminada.'; break;
-      case 'referral': await c.setReferral(str('planId'), { pct: str('pct') || '0', months: str('months') || '12' }); ok = 'Referidos guardados.'; break;
-      case 'plan-new': await c.savePlan({ name: str('name'), isDefault: false, rules: [{ label: `Todo igual: ${str('pct')} %`, pay: { type: 'percent', pct: str('pct') } }] }); ok = 'Plan creado.'; break;
-      case 'plan-delete': await c.deletePlan(str('planId')); ok = 'Plan eliminado.'; break;
-      case 'assign': await c.assignPlan(str('userId'), str('planId') || null); ok = 'Plan asignado.'; break;
-      case 'confirm': await c.confirmEvent(str('id')); ok = 'Venta confirmada. Calcula para generar la comisión.'; break;
-      case 'event-void': await c.voidEvent(str('id')); ok = 'Ingreso anulado.'; break;
+      case 'rule-delete': await c.removeRule(str('planId'), str('ruleId')); ok = m.ok.ruleDeleted; break;
+      case 'referral': await c.setReferral(str('planId'), { pct: str('pct') || '0', months: str('months') || '12' }); ok = m.ok.referral; break;
+      case 'plan-new': await c.savePlan({ name: str('name'), isDefault: false, rules: [{ label: m.rule.flatLabel(str('pct')), pay: { type: 'percent', pct: str('pct') } }] }); ok = m.ok.planCreated; break;
+      case 'plan-delete': await c.deletePlan(str('planId')); ok = m.ok.planDeleted; break;
+      case 'terms': await c.setConditions(str('userId'), { visible: str('visible') === 'on', note: str('note') }); ok = m.terms.saved; break;
+      case 'assign': await c.assignPlan(str('userId'), str('planId') || null); ok = m.ok.planAssigned; break;
+      case 'confirm': await c.confirmEvent(str('id')); ok = m.ok.confirmed; break;
+      case 'event-void': await c.voidEvent(str('id')); ok = m.ok.eventVoided; break;
       case 'key': newKey = await c.createApiKey(str('name')); break;
-      case 'key-revoke': await c.revokeApiKey(str('id')); ok = 'Clave revocada.'; break;
-      case 'connector': await c.saveConnector({ key: str('key'), name: str('name'), mapping: str('mapping') }); ok = 'Conector guardado.'; break;
-      case 'connector-delete': await c.deleteConnector(str('id')); ok = 'Conector eliminado.'; break;
-      case 'coupon': await c.saveCoupon({ code: str('code'), label: str('label'), kind: str('kind'), value: str('value'), maxUses: str('maxUses'), validUntil: str('validUntil'), note: str('note') }); ok = 'Cupón creado: el equipo ya puede aplicarlo en sus propuestas.'; break;
-      case 'coupon-toggle': await c.setCouponActive(str('id'), str('active') === '1'); ok = str('active') === '1' ? 'Cupón activado.' : 'Cupón desactivado. Las propuestas que ya lo tienen lo conservan.'; break;
+      case 'key-revoke': await c.revokeApiKey(str('id')); ok = m.ok.keyRevoked; break;
+      case 'connector': await c.saveConnector({ key: str('key'), name: str('name'), mapping: str('mapping') }); ok = m.ok.connectorSaved; break;
+      case 'connector-delete': await c.deleteConnector(str('id')); ok = m.ok.connectorDeleted; break;
+      case 'coupon': await c.saveCoupon({ code: str('code'), label: str('label'), kind: str('kind'), value: str('value'), maxUses: str('maxUses'), validUntil: str('validUntil'), note: str('note') }); ok = m.ok.couponCreated; break;
+      case 'coupon-toggle': await c.setCouponActive(str('id'), str('active') === '1'); ok = str('active') === '1' ? m.ok.couponOn : m.ok.couponOff; break;
     }
   });
 }
 
 const couponList = tab === 'cupones' ? await c.coupons({ all: true }) : [];
-const couponValue = (x: (typeof couponList)[number]) => (x.kind === 'percent' ? `${x.value / 100} %` : x.kind === 'fixed' ? formatMoney(x.value) : `${x.value} ${x.value === 1 ? 'mes gratis' : 'meses gratis'}`);
+const couponValue = (x: (typeof couponList)[number]) => (x.kind === 'percent' ? m.coupons.percent(x.value / 100) : x.kind === 'fixed' ? money(x.value) : m.coupons.freeMonths(x.value));
 const [t, events, territory, apiKeys, connectors] = await Promise.all([
   c.team(), tab === 'ingresos' ? c.events() : Promise.resolve([]), admin.accounts.territory().catch(() => ({ zones: [] })),
   tab === 'api' && canWrite ? c.apiKeys() : Promise.resolve([]), tab === 'api' && canWrite ? c.connectors() : Promise.resolve([]),
 ]);
-const name = (u: string) => t.names.get(u) ?? 'Alguien';
+const name = (u: string) => t.names.get(u) ?? m.team.someone;
+const terms = tab === 'plan' && canWrite ? new Map((await c.conditions()).map((x) => [x.userId, x])) : new Map();
 const def = t.plans.plans.find((p) => p.isDefault);
 const flat = def?.rules.find((r) => r.id === 'todo-igual');
-const KINDS = { sale: 'Venta', recurring: 'Cuota', volume: 'Volumen', metric: 'Métrica', refund: 'Devolución' } as const;
-const ROLES = { admin: 'Admin', lead: 'Jefe/a', rep: 'Comercial', partner: 'Colaborador' } as const;
+const KINDS = m.team.kinds;
+const ROLES = m.team.roles;
 function describe(r: Rule): string {
   const w = r.when;
   const cond = [
-    w.kinds?.length && w.kinds.map((k) => KINDS[k]).join(' o '),
-    w.offers?.length && `paquete ${w.offers.join(', ')}`,
-    w.zoneIds?.length && `en ${w.zoneIds.map((z) => zonePath(territory.zones, z).split(' › ').at(-1)).join(', ')}`,
-    w.roles?.length && w.roles.map((x) => ROLES[x]).join(' o '),
-    w.minCents != null && `desde ${formatMoney(w.minCents)}`, w.maxCents != null && `hasta ${formatMoney(w.maxCents)}`,
-    (w.monthsFrom != null || w.monthsTo != null) && `meses ${w.monthsFrom ?? 0}–${w.monthsTo ?? '∞'} desde que se ganó`,
-  ].filter(Boolean).join(' · ') || 'Todo';
-  const pay = r.pay.type === 'percent' ? `${r.pay.bps / 100} % del ingreso` : r.pay.type === 'fixed' ? `${formatMoney(r.pay.cents)} fijos` : `${formatMoney(r.pay.cents)} si ${r.pay.metric} ≥ ${r.pay.threshold} en un mes`;
+    w.kinds?.length && m.rule.or(w.kinds.map((k) => KINDS[k])),
+    w.offers?.length && m.rule.offers(w.offers.join(', ')),
+    w.zoneIds?.length && m.rule.zones(w.zoneIds.map((z) => zonePath(territory.zones, z).split(' › ').at(-1)).join(', ')),
+    w.roles?.length && m.rule.or(w.roles.map((x) => ROLES[x])),
+    w.minCents != null && m.rule.min(money(w.minCents)), w.maxCents != null && m.rule.max(money(w.maxCents)),
+    (w.monthsFrom != null || w.monthsTo != null) && m.rule.months(w.monthsFrom ?? 0, w.monthsTo ?? '∞'),
+  ].filter(Boolean).join(' · ') || m.rule.all;
+  const pay = r.pay.type === 'percent' ? m.rule.percent(r.pay.bps / 100) : r.pay.type === 'fixed' ? m.rule.fixed(money(r.pay.cents)) : m.rule.bounty(money(r.pay.cents), r.pay.metric, r.pay.threshold);
   return `${cond} → ${pay}`;
 }
 const pendingEvents = events.filter((e) => e.status === 'pending');
 const F = [
-  { k: 'pending', label: 'Pendiente de aprobar', v: t.totals.pending },
-  { k: 'approved', label: 'Aprobado por liquidar', v: t.totals.approved },
-  { k: 'settled', label: 'Liquidado sin pagar', v: t.totals.settled },
-  { k: 'paid', label: 'Pagado', v: t.totals.paid },
+  { k: 'pending', label: m.team.totals.pending, v: t.totals.pending },
+  { k: 'approved', label: m.team.totals.approved, v: t.totals.approved },
+  { k: 'settled', label: m.team.totals.settled, v: t.totals.settled },
+  { k: 'paid', label: m.team.totals.paid, v: t.totals.paid },
 ];
 const origin = Astro.url.origin;
 ---
-<AdminLayout title="Comisiones">
-  <PageHeader eyebrow="Configurar" title="Comisiones" tail="sin sorpresas." lede="Cada euro sale de un ingreso confirmado y de una regla que puedes leer. Lo aprobado no se edita: se corrige con ajustes.">
-    {canWrite && <form method="post"><input type="hidden" name="action" value="process" /><button class="co-btn co-btn--primary" type="submit" data-testid="process">Calcular ahora</button></form>}
+<AdminLayout title={m.team.title}>
+  <PageHeader eyebrow={m.team.eyebrow} title={m.team.title} tail={m.team.tail} lede={m.team.lede}>
+    {canWrite && <form method="post"><input type="hidden" name="action" value="process" /><button class="co-btn co-btn--primary" type="submit" data-testid="process">{m.team.process}</button></form>}
   </PageHeader>
   {ok && <div class="mb-4"><Alert kind="success" title={ok} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
   {newKey && (
     <div class="co-alert co-alert--success mb-4" data-testid="new-key"><Icon name="key-round" size={18} />
-      <div class="min-w-0"><p class="font-semibold">Clave creada. Cópiala ahora: no se volverá a mostrar.</p><code class="block break-all">{newKey}</code></div></div>
+      <div class="min-w-0"><p class="font-semibold">{m.team.newKey}</p><code class="block break-all">{newKey}</code></div></div>
   )}
-  <nav class="co-tabs mb-6" aria-label="Secciones" data-scroll-x>
+  <nav class="co-tabs mb-6" aria-label={m.team.sections} data-scroll-x>
     {TABS.map(([k, l]) => <a class="co-tab" href={`?tab=${k}`} aria-current={tab === k ? 'page' : undefined}>{l}{k === 'ingresos' && pendingEvents.length ? ` · ${pendingEvents.length}` : ''}</a>)}
   </nav>
 
   {tab === 'resumen' && (
     <div class="grid gap-6">
       <section class="co-grid co-grid--2 lg:!grid-cols-4">
-        {F.map((f) => <div class="co-card grid gap-1"><p class="text-eyebrow">{f.label}</p><p class="co-figure text-3xl" data-testid={`team-${f.k}`}>{formatMoney(f.v)}</p></div>)}
+        {F.map((f) => <div class="co-card grid gap-1"><p class="text-eyebrow">{f.label}</p><p class="co-figure text-3xl" data-testid={`team-${f.k}`}>{money(f.v)}</p></div>)}
       </section>
       {canWrite && (
         <section class="co-card flex flex-wrap items-end gap-3">
           <form method="post" class="flex flex-wrap items-end gap-2"><input type="hidden" name="action" value="approve-period" />
-            <label class="co-field">Aprobar lo pendiente hasta<input class="co-input" type="month" name="period" value={period} /></label>
-            <button class="co-btn co-btn--ghost" type="submit" data-testid="approve-period">Aprobar</button></form>
+            <label class="co-field">{m.summary.approveUntil}<input class="co-input" type="month" name="period" value={period} /></label>
+            <button class="co-btn co-btn--ghost" type="submit" data-testid="approve-period">{m.summary.approve}</button></form>
           <form method="post" class="flex flex-wrap items-end gap-2"><input type="hidden" name="action" value="settle" />
-            <label class="co-field">Liquidar lo aprobado hasta<input class="co-input" type="month" name="period" value={period} /></label>
-            <button class="co-btn co-btn--ghost" type="submit" data-testid="settle">Liquidar</button></form>
+            <label class="co-field">{m.summary.settleUntil}<input class="co-input" type="month" name="period" value={period} /></label>
+            <button class="co-btn co-btn--ghost" type="submit" data-testid="settle">{m.summary.settle}</button></form>
         </section>
       )}
       <section class="co-section !mt-0">
-        <div class="co-section__head"><h2 class="text-eyebrow">Por persona</h2></div>
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.summary.byPerson}</h2></div>
         <ul class="co-rows" data-testid="people">
           {t.people.filter((p) => p.totals.pending || p.totals.approved || p.totals.settled || p.totals.paid || p.role !== 'admin').map((p) => (
             <li class="co-row" data-testid="person" data-name={p.name}>
-              <span class="co-row__main"><span class="co-row-title">{p.name}</span><span class="co-meta">{ROLES[p.role]} · {p.plan?.name ?? 'Sin plan'}</span></span>
-              <span class="co-meta tabular-nums">Pendiente {formatMoney(p.totals.pending)}</span>
-              <span class="co-meta tabular-nums">Aprobado {formatMoney(p.totals.approved + p.totals.settled)}</span>
-              <span class="co-row-title tabular-nums">Pagado {formatMoney(p.totals.paid)}</span>
+              <span class="co-row__main"><span class="co-row-title">{p.name}</span><span class="co-meta">{ROLES[p.role]} · {p.plan?.name ?? m.summary.noPlan}</span></span>
+              <span class="co-meta tabular-nums">{m.summary.pending(money(p.totals.pending))}</span>
+              <span class="co-meta tabular-nums">{m.summary.approved(money(p.totals.approved + p.totals.settled))}</span>
+              <span class="co-row-title tabular-nums">{m.summary.paid(money(p.totals.paid))}</span>
             </li>
           ))}
         </ul>
@@ -159,23 +164,23 @@ const origin = Astro.url.origin;
       <div class="grid content-start gap-5">
         <form method="post" class="co-card grid gap-3" data-testid="flat">
           <input type="hidden" name="action" value="flat" />
-          <p class="text-eyebrow">Paso 1</p>
-          <h2 class="co-entity">¿Comisiones iguales en todo?</h2>
-          <p class="co-body">Sí: un porcentaje de lo que ingresa la empresa por cada venta. Es lo único obligatorio; lo demás son excepciones.</p>
+          <p class="text-eyebrow">{m.plan.step1}</p>
+          <h2 class="co-entity">{m.plan.flatTitle}</h2>
+          <p class="co-body">{m.plan.flatBody}</p>
           <fieldset class="flex flex-wrap items-end gap-2" disabled={!canWrite}>
-            <label class="co-field">Porcentaje<input class="co-input max-w-[8rem]" name="pct" inputmode="decimal" required value={flat?.pay.type === 'percent' ? flat.pay.bps / 100 : ''} placeholder="30" /></label>
+            <label class="co-field">{m.plan.percentage}<input class="co-input max-w-[8rem]" name="pct" inputmode="decimal" required value={flat?.pay.type === 'percent' ? flat.pay.bps / 100 : ''} placeholder="30" /></label>
             <span class="pb-2.5">%</span>
-            {canWrite && <button class="co-btn co-btn--primary" type="submit">Guardar</button>}
+            {canWrite && <button class="co-btn co-btn--primary" type="submit">{m.plan.save}</button>}
           </fieldset>
         </form>
 
         {def && (
           <section class="co-card grid gap-3" data-testid="rules">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <div><p class="text-eyebrow">Paso 2 · opcional</p><h2 class="co-entity">Excepciones</h2></div>
-              {canWrite && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="rule-dialog" data-testid="add-rule"><Icon name="plus" size={14} />Añadir excepción</button>}
+              <div><p class="text-eyebrow">{m.plan.step2}</p><h2 class="co-entity">{m.plan.exceptions}</h2></div>
+              {canWrite && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="rule-dialog" data-testid="add-rule"><Icon name="plus" size={14} />{m.plan.addException}</button>}
             </div>
-            <p class="co-meta">Se leen en orden: gana la primera que encaja. Ejemplos: el paquete grande al 10 %, los colaboradores al 20 %, Corea al 40 %, la pasarela al 70 % los 6 primeros meses, 30 € si el QR pasa de 100 peticiones en un mes.</p>
+            <p class="co-meta">{m.plan.rulesHelp}</p>
             <ol class="grid gap-2 p-0">
               {def.rules.map((r, i) => (
                 <li class="co-inset flex list-none flex-wrap items-center gap-2 !p-3" data-testid="rule" data-label={r.label}>
@@ -184,9 +189,9 @@ const origin = Astro.url.origin;
                   {canWrite && (
                     <form method="post" class="flex gap-1">
                       <input type="hidden" name="planId" value={def.id} /><input type="hidden" name="ruleId" value={r.id} />
-                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" name="action" value="rule-up" aria-label="Subir" disabled={i === 0}><Icon name="arrow-up" size={14} /></button>
-                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" name="action" value="rule-down" aria-label="Bajar" disabled={i === def.rules.length - 1}><Icon name="arrow-down" size={14} /></button>
-                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" name="action" value="rule-delete" aria-label={`Eliminar ${r.label}`}><Icon name="trash2" size={14} /></button>
+                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" name="action" value="rule-up" aria-label={m.plan.moveUp} disabled={i === 0}><Icon name="arrow-up" size={14} /></button>
+                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" name="action" value="rule-down" aria-label={m.plan.moveDown} disabled={i === def.rules.length - 1}><Icon name="arrow-down" size={14} /></button>
+                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" name="action" value="rule-delete" aria-label={m.plan.remove(r.label)}><Icon name="trash2" size={14} /></button>
                     </form>
                   )}
                 </li>
@@ -194,8 +199,8 @@ const origin = Astro.url.origin;
             </ol>
             {canWrite && (
               <form method="post"><input type="hidden" name="action" value="recalc" />
-                <button class="co-btn co-btn--quiet co-btn--sm" type="submit">Recalcular lo pendiente con este plan</button>
-                <span class="co-help">Lo aprobado y lo pagado no cambia.</span></form>
+                <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{m.plan.recalc}</button>
+                <span class="co-help">{m.plan.recalcHelp}</span></form>
             )}
           </section>
         )}
@@ -203,27 +208,47 @@ const origin = Astro.url.origin;
         {def && (
           <form method="post" class="co-card grid gap-3" data-testid="referral">
             <input type="hidden" name="action" value="referral" /><input type="hidden" name="planId" value={def.id} />
-            <h2 class="co-card-title">Referidos</h2>
-            <p class="co-body">Quien invita a otra persona cobra un % de lo que gane su invitado durante un tiempo. Por ejemplo, un DJ que trae a otro DJ.</p>
+            <h2 class="co-card-title">{m.plan.referrals}</h2>
+            <p class="co-body">{m.plan.referralBody}</p>
             <fieldset class="flex flex-wrap items-end gap-2" disabled={!canWrite}>
-              <label class="co-field">% de sus comisiones<input class="co-input max-w-[7rem]" name="pct" inputmode="decimal" value={def.referral ? def.referral.bps / 100 : ''} placeholder="0" /></label>
-              <label class="co-field">Durante (meses)<input class="co-input max-w-[7rem]" type="number" min="1" max="120" name="months" value={def.referral?.months ?? 12} /></label>
-              {canWrite && <button class="co-btn co-btn--ghost" type="submit">Guardar</button>}
+              <label class="co-field">{m.plan.referralPct}<input class="co-input max-w-[7rem]" name="pct" inputmode="decimal" value={def.referral ? def.referral.bps / 100 : ''} placeholder="0" /></label>
+              <label class="co-field">{m.plan.referralMonths}<input class="co-input max-w-[7rem]" type="number" min="1" max="120" name="months" value={def.referral?.months ?? 12} /></label>
+              {canWrite && <button class="co-btn co-btn--ghost" type="submit">{m.plan.save}</button>}
             </fieldset>
           </form>
         )}
       </div>
 
       <aside class="grid content-start gap-4">
+        {canWrite && (
+          <section class="co-card grid gap-3" data-testid="terms">
+            <h2 class="co-card-title">{m.terms.title}</h2>
+            <p class="co-meta">{m.terms.help}</p>
+            {t.people.map((p) => {
+              const x = terms.get(p.userId);
+              return (
+                <details class="border-t border-line pt-2" data-testid={`terms-${p.userId}`}>
+                  <summary class="flex cursor-pointer items-center gap-2 text-sm"><span class="min-w-0 flex-1">{p.name}</span><span class={x?.visible ? 'co-badge co-badge--signal' : 'co-badge'}>{x?.visible ? m.terms.shown : m.terms.hidden}</span></summary>
+                  <form method="post" class="mt-2 grid gap-2">
+                    <input type="hidden" name="action" value="terms" /><input type="hidden" name="userId" value={p.userId} />
+                    <label class="co-field">{m.terms.note}<textarea class="co-input" name="note" rows="2" maxlength="1000" placeholder={m.terms.notePlaceholder}>{x?.note ?? ''}</textarea></label>
+                    <label class="co-check"><input type="checkbox" name="visible" checked={!!x?.visible} /><span>{m.terms.show}</span></label>
+                    <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{m.terms.save}</button>
+                  </form>
+                </details>
+              );
+            })}
+          </section>
+        )}
         <section class="co-card grid gap-3" data-testid="plans">
-          <h2 class="co-card-title">Planes por persona</h2>
-          <p class="co-meta">Sin plan propio, se aplica «{def?.name ?? 'el plan por defecto'}».</p>
+          <h2 class="co-card-title">{m.plan.plans}</h2>
+          <p class="co-meta">{m.plan.defaultApplies(def?.name ?? m.plan.defaultPlan)}</p>
           {t.people.map((p) => (
             <form method="post" class="flex flex-wrap items-center gap-2">
               <input type="hidden" name="action" value="assign" /><input type="hidden" name="userId" value={p.userId} />
               <span class="min-w-0 flex-1 text-sm">{p.name}</span>
               <select class="co-select !min-h-[32px] !w-auto !py-0 text-sm" name="planId" disabled={!canWrite} onchange="this.form.requestSubmit()">
-                <option value="">Por defecto</option>
+                <option value="">{m.plan.byDefault}</option>
                 {t.plans.plans.filter((x) => !x.isDefault).map((x) => <option value={x.id} selected={t.plans.assignments.some((a) => a.userId === p.userId && a.planId === x.id)}>{x.name}</option>)}
               </select>
             </form>
@@ -231,13 +256,13 @@ const origin = Astro.url.origin;
           {canWrite && (
             <form method="post" class="grid gap-2 border-t border-line pt-3">
               <input type="hidden" name="action" value="plan-new" />
-              <p class="co-field">Nuevo plan</p>
-              <div class="flex flex-wrap gap-2"><input class="co-input flex-1" name="name" required maxlength="80" placeholder="Colaboradores" /><input class="co-input max-w-[5rem]" name="pct" required inputmode="decimal" placeholder="20" /><button class="co-btn co-btn--ghost" type="submit">Crear</button></div>
+              <p class="co-field">{m.plan.newPlan}</p>
+              <div class="flex flex-wrap gap-2"><input class="co-input flex-1" name="name" required maxlength="80" placeholder={m.plan.newPlanPlaceholder} /><input class="co-input max-w-[5rem]" name="pct" required inputmode="decimal" placeholder="20" /><button class="co-btn co-btn--ghost" type="submit">{m.plan.create}</button></div>
             </form>
           )}
           {canWrite && t.plans.plans.filter((x) => !x.isDefault).map((x) => (
             <form method="post" class="flex items-center gap-2 text-sm"><input type="hidden" name="action" value="plan-delete" /><input type="hidden" name="planId" value={x.id} />
-              <span class="flex-1">{x.name} · {x.rules.map((r) => r.label).join(', ')}</span><button class="co-btn co-btn--quiet co-btn--sm" type="submit">Eliminar</button></form>
+              <span class="flex-1">{x.name} · {x.rules.map((r) => r.label).join(', ')}</span><button class="co-btn co-btn--quiet co-btn--sm" type="submit">{m.plan.delete}</button></form>
           ))}
         </section>
       </aside>
@@ -247,38 +272,38 @@ const origin = Astro.url.origin;
           <form method="post" data-testid="rule-form">
             <input type="hidden" name="action" value="rule" /><input type="hidden" name="planId" value={def.id} />
             <div class="co-dialog__body">
-              <h2 id="rule-title" class="co-entity">Añadir excepción</h2>
-              <label class="co-field">Nombre<input class="co-input" name="label" required maxlength="120" placeholder="Paquete grande al 10 %" /></label>
-              <fieldset class="grid gap-2"><legend class="co-field mb-1">Cuánto se paga</legend>
+              <h2 id="rule-title" class="co-entity">{m.ruleForm.title}</h2>
+              <label class="co-field">{m.ruleForm.name}<input class="co-input" name="label" required maxlength="120" placeholder={m.ruleForm.namePlaceholder} /></label>
+              <fieldset class="grid gap-2"><legend class="co-field mb-1">{m.ruleForm.howMuch}</legend>
                 <div class="co-policy grid gap-2 sm:grid-cols-3">
-                  <label class="co-option !p-3"><input type="radio" name="payType" value="percent" checked /><span class="co-row-title">Porcentaje</span><span class="co-meta">Del ingreso de la empresa</span></label>
-                  <label class="co-option !p-3"><input type="radio" name="payType" value="fixed" /><span class="co-row-title">Importe fijo</span><span class="co-meta">Por cada venta</span></label>
-                  <label class="co-option !p-3"><input type="radio" name="payType" value="bounty" /><span class="co-row-title">Bounty</span><span class="co-meta">Al pasar un umbral en un mes</span></label>
+                  <label class="co-option !p-3"><input type="radio" name="payType" value="percent" checked /><span class="co-row-title">{m.ruleForm.percent}</span><span class="co-meta">{m.ruleForm.percentHint}</span></label>
+                  <label class="co-option !p-3"><input type="radio" name="payType" value="fixed" /><span class="co-row-title">{m.ruleForm.fixed}</span><span class="co-meta">{m.ruleForm.fixedHint}</span></label>
+                  <label class="co-option !p-3"><input type="radio" name="payType" value="bounty" /><span class="co-row-title">{m.ruleForm.bounty}</span><span class="co-meta">{m.ruleForm.bountyHint}</span></label>
                 </div>
                 <div class="grid gap-2 sm:grid-cols-4">
                   <label class="co-field">%<input class="co-input" name="pct" inputmode="decimal" placeholder="10" /></label>
-                  <label class="co-field">Importe (€)<input class="co-input" name="amount" inputmode="decimal" placeholder="30" /></label>
-                  <label class="co-field">Métrica<input class="co-input" name="metric" placeholder="song_requests" /></label>
-                  <label class="co-field">Umbral al mes<input class="co-input" name="threshold" type="number" min="1" placeholder="100" /></label>
+                  <label class="co-field">{m.ruleForm.amount}<input class="co-input" name="amount" inputmode="decimal" placeholder="30" /></label>
+                  <label class="co-field">{m.ruleForm.metric}<input class="co-input" name="metric" placeholder="song_requests" /></label>
+                  <label class="co-field">{m.ruleForm.threshold}<input class="co-input" name="threshold" type="number" min="1" placeholder="100" /></label>
                 </div>
               </fieldset>
-              <fieldset class="grid gap-2"><legend class="co-field mb-1">Cuándo se aplica <span class="co-help">Vacío = siempre</span></legend>
+              <fieldset class="grid gap-2"><legend class="co-field mb-1">{m.ruleForm.when} <span class="co-help">{m.ruleForm.whenHelp}</span></legend>
                 <div class="co-chips">{Object.entries(KINDS).filter(([k]) => k !== 'refund').map(([k, l]) => <label class="co-chip"><input type="checkbox" name="kinds" value={k} />{l}</label>)}</div>
                 <div class="co-chips">{(['rep', 'lead', 'partner'] as const).map((k) => <label class="co-chip"><input type="checkbox" name="roles" value={k} />{ROLES[k]}</label>)}</div>
-                <label class="co-field">Paquetes <span class="co-help">Códigos separados por comas, como en los ingresos (pack-3000)</span><input class="co-input" name="offers" /></label>
+                <label class="co-field">{m.ruleForm.offers} <span class="co-help">{m.ruleForm.offersHelp}</span><input class="co-input" name="offers" /></label>
                 {territory.zones.length > 0 && <div class="co-chips">{territory.zones.map((z) => <label class="co-chip"><input type="checkbox" name="zoneIds" value={z.id} />{z.name}</label>)}</div>}
                 <div class="grid gap-2 sm:grid-cols-4">
-                  <label class="co-field">Importe desde (€)<input class="co-input" name="min" inputmode="decimal" /></label>
-                  <label class="co-field">Hasta (€)<input class="co-input" name="max" inputmode="decimal" /></label>
-                  <label class="co-field">Mes desde<input class="co-input" name="monthsFrom" type="number" min="0" placeholder="0" /></label>
-                  <label class="co-field">Mes hasta<input class="co-input" name="monthsTo" type="number" min="1" placeholder="6" /></label>
+                  <label class="co-field">{m.ruleForm.min}<input class="co-input" name="min" inputmode="decimal" /></label>
+                  <label class="co-field">{m.ruleForm.max}<input class="co-input" name="max" inputmode="decimal" /></label>
+                  <label class="co-field">{m.ruleForm.monthFrom}<input class="co-input" name="monthsFrom" type="number" min="0" placeholder="0" /></label>
+                  <label class="co-field">{m.ruleForm.monthTo}<input class="co-input" name="monthsTo" type="number" min="1" placeholder="6" /></label>
                 </div>
-                <p class="co-help">Meses desde que se ganó la cuenta. «Los 6 primeros meses» = desde 0 hasta 6.</p>
+                <p class="co-help">{m.ruleForm.monthsHelp}</p>
               </fieldset>
             </div>
             <div class="co-dialog__foot">
-              <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
-              <button class="co-btn co-btn--primary" type="submit">Añadir</button>
+              <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{m.ruleForm.cancel}</button>
+              <button class="co-btn co-btn--primary" type="submit">{m.ruleForm.add}</button>
             </div>
           </form>
         </dialog>
@@ -289,30 +314,30 @@ const origin = Astro.url.origin;
   {tab === 'ingresos' && (
     <div class="grid gap-6">
       <section class="co-section !mt-0" data-testid="pending-events">
-        <div class="co-section__head"><h2 class="text-eyebrow">Ventas declaradas por confirmar · {pendingEvents.length}</h2><span class="co-meta">Hasta que las confirmes, no generan comisión.</span></div>
-        {pendingEvents.length === 0 ? <p class="co-meta">Nada por confirmar.</p> : (
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.events.declared(pendingEvents.length)}</h2><span class="co-meta">{m.events.declaredHelp}</span></div>
+        {pendingEvents.length === 0 ? <p class="co-meta">{m.events.nothingToConfirm}</p> : (
           <ul class="co-rows">{pendingEvents.map((e) => (
             <li class="co-row co-row--attention" data-testid="pending-event">
-              <span class="co-row__main"><span class="co-row-title">{name(e.sellerId ?? '')} · {formatMoney(e.amountCents, e.currency)}{e.offer ? ` · ${e.offer}` : ''}</span>
-                <span class="co-meta">{KINDS[e.kind]} del {new Date(e.occurredAt).toLocaleDateString('es-ES')}{e.dossierId ? <> · <a class="underline" href={`/admin/dossiers/${e.dossierId}`}>ver propuesta</a></> : ''}{e.note ? ` · ${e.note}` : ''}</span></span>
+              <span class="co-row__main"><span class="co-row-title">{name(e.sellerId ?? '')} · {money(e.amountCents, e.currency)}{e.offer ? ` · ${e.offer}` : ''}</span>
+                <span class="co-meta">{m.events.on(KINDS[e.kind], fmt.date(e.occurredAt, {}))}{e.dossierId ? <> · <a class="underline" href={`/admin/dossiers/${e.dossierId}`}>{m.events.viewProposal}</a></> : ''}{e.note ? ` · ${e.note}` : ''}</span></span>
               {canWrite && (
                 <form method="post" class="flex gap-2"><input type="hidden" name="id" value={e.id} />
-                  <button class="co-btn co-btn--primary co-btn--sm" type="submit" name="action" value="confirm" data-testid="confirm-event">Confirmar</button>
-                  <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="action" value="event-void">Anular</button></form>
+                  <button class="co-btn co-btn--primary co-btn--sm" type="submit" name="action" value="confirm" data-testid="confirm-event">{m.events.confirm}</button>
+                  <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="action" value="event-void">{m.events.void}</button></form>
               )}
             </li>))}
           </ul>
         )}
       </section>
       <section class="co-section !mt-0">
-        <div class="co-section__head"><h2 class="text-eyebrow">Últimos ingresos</h2><span class="co-meta">Llegan de ventas declaradas y de la API. Un ingreso confirmado no se edita: se anula o se devuelve.</span></div>
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.events.latest}</h2><span class="co-meta">{m.events.latestHelp}</span></div>
         {events.filter((e) => e.status !== 'pending').length === 0
-          ? <EmptyState kind="none" title="Todavía no hay ingresos" because="Se crean al confirmar ventas declaradas o al recibirlos por la API." />
+          ? <EmptyState kind="none" title={m.events.emptyTitle} because={m.events.emptyBecause} />
           : <ul class="co-rows">{events.filter((e) => e.status !== 'pending').slice(0, 100).map((e) => (
               <li class="co-row">
-                <span class="co-row__main"><span class="co-row-title">{KINDS[e.kind]} · {e.kind === 'metric' ? `${e.quantity} ${e.metric}` : formatMoney(e.amountCents, e.currency)}{e.revenueCents !== e.amountCents && e.kind !== 'metric' ? ` (ingreso ${formatMoney(e.revenueCents, e.currency)})` : ''}</span>
-                  <span class="co-meta">{e.source} · {e.externalId} · {new Date(e.occurredAt).toLocaleDateString('es-ES')}{e.sellerId ? ` · ${name(e.sellerId)}` : ''}</span></span>
-                <span class={e.status === 'void' ? 'co-badge' : 'co-badge co-badge--soft'}>{e.status === 'void' ? 'Anulado' : 'Confirmado'}</span>
+                <span class="co-row__main"><span class="co-row-title">{KINDS[e.kind]} · {e.kind === 'metric' ? `${e.quantity} ${e.metric}` : money(e.amountCents, e.currency)}{e.revenueCents !== e.amountCents && e.kind !== 'metric' ? m.events.revenue(money(e.revenueCents, e.currency)) : ''}</span>
+                  <span class="co-meta">{e.source} · {e.externalId} · {fmt.date(e.occurredAt, {})}{e.sellerId ? ` · ${name(e.sellerId)}` : ''}</span></span>
+                <span class={e.status === 'void' ? 'co-badge' : 'co-badge co-badge--soft'}>{e.status === 'void' ? m.events.voided : m.events.confirmed}</span>
               </li>))}
             </ul>}
       </section>
@@ -322,14 +347,14 @@ const origin = Astro.url.origin;
   {tab === 'libro' && (
     <div class="co-split">
       <section class="co-section !mt-0">
-        <div class="co-section__head"><h2 class="text-eyebrow">Libro · {t.entries.length} líneas</h2></div>
-        {t.entries.length === 0 ? <EmptyState kind="none" title="El libro está vacío" because="Confirma ingresos y pulsa «Calcular ahora»." /> : (
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.ledger.title(t.entries.length)}</h2></div>
+        {t.entries.length === 0 ? <EmptyState kind="none" title={m.ledger.emptyTitle} because={m.ledger.emptyBecause} /> : (
           <ul class="co-rows" data-testid="ledger">{t.entries.slice(0, 300).map((e) => (
             <EntryRow e={e} who={name(e.userId)}>
               {canWrite && (e.status === 'pending' || e.status === 'ineligible') && (
                 <form method="post" class="flex gap-1"><input type="hidden" name="id" value={e.id} />
-                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit" name="action" value="approve">Aprobar</button>
-                  <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="action" value="void">Anular</button></form>
+                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit" name="action" value="approve">{m.ledger.approve}</button>
+                  <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="action" value="void">{m.ledger.void}</button></form>
               )}
             </EntryRow>))}
           </ul>
@@ -339,13 +364,13 @@ const origin = Astro.url.origin;
         <aside>
           <form method="post" class="co-card grid gap-3" data-testid="adjust">
             <input type="hidden" name="action" value="adjust" />
-            <h2 class="co-card-title">Ajuste manual</h2>
-            <p class="co-meta">Para corregir: lo aprobado no se edita. Negativo para restar.</p>
-            <label class="co-field">Persona<select class="co-select" name="userId" required>{t.people.map((p) => <option value={p.userId}>{p.name}</option>)}</select></label>
-            <label class="co-field">Importe (€)<input class="co-input" name="amount" required inputmode="decimal" placeholder="-50" /></label>
-            <label class="co-field">Motivo <span class="co-help">Lo verá la persona</span><input class="co-input" name="reason" required maxlength="300" placeholder="Descuento acordado con el cliente" /></label>
-            <label class="co-field">Periodo<input class="co-input" type="month" name="period" value={period} /></label>
-            <button class="co-btn co-btn--ghost w-fit" type="submit">Crear ajuste</button>
+            <h2 class="co-card-title">{m.ledger.adjustTitle}</h2>
+            <p class="co-meta">{m.ledger.adjustHelp}</p>
+            <label class="co-field">{m.ledger.person}<select class="co-select" name="userId" required>{t.people.map((p) => <option value={p.userId}>{p.name}</option>)}</select></label>
+            <label class="co-field">{m.ledger.amount}<input class="co-input" name="amount" required inputmode="decimal" placeholder="-50" /></label>
+            <label class="co-field">{m.ledger.reason} <span class="co-help">{m.ledger.reasonHelp}</span><input class="co-input" name="reason" required maxlength="300" placeholder={m.ledger.reasonPlaceholder} /></label>
+            <label class="co-field">{m.ledger.period}<input class="co-input" type="month" name="period" value={period} /></label>
+            <button class="co-btn co-btn--ghost w-fit" type="submit">{m.ledger.create}</button>
           </form>
         </aside>
       )}
@@ -354,22 +379,22 @@ const origin = Astro.url.origin;
 
   {tab === 'liquidaciones' && (
     <section class="co-section !mt-0">
-      {t.payouts.length === 0 ? <EmptyState kind="none" title="Todavía no hay liquidaciones" because="Aprueba lo pendiente y liquida un periodo desde Resumen." /> : (
+      {t.payouts.length === 0 ? <EmptyState kind="none" title={m.payouts.emptyTitle} because={m.payouts.emptyBecause} /> : (
         <ul class="co-rows" data-testid="payouts">{t.payouts.map((p) => (
           <li class="co-row" data-testid="payout" data-status={p.status}>
-            <span class="co-row__main"><span class="co-row-title">{name(p.userId)} · {p.period}</span><span class="co-meta">{p.status === 'paid' ? `Pagada el ${new Date(p.paidAt!).toLocaleDateString('es-ES')}` : 'Total congelado; pendiente de pago'}</span></span>
-            <span class="co-row-title tabular-nums">{formatMoney(p.totalCents, p.currency)}</span>
+            <span class="co-row__main"><span class="co-row-title">{name(p.userId)} · {p.period}</span><span class="co-meta">{p.status === 'paid' ? m.paidOn(fmt.date(p.paidAt, {})) : m.payouts.frozen}</span></span>
+            <span class="co-row-title tabular-nums">{money(p.totalCents, p.currency)}</span>
             {p.status === 'open' && canWrite ? (
               <span class="flex gap-1">
-                <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open={`pay-${p.id}`} data-testid="mark-paid">Marcar pagada</button>
-                <form method="post"><input type="hidden" name="action" value="payout-delete" /><input type="hidden" name="id" value={p.id} /><button class="co-btn co-btn--quiet co-btn--sm" type="submit">Deshacer</button></form>
-                <ConfirmDialog id={`pay-${p.id}`} title={`Pagar ${formatMoney(p.totalCents, p.currency)} a ${name(p.userId)}`} confirmLabel="Marcar pagada" testid={`pay-${p.id}`}
-                  does="Sus líneas pasan a pagadas y la persona recibe un aviso. No se puede deshacer."
-                  doesNot="No hace la transferencia: solo deja constancia de que ya la has hecho.">
+                <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open={`pay-${p.id}`} data-testid="mark-paid">{m.payouts.markPaid}</button>
+                <form method="post"><input type="hidden" name="action" value="payout-delete" /><input type="hidden" name="id" value={p.id} /><button class="co-btn co-btn--quiet co-btn--sm" type="submit">{m.payouts.undo}</button></form>
+                <ConfirmDialog id={`pay-${p.id}`} title={m.payouts.payTitle(money(p.totalCents, p.currency), name(p.userId))} confirmLabel={m.payouts.markPaid} testid={`pay-${p.id}`}
+                  does={m.payouts.payDoes}
+                  doesNot={m.payouts.payDoesNot}>
                   <input type="hidden" name="action" value="paid" /><input type="hidden" name="id" value={p.id} />
                 </ConfirmDialog>
               </span>
-            ) : <span class={p.status === 'paid' ? 'co-badge co-badge--signal' : 'co-badge co-badge--soft'}>{p.status === 'paid' ? 'Pagada' : 'Pendiente'}</span>}
+            ) : <span class={p.status === 'paid' ? 'co-badge co-badge--signal' : 'co-badge co-badge--soft'}>{p.status === 'paid' ? m.payouts.paid : m.payouts.pending}</span>}
           </li>))}
         </ul>
       )}
@@ -379,16 +404,16 @@ const origin = Astro.url.origin;
   {tab === 'cupones' && (
     <div class="co-split">
       <section class="co-section !mt-0" data-testid="coupons">
-        <div class="co-section__head"><h2 class="text-eyebrow">Cupones</h2><span class="co-meta">Palancas de negociación. El equipo las aplica en el precio de la propuesta y el cliente ve el descuento. La comisión se calcula sobre lo que de verdad se cobra.</span></div>
-        {couponList.length === 0 ? <EmptyState kind="none" title="Todavía no hay cupones" because="Crea el primero con el formulario: un 30 % de lanzamiento, un 10 % por pago anual o un mes gratis." /> : (
+        <div class="co-section__head"><h2 class="text-eyebrow">{m.coupons.title}</h2><span class="co-meta">{m.coupons.help}</span></div>
+        {couponList.length === 0 ? <EmptyState kind="none" title={m.coupons.emptyTitle} because={m.coupons.emptyBecause} /> : (
           <ul class="co-rows">{couponList.map((x) => (
             <li class:list={['co-row', !x.active && 'opacity-60']} data-testid="coupon" data-code={x.code}>
               <span class="co-row__lead"><Icon name="ticket" /></span>
               <span class="co-row__main"><span class="co-row-title">{x.label} <code class="co-meta">{x.code}</code></span>
-                <span class="co-meta">{couponValue(x)} · {x.uses}{x.maxUses ? ` de ${x.maxUses}` : ''} {x.uses === 1 ? 'uso' : 'usos'}{x.validUntil ? ` · hasta el ${new Date(x.validUntil).toLocaleDateString('es-ES')}` : ''}{x.note ? ` · ${x.note}` : ''}</span></span>
-              <span class={x.active ? 'co-badge co-badge--signal' : 'co-badge'}>{x.active ? 'Activo' : 'Desactivado'}</span>
+                <span class="co-meta">{couponValue(x)} · {m.coupons.uses(x.uses, x.maxUses)}{x.validUntil ? ` · ${m.coupons.until(fmt.date(x.validUntil, {}))}` : ''}{x.note ? ` · ${x.note}` : ''}</span></span>
+              <span class={x.active ? 'co-badge co-badge--signal' : 'co-badge'}>{x.active ? m.coupons.active : m.coupons.inactive}</span>
               {canWrite && <form method="post"><input type="hidden" name="action" value="coupon-toggle" /><input type="hidden" name="id" value={x.id} /><input type="hidden" name="active" value={x.active ? '0' : '1'} />
-                <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{x.active ? 'Desactivar' : 'Activar'}</button></form>}
+                <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{x.active ? m.coupons.deactivate : m.coupons.activate}</button></form>}
             </li>))}
           </ul>
         )}
@@ -397,23 +422,23 @@ const origin = Astro.url.origin;
         <aside>
           <form method="post" class="co-card grid gap-3" data-testid="coupon-form">
             <input type="hidden" name="action" value="coupon" />
-            <h2 class="co-entity">Nuevo cupón</h2>
-            <label class="co-field">Lo que verá el cliente<input class="co-input" name="label" required maxlength="80" placeholder="30 % de lanzamiento" /></label>
-            <label class="co-field">Código<input class="co-input uppercase" name="code" required maxlength="32" placeholder="LANZA30" /></label>
-            <fieldset class="grid gap-2"><legend class="co-field mb-1">Tipo</legend>
+            <h2 class="co-entity">{m.coupons.newTitle}</h2>
+            <label class="co-field">{m.coupons.label}<input class="co-input" name="label" required maxlength="80" placeholder={m.coupons.labelPlaceholder} /></label>
+            <label class="co-field">{m.coupons.code}<input class="co-input uppercase" name="code" required maxlength="32" placeholder={m.coupons.codePlaceholder} /></label>
+            <fieldset class="grid gap-2"><legend class="co-field mb-1">{m.coupons.type}</legend>
               <div class="grid gap-2 sm:grid-cols-3">
-                <label class="co-option !p-3"><input type="radio" name="kind" value="percent" checked /><span class="co-row-title">%</span><span class="co-meta">Descuento</span></label>
-                <label class="co-option !p-3"><input type="radio" name="kind" value="fixed" /><span class="co-row-title">€</span><span class="co-meta">Importe fijo</span></label>
-                <label class="co-option !p-3"><input type="radio" name="kind" value="free_months" /><span class="co-row-title">Meses</span><span class="co-meta">Gratis</span></label>
+                <label class="co-option !p-3"><input type="radio" name="kind" value="percent" checked /><span class="co-row-title">%</span><span class="co-meta">{m.coupons.discount}</span></label>
+                <label class="co-option !p-3"><input type="radio" name="kind" value="fixed" /><span class="co-row-title">€</span><span class="co-meta">{m.coupons.fixed}</span></label>
+                <label class="co-option !p-3"><input type="radio" name="kind" value="free_months" /><span class="co-row-title">{m.coupons.months}</span><span class="co-meta">{m.coupons.free}</span></label>
               </div>
             </fieldset>
-            <label class="co-field">Valor <span class="co-help">30 (%), 150 (€) o 1 (mes)</span><input class="co-input max-w-[8rem]" name="value" required inputmode="decimal" /></label>
+            <label class="co-field">{m.coupons.value} <span class="co-help">{m.coupons.valueHelp}</span><input class="co-input max-w-[8rem]" name="value" required inputmode="decimal" /></label>
             <div class="grid gap-3 sm:grid-cols-2">
-              <label class="co-field">Usos máximos <span class="co-help">Opcional</span><input class="co-input" name="maxUses" type="number" min="1" /></label>
-              <label class="co-field">Válido hasta <span class="co-help">Opcional</span><input class="co-input" name="validUntil" type="date" /></label>
+              <label class="co-field">{m.coupons.maxUses} <span class="co-help">{m.coupons.optional}</span><input class="co-input" name="maxUses" type="number" min="1" /></label>
+              <label class="co-field">{m.coupons.validUntil} <span class="co-help">{m.coupons.optional}</span><input class="co-input" name="validUntil" type="date" /></label>
             </div>
-            <label class="co-field">Nota interna <span class="co-help">Cuándo usarlo</span><input class="co-input" name="note" maxlength="300" placeholder="Para cerrar antes de fin de mes" /></label>
-            <button class="co-btn co-btn--primary w-fit" type="submit">Crear cupón</button>
+            <label class="co-field">{m.coupons.note} <span class="co-help">{m.coupons.noteHelp}</span><input class="co-input" name="note" maxlength="300" placeholder={m.coupons.notePlaceholder} /></label>
+            <button class="co-btn co-btn--primary w-fit" type="submit">{m.coupons.create}</button>
           </form>
         </aside>
       )}
@@ -424,31 +449,31 @@ const origin = Astro.url.origin;
     <div class="co-split">
       <div class="grid content-start gap-5">
         <section class="co-card grid gap-3">
-          <h2 class="co-entity">Enviar ingresos por API</h2>
-          <p class="co-body">Para pasarelas, CRMs o tu backend. Idempotente: el mismo <code>external_id</code> no se cuenta dos veces y, si llega con otros importes, se rechaza.</p>
+          <h2 class="co-entity">{m.api.title}</h2>
+          <p class="co-body" set:html={m.api.body} />
           <pre class="co-inset overflow-x-auto text-xs" data-scroll-x>{`curl -X POST ${origin}/api/v1/events \\
   -H "Authorization: Bearer ss_live_…" -H "Content-Type: application/json" \\
   -d '{"source":"pasarela","events":[{
     "external_id":"2026-03-centro-azul","kind":"volume",
     "occurred_at":"2026-03-31T23:59:00Z","amount":"9000","take_rate":3,
     "quantity":35,"account_ref":"oquea:c1","seller_email":"ana@empresa.com"}]}'`}</pre>
-          <p class="co-meta">Tipos: <code>sale</code>, <code>recurring</code>, <code>volume</code> (con <code>take_rate</code> o <code>revenue</code>), <code>metric</code> (<code>metric</code> + <code>quantity</code>) y <code>refund</code> (<code>refunds_external_id</code>). Importes en euros (<code>amount</code>) o céntimos (<code>amount_cents</code>).</p>
+          <p class="co-meta" set:html={m.api.types} />
         </section>
         <section class="co-card grid gap-3" data-testid="connectors">
-          <h2 class="co-entity">Conectores</h2>
-          <p class="co-body">Si una API externa no puede enviar nuestro formato, un conector traduce el suyo: <code>POST {origin}/api/v1/ingest/&lt;clave&gt;</code>.</p>
+          <h2 class="co-entity">{m.api.connectors}</h2>
+          <p class="co-body">{m.api.connectorsBody}<code>POST {origin}/api/v1/ingest/&lt;{m.api.keyParam}&gt;</code>.</p>
           {connectors.map((x) => (
             <form method="post" class="co-inset flex flex-wrap items-center gap-2 !p-3"><input type="hidden" name="action" value="connector-delete" /><input type="hidden" name="id" value={x.id} />
               <span class="min-w-0 flex-1"><span class="co-row-title block">{x.name}</span><span class="co-meta">/api/v1/ingest/{x.key}</span></span>
-              <button class="co-btn co-btn--quiet co-btn--sm" type="submit">Eliminar</button></form>
+              <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{m.api.delete}</button></form>
           ))}
           <form method="post" class="grid gap-2">
             <input type="hidden" name="action" value="connector" />
             <div class="grid gap-2 sm:grid-cols-2">
-              <label class="co-field">Clave<input class="co-input" name="key" required placeholder="oquea-pagos" /></label>
-              <label class="co-field">Nombre<input class="co-input" name="name" placeholder="Pasarela Oquea" /></label>
+              <label class="co-field">{m.api.key}<input class="co-input" name="key" required placeholder={m.api.keyPlaceholder} /></label>
+              <label class="co-field">{m.api.name}<input class="co-input" name="name" placeholder={m.api.namePlaceholder} /></label>
             </div>
-            <label class="co-field">Mapeo (JSON)<textarea class="co-textarea font-mono text-xs" name="mapping" required rows="9">{`{
+            <label class="co-field">{m.api.mapping}<textarea class="co-textarea font-mono text-xs" name="mapping" required rows="9">{`{
   "items": "data.payments",
   "fields": {
     "external_id": "id",
@@ -459,21 +484,21 @@ const origin = Astro.url.origin;
     "account_ref": { "path": "center.id", "prefix": "oquea:" }
   }
 }`}</textarea></label>
-            <button class="co-btn co-btn--ghost w-fit" type="submit">Guardar conector</button>
+            <button class="co-btn co-btn--ghost w-fit" type="submit">{m.api.saveConnector}</button>
           </form>
         </section>
       </div>
       <aside>
         <section class="co-card grid gap-3" data-testid="api-keys">
-          <h2 class="co-card-title">Claves API</h2>
-          <p class="co-meta">Guardamos solo una huella: si se pierde una clave, revócala y crea otra.</p>
+          <h2 class="co-card-title">{m.api.keys}</h2>
+          <p class="co-meta">{m.api.keysHelp}</p>
           {apiKeys.map((k) => (
             <form method="post" class="flex flex-wrap items-center gap-2 text-sm"><input type="hidden" name="action" value="key-revoke" /><input type="hidden" name="id" value={k.id} />
-              <span class="min-w-0 flex-1"><span class="font-semibold">{k.name}</span> <code class="co-meta">{k.prefix}…</code>{k.revokedAt && <span class="co-meta"> · revocada</span>}</span>
-              {!k.revokedAt && <button class="co-btn co-btn--quiet co-btn--sm" type="submit">Revocar</button>}</form>
+              <span class="min-w-0 flex-1"><span class="font-semibold">{k.name}</span> <code class="co-meta">{k.prefix}…</code>{k.revokedAt && <span class="co-meta"> · {m.api.revoked}</span>}</span>
+              {!k.revokedAt && <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{m.api.revoke}</button>}</form>
           ))}
           <form method="post" class="flex gap-2"><input type="hidden" name="action" value="key" />
-            <input class="co-input flex-1" name="name" required maxlength="80" placeholder="Pasarela Oquea" /><button class="co-btn co-btn--primary" type="submit" data-testid="create-key">Crear clave</button></form>
+            <input class="co-input flex-1" name="name" required maxlength="80" placeholder={m.api.namePlaceholder} /><button class="co-btn co-btn--primary" type="submit" data-testid="create-key">{m.api.createKey}</button></form>
         </section>
       </aside>
     </div>

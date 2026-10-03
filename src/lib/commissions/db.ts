@@ -1,4 +1,4 @@
-import type { Coupon, Entry, EntryDraft, EntryStatus, EventStatus, Payout, Plan, RevenueEvent } from './types';
+import type { MemberConditions, MyConditions, Coupon, Entry, EntryDraft, EntryStatus, EventStatus, Payout, Plan, RevenueEvent } from './types';
 
 export type EventInsert = Omit<RevenueEvent, 'id' | 'tenantId' | 'createdAt'>;
 export interface ApiKey { id: string; tenantId: string; name: string; prefix: string; createdAt: string; lastUsedAt: string | null; revokedAt: string | null }
@@ -38,6 +38,12 @@ export interface CommissionsDb {
   /** Cupones con sus usos (propuestas que lo tienen aplicado). */
   listCoupons(tenantId: string): Promise<Coupon[]>;
   saveCoupon(tenantId: string, c: Omit<Coupon, 'id' | 'tenantId' | 'uses'>, id?: string): Promise<string>;
+
+  /** Condiciones por persona (RLS: el admin las escribe; cada uno ve las suyas; jefes/as, todas). */
+  listConditions(tenantId: string): Promise<MemberConditions[]>;
+  setConditions(tenantId: string, userId: string, c: { visible: boolean; note: string | null }): Promise<void>;
+  /** RPC my_conditions: el plan que me aplica, solo si está acordado. */
+  myConditions(tenantId: string): Promise<MyConditions>;
 }
 
 /** Entrada por API (servidor con service role): resuelve la clave y escribe eventos de ese tenant. */

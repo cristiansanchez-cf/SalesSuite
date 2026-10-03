@@ -6,21 +6,21 @@ import { AdminError } from '~/lib/admin/service';
 import { parseBrand, type Brand } from '~/lib/brand';
 import { COLOR_KEYS, parseTheme, type ThemeTokens } from '~/lib/theme';
 import { clearTenantCache } from '~/lib/tenant';
+import { i18n } from '~/lib/i18n';
+import { teamMessages } from '~/lib/i18n/messages/team';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
+const { m: { brand: M } } = i18n(Astro, teamMessages);
 
-const COLOR_LABEL: Record<(typeof COLOR_KEYS)[number], string> = {
-  bg: 'Fondo', surface: 'Fondo secundario', text: 'Texto', muted: 'Texto suave', border: 'Bordes',
-  primary: 'Primario', 'primary-contrast': 'Texto sobre primario', accent: 'Acento', 'accent-contrast': 'Texto sobre acento',
-};
+const COLOR_LABEL: Record<(typeof COLOR_KEYS)[number], string> = M.colors;
 const ASSETS = [
-  { kind: 'logo', field: 'logoUrl', label: 'Logo', accept: 'image/svg+xml,image/png,image/webp' },
-  { kind: 'logo-dark', field: 'logoOnDarkUrl', label: 'Logo para fondo oscuro', accept: 'image/svg+xml,image/png,image/webp' },
-  { kind: 'favicon', field: 'faviconUrl', label: 'Favicon', accept: 'image/png,image/svg+xml,image/x-icon' },
-  { kind: 'og', field: 'ogImageUrl', label: 'Imagen al compartir (1200×630)', accept: 'image/png,image/jpeg,image/webp' },
+  { kind: 'logo', field: 'logoUrl', label: M.assets.logo, accept: 'image/svg+xml,image/png,image/webp' },
+  { kind: 'logo-dark', field: 'logoOnDarkUrl', label: M.assets['logo-dark'], accept: 'image/svg+xml,image/png,image/webp' },
+  { kind: 'favicon', field: 'faviconUrl', label: M.assets.favicon, accept: 'image/png,image/svg+xml,image/x-icon' },
+  { kind: 'og', field: 'ogImageUrl', label: M.assets.og, accept: 'image/png,image/jpeg,image/webp' },
 ] as const;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -43,7 +43,7 @@ if (Astro.request.method === 'POST') {
     const faceFamily = str('fontFaceFamily');
     let faces: unknown[] = [];
     if (faceFamily || fontUrl) {
-      if (!faceFamily || !fontUrl) throw new AdminError(422, 'Para una fuente propia indica familia y archivo/URL');
+      if (!faceFamily || !fontUrl) throw new AdminError(422, M.errFont);
       faces = [{ family: faceFamily, src: fontUrl, weight: str('fontFaceWeight') || '400 900' }];
     }
     const themeTokens = {
@@ -65,14 +65,14 @@ const settings = await t.getSettings();
 const theme: ThemeTokens = parseTheme(settings.themeTokens);
 const brand: Brand = parseBrand(settings.brand);
 const face = theme.font?.faces?.[0];
-const okMsg = flash(Astro.url, { saved: 'Marca guardada. Los dossiers ya la muestran.' });
+const okMsg = flash(Astro.url, { saved: M.okSaved });
 const field = 'co-input';
 const card = 'space-y-3 co-card';
 ---
-<AdminLayout title="Marca" wide>
-  <p class="text-eyebrow mb-3">Configurar</p>
-  <h1 class="co-page-title">Marca y tema</h1>
-  <p class="text-sm text-muted">Se aplica a todos los dossiers de <code>{settings.slug}</code> sin tocar código.{admin.mode === 'demo' && ' En demo no hay subida de archivos: usa URLs.'}</p>
+<AdminLayout title={M.title} wide>
+  <p class="text-eyebrow mb-3">{M.eyebrow}</p>
+  <h1 class="co-page-title">{M.heading}</h1>
+  <p class="text-sm text-muted">{M.ledeA}<code>{settings.slug}</code>{M.ledeB}{admin.mode === 'demo' && M.demoNote}</p>
   {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
   {result.error && (
     <div class="mt-4 co-alert co-alert--rejection" role="alert" data-testid="error">
@@ -84,76 +84,76 @@ const card = 'space-y-3 co-card';
   <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
     <form method="post" enctype="multipart/form-data" class="space-y-5" data-testid="brand-form">
       <section class={card}>
-        <h2 class="co-card-title">General</h2>
-        <label class="block text-sm font-medium">Nombre comercial<input class={field} name="name" value={settings.name} required maxlength="80" /></label>
-        <label class="block text-sm font-medium">Idioma por defecto
+        <h2 class="co-card-title">{M.general}</h2>
+        <label class="block text-sm font-medium">{M.tradeName}<input class={field} name="name" value={settings.name} required maxlength="80" /></label>
+        <label class="block text-sm font-medium">{M.defaultLocale}
           <select class={field} name="defaultLocale">{LOCALES.map((l) => <option selected={l === settings.defaultLocale}>{l}</option>)}</select>
         </label>
       </section>
 
       <section class={card}>
-        <h2 class="co-card-title">Colores</h2>
+        <h2 class="co-card-title">{M.colorsTitle}</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           {COLOR_KEYS.map((k) => (
             <label class="flex items-center gap-2 text-sm">
               <input type="color" class="h-9 w-12 cursor-pointer rounded border border-line" value={theme.colors?.[k] ?? '#000000'}
                 oninput={`this.nextElementSibling.value=this.value`} aria-label={COLOR_LABEL[k]} />
-              <input class="w-24 rounded-lg border border-line px-2 py-1.5 font-mono text-xs" name={`color_${k}`} value={theme.colors?.[k] ?? ''} placeholder="por defecto" pattern="#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?" />
+              <input class="w-24 rounded-lg border border-line px-2 py-1.5 font-mono text-xs" name={`color_${k}`} value={theme.colors?.[k] ?? ''} placeholder={M.defaultPlaceholder} pattern="#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?" />
               <span>{COLOR_LABEL[k]}</span>
             </label>
           ))}
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm font-medium">Radio tarjetas<input class={field} name="radius_card" value={theme.radius?.card ?? ''} placeholder="20px" /></label>
-          <label class="text-sm font-medium">Radio botones<input class={field} name="radius_button" value={theme.radius?.button ?? ''} placeholder="999px" /></label>
+          <label class="text-sm font-medium">{M.radiusCard}<input class={field} name="radius_card" value={theme.radius?.card ?? ''} placeholder="20px" /></label>
+          <label class="text-sm font-medium">{M.radiusButton}<input class={field} name="radius_button" value={theme.radius?.button ?? ''} placeholder="999px" /></label>
         </div>
       </section>
 
       <section class={card}>
-        <h2 class="co-card-title">Tipografía</h2>
-        <label class="block text-sm font-medium">Titulares (font-family)<input class={field} name="fontDisplay" value={theme.font?.display ?? ''} placeholder="'YWFTKul', ui-sans-serif, sans-serif" /></label>
-        <label class="block text-sm font-medium">Texto (font-family)<input class={field} name="fontSans" value={theme.font?.sans ?? ''} placeholder="ui-sans-serif, system-ui, sans-serif" /></label>
+        <h2 class="co-card-title">{M.typography}</h2>
+        <label class="block text-sm font-medium">{M.display}<input class={field} name="fontDisplay" value={theme.font?.display ?? ''} placeholder="'YWFTKul', ui-sans-serif, sans-serif" /></label>
+        <label class="block text-sm font-medium">{M.sans}<input class={field} name="fontSans" value={theme.font?.sans ?? ''} placeholder="ui-sans-serif, system-ui, sans-serif" /></label>
         <fieldset class="rounded-xl border border-line p-3">
-          <legend class="px-1 text-sm font-medium">Fuente propia (WOFF2)</legend>
+          <legend class="px-1 text-sm font-medium">{M.ownFont}</legend>
           <div class="grid gap-3 sm:grid-cols-2">
-            <label class="text-sm">Familia<input class={field} name="fontFaceFamily" value={face?.family ?? ''} placeholder="YWFTKul" /></label>
-            <label class="text-sm">Pesos<input class={field} name="fontFaceWeight" value={face?.weight ?? ''} placeholder="400 900" /></label>
+            <label class="text-sm">{M.family}<input class={field} name="fontFaceFamily" value={face?.family ?? ''} placeholder="YWFTKul" /></label>
+            <label class="text-sm">{M.weights}<input class={field} name="fontFaceWeight" value={face?.weight ?? ''} placeholder="400 900" /></label>
           </div>
-          <label class="mt-2 block text-sm">URL<input class={field} name="fontFaceUrl" value={face?.src ?? ''} placeholder="https://…/fuente.woff2" /></label>
-          {admin.mode === 'supabase' && <label class="mt-2 block text-sm">…o sube el archivo<input type="file" name="file_font" accept=".woff2,.woff,font/woff2,font/woff" class="block text-sm" /></label>}
+          <label class="mt-2 block text-sm">{M.url}<input class={field} name="fontFaceUrl" value={face?.src ?? ''} placeholder={M.fontUrlPlaceholder} /></label>
+          {admin.mode === 'supabase' && <label class="mt-2 block text-sm">{M.orUpload}<input type="file" name="file_font" accept=".woff2,.woff,font/woff2,font/woff" class="block text-sm" /></label>}
         </fieldset>
       </section>
 
       <section class={card}>
-        <h2 class="co-card-title">Logos e imágenes</h2>
+        <h2 class="co-card-title">{M.logos}</h2>
         {ASSETS.map((a) => (
           <div>
             <label class="block text-sm font-medium">{a.label}<input class={field} name={a.field} value={brand[a.field] ?? ''} placeholder="https://…" /></label>
-            {admin.mode === 'supabase' && <input type="file" name={`file_${a.kind}`} accept={a.accept} class="mt-1 block text-sm" aria-label={`Subir ${a.label}`} />}
+            {admin.mode === 'supabase' && <input type="file" name={`file_${a.kind}`} accept={a.accept} class="mt-1 block text-sm" aria-label={M.upload(a.label)} />}
             {brand[a.field] && <img src={brand[a.field]} alt="" class="mt-2 h-10 w-auto rounded border border-line bg-surface p-1" />}
           </div>
         ))}
-        <label class="block text-sm font-medium">Texto alternativo del logo<input class={field} name="logoAlt" value={brand.logoAlt ?? ''} maxlength="80" /></label>
+        <label class="block text-sm font-medium">{M.logoAlt}<input class={field} name="logoAlt" value={brand.logoAlt ?? ''} maxlength="80" /></label>
       </section>
 
       <section class={card}>
-        <h2 class="co-card-title">Contacto en los dossiers</h2>
+        <h2 class="co-card-title">{M.contact}</h2>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="text-sm font-medium">WhatsApp (con prefijo)<input class={field} name="whatsapp" value={brand.contact?.whatsapp ?? ''} placeholder="34600111222" inputmode="numeric" /></label>
-          <label class="text-sm font-medium">Email<input class={field} type="email" name="email" value={brand.contact?.email ?? ''} /></label>
-          <label class="text-sm font-medium">Teléfono<input class={field} name="phone" value={brand.contact?.phone ?? ''} placeholder="+34 600 111 222" /></label>
-          <label class="text-sm font-medium">Web<input class={field} name="website" value={brand.contact?.website ?? ''} placeholder="https://…" /></label>
+          <label class="text-sm font-medium">{M.whatsapp}<input class={field} name="whatsapp" value={brand.contact?.whatsapp ?? ''} placeholder="34600111222" inputmode="numeric" /></label>
+          <label class="text-sm font-medium">{M.email}<input class={field} type="email" name="email" value={brand.contact?.email ?? ''} /></label>
+          <label class="text-sm font-medium">{M.phone}<input class={field} name="phone" value={brand.contact?.phone ?? ''} placeholder="+34 600 111 222" /></label>
+          <label class="text-sm font-medium">{M.web}<input class={field} name="website" value={brand.contact?.website ?? ''} placeholder="https://…" /></label>
         </div>
-        <label class="block text-sm font-medium">Texto legal del pie<input class={field} name="legal" value={brand.legal ?? ''} maxlength="200" /></label>
+        <label class="block text-sm font-medium">{M.legal}<input class={field} name="legal" value={brand.legal ?? ''} maxlength="200" /></label>
       </section>
 
-      <button class="co-btn co-btn--primary" type="submit">Guardar marca</button>
+      <button class="co-btn co-btn--primary" type="submit">{M.save}</button>
     </form>
 
     <div>
       <div class="xl:sticky xl:top-4">
-        <p class="mb-2 text-sm font-bold">Vista previa <span class="font-normal text-muted">· tras guardar</span></p>
-        <iframe title="Vista previa de la marca" src={`/admin/brand/preview?t=${Date.now()}`} class="h-[80vh] w-full co-card" data-testid="brand-preview"></iframe>
+        <p class="mb-2 text-sm font-bold">{M.preview} <span class="font-normal text-muted">{M.afterSave}</span></p>
+        <iframe title={M.previewTitle} src={`/admin/brand/preview?t=${Date.now()}`} class="h-[80vh] w-full co-card" data-testid="brand-preview"></iframe>
       </div>
     </div>
   </div>

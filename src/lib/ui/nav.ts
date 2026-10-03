@@ -19,6 +19,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
   const perms = can(role);
   const mode: NavMode = perms.configure && SETUP_PREFIXES.some(on) ? 'setup' : 'sell';
   const sell: NavItem[] = [
+    { href: '/admin/start', label: L.start, icon: 'compass', on: on('/admin/start'), testid: 'nav-start' },
     ...(role !== 'partner' ? [{ href: '/admin/inicio', label: L.home, icon: 'gauge' as IconName, on: on('/admin/inicio') }] : []),
     role === 'partner'
       ? { href: '/admin', label: L.myAccounts, icon: 'store', on: path === '/admin' || on('/admin/dossiers') }

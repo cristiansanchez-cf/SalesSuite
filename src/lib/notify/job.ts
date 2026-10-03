@@ -28,12 +28,12 @@ const hello = (r: Recipient) => notifyMessages[loc(r)].email.hello(r.name ? r.na
 
 function layout(title: string, intro: string, sections: Array<{ heading: string; items: NotificationView[] }>, base: string, footer: string, locale: Locale) {
   const E = notifyMessages[locale].email;
-  const li = (n: NotificationView) => `<li style="margin:0 0 12px"><a href="${esc(base + '/admin/notifications/' + n.id)}" style="color:#0a0a0a;font-weight:600">${esc(n.title)}</a>${n.detail ? `<br><span style="color:#555">${esc(n.detail)}</span>` : ''}</li>`;
-  const html = `<!doctype html><html lang="${locale}"><body style="margin:0;padding:24px;background:#f6f5f2;font-family:Inter,Arial,sans-serif;color:#0a0a0a">
-<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e7e5e0;border-radius:16px;padding:28px">
+  const li = (n: NotificationView) => `<li style="margin:0 0 12px"><a href="${esc(base + '/admin/notifications/' + n.id)}" style="color:#1a1a1a;font-weight:600">${esc(n.title)}</a>${n.detail ? `<br><span style="color:#555">${esc(n.detail)}</span>` : ''}</li>`;
+  const html = `<!doctype html><html lang="${locale}"><body style="margin:0;padding:24px;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px">
 <h1 style="font-size:20px;margin:0 0 12px">${esc(title)}</h1><p style="margin:0 0 20px;line-height:1.5">${esc(intro)}</p>
 ${sections.filter((s) => s.items.length).map((s) => `<h2 style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#555;margin:20px 0 10px">${esc(s.heading)}</h2><ul style="padding-left:18px;margin:0">${s.items.map(li).join('')}</ul>`).join('')}
-<p style="margin:24px 0 0"><a href="${esc(base)}/admin/notifications" style="display:inline-block;background:#0a0a0a;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${esc(E.viewAll)}</a></p>
+<p style="margin:24px 0 0"><a href="${esc(base)}/admin/notifications" style="display:inline-block;background:#1a1a1a;color:#fff;font-weight:600;padding:12px 20px;border-radius:8px;text-decoration:none">${esc(E.viewAll)}</a></p>
 <p style="margin:24px 0 0;font-size:12px;color:#777">${esc(footer)} <a href="${esc(base)}/admin/account" style="color:#777">${esc(E.change)}</a>.</p>
 </div></body></html>`;
   const text = [title, '', intro, ...sections.filter((s) => s.items.length).flatMap((s) => ['', s.heading.toUpperCase(), ...s.items.map((n) => `- ${n.title}${n.detail ? ` (${n.detail})` : ''}: ${base}/admin/notifications/${n.id}`)]),

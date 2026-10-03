@@ -12,7 +12,9 @@ import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { slug } from '~/lib/evidence/schema';
-import { PERSONA_ROLES, ROLE_HINT, ROLE_LABEL } from '~/lib/playbook/market';
+import { PERSONA_ROLES } from '~/lib/playbook/market';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { PRESETS, ROLE_ICON, SEGMENT_ICONS } from '~/lib/setup/presets';
 import { createSetupService } from '~/lib/setup/service';
 import { isIconName } from '~/lib/ui/icons';
@@ -20,13 +22,14 @@ import { isIconName } from '~/lib/ui/icons';
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
+const { m: msg } = i18n(Astro, playbookMessages);
 const setup = createSetupService(admin.session, { playbook: admin.playbook, evidence: admin.evidence });
 const STEPS = [
-  { n: 1, title: 'Punto de partida', icon: 'wand-sparkles' },
-  { n: 2, title: 'Sectores', icon: 'compass' },
-  { n: 3, title: 'Actores', icon: 'users' },
-  { n: 4, title: 'Situaciones', icon: 'layers' },
-  { n: 5, title: 'Listo', icon: 'circle-check' },
+  { n: 1, title: msg.setup.steps.start, icon: 'wand-sparkles' },
+  { n: 2, title: msg.setup.steps.segments, icon: 'compass' },
+  { n: 3, title: msg.setup.steps.actors, icon: 'users' },
+  { n: 4, title: msg.setup.steps.facets, icon: 'layers' },
+  { n: 5, title: msg.setup.steps.done, icon: 'circle-check' },
 ] as const;
 const step = Math.min(5, Math.max(1, Number(Astro.url.searchParams.get('step') ?? '1') || 1));
 
@@ -75,16 +78,16 @@ const st = await setup.status();
 const okKey = Astro.url.searchParams.get('ok') ?? '';
 const presetMsg = /^preset-(\d+)-(\d+)-(\d+)$/.exec(okKey);
 const okMsg = presetMsg
-  ? `Añadido: ${presetMsg[1]} sectores, ${presetMsg[2]} actores y ${presetMsg[3]} situaciones. Lo que ya tenías no se ha tocado.`
-  : flash(Astro.url, { segment: 'Sector añadido.', persona: 'Actor añadido.', facet: 'Situación añadida.', 'facet-saved': 'Situación guardada.' });
+  ? msg.setup.presetAdded(presetMsg[1], presetMsg[2], presetMsg[3])
+  : flash(Astro.url, msg.setup.flash);
 const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
 const href = (n: number) => `/admin/setup?step=${n}`;
 const done = [true, st.checks.segments, st.checks.personas, st.checks.facets, st.checks.segments && st.checks.personas && st.checks.facets];
-const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
+const SCOPE = msg.setup.scope;
 ---
-<AdminLayout title="Configuración guiada">
-  <PageHeader eyebrow="Configurar" title="Configuración guiada" lede="Deja tu empresa lista para vender en cinco pasos. Todo lo que pongas aquí alimenta el guion, «Preparar mensaje» y «Qué ha funcionado». Puedes volver cuando quieras." />
-  <nav aria-label="Pasos" class="mb-6">
+<AdminLayout title={msg.setup.title}>
+  <PageHeader eyebrow={msg.setup.eyebrow} title={msg.setup.title} lede={msg.setup.lede} />
+  <nav aria-label={msg.setup.stepsLabel} class="mb-6">
     <ol class="co-steps">
       {STEPS.map((s) => (
         <li aria-current={s.n === step ? 'step' : undefined}><a href={href(s.n)} class="inline-flex items-center gap-1.5 hover:text-ink">{s.title}{done[s.n - 1] && s.n !== step && <Icon name="check" size={14} />}</a></li>
@@ -96,18 +99,18 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
 
   {step === 1 && (
     <section class="grid gap-4" data-testid="setup-presets">
-      <p class="co-lede">Elige lo que más se parece a tu negocio. Te propone sectores, actores (quién decide, quién paga, quién puede tumbar la venta) y situaciones. Luego lo adaptas todo.</p>
+      <p class="co-lede">{msg.setup.start.lede}</p>
       <div class="co-grid co-grid--3">
         {PRESETS.map((p) => (
           <article class="co-card grid content-start gap-3">
             <span class="co-option__icon"><Icon name={p.icon} /></span>
             <h2 class="co-card-title">{p.name}</h2>
             <p class="co-body">{p.pitch}</p>
-            <p class="co-meta">{p.segments.length} sectores · {p.segments.reduce((n, s) => n + s.personas.length, 0)} actores · {p.facets.length} situaciones</p>
-            <button type="button" class="co-btn co-btn--primary co-btn--sm w-fit" data-dialog-open={`preset-${p.key}`} data-testid={`preset-${p.key}`}>Usar como punto de partida</button>
-            <ConfirmDialog id={`preset-${p.key}`} title={`Partir de «${p.name}»`} confirmLabel="Añadir lo que falta" testid={`preset-${p.key}-dialog`}
-              does="Añade los sectores, actores y situaciones de este punto de partida que todavía no tengas."
-              doesNot="No borra ni cambia nada de lo que ya tienes, y no toca tu catálogo, tu playbook ni tus dossiers.">
+            <p class="co-meta">{msg.setup.start.presetMeta(p.segments.length, p.segments.reduce((n, s) => n + s.personas.length, 0), p.facets.length)}</p>
+            <button type="button" class="co-btn co-btn--primary co-btn--sm w-fit" data-dialog-open={`preset-${p.key}`} data-testid={`preset-${p.key}`}>{msg.setup.start.use}</button>
+            <ConfirmDialog id={`preset-${p.key}`} title={msg.setup.start.presetTitle(p.name)} confirmLabel={msg.setup.start.presetConfirm} testid={`preset-${p.key}-dialog`}
+              does={msg.setup.start.presetDoes}
+              doesNot={msg.setup.start.presetDoesNot}>
               <input type="hidden" name="action" value="preset" />
               <input type="hidden" name="preset" value={p.key} />
             </ConfirmDialog>
@@ -115,9 +118,9 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
         ))}
         <a class="co-card co-card--link grid content-start gap-3" href={href(2)}>
           <span class="co-option__icon"><Icon name="pencil" /></span>
-          <h2 class="co-card-title">Empezar en blanco</h2>
-          <p class="co-body">Crea tú los sectores, actores y situaciones desde cero.</p>
-          <span class="co-meta">Ir al paso 2 →</span>
+          <h2 class="co-card-title">{msg.setup.start.blankTitle}</h2>
+          <p class="co-body">{msg.setup.start.blankBody}</p>
+          <span class="co-meta">{msg.setup.start.blankGo}</span>
         </a>
       </div>
     </section>
@@ -126,9 +129,9 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
   {step === 2 && (
     <div class="co-split">
       <section class="grid content-start gap-3">
-        <p class="co-lede">Un sector es un tipo de cliente con su forma de comprar (p. ej. «Locales de ocio nocturno», «Hoteles con centro de buceo»). La región no es un sector: va en el paso 4.</p>
+        <p class="co-lede">{msg.setup.segments.lede}</p>
         {st.segments.length === 0
-          ? <EmptyState kind="create" title="Todavía no hay sectores" detail="Añade el primero con el formulario, o vuelve al paso 1 y parte de un ejemplo." action={{ href: href(1), label: 'Ver puntos de partida' }} />
+          ? <EmptyState kind="create" title={msg.setup.segments.emptyTitle} detail={msg.setup.segments.emptyDetail} action={{ href: href(1), label: msg.setup.segments.emptyAction }} />
           : <ul class="co-grid co-grid--2 m-0 p-0" data-testid="setup-segments">{st.segments.map((sg) => (
               <li class="list-none"><a class="co-card co-card--link h-full" href={`/admin/playbook/segment/${sg.id}`}><span class="grid content-start gap-3">
                 <span class="flex items-center gap-3">
@@ -137,23 +140,23 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
                 </span>
                 {sg.personas.length > 0
                   ? <span class="co-chips">{sg.personas.map((p) => <span class="co-tag">{p.name}</span>)}</span>
-                  : <span class="co-meta">Sin actores todavía</span>}
-                <span class="co-meta">{sg.modules.length === 1 ? '1 módulo que encaja' : `${sg.modules.length} módulos que encajan`}{sg.icp ? '' : ' · falta el cliente ideal'}</span>
+                  : <span class="co-meta">{msg.setup.segments.noActors}</span>}
+                <span class="co-meta">{msg.setup.segments.modulesFit(sg.modules.length)}{sg.icp ? '' : msg.setup.segments.missingIcp}</span>
               </span></a></li>))}
             </ul>}
-        <a class="co-btn co-btn--primary w-fit" href={href(3)}>Siguiente: actores <span aria-hidden="true">→</span></a>
+        <a class="co-btn co-btn--primary w-fit" href={href(3)}>{msg.setup.segments.next} <span aria-hidden="true">→</span></a>
       </section>
       <aside>
         <form method="post" class="co-card grid gap-3" data-testid="setup-segment-form">
           <input type="hidden" name="action" value="segment" />
-          <h2 class="co-entity">Añadir sector</h2>
-          <label class="co-field">Nombre<input class="co-input" name="name" required maxlength="80" placeholder="Hoteles con centro de buceo" /></label>
-          <fieldset><legend class="co-field mb-2">Icono</legend>
+          <h2 class="co-entity">{msg.setup.segments.add}</h2>
+          <label class="co-field">{msg.common.name}<input class="co-input" name="name" required maxlength="80" placeholder={msg.setup.segments.namePlaceholder} /></label>
+          <fieldset><legend class="co-field mb-2">{msg.setup.segments.icon}</legend>
             <div class="co-chips">{SEGMENT_ICONS.map((i, k) => <label class="co-chip !px-2.5" title={i}><input type="radio" name="icon" value={i} checked={k === 0} /><Icon name={i} size={16} /></label>)}</div>
           </fieldset>
-          <label class="co-field">Qué es <span class="co-help">Opcional</span><input class="co-input" name="description" maxlength="1000" /></label>
-          <label class="co-field">Cliente ideal <span class="co-help">Opcional: tamaño, señales…</span><textarea class="co-textarea" name="icp" maxlength="2000"></textarea></label>
-          <button class="co-btn co-btn--primary" type="submit">Añadir sector</button>
+          <label class="co-field">{msg.setup.segments.what} <span class="co-help">{msg.setup.segments.optional}</span><input class="co-input" name="description" maxlength="1000" /></label>
+          <label class="co-field">{msg.setup.segments.icp} <span class="co-help">{msg.setup.segments.icpHelp}</span><textarea class="co-textarea" name="icp" maxlength="2000"></textarea></label>
+          <button class="co-btn co-btn--primary" type="submit">{msg.setup.segments.add}</button>
         </form>
       </aside>
     </div>
@@ -161,13 +164,13 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
 
   {step === 3 && (
     <section class="grid gap-8">
-      <p class="co-lede">Los actores son los papeles que intervienen en una venta. Lo más importante: <strong class="text-ink">quién puede tumbarla</strong>. Un DJ puede vetar las peticiones de canciones; un instructor, un servicio que le dé trabajo extra.</p>
-      {st.segments.length === 0 && <EmptyState kind="create" title="Primero crea un sector" action={{ href: href(2), label: 'Ir a sectores' }} />}
+      <p class="co-lede">{msg.setup.actors.ledeBefore}<strong class="text-ink">{msg.setup.actors.ledeStrong}</strong>{msg.setup.actors.ledeAfter}</p>
+      {st.segments.length === 0 && <EmptyState kind="create" title={msg.setup.actors.emptyTitle} action={{ href: href(2), label: msg.setup.actors.emptyAction }} />}
       {st.segments.map((sg) => (
         <section class="grid gap-3" data-testid="setup-actors" data-segment={sg.key}>
           <div class="co-section__head !mb-0">
             <h2 class="co-card-title flex items-center gap-2"><span class="co-row__lead">{icon(sg.icon) ? <Icon name={icon(sg.icon)!} /> : <Icon name="compass" />}</span>{sg.name}</h2>
-            <span class="co-meta">{sg.personas.length === 1 ? '1 actor' : `${sg.personas.length} actores`}</span>
+            <span class="co-meta">{msg.setup.actors.count(sg.personas.length)}</span>
           </div>
           <ul class="co-grid co-grid--3 m-0 p-0">
             {sg.personas.map((p) => (
@@ -175,20 +178,20 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
                 <a class="co-card co-card--link h-full" href={`/admin/playbook/persona/${p.id}`} data-testid="actor-card"><span class="grid content-start gap-3">
                   <span class="flex items-center gap-3">
                     <span class="co-option__icon"><Icon name={ROLE_ICON[p.role]} size={18} /></span>
-                    <span class="min-w-0"><span class="co-row-title block">{p.name}</span><span class="co-meta">{ROLE_LABEL[p.role]}</span></span>
+                    <span class="min-w-0"><span class="co-row-title block">{p.name}</span><span class="co-meta">{msg.role[p.role]}</span></span>
                   </span>
                   {p.canBlock
-                    ? <span class="co-blocker"><strong>Puede tumbarla:</strong> {p.canBlock}</span>
-                    : <span class="co-meta">Falta cómo puede tumbar la venta</span>}
-                  {p.canHelp && <span class="co-meta">Ayuda: {p.canHelp}</span>}
+                    ? <span class="co-blocker"><strong>{msg.setup.actors.canBlock}</strong> {p.canBlock}</span>
+                    : <span class="co-meta">{msg.setup.actors.missingBlock}</span>}
+                  {p.canHelp && <span class="co-meta">{msg.setup.actors.helps(p.canHelp)}</span>}
                 </span></a>
               </li>
             ))}
             <li class="list-none">
               <button type="button" class="co-card co-card--add" data-dialog-open={`add-actor-${sg.id}`} data-testid={`add-actor-${sg.key}`}>
                 <span class="co-option__icon"><Icon name="plus" size={18} /></span>
-                <span class="co-row-title">Añadir actor</span>
-                <span class="co-meta">en {sg.name}</span>
+                <span class="co-row-title">{msg.setup.actors.add}</span>
+                <span class="co-meta">{msg.setup.actors.inSegment(sg.name)}</span>
               </button>
             </li>
           </ul>
@@ -197,96 +200,96 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
               <input type="hidden" name="action" value="persona" />
               <input type="hidden" name="segmentId" value={sg.id} />
               <div class="co-dialog__body">
-                <h2 id={`add-actor-${sg.id}-title`} class="co-entity">Añadir actor en {sg.name}</h2>
-                <label class="co-field">Papel o cargo<input class="co-input" name="name" required maxlength="80" placeholder="Instructor/a autónomo" /></label>
-                <fieldset><legend class="co-field mb-2">Qué papel tiene en la decisión</legend>
+                <h2 id={`add-actor-${sg.id}-title`} class="co-entity">{msg.setup.actors.addIn(sg.name)}</h2>
+                <label class="co-field">{msg.setup.actors.roleName}<input class="co-input" name="name" required maxlength="80" placeholder={msg.setup.actors.roleNamePlaceholder} /></label>
+                <fieldset><legend class="co-field mb-2">{msg.setup.actors.roleLegend}</legend>
                   <div class="grid gap-2 sm:grid-cols-2">
                     {PERSONA_ROLES.map((r, k) => (
                       <label class="co-option !flex-row !items-center !gap-3 !p-3">
                         <input type="radio" name="role" value={r} checked={k === 0} />
                         <span class="co-option__icon"><Icon name={ROLE_ICON[r]} size={16} /></span>
-                        <span class="min-w-0"><span class="co-row-title block">{ROLE_LABEL[r]}</span><span class="co-meta">{ROLE_HINT[r]}</span></span>
+                        <span class="min-w-0"><span class="co-row-title block">{msg.role[r]}</span><span class="co-meta">{msg.roleHint[r]}</span></span>
                       </label>
                     ))}
                   </div>
                 </fieldset>
-                <label class="co-field">¿Cómo puede tumbar la venta? <span class="co-help">Lo que más ayuda a un comercial nuevo</span>
-                  <textarea class="co-textarea" name="canBlock" maxlength="1000" placeholder="Si le resulta laborioso en el día a día, lo desaconseja a su centro."></textarea>
+                <label class="co-field">{msg.setup.actors.howBlock} <span class="co-help">{msg.setup.actors.howBlockHelp}</span>
+                  <textarea class="co-textarea" name="canBlock" maxlength="1000" placeholder={msg.setup.actors.howBlockPlaceholder}></textarea>
                 </label>
-                <label class="co-field">¿Cómo puede ayudar? <span class="co-help">Opcional</span><textarea class="co-textarea !min-h-[64px]" name="canHelp" maxlength="1000"></textarea></label>
+                <label class="co-field">{msg.setup.actors.howHelp} <span class="co-help">{msg.setup.actors.optional}</span><textarea class="co-textarea !min-h-[64px]" name="canHelp" maxlength="1000"></textarea></label>
               </div>
               <div class="co-dialog__foot">
-                <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
-                <button class="co-btn co-btn--primary" type="submit">Añadir actor</button>
+                <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{msg.common.cancel}</button>
+                <button class="co-btn co-btn--primary" type="submit">{msg.setup.actors.add}</button>
               </div>
             </form>
           </dialog>
         </section>
       ))}
-      <a class="co-btn co-btn--primary w-fit" href={href(4)}>Siguiente: situaciones <span aria-hidden="true">→</span></a>
+      <a class="co-btn co-btn--primary w-fit" href={href(4)}>{msg.setup.actors.next} <span aria-hidden="true">→</span></a>
     </section>
   )}
 
   {step === 4 && (
     <div class="co-split">
       <section class="grid content-start gap-3">
-        <p class="co-lede">Las situaciones describen cada venta para compararla con otras: tipo de personalidad, región o mercado, rasgos de la cuenta (tiene pantalla, es familiar…). Son lo que permite decir «en una situación así, esto funcionó». Lo que funcionó en Brasil se enseña en Corea, marcado como de otra región.</p>
-        {st.facets.length === 0 && <EmptyState kind="create" title="Todavía no hay situaciones" detail="Añade al menos el tipo de personalidad o la región con el formulario, o parte de un ejemplo en el paso 1." action={{ href: href(1), label: 'Ver puntos de partida' }} />}
+        <p class="co-lede">{msg.setup.facets.lede}</p>
+        {st.facets.length === 0 && <EmptyState kind="create" title={msg.setup.facets.emptyTitle} detail={msg.setup.facets.emptyDetail} action={{ href: href(1), label: msg.setup.segments.emptyAction }} />}
         <ul class="co-rows" data-testid="setup-facets">
           {st.facets.map((f) => (
             <li class:list={['co-card grid gap-2', f.status === 'archived' && 'opacity-60']}>
               <div class="flex flex-wrap items-center gap-2">
                 <span class="co-row__lead">{icon(f.icon) ? <Icon name={icon(f.icon)!} /> : <Icon name="layers" />}</span>
-                <span class="min-w-0 flex-1"><span class="co-row-title block">{f.label}</span><span class="co-meta">{f.question ?? ''} · {SCOPE[f.scope]} · {f.multi ? 'varias opciones' : 'una opción'}{f.weight > 1 ? ' · pesa más al comparar' : ''}</span></span>
-                <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`facet-${f.id}`}>Editar</button>
+                <span class="min-w-0 flex-1"><span class="co-row-title block">{f.label}</span><span class="co-meta">{f.question ?? ''} · {SCOPE[f.scope]} · {f.multi ? msg.setup.facets.multi : msg.setup.facets.single}{f.weight > 1 ? msg.setup.facets.weighs : ''}</span></span>
+                <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`facet-${f.id}`}>{msg.common.edit}</button>
               </div>
               <div class="flex flex-wrap gap-1">{f.options.map((o) => <span class="co-tag">{o.label}</span>)}</div>
-              <dialog id={`facet-${f.id}`} class="co-dialog" aria-label={`Editar ${f.label}`}>
+              <dialog id={`facet-${f.id}`} class="co-dialog" aria-label={msg.setup.facets.editLabel(f.label)}>
                 <form method="post">
                   <input type="hidden" name="action" value="facet" /><input type="hidden" name="id" value={f.id} />
                   <input type="hidden" name="scope" value={f.scope} /><input type="hidden" name="icon" value={f.icon ?? ''} />
                   <div class="co-dialog__body">
-                    <h2 class="co-entity">Editar «{f.label}»</h2>
-                    <label class="co-field">Nombre<input class="co-input" name="label" value={f.label} required maxlength="60" /></label>
-                    <label class="co-field">Pregunta<input class="co-input" name="question" value={f.question ?? ''} maxlength="200" /></label>
-                    <label class="co-field">Opciones <span class="co-help">Una por línea</span><textarea class="co-textarea" name="options" required>{f.options.map((o) => o.label).join('\n')}</textarea></label>
-                    <label class="co-check"><input type="checkbox" name="multi" checked={f.multi} />Se pueden marcar varias</label>
-                    <label class="co-check"><input type="checkbox" name="weight" value="2" checked={f.weight > 1} />Pesa más al comparar situaciones</label>
-                    <p class="co-dialog__not"><strong>Lo que no hace:</strong> no cambia los cierres ya documentados. Si quitas una opción, deja de usarse al comparar.</p>
+                    <h2 class="co-entity">{msg.setup.facets.editTitle(f.label)}</h2>
+                    <label class="co-field">{msg.common.name}<input class="co-input" name="label" value={f.label} required maxlength="60" /></label>
+                    <label class="co-field">{msg.setup.facets.question}<input class="co-input" name="question" value={f.question ?? ''} maxlength="200" /></label>
+                    <label class="co-field">{msg.setup.facets.options} <span class="co-help">{msg.setup.facets.optionsHelp}</span><textarea class="co-textarea" name="options" required>{f.options.map((o) => o.label).join('\n')}</textarea></label>
+                    <label class="co-check"><input type="checkbox" name="multi" checked={f.multi} />{msg.setup.facets.multiCheck}</label>
+                    <label class="co-check"><input type="checkbox" name="weight" value="2" checked={f.weight > 1} />{msg.setup.facets.weightCheck}</label>
+                    <p class="co-dialog__not"><strong>{msg.setup.facets.notDoesLabel}</strong> {msg.setup.facets.notDoes}</p>
                   </div>
                   <div class="co-dialog__foot">
-                    <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
-                    <button type="submit" class="co-btn co-btn--primary">Guardar</button>
+                    <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{msg.common.cancel}</button>
+                    <button type="submit" class="co-btn co-btn--primary">{msg.common.save}</button>
                   </div>
                 </form>
                 <form method="post" class="px-6 pb-5">
                   <input type="hidden" name="action" value="facet-status" /><input type="hidden" name="id" value={f.id} />
                   <input type="hidden" name="status" value={f.status === 'archived' ? 'official' : 'archived'} />
-                  <button type="submit" class="co-btn co-btn--quiet co-btn--sm">{f.status === 'archived' ? 'Volver a usar esta situación' : 'Dejar de usar esta situación'}</button>
+                  <button type="submit" class="co-btn co-btn--quiet co-btn--sm">{f.status === 'archived' ? msg.setup.facets.reuse : msg.setup.facets.stopUsing}</button>
                 </form>
               </dialog>
             </li>
           ))}
         </ul>
-        <a class="co-btn co-btn--primary w-fit" href={href(5)}>Siguiente: revisar <span aria-hidden="true">→</span></a>
+        <a class="co-btn co-btn--primary w-fit" href={href(5)}>{msg.setup.facets.next} <span aria-hidden="true">→</span></a>
       </section>
       <aside>
         <form method="post" class="co-card grid gap-3" data-testid="setup-facet-form">
           <input type="hidden" name="action" value="facet" />
-          <h2 class="co-entity">Añadir situación</h2>
-          <label class="co-field">Nombre<input class="co-input" name="label" required maxlength="60" placeholder="Región" /></label>
-          <label class="co-field">Pregunta que verá el comercial<input class="co-input" name="question" maxlength="200" placeholder="¿En qué región está la cuenta?" /></label>
-          <fieldset><legend class="co-field mb-2">¿De qué es?</legend>
+          <h2 class="co-entity">{msg.setup.facets.add}</h2>
+          <label class="co-field">{msg.common.name}<input class="co-input" name="label" required maxlength="60" placeholder={msg.setup.facets.labelPlaceholder} /></label>
+          <label class="co-field">{msg.setup.facets.questionLabel}<input class="co-input" name="question" maxlength="200" placeholder={msg.setup.facets.questionPlaceholder} /></label>
+          <fieldset><legend class="co-field mb-2">{msg.setup.facets.scopeLegend}</legend>
             <div class="co-grid co-grid--2">
-              <label class="co-option"><input type="radio" name="scope" value="account" checked /><span class="co-option__icon"><Icon name="store" size={16} /></span><span class="co-row-title">De la cuenta</span><span class="co-meta">Región, rasgos del sitio</span></label>
-              <label class="co-option"><input type="radio" name="scope" value="contact" /><span class="co-option__icon"><Icon name="user" size={16} /></span><span class="co-row-title">De la persona</span><span class="co-meta">Tipo de personalidad</span></label>
+              <label class="co-option"><input type="radio" name="scope" value="account" checked /><span class="co-option__icon"><Icon name="store" size={16} /></span><span class="co-row-title">{msg.setup.scope.account}</span><span class="co-meta">{msg.setup.facets.accountMeta}</span></label>
+              <label class="co-option"><input type="radio" name="scope" value="contact" /><span class="co-option__icon"><Icon name="user" size={16} /></span><span class="co-row-title">{msg.setup.scope.contact}</span><span class="co-meta">{msg.setup.facets.contactMeta}</span></label>
             </div>
           </fieldset>
-          <label class="co-field">Opciones <span class="co-help">Una por línea</span><textarea class="co-textarea" name="options" required placeholder={'Brasil\nCorea'}></textarea></label>
-          <label class="co-check"><input type="checkbox" name="multi" />Se pueden marcar varias</label>
-          <label class="co-check"><input type="checkbox" name="weight" value="2" />Pesa más al comparar (p. ej. la región)</label>
+          <label class="co-field">{msg.setup.facets.options} <span class="co-help">{msg.setup.facets.optionsHelp}</span><textarea class="co-textarea" name="options" required placeholder={msg.setup.facets.optionsPlaceholder}></textarea></label>
+          <label class="co-check"><input type="checkbox" name="multi" />{msg.setup.facets.multiCheck}</label>
+          <label class="co-check"><input type="checkbox" name="weight" value="2" />{msg.setup.facets.weightCheckNew}</label>
           <input type="hidden" name="icon" value="layers" />
-          <button class="co-btn co-btn--primary" type="submit">Añadir situación</button>
+          <button class="co-btn co-btn--primary" type="submit">{msg.setup.facets.add}</button>
         </form>
       </aside>
     </div>
@@ -296,23 +299,23 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
     <section class="grid gap-3" data-testid="setup-done">
       <ul class="co-actions">
         {[
-          { ok: st.checks.segments, label: 'Sectores', detail: `${st.segments.length} definidos`, href: href(2) },
-          { ok: st.checks.personas, label: 'Actores', detail: `${st.personas.length} definidos`, href: href(3) },
-          { ok: st.checks.blockers, label: 'Quién puede tumbar la venta', detail: st.checks.blockers ? 'Al menos un actor lo explica' : 'Ningún actor dice cómo puede tumbarla', href: href(3) },
-          { ok: st.checks.facets, label: 'Situaciones', detail: `${st.facets.filter((f) => f.status === 'official').length} en uso`, href: href(4) },
-          { ok: st.checks.plays, label: 'Playbook', detail: st.checks.plays ? 'Hay jugadas oficiales' : 'Escribe cómo se vende cada módulo', href: '/admin/playbook' },
+          { ok: st.checks.segments, label: msg.setup.done.segments, detail: msg.setup.done.defined(st.segments.length), href: href(2) },
+          { ok: st.checks.personas, label: msg.setup.done.actors, detail: msg.setup.done.defined(st.personas.length), href: href(3) },
+          { ok: st.checks.blockers, label: msg.setup.done.blockers, detail: st.checks.blockers ? msg.setup.done.blockersOk : msg.setup.done.blockersMissing, href: href(3) },
+          { ok: st.checks.facets, label: msg.setup.done.facets, detail: msg.setup.done.inUse(st.facets.filter((f) => f.status === 'official').length), href: href(4) },
+          { ok: st.checks.plays, label: msg.setup.done.playbook, detail: st.checks.plays ? msg.setup.done.playsOk : msg.setup.done.playsMissing, href: '/admin/playbook' },
         ].map((x) => (
           <li><a class:list={['co-action', !x.ok && 'co-row--attention']} href={x.href}>
             <Icon name={x.ok ? 'circle-check' : 'triangle-alert'} />
-            <span class="co-action__label">{x.label}<small>{x.ok ? x.detail : `Falta: ${x.detail}`}</small></span>
+            <span class="co-action__label">{x.label}<small>{x.ok ? x.detail : msg.setup.done.missing(x.detail)}</small></span>
             <Icon name="chevron-right" size={16} />
           </a></li>
         ))}
       </ul>
-      <p class="co-meta">Siguiente: invita a tu equipo y a tus colaboradores desde «Equipo», y revisa el catálogo de módulos.</p>
+      <p class="co-meta">{msg.setup.done.nextMeta}</p>
       <div class="flex flex-wrap gap-2">
-        <a class="co-btn co-btn--primary" href="/admin/team">Invitar al equipo <span aria-hidden="true">→</span></a>
-        <a class="co-btn co-btn--ghost" href="/admin/catalog">Revisar el catálogo</a>
+        <a class="co-btn co-btn--primary" href="/admin/team">{msg.setup.done.invite} <span aria-hidden="true">→</span></a>
+        <a class="co-btn co-btn--ghost" href="/admin/catalog">{msg.setup.done.reviewCatalog}</a>
       </div>
     </section>
   )}

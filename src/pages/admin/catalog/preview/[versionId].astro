@@ -1,6 +1,8 @@
 ---
 import DossierView from '~/components/dossier/DossierView.astro';
 import { AdminError } from '~/lib/admin/service';
+import { i18n } from '~/lib/i18n';
+import { teamMessages } from '~/lib/i18n/messages/team';
 
 const { admin, tenant } = Astro.locals;
 if (!admin || !tenant) return Astro.redirect('/admin/login');
@@ -12,4 +14,4 @@ try {
   throw e;
 }
 ---
-<DossierView tenant={tenant} dossier={dossier} banner={`Vista previa · ${dossier.title} · prospecto de ejemplo`} />
+<DossierView tenant={tenant} dossier={dossier} banner={i18n(Astro, teamMessages).m.catalog.previewBanner(dossier.title)} />

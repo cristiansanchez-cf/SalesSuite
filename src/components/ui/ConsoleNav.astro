@@ -36,7 +36,7 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
 
 <nav class="co-nav" aria-label={m.nav.sections}>
   {nav.items.map((n) => (
-    <a href={n.href} class="co-nav__item" aria-current={n.on ? 'page' : undefined}>
+    <a href={n.href} class="co-nav__item" aria-current={n.on ? 'page' : undefined} data-testid={primary ? n.testid : undefined}>
       <Icon name={n.icon} size={18} />{n.label}{n.count ? <span class="co-nav__count" aria-label={m.nav.pending(n.count)}>{n.count}</span> : null}
     </a>
   ))}

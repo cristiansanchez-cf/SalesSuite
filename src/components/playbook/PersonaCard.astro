@@ -1,44 +1,47 @@
 ---
 /** Ficha de un actor (stakeholder): papel, qué quiere, cómo abordarle y si puede ayudar o tumbar. */
 import { renderMarkdown } from '~/lib/playbook/markdown';
-import { ROLE_CLASS, ROLE_HINT, ROLE_LABEL, type PersonaView } from '~/lib/playbook/market';
-import { OBJECTION_LABEL, type PlayView } from '~/lib/playbook/types';
+import { ROLE_CLASS, type PersonaView } from '~/lib/playbook/market';
+import type { PlayView } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 interface Props { persona: PersonaView; plays?: PlayView[]; adminEdit?: boolean }
 const { persona: p, plays = [], adminEdit = false } = Astro.props;
+const { m } = i18n(Astro, playbookMessages);
 const row = (label: string, v: string | null) => (v ? { label, v } : null);
-const rows = [row('Quiere', p.goals), row('Le duele', p.pains), row('Mide', p.kpis)].filter(Boolean) as Array<{ label: string; v: string }>;
+const rows = [row(m.personaCard.wants, p.goals), row(m.personaCard.hurts, p.pains), row(m.personaCard.measures, p.kpis)].filter(Boolean) as Array<{ label: string; v: string }>;
 ---
 <article id={`actor-${p.key}`} class="scroll-mt-24 co-card" data-testid="persona" data-persona-key={p.key}>
   <div class="flex flex-wrap items-center gap-2">
     <h3 class="min-w-0 flex-1 co-entity">{p.name}</h3>
-    <span class={ROLE_CLASS[p.role]} title={ROLE_HINT[p.role]}>{ROLE_LABEL[p.role]}</span>
-    {adminEdit && <a class="text-xs text-muted underline" href={`/admin/playbook/persona/${p.id}`}>Editar</a>}
+    <span class={ROLE_CLASS[p.role]} title={m.roleHint[p.role]}>{m.role[p.role]}</span>
+    {adminEdit && <a class="text-xs text-muted underline" href={`/admin/playbook/persona/${p.id}`}>{m.common.edit}</a>}
   </div>
-  <p class="mt-0.5 text-xs text-muted">{ROLE_HINT[p.role]}</p>
+  <p class="mt-0.5 text-xs text-muted">{m.roleHint[p.role]}</p>
   {rows.length > 0 && (
     <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-3">
       {rows.map((r) => <div><dt class="text-xs font-semibold text-muted">{r.label}</dt><dd class="m-0">{r.v}</dd></div>)}
     </dl>
   )}
-  {p.howToApproach && <div class="mt-3 rounded-[var(--console-radius-control)] bg-[var(--console-chip-bg)] p-3 text-sm"><p class="text-xs font-semibold text-muted">Cómo abordarle</p><div class="prose-play" set:html={renderMarkdown(p.howToApproach)} /></div>}
+  {p.howToApproach && <div class="mt-3 rounded-[var(--console-radius-control)] bg-[var(--console-chip-bg)] p-3 text-sm"><p class="text-xs font-semibold text-muted">{m.personaCard.approach}</p><div class="prose-play" set:html={renderMarkdown(p.howToApproach)} /></div>}
   <div class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-    {p.canHelp && <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">Cómo puede ayudarte</p><p>{p.canHelp}</p></div>}
-    {p.canBlock && <div class="rounded-[var(--console-radius-control)] bg-[var(--console-attention-bg)] p-3 shadow-[inset_3px_0_0_var(--console-attention)]"><p class="text-eyebrow mb-1">Cómo puede tumbarlo</p><p>{p.canBlock}</p></div>}
+    {p.canHelp && <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">{m.personaCard.canHelp}</p><p>{p.canHelp}</p></div>}
+    {p.canBlock && <div class="rounded-[var(--console-radius-control)] bg-[var(--console-attention-bg)] p-3 shadow-[inset_3px_0_0_var(--console-attention)]"><p class="text-eyebrow mb-1">{m.personaCard.canBlock}</p><p>{p.canBlock}</p></div>}
   </div>
-  {p.avoid && <p class="mt-2 text-sm"><span class="font-semibold">Evita:</span> {p.avoid}</p>}
-  {p.objections.length > 0 && <p class="mt-2 text-sm"><span class="font-semibold">Objeciones típicas:</span> {p.objections.map((o) => OBJECTION_LABEL[o]).join(' · ')}</p>}
+  {p.avoid && <p class="mt-2 text-sm"><span class="font-semibold">{m.personaCard.avoid}</span> {p.avoid}</p>}
+  {p.objections.length > 0 && <p class="mt-2 text-sm"><span class="font-semibold">{m.personaCard.objections}</span> {p.objections.map((o) => m.objection[o]).join(' · ')}</p>}
   {p.angles.length > 0 && (
     <div class="mt-3 text-sm">
-      <p class="text-xs font-semibold text-muted">Qué le aporta cada módulo</p>
+      <p class="text-xs font-semibold text-muted">{m.personaCard.angles}</p>
       <ul class="mt-1 space-y-1 p-0">{p.angles.map((a) => <li class="list-none"><strong>{a.moduleName}:</strong> {a.angle}</li>)}</ul>
     </div>
   )}
   {plays.length > 0 && (
     <div class="mt-3 text-sm">
-      <p class="text-xs font-semibold text-muted">Jugadas para este actor</p>
+      <p class="text-xs font-semibold text-muted">{m.personaCard.plays}</p>
       <ul class="mt-1 space-y-1 p-0">{plays.map((pl) => <li class="list-none">▸ <a class="underline-offset-2 hover:underline" href={`/admin/learn/${pl.moduleId ?? 'general'}#play-${pl.id}`}>{pl.title}</a></li>)}</ul>
     </div>
   )}
-  <div class="mt-4"><a class="inline-flex co-btn co-btn--primary co-btn--sm" href={`/admin/compose?persona=${p.id}`} data-testid="compose-persona">Preparar mensaje para un/a {p.name.toLowerCase()}</a></div>
+  <div class="mt-4"><a class="inline-flex co-btn co-btn--primary co-btn--sm" href={`/admin/compose?persona=${p.id}`} data-testid="compose-persona">{m.personaCard.compose(p.name)}</a></div>
 </article>

@@ -67,16 +67,35 @@ Copia el contenido de cada archivo de `supabase/templates/`:
 |---|---|---|
 | Invite user | `invite.html` | Te han invitado a la consola de dossiers |
 | Magic Link | `magic_link.html` | Tu código para entrar |
+| Confirm signup | `confirm_signup.html` | Confirma tu email |
 | Reset Password | `recovery.html` | Elige una contraseña nueva |
 
 **Este paso es obligatorio.** Las invitaciones con la plantilla por defecto no inician sesión en la app, que funciona en servidor. Las nuestras llevan al dominio del tenant (`/admin/auth/confirm`) y funcionan aunque el email se abra en otro dispositivo.
 
 El acceso habitual es **sin contraseña: email → código de 6 dígitos**. Lo usan sobre todo los colaboradores ([`PARTNERS.md`](PARTNERS.md)). La plantilla *Magic Link* lleva el código (`{{ .Token }}`) y además el botón. En *Authentication → Sign In / Providers → Email*, deja **Email OTP Length = 6** y **Email OTP Expiration = 3600**.
 
-### 3.4 SMTP propio (*Project Settings → Authentication → SMTP Settings*)
-El email integrado de Supabase **solo envía a los miembros del equipo del proyecto** y tiene un límite muy bajo, así que las invitaciones a los comerciales de Enjoy no llegarían. Configura un SMTP:
-- Recomendado: **Resend** (gratis hasta 3.000 emails/mes). Verifica el dominio de envío (p. ej. `cofundo.app` o `enjoytheclub.es`) y usa host `smtp.resend.com`, puerto `465`, usuario `resend` y tu API key como contraseña.
-- Remitente: `Dossiers <no-reply@tu-dominio>`.
+### 3.4 SMTP propio con Resend (*Project Settings → Authentication → SMTP Settings*)
+El email integrado de Supabase **solo envía a los miembros del equipo del proyecto** y tiene un límite muy bajo, así que las invitaciones a los comerciales no llegarían. Configura Resend:
+
+| Campo | Valor |
+|---|---|
+| Host | `smtp.resend.com` |
+| Puerto | `465` |
+| Usuario | `resend` |
+| Contraseña | una API key de Resend **solo de envío** y **exclusiva de esta app** (si se filtra, se revoca sin tocar otras apps) |
+| Remitente | `hola@correo.cofundo.io` (o el dominio verificado del tenant), nombre visible: `Cofundo` o el del tenant |
+
+- Pégala en el panel de Supabase; **nunca** en el repo ni en el chat.
+- Límite del plan gratuito de Resend: **100 emails/día** (3.000/mes). Cada inicio de sesión gasta uno: vigila el panel de Resend cuando entren los primeros comerciales.
+- En *Authentication → Rate Limits*, deja el envío de emails en un valor razonable; la pantalla de acceso traduce el error «espera N segundos».
+- Recomendado: **un proyecto de Supabase propio para SalesSuite** (no compartir el del Cerebro de Ventas). Ver docs/FOUNDATIONS.md §5.7 para cómo se comparte la identidad por email.
+
+### 3.5 Prueba de acceso (hazla una vez por proyecto)
+1. Invita a tu propio email desde `/admin/team` → llega «Te han invitado» → acepta → eliges contraseña (opcional) → aterrizas en **Empieza aquí**.
+2. Sal, pon tu email en `/admin/login` → llega «Tu código para entrar» con el código arriba → escríbelo → entras.
+3. Pide dos códigos seguidos → ves «espera N segundos».
+4. Recarga la pantalla del código → sigue ofreciendo «Ya tengo un código para…» durante una hora.
+5. Abre el botón del email en otro navegador → si falla, el código sigue funcionando (por eso va primero).
 
 ## 4. Claves (*Project Settings → API Keys*)
 

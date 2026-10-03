@@ -2,28 +2,31 @@
 import Badges from './Badges.astro';
 import { renderMarkdown } from '~/lib/playbook/markdown';
 import type { PlayView } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 interface Props { play: PlayView; canPropose?: boolean; adminEdit?: boolean }
 const { play, canPropose = true, adminEdit = false } = Astro.props;
 const anchor = `play-${play.id}`;
 const field = 'co-input';
+const { m } = i18n(Astro, playbookMessages);
 ---
 <article id={anchor} class="scroll-mt-24 co-card" data-testid="play" data-play-key={play.key}>
   <div class="flex flex-wrap items-start gap-2">
     <h3 class="min-w-0 flex-1 text-lg font-bold">{play.title}</h3>
-    {adminEdit && <a href={`/admin/playbook/${play.id}`} class="text-xs text-muted underline">Editar</a>}
+    {adminEdit && <a href={`/admin/playbook/${play.id}`} class="text-xs text-muted underline">{m.common.edit}</a>}
   </div>
-  <div class="mt-1"><Badges stage={play.stage} objection={play.objection} segments={play.segments} />{play.audience !== 'all' && <span class="co-badge co-badge--soft ml-1" data-testid="audience">{play.audience === 'team' ? 'Solo equipo interno' : 'Para colaboradores'}</span>}</div>
+  <div class="mt-1"><Badges stage={play.stage} objection={play.objection} segments={play.segments} />{play.audience !== 'all' && <span class="co-badge co-badge--soft ml-1" data-testid="audience">{play.audience === 'team' ? m.playCard.audienceTeam : m.playCard.audiencePartners}</span>}</div>
   {play.body && <div class="prose-play mt-3 text-[15px] leading-relaxed" set:html={renderMarkdown(play.body)} />}
   {(play.whenToUse || play.whyItWorks) && (
     <dl class:list={['mt-3 grid gap-2 rounded-xl bg-surface p-3 text-sm', play.whenToUse && play.whyItWorks && 'sm:grid-cols-2']}>
-      {play.whenToUse && <div><dt class="text-xs font-semibold text-muted">Cuándo usarla</dt><dd class="m-0">{play.whenToUse}</dd></div>}
-      {play.whyItWorks && <div><dt class="text-xs font-semibold text-muted">Por qué funciona</dt><dd class="m-0">{play.whyItWorks}</dd></div>}
+      {play.whenToUse && <div><dt class="text-xs font-semibold text-muted">{m.playCard.whenToUse}</dt><dd class="m-0">{play.whenToUse}</dd></div>}
+      {play.whyItWorks && <div><dt class="text-xs font-semibold text-muted">{m.playCard.whyItWorks}</dt><dd class="m-0">{play.whyItWorks}</dd></div>}
     </dl>
   )}
   {play.techniqueRefs.length > 0 && (
     <div class="mt-3 text-sm" data-testid="cerebro-refs">
-      <p class="text-xs font-semibold text-muted">Técnicas relacionadas del Cerebro de Ventas</p>
+      <p class="text-xs font-semibold text-muted">{m.playCard.refs}</p>
       <ul class="mt-1 space-y-1 p-0">
         {play.techniqueRefs.map((r) => (
           <li class="list-none">
@@ -35,18 +38,18 @@ const field = 'co-input';
     </div>
   )}
   <div class="mt-4 flex flex-wrap items-center gap-3">
-    <span class="co-meta" data-testid="play-evidence">{play.evidence.used ? `Usada en ${play.evidence.used} ${play.evidence.used === 1 ? 'cierre documentado' : 'cierres documentados'} · ganó ${play.evidence.won}` : 'Sin cierres documentados todavía'} · v{play.version}</span>
+    <span class="co-meta" data-testid="play-evidence">{m.playCard.evidence(play.evidence.used, play.evidence.won)} · v{play.version}</span>
     {canPropose && (
       <details class="w-full text-sm">
-        <summary class="cursor-pointer text-muted hover:text-ink">Proponer una mejora</summary>
+        <summary class="cursor-pointer text-muted hover:text-ink">{m.playCard.propose}</summary>
         <form method="post" action={`#${anchor}`} class="mt-2 space-y-2 rounded-xl border border-line p-3">
           <input type="hidden" name="action" value="change" />
           <input type="hidden" name="playId" value={play.id} />
-          <label class="block text-xs font-semibold">¿Qué mejora? (una línea)<input class={field} name="title" required maxlength="200" placeholder="Añadir el coste por invitado" /></label>
-          <label class="block text-xs font-semibold">Texto propuesto
+          <label class="block text-xs font-semibold">{m.playCard.what}<input class={field} name="title" required maxlength="200" placeholder={m.playCard.whatPlaceholder} /></label>
+          <label class="block text-xs font-semibold">{m.playCard.proposed}
             <textarea class={`${field} h-32`} name="body" required maxlength="8000">{play.body}</textarea>
           </label>
-          <button class="co-btn co-btn--primary co-btn--sm" type="submit">Enviar al líder</button>
+          <button class="co-btn co-btn--primary co-btn--sm" type="submit">{m.playCard.send}</button>
         </form>
       </details>
     )}

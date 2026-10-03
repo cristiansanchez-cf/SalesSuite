@@ -1,25 +1,28 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { BRAND } from '~/lib/site';
+import { i18n } from '~/lib/i18n';
+import { sellMessages } from '~/lib/i18n/messages/sell';
 Astro.response.status = 403;
 const email = Astro.locals.forbiddenEmail;
 const reason = Astro.locals.forbiddenReason;
-const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+const { m, f } = i18n(Astro, sellMessages);
+const date = (iso: string) => f.date(iso, { day: 'numeric', month: 'long', year: 'numeric' });
 ---
-<AdminLayout title="Sin acceso" bare>
+<AdminLayout title={m.forbidden.title} bare>
   <div class="mx-auto mt-4 grid max-w-md gap-6 sm:mt-14">
     <p class="text-center"><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {BRAND.app}</span></p>
     <div class="co-card grid gap-3 !p-6">
-      <p class="text-eyebrow">{Astro.locals.tenant?.name ?? 'Este espacio'}</p>
-      <h1 class="co-page-title">Sin acceso.</h1>
+      <p class="text-eyebrow">{Astro.locals.tenant?.name ?? m.forbidden.thisSpace}</p>
+      <h1 class="co-page-title">{m.forbidden.heading}</h1>
       {reason?.kind === 'partner-expired' ? (
-        <p class="co-body" data-testid="partner-expired">Tu acceso como colaborador terminó{reason.expiresAt ? ` el ${date(reason.expiresAt)}` : ''}. Tus propuestas siguen guardadas: pide a tu contacto en la empresa que lo renueve.</p>
+        <p class="co-body" data-testid="partner-expired">{m.forbidden.partnerExpired(reason.expiresAt ? date(reason.expiresAt) : null)}</p>
       ) : (
-        <p class="co-body">{email ? `${email} no tiene acceso` : 'Tu cuenta no tiene acceso'} a este espacio o a esta sección. Si crees que debería, pídeselo a un admin.</p>
+        <p class="co-body">{m.forbidden.noAccess(email ?? null)}</p>
       )}
       <div class="flex flex-wrap gap-2">
-        {Astro.locals.admin && <a class="co-btn co-btn--primary" href="/admin">Volver al inicio</a>}
-        <form method="post" action="/admin/logout"><button class="co-btn co-btn--ghost" type="submit">Cambiar de cuenta</button></form>
+        {Astro.locals.admin && <a class="co-btn co-btn--primary" href="/admin">{m.forbidden.home}</a>}
+        <form method="post" action="/admin/logout"><button class="co-btn co-btn--ghost" type="submit">{m.forbidden.switchAccount}</button></form>
       </div>
     </div>
   </div>

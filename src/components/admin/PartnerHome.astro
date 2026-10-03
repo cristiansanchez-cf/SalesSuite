@@ -3,37 +3,40 @@
  * Inicio del colaborador (docs/PARTNERS.md): sus cuentas, lo que puede ofrecer y su guía.
  * Todo lo que se lista ya viene filtrado por el alcance del partner (servicio + RLS).
  */
-import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
+import { relativeTime, STATUS_CLASS, STATUS_LABELS } from '~/lib/admin/format';
 import type { AdminContext } from '~/lib/admin/auth';
 import { renderMarkdown } from '~/lib/playbook/markdown';
-import { PRICE_POLICY_LABEL } from '~/lib/partner/labels';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
+import { i18n } from '~/lib/i18n';
+import { sellMessages } from '~/lib/i18n/messages/sell';
 
 interface Props { admin: AdminContext; error: string | null; errorAccount: string | null; inviteError?: string | null }
 const { admin, error, errorAccount, inviteError = null } = Astro.props;
 const partner = admin.session.partner!;
+const { m, f, locale } = i18n(Astro, sellMessages);
+const STATUS_LABEL = STATUS_LABELS[locale];
 const [dossiers, idx, market, invitees] = await Promise.all([admin.service.listDossiers(), admin.playbook.learnIndex(), admin.playbook.market(), partner.canInvite ? admin.tenantAdmin.myInvitees() : Promise.resolve([])]);
 const invitedOk = Astro.url.searchParams.get('ok');
 const segName = new Map(market.map((s) => [s.id, s.name]));
 const nowMs = Date.now();
 const overdue = dossiers.filter((d) => d.nextStepAt && new Date(d.nextStepAt).getTime() < nowMs).length;
 const name = admin.session.displayName || admin.session.email;
-const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+const dateFmt = (iso: string) => f.date(iso, { day: 'numeric', month: 'long', year: 'numeric' });
 ---
-<PageHeader eyebrow="Mis cuentas" title={`Hola, ${name.split(' ')[0]}`} lede="Crea la propuesta de cada cuenta, envía el enlace y apunta el próximo paso." />
+<PageHeader eyebrow={m.partner.eyebrow} title={m.partner.hello(name.split(' ')[0])} lede={m.partner.lede} />
 <div class="co-split">
   <section>
     {overdue > 0 && (
       <p class="co-row co-row--attention mb-3" data-testid="overdue-banner">
         <span class="co-row__lead"><Icon name="clock" /></span>
-        <span class="co-row__main"><span class="co-row-title">Tienes {overdue} {overdue === 1 ? 'seguimiento vencido' : 'seguimientos vencidos'}</span><span class="co-meta">Están marcados en cada cuenta</span></span>
+        <span class="co-row__main"><span class="co-row-title">{m.common.youHaveOverdue(overdue)}</span><span class="co-meta">{m.partner.overdueHint}</span></span>
       </p>
     )}
     {partner.accounts.length === 0 && (
-      <div data-testid="no-accounts"><EmptyState kind="none" title="Todavía no tienes cuentas asignadas" because="Cuando la empresa te asigne locales o centros aparecerán aquí, con sus indicaciones." /></div>
+      <div data-testid="no-accounts"><EmptyState kind="none" title={m.partner.noAccountsTitle} because={m.partner.noAccountsBecause} /></div>
     )}
     <div class="grid gap-3" data-testid="accounts">
       {partner.accounts.map((a) => {
@@ -44,7 +47,7 @@ const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeri
               <span class="co-row__lead"><Icon name="store" /></span>
               <div class="min-w-0 flex-1">
                 <h2 class="co-entity">{a.name}</h2>
-                <p class="co-meta">{[a.segmentId ? segName.get(a.segmentId) : null, PRICE_POLICY_LABEL[a.pricePolicy]].filter(Boolean).join(' · ')}</p>
+                <p class="co-meta">{[a.segmentId ? segName.get(a.segmentId) : null, m.labels.pricePolicy[a.pricePolicy]].filter(Boolean).join(' · ')}</p>
               </div>
             </div>
             {a.notes && <p class="co-alert co-alert--info" data-testid="account-notes"><Icon name="info" size={16} /><span>{a.notes}</span></p>}
@@ -57,7 +60,7 @@ const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeri
                       <a href={`/admin/dossiers/${d.id}`} class:list={['co-row', late && 'co-row--attention']} data-testid="partner-dossier">
                         <span class="co-row__main">
                           <span class="co-row-title">{d.title}</span>
-                          <span class="co-meta">{relativeTime(d.updatedAt)}{d.nextStepAt ? ` · ${late ? 'Seguimiento vencido' : 'Próximo paso'}: ${d.nextStep ?? 'sin describir'}` : ''}</span>
+                          <span class="co-meta">{relativeTime(d.updatedAt, undefined, locale)}{d.nextStepAt ? ` · ${late ? m.common.overdueFollowup : m.common.nextStep}: ${d.nextStep ?? m.partner.undescribed}` : ''}</span>
                         </span>
                         <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
                         <span class="co-row__chevron"><Icon name="chevron-right" /></span>
@@ -68,20 +71,20 @@ const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeri
               </ul>
             )}
             <details open={list.length === 0 || errorAccount === a.id}>
-              <summary class="co-btn co-btn--ghost co-btn--sm w-fit"><Icon name="plus" size={14} />Nueva propuesta para {a.name}</summary>
+              <summary class="co-btn co-btn--ghost co-btn--sm w-fit"><Icon name="plus" size={14} />{m.partner.newFor(a.name)}</summary>
               <form method="post" class="mt-3 grid gap-3 sm:grid-cols-2" data-testid="partner-create">
                 <input type="hidden" name="partnerAccountId" value={a.id} />
                 <input type="hidden" name="prospectCompany" value={a.name} />
                 {error && errorAccount === a.id && <div class="sm:col-span-2"><Alert kind="rejection" title={error} /></div>}
-                <label class="co-field sm:col-span-2">Título<input class="co-input" name="title" required maxlength="140" value={`${a.name} · Propuesta`} /></label>
-                <label class="co-field">Persona de contacto<input class="co-input" name="prospectName" maxlength="120" placeholder="Marcos (dueño)" /></label>
-                <label class="co-field">Partir de
+                <label class="co-field sm:col-span-2">{m.common.title}<input class="co-input" name="title" required maxlength="140" value={m.partner.defaultTitle(a.name)} /></label>
+                <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" placeholder={m.partner.contactPlaceholder} /></label>
+                <label class="co-field">{m.common.startFrom}
                   <select class="co-select" name="fromDossierId">
-                    <option value="">Propuesta vacía</option>
+                    <option value="">{m.partner.emptyProposal}</option>
                     {list.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
                   </select>
                 </label>
-                <button class="co-btn co-btn--primary sm:col-span-2" type="submit">Crear y editar <span aria-hidden="true">→</span></button>
+                <button class="co-btn co-btn--primary sm:col-span-2" type="submit">{m.common.createEdit} <span aria-hidden="true">→</span></button>
               </form>
             </details>
           </article>
@@ -93,32 +96,32 @@ const dateFmt = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeri
   <aside class="grid content-start gap-3">
     {partner.welcomeNote && (
       <section class="co-card co-card--soft" data-testid="welcome-note">
-        <p class="text-eyebrow mb-2">Tu guía</p>
+        <p class="text-eyebrow mb-2">{m.partner.guide}</p>
         <div class="prose-play grid gap-2" set:html={renderMarkdown(partner.welcomeNote)} />
       </section>
     )}
     <section class="co-card" data-testid="partner-modules">
-      <p class="text-eyebrow mb-2">Lo que puedes ofrecer</p>
+      <p class="text-eyebrow mb-2">{m.partner.offer}</p>
       <ul class="co-actions">
-        {idx.modules.map((m) => (
-          <li><a class="co-action" href={`/admin/learn/${m.moduleId}`}><Icon name={m.learned ? 'circle-check' : 'book-open'} /><span class="co-action__label">{m.name}<small>{m.learned ? 'Ya lo has repasado' : 'Aprende a venderlo'}</small></span><Icon name="chevron-right" size={16} /></a></li>
+        {idx.modules.map((mod) => (
+          <li><a class="co-action" href={`/admin/learn/${mod.moduleId}`}><Icon name={mod.learned ? 'circle-check' : 'book-open'} /><span class="co-action__label">{mod.name}<small>{mod.learned ? m.partner.learned : m.partner.learn}</small></span><Icon name="chevron-right" size={16} /></a></li>
         ))}
       </ul>
     </section>
     {partner.canInvite && (
       <section class="co-card grid gap-3" data-testid="invite-colleague">
-        <p class="text-eyebrow">Invita a un colega</p>
-        <p class="co-body">¿Conoces a alguien que podría vender esto? Invítale: tendrá tus mismos módulos y la empresa sabrá que viene de tu parte.</p>
+        <p class="text-eyebrow">{m.partner.inviteTitle}</p>
+        <p class="co-body">{m.partner.inviteBody}</p>
         {inviteError && <Alert kind="rejection" title={inviteError} />}
-        {(invitedOk === 'invited' || invitedOk === 'added') && <Alert kind="success" title="Invitación enviada. Le llegará un email para entrar." />}
+        {(invitedOk === 'invited' || invitedOk === 'added') && <Alert kind="success" title={m.partner.inviteSent} />}
         <form method="post" class="grid gap-2">
           <input type="hidden" name="action" value="invite-colleague" />
-          <label class="co-field">Su email<input class="co-input" type="email" name="email" required /></label>
-          <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">Enviar invitación</button>
+          <label class="co-field">{m.partner.theirEmail}<input class="co-input" type="email" name="email" required /></label>
+          <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{m.partner.sendInvite}</button>
         </form>
-        {invitees.length > 0 && <p class="co-meta">Has invitado a: {invitees.map((m) => m.displayName || m.email).join(', ')}</p>}
+        {invitees.length > 0 && <p class="co-meta">{m.partner.invited(invitees.map((x) => x.displayName || x.email).join(', '))}</p>}
       </section>
     )}
-    {partner.expiresAt && <p class="co-meta px-1" data-testid="partner-expiry">Tu acceso está activo hasta el {dateFmt(partner.expiresAt)}.</p>}
+    {partner.expiresAt && <p class="co-meta px-1" data-testid="partner-expiry">{m.partner.expiry(dateFmt(partner.expiresAt))}</p>}
   </aside>
 </div>

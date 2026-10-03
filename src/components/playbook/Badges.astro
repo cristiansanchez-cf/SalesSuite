@@ -1,12 +1,15 @@
 ---
-import { KIND_LABEL, OBJECTION_LABEL, STAGE_LABEL, type Objection, type PlayKind, type Stage } from '~/lib/playbook/types';
+import type { Objection, PlayKind, Stage } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 interface Props { kind?: PlayKind; stage?: Stage | null; objection?: Objection | null; segments?: string[]; team?: boolean }
 const { kind, stage, objection, segments = [], team = false } = Astro.props;
+const { m } = i18n(Astro, playbookMessages);
 ---
 <span class="flex flex-wrap gap-1">
-  {team && <span class="co-badge co-badge--soft">Del equipo</span>}
-  {kind && <span class="co-badge">{KIND_LABEL[kind]}</span>}
-  {stage && <span class="co-badge co-badge--soft" title="Etapa (misma taxonomía que el Cerebro de Ventas)">{STAGE_LABEL[stage]}</span>}
-  {objection && <span class="co-badge co-badge--attention" title="Tipo de objeción">Objeción: {OBJECTION_LABEL[objection]}</span>}
+  {team && <span class="co-badge co-badge--soft">{m.badges.team}</span>}
+  {kind && <span class="co-badge">{m.kind[kind]}</span>}
+  {stage && <span class="co-badge co-badge--soft" title={m.badges.stageTitle}>{m.stage[stage]}</span>}
+  {objection && <span class="co-badge co-badge--attention" title={m.badges.objectionTitle}>{m.badges.objection(m.objection[objection])}</span>}
   {segments.map((s) => <span class="co-badge">{s}</span>)}
 </span>

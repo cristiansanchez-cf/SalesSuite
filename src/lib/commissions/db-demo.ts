@@ -242,6 +242,28 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
       s.coupon = [...s.coupon.filter((x) => x.id !== row.id), row];
       return row.id;
     },
+    async listConditions(t) {
+      return db().member_conditions.filter((c) => c.tenant_id === t && (isManager(t) || c.user_id === actor))
+        .map((c) => ({ userId: c.user_id, visible: c.visible, note: c.note, agreedAt: c.agreed_at }));
+    },
+    async setConditions(t, userId, c) {
+      admin(t);
+      const s = db();
+      if (!roleOf(t, userId)) throw new Error('violates foreign key: member_conditions → membership');
+      const cur = s.member_conditions.find((x) => x.tenant_id === t && x.user_id === userId);
+      const agreed = c.visible ? (cur?.agreed_at ?? now()) : (cur?.agreed_at ?? null);
+      s.member_conditions = [...s.member_conditions.filter((x) => x !== cur), { tenant_id: t, user_id: userId, visible: c.visible, note: c.note, agreed_at: agreed }];
+    },
+    async myConditions(t) {
+      // = RPC my_conditions
+      if (!roleOf(t, actor)) deny('Sin acceso');
+      const s = db();
+      const c = s.member_conditions.find((x) => x.tenant_id === t && x.user_id === actor);
+      if (!c?.visible) return { visible: false, note: null, agreedAt: null, plan: null };
+      const planId = s.commission_plan_member.find((x) => x.tenant_id === t && x.user_id === actor)?.plan_id;
+      const p = s.commission_plan.find((x) => x.tenant_id === t && (planId ? x.id === planId : x.is_default));
+      return { visible: true, note: c.note, agreedAt: c.agreed_at, plan: p ? { name: p.name, rules: structuredClone(p.rules) as Plan['rules'], referral: (p.referral as Plan['referral']) ?? null } : null };
+    },
     async deleteConnector(id) {
       const s = db();
       const c = s.connector.find((x) => x.id === id);

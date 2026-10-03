@@ -1,22 +1,24 @@
 ---
 /** Una línea del libro con la explicación de cada euro (docs/COMMISSIONS.md §4). */
 import Icon from '~/components/ui/Icon.astro';
-import { formatMoney } from '~/lib/commissions/money';
+import { i18n } from '~/lib/i18n';
+import { commissionsMessages } from '~/lib/i18n/messages/commissions';
 import type { Entry } from '~/lib/commissions/types';
 interface Props { e: Entry; who?: string | null }
 const { e, who } = Astro.props;
+const { m, f } = i18n(Astro, commissionsMessages);
 const STATUS: Record<Entry['status'], { label: string; cls: string }> = {
-  pending: { label: 'Pendiente', cls: 'co-badge co-badge--soft' },
-  approved: { label: e.payoutId ? 'Liquidada' : 'Aprobada', cls: 'co-badge co-badge--ink' },
-  paid: { label: 'Pagada', cls: 'co-badge co-badge--signal' },
-  void: { label: 'Anulada', cls: 'co-badge' },
-  ineligible: { label: 'Sin comisión', cls: 'co-badge co-badge--attention' },
+  pending: { label: m.entry.status.pending, cls: 'co-badge co-badge--soft' },
+  approved: { label: e.payoutId ? m.entry.status.settled : m.entry.status.approved, cls: 'co-badge co-badge--ink' },
+  paid: { label: m.entry.status.paid, cls: 'co-badge co-badge--signal' },
+  void: { label: m.entry.status.void, cls: 'co-badge' },
+  ineligible: { label: m.entry.status.ineligible, cls: 'co-badge co-badge--attention' },
 };
-const KIND = { commission: 'Comisión', referral: 'Referido', bounty: 'Bounty', refund: 'Devolución', adjustment: 'Ajuste' } as const;
+const KIND = m.entry.kind;
 const icon = { commission: 'wallet', referral: 'user-plus', bounty: 'star', refund: 'rotate-ccw', adjustment: 'pencil' } as const;
 const why = e.kind === 'adjustment' ? e.reason
   : e.kind === 'bounty' ? `${e.ruleLabel ?? ''}${e.reason ? ` · ${e.reason}` : ''}`
-  : `${e.ruleLabel ?? KIND[e.kind]}${e.baseCents ? ` · sobre ${formatMoney(Math.abs(e.baseCents), e.currency)}` : ''}${e.status === 'ineligible' && e.reason ? ` · ${e.reason}` : ''}`;
+  : `${e.ruleLabel ?? KIND[e.kind]}${e.baseCents ? ` · ${m.entry.base(f.money(Math.abs(e.baseCents), e.currency))}` : ''}${e.status === 'ineligible' && e.reason ? ` · ${e.reason}` : ''}`;
 ---
 <li class:list={['co-row', e.status === 'ineligible' && 'co-row--attention']} data-testid="entry" data-status={e.status} data-kind={e.kind}>
   <span class="co-row__lead"><Icon name={icon[e.kind]} /></span>
@@ -24,7 +26,7 @@ const why = e.kind === 'adjustment' ? e.reason
     <span class="co-row-title">{KIND[e.kind]}{who ? ` · ${who}` : ''}</span>
     <span class="co-meta">{why} · {e.period}</span>
   </span>
-  <span class:list={['co-row-title tabular-nums', e.amountCents < 0 && 'text-[var(--console-danger)]']}>{formatMoney(e.amountCents, e.currency)}</span>
+  <span class:list={['co-row-title tabular-nums', e.amountCents < 0 && 'text-[var(--console-danger)]']}>{f.money(e.amountCents, e.currency)}</span>
   <span class={STATUS[e.status].cls}>{STATUS[e.status].label}</span>
   <slot />
 </li>

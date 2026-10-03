@@ -321,6 +321,13 @@ export function createCommissionsService(db: CommissionsDb, deps: { admin: Admin
     deleteConnector: async (id: string) => { requireAdmin(); if (!(await db.deleteConnector(id))) throw new AdminError(404, 'Conector no encontrado'); },
     canManage: perms.manageCommissions, canReadTeam: perms.manageTeam,
     coupons, saveCoupon, setCouponActive,
+    myConditions: () => db.myConditions(s.tenantId),
+    conditions: async () => { requireRead(); return db.listConditions(s.tenantId); },
+    setConditions: async (userId: string, c: { visible: boolean; note?: string | null }) => {
+      requireAdmin();
+      if (!(await members()).has(userId)) throw new AdminError(404, 'Esa persona no está en el equipo');
+      try { await db.setConditions(s.tenantId, userId, { visible: c.visible, note: c.note?.trim().slice(0, 1000) || null }); } catch (e) { mapError(e); }
+    },
   };
 }
 export type CommissionsService = ReturnType<typeof createCommissionsService>;
@@ -335,4 +342,5 @@ export const emptyCommissionsDb: CommissionsDb = {
   async listApiKeys() { return []; }, async createApiKey() { throw new Error('permission denied: sin comisiones'); }, async revokeApiKey() { return false; },
   async listConnectors() { return []; }, async saveConnector() { throw new Error('permission denied: sin comisiones'); }, async deleteConnector() { return false; },
   async listCoupons() { return []; }, async saveCoupon() { throw new Error('permission denied: sin comisiones'); },
+  async listConditions() { return []; }, async setConditions() {}, async myConditions() { return { visible: false, note: null, agreedAt: null, plan: null }; },
 };

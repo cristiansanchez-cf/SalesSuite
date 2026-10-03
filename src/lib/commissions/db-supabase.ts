@@ -141,6 +141,20 @@ export function supabaseCommissionsDb(sb: SupabaseClient): CommissionsDb {
         active: c.active, note: c.note, uses: uses.get(c.id) ?? 0,
       }));
     },
+    async listConditions(t) {
+      return (check(await sb.from('member_conditions').select('user_id, visible, note, agreed_at').eq('tenant_id', t)) ?? [])
+        .map((r: Row) => ({ userId: r.user_id, visible: r.visible, note: r.note, agreedAt: r.agreed_at }));
+    },
+    async setConditions(t, userId, c) {
+      const cur = check(await sb.from('member_conditions').select('agreed_at').eq('tenant_id', t).eq('user_id', userId).maybeSingle()) as Row | null;
+      check(await sb.from('member_conditions').upsert({
+        tenant_id: t, user_id: userId, visible: c.visible, note: c.note, agreed_at: cur?.agreed_at ?? (c.visible ? new Date().toISOString() : null),
+      }));
+    },
+    async myConditions(t) {
+      const r = check(await sb.rpc('my_conditions', { p_tenant: t })) as Row;
+      return { visible: !!r?.visible, note: r?.note ?? null, agreedAt: r?.agreedAt ?? null, plan: r?.plan ?? null };
+    },
     async saveCoupon(t, c, id) {
       const row = { tenant_id: t, code: c.code, label: c.label, kind: c.kind, value: c.value, max_uses: c.maxUses, valid_until: c.validUntil, active: c.active, note: c.note };
       if (id) {

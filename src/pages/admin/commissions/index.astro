@@ -4,46 +4,49 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import EntryRow from '~/components/commissions/EntryRow.astro';
-import { formatMoney } from '~/lib/commissions/money';
+import { i18n } from '~/lib/i18n';
+import { commissionsMessages } from '~/lib/i18n/messages/commissions';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
+const { m, f } = i18n(Astro, commissionsMessages);
 const { entries, payouts, totals } = await admin.commissions.mine();
+// El data-testid va con un id fijo (en español), no con la etiqueta traducida: los smoke tests lo usan.
 const F = [
-  { label: 'Pendiente de aprobar', value: totals.pending, hint: 'Calculado; falta que lo apruebe la empresa' },
-  { label: 'Aprobado', value: totals.approved + totals.settled, hint: 'Se incluirá en tu próxima liquidación' },
-  { label: 'Pagado', value: totals.paid, hint: 'Histórico' },
+  { id: 'Pendiente de aprobar', label: m.mine.pending, value: totals.pending, hint: m.mine.pendingHint },
+  { id: 'Aprobado', label: m.mine.approved, value: totals.approved + totals.settled, hint: m.mine.approvedHint },
+  { id: 'Pagado', label: m.mine.paid, value: totals.paid, hint: m.mine.paidHint },
 ];
 ---
-<AdminLayout title="Mis comisiones">
-  <PageHeader eyebrow="Vender" title="Mis comisiones" lede="Lo que llevas ganado y de dónde sale cada euro. Las ventas que declaras cuentan cuando la empresa las confirma." />
+<AdminLayout title={m.mine.title}>
+  <PageHeader eyebrow={m.mine.eyebrow} title={m.mine.title} lede={m.mine.lede} />
   <section class="co-grid co-grid--3 mb-6" data-testid="my-totals">
-    {F.map((f) => (
+    {F.map((x) => (
       <div class="co-card grid gap-1">
-        <p class="text-eyebrow">{f.label}</p>
-        <p class="co-figure text-4xl" data-testid={`total-${f.label}`}>{formatMoney(f.value)}</p>
-        <p class="co-meta">{f.hint}</p>
+        <p class="text-eyebrow">{x.label}</p>
+        <p class="co-figure text-4xl" data-testid={`total-${x.id}`}>{f.money(x.value)}</p>
+        <p class="co-meta">{x.hint}</p>
       </div>
     ))}
   </section>
-  {totals.ineligible > 0 && <p class="co-alert co-alert--info mb-6">Tienes {formatMoney(totals.ineligible)} en ventas sin comisión por ahora (conflicto de cuenta). Tu jefe/a de ventas decidirá.</p>}
+  {totals.ineligible > 0 && <p class="co-alert co-alert--info mb-6">{m.mine.ineligible(f.money(totals.ineligible))}</p>}
 
   <section class="co-section">
-    <div class="co-section__head"><h2 class="text-eyebrow">Movimientos</h2></div>
+    <div class="co-section__head"><h2 class="text-eyebrow">{m.mine.entries}</h2></div>
     {entries.length === 0
-      ? <EmptyState kind="none" title="Todavía no hay comisiones" because="Aparecen cuando la empresa confirma una venta tuya. Al ganar una propuesta, declara la venta desde la propia propuesta." />
+      ? <EmptyState kind="none" title={m.mine.emptyTitle} because={m.mine.emptyBecause} />
       : <ul class="co-rows" data-testid="entries">{entries.map((e) => <EntryRow e={e} />)}</ul>}
   </section>
 
   {payouts.length > 0 && (
     <section class="co-section">
-      <div class="co-section__head"><h2 class="text-eyebrow">Liquidaciones</h2></div>
+      <div class="co-section__head"><h2 class="text-eyebrow">{m.mine.payouts}</h2></div>
       <ul class="co-rows" data-testid="payouts">
         {payouts.map((p) => (
           <li class="co-row">
-            <span class="co-row__main"><span class="co-row-title">{p.period}</span><span class="co-meta">{p.status === 'paid' ? `Pagada el ${new Date(p.paidAt!).toLocaleDateString('es-ES')}` : 'Lista para pago'}</span></span>
-            <span class="co-row-title tabular-nums">{formatMoney(p.totalCents, p.currency)}</span>
-            <span class={p.status === 'paid' ? 'co-badge co-badge--signal' : 'co-badge co-badge--soft'}>{p.status === 'paid' ? 'Pagada' : 'Pendiente de pago'}</span>
+            <span class="co-row__main"><span class="co-row-title">{p.period}</span><span class="co-meta">{p.status === 'paid' ? m.paidOn(f.date(p.paidAt, {})) : m.mine.readyToPay}</span></span>
+            <span class="co-row-title tabular-nums">{f.money(p.totalCents, p.currency)}</span>
+            <span class={p.status === 'paid' ? 'co-badge co-badge--signal' : 'co-badge co-badge--soft'}>{p.status === 'paid' ? m.mine.payoutPaid : m.mine.payoutPending}</span>
           </li>
         ))}
       </ul>

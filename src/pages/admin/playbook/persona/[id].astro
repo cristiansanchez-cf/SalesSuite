@@ -3,13 +3,16 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
-import { PERSONA_ROLES, ROLE_HINT, ROLE_LABEL, type PersonaView } from '~/lib/playbook/market';
-import { OBJECTIONS, OBJECTION_LABEL } from '~/lib/playbook/types';
+import { PERSONA_ROLES, type PersonaView } from '~/lib/playbook/market';
+import { OBJECTIONS } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const pb = admin.playbook;
+const { m: msg } = i18n(Astro, playbookMessages);
 const id = Astro.params.id ?? '';
 const isNew = id === 'new';
 const [market, catalog] = await Promise.all([pb.market(), admin.tenantAdmin.listCatalog()]);
@@ -42,48 +45,48 @@ if (Astro.request.method === 'POST') {
 const v = (k: string, fb: string | null | undefined) => (draft && draft[k] !== undefined ? draft[k] : fb ?? '');
 const field = 'co-input';
 const areas: Array<[string, string, string]> = [
-  ['goals', 'Qué quiere conseguir', v('goals', p?.goals)], ['pains', 'Qué le duele', v('pains', p?.pains)],
-  ['kpis', 'Qué mide / le hace quedar bien', v('kpis', p?.kpis)], ['howToApproach', 'Cómo abordarle (canal, gancho, momento)', v('howToApproach', p?.howToApproach)],
-  ['avoid', 'Qué evitar', v('avoid', p?.avoid)], ['canHelp', 'Cómo puede ayudarte', v('canHelp', p?.canHelp)], ['canBlock', 'Cómo puede tumbarlo', v('canBlock', p?.canBlock)],
+  ['goals', msg.persona.goals, v('goals', p?.goals)], ['pains', msg.persona.pains, v('pains', p?.pains)],
+  ['kpis', msg.persona.kpis, v('kpis', p?.kpis)], ['howToApproach', msg.persona.howToApproach, v('howToApproach', p?.howToApproach)],
+  ['avoid', msg.persona.avoid, v('avoid', p?.avoid)], ['canHelp', msg.persona.canHelp, v('canHelp', p?.canHelp)], ['canBlock', msg.persona.canBlock, v('canBlock', p?.canBlock)],
 ];
 ---
-<AdminLayout title={isNew ? 'Nuevo actor' : p!.name} wide>
-  <a href={`/admin/playbook/segment/${segmentId}`} class="text-sm text-muted hover:text-ink">← {seg?.name ?? 'Sector'}</a>
-  <p class="text-eyebrow mb-3">Mercado · actor</p>
-  <h1 class="co-page-title">{isNew ? 'Nuevo actor' : p!.name}</h1>
-  {Astro.url.searchParams.get('ok') && <p class="mt-3 co-alert co-alert--success" role="status">Guardado.</p>}
+<AdminLayout title={isNew ? msg.persona.newActor : p!.name} wide>
+  <a href={`/admin/playbook/segment/${segmentId}`} class="text-sm text-muted hover:text-ink">← {seg?.name ?? msg.persona.segment}</a>
+  <p class="text-eyebrow mb-3">{msg.persona.eyebrow}</p>
+  <h1 class="co-page-title">{isNew ? msg.persona.newActor : p!.name}</h1>
+  {Astro.url.searchParams.get('ok') && <p class="mt-3 co-alert co-alert--success" role="status">{msg.common.saved}</p>}
   {result.error && <div class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error"><p class="font-semibold">{result.error}</p>{result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}</div>}
 
   <div class="mt-5 grid gap-6 xl:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]">
     <form method="post" class="space-y-3 co-card" data-testid="persona-form">
       <input type="hidden" name="action" value="save" />
       <div class="grid gap-3 sm:grid-cols-2">
-        <label class="text-sm font-medium">Nombre / cargo<input class={field} name="name" required maxlength="80" value={v('name', p?.name)} placeholder="DJ residente" /></label>
-        <label class="text-sm font-medium">Clave<input class={field} name="key" required value={v('key', p?.key)} placeholder="dj-residente" /></label>
-        <label class="text-sm font-medium">Sector
+        <label class="text-sm font-medium">{msg.persona.nameRole}<input class={field} name="name" required maxlength="80" value={v('name', p?.name)} placeholder={msg.persona.namePlaceholder} /></label>
+        <label class="text-sm font-medium">{msg.common.key}<input class={field} name="key" required value={v('key', p?.key)} placeholder={msg.persona.keyPlaceholder} /></label>
+        <label class="text-sm font-medium">{msg.persona.segment}
           <select class={field} name="segmentId">{market.map((s) => <option value={s.id} selected={v('segmentId', segmentId) === s.id}>{s.name}</option>)}</select>
         </label>
-        <label class="text-sm font-medium">Papel en la decisión
-          <select class={field} name="role">{PERSONA_ROLES.map((r) => <option value={r} selected={v('role', p?.role ?? 'decisor') === r}>{ROLE_LABEL[r]} — {ROLE_HINT[r]}</option>)}</select>
+        <label class="text-sm font-medium">{msg.persona.role}
+          <select class={field} name="role">{PERSONA_ROLES.map((r) => <option value={r} selected={v('role', p?.role ?? 'decisor') === r}>{msg.role[r]} — {msg.roleHint[r]}</option>)}</select>
         </label>
       </div>
       {areas.map(([name, label, value]) => <label class="block text-sm font-medium">{label}<textarea class={`${field} h-20`} name={name}>{value}</textarea></label>)}
       <fieldset class="rounded-xl border border-line p-3 text-sm">
-        <legend class="px-1 font-medium">Objeciones típicas <span class="font-normal text-muted">(taxonomía del Cerebro)</span></legend>
+        <legend class="px-1 font-medium">{msg.persona.objections} <span class="font-normal text-muted">{msg.persona.objectionsHint}</span></legend>
         <div class="flex flex-wrap gap-3">
-          {OBJECTIONS.map((o) => <label class="flex items-center gap-1"><input type="checkbox" name="objections" value={o} checked={draftObjections ? draftObjections.includes(o) : p?.objections.includes(o)} />{OBJECTION_LABEL[o]}</label>)}
+          {OBJECTIONS.map((o) => <label class="flex items-center gap-1"><input type="checkbox" name="objections" value={o} checked={draftObjections ? draftObjections.includes(o) : p?.objections.includes(o)} />{msg.objection[o]}</label>)}
         </div>
       </fieldset>
       <div class="flex gap-2">
-        <button class="co-btn co-btn--primary" type="submit">{isNew ? 'Crear actor' : 'Guardar'}</button>
-        {!isNew && <button type="button" class="co-btn co-btn--danger" data-dialog-open="delete-persona" data-testid="delete-persona">Borrar</button>}
+        <button class="co-btn co-btn--primary" type="submit">{isNew ? msg.persona.create : msg.common.save}</button>
+        {!isNew && <button type="button" class="co-btn co-btn--danger" data-dialog-open="delete-persona" data-testid="delete-persona">{msg.persona.delete}</button>}
       </div>
     </form>
 
     {p && (
       <section id="angles" class="co-card" data-testid="angles">
-        <h2 class="co-card-title">Qué le aporta cada módulo</h2>
-        <p class="text-sm text-muted">El ángulo con el que presentar cada módulo a este actor. Vacío = no le importa.</p>
+        <h2 class="co-card-title">{msg.persona.anglesTitle}</h2>
+        <p class="text-sm text-muted">{msg.persona.anglesLede}</p>
         <div class="mt-3 space-y-3">
           {catalog.map((m) => {
             const a = p.angles.find((x) => x.moduleId === m.id);
@@ -91,8 +94,8 @@ const areas: Array<[string, string, string]> = [
               <form method="post" class="grid gap-2 sm:grid-cols-[10rem_1fr_auto]">
                 <input type="hidden" name="action" value="angle" /><input type="hidden" name="moduleId" value={m.id} />
                 <span class="self-center text-sm font-semibold">{m.name}</span>
-                <input class={field} name="angle" value={a?.angle ?? ''} maxlength="1000" placeholder="Qué le resuelve…" />
-                <button class="co-btn co-btn--ghost co-btn--sm" type="submit">Guardar</button>
+                <input class={field} name="angle" value={a?.angle ?? ''} maxlength="1000" placeholder={msg.persona.anglePlaceholder} />
+                <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{msg.common.save}</button>
               </form>
             );
           })}
@@ -101,9 +104,9 @@ const areas: Array<[string, string, string]> = [
     )}
   </div>
   {p && (
-    <ConfirmDialog id="delete-persona" title={`Borrar «${p.name}»`} confirmLabel="Borrar actor" danger testid="delete-persona-dialog"
-      does="El actor desaparece del mercado, del guion y de «Preparar mensaje». Las personas de tus propuestas que lo usaban se quedan sin tipo."
-      doesNot="No borra a esas personas ni sus notas, ni los cierres ya documentados.">
+    <ConfirmDialog id="delete-persona" title={msg.persona.deleteTitle(p.name)} confirmLabel={msg.persona.deleteConfirm} danger testid="delete-persona-dialog"
+      does={msg.persona.deleteDoes}
+      doesNot={msg.persona.deleteDoesNot}>
       <input type="hidden" name="action" value="delete" />
     </ConfirmDialog>
   )}

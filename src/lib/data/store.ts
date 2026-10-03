@@ -154,6 +154,7 @@ export interface DemoDb {
   api_key: ApiKeyRow[];
   connector: ConnectorRow[];
   coupon: CouponRow[];
+  member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -275,6 +276,7 @@ export function freshDemoDb(): DemoDb {
     payout: [],
     api_key: [],
     connector: [],
+    member_conditions: [],
     coupon: [
       { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },
       { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },

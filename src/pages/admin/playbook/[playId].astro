@@ -3,12 +3,15 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
-import { AUDIENCE_LABEL, AUDIENCES, KIND_LABEL, OBJECTION_LABEL, OBJECTIONS, PLAY_KINDS, STAGE_LABEL, STAGES, type PlayView, type TechniqueRef } from '~/lib/playbook/types';
+import { AUDIENCES, OBJECTIONS, PLAY_KINDS, STAGES, type PlayView, type TechniqueRef } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const pb = admin.playbook;
+const { m: msg, f: fmt } = i18n(Astro, playbookMessages);
 const id = Astro.params.playId ?? '';
 const isNew = id === 'new';
 
@@ -21,7 +24,7 @@ function parseRefs(src: string): TechniqueRef[] {
   return src.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
     const [num, title, creator, url] = l.split('|').map((x) => x.trim());
     const n = Number(num);
-    if (!Number.isInteger(n) || n <= 0 || !title) throw new AdminError(422, `Referencia no válida: «${l}». Formato: id | título | creador | url`);
+    if (!Number.isInteger(n) || n <= 0 || !title) throw new AdminError(422, msg.play.invalidRef(l));
     return { source: 'cerebro' as const, id: n, title, ...(creator ? { creator } : {}), ...(url ? { url } : {}) };
   });
 }
@@ -51,7 +54,7 @@ if (Astro.request.method === 'POST') {
     };
     if (isNew) { to = `/admin/playbook/${await pb.createPlay(input, str('note') || undefined)}?ok=created`; }
     else {
-      if (!str('note').trim()) throw new AdminError(422, 'Escribe una nota de cambio: el equipo la verá en Novedades');
+      if (!str('note').trim()) throw new AdminError(422, msg.play.noteRequired);
       await pb.updatePlay(id, input, str('note'));
       to = `/admin/playbook/${id}?ok=saved`;
     }
@@ -64,14 +67,14 @@ const cur = current;
 const history = cur ? await pb.history(cur.id) : [];
 const saved = Astro.url.searchParams.get('ok');
 const field = 'co-input';
-const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+const date = (iso: string) => fmt.date(iso, { dateStyle: 'medium', timeStyle: 'short' });
 ---
-<AdminLayout title={isNew ? 'Nueva jugada' : cur!.title} wide>
-  <a href="/admin/playbook?tab=plays" class="text-sm text-muted hover:text-ink">← Playbook</a>
-  <p class="text-eyebrow mb-3">Playbook · jugada</p>
-  <h1 class="co-page-title">{isNew ? 'Nueva jugada' : cur!.title}</h1>
-  {cur && <p class="text-sm text-muted">v{cur.version} · {cur.status === 'official' ? 'Oficial' : cur.status === 'draft' ? 'Borrador' : 'Archivada'} · Usada en {cur.evidence.used} cierres documentados · ganó {cur.evidence.won}</p>}
-  {saved && <p class="mt-3 co-alert co-alert--success" role="status">{saved === 'created' ? 'Jugada creada.' : 'Guardado: nueva versión publicada.'}</p>}
+<AdminLayout title={isNew ? msg.play.newPlay : cur!.title} wide>
+  <a href="/admin/playbook?tab=plays" class="text-sm text-muted hover:text-ink">{msg.common.backPlaybook}</a>
+  <p class="text-eyebrow mb-3">{msg.play.eyebrow}</p>
+  <h1 class="co-page-title">{isNew ? msg.play.newPlay : cur!.title}</h1>
+  {cur && <p class="text-sm text-muted">v{cur.version} · {cur.status === 'official' ? msg.common.official : cur.status === 'draft' ? msg.common.draft : msg.common.archivedF} · {msg.play.usedIn(cur.evidence.used, cur.evidence.won)}</p>}
+  {saved && <p class="mt-3 co-alert co-alert--success" role="status">{saved === 'created' ? msg.play.created : msg.play.savedVersion}</p>}
   {result.error && (
     <div class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error">
       <p class="font-semibold">{result.error}</p>
@@ -82,75 +85,75 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   <div class="mt-5 grid gap-6 xl:grid-cols-[minmax(0,44rem)_minmax(0,1fr)]">
     <form method="post" class="space-y-4 co-card" data-testid="play-form">
       <div class="grid gap-3 sm:grid-cols-2">
-        <label class="text-sm font-medium">Módulo
+        <label class="text-sm font-medium">{msg.play.module}
           <select class={field} name="moduleId">
-            <option value="">General (empresa)</option>
+            <option value="">{msg.common.general}</option>
             {all.modules.map((m) => <option value={m.id} selected={v('moduleId', cur?.moduleId ?? '') === m.id}>{m.name}</option>)}
           </select>
         </label>
-        <label class="text-sm font-medium">Tipo
-          <select class={field} name="kind">{PLAY_KINDS.map((k) => <option value={k} selected={v('kind', cur?.kind ?? 'pitch') === k}>{KIND_LABEL[k]}</option>)}</select>
+        <label class="text-sm font-medium">{msg.play.type}
+          <select class={field} name="kind">{PLAY_KINDS.map((k) => <option value={k} selected={v('kind', cur?.kind ?? 'pitch') === k}>{msg.kind[k]}</option>)}</select>
         </label>
-        <label class="text-sm font-medium">Etapa <span class="font-normal text-muted">(como el Cerebro)</span>
-          <select class={field} name="stage"><option value="">—</option>{STAGES.map((k) => <option value={k} selected={v('stage', cur?.stage ?? '') === k}>{STAGE_LABEL[k]}</option>)}</select>
+        <label class="text-sm font-medium">{msg.play.stage} <span class="font-normal text-muted">{msg.play.stageHint}</span>
+          <select class={field} name="stage"><option value="">—</option>{STAGES.map((k) => <option value={k} selected={v('stage', cur?.stage ?? '') === k}>{msg.stage[k]}</option>)}</select>
         </label>
-        <label class="text-sm font-medium">Objeción
-          <select class={field} name="objection"><option value="">—</option>{OBJECTIONS.map((k) => <option value={k} selected={v('objection', cur?.objection ?? '') === k}>{OBJECTION_LABEL[k]}</option>)}</select>
+        <label class="text-sm font-medium">{msg.play.objection}
+          <select class={field} name="objection"><option value="">—</option>{OBJECTIONS.map((k) => <option value={k} selected={v('objection', cur?.objection ?? '') === k}>{msg.objection[k]}</option>)}</select>
         </label>
       </div>
-      <label class="block text-sm font-medium">Título<input class={field} name="title" required maxlength="200" value={v('title', cur?.title ?? '')} /></label>
-      <label class="block text-sm font-medium">Texto <span class="font-normal text-muted">(**negrita**, *cursiva*, listas con «- »; admite {'{company}'} y {'{prospect}'})</span>
+      <label class="block text-sm font-medium">{msg.play.title}<input class={field} name="title" required maxlength="200" value={v('title', cur?.title ?? '')} /></label>
+      <label class="block text-sm font-medium">{msg.play.text} <span class="font-normal text-muted">{msg.play.textHint}</span>
         <textarea class={`${field} h-48`} name="body" maxlength="8000">{v('body', cur?.body ?? '')}</textarea>
       </label>
       <div class="grid gap-3 sm:grid-cols-2">
-        <label class="text-sm font-medium">Cuándo usarla<textarea class={`${field} h-24`} name="whenToUse" maxlength="1000">{v('whenToUse', cur?.whenToUse ?? '')}</textarea></label>
-        <label class="text-sm font-medium">Por qué funciona<textarea class={`${field} h-24`} name="whyItWorks" maxlength="2000">{v('whyItWorks', cur?.whyItWorks ?? '')}</textarea></label>
+        <label class="text-sm font-medium">{msg.playCard.whenToUse}<textarea class={`${field} h-24`} name="whenToUse" maxlength="1000">{v('whenToUse', cur?.whenToUse ?? '')}</textarea></label>
+        <label class="text-sm font-medium">{msg.playCard.whyItWorks}<textarea class={`${field} h-24`} name="whyItWorks" maxlength="2000">{v('whyItWorks', cur?.whyItWorks ?? '')}</textarea></label>
       </div>
-      <label class="block text-sm font-medium">Fichas del Cerebro de Ventas <span class="font-normal text-muted">(una por línea: id | título | creador | url)</span>
-        <textarea class={`${field} h-20 font-mono text-xs`} name="refs" placeholder="707 | El cliente dice 'caro' porque… | Alfonso y Cristian | https://…">{v('refs', refsText(cur?.techniqueRefs ?? []))}</textarea>
+      <label class="block text-sm font-medium">{msg.play.refs} <span class="font-normal text-muted">{msg.play.refsHint}</span>
+        <textarea class={`${field} h-20 font-mono text-xs`} name="refs" placeholder={msg.play.refsPlaceholder}>{v('refs', refsText(cur?.techniqueRefs ?? []))}</textarea>
       </label>
-      <p class="text-xs text-muted">Se enlaza y atribuye la ficha; no copies aquí el guion literal del creador.</p>
+      <p class="text-xs text-muted">{msg.play.refsNote}</p>
       <div class="grid gap-3 sm:grid-cols-2">
-        <label class="text-sm font-medium">Actores <span class="font-normal text-muted">(claves, separadas por comas)</span><input class={field} name="personas" value={v('personas', (cur?.personas ?? []).join(', '))} placeholder="propietario-local, dj-residente" /></label>
-        <label class="text-sm font-medium">Quién la ve
+        <label class="text-sm font-medium">{msg.play.actors} <span class="font-normal text-muted">{msg.play.actorsHint}</span><input class={field} name="personas" value={v('personas', (cur?.personas ?? []).join(', '))} placeholder={msg.play.actorsPlaceholder} /></label>
+        <label class="text-sm font-medium">{msg.play.audience}
           <select class={field} name="audience" data-testid="play-audience">
-            {AUDIENCES.map((a) => <option value={a} selected={v('audience', cur?.audience ?? 'all') === a}>{AUDIENCE_LABEL[a]}</option>)}
+            {AUDIENCES.map((a) => <option value={a} selected={v('audience', cur?.audience ?? 'all') === a}>{msg.audience[a]}</option>)}
           </select>
-          <span class="text-xs font-normal text-muted">Los colaboradores nunca ven «Precio y monetización».</span>
+          <span class="text-xs font-normal text-muted">{msg.play.audienceNote}</span>
         </label>
       </div>
       <div class="grid gap-3 sm:grid-cols-3">
-        <label class="text-sm font-medium">Segmentos<input class={field} name="segments" value={v('segments', (cur?.segments ?? []).join(', '))} placeholder="bodas, locales" /></label>
-        <label class="text-sm font-medium">Clave (import)<input class={field} name="key" value={v('key', cur?.key ?? '')} placeholder="opcional" /></label>
-        <label class="text-sm font-medium">Estado
-          <select class={field} name="status"><option value="official" selected={v('status', cur?.status ?? 'official') === 'official'}>Oficial</option><option value="draft" selected={v('status', cur?.status ?? '') === 'draft'}>Borrador</option></select>
+        <label class="text-sm font-medium">{msg.play.segments}<input class={field} name="segments" value={v('segments', (cur?.segments ?? []).join(', '))} placeholder={msg.play.segmentsPlaceholder} /></label>
+        <label class="text-sm font-medium">{msg.play.keyImport}<input class={field} name="key" value={v('key', cur?.key ?? '')} placeholder={msg.common.optional} /></label>
+        <label class="text-sm font-medium">{msg.common.status}
+          <select class={field} name="status"><option value="official" selected={v('status', cur?.status ?? 'official') === 'official'}>{msg.common.official}</option><option value="draft" selected={v('status', cur?.status ?? '') === 'draft'}>{msg.common.draft}</option></select>
         </label>
       </div>
-      <label class="block text-sm font-medium">Nota del cambio {!isNew && <span class="font-normal text-muted">(obligatoria: la verá el equipo en Novedades)</span>}
-        <input class={field} name="note" maxlength="500" value={v('note', '')} placeholder={isNew ? 'opcional' : 'p. ej. Nuevo dato tras las bodas de septiembre'} />
+      <label class="block text-sm font-medium">{msg.play.note} {!isNew && <span class="font-normal text-muted">{msg.play.noteHint}</span>}
+        <input class={field} name="note" maxlength="500" value={v('note', '')} placeholder={isNew ? msg.common.optional : msg.play.notePlaceholder} />
       </label>
       <div class="flex flex-wrap gap-2">
-        <button class="co-btn co-btn--primary" type="submit" name="action" value="save">{isNew ? 'Crear jugada' : 'Guardar nueva versión'}</button>
-        {cur && cur.status !== 'archived' && <button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit" name="action" value="archive" formnovalidate>Archivar</button>}
-        {cur && cur.status === 'archived' && <button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit" name="action" value="restore" formnovalidate>Restaurar</button>}
+        <button class="co-btn co-btn--primary" type="submit" name="action" value="save">{isNew ? msg.play.create : msg.play.saveVersion}</button>
+        {cur && cur.status !== 'archived' && <button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit" name="action" value="archive" formnovalidate>{msg.play.archive}</button>}
+        {cur && cur.status === 'archived' && <button class="rounded-lg border border-line px-4 py-2 font-semibold" type="submit" name="action" value="restore" formnovalidate>{msg.play.restore}</button>}
       </div>
     </form>
 
     {cur && (
       <aside class="space-y-4">
-        <a href={`/admin/learn/${cur.moduleId ?? 'general'}#play-${cur.id}`} class="block text-sm underline">Ver como la ve el equipo →</a>
+        <a href={`/admin/learn/${cur.moduleId ?? 'general'}#play-${cur.id}`} class="block text-sm underline">{msg.play.viewAsTeam}</a>
         <section class="co-card" data-testid="history">
-          <h2 class="font-bold">Historial</h2>
+          <h2 class="font-bold">{msg.play.history}</h2>
           <ol class="mt-3 space-y-3 p-0">
             {history.map((h) => (
               <li class="list-none border-l-2 border-line pl-3 text-sm">
                 <p><strong>v{h.version}</strong> · {date(h.createdAt)} · {h.changedByName ?? '—'}</p>
                 {h.changeNote && <p class="text-muted">{h.changeNote}</p>}
-                {h.contributionId && <p class="text-xs text-violet-800">Desde una propuesta del equipo</p>}
+                {h.contributionId && <p class="text-xs text-violet-800">{msg.play.fromProposal}</p>}
               </li>
             ))}
           </ol>
-          {history.length === 0 && <p class="text-sm text-muted">Sin cambios registrados (importada o de ejemplo).</p>}
+          {history.length === 0 && <p class="text-sm text-muted">{msg.play.noHistory}</p>}
         </section>
       </aside>
     )}

@@ -10,17 +10,19 @@ import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { AdminError } from '~/lib/admin/service';
 import { requestOrigin } from '~/lib/http';
-import { ROLE_LABEL, STANCE_LABEL } from '~/lib/playbook/market';
 import { CHANNELS, MESSAGE_TYPES } from '~/lib/playbook/schema';
-import { OBJECTIONS, OBJECTION_LABEL } from '~/lib/playbook/types';
+import { OBJECTIONS, STAGE_LABEL, STAGES } from '~/lib/playbook/types';
 import type { ContextBrief } from '~/lib/playbook/context';
 import { mergeSituation } from '~/lib/evidence/similarity';
 import { isIconName } from '~/lib/ui/icons';
 import type { Situation } from '~/lib/evidence/types';
+import { i18n } from '~/lib/i18n';
+import { sellMessages } from '~/lib/i18n/messages/sell';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const pb = admin.playbook;
+const { m } = i18n(Astro, sellMessages);
 const q = Astro.url.searchParams;
 const val = (k: string) => q.get(k) || null;
 const sel = {
@@ -74,45 +76,52 @@ const enc = brief ? encodeURIComponent(brief.prompt) : '';
 const claudeUrl = brief && enc.length < MAX_URL ? `https://claude.ai/new?q=${enc}` : null;
 const chatgptUrl = brief && enc.length < MAX_URL ? `https://chatgpt.com/?q=${enc}` : null;
 const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
+// El contexto para el Cerebro sale en español (sus filtros); lo que se muestra en pantalla, en el idioma de quien mira.
+const typeLabel = MESSAGE_TYPES[sel.type]?.label ?? '';
+const briefTitle = brief && typeLabel && brief.title.startsWith(typeLabel) ? m.labels.messageType[sel.type] + brief.title.slice(typeLabel.length) : brief?.title;
+const stageKey = brief ? STAGES.find((s) => STAGE_LABEL[s] === brief!.cerebro.etapa) : undefined;
+const shownStage = stageKey ? m.labels.stage[stageKey] : brief?.cerebro.etapa ?? '';
+const objectionKey = sel.objection && (OBJECTIONS as readonly string[]).includes(sel.objection) ? (sel.objection as (typeof OBJECTIONS)[number]) : null;
+const shownObjection = objectionKey ? m.labels.objection[objectionKey] : brief?.cerebro.objecion ?? '';
 ---
-<AdminLayout title="Preparar mensaje" wide>
-  <PageHeader eyebrow="Vender" title="Preparar mensaje" lede="Cuatro pasos y te preparo todo el contexto (tu propuesta, el actor, la situación y lo que le ha funcionado al equipo) para que el Cerebro de Ventas elija la técnica y redacte contigo en Claude o ChatGPT." />
+<AdminLayout title={m.compose.title} wide>
+  <PageHeader eyebrow={m.common.eyebrow} title={m.compose.title} lede={m.compose.lede} />
 
   <div class="grid gap-6 xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
     <form method="get" class="co-card grid content-start gap-5" data-testid="compose-form">
       <input type="hidden" name="go" value="1" />
       <input type="hidden" name="sit" value="1" />
       <section class="grid gap-3">
-        <p class="text-eyebrow">01 · ¿Para qué cuenta?</p>
-        <label class="co-field">Dossier <span class="co-help">Opcional: con dossier incluyo tu propuesta, su precio y el enlace</span>
+        <p class="text-eyebrow">01 · {m.compose.step1}</p>
+        <label class="co-field">{m.compose.dossier} <span class="co-help">{m.compose.dossierHelp}</span>
           <select class="co-select" name="dossier" onchange="this.form.contact && (this.form.contact.value=''); this.form.sit.value=''; this.form.submit()">
-            <option value="">Sin dossier</option>
+            <option value="">{m.compose.noDossier}</option>
             {dossiers.map((d) => <option value={d.id} selected={d.id === sel.dossier}>{d.title}{d.prospectCompany ? ` · ${d.prospectCompany}` : ''}</option>)}
           </select>
         </label>
         {!state && (
-          <label class="co-field">Sector
-            <select class="co-select" name="segment"><option value="">El del actor</option>{market.map((sg) => <option value={sg.id} selected={sg.id === sel.segment}>{sg.name}</option>)}</select>
+          <label class="co-field">{m.common.sector}
+            <select class="co-select" name="segment"><option value="">{m.compose.segmentDefault}</option>{market.map((sg) => <option value={sg.id} selected={sg.id === sel.segment}>{sg.name}</option>)}</select>
           </label>
         )}
       </section>
 
       <section class="grid gap-3">
-        <p class="text-eyebrow">02 · ¿Con quién hablas?</p>
+        <p class="text-eyebrow">02 · {m.common.whoTalk}</p>
         {state && state.contacts.length > 0 && (
-          <label class="co-field">Persona de la cuenta
+          <label class="co-field">{m.compose.accountPerson}
             <select class="co-select" name="contact" onchange="this.form.sit.value=''; this.form.submit()">
-              <option value="">Elegir un tipo de actor</option>
-              {state.contacts.map((c) => <option value={c.id} selected={c.id === sel.contact}>{c.name} · {STANCE_LABEL[c.stance]}</option>)}
+              <option value="">{m.compose.chooseActor}</option>
+              {state.contacts.map((c) => <option value={c.id} selected={c.id === sel.contact}>{c.name} · {m.labels.stance[c.stance]}</option>)}
             </select>
           </label>
         )}
-        <label class="co-field">{state?.contacts.length ? 'O un tipo de actor' : 'Tipo de actor'}
+        <label class="co-field">{state?.contacts.length ? m.compose.orActorType : m.compose.actorType}
           <select class="co-select" name="persona" data-testid="persona-select">
-            <option value="">Sin concretar</option>
+            <option value="">{m.compose.unspecified}</option>
             {market.map((sg) => (
               <optgroup label={sg.name}>
-                {sg.personas.map((p) => <option value={p.id} selected={p.id === sel.persona}>{p.name} ({ROLE_LABEL[p.role].toLowerCase()})</option>)}
+                {sg.personas.map((p) => <option value={p.id} selected={p.id === sel.persona}>{p.name} ({m.labels.personaRole[p.role].toLowerCase()})</option>)}
               </optgroup>
             ))}
           </select>
@@ -121,7 +130,7 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
 
       {facets.length > 0 && (
         <section class="grid gap-3" data-testid="compose-situation">
-          <p class="text-eyebrow">03 · ¿Cómo es? <span class="normal-case tracking-normal">· opcional, afina las recomendaciones</span></p>
+          <p class="text-eyebrow">03 · {m.compose.step3} <span class="normal-case tracking-normal">{m.compose.step3Hint}</span></p>
           {facets.map((f) => (
             <fieldset class="grid gap-2">
               <legend class="co-field mb-1">{f.question ?? f.label}</legend>
@@ -134,23 +143,23 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
       )}
 
       <section class="grid gap-3">
-        <p class="text-eyebrow">{facets.length ? '04' : '03'} · ¿Qué necesitas?</p>
+        <p class="text-eyebrow">{facets.length ? '04' : '03'} · {m.compose.step4}</p>
         <div class="grid grid-cols-2 gap-3">
-          <label class="co-field">Para qué
-            <select class="co-select" name="type" data-testid="type-select">{Object.entries(MESSAGE_TYPES).map(([k, v]) => <option value={k} selected={k === sel.type}>{v.label}</option>)}</select>
+          <label class="co-field">{m.compose.purpose}
+            <select class="co-select" name="type" data-testid="type-select">{Object.keys(MESSAGE_TYPES).map((k) => <option value={k} selected={k === sel.type}>{m.labels.messageType[k as keyof typeof MESSAGE_TYPES]}</option>)}</select>
           </label>
-          <label class="co-field">Canal
-            <select class="co-select" name="channel">{Object.entries(CHANNELS).map(([k, v]) => <option value={k} selected={k === sel.channel}>{v}</option>)}</select>
+          <label class="co-field">{m.compose.channel}
+            <select class="co-select" name="channel">{Object.keys(CHANNELS).map((k) => <option value={k} selected={k === sel.channel}>{m.labels.channel[k as keyof typeof CHANNELS]}</option>)}</select>
           </label>
         </div>
-        <label class="co-field">Objeción <span class="co-help">Si respondes a una</span>
-          <select class="co-select" name="objection" data-testid="objection-select"><option value="">Ninguna</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{OBJECTION_LABEL[o]}</option>)}</select>
+        <label class="co-field">{m.compose.objection} <span class="co-help">{m.compose.objectionHelp}</span>
+          <select class="co-select" name="objection" data-testid="objection-select"><option value="">{m.common.none}</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{m.labels.objection[o]}</option>)}</select>
         </label>
-        <label class="co-field">Lo que sabes de este caso
-          <textarea class="co-textarea" name="notes" maxlength="1500" placeholder="Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…">{sel.notes}</textarea>
+        <label class="co-field">{m.compose.notes}
+          <textarea class="co-textarea" name="notes" maxlength="1500" placeholder={m.compose.notesPlaceholder}>{sel.notes}</textarea>
         </label>
       </section>
-      <button class="co-btn co-btn--primary" type="submit" data-testid="compose-go">Preparar contexto <span aria-hidden="true">→</span></button>
+      <button class="co-btn co-btn--primary" type="submit" data-testid="compose-go">{m.compose.go} <span aria-hidden="true">→</span></button>
     </form>
 
     <section class="grid content-start gap-4">
@@ -158,45 +167,45 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
       {!brief && !error && (
         <div class="co-empty co-aurora-soft !border-transparent">
           <Icon name="message-square-text" size={22} />
-          <p class="co-empty__title">Elige a quién escribes</p>
-          <p class="co-body max-w-[52ch]">Por ejemplo: «DJ residente · ocio nocturno · primer contacto». Desde un dossier, elige a una persona de la cuenta y el contexto incluirá tu propuesta, su precio y el enlace.</p>
+          <p class="co-empty__title">{m.compose.emptyTitle}</p>
+          <p class="co-body max-w-[52ch]">{m.compose.emptyBody}</p>
         </div>
       )}
       {rec && rec.stories.some((m) => m.score > 0) && (
         <div class="co-card co-card--soft grid gap-2" data-testid="compose-evidence">
-          <p class="text-eyebrow">Al equipo le funcionó en situaciones parecidas</p>
-          {rec.plays.length > 0 && <p class="text-sm"><strong>Jugadas que más ganan:</strong> {rec.plays.slice(0, 3).map((p) => `${p.title} (${p.wonIn})`).join(' · ')}</p>}
-          {rec.stories.filter((m) => m.score > 0).map((m) => (
-            <p class="text-sm"><span class:list={['co-badge mr-1', m.story.outcome === 'won' ? 'co-badge--ink' : 'co-badge--attention']}>{m.story.outcome === 'won' ? 'Ganado' : 'Perdido'}</span><strong>{m.story.title}</strong> <span class="co-meta">· {m.matches.map((x) => x.label).join(' · ')}</span><span class="co-body block">«{m.story.outcome === 'won' ? m.story.whatWorked : m.story.whatFailed ?? m.story.whatWorked}»</span></p>
+          <p class="text-eyebrow">{m.compose.evidenceTitle}</p>
+          {rec.plays.length > 0 && <p class="text-sm"><strong>{m.compose.topPlays}</strong> {rec.plays.slice(0, 3).map((p) => `${p.title} (${p.wonIn})`).join(' · ')}</p>}
+          {rec.stories.filter((s) => s.score > 0).map((s) => (
+            <p class="text-sm"><span class:list={['co-badge mr-1', s.story.outcome === 'won' ? 'co-badge--ink' : 'co-badge--attention']}>{s.story.outcome === 'won' ? m.common.won : m.common.lost}</span><strong>{s.story.title}</strong> <span class="co-meta">· {s.matches.map((x) => x.label).join(' · ')}</span><span class="co-body block">«{s.story.outcome === 'won' ? s.story.whatWorked : s.story.whatFailed ?? s.story.whatWorked}»</span></p>
           ))}
-          <p class="co-meta">Ya va incluido en la petición, separado de lo que proponga el Cerebro.</p>
+          <p class="co-meta">{m.compose.evidenceNote}</p>
         </div>
       )}
       {brief && (
         <div class="grid gap-4" data-testid="brief">
           <div class="co-card grid gap-3">
-            <h2 class="co-entity">{brief.title}</h2>
+            <h2 class="co-entity">{briefTitle}</h2>
             <p class="flex flex-wrap gap-1.5">
-              <span class="co-badge co-badge--soft">Cerebro · etapa: {brief.cerebro.etapa}</span>
-              {brief.cerebro.objecion && <span class="co-badge co-badge--attention">objeción: {brief.cerebro.objecion}</span>}
-              {brief.plays.length > 0 && <span class="co-badge">{brief.plays.length} jugadas del playbook</span>}
+              <span class="co-badge co-badge--soft">{m.compose.cerebroStage(shownStage)}</span>
+              {brief.cerebro.objecion && <span class="co-badge co-badge--attention">{m.compose.objectionBadge(shownObjection)}</span>}
+              {brief.plays.length > 0 && <span class="co-badge">{m.compose.plays(brief.plays.length)}</span>}
             </p>
             <div class="flex flex-wrap gap-2">
-              <button type="button" class="co-btn co-btn--primary" data-copy="prompt" data-testid="copy-prompt"><Icon name="copy" size={16} />Copiar para Claude / ChatGPT</button>
-              {claudeUrl && <a class="co-btn co-btn--ghost" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">Abrir en Claude <Icon name="external-link" size={14} /></a>}
-              {chatgptUrl && <a class="co-btn co-btn--ghost" href={chatgptUrl} target="_blank" rel="noopener noreferrer">Abrir en ChatGPT <Icon name="external-link" size={14} /></a>}
+              <button type="button" class="co-btn co-btn--primary" data-copy="prompt" data-testid="copy-prompt" data-copied={m.compose.copied}><Icon name="copy" size={16} />{m.compose.copyPrompt}</button>
+              {claudeUrl && <a class="co-btn co-btn--ghost" href={claudeUrl} target="_blank" rel="noopener noreferrer" data-testid="open-claude">{m.compose.openClaude} <Icon name="external-link" size={14} /></a>}
+              {chatgptUrl && <a class="co-btn co-btn--ghost" href={chatgptUrl} target="_blank" rel="noopener noreferrer">{m.compose.openChatgpt} <Icon name="external-link" size={14} /></a>}
             </div>
-            <p class="co-meta">Con el Cerebro de Ventas conectado, el asistente buscará la técnica, te dirá de qué creador sale y redactará el mensaje con tu contexto. Revisa siempre lo que aparece entre [corchetes].</p>
+            <p class="co-meta">{m.compose.briefNote}</p>
           </div>
-          <label class="co-field">Petición completa
+          <label class="co-field">{m.compose.fullPrompt}
             <textarea id="prompt" class="co-textarea h-72 font-mono !text-xs" readonly data-testid="prompt">{brief.prompt}</textarea>
           </label>
           <details class="co-card">
-            <summary class="cursor-pointer co-row-title">Solo el contexto, sin instrucciones</summary>
+            <summary class="cursor-pointer co-row-title">{m.compose.contextOnly}</summary>
             <textarea id="brief" class="co-textarea mt-2 h-64 font-mono !text-xs" readonly>{brief.brief}</textarea>
-            <button type="button" class="co-btn co-btn--ghost co-btn--sm mt-2" data-copy="brief">Copiar contexto</button>
+            <button type="button" class="co-btn co-btn--ghost co-btn--sm mt-2" data-copy="brief" data-copied={m.compose.copied}>{m.compose.copyContext}</button>
           </details>
-          {state && <a class="co-btn co-btn--quiet w-fit" href={`/admin/dossiers/${state.dossier.id}`}>← Volver al dossier</a>}
+          {state && <a class="co-btn co-btn--quiet w-fit" href={`/admin/dossiers/${state.dossier.id}`}>{m.compose.back}</a>}
         </div>
       )}
     </section>
@@ -213,7 +222,7 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
         if (!el) return;
         const prev = b.textContent;
         try { await navigator.clipboard.writeText(el.value); } catch { el.select(); document.execCommand('copy'); }
-        b.textContent = '¡Copiado!';
+        b.textContent = b.dataset.copied ?? '';
         setTimeout(() => (b.textContent = prev), 1600);
       });
     });

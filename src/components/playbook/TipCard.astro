@@ -2,27 +2,30 @@
 import Badges from './Badges.astro';
 import { renderMarkdown } from '~/lib/playbook/markdown';
 import type { ContributionView } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 interface Props { tip: ContributionView; mine?: boolean }
 const { tip, mine = false } = Astro.props;
 const anchor = `tip-${tip.id}`;
-const STATUS = { pending: 'Pendiente de revisión', accepted: 'Aceptado ✓', rejected: 'No aceptado', hidden: 'Oculto', shared: 'Compartido' } as const;
-const date = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(tip.createdAt));
+const { m, f } = i18n(Astro, playbookMessages);
+const STATUS = m.tipCard.status;
+const date = f.date(tip.createdAt, { dateStyle: 'medium' });
 ---
 <article id={anchor} class="scroll-mt-24 co-card" data-testid="tip">
   <div class="flex flex-wrap items-center gap-2">
     <Badges team kind={tip.kind === 'tip' ? undefined : tip.kind} />
-    <span class="text-xs text-muted">{tip.authorName ?? 'Alguien del equipo'} · {date}</span>
-    {tip.type === 'change' && <span class="text-xs font-semibold">Mejora de «{tip.playTitle}» · {STATUS[tip.status]}</span>}
-    {tip.type === 'tip' && tip.status === 'accepted' && <span class="co-badge co-badge--ink">Ascendido a oficial</span>}
+    <span class="text-xs text-muted">{tip.authorName ?? m.tipCard.someone} · {date}</span>
+    {tip.type === 'change' && <span class="text-xs font-semibold">{m.tipCard.changeOf(tip.playTitle, STATUS[tip.status])}</span>}
+    {tip.type === 'tip' && tip.status === 'accepted' && <span class="co-badge co-badge--ink">{m.tipCard.promoted}</span>}
   </div>
   <h4 class="mt-2 co-card-title">{tip.title}</h4>
   <div class="mt-1 text-sm leading-relaxed" set:html={renderMarkdown(tip.body)} />
-  {tip.reviewNote && <p class="mt-2 rounded-lg bg-bg p-2 text-xs"><strong>Nota del líder:</strong> {tip.reviewNote}</p>}
+  {tip.reviewNote && <p class="mt-2 rounded-lg bg-bg p-2 text-xs"><strong>{m.tipCard.leaderNote}</strong> {tip.reviewNote}</p>}
   <div class="mt-3 flex flex-wrap items-center gap-3">
     {mine && ['shared', 'pending'].includes(tip.status) && (
       <form method="post"><input type="hidden" name="action" value="withdraw" /><input type="hidden" name="id" value={tip.id} />
-        <button class="text-xs text-muted underline" type="submit">Retirar</button></form>
+        <button class="text-xs text-muted underline" type="submit">{m.tipCard.withdraw}</button></form>
     )}
   </div>
 </article>

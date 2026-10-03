@@ -2,11 +2,14 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { REGISTRY } from '~/modules/registry';
+import { i18n } from '~/lib/i18n';
+import { teamMessages } from '~/lib/i18n/messages/team';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
+const { m: { catalog: M }, f: fmt } = i18n(Astro, teamMessages);
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -27,19 +30,19 @@ if (Astro.request.method === 'POST') {
   });
   if (!result.error) return Astro.redirect(to, 303);
 }
-const okMsg = flash(Astro.url, { published: 'Versión publicada: ya aparece en el builder.', archived: 'Versión archivada. Los dossiers que la usan siguen funcionando.', visibility: 'Visibilidad actualizada.' });
+const okMsg = flash(Astro.url, { published: M.okPublished, archived: M.okArchived, visibility: M.okVisibility });
 const catalog = await t.listCatalog();
-const STATUS = { draft: ['Borrador', 'co-badge'], published: ['Publicada', 'co-badge co-badge--ink'], archived: ['Archivada', 'co-badge co-badge--soft'] } as const;
-const money = (n: number | null, c: string) => (n == null ? '—' : new Intl.NumberFormat('es-ES', { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(n));
+const STATUS = { draft: [M.status.draft, 'co-badge'], published: [M.status.published, 'co-badge co-badge--ink'], archived: [M.status.archived, 'co-badge co-badge--soft'] } as const;
+const money = (n: number | null, c: string) => (n == null ? '—' : new Intl.NumberFormat(fmt.tag, { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(n));
 const field = 'co-input';
 const btn = 'co-btn co-btn--ghost co-btn--sm';
 ---
-<AdminLayout title="Catálogo">
+<AdminLayout title={M.title}>
   <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
     <section>
-      <p class="text-eyebrow mb-3">Configurar</p>
-      <h1 class="co-page-title">Catálogo</h1>
-      <p class="text-sm text-muted">Los comerciales solo ven la última versión <strong>publicada</strong> de cada módulo visible. Una versión publicada no se modifica: se crea otra.</p>
+      <p class="text-eyebrow mb-3">{M.eyebrow}</p>
+      <h1 class="co-page-title">{M.title}</h1>
+      <p class="text-sm text-muted">{M.introA}<strong>{M.introStrong}</strong>{M.introB}</p>
       {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
       {result.error && (
         <div class="mt-4 co-alert co-alert--rejection" role="alert">
@@ -53,42 +56,42 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
           <article class="co-card" data-module-key={m.key}>
             <div class="flex flex-wrap items-start gap-3">
               <div class="min-w-0 flex-1">
-                <h2 class="co-card-title">{m.name} {!m.isCatalog && <span class="ml-1 co-badge co-badge--soft">Oculto</span>}</h2>
+                <h2 class="co-card-title">{m.name} {!m.isCatalog && <span class="ml-1 co-badge co-badge--soft">{M.hidden}</span>}</h2>
                 <p class="text-xs text-muted"><code>{m.key}</code> · {m.blockLabel}</p>
                 {m.description && <p class="mt-1 text-sm text-muted">{m.description}</p>}
               </div>
               <form method="post">
                 <input type="hidden" name="action" value="visibility" /><input type="hidden" name="moduleId" value={m.id} />
                 <input type="hidden" name="isCatalog" value={m.isCatalog ? '0' : '1'} />
-                <button class={btn} type="submit">{m.isCatalog ? 'Ocultar del catálogo' : 'Mostrar en catálogo'}</button>
+                <button class={btn} type="submit">{m.isCatalog ? M.hide : M.show}</button>
               </form>
               <form method="post">
                 <input type="hidden" name="action" value="draft" /><input type="hidden" name="moduleId" value={m.id} />
                 <button class="co-btn co-btn--primary co-btn--sm" type="submit">
-                  {m.versions.some((v) => v.status === 'draft') ? 'Editar borrador' : 'Nueva versión'}
+                  {m.versions.some((v) => v.status === 'draft') ? M.editDraft : M.newVersion}
                 </button>
               </form>
             </div>
             <table class="mt-3 w-full text-sm">
-              <thead><tr class="text-left text-xs text-muted"><th class="py-1">Versión</th><th>Estado</th><th>Precio</th><th>En uso</th><th></th></tr></thead>
+              <thead><tr class="text-left text-xs text-muted"><th class="py-1">{M.version}</th><th>{M.state}</th><th>{M.price}</th><th>{M.inUse}</th><th></th></tr></thead>
               <tbody>
                 {m.versions.map((v) => (
                   <tr class="border-t border-line">
                     <td class="py-2 font-semibold">v{v.version}</td>
                     <td><span class={STATUS[v.status][1]}>{STATUS[v.status][0]}</span>
-                      {v.error && <span class="ml-1 text-xs text-red-700" title={v.error}>inválida</span>}</td>
+                      {v.error && <span class="ml-1 text-xs text-red-700" title={v.error}>{M.invalid}</span>}</td>
                     <td>{money(v.defaultPrice, v.currency)}</td>
-                    <td class="text-muted">{v.usage} {v.usage === 1 ? 'item' : 'items'}</td>
+                    <td class="text-muted">{M.usage(v.usage)}</td>
                     <td class="py-2 text-right">
                       <div class="flex flex-wrap justify-end gap-1">
-                        <a class={btn} href={`/admin/catalog/${v.id}`}>{v.status === 'draft' ? 'Editar' : 'Ver'}</a>
+                        <a class={btn} href={`/admin/catalog/${v.id}`}>{v.status === 'draft' ? M.edit : M.view}</a>
                         {v.status === 'draft' && (
                           <form method="post"><input type="hidden" name="action" value="publish" /><input type="hidden" name="versionId" value={v.id} />
-                            <button class={btn} type="submit">Publicar</button></form>
+                            <button class={btn} type="submit">{M.publish}</button></form>
                         )}
                         {v.status === 'published' && (
                           <form method="post"><input type="hidden" name="action" value="archive" /><input type="hidden" name="versionId" value={v.id} />
-                            <button class={btn} type="submit">Archivar</button></form>
+                            <button class={btn} type="submit">{M.archive}</button></form>
                         )}
                       </div>
                     </td>
@@ -104,15 +107,15 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
     <aside>
       <form method="post" class="space-y-3 co-card lg:sticky lg:top-6" data-testid="create-module">
         <input type="hidden" name="action" value="create" />
-        <h2 class="co-card-title">Nuevo módulo</h2>
-        <p class="text-xs text-muted">Variante de un tipo de bloque existente (p. ej. «Hero · Locales»). Tipos de bloque nuevos = desarrollo (ver MODULE_AUTHORING).</p>
-        <label class="block text-sm font-medium">Tipo de bloque
+        <h2 class="co-card-title">{M.newModule}</h2>
+        <p class="text-xs text-muted">{M.newModuleHelp}</p>
+        <label class="block text-sm font-medium">{M.blockType}
           <select class={field} name="blockType">{Object.entries(REGISTRY).map(([k, v]) => <option value={k}>{v.label}</option>)}</select>
         </label>
-        <label class="block text-sm font-medium">Nombre<input class={field} name="name" required maxlength="80" placeholder="Hero · Locales" /></label>
-        <label class="block text-sm font-medium">Clave<input class={field} name="key" required pattern="[a-z0-9][a-z0-9\-]{1,62}" placeholder="hero-locales" /></label>
-        <label class="block text-sm font-medium">Descripción<input class={field} name="description" maxlength="240" /></label>
-        <button class="co-btn co-btn--primary" type="submit">Crear borrador</button>
+        <label class="block text-sm font-medium">{M.name}<input class={field} name="name" required maxlength="80" placeholder={M.namePlaceholder} /></label>
+        <label class="block text-sm font-medium">{M.key}<input class={field} name="key" required pattern="[a-z0-9][a-z0-9\-]{1,62}" placeholder={M.keyPlaceholder} /></label>
+        <label class="block text-sm font-medium">{M.description}<input class={field} name="description" maxlength="240" /></label>
+        <button class="co-btn co-btn--primary" type="submit">{M.createDraft}</button>
       </form>
     </aside>
   </div>

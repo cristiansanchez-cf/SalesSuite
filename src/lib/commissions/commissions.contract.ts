@@ -189,6 +189,24 @@ export function commissionsContract(name: string, env: () => CommissionsEnv) {
       await rejects(dj.service.apply(dd, { op: 'setCoupon', couponId: c.id }), 403);
     });
 
+    test('condiciones opcionales: invisibles hasta que se acuerdan; cada uno ve las suyas', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      const dj = await ctx(U.dj);
+      await admin.commissions.setFlat(30);
+      const colab = await admin.commissions.savePlan({ name: 'Colaboradores', rules: [{ label: '20 % por paquete', pay: { type: 'percent', pct: 20 } }] });
+      await admin.commissions.assignPlan(U.dj.id, colab);
+      expect(await rep.commissions.myConditions()).toMatchObject({ visible: false, plan: null });
+      await rejects(rep.commissions.setConditions(U.rep.id, { visible: true }), 403);
+      await admin.commissions.setConditions(U.rep.id, { visible: true, note: 'Revisamos en enero' });
+      await admin.commissions.setConditions(U.dj.id, { visible: true });
+      expect(await rep.commissions.myConditions()).toMatchObject({ visible: true, note: 'Revisamos en enero', plan: { name: 'General' } });
+      expect((await dj.commissions.myConditions()).plan?.name).toBe('Colaboradores');
+      expect((await admin.commissions.conditions()).filter((c) => c.visible)).toHaveLength(2);
+      await admin.commissions.setConditions(U.rep.id, { visible: false });
+      expect((await rep.commissions.myConditions()).visible).toBe(false);
+    });
+
     test('ajustes con motivo y liquidaciones que no pagan saldos negativos', async () => {
       const admin = await ctx(U.admin);
       await admin.commissions.setFlat(30);

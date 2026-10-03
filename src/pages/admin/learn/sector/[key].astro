@@ -4,9 +4,12 @@ import PersonaCard from '~/components/playbook/PersonaCard.astro';
 import { AdminError } from '~/lib/admin/service';
 import { renderMarkdown } from '~/lib/playbook/markdown';
 import { PERSONA_ROLES } from '~/lib/playbook/market';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
+const { m: msg } = i18n(Astro, playbookMessages);
 let v;
 try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
@@ -15,22 +18,22 @@ try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) 
 const sg = v.segment;
 const personas = [...sg.personas].sort((a, b) => PERSONA_ROLES.indexOf(a.role) - PERSONA_ROLES.indexOf(b.role) || a.position - b.position);
 const facts = [
-  ['Por qué nosotros', sg.valueProp], ['Cliente ideal', sg.icp], ['No pierdas el tiempo si…', sg.disqualifiers],
-  ['Cómo compran', sg.buyingProcess],
+  [msg.sector.whyUs, sg.valueProp], [msg.sector.icp, sg.icp], [msg.sector.disqualifiers, sg.disqualifiers],
+  [msg.sector.buyingProcess, sg.buyingProcess],
 ].filter(([, x]) => x) as Array<[string, string]>;
-const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<number, string>;
+const PRIO = msg.priority as Record<number, string>;
 ---
 <AdminLayout title={sg.name} wide>
-  <a href="/admin/learn" class="text-sm text-muted hover:text-ink">← Aprende</a>
+  <a href="/admin/learn" class="text-sm text-muted hover:text-ink">{msg.common.backLearn}</a>
   <div class="mt-1 flex flex-wrap items-end gap-3">
     <h1 class="min-w-0 flex-1 co-page-title">{sg.name}</h1>
-    {admin.playbook.isAdmin && <a class="text-sm underline" href={`/admin/playbook/segment/${sg.id}`}>Editar sector</a>}
+    {admin.playbook.isAdmin && <a class="text-sm underline" href={`/admin/playbook/segment/${sg.id}`}>{msg.sector.edit}</a>}
   </div>
   {sg.description && <p class="text-muted">{sg.description}</p>}
   {(sg.dealSize || sg.salesCycle) && (
     <p class="mt-2 flex flex-wrap gap-2 text-sm">
-      {sg.dealSize && <span class="rounded-full bg-bg px-3 py-1">Ticket: <strong>{sg.dealSize}</strong></span>}
-      {sg.salesCycle && <span class="rounded-full bg-bg px-3 py-1">⏱ Ciclo: <strong>{sg.salesCycle}</strong></span>}
+      {sg.dealSize && <span class="rounded-full bg-bg px-3 py-1">{msg.sector.ticket} <strong>{sg.dealSize}</strong></span>}
+      {sg.salesCycle && <span class="rounded-full bg-bg px-3 py-1">{msg.sector.cycle} <strong>{sg.salesCycle}</strong></span>}
     </p>
   )}
 
@@ -44,7 +47,7 @@ const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<numbe
       ))}
       {sg.modules.length > 0 && (
         <section class="co-card" data-testid="segment-modules">
-          <h2 class="text-eyebrow">Qué módulos vender aquí</h2>
+          <h2 class="text-eyebrow">{msg.sector.modulesHere}</h2>
           <ul class="mt-2 space-y-2 p-0 text-sm">
             {sg.modules.map((m) => (
               <li class="list-none"><a class="font-semibold underline-offset-2 hover:underline" href={`/admin/learn/${m.moduleId}`}>{m.moduleName}</a>
@@ -54,16 +57,16 @@ const PRIO = { 1: '★ Estrella', 2: 'Encaja', 3: 'Secundario' } as Record<numbe
           </ul>
         </section>
       )}
-      <a class="block rounded-2xl bg-ink p-4 text-center font-semibold text-bg" href={`/admin/compose?segment=${sg.id}`}>Preparar un mensaje para {sg.name.toLowerCase()}</a>
+      <a class="block rounded-2xl bg-ink p-4 text-center font-semibold text-bg" href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)}</a>
     </aside>
 
     <section>
-      <h2 class="co-card-title">Actores: quién decide, quién paga, quién puede tumbarlo</h2>
-      <p class="text-sm text-muted">En cada cuenta, mapea a estas personas (en el dossier → «Cuenta y actores»). Vender solo al decisor y olvidar al que puede vetar es la forma más rápida de perder.</p>
+      <h2 class="co-card-title">{msg.sector.actorsTitle}</h2>
+      <p class="text-sm text-muted">{msg.sector.actorsLede}</p>
       <div class="mt-4 grid gap-4 2xl:grid-cols-2" data-testid="personas">
         {personas.map((p) => <PersonaCard persona={p} plays={v.byPersona[p.key]} adminEdit={admin.playbook.isAdmin} />)}
       </div>
-      {personas.length === 0 && <p class="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-muted">Este sector aún no tiene actores definidos.</p>}
+      {personas.length === 0 && <p class="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-muted">{msg.sector.noActors}</p>}
     </section>
   </div>
 </AdminLayout>

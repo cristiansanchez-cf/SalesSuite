@@ -3,11 +3,14 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
 import { REGISTRY, isBlockType } from '~/modules/registry';
+import { i18n } from '~/lib/i18n';
+import { teamMessages } from '~/lib/i18n/messages/team';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
+const { m: { catalog: M } } = i18n(Astro, teamMessages);
 const versionId = Astro.params.versionId ?? '';
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -22,7 +25,7 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     if (action === 'save' || action === 'publish') {
       let props: unknown;
-      try { props = JSON.parse(draftJson || '{}'); } catch { throw new AdminError(422, 'El contenido no es JSON válido'); }
+      try { props = JSON.parse(draftJson || '{}'); } catch { throw new AdminError(422, M.errJson); }
       const p = draftPrice!.trim().replace(',', '.');
       await t.saveDraft(versionId, { defaultProps: props, defaultPrice: p === '' ? null : Number(p), currency: String(f.get('currency') ?? 'EUR') });
       if (action === 'publish') { await t.publish(versionId); ok = 'published'; }
@@ -37,14 +40,14 @@ if (!mod) return Astro.rewrite('/404');
 const v = mod.versions.find((x) => x.id === versionId)!;
 const editable = v.status === 'draft';
 const example = isBlockType(mod.blockType) ? REGISTRY[mod.blockType].example : {};
-const okMsg = flash(Astro.url, { saved: 'Borrador guardado.', created: 'Módulo creado con contenido de ejemplo: edítalo y publícalo.' });
+const okMsg = flash(Astro.url, { saved: M.okSaved, created: M.okCreated });
 const field = 'co-input disabled:bg-surface';
 ---
 <AdminLayout title={`${mod.name} · v${v.version}`} wide>
-  <a href="/admin/catalog" class="text-sm text-muted hover:text-ink">← Catálogo</a>
-  <p class="text-eyebrow mb-3">Catálogo · versión</p>
+  <a href="/admin/catalog" class="text-sm text-muted hover:text-ink">← {M.title}</a>
+  <p class="text-eyebrow mb-3">{M.versionEyebrow}</p>
   <h1 class="co-page-title">{mod.name} · v{v.version}</h1>
-  <p class="text-sm text-muted"><code>{mod.key}</code> · {mod.blockLabel} · {editable ? 'Borrador' : v.status === 'published' ? 'Publicada (solo lectura)' : 'Archivada (solo lectura)'}</p>
+  <p class="text-sm text-muted"><code>{mod.key}</code> · {mod.blockLabel} · {editable ? M.draft : v.status === 'published' ? M.publishedReadOnly : M.archivedReadOnly}</p>
   {okMsg && <p class="mt-3 co-alert co-alert--success" role="status">{okMsg}</p>}
   {result.error && (
     <div class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error">
@@ -55,27 +58,27 @@ const field = 'co-input disabled:bg-surface';
 
   <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
     <form method="post" class="space-y-3 co-card">
-      <label class="block text-sm font-medium">Contenido (JSON)
+      <label class="block text-sm font-medium">{M.content}
         <textarea class={`${field} h-[26rem] font-mono text-xs`} name="defaultProps" spellcheck="false" disabled={!editable} data-testid="props">{draftJson ?? JSON.stringify(v.defaultProps, null, 2)}</textarea>
       </label>
       <div class="grid grid-cols-2 gap-3">
-        <label class="text-sm font-medium">Precio por defecto<input class={field} name="defaultPrice" inputmode="decimal" value={draftPrice ?? (v.defaultPrice ?? '')} disabled={!editable} placeholder="sin precio" /></label>
-        <label class="text-sm font-medium">Moneda
+        <label class="text-sm font-medium">{M.defaultPrice}<input class={field} name="defaultPrice" inputmode="decimal" value={draftPrice ?? (v.defaultPrice ?? '')} disabled={!editable} placeholder={M.noPrice} /></label>
+        <label class="text-sm font-medium">{M.currency}
           <select class={field} name="currency" disabled={!editable}>{['EUR', 'USD', 'GBP', 'MXN'].map((c) => <option selected={c === v.currency}>{c}</option>)}</select>
         </label>
       </div>
-      <p class="text-xs text-muted">Textos admiten <code>{'{company}'}</code> y <code>{'{prospect}'}</code>. Se valida contra el contrato del bloque al guardar.</p>
+      <p class="text-xs text-muted">{M.placeholdersA}<code>{'{company}'}</code>{M.placeholdersAnd}<code>{'{prospect}'}</code>{M.placeholdersB}</p>
       {editable && (
         <div class="flex gap-2">
-          <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="save" type="submit">Guardar borrador</button>
-          <button class="co-btn co-btn--primary" name="action" value="publish" type="submit" data-testid="publish-version">Guardar y publicar</button>
+          <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="save" type="submit">{M.saveDraft}</button>
+          <button class="co-btn co-btn--primary" name="action" value="publish" type="submit" data-testid="publish-version">{M.saveAndPublish}</button>
         </div>
       )}
-      <details class="text-xs"><summary class="cursor-pointer text-muted">Ejemplo mínimo de este bloque</summary><pre class="mt-1 overflow-auto rounded-lg bg-surface p-2">{JSON.stringify(example, null, 2)}</pre></details>
+      <details class="text-xs"><summary class="cursor-pointer text-muted">{M.example}</summary><pre class="mt-1 overflow-auto rounded-lg bg-surface p-2">{JSON.stringify(example, null, 2)}</pre></details>
     </form>
     <div>
-      <p class="mb-2 text-sm font-bold">Vista previa {editable && <span class="font-normal text-muted">· del último guardado</span>}</p>
-      <iframe title="Vista previa del módulo" src={`/admin/catalog/preview/${v.id}?t=${Date.now()}`} class="h-[75vh] w-full co-card" data-testid="version-preview"></iframe>
+      <p class="mb-2 text-sm font-bold">{M.preview} {editable && <span class="font-normal text-muted">{M.previewLastSaved}</span>}</p>
+      <iframe title={M.previewTitle} src={`/admin/catalog/preview/${v.id}?t=${Date.now()}`} class="h-[75vh] w-full co-card" data-testid="version-preview"></iframe>
     </div>
   </div>
 </AdminLayout>

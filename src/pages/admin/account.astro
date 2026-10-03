@@ -8,7 +8,8 @@ import { shellMessages } from '~/lib/i18n/messages/shell';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-const setup = Astro.url.searchParams.get('setup') === '1';
+const setupParam = Astro.url.searchParams.get('setup');
+const setup = setupParam === '1' || setupParam === 'recovery';
 let { m, locale } = i18n(Astro, shellMessages);
 // Colaboradores: siempre sin contraseña (código por email).
 const showPassword = admin.session.role !== 'partner';
@@ -51,7 +52,7 @@ if (form?.get('action') === 'locale') {
     if (e) error = e.message.includes('should be different') ? m.account.errSame : m.account.errSave;
     else {
       await sb.from('users').update({ display_name: name || null, phone: phone || null }).eq('id', admin.session.userId);
-      if (setup) return Astro.redirect('/admin', 303);
+      if (setup) return Astro.redirect(setupParam === '1' ? '/admin/start' : '/admin', 303);
       ok = m.account.saved;
     }
   } else {

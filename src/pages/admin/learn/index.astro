@@ -1,5 +1,7 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -10,17 +12,18 @@ if (Astro.request.method === 'POST') {
 }
 const [idx, market] = await Promise.all([pb.learnIndex(), pb.market()]);
 const pct = Math.round((idx.progress.done / Math.max(1, idx.progress.total)) * 100);
-const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(new Date(iso));
+const { m: msg, f } = i18n(Astro, playbookMessages);
+const date = (iso: string) => f.date(iso, { day: 'numeric', month: 'short' });
 ---
-<AdminLayout title="Aprende a vender">
+<AdminLayout title={msg.learn.title}>
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p class="text-eyebrow mb-3">Vender</p>
-      <h1 class="co-page-title">Aprende a vender</h1>
-      <p class="text-sm text-muted">Todo lo que necesitas para vender cada módulo: qué es, para quién, cómo presentarlo, objeciones y precio. Lo mantiene tu líder y lo mejora el equipo.</p>
+      <p class="text-eyebrow mb-3">{msg.learn.eyebrow}</p>
+      <h1 class="co-page-title">{msg.learn.title}</h1>
+      <p class="text-sm text-muted">{msg.learn.lede}</p>
     </div>
     <div class="w-56" data-testid="progress">
-      <div class="flex justify-between text-xs font-semibold"><span>Tu formación</span><span>{idx.progress.done}/{idx.progress.total}</span></div>
+      <div class="flex justify-between text-xs font-semibold"><span>{msg.learn.progress}</span><span>{idx.progress.done}/{idx.progress.total}</span></div>
       <div class="co-progress mt-1"><span style={`width:${pct}%`}></span></div>
     </div>
   </div>
@@ -28,8 +31,8 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric',
   {(idx.news.length > 0 || idx.newTips > 0) && (
     <section class="mt-6 co-card co-card--soft" data-testid="news">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="co-card-title">Novedades desde tu última visita</h2>
-        <form method="post"><button class="text-xs font-semibold underline" type="submit">Marcar como vistas</button></form>
+        <h2 class="co-card-title">{msg.learn.news}</h2>
+        <form method="post"><button class="text-xs font-semibold underline" type="submit">{msg.learn.markSeen}</button></form>
       </div>
       <ul class="mt-2 space-y-1 p-0 text-sm">
         {idx.news.map((n) => (
@@ -39,7 +42,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric',
             {n.note && <span class="text-muted"> — {n.note}</span>}
           </li>
         ))}
-        {idx.newTips > 0 && <li class="list-none">{idx.newTips} {idx.newTips === 1 ? 'truco nuevo' : 'trucos nuevos'} del equipo</li>}
+        {idx.newTips > 0 && <li class="list-none">{msg.learn.newTips(idx.newTips)}</li>}
       </ul>
     </section>
   )}
@@ -47,29 +50,29 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric',
   <a href="/admin/learn/general" class="mt-6 flex items-center gap-4 co-card hover:border-ink" data-testid="topic-general">
     <span class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-ink text-xl text-bg">1</span>
     <span class="min-w-0 flex-1">
-      <span class="block text-lg font-bold">Empieza aquí: la empresa</span>
-      <span class="block text-sm text-muted">Qué vendemos, cliente ideal, cómo abrir y cerrar, objeciones generales · {idx.general.playCount} jugadas</span>
+      <span class="block text-lg font-bold">{msg.learn.startHere}</span>
+      <span class="block text-sm text-muted">{msg.learn.generalMeta(idx.general.playCount)}</span>
     </span>
-    {idx.general.learned ? <span class="co-badge co-badge--ink">✓ Aprendido</span> : <span class="text-sm font-semibold">Empezar →</span>}
+    {idx.general.learned ? <span class="co-badge co-badge--ink">{msg.learn.learned}</span> : <span class="text-sm font-semibold">{msg.learn.start}</span>}
   </a>
 
   {market.length > 0 && (
     <>
-      <h2 class="mt-8 text-lg font-bold">A quién vendemos</h2>
-      <p class="text-sm text-muted">Cada sector tiene su cliente ideal y sus actores: quién decide, quién paga y quién puede tumbarlo.</p>
+      <h2 class="mt-8 text-lg font-bold">{msg.learn.whoWeSell}</h2>
+      <p class="text-sm text-muted">{msg.learn.whoLede}</p>
       <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="segments">
         {market.map((sg) => (
           <a href={`/admin/learn/sector/${sg.key}`} class="flex flex-col co-card hover:border-ink" data-testid="segment">
             <span class="font-bold">{sg.name}</span>
             {sg.description && <span class="mt-1 text-sm text-muted">{sg.description}</span>}
-            <span class="mt-auto pt-3 text-xs text-muted">{sg.personas.length} actores · {sg.modules.length} módulos{sg.playCount ? ` · ${sg.playCount} jugadas` : ''}</span>
+            <span class="mt-auto pt-3 text-xs text-muted">{msg.learn.segmentMeta(sg.personas.length, sg.modules.length, sg.playCount)}</span>
           </a>
         ))}
       </div>
     </>
   )}
 
-  <h2 class="mt-8 text-lg font-bold">Módulos que vendemos</h2>
+  <h2 class="mt-8 text-lg font-bold">{msg.learn.modulesTitle}</h2>
   <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="topics">
     {idx.modules.map((m) => (
       <a href={`/admin/learn/${m.moduleId}`} class="flex flex-col co-card hover:border-ink" data-testid="topic">
@@ -79,8 +82,8 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric',
         </span>
         {m.description && <span class="mt-1 text-sm text-muted">{m.description}</span>}
         <span class="mt-auto pt-3 text-xs text-muted">
-          {m.playCount ? `${m.playCount} jugadas` : <span class="text-amber-700">Sin jugadas todavía</span>}
-          {m.tipCount > 0 && ` · ${m.tipCount} del equipo`}
+          {m.playCount ? msg.learn.playCount(m.playCount) : <span class="text-amber-700">{msg.learn.noPlaysYet}</span>}
+          {m.tipCount > 0 && msg.learn.teamCount(m.tipCount)}
         </span>
       </a>
     ))}

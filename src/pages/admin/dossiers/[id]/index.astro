@@ -6,14 +6,15 @@ import Alert from '~/components/ui/Alert.astro';
 import { AdminError } from '~/lib/admin/service';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
-import { ELIGIBILITY_LABEL } from '~/lib/accounts/rules';
-import { formatMoney } from '~/lib/commissions/money';
+import { i18n } from '~/lib/i18n';
+import { builderMessages } from '~/lib/i18n/messages/builder';
 import type { BuilderState } from '~/lib/admin/types';
 import { requestOrigin } from '~/lib/http';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
+const { m: t, f: fmt, locale } = i18n(Astro, builderMessages);
 const id = Astro.params.id ?? '';
 
 // Cuenta del CRM y decisión sobre la comisión (docs/ACCOUNTS.md).
@@ -64,14 +65,14 @@ const origin = requestOrigin(Astro.request, Astro.url);
     <div class:list={['co-alert mb-4', d.accountDecision === 'approved' ? 'co-alert--success' : 'co-alert--rejection']} data-testid="commission-conflict">
       <Icon name="shield-alert" size={18} />
       <div class="min-w-0 flex-1">
-        <p class="font-semibold">{d.accountDecision === 'approved' ? 'Comisión aprobada a pesar del conflicto' : `Esta venta no genera comisión: ${ELIGIBILITY_LABEL[d.accountEligibility!].toLowerCase()}`}</p>
-        <p>{d.accountDecision ? 'Ya está decidido.' : perms.manageAccounts ? 'Decide si se paga. Hasta entonces, no cuenta para comisiones.' : 'Un/a jefe/a de ventas decidirá si se paga.'}</p>
+        <p class="font-semibold">{d.accountDecision === 'approved' ? t.page.approved : t.page.noCommission(t.page.eligibility[d.accountEligibility!].toLowerCase())}</p>
+        <p>{d.accountDecision ? t.page.decided : perms.manageAccounts ? t.page.decide : t.page.leadDecides}</p>
       </div>
       {perms.manageAccounts && !d.accountDecision && (
         <form method="post" class="flex flex-wrap gap-2">
           <input type="hidden" name="action" value="decide" />
-          <button class="co-btn co-btn--ghost co-btn--sm" type="submit" name="decision" value="approved">Pagar comisión</button>
-          <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="decision" value="rejected">Sin comisión</button>
+          <button class="co-btn co-btn--ghost co-btn--sm" type="submit" name="decision" value="approved">{t.page.pay}</button>
+          <button class="co-btn co-btn--quiet co-btn--sm" type="submit" name="decision" value="rejected">{t.page.dontPay}</button>
         </form>
       )}
     </div>
@@ -79,45 +80,45 @@ const origin = requestOrigin(Astro.request, Astro.url);
   {(canDeclare || declared.length > 0) && (
     <section class="co-card mb-4 grid gap-3" data-testid="declare-sale">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 class="co-card-title flex items-center gap-2"><Icon name="wallet" size={18} />Venta</h2>
-        <a class="co-meta underline" href="/admin/commissions">Mis comisiones</a>
+        <h2 class="co-card-title flex items-center gap-2"><Icon name="wallet" size={18} />{t.page.sale}</h2>
+        <a class="co-meta underline" href="/admin/commissions">{t.page.myCommissions}</a>
       </div>
       {declared.length > 0 && (
         <ul class="grid gap-1 p-0">{declared.map((e) => (
           <li class="flex list-none flex-wrap items-center gap-2 text-sm" data-testid="declared">
-            <strong>{formatMoney(e.amountCents, e.currency)}</strong>{e.offer && <span class="co-meta">{e.offer}</span>}
-            <span class="co-meta">· {new Date(e.occurredAt).toLocaleDateString('es-ES')}</span>
-            <span class={e.status === 'confirmed' ? 'co-badge co-badge--signal' : e.status === 'void' ? 'co-badge' : 'co-badge co-badge--soft'}>{e.status === 'confirmed' ? 'Confirmada' : e.status === 'void' ? 'Anulada' : 'Pendiente de confirmar'}</span>
+            <strong>{fmt.money(e.amountCents, e.currency)}</strong>{e.offer && <span class="co-meta">{e.offer}</span>}
+            <span class="co-meta">· {new Date(e.occurredAt).toLocaleDateString(fmt.tag)}</span>
+            <span class={e.status === 'confirmed' ? 'co-badge co-badge--signal' : e.status === 'void' ? 'co-badge' : 'co-badge co-badge--soft'}>{e.status === 'confirmed' ? t.page.confirmed : e.status === 'void' ? t.page.void : t.page.pending}</span>
           </li>))}
         </ul>
       )}
       {canDeclare && (
         <form method="post" class="flex flex-wrap items-end gap-2">
           <input type="hidden" name="action" value="declare" />
-          <label class="co-field">Importe cobrado (€)<input class="co-input max-w-[9rem]" name="amount" required inputmode="decimal" placeholder="1.000" /></label>
-          <label class="co-field">Tipo<select class="co-select" name="kind"><option value="sale">Pago único</option><option value="recurring">Cuota (suscripción)</option></select></label>
-          <label class="co-field">Paquete <span class="co-help">Opcional</span><input class="co-input max-w-[10rem]" name="offer" maxlength="80" placeholder="pack-1000" /></label>
-          <label class="co-field">Fecha<input class="co-input" type="date" name="occurredAt" required value={new Date().toISOString().slice(0, 10)} /></label>
-          <button class="co-btn co-btn--primary" type="submit">{declared.length ? 'Declarar otro cobro' : 'Declarar la venta'}</button>
+          <label class="co-field">{t.page.amount}<input class="co-input max-w-[9rem]" name="amount" required inputmode="decimal" placeholder={t.page.amountPlaceholder} /></label>
+          <label class="co-field">{t.page.kind}<select class="co-select" name="kind"><option value="sale">{t.page.oneOff}</option><option value="recurring">{t.page.recurring}</option></select></label>
+          <label class="co-field">{t.page.offer} <span class="co-help">{t.page.optional}</span><input class="co-input max-w-[10rem]" name="offer" maxlength="80" placeholder="pack-1000" /></label>
+          <label class="co-field">{t.page.date}<input class="co-input" type="date" name="occurredAt" required value={new Date().toISOString().slice(0, 10)} /></label>
+          <button class="co-btn co-btn--primary" type="submit">{declared.length ? t.page.declareAnother : t.page.declare}</button>
         </form>
       )}
-      {canDeclare && declared.length === 0 && <p class="co-help">Cuenta para tus comisiones cuando la empresa la confirme.</p>}
+      {canDeclare && declared.length === 0 && <p class="co-help">{t.page.declareHelp}</p>}
     </section>
   )}
   {crm && (linked || mine.length > 0) && (
     <div class="co-inset mb-4 flex flex-wrap items-center gap-3 !py-2.5" data-testid="crm-account">
       <Icon name="map-pin" size={16} />
       {linked
-        ? <span class="text-sm">Cuenta: <a class="font-semibold underline" href={`/admin/accounts/${linked.id}`}>{linked.name}</a> <span class="co-meta">· {linked.zonePath || 'sin zona'}</span></span>
+        ? <span class="text-sm">{t.page.account} <a class="font-semibold underline" href={`/admin/accounts/${linked.id}`}>{linked.name}</a> <span class="co-meta">· {linked.zonePath || t.page.noZone}</span></span>
         : (
           <form method="post" class="flex flex-wrap items-center gap-2">
             <input type="hidden" name="action" value="link" />
-            <label class="text-sm" for="link-account">Vincular a una de tus cuentas</label>
+            <label class="text-sm" for="link-account">{t.page.linkTo}</label>
             <select id="link-account" class="co-select !min-h-[32px] !w-auto !py-0" name="accountId" required>{mine.map((a) => <option value={a.id}>{a.name}</option>)}</select>
-            <button class="co-btn co-btn--ghost co-btn--sm" type="submit">Vincular</button>
+            <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{t.page.link}</button>
           </form>
         )}
     </div>
   )}
-  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} />
 </AdminLayout>

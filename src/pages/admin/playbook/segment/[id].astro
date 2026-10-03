@@ -2,12 +2,14 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
-import { ROLE_LABEL } from '~/lib/playbook/market';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const pb = admin.playbook;
+const { m: msg } = i18n(Astro, playbookMessages);
 const id = Astro.params.id ?? '';
 const isNew = id === 'new';
 const [market, catalog] = await Promise.all([pb.market(), admin.tenantAdmin.listCatalog()]);
@@ -42,26 +44,26 @@ const ok = Astro.url.searchParams.get('ok');
 const field = 'co-input';
 const area = (name: string, label: string, hint: string, value: string, h = 'h-24') => ({ name, label, hint, value, h });
 const areas = [
-  area('description', 'Qué es este sector', 'Una frase.', v('description', sg?.description), 'h-16'),
-  area('valueProp', 'Por qué nosotros aquí', 'Propuesta de valor en este sector.', v('valueProp', sg?.valueProp)),
-  area('icp', 'Cliente ideal', 'Tamaño, señales, situación. Admite listas con «- ».', v('icp', sg?.icp), 'h-28'),
-  area('disqualifiers', 'Descartar si…', 'Cuándo no perder el tiempo.', v('disqualifiers', sg?.disqualifiers), 'h-16'),
-  area('buyingProcess', 'Cómo compran', 'Quién decide, quién influye, qué pasos.', v('buyingProcess', sg?.buyingProcess)),
+  area('description', msg.segment.description, msg.segment.descriptionHint, v('description', sg?.description), 'h-16'),
+  area('valueProp', msg.segment.valueProp, msg.segment.valuePropHint, v('valueProp', sg?.valueProp)),
+  area('icp', msg.segment.icp, msg.segment.icpHint, v('icp', sg?.icp), 'h-28'),
+  area('disqualifiers', msg.segment.disqualifiers, msg.segment.disqualifiersHint, v('disqualifiers', sg?.disqualifiers), 'h-16'),
+  area('buyingProcess', msg.segment.buyingProcess, msg.segment.buyingProcessHint, v('buyingProcess', sg?.buyingProcess)),
 ];
 ---
-<AdminLayout title={isNew ? 'Nuevo sector' : sg!.name} wide>
-  <a href="/admin/playbook?tab=market" class="text-sm text-muted hover:text-ink">← Mercado</a>
-  <p class="text-eyebrow mb-3">Mercado · sector</p>
-  <h1 class="co-page-title">{isNew ? 'Nuevo sector' : sg!.name}</h1>
-  {ok && <p class="mt-3 co-alert co-alert--success" role="status">Guardado.</p>}
+<AdminLayout title={isNew ? msg.segment.newSegment : sg!.name} wide>
+  <a href="/admin/playbook?tab=market" class="text-sm text-muted hover:text-ink">{msg.common.backMarket}</a>
+  <p class="text-eyebrow mb-3">{msg.segment.eyebrow}</p>
+  <h1 class="co-page-title">{isNew ? msg.segment.newSegment : sg!.name}</h1>
+  {ok && <p class="mt-3 co-alert co-alert--success" role="status">{msg.common.saved}</p>}
   {result.error && <div class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error"><p class="font-semibold">{result.error}</p>{result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}</div>}
 
   <div class="mt-5 grid gap-6 xl:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]">
     <form method="post" class="space-y-3 co-card" data-testid="segment-form">
       <input type="hidden" name="action" value="save" />
       <div class="grid gap-3 sm:grid-cols-[1fr_12rem]">
-        <label class="text-sm font-medium">Nombre<input class={field} name="name" required maxlength="80" value={v('name', sg?.name)} /></label>
-        <label class="text-sm font-medium">Clave<input class={field} name="key" required value={v('key', sg?.key)} placeholder="ocio-nocturno" /></label>
+        <label class="text-sm font-medium">{msg.common.name}<input class={field} name="name" required maxlength="80" value={v('name', sg?.name)} /></label>
+        <label class="text-sm font-medium">{msg.common.key}<input class={field} name="key" required value={v('key', sg?.key)} placeholder={msg.segment.keyPlaceholder} /></label>
       </div>
       {areas.map((a) => (
         <label class="block text-sm font-medium">{a.label} <span class="font-normal text-muted">{a.hint}</span>
@@ -69,26 +71,26 @@ const areas = [
         </label>
       ))}
       <div class="grid gap-3 sm:grid-cols-3">
-        <label class="text-sm font-medium">Ticket típico<input class={field} name="dealSize" value={v('dealSize', sg?.dealSize)} placeholder="300–900 €" /></label>
-        <label class="text-sm font-medium">Ciclo de venta<input class={field} name="salesCycle" value={v('salesCycle', sg?.salesCycle)} placeholder="2–8 semanas" /></label>
-        <label class="text-sm font-medium">Estado
-          <select class={field} name="status">{[['official', 'Visible'], ['draft', 'Borrador'], ['archived', 'Archivado']].map(([k, l]) => <option value={k} selected={v('status', sg?.status ?? 'official') === k}>{l}</option>)}</select>
+        <label class="text-sm font-medium">{msg.segment.dealSize}<input class={field} name="dealSize" value={v('dealSize', sg?.dealSize)} placeholder={msg.segment.dealSizePlaceholder} /></label>
+        <label class="text-sm font-medium">{msg.segment.salesCycle}<input class={field} name="salesCycle" value={v('salesCycle', sg?.salesCycle)} placeholder={msg.segment.salesCyclePlaceholder} /></label>
+        <label class="text-sm font-medium">{msg.common.status}
+          <select class={field} name="status">{[['official', msg.segment.visible], ['draft', msg.common.draft], ['archived', msg.common.archivedM]].map(([k, l]) => <option value={k} selected={v('status', sg?.status ?? 'official') === k}>{l}</option>)}</select>
         </label>
       </div>
-      <button class="co-btn co-btn--primary" type="submit">{isNew ? 'Crear sector' : 'Guardar'}</button>
+      <button class="co-btn co-btn--primary" type="submit">{isNew ? msg.segment.create : msg.common.save}</button>
     </form>
 
     {sg && (
       <aside class="space-y-5">
         <section class="co-card">
-          <div class="flex items-center gap-2"><h2 class="flex-1 font-bold">Actores</h2><a class="co-btn co-btn--primary co-btn--sm" href={`/admin/playbook/persona/new?segment=${sg.id}`}>Añadir actor</a></div>
+          <div class="flex items-center gap-2"><h2 class="flex-1 font-bold">{msg.segment.actors}</h2><a class="co-btn co-btn--primary co-btn--sm" href={`/admin/playbook/persona/new?segment=${sg.id}`}>{msg.segment.addActor}</a></div>
           <ul class="mt-3 space-y-1 p-0 text-sm">
-            {sg.personas.map((p) => <li class="list-none"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/persona/${p.id}`}>{p.name}</a> <span class="text-muted">· {ROLE_LABEL[p.role]} · {p.angles.length} ángulos</span></li>)}
+            {sg.personas.map((p) => <li class="list-none"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/persona/${p.id}`}>{p.name}</a> <span class="text-muted">· {msg.role[p.role]} · {msg.segment.angles(p.angles.length)}</span></li>)}
           </ul>
-          {sg.personas.length === 0 && <p class="mt-2 text-sm text-muted">Sin actores todavía.</p>}
+          {sg.personas.length === 0 && <p class="mt-2 text-sm text-muted">{msg.segment.noActors}</p>}
         </section>
         <section class="co-card" data-testid="fits">
-          <h2 class="co-card-title">Qué módulos encajan aquí (ICP por módulo)</h2>
+          <h2 class="co-card-title">{msg.segment.fitsTitle}</h2>
           <div class="mt-3 space-y-3">
             {catalog.map((m) => {
               const f = sg.modules.find((x) => x.moduleId === m.id);
@@ -96,14 +98,14 @@ const areas = [
                 <form method="post" class="grid gap-2 rounded-xl border border-line p-3 sm:grid-cols-[10rem_1fr_7rem_auto]">
                   <input type="hidden" name="action" value="fit" /><input type="hidden" name="moduleId" value={m.id} />
                   <span class="self-center text-sm font-semibold">{m.name}</span>
-                  <input class={field} name="fit" value={f?.fit ?? ''} placeholder="Por qué encaja en este sector" maxlength="1000" />
-                  <select class={field} name="priority" aria-label={`Prioridad de ${m.name}`}>
-                    <option value="" selected={!f}>No encaja</option>
-                    <option value="1" selected={f?.priority === 1}>★ Estrella</option>
-                    <option value="2" selected={f?.priority === 2}>Encaja</option>
-                    <option value="3" selected={f?.priority === 3}>Secundario</option>
+                  <input class={field} name="fit" value={f?.fit ?? ''} placeholder={msg.segment.fitPlaceholder} maxlength="1000" />
+                  <select class={field} name="priority" aria-label={msg.segment.priorityOf(m.name)}>
+                    <option value="" selected={!f}>{msg.segment.noFit}</option>
+                    <option value="1" selected={f?.priority === 1}>{msg.priority[1]}</option>
+                    <option value="2" selected={f?.priority === 2}>{msg.priority[2]}</option>
+                    <option value="3" selected={f?.priority === 3}>{msg.priority[3]}</option>
                   </select>
-                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit">Guardar</button>
+                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{msg.common.save}</button>
                 </form>
               );
             })}

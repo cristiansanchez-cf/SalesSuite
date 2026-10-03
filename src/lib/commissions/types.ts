@@ -93,3 +93,7 @@ export interface Coupon {
   id: string; tenantId: string; code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number;
   maxUses: number | null; validUntil: string | null; active: boolean; note: string | null; uses: number;
 }
+
+/** Condiciones de una persona (opcionales: solo se enseñan cuando el admin las marca como acordadas). */
+export interface MemberConditions { userId: string; visible: boolean; note: string | null; agreedAt: string | null }
+export interface MyConditions { visible: boolean; note: string | null; agreedAt: string | null; plan: { name: string; rules: Rule[]; referral: Referral | null } | null }

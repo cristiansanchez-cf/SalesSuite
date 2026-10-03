@@ -13,12 +13,17 @@ import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { zonePath } from '~/lib/accounts/rules';
 import type { AccountState as State } from '~/lib/accounts/types';
+import { i18n } from '~/lib/i18n';
+import { accountsMessages } from '~/lib/i18n/messages/accounts';
+import { shellMessages } from '~/lib/i18n/messages/shell';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
+const { m: { list: M }, locale } = i18n(Astro, accountsMessages);
+const S = shellMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -46,7 +51,7 @@ const [{ items, total, scope: effective }, t, colleagues, segments] = await Prom
 ]);
 const shown = items.filter((a) => stateF === 'all' || a.state === stateF);
 const count = (s: State) => items.filter((a) => a.state === s).length;
-const STATES: Array<[State | 'all', string]> = [['all', 'Todas'], ['mine', 'Mías'], ['free', 'Libres'], ['taken', 'De otros'], ['my_customer', 'Mis clientes'], ['customer', 'Clientes'], ['blocked', 'Bloqueadas']];
+const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
 const href = (p: Record<string, string>) => {
   const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...p });
   for (const [k, v] of [...u]) if (!v || (k === 'ver' && v === 'zone') || (k === 'estado' && v === 'all')) u.delete(k);
@@ -56,29 +61,29 @@ const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).fi
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 const okMsg = flash(Astro.url, {});
 ---
-<AdminLayout title="Cuentas">
-  <PageHeader eyebrow="Vender" title="Cuentas" lede={`Los locales de tu zona y quién los trabaja. Si una cuenta ya la trabaja otra persona, no la toques: esa venta no generaría comisión. Cada contacto te la reserva ${t.rules.claimDays} días.`}>
-    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/territory#importar"><Icon name="upload" size={16} />Importar</a>}
-    <button type="button" class="co-btn co-btn--primary" data-dialog-open="new-account" data-testid="new-account"><Icon name="plus" size={16} />Nueva cuenta</button>
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
+    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/territory#importar"><Icon name="upload" size={16} />{M.import}</a>}
+    <button type="button" class="co-btn co-btn--primary" data-dialog-open="new-account" data-testid="new-account"><Icon name="plus" size={16} />{M.newAccount}</button>
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
   <section class="co-card mb-6 grid gap-3" data-testid="my-zone">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="co-card-title flex items-center gap-2"><Icon name="map-pin" size={18} />{myZones ? `Tu zona: ${myZones}` : 'Aún no tienes zona asignada'}</h2>
-      {!myZones && <span class="co-meta">Ves todas las cuentas. {perms.manageAccounts ? 'Asigna zonas en Territorio.' : 'Pídeselo a tu jefe/a de ventas.'}</span>}
+      <h2 class="co-card-title flex items-center gap-2"><Icon name="map-pin" size={18} />{myZones ? M.yourZone(myZones) : M.noZone}</h2>
+      {!myZones && <span class="co-meta">{M.seeAll} {perms.manageAccounts ? M.assignInTerritory : M.askLead}</span>}
     </div>
     {colleagues.length > 0 && (
       <div class="grid gap-2" data-testid="colleagues">
-        <p class="text-eyebrow">Vendedores de tu zona</p>
+        <p class="text-eyebrow">{M.colleagues}</p>
         <ul class="co-grid co-grid--3 m-0 p-0">
           {colleagues.map((c) => (
             <li class="co-inset flex list-none flex-wrap items-center gap-3 !p-3">
               <span class="min-w-0 flex-1"><span class="co-row-title block truncate">{c.name}</span><span class="co-meta">{c.zones.join(', ')}</span></span>
-              {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={wa(c.phone)} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp a ${c.name}`} title="WhatsApp"><Icon name="message-square-text" size={14} /></a>}
-              {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${c.phone}`} aria-label={`Llamar a ${c.name}`} title="Llamar"><Icon name="phone" size={14} /></a>}
-              <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${c.email}`} aria-label={`Email a ${c.name}`} title="Email"><Icon name="mail" size={14} /></a>
+              {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={wa(c.phone)} target="_blank" rel="noopener noreferrer" aria-label={M.whatsappTo(c.name)} title={M.whatsapp}><Icon name="message-square-text" size={14} /></a>}
+              {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${c.phone}`} aria-label={M.callTo(c.name)} title={M.call}><Icon name="phone" size={14} /></a>}
+              <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${c.email}`} aria-label={M.emailTo(c.name)} title={M.email}><Icon name="mail" size={14} /></a>
             </li>
           ))}
         </ul>
@@ -86,10 +91,10 @@ const okMsg = flash(Astro.url, {});
     )}
   </section>
 
-  <nav class="co-tabs mb-4" aria-label="Alcance" data-scroll-x>
-    <a class="co-tab" href={href({ ver: 'zone' })} aria-current={effective === 'zone' ? 'page' : undefined}>Mi zona</a>
-    <a class="co-tab" href={href({ ver: 'mine' })} aria-current={effective === 'mine' ? 'page' : undefined}>Mías</a>
-    <a class="co-tab" href={href({ ver: 'all' })} aria-current={effective === 'all' ? 'page' : undefined}>Todas</a>
+  <nav class="co-tabs mb-4" aria-label={M.scope} data-scroll-x>
+    <a class="co-tab" href={href({ ver: 'zone' })} aria-current={effective === 'zone' ? 'page' : undefined}>{M.myZone}</a>
+    <a class="co-tab" href={href({ ver: 'mine' })} aria-current={effective === 'mine' ? 'page' : undefined}>{M.mine}</a>
+    <a class="co-tab" href={href({ ver: 'all' })} aria-current={effective === 'all' ? 'page' : undefined}>{M.all}</a>
   </nav>
   <div class="mb-5 flex flex-wrap items-center gap-3">
     <div class="co-chips" data-scroll-x>
@@ -99,15 +104,15 @@ const okMsg = flash(Astro.url, {});
     </div>
     <form method="get" class="ml-auto flex min-w-[14rem] flex-1 sm:flex-none" role="search">
       {scope !== 'zone' && <input type="hidden" name="ver" value={scope} />}
-      <label class="sr-only" for="acc-q">Buscar cuenta</label>
-      <input id="acc-q" class="co-input" type="search" name="q" value={search} placeholder="Buscar cuenta" />
+      <label class="sr-only" for="acc-q">{M.search}</label>
+      <input id="acc-q" class="co-input" type="search" name="q" value={search} placeholder={M.search} />
     </form>
   </div>
 
   {shown.length === 0
     ? (total === 0
-        ? <EmptyState kind="create" title={effective === 'mine' ? 'Todavía no trabajas ninguna cuenta' : 'No hay cuentas en esta zona'} detail="Da de alta el primer local que visites: quedará reservado para ti." action={{ dialog: 'new-account', label: 'Nueva cuenta' }} />
-        : <EmptyState kind="filter" title="Ninguna cuenta con estos filtros" clearHref="/admin/accounts" />)
+        ? <EmptyState kind="create" title={effective === 'mine' ? M.emptyMine : M.emptyZone} detail={M.emptyDetail} action={{ dialog: 'new-account', label: M.newAccount }} />
+        : <EmptyState kind="filter" title={M.emptyFilter} clearHref="/admin/accounts" />)
     : <ul class="co-rows" data-testid="accounts">
         {shown.map((a) => (
           <li class:list={['co-row', a.state === 'mine' && 'co-row--attention']} data-testid="account" data-name={a.name}>
@@ -119,7 +124,7 @@ const okMsg = flash(Astro.url, {});
             <AccountState a={a} />
             {a.state === 'free' && (
               <form method="post"><input type="hidden" name="action" value="claim" /><input type="hidden" name="id" value={a.id} />
-                <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="claim">Me la quedo</button></form>
+                <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="claim">{M.claim}</button></form>
             )}
           </li>
         ))}
@@ -129,23 +134,23 @@ const okMsg = flash(Astro.url, {});
     <form method="post" data-testid="new-account-form">
       <input type="hidden" name="action" value="create" />
       <div class="co-dialog__body">
-        <h2 id="new-account-title" class="co-entity">Nueva cuenta</h2>
-        <p class="co-body">Queda reservada para ti {t.rules.claimDays} días. Si ya la trabaja otra persona, te lo diremos.</p>
-        <label class="co-field">Nombre del local<input class="co-input" name="name" required maxlength="160" placeholder="Club Sol" /></label>
+        <h2 id="new-account-title" class="co-entity">{M.newAccount}</h2>
+        <p class="co-body">{M.newBody(t.rules.claimDays)}</p>
+        <label class="co-field">{M.venueName}<input class="co-input" name="name" required maxlength="160" placeholder="Club Sol" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="co-field">Zona
-            <select class="co-select" name="zoneId"><option value="">Sin zona</option>{t.zones.map((z) => <option value={z.id} selected={t.myZoneIds.length === 1 && z.id === t.myZoneIds[0]}>{zonePath(t.zones, z.id)}</option>)}</select>
+          <label class="co-field">{M.zone}
+            <select class="co-select" name="zoneId"><option value="">{M.noZoneOption}</option>{t.zones.map((z) => <option value={z.id} selected={t.myZoneIds.length === 1 && z.id === t.myZoneIds[0]}>{zonePath(t.zones, z.id)}</option>)}</select>
           </label>
-          <label class="co-field">Sector
-            <select class="co-select" name="segmentId"><option value="">Sin sector</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
+          <label class="co-field">{M.sector}
+            <select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
           </label>
         </div>
-        <label class="co-field">Dirección <span class="co-help">Opcional</span><input class="co-input" name="address" maxlength="300" /></label>
-        <label class="co-field">Notas <span class="co-help">Opcional</span><textarea class="co-textarea !min-h-[64px]" name="notes" maxlength="2000" placeholder="Tiene DJ residente; el dueño es Marcos."></textarea></label>
+        <label class="co-field">{M.address} <span class="co-help">{M.optional}</span><input class="co-input" name="address" maxlength="300" /></label>
+        <label class="co-field">{M.notes} <span class="co-help">{M.optional}</span><textarea class="co-textarea !min-h-[64px]" name="notes" maxlength="2000" placeholder={M.notesPlaceholder}></textarea></label>
       </div>
       <div class="co-dialog__foot">
-        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
-        <button class="co-btn co-btn--primary" type="submit">Dar de alta</button>
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+        <button class="co-btn co-btn--primary" type="submit">{M.create}</button>
       </div>
     </form>
   </dialog>

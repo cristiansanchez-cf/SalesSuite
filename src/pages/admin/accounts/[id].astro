@@ -9,9 +9,11 @@ import AccountState from '~/components/accounts/AccountState.astro';
 import { can } from '~/lib/admin/permissions';
 import { AdminError } from '~/lib/admin/service';
 import { flash, formAction } from '~/lib/admin/forms';
-import { relativeTime, STATUS_CLASS, STATUS_LABEL } from '~/lib/admin/format';
-import { ELIGIBILITY_LABEL, zonePath } from '~/lib/accounts/rules';
+import { STATUS_CLASS } from '~/lib/admin/format';
+import { ELIGIBILITY_LABELS, zonePath } from '~/lib/accounts/rules';
 import type { TouchKind } from '~/lib/accounts/types';
+import { i18n } from '~/lib/i18n';
+import { accountsMessages } from '~/lib/i18n/messages/accounts';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -19,6 +21,9 @@ const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
 const id = Astro.params.id ?? '';
+const { m: msg, f: fmt, locale } = i18n(Astro, accountsMessages);
+const M = msg.detail;
+const ELIGIBILITY_LABEL = ELIGIBILITY_LABELS[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -53,34 +58,31 @@ try { data = await acc.get(id); } catch (e) {
 }
 const { account: a, eligibility, touches, dossiers, canEdit, rules } = data;
 const [t, segments, members] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([])]);
-const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(new Date(iso)) : '');
-const NOT = (e: string) => `No se ha reservado: ${ELIGIBILITY_LABEL[e as keyof typeof ELIGIBILITY_LABEL]?.toLowerCase() ?? e}.`;
+const day = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'long' });
+const NOT = (e: string) => M.notClaimed(ELIGIBILITY_LABEL[e as keyof typeof ELIGIBILITY_LABEL]?.toLowerCase() ?? e);
 const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
-  created: `Cuenta dada de alta y reservada para ti ${rules.claimDays} días.`, contact: `Contacto registrado. La tienes reservada hasta el ${day(a.claimedUntil)}.`,
-  claimed: `Es tuya hasta el ${day(a.claimedUntil)}. Cada contacto renueva la reserva.`, released: 'La has soltado: ya puede trabajarla otra persona.',
-  saved: 'Datos guardados.', assigned: 'Asignación guardada.', blocked: 'Cuenta bloqueada: nadie generará comisión con ella.', unblocked: 'Cuenta desbloqueada.',
+  created: M.okCreated(rules.claimDays), contact: M.okContact(day(a.claimedUntil)),
+  claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
+  saved: M.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
 });
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
-const TOUCH: Record<TouchKind, string> = {
-  created: 'Alta de la cuenta', contact: 'Contacto', dossier: 'Propuesta creada', won: 'Venta ganada', lost: 'Venta perdida', claim: 'Se la quedó',
-  release: 'La soltó', block: 'Bloqueada', unblock: 'Desbloqueada', assign: 'Asignada a',
-};
+const TOUCH: Record<TouchKind, string> = M.touch;
 const STATE_ALERT = {
-  free: { kind: 'info' as const, title: 'Libre', body: `Si la contactas, queda reservada para ti ${rules.claimDays} días.` },
-  mine: { kind: 'success' as const, title: `Reservada para ti hasta el ${day(a.claimedUntil)}`, body: 'Cada contacto o propuesta renueva la reserva. Si la dejas, pasa a estar libre.' },
-  taken: { kind: 'rejection' as const, title: `La trabaja ${a.ownerName ?? 'otra persona'} hasta el ${day(a.claimedUntil)}`, body: 'Si la vendes tú, la venta no generará comisión. Habla con tu compañero/a antes de contactarla.' },
-  my_customer: { kind: 'success' as const, title: 'Es cliente tuyo', body: `Desde el ${day(a.wonAt)}.` },
-  customer: { kind: 'info' as const, title: `Es cliente de ${a.wonByName ?? 'otra persona'}`, body: 'Una venta nueva aquí no generará comisión para ti.' },
-  blocked: { kind: 'rejection' as const, title: 'Bloqueada: no se puede vender', body: a.blockedReason ?? 'La empresa no autoriza venderle. Ninguna venta aquí genera comisión.' },
+  free: { kind: 'info' as const, title: M.freeTitle, body: M.freeBody(rules.claimDays) },
+  mine: { kind: 'success' as const, title: M.mineTitle(day(a.claimedUntil)), body: M.mineBody },
+  taken: { kind: 'rejection' as const, title: M.takenTitle(a.ownerName ?? msg.state.someoneElse, day(a.claimedUntil)), body: M.takenBody },
+  my_customer: { kind: 'success' as const, title: M.myCustomerTitle, body: M.myCustomerBody(day(a.wonAt)) },
+  customer: { kind: 'info' as const, title: M.customerTitle(a.wonByName ?? msg.state.someoneElse), body: M.customerBody },
+  blocked: { kind: 'rejection' as const, title: M.blockedTitle, body: a.blockedReason ?? M.blockedBody },
 }[a.state];
 ---
 <AdminLayout title={a.name}>
-  <PageHeader eyebrow={a.zonePath || 'Sin zona'} title={a.name} back={{ href: '/admin/accounts', label: 'Cuentas' }}>
+  <PageHeader eyebrow={a.zonePath || M.noZone} title={a.name} back={{ href: '/admin/accounts', label: M.back }}>
     <AccountState a={a} />
     {(a.state === 'free' || a.state === 'mine' || a.state === 'my_customer') && (
       <form method="post"><input type="hidden" name="action" value="dossier" />
-        <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">Crear propuesta <span aria-hidden="true">→</span></button></form>
+        <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
     )}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
@@ -97,23 +99,23 @@ const STATE_ALERT = {
       {a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer' && (
         <form method="post" class="co-card grid gap-3" data-testid="contact-form">
           <input type="hidden" name="action" value="contact" />
-          <h2 class="co-card-title">Registrar un contacto</h2>
-          <label class="co-field">Qué ha pasado <span class="co-help">Opcional: una línea</span>
-            <input class="co-input" name="note" maxlength="500" placeholder="Visita: el dueño quiere verlo un viernes" /></label>
+          <h2 class="co-card-title">{M.registerContact}</h2>
+          <label class="co-field">{M.whatHappened} <span class="co-help">{M.oneLine}</span>
+            <input class="co-input" name="note" maxlength="500" placeholder={M.notePlaceholder} /></label>
           <div class="flex flex-wrap gap-2">
-            <button class="co-btn co-btn--primary w-fit" type="submit">Registrar contacto</button>
-            {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet" data-dialog-open="release">Soltar la cuenta</button>}
+            <button class="co-btn co-btn--primary w-fit" type="submit">{M.registerButton}</button>
+            {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet" data-dialog-open="release">{M.release}</button>}
           </div>
         </form>
       )}
 
       <section class="co-section">
-        <div class="co-section__head"><h2 class="text-eyebrow">Propuestas · {dossiers.length}</h2></div>
-        {dossiers.length === 0 ? <p class="co-meta">Todavía no hay propuestas para esta cuenta.</p> : (
+        <div class="co-section__head"><h2 class="text-eyebrow">{M.proposals(dossiers.length)}</h2></div>
+        {dossiers.length === 0 ? <p class="co-meta">{M.noProposals}</p> : (
           <ul class="co-rows">{dossiers.map((d) => (
             <li><a class="co-row" href={`/admin/dossiers/${d.id}`}>
-              <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName ?? 'Sin autor'} · {relativeTime(d.updatedAt)}{d.outcome === 'won' ? ' · Ganada' : d.outcome === 'lost' ? ' · Perdida' : ''}{d.accountEligibility && d.accountEligibility !== 'eligible' ? ` · ${ELIGIBILITY_LABEL[d.accountEligibility]}` : ''}</span></span>
-              <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
+              <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName ?? M.noAuthor} · {fmt.relative(d.updatedAt)}{d.outcome === 'won' ? ` · ${M.won}` : d.outcome === 'lost' ? ` · ${M.lost}` : ''}{d.accountEligibility && d.accountEligibility !== 'eligible' ? ` · ${ELIGIBILITY_LABEL[d.accountEligibility]}` : ''}</span></span>
+              <span class={STATUS_CLASS[d.status]}>{msg.dossierStatus[d.status]}</span>
               <span class="co-row__chevron"><Icon name="chevron-right" /></span>
             </a></li>))}
           </ul>
@@ -121,11 +123,11 @@ const STATE_ALERT = {
       </section>
 
       <section class="co-section" data-testid="history">
-        <div class="co-section__head"><h2 class="text-eyebrow">Historial</h2></div>
+        <div class="co-section__head"><h2 class="text-eyebrow">{M.history}</h2></div>
         <ol class="grid gap-2 p-0">
           {touches.map((x) => (
             <li class="flex list-none gap-3 text-sm">
-              <span class="co-meta w-28 shrink-0">{relativeTime(x.createdAt)}</span>
+              <span class="co-meta w-28 shrink-0">{fmt.relative(x.createdAt)}</span>
               <span><strong>{TOUCH[x.kind]}{x.kind === 'assign' && x.note ? ` ${x.note}` : ''}</strong>{x.userName ? ` · ${x.userName}` : ''}{x.note && x.kind !== 'assign' ? <span class="co-body block">{x.note}</span> : null}</span>
             </li>
           ))}
@@ -136,54 +138,54 @@ const STATE_ALERT = {
     <aside class="grid content-start gap-4">
       <form method="post" class="co-card grid gap-3" data-testid="account-info">
         <input type="hidden" name="action" value="save" />
-        <h2 class="co-entity">Datos</h2>
+        <h2 class="co-entity">{M.data}</h2>
         <fieldset class="grid gap-3" disabled={!canEdit}>
-          <label class="co-field">Nombre<input class="co-input" name="name" value={a.name} required maxlength="160" /></label>
-          <label class="co-field">Zona<select class="co-select" name="zoneId"><option value="">Sin zona</option>{t.zones.map((z) => <option value={z.id} selected={z.id === a.zoneId}>{zonePath(t.zones, z.id)}</option>)}</select></label>
-          <label class="co-field">Sector<select class="co-select" name="segmentId"><option value="">Sin sector</option>{segments.map((sg) => <option value={sg.id} selected={sg.id === a.segmentId}>{sg.name}</option>)}</select></label>
-          <label class="co-field">Dirección<input class="co-input" name="address" value={a.address ?? ''} maxlength="300" /></label>
-          <label class="co-field">Referencia externa <span class="co-help">Id de Google Maps, del CRM…</span><input class="co-input" name="externalRef" value={a.externalRef ?? ''} maxlength="120" /></label>
-          <label class="co-field">Notas<textarea class="co-textarea" name="notes" maxlength="2000">{a.notes ?? ''}</textarea></label>
-          {canEdit && <button class="co-btn co-btn--ghost w-fit" type="submit">Guardar datos</button>}
+          <label class="co-field">{M.name}<input class="co-input" name="name" value={a.name} required maxlength="160" /></label>
+          <label class="co-field">{M.zone}<select class="co-select" name="zoneId"><option value="">{M.noZone}</option>{t.zones.map((z) => <option value={z.id} selected={z.id === a.zoneId}>{zonePath(t.zones, z.id)}</option>)}</select></label>
+          <label class="co-field">{M.sector}<select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id} selected={sg.id === a.segmentId}>{sg.name}</option>)}</select></label>
+          <label class="co-field">{M.address}<input class="co-input" name="address" value={a.address ?? ''} maxlength="300" /></label>
+          <label class="co-field">{M.externalRef} <span class="co-help">{M.externalRefHelp}</span><input class="co-input" name="externalRef" value={a.externalRef ?? ''} maxlength="120" /></label>
+          <label class="co-field">{M.notes}<textarea class="co-textarea" name="notes" maxlength="2000">{a.notes ?? ''}</textarea></label>
+          {canEdit && <button class="co-btn co-btn--ghost w-fit" type="submit">{M.saveData}</button>}
         </fieldset>
-        {!canEdit && <p class="co-help">Edita los datos quien la trabaja o un/a jefe/a de ventas.</p>}
+        {!canEdit && <p class="co-help">{M.editHint}</p>}
       </form>
 
       {perms.manageAccounts && (
         <section class="co-card grid gap-3" data-testid="account-manage">
-          <h2 class="co-entity">Gestión</h2>
+          <h2 class="co-entity">{M.manage}</h2>
           <form method="post" class="grid gap-2">
             <input type="hidden" name="action" value="assign" />
-            <label class="co-field">Quién la trabaja
-              <select class="co-select" name="userId"><option value="">Nadie (libre)</option>{members.filter((m) => m.role !== 'partner').map((m) => <option value={m.userId} selected={m.userId === a.ownerId}>{m.displayName || m.email}</option>)}</select>
+            <label class="co-field">{M.whoWorks}
+              <select class="co-select" name="userId"><option value="">{M.nobody}</option>{members.filter((m) => m.role !== 'partner').map((m) => <option value={m.userId} selected={m.userId === a.ownerId}>{m.displayName || m.email}</option>)}</select>
             </label>
-            <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">Asignar</button>
+            <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{M.assign}</button>
           </form>
           <div class="co-actions">
             {a.status === 'blocked'
-              ? <form method="post"><input type="hidden" name="action" value="unblock" /><button class="co-action" type="submit"><Icon name="rotate-ccw" /><span class="co-action__label">Desbloquear</span><Icon name="chevron-right" size={16} /></button></form>
-              : <button type="button" class="co-action" data-dialog-open="block" data-testid="block-open"><Icon name="ban" /><span class="co-action__label">Bloquear la cuenta<small>Nadie generará comisión con ella</small></span><Icon name="chevron-right" size={16} /></button>}
-            <button type="button" class="co-action" data-dialog-open="delete-account"><Icon name="trash2" /><span class="co-action__label">Eliminar la cuenta</span><Icon name="chevron-right" size={16} /></button>
+              ? <form method="post"><input type="hidden" name="action" value="unblock" /><button class="co-action" type="submit"><Icon name="rotate-ccw" /><span class="co-action__label">{M.unblock}</span><Icon name="chevron-right" size={16} /></button></form>
+              : <button type="button" class="co-action" data-dialog-open="block" data-testid="block-open"><Icon name="ban" /><span class="co-action__label">{M.block}<small>{M.blockHint}</small></span><Icon name="chevron-right" size={16} /></button>}
+            <button type="button" class="co-action" data-dialog-open="delete-account"><Icon name="trash2" /><span class="co-action__label">{M.delete}</span><Icon name="chevron-right" size={16} /></button>
           </div>
         </section>
       )}
     </aside>
   </div>
 
-  <ConfirmDialog id="release" title={`Soltar ${a.name}`} confirmLabel="Soltarla"
-    does="Deja de estar reservada para ti: cualquiera de tu equipo podrá trabajarla."
-    doesNot="No borra el historial ni tus propuestas, y no avisa a nadie.">
+  <ConfirmDialog id="release" title={M.releaseTitle(a.name)} confirmLabel={M.releaseConfirm}
+    does={M.releaseDoes}
+    doesNot={M.releaseDoesNot}>
     <input type="hidden" name="action" value="release" />
   </ConfirmDialog>
-  <ConfirmDialog id="block" title={`Bloquear ${a.name}`} confirmLabel="Bloquear" danger testid="block-dialog"
-    does="Nadie podrá reservarla y ninguna venta aquí generará comisión. Quien la abra verá el motivo."
-    doesNot="No borra el historial ni las propuestas, y no avisa al local.">
+  <ConfirmDialog id="block" title={M.blockTitle(a.name)} confirmLabel={M.blockConfirm} danger testid="block-dialog"
+    does={M.blockDoes}
+    doesNot={M.blockDoesNot}>
     <input type="hidden" name="action" value="block" />
-    <label class="co-field">Motivo<input class="co-input" name="reason" required maxlength="300" placeholder="El dueño ha pedido no recibir más comerciales" /></label>
+    <label class="co-field">{M.reason}<input class="co-input" name="reason" required maxlength="300" placeholder={M.reasonPlaceholder} /></label>
   </ConfirmDialog>
-  <ConfirmDialog id="delete-account" title={`Eliminar ${a.name}`} confirmLabel="Eliminar" danger
-    does="La cuenta y su historial desaparecen del CRM."
-    doesNot="No borra las propuestas: se quedan sin cuenta vinculada.">
+  <ConfirmDialog id="delete-account" title={M.deleteTitle(a.name)} confirmLabel={M.deleteConfirm} danger
+    does={M.deleteDoes}
+    doesNot={M.deleteDoesNot}>
     <input type="hidden" name="action" value="delete" />
   </ConfirmDialog>
 </AdminLayout>

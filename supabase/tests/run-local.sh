@@ -23,4 +23,5 @@ run supabase/tests/32_notifications.test.sql
 run supabase/tests/33_accounts.test.sql
 run supabase/tests/34_commissions.test.sql
 run supabase/tests/35_coupons.test.sql
+run supabase/tests/36_conditions.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

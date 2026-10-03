@@ -4,12 +4,14 @@ import { can } from '~/lib/admin/permissions';
 import Badges from '~/components/playbook/Badges.astro';
 import { flash, formAction } from '~/lib/admin/forms';
 import { renderMarkdown } from '~/lib/playbook/markdown';
-import { KIND_LABEL } from '~/lib/playbook/types';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const pb = admin.playbook;
+const { m: msg, f: fmt } = i18n(Astro, playbookMessages);
 const tab = (Astro.url.searchParams.get('tab') ?? 'inbox') as 'inbox' | 'plays' | 'market' | 'metrics';
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -19,38 +21,34 @@ if (Astro.request.method === 'POST') {
   result = await formAction(() => pb.review(String(f.get('id')), action, String(f.get('note') ?? '')));
   if (!result.error) return Astro.redirect(`/admin/playbook?tab=inbox&ok=${action}`, 303);
 }
-const okMsg = flash(Astro.url, {
-  accept: 'Mejora aplicada: la jugada oficial tiene nueva versión y el equipo lo verá en Novedades.',
-  reject: 'Propuesta rechazada; su autor verá tu nota.', promote: 'Truco ascendido a jugada oficial.', hide: 'Truco ocultado.',
-  saved: 'Jugada guardada.', created: 'Jugada creada.',
-});
+const okMsg = flash(Astro.url, msg.admin.flash);
 
 const inbox = await pb.inbox();
 const all = tab === 'plays' ? await pb.listAll() : null;
 const m = tab === 'metrics' ? await pb.metrics() : null;
 const mk = tab === 'market' ? await pb.market() : null;
-const moduleName = (id: string | null) => (id ? all?.modules.find((x) => x.id === id)?.name ?? 'Módulo retirado' : 'General (empresa)');
+const moduleName = (id: string | null) => (id ? all?.modules.find((x) => x.id === id)?.name ?? msg.admin.moduleRetired : msg.common.general);
 const tabs = [
-  { id: 'inbox', label: `Bandeja${inbox.pending.length ? ` (${inbox.pending.length})` : ''}` },
-  { id: 'plays', label: 'Jugadas' },
-  { id: 'market', label: 'Mercado y actores' },
-  { id: 'metrics', label: 'Qué funciona' },
+  { id: 'inbox', label: msg.admin.tabInbox(inbox.pending.length) },
+  { id: 'plays', label: msg.admin.tabPlays },
+  { id: 'market', label: msg.admin.tabMarket },
+  { id: 'metrics', label: msg.admin.tabMetrics },
 ];
 const field = 'co-input';
 const btn = 'co-btn co-btn--ghost co-btn--sm';
-const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso));
+const date = (iso: string) => fmt.date(iso, { dateStyle: 'medium' });
 ---
-<AdminLayout title="Playbook" wide>
+<AdminLayout title={msg.admin.title} wide>
   <div class="flex flex-wrap items-end gap-3">
     <div class="min-w-0 flex-1">
-      <p class="text-eyebrow mb-3">Configurar</p>
-      <h1 class="co-page-title">Playbook de ventas</h1>
-      <p class="text-sm text-muted">Lo oficial lo mantienes tú; el equipo propone y comparte. Cada cambio queda versionado y avisa al equipo.</p>
+      <p class="text-eyebrow mb-3">{msg.admin.eyebrow}</p>
+      <h1 class="co-page-title">{msg.admin.heading}</h1>
+      <p class="text-sm text-muted">{msg.admin.lede}</p>
     </div>
-    <a class={btn} href="/admin/api/playbook/export" download="playbook.json">Exportar (formato Cerebro)</a>
-    <a class="co-btn co-btn--primary" href="/admin/playbook/new">Nueva jugada</a>
+    <a class={btn} href="/admin/api/playbook/export" download="playbook.json">{msg.admin.export}</a>
+    <a class="co-btn co-btn--primary" href="/admin/playbook/new">{msg.admin.newPlay}</a>
   </div>
-  <nav class="co-tabs mt-5" aria-label="Secciones del playbook" data-scroll-x>
+  <nav class="co-tabs mt-5" aria-label={msg.admin.tabsLabel} data-scroll-x>
     {tabs.map((t) => <a href={`?tab=${t.id}`} class="co-tab" aria-current={tab === t.id ? 'page' : undefined}>{t.label}</a>)}
   </nav>
   {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
@@ -59,40 +57,40 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   {tab === 'inbox' && (
     <div class="mt-6 space-y-8" data-testid="inbox">
       <section>
-        <h2 class="co-card-title">Pendiente de aprobar</h2><p class="co-meta">Mejoras de jugadas del equipo y trucos de colaboradores.</p>
-        {inbox.pending.length === 0 && <p class="mt-2 text-sm text-muted">Nada pendiente.</p>}
+        <h2 class="co-card-title">{msg.admin.pendingTitle}</h2><p class="co-meta">{msg.admin.pendingMeta}</p>
+        {inbox.pending.length === 0 && <p class="mt-2 text-sm text-muted">{msg.admin.nothingPending}</p>}
         <div class="mt-3 space-y-4">
           {inbox.pending.map((c) => (
             <article class="co-card" data-testid="pending">
               {c.type === 'tip' ? (
                 <>
-                  <p class="text-sm"><strong>{c.authorName ?? 'Un colaborador'}</strong> comparte un truco · {date(c.createdAt)} <span class="co-badge co-badge--attention ml-1">Colaborador</span></p>
+                  <p class="text-sm"><strong>{c.authorName ?? msg.admin.aPartner}</strong> {msg.admin.sharesTip} · {date(c.createdAt)} <span class="co-badge co-badge--attention ml-1">{msg.admin.partner}</span></p>
                   <p class="mt-1 font-semibold">“{c.title}”</p>
                   <div class="mt-3 rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
                 </>
               ) : (
                 <>
-                  <p class="text-sm"><strong>{c.authorName ?? 'Alguien'}</strong> propone en <a class="underline" href={`/admin/playbook/${c.playId}`}>«{c.current?.title}»</a> · {date(c.createdAt)}</p>
+                  <p class="text-sm"><strong>{c.authorName ?? msg.admin.someone}</strong> {msg.admin.proposesIn} <a class="underline" href={`/admin/playbook/${c.playId}`}>{msg.common.quoted(c.current?.title)}</a> · {date(c.createdAt)}</p>
                   <p class="mt-1 font-semibold">“{c.title}”</p>
                   <div class="mt-3 grid gap-3 md:grid-cols-2">
-                    <div class="rounded-[var(--console-radius-control)] bg-[var(--console-chip-bg)] p-3"><p class="text-eyebrow mb-1">Actual (v{c.current?.version})</p><div class="prose-play text-sm" set:html={renderMarkdown(c.current?.body ?? '')} /></div>
-                    <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">Propuesta</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
+                    <div class="rounded-[var(--console-radius-control)] bg-[var(--console-chip-bg)] p-3"><p class="text-eyebrow mb-1">{msg.admin.current} (v{c.current?.version})</p><div class="prose-play text-sm" set:html={renderMarkdown(c.current?.body ?? '')} /></div>
+                    <div class="rounded-[var(--console-radius-control)] bg-[var(--console-good-bg)] p-3"><p class="text-eyebrow mb-1">{msg.admin.proposal}</p><div class="prose-play text-sm" set:html={renderMarkdown(c.body)} /></div>
                   </div>
                 </>
               )}
               <form method="post" class="mt-3 flex flex-wrap items-center gap-2">
                 <input type="hidden" name="id" value={c.id} />
-                <input class={`${field} max-w-md`} name="note" placeholder="Nota para el autor (obligatoria si rechazas)" maxlength="500" />
-                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="accept" type="submit" data-testid="accept">{c.type === 'tip' ? 'Aprobar: visible para el equipo' : 'Aceptar y publicar'}</button>
-                <button class={btn} name="action" value="reject" type="submit">Rechazar</button>
+                <input class={`${field} max-w-md`} name="note" placeholder={msg.admin.notePlaceholder} maxlength="500" />
+                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="accept" type="submit" data-testid="accept">{c.type === 'tip' ? msg.admin.approveTip : msg.admin.acceptPublish}</button>
+                <button class={btn} name="action" value="reject" type="submit">{msg.admin.reject}</button>
               </form>
             </article>
           ))}
         </div>
       </section>
       <section>
-        <h2 class="co-card-title">Trucos del equipo <span class="text-sm font-normal text-muted">· ordenados por «me funcionó»</span></h2>
-        {inbox.tips.length === 0 && <p class="mt-2 text-sm text-muted">El equipo aún no ha compartido trucos.</p>}
+        <h2 class="co-card-title">{msg.admin.tipsTitle} <span class="text-sm font-normal text-muted">{msg.admin.tipsSort}</span></h2>
+        {inbox.tips.length === 0 && <p class="mt-2 text-sm text-muted">{msg.admin.noTips}</p>}
         <div class="mt-3 grid gap-3 lg:grid-cols-2">
           {inbox.tips.map((t) => (
             <article class="rounded-2xl border border-violet-200 bg-bg p-4" data-testid="team-tip">
@@ -102,8 +100,8 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
               <div class="prose-play mt-1 text-sm" set:html={renderMarkdown(t.body)} />
               <form method="post" class="mt-3 flex gap-2">
                 <input type="hidden" name="id" value={t.id} />
-                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="promote" type="submit" data-testid="promote">Hacer oficial</button>
-                <button class={btn} name="action" value="hide" type="submit">Ocultar</button>
+                <button class="co-btn co-btn--primary co-btn--sm" name="action" value="promote" type="submit" data-testid="promote">{msg.admin.makeOfficial}</button>
+                <button class={btn} name="action" value="hide" type="submit">{msg.admin.hide}</button>
               </form>
             </article>
           ))}
@@ -111,7 +109,7 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
       </section>
       {inbox.reviewed.length > 0 && (
         <section>
-          <h2 class="co-card-title">Revisado recientemente</h2>
+          <h2 class="co-card-title">{msg.admin.reviewed}</h2>
           <ul class="mt-2 space-y-1 p-0 text-sm">
             {inbox.reviewed.map((c) => <li class="list-none"><span class="font-semibold">{{ accepted: '✓', rejected: '✕', hidden: '◌' }[c.status as 'accepted']}</span> {c.title} <span class="text-muted">· {c.authorName}{c.reviewNote && ` · ${c.reviewNote}`}</span></li>)}
           </ul>
@@ -126,17 +124,17 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         const list = all.plays.filter((p) => p.moduleId === mid);
         return (
           <section>
-            <h2 class="co-card-title">{moduleName(mid)} <span class="text-sm font-normal text-muted">· {list.filter((p) => p.status === 'official').length} oficiales</span></h2>
-            {list.length === 0 && <p class="mt-1 text-sm text-amber-700">Sin jugadas: los comerciales no tendrán guion para este módulo.</p>}
+            <h2 class="co-card-title">{moduleName(mid)} <span class="text-sm font-normal text-muted">{msg.admin.officialCount(list.filter((p) => p.status === 'official').length)}</span></h2>
+            {list.length === 0 && <p class="mt-1 text-sm text-amber-700">{msg.admin.noPlaysModule}</p>}
             <ul class="mt-2 divide-y divide-line overflow-hidden co-card">
               {list.map((p) => (
                 <li class="list-none">
                   <a href={`/admin/playbook/${p.id}`} class="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-surface">
-                    <span class="w-40 shrink-0 text-xs text-muted">{KIND_LABEL[p.kind]}</span>
+                    <span class="w-40 shrink-0 text-xs text-muted">{msg.kind[p.kind]}</span>
                     <span class="min-w-0 flex-1 truncate font-semibold">{p.title}</span>
-                    {p.status !== 'official' && <span class="co-badge co-badge--soft">{p.status === 'draft' ? 'Borrador' : 'Archivada'}</span>}
-                    {p.techniqueRefs.length > 0 && <span class="text-xs" title="Enlaza fichas del Cerebro">{p.techniqueRefs.length}</span>}
-                    <span class="co-meta">{p.score.worked + p.score.didnt} cierres · ganó {p.score.worked} · v{p.version}</span>
+                    {p.status !== 'official' && <span class="co-badge co-badge--soft">{p.status === 'draft' ? msg.common.draft : msg.common.archivedF}</span>}
+                    {p.techniqueRefs.length > 0 && <span class="text-xs" title={msg.admin.linksCerebro}>{p.techniqueRefs.length}</span>}
+                    <span class="co-meta">{msg.admin.score(p.score.worked + p.score.didnt, p.score.worked)} · v{p.version}</span>
                   </a>
                 </li>
               ))}
@@ -150,20 +148,20 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   {mk && (
     <div class="mt-6" data-testid="market-admin">
       <div class="flex items-center gap-2">
-        <p class="flex-1 text-sm text-muted">Sectores (cliente ideal) y actores de cada uno. Lo ven los comerciales en «Aprende» y alimenta el guion y «Preparar mensaje».</p>
-        <a class="co-btn co-btn--primary" href="/admin/playbook/segment/new">Nuevo sector</a>
+        <p class="flex-1 text-sm text-muted">{msg.admin.marketLede}</p>
+        <a class="co-btn co-btn--primary" href="/admin/playbook/segment/new">{msg.admin.newSegment}</a>
       </div>
       <div class="mt-4 grid gap-4 lg:grid-cols-2">
         {mk.map((sg) => (
           <section class="co-card">
             <div class="flex items-center gap-2">
               <h2 class="flex-1 text-lg font-bold"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/segment/${sg.id}`}>{sg.name}</a></h2>
-              {sg.status !== 'official' && <span class="co-badge co-badge--soft">{sg.status === 'draft' ? 'Borrador' : 'Archivado'}</span>}
-              <a class="text-xs underline" href={`/admin/playbook/persona/new?segment=${sg.id}`}>+ actor</a>
+              {sg.status !== 'official' && <span class="co-badge co-badge--soft">{sg.status === 'draft' ? msg.common.draft : msg.common.archivedM}</span>}
+              <a class="text-xs underline" href={`/admin/playbook/persona/new?segment=${sg.id}`}>{msg.admin.addActor}</a>
             </div>
-            <p class="text-xs text-muted">{sg.modules.length} módulos encajan · {sg.playCount} jugadas</p>
+            <p class="text-xs text-muted">{msg.admin.segmentMeta(sg.modules.length, sg.playCount)}</p>
             <ul class="mt-2 space-y-1 p-0 text-sm">
-              {sg.personas.map((p) => <li class="list-none"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/persona/${p.id}`}>{p.name}</a> <span class="text-muted">· {{ decisor: 'decide', pagador: 'paga', influenciador: 'influye', campeon: 'aliado', usuario: 'usuario', guardian: 'puede vetar' }[p.role]}</span></li>)}
+              {sg.personas.map((p) => <li class="list-none"><a class="underline-offset-2 hover:underline" href={`/admin/playbook/persona/${p.id}`}>{p.name}</a> <span class="text-muted">· {msg.roleShort[p.role]}</span></li>)}
             </ul>
           </section>
         ))}
@@ -174,22 +172,22 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
   {m && (
     <div class="mt-6 grid gap-5 lg:grid-cols-2" data-testid="metrics">
       <section class="co-card">
-        <h2 class="co-card-title">Lo que más gana</h2><p class="co-meta">Según los cierres documentados (ganados frente a perdidos), no según opiniones.</p>
-        <ol class="mt-2 space-y-1 pl-5 text-sm">{m.best.map((p) => <li><a class="underline-offset-2 hover:underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="co-meta">· {p.score.worked + p.score.didnt} cierres · ganó {p.score.worked}</span></li>)}</ol>
-        {m.best.length === 0 && <p class="co-meta">Todavía no hay cierres documentados. Se piden al marcar un dossier como ganado o perdido.</p>}
+        <h2 class="co-card-title">{msg.admin.bestTitle}</h2><p class="co-meta">{msg.admin.bestMeta}</p>
+        <ol class="mt-2 space-y-1 pl-5 text-sm">{m.best.map((p) => <li><a class="underline-offset-2 hover:underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="co-meta">· {msg.admin.score(p.score.worked + p.score.didnt, p.score.worked)}</span></li>)}</ol>
+        {m.best.length === 0 && <p class="co-meta">{msg.admin.bestEmpty}</p>}
       </section>
       <section class="co-card">
-        <h2 class="co-card-title">A revisar</h2><p class="co-meta">Jugadas usadas en más cierres perdidos que ganados.</p>
-        <ul class="mt-2 space-y-1 p-0 text-sm">{m.struggling.map((p) => <li class="list-none"><a class="underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="co-meta">· {p.score.worked + p.score.didnt} cierres · ganó {p.score.worked}</span></li>)}</ul>
-        {m.struggling.length === 0 && <p class="text-sm text-muted">Nada que revisar por ahora.</p>}
+        <h2 class="co-card-title">{msg.admin.reviewTitle}</h2><p class="co-meta">{msg.admin.reviewMeta}</p>
+        <ul class="mt-2 space-y-1 p-0 text-sm">{m.struggling.map((p) => <li class="list-none"><a class="underline" href={`/admin/playbook/${p.id}`}>{p.title}</a> <span class="co-meta">· {msg.admin.score(p.score.worked + p.score.didnt, p.score.worked)}</span></li>)}</ul>
+        {m.struggling.length === 0 && <p class="text-sm text-muted">{msg.admin.reviewEmpty}</p>}
       </section>
       <section class="co-card">
-        <h2 class="co-card-title">Trucos recientes del equipo</h2><p class="co-meta">Candidatos a oficial: asciéndelos desde la bandeja.</p>
+        <h2 class="co-card-title">{msg.admin.recentTips}</h2><p class="co-meta">{msg.admin.recentTipsMeta}</p>
         <ul class="mt-2 space-y-1 p-0 text-sm">{m.topTips.map((t) => <li class="list-none">{t.title} <span class="co-meta">· {t.authorName}</span></li>)}</ul>
-        {m.topTips.length === 0 && <p class="co-meta">El equipo aún no ha compartido trucos.</p>}
+        {m.topTips.length === 0 && <p class="co-meta">{msg.admin.noTips}</p>}
       </section>
       <section class="co-card">
-        <h2 class="co-card-title">Formación del equipo</h2>
+        <h2 class="co-card-title">{msg.admin.training}</h2>
         <ul class="mt-2 space-y-2 p-0 text-sm">
           {m.team.map((x) => (
             <li class="list-none">
@@ -200,13 +198,13 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
         </ul>
       </section>
       <section class="co-card">
-        <h2 class="co-card-title">Resultado de dossiers</h2>
-        <p class="mt-2 text-sm">Ganados <strong>{m.outcomes.won}</strong> · Perdidos <strong>{m.outcomes.lost}</strong> · Publicados abiertos <strong>{m.outcomes.open}</strong></p>
-        <p class="mt-1 text-xs text-muted">Con la analítica de visionado (Fase 2) esto se cruzará con las jugadas usadas para medir tasa de cierre por jugada.</p>
+        <h2 class="co-card-title">{msg.admin.outcomes}</h2>
+        <p class="mt-2 text-sm">{msg.admin.won} <strong>{m.outcomes.won}</strong> · {msg.admin.lost} <strong>{m.outcomes.lost}</strong> · {msg.admin.open} <strong>{m.outcomes.open}</strong></p>
+        <p class="mt-1 text-xs text-muted">{msg.admin.outcomesNote}</p>
       </section>
       <section class="co-card">
-        <h2 class="co-card-title">Módulos sin jugadas</h2>
-        <p class="mt-2 text-sm">{m.uncoveredModules.length ? m.uncoveredModules.join(', ') : 'Todos los módulos tienen jugadas ✓'}</p>
+        <h2 class="co-card-title">{msg.admin.uncovered}</h2>
+        <p class="mt-2 text-sm">{m.uncoveredModules.length ? m.uncoveredModules.join(', ') : msg.admin.allCovered}</p>
       </section>
     </div>
   )}

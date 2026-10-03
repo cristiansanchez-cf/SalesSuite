@@ -1,4 +1,6 @@
 import type { PlaybookService } from './service';
+import type { Locale } from '~/lib/i18n/core';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
 
 /**
  * Acciones de formulario comunes de las páginas del playbook (sin JS).
@@ -24,11 +26,5 @@ export async function learnAction(pb: PlaybookService, f: FormData, ctx: { modul
   }
 }
 
-export const LEARN_FLASH: Record<string, string> = {
-  change: 'Mejora enviada al líder. Te avisaremos en esta ficha cuando la revise.',
-  tip: '¡Gracias! Tu truco ya es visible para el equipo.',
-  'tip-pending': '¡Gracias! El equipo lo revisará antes de publicarlo.',
-  withdraw: 'Aporte retirado.',
-  learned: 'Marcado como aprendido.',
-  unlearned: 'Desmarcado.',
-};
+/** Mensajes de éxito por clave, en el idioma de quien mira (messages/playbook.ts → topic.flash). */
+export const LEARN_FLASH = (locale: Locale): Record<string, string> => playbookMessages[locale].topic.flash;
