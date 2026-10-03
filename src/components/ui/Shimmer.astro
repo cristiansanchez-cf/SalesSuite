@@ -7,7 +7,7 @@ interface Props { variant?: 'page' | 'cards' | 'rows' | 'hero' | 'home'; count?:
 const { variant = 'rows', count = 3, label = 'Cargando…', class: cls } = Astro.props;
 const n = Array.from({ length: count });
 ---
-<div class:list={['grid gap-4', cls]} role="status" aria-live="polite" data-shimmer={variant}>
+<div class:list={["grid gap-4", cls]} aria-busy="true" data-shimmer={variant}>
   <span class="sr-only">{label}</span>
   {variant === 'page' && (<>
     <span class="co-shimmer co-shimmer--title" aria-hidden="true"></span>
