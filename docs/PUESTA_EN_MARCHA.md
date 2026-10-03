@@ -35,6 +35,13 @@ Cristian siguió una versión anterior hasta el paso «A4». Lo que probablement
 
 ---
 
+### Estado a 3 de octubre (informe de Cowork)
+
+Hechos: estado de partida, pasos 1 a 6. Para la siguiente sesión:
+- **El proyecto de Supabase se llama `Sales`** (ref `gxogpgwwihoepgyqqdpp`). El nombre da igual. Usa las claves nuevas (`sb_publishable_…` / `sb_secret_…`): valen igual que `anon` / `service_role`.
+- **Paso 7: se bloqueó porque faltan los archivos de marca de Enjoy.** Ya está resuelto: el alta sigue sin ellos y lo avisa con «⚠ Falta assets/…». Repite el **7.1** (prueba) y, si sale en verde, Cristian lanza el **7.2**. El logo, el favicon, la imagen para compartir y la fuente se añaden después a `tenants/enjoy/assets/` y basta con repetir el alta.
+- Pendientes: 7, 8 y 9.
+
 ## Mapa de lo que habrá al terminar
 
 | Pieza | Dónde | Para qué |
@@ -67,7 +74,7 @@ Cristian siguió una versión anterior hasta el paso «A4». Lo que probablement
     - `https://enjoy.ventas.cofundo.io/**`
     - `https://oquea.ventas.cofundo.io/**`
     - `http://localhost:4321/**`
-- [ ] **1.5** **Authentication → Emails → Templates.** Para cada plantilla, pega el asunto y el contenido del archivo indicado. Los archivos están en el repositorio, en `supabase/templates/`: ábrelos en GitHub, pulsa *Raw* y copia todo.
+- [ ] **1.5** (Supabase no deja editar las plantillas hasta que el SMTP propio esté activo: haz antes el paso 2.5.) **Authentication → Emails → Templates.** Para cada plantilla, pega el asunto y el contenido del archivo indicado. Los archivos están en el repositorio, en `supabase/templates/`: ábrelos en GitHub, pulsa *Raw* y copia todo.
 
   | Plantilla | Asunto | Archivo |
   |---|---|---|
@@ -178,7 +185,7 @@ Crea Enjoy con su marca y con el **catálogo, el mercado y el playbook de ejempl
   - Admin email: **el email de Cristian**.
   - Dry run: **marcado**.
 
-  Debe acabar en verde con una línea del tipo «tenant.json válido: … 1 admins». El email no aparece en el registro: GitHub lo oculta.
+  Debe acabar en verde con una línea del tipo «tenant.json válido: … 1 admins». El email no aparece en el registro: GitHub lo oculta. Las líneas «⚠ Falta assets/…» son avisos, no errores: Enjoy se da de alta sin su logo ni su fuente hasta que se suban.
 - [ ] **7.2** Repite con **Dry run desmarcado**.
 - [ ] **Comprobación 7:** a Cristian le llega «Te han invitado» desde `hola@correo.cofundo.io`. Al pulsar *Aceptar invitación* entra en `https://enjoy.ventas.cofundo.io`, completa su nombre y aterriza en **Empieza aquí**.
 

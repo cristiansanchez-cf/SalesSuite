@@ -6,6 +6,7 @@
  *
  * Env: PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (service role: SOLO en tu máquina o CI, nunca en el cliente).
  * Variables: ADMIN_EMAILS=a@x.com,b@y.com añade admins sin tocar tenant.json.
+ * --allow-missing-assets: si falta un archivo de assets/, se omite ese campo (logo, favicon, fuente…) con un aviso en vez de fallar.
  * Flags: --skip-assets (no sube a Storage), --skip-invites (no envía invitaciones; solo da rol a usuarios existentes).
  *
  * Qué hace:
@@ -30,6 +31,7 @@ const dir = args.find((a) => !a.startsWith('--'));
 const DRY = args.includes('--dry-run');
 const SKIP_ASSETS = args.includes('--skip-assets');
 const SKIP_INVITES = args.includes('--skip-invites');
+const ALLOW_MISSING_ASSETS = args.includes('--allow-missing-assets');
 
 const tenantFile = z.object({
   slug: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
@@ -107,6 +109,28 @@ function canonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
   if (v && typeof v === 'object') return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canonical((v as Record<string, unknown>)[k])}`).join(',')}}`;
   return JSON.stringify(v);
+}
+
+/**
+ * Quita las referencias "asset:<ruta>" cuyo archivo no existe: la clave de un objeto o el elemento de una lista
+ * (p. ej. una fuente en theme_tokens.font.faces). Devuelve las rutas omitidas para avisar.
+ */
+function pruneMissingAssets(v: unknown, have: Set<string>, dropped: Set<string>): unknown {
+  const missingRef = (x: unknown) => typeof x === 'string' && x.startsWith('asset:') && !have.has(x.slice(6));
+  const holdsMissing = (x: unknown) => !!x && typeof x === 'object' && !Array.isArray(x) && Object.values(x as Record<string, unknown>).some(missingRef);
+  if (Array.isArray(v)) {
+    return v.filter((x) => {
+      if (missingRef(x)) { dropped.add((x as string).slice(6)); return false; }
+      if (holdsMissing(x)) { Object.values(x as Record<string, unknown>).filter(missingRef).forEach((r) => dropped.add((r as string).slice(6))); return false; }
+      return true;
+    }).map((x) => pruneMissingAssets(x, have, dropped));
+  }
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(Object.entries(v as Record<string, unknown>)
+      .filter(([, x]) => { if (missingRef(x)) { dropped.add((x as string).slice(6)); return false; } return true; })
+      .map(([k, x]) => [k, pruneMissingAssets(x, have, dropped)]));
+  }
+  return v;
 }
 
 /** Sustituye recursivamente "asset:<ruta>" por URL usando `map`. */
@@ -207,13 +231,20 @@ async function main() {
   // ADMIN_EMAILS (separados por comas) se suman a "admins": así no hace falta guardar emails en el repositorio.
   const extraAdmins = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean);
   if (extraAdmins.length) raw.admins = [...new Set([...(raw.admins ?? []), ...extraAdmins])];
+  const assetsDir = join(root, 'assets');
+  // Solo tipos permitidos en Storage; el resto (README, .DS_Store…) se ignora.
+  const files = (await listFiles(assetsDir)).map((p) => relative(assetsDir, p).split('\\').join('/')).filter((f) => MIME[extname(f).toLowerCase()]);
+  if (ALLOW_MISSING_ASSETS) {
+    const dropped = new Set<string>();
+    const pruned = pruneMissingAssets(raw, new Set(files), dropped) as typeof raw;
+    Object.keys(raw).forEach((k) => delete raw[k]);
+    Object.assign(raw, pruned);
+    for (const k of dropped) log(`⚠ Falta assets/${k}: se omite (se puede añadir después y repetir el alta).`);
+  }
   const parsed = tenantFile.safeParse(raw);
   if (!parsed.success) fail(`tenant.json inválido:\n  ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n  ')}`);
   const t = parsed.data;
 
-  const assetsDir = join(root, 'assets');
-  // Solo tipos permitidos en Storage; el resto (README, .DS_Store…) se ignora.
-  const files = (await listFiles(assetsDir)).map((p) => relative(assetsDir, p).split('\\').join('/')).filter((f) => MIME[extname(f).toLowerCase()]);
   const errors = validate(t, files);
   if (errors.length) fail(`Validación:\n  ${errors.join('\n  ')}`);
   log(`tenant.json válido: ${t.market.length} sectores, ${t.facets.length} situaciones, ${t.market.reduce((n, s) => n + s.personas.length, 0)} actores, ${t.playbook.length} jugadas, ${t.catalog.length} módulos, ${files.length} assets, ${t.domains.length} dominios, ${t.admins.length} admins`);

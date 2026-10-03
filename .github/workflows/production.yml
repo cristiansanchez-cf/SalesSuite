@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Ocultar el email en los registros
         if: ${{ inputs.admin_email != '' }}
@@ -66,7 +66,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: ${{ inputs.what != 'migraciones' }}
         with:
           node-version: 22
@@ -86,4 +86,5 @@ jobs:
           DRY: ${{ inputs.dry_run }}
         run: |
           case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
-          if [ "$DRY" = "true" ]; then npm run tenant:bootstrap -- "tenants/$TENANT" --dry-run; else npm run tenant:bootstrap -- "tenants/$TENANT"; fi
+          # Si faltan archivos de marca (logo, fuente…), el alta sigue sin ellos y lo avisa; se añaden después y se repite.
+          if [ "$DRY" = "true" ]; then npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets --dry-run; else npm run tenant:bootstrap -- "tenants/$TENANT" --allow-missing-assets; fi

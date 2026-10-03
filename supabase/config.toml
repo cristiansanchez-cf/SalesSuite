@@ -40,7 +40,7 @@ otp_expiry = 3600
 otp_length = 6
 
 [auth.email.template.invite]
-subject = "Te han invitado a la consola de dossiers"
+subject = "Te han invitado"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.confirmation]

@@ -67,7 +67,7 @@ Copia el contenido de cada archivo de `supabase/templates/`:
 
 | Plantilla | Archivo | Asunto |
 |---|---|---|
-| Invite user | `invite.html` | Te han invitado a la consola de dossiers |
+| Invite user | `invite.html` | Te han invitado |
 | Magic Link | `magic_link.html` | Tu código para entrar |
 | Confirm signup | `confirm_signup.html` | Confirma tu email |
 | Reset Password | `recovery.html` | Elige una contraseña nueva |

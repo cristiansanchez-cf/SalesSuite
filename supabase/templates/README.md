@@ -6,7 +6,7 @@ dominio correcto de cada tenant y funciona aunque se abra en otro dispositivo (n
 
 | Plantilla en Supabase (Auth → Email Templates) | Archivo | Asunto sugerido |
 |---|---|---|
-| Invite user | `invite.html` | Te han invitado a la consola de dossiers |
+| Invite user | `invite.html` | Te han invitado |
 | Magic Link | `magic_link.html` | Tu código para entrar |
 | Confirm signup | `confirm_signup.html` | Confirma tu email |
 | Reset Password | `recovery.html` | Elige una contraseña nueva |
