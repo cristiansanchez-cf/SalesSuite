@@ -102,6 +102,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.textContent('[data-testid=setup-segments]')).includes('Hoteles y posadas con centro de buceo'), 'sectores del punto de partida');
   await p.goto(`${BASE}/admin/setup?step=3`);
   assert((await p.textContent('main')).includes('puede tumbarla'), 'actores con quién puede tumbar la venta');
+  assert((await p.$$('[data-testid=actor-card]')).length >= 4, 'actores en tarjetas');
+  await p.click('[data-testid=add-actor-bodas]');
+  await p.fill('[data-testid=setup-persona-form]:visible [name=name]', `Wedding planner ${RUN}`);
+  await p.locator('[data-testid=setup-persona-form]:visible label.co-option', { hasText: 'Influye' }).first().click();
+  await p.fill('[data-testid=setup-persona-form]:visible [name=canBlock]', 'Si no lo propone ella, lo descarta.');
+  await p.click('[data-testid=setup-persona-form]:visible button[type=submit]');
+  await p.waitForURL(/ok=persona/);
+  assert((await p.textContent('[data-testid=setup-actors][data-segment=bodas]')).includes(`Wedding planner ${RUN}`), 'actor añadido desde la tarjeta, ya en su sector');
   await p.goto(`${BASE}/admin/setup?step=4`);
   await p.fill('[data-testid=setup-facet-form] [name=label]', `Temporada ${RUN}`);
   await p.fill('[data-testid=setup-facet-form] [name=options]', 'Alta\nBaja');

@@ -248,16 +248,17 @@ a.co-card:hover, .co-card--link:hover { border-color: var(--console-card-border-
 .co-section__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 
 /* Listas accionables = tarjetas; la fila entera es el enlace (guía §6). */
-.co-rows { display: grid; gap: var(--console-gap); margin: 0; padding: 0; list-style: none; }
+.co-rows { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--console-gap); margin: 0; padding: 0; list-style: none; }
 .co-row {
   display: flex; align-items: center; gap: 14px; padding: var(--console-row-pad-y) var(--console-row-pad-x);
   border: 1px solid var(--console-card-border); border-radius: var(--console-radius-card);
   background: var(--console-surface); color: inherit; text-decoration: none;
   transition: border-color var(--co-duration-quick) var(--co-ease-out-soft);
+  flex-wrap: wrap; min-width: 0;
 }
 a.co-row:hover { border-color: var(--console-card-border-hover); }
 a.co-row:hover .co-row__chevron { transform: translateX(3px); }
-.co-row__main { min-width: 0; flex: 1; }
+.co-row__main { min-width: 0; flex: 1 1 13rem; }
 .co-row__main > * { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .co-row__chevron { color: var(--co-ink-dim); transition: transform var(--co-duration-quick) var(--co-ease-out-soft); }
 .co-row__lead {
@@ -266,6 +267,13 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 }
 /* Fila que pide atención: relleno suave + regla lateral, y el motivo en texto (guía Lumbra §3 y §15). */
 .co-row--attention { background: var(--console-attention-bg); box-shadow: inset 3px 0 0 var(--console-attention); }
+
+/* Pestañas: en el móvil se desplazan en horizontal en vez de desbordar la página. */
+.co-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--console-card-border); overflow-x: auto; scrollbar-width: none; }
+.co-tabs::-webkit-scrollbar { display: none; }
+.co-tab { flex: none; margin-bottom: -1px; padding: 8px 16px; border-bottom: 2px solid transparent; font-size: 0.875rem; font-weight: 600; color: var(--co-ink-soft); text-decoration: none; white-space: nowrap; }
+.co-tab:hover { color: var(--co-ink); }
+.co-tab[aria-current='page'] { border-color: var(--co-ink); color: var(--co-ink); }
 
 /* Columnas medidas contra el panel: ≥720 → 2, ≥1100 → 3 (guía §9). */
 .co-grid { display: grid; gap: var(--console-gap); grid-template-columns: minmax(0, 1fr); }
@@ -340,6 +348,17 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 }
 .co-tag--match { background: var(--console-chip-bg); border-color: transparent; color: var(--co-ink); }
 
+/* Tarjeta para añadir uno más al final de una rejilla de tarjetas. */
+.co-card--add {
+  display: grid; place-content: center; justify-items: center; gap: 6px; width: 100%; height: 100%; min-height: 132px;
+  border-style: dashed; background: transparent; color: var(--co-ink-soft); cursor: pointer; text-align: center;
+  font: inherit; transition: border-color var(--co-duration-quick) var(--co-ease-out-soft), color var(--co-duration-quick) var(--co-ease-out-soft);
+}
+.co-card--add:hover { border-color: var(--co-ink); color: var(--co-ink); }
+.co-card--add:focus-visible { outline: 2px solid var(--co-ink); outline-offset: 2px; }
+/* Quién puede tumbar la venta: lo que más importa de un actor, con la misma señal que «pide atención». */
+.co-blocker { display: block; padding: 8px 12px; border-radius: var(--console-radius-control); background: var(--console-attention-bg); box-shadow: inset 3px 0 0 var(--console-attention); font-size: 0.875rem; line-height: 1.45; }
+
 /* Opción grande con icono (wizards). */
 .co-option {
   position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px;
@@ -406,6 +425,7 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
   border-radius: var(--console-radius-card); background: var(--console-surface); color: var(--co-ink);
   box-shadow: var(--console-overlay-shadow);
 }
+.co-dialog--wide { width: min(44rem, calc(100vw - 32px)); }
 .co-dialog::backdrop { background: var(--console-backdrop); backdrop-filter: blur(4px); }
 .co-dialog[open] { animation: co-pop 100ms var(--co-ease-out-soft); }
 .co-dialog__body { display: grid; gap: 12px; padding: 24px; }

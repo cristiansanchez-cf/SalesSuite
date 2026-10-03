@@ -300,7 +300,7 @@
     <button role="tab" aria-selected={tab === 'preview' && pane === 'script'} aria-pressed={tab === 'preview' && pane === 'script'} onclick={() => { tab = 'preview'; pane = 'script'; }}>Guion</button>
   </div>
 
-  <div class="grid gap-5 xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
+  <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
     <!-- ============ editor ============ -->
     <div class="space-y-5 {tab === 'edit' ? '' : 'hidden xl:block'}">
       <!-- datos -->

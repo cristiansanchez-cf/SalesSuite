@@ -129,12 +129,17 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
         <p class="co-lede">Un sector es un tipo de cliente con su forma de comprar (p. ej. «Locales de ocio nocturno», «Hoteles con centro de buceo»). La región no es un sector: va en el paso 4.</p>
         {st.segments.length === 0
           ? <EmptyState kind="create" title="Todavía no hay sectores" detail="Añade el primero con el formulario, o vuelve al paso 1 y parte de un ejemplo." action={{ href: href(1), label: 'Ver puntos de partida' }} />
-          : <ul class="co-rows" data-testid="setup-segments">{st.segments.map((sg) => (
-              <li><a class="co-row" href={`/admin/playbook/segment/${sg.id}`}>
-                <span class="co-row__lead">{icon(sg.icon) ? <Icon name={icon(sg.icon)!} /> : <Icon name="compass" />}</span>
-                <span class="co-row__main"><span class="co-row-title">{sg.name}</span><span class="co-meta">{sg.personas.length} actores · {sg.modules.length} módulos que encajan{sg.icp ? '' : ' · falta el cliente ideal'}</span></span>
-                <span class="co-row__chevron"><Icon name="chevron-right" /></span>
-              </a></li>))}
+          : <ul class="co-grid co-grid--2 m-0 p-0" data-testid="setup-segments">{st.segments.map((sg) => (
+              <li class="list-none"><a class="co-card co-card--link h-full" href={`/admin/playbook/segment/${sg.id}`}><span class="grid content-start gap-3">
+                <span class="flex items-center gap-3">
+                  <span class="co-option__icon">{icon(sg.icon) ? <Icon name={icon(sg.icon)!} /> : <Icon name="compass" />}</span>
+                  <span class="co-row-title">{sg.name}</span>
+                </span>
+                {sg.personas.length > 0
+                  ? <span class="co-chips">{sg.personas.map((p) => <span class="co-tag">{p.name}</span>)}</span>
+                  : <span class="co-meta">Sin actores todavía</span>}
+                <span class="co-meta">{sg.modules.length === 1 ? '1 módulo que encaja' : `${sg.modules.length} módulos que encajan`}{sg.icp ? '' : ' · falta el cliente ideal'}</span>
+              </span></a></li>))}
             </ul>}
         <a class="co-btn co-btn--primary w-fit" href={href(3)}>Siguiente: actores <span aria-hidden="true">→</span></a>
       </section>
@@ -155,51 +160,71 @@ const SCOPE = { account: 'De la cuenta', contact: 'De la persona' } as const;
   )}
 
   {step === 3 && (
-    <div class="co-split">
-      <section class="grid content-start gap-4">
-        <p class="co-lede">Los actores son los papeles que intervienen en una venta. Lo más importante: <strong class="text-ink">quién puede tumbarla</strong>. Un DJ puede vetar las peticiones de canciones; un instructor, un servicio que le dé trabajo extra.</p>
-        {st.segments.length === 0 && <EmptyState kind="create" title="Primero crea un sector" action={{ href: href(2), label: 'Ir a sectores' }} />}
-        {st.segments.map((sg) => (
-          <div class="co-card grid gap-2" data-testid="setup-actors">
-            <h2 class="co-card-title flex items-center gap-2">{icon(sg.icon) && <Icon name={icon(sg.icon)!} />}{sg.name}</h2>
-            {sg.personas.length === 0 ? <p class="co-meta">Sin actores todavía.</p> : (
-              <ul class="grid gap-1 p-0">{sg.personas.map((p) => (
-                <li class="flex flex-wrap items-center gap-2 text-sm">
-                  <Icon name={ROLE_ICON[p.role]} size={16} /><a class="font-medium hover:underline" href={`/admin/playbook/persona/${p.id}`}>{p.name}</a>
-                  <span class="co-tag">{ROLE_LABEL[p.role]}</span>
-                  {p.canBlock && <span class="co-meta">· puede tumbarla: {p.canBlock}</span>}
-                </li>))}
-              </ul>
-            )}
+    <section class="grid gap-8">
+      <p class="co-lede">Los actores son los papeles que intervienen en una venta. Lo más importante: <strong class="text-ink">quién puede tumbarla</strong>. Un DJ puede vetar las peticiones de canciones; un instructor, un servicio que le dé trabajo extra.</p>
+      {st.segments.length === 0 && <EmptyState kind="create" title="Primero crea un sector" action={{ href: href(2), label: 'Ir a sectores' }} />}
+      {st.segments.map((sg) => (
+        <section class="grid gap-3" data-testid="setup-actors" data-segment={sg.key}>
+          <div class="co-section__head !mb-0">
+            <h2 class="co-card-title flex items-center gap-2"><span class="co-row__lead">{icon(sg.icon) ? <Icon name={icon(sg.icon)!} /> : <Icon name="compass" />}</span>{sg.name}</h2>
+            <span class="co-meta">{sg.personas.length === 1 ? '1 actor' : `${sg.personas.length} actores`}</span>
           </div>
-        ))}
-        <a class="co-btn co-btn--primary w-fit" href={href(4)}>Siguiente: situaciones <span aria-hidden="true">→</span></a>
-      </section>
-      <aside>
-        <form method="post" class="co-card grid gap-3" data-testid="setup-persona-form">
-          <input type="hidden" name="action" value="persona" />
-          <h2 class="co-entity">Añadir actor</h2>
-          <label class="co-field">Sector<select class="co-select" name="segmentId" required>{st.segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select></label>
-          <label class="co-field">Papel o cargo<input class="co-input" name="name" required maxlength="80" placeholder="Instructor/a autónomo" /></label>
-          <fieldset><legend class="co-field mb-2">Qué papel tiene en la decisión</legend>
-            <div class="grid gap-2">
-              {PERSONA_ROLES.map((r, k) => (
-                <label class="co-option !flex-row !items-center !gap-3 !p-3">
-                  <input type="radio" name="role" value={r} checked={k === 0} />
-                  <span class="co-option__icon"><Icon name={ROLE_ICON[r]} size={16} /></span>
-                  <span><span class="co-row-title block">{ROLE_LABEL[r]}</span><span class="co-meta">{ROLE_HINT[r]}</span></span>
+          <ul class="co-grid co-grid--3 m-0 p-0">
+            {sg.personas.map((p) => (
+              <li class="list-none">
+                <a class="co-card co-card--link h-full" href={`/admin/playbook/persona/${p.id}`} data-testid="actor-card"><span class="grid content-start gap-3">
+                  <span class="flex items-center gap-3">
+                    <span class="co-option__icon"><Icon name={ROLE_ICON[p.role]} size={18} /></span>
+                    <span class="min-w-0"><span class="co-row-title block">{p.name}</span><span class="co-meta">{ROLE_LABEL[p.role]}</span></span>
+                  </span>
+                  {p.canBlock
+                    ? <span class="co-blocker"><strong>Puede tumbarla:</strong> {p.canBlock}</span>
+                    : <span class="co-meta">Falta cómo puede tumbar la venta</span>}
+                  {p.canHelp && <span class="co-meta">Ayuda: {p.canHelp}</span>}
+                </span></a>
+              </li>
+            ))}
+            <li class="list-none">
+              <button type="button" class="co-card co-card--add" data-dialog-open={`add-actor-${sg.id}`} data-testid={`add-actor-${sg.key}`}>
+                <span class="co-option__icon"><Icon name="plus" size={18} /></span>
+                <span class="co-row-title">Añadir actor</span>
+                <span class="co-meta">en {sg.name}</span>
+              </button>
+            </li>
+          </ul>
+          <dialog id={`add-actor-${sg.id}`} class="co-dialog co-dialog--wide" aria-labelledby={`add-actor-${sg.id}-title`}>
+            <form method="post" data-testid="setup-persona-form">
+              <input type="hidden" name="action" value="persona" />
+              <input type="hidden" name="segmentId" value={sg.id} />
+              <div class="co-dialog__body">
+                <h2 id={`add-actor-${sg.id}-title`} class="co-entity">Añadir actor en {sg.name}</h2>
+                <label class="co-field">Papel o cargo<input class="co-input" name="name" required maxlength="80" placeholder="Instructor/a autónomo" /></label>
+                <fieldset><legend class="co-field mb-2">Qué papel tiene en la decisión</legend>
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    {PERSONA_ROLES.map((r, k) => (
+                      <label class="co-option !flex-row !items-center !gap-3 !p-3">
+                        <input type="radio" name="role" value={r} checked={k === 0} />
+                        <span class="co-option__icon"><Icon name={ROLE_ICON[r]} size={16} /></span>
+                        <span class="min-w-0"><span class="co-row-title block">{ROLE_LABEL[r]}</span><span class="co-meta">{ROLE_HINT[r]}</span></span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <label class="co-field">¿Cómo puede tumbar la venta? <span class="co-help">Lo que más ayuda a un comercial nuevo</span>
+                  <textarea class="co-textarea" name="canBlock" maxlength="1000" placeholder="Si le resulta laborioso en el día a día, lo desaconseja a su centro."></textarea>
                 </label>
-              ))}
-            </div>
-          </fieldset>
-          <label class="co-field">¿Cómo puede tumbar la venta? <span class="co-help">Lo que más ayuda a un comercial nuevo</span>
-            <textarea class="co-textarea" name="canBlock" maxlength="1000" placeholder="Si le resulta laborioso en el día a día, lo desaconseja a su centro."></textarea>
-          </label>
-          <label class="co-field">¿Cómo puede ayudar? <span class="co-help">Opcional</span><textarea class="co-textarea !min-h-[64px]" name="canHelp" maxlength="1000"></textarea></label>
-          <button class="co-btn co-btn--primary" type="submit" disabled={st.segments.length === 0}>Añadir actor</button>
-        </form>
-      </aside>
-    </div>
+                <label class="co-field">¿Cómo puede ayudar? <span class="co-help">Opcional</span><textarea class="co-textarea !min-h-[64px]" name="canHelp" maxlength="1000"></textarea></label>
+              </div>
+              <div class="co-dialog__foot">
+                <button type="button" class="co-btn co-btn--ghost" data-dialog-close>Cancelar</button>
+                <button class="co-btn co-btn--primary" type="submit">Añadir actor</button>
+              </div>
+            </form>
+          </dialog>
+        </section>
+      ))}
+      <a class="co-btn co-btn--primary w-fit" href={href(4)}>Siguiente: situaciones <span aria-hidden="true">→</span></a>
+    </section>
   )}
 
   {step === 4 && (

@@ -50,8 +50,8 @@ const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'med
     <a class={btn} href="/admin/api/playbook/export" download="playbook.json">Exportar (formato Cerebro)</a>
     <a class="co-btn co-btn--primary" href="/admin/playbook/new">Nueva jugada</a>
   </div>
-  <nav class="mt-5 flex gap-1 border-b border-line" aria-label="Secciones del playbook">
-    {tabs.map((t) => <a href={`?tab=${t.id}`} class:list={['-mb-px border-b-2 px-4 py-2 text-sm font-semibold', tab === t.id ? 'border-ink' : 'border-transparent text-muted hover:text-ink']}>{t.label}</a>)}
+  <nav class="co-tabs mt-5" aria-label="Secciones del playbook" data-scroll-x>
+    {tabs.map((t) => <a href={`?tab=${t.id}`} class="co-tab" aria-current={tab === t.id ? 'page' : undefined}>{t.label}</a>)}
   </nav>
   {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
   {result.error && <p class="mt-4 co-alert co-alert--rejection" role="alert">{result.error} {result.details.join(' · ')}</p>}

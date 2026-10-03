@@ -27,7 +27,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const rep = await login('rep@enjoy.test');
   // ---- sectores y actores
   await rep.goto(`${BASE}/admin/learn`);
-  assert((await rep.$$('[data-testid=segment]')).length === 4, 'Aprende: 4 sectores');
+  // Otros smokes pueden haber añadido sectores (punto de partida «buceo»): basta con que estén los 4 de Enjoy.
+  const segs = await rep.$$eval('[data-testid=segment]', (els) => els.map((e) => e.textContent));
+  assert(['Bodas', 'Locales de ocio nocturno', 'Conciertos', 'Festivales'].every((n) => segs.some((t) => t.includes(n))), 'Aprende: los 4 sectores de Enjoy');
   await rep.locator('[data-testid=segment]', { hasText: 'ocio nocturno' }).click();
   const dj = rep.locator('[data-testid=persona][data-persona-key=dj-residente]');
   assert((await dj.textContent()).includes('Cómo puede tumbarlo'), 'actor con «puede ayudar / puede tumbarlo»');

@@ -28,6 +28,8 @@ const sel = {
   type: (val('type') ?? 'primer_contacto') as keyof typeof MESSAGE_TYPES, channel: (val('channel') ?? 'whatsapp') as keyof typeof CHANNELS,
   objection: val('objection'), notes: q.get('notes') ?? '',
 };
+// Elegir una objeción es responder a ella, aunque el tipo se quedara en el valor por defecto (docs/UX_REVIEW.md #5).
+if (sel.objection) sel.type = 'objecion';
 
 const [market, dossiers, facets] = await Promise.all([pb.market(), admin.service.listDossiers(), admin.evidence.facets()]);
 const state = sel.dossier ? await admin.service.getState(sel.dossier).catch(() => null) : null;
@@ -142,7 +144,7 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
           </label>
         </div>
         <label class="co-field">Objeción <span class="co-help">Si respondes a una</span>
-          <select class="co-select" name="objection"><option value="">Ninguna</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{OBJECTION_LABEL[o]}</option>)}</select>
+          <select class="co-select" name="objection" data-testid="objection-select"><option value="">Ninguna</option>{OBJECTIONS.map((o) => <option value={o} selected={o === sel.objection}>{OBJECTION_LABEL[o]}</option>)}</select>
         </label>
         <label class="co-field">Lo que sabes de este caso
           <textarea class="co-textarea" name="notes" maxlength="1500" placeholder="Ej.: le conocí en la feria, tiene 3 locales, le preocupa la caja entre semana…">{sel.notes}</textarea>
@@ -200,6 +202,11 @@ const icon = (x: string | null | undefined) => (x && isIconName(x) ? x : null);
     </section>
   </div>
   <script>
+    // Objeción y tipo van juntos: elegir una objeción pasa a «Responder a una objeción»; cambiar de tipo la quita.
+    const typeSel = document.querySelector<HTMLSelectElement>('[data-testid=type-select]');
+    const objSel = document.querySelector<HTMLSelectElement>('[data-testid=objection-select]');
+    objSel?.addEventListener('change', () => { if (objSel.value && typeSel) typeSel.value = 'objecion'; });
+    typeSel?.addEventListener('change', () => { if (typeSel.value !== 'objecion' && objSel) objSel.value = ''; });
     document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => {
       b.addEventListener('click', async () => {
         const el = document.getElementById(b.dataset.copy!) as HTMLTextAreaElement | null;
