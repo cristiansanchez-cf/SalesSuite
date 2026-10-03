@@ -14,7 +14,8 @@
   import { builderMessages } from '~/lib/i18n/messages/builder';
 
   interface MarketLite {
-    segments: Array<{ id: string; key: string; name: string }>;
+    /** modules: ids de módulo recomendados para el sector, por prioridad. */
+    segments: Array<{ id: string; key: string; name: string; modules?: string[] }>;
     personas: Array<{ id: string; segmentId: string; name: string; role: string }>;
   }
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
@@ -48,7 +49,7 @@
   // Lista local para el drag & drop (svelte-dnd-action la reordena mientras se arrastra).
   // Se inicializa síncrona (SSR) y se re-sincroniza tras cada respuesta del servidor.
   const snapshot = () => s.items.map((i) => ({ ...i }));
-  let list = $state<BuilderItem[]>(snapshot());
+  let list = $state<Array<BuilderItem & { cat?: true }>>(snapshot());
 
   const d = $derived(s.dossier);
   const editable = $derived(s.canEdit);
@@ -75,6 +76,7 @@
         }
         s = body;
         list = snapshot();
+        cat = toCat();
         error = null;
         failure = null;
         details = [];
@@ -120,6 +122,11 @@
   function onFinalize(e: CustomEvent<DndEvent<BuilderItem>>) {
     list = e.detail.items;
     const id = e.detail.info.id as string;
+    // Soltado desde «Añadir»: se añade justo donde cae.
+    if (id.startsWith('cat:')) {
+      run({ op: 'addItem', moduleVersionId: id.slice(4), index: Math.max(0, list.findIndex((i) => i.id === id)) });
+      return;
+    }
     const to = list.findIndex((i) => i.id === id);
     const from = s.items.findIndex((i) => i.id === id);
     if (to >= 0 && from >= 0 && to !== from) run({ op: 'move', itemId: id, toIndex: to });
@@ -151,6 +158,29 @@
     propsError = null;
     if (await run({ op: 'setProps', itemId: item.id, propOverrides: parsed as Record<string, unknown> })) openProps = null;
   }
+
+  // ---------- «Añadir»: el catálogo también se arrastra a la lista
+  type CatItem = BuilderState['catalog'][number] & { id: string; cat: true };
+  const toCat = (): CatItem[] => s.catalog.map((c) => ({ ...c, id: `cat:${c.versionId}`, cat: true as const }));
+  let cat = $state<CatItem[]>(toCat());
+  function onCatConsider(e: CustomEvent<DndEvent<CatItem>>) { cat = e.detail.items; }
+  function onCatFinalize() { cat = toCat(); }
+  /** Empieza rápido: los recomendados del sector (por prioridad) o todo el catálogo, en orden. */
+  const recommended = $derived(
+    (market.segments.find((x) => x.id === d.segmentId)?.modules ?? [])
+      .map((mid) => s.catalog.find((c) => c.moduleId === mid))
+      .filter((c): c is BuilderState['catalog'][number] => !!c),
+  );
+  function addMany(cs: Array<{ versionId: string }>) { for (const c of cs) run({ op: 'addItem', moduleVersionId: c.versionId }); }
+
+  // ---------- compartir: publicar y enlace en un paso; prueba o real
+  const activeLinks = $derived(s.links.filter((l) => l.state === 'active'));
+  const viewMode = $derived(d.viewMode ?? 'live');
+  async function publishAndLink() {
+    if (!(await run({ op: 'setStatus', status: 'published' }))) return;
+    if (!s.links.some((l) => l.state === 'active')) await run({ op: 'createLink', expiresAt: null });
+  }
+  function setMode(m: 'test' | 'live') { if (viewMode !== m) run({ op: 'update', patch: { viewMode: m } }); }
 
   // ---------- confirmación (guía Lumbra §9–11: dice lo que hace y lo que NO hace; nada de confirm() nativo)
   type Ask = { title: string; does: string; doesNot: string; label: string; danger?: boolean };
@@ -298,15 +328,16 @@
 </script>
 
 <div class="builder" data-testid="builder" data-busy={busy ? '' : undefined}>
-  <!-- cabecera -->
-  <div class="mb-5 flex flex-wrap items-end gap-3">
-    <div class="min-w-0 flex-1">
-      <a href="/admin" class="co-meta hover:text-ink">← {s.pricesLocked ? t.header.backAccounts : t.header.backDossiers}</a>
-      <p class="text-eyebrow mb-2 mt-3">{t.header.eyebrow}</p>
-      <h1 class="co-page-title truncate">{d.title}</h1>
+  <!-- cabecera: el título se edita aquí mismo -->
+  <div class="mb-5 grid gap-2">
+    <a href="/admin" class="co-meta w-fit hover:text-ink">← {s.pricesLocked ? t.header.backAccounts : t.header.backDossiers}</a>
+    <div class="flex flex-wrap items-center gap-3">
+      <input class="builder-title min-w-0 flex-1" value={d.title} disabled={!editable} maxlength="140" aria-label={t.prospect.name}
+        onchange={(e) => saveField('title', e.currentTarget.value)} data-testid="title" />
+      <span class={STATUS_CLASS[d.status]} data-testid="status">{t.status[d.status]}</span>
+      {#if d.status === 'published'}<span class="co-badge {viewMode === 'test' ? 'co-badge--attention' : 'co-badge--signal'}" data-testid="view-mode-badge">{viewMode === 'test' ? t.share.test : t.share.live}</span>{/if}
+      <span class="co-meta" aria-live="polite">{busy ? t.header.saving : t.header.saved}</span>
     </div>
-    <span class={STATUS_CLASS[d.status]} data-testid="status">{t.status[d.status]}</span>
-    <span class="co-meta" aria-live="polite">{busy ? t.header.saving : t.header.saved}</span>
   </div>
 
   {#if !editable}
@@ -331,105 +362,107 @@
   <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
     <!-- ============ editor ============ -->
     <div class="space-y-5 {tab === 'edit' ? '' : 'hidden xl:block'}">
-      <!-- datos -->
-      <section class={card}>
-        <h2 class="mb-3 co-card-title">{t.prospect.title}</h2>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="text-sm font-medium sm:col-span-2">{t.prospect.name}
-            <input class={field} value={d.title} disabled={!editable} maxlength="140" onchange={(e) => saveField('title', e.currentTarget.value)} data-testid="title" />
-          </label>
-          <label class="text-sm font-medium">{t.prospect.company}
-            <input class={field} value={d.prospectCompany ?? ''} disabled={!editable} maxlength="120" onchange={(e) => saveField('prospectCompany', e.currentTarget.value)} />
-          </label>
-          <label class="text-sm font-medium">{t.prospect.contact}
-            <input class={field} value={d.prospectName ?? ''} disabled={!editable} maxlength="120" onchange={(e) => saveField('prospectName', e.currentTarget.value)} />
-          </label>
-          <label class="text-sm font-medium">{t.prospect.language}
-            <select class={field} value={d.locale} disabled={!editable} onchange={(e) => saveField('locale', e.currentTarget.value)}>
-              {#each Object.entries(LOCALES) as [k, v]}<option value={k}>{v}</option>{/each}
-            </select>
-          </label>
-        </div>
-        <p class="mt-2 text-xs text-muted">{t.prospect.tokensPre}<code>{'{company}'}</code>{t.prospect.tokensMid}<code>{'{prospect}'}</code>{t.prospect.tokensPost}</p>
-      </section>
-
-      <!-- precio -->
-      <section class={card}>
-        <div class="mb-3 flex items-center justify-between gap-3">
-          <h2 class="co-card-title">{t.price.title}</h2>
-          {#if s.total}<span class="text-sm">{t.price.total} {#if s.total.before}<s class="text-muted">{s.total.before.formatted}</s> {/if}<strong data-testid="total">{s.total.formatted}</strong></span>{/if}
-        </div>
-        {#if s.partnerAccount}
-          <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
-            {t.price.account} <strong>{s.partnerAccount.name}</strong> · {t.policy[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? t.price.overList(`${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct}`) : ''}
-            {#if s.pricesLocked}
-              <span class="mt-1 block text-muted">{t.price.locked}{s.partnerAccount.pricePolicy === 'hidden' ? t.price.lockedHidden : ''}</span>
-            {:else}
-              <span class="mt-1 block text-muted">{t.price.partner}</span>
-            {/if}
-          </p>
-        {/if}
-        {#if !s.pricesLocked}
-        <div class="co-segmented" role="radiogroup" aria-label={t.price.mode}>
-          {#each [['none', t.price.modeNone], ['total', t.price.modeTotal], ['per_module', t.price.modePerModule]] as [mode, label]}
-            <button
-              role="radio" aria-checked={d.priceMode === mode} disabled={!editable}
-              onclick={() => d.priceMode !== mode && run({ op: 'update', patch: { priceMode: mode as 'none' | 'total' | 'per_module' } })}
-              data-testid={`price-mode-${mode}`}
-            >{label}</button>
-          {/each}
-        </div>
-        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-          {#if d.priceMode === 'total'}
-            <label class="text-sm font-medium">{t.price.totalPrice}
-              <input class={field} inputmode="decimal" value={d.totalPrice ?? ''} disabled={!editable} placeholder="0" onchange={(e) => saveTotal(e.currentTarget.value)} data-testid="total-price" />
-            </label>
+      <!-- compartir: lo primero que necesita el comercial -->
+      <section class="{card} share-card" data-testid="share">
+        <h2 class="mb-3 co-card-title">{t.share.title}</h2>
+        {#if d.status !== 'published'}
+          {#if s.publishBlockers.length}
+            <div class="co-alert co-alert--rejection mb-3 block"><p class="font-semibold">{t.publish.blockers}</p><ul>{#each s.publishBlockers as b}<li>{b}</li>{/each}</ul></div>
+          {:else}
+            <p class="co-meta mb-3">{t.share.draftHelp}</p>
           {/if}
-          {#if d.priceMode !== 'none'}
-            <label class="text-sm font-medium">{t.price.currency}
-              <select class={field} value={d.currency} disabled={!editable} onchange={(e) => saveField('currency', e.currentTarget.value)}>
-                {#each CURRENCIES as c}<option>{c}</option>{/each}
+          <button class="co-btn co-btn--primary co-btn--block" disabled={!editable || s.publishBlockers.length > 0 || busy} onclick={publishAndLink} data-testid="publish">{t.share.publishAndLink} <span aria-hidden="true">→</span></button>
+        {:else}
+          {#if activeLinks[0]}
+            <div class="flex flex-wrap items-center gap-2">
+              <code class="min-w-0 flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs" data-testid="share-url">{linkUrl(activeLinks[0].token)}</code>
+              <button class="co-btn co-btn--primary co-btn--sm" onclick={() => copy(activeLinks[0].token)} data-testid="share-copy">{copied === activeLinks[0].token ? t.links.copied : t.links.copy}</button>
+              <a class={btn} href={linkUrl(activeLinks[0].token)} target="_blank" rel="noopener noreferrer">{t.links.open}</a>
+            </div>
+          {/if}
+          <div class="mt-4 grid gap-2">
+            <div class="co-segmented" role="radiogroup" aria-label={t.share.mode}>
+              <button role="radio" aria-checked={viewMode === 'test'} disabled={!editable} onclick={() => setMode('test')} data-testid="view-mode-test">{t.share.test}</button>
+              <button role="radio" aria-checked={viewMode === 'live'} disabled={!editable} onclick={() => setMode('live')} data-testid="view-mode-live">{t.share.live}</button>
+            </div>
+            <p class="co-meta">{viewMode === 'test' ? t.share.testHelp : t.share.liveHelp}</p>
+          </div>
+        {/if}
+        <details class="mt-4 border-t border-[var(--console-divider)] pt-3" open={d.status === 'published'}>
+          <summary class="cursor-pointer text-sm font-semibold text-muted">{t.share.moreLinks(s.links.length)}</summary>
+          <div class="mt-3">
+            {#if d.status !== 'published'}<p class="mb-3 text-sm text-muted">{t.links.unpublished}</p>{/if}
+        {#if editable}
+            <div class="mb-3 flex flex-wrap gap-2">
+              <select class="co-select !w-auto" bind:value={linkExpiry} aria-label={t.links.expiry}>
+                <option value="">{t.links.noExpiry}</option><option value="7">{t.links.in7}</option><option value="30">{t.links.in30}</option>
               </select>
-            </label>
+              <button class="co-btn co-btn--primary co-btn--sm" onclick={createLink} data-testid="create-link">{t.links.create}</button>
+            </div>
           {/if}
-        </div>
-        {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">{t.price.perModuleHelp}</p>{/if}
-        {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
-          <label class="mt-3 block text-sm font-medium">{t.price.coupon} <span class="font-normal text-muted">{t.price.couponHint}</span>
-            <select class={field} value={d.couponId ?? ''} disabled={!editable} onchange={(e) => run({ op: 'setCoupon', couponId: e.currentTarget.value || null })} data-testid="coupon">
-              <option value="">{t.price.noCoupon}</option>
-              {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<option value={d.couponId}>{d.discount.label} ({d.discount.code})</option>{/if}
-              {#each coupons as c}<option value={c.id}>{c.label} ({c.code})</option>{/each}
-            </select>
-          </label>
-        {/if}
-        {/if}
+          <ul class="space-y-2 p-0" data-testid="links">
+            {#each s.links as l (l.id)}
+              <li class="co-card list-none !p-3 text-sm {l.state === 'active' ? '' : 'opacity-60'}" data-state={l.state}>
+                <div class="flex flex-wrap items-center gap-2">
+                  <code class="min-w-0 flex-1 truncate text-xs" data-testid="link-url">{linkUrl(l.token)}</code>
+                  <span class="text-xs font-semibold">{l.state === 'active' ? (l.expiresAt ? t.links.expiresOn(fmtDate(l.expiresAt)) : t.links.active) : l.state === 'revoked' ? t.links.revoked : t.links.expired}</span>
+                </div>
+                {#if l.state === 'active'}
+                  <div class="mt-2 flex gap-2">
+                    <button class={btn} onclick={() => copy(l.token)}>{copied === l.token ? t.links.copied : t.links.copy}</button>
+                    <a class={btn} href={linkUrl(l.token)} target="_blank" rel="noopener noreferrer">{t.links.open}</a>
+                    {#if editable}<button class="co-btn co-btn--danger co-btn--sm ml-auto" onclick={() => revoke(l.id)}>{t.links.revoke}</button>{/if}
+                  </div>
+                {/if}
+              </li>
+            {:else}
+              <li class="co-meta list-none">{editable ? t.links.emptyEditable : t.links.empty}</li>
+            {/each}
+          </ul>
+          </div>
+          {#if d.status === 'published'}<button class="{btn} mt-3" disabled={!editable} onclick={() => setStatus('draft')}>{t.publish.unpublish}</button>{/if}
+        </details>
       </section>
 
-      <!-- módulos -->
+      <!-- módulos: arrastrar para ordenar o desde «Añadir» -->
       <section class={card}>
-        <h2 class="mb-3 co-card-title">{t.modules.title} <span class="font-normal text-muted">{t.modules.dragHint}</span></h2>
-        {#if list.length === 0}
-          <p class="co-empty co-meta">{t.modules.empty}</p>
+        <h2 class="mb-1 co-card-title">{t.modules.title}</h2>
+        <p class="co-meta mb-3">{t.quick.dragHint}</p>
+        {#if s.items.length === 0 && editable}
+          <div class="mb-3 grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-4" data-testid="quick-start">
+            <p class="text-eyebrow">{t.quick.title}</p>
+            {#if market.segments.length}
+              <p class="text-sm font-semibold">{t.quick.sector}</p>
+              <div class="co-chips">
+                {#each market.segments as sg (sg.id)}
+                  <button type="button" class="co-chip" aria-pressed={d.segmentId === sg.id} onclick={() => run({ op: 'setSegment', segmentId: sg.id })}>{sg.name}</button>
+                {/each}
+              </div>
+            {/if}
+            <div class="flex flex-wrap gap-2">
+              {#if recommended.length}<button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={() => addMany(recommended)} data-testid="add-recommended">{t.quick.recommended(recommended.length)}</button>{/if}
+              {#if s.catalog.length}<button class="{btn}" disabled={busy} onclick={() => addMany(s.catalog)} data-testid="add-all">{t.quick.all(s.catalog.length)}</button>{/if}
+            </div>
+          </div>
         {/if}
         <ol
-          class="space-y-2 p-0"
-          use:dndzone={{ items: list, flipDurationMs: 150, dragDisabled: !editable || busy, dropTargetStyle: {} }}
+          class="space-y-2 p-0 {s.items.length === 0 ? 'drop-empty' : 'min-h-[3rem]'}"
+          use:dndzone={{ items: list, type: 'module', flipDurationMs: 150, dragDisabled: !editable || busy, dropTargetStyle: { outline: '2px dashed var(--co-signal)', outlineOffset: '4px', borderRadius: '12px' } }}
           onconsider={onConsider}
           onfinalize={onFinalize}
           data-testid="items"
         >
           {#each list as item, idx (item.id)}
-            <li class="list-none rounded-[var(--console-radius-control)] border border-[var(--console-card-border)] bg-[var(--console-surface)] {item.visible ? '' : 'opacity-60'}" animate:flip={{ duration: 150 }} data-testid="item" data-item-key={item.moduleKey}>
+            <li class="list-none rounded-[var(--console-radius-control)] {item.cat ? 'border-2 border-dashed border-[color:var(--co-signal)] p-3 font-semibold' : `border border-[var(--console-card-border)] bg-[var(--console-surface)] ${item.visible ? '' : 'opacity-60'}`}" animate:flip={{ duration: 150 }} data-testid={item.cat ? undefined : 'item'} data-item-key={item.moduleKey}>
+              {#if item.cat}{item.moduleName}{:else}
               <div class="flex items-center gap-2 p-2 pl-3">
                 <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
                 <div class="min-w-0 flex-1">
                   <p class="truncate font-semibold">{item.moduleName}</p>
-                  <p class="truncate text-xs text-muted">
-                    {item.blockType} · v{item.version}
-                    {#if !item.visible} · <span class="font-semibold">{t.modules.hidden}</span>{/if}
-                    {#if item.price} · {item.price.formatted}{/if}
-                  </p>
+                  {#if !item.visible || item.price}<p class="truncate text-xs text-muted">
+                    {#if !item.visible}<span class="font-semibold">{t.modules.hidden}</span>{/if}
+                    {#if item.price}{!item.visible ? ' · ' : ''}{item.price.formatted}{/if}
+                  </p>{/if}
                 </div>
                 <button class={iconBtn} disabled={!editable || idx === 0} onclick={() => move(item, -1)} aria-label={t.modules.moveUp(item.moduleName)}>↑</button>
                 <button class={iconBtn} disabled={!editable || idx === list.length - 1} onclick={() => move(item, 1)} aria-label={t.modules.moveDown(item.moduleName)}>↓</button>
@@ -449,7 +482,7 @@
                 {#if item.upgradeTo}
                   <button class={btn} disabled={!editable} onclick={() => run({ op: 'upgradeItem', itemId: item.id })}>{t.modules.upgrade(item.upgradeTo.version)}</button>
                 {/if}
-                <button class="{btn} ml-auto" onclick={() => toggleProps(item)} aria-expanded={openProps === item.id}>{t.modules.customise}</button>
+                <button class="co-btn co-btn--quiet co-btn--sm ml-auto" onclick={() => toggleProps(item)} aria-expanded={openProps === item.id}>{t.advanced}</button>
               </div>
               {#if openProps === item.id}
                 <div class="space-y-2 border-t border-line p-3 text-sm">
@@ -460,29 +493,70 @@
                   {#if editable}<button class="co-btn co-btn--primary co-btn--sm" onclick={() => saveProps(item)}>{t.modules.saveProps}</button>{/if}
                 </div>
               {/if}
+              {/if}
             </li>
           {/each}
         </ol>
-      </section>
-
-      <!-- catálogo -->
-      {#if editable}
-        <section class={card}>
-          <h2 class="mb-3 co-card-title">{t.catalog.title}</h2>
-          <ul class="grid gap-2 p-0 sm:grid-cols-2" data-testid="catalog">
-            {#each s.catalog as c (c.versionId)}
-              <li class="co-row list-none !items-start !p-3">
-                <div class="min-w-0 flex-1">
-                  <p class="font-semibold">{c.moduleName}</p>
-                  <p class="text-xs text-muted">{c.blockType} · v{c.version}{c.defaultPrice != null ? ` · ${money(c.defaultPrice, c.currency)}` : ''}</p>
-                  {#if c.description}<p class="mt-1 text-xs text-muted">{c.description}</p>{/if}
-                </div>
-                <button class={btn} disabled={busy} onclick={() => run({ op: 'addItem', moduleVersionId: c.versionId })} aria-label={t.catalog.addNamed(c.moduleName)} data-testid="add-{c.moduleKey}">{t.catalog.add}</button>
+        {#if editable && cat.length}
+          <p class="text-eyebrow mb-2 mt-5">{t.quick.add}</p>
+          <ul
+            class="grid gap-2 p-0 sm:grid-cols-2"
+            use:dndzone={{ items: cat, type: 'module', dropFromOthersDisabled: true, flipDurationMs: 150, dragDisabled: busy, dropTargetStyle: {} }}
+            onconsider={onCatConsider}
+            onfinalize={onCatFinalize}
+            data-testid="catalog"
+          >
+            {#each cat as c (c.id)}
+              <li class="co-row list-none !items-center !p-3" animate:flip={{ duration: 150 }}>
+                <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold">{c.moduleName}</span>
+                  {#if c.description}<span class="block truncate text-xs text-muted">{c.description}</span>{/if}
+                </span>
+                <button class={iconBtn} disabled={busy} onclick={() => run({ op: 'addItem', moduleVersionId: c.versionId })} aria-label={t.catalog.addNamed(c.moduleName)} data-testid="add-{c.moduleKey}">＋</button>
               </li>
             {/each}
           </ul>
-        </section>
-      {/if}
+        {/if}
+      </section>
+
+      <!-- seguimiento -->
+      <section class={card} data-testid="followup">
+        <h2 class="mb-3 co-card-title">{t.followup.title} {#if overdue}<span class="co-badge co-badge--attention ml-1">{t.followup.overdue}</span>{/if}</h2>
+        <div class="grid gap-2 sm:grid-cols-[1fr_13rem]">
+          <input class={field} placeholder={t.followup.nextPlaceholder} bind:value={nextText} maxlength="300" disabled={!editable}
+            onchange={() => saveNext()} aria-label={t.followup.next} data-testid="next-step" />
+          <input class={field} type="datetime-local" bind:value={nextAt} disabled={!editable} onchange={() => saveNext()} aria-label={t.followup.nextAt} data-testid="next-at" />
+        </div>
+        {#if editable}
+          <div class="mt-2 flex flex-wrap gap-2 text-xs">
+            <button class={btn} onclick={() => preset(2)}>{t.followup.in2d}</button>
+            <button class={btn} onclick={() => preset(7)}>{t.followup.in1w}</button>
+            <button class={btn} onclick={() => preset(14)}>{t.followup.in2w}</button>
+            {#if d.nextStepAt}<button class={btn} onclick={() => { nextText = ''; saveNext(''); }}>{t.followup.clear}</button>{/if}
+          </div>
+        {/if}
+        <a class="mt-3 co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&type=seguimiento">{t.followup.compose}</a>
+        <div class="mt-4 border-t border-[var(--console-divider)] pt-4">
+        <div class="grid gap-2">
+          <label class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="font-semibold">{t.publish.outcome}</span>
+            <select class="co-select !w-auto" value={d.outcome} disabled={!editable} onchange={(e) => onOutcome(e.currentTarget.value)} data-testid="outcome">
+              {#each Object.entries(t.outcome) as [k, v]}<option value={k}>{v}</option>{/each}
+            </select>
+          </label>
+          {#if d.outcome !== 'open' && editable}
+            <a class="co-action" href="/admin/dossiers/{d.id}/debrief" data-testid="debrief-cta">
+              <span class="co-action__label">{hasStory ? t.publish.reviewStory : t.publish.writeStory}<small>{hasStory ? t.publish.reviewStoryHint : t.publish.writeStoryHint}</small></span>
+              <span aria-hidden="true">→</span>
+            </a>
+          {:else}
+            <p class="co-meta">{t.publish.outcomeHelp}</p>
+          {/if}
+        </div>
+      </div>
+      </section>
+
 
       <!-- cuenta y actores -->
       <section class={card} data-testid="account">
@@ -551,91 +625,86 @@
         {/if}
       </section>
 
-      <!-- seguimiento -->
-      <section class={card} data-testid="followup">
-        <h2 class="mb-3 co-card-title">{t.followup.title} {#if overdue}<span class="co-badge co-badge--attention ml-1">{t.followup.overdue}</span>{/if}</h2>
-        <div class="grid gap-2 sm:grid-cols-[1fr_13rem]">
-          <input class={field} placeholder={t.followup.nextPlaceholder} bind:value={nextText} maxlength="300" disabled={!editable}
-            onchange={() => saveNext()} aria-label={t.followup.next} data-testid="next-step" />
-          <input class={field} type="datetime-local" bind:value={nextAt} disabled={!editable} onchange={() => saveNext()} aria-label={t.followup.nextAt} data-testid="next-at" />
-        </div>
-        {#if editable}
-          <div class="mt-2 flex flex-wrap gap-2 text-xs">
-            <button class={btn} onclick={() => preset(2)}>{t.followup.in2d}</button>
-            <button class={btn} onclick={() => preset(7)}>{t.followup.in1w}</button>
-            <button class={btn} onclick={() => preset(14)}>{t.followup.in2w}</button>
-            {#if d.nextStepAt}<button class={btn} onclick={() => { nextText = ''; saveNext(''); }}>{t.followup.clear}</button>{/if}
-          </div>
-        {/if}
-        <a class="mt-3 co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&type=seguimiento">{t.followup.compose}</a>
-      </section>
-
-      <!-- publicación -->
-      <section class={card}>
-        <h2 class="mb-3 co-card-title">{t.publish.title}</h2>
-        {#if s.publishBlockers.length && d.status !== 'published'}
-          <div class="co-alert co-alert--rejection mb-3 block"><p class="font-semibold">{t.publish.blockers}</p><ul>{#each s.publishBlockers as b}<li>{b}</li>{/each}</ul></div>
-        {/if}
-        <div class="flex flex-wrap gap-2">
-          {#if d.status !== 'published'}
-            <button class="co-btn co-btn--primary" disabled={!editable || s.publishBlockers.length > 0} onclick={() => setStatus('published')} data-testid="publish">{t.publish.publish}</button>
-          {:else}
-            <button class={btn} disabled={!editable} onclick={() => setStatus('draft')}>{t.publish.unpublish}</button>
-          {/if}
-          {#if d.status !== 'archived'}<button class={btn} disabled={!editable} onclick={() => setStatus('archived')}>{t.publish.archive}</button>{/if}
-          {#if d.status !== 'published'}<button class="co-btn co-btn--danger co-btn--sm ml-auto" disabled={!editable} onclick={destroy}>{t.publish.delete}</button>{/if}
-        </div>
-        {#if d.publishedAt && d.status === 'published'}<p class="mt-2 text-xs text-muted">{t.publish.publishedOn(fmtDate(d.publishedAt))}</p>{/if}
-        <div class="mt-4 grid gap-2 border-t border-[var(--console-divider)] pt-4">
-          <label class="flex flex-wrap items-center gap-2 text-sm">
-            <span class="font-semibold">{t.publish.outcome}</span>
-            <select class="co-select !w-auto" value={d.outcome} disabled={!editable} onchange={(e) => onOutcome(e.currentTarget.value)} data-testid="outcome">
-              {#each Object.entries(t.outcome) as [k, v]}<option value={k}>{v}</option>{/each}
+      <!-- datos del cliente y precio: a mano, pero sin ocupar la pantalla -->
+      <details class={card} data-testid="client-data">
+        <summary class="cursor-pointer co-card-title">{t.clientData}</summary>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          <label class="text-sm font-medium">{t.prospect.company}
+            <input class={field} value={d.prospectCompany ?? ''} disabled={!editable} maxlength="120" onchange={(e) => saveField('prospectCompany', e.currentTarget.value)} />
+          </label>
+          <label class="text-sm font-medium">{t.prospect.contact}
+            <input class={field} value={d.prospectName ?? ''} disabled={!editable} maxlength="120" onchange={(e) => saveField('prospectName', e.currentTarget.value)} />
+          </label>
+          <label class="text-sm font-medium">{t.prospect.language}
+            <select class={field} value={d.locale} disabled={!editable} onchange={(e) => saveField('locale', e.currentTarget.value)}>
+              {#each Object.entries(LOCALES) as [k, v]}<option value={k}>{v}</option>{/each}
             </select>
           </label>
-          {#if d.outcome !== 'open' && editable}
-            <a class="co-action" href="/admin/dossiers/{d.id}/debrief" data-testid="debrief-cta">
-              <span class="co-action__label">{hasStory ? t.publish.reviewStory : t.publish.writeStory}<small>{hasStory ? t.publish.reviewStoryHint : t.publish.writeStoryHint}</small></span>
-              <span aria-hidden="true">→</span>
-            </a>
-          {:else}
-            <p class="co-meta">{t.publish.outcomeHelp}</p>
+        </div>
+        <p class="mt-2 text-xs text-muted">{t.prospect.tokensPre}<code>{'{company}'}</code>{t.prospect.tokensMid}<code>{'{prospect}'}</code>{t.prospect.tokensPost}</p>
+      </details>
+
+      <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount}>
+        <summary class="flex cursor-pointer items-center justify-between gap-3">
+          <span class="co-card-title">{t.price.title}</span>
+          <span class="text-sm">{#if s.total}{#if s.total.before}<s class="text-muted">{s.total.before.formatted}</s> {/if}<strong data-testid="total">{s.total.formatted}</strong>{:else}<span class="text-muted">{t.price.modeNone}</span>{/if}</span>
+        </summary>
+        <div class="mt-3">
+        {#if s.partnerAccount}
+          <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
+            {t.price.account} <strong>{s.partnerAccount.name}</strong> · {t.policy[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? t.price.overList(`${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct}`) : ''}
+            {#if s.pricesLocked}
+              <span class="mt-1 block text-muted">{t.price.locked}{s.partnerAccount.pricePolicy === 'hidden' ? t.price.lockedHidden : ''}</span>
+            {:else}
+              <span class="mt-1 block text-muted">{t.price.partner}</span>
+            {/if}
+          </p>
+        {/if}
+        {#if !s.pricesLocked}
+        <div class="co-segmented" role="radiogroup" aria-label={t.price.mode}>
+          {#each [['none', t.price.modeNone], ['total', t.price.modeTotal], ['per_module', t.price.modePerModule]] as [mode, label]}
+            <button
+              role="radio" aria-checked={d.priceMode === mode} disabled={!editable}
+              onclick={() => d.priceMode !== mode && run({ op: 'update', patch: { priceMode: mode as 'none' | 'total' | 'per_module' } })}
+              data-testid={`price-mode-${mode}`}
+            >{label}</button>
+          {/each}
+        </div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          {#if d.priceMode === 'total'}
+            <label class="text-sm font-medium">{t.price.totalPrice}
+              <input class={field} inputmode="decimal" value={d.totalPrice ?? ''} disabled={!editable} placeholder="0" onchange={(e) => saveTotal(e.currentTarget.value)} data-testid="total-price" />
+            </label>
+          {/if}
+          {#if d.priceMode !== 'none'}
+            <label class="text-sm font-medium">{t.price.currency}
+              <select class={field} value={d.currency} disabled={!editable} onchange={(e) => saveField('currency', e.currentTarget.value)}>
+                {#each CURRENCIES as c}<option>{c}</option>{/each}
+              </select>
+            </label>
           {/if}
         </div>
-      </section>
-
-      <!-- enlaces -->
-      <section class={card}>
-        <h2 class="mb-3 co-card-title">{t.links.title}</h2>
-        {#if d.status !== 'published'}<p class="mb-3 text-sm text-muted">{t.links.unpublished}</p>{/if}
-        {#if editable}
-          <div class="mb-3 flex flex-wrap gap-2">
-            <select class="co-select !w-auto" bind:value={linkExpiry} aria-label={t.links.expiry}>
-              <option value="">{t.links.noExpiry}</option><option value="7">{t.links.in7}</option><option value="30">{t.links.in30}</option>
+        {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">{t.price.perModuleHelp}</p>{/if}
+        {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
+          <label class="mt-3 block text-sm font-medium">{t.price.coupon} <span class="font-normal text-muted">{t.price.couponHint}</span>
+            <select class={field} value={d.couponId ?? ''} disabled={!editable} onchange={(e) => run({ op: 'setCoupon', couponId: e.currentTarget.value || null })} data-testid="coupon">
+              <option value="">{t.price.noCoupon}</option>
+              {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<option value={d.couponId}>{d.discount.label} ({d.discount.code})</option>{/if}
+              {#each coupons as c}<option value={c.id}>{c.label} ({c.code})</option>{/each}
             </select>
-            <button class="co-btn co-btn--primary co-btn--sm" onclick={createLink} data-testid="create-link">{t.links.create}</button>
-          </div>
+          </label>
         {/if}
-        <ul class="space-y-2 p-0" data-testid="links">
-          {#each s.links as l (l.id)}
-            <li class="co-card list-none !p-3 text-sm {l.state === 'active' ? '' : 'opacity-60'}" data-state={l.state}>
-              <div class="flex flex-wrap items-center gap-2">
-                <code class="min-w-0 flex-1 truncate text-xs" data-testid="link-url">{linkUrl(l.token)}</code>
-                <span class="text-xs font-semibold">{l.state === 'active' ? (l.expiresAt ? t.links.expiresOn(fmtDate(l.expiresAt)) : t.links.active) : l.state === 'revoked' ? t.links.revoked : t.links.expired}</span>
-              </div>
-              {#if l.state === 'active'}
-                <div class="mt-2 flex gap-2">
-                  <button class={btn} onclick={() => copy(l.token)}>{copied === l.token ? t.links.copied : t.links.copy}</button>
-                  <a class={btn} href={linkUrl(l.token)} target="_blank" rel="noopener noreferrer">{t.links.open}</a>
-                  {#if editable}<button class="co-btn co-btn--danger co-btn--sm ml-auto" onclick={() => revoke(l.id)}>{t.links.revoke}</button>{/if}
-                </div>
-              {/if}
-            </li>
-          {:else}
-            <li class="co-meta list-none">{editable ? t.links.emptyEditable : t.links.empty}</li>
-          {/each}
-        </ul>
-      </section>
+        {/if}
+        </div>
+      </details>
+
+      <details class="px-1">
+        <summary class="cursor-pointer text-sm text-muted">{t.moreActions}</summary>
+        <div class="mt-3 flex flex-wrap gap-2">
+          {#if d.status !== 'archived'}<button class={btn} disabled={!editable} onclick={() => setStatus('archived')}>{t.publish.archive}</button>{/if}
+          {#if d.status !== 'published'}<button class="co-btn co-btn--danger co-btn--sm" disabled={!editable} onclick={destroy}>{t.publish.delete}</button>{/if}
+        </div>
+      </details>
     </div>
 
     <!-- ============ preview ============ -->

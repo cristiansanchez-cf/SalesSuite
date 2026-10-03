@@ -66,7 +66,7 @@ async function login(b, email, mobile = false) {
   await p.fill('[data-testid=welcome-create] [name=company]', 'Sala Luna');
   await p.click('[data-testid=welcome-create] button[type=submit]');
   await p.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/);
-  assert((await p.textContent('body')).includes('Propuesta para Sala Luna'), 'crea la propuesta y abre el editor');
+  assert((await p.inputValue('[data-testid=title]')).includes('Propuesta para Sala Luna'), 'crea la propuesta y abre el editor');
   await p.goto(`${BASE}/admin/inicio`);
   assert(!(await p.isVisible('[data-testid=welcome-resume]')), 'terminada: Inicio ya no la recuerda');
   await p.goto(`${BASE}/admin/start`);

@@ -103,6 +103,18 @@ const es = {
     uncovered: (list: string) => `Sin jugadas para: ${list}.`, compose: 'Preparar mensaje', team: 'Equipo',
     used: (used: number, won: number) => `Usada en ${used} cierres documentados · ganó ${won}`, noEvidence: 'Sin cierres documentados todavía',
   },
+  share: {
+    title: 'Compartir', publishAndLink: 'Publicar y crear el enlace', draftHelp: 'Cuando la tengas, publícala: el enlace sale al momento.',
+    mode: 'Modo', test: 'Prueba', live: 'Real',
+    testHelp: 'Ábrelo y mándaselo a quien quieras: estas aperturas no cuentan ni te avisan.',
+    liveHelp: 'Cada apertura del cliente cuenta y te avisamos.', goLive: 'Listo: pasar a real',
+    newLink: 'Otro enlace', moreLinks: (n: number) => `Enlaces (${n})`,
+  },
+  quick: {
+    title: 'Empieza rápido', sector: '¿Para qué sector es?', recommended: (n: number) => `Añadir los ${n} recomendados`,
+    all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
+  },
+  clientData: 'Datos del cliente', advanced: 'Avanzado', moreActions: 'Más acciones',
   preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa del dossier' },
   page: {
     approved: 'Comisión aprobada a pesar del conflicto', noCommission: (reason: string) => `Esta venta no genera comisión: ${reason}`,
@@ -221,6 +233,18 @@ export const builderMessages = defineMessages({
       uncovered: (list) => `No plays for: ${list}.`, compose: 'Write a message', team: 'Team',
       used: (used, won) => `Used in ${used} documented deals · won ${won}`, noEvidence: 'No documented deals yet',
     },
+    share: {
+      title: 'Share', publishAndLink: 'Publish and create the link', draftHelp: 'When it is ready, publish it: the link is ready straight away.',
+      mode: 'Mode', test: 'Test', live: 'Live',
+      testHelp: 'Open it and send it to anyone: these opens do not count or notify you.',
+      liveHelp: 'Every customer open counts and we let you know.', goLive: 'Ready: switch to live',
+      newLink: 'Another link', moreLinks: (n) => `Links (${n})`,
+    },
+    quick: {
+      title: 'Quick start', sector: 'Which sector is it for?', recommended: (n) => `Add the ${n} recommended`,
+      all: (n) => `Add the whole catalog (${n})`, add: 'Add', dragHint: 'Drag to reorder, or drag in from «Add».',
+    },
+    clientData: 'Customer details', advanced: 'Advanced', moreActions: 'More actions',
     preview: { title: 'Preview', mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop', open: 'Open ↗', frame: 'Proposal preview' },
     page: {
       approved: 'Commission approved despite the conflict', noCommission: (reason) => `This sale earns no commission: ${reason}`,
@@ -336,6 +360,18 @@ export const builderMessages = defineMessages({
       uncovered: (list) => `Sem jogadas para: ${list}.`, compose: 'Preparar mensagem', team: 'Equipe',
       used: (used, won) => `Usada em ${used} fechamentos documentados · ganhou ${won}`, noEvidence: 'Ainda sem fechamentos documentados',
     },
+    share: {
+      title: 'Compartilhar', publishAndLink: 'Publicar e criar o link', draftHelp: 'Quando estiver pronta, publique: o link sai na hora.',
+      mode: 'Modo', test: 'Teste', live: 'Real',
+      testHelp: 'Abra e envie para quem quiser: essas aberturas não contam nem avisam você.',
+      liveHelp: 'Cada abertura do cliente conta e avisamos você.', goLive: 'Pronto: passar para real',
+      newLink: 'Outro link', moreLinks: (n) => `Links (${n})`,
+    },
+    quick: {
+      title: 'Comece rápido', sector: 'Para qual setor é?', recommended: (n) => `Adicionar os ${n} recomendados`,
+      all: (n) => `Adicionar todo o catálogo (${n})`, add: 'Adicionar', dragHint: 'Arraste para ordenar, ou arraste de «Adicionar».',
+    },
+    clientData: 'Dados do cliente', advanced: 'Avançado', moreActions: 'Mais ações',
     preview: { title: 'Pré-visualização', mobile: 'Celular', tablet: 'Tablet', desktop: 'Desktop', open: 'Abrir ↗', frame: 'Pré-visualização da proposta' },
     page: {
       approved: 'Comissão aprovada apesar do conflito', noCommission: (reason) => `Esta venda não gera comissão: ${reason}`,
@@ -451,6 +487,18 @@ export const builderMessages = defineMessages({
       uncovered: (list) => `플레이가 없는 항목: ${list}.`, compose: '메시지 작성', team: '팀',
       used: (used, won) => `기록된 거래 ${used}건에서 사용 · ${won}건 성사`, noEvidence: '아직 기록된 거래가 없습니다',
     },
+    share: {
+      title: '공유', publishAndLink: '게시하고 링크 만들기', draftHelp: '준비되면 게시하세요. 링크가 바로 만들어집니다.',
+      mode: '모드', test: '테스트', live: '실전',
+      testHelp: '열어 보고 누구에게나 보내세요. 이 열람은 집계하지 않고 알림도 없습니다.',
+      liveHelp: '고객의 열람이 모두 집계되고 알려 드립니다.', goLive: '준비 완료: 실전으로 전환',
+      newLink: '다른 링크', moreLinks: (n) => `링크 (${n})`,
+    },
+    quick: {
+      title: '빠르게 시작', sector: '어떤 업종인가요?', recommended: (n) => `추천 ${n}개 추가`,
+      all: (n) => `카탈로그 전체 추가 (${n})`, add: '추가', dragHint: '끌어서 순서를 바꾸거나 «추가»에서 끌어오세요.',
+    },
+    clientData: '고객 정보', advanced: '고급', moreActions: '더 보기',
     preview: { title: '미리보기', mobile: '모바일', tablet: '태블릿', desktop: '데스크톱', open: '열기 ↗', frame: '제안서 미리보기' },
     page: {
       approved: '충돌에도 불구하고 커미션이 승인되었습니다', noCommission: (reason) => `이 판매는 커미션 대상이 아닙니다: ${reason}`,

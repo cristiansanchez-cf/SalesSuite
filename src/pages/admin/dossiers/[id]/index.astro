@@ -42,7 +42,7 @@ try {
   facets = fs.map((f) => ({ key: f.key, label: f.label, question: f.question, scope: f.scope, multi: f.multi, options: f.options }));
   hasStory = !!story;
   market = {
-    segments: m.map((x) => ({ id: x.id, key: x.key, name: x.name })),
+    segments: m.filter((x) => x.status !== 'archived').map((x) => ({ id: x.id, key: x.key, name: x.name, modules: [...x.modules].sort((p, q) => p.priority - q.priority).map((mo) => mo.moduleId) })),
     personas: m.flatMap((x) => x.personas.map((p) => ({ id: p.id, segmentId: p.segmentId, name: p.name, role: p.role }))),
   };
 } catch (e) {

@@ -26,4 +26,5 @@ Método (docs/FOUNDATIONS.md §7): cuando el fundador prueba un recorrido y dice
 | Aperturas internas (modo prueba, tu navegador y la red del equipo no cuentan) | `scripts/smoke-analytics.cjs`, `supabase/tests/40_internal_views.test.sql`, `src/lib/analytics/internal.test.ts` | Pendiente | |
 | Analítica de dossiers (aperturas, secciones, aviso al autor) | `scripts/smoke-analytics.cjs`, `src/lib/analytics/analytics.test.ts`, `supabase/tests/37_dossier_views.test.sql` | Pendiente | |
 | Inicio («Lo siguiente», tu día en tres números, quién te está mirando) y Dossiers (tarjetas agrupadas, «Nueva propuesta» en ventana) | `scripts/smoke-admin.cjs`, `scripts/smoke-commissions.cjs` | Pendiente | |
+| Editor del dossier (compartir arriba: publicar + enlace en un paso, prueba/real; arrastrar módulos y desde «Añadir»; empieza rápido por sector; precio plegado) | `scripts/smoke-admin.cjs` | Pendiente | |
 | Móvil sin desbordes | `scripts/smoke-mobile.cjs` | Pendiente | |

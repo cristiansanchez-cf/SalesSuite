@@ -53,17 +53,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(JSON.stringify(await order()) === JSON.stringify(['hero-bodas', 'tabs-experiencias', 'tabs-locales', 'pricing']), '4 módulos añadidos');
 
   // arrastrar el #3 arriba del todo (ratón real sobre svelte-dnd-action)
+  await p.evaluate(() => document.querySelector('[data-testid=items]').scrollIntoView({ block: 'start' }));
   const items = await p.$$('[data-testid=item]');
   const src = await items[2].boundingBox();
   const dst = await items[0].boundingBox();
   await p.mouse.move(src.x + 20, src.y + 20);
   await p.mouse.down();
-  for (let i = 1; i <= 15; i++) await p.mouse.move(src.x + 20, src.y + 20 - ((src.y - dst.y + 10) * i) / 15);
+  for (let i = 1; i <= 15; i++) { await p.mouse.move(src.x + 20, src.y + 20 - ((src.y - dst.y + 10) * i) / 15); await p.waitForTimeout(30); }
   await p.waitForTimeout(200);
   await p.mouse.up();
   await p.waitForTimeout(400);
   await settle();
-  assert(JSON.stringify(await order()) === JSON.stringify(['tabs-locales', 'hero-bodas', 'tabs-experiencias', 'pricing']), 'drag & drop: #3 arriba');
+  assert(JSON.stringify(await order()) === JSON.stringify(['tabs-locales', 'hero-bodas', 'tabs-experiencias', 'pricing']), `drag & drop: #3 arriba (${await order()})`);
 
   // persistido en servidor (recarga)
   await p.reload();
@@ -78,6 +79,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[aria-label="Ocultar Portada para bodas"]'); await settle();
 
   // per_module + override
+  // El precio está a mano pero plegado: no es lo primero.
+  assert((await p.getAttribute('[data-testid=price-panel]', 'open')) === null, 'precio plegado mientras no hay precio');
+  await p.click('[data-testid=price-panel] summary');
   await p.click('[data-testid=price-mode-per_module]'); await settle();
   const priceInput = (await p.$$('[data-testid=item-price-input]'))[0];
   await priceInput.fill('250');
@@ -85,8 +89,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.textContent('[data-testid=total]')).replace(/\s/g, ' ') === '700 €', 'total per_module 250 + 450 = 700 €');
 
   // 4. Publicar + enlace
-  await p.click('[data-testid=publish]'); await settle();
+  await p.click('[data-testid=publish]'); await settle(); await settle();
   assert((await p.textContent('[data-testid=status]')) === 'Publicado', 'publicado');
+  assert(/\/d\/[A-Za-z0-9_-]{32}$/.test((await p.textContent('[data-testid=share-url]')).trim()), 'publicar crea el enlace en el mismo paso');
+  assert((await p.getAttribute('[data-testid=view-mode-test]', 'aria-checked')) === 'true', 'una propuesta nueva empieza en modo prueba');
+  await p.click('[data-testid=view-mode-live]'); await settle();
+  assert((await p.getAttribute('[data-testid=view-mode-live]', 'aria-checked')) === 'true', 'pasa a real');
   await p.click('[data-testid=create-link]'); await settle();
   const url = (await p.textContent('[data-testid=link-url]')).trim();
   assert(/\/d\/[A-Za-z0-9_-]{32}$/.test(url), `enlace generado ${url}`);
@@ -118,6 +126,33 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await v.goto(url2)).status() === 200, 'nuevo enlace 200');
   await p.click('text=Despublicar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();
   assert((await v.goto(url2)).status() === 404, 'despublicado → 404');
+
+  // Arrastrar un módulo desde «Añadir» a una propuesta nueva (ventana alta: catálogo y lista a la vista).
+  {
+    const g = await (await b.newContext({ viewport: { width: 1440, height: 1800 } })).newPage();
+    await g.goto(`${BASE}/admin/login`);
+    await g.click('[data-testid="demo-rep@enjoy.test"]');
+    await g.waitForURL(/\/admin/);
+    await g.goto(`${BASE}/admin`);
+    await g.click('[data-testid=new-dossier]');
+    await g.fill('[data-testid=create-form] [name=title]', 'Arrastre · E2E');
+    await g.click('[data-testid=create-form] button[type=submit]');
+    await g.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/);
+    await g.waitForTimeout(1000);  // el editor (isla) tiene que estar hidratado para arrastrar
+    assert(await g.isVisible('[data-testid=quick-start]'), 'propuesta vacía: «Empieza rápido»');
+    const from = await g.locator('[data-testid=catalog] li').first().boundingBox();
+    const to = await g.locator('[data-testid=items]').boundingBox();
+    await g.mouse.move(from.x + 30, from.y + 15);
+    await g.mouse.down();
+    for (let i = 1; i <= 20; i++) { await g.mouse.move(from.x + 30 + ((to.x + 40 - from.x - 30) * i) / 20, from.y + 15 + ((to.y + 20 - from.y - 15) * i) / 20); await g.waitForTimeout(30); }
+    // Como una persona: se queda un momento sobre la zona antes de soltar.
+    for (let i = 0; i < 5; i++) { await g.mouse.move(to.x + 60 + i * 10, to.y + 30); await g.waitForTimeout(80); }
+    await g.mouse.up();
+    await g.waitForTimeout(1500);
+    assert((await g.locator('[data-testid=item]').count()) === 1, 'arrastrar desde «Añadir» lo mete en la propuesta');
+    if (OUT) await g.screenshot({ path: `${OUT}/builder-drag.png`, fullPage: true });
+    await g.close();
+  }
 
   // otro tenant no ve el dossier
   const other = await b.newContext();
