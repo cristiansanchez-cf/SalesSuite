@@ -279,6 +279,38 @@ export function createCommissionsService(db: CommissionsDb, deps: { admin: Admin
     try { return await db.saveConnector(s.tenantId, { key, name: input.name.trim().slice(0, 80) || key, mapping: mapping as Record<string, unknown>, active: input.active ?? true }, id); } catch (e) { mapError(e); }
   }
 
+  // ---------------------------------------------------------------- cupones
+  /** Los que puede aplicar el equipo hoy (activos, vigentes y con usos). */
+  async function coupons(opts: { all?: boolean } = {}) {
+    const list = await db.listCoupons(s.tenantId);
+    const today = now().toISOString().slice(0, 10);
+    return opts.all ? list : list.filter((c) => c.active && (!c.validUntil || c.validUntil >= today) && (c.maxUses == null || c.uses < c.maxUses));
+  }
+  async function saveCoupon(input: { code: string; label: string; kind: string; value: string; maxUses?: string; validUntil?: string; note?: string }, id?: string) {
+    requireAdmin();
+    const code = input.code.trim().toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9-]{1,31}$/.test(code)) throw new AdminError(422, 'Código: letras, números y guiones (p. ej. LANZA30)');
+    const label = input.label.trim();
+    if (!label) throw new AdminError(422, 'Describe el cupón como lo verá el cliente (p. ej. «30 % de lanzamiento»)');
+    const kind = input.kind as 'percent' | 'fixed' | 'free_months';
+    let value: number;
+    if (kind === 'percent') { const p = Number(input.value.replace(',', '.')); if (!(p > 0 && p <= 100)) throw new AdminError(422, 'El porcentaje va de 1 a 100'); value = Math.round(p * 100); }
+    else if (kind === 'fixed') { try { value = parseMoney(input.value); } catch { throw new AdminError(422, 'Importe no válido'); } if (value <= 0) throw new AdminError(422, 'El importe debe ser mayor que cero'); }
+    else if (kind === 'free_months') { value = Number(input.value); if (!Number.isInteger(value) || value < 1 || value > 24) throw new AdminError(422, 'Entre 1 y 24 meses'); }
+    else throw new AdminError(422, 'Tipo de cupón no válido');
+    const maxUses = input.maxUses?.trim() ? Number(input.maxUses) : null;
+    if (maxUses != null && !(Number.isInteger(maxUses) && maxUses > 0)) throw new AdminError(422, 'Usos máximos: un número entero');
+    const validUntil = input.validUntil?.trim() || null;
+    if (validUntil && !/^\d{4}-\d{2}-\d{2}$/.test(validUntil)) throw new AdminError(422, 'Fecha no válida');
+    try { return await db.saveCoupon(s.tenantId, { code, label: label.slice(0, 80), kind, value, maxUses, validUntil, active: true, note: input.note?.trim().slice(0, 300) || null }, id); } catch (e) { mapError(e); }
+  }
+  async function setCouponActive(id: string, active: boolean) {
+    requireAdmin();
+    const c = (await db.listCoupons(s.tenantId)).find((x) => x.id === id);
+    if (!c) throw new AdminError(404, 'Cupón no encontrado');
+    try { await db.saveCoupon(s.tenantId, { ...c, active }, id); } catch (e) { mapError(e); }
+  }
+
   return {
     plans, savePlan, setFlat, addRule, removeRule, moveRule, setReferral, deletePlan, assignPlan,
     declareSale, confirmEvent, voidEvent, events, process, recalculate,
@@ -288,6 +320,7 @@ export function createCommissionsService(db: CommissionsDb, deps: { admin: Admin
     connectors: async () => { requireAdmin(); return db.listConnectors(s.tenantId); }, saveConnector,
     deleteConnector: async (id: string) => { requireAdmin(); if (!(await db.deleteConnector(id))) throw new AdminError(404, 'Conector no encontrado'); },
     canManage: perms.manageCommissions, canReadTeam: perms.manageTeam,
+    coupons, saveCoupon, setCouponActive,
   };
 }
 export type CommissionsService = ReturnType<typeof createCommissionsService>;
@@ -301,4 +334,5 @@ export const emptyCommissionsDb: CommissionsDb = {
   async createPayout() { throw new Error('permission denied: sin comisiones'); }, async markPayoutPaid() { return false; }, async deletePayout() { return false; },
   async listApiKeys() { return []; }, async createApiKey() { throw new Error('permission denied: sin comisiones'); }, async revokeApiKey() { return false; },
   async listConnectors() { return []; }, async saveConnector() { throw new Error('permission denied: sin comisiones'); }, async deleteConnector() { return false; },
+  async listCoupons() { return []; }, async saveCoupon() { throw new Error('permission denied: sin comisiones'); },
 };

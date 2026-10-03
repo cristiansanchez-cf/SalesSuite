@@ -157,6 +157,38 @@ export function commissionsContract(name: string, env: () => CommissionsEnv) {
       expect(await E.ingestDb().tenantForKey(hashKey(key))).toBeNull();
     });
 
+    test('cupones: el admin los crea, el equipo los aplica, la propuesta guarda una copia', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      await rejects(rep.commissions.saveCoupon({ code: 'MIO', label: 'x', kind: 'percent', value: '90' }), 403);
+      await rejects(admin.commissions.saveCoupon({ code: 'mal código', label: 'x', kind: 'percent', value: '10' }), 422);
+      await admin.commissions.saveCoupon({ code: 'lanza30', label: '30 % de lanzamiento', kind: 'percent', value: '30', maxUses: '1' });
+      const [c] = await rep.commissions.coupons();
+      expect(c).toMatchObject({ code: 'LANZA30', value: 3000, uses: 0 });
+
+      const d = await rep.service.createDossier({ title: 'Con cupón' });
+      await rep.service.apply(d, { op: 'update', patch: { priceMode: 'total', totalPrice: 1000 } });
+      await rep.service.apply(d, { op: 'setCoupon', couponId: c.id });
+      const st = await rep.service.getState(d);
+      expect(st.dossier.discount).toEqual({ code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000 });
+      expect(st.total).toMatchObject({ amount: 700, before: { amount: 1000 }, discount: { code: 'LANZA30' } });
+
+      // Sin usos libres: ni aparece ni se puede aplicar a otra.
+      expect(await rep.commissions.coupons()).toEqual([]);
+      const d2 = await rep.service.createDossier({ title: 'Otra' });
+      await rejects(rep.service.apply(d2, { op: 'setCoupon', couponId: c.id }), 409);
+      // Desactivarlo no cambia lo ya aplicado; quitarlo, sí.
+      await admin.commissions.setCouponActive(c.id, false);
+      expect((await rep.service.getState(d)).total?.amount).toBe(700);
+      await rep.service.apply(d, { op: 'setCoupon', couponId: null });
+      expect((await rep.service.getState(d)).total).toMatchObject({ amount: 1000 });
+      expect((await rep.service.getState(d)).total?.before).toBeUndefined();
+
+      const dj = await ctx(U.dj);
+      const dd = await dj.service.createDossier({ title: 'DJ', partnerAccountId: dj.session.partner!.accounts[0].id });
+      await rejects(dj.service.apply(dd, { op: 'setCoupon', couponId: c.id }), 403);
+    });
+
     test('ajustes con motivo y liquidaciones que no pagan saldos negativos', async () => {
       const admin = await ctx(U.admin);
       await admin.commissions.setFlat(30);

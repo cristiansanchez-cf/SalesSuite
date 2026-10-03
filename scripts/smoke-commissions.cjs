@@ -101,6 +101,27 @@ const euros = (s) => Number(String(s).replace(/[^\d,-]/g, '').replace(/\./g, '')
   const bad = await admin.request.post(`${BASE}/api/v1/events`, { headers: { authorization: `Bearer ${key}` }, data: { source: 'pasarela', events: [{ ...body.events[0], amount: '999' }] } });
   assert(bad.status() === 422 && (await bad.json()).conflicts.length === 1, 'API: mismo id con otro importe se rechaza');
 
-  // ---- la jefa ve, no toca
+  // ---- cupones: el admin crea uno, se aplica en la propuesta y el cliente lo ve
+  await admin.goto(`${BASE}/admin/commissions/team?tab=cupones`);
+  await admin.fill('[data-testid=coupon-form] [name=label]', `10 % por pago anual ${RUN}`);
+  await admin.fill('[data-testid=coupon-form] [name=code]', `ANUAL${RUN}`.toUpperCase().slice(0, 30));
+  await admin.fill('[data-testid=coupon-form] [name=value]', '10');
+  await admin.click('[data-testid=coupon-form] button[type=submit]');
+  await admin.waitForLoadState();
+  assert(await admin.isVisible(`[data-testid=coupon][data-code="${`ANUAL${RUN}`.toUpperCase().slice(0, 30)}"]`), 'cupón creado');
+  await admin.goto(`${BASE}/admin/dossiers/00000000-0000-4000-8000-000000d05501`);
+  await admin.click('[role=tab]:visible >> text=Editar').catch(() => {});
+  const before = euros(await admin.textContent('[data-testid=total]'));
+  await admin.selectOption('[data-testid=coupon]', { label: `10 % por pago anual ${RUN} (${`ANUAL${RUN}`.toUpperCase().slice(0, 30)})` });
+  await admin.waitForFunction(() => !document.querySelector('[data-testid=builder][data-busy]'));
+  await admin.waitForTimeout(300);
+  const after = euros(await admin.textContent('[data-testid=total]'));
+  assert(Math.abs(after - before * 0.9) < 0.01, `el total baja un 10 % (${before} → ${after})`);
+  const pub = await b.newPage();
+  await pub.goto(`${BASE}/d/demo-sala-x-7Qm2`);
+  assert((await pub.textContent('[data-testid=pricing-discount]').catch(() => '')).includes('10 % por pago anual'), 'el cliente ve el cupón aplicado');
+  assert(await pub.isVisible('[data-testid=pricing-before]'), 'y el precio anterior tachado');
+  if (OUT) await pub.screenshot({ path: `${OUT}/coupon-public.png`, fullPage: true });
+  await admin.selectOption('[data-testid=coupon]', '');
   await b.close();
 })();

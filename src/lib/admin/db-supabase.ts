@@ -7,7 +7,7 @@ type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at, coupon_id, discount';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -25,6 +25,8 @@ const toDossier = (r: Row): DossierRecord => ({
   accountEligibility: r.account_eligibility ?? null,
   accountDecision: r.account_decision ?? null,
   accountDecidedAt: r.account_decided_at ?? null,
+  couponId: r.coupon_id ?? null,
+  discount: r.discount ?? null,
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';
@@ -146,6 +148,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.nextStepAt !== undefined) patch.next_step_at = p.nextStepAt;
       if (p.situation !== undefined) patch.situation = p.situation;
       if (p.accountId !== undefined) patch.account_id = p.accountId;
+      if (p.couponId !== undefined) patch.coupon_id = p.couponId;
       const rows = check(await sb.from('dossier').update(patch).eq('id', id).select(DOSSIER_COLS)) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },

@@ -27,6 +27,7 @@ export interface DossierRow {
   situation?: Record<string, string[]>;
   account_id?: string | null; account_eligibility?: string | null; account_decision?: 'approved' | 'rejected' | null;
   account_decided_by?: string | null; account_decided_at?: string | null;
+  coupon_id?: string | null; discount?: { code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number } | null;
 }
 export interface DossierItemRow {
   id: string; dossier_id: string; module_version_id: string; position: number; visible: boolean;
@@ -105,6 +106,10 @@ export interface CommissionEntryRow {
 }
 export interface PayoutRow { id: string; tenant_id: string; user_id: string; period: string; total_cents: number; currency: string; status: 'open' | 'paid'; paid_at: string | null; created_by: string | null; created_at: string }
 export interface ApiKeyRow { id: string; tenant_id: string; name: string; key_hash: string; prefix: string; created_by: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface CouponRow {
+  id: string; tenant_id: string; code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number; max_uses: number | null;
+  valid_until: string | null; active: boolean; note: string | null; created_at: string;
+}
 export interface ConnectorRow { id: string; tenant_id: string; key: string; name: string; mapping: Record<string, unknown>; active: boolean }
 export interface NotificationRow {
   id: string; tenant_id: string; user_id: string; kind: string; severity: 'action' | 'info'; entity_key: string; params: Record<string, unknown>;
@@ -148,6 +153,7 @@ export interface DemoDb {
   payout: PayoutRow[];
   api_key: ApiKeyRow[];
   connector: ConnectorRow[];
+  coupon: CouponRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -269,6 +275,10 @@ export function freshDemoDb(): DemoDb {
     payout: [],
     api_key: [],
     connector: [],
+    coupon: [
+      { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },
+      { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },
+    ],
   };
 }
 

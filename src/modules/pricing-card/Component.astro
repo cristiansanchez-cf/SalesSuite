@@ -19,7 +19,9 @@ const t = (s: string) => interpolate(s, ctx);
         {eyebrow && <p class="text-sm font-bold uppercase tracking-wider opacity-80">{t(eyebrow)}</p>}
         <h2 class="mt-2 font-display text-3xl font-extrabold sm:text-4xl">{t(title)}</h2>
         {subtitle && <p class="mt-3 opacity-90">{t(subtitle)}</p>}
-        <p class="mt-8 flex flex-wrap items-baseline gap-x-3" data-testid="pricing-figure">
+        {figure?.discount && <p class="mt-8 inline-flex rounded-pill bg-primary-contrast/15 px-3 py-1 text-sm font-semibold" data-testid="pricing-discount">{figure.discount.label}</p>}
+        <p class:list={['flex flex-wrap items-baseline gap-x-3', figure?.discount ? 'mt-3' : 'mt-8']} data-testid="pricing-figure">
+          {figure?.before && <s class="text-2xl opacity-60" data-testid="pricing-before">{figure.before.formatted}</s>}
           {figure
             ? <><span class="font-display text-5xl font-extrabold sm:text-6xl">{figure.formatted}</span>
                 {priceSuffix && <span class="text-lg opacity-80">{priceSuffix}</span>}</>

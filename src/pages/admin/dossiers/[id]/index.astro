@@ -53,6 +53,7 @@ const mine = crm && !d.accountId && state.canEdit ? await admin.accounts.mine() 
 // Venta declarada (docs/COMMISSIONS.md): quien ganó la propuesta declara el importe; un admin lo confirma.
 const canDeclare = d.outcome === 'won' && d.authorId === admin.session.userId;
 const declared = d.outcome === 'won' ? (await admin.commissions.events()).filter((e) => e.dossierId === d.id) : [];
+const coupons = admin.session.role === 'partner' ? [] : (await admin.commissions.coupons()).map((c) => ({ id: c.id, code: c.code, label: c.label }));
 const conflict = d.outcome === 'won' && d.accountEligibility && d.accountEligibility !== 'eligible';
 // El enlace público vive en el mismo host del tenant que la consola.
 const origin = requestOrigin(Astro.request, Astro.url);
@@ -118,5 +119,5 @@ const origin = requestOrigin(Astro.request, Astro.url);
         )}
     </div>
   )}
-  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} />
 </AdminLayout>

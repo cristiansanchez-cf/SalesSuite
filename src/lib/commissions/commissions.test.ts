@@ -12,7 +12,7 @@ commissionsContract('demo', () => ({
   async reset() {
     const db = resetDemoDb();
     // Mismo punto de partida que Supabase.
-    Object.assign(db, { play_contribution: [], notification: [], zone: [], membership_zone: [], account_rules: [], account: [], account_touch: [], commission_plan: [] });
+    Object.assign(db, { play_contribution: [], notification: [], zone: [], membership_zone: [], account_rules: [], account: [], account_touch: [], commission_plan: [], coupon: [] });
     db.users.push({ id: LEAD.id, email: LEAD.email, display_name: '', memberships: [{ tenant_id: '00000000-0000-4000-8000-000000000e01', role: 'lead' }] });
   },
   adminDbFor: () => demoAdminDb(), partnerDbFor: () => demoAdminDb(), playbookDbFor: () => demoPlaybookDb(), evidenceDbFor: () => demoEvidenceDb(),

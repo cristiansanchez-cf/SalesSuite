@@ -20,6 +20,7 @@ export interface PublicDossierRow {
   id: string; tenant_id: string; title: string; prospect_name: string | null; prospect_company: string | null;
   locale: string; price_mode: PublicDossier['priceMode']; total_price: number | string | null; currency: string;
   theme_override: unknown;
+  discount?: PublicDossier['discount'];
   items: Array<{
     id: string; position: number | string; block_type: string; module_key: string;
     default_props: Record<string, unknown> | null; prop_overrides: Record<string, unknown> | null;
@@ -38,6 +39,7 @@ export const toPublicDossier = (r: PublicDossierRow): PublicDossier => ({
   totalPrice: num(r.total_price),
   currency: r.currency,
   themeOverride: r.theme_override == null ? null : parseTheme(r.theme_override),
+  discount: r.discount ?? null,
   items: r.items
     .map((i): RenderItem => ({
       id: i.id,

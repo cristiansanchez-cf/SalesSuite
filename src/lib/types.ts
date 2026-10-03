@@ -39,6 +39,11 @@ export interface PublicDossier {
   totalPrice: number | null;
   currency: string;
   themeOverride: ThemeTokens | null;
+  /** Cupón aplicado (copia guardada al aplicarlo). */
+  discount?: Discount | null;
   /** Solo items visibles, ordenados por position. */
   items: RenderItem[];
 }
+
+/** Cupón de descuento (docs/COMMISSIONS.md §6). percent: puntos básicos · fixed: céntimos · free_months: meses. */
+export interface Discount { code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number }

@@ -225,6 +225,23 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
       s.connector = [...s.connector.filter((x) => x.id !== row.id), row];
       return row.id;
     },
+    async listCoupons(t) {
+      if (!['admin', 'lead', 'rep'].includes(roleOf(t, actor) ?? '')) return [];
+      const s = db();
+      return s.coupon.filter((c) => c.tenant_id === t).map((c) => ({
+        id: c.id, tenantId: c.tenant_id, code: c.code, label: c.label, kind: c.kind, value: c.value, maxUses: c.max_uses, validUntil: c.valid_until,
+        active: c.active, note: c.note, uses: s.dossier.filter((d) => d.coupon_id === c.id).length,
+      }));
+    },
+    async saveCoupon(t, c, id) {
+      admin(t);
+      const s = db();
+      if (s.coupon.some((x) => x.tenant_id === t && x.code === c.code && x.id !== id)) throw new Error('duplicate key: coupon');
+      const row = { id: id ?? randomUUID(), tenant_id: t, code: c.code, label: c.label, kind: c.kind, value: c.value, max_uses: c.maxUses,
+        valid_until: c.validUntil, active: c.active, note: c.note, created_at: s.coupon.find((x) => x.id === id)?.created_at ?? now() };
+      s.coupon = [...s.coupon.filter((x) => x.id !== row.id), row];
+      return row.id;
+    },
     async deleteConnector(id) {
       const s = db();
       const c = s.connector.find((x) => x.id === id);
@@ -233,6 +250,19 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
       return true;
     },
   };
+}
+
+/** = trigger dossier_coupon_apply: valida y guarda una copia del cupón en la propuesta. */
+export function demoApplyCoupon(d: import('../data/store').DossierRow, couponId: string | null) {
+  if (couponId === (d.coupon_id ?? null)) return;
+  if (!couponId) { d.coupon_id = null; d.discount = null; return; }
+  const s = db();
+  const c = s.coupon.find((x) => x.id === couponId && x.tenant_id === d.tenant_id);
+  if (!c || !c.active) check('Cupón no disponible');
+  if (c!.valid_until && c!.valid_until < new Date().toISOString().slice(0, 10)) check('El cupón ha caducado');
+  if (c!.max_uses != null && s.dossier.filter((x) => x.coupon_id === c!.id && x.id !== d.id).length >= c!.max_uses) check('El cupón ya no tiene usos disponibles');
+  d.coupon_id = c!.id;
+  d.discount = { code: c!.code, label: c!.label, kind: c!.kind, value: c!.value };
 }
 
 /** = el servidor con service role: ve todos los tenants. */

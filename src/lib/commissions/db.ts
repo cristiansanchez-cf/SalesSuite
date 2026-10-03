@@ -1,4 +1,4 @@
-import type { Entry, EntryDraft, EntryStatus, EventStatus, Payout, Plan, RevenueEvent } from './types';
+import type { Coupon, Entry, EntryDraft, EntryStatus, EventStatus, Payout, Plan, RevenueEvent } from './types';
 
 export type EventInsert = Omit<RevenueEvent, 'id' | 'tenantId' | 'createdAt'>;
 export interface ApiKey { id: string; tenantId: string; name: string; prefix: string; createdAt: string; lastUsedAt: string | null; revokedAt: string | null }
@@ -34,6 +34,10 @@ export interface CommissionsDb {
   listConnectors(tenantId: string): Promise<Connector[]>;
   saveConnector(tenantId: string, c: Omit<Connector, 'id' | 'tenantId'>, id?: string): Promise<string>;
   deleteConnector(id: string): Promise<boolean>;
+
+  /** Cupones con sus usos (propuestas que lo tienen aplicado). */
+  listCoupons(tenantId: string): Promise<Coupon[]>;
+  saveCoupon(tenantId: string, c: Omit<Coupon, 'id' | 'tenantId' | 'uses'>, id?: string): Promise<string>;
 }
 
 /** Entrada por API (servidor con service role): resuelve la clave y escribe eventos de ese tenant. */

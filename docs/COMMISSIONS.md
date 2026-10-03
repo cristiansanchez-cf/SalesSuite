@@ -104,7 +104,12 @@ no elegible          (con motivo; un admin puede aprobarla si decide pagarla)
 
 ## 6. Cupones
 
-Catálogo de cupones del espacio (30 %, 10 %, mes gratis…) que el admin crea como palancas de negociación, con usos máximos y caducidad. Aplicar un cupón a una propuesta cambia el precio que ve el cliente. Como la comisión se calcula sobre lo que de verdad ingresa la empresa (el evento), un descuento reduce la comisión sin reglas extra.
+Catálogo de cupones del espacio (30 %, 10 %, mes gratis…) que el admin crea como palancas de negociación, con usos máximos y caducidad (Comisiones → Cupones).
+
+- El equipo interno lo elige en el precio de la propuesta. Los colaboradores no aplican cupones.
+- El cliente ve el precio anterior tachado y el nombre del cupón.
+- La propuesta guarda una **copia** del descuento (trigger `dossier_coupon_apply`): editar o desactivar el cupón no cambia lo ya enviado. Los usos, la caducidad y si está activo los valida Postgres.
+- Como la comisión se calcula sobre lo que de verdad ingresa la empresa (el evento), un descuento reduce la comisión sin reglas extra.
 
 ## 7. Garantías y pruebas
 

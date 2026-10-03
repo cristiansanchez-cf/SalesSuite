@@ -4,6 +4,7 @@ import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
 import { demoEmitMembership } from '../notify/db-demo';
 import { demoAccountsOnDossier } from '../accounts/db-demo';
+import { demoApplyCoupon } from '../commissions/db-demo';
 
 export const newToken = () => randomBytes(24).toString('base64url');
 
@@ -20,6 +21,8 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   accountEligibility: (r.account_eligibility as DossierRecord['accountEligibility']) ?? null,
   accountDecision: r.account_decision ?? null,
   accountDecidedAt: r.account_decided_at ?? null,
+  couponId: r.coupon_id ?? null,
+  discount: r.discount ?? null,
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -92,6 +95,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.nextStepAt !== undefined) d.next_step_at = p.nextStepAt;
       if (p.situation !== undefined) d.situation = p.situation;
       if (p.accountId !== undefined) d.account_id = p.accountId;
+      if (p.couponId !== undefined) demoApplyCoupon(d, p.couponId);  // = trigger dossier_coupon_apply
       demoAccountsOnDossier(prev, d);
       d.updated_at = new Date().toISOString();
       return toDossier(d);

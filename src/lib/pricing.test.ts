@@ -36,3 +36,20 @@ describe('pricing', () => {
     expect(t.amount).toBe(0.3);
   });
 });
+
+describe('cupones', () => {
+  const base = { priceMode: 'total' as const, totalPrice: 1000, currency: 'EUR', locale: 'es-ES', items: [] };
+  test('porcentaje, fijo y meses gratis, al céntimo', () => {
+    const p = resolveTotal({ ...base, discount: { code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000 } })!;
+    expect(p.amount).toBe(700);
+    expect(nbsp(p.before!.formatted)).toBe('1000 €');
+    expect(p.discount).toEqual({ code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent' });
+    expect(resolveTotal({ ...base, totalPrice: 99.99, discount: { code: 'X', label: 'x', kind: 'percent', value: 3333 } })!.amount).toBe(66.66);
+    expect(resolveTotal({ ...base, discount: { code: 'F', label: '150 € menos', kind: 'fixed', value: 15_000 } })!.amount).toBe(850);
+    expect(resolveTotal({ ...base, totalPrice: 100, discount: { code: 'F', label: 'x', kind: 'fixed', value: 15_000 } })!.amount).toBe(0);
+    const free = resolveTotal({ ...base, discount: { code: 'M', label: 'Primer mes gratis', kind: 'free_months', value: 1 } })!;
+    expect(free.amount).toBe(1000);
+    expect(free.before).toBeUndefined();
+    expect(free.discount?.label).toBe('Primer mes gratis');
+  });
+});

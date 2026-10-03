@@ -24,7 +24,7 @@ export type PricingCardProps = z.infer<typeof pricingCardSchema>;
  *  - per_module → suma de items (total resuelto); el precio propio del item no se suma aparte
  *  - none → noPriceLabel
  */
-export function pricingFigure(ctx: { priceMode: string; total: { formatted: string } | null; price: { formatted: string } | null }) {
+export function pricingFigure<P extends { formatted: string }>(ctx: { priceMode: string; total: P | null; price: P | null }) {
   if (ctx.priceMode === 'none') return null;
   return ctx.total ?? ctx.price ?? null;
 }

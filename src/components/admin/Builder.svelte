@@ -17,8 +17,9 @@
     personas: Array<{ id: string; segmentId: string; name: string; role: string }>;
   }
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
-  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false }:
-    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean } = $props();
+  interface CouponLite { id: string; code: string; label: string }
+  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [] }:
+    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[] } = $props();
 
   // Copia JSON: las props llegan como proxies y structuredClone no puede clonarlas.
   let s = $state<BuilderState>(JSON.parse(JSON.stringify(initial)));
@@ -356,7 +357,7 @@
       <section class={card}>
         <div class="mb-3 flex items-center justify-between gap-3">
           <h2 class="co-card-title">Precio</h2>
-          {#if s.total}<span class="text-sm">Total: <strong data-testid="total">{s.total.formatted}</strong></span>{/if}
+          {#if s.total}<span class="text-sm">Total: {#if s.total.before}<s class="text-muted">{s.total.before.formatted}</s> {/if}<strong data-testid="total">{s.total.formatted}</strong></span>{/if}
         </div>
         {#if s.partnerAccount}
           <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
@@ -393,6 +394,15 @@
           {/if}
         </div>
         {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">Cada módulo usa su precio de catálogo salvo que lo sobrescribas abajo. El total suma los módulos visibles. Importes sin IVA.</p>{/if}
+        {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
+          <label class="mt-3 block text-sm font-medium">Cupón <span class="font-normal text-muted">· palanca de negociación; el cliente lo ve aplicado</span>
+            <select class={field} value={d.couponId ?? ''} disabled={!editable} onchange={(e) => run({ op: 'setCoupon', couponId: e.currentTarget.value || null })} data-testid="coupon">
+              <option value="">Sin cupón</option>
+              {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<option value={d.couponId}>{d.discount.label} ({d.discount.code})</option>{/if}
+              {#each coupons as c}<option value={c.id}>{c.label} ({c.code})</option>{/each}
+            </select>
+          </label>
+        {/if}
         {/if}
       </section>
 

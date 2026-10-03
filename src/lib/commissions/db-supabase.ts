@@ -129,6 +129,26 @@ export function supabaseCommissionsDb(sb: SupabaseClient): CommissionsDb {
       return (check(await sb.from('connector').insert(row).select('id').single()) as Row).id;
     },
     async deleteConnector(id) { return (check(await sb.from('connector').delete().eq('id', id).select('id')) ?? []).length > 0; },
+    async listCoupons(t) {
+      const [cs, ds] = await Promise.all([
+        sb.from('coupon').select('*').eq('tenant_id', t).order('created_at'),
+        sb.from('dossier').select('coupon_id').eq('tenant_id', t).not('coupon_id', 'is', null),
+      ]);
+      const uses = new Map<string, number>();
+      for (const d of check(ds) ?? []) uses.set((d as Row).coupon_id, (uses.get((d as Row).coupon_id) ?? 0) + 1);
+      return (check(cs) ?? []).map((c: Row) => ({
+        id: c.id, tenantId: c.tenant_id, code: c.code, label: c.label, kind: c.kind, value: c.value, maxUses: c.max_uses, validUntil: c.valid_until,
+        active: c.active, note: c.note, uses: uses.get(c.id) ?? 0,
+      }));
+    },
+    async saveCoupon(t, c, id) {
+      const row = { tenant_id: t, code: c.code, label: c.label, kind: c.kind, value: c.value, max_uses: c.maxUses, valid_until: c.validUntil, active: c.active, note: c.note };
+      if (id) {
+        if (!(check(await sb.from('coupon').update(row).eq('id', id).select('id')) ?? []).length) throw new Error('permission denied: cupón');
+        return id;
+      }
+      return (check(await sb.from('coupon').insert(row).select('id').single()) as Row).id;
+    },
   };
 }
 

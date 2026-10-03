@@ -51,6 +51,7 @@ export function toPublicDossier(d: DossierRecord, items: ItemRecord[]): PublicDo
     totalPrice: d.totalPrice,
     currency: d.currency,
     themeOverride: null,
+    discount: d.discount,
     items: items.filter((i) => i.visible).sort((a, b) => a.position - b.position).map(toRenderItem),
   };
 }
@@ -347,6 +348,17 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         try { await assertWrote(await db.updateDossier(id, { accountId: op.accountId })); } catch (e) {
           if (e instanceof AdminError) throw e;
           if (/foreign key|violates/i.test(String(e))) throw new AdminError(404, 'Cuenta no encontrada');
+          throw e;
+        }
+        break;
+      }
+      case 'setCoupon': {
+        if (isPartner) throw new AdminError(403, 'Los cupones los aplica el equipo interno');
+        try { await assertWrote(await db.updateDossier(id, { couponId: op.couponId })); } catch (e) {
+          if (e instanceof AdminError) throw e;
+          const m = String(e);
+          if (/caducado|usos|no disponible/i.test(m)) throw new AdminError(409, m.match(/El cupón[^.(]*|Cupón no disponible/)?.[0]?.trim() ?? 'Cupón no disponible');
+          if (/foreign key/i.test(m)) throw new AdminError(404, 'Cupón no encontrado');
           throw e;
         }
         break;

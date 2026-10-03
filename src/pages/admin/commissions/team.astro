@@ -21,7 +21,7 @@ if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).manageTeam) return Astro.rewrite('/admin/forbidden');
 const c = admin.commissions;
 const canWrite = c.canManage;
-const TABS = [['resumen', 'Resumen'], ['plan', 'Plan'], ['ingresos', 'Ingresos'], ['libro', 'Libro'], ['liquidaciones', 'Liquidaciones'], ...(canWrite ? [['api', 'API']] : [])] as const;
+const TABS = [['resumen', 'Resumen'], ['plan', 'Plan'], ['ingresos', 'Ingresos'], ['libro', 'Libro'], ['liquidaciones', 'Liquidaciones'], ['cupones', 'Cupones'], ...(canWrite ? [['api', 'API']] : [])] as const;
 const tab = (TABS.find(([k]) => k === Astro.url.searchParams.get('tab'))?.[0] ?? 'resumen') as (typeof TABS)[number][0];
 const period = new Date().toISOString().slice(0, 7);
 
@@ -70,10 +70,14 @@ if (Astro.request.method === 'POST') {
       case 'key-revoke': await c.revokeApiKey(str('id')); ok = 'Clave revocada.'; break;
       case 'connector': await c.saveConnector({ key: str('key'), name: str('name'), mapping: str('mapping') }); ok = 'Conector guardado.'; break;
       case 'connector-delete': await c.deleteConnector(str('id')); ok = 'Conector eliminado.'; break;
+      case 'coupon': await c.saveCoupon({ code: str('code'), label: str('label'), kind: str('kind'), value: str('value'), maxUses: str('maxUses'), validUntil: str('validUntil'), note: str('note') }); ok = 'Cupón creado: el equipo ya puede aplicarlo en sus propuestas.'; break;
+      case 'coupon-toggle': await c.setCouponActive(str('id'), str('active') === '1'); ok = str('active') === '1' ? 'Cupón activado.' : 'Cupón desactivado. Las propuestas que ya lo tienen lo conservan.'; break;
     }
   });
 }
 
+const couponList = tab === 'cupones' ? await c.coupons({ all: true }) : [];
+const couponValue = (x: (typeof couponList)[number]) => (x.kind === 'percent' ? `${x.value / 100} %` : x.kind === 'fixed' ? formatMoney(x.value) : `${x.value} ${x.value === 1 ? 'mes gratis' : 'meses gratis'}`);
 const [t, events, territory, apiKeys, connectors] = await Promise.all([
   c.team(), tab === 'ingresos' ? c.events() : Promise.resolve([]), admin.accounts.territory().catch(() => ({ zones: [] })),
   tab === 'api' && canWrite ? c.apiKeys() : Promise.resolve([]), tab === 'api' && canWrite ? c.connectors() : Promise.resolve([]),
@@ -370,6 +374,50 @@ const origin = Astro.url.origin;
         </ul>
       )}
     </section>
+  )}
+
+  {tab === 'cupones' && (
+    <div class="co-split">
+      <section class="co-section !mt-0" data-testid="coupons">
+        <div class="co-section__head"><h2 class="text-eyebrow">Cupones</h2><span class="co-meta">Palancas de negociación. El equipo las aplica en el precio de la propuesta y el cliente ve el descuento. La comisión se calcula sobre lo que de verdad se cobra.</span></div>
+        {couponList.length === 0 ? <EmptyState kind="none" title="Todavía no hay cupones" because="Crea el primero con el formulario: un 30 % de lanzamiento, un 10 % por pago anual o un mes gratis." /> : (
+          <ul class="co-rows">{couponList.map((x) => (
+            <li class:list={['co-row', !x.active && 'opacity-60']} data-testid="coupon" data-code={x.code}>
+              <span class="co-row__lead"><Icon name="ticket" /></span>
+              <span class="co-row__main"><span class="co-row-title">{x.label} <code class="co-meta">{x.code}</code></span>
+                <span class="co-meta">{couponValue(x)} · {x.uses}{x.maxUses ? ` de ${x.maxUses}` : ''} {x.uses === 1 ? 'uso' : 'usos'}{x.validUntil ? ` · hasta el ${new Date(x.validUntil).toLocaleDateString('es-ES')}` : ''}{x.note ? ` · ${x.note}` : ''}</span></span>
+              <span class={x.active ? 'co-badge co-badge--signal' : 'co-badge'}>{x.active ? 'Activo' : 'Desactivado'}</span>
+              {canWrite && <form method="post"><input type="hidden" name="action" value="coupon-toggle" /><input type="hidden" name="id" value={x.id} /><input type="hidden" name="active" value={x.active ? '0' : '1'} />
+                <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{x.active ? 'Desactivar' : 'Activar'}</button></form>}
+            </li>))}
+          </ul>
+        )}
+      </section>
+      {canWrite && (
+        <aside>
+          <form method="post" class="co-card grid gap-3" data-testid="coupon-form">
+            <input type="hidden" name="action" value="coupon" />
+            <h2 class="co-entity">Nuevo cupón</h2>
+            <label class="co-field">Lo que verá el cliente<input class="co-input" name="label" required maxlength="80" placeholder="30 % de lanzamiento" /></label>
+            <label class="co-field">Código<input class="co-input uppercase" name="code" required maxlength="32" placeholder="LANZA30" /></label>
+            <fieldset class="grid gap-2"><legend class="co-field mb-1">Tipo</legend>
+              <div class="grid gap-2 sm:grid-cols-3">
+                <label class="co-option !p-3"><input type="radio" name="kind" value="percent" checked /><span class="co-row-title">%</span><span class="co-meta">Descuento</span></label>
+                <label class="co-option !p-3"><input type="radio" name="kind" value="fixed" /><span class="co-row-title">€</span><span class="co-meta">Importe fijo</span></label>
+                <label class="co-option !p-3"><input type="radio" name="kind" value="free_months" /><span class="co-row-title">Meses</span><span class="co-meta">Gratis</span></label>
+              </div>
+            </fieldset>
+            <label class="co-field">Valor <span class="co-help">30 (%), 150 (€) o 1 (mes)</span><input class="co-input max-w-[8rem]" name="value" required inputmode="decimal" /></label>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="co-field">Usos máximos <span class="co-help">Opcional</span><input class="co-input" name="maxUses" type="number" min="1" /></label>
+              <label class="co-field">Válido hasta <span class="co-help">Opcional</span><input class="co-input" name="validUntil" type="date" /></label>
+            </div>
+            <label class="co-field">Nota interna <span class="co-help">Cuándo usarlo</span><input class="co-input" name="note" maxlength="300" placeholder="Para cerrar antes de fin de mes" /></label>
+            <button class="co-btn co-btn--primary w-fit" type="submit">Crear cupón</button>
+          </form>
+        </aside>
+      )}
+    </div>
   )}
 
   {tab === 'api' && canWrite && (

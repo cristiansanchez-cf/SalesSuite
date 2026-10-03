@@ -51,6 +51,7 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('removeContact'), contactId: id }),
   z.object({ op: z.literal('setSituation'), situation: situationSchema }),
   z.object({ op: z.literal('setAccount'), accountId: id.nullable() }),
+  z.object({ op: z.literal('setCoupon'), couponId: id.nullable() }),
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;

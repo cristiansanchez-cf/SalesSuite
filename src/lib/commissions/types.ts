@@ -87,3 +87,9 @@ export interface EngineContext {
   existing: Entry[];
 }
 export interface EngineResult { entries: EntryDraft[]; skipped: Array<{ eventId: string; reason: string }> }
+
+/** Cupón del catálogo (docs/COMMISSIONS.md §6). */
+export interface Coupon {
+  id: string; tenantId: string; code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number;
+  maxUses: number | null; validUntil: string | null; active: boolean; note: string | null; uses: number;
+}

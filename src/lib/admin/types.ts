@@ -80,6 +80,9 @@ export interface DossierRecord {
   accountEligibility: import('../accounts/types').Eligibility | null;
   accountDecision: import('../accounts/types').AccountDecision | null;
   accountDecidedAt: string | null;
+  /** Cupón aplicado y su copia (docs/COMMISSIONS.md §6). */
+  couponId: string | null;
+  discount: import('../types').Discount | null;
 }
 
 export interface DossierSummary extends DossierRecord {
