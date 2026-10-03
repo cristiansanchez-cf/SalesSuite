@@ -21,6 +21,10 @@ const es = {
     empty: 'Tu empresa aún no ha preparado este recorrido. Mientras, mira qué ofrecemos.', seeOffer: 'Ver qué ofrecemos',
     flash: 'Hecho: ya sabes lo que vendes.',
   },
+  topic: {
+    eyebrow: 'Aprende', fit: 'Dónde encaja', star: 'Estrella', see: 'Verlo como el cliente', close: 'Cerrar', why: 'Cuándo usarla y por qué funciona',
+    team: 'Del equipo', kinds: { pitch: 'Presentarlo', fit: 'Para quién', discovery: 'Preguntas', proof: 'Pruebas', objection: 'Objeciones', monetization: 'Precio', script: 'Guiones', tip: 'Consejos' },
+  },
   sector: {
     icp: 'Cliente ideal', icpEn: 'Ideal Customer Profile · ICP',
     imagine: 'Imagínatelo', imagineLede: 'Así verá el cliente su propuesta. Toca para verla entera.',
@@ -50,6 +54,10 @@ export const learnMessages = defineMessages({
       empty: 'Your company has not prepared this tour yet. Meanwhile, see what we offer.', seeOffer: 'See what we offer',
       flash: 'Done: you know what you sell.',
     },
+    topic: {
+      eyebrow: 'Learn', fit: 'Where it fits', star: 'Star', see: 'See it as the customer', close: 'Close', why: 'When to use it and why it works',
+      team: 'From the team', kinds: { pitch: 'Pitch it', fit: 'Who for', discovery: 'Questions', proof: 'Proof', objection: 'Objections', monetization: 'Price', script: 'Scripts', tip: 'Tips' },
+    },
     sector: {
       icp: 'Ideal customer', icpEn: 'Ideal Customer Profile · ICP',
       imagine: 'Picture it', imagineLede: 'This is how the customer will see their proposal. Tap to see it in full.',
@@ -76,6 +84,10 @@ export const learnMessages = defineMessages({
       empty: 'Sua empresa ainda não preparou este percurso. Enquanto isso, veja o que oferecemos.', seeOffer: 'Ver o que oferecemos',
       flash: 'Feito: você já sabe o que vende.',
     },
+    topic: {
+      eyebrow: 'Aprenda', fit: 'Onde encaixa', star: 'Estrela', see: 'Ver como o cliente', close: 'Fechar', why: 'Quando usar e por que funciona',
+      team: 'Da equipe', kinds: { pitch: 'Apresentar', fit: 'Para quem', discovery: 'Perguntas', proof: 'Provas', objection: 'Objeções', monetization: 'Preço', script: 'Roteiros', tip: 'Dicas' },
+    },
     sector: {
       icp: 'Cliente ideal', icpEn: 'Ideal Customer Profile · ICP',
       imagine: 'Imagine', imagineLede: 'Assim o cliente verá a proposta. Toque para ver inteira.',
@@ -101,6 +113,10 @@ export const learnMessages = defineMessages({
       got: '이해했어요', gotNext: '이해했어요: 이제 제공하는 것 보기', back: '판매 배우기로 돌아가기', backWelcome: '환영 안내로 돌아가기',
       empty: '아직 회사에서 이 안내를 준비하지 않았습니다. 그동안 제공하는 것을 살펴보세요.', seeOffer: '제공하는 것 보기',
       flash: '완료: 이제 무엇을 파는지 알아요.',
+    },
+    topic: {
+      eyebrow: '배우기', fit: '잘 맞는 곳', star: '핵심', see: '고객 화면으로 보기', close: '닫기', why: '언제 쓰고 왜 효과가 있는지',
+      team: '팀에서', kinds: { pitch: '소개하기', fit: '누구에게', discovery: '질문', proof: '증거', objection: '반론', monetization: '가격', script: '스크립트', tip: '팁' },
     },
     sector: {
       icp: '이상적인 고객', icpEn: 'Ideal Customer Profile · ICP',

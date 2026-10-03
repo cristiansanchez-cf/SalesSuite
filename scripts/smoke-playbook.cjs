@@ -29,6 +29,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await rep.screenshot({ path: `${OUT}/learn-index.png`, fullPage: true });
 
   await rep.click('[data-testid=topic-general]');
+  assert(await rep.isVisible('[data-tab]'), 'jugadas en pestañas, no una lista infinita');
+  await rep.click('[data-tab=objection]');
   const caro = rep.locator('[data-testid=play]', { hasText: '"Es caro"' });
   assert((await caro.locator('[data-testid=cerebro-refs]').textContent()).includes('[707]'), 'jugada enlaza ficha del Cerebro con atribución');
   // El voto es un interruptor: comprobamos que cambia (el script se puede repetir).
@@ -57,8 +59,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ficha de módulo con vista previa en vivo
   await rep.locator('[data-testid=topic]', { hasText: 'Experiencias en directo' }).click();
+  assert(await rep.isVisible('[data-testid=topic-hero]') && (await rep.locator('[data-testid=module-fit] img').count()) > 0, 'ficha de módulo: portada y sectores con foto');
+  assert(!(await rep.isVisible('iframe[title^="Vista previa"]')), 'la vista del cliente no ocupa la pantalla hasta pedirla');
+  await rep.click('[data-testid=client-view]');
   const frame = rep.frameLocator('iframe[title^="Vista previa"]');
-  assert(await frame.locator('[data-block-type=tabs-showcase]').isVisible(), 'ficha de módulo: vista previa en vivo del módulo');
+  await frame.locator('[data-block-type=tabs-showcase]').waitFor({ timeout: 10000 });
+  assert(await frame.locator('[data-block-type=tabs-showcase]').isVisible(), 'ficha de módulo: vista previa en vivo, a demanda');
   if (OUT) await rep.screenshot({ path: `${OUT}/learn-module.png`, fullPage: false });
 
   // ---------------- guion en el builder (Sala X)

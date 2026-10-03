@@ -5,8 +5,8 @@ const es = {
   title: 'Empieza aquí',
   eyebrow: 'Bienvenida',
   hello: (name: string) => `Hola, ${name}`,
-  lede: 'Lo que necesitas para vender, en cinco minutos.',
-  what: { title: 'Qué vendemos', empty: 'El catálogo está en preparación.', from: (price: string) => `desde ${price}`, more: 'Ver fichas de producto' },
+  lede: 'Tu base. Vuelve aquí cuando quieras.',
+  what: { title: 'Qué vendemos', watch: 'Mira lo que vendes', empty: 'El catálogo está en preparación.', from: (price: string) => `desde ${price}`, more: 'Ver fichas de producto' },
   who: { title: 'A quién', empty: 'Todavía no hay sectores definidos.', icp: 'Cliente ideal', avoid: 'Mejor no', people: 'Con quién hablas' },
   how: {
     title: 'Cómo se vende',
@@ -25,7 +25,7 @@ const es = {
     history: 'Historial de mis condiciones', since: (date: string) => `Desde el ${date}`,
   },
   steps: {
-    title: 'Primeros pasos',
+    title: 'Primeros pasos', progress: (n: number, total: number) => (n === 0 ? 'Empieza por el primero' : `Ya has hecho ${n} de ${total}`),
     profile: 'Completa tu nombre y teléfono',
     firstDossier: 'Crea tu primera propuesta',
     publish: 'Publica y comparte el enlace',
@@ -41,8 +41,8 @@ export const startMessages = defineMessages({
     title: 'Start here',
     eyebrow: 'Welcome',
     hello: (name) => `Hi, ${name}`,
-    lede: 'What you need to start selling, in five minutes.',
-    what: { title: 'What we sell', empty: 'The catalog is being prepared.', from: (price) => `from ${price}`, more: 'See product sheets' },
+    lede: 'Your base. Come back whenever you like.',
+    what: { title: 'What we sell', watch: 'See what you sell', empty: 'The catalog is being prepared.', from: (price) => `from ${price}`, more: 'See product sheets' },
     who: { title: 'Who we sell to', empty: 'No sectors defined yet.', icp: 'Ideal customer', avoid: 'Better not', people: 'Who you talk to' },
     how: {
       title: 'How it sells',
@@ -61,7 +61,7 @@ export const startMessages = defineMessages({
       history: 'History of my terms', since: (date) => `Since ${date}`,
     },
     steps: {
-      title: 'First steps',
+      title: 'First steps', progress: (n, total) => (n === 0 ? 'Start with the first one' : `You have done ${n} of ${total}`),
       profile: 'Add your name and phone',
       firstDossier: 'Create your first proposal',
       publish: 'Publish it and share the link',
@@ -74,8 +74,8 @@ export const startMessages = defineMessages({
     title: 'Comece aqui',
     eyebrow: 'Boas-vindas',
     hello: (name) => `Olá, ${name}`,
-    lede: 'O que você precisa para vender, em cinco minutos.',
-    what: { title: 'O que vendemos', empty: 'O catálogo está em preparação.', from: (price) => `a partir de ${price}`, more: 'Ver fichas de produto' },
+    lede: 'Sua base. Volte aqui quando quiser.',
+    what: { title: 'O que vendemos', watch: 'Veja o que você vende', empty: 'O catálogo está em preparação.', from: (price) => `a partir de ${price}`, more: 'Ver fichas de produto' },
     who: { title: 'Para quem', empty: 'Ainda não há setores definidos.', icp: 'Cliente ideal', avoid: 'Melhor não', people: 'Com quem você fala' },
     how: {
       title: 'Como se vende',
@@ -94,7 +94,7 @@ export const startMessages = defineMessages({
       history: 'Histórico das minhas condições', since: (date) => `Desde ${date}`,
     },
     steps: {
-      title: 'Primeiros passos',
+      title: 'Primeiros passos', progress: (n, total) => (n === 0 ? 'Comece pelo primeiro' : `Você já fez ${n} de ${total}`),
       profile: 'Complete seu nome e telefone',
       firstDossier: 'Crie sua primeira proposta',
       publish: 'Publique e compartilhe o link',
@@ -107,8 +107,8 @@ export const startMessages = defineMessages({
     title: '여기서 시작하세요',
     eyebrow: '환영합니다',
     hello: (name) => `${name}님, 안녕하세요`,
-    lede: '판매를 시작하는 데 필요한 것, 5분이면 충분합니다.',
-    what: { title: '무엇을 파나요', empty: '카탈로그를 준비하고 있습니다.', from: (price) => `${price}부터`, more: '제품 정보 보기' },
+    lede: '나의 기본 화면입니다. 언제든 돌아오세요.',
+    what: { title: '무엇을 파나요', watch: '무엇을 파는지 보세요', empty: '카탈로그를 준비하고 있습니다.', from: (price) => `${price}부터`, more: '제품 정보 보기' },
     who: { title: '누구에게 파나요', empty: '아직 정의된 업종이 없습니다.', icp: '이상적인 고객', avoid: '피하는 게 좋은 경우', people: '대화 상대' },
     how: {
       title: '어떻게 파나요',
@@ -127,7 +127,7 @@ export const startMessages = defineMessages({
       history: '내 조건 변경 기록', since: (date) => `${date}부터`,
     },
     steps: {
-      title: '첫걸음',
+      title: '첫걸음', progress: (n, total) => (n === 0 ? '첫 단계부터 시작하세요' : `${total}개 중 ${n}개 완료`),
       profile: '이름과 전화번호 입력',
       firstDossier: '첫 제안서 만들기',
       publish: '게시하고 링크 공유하기',

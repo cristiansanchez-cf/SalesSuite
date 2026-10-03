@@ -1,4 +1,9 @@
 ---
+/**
+ * Ficha de venta de un módulo (o «general»): portada con la imagen del producto, dónde encaja (fotos de los sectores),
+ * las jugadas en pestañas (una cosa cada vez, no una lista infinita) y lo que aporta el equipo. La vista del cliente se
+ * abre a demanda («Verlo como el cliente»), no ocupa la pantalla todo el rato.
+ */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PlayCard from '~/components/playbook/PlayCard.astro';
 import TipCard from '~/components/playbook/TipCard.astro';
@@ -8,6 +13,8 @@ import { LEARN_FLASH, learnAction } from '~/lib/playbook/forms';
 import { PLAY_KINDS } from '~/lib/playbook/types';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
+import { learnMessages } from '~/lib/i18n/messages/learn';
+import Icon from '~/components/ui/Icon.astro';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -36,93 +43,161 @@ try {
 const okMsg = flash(Astro.url, LEARN_FLASH(locale));
 const partner = admin.session.partner ?? null;
 const field = 'co-input';
+const lm = learnMessages[locale];
+// Portada: la captura del módulo; si no tiene, su propia propuesta en vivo, difuminada.
+const cover = view.module ? (await pb.learnIndex().catch(() => null))?.modules.find((x) => x.moduleId === topicId)?.cover ?? null : null;
+const firstTab = view.sections[0]?.kind ?? 'team';
 ---
 <AdminLayout title={view.name} wide>
-  <a href="/admin/learn" class="text-sm text-muted hover:text-ink">{msg.common.backLearn}</a>
-  <p class="text-eyebrow mb-3 mt-3">{msg.topic.eyebrow}</p>
-  <div class="flex flex-wrap items-center gap-3">
-    <h1 class="min-w-0 flex-1 co-page-title">{view.name}</h1>
-    <form method="post">
-      <input type="hidden" name="action" value="learned" /><input type="hidden" name="done" value={view.learned ? '0' : '1'} />
-      <button class:list={['co-btn', view.learned ? 'co-btn--ghost' : 'co-btn--primary']} type="submit" data-testid="learned">
-        {view.learned ? msg.learn.learned : msg.topic.markLearned}
-      </button>
-    </form>
-  </div>
-  {view.module?.description && <p class="text-muted">{view.module.description}</p>}
-  {okMsg && <p class="mt-3 co-alert co-alert--success" role="status">{okMsg}</p>}
-  {result.error && (
-    <div class="mt-3 co-alert co-alert--rejection" role="alert">
-      <p class="font-semibold">{result.error}</p>
-      {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
-    </div>
-  )}
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-12 pb-10">
+    <a href="/admin/learn" class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{msg.common.backLearn.replace(/^←\s*/, '')}</a>
 
-  <div class:list={['mt-6 grid gap-6', view.module && 'xl:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]']}>
-    <div class="space-y-8">
-      {fit.length > 0 && (
-        <section class="co-card" data-testid="module-fit">
-          <h2 class="text-eyebrow">{msg.topic.fitTitle}</h2>
-          <div class="mt-3 grid gap-3 md:grid-cols-2">
-            {fit.map((f) => (
-              <div class="rounded-xl bg-surface p-3 text-sm">
-                <a class="font-bold underline-offset-2 hover:underline" href={`/admin/learn/sector/${f.segment.key}`}>{f.segment.name}</a>
-                {f.fit?.priority === 1 && <span class="ml-1 text-xs">★</span>}
-                {f.fit?.fit && <p class="text-muted">{f.fit.fit}</p>}
-                {f.angles.length > 0 && <ul class="mt-1 space-y-0.5 p-0">{f.angles.map((a) => <li class="list-none"><strong>{a.persona}:</strong> {a.angle}</li>)}</ul>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {view.sections.length === 0 && (
-        <p class="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
-          {msg.topic.empty}
-        </p>
-      )}
-      {view.sections.map((sec) => (
-        <section>
-          <h2 class="mb-3 text-eyebrow">{msg.kind[sec.kind]}</h2>
-          <div class="space-y-3">{sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose />)}</div>
-        </section>
-      ))}
-
-      <section data-testid="team">
-        <h2 class="mb-3 text-eyebrow">{msg.topic.teamTitle}</h2>
-        <div class="space-y-3">
-          {view.tips.map((t) => <TipCard tip={t} mine={t.authorId === admin.session.userId} />)}
-          {view.tips.length === 0 && <p class="text-sm text-muted">{partner ? msg.topic.teamEmptyPartner : msg.topic.teamEmpty}</p>}
+    <header class="learn-card min-h-[18rem] sm:min-h-[22rem]" data-testid="topic-hero">
+      {view.module && (cover
+        ? <img src={cover} alt="" class="learn-card__bg" />
+        : <iframe src={`/admin/learn/preview/${view.module.moduleId}`} title="" aria-hidden="true" tabindex="-1" class="learn-card__bg learn-card__ui"></iframe>)}
+      {!view.module && <span class="learn-card__bg topic-general-bg" aria-hidden="true"></span>}
+      <span class="learn-card__shade"></span>
+      <div class="learn-card__body !gap-4 sm:!p-10">
+        <p class="text-xs font-semibold uppercase tracking-wider text-white/70">{lm.topic.eyebrow}</p>
+        <h1 class="text-4xl font-bold leading-none sm:text-6xl">{view.name}</h1>
+        {view.module?.description && <p class="max-w-2xl text-lg text-white/85">{view.module.description}</p>}
+        <div class="flex flex-wrap items-center gap-3">
+          {view.module && <button type="button" class="learn-cta !mt-0" data-testid="client-view" data-open-preview>{lm.topic.see} <span aria-hidden="true">→</span></button>}
+          <form method="post">
+            <input type="hidden" name="action" value="learned" /><input type="hidden" name="done" value={view.learned ? '0' : '1'} />
+            <button class:list={['learn-pill !px-4 !py-2 !text-sm', !view.learned && 'learn-pill--signal']} type="submit" data-testid="learned">
+              {view.learned ? <><Icon name="circle-check" size={14} />{msg.learn.learned.replace(/^✓\s*/, '')}</> : msg.topic.markLearned}
+            </button>
+          </form>
         </div>
-        <form method="post" class="mt-4 space-y-2 co-card" data-testid="tip-form">
-          <input type="hidden" name="action" value="tip" />
-          <h3 class="font-bold">{msg.topic.shareTitle}</h3>
-          <p class="text-xs text-muted">{partner ? msg.topic.shareHelpPartner : msg.topic.shareHelp}</p>
-          <div class="grid gap-2 sm:grid-cols-[1fr_12rem]">
-            <input class={field} name="title" required maxlength="200" placeholder={msg.topic.titlePlaceholder} />
-            <select class={field} name="kind" aria-label={msg.topic.type}>
-              {PLAY_KINDS.filter((k) => !partner || k !== 'monetization').map((k) => <option value={k} selected={k === 'tip'}>{msg.kind[k]}</option>)}
-            </select>
-          </div>
-          <textarea class={`${field} h-24`} name="body" required maxlength="4000" placeholder={msg.topic.bodyPlaceholder}></textarea>
-          <button class="co-btn co-btn--primary" type="submit">{partner ? msg.topic.submitPartner : msg.topic.submit}</button>
-        </form>
+      </div>
+    </header>
+
+    {okMsg && <p class="co-alert co-alert--success w-fit" role="status">{okMsg}</p>}
+    {result.error && (
+      <div class="co-alert co-alert--rejection" role="alert">
+        <p class="font-semibold">{result.error}</p>
+        {result.details.length > 0 && <ul class="list-disc pl-5">{result.details.map((d) => <li>{d}</li>)}</ul>}
+      </div>
+    )}
+
+    {fit.length > 0 && (
+      <section class="grid gap-5" data-testid="module-fit">
+        <h2 class="text-eyebrow">{lm.topic.fit}</h2>
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {fit.map((x) => (
+            <a class="learn-card min-h-[11rem]" href={`/admin/learn/sector/${x.segment.key}`}>
+              {x.segment.image && <img src={x.segment.image} alt="" class="learn-card__bg" loading="lazy" />}
+              <span class="learn-card__shade"></span>
+              <span class="learn-card__body !gap-1 !p-4">
+                {x.fit?.priority === 1 && <span class="learn-pill learn-pill--signal w-fit !text-xs">★ {lm.topic.star}</span>}
+                <span class="text-lg font-bold leading-tight">{x.segment.name}</span>
+                {x.fit?.fit && <span class="line-clamp-2 text-xs text-white/80">{x.fit.fit}</span>}
+              </span>
+            </a>
+          ))}
+        </div>
       </section>
+    )}
 
-      {view.myOpen.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-eyebrow">{msg.topic.mine}</h2>
-          <div class="space-y-3">{view.myOpen.map((t) => <TipCard tip={t} mine />)}</div>
-        </section>
-      )}
-    </div>
+    <section class="grid gap-6" data-tabs>
+      {view.sections.length === 0 ? (
+        <p class="rounded-2xl border border-dashed border-line p-8 text-center text-muted">{msg.topic.empty}</p>
+      ) : <>
+        <nav class="topic-tabs" aria-label={msg.topic.eyebrow}>
+          {view.sections.map((sec) => (
+            <a href={`#k-${sec.kind}`} class="topic-tab" data-tab={sec.kind} aria-selected={sec.kind === firstTab ? 'true' : 'false'}>
+              {lm.topic.kinds[sec.kind]}<span class="topic-tab__n">{sec.plays.length}</span>
+            </a>
+          ))}
+        </nav>
+        {view.sections.map((sec) => (
+          <div id={`k-${sec.kind}`} class="topic-panel grid gap-4" data-panel={sec.kind} data-active={sec.kind === firstTab ? '1' : '0'}>
+            {sec.plays.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose />)}
+          </div>
+        ))}
+      </>}
+    </section>
 
-    {view.module && (
-      <aside>
-        <div class="xl:sticky xl:top-4">
-          <p class="mb-2 text-sm font-bold">{msg.topic.clientView}</p>
-          <iframe title={msg.topic.previewOf(view.name)} src={`/admin/learn/preview/${view.module.moduleId}`} class="h-[70vh] w-full co-card" loading="lazy"></iframe>
+    <section class="grid gap-5" data-testid="team">
+      <h2 class="text-eyebrow">{lm.topic.team}{view.tips.length > 0 && ` · ${view.tips.length}`}</h2>
+      {view.tips.length > 0
+        ? <div class="grid gap-3 md:grid-cols-2">{view.tips.map((t) => <TipCard tip={t} mine={t.authorId === admin.session.userId} />)}</div>
+        : <p class="co-meta">{partner ? msg.topic.teamEmptyPartner : msg.topic.teamEmpty}</p>}
+      <form method="post" class="co-card grid gap-3 !p-6" data-testid="tip-form">
+        <input type="hidden" name="action" value="tip" />
+        <div class="grid gap-1">
+          <h3 class="co-entity">{msg.topic.shareTitle}</h3>
+          <p class="co-meta">{partner ? msg.topic.shareHelpPartner : msg.topic.shareHelp}</p>
         </div>
-      </aside>
+        <div class="grid gap-2 sm:grid-cols-[1fr_12rem]">
+          <input class={field} name="title" required maxlength="200" placeholder={msg.topic.titlePlaceholder} />
+          <select class={field} name="kind" aria-label={msg.topic.type}>
+            {PLAY_KINDS.filter((k) => !partner || k !== 'monetization').map((k) => <option value={k} selected={k === 'tip'}>{msg.kind[k]}</option>)}
+          </select>
+        </div>
+        <textarea class={`${field} h-24`} name="body" required maxlength="4000" placeholder={msg.topic.bodyPlaceholder}></textarea>
+        <button class="co-btn co-btn--primary w-fit" type="submit">{partner ? msg.topic.submitPartner : msg.topic.submit}</button>
+      </form>
+    </section>
+
+    {view.myOpen.length > 0 && (
+      <section class="grid gap-4">
+        <h2 class="text-eyebrow">{msg.topic.mine}</h2>
+        <div class="grid gap-3">{view.myOpen.map((t) => <TipCard tip={t} mine />)}</div>
+      </section>
     )}
   </div>
+
+  {view.module && (
+    <dialog class="topic-preview" data-preview>
+      <div class="flex items-center justify-between gap-3 px-5 py-3">
+        <p class="co-entity">{msg.topic.clientView}</p>
+        <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-close-preview>{lm.topic.close}</button>
+      </div>
+      <iframe title={msg.topic.previewOf(view.name)} data-src={`/admin/learn/preview/${view.module.moduleId}`}></iframe>
+    </dialog>
+  )}
 </AdminLayout>
+
+<style>
+  .topic-general-bg { background: radial-gradient(circle at 20% 20%, var(--co-signal, #7c3aed), transparent 60%), radial-gradient(circle at 80% 70%, var(--co-signal-badge, #cbb6ff), transparent 55%), #121014; filter: none; }
+  .topic-tabs { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
+  .topic-tab { display: inline-flex; flex-shrink: 0; align-items: center; gap: .5rem; border: 1px solid var(--console-border, rgba(127,127,127,.3)); border-radius: 999px; padding: .55rem 1.1rem; font-weight: 600; white-space: nowrap; }
+  .topic-tab[aria-selected='true'] { border-color: transparent; background: var(--console-ink, #111); color: var(--console-bg, #fff); }
+  .topic-tab__n { font-size: .75rem; opacity: .6; }
+  /* Sin JS se ven todas; con JS, una pestaña cada vez. */
+  [data-tabs][data-ready] .topic-panel[data-active='0'] { display: none; }
+  .topic-preview { width: min(1100px, 94vw); height: 88vh; padding: 0; border: 0; border-radius: 1.25rem; overflow: hidden; background: var(--console-surface, #fff); color: inherit; }
+  .topic-preview[open] { display: flex; flex-direction: column; }
+  .topic-preview::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(4px); }
+  .topic-preview iframe { flex: 1; width: 100%; border: 0; }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-tabs]');
+  if (root && root.querySelector('[data-tab]')) {
+    const tabs = [...root.querySelectorAll<HTMLElement>('[data-tab]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
+    const show = (k: string) => {
+      tabs.forEach((t) => t.setAttribute('aria-selected', t.dataset.tab === k ? 'true' : 'false'));
+      panels.forEach((p) => (p.dataset.active = p.dataset.panel === k ? '1' : '0'));
+    };
+    tabs.forEach((t) => t.addEventListener('click', (e) => { e.preventDefault(); show(t.dataset.tab!); }));
+    // Si se llega a una jugada concreta (#play-…), se abre su pestaña.
+    const target = location.hash.startsWith('#play-') ? document.getElementById(location.hash.slice(1)) : null;
+    const panel = target?.closest<HTMLElement>('[data-panel]');
+    if (panel) show(panel.dataset.panel!);
+    root.dataset.ready = '';
+    target?.scrollIntoView();
+  }
+  const dlg = document.querySelector<HTMLDialogElement>('[data-preview]');
+  document.querySelector('[data-open-preview]')?.addEventListener('click', () => {
+    const f = dlg?.querySelector('iframe');
+    if (f && !f.src) f.src = f.dataset.src!;
+    dlg?.showModal();
+  });
+  dlg?.querySelector('[data-close-preview]')?.addEventListener('click', () => dlg.close());
+  dlg?.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+</script>

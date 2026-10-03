@@ -310,7 +310,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const { segments } = await loadMarket();
     return segments
       .map((sg) => ({
-        segment: { key: sg.key, name: sg.name },
+        segment: { key: sg.key, name: sg.name, image: sg.image },
         fit: sg.modules.find((m) => m.moduleId === moduleId) ?? null,
         angles: sg.personas.flatMap((p) => p.angles.filter((a) => a.moduleId === moduleId).map((a) => ({ persona: p.name, role: p.role, angle: a.angle }))),
       }))

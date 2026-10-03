@@ -1,11 +1,12 @@
 ---
 /**
- * Empieza aquí (docs/FOUNDATIONS.md §4.1): al llegar, el vendedor sabe qué vendemos, a quién, cómo se vende
- * (con humildad: comprobado frente a hipótesis) y, solo si ya están acordadas, sus condiciones.
+ * Empieza aquí (docs/FOUNDATIONS.md §4.1): la base del comercial, para volver cuando quiera. Poco texto y una idea por
+ * bloque: tus primeros pasos (con el siguiente destacado) → qué vendemos (el recorrido del producto, con imagen) → a quién
+ * (fotos de los sectores) → cómo se vende (lo comprobado frente a hipótesis) → tus condiciones (solo si están acordadas).
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
-import PageHeader from '~/components/ui/PageHeader.astro';
 import Icon from '~/components/ui/Icon.astro';
+import { ICONS, type IconName } from '~/lib/ui/icons';
 import { i18n } from '~/lib/i18n';
 import { startMessages } from '~/lib/i18n/messages/start';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
@@ -17,8 +18,9 @@ const { m, f, locale } = i18n(Astro, startMessages);
 const partner = admin.session.role === 'partner';
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
 
-const [catalog, segments, plays, terms, dossiers] = await Promise.all([
+const [catalog, learn, segments, plays, terms, dossiers] = await Promise.all([
   admin.service.catalog().catch(() => []),
+  admin.playbook.learnIndex().catch(() => null),
   admin.playbook.market().catch(() => []),
   admin.playbook.listAllVisible().catch(() => []),
   admin.commissions.myConditions().catch(() => ({ visible: false, note: null, agreedAt: null, plan: null })),
@@ -27,115 +29,154 @@ const [catalog, segments, plays, terms, dossiers] = await Promise.all([
 const history = terms.visible ? await admin.commissions.myConditionsHistory().catch(() => []) : [];
 const day = (iso: string) => f.date(iso, { day: 'numeric', month: 'long', year: 'numeric' });
 const sectors = segments.filter((s) => s.status !== 'archived').slice(0, 4);
+const sectorIcon = (i: string | null) => (i && i in ICONS ? i : 'target') as IconName;
 // Lo comprobado primero; del resto, unas pocas hipótesis para empezar.
-const ranked = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 5);
+const ranked = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 3);
+const tourImgs = learn?.tour.steps.filter((s) => s.image) ?? [];
+const cover = tourImgs[Math.floor(tourImgs.length / 2)]?.image ?? learn?.modules.find((x) => x.cover)?.cover ?? null;
+const hasTour = (learn?.tour.steps.length ?? 0) > 0;
 
 const phone = admin.mode === 'supabase' && admin.supabase
   ? ((await admin.supabase.from('users').select('phone').eq('id', admin.session.userId).maybeSingle()).data?.phone as string | null)
   : demoDb().users.find((x) => x.id === admin.session.userId)?.phone ?? null;
 const mine = dossiers.filter((d) => d.authorId === admin.session.userId);
 const steps = [
-  { key: 'profile', label: m.steps.profile, done: !!admin.session.displayName && (partner || !!phone), href: '/admin/account' },
-  { key: 'dossier', label: m.steps.firstDossier, done: mine.length > 0, href: '/admin' },
-  { key: 'publish', label: m.steps.publish, done: mine.some((d) => d.publishedAt), href: '/admin' },
-  { key: 'cerebro', label: m.steps.cerebro, done: false, href: 'https://cofundo.io/tutorial', external: true },
+  { key: 'profile', label: m.steps.profile, icon: 'user' as IconName, done: !!admin.session.displayName && (partner || !!phone), href: '/admin/account' },
+  { key: 'dossier', label: m.steps.firstDossier, icon: 'file-text' as IconName, done: mine.length > 0, href: '/admin' },
+  { key: 'publish', label: m.steps.publish, icon: 'send' as IconName, done: mine.some((d) => d.publishedAt), href: '/admin' },
+  { key: 'cerebro', label: m.steps.cerebro, icon: 'sparkles' as IconName, done: false, href: 'https://cofundo.io/tutorial', external: true },
 ];
+const doneCount = steps.filter((s) => s.done).length;
+const next = steps.find((s) => !s.done)?.key;
 ---
-<AdminLayout title={m.title}>
-  <PageHeader eyebrow={m.eyebrow} title={m.hello(first)} lede={m.lede}>
-    <a class="co-btn co-btn--ghost" href="/admin/welcome" data-testid="welcome-again"><Icon name="sparkles" size={16} />{welcomeMessages[locale].again}</a>
-  </PageHeader>
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-14 pb-10">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div class="grid gap-3">
+        <p class="text-eyebrow">{m.title}</p>
+        <h1 class="co-page-title !text-5xl">{m.hello(first)}</h1>
+        <p class="co-lede !text-lg">{m.lede}</p>
+      </div>
+      <a class="co-btn co-btn--ghost" href="/admin/welcome" data-testid="welcome-again"><Icon name="sparkles" size={16} />{welcomeMessages[locale].again}</a>
+    </header>
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <section class="co-card grid content-start gap-4" data-testid="start-what">
-      <h2 class="co-entity flex items-center gap-2"><Icon name="boxes" size={18} />{m.what.title}</h2>
-      {catalog.length === 0 ? <p class="co-help">{m.what.empty}</p> : (
-        <ul class="grid gap-3">
-          {catalog.map((c) => (
-            <li>
-              <a class="co-row-title hover:underline" href={`/admin/learn/preview/${c.moduleId}`}>{c.moduleName}</a>
-              {!partner && c.defaultPrice != null && <span class="co-meta"> · {m.what.from(f.money(c.defaultPrice, c.currency))}</span>}
-              {c.description && <p class="co-help">{c.description}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
+    <section class="grid gap-5" data-testid="start-steps">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="text-eyebrow">{m.steps.title}</h2>
+        <p class="font-semibold">{m.steps.progress(doneCount, steps.length)}</p>
+      </div>
+      <ol class="grid gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map((s, i) => (
+          <li class="list-none">
+            <a class:list={['co-card co-card--link !grid h-full content-start gap-4 !p-5', s.key === next && 'start-next']} href={s.href} data-testid={`step-${s.key}`} data-done={s.done ? '1' : '0'} {...(s.external ? { target: '_blank', rel: 'noopener' } : {})}>
+              <span class="flex items-center justify-between">
+                <span class:list={['inline-flex h-11 w-11 items-center justify-center rounded-full', s.done ? 'bg-[var(--console-good-bg)] text-[color:var(--console-good,#15803d)]' : 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]']} aria-hidden="true"><Icon name={s.done ? 'circle-check' : s.icon} size={20} /></span>
+                <span class="co-figure text-2xl text-muted">{i + 1}</span>
+              </span>
+              <span class="co-entity">{s.label}</span>
+              <span class="co-meta">{s.done ? m.steps.done : m.steps.todo}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
     </section>
 
-    <section class="co-card grid content-start gap-4" data-testid="start-who">
-      <h2 class="co-entity flex items-center gap-2"><Icon name="target" size={18} />{m.who.title}</h2>
-      {sectors.length === 0 ? <p class="co-help">{m.who.empty}</p> : (
-        <ul class="grid gap-4">
-          {sectors.map((s) => (
-            <li class="grid gap-1">
-              <a class="co-row-title hover:underline" href={`/admin/learn/sector/${s.key}`}>{s.name}</a>
-              {s.icp && <p class="co-help"><strong>{m.who.icp}:</strong> {s.icp}</p>}
-              {s.disqualifiers && <p class="co-help"><strong>{m.who.avoid}:</strong> {s.disqualifiers}</p>}
-              {s.personas.length > 0 && <p class="co-meta">{m.who.people}: {s.personas.map((p) => p.name).join(' · ')}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div class="grid gap-6 lg:grid-cols-2">
+      <section class="grid content-start gap-4" data-testid="start-what">
+        <h2 class="text-eyebrow">{m.what.title}</h2>
+        <div class="learn-card min-h-[20rem]">
+          {cover && <img src={cover} alt="" class="learn-card__bg" />}
+          <span class="learn-card__shade"></span>
+          <div class="learn-card__body">
+            {catalog.length === 0 ? <p class="text-white/80">{m.what.empty}</p> : (
+              <ul class="flex flex-wrap gap-2 p-0">
+                {catalog.map((c) => (
+                  <li class="list-none"><a class="learn-pill hover:bg-white/30" href={`/admin/learn/preview/${c.moduleId}`} target="_blank" rel="noopener">
+                    {c.moduleName}{!partner && c.defaultPrice != null && <span class="font-normal text-white/75"> · {m.what.from(f.money(c.defaultPrice, c.currency))}</span>}
+                  </a></li>
+                ))}
+              </ul>
+            )}
+            <span class="text-3xl font-bold leading-tight">{m.what.watch}</span>
+            <a class="learn-cta" href={hasTour ? '/admin/learn/tour' : '/admin/learn#offer'}>{m.what.more} <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </section>
 
-    <section class="co-card grid content-start gap-4" data-testid="start-how">
-      <h2 class="co-entity flex items-center gap-2"><Icon name="book-open" size={18} />{m.how.title}</h2>
-      {ranked.length === 0 ? <p class="co-help">{m.how.empty}</p> : <>
-        <p class="co-help">{m.how.honest}</p>
-        <ul class="grid gap-3">
-          {ranked.map((p) => (
-            <li class="grid gap-1" data-testid="start-play">
-              <span class="co-row-title">{p.title}</span>
-              {p.evidence.won > 0
-                ? <span class="co-badge co-badge--signal w-fit" data-testid="proven">{m.how.proven(p.evidence.won)}</span>
-                : <span class="co-badge w-fit" data-testid="hypothesis">{m.how.hypothesis}</span>}
-            </li>
-          ))}
-        </ul>
-        <a class="co-btn co-btn--ghost w-fit" href="/admin/learn">{m.how.more}</a>
-      </>}
-    </section>
-
-    <section class="co-card grid content-start gap-4" data-testid="start-terms">
-      <h2 class="co-entity flex items-center gap-2"><Icon name="wallet" size={18} />{m.terms.title}</h2>
-      {!terms.visible ? <p class="co-help" data-testid="terms-pending">{m.terms.pending}</p> : <>
-        {terms.note && <p class="whitespace-pre-line" data-testid="terms-note">{terms.note}</p>}
-        {terms.plan && terms.plan.rules.length > 0 && (
-          <ul class="grid gap-1">{terms.plan.rules.map((r) => <li class="co-row-title">{r.label}</li>)}</ul>
+      <section class="grid content-start gap-4" data-testid="start-who">
+        <h2 class="text-eyebrow">{m.who.title}</h2>
+        {sectors.length === 0 ? <p class="co-help">{m.who.empty}</p> : (
+          <div class="grid min-h-[20rem] grid-cols-2 gap-3">
+            {sectors.map((s) => (
+              <a class="learn-card min-h-[9rem]" href={`/admin/learn/sector/${s.key}`} data-testid="start-sector">
+                {s.image && <img src={s.image} alt="" class="learn-card__bg" loading="lazy" />}
+                <span class="learn-card__shade"></span>
+                <span class="learn-card__body !gap-1 !p-4">
+                  {!s.image && <Icon name={sectorIcon(s.icon)} size={22} />}
+                  <span class="text-lg font-bold leading-tight">{s.name}</span>
+                  {s.personas.length > 0 && <span class="text-xs text-white/75">{s.personas.length} · {m.who.people.toLowerCase()}</span>}
+                </span>
+              </a>
+            ))}
+          </div>
         )}
-        {terms.plan?.referral && <p class="co-help">{m.terms.referral(String(terms.plan.referral.bps / 100), terms.plan.referral.months)}</p>}
-        {terms.agreedAt && <p class="co-meta">{m.terms.agreed(f.date(terms.agreedAt, { day: 'numeric', month: 'long', year: 'numeric' }))}</p>}
-        {history.length > 1 && (
-          <details data-testid="terms-history">
-            <summary class="co-meta cursor-pointer underline">{m.terms.history}</summary>
-            <ol class="mt-2 grid gap-2">
-              {history.map((h) => (
-                <li class="co-inset !py-2 text-sm">
-                  <span class="co-meta block">{m.terms.since(day(h.changedAt))}</span>
-                  {h.note && <span class="block whitespace-pre-line">{h.note}</span>}
-                  {h.plan && <span class="co-meta block">{h.plan.name}: {h.plan.rules.map((r) => r.label).join(' · ')}</span>}
-                </li>
-              ))}
-            </ol>
-          </details>
-        )}
-        <a class="co-btn co-btn--ghost w-fit" href="/admin/commissions">{m.terms.see}</a>
-      </>}
-    </section>
+      </section>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <section class="grid content-start gap-4" data-testid="start-how">
+        <h2 class="text-eyebrow">{m.how.title}</h2>
+        {ranked.length === 0 ? <p class="co-help">{m.how.empty}</p> : <>
+          <ul class="grid gap-3 p-0">
+            {ranked.map((p) => (
+              <li class="list-none" data-testid="start-play">
+                <a class="co-card co-card--link !flex items-center gap-4 !p-5" href={`/admin/learn/${p.moduleId ?? 'general'}#play-${p.id}`}>
+                  <span class="min-w-0 flex-1 co-entity">{p.title}</span>
+                  {p.evidence.won > 0
+                    ? <span class="co-badge co-badge--signal shrink-0" data-testid="proven">{m.how.proven(p.evidence.won)}</span>
+                    : <span class="co-badge shrink-0" data-testid="hypothesis">{m.how.hypothesis}</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a class="w-fit text-sm font-semibold underline" href="/admin/learn">{m.how.more}</a>
+        </>}
+      </section>
+
+      <section class="grid content-start gap-4" data-testid="start-terms">
+        <h2 class="text-eyebrow">{m.terms.title}</h2>
+        <div class="co-card grid content-start gap-4 !p-7">
+          {!terms.visible ? (
+            <p class="flex items-start gap-3 text-lg leading-snug" data-testid="terms-pending"><span class="mt-0.5 text-[color:var(--co-signal)]"><Icon name="wallet" size={22} /></span>{m.terms.pending}</p>
+          ) : <>
+            {terms.note && <p class="whitespace-pre-line text-xl font-semibold leading-snug" data-testid="terms-note">{terms.note}</p>}
+            {terms.plan && terms.plan.rules.length > 0 && (
+              <ul class="flex flex-wrap gap-2 p-0">{terms.plan.rules.map((r) => <li class="co-chip list-none">{r.label}</li>)}</ul>
+            )}
+            {terms.plan?.referral && <p class="co-meta">{m.terms.referral(String(terms.plan.referral.bps / 100), terms.plan.referral.months)}</p>}
+            {terms.agreedAt && <p class="co-meta">{m.terms.agreed(day(terms.agreedAt))}</p>}
+            {history.length > 1 && (
+              <details data-testid="terms-history">
+                <summary class="co-meta cursor-pointer underline">{m.terms.history}</summary>
+                <ol class="mt-2 grid gap-2 p-0">
+                  {history.map((h) => (
+                    <li class="co-inset list-none !py-2 text-sm">
+                      <span class="co-meta block">{m.terms.since(day(h.changedAt))}</span>
+                      {h.note && <span class="block whitespace-pre-line">{h.note}</span>}
+                      {h.plan && <span class="co-meta block">{h.plan.name}: {h.plan.rules.map((r) => r.label).join(' · ')}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )}
+            <a class="w-fit text-sm font-semibold underline" href="/admin/commissions">{m.terms.see}</a>
+          </>}
+        </div>
+      </section>
+    </div>
   </div>
-
-  <section class="co-card mt-6 grid gap-3" data-testid="start-steps">
-    <h2 class="co-entity flex items-center gap-2"><Icon name="list-checks" size={18} />{m.steps.title}</h2>
-    <ul class="grid gap-2">
-      {steps.map((s) => (
-        <li>
-          <a class="co-row" href={s.href} data-testid={`step-${s.key}`} data-done={s.done ? '1' : '0'} {...(s.external ? { target: '_blank', rel: 'noopener' } : {})}>
-            <Icon name={s.done ? 'circle-check' : 'chevron-right'} size={18} />
-            <span class="min-w-0 flex-1 co-row-title">{s.label}</span>
-            <span class="co-meta">{s.done ? m.steps.done : m.steps.todo}</span>
-          </a>
-        </li>
-      ))}
-    </ul>
-  </section>
 </AdminLayout>
+
+<style>
+  .start-next { border-color: var(--co-signal); box-shadow: 0 0 0 1px var(--co-signal); }
+</style>

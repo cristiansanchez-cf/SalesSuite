@@ -19,9 +19,9 @@ Método (docs/FOUNDATIONS.md §7): cuando el fundador prueba un recorrido y dice
 | Zonas y cuentas (reserva, bloqueo, conflictos) | `scripts/smoke-accounts.cjs`, `supabase/tests/33_accounts.test.sql` | Pendiente | |
 | Comisiones (plan, venta declarada, liquidación, API, cupones) | `scripts/smoke-commissions.cjs`, `src/lib/commissions/*.test.ts`, `supabase/tests/34_commissions.test.sql` | Pendiente | |
 | Idiomas | `scripts/smoke-i18n.cjs` | Pendiente | |
-| Empieza aquí (onboarding del vendedor) e historial de condiciones | `scripts/smoke-start.cjs`, `supabase/tests/36_conditions.test.sql`, `src/lib/commissions/commissions.contract.ts` | Pendiente | Prueba guiada: docs/PUESTA_EN_MARCHA.md §G |
+| Empieza aquí (la base del comercial: primeros pasos, qué vendemos, a quién, cómo se vende, condiciones) e historial de condiciones | `scripts/smoke-start.cjs`, `supabase/tests/36_conditions.test.sql`, `src/lib/commissions/commissions.contract.ts` | Pendiente | Prueba guiada: docs/PUESTA_EN_MARCHA.md §G |
 | Bienvenida paso a paso (tutorial + primera propuesta) | `scripts/smoke-welcome.cjs`, `supabase/tests/38_daily_digest.test.sql` | Pendiente | |
-| Aprende visual (recorrido del producto, sectores con foto, Imagínatelo, progreso en positivo) | `scripts/smoke-learn.cjs`, `src/lib/playbook/learn.test.ts`, `supabase/tests/39_learn_visual.test.sql` | Pendiente | |
+| Aprende visual (recorrido del producto, sectores con foto, Imagínatelo, progreso en positivo, ficha de módulo con pestañas y vista del cliente a demanda) | `scripts/smoke-learn.cjs`, `scripts/smoke-playbook.cjs`, `src/lib/playbook/learn.test.ts`, `supabase/tests/39_learn_visual.test.sql` | Pendiente | |
 | Resumen diario de seguimientos (email a las 7:00, preferencia y zona horaria) | `scripts/smoke-daily.cjs`, `src/lib/notify/daily.test.ts`, `supabase/tests/38_daily_digest.test.sql` | Pendiente | |
 | Analítica de dossiers (aperturas, secciones, aviso al autor) | `scripts/smoke-analytics.cjs`, `src/lib/analytics/analytics.test.ts`, `supabase/tests/37_dossier_views.test.sql` | Pendiente | |
 | Móvil sin desbordes | `scripts/smoke-mobile.cjs` | Pendiente | |
