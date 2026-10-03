@@ -53,14 +53,15 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(JSON.stringify(await order()) === JSON.stringify(['hero-bodas', 'tabs-experiencias', 'tabs-locales', 'pricing']), '4 módulos añadidos');
 
   // arrastrar el #3 arriba del todo (ratón real sobre svelte-dnd-action)
-  await p.evaluate(() => document.querySelector('[data-testid=items]').scrollIntoView({ block: 'start' }));
+  await p.evaluate(() => document.querySelector('[data-testid=items]').scrollIntoView({ block: 'center' }));
+  await p.waitForTimeout(500);
   const items = await p.$$('[data-testid=item]');
   const src = await items[2].boundingBox();
   const dst = await items[0].boundingBox();
   await p.mouse.move(src.x + 20, src.y + 20);
   await p.mouse.down();
-  for (let i = 1; i <= 15; i++) { await p.mouse.move(src.x + 20, src.y + 20 - ((src.y - dst.y + 10) * i) / 15); await p.waitForTimeout(30); }
-  await p.waitForTimeout(200);
+  for (let i = 1; i <= 15; i++) { await p.mouse.move(src.x + 20, src.y + 20 - ((src.y - dst.y + 10) * i) / 15); await p.waitForTimeout(40); }
+  for (let i = 0; i < 4; i++) { await p.mouse.move(src.x + 24 + i * 4, dst.y + 6); await p.waitForTimeout(80); }  // se queda un momento antes de soltar
   await p.mouse.up();
   await p.waitForTimeout(400);
   await settle();

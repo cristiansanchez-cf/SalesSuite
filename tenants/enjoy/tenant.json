@@ -1029,7 +1029,7 @@
       "kind": "tip",
       "stage": "mentalidad",
       "title": "Lo que no se dice (en ningún sector)",
-      "body": "- **Cifras de monetización o retorno**, ni «se paga solo». Si hay que dar un número, el bajo.\n- **Soporte 24 h o SLA.** Hoy lo da el CTO (y casi no hay incidencias).\n- **El plan gratuito para DJs:** sale en semanas.\n- **CRM de fidelización, remarketing, peticiones patrocinadas:** no existen.\n- **Nada que esté «a punto de salir»:** si no está en producción, no se vende.\n- **Nombres de clientes** sin autorización.\n\n**Sí se puede usar:** cerca de 30.000 peticiones en 2025 con muy pocos eventos. El público sí escanea un QR."
+      "body": "- **Cifras de monetización o retorno**, ni «se paga solo». Mecanismo sí, números no; si hay que dar uno, el bajo.\n- **Roadmap como producto:** varias pantallas, CRM, remarketing, bonos, «encuentra y gana».\n- **Bonos de consumición válidos en varios locales:** ni se mencionan (IVA y posible normativa de prepago).\n- **Soporte 24 h o SLA.**\n- **Fechas de entrega** de cualquier funcionalidad futura.\n- **El plan gratuito para DJs:** hasta que salga.\n- **Nombres de clientes:** solo La Biblioteca, El Andén y Batiq.\n\n**Sí se puede usar:** cerca de 30.000 peticiones en 2025 con muy pocos eventos. El público sí escanea un QR."
     },
     {
       "key": "gen-cobro",
@@ -2324,6 +2324,164 @@
       "stage": "prospeccion",
       "title": "Congresos del sector: el otro canal que funciona",
       "body": "ForVenues (congreso de ocio nocturno) nos dio contacto directo con varias promotoras y con Shark Events, que de otra forma no habrían atendido. Junto con la puerta fría presencial, es el canal que más conversaciones con cuentas grandes ha producido.\n\nVe con fechas para proponer: lo que se pierde ahí se pierde en el seguimiento."
+    },
+    {
+      "key": "gen-frontera-vision",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "title": "La frontera: dirección sí, promesas no",
+      "body": "**Se puede compartir la dirección del producto. No se puede prometer un resultado, ni una fecha, ni meter el futuro en el precio.**\n\n- Sí: «Hacia dónde vamos es fidelización y datos». No: «En marzo tendrás el CRM».\n- Sí: «Esto es lo que hay hoy; esto es lo que estamos construyendo». No: «Con esto vas a recuperar la cuota».\n- Sí: «Queremos crecer con vosotros». No: «Te lo incluyo cuando salga».\n\n**Tres reglas duras:**\n1. Lo que está en roadmap no entra en el contrato ni en el precio. Se cobra lo que funciona hoy.\n2. Nunca una fecha concreta. «Estamos trabajando en ello» sí; «en el primer trimestre» no.\n3. Si un cliente compra por el roadmap y no por lo que hay hoy, es una alarma, no una venta: cuando llegue el retraso, se da de baja.\n\nSi te oyes diciendo «cuando salga X vas a conseguir Y», has cruzado la línea.",
+      "why_it_works": "Prometer de más es lo que más clientes nos ha costado: el error no fue hablar del futuro, fue prometer un resultado con número."
+    },
+    {
+      "key": "gen-hoy",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "title": "Lo que existe hoy (y a veces no se vende)",
+      "body": "Está en producción y se puede enseñar:\n\n- Fotos del público en pantalla, con validación.\n- Álbum colaborativo, **con descarga de las fotos**.\n- Mensajes en pantalla, con o sin foto.\n- Peticiones de canciones, con menú abierto o cerrado, con o sin dedicatoria.\n- **Mensajes a pantalla en tiempo real desde el móvil del responsable.**\n- Pantalla Lite (navegador, Smart TV) y Desktop (NDI sobre los visuales).\n- Consentimiento de uso comercial del contenido.\n- Analítica de participación.\n\n**Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento."
+    },
+    {
+      "key": "gen-venta-barra",
+      "module_key": "tabs-experiencias",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "personas": [
+        "propietario-local",
+        "dueno-oficina",
+        "promotor"
+      ],
+      "title": "La venta en barra: existe hoy y está infravendida",
+      "body": "Que el responsable lance mensajes a la pantalla desde su móvil es venta en el momento, y es de hoy:\n\n- «Chupito a 2 € los próximos diez minutos».\n- La copa que sobra, justo cuando la barra está parada.\n- Entretener a quien hace cola: pide canción, sube foto o manda mensaje mientras le sirven.\n\n«Un martes a la una y media ves la barra parada y mandas a la pantalla, desde tu móvil, “chupito a 2 € los próximos diez minutos”. Eso hoy no lo puedes hacer de ninguna otra forma».",
+      "why_it_works": "Son tickets del mismo día, no contenido para la semana que viene. Con el dueño de oficina funciona mejor que las fotos."
+    },
+    {
+      "key": "gen-roadmap",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "audience": "team",
+      "title": "Roadmap 2027 (se cuenta, no se vende)",
+      "body": "Nada de esto se vende; solo se cuenta a cuentas grandes (ver «Con quién se habla de visión»).\n\n- **Varias pantallas a la vez** desde el mismo panel, con contenidos por zona. Hoy no existe: es la limitación más seria para festivales.\n- **Datos y fidelización:** el consentimiento del público como CRM del local o del evento, por segmentos (edad, música, frecuencia), no por persona.\n- **Remarketing:** volver a contactar a quien pasó por allí.\n- **Bono copa y red de locales:** a largo plazo. **No se menciona a clientes**: un bono prepago válido en varios locales tiene implicaciones de IVA y posible normativa de dinero electrónico; primero abogado y gestoría."
+    },
+    {
+      "key": "gen-vision-quien",
+      "module_key": null,
+      "kind": "script",
+      "stage": "pitch_demo",
+      "segments": [
+        "conciertos",
+        "festivales",
+        "promotoras"
+      ],
+      "title": "Con quién se habla de visión (y con quién no)",
+      "body": "**Sí:** festivales y grupos de festivales, promotoras internacionales (a Bresh le interesó el dato, no la pantalla), grupos con varios locales, marcas patrocinadoras.\n\n«Te cuento lo que hay hoy, que es lo que te vendo y lo que vas a poder usar desde la primera noche. Y te cuento también hacia dónde vamos, porque con alguien como vosotros lo que nos interesa es una relación de años, no una suscripción. Lo que estamos construyendo es la parte de datos y fidelización: que el público que pasa por aquí deje de ser anónimo y podáis volver a hablar con él. No te pongo fecha porque no te la puedo garantizar, pero es la dirección».\n\n**No:** pubs y salas pequeñas (quieren que funcione el sábado), cualquier cliente que ya duda del precio (añadir futuro a una objeción de precio es regalar una promesa) y casetas o eventos puntuales (compran una noche)."
+    },
+    {
+      "key": "gen-cuenta-grande",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "title": "Cuenta grande no es un local grande",
+      "body": "- **Ciclo:** días o semanas en un local; meses en una cuenta grande.\n- **Decisión:** una o dos personas; o una estructura con varios niveles.\n- **Ticket:** decenas o cientos de euros; o miles.\n- **Qué compran:** que funcione el sábado; o un socio con recorrido.\n- **La visión:** ruido en un local; parte central en una cuenta grande.\n- **El riesgo:** churn rápido; o una temporada entera perdida si falla el seguimiento.\n\nCon un local pierdes 99 €/mes; con un grupo de festivales pierdes la temporada y una puerta que no se vuelve a abrir."
+    },
+    {
+      "key": "gen-quien-vende",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "audience": "team",
+      "title": "Quién vende qué",
+      "body": "**Lo lleva el fundador:** acuerdos marco con marcas (cerveceras, espirituosas, energéticas), agencias de patrocinio, grupos grandes y promotoras internacionales (Superstruct, Live Nation, Bresh), y cualquier conversación con exclusividad, equity, reventa o marca blanca.\n\n**Lo lleva el equipo comercial:** locales de todos los tramos, promotoras locales y regionales, festivales medianos independientes en modelo A (paga el festival), infraestructuras de temporada tipo Selvatic, casetas y eventos de temporada, artistas, charangas, orquestas y salas."
+    },
+    {
+      "key": "gen-traspaso-marca",
+      "module_key": null,
+      "kind": "script",
+      "stage": "descubrimiento",
+      "segments": [
+        "conciertos",
+        "festivales",
+        "promotoras"
+      ],
+      "personas": [
+        "marca-patrocinadora",
+        "agencia-patrocinio"
+      ],
+      "title": "Cuando sale una marca: abre la puerta y pásala",
+      "body": "El vendedor no vende la marca: la detecta, la cualifica y la pasa al fundador. Lo que tiene que traer:\n\n1. Nombre de la marca y qué patrocinan exactamente.\n2. Quién lleva esa relación por parte del festival o la sala.\n3. Si es acuerdo anual o por evento.\n4. Si estarían dispuestos a presentarnos.",
+      "why_it_works": "Un contacto así vale más que la suscripción del festival que lo ha dado."
+    },
+    {
+      "key": "gen-seguimiento-causa",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "title": "La causa única de casi todas las pérdidas",
+      "body": "Almería, Altare, Batiq Fest, Shark Events, Bresh, Topamin Fest, The Lab, Deep Delay, la tercera promotora y los resellers de bodas: **todos dijeron que sí y todos se perdieron en el seguimiento.**\n\nNinguno por precio, producto o competencia. Es el único patrón que se repite en todos los sectores."
+    },
+    {
+      "key": "gen-pendientes",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "audience": "team",
+      "title": "Pendientes que bloquean ventas",
+      "body": "- **Vídeo corto de la pantalla en una sala real:** a todos; resuelve media reunión.\n- **% de asistentes que pagan y ticket medio:** a todos; sin él no se habla de monetización.\n- **Techos de interacciones reales:** locales; hoy están estimados.\n- **Prueba de carga:** conciertos y festivales de más de 20.000.\n- **Precio para charangas y orquestas:** conciertos, tramo de entrada.\n- **Un caso de éxito en concierto o festival:** no hay ninguno."
+    },
+    {
+      "key": "conc-multipantalla",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "descubrimiento",
+      "segments": [
+        "conciertos",
+        "festivales"
+      ],
+      "personas": [
+        "direccion-produccion"
+      ],
+      "title": "Una pantalla: dilo antes del advance",
+      "body": "Hoy se controla una pantalla. Un recinto con escenario principal, segundo escenario y zona de barras no se cubre con el producto actual.\n\nSábelo antes de entrar en el advance: en recintos con varias pantallas, la conversación es **qué pantalla usamos y en qué momento**, no todas. Varias pantallas está en el roadmap: se cuenta como dirección, nunca como compromiso."
+    },
+    {
+      "key": "conc-charangas-precio",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "segments": [
+        "conciertos"
+      ],
+      "personas": [
+        "charanga-orquesta"
+      ],
+      "audience": "team",
+      "title": "Charangas y orquestas: aún sin precio",
+      "body": "Son la mejor puerta de entrada del sector, pero el tramo más bajo (600 € hasta 1.000 personas) no encaja con ese mercado. **Hasta que se defina, no se cotiza por escrito a una banda de pueblo.**"
+    },
+    {
+      "key": "fest-sano",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "prospeccion",
+      "segments": [
+        "festivales"
+      ],
+      "title": "Festivales: busca al sano, no al que se está muriendo",
+      "body": "Un festival que cancela por viabilidad no es un cliente: es un impago. Veinte se han cancelado este año por no salirles las cuentas.\n\nEl bueno es **el independiente que está sano y quiere diferenciarse**. Señales: repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes y paga a proveedores a tiempo."
+    },
+    {
+      "key": "fest-modelos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "segments": [
+        "festivales"
+      ],
+      "audience": "team",
+      "title": "Festivales: qué hace el equipo comercial",
+      "body": "- **Modelo A, completo:** el festival paga.\n- **Infraestructuras de temporada** (tipo Selvatic).\n- **Detectar qué marcas patrocinan cada festival y pasarlas al fundador.**\n\nEl modelo B (entrar con una marca ya detrás) implica venderle primero a la marca: eso lo lleva el fundador."
     }
   ]
 }
