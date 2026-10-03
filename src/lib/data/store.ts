@@ -9,7 +9,7 @@ export type Role = 'admin' | 'lead' | 'rep' | 'partner';
 export type DossierStatus = 'draft' | 'published' | 'archived';
 export type PriceModeRow = 'none' | 'total' | 'per_module';
 
-export interface TenantRow { id: string; slug: string; name: string; status: string; default_locale: string; theme_tokens: unknown; brand: unknown }
+export interface TenantRow { id: string; slug: string; name: string; status: string; default_locale: string; theme_tokens: unknown; brand: unknown; tour?: unknown }
 export interface DomainRow { id: string; tenant_id: string; hostname: string; is_primary: boolean; ssl_status: string }
 export interface ModuleRow { id: string; tenant_id: string; key: string; block_type: string; name: string; description: string | null; is_catalog: boolean }
 export interface ModuleVersionRow {
@@ -51,7 +51,7 @@ export interface SeenRow { tenant_id: string; user_id: string; seen_at: string }
 export interface SegmentRow {
   id: string; tenant_id: string; key: string; name: string; description: string | null; value_prop: string | null; icp: string | null;
   disqualifiers: string | null; buying_process: string | null; deal_size: string | null; sales_cycle: string | null; position: number; status: string;
-  icon?: string | null;
+  icon?: string | null; image?: string | null;
 }
 export interface PersonaRow {
   id: string; tenant_id: string; segment_id: string; key: string; name: string; role: string; goals: string | null; pains: string | null;

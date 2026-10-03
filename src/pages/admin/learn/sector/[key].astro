@@ -2,7 +2,8 @@
 /**
  * Ficha de un sector (docs/FOUNDATIONS.md §4.1 y §6): se lee de arriba a abajo como una historia numerada y cada bloque
  * destaca UNA cosa. 1 Por qué nosotros · 2 A quién sí / no · 3 Quién está en la sala (mapa: deciden → influyen → pueden
- * vetar; cada persona tiene su pantalla) · 4 Qué ofrecer · 5 Qué decir. Desde la bienvenida se vuelve a ella (?from=welcome).
+ * vetar; cada persona tiene su pantalla) · 4 Qué ofrecer · 5 Imagínatelo (cada módulo contado y visto: la propuesta real)
+ * · 6 Qué decir. «Entendido» lo marca como repasado. Desde la bienvenida se vuelve a ella (?from=welcome).
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
@@ -13,10 +14,21 @@ import { ROLE_ICON } from '~/lib/setup/presets';
 import { ICONS, type IconName } from '~/lib/ui/icons';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
+import { learnMessages } from '~/lib/i18n/messages/learn';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
-const { m: msg } = i18n(Astro, playbookMessages);
+const { m: msg, locale } = i18n(Astro, playbookMessages);
+const lm = learnMessages[locale];
+if (Astro.request.method === 'POST') {
+  const key = Astro.params.key ?? '';
+  try { await admin.playbook.markLearned(`sector:${key}`, true); } catch (e) {
+    if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+    throw e;
+  }
+  const welcome = Astro.url.searchParams.get('from') === 'welcome';
+  return Astro.redirect(welcome ? '/admin/welcome?step=3' : '/admin/learn?ok=sector', 303);
+}
 let v;
 try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
@@ -39,6 +51,8 @@ const GROUPS: Array<{ key: 'decide' | 'influence' | 'veto'; roles: PersonaRole[]
 ];
 const room = GROUPS.map((g) => ({ ...g, people: sg.personas.filter((p) => g.roles.includes(p.role)).sort((a, b) => a.position - b.position) })).filter((g) => g.people.length);
 const plays = v.plays.slice(0, 6);
+// Imagínatelo: los módulos del sector por prioridad, hasta tres (lo que de verdad verá este cliente).
+const imagine = [...sg.modules].sort((a, b) => a.priority - b.priority).slice(0, 3);
 let n = 0;
 const step = () => ++n;
 ---
@@ -49,17 +63,35 @@ const step = () => ++n;
         <a href={back.href} class="inline-flex items-center gap-1 text-sm text-muted hover:text-ink" data-testid="sector-back"><Icon name="chevron-left" size={14} />{back.label}</a>
         {admin.playbook.isAdmin && <a class="text-sm text-muted underline" href={`/admin/playbook/segment/${sg.id}`}>{msg.sector.edit}</a>}
       </div>
-      <header class="grid gap-5" data-testid="sector-hero">
-        <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={icon} size={32} /></span>
-        <h1 class="co-page-title !text-5xl">{sg.name}</h1>
-        {sg.description && <p class="co-lede max-w-2xl !text-lg">{sg.description}</p>}
-        {(sg.dealSize || sg.salesCycle) && (
-          <div class="flex flex-wrap gap-6">
-            {sg.dealSize && <div><p class="text-eyebrow">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.dealSize}</p></div>}
-            {sg.salesCycle && <div><p class="text-eyebrow">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.salesCycle}</p></div>}
+      {sg.image ? (
+        <header class="sector-hero" data-testid="sector-hero">
+          <img src={sg.image} alt="" class="sector-hero__bg" />
+          <span class="sector-hero__shade"></span>
+          <div class="grid gap-4 p-7 sm:p-10">
+            {v.learned && <span class="sector-hero__pill w-fit"><Icon name="circle-check" size={14} />{lm.sector.learned}</span>}
+            <h1 class="text-5xl font-bold leading-none sm:text-6xl">{sg.name}</h1>
+            {sg.description && <p class="max-w-2xl text-lg text-white/85">{sg.description}</p>}
+            {(sg.dealSize || sg.salesCycle) && (
+              <div class="flex flex-wrap gap-8">
+                {sg.dealSize && <div><p class="text-xs font-semibold uppercase tracking-wider text-white/70">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.dealSize}</p></div>}
+                {sg.salesCycle && <div><p class="text-xs font-semibold uppercase tracking-wider text-white/70">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.salesCycle}</p></div>}
+              </div>
+            )}
           </div>
-        )}
-      </header>
+        </header>
+      ) : (
+        <header class="grid gap-5" data-testid="sector-hero">
+          <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={icon} size={32} /></span>
+          <h1 class="co-page-title !text-5xl">{sg.name}</h1>
+          {sg.description && <p class="co-lede max-w-2xl !text-lg">{sg.description}</p>}
+          {(sg.dealSize || sg.salesCycle) && (
+            <div class="flex flex-wrap gap-6">
+              {sg.dealSize && <div><p class="text-eyebrow">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.dealSize}</p></div>}
+              {sg.salesCycle && <div><p class="text-eyebrow">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.salesCycle}</p></div>}
+            </div>
+          )}
+        </header>
+      )}
     </div>
 
     {sg.valueProp && (
@@ -75,7 +107,10 @@ const step = () => ++n;
         <div class="grid gap-4 md:grid-cols-2">
           {icp.length > 0 && (
             <div class="co-card grid content-start gap-4 !p-7">
-              <p class="flex items-center gap-2 font-semibold text-[color:var(--console-good,#15803d)]"><Icon name="circle-check" size={20} />{msg.sector.yes}</p>
+              <div class="grid gap-1" data-testid="sector-icp">
+                <p class="flex items-center gap-2 text-xl font-semibold text-[color:var(--console-good,#15803d)]"><Icon name="circle-check" size={22} />{lm.sector.icp}</p>
+                <p class="co-meta">{lm.sector.icpEn}</p>
+              </div>
               <ul class="grid gap-3 p-0">{icp.map((x) => <li class="list-none text-[15px] leading-relaxed">{x}</li>)}</ul>
             </div>
           )}
@@ -128,6 +163,28 @@ const step = () => ++n;
       </section>
     )}
 
+    {sg.modules.length > 0 && (
+      <section class="grid gap-6" data-testid="sector-imagine">
+        <div class="grid gap-2">
+          <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{lm.sector.imagine}</h2>
+          <p class="co-meta">{lm.sector.imagineLede}</p>
+        </div>
+        <ol class="grid gap-10 p-0">{imagine.map((mo, i) => (
+          <li class="grid list-none items-center gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <div class:list={['grid content-center gap-3', i % 2 === 1 && 'md:order-2']}>
+              <span class="co-figure text-5xl text-[color:var(--co-signal)]">{i + 1}</span>
+              <p class="text-2xl font-semibold leading-snug">{mo.fit ?? mo.moduleName}</p>
+              {mo.fit && <p class="co-meta">{mo.moduleName}</p>}
+            </div>
+            <a class="imagine-frame" href={`/admin/learn/preview/${mo.moduleId}`} target="_blank" rel="noopener" data-testid="imagine-preview">
+              <span class="imagine-frame__bar" aria-hidden="true"><span></span><span></span><span></span></span>
+              <iframe src={`/admin/learn/preview/${mo.moduleId}`} title={mo.moduleName} loading="lazy" tabindex="-1"></iframe>
+            </a>
+          </li>))}
+        </ol>
+      </section>
+    )}
+
     {plays.length > 0 && (
       <section class="grid gap-5" data-testid="sector-plays">
         <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{msg.sector.steps.say}</h2>
@@ -141,9 +198,25 @@ const step = () => ++n;
       </section>
     )}
 
-    <div class="flex flex-wrap gap-3">
-      <a class="co-btn co-btn--primary" href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)} <span aria-hidden="true">→</span></a>
+    <div class="flex flex-wrap items-center gap-3">
+      {v.learned
+        ? <span class="co-badge co-badge--ink" data-testid="sector-learned">{lm.sector.learned}</span>
+        : <form method="post"><button class="co-btn co-btn--primary" type="submit" data-testid="sector-got">{lm.sector.got} <span aria-hidden="true">→</span></button></form>}
+      <a class:list={['co-btn', v.learned ? 'co-btn--primary' : 'co-btn--ghost']} href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)} <span aria-hidden="true">→</span></a>
       {fromWelcome && <a class="co-btn co-btn--ghost" href={back.href}>{back.label}</a>}
     </div>
   </div>
 </AdminLayout>
+
+<style>
+  .sector-hero { position: relative; isolation: isolate; display: flex; align-items: flex-end; min-height: 22rem; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; color: #fff; }
+  .sector-hero__bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; filter: blur(2px); transform: scale(1.04); }
+  .sector-hero__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.35) 60%, rgba(0,0,0,.15)); }
+  .sector-hero__pill { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; background: rgba(255,255,255,.18); padding: .25rem .7rem; font-size: .8rem; font-weight: 600; }
+  /* Ventana de navegador con la propuesta real dentro; se abre entera al tocarla. */
+  .imagine-frame { position: relative; display: block; overflow: hidden; border: 1px solid var(--console-border, rgba(127,127,127,.3)); border-radius: 1rem; background: #fff; box-shadow: 0 24px 60px rgba(0,0,0,.25); transition: transform .3s ease; }
+  .imagine-frame:hover { transform: translateY(-4px); }
+  .imagine-frame__bar { display: flex; gap: .35rem; padding: .6rem .8rem; background: #1d1a21; }
+  .imagine-frame__bar span { width: .6rem; height: .6rem; border-radius: 999px; background: rgba(255,255,255,.3); }
+  .imagine-frame iframe { display: block; width: 100%; height: 26rem; border: 0; pointer-events: none; }
+</style>

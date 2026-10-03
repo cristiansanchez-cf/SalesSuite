@@ -36,6 +36,8 @@ export interface Segment {
   status: 'draft' | 'official' | 'archived';
   /** Icono de línea (src/lib/ui/icons.ts). */
   icon: string | null;
+  /** Foto del sector (fondo de su tarjeta y de su ficha). La pone el alta del espacio; el editor no la toca. */
+  image: string | null;
 }
 
 export interface Persona {

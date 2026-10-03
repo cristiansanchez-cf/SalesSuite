@@ -216,4 +216,6 @@ export interface TenantSettings {
   defaultLocale: string;
   themeTokens: unknown;
   brand: unknown;
+  /** Recorrido del producto para Aprende (jsonb; se valida al leer con tourOf). */
+  tour?: unknown;
 }

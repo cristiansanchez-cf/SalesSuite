@@ -52,7 +52,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     await rep.waitForURL(/ok=learned/);
   }
   await rep.goto(`${BASE}/admin/learn`);
-  assert((await rep.textContent('[data-testid=progress]')).includes('1/'), 'progreso de formación actualizado');
+  assert(Number(await rep.getAttribute('[data-testid=progress]', 'data-done')) >= 1, 'progreso de formación actualizado');
+  assert((await rep.textContent('[data-testid=progress]')).includes('Ya has completado'), 'progreso en positivo («Ya has completado…»)');
 
   // ficha de módulo con vista previa en vivo
   await rep.locator('[data-testid=topic]', { hasText: 'Tabs · Experiencias' }).click();

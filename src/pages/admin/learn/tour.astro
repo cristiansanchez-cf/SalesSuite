@@ -1,0 +1,71 @@
+---
+/**
+ * «Lo que vendes, en 1 minuto» (docs/PLAYBOOK.md §Aprender): el producto contado en orden, un paso por bloque, cada uno
+ * con su imagen grande (QR → pide o manda → pantalla → álbum → resultado). Lo escribe la empresa en tenant.tour.
+ * «Entendido» lo marca como hecho y lleva a «Qué ofrecemos».
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { learnMessages } from '~/lib/i18n/messages/learn';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const pb = admin.playbook;
+const { m } = i18n(Astro, learnMessages);
+if (Astro.request.method === 'POST') {
+  await pb.markLearned('tour', true);
+  return Astro.redirect('/admin/learn?ok=tour#offer', 303);
+}
+const { tour } = await pb.learnIndex();
+const steps = tour.steps;
+---
+<AdminLayout title={m.tourCard.title} wide>
+  <div class="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-14 pb-10" data-testid="tour">
+    <div class="grid gap-6">
+      <a href="/admin/learn" class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{m.tour.back}</a>
+      <header class="grid gap-3">
+        <p class="text-eyebrow">{m.tour.eyebrow}</p>
+        <h1 class="co-page-title !text-5xl">{m.tour.title}</h1>
+        <p class="co-lede !text-lg">{m.tour.lede}</p>
+      </header>
+    </div>
+
+    {steps.length === 0 ? (
+      <div class="grid gap-4">
+        <p class="co-lede">{m.tour.empty}</p>
+        <a class="co-btn co-btn--primary w-fit" href="/admin/learn#offer">{m.tour.seeOffer} <span aria-hidden="true">→</span></a>
+      </div>
+    ) : <>
+      <ol class="tour grid gap-16 p-0">
+        {steps.map((s, i) => (
+          <li class="tour__step grid list-none items-center gap-6 md:grid-cols-2 md:gap-12" data-testid="tour-step">
+            {s.image ? (
+              <figure class:list={['tour__frame', i % 2 === 1 && 'md:order-2']}>
+                <img src={s.image} alt="" class="tour__blur" loading={i < 2 ? 'eager' : 'lazy'} />
+                <img src={s.image} alt={s.title} class="tour__img" loading={i < 2 ? 'eager' : 'lazy'} />
+              </figure>
+            ) : <span class:list={['hidden md:block', i % 2 === 1 && 'md:order-2']}></span>}
+            <div class="grid content-center gap-4">
+              <span class="co-figure text-6xl text-[color:var(--co-signal)]">{String(i + 1).padStart(2, '0')}</span>
+              <h2 class="text-3xl font-bold leading-tight sm:text-4xl">{s.title}</h2>
+              {s.body && <p class="max-w-md text-lg leading-relaxed text-muted">{s.body}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <form method="post" class="grid justify-items-center gap-3 text-center">
+        <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="sparkles" size={30} /></span>
+        <button class="co-btn co-btn--primary" type="submit" data-testid="tour-got">{m.tour.gotNext} <span aria-hidden="true">→</span></button>
+      </form>
+    </>}
+  </div>
+</AdminLayout>
+
+<style>
+  /* Marco de imagen: la misma foto, difuminada, rellena el fondo; delante, entera. Sirve para móvil vertical y pantalla. */
+  .tour__frame { position: relative; isolation: isolate; margin: 0; display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; }
+  .tour__blur { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; filter: blur(24px) saturate(1.2); opacity: .7; transform: scale(1.2); }
+  .tour__img { max-width: 88%; max-height: 88%; object-fit: contain; border-radius: .75rem; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+</style>

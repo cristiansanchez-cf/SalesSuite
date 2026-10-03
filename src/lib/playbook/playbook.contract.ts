@@ -53,7 +53,9 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       expect(idx.general.playCount).toBe(11);
       const exp = idx.modules.find((m) => m.moduleId === EXP)!;
       expect(exp.playCount).toBe(9);
-      expect(idx.progress).toEqual({ done: 0, total: 1 + idx.modules.length });
+      // Recorrido del producto (tenant.tour) + 4 sectores + cómo se vende + cada módulo.
+      expect(idx.tour.steps.length).toBeGreaterThanOrEqual(4);
+      expect(idx.progress).toEqual({ done: 0, total: 1 + 4 + 1 + idx.modules.length });
 
       const g = await svc(U.rep).topic('general');
       expect(g.sections[0].kind).toBe('pitch');
@@ -67,6 +69,16 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       await svc(U.rep).markLearned(EXP, false);
       expect((await svc(U.rep).learnIndex()).progress.done).toBe(1);
       await rejects(svc(U.rep).markLearned('00000000-0000-4000-8000-00000000ffff', true), 404);
+
+      // Recorrido y sectores cuentan; un sector que no existe, no.
+      await svc(U.rep).markLearned('tour', true);
+      await svc(U.rep).markLearned('sector:bodas', true);
+      const after = await svc(U.rep).learnIndex();
+      expect(after.tour.learned).toBe(true);
+      expect(after.sectorsLearned).toEqual(['bodas']);
+      expect(after.progress.done).toBe(3);
+      expect((await svc(U.rep).segmentView('bodas')).learned).toBe(true);
+      await rejects(svc(U.rep).markLearned('sector:no-existe', true), 404);
     });
 
     test('otro tenant no ve el playbook de Enjoy', async () => {

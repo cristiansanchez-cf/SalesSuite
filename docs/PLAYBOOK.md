@@ -56,9 +56,13 @@ Cada jugada lleva los **mismos campos que una ficha del Cerebro de Ventas**: *cu
 - 🔜 Con la analítica de Fase 2 (aperturas y tiempo por módulo): tasa de cierre por jugada y por módulo.
 
 ### 5. Onboarding "ready to go" ✅
-**Aprende** es un recorrido:
-1. **Empieza aquí**: la empresa, el cliente ideal, las objeciones generales.
-2. Una ficha por módulo, cada una con *"Marcar como aprendido"*.
+**Aprende** son cuatro pasos en orden (rehecho en octubre de 2026: visual, poco texto). Primero se le vende el producto al comercial; después, a quién se lo vende él:
+1. **Lo que vendes, en 1 minuto** (`/admin/learn/tour`): el producto contado paso a paso con imágenes grandes (escanea el QR → pide o manda → aparece en pantalla → queda en el álbum → quien contrata ve el resultado). Lo escribe la empresa en `tenant.tour` (`tenants/<slug>/tenant.json` → `tour`, hasta 8 pasos; `image` admite `asset:`). «Entendido» lo marca como hecho.
+2. **Qué ofrecemos**: tarjetas grandes por módulo con la captura del producto de fondo (la primera imagen de sus props) o, si no tiene, la propia propuesta en vivo, difuminada.
+3. **A quién vendemos**: tarjetas grandes por sector con su foto (`segment.image`, la pone el alta del espacio). La ficha del sector añade «Cliente ideal · Ideal Customer Profile (ICP)», quién puede frenarlo, e **Imagínatelo**: cada módulo del sector contado en una frase y visto en la propuesta real. «Entendido» marca el sector como repasado.
+4. **Cómo se vende**: las jugadas generales, y cada módulo con *"Marcar como aprendido"*.
+
+El progreso se cuenta en positivo («Ya has completado 3 de 10», nunca «0/10») y siempre hay un botón «Empieza aquí» / «Sigue con…» al siguiente paso pendiente. Cuentan: recorrido, cada sector, cómo se vende y cada módulo (`learning_progress.topic`: `general`, `tour`, `sector:<clave>` o el id del módulo).
 
 El comercial ve su progreso y el líder ve el del equipo. Un comercial nuevo puede vender sin depender de nadie, y el contenido se mantiene vivo porque está atado a los módulos que se venden.
 

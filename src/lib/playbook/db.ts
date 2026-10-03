@@ -34,7 +34,7 @@ export interface PlaybookDb {
   // ---- mapa de mercado (lectura: miembros; escritura: admins vía RLS)
   listSegments(tenantId: string): Promise<Segment[]>;
   /** Inserta (sin id) o actualiza (con id). Devuelve el id. */
-  saveSegment(tenantId: string, row: Omit<Segment, 'id'> & { id?: string }): Promise<string>;
+  saveSegment(tenantId: string, row: Omit<Segment, 'id' | 'image'> & { id?: string }): Promise<string>;
   listPersonas(tenantId: string): Promise<Persona[]>;
   savePersona(tenantId: string, row: Omit<Persona, 'id'> & { id?: string }): Promise<string>;
   deletePersona(id: string): Promise<boolean>;

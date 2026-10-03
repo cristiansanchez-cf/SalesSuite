@@ -229,7 +229,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     // ---- gestión del tenant
     async getTenant(id) {
       const t = db().tenant.find((x) => x.id === id);
-      return t ? { id: t.id, slug: t.slug, name: t.name, defaultLocale: t.default_locale, themeTokens: t.theme_tokens, brand: t.brand } : null;
+      return t ? { id: t.id, slug: t.slug, name: t.name, defaultLocale: t.default_locale, themeTokens: t.theme_tokens, brand: t.brand, tour: t.tour ?? [] } : null;
     },
     async updateTenant(id, p) {
       const t = db().tenant.find((x) => x.id === id);

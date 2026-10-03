@@ -49,6 +49,38 @@
     "contact": {},
     "logoOnDarkUrl": "asset:logo.svg"
   },
+  "tour": [
+    {
+      "title": "El invitado escanea el QR",
+      "body": "Sin descargar nada. Lo abre con la cámara y ya está dentro.",
+      "image": "asset:img/tabs/qr.webp"
+    },
+    {
+      "title": "Pide una canción o manda un mensaje",
+      "body": "Desde su móvil: una dedicatoria, una foto, la canción que quiere bailar.",
+      "image": "asset:img/tabs/request-mobile-1.webp"
+    },
+    {
+      "title": "Aparece en la pantalla",
+      "body": "Lo que manda se ve en grande, en directo. Todo el mundo lo mira.",
+      "image": "asset:img/tabs/messages-screen.webp"
+    },
+    {
+      "title": "La kiss-cam lo convierte en espectáculo",
+      "body": "El momento que nadie olvida, en la pantalla gigante.",
+      "image": "asset:img/tabs/kisscam-screen.webp"
+    },
+    {
+      "title": "Todo queda en el álbum",
+      "body": "Fotos y mensajes de la noche, guardados para quien lo contrata.",
+      "image": "asset:img/tabs/album-mobile.webp"
+    },
+    {
+      "title": "Quien contrata ve el resultado",
+      "body": "Participación, momentos y su marca en cada pantalla. Por eso repite.",
+      "image": "asset:img/tabs/album-grid.webp"
+    }
+  ],
   "domains": [
     {
       "hostname": "enjoy.ventas.cofundo.io",
@@ -64,7 +96,7 @@
     {
       "key": "hero-bodas",
       "block_type": "hero-pitch",
-      "name": "Hero · Bodas",
+      "name": "Portada para bodas",
       "description": "Portada del dossier con titular personalizado y palabras rotando.",
       "default_price": null,
       "currency": "EUR",
@@ -90,7 +122,7 @@
     {
       "key": "tabs-experiencias",
       "block_type": "tabs-showcase",
-      "name": "Tabs · Experiencias",
+      "name": "Experiencias en directo",
       "description": "Servicios en pestañas con mock de chat animado.",
       "default_price": 450,
       "currency": "EUR",
@@ -147,7 +179,7 @@
     {
       "key": "tabs-locales",
       "block_type": "tabs-showcase",
-      "name": "Tabs · Locales",
+      "name": "Enjoy para tu sala",
       "description": "Propuesta para salas y locales.",
       "default_price": 300,
       "currency": "EUR",
@@ -198,7 +230,7 @@
     {
       "key": "pricing",
       "block_type": "pricing-card",
-      "name": "Tarjeta de precio",
+      "name": "Precio de la propuesta",
       "description": "Cifra según price_mode del dossier.",
       "default_price": null,
       "currency": "EUR",
@@ -364,7 +396,8 @@
           ]
         }
       ],
-      "icon": "heart"
+      "icon": "heart",
+      "image": "asset:img/usecases/bodas.webp"
     },
     {
       "key": "ocio-nocturno",
@@ -475,7 +508,8 @@
           ]
         }
       ],
-      "icon": "music"
+      "icon": "music",
+      "image": "asset:img/usecases/locales.webp"
     },
     {
       "key": "conciertos",
@@ -559,7 +593,8 @@
           ]
         }
       ],
-      "icon": "mic"
+      "icon": "mic",
+      "image": "asset:img/usecases/djs.webp"
     },
     {
       "key": "festivales",
@@ -643,7 +678,8 @@
           ]
         }
       ],
-      "icon": "party-popper"
+      "icon": "party-popper",
+      "image": "asset:img/usecases/festivales.webp"
     }
   ],
   "facets": [

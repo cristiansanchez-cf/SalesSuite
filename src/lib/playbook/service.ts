@@ -27,11 +27,38 @@ function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   return r.data;
 }
 
+/** Primera imagen de producto dentro de las props de un módulo (p. ej. una pestaña con captura). */
+export function firstImage(v: unknown): string | null {
+  if (typeof v === 'string') return /^(https:\/\/|\/)[^\s"'()]+\.(webp|png|jpe?g|avif)(\?[^\s"'()]*)?$/i.test(v) ? v : null;
+  if (Array.isArray(v)) { for (const x of v) { const r = firstImage(x); if (r) return r; } return null; }
+  if (v && typeof v === 'object') { for (const x of Object.values(v)) { const r = firstImage(x); if (r) return r; } }
+  return null;
+}
+
+/** tenant.tour validado (lo escribe el alta del espacio; se lee con cuidado igualmente). */
+export function tourOf(raw: unknown): TourStep[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 8).flatMap((x) => {
+    if (!x || typeof x !== 'object') return [];
+    const o = x as Record<string, unknown>;
+    if (typeof o.title !== 'string' || !o.title.trim()) return [];
+    const image = typeof o.image === 'string' && /^(https:\/\/|\/)[^\s"'()]+$/.test(o.image) ? o.image : null;
+    return [{ title: o.title.slice(0, 80), body: typeof o.body === 'string' ? o.body.slice(0, 240) : null, image }];
+  });
+}
+
 export interface TopicModule { moduleId: string; name: string; description: string | null; blockType: string; versionId: string }
 
+export interface TourStep { title: string; body: string | null; image: string | null }
+
 export interface LearnIndex {
+  /** «Lo que vendes, en 1 minuto» (tenant.tour). Vacío = la empresa aún no lo ha preparado. */
+  tour: { steps: TourStep[]; learned: boolean };
   general: { playCount: number; learned: boolean };
-  modules: Array<TopicModule & { playCount: number; tipCount: number; learned: boolean }>;
+  /** cover: primera imagen de producto del módulo (para el fondo de su tarjeta). */
+  modules: Array<TopicModule & { playCount: number; tipCount: number; learned: boolean; cover: string | null }>;
+  /** Sectores que esta persona ya ha repasado (claves). */
+  sectorsLearned: string[];
   progress: { done: number; total: number };
   news: Array<{ playId: string; title: string; topic: string; topicName: string; note: string | null; at: string }>;
   newTips: number;
@@ -97,9 +124,10 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   // ------------------------------------------------------------ aprender
   async function learnIndex(): Promise<LearnIndex> {
-    const [{ plays, contributions, latest }, progress, seenAt] = await Promise.all([
-      load(), pdb.listProgress(s.tenantId), pdb.getSeen(s.tenantId, s.userId),
+    const [{ plays, contributions, latest }, progress, seenAt, versions, tenant, segs] = await Promise.all([
+      load(), pdb.listProgress(s.tenantId), pdb.getSeen(s.tenantId, s.userId), adb.listModuleVersions(s.tenantId), adb.getTenant(s.tenantId), loadMarket(),
     ]);
+    const coverOf = new Map(versions.map((v) => [v.id, firstImage(v.defaultProps)]));
     const mine = new Set(progress.filter((p) => p.userId === s.userId).map((p) => p.topic));
     const off = plays.filter(official);
     const modules = [...latest.values()]
@@ -108,6 +136,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
         playCount: off.filter((p) => p.moduleId === v.moduleId).length,
         tipCount: contributions.filter((c) => visibleTip(c) && c.moduleId === v.moduleId).length,
         learned: mine.has(v.moduleId),
+        cover: coverOf.get(v.versionId) ?? null,
       }))
       .sort((a, b) => b.playCount - a.playCount || a.name.localeCompare(b.name));
     const revisions = await pdb.listRevisions(s.tenantId, { since: seenAt, limit: 20 });
@@ -119,10 +148,19 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
         topicName: p.moduleId ? latest.get(p.moduleId)?.moduleName ?? 'Módulo' : 'General', note: r.changeNote, at: r.createdAt,
       };
     });
+    const tour = { steps: tourOf(tenant?.tour), learned: mine.has('tour') };
+    const sectorKeys = segs.segments.filter((x) => x.status !== 'archived').map((x) => x.key);
+    const sectorsLearned = sectorKeys.filter((k) => mine.has(`sector:${k}`));
     return {
+      tour,
       general: { playCount: off.filter((p) => p.moduleId === null).length, learned: mine.has('general') },
       modules,
-      progress: { done: (mine.has('general') ? 1 : 0) + modules.filter((m) => m.learned).length, total: 1 + modules.length },
+      sectorsLearned,
+      // Lo que cuenta: el recorrido (si existe), cada sector, cómo se vende (general) y cada módulo.
+      progress: {
+        done: (tour.steps.length && tour.learned ? 1 : 0) + sectorsLearned.length + (mine.has('general') ? 1 : 0) + modules.filter((m) => m.learned).length,
+        total: (tour.steps.length ? 1 : 0) + sectorKeys.length + 1 + modules.length,
+      },
       news,
       newTips: contributions.filter((c) => visibleTip(c) && (!seenAt || c.createdAt > seenAt) && c.authorId !== s.userId).length,
     };
@@ -153,7 +191,10 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   async function markLearned(topicId: string, done: boolean) {
-    if (topicId !== 'general') {
+    if (topicId.startsWith('sector:')) {
+      const { segments } = await loadMarket();
+      if (!segments.some((x) => `sector:${x.key}` === topicId)) throw new AdminError(404, 'Sector no encontrado');
+    } else if (topicId !== 'general' && topicId !== 'tour') {
       const { latest } = await load();
       if (!latest.has(topicId)) throw new AdminError(404, 'Módulo no encontrado');
     }
@@ -248,11 +289,12 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const { segments } = await loadMarket();
     const sg = segments.find((x) => x.key === key);
     if (!sg) throw new AdminError(404, 'Sector no encontrado');
-    const { plays, contributions } = await load();
+    const [{ plays, contributions }, progress] = await Promise.all([load(), pdb.listProgress(s.tenantId)]);
     const personaKeys = new Set(sg.personas.map((x) => x.key));
     const forSeg = plays.filter((p) => official(p) && (p.segments.includes(key) || p.personas.some((k) => personaKeys.has(k))));
     return {
       segment: sg,
+      learned: progress.some((p) => p.userId === s.userId && p.topic === `sector:${key}`),
       plays: forSeg.sort((a, b) => a.position - b.position),
       byPersona: Object.fromEntries(sg.personas.map((x) => [x.key, forSeg.filter((p) => p.personas.includes(x.key))])),
       tips: contributions.filter((c) => visibleTip(c) && forSeg.some((p) => p.id === c.playId)),

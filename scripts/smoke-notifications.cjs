@@ -26,7 +26,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // ---- el colaborador propone un truco
   const dj = await login('dj@enjoy.test');
   await dj.goto(`${BASE}/admin/learn`);
-  const topic = await dj.getAttribute('a[href^="/admin/learn/"]', 'href');
+  const topic = await dj.getAttribute('[data-testid=topic] >> nth=0', 'href');
   await dj.goto(`${BASE}${topic}`);
   await dj.fill('[data-testid=tip-form] [name=title]', `Truco de cabina ${RUN}`);
   await dj.fill('[data-testid=tip-form] [name=body]', 'Pide la canción del cumpleañero antes de las doce.');

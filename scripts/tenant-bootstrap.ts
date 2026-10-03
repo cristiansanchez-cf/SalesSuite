@@ -39,6 +39,8 @@ const tenantFile = z.object({
   default_locale: z.string().default('es-ES'),
   theme_tokens: z.unknown(),
   brand: z.unknown().default({}),
+  /** «Lo que vendes, en 1 minuto» (Aprende): pasos con imagen, de arriba abajo. image admite "asset:<ruta>". */
+  tour: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().max(240).nullable().default(null), image: z.string().nullable().default(null) })).max(8).default([]),
   domains: z.array(z.object({ hostname: z.string().regex(/^[a-z0-9.-]+$/), is_primary: z.boolean().default(false) })).min(1),
   admins: z.array(z.string().email()).default([]),
   catalog: z.array(z.object({
@@ -53,7 +55,7 @@ const tenantFile = z.object({
   })).default([]),
   /** Mapa de mercado: sectores con cliente ideal, actores y encaje de módulos (docs/PLAYBOOK.md §Mercado). */
   market: z.array(z.object({
-    key: z.string(), name: z.string(), icon: z.string().nullable().default(null), description: z.string().nullable().default(null), value_prop: z.string().nullable().default(null),
+    key: z.string(), name: z.string(), icon: z.string().nullable().default(null), image: z.string().nullable().default(null), description: z.string().nullable().default(null), value_prop: z.string().nullable().default(null),
     icp: z.string().nullable().default(null), disqualifiers: z.string().nullable().default(null), buying_process: z.string().nullable().default(null),
     deal_size: z.string().nullable().default(null), sales_cycle: z.string().nullable().default(null),
     modules: z.array(z.object({ module_key: z.string(), priority: z.number().int().min(1).max(3).default(2), fit: z.string().nullable().default(null) })).default([]),
@@ -170,7 +172,7 @@ function toPlayInput(p: TenantFile['playbook'][number], moduleId: string | null)
 function validate(t: TenantFile, assetKeys: string[]) {
   const missing = new Set<string>();
   // 1ª pasada: detectar assets ausentes; 2ª: validar con URLs simuladas para TODOS (sin errores en cascada).
-  replaceAssets([t.theme_tokens, t.brand, t.catalog.map((m) => m.props)], new Map(assetKeys.map((k) => [k, 'x'])), missing);
+  replaceAssets([t.theme_tokens, t.brand, t.catalog.map((m) => m.props), t.tour, t.market.map((m) => m.image)], new Map(assetKeys.map((k) => [k, 'x'])), missing);
   const fake = new Map([...assetKeys, ...missing].map((k) => [k, `https://assets.invalid/${k}`]));
   const errors: string[] = [];
   const theme = themeTokensSchema.safeParse(replaceAssets(t.theme_tokens ?? {}, fake, missing));
@@ -283,7 +285,8 @@ async function main() {
   const missing = new Set<string>();
   const theme = replaceAssets(t.theme_tokens ?? {}, urls, missing);
   const brand = replaceAssets(t.brand ?? {}, urls, missing);
-  must(await sb.from('tenant').update({ name: t.name, default_locale: t.default_locale, theme_tokens: theme, brand }).eq('id', tenantId), 'actualizar tenant');
+  const tour = (replaceAssets(t.tour, urls, missing) as TenantFile['tour']).map((x) => ({ ...x, image: x.image?.startsWith('asset:') ? null : x.image }));
+  must(await sb.from('tenant').update({ name: t.name, default_locale: t.default_locale, theme_tokens: theme, brand, tour }).eq('id', tenantId), 'actualizar tenant');
   log('tema y marca actualizados');
 
   // 3. dominios
@@ -331,6 +334,7 @@ async function main() {
       tenant_id: tenantId, key: sg.key, name: sg.name, description: sg.description, value_prop: sg.value_prop, icp: sg.icp,
       disqualifiers: sg.disqualifiers, buying_process: sg.buying_process, deal_size: sg.deal_size, sales_cycle: sg.sales_cycle,
       position: (i + 1) * 1024, status: 'official', icon: sg.icon,
+      image: (() => { const u = replaceAssets(sg.image, urls, missing); return typeof u === 'string' && !u.startsWith('asset:') ? u : null; })(),
     };
     const segId = mustOne(await sb.from('segment').upsert(segRow, { onConflict: 'tenant_id,key' }).select('id').single(), `sector ${sg.key}`).id as string;
     must(await sb.from('segment_module').delete().eq('segment_id', segId), `limpiar encajes ${sg.key}`);

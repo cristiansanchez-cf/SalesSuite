@@ -242,8 +242,11 @@ function full(sb: SupabaseClient): AdminDb {
 
     // ---- gestión del tenant
     async getTenant(id) {
-      const r = check(await sb.from('tenant').select('id, slug, name, default_locale, theme_tokens, brand').eq('id', id).maybeSingle());
-      return r ? { id: r.id, slug: r.slug, name: r.name, defaultLocale: r.default_locale, themeTokens: r.theme_tokens, brand: r.brand } : null;
+      // tour: columna de la migración 20261020; si aún no existe, se lee sin ella.
+      let res = await sb.from('tenant').select('id, slug, name, default_locale, theme_tokens, brand, tour').eq('id', id).maybeSingle();
+      if (res.error) res = await sb.from('tenant').select('id, slug, name, default_locale, theme_tokens, brand').eq('id', id).maybeSingle();
+      const r = check(res) as Row | null;
+      return r ? { id: r.id, slug: r.slug, name: r.name, defaultLocale: r.default_locale, themeTokens: r.theme_tokens, brand: r.brand, tour: r.tour ?? [] } : null;
     },
     async updateTenant(id, p) {
       const patch: Row = {};
