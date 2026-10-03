@@ -176,6 +176,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     const account = isPartner ? s.partner?.accounts.find((a) => a.id === input.partnerAccountId) ?? null : null;
     if (isPartner && !account) throw new AdminError(422, 'Elige para qué cuenta es la propuesta');
     if (!isPartner && input.partnerAccountId) throw new AdminError(422, 'Solo los colaboradores crean propuestas de sus cuentas');
+    if (isPartner && input.accountId) throw new AdminError(422, 'Los colaboradores venden en sus cuentas asignadas');
     if (account && tpl && tpl.partnerAccountId !== account.id) throw new AdminError(422, 'Solo puedes duplicar propuestas de la misma cuenta');
     const d = await db.insertDossier({
       tenantId: s.tenantId,
@@ -188,6 +189,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       totalPrice: tpl?.totalPrice ?? null,
       currency: tpl?.currency ?? 'EUR',
       partnerAccountId: account?.id ?? null,
+      accountId: input.accountId ?? null,
     });
     const segmentId = account?.segmentId ?? tpl?.segmentId;
     if (segmentId) await db.updateDossier(d.id, { segmentId });
@@ -338,6 +340,15 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       case 'removeContact': {
         if (!(await db.listContacts([id])).some((x) => x.id === op.contactId)) throw new AdminError(404, 'Contacto no encontrado');
         await assertWrote(await db.deleteContact(op.contactId));
+        break;
+      }
+      case 'setAccount': {
+        if (isPartner) throw new AdminError(422, 'Los colaboradores venden en sus cuentas asignadas');
+        try { await assertWrote(await db.updateDossier(id, { accountId: op.accountId })); } catch (e) {
+          if (e instanceof AdminError) throw e;
+          if (/foreign key|violates/i.test(String(e))) throw new AdminError(404, 'Cuenta no encontrada');
+          throw e;
+        }
         break;
       }
       case 'setSituation': {

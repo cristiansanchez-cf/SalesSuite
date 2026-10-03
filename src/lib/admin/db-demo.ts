@@ -3,6 +3,7 @@ import { demoDb, type DemoDb, type DossierRow, type PartnerAccountRow, type Part
 import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
 import { demoEmitMembership } from '../notify/db-demo';
+import { demoAccountsOnDossier } from '../accounts/db-demo';
 
 export const newToken = () => randomBytes(24).toString('base64url');
 
@@ -15,6 +16,10 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
   partnerAccountId: r.partner_account_id ?? null,
   situation: r.situation ?? {},
+  accountId: r.account_id ?? null,
+  accountEligibility: (r.account_eligibility as DossierRecord['accountEligibility']) ?? null,
+  accountDecision: r.account_decision ?? null,
+  accountDecidedAt: r.account_decided_at ?? null,
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -60,13 +65,16 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
         prospect_name: n.prospectName, prospect_company: n.prospectCompany, prospect_meta: {},
         status: 'draft', locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
         theme_override: null, published_at: null, created_at: now, updated_at: now, partner_account_id: n.partnerAccountId ?? null,
+        account_id: n.accountId ?? null,
       };
+      demoAccountsOnDossier(null, row);
       db().dossier.push(row);
       return toDossier(row);
     },
     async updateDossier(id, p) {
       const d = db().dossier.find((x) => x.id === id);
       if (!d) return null;
+      const prev = { ...d };
       if (p.title !== undefined) d.title = p.title;
       if (p.prospectName !== undefined) d.prospect_name = p.prospectName;
       if (p.prospectCompany !== undefined) d.prospect_company = p.prospectCompany;
@@ -83,6 +91,8 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.nextStep !== undefined) d.next_step = p.nextStep;
       if (p.nextStepAt !== undefined) d.next_step_at = p.nextStepAt;
       if (p.situation !== undefined) d.situation = p.situation;
+      if (p.accountId !== undefined) d.account_id = p.accountId;
+      demoAccountsOnDossier(prev, d);
       d.updated_at = new Date().toISOString();
       return toDossier(d);
     },
@@ -230,7 +240,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     async listMembers(tenantId) {
       return db().users.flatMap((u) => u.memberships
         .filter((m) => m.tenant_id === tenantId)
-        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role, invitedBy: m.invited_by ?? null, joinedAt: m.created_at ?? null })));
+        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role, invitedBy: m.invited_by ?? null, joinedAt: m.created_at ?? null, phone: u.phone ?? null })));
     },
     async addMember(tenantId, userId, role, inviter) {
       const u = db().users.find((x) => x.id === userId);

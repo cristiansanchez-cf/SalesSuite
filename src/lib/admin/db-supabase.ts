@@ -7,7 +7,7 @@ type Row = Record<string, any>;
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
-const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation';
+const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_company, status, locale, price_mode, total_price, currency, published_at, updated_at, outcome, outcome_note, segment_id, next_step, next_step_at, partner_account_id, situation, account_id, account_eligibility, account_decision, account_decided_at';
 const ITEM_COLS = 'id, dossier_id, position, visible, price_override, prop_overrides, module_version_id, '
   + 'module_version!inner(id, version, default_props, default_price, default_currency, module!inner(id, key, name, block_type))';
 const LINK_COLS = 'id, dossier_id, token, is_active, expires_at, created_at';
@@ -21,6 +21,10 @@ const toDossier = (r: Row): DossierRecord => ({
   segmentId: r.segment_id ?? null, nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null,
   partnerAccountId: r.partner_account_id ?? null,
   situation: r.situation ?? {},
+  accountId: r.account_id ?? null,
+  accountEligibility: r.account_eligibility ?? null,
+  accountDecision: r.account_decision ?? null,
+  accountDecidedAt: r.account_decided_at ?? null,
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';
@@ -119,7 +123,7 @@ function full(sb: SupabaseClient): AdminDb {
       const r = checkOne(await sb.from('dossier').insert({
         tenant_id: n.tenantId, author_id: n.authorId, title: n.title, prospect_name: n.prospectName,
         prospect_company: n.prospectCompany, locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
-        partner_account_id: n.partnerAccountId ?? null,
+        partner_account_id: n.partnerAccountId ?? null, account_id: n.accountId ?? null,
       }).select(DOSSIER_COLS).single());
       return toDossier(r);
     },
@@ -141,6 +145,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.nextStep !== undefined) patch.next_step = p.nextStep;
       if (p.nextStepAt !== undefined) patch.next_step_at = p.nextStepAt;
       if (p.situation !== undefined) patch.situation = p.situation;
+      if (p.accountId !== undefined) patch.account_id = p.accountId;
       const rows = check(await sb.from('dossier').update(patch).eq('id', id).select(DOSSIER_COLS)) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },
@@ -248,8 +253,8 @@ function full(sb: SupabaseClient): AdminDb {
     },
 
     async listMembers(tenantId) {
-      const rows = check(await sb.from('membership').select('user_id, role, invited_by, created_at, users!membership_user_id_fkey!inner(email, display_name)').eq('tenant_id', tenantId)) ?? [];
-      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role, invitedBy: r.invited_by ?? null, joinedAt: r.created_at ?? null }));
+      const rows = check(await sb.from('membership').select('user_id, role, invited_by, created_at, users!membership_user_id_fkey!inner(email, display_name, phone)').eq('tenant_id', tenantId)) ?? [];
+      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role, invitedBy: r.invited_by ?? null, joinedAt: r.created_at ?? null, phone: r.users.phone ?? null }));
     },
     async addMember(tenantId, userId, role) {
       // invited_by lo pone el trigger membership_set_inviter con la sesión.

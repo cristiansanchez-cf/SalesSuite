@@ -33,7 +33,7 @@ trap 'kill $PG_PID $PX_PID 2>/dev/null || true' EXIT
 for _ in $(seq 1 50); do curl -sf http://127.0.0.1:3000/ >/dev/null && break; sleep 0.2; done
 
 SUPABASE_IT_URL=http://127.0.0.1:54321 SUPABASE_IT_JWT_SECRET="$SECRET" SUPABASE_IT_DB_URL="$DB_URL" \
-  npx vitest run --no-file-parallelism src/lib/admin/service.supabase.test.ts src/lib/playbook/playbook.supabase.test.ts src/lib/partner/partner.supabase.test.ts src/lib/evidence/evidence.supabase.test.ts src/lib/notify/notify.supabase.test.ts
+  npx vitest run --no-file-parallelism src/lib/admin/service.supabase.test.ts src/lib/playbook/playbook.supabase.test.ts src/lib/partner/partner.supabase.test.ts src/lib/evidence/evidence.supabase.test.ts src/lib/notify/notify.supabase.test.ts src/lib/accounts/accounts.supabase.test.ts
 
 # Script de alta de tenants (service role) contra la misma API.
 bash supabase/tests/bootstrap-it.sh "$DB_URL" http://127.0.0.1:54321 "$SECRET"

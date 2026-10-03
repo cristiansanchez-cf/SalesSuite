@@ -15,11 +15,11 @@ const toN = (r: NotificationRow): Notification => ({
 const now = () => new Date().toISOString();
 
 // ---------------------------------------------------------------- emisión (= triggers)
-function userLabel(id: string | null | undefined): string | null {
+export function userLabel(id: string | null | undefined): string | null {
   const u = db().users.find((x) => x.id === id);
   return u ? (u.display_name || u.email) : null;
 }
-function notifyRoles(tenantId: string, roles: Role[], kind: string, severity: 'action' | 'info', entity: string, params: Record<string, unknown>, except: string | null) {
+export function notifyRoles(tenantId: string, roles: Role[], kind: string, severity: 'action' | 'info', entity: string, params: Record<string, unknown>, except: string | null) {
   const s = db();
   for (const u of s.users) {
     const m = u.memberships.find((x) => x.tenant_id === tenantId);
@@ -29,7 +29,7 @@ function notifyRoles(tenantId: string, roles: Role[], kind: string, severity: 'a
       read_at: null, dismissed_at: null, emailed_at: null, resolved_at: null });
   }
 }
-function resolve(tenantId: string, kind: string, entity: string) {
+export function resolveNotifications(tenantId: string, kind: string, entity: string) {
   for (const n of db().notification) if (n.tenant_id === tenantId && n.kind === kind && n.entity_key === entity && !n.resolved_at) n.resolved_at = now();
 }
 
@@ -37,9 +37,9 @@ export function demoEmitContribution(op: 'insert' | 'update' | 'delete', c: { id
   if (op === 'insert' && c.status === 'pending') {
     notifyRoles(c.tenant_id, ['admin', 'lead'], 'contribution_pending', 'action', c.id, { title: c.title, type: c.type, author: userLabel(c.author_id) }, c.author_id);
   } else if (op === 'update' && oldStatus === 'pending' && c.status !== 'pending') {
-    resolve(c.tenant_id, 'contribution_pending', c.id);
+    resolveNotifications(c.tenant_id, 'contribution_pending', c.id);
   } else if (op === 'delete' && c.status === 'pending') {
-    resolve(c.tenant_id, 'contribution_pending', c.id);
+    resolveNotifications(c.tenant_id, 'contribution_pending', c.id);
   }
 }
 

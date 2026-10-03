@@ -72,3 +72,18 @@ Los órdenes de las listas son deterministas: si dos filas empatan, decide el id
 - **Cuerpo a 14** y no a 13, por lo aprendido en Lumbra.
 - **Hover de tarjeta sin sombra**: solo cambia el borde. En una consola, la elevación se reserva para lo efímero.
 - **Éxito monocromo**, con el tinte cian del aurora al 14 %: Cofundo no tiene verde.
+
+## 8. Contraste con cofundo.io (capturas de octubre 2026)
+
+Las capturas de la web (precio, «Cómo funciona», «El cambio» y portada) confirmaron la base (Big Shoulders para titulares y cifras, Inter para el cuerpo, eyebrows en mayúsculas espaciadas, botones píldora negros con «→», tarjetas blancas sobre aurora) y añadieron cuatro piezas que faltaban:
+
+| En la web | En la consola |
+|---|---|
+| Violeta de marca en «822 técnicas», en los pasos «04» y «05» y en el chip «Cerebro de ventas» | `--co-signal` (#6a2bd9): número del paso actual (`.co-steps`), opción elegida (`.co-option`), cifras protagonistas (`.co-figure`) |
+| Opción elegida con contorno violeta («Individual») | `.co-option:has(input:checked)` usa `--co-signal` en lugar de negro |
+| Badge lavanda «2 MESES GRATIS» | `.co-badge--signal` |
+| Respuesta del Cerebro en burbuja lavanda sólida | `--console-cerebro-bg` = `--co-signal-soft` |
+| Bloque gris claro dentro de la tarjeta blanca (ejemplo de conversación) | `.co-inset` |
+| Titular a dos tonos («Tu equipo ya tiene IA. *Sigue sin saber qué decir.*») | `PageHeader tail="…"` → `.co-tail` |
+
+Regla: el violeta es una **señal**, como mucho una vez por bloque, nunca un fondo grande ni un botón. Los botones siguen siendo negros. El coral (`--console-attention`) sigue reservado para «pide tu acción».

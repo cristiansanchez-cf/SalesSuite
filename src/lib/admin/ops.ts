@@ -50,6 +50,7 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('updateContact'), contactId: id, contact: contactSchema.partial() }),
   z.object({ op: z.literal('removeContact'), contactId: id }),
   z.object({ op: z.literal('setSituation'), situation: situationSchema }),
+  z.object({ op: z.literal('setAccount'), accountId: id.nullable() }),
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;
@@ -65,6 +66,8 @@ export const createDossierSchema = z.object({
   fromDossierId: id.optional(),
   /** Colaborador: cuenta asignada (obligatoria para él; fija sector y política de precio). */
   partnerAccountId: id.optional(),
+  /** Cuenta del CRM (docs/ACCOUNTS.md): vincularla cuenta como contacto. */
+  accountId: id.optional(),
 });
 export type CreateDossierInput = z.infer<typeof createDossierSchema>;
 

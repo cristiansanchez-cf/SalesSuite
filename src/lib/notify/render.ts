@@ -14,6 +14,9 @@ interface KindDef {
   href(n: Notification): string;
 }
 
+const REASON: Record<string, string> = {
+  claimed_by_other: 'la trabajaba otra persona', blocked: 'la cuenta está bloqueada', out_of_zone: 'está fuera de su zona', no_account: 'no tiene cuenta del CRM',
+};
 const ROLE: Record<string, string> = { admin: 'admin', lead: 'jefe/a de ventas', rep: 'comercial', partner: 'colaborador/a' };
 
 export const KINDS: Record<string, KindDef> = {
@@ -33,6 +36,12 @@ export const KINDS: Record<string, KindDef> = {
     icon: 'users', resolvesOnRead: true,
     title: (p) => `${p.inviter || 'Tu jefe/a de ventas'} ha añadido a ${p.name || 'alguien'} como ${ROLE[p.role] ?? p.role}`,
     href: () => '/admin/team',
+  },
+  account_conflict: {
+    icon: 'shield-alert', resolvesOnRead: false,
+    title: (p) => `${p.seller || 'Alguien'} ha ganado ${p.account ? `«${p.account}»` : 'una venta'}, pero ${REASON[p.reason] ?? 'no cumple las reglas'}`,
+    detail: (p) => `Sin comisión hasta que decidas${p.holder && p.reason === 'claimed_by_other' ? ` · la trabajaba ${p.holder}` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,
+    href: (n) => `/admin/dossiers/${n.entityKey}`,
   },
   story_shared: {
     icon: 'trophy', resolvesOnRead: true,

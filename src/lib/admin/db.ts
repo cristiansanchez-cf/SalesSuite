@@ -14,6 +14,7 @@ export interface NewDossier {
   totalPrice: number | null;
   currency: string;
   partnerAccountId?: string | null;
+  accountId?: string | null;
 }
 
 export interface NewItem {
@@ -36,6 +37,7 @@ export type DossierDbPatch = DossierPatch & {
   nextStep?: string | null;
   nextStepAt?: string | null;
   situation?: import('../evidence/types').Situation;
+  accountId?: string | null;
 };
 
 export type ContactInput = Omit<import('../playbook/market').DossierContact, 'id' | 'dossierId' | 'position'>;

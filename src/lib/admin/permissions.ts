@@ -4,7 +4,7 @@
  *  - admin: todo.
  *  - lead (jefe/a de ventas): equipo comercial y colaboradores, playbook, mercado, situaciones y todos los dossiers.
  *    No toca marca, catálogo, roles de admin ni precios.
- *  - rep: sus dossiers.
+ *  - rep: sus dossiers y las cuentas de su zona.
  *  - partner: sus cuentas (docs/PARTNERS.md).
  */
 import type { Role } from './types';
@@ -27,6 +27,12 @@ export function can(role: Role) {
     configure: manager,
     /** Comisiones: configurar planes y liquidar. */
     manageCommissions: admin,
+    /** Cuentas del CRM (equipo interno; los colaboradores venden en sus cuentas asignadas). */
+    useAccounts: manager || role === 'rep',
+    /** Bloquear, asignar y liberar cuentas; asignar zonas al equipo; decidir conflictos de comisión. */
+    manageAccounts: manager,
+    /** Definir el territorio y las reglas de cuentas. */
+    manageZones: admin,
   };
 }
 

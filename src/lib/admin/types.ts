@@ -75,6 +75,11 @@ export interface DossierRecord {
   partnerAccountId: string | null;
   /** Situación de la cuenta según las facetas del tenant (región, rasgos…). */
   situation: import('../evidence/types').Situation;
+  /** Cuenta del CRM (docs/ACCOUNTS.md) y si la venta genera comisión (lo calcula la base de datos al ganarla). */
+  accountId: string | null;
+  accountEligibility: import('../accounts/types').Eligibility | null;
+  accountDecision: import('../accounts/types').AccountDecision | null;
+  accountDecidedAt: string | null;
 }
 
 export interface DossierSummary extends DossierRecord {
@@ -161,6 +166,8 @@ export interface MemberRecord {
   /** Quién le invitó (trazabilidad de la red de colaboradores). */
   invitedBy: string | null;
   joinedAt: string | null;
+  /** Para que los compañeros de zona puedan llamarle o escribirle por WhatsApp. */
+  phone?: string | null;
 }
 
 export interface PartnerView extends MemberRecord {

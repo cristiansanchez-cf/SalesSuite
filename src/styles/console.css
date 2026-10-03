@@ -24,6 +24,13 @@
   --co-aurora-amber: #ffb56b;
   --co-accent: #0a0a0a;
   --co-accent-soft: #1a1a1a;
+  /* Violeta de marca (cofundo.io): cifras y pasos destacados, opción elegida, lo que viene del Cerebro.
+     Señal, no decoración: como mucho una vez por bloque. Texto sobre blanco con contraste AA. */
+  --co-signal: #6a2bd9;
+  --co-signal-soft: #ece6fc;   /* burbuja del Cerebro */
+  --co-signal-badge: #cbb6ff;  /* badge «2 MESES GRATIS» */
+  --co-signal-ink: #2a1066;    /* texto sobre el badge */
+  --co-inset: #f6f6f3;         /* superficie anidada dentro de una tarjeta */
 
   --co-font-impact: 'Big Shoulders Variable', 'Big Shoulders', 'Big Shoulders Display', 'Oswald', 'Arial Narrow', Impact, sans-serif;
   --co-font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-serif, Georgia, serif;
@@ -76,7 +83,7 @@
   --console-attention-bg: color-mix(in oklch, var(--co-aurora-coral) 10%, var(--co-canvas-elevated));
   --console-danger: #a8401c;                                                     /* coral oscurecido: texto con contraste AA */
   --console-good-bg: color-mix(in oklch, var(--co-aurora-cyan) 14%, var(--co-canvas-elevated));
-  --console-cerebro-bg: color-mix(in oklch, var(--co-aurora-violet) 22%, transparent);
+  --console-cerebro-bg: var(--co-signal-soft);
   --console-progress-track: color-mix(in oklch, var(--co-ink) 8%, transparent);
   --console-overlay-shadow: 0 24px 48px -24px rgba(10, 10, 10, 0.28);
   --console-backdrop: color-mix(in oklch, var(--co-ink) 40%, transparent);
@@ -144,6 +151,11 @@ html.console {
 .co-meta { font-size: var(--console-fs-meta); line-height: 1.35; color: var(--co-ink-dim); }
 .co-lede { font-size: var(--console-fs-body); color: var(--co-ink-soft); max-width: 64ch; line-height: 1.5; }
 .co-num { font-family: var(--co-font-impact); font-weight: 600; color: var(--co-ink-dim); }
+/* Titular a dos tonos: la segunda parte en gris («Tu equipo ya tiene IA. Sigue sin saber qué decir.»). */
+.co-tail { color: color-mix(in oklch, var(--co-ink) 55%, var(--co-canvas)); }
+/* Cifra protagonista (Big Shoulders en violeta), p. ej. KPIs de Inicio. */
+.co-figure { font-family: var(--co-font-impact); font-weight: 600; line-height: 0.95; letter-spacing: -0.01em; color: var(--co-signal); }
+.co-signal { color: var(--co-signal); }
 
 /* ------------------------------------------------------------------ shell */
 .co-shell { display: grid; grid-template-columns: var(--console-sidebar) minmax(0, 1fr); min-height: 100vh; }
@@ -367,6 +379,9 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 .co-badge--ink { background: var(--co-ink); border-color: var(--co-ink); color: #fff; }
 .co-badge--attention { border-color: var(--console-attention); color: var(--co-ink); background: var(--console-attention-bg); }
 .co-badge--soft { border-color: transparent; background: var(--console-chip-bg); color: var(--co-ink); }
+.co-badge--signal { border-color: transparent; background: var(--co-signal-badge); color: var(--co-signal-ink); font-weight: 600; }
+/* Superficie anidada: un bloque gris claro dentro de una tarjeta blanca (ejemplos, citas, vista previa). */
+.co-inset { padding: 16px; border: 1px solid var(--console-card-border); border-radius: var(--console-radius-control); background: var(--co-inset); }
 
 /* Etiqueta descriptiva (situación, coincidencias): minúscula y legible; una frase no es un badge. */
 .co-tag {
@@ -399,10 +414,11 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
   transition: border-color var(--co-duration-quick) var(--co-ease-out-soft);
 }
 .co-option:hover { border-color: var(--console-card-border-hover); }
-.co-option:has(input:checked) { border-color: var(--co-ink); box-shadow: inset 0 0 0 1px var(--co-ink); }
+.co-option:has(input:checked) { border-color: var(--co-signal); box-shadow: inset 0 0 0 1px var(--co-signal); }
 .co-option input { position: absolute; opacity: 0; pointer-events: none; }
 .co-option__icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--console-radius-control); background: var(--console-chip-bg); }
-.co-option:has(input:checked) .co-option__icon { background: var(--co-ink); color: #fff; }
+.co-option:has(input:checked) .co-option__icon { background: var(--co-signal); color: #fff; }
+.co-option:has(input:focus-visible) { outline: 2px solid var(--co-signal); outline-offset: 2px; }
 
 .co-progress { height: 6px; border-radius: var(--console-radius-pill); background: var(--console-progress-track); overflow: hidden; }
 .co-progress > span { display: block; height: 100%; background: var(--co-ink); border-radius: inherit; }
@@ -415,6 +431,7 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
   font-family: var(--co-font-impact); font-weight: 600; font-size: 1rem;
 }
 .co-steps li[aria-current='step'] { color: var(--co-ink); font-weight: 600; }
+.co-steps li[aria-current='step']::before { color: var(--co-signal); }
 .co-steps li + li::after { order: -1; content: ''; width: 16px; height: 1px; background: var(--console-divider); }
 
 /* ------------------------------------------------------------------ acciones (guía Lumbra §9–10) */

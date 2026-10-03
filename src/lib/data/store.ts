@@ -25,6 +25,8 @@ export interface DossierRow {
   segment_id?: string | null; next_step?: string | null; next_step_at?: string | null;
   partner_account_id?: string | null;
   situation?: Record<string, string[]>;
+  account_id?: string | null; account_eligibility?: string | null; account_decision?: 'approved' | 'rejected' | null;
+  account_decided_by?: string | null; account_decided_at?: string | null;
 }
 export interface DossierItemRow {
   id: string; dossier_id: string; module_version_id: string; position: number; visible: boolean;
@@ -79,6 +81,16 @@ export interface PartnerAccountRow {
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
 export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null }
+export interface ZoneRow { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number }
+export interface MembershipZoneRow { tenant_id: string; user_id: string; zone_id: string }
+export interface AccountRulesRow { tenant_id: string; claim_days: number; strict_zones: boolean; require_account: boolean }
+export interface AccountRow {
+  id: string; tenant_id: string; name: string; zone_id: string | null; segment_id: string | null; address: string | null; external_ref: string | null;
+  notes: string | null; status: 'open' | 'customer' | 'blocked'; blocked_reason: string | null; owner_id: string | null; claimed_until: string | null;
+  last_touch_at: string | null; last_touch_by: string | null; won_at: string | null; won_by: string | null; won_dossier_id: string | null;
+  created_by: string | null; created_at: string;
+}
+export interface AccountTouchRow { id: string; tenant_id: string; account_id: string; user_id: string | null; kind: string; note: string | null; created_at: string }
 export interface NotificationRow {
   id: string; tenant_id: string; user_id: string; kind: string; severity: 'action' | 'info'; entity_key: string; params: Record<string, unknown>;
   created_at: string; read_at: string | null; dismissed_at: string | null; emailed_at: string | null; resolved_at: string | null;
@@ -109,6 +121,11 @@ export interface DemoDb {
   situation_facet: SituationFacetRow[];
   win_story: WinStoryRow[];
   notification: NotificationRow[];
+  zone: ZoneRow[];
+  membership_zone: MembershipZoneRow[];
+  account_rules: AccountRulesRow[];
+  account: AccountRow[];
+  account_touch: AccountTouchRow[];
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -140,6 +157,28 @@ export const DEMO_PARTNER = {
       price_policy: 'list', price_adjust_pct: 0, notes: null, position: 3072 },
   ] satisfies PartnerAccountRow[],
 };
+
+const Z = {
+  es: '00000000-0000-4000-8000-0000000a0001', cv: '00000000-0000-4000-8000-0000000a0002', vlc: '00000000-0000-4000-8000-0000000a0003',
+  cs: '00000000-0000-4000-8000-0000000a0004', cat: '00000000-0000-4000-8000-0000000a0005', bcn: '00000000-0000-4000-8000-0000000a0006',
+  mad: '00000000-0000-4000-8000-0000000a0007',
+};
+const DEMO_ZONES: ZoneRow[] = [
+  { id: Z.es, tenant_id: ENJOY, parent_id: null, name: 'España', kind: 'country', position: 0 },
+  { id: Z.cv, tenant_id: ENJOY, parent_id: Z.es, name: 'Comunidad Valenciana', kind: 'region', position: 0 },
+  { id: Z.vlc, tenant_id: ENJOY, parent_id: Z.cv, name: 'Valencia', kind: 'city', position: 0 },
+  { id: Z.cs, tenant_id: ENJOY, parent_id: Z.cv, name: 'Castellón', kind: 'city', position: 1 },
+  { id: Z.cat, tenant_id: ENJOY, parent_id: Z.es, name: 'Cataluña', kind: 'region', position: 1 },
+  { id: Z.bcn, tenant_id: ENJOY, parent_id: Z.cat, name: 'Barcelona', kind: 'city', position: 0 },
+  { id: Z.mad, tenant_id: ENJOY, parent_id: Z.es, name: 'Madrid', kind: 'city', position: 2 },
+];
+function demoAccount(id: string, name: string, zone: string, p: Partial<AccountRow>): AccountRow {
+  return {
+    id, tenant_id: ENJOY, name, zone_id: zone, segment_id: NIGHTLIFE, address: null, external_ref: null, notes: null, status: 'open', blocked_reason: null,
+    owner_id: null, claimed_until: null, last_touch_at: null, last_touch_by: null, won_at: null, won_by: null, won_dossier_id: null,
+    created_by: null, created_at: new Date(Date.now() - 60 * 86_400_000).toISOString(), ...p,
+  };
+}
 
 export function freshDemoDb(): DemoDb {
   const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'
@@ -187,6 +226,18 @@ export function freshDemoDb(): DemoDb {
       entity_key: '00000000-0000-4000-8000-0000009c0002', params: { title: 'Añadir el coste por invitado', type: 'change', author: DEMO_USERS[0].display_name },
       created_at: ago(1), read_at: null, dismissed_at: null, emailed_at: ago(1), resolved_at: null,
     }] : [],
+    // Territorio y cuentas de ejemplo (docs/ACCOUNTS.md).
+    zone: DEMO_ZONES.map((z) => ({ ...z })),
+    membership_zone: [{ tenant_id: ENJOY, user_id: REP, zone_id: Z.cv }],
+    account_rules: [],
+    account: [
+      demoAccount('00000000-0000-4000-8000-0000000ac001', 'Club Sol', Z.vlc, { owner_id: REP, claimed_until: ago(-20), last_touch_at: ago(10), last_touch_by: REP, notes: 'Tiene DJ residente los viernes.' }),
+      demoAccount('00000000-0000-4000-8000-0000000ac002', 'Sala Marina', Z.vlc, {}),
+      demoAccount('00000000-0000-4000-8000-0000000ac003', 'Terraza Azahar', Z.cs, {}),
+      demoAccount('00000000-0000-4000-8000-0000000ac004', 'Discoteca Faro', Z.bcn, {}),
+      demoAccount('00000000-0000-4000-8000-0000000ac005', 'Sala Gran Vía', Z.mad, { status: 'blocked', blocked_reason: 'El dueño ha pedido no recibir más comerciales.' }),
+    ],
+    account_touch: [],
   };
 }
 
