@@ -396,6 +396,92 @@ Dirección del festival decide; patrocinios lo vende a las marcas; producción t
 - **Objeciones típicas:** Desconfianza
 - **Ángulo con «Experiencias en directo»:** Cero montaje para producción. Y antes de nada, comprobar la cobertura y el wifi del recinto: si no hay, no se hace.
 
+## Hoteles y resorts · `hoteles`
+
+_Resorts all-inclusive, hoteles vacacionales alejados del centro y hoteles con salón de eventos. Cruceros, más adelante._
+
+**⚠️ Aviso para quien vende**
+
+Vertical sin validar: cero conversaciones, cero clientes. Lo lleva un colaborador externo que ya vende a este sector. El objetivo no es vender, es saber si la vertical existe. Nunca se habla de cobrar al huésped ni de precio.
+
+**Por qué nos compra (propuesta de valor)**
+
+El sitio del que la gente no sale. Su problema no es el dinero: es llenar el tiempo. Aquí no vendemos monetización, vendemos satisfacción y contenido: el huésped que se aburre no se queja, se va y pone una reseña tibia. Y cientos de fotos de huéspedes pasándoselo bien, subidas por ellos aceptando los términos de uso.
+
+**Cliente ideal**
+
+- Resort all-inclusive con equipo de animación propio y show nocturno
+- Hotel vacacional alejado del centro, donde el huésped cena y se queda
+- Hotel con salón de eventos: bodas, incentivos, convenciones. Entrada fácil aunque la animación no compre
+- Hoteles pequeños independientes, para eventos puntuales: la validación más rápida
+
+**Cuándo NO venderle**
+
+- Hotel urbano de paso: el huésped sale a la ciudad
+- Hotel de negocios sin programa de entretenimiento
+- Sitios sin pantalla en ninguna zona común
+- Crucero, hasta que sepamos lo de la conectividad
+
+**Cómo decide (proceso de compra)**
+
+Compra el director de entretenimiento y actividades: es su presupuesto y su problema. El jefe de animación es el aliado natural. Dirección firma lo que cuesta dinero (en hoteles pequeños, a veces directamente). En cadenas grandes la venta es larga y con mucha gente.
+
+**Tamaño de la venta**
+
+Sin tarifa: el dossier va sin precio.
+
+**Ciclo de venta**
+
+Uno o dos meses entre que se tantea y alguien decide algo. En hoteles pequeños, rápido para sus eventos puntuales.
+
+**Qué enseñarle, en orden**
+
+1. Móvil del invitado — Lo que hace el huésped y lo que significa para el hotel.
+1. Experiencias en directo — Las tres dinámicas que puede montar el equipo de animación.
+2. Pantalla en vivo — Su pantalla, en la piscina, el buffet o el teatro.
+
+### Actores
+
+#### Director/a de entretenimiento y actividades · `hotel-entretenimiento` · Decide
+
+- **Quiere:** Diseñar la estrategia de animación y que el huésped responda bien.
+- **Le duele:** Entretener a los mismos huéspedes siete o catorce días seguidos.
+- **Cómo abordarle:** Es el comprador: su presupuesto y su problema.
+- **Cómo te ayuda:** Decide qué entra en el programa de animación.
+- **Cómo lo puede tumbar:** Si le complica la vida a su equipo.
+- **Evita:** Hablar de cobrar al huésped.
+- **Objeciones típicas:** No lo necesito, Tiempo / me lo pienso
+
+#### Jefe/a de animación · `hotel-jefe-animacion` · Aliado interno
+
+- **Quiere:** Coordinar al equipo y planificar las actuaciones en directo.
+- **Le duele:** Cuando se acaba el repertorio de juegos, se repite.
+- **Cómo abordarle:** Lo usa a diario: aliado natural.
+- **Cómo te ayuda:** Empuja dentro.
+- **Objeciones típicas:** Tiempo / me lo pienso
+
+#### Animadores · `hotel-animadores` · Lo usa
+
+- **Quiere:** Dinamizar las actividades cara a cara con el huésped.
+- **Cómo abordarle:** Quienes lo operan: que no les complique la vida.
+- **Cómo lo puede tumbar:** Si les complica la vida, se muere.
+- **Objeciones típicas:** Tiempo / me lo pienso
+
+#### Guest experience · `hotel-guest-experience` · Influye
+
+- **Quiere:** Que la experiencia del huésped sea buena.
+- **Cómo abordarle:** Le interesan las reseñas.
+
+#### Dirección del hotel · `hotel-direccion` · Paga
+
+- **Cómo abordarle:** Firma lo que cuesta dinero. Decide en cadenas; en hoteles pequeños, a veces directamente.
+- **Objeciones típicas:** Precio, No decido yo
+
+#### Marketing y redes · `hotel-marketing` · Influye
+
+- **Quiere:** Instagram, Booking, TripAdvisor.
+- **Cómo abordarle:** El contenido es suyo.
+
 ## Bodas · `bodas`
 
 _Para 2027 (Q2–Q3). Hoy es el sector del que menos sabemos: no es prioridad._

@@ -35,3 +35,12 @@ Actualizadas: NDI con tu frase nueva y menú cerrado con la frase del reto.
 - ¿Por defecto **sala + ángulo A**?
 - Charanga: ¿te vale portada, menú cerrado, tu público, lo que te llevas y precio?
 - ¿El ejemplo de conciertos lo dejamos como sala a 499 €/mes?
+
+---
+
+# Anexo · Adenda 11-bis (multipantalla disponible)
+
+- Nueva pregunta: **«¿El recinto tiene más de una pantalla?»**. Añade «La pantalla de la barra» con tu texto literal. Es el primer extra en entrar al recortar.
+- La guía al comercial ya no dice «hoy manejamos una pantalla»: dice tu pregunta «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.».
+- Fuera la fila «Prometer varias pantallas» del «Nunca» y la del multipantalla de pendientes.
+- **Lo he extendido a lo general** (lo dice también tu 14): «Qué hay hoy» habla de varias pantallas; quitado del roadmap y de «Lo que no se dice» (general y locales). La jugada de festivales «hoy manejamos una pantalla» pasa a tu pregunta. **Confírmalo para festivales.**

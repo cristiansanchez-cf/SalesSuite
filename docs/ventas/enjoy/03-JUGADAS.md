@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 175 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 182 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,7 +11,7 @@ Las 175 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 149 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Reparto:** General: 156 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
 - **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
@@ -112,7 +112,7 @@ _etapa: Pitch / Demo_
 > - Consentimiento de uso comercial del contenido.
 > - Analítica de participación.
 > 
-> **Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.
+> **Varias pantallas:** contenido distinto en cada una (piscina, buffet, teatro; escenario y barra). Se vende como disponible.
 
 #### Primero: el contenido con permiso · `noche-pitch-contenido`
 
@@ -248,7 +248,7 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **Nunca** prometas un aviso personal, una notificación ni una cola con posiciones numeradas.
 
-### Para quién (y cuándo no) (9)
+### Para quién (y cuándo no) (10)
 
 #### Cuenta grande no es un local grande · `gen-cuenta-grande`
 
@@ -365,6 +365,18 @@ _etapa: Prospección · sectores: Conciertos y artistas_
 > **Agencia o management con varios artistas.** El mejor formato del sector: una venta, muchos eventos.
 > 
 > **Charangas, orquestas, tributos y bandas.** Deciden ellos y se cierra en días: la puerta de entrada. Sin pantalla no hay propuesta.
+
+#### La tesis, en una página · `hotel-tesis`
+
+_etapa: Descubrimiento · sectores: Hoteles y resorts_
+
+> **El cliente ideal es el sitio del que la gente no sale.** Resort all-inclusive, hotel vacacional alejado del centro. Mucha gente, en el mismo sitio, durante muchos días, con todo pagado.
+> 
+> **Su problema no es el dinero: es llenar el tiempo.** Un equipo de animación de seis personas tiene que entretener a los mismos huéspedes durante siete o catorce días seguidos, y cuando se acaba el repertorio se repite. El huésped que se aburre no se queja: se va y pone una reseña tibia.
+> 
+> **Por eso aquí no vendemos monetización, vendemos satisfacción y contenido.** Y el programa de animación lo reciben todos los departamentos del hotel: lo que entra en animación lo ve toda la casa.
+> 
+> *Tesis sin validar, con fuentes en el documento 14.*
 
 ### Preguntas de descubrimiento (6)
 
@@ -742,7 +754,7 @@ _etapa: Negociación · sectores: Conciertos y artistas_
 > 
 > **Nunca** le vendas al promotor como un coste de producción más.
 
-### Guiones (23)
+### Guiones (24)
 
 #### Después de la venta: la parte que hemos fallado · `gen-postventa`
 
@@ -992,7 +1004,15 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **Con pantalla es cuando interesa de verdad.**
 
-### Consejos (50)
+#### Gratis para el huésped, y dilo pronto · `hotel-gratis`
+
+_etapa: Pitch / Demo · sectores: Hoteles y resorts_
+
+> **La monetización no se menciona.** El huésped lleva pulsera de todo incluido: no va a pagar por una canción, y plantearlo te deja como alguien que no entiende el negocio. Lo que sí se dice, pronto:
+> 
+> > «Aquí el servicio va gratis para el huésped. Si en algún momento queréis dejar que alguien deje una propina, se puede, y ese dinero se queda en el hotel. Pero por defecto, gratis.»
+
+### Consejos (55)
 
 #### Lo primero que se comprueba · `gen-cobertura`
 
@@ -1018,7 +1038,6 @@ _etapa: Mentalidad · sectores: Conciertos y artistas · la ven: Solo equipo int
 > | Qué | Bloquea |
 > |---|---|
 > | Reunión con Bruno (documento 13) | Quién decide, quién controla la pantalla, de qué partida sale, quién monta los VIP |
-> | Multipantalla (unos cinco días de desarrollo) | La pantalla de la barra |
 > | Prueba de carga | Todo lo de +20.000 |
 > | Un caso de éxito en concierto | No hay ninguno. El piloto con un artista de Balaunka sería el primero |
 > | Precio real de charangas | 120/390 € es propuesta |
@@ -1161,7 +1180,6 @@ _etapa: Mentalidad · la ven: Solo equipo interno_
 
 > Nada de esto se vende; solo se cuenta a cuentas grandes (ver «Con quién se habla de visión»).
 > 
-> - **Varias pantallas a la vez** desde el mismo panel, con contenidos por zona. Hoy no existe: es la limitación más seria para festivales.
 > - **Datos y fidelización:** el consentimiento del público como CRM del local o del evento, por segmentos (edad, música, frecuencia), no por persona.
 > - **Remarketing:** volver a contactar a quien pasó por allí.
 > - **Bono copa y red de locales:** a largo plazo. **No se menciona a clientes**: un bono prepago válido en varios locales tiene implicaciones de IVA y posible normativa de dinero electrónico; primero abogado y gestoría.
@@ -1290,7 +1308,7 @@ _etapa: Mentalidad · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
 > - **Cifras de monetización.** Ni «se paga solo», ni «lo recuperas». Si hay que dar un número: La Biblioteca genera 150–300 €/mes en temporada alta pero **10–50 € el resto del año**. Se da el bajo, nunca el alto. Prometer el alto es lo que nos costó la cartera.
 > - **Soporte 24h u horarios.**
-> - **Funcionalidades que no están en producción.** Multipantalla, CRM, remarketing, bonos.
+> - **Funcionalidades que no están en producción.** CRM, remarketing, bonos.
 > - **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.
 > - **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos.
 
@@ -1351,7 +1369,7 @@ _etapa: Mentalidad · sectores: Festivales_
 _etapa: Mentalidad_
 
 > - **Cifras de monetización o retorno.** Mecanismo sí, números no.
-> - **Multipantalla, CRM, remarketing, bonos, «encuentra y gana».** No existen.
+> - **CRM, remarketing, bonos, «encuentra y gana».** No existen.
 > - **Soporte 24h u horarios.**
 > - **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos. La única excepción es el acompañamiento presencial en la primera edición de un festival.
 > - **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.
@@ -1471,15 +1489,17 @@ _etapa: Negociación · sectores: Conciertos y artistas_
 > 
 > **Siempre antes del precio, el ancla** (la kiss cam clásica de 8.000 € por noche). **Suelo: 500 € por evento en sala, 90 € en charanga.** Por debajo, fundador. Precios sin validar.
 
-#### Hoy manejamos una pantalla · `conc-una-pantalla`
+#### Varias pantallas, contenido distinto · `conc-una-pantalla`
 
 _etapa: Descubrimiento · sectores: Conciertos y artistas_
 
-> Hoy un mismo contenido va a todas las pantallas del evento. **Nunca prometas varias.** Se acota desde la primera reunión:
+> Gestionar varias pantallas con contenido distinto **se vende como disponible**. Donde antes se acotaba a una, ahora se pregunta:
 > 
-> > «Hoy manejamos una pantalla. Lo que tenemos que decidir es en cuál y en qué momento.»
+> > «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.»
 > 
-> **La pantalla de la barra** (promociones y felicitaciones sin tocar la del escenario) está **bloqueada hasta que exista el multipantalla**. Prometerlo antes de tiempo es exactamente el error que nos ha costado clientes.
+> Lo que abre: **la pantalla de la barra**. Comunicación y venta in situ con el público esperando, sin tocar la del escenario. Es el argumento de barra, el que mejor funciona con una sala, aplicado a conciertos.
+> 
+> **El límite sigue siendo no inventar nada más allá de esto.** Multipantalla sí; CRM, remarketing y vídeo en directo, no.
 
 #### Los datos: a quién le importan de verdad · `conc-datos`
 
@@ -1514,7 +1534,6 @@ _etapa: Mentalidad · sectores: Conciertos y artistas_
 > | **Prometer que duplica el patrocinio** | La palanca existe, el número no |
 > | **Vender +20.000 sin prueba de carga** | Un «votad todos» nos tumba el servicio |
 > | **Vender donde no hay cobertura** | Un evento fallido se cuenta entre promotores |
-> | **Prometer varias pantallas** | Hoy es una |
 > | **El ángulo VIP** | Hasta confirmar quién los monta |
 > | **Proponer subir gente al escenario** | Seguridad y responsabilidad civil |
 > | **Señalar a una persona concreta en pantalla** | Aceptó subir su mensaje, no que 3.000 personas la busquen |
@@ -1522,6 +1541,68 @@ _etapa: Mentalidad · sectores: Conciertos y artistas_
 > | **Decir que algo va automático** | Todo lleva validación manual. «Siempre hay validación manual, es como sabes seguro lo que sale en tu pantalla». Punto |
 > | **Cerrar con marcas** | Lo lleva fundador |
 > | **CRM, remarketing, perfiles demográficos** | Roadmap |
+
+#### Nota interna: el ajuste que bloquea el gratuito · `hotel-ajuste-gratis`
+
+_etapa: Mentalidad · sectores: Hoteles y resorts · la ven: Solo equipo interno_
+
+> Existe un ajuste que deja el sistema bloqueado en gratuito e impide poner precio desde dentro, para que nadie del equipo de animación acabe cobrándole a un huésped por error. **No se vende ni se menciona:** es configuración nuestra, no una funcionalidad.
+
+#### Antes de la primera reunión · `hotel-avisos`
+
+_etapa: Prospección · sectores: Hoteles y resorts_
+
+> | Qué | Por qué importa |
+> |---|---|
+> | **Conectividad** | En un resort hay wifi, pero no siempre en todas las zonas. Se comprueba antes |
+> | **Validación manual** | Todo lo que sale en pantalla lo valida alguien: una persona del equipo de animación con el móvil |
+> 
+> **Resuelto, y es parte del argumento:**
+> 
+> - **Idioma:** cada huésped lo ve en el suyo; la app detecta el del móvil. En un resort con seis nacionalidades no es un detalle.
+> - **Varias zonas:** pantallas distintas con contenido propio (piscina, buffet, teatro). Se vende como disponible.
+> 
+> **Cruceros: se dejan para después.** La conectividad a bordo cambia el producto y nadie la ha mirado. Si salen, se escuchan; no se proponen.
+
+#### Lo que no se dice en hoteles · `hotel-nunca`
+
+_etapa: Mentalidad · sectores: Hoteles y resorts_
+
+> | Qué | Por qué |
+> |---|---|
+> | **Que se puede cobrar a los huéspedes** | All-inclusive. Te deja fuera de juego |
+> | **El ajuste que bloquea el gratuito** | Es configuración nuestra, no una funcionalidad que vender |
+> | **Cualquier precio** | No hay tarifa para este sector |
+> | **Cruceros** | Hasta que sepamos lo de la conectividad |
+> | **Que va automático** | Todo lleva validación manual |
+> | **CRM, remarketing, datos de huéspedes** | Roadmap |
+> | **Nombres de clientes** | No tenemos ninguno en este sector |
+
+#### Qué queremos saber de cada conversación · `hotel-traer`
+
+_etapa: Seguimiento · sectores: Hoteles y resorts_
+
+> El objetivo no es vender: es saber si la vertical existe.
+> 
+> 1. **¿Quién decidió escuchar?** ¿Animación, dirección, marketing?
+> 2. **¿Cuál fue su primera reacción?** ¿Qué le interesó: el entretenimiento, el contenido o las reseñas?
+> 3. **¿Qué pantallas tienen y en qué zonas?**
+> 4. **¿Qué presupuesto maneja animación y quién lo firma?**
+> 5. **¿Qué le preocupó?** La objeción literal.
+> 6. **¿Hay salón de eventos?** Puede ser la entrada aunque animación no compre.
+> 
+> **Con cinco conversaciones así sabremos si esto es una vertical o una distracción.**
+
+#### Pendientes de hoteles · `hotel-pendientes`
+
+_etapa: Mentalidad · sectores: Hoteles y resorts · la ven: Solo equipo interno_
+
+> | Qué | Estado |
+> |---|---|
+> | Tarifa para el sector | No existe. Hasta tenerla, el dossier va sin precio |
+> | Conectividad en cruceros | Sin mirar |
+> 
+> Nada de esto frena a Ángel: puede empezar a enseñar el dossier ya.
 
 ## Módulo: Pantalla en vivo
 
@@ -1563,13 +1644,13 @@ _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Director/a d
 > 
 > **Es la primera objeción técnica siempre.** Va contestada antes de que la hagan.
 
-#### Acotar desde el principio · `conc-multipantalla`
+#### Cuántas pantallas y en qué zonas · `conc-multipantalla`
 
 _etapa: Pitch / Demo · sectores: Festivales_
 
-> > «Una cosa que te digo ya: hoy manejamos una pantalla, no todo el recinto. Lo que tenemos que decidir es en qué pantalla y en qué momento.»
+> > «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.»
 > 
-> **Se dice en la primera reunión.** Si no, el cliente se imagina el festival entero y lo descubre el día del montaje.
+> **Se pregunta en la primera reunión.** Además de vender, te da información útil del recinto.
 
 ### Objeciones (1)
 

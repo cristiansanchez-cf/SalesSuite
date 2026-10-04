@@ -11,11 +11,14 @@
 import { parseProposal, planProposal } from '../src/lib/proposal/preset';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-interface Sample { key: string; segment: string; title: string; company: string; contact: string; tariff: string; coupon?: string }
+/** `company`/`contact` vacíos: dossier genérico (se enseña a varios). `live`: las aperturas cuentan (no es de prueba). */
+interface Sample { key: string; segment: string; title: string; company: string | null; contact: string | null; tariff: string | null; coupon?: string; live?: boolean }
 
 const SAMPLES: Sample[] = [
   { key: 'locales', segment: 'ocio-nocturno', title: 'Propuesta para Sala Ejemplo', company: 'Sala Ejemplo', contact: 'Marta (gerente)', tariff: 'Local mediano (150–500)' },
   { key: 'promotoras', segment: 'promotoras', title: 'Propuesta para Promotora Ejemplo', company: 'Promotora Ejemplo', contact: 'Javi (producción)', tariff: 'Promotora pequeña · evento suelto' },
+  // Hoteles: dossier de validación para un colaborador externo (documento 14). Sin precio, sin nombre de hotel.
+  { key: 'hoteles', segment: 'hoteles', title: 'Enjoy para hoteles y resorts', company: null, contact: null, tariff: null, live: true },
   { key: 'conciertos', segment: 'conciertos', title: 'Propuesta para Auditorio Ejemplo', company: 'Auditorio Ejemplo', contact: 'Lucía (programación)', tariff: 'Sala de conciertos · suscripción (más de 500)' },
 ];
 
@@ -84,7 +87,7 @@ async function main() {
       else {
         id = (must(await sb.from('dossier').insert({
           tenant_id: tid, author_id: author.user_id, title: s.title, prospect_name: s.contact, prospect_company: s.company,
-          prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: 'test', price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null,
+          prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: s.live ? 'live' : 'test', price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null,
         }).select('id').single(), `crear ${s.key}`) as { id: string }).id;
       }
       must(await sb.from('dossier_item').insert(rows(id)), `módulos ${s.key}`);
@@ -114,7 +117,7 @@ async function main() {
 
     const d = must(await sb.from('dossier').insert({
       tenant_id: tid, author_id: author.user_id, title: s.title, prospect_name: s.contact, prospect_company: s.company,
-      prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: 'test',
+      prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: s.live ? 'live' : 'test',
       price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null,
     }).select('id').single(), `crear ${s.key}`) as { id: string };
     must(await sb.from('dossier_item').insert(mods.map((v, i) => ({ dossier_id: d.id, module_version_id: v.id, position: (i + 1) * 1024 }))), `módulos ${s.key}`);

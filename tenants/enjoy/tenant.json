@@ -2766,6 +2766,26 @@
               "eyebrow": "Cómo empezamos",
               "title": "Propuesta para {company}"
             }
+          },
+          "barra": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Varias pantallas",
+              "title": "La pantalla de la barra",
+              "tabs": [
+                {
+                  "label": "Barra",
+                  "title": "Contenido propio en la barra",
+                  "body": "Una pantalla en la zona de barra, con contenido propio: una promoción, una felicitación, lo que se te ocurra en el momento. Todo a golpe de móvil, sin tocar la del escenario.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/messages-screen.webp",
+                    "alt": "Mensajes en la pantalla de la barra"
+                  }
+                }
+              ]
+            }
           }
         },
         "modes": {
@@ -2796,6 +2816,7 @@
           "publico",
           "llevas",
           "precio",
+          "barra",
           "menu",
           "preshow",
           "marca"
@@ -2805,7 +2826,7 @@
             "key": "tipo",
             "label": "¿Qué tipo de cliente es?",
             "default": "sala",
-            "hint": "Sector sin validar: cero ventas cerradas. Sin cobertura en el recinto, no se vende. Hoy manejamos una pantalla: acótalo en la primera reunión. Agentes de artistas y de DJ: canal, no cliente; sin propuesta.",
+            "hint": "Sector sin validar: cero ventas cerradas. Sin cobertura en el recinto, no se vende. Pregunta: «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.» Agentes de artistas y de DJ: canal, no cliente; sin propuesta.",
             "options": [
               {
                 "key": "sala",
@@ -2992,6 +3013,29 @@
                 "before": "precio"
               }
             ]
+          },
+          {
+            "key": "pantallas",
+            "label": "¿El recinto tiene más de una pantalla?",
+            "hint": "Pregunta: «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.»",
+            "when": [
+              "tipo:sala",
+              "tipo:promotor",
+              "tipo:artista",
+              "tipo:agencia"
+            ],
+            "rules": [
+              {
+                "add": "barra",
+                "after": "llevas",
+                "before": [
+                  "menu",
+                  "preshow",
+                  "marca",
+                  "precio"
+                ]
+              }
+            ]
           }
         ]
       }
@@ -3091,6 +3135,294 @@
       "icon": "party-popper",
       "image": "asset:img/usecases/festivales.webp",
       "notice": "En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta."
+    },
+    {
+      "key": "hoteles",
+      "name": "Hoteles y resorts",
+      "icon": "hotel",
+      "image": null,
+      "description": "Resorts all-inclusive, hoteles vacacionales alejados del centro y hoteles con salón de eventos. Cruceros, más adelante.",
+      "value_prop": "El sitio del que la gente no sale. Su problema no es el dinero: es llenar el tiempo. Aquí no vendemos monetización, vendemos satisfacción y contenido: el huésped que se aburre no se queja, se va y pone una reseña tibia. Y cientos de fotos de huéspedes pasándoselo bien, subidas por ellos aceptando los términos de uso.",
+      "icp": "- Resort all-inclusive con equipo de animación propio y show nocturno\n- Hotel vacacional alejado del centro, donde el huésped cena y se queda\n- Hotel con salón de eventos: bodas, incentivos, convenciones. Entrada fácil aunque la animación no compre\n- Hoteles pequeños independientes, para eventos puntuales: la validación más rápida",
+      "disqualifiers": "- Hotel urbano de paso: el huésped sale a la ciudad\n- Hotel de negocios sin programa de entretenimiento\n- Sitios sin pantalla en ninguna zona común\n- Crucero, hasta que sepamos lo de la conectividad",
+      "buying_process": "Compra el director de entretenimiento y actividades: es su presupuesto y su problema. El jefe de animación es el aliado natural. Dirección firma lo que cuesta dinero (en hoteles pequeños, a veces directamente). En cadenas grandes la venta es larga y con mucha gente.",
+      "deal_size": "Sin tarifa: el dossier va sin precio.",
+      "sales_cycle": "Uno o dos meses entre que se tantea y alguien decide algo. En hoteles pequeños, rápido para sus eventos puntuales.",
+      "notice": "Vertical sin validar: cero conversaciones, cero clientes. Lo lleva un colaborador externo que ya vende a este sector. El objetivo no es vender, es saber si la vertical existe. Nunca se habla de cobrar al huésped ni de precio.",
+      "proposal": {
+        "blocks": {
+          "portada": {
+            "module": "portada",
+            "props": {
+              "eyebrow": "Entretenimiento interactivo para hoteles y resorts",
+              "title": "Que la gente que no sale del hotel tenga algo que hacer",
+              "subtitle": "Tus huéspedes participan desde el móvil y salen en la pantalla. Sin descargar nada."
+            }
+          },
+          "problema": {
+            "module": "lo-que-te-pasa",
+            "props": {
+              "title": "Lo que pasa hoy",
+              "cards": [
+                {
+                  "problem": "Tu equipo de animación entretiene a las mismas personas durante dos semanas.",
+                  "solution": "Una actividad nueva que se renueva sola, porque la hacen ellos."
+                },
+                {
+                  "problem": "Hay horas muertas: la espera del show, la sobremesa, la tarde de piscina.",
+                  "solution": "Algo que hacer desde el móvil, sin montar nada ni sacar a nadie."
+                },
+                {
+                  "problem": "El contenido de tus redes lo tienes que producir tú.",
+                  "solution": "Cientos de fotos de huéspedes pasándoselo bien, subidas por ellos y con permiso para usarlas."
+                }
+              ]
+            }
+          },
+          "huespedes": {
+            "module": "movil-invitado",
+            "props": {
+              "eyebrow": "Tus huéspedes",
+              "title": "Lo que van a hacer tus huéspedes",
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "ownerLabel": "Lo que significa para ti",
+              "parts": [
+                {
+                  "title": "Lo que van a hacer tus huéspedes",
+                  "steps": [
+                    {
+                      "key": "scan",
+                      "says": "Apunta con la cámara al QR de la mesa. Sin descargar nada.",
+                      "owner": "Participa todo el mundo, de cualquier edad"
+                    },
+                    {
+                      "key": "form",
+                      "label": "Su foto o su mensaje",
+                      "says": "Sube su foto o manda su mensaje.",
+                      "owner": "Tu equipo decide qué sale, desde el móvil"
+                    },
+                    {
+                      "key": "live",
+                      "says": "Sale en la pantalla delante de todos.",
+                      "owner": "La sala entera mirando a ver quién aparece"
+                    },
+                    {
+                      "key": "album",
+                      "says": "Se queda en el álbum de la semana.",
+                      "owner": "Contenido de tu hotel, con permiso para publicarlo"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "dinamicas": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Tu equipo",
+              "title": "Lo que puede montar tu equipo",
+              "tabs": [
+                {
+                  "label": "Foto en pantalla",
+                  "title": "Foto en pantalla durante el show",
+                  "body": "El huésped sube la suya y sale en grande.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/live/kisscam-mobile.webp",
+                    "alt": "Su foto, en la pantalla"
+                  }
+                },
+                {
+                  "label": "Reto de fotos",
+                  "title": "Reto de fotos",
+                  "body": "«Sube tres fotos de hoy y entras en el sorteo.» La app enseña al animador cuántas ha subido esa persona, con la hora, para validarlo en dos segundos.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/album-grid.webp",
+                    "alt": "Fotos subidas por los huéspedes"
+                  }
+                },
+                {
+                  "label": "Mensajes",
+                  "title": "Mensajes en pantalla",
+                  "body": "Felicitaciones, cumpleaños, aniversarios. Lo que hoy se hace por megafonía.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/messages-screen.webp",
+                    "alt": "Mensajes de los huéspedes en pantalla"
+                  }
+                }
+              ]
+            }
+          },
+          "por-dentro": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Por dentro",
+              "title": "Cómo funciona por dentro",
+              "tabs": [
+                {
+                  "label": "Por dentro",
+                  "title": "Sin tocar nada de lo que ya tenéis",
+                  "body": "Se abre en un navegador o en una Smart TV, o se instala en el ordenador que ya tenéis conectado a la pantalla.",
+                  "bullets": [
+                    "Lo lleva quien vosotros digáis, desde su móvil.",
+                    "Todo lo que sale en pantalla lo valida una persona. Siempre.",
+                    "El servicio va gratis para el huésped.",
+                    "Cada huésped lo ve en su idioma: la app detecta el del móvil."
+                  ]
+                }
+              ]
+            }
+          },
+          "hablemos": {
+            "module": "portada",
+            "props": {
+              "eyebrow": "Enjoy para hoteles y resorts",
+              "title": "Hablemos",
+              "subtitle": "Cuéntanos cómo funciona vuestro programa de animación y os decimos si esto encaja.",
+              "ctas": [
+                {
+                  "label": "Escríbenos",
+                  "href": "mailto:hola@enjoytheclub.es",
+                  "variant": "primary"
+                }
+              ]
+            }
+          }
+        },
+        "modes": {
+          "full": [
+            "portada",
+            "problema",
+            "huespedes",
+            "dinamicas",
+            "por-dentro",
+            "hablemos"
+          ]
+        },
+        "max": {
+          "full": 6
+        }
+      },
+      "modules": [
+        {
+          "module_key": "movil-invitado",
+          "priority": 1,
+          "fit": "Lo que hace el huésped y lo que significa para el hotel."
+        },
+        {
+          "module_key": "tabs-experiencias",
+          "priority": 1,
+          "fit": "Las tres dinámicas que puede montar el equipo de animación."
+        },
+        {
+          "module_key": "pantalla-en-vivo",
+          "priority": 2,
+          "fit": "Su pantalla, en la piscina, el buffet o el teatro."
+        }
+      ],
+      "personas": [
+        {
+          "key": "hotel-entretenimiento",
+          "name": "Director/a de entretenimiento y actividades",
+          "role": "decisor",
+          "goals": "Diseñar la estrategia de animación y que el huésped responda bien.",
+          "pains": "Entretener a los mismos huéspedes siete o catorce días seguidos.",
+          "kpis": "Encuestas al huésped, observación directa, valoraciones online.",
+          "objections": [
+            "no_lo_necesito",
+            "tiempo"
+          ],
+          "how_to_approach": "Es el comprador: su presupuesto y su problema.",
+          "avoid": "Hablar de cobrar al huésped.",
+          "can_help": "Decide qué entra en el programa de animación.",
+          "can_block": "Si le complica la vida a su equipo.",
+          "angles": []
+        },
+        {
+          "key": "hotel-jefe-animacion",
+          "name": "Jefe/a de animación",
+          "role": "campeon",
+          "goals": "Coordinar al equipo y planificar las actuaciones en directo.",
+          "pains": "Cuando se acaba el repertorio de juegos, se repite.",
+          "kpis": null,
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Lo usa a diario: aliado natural.",
+          "avoid": null,
+          "can_help": "Empuja dentro.",
+          "can_block": null,
+          "angles": []
+        },
+        {
+          "key": "hotel-animadores",
+          "name": "Animadores",
+          "role": "usuario",
+          "goals": "Dinamizar las actividades cara a cara con el huésped.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Quienes lo operan: que no les complique la vida.",
+          "avoid": null,
+          "can_help": null,
+          "can_block": "Si les complica la vida, se muere.",
+          "angles": []
+        },
+        {
+          "key": "hotel-guest-experience",
+          "name": "Guest experience",
+          "role": "influenciador",
+          "goals": "Que la experiencia del huésped sea buena.",
+          "pains": null,
+          "kpis": "Reseñas.",
+          "objections": [],
+          "how_to_approach": "Le interesan las reseñas.",
+          "avoid": null,
+          "can_help": null,
+          "can_block": null,
+          "angles": []
+        },
+        {
+          "key": "hotel-direccion",
+          "name": "Dirección del hotel",
+          "role": "pagador",
+          "goals": null,
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "precio",
+            "no_decido_yo"
+          ],
+          "how_to_approach": "Firma lo que cuesta dinero. Decide en cadenas; en hoteles pequeños, a veces directamente.",
+          "avoid": null,
+          "can_help": null,
+          "can_block": null,
+          "angles": []
+        },
+        {
+          "key": "hotel-marketing",
+          "name": "Marketing y redes",
+          "role": "influenciador",
+          "goals": "Instagram, Booking, TripAdvisor.",
+          "pains": null,
+          "kpis": "Reseñas y contenido.",
+          "objections": [],
+          "how_to_approach": "El contenido es suyo.",
+          "avoid": null,
+          "can_help": null,
+          "can_block": null,
+          "angles": []
+        }
+      ]
     },
     {
       "key": "bodas",
@@ -4011,7 +4343,7 @@
       ],
       "audience": "team",
       "title": "Lo que falta para vender sin miedo",
-      "body": "| Qué | Bloquea |\n|---|---|\n| Reunión con Bruno (documento 13) | Quién decide, quién controla la pantalla, de qué partida sale, quién monta los VIP |\n| Multipantalla (unos cinco días de desarrollo) | La pantalla de la barra |\n| Prueba de carga | Todo lo de +20.000 |\n| Un caso de éxito en concierto | No hay ninguno. El piloto con un artista de Balaunka sería el primero |\n| Precio real de charangas | 120/390 € es propuesta |\n| Condiciones de agentes y colaboradores | Hoy no se puede ofrecer nada por escrito |\n\n**De antes:**\n\n- **Prueba de carga:** sin ella no se vende por encima de 20.000.\n- **% que paga y ticket medio:** sin esto no se habla de monetización.\n- **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.\n- **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.\n- **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.\n- **Pie de foto en el álbum:** hasta que esté, no se vende.",
+      "body": "| Qué | Bloquea |\n|---|---|\n| Reunión con Bruno (documento 13) | Quién decide, quién controla la pantalla, de qué partida sale, quién monta los VIP |\n| Prueba de carga | Todo lo de +20.000 |\n| Un caso de éxito en concierto | No hay ninguno. El piloto con un artista de Balaunka sería el primero |\n| Precio real de charangas | 120/390 € es propuesta |\n| Condiciones de agentes y colaboradores | Hoy no se puede ofrecer nada por escrito |\n\n**De antes:**\n\n- **Prueba de carga:** sin ella no se vende por encima de 20.000.\n- **% que paga y ticket medio:** sin esto no se habla de monetización.\n- **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.\n- **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.\n- **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.\n- **Pie de foto en el álbum:** hasta que esté, no se vende.",
       "pinned": null,
       "objection": null
     },
@@ -4235,7 +4567,7 @@
       "kind": "pitch",
       "stage": "pitch_demo",
       "title": "Lo que existe hoy (y a veces no se vende)",
-      "body": "Está en producción y se puede enseñar:\n\n- Fotos del público en pantalla, con validación.\n- Álbum colaborativo, **con descarga de las fotos**.\n- Mensajes en pantalla, con o sin foto.\n- Peticiones de canciones, con menú abierto o cerrado, con o sin dedicatoria.\n- **Mensajes a pantalla en tiempo real desde el móvil del responsable.**\n- Pantalla Lite (navegador, Smart TV) y Desktop (NDI sobre los visuales).\n- Consentimiento de uso comercial del contenido.\n- Analítica de participación.\n\n**Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.",
+      "body": "Está en producción y se puede enseñar:\n\n- Fotos del público en pantalla, con validación.\n- Álbum colaborativo, **con descarga de las fotos**.\n- Mensajes en pantalla, con o sin foto.\n- Peticiones de canciones, con menú abierto o cerrado, con o sin dedicatoria.\n- **Mensajes a pantalla en tiempo real desde el móvil del responsable.**\n- Pantalla Lite (navegador, Smart TV) y Desktop (NDI sobre los visuales).\n- Consentimiento de uso comercial del contenido.\n- Analítica de participación.\n\n**Varias pantallas:** contenido distinto en cada una (piscina, buffet, teatro; escenario y barra). Se vende como disponible.",
       "pinned": null
     },
     {
@@ -4260,7 +4592,7 @@
       "stage": "mentalidad",
       "audience": "team",
       "title": "Roadmap 2027 (se cuenta, no se vende)",
-      "body": "Nada de esto se vende; solo se cuenta a cuentas grandes (ver «Con quién se habla de visión»).\n\n- **Varias pantallas a la vez** desde el mismo panel, con contenidos por zona. Hoy no existe: es la limitación más seria para festivales.\n- **Datos y fidelización:** el consentimiento del público como CRM del local o del evento, por segmentos (edad, música, frecuencia), no por persona.\n- **Remarketing:** volver a contactar a quien pasó por allí.\n- **Bono copa y red de locales:** a largo plazo. **No se menciona a clientes**: un bono prepago válido en varios locales tiene implicaciones de IVA y posible normativa de dinero electrónico; primero abogado y gestoría.",
+      "body": "Nada de esto se vende; solo se cuenta a cuentas grandes (ver «Con quién se habla de visión»).\n\n- **Datos y fidelización:** el consentimiento del público como CRM del local o del evento, por segmentos (edad, música, frecuencia), no por persona.\n- **Remarketing:** volver a contactar a quien pasó por allí.\n- **Bono copa y red de locales:** a largo plazo. **No se menciona a clientes**: un bono prepago válido en varios locales tiene implicaciones de IVA y posible normativa de dinero electrónico; primero abogado y gestoría.",
       "pinned": null
     },
     {
@@ -5288,7 +5620,7 @@
       ],
       "personas": [],
       "title": "Lo que no se dice nunca",
-      "body": "- **Cifras de monetización.** Ni «se paga solo», ni «lo recuperas». Si hay que dar un número: La Biblioteca genera 150–300 €/mes en temporada alta pero **10–50 € el resto del año**. Se da el bajo, nunca el alto. Prometer el alto es lo que nos costó la cartera.\n- **Soporte 24h u horarios.**\n- **Funcionalidades que no están en producción.** Multipantalla, CRM, remarketing, bonos.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos.",
+      "body": "- **Cifras de monetización.** Ni «se paga solo», ni «lo recuperas». Si hay que dar un número: La Biblioteca genera 150–300 €/mes en temporada alta pero **10–50 € el resto del año**. Se da el bajo, nunca el alto. Prometer el alto es lo que nos costó la cartera.\n- **Soporte 24h u horarios.**\n- **Funcionalidades que no están en producción.** CRM, remarketing, bonos.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -6067,8 +6399,8 @@
         "festivales"
       ],
       "personas": [],
-      "title": "Acotar desde el principio",
-      "body": "> «Una cosa que te digo ya: hoy manejamos una pantalla, no todo el recinto. Lo que tenemos que decidir es en qué pantalla y en qué momento.»\n\n**Se dice en la primera reunión.** Si no, el cliente se imagina el festival entero y lo descubre el día del montaje.",
+      "title": "Cuántas pantallas y en qué zonas",
+      "body": "> «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.»\n\n**Se pregunta en la primera reunión.** Además de vender, te da información útil del recinto.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -6185,7 +6517,7 @@
       "segments": [],
       "personas": [],
       "title": "Lo que no se dice nunca",
-      "body": "- **Cifras de monetización o retorno.** Mecanismo sí, números no.\n- **Multipantalla, CRM, remarketing, bonos, «encuentra y gana».** No existen.\n- **Soporte 24h u horarios.**\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos. La única excepción es el acompañamiento presencial en la primera edición de un festival.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Fechas de entrega** de cualquier cosa futura.",
+      "body": "- **Cifras de monetización o retorno.** Mecanismo sí, números no.\n- **CRM, remarketing, bonos, «encuentra y gana».** No existen.\n- **Soporte 24h u horarios.**\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos. La única excepción es el acompañamiento presencial en la primera edición de un festival.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Fechas de entrega** de cualquier cosa futura.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -6598,8 +6930,8 @@
       "audience": "all",
       "about": false,
       "pinned": null,
-      "title": "Hoy manejamos una pantalla",
-      "body": "Hoy un mismo contenido va a todas las pantallas del evento. **Nunca prometas varias.** Se acota desde la primera reunión:\n\n> «Hoy manejamos una pantalla. Lo que tenemos que decidir es en cuál y en qué momento.»\n\n**La pantalla de la barra** (promociones y felicitaciones sin tocar la del escenario) está **bloqueada hasta que exista el multipantalla**. Prometerlo antes de tiempo es exactamente el error que nos ha costado clientes.",
+      "title": "Varias pantallas, contenido distinto",
+      "body": "Gestionar varias pantallas con contenido distinto **se vende como disponible**. Donde antes se acotaba a una, ahora se pregunta:\n\n> «¿Cuántas pantallas tenéis y en qué zonas? Podemos poner contenido distinto en cada una.»\n\nLo que abre: **la pantalla de la barra**. Comunicación y venta in situ con el público esperando, sin tocar la del escenario. Es el argumento de barra, el que mejor funciona con una sala, aplicado a conciertos.\n\n**El límite sigue siendo no inventar nada más allá de esto.** Multipantalla sí; CRM, remarketing y vídeo en directo, no.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -6659,7 +6991,147 @@
       "about": false,
       "pinned": null,
       "title": "Nunca en conciertos",
-      "body": "| Qué | Por qué |\n|---|---|\n| **Vender a un promotor como coste de producción** | Margen estrecho y riesgo propio |\n| **Prometer que duplica el patrocinio** | La palanca existe, el número no |\n| **Vender +20.000 sin prueba de carga** | Un «votad todos» nos tumba el servicio |\n| **Vender donde no hay cobertura** | Un evento fallido se cuenta entre promotores |\n| **Prometer varias pantallas** | Hoy es una |\n| **El ángulo VIP** | Hasta confirmar quién los monta |\n| **Proponer subir gente al escenario** | Seguridad y responsabilidad civil |\n| **Señalar a una persona concreta en pantalla** | Aceptó subir su mensaje, no que 3.000 personas la busquen |\n| **Vídeo en directo** | No existe |\n| **Decir que algo va automático** | Todo lleva validación manual. «Siempre hay validación manual, es como sabes seguro lo que sale en tu pantalla». Punto |\n| **Cerrar con marcas** | Lo lleva fundador |\n| **CRM, remarketing, perfiles demográficos** | Roadmap |",
+      "body": "| Qué | Por qué |\n|---|---|\n| **Vender a un promotor como coste de producción** | Margen estrecho y riesgo propio |\n| **Prometer que duplica el patrocinio** | La palanca existe, el número no |\n| **Vender +20.000 sin prueba de carga** | Un «votad todos» nos tumba el servicio |\n| **Vender donde no hay cobertura** | Un evento fallido se cuenta entre promotores |\n| **El ángulo VIP** | Hasta confirmar quién los monta |\n| **Proponer subir gente al escenario** | Seguridad y responsabilidad civil |\n| **Señalar a una persona concreta en pantalla** | Aceptó subir su mensaje, no que 3.000 personas la busquen |\n| **Vídeo en directo** | No existe |\n| **Decir que algo va automático** | Todo lleva validación manual. «Siempre hay validación manual, es como sabes seguro lo que sale en tu pantalla». Punto |\n| **Cerrar con marcas** | Lo lleva fundador |\n| **CRM, remarketing, perfiles demográficos** | Roadmap |",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-tesis",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La tesis, en una página",
+      "body": "**El cliente ideal es el sitio del que la gente no sale.** Resort all-inclusive, hotel vacacional alejado del centro. Mucha gente, en el mismo sitio, durante muchos días, con todo pagado.\n\n**Su problema no es el dinero: es llenar el tiempo.** Un equipo de animación de seis personas tiene que entretener a los mismos huéspedes durante siete o catorce días seguidos, y cuando se acaba el repertorio se repite. El huésped que se aburre no se queja: se va y pone una reseña tibia.\n\n**Por eso aquí no vendemos monetización, vendemos satisfacción y contenido.** Y el programa de animación lo reciben todos los departamentos del hotel: lo que entra en animación lo ve toda la casa.\n\n*Tesis sin validar, con fuentes en el documento 14.*",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-gratis",
+      "module_key": null,
+      "kind": "script",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Gratis para el huésped, y dilo pronto",
+      "body": "**La monetización no se menciona.** El huésped lleva pulsera de todo incluido: no va a pagar por una canción, y plantearlo te deja como alguien que no entiende el negocio. Lo que sí se dice, pronto:\n\n> «Aquí el servicio va gratis para el huésped. Si en algún momento queréis dejar que alguien deje una propina, se puede, y ese dinero se queda en el hotel. Pero por defecto, gratis.»",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-ajuste-gratis",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Nota interna: el ajuste que bloquea el gratuito",
+      "body": "Existe un ajuste que deja el sistema bloqueado en gratuito e impide poner precio desde dentro, para que nadie del equipo de animación acabe cobrándole a un huésped por error. **No se vende ni se menciona:** es configuración nuestra, no una funcionalidad.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-avisos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Antes de la primera reunión",
+      "body": "| Qué | Por qué importa |\n|---|---|\n| **Conectividad** | En un resort hay wifi, pero no siempre en todas las zonas. Se comprueba antes |\n| **Validación manual** | Todo lo que sale en pantalla lo valida alguien: una persona del equipo de animación con el móvil |\n\n**Resuelto, y es parte del argumento:**\n\n- **Idioma:** cada huésped lo ve en el suyo; la app detecta el del móvil. En un resort con seis nacionalidades no es un detalle.\n- **Varias zonas:** pantallas distintas con contenido propio (piscina, buffet, teatro). Se vende como disponible.\n\n**Cruceros: se dejan para después.** La conectividad a bordo cambia el producto y nadie la ha mirado. Si salen, se escuchan; no se proponen.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-nunca",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Lo que no se dice en hoteles",
+      "body": "| Qué | Por qué |\n|---|---|\n| **Que se puede cobrar a los huéspedes** | All-inclusive. Te deja fuera de juego |\n| **El ajuste que bloquea el gratuito** | Es configuración nuestra, no una funcionalidad que vender |\n| **Cualquier precio** | No hay tarifa para este sector |\n| **Cruceros** | Hasta que sepamos lo de la conectividad |\n| **Que va automático** | Todo lleva validación manual |\n| **CRM, remarketing, datos de huéspedes** | Roadmap |\n| **Nombres de clientes** | No tenemos ninguno en este sector |",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-traer",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Qué queremos saber de cada conversación",
+      "body": "El objetivo no es vender: es saber si la vertical existe.\n\n1. **¿Quién decidió escuchar?** ¿Animación, dirección, marketing?\n2. **¿Cuál fue su primera reacción?** ¿Qué le interesó: el entretenimiento, el contenido o las reseñas?\n3. **¿Qué pantallas tienen y en qué zonas?**\n4. **¿Qué presupuesto maneja animación y quién lo firma?**\n5. **¿Qué le preocupó?** La objeción literal.\n6. **¿Hay salón de eventos?** Puede ser la entrada aunque animación no compre.\n\n**Con cinco conversaciones así sabremos si esto es una vertical o una distracción.**",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "hotel-pendientes",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "hoteles"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Pendientes de hoteles",
+      "body": "| Qué | Estado |\n|---|---|\n| Tarifa para el sector | No existe. Hasta tenerla, el dossier va sin precio |\n| Conectividad en cruceros | Sin mirar |\n\nNada de esto frena a Ángel: puede empezar a enseñar el dossier ya.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],

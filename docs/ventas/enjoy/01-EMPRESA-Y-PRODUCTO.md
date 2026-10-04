@@ -35,7 +35,7 @@ Está en producción y se puede enseñar:
 - Consentimiento de uso comercial del contenido.
 - Analítica de participación.
 
-**Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.
+**Varias pantallas:** contenido distinto en cada una (piscina, buffet, teatro; escenario y barra). Se vende como disponible.
 
 
 ### Primero: el contenido con permiso · `noche-pitch-contenido`
