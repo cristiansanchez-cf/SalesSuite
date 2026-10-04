@@ -92,6 +92,12 @@ const step = () => ++n;
           )}
         </header>
       )}
+      {sg.notice && (
+        <div class="co-alert co-alert--attention flex gap-3 border-l-4 !border-l-[color:var(--co-signal)]" role="note" data-testid="sector-notice">
+          <span class="mt-0.5 shrink-0 text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="triangle-alert" size={20} /></span>
+          <div class="grid gap-1"><p class="font-semibold">{msg.sector.notice}</p><p>{sg.notice}</p></div>
+        </div>
+      )}
     </div>
 
     {sg.valueProp && (

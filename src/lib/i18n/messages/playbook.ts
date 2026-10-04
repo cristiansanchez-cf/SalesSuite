@@ -152,7 +152,7 @@ const es = {
     },
   },
   sector: {
-    edit: 'Editar sector', ticket: 'Ticket:', cycle: '⏱ Ciclo:',
+    edit: 'Editar sector', notice: 'Aviso', ticket: 'Ticket:', cycle: '⏱ Ciclo:',
     whyUs: 'Por qué nosotros', icp: 'Cliente ideal', disqualifiers: 'No pierdas el tiempo si…', buyingProcess: 'Cómo compran',
     modulesHere: 'Qué módulos vender aquí', compose: (name: string) => `Preparar un mensaje para ${name.toLowerCase()}`,
     actorsTitle: 'Actores: quién decide, quién paga, quién puede tumbarlo',
@@ -369,7 +369,7 @@ export const playbookMessages = defineMessages({
       },
     },
     sector: {
-      edit: 'Edit sector', ticket: 'Deal size:', cycle: '⏱ Cycle:',
+      edit: 'Edit sector', notice: 'Heads-up', ticket: 'Deal size:', cycle: '⏱ Cycle:',
       whyUs: 'Why us', icp: 'Ideal customer', disqualifiers: 'Do not spend time if…', buyingProcess: 'How they buy',
       modulesHere: 'Which modules to sell here', compose: (name) => `Write a message for: ${name}`,
       actorsTitle: 'Stakeholders: who decides, who pays, who can block it',
@@ -583,7 +583,7 @@ export const playbookMessages = defineMessages({
       },
     },
     sector: {
-      edit: 'Editar setor', ticket: 'Ticket:', cycle: '⏱ Ciclo:',
+      edit: 'Editar setor', notice: 'Aviso', ticket: 'Ticket:', cycle: '⏱ Ciclo:',
       whyUs: 'Por que nós', icp: 'Cliente ideal', disqualifiers: 'Não perca tempo se…', buyingProcess: 'Como compram',
       modulesHere: 'Quais módulos vender aqui', compose: (name) => `Preparar uma mensagem para: ${name}`,
       actorsTitle: 'Stakeholders: quem decide, quem paga, quem pode barrar',
@@ -797,7 +797,7 @@ export const playbookMessages = defineMessages({
       },
     },
     sector: {
-      edit: '업종 편집', ticket: '거래 규모:', cycle: '⏱ 주기:',
+      edit: '업종 편집', notice: '주의', ticket: '거래 규모:', cycle: '⏱ 주기:',
       whyUs: '우리를 선택하는 이유', icp: '이상적인 고객', disqualifiers: '이런 경우 시간을 쓰지 마세요…', buyingProcess: '구매 방식',
       modulesHere: '이 업종에 판매할 모듈', compose: (name) => `${name} 대상 메시지 작성`,
       actorsTitle: '이해관계자: 누가 결정하고, 누가 비용을 내며, 누가 무산시킬 수 있는지',

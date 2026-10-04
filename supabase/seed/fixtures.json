@@ -379,11 +379,11 @@
             }
           },
           {
-            "label": "Retos",
-            "title": "Retos y votaciones por mesa",
-            "body": "Gamificación ligera para que nadie se quede sentado.",
+            "label": "Por mesa",
+            "title": "Dinámicas por mesa",
+            "body": "Un ejemplo de lo versátil que es: pon un número en cada mesa y que las mesas se escriban por la pantalla.",
             "bullets": [
-              "Premios del local"
+              "«Los de la mesa 1 son muy guapos»"
             ]
           }
         ]
@@ -573,7 +573,7 @@
           {
             "scene": "club.idle",
             "label": "Reclamo",
-            "says": "Lo que se ve el 90 % de la noche: un QR gigante. El anzuelo: sin esto no entra nadie."
+            "says": "Lo que se ve la mayor parte de la noche: un QR gigante. El anzuelo: sin esto no entra nadie."
           },
           {
             "scene": "club.song",
@@ -583,12 +583,12 @@
           {
             "scene": "club.photo",
             "label": "Foto",
-            "says": "Su foto en grande y entera (nunca se recorta una cara). Es lo que más se comparte."
+            "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum de la noche: fotos con permiso que el local puede usar en sus redes."
           },
           {
             "scene": "club.message",
             "label": "Dedicatoria",
-            "says": "Un mensaje delante de toda la sala. Se cobra aparte y funciona solo."
+            "says": "Un mensaje delante de toda la sala, con o sin foto."
           },
           {
             "scene": "tp.idle",
@@ -1446,7 +1446,8 @@
       "position": 3072,
       "status": "official",
       "icon": "mic",
-      "image": "/demo/enjoy/img/djs.webp"
+      "image": "/demo/enjoy/img/djs.webp",
+      "notice": "En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta."
     },
     {
       "id": "00000000-0000-4000-8000-0000005e0004",
@@ -1463,7 +1464,8 @@
       "position": 4096,
       "status": "official",
       "icon": "party-popper",
-      "image": "/demo/enjoy/img/festivales.webp"
+      "image": "/demo/enjoy/img/festivales.webp",
+      "notice": "En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta."
     }
   ],
   "persona": [
@@ -1815,7 +1817,7 @@
       "tenant_id": "00000000-0000-4000-8000-000000000e01",
       "segment_id": "00000000-0000-4000-8000-0000005e0004",
       "module_id": "00000000-0000-4000-8000-00000000e102",
-      "fit": "Retos y kiss-cam en zonas comunes y entre conciertos.",
+      "fit": "Fotos y mensajes del público en pantalla, en zonas comunes y entre conciertos.",
       "priority": 1
     },
     {
@@ -1928,7 +1930,7 @@
       "tenant_id": "00000000-0000-4000-8000-000000000e01",
       "persona_id": "00000000-0000-4000-8000-0000009e0015",
       "module_id": "00000000-0000-4000-8000-00000000e102",
-      "angle": "Montaje cerrado, plan B sin conexión y prueba previa."
+      "angle": "Cero montaje para producción. Y antes de nada, comprobar la cobertura y el wifi del recinto: si no hay, no se hace."
     }
   ],
   "dossier_contact": [

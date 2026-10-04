@@ -33,7 +33,7 @@ export const REGISTRY = {
   'live-screen': {
     label: 'Pantalla en vivo (interactiva)',
     schema: liveScreenSchema,
-    example: { title: 'Así se ve en tu local', scenes: [{ scene: 'club.idle', label: 'Reclamo', says: 'Lo que se ve el 90 % de la noche: el QR.' }] },
+    example: { title: 'Así se ve en tu local', scenes: [{ scene: 'club.idle', label: 'Reclamo', says: 'Lo que se ve la mayor parte de la noche: el QR.' }] },
     load: () => import('./live-screen/Component.astro'),
   },
   'phone-tour': {

@@ -36,7 +36,7 @@ const toRow = (p: Record<string, unknown>) =>
 const toSegment = (r: Row): Segment => ({
   id: r.id, key: r.key, name: r.name, description: r.description, valueProp: r.value_prop, icp: r.icp, disqualifiers: r.disqualifiers,
   buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status, icon: r.icon ?? null,
-  image: r.image ?? null,
+  image: r.image ?? null, notice: r.notice ?? null,
 });
 const toPersona = (r: Row): Persona => ({
   id: r.id, segmentId: r.segment_id, key: r.key, name: r.name, role: r.role, goals: r.goals, pains: r.pains, kpis: r.kpis,

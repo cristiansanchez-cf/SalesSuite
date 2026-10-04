@@ -19,7 +19,7 @@ export interface TrackLine {
 export interface TrackFact { label: string; text: string }
 
 export interface TrackSection {
-  id: 'cuenta' | 'apertura' | 'descubrimiento' | 'presentacion' | 'precio' | 'objeciones' | 'cierre';
+  id: 'antes' | 'preparacion' | 'cuenta' | 'apertura' | 'descubrimiento' | 'relato' | 'presentacion' | 'precio' | 'objeciones' | 'cierre';
   title: string;
   hint: string;
   /** Subtítulo por bloque (presentación: uno por módulo; cuenta: uno por persona). */
@@ -65,9 +65,17 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
   const tipLine = (x: ContributionView): TrackLine => ({ source: 'team', id: x.id, kind: x.kind, title: p(x.title), text: p(x.body), refs: [], score: x.score });
 
 
-  const general = (kinds: PlayKind[], stages?: Stage[]) => official
-    .filter((x) => x.moduleId === null && kinds.includes(x.kind) && (!stages || (x.stage && stages.includes(x.stage))))
-    .sort((a, b) => a.position - b.position);
+  // Jugadas sin módulo de esos tipos/etapas. Si el sector tiene las suyas, solo esas: sus guiones
+  // sustituyen a los generales (no se mezclan dos aperturas o dos «es caro»).
+  const general = (kinds: PlayKind[], stages?: Stage[]) => {
+    const all = official
+      .filter((x) => x.moduleId === null && kinds.includes(x.kind) && (!stages || (x.stage && stages.includes(x.stage))))
+      .sort((a, b) => a.position - b.position);
+    const own = segKey ? all.filter((x) => x.segments.includes(segKey)) : [];
+    return own.length ? own : all;
+  };
+  // ¿El sector tiene guion propio (relato verificado)? Entonces se cuenta su relato y no el general.
+  const sectorOwn = !!segKey && official.some((x) => x.moduleId === null && x.kind === 'pitch' && x.segments.includes(segKey));
   const ofModules = (kinds: PlayKind[]) => official.filter((x) => x.moduleId && moduleIds.has(x.moduleId) && kinds.includes(x.kind));
   const sharedTips = tips.filter((t) => t.status === 'shared' || t.status === 'accepted');
 
@@ -78,6 +86,19 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
   const moduleIds = new Set(modules.map((m) => m.id));
 
   const sections: TrackSection[] = [];
+
+  const notice = account?.segment?.notice ?? null;
+  const mindset = general(['tip', 'fit'], ['mentalidad']);
+  if (notice || mindset.length) {
+    sections.push({
+      id: 'antes', title: 'Antes de nada', hint: 'Cómo hay que llevar esta conversación.',
+      blocks: [{ title: null, note: notice ? `Aviso: ${notice}` : undefined, lines: mindset.map(line) }],
+    });
+  }
+  sections.push({
+    id: 'preparacion', title: 'Antes de ir', hint: 'Lo que se mira y se manda antes de la llamada o la visita.',
+    blocks: [{ title: null, lines: general(['script', 'tip', 'fit'], ['prospeccion']).map(line) }],
+  });
 
   if (account && (account.contacts.length || account.segment)) {
     const blocks: TrackSection['blocks'] = account.contacts.map(({ contact, persona }) => {
@@ -113,16 +134,23 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
 
   sections.push({
     id: 'apertura', title: 'Apertura', hint: 'Primeros minutos: su objetivo antes que tu producto.',
-    blocks: [{ title: null, lines: [...general(['script'], ['primer_contacto', 'prospeccion']), ...general(['pitch'])].map(line) }],
+    blocks: [{ title: null, lines: [...general(['script', 'tip'], ['primer_contacto']), ...(sectorOwn ? [] : general(['pitch']))].map(line) }],
   });
 
   sections.push({
     id: 'descubrimiento', title: 'Descubrimiento', hint: 'Pregunta y escucha: cada respuesta te dice qué módulo enseñar.',
     blocks: [{
       title: null,
-      lines: [...general(['discovery']), ...ofModules(['discovery']).sort(byEvidenceThenPosition)].map(line),
+      lines: [...general(['discovery', 'fit'], ['descubrimiento']), ...ofModules(['discovery']).sort(byEvidenceThenPosition)].map(line),
     }],
   });
+
+  if (sectorOwn) {
+    sections.push({
+      id: 'relato', title: 'Lo que se cuenta', hint: 'En este orden. Es estructura, no un texto para recitar.',
+      blocks: [{ title: null, lines: general(['pitch', 'proof', 'tip'], ['pitch_demo']).map(line) }],
+    });
+  }
 
   const uncovered: string[] = [];
   sections.push({
@@ -145,7 +173,7 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
     id: 'precio', title: 'Precio', hint: 'Después del valor, nunca antes.',
     blocks: [{
       title: null, note: priceNote,
-      lines: [...ofModules(['monetization']).sort(byEvidenceThenPosition), ...general(['monetization']), ...general(['tip'], ['negociacion'])].map(line),
+      lines: [...ofModules(['monetization']).sort(byEvidenceThenPosition), ...general(['monetization', 'tip'], ['negociacion'])].map(line),
     }],
   });
 
@@ -161,7 +189,7 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
   });
 
   sections.push({
-    id: 'cierre', title: 'Cierre', hint: 'Una fecha concreta, no "hablamos".',
+    id: 'cierre', title: 'Cierre y seguimiento', hint: 'Una fecha concreta, no "hablamos". Y después, seguimiento: es lo que más clientes nos ha hecho perder.',
     blocks: [{ title: null, lines: general(['script', 'tip'], ['cierre', 'seguimiento']).map(line) }],
   });
 

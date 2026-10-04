@@ -23,7 +23,7 @@ const rowToContribution = (r: ContributionRow): Contribution => ({
 const rowToSegment = (r: SegmentRow): Segment => ({
   id: r.id, key: r.key, name: r.name, description: r.description, valueProp: r.value_prop, icp: r.icp, disqualifiers: r.disqualifiers,
   buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status as Segment['status'], icon: r.icon ?? null,
-  image: r.image ?? null,
+  image: r.image ?? null, notice: r.notice ?? null,
 });
 const rowToPersona = (r: PersonaRow): Persona => ({
   id: r.id, segmentId: r.segment_id, key: r.key, name: r.name, role: r.role as Persona['role'], goals: r.goals, pains: r.pains, kpis: r.kpis,

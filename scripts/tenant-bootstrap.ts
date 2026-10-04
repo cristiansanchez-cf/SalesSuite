@@ -58,6 +58,8 @@ const tenantFile = z.object({
     key: z.string(), name: z.string(), icon: z.string().nullable().default(null), image: z.string().nullable().default(null), description: z.string().nullable().default(null), value_prop: z.string().nullable().default(null),
     icp: z.string().nullable().default(null), disqualifiers: z.string().nullable().default(null), buying_process: z.string().nullable().default(null),
     deal_size: z.string().nullable().default(null), sales_cycle: z.string().nullable().default(null),
+    /** Aviso que el comercial tiene que ver en este sector (Aprende y guion de la reunión). */
+    notice: z.string().max(600).nullable().default(null),
     modules: z.array(z.object({ module_key: z.string(), priority: z.number().int().min(1).max(3).default(2), fit: z.string().nullable().default(null) })).default([]),
     personas: z.array(z.object({
       key: z.string(), name: z.string(), role: z.string(), goals: z.string().nullable().default(null), pains: z.string().nullable().default(null),
@@ -84,6 +86,8 @@ const tenantFile = z.object({
     code: z.string().regex(/^[A-Z0-9][A-Z0-9-]{1,31}$/), label: z.string().min(1).max(80), kind: z.enum(['percent', 'fixed', 'free_months']),
     value: z.number().int().positive(), note: z.string().max(300).nullable().default(null), active: z.boolean().default(true),
   })).default([]),
+  /** Jugadas retiradas (sustituidas): se archivan con su historial, nunca se borran. */
+  retired_plays: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/)).default([]),
   /** Situaciones (docs/EVIDENCE.md): tipo de personalidad, región, rasgos de la cuenta… Upsert por key. */
   facets: z.array(z.unknown()).default([]),
   /** Playbook de ventas (docs/PLAYBOOK.md). `module_key` null = jugada general. */
@@ -226,6 +230,7 @@ function validate(t: TenantFile, assetKeys: string[]) {
   const pkeys = new Set<string>();
   for (const p of t.playbook) {
     if (pkeys.has(p.key)) errors.push(`playbook: clave duplicada ${p.key}`);
+    if (t.retired_plays.includes(p.key)) errors.push(`playbook.${p.key}: está también en retired_plays`);
     pkeys.add(p.key);
     if (p.module_key && !keys.has(p.module_key)) errors.push(`playbook.${p.key}: module_key "${p.module_key}" no está en catalog`);
     for (const sk of p.segments) if (t.market.length && !segKeys.has(sk)) errors.push(`playbook.${p.key}: sector "${sk}" no está en market`);
@@ -357,7 +362,7 @@ async function main() {
   for (const [i, sg] of t.market.entries()) {
     const segRow = {
       tenant_id: tenantId, key: sg.key, name: sg.name, description: sg.description, value_prop: sg.value_prop, icp: sg.icp,
-      disqualifiers: sg.disqualifiers, buying_process: sg.buying_process, deal_size: sg.deal_size, sales_cycle: sg.sales_cycle,
+      disqualifiers: sg.disqualifiers, buying_process: sg.buying_process, deal_size: sg.deal_size, sales_cycle: sg.sales_cycle, notice: sg.notice,
       position: (i + 1) * 1024, status: 'official', icon: sg.icon,
       image: (() => { const u = replaceAssets(sg.image, urls, missing); return typeof u === 'string' && !u.startsWith('asset:') ? u : null; })(),
     };
@@ -431,6 +436,16 @@ async function main() {
     }
   }
   if (t.playbook.length) log(`playbook: ${t.playbook.length} jugadas sincronizadas`);
+  // Retiradas: archivadas (dejan de salir en Aprende y en los guiones) con una revisión que dice por qué.
+  let archived = 0;
+  for (const key of t.retired_plays) {
+    const cur = must(await sb.from('play').select('id, version, status').eq('tenant_id', tenantId).eq('key', key).maybeSingle(), `leer jugada ${key}`) as { id: string; version: number; status: string } | null;
+    if (!cur || cur.status === 'archived') continue;
+    must(await sb.from('play').update({ status: 'archived', version: cur.version + 1 }).eq('id', cur.id), `retirar ${key}`);
+    must(await sb.from('play_revision').insert({ tenant_id: tenantId, play_id: cur.id, version: cur.version + 1, snapshot: { status: 'archived' }, change_note: 'Retirada: la sustituyen los guiones verificados' }), `revisión ${key}`);
+    archived++;
+  }
+  if (archived) log(`playbook: ${archived} jugadas retiradas (archivadas)`);
 
   // 7. admins
   const redirectTo = `https://${primary.hostname}/admin/auth/confirm?next=/admin/account`;

@@ -37,6 +37,10 @@ Cada jugada lleva los **mismos campos que una ficha del Cerebro de Ventas**: *cu
 
 ### 2. Aparece donde se vende ✅
 - **En el builder**, pestaña **"Guion de venta"**: con los módulos que el comercial ha puesto en *este* dossier, en *su* orden, la app arma el guion de la reunión. Apertura, preguntas de descubrimiento, cómo presentar cada módulo, precio con las cifras del dossier, objeciones probables según los módulos elegidos, y cierre. Los textos se personalizan con `{company}`/`{prospect}`. Se puede imprimir o copiar.
+  - Orden: **Antes de nada** (aviso del sector + mentalidad) → **Antes de ir** (prospección) → Con quién hablas → Apertura → Descubrimiento → **Lo que se cuenta** (relato del sector, si lo tiene) → Presentación por módulo → Precio → Objeciones → Cierre y seguimiento.
+  - **El sector manda**: en cada apartado, si el sector de la cuenta tiene jugadas propias, salen solo esas; las generales solo cubren huecos. Así un guion verificado no se mezcla con una apertura o un «es caro» genérico.
+- **Guiones verificados** (Enjoy: locales, promotoras, conciertos, festivales): se cargan literales con `scripts/import-guiones.py` desde `docs/ventas/enjoy/fuentes/`. Las jugadas que sustituyen van en `retired_plays` de `tenant.json`: el alta las **archiva** (con revisión «Retirada…»), no las borra.
+- **Aviso del sector** (`segment.notice`, máx. 600): lo pone el alta (`market[].notice`). Sale arriba de la ficha del sector en Aprende y al principio del guion. Ejemplo: conciertos y festivales, «aún no hemos cerrado ninguna venta».
 - **En "Aprende"**: una ficha de venta por módulo con la **vista previa en vivo del módulo** (el comercial ve exactamente lo que verá el cliente), sus jugadas y lo que ha aportado el equipo.
 
 ### 3. Dos capas: oficial y equipo ✅

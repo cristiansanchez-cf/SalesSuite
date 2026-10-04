@@ -38,6 +38,8 @@ export interface Segment {
   icon: string | null;
   /** Foto del sector (fondo de su tarjeta y de su ficha). La pone el alta del espacio; el editor no la toca. */
   image: string | null;
+  /** Aviso para quien vende este sector (p. ej. «aquí aún no hemos cerrado nada»). Lo pone el alta del espacio. */
+  notice?: string | null;
 }
 
 export interface Persona {
