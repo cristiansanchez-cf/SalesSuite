@@ -1,0 +1,26 @@
+{
+  "$comment": "Alta de Oquea en Cofundo Ventas (docs/oquea/00-HANDOFF.md). Esqueleto vacío: el contenido entra documento a documento con scripts/apply-oquea-NN.py, nunca a mano. Los tokens de partida salen de la skill oquea-design (SKILL.md §3 y §5); text, muted, surface, border y accent-contrast están PENDIENTES del design system (references/oquea.md o Figma cgUfyZggGl48N3OWugHOEz).",
+  "slug": "oquea",
+  "name": "Oquea",
+  "default_locale": "es-ES",
+  "theme_tokens": {
+    "colors": {
+      "bg": "#ffffff",
+      "primary": "#3757be",
+      "primary-contrast": "#ffffff",
+      "accent": "#d0ff00"
+    },
+    "radius": { "button": "999px", "pill": "999px" }
+  },
+  "brand": { "logoAlt": "Oquea", "contact": {} },
+  "tour": [],
+  "domains": [{ "hostname": "oquea.ventas.cofundo.io", "is_primary": true }],
+  "admins": [],
+  "catalog": [],
+  "market": [],
+  "price_options": [],
+  "coupons": [],
+  "facets": [],
+  "playbook": [],
+  "retired_plays": []
+}
