@@ -215,7 +215,7 @@ Si no llega el email: mira en Resend → *Emails* si salió. Si no salió, revis
 
 ### Dossiers de ejemplo
 
-Para ver propuestas reales en tu cuenta sin crearlas a mano: GitHub → Actions → **Producción** → *Qué hacer* = `dossiers-ejemplo`, *Email* = el tuyo (o vacío: el admin más antiguo), «Solo comprobar» desmarcado. Crea tres propuestas publicadas (Locales, Promotoras, Conciertos) con sus módulos recomendados y una tarifa, **en modo prueba** (tus aperturas no cuentan). Repetirlo no las duplica. El resumen enlaza cada una al editor; el enlace del cliente está en «Compartir».
+Para ver propuestas reales en tu cuenta sin crearlas a mano: GitHub → Actions → **Producción** → *Qué hacer* = `dossiers-ejemplo`, *Email* = el tuyo (o vacío: el admin más antiguo), «Solo comprobar» desmarcado. Crea cinco propuestas publicadas con las combinaciones más típicas (local pequeño, local mediano, sala de conciertos, promotora y hoteles; ver `SAMPLES` en `scripts/sample-dossiers.ts`), genéricas para enseñarlas a varios clientes, con su tarifa y con las aperturas contando. Repetirlo las rehace sin duplicarlas ni cambiar su enlace; las que ya no están en la lista se borran. El resumen enlaza cada una al editor; el enlace del cliente está en «Compartir».
 
 ### Si va lento
 
