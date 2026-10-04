@@ -21,6 +21,11 @@
   Referencia de relato y de maqueta (`docs/ventas/oquea/agente/03-GUIA-INICIO-REFERENCIA.md`) y **19 capturas reales**
   de la app (`tenants/oquea/assets/img/producto/app/`).
 
+- **Plantillas con la UI de Oquea** (`src/modules/app-steps`, `src/modules/center-console`) y **primer contenido**
+  (`scripts/apply-oquea-03.py`): 12 diapositivas, sector «Centros de buceo» con receta, recorrido de Aprende, 10
+  jugadas y un dossier de ejemplo. Detalle: `docs/ventas/oquea/agente/03-GUIA-CARGADO.md`. Lo que toca código
+  compartido: `docs/oquea/PETICIONES.md`.
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)
@@ -38,10 +43,10 @@
 ### B · Negocio (doc 02-PROMPT-AGENTE-NEGOCIO)
 | Doc | Qué | Estado |
 |---|---|---|
-| 01 | Empresa y producto (qué hay EN PRODUCCIÓN) | PENDIENTE |
+| 01 | Empresa y producto (qué hay EN PRODUCCIÓN) | 🟡 parcial desde la guía y la web; falta el documento |
 | 02 | Mercado: sectores, actores, situaciones | PENDIENTE |
-| 03 | Jugadas | PENDIENTE |
+| 03 | Jugadas | 🟡 10 de la guía y la web |
 | 04 | Precios, cupones, suelo, prueba gratis | PENDIENTE |
-| 05 | Propuesta por sector | PENDIENTE |
+| 05 | Propuesta por sector | 🟡 receta de «Centros de buceo» desde la guía |
 | 06 | Casos reales | PENDIENTE |
 | 07 | Organización comercial | PENDIENTE |

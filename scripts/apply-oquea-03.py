@@ -6,6 +6,7 @@ apply-oquea-00.py. Idempotente: rehace el catálogo, el sector, el recorrido y l
 
 - Pie: teléfono y web de la guía (Cristian, 4-oct-2026: «todo de la guía»). El WhatsApp comercial sigue siendo el de la
   entrega 00 (la guía no dice que el teléfono tenga WhatsApp).
+- Consola del centro (plantilla center-console): la pantalla de escritorio que compra un centro.
 - Catálogo: diapositivas «Pasos con la app» (plantilla app-steps) con las pantallas de la app recreadas en español
   (las capturas de la guía están casi todas en inglés; solo se usa tal cual una que está en español).
 - Sector «Centros de buceo» con su receta (portada → cómo funciona → … → cierre). Sin precio: falta el documento 04.
@@ -59,6 +60,18 @@ CATALOG = [
               {'icon': 'share', 'title': 'Ellos comparten la inmersión', 'body': 'Con tu logo. Marketing orgánico para tu centro.'},
           ],
           screens=[{'screen': 'dive-saved'}, {'screen': 'share-card'}]),
+    {'key': 'consola', 'block_type': 'center-console', 'name': 'Consola del centro', 'is_catalog': True, 'default_price': None,
+     'currency': 'EUR', 'description': 'La consola de escritorio: lo de hoy, quién viene, el CRM y tu centro. Interactiva.',
+     'props': {
+         'eyebrow': 'Desde el ordenador del centro', 'title': 'Todo tu centro, en una pantalla', 'highlight': 'en una pantalla',
+         'lede': 'Lo que hace el día a día: tus salidas, quién viene a cada una y tu lista de buceadores.',
+         'views': [
+             {'view': 'today', 'label': 'Hoy', 'says': 'Las salidas del día y cuántos buceadores tienes ya en tu CRM.'},
+             {'view': 'activity', 'label': 'Quién viene', 'says': 'En cada salida ves quién escaneó el QR y a quién añadiste a mano.'},
+             {'view': 'crm', 'label': 'CRM', 'says': 'Cada buceador, con su historial en tu centro y tus notas internas.'},
+             {'view': 'centre', 'label': 'Tu centro', 'says': 'Tu QR, tu perfil público y cómo te ven los buceadores.'},
+         ],
+     }},
     steps('registro-qr', 'Registro de inmersiones por QR',
           'Lo que vive el buceador: escanea, ve la actividad del día y la guarda en su logbook. Sin instalar nada.',
           title='Un escaneo y la inmersión queda en su logbook', highlight='un escaneo',
@@ -156,6 +169,7 @@ SEGMENT = {
                '(documentos 01–07 del negocio). No hables de precio hasta que esté la tarifa.'),
     'modules': [
         {'module_key': 'como-funciona', 'priority': 1, 'fit': 'El argumento entero en una diapositiva.'},
+        {'module_key': 'consola', 'priority': 1, 'fit': 'Lo que compra un centro: su día a día en el ordenador.'},
         {'module_key': 'crm', 'priority': 1, 'fit': 'Lo que gana quien paga: sus buceadores, por fin en una lista.'},
         {'module_key': 'compartir', 'priority': 1, 'fit': 'Marketing orgánico: cada tarjeta lleva su logo.'},
         {'module_key': 'registro-qr', 'priority': 2, 'fit': 'Para enseñar lo fácil que es para el buceador.'},
@@ -169,11 +183,11 @@ SEGMENT = {
     'proposal': {
         'blocks': B,
         'modes': {
-            'full': ['portada', 'como-funciona', 'registro-qr', 'crm', 'compartir', 'qr-del-centro', 'alta-centro', 'cierre'],
-            'visual': ['portada', 'como-funciona', 'crm', 'compartir', 'cierre'],
+            'full': ['portada', 'como-funciona', 'consola', 'registro-qr', 'crm', 'compartir', 'qr-del-centro', 'alta-centro', 'cierre'],
+            'visual': ['portada', 'como-funciona', 'consola', 'compartir', 'cierre'],
         },
-        'max': {'full': 9, 'visual': 6},
-        'priority': ['portada', 'cierre', 'como-funciona', 'crm', 'compartir', 'registro-qr', 'qr-del-centro', 'alta-centro', 'actividades', 'equipo', 'dive-sites'],
+        'max': {'full': 10, 'visual': 6},
+        'priority': ['portada', 'cierre', 'como-funciona', 'consola', 'crm', 'compartir', 'registro-qr', 'qr-del-centro', 'alta-centro', 'actividades', 'equipo', 'dive-sites'],
         'questions': [
             {'key': 'salidas-diarias', 'label': '¿Hace salidas todos los días?', 'hint': 'Las actividades se programan una vez.',
              'rules': [{'add': 'actividades', 'after': ['qr-del-centro', 'compartir']}]},

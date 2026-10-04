@@ -7,6 +7,7 @@
  * Se diseña a 375 px de ancho; `zoom` lo encoge.
  */
 import { APP_ICONS, MASK_ICON, type AppIcon } from './icons';
+import { fakeQr } from './qr';
 import type { AppSample, AppScreen } from './schema';
 import AppNav from './AppNav.astro';
 import CenterHead from './CenterHead.astro';
@@ -21,20 +22,7 @@ const mask = (size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 const centerName = center.slice(0, 28);
 
-// QR de mentira, siempre el mismo para el mismo centro (no se puede escanear: no lleva a ningún sitio).
-const qr = (() => {
-  let h = 2166136261;
-  for (const ch of centerName) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  const n = 25; const cells: string[] = [];
-  const finder = (x: number, y: number) => (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    if (finder(x, y)) continue;
-    h = Math.imul(h ^ (x * 31 + y), 2246822519) >>> 0;
-    if (h % 100 < 47 && !(x > 9 && x < 15 && y > 9 && y < 15)) cells.push(`M${x} ${y}h1v1h-1z`);
-  }
-  const f = (x: number, y: number) => `M${x} ${y}h7v7h-7zM${x + 1} ${y + 1}v5h5v-5zM${x + 2} ${y + 2}h3v3h-3z`;
-  return `<svg viewBox="-1 -1 ${n + 2} ${n + 2}" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${f(0, 0)}${f(n - 7, 0)}${f(0, n - 7)}${cells.join('')}"/></svg>`;
-})();
+const qr = fakeQr(centerName);
 
 const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
 ---

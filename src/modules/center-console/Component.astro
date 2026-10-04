@@ -1,0 +1,309 @@
+---
+/**
+ * center-console ← la consola de escritorio de Oquea, recreada con las medidas reales (lateral 264, contenido 1120,
+ * tarjetas de radio 16 con borde de 1 px y sin sombra, ítem activo con fondo + color + peso). Es la pantalla que compra
+ * un centro: se enseña aquí y no el móvil. Interactiva: el lateral (o las pastillas de abajo, en móvil) cambia de vista;
+ * pasan solas hasta que el comercial toca. La consola es clara siempre (como la app); el azul y el acento, del tema.
+ * Se dibuja a 1180 × 640 px (720 en «compacto», sin lateral, como la app por debajo de 1024) y se escala al hueco (client.ts).
+ */
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import { APP_ICONS, MASK_ICON } from '../app-steps/icons';
+import { fakeQr } from '../app-steps/qr';
+import type { CenterConsoleProps } from './schema';
+
+type Props = CenterConsoleProps & ModuleBaseProps;
+const { eyebrow, title, highlight, lede, views, autoplay, everyMs, exampleLabel, sample: s, ctx } = Astro.props;
+const t = (x: string) => interpolate(x, ctx);
+const center = (ctx.prospectCompany || ctx.prospectName || 'Tu centro de buceo').trim().slice(0, 32);
+const logo = ctx.media?.logo || null;
+const ic = (n: keyof typeof APP_ICONS, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
+const mask = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MASK_ICON}</svg>`;
+const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+
+const fullTitle = t(title);
+const hl = highlight ? t(highlight) : '';
+const at = hl ? fullTitle.toLowerCase().indexOf(hl.toLowerCase()) : -1;
+const parts = at >= 0 ? [fullTitle.slice(0, at), fullTitle.slice(at, at + hl.length), fullTitle.slice(at + hl.length)] : [fullTitle, '', ''];
+
+const NAV = [
+  ['today', 'calendar', 'Actividades', '4'], ['cal', 'calendar', 'Calendario', ''], ['crm', 'users', 'CRM', s.divers],
+  ['sites', 'pin', 'Puntos de inmersión', ''], ['centre', 'home', 'Mi centro', ''], ['team', 'user', 'Equipo', ''],
+] as const;
+const navFor = (v: string) => (v === 'activity' ? 'today' : v);
+const first = views[0]!.view;
+const id = `cc-${ctx.itemId}`;
+const DIVERS = [
+  ['Laura Méndez', 'Advanced Open Water', '42', 'qr', '09:30'], ['Tomás Ferreira', 'Open Water', '8', 'qr', '09:31'],
+  ['Marta Ruiz', 'Divemaster', '310', 'hand', ''], ['Kenji Sato', 'Rescue Diver', '57', 'qr', '09:34'],
+] as const;
+---
+<div data-module="center-console" class="cc-wrap" data-autoplay={autoplay ? String(everyMs) : undefined}>
+<div class="cc">
+  <div class="cc__copy">
+    {eyebrow && <p class="cc__eyebrow">{t(eyebrow)}</p>}
+    <h2 class="cc__title">{parts[0]}{parts[1] && <em>{parts[1]}</em>}{parts[2]}</h2>
+    {lede && <p class="cc__lede">{t(lede)}</p>}
+  </div>
+
+  <div class="cc__frame" data-frame>
+    <div class="cc__chrome" aria-hidden="true"><i></i><i></i><i></i><span>oquea.app</span></div>
+    <div class="cc__viewport" data-viewport>
+      <div class="cc-app" data-app aria-hidden="true">
+        <aside class="cc-side">
+          <div class="cc-logo"><span class="cc-iso"></span>oquea</div>
+          <div class="cc-mode"><span class="on">Gestión</span><span>Buceador</span></div>
+          <nav class="cc-nav">
+            {NAV.map(([k, i, l, b]) => (
+              <span class:list={['cc-nav__item', navFor(first) === k && 'is-on']} data-nav={k}><Fragment set:html={ic(i)} />{l}{b && <em>{b}</em>}</span>
+            ))}
+          </nav>
+          <div class="cc-side__bottom">
+            <span class="cc-ctx">{logo ? <img src={logo} alt="" /> : <b class="cc-av">{initials(center)}</b>}<span><b>{center}</b><small>Centro activo</small></span></span>
+            <span class="cc-ctx"><b class="cc-av">{initials(s.owner)}</b><span><b>{s.owner}</b><small>Propietario</small></span></span>
+          </div>
+        </aside>
+
+        <main class="cc-main">
+          <!-- Actividades de hoy -->
+          <section class:list={['cc-view', first === 'today' && 'is-on']} data-view="today">
+            <header class="cc-head">
+              <div><h3>Actividades de hoy</h3><p>{center} · 3 salidas programadas</p></div>
+              <span class="cc-btn cc-btn--ghost">Ver QR del centro</span><span class="cc-btn">Crear actividad</span>
+            </header>
+            <div class="cc-grid">
+              <div class="cc-card cc-stat"><b>{s.divers}</b><small>Buceadores en tu CRM</small></div>
+              <div class="cc-card cc-stat"><b>{s.dives}</b><small>Inmersiones registradas</small></div>
+              <div class="cc-card cc-stat"><b>5 de 6</b><small>Perfil público completo</small><span class="cc-bar"><i style="width:83%"></i></span></div>
+            </div>
+            <div class="cc-acts">
+              {[['Salida en barco', '09:00', s.site, '6 de 8'], ['Bautismo de buceo', '11:30', 'Playa del centro', '4 de 6'], ['Buceo nocturno', '20:00', 'Shark Point', '3 de 8']].map(([n, h, site, cap], i) => (
+                <div class:list={['cc-card cc-act', i === 0 && 'is-hot']}>
+                  <span class="cc-act__ico" set:html={mask(22)} />
+                  <span class="cc-act__txt"><b>{n}</b><small>{h} · {site}</small></span>
+                  <span class="cc-chip">{cap} plazas</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <!-- Detalle de actividad: participantes -->
+          <section class:list={['cc-view', first === 'activity' && 'is-on']} data-view="activity">
+            <header class="cc-head">
+              <div><p class="cc-crumb">Actividades › Salida en barco</p><h3>Salida en barco · 09:00</h3><p>{s.site} · 6 participantes</p></div>
+              <span class="cc-btn cc-btn--ghost">Editar</span><span class="cc-btn">Añadir participante</span>
+            </header>
+            <div class="cc-split">
+              <div>
+                <p class="cc-sec">Participantes</p>
+                <div class="cc-list">
+                  {DIVERS.map(([n, l, d, how, h]) => (
+                    <div class="cc-card cc-row">
+                      <b class="cc-pic">{initials(n)}</b>
+                      <span><b>{n}</b><small>{l} · {d} inmersiones</small></span>
+                      <span class="cc-row__meta"><span class:list={['cc-chip', how === 'hand' && 'cc-chip--grey']}>{how === 'qr' ? 'Escaneó el QR' : 'Añadido a mano'}</span><small>{how === 'qr' ? `${s.site} · ${h}` : 'Sin cuenta todavía'}</small></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <aside class="cc-card cc-aside">
+                <p class="cc-sec">Hoy</p>
+                <div class="cc-kv"><span>Escanearon el QR</span><b>5</b></div>
+                <div class="cc-kv"><span>Añadidos a mano</span><b>1</b></div>
+                <span class="cc-bar"><i style="width:75%"></i></span>
+                <small>6 de 8 plazas</small>
+              </aside>
+            </div>
+          </section>
+
+          <!-- CRM -->
+          <section class:list={['cc-view', first === 'crm' && 'is-on']} data-view="crm">
+            <header class="cc-head">
+              <div><h3>CRM</h3><p>{s.divers} buceadores han pasado por {center}</p></div>
+              <span class="cc-search"><Fragment set:html={ic('search', 16)} />Buscar buceador</span>
+            </header>
+            <div class="cc-split">
+              <div class="cc-list">
+                {DIVERS.map(([n, l, d, how], i) => (
+                  <div class:list={['cc-card cc-row', i === 0 && 'is-sel']}>
+                    <b class="cc-pic">{initials(n)}</b>
+                    <span><b>{n}</b><small>{l} · {d} inmersiones</small></span>
+                    <span class="cc-row__meta"><span class:list={['cc-chip', how === 'hand' && 'cc-chip--grey']}>{how === 'qr' ? 'Escaneó el QR' : 'Añadido a mano'}</span></span>
+                  </div>
+                ))}
+              </div>
+              <aside class="cc-card cc-aside cc-profile">
+                <b class="cc-pic cc-pic--lg">LM</b>
+                <b class="cc-profile__name">Laura Méndez</b>
+                <span class="cc-chip"><Fragment set:html={ic('shield', 12)} />Advanced Open Water</span>
+                <div class="cc-kv"><span>Inmersiones aquí</span><b>8</b></div>
+                <div class="cc-kv"><span>Primera</span><b>10 jun 2023</b></div>
+                <div class="cc-kv"><span>Última</span><b>26 feb 2026</b></div>
+                <p class="cc-sec cc-sec--sm">Notas internas</p>
+                <p class="cc-note">Prefiere salidas de mañana. Trae su ordenador.</p>
+              </aside>
+            </div>
+          </section>
+
+          <!-- Mi centro -->
+          <section class:list={['cc-view', first === 'centre' && 'is-on']} data-view="centre">
+            <header class="cc-head">
+              <div><h3>{center}</h3><p>Mi centro · perfil público</p></div>
+              <span class="cc-btn cc-btn--ghost">Cómo te ven los buceadores</span><span class="cc-btn">Editar datos</span>
+            </header>
+            <div class="cc-split">
+              <div class="cc-grid cc-grid--2">
+                <div class="cc-card cc-qrcard"><span class="cc-qr" set:html={fakeQr(center)} /><span><b>Tu QR único</b><small>Para el barco, el mostrador o la entrada.</small><span class="cc-mini"><span class="cc-btn cc-btn--sm">Descargar</span><span class="cc-btn cc-btn--sm cc-btn--ghost">Compartir enlace</span></span></span></div>
+                <div class="cc-card cc-stat"><b>5 de 6</b><small>Perfil público completo</small><span class="cc-bar"><i style="width:83%"></i></span></div>
+                <div class="cc-card cc-tile"><Fragment set:html={ic('pin')} /><span><b>Dive sites</b><small>{s.site}, Shark Point y 4 más</small></span></div>
+                <div class="cc-card cc-tile"><Fragment set:html={ic('users')} /><span><b>Equipo</b><small>3 instructores · 2 divemasters</small></span></div>
+                <div class="cc-card cc-tile"><Fragment set:html={ic('globe')} /><span><b>Idiomas</b><small>Español · English · Português</small></span></div>
+                <div class="cc-card cc-tile"><Fragment set:html={ic('ruler')} /><span><b>Unidades</b><small>Metros · bar · °C</small></span></div>
+              </div>
+              <aside class="cc-card cc-aside">
+                <p class="cc-sec">Cómo te ven los buceadores</p>
+                {['Sobre el centro', 'Idiomas', 'Ubicación', 'Dive sites', 'Vida marina', 'Equipo', 'Contacto'].map((x) => <div class="cc-kv"><span>{x}</span><Fragment set:html={ic('check', 16)} /></div>)}
+              </aside>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    {exampleLabel && <span class="cc__example">{exampleLabel}</span>}
+  </div>
+
+  <div class="cc__says" role="tablist" aria-label="Pantallas de la consola">
+    {views.map((v, i) => (
+      <button type="button" role="tab" class="cc__tab" id={`${id}-t${i}`} aria-selected={i === 0 ? 'true' : 'false'} data-show={v.view} data-nav-target={navFor(v.view)}>{t(v.label)}</button>
+    ))}
+  </div>
+  <p class="cc__line" aria-live="polite">
+    {views.map((v, i) => <span data-says={v.view} hidden={i !== 0}>{t(v.says)}</span>)}
+  </p>
+</div>
+</div>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('center-console', init);
+</script>
+
+<style>
+  .cc-wrap { display: flex; flex-direction: column; min-height: 100%; }
+  .cc {
+    --cp: rgb(var(--color-primary, 55 87 190));
+    --cp-tint: color-mix(in srgb, var(--cp) 7%, #fff);
+    --cp-chip: color-mix(in srgb, var(--cp) 11%, #fff);
+    flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 1rem;
+    padding: clamp(1.25rem, 4vw, 3rem) clamp(1rem, 4vw, 4rem);
+    font-family: var(--font-sans, inherit); color: rgb(var(--color-text, 41 41 41));
+    background: color-mix(in srgb, var(--cp) 6%, rgb(var(--color-bg, 255 255 255)));
+  }
+  .cc__copy { max-width: 60rem; }
+  .cc__eyebrow { margin: 0 0 .6rem; font-size: .85rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--cp); }
+  .cc__title { margin: 0; font-family: var(--font-display, inherit); font-size: clamp(1.9rem, 3.8vw, 3.2rem); font-weight: 700; line-height: 1.05; letter-spacing: -.02em; }
+  .cc__title em { font-style: normal; color: var(--cp); }
+  .cc__lede { margin: .75rem 0 0; max-width: 52ch; font-size: clamp(1rem, 1.3vw, 1.15rem); line-height: 1.5; color: rgb(var(--color-muted, 124 124 124)); }
+
+  .cc__frame { position: relative; width: 100%; max-width: min(1180px, calc((var(--deck-h, 100dvh) - 27rem) * 1.84)); margin-inline: auto; border-radius: 16px; border: 1px solid #e6e8ee; background: #fff; overflow: hidden; }
+  .cc__chrome { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-bottom: 1px solid #eeeef2; background: #fbfbfb; }
+  .cc__chrome i { width: 10px; height: 10px; border-radius: 99px; background: #e2e4ea; }
+  .cc__chrome span { margin-left: 14px; padding: 3px 14px; border-radius: 99px; background: #f1f2f5; font-size: 12px; color: #8a8f9a; }
+  .cc__viewport { position: relative; overflow: hidden; height: calc(640px * var(--s, .55)); }
+  .cc__example { position: absolute; right: 12px; bottom: 10px; padding: 3px 10px; border-radius: 99px; background: rgb(31 41 76 / .75); color: #fff; font-size: 11px; }
+
+  .cc__says { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
+  .cc__tab { padding: .5rem 1rem; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--cp) 25%, transparent); background: rgb(var(--color-bg, 255 255 255)); color: inherit; font: inherit; font-size: .95rem; cursor: pointer; }
+  .cc__tab[aria-selected='true'] { background: var(--cp); border-color: var(--cp); color: #fff; }
+  .cc__line { margin: 0 auto; max-width: 60ch; min-height: 1.5em; text-align: center; font-size: clamp(1rem, 1.4vw, 1.2rem); line-height: 1.45; }
+
+  /* ---- La app, a tamaño de diseño (1180 × 720) y escalada desde arriba a la izquierda ---- */
+  .cc-app { --ink: #1f294c; --mut: #6b7280; --hint: #8a8f9a; --line: #e6e8ee; --div: #eeeef2; --grey: #f4f6fa;
+    position: absolute; top: 0; left: 0; width: 1180px; height: 640px; display: flex; transform: scale(var(--s, .55)); transform-origin: 0 0;
+    color: var(--ink); font-size: 14px; line-height: 1.3; background: #fff; text-align: left; }
+  .cc-app b { font-weight: 700; }
+  .cc-app small { display: block; font-size: 12px; color: var(--mut); }
+  .cc-side { width: 264px; flex: none; display: flex; flex-direction: column; padding: 16px; border-right: 1px solid var(--div); }
+  .cc-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+  .cc-iso { width: 26px; height: 20px; background: radial-gradient(circle at 30% 50%, var(--cp) 0 4px, transparent 5px), radial-gradient(circle at 70% 50%, var(--cp) 0 9px, transparent 10px); }
+  .cc-mode { display: flex; gap: 4px; margin-top: 20px; padding: 4px; border-radius: 99px; background: var(--grey); }
+  .cc-mode span { flex: 1; padding: 8px 10px; border-radius: 99px; text-align: center; color: var(--hint); font-size: 13px; }
+  .cc-mode .on { background: #fff; color: var(--ink); font-weight: 600; }
+  .cc-nav { margin-top: 20px; }
+  .cc-nav__item { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 4px; border-radius: 99px; color: #7c7c7c; font-weight: 500; transition: background .25s, color .25s; }
+  .cc-nav__item em { margin-left: auto; padding: 2px 8px; border-radius: 99px; background: var(--cp-chip); color: var(--cp); font-style: normal; font-size: 11px; font-weight: 700; }
+  .cc-nav__item.is-on { background: var(--cp-tint); color: var(--cp); font-weight: 600; }
+  .cc-side__bottom { margin-top: auto; }
+  .cc-ctx { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
+  .cc-ctx b:not(.cc-av) { display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .cc-ctx small { font-size: 11px; color: var(--hint); }
+  .cc-ctx img { width: 36px; height: 36px; border-radius: 99px; object-fit: contain; border: 1px solid var(--line); }
+  .cc-av { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 99px; background: var(--cp-chip); color: var(--cp); font-weight: 800; font-size: 13px; }
+
+  .cc-main { flex: 1; min-width: 0; position: relative; }
+  .cc-view { position: absolute; inset: 0; padding: 24px 28px; opacity: 0; transform: translateY(6px); transition: opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1); pointer-events: none; }
+  .cc-view.is-on { opacity: 1; transform: none; }
+  .cc-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
+  .cc-head > div { margin-right: auto; }
+  .cc-head h3 { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.15; }
+  .cc-head p { margin: 4px 0 0; color: var(--mut); font-size: 13px; }
+  .cc-head .cc-crumb { margin: 0 0 6px; color: var(--hint); font-size: 12px; }
+  .cc-btn { display: inline-flex; align-items: center; padding: 10px 18px; border-radius: 99px; background: var(--cp); color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .cc-btn--ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .cc-btn--sm { padding: 6px 12px; font-size: 12px; }
+  .cc-search { display: inline-flex; align-items: center; gap: 8px; width: 280px; padding: 10px 14px; border-radius: 99px; background: var(--grey); color: var(--hint); font-size: 13px; }
+  .cc-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .cc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+  .cc-grid--2 { grid-template-columns: repeat(2, 1fr); margin: 0; align-content: start; }
+  .cc-stat b { display: block; font-size: 22px; font-weight: 800; }
+  .cc-bar { display: block; height: 6px; margin-top: 10px; border-radius: 99px; background: #e8eef8; overflow: hidden; }
+  .cc-bar i { display: block; height: 100%; border-radius: 99px; background: var(--cp); }
+  .cc-acts { display: grid; gap: 12px; }
+  .cc-act { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+  .cc-act.is-hot { border-color: color-mix(in srgb, var(--cp) 45%, #fff); }
+  .cc-act__ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--cp-chip); color: var(--cp); }
+  .cc-act__txt { flex: 1; }
+  .cc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; background: #eaf0fb; color: var(--cp); font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .cc-chip--grey { background: var(--grey); color: var(--mut); }
+  .cc-split { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+  .cc-sec { margin: 0 0 12px; font-size: 14px; font-weight: 800; }
+  .cc-sec--sm { margin: 14px 0 6px; }
+  .cc-list { display: grid; gap: 10px; }
+  .cc-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; }
+  .cc-row.is-sel { border-color: var(--cp); }
+  .cc-row > span:nth-child(2) { flex: 1; min-width: 0; }
+  .cc-row b:not(.cc-pic) { display: block; font-size: 14px; font-weight: 600; }
+  .cc-row__meta { display: grid; justify-items: end; gap: 4px; }
+  .cc-pic { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: #eaf0fb; color: var(--cp); font-size: 14px; }
+  .cc-pic--lg { width: 64px; height: 64px; border-radius: 99px; font-size: 20px; }
+  .cc-aside { display: grid; gap: 10px; }
+  .cc-kv { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--div); font-size: 13px; color: var(--mut); }
+  .cc-kv b { color: var(--ink); }
+  .cc-kv :global(svg) { color: var(--cp); }
+  .cc-profile { justify-items: center; text-align: center; }
+  .cc-profile .cc-kv { width: 100%; }
+  .cc-profile__name { font-size: 18px; }
+  .cc-profile .cc-sec { justify-self: start; }
+  .cc-note { justify-self: stretch; margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff1f0; border: 1px solid #ffd4d2; text-align: left; font-size: 13px; color: #6b3a37; }
+  .cc-qrcard { grid-column: 1 / -1; display: flex; gap: 18px; align-items: center; }
+  .cc-qr { width: 96px; height: 96px; flex: none; padding: 6px; border-radius: 10px; border: 1px solid var(--line); color: #111; }
+  .cc-mini { display: flex; gap: 8px; margin-top: 10px; }
+  .cc-tile { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--cp); }
+  .cc-tile b { color: var(--ink); display: block; }
+
+  /* Compacto (pantallas estrechas): sin lateral, como la app por debajo de 1024 */
+  .cc-app.is-compact { width: 720px; }
+  .cc-app.is-compact .cc-side { display: none; }
+  .cc-app.is-compact .cc-view { padding: 18px; }
+  .cc-app.is-compact .cc-split { grid-template-columns: 1fr; }
+  .cc-app.is-compact .cc-split > aside { display: none; }
+  .cc-app.is-compact .cc-grid { grid-template-columns: repeat(3, 1fr); }
+  .cc-app.is-compact .cc-head .cc-btn--ghost, .cc-app.is-compact .cc-search { display: none; }
+
+  @media (max-height: 820px) and (min-width: 760px) {
+    .cc__lede { display: none; }
+    .cc__frame { max-width: min(1180px, calc((var(--deck-h, 100dvh) - 21rem) * 1.84)); }
+  }
+  @media (prefers-reduced-motion: reduce) { .cc-view { transition: none; transform: none; } }
+</style>

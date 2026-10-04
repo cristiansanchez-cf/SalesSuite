@@ -81,3 +81,18 @@ La pantalla real del local, interactiva, para enseñarla en la tablet: botonera 
 - La pantalla **solo muestra**: no cobra ni gestiona la cola. No venderla como si lo hiciera.
 - Sin importes: la propuesta nunca enseña tramos de pago (nada de «Platino 100 €»: asusta al cliente). `client.ts` fuerza `amount: 0`.
 - `venueVideo` ({webm, mp4, poster}): visuales de ejemplo para el modo transparente cuando no hay vídeo del cliente.
+
+## Caso: `app-steps` y `center-console` (Oquea)
+
+- `app-steps` es la diapositiva de la guía de inicio de Oquea: el paso a la izquierda (chip con número, titular con
+  `highlight` en el color de la marca, tarjetas con icono, aviso `check | info | bulb`) y 1–2 móviles a la derecha.
+  `Screen.astro` recrea 16 pantallas de la app en HTML (`access`, `qr-activity`, `dive-saved`, `share-card`, `logbook`,
+  `diver-profile`, `activities`, `create-activity`, `center-qr`, `crm-list`, `crm-diver`, `my-centres`, `team`,
+  `dive-sites`) o enseña una captura (`image` + `src`). La app es clara siempre: blanco y grises fijos; el azul y el
+  acento salen del tema. Usa el nombre, el logo y la primera foto del cliente. `tone: dark` = portada o cierre.
+- `center-console` es la consola de escritorio (lateral 264, contenido 1180 × 640, tarjetas con borde y sin sombra).
+  Vistas `today`, `activity`, `crm`, `centre`, cada una con su frase (`says`). `client.ts` la escala al hueco y la pasa
+  sola hasta el primer toque; en móvil se dibuja en «compacto» (720 sin lateral), como la app por debajo de 1024.
+  Las cifras son de ejemplo y lo dice en pantalla (`exampleLabel`).
+- `[data-module]` es un envoltorio: la presentación lo pone en columna flexible, así que la rejilla va dentro.
+- Variables CSS con prefijo propio (`--st-*`, `--ap*`, `--cp*`): `--p` a secas choca con otra del dossier.

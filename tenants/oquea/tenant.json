@@ -169,6 +169,43 @@
       }
     },
     {
+      "key": "consola",
+      "block_type": "center-console",
+      "name": "Consola del centro",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La consola de escritorio: lo de hoy, quién viene, el CRM y tu centro. Interactiva.",
+      "props": {
+        "eyebrow": "Desde el ordenador del centro",
+        "title": "Todo tu centro, en una pantalla",
+        "highlight": "en una pantalla",
+        "lede": "Lo que hace el día a día: tus salidas, quién viene a cada una y tu lista de buceadores.",
+        "views": [
+          {
+            "view": "today",
+            "label": "Hoy",
+            "says": "Las salidas del día y cuántos buceadores tienes ya en tu CRM."
+          },
+          {
+            "view": "activity",
+            "label": "Quién viene",
+            "says": "En cada salida ves quién escaneó el QR y a quién añadiste a mano."
+          },
+          {
+            "view": "crm",
+            "label": "CRM",
+            "says": "Cada buceador, con su historial en tu centro y tus notas internas."
+          },
+          {
+            "view": "centre",
+            "label": "Tu centro",
+            "says": "Tu QR, tu perfil público y cómo te ven los buceadores."
+          }
+        ]
+      }
+    },
+    {
       "key": "registro-qr",
       "block_type": "app-steps",
       "name": "Registro de inmersiones por QR",
@@ -524,6 +561,11 @@
           "fit": "El argumento entero en una diapositiva."
         },
         {
+          "module_key": "consola",
+          "priority": 1,
+          "fit": "Lo que compra un centro: su día a día en el ordenador."
+        },
+        {
           "module_key": "crm",
           "priority": 1,
           "fit": "Lo que gana quien paga: sus buceadores, por fin en una lista."
@@ -575,6 +617,10 @@
             "module": "como-funciona",
             "props": {}
           },
+          "consola": {
+            "module": "consola",
+            "props": {}
+          },
           "registro-qr": {
             "module": "registro-qr",
             "props": {}
@@ -616,6 +662,7 @@
           "full": [
             "portada",
             "como-funciona",
+            "consola",
             "registro-qr",
             "crm",
             "compartir",
@@ -626,19 +673,20 @@
           "visual": [
             "portada",
             "como-funciona",
-            "crm",
+            "consola",
             "compartir",
             "cierre"
           ]
         },
         "max": {
-          "full": 9,
+          "full": 10,
           "visual": 6
         },
         "priority": [
           "portada",
           "cierre",
           "como-funciona",
+          "consola",
           "crm",
           "compartir",
           "registro-qr",
