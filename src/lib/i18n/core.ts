@@ -33,12 +33,14 @@ export function fromAcceptLanguage(header: string | null | undefined): Locale | 
   return prefs.find((p) => isLocale(p.lang))?.lang as Locale ?? null;
 }
 
-/** Preferencia guardada → cookie → idioma del espacio → navegador → español. */
+/**
+ * Lo que elige cada uno (guardado en su cuenta o en la cookie) → idioma del espacio → español.
+ * El idioma del navegador no decide: la app sale en español salvo que alguien elija otro (selector de idioma).
+ */
 export function resolveLocale(o: { user?: string | null; cookie?: string | null; tenant?: string | null; accept?: string | null }): Locale {
   for (const c of [o.user, o.cookie]) if (isLocale(c)) return c;
   const t = o.tenant?.slice(0, 2).toLowerCase();
-  const browser = fromAcceptLanguage(o.accept);
-  return browser ?? (isLocale(t) ? t : DEFAULT_LOCALE);
+  return isLocale(t) ? t : DEFAULT_LOCALE;
 }
 
 /** Formateadores en el idioma de quien mira. */

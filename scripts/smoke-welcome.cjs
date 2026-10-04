@@ -43,6 +43,15 @@ async function login(b, email, mobile = false) {
   await p.waitForLoadState();
   assert(await p.isVisible('[data-testid=welcome-terms-pending]'), 'condiciones sin acordar: mensaje humilde');
 
+  // Idioma en la bienvenida: en español por defecto; se cambia aquí mismo y vuelve al mismo paso.
+  await p.goto(`${BASE}/admin/welcome?step=2`);
+  assert((await p.getAttribute('html', 'lang')) === 'es' && await p.isVisible('[data-testid=welcome-locale]'), 'bienvenida en español, con selector de idioma');
+  await p.click('[data-testid=welcome-locale-en]');
+  await p.waitForURL(/\/admin\/welcome\?step=2/);
+  assert((await p.getAttribute('html', 'lang')) === 'en', 'cambia a inglés y sigue en el mismo paso');
+  await p.click('[data-testid=welcome-locale-es]');
+  await p.waitForURL(/\/admin\/welcome\?step=2/);
+
   // «Qué vendemos»: primero el recorrido del producto (y vuelve aquí), después los módulos con su imagen.
   await p.goto(`${BASE}/admin/welcome?step=2`);
   assert((await p.locator('[data-testid=welcome-module]').count()) > 0, 'qué vendemos: módulos en tarjetas visuales');

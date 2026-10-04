@@ -5,7 +5,9 @@ describe('idiomas', () => {
   test('preferencia guardada, cookie, navegador, espacio', () => {
     expect(resolveLocale({ user: 'ko', cookie: 'en', accept: 'pt-BR' })).toBe('ko');
     expect(resolveLocale({ user: null, cookie: 'en', accept: 'pt-BR' })).toBe('en');
-    expect(resolveLocale({ accept: 'pt-BR,pt;q=0.9,en;q=0.8' })).toBe('pt');
+    // El navegador no decide: español salvo que se elija otro idioma.
+    expect(resolveLocale({ accept: 'pt-BR,pt;q=0.9,en;q=0.8' })).toBe('es');
+    expect(resolveLocale({ accept: 'en-GB', tenant: 'es-ES' })).toBe('es');
     expect(resolveLocale({ accept: 'fr-FR,fr;q=0.9', tenant: 'en-GB' })).toBe('en');
     expect(resolveLocale({ user: 'xx', accept: 'de' })).toBe('es');
     expect(fromAcceptLanguage('de;q=1, ko;q=0.5, en;q=0.7')).toBe('en');

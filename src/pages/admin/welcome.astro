@@ -11,7 +11,7 @@ import { BRAND } from '~/lib/site';
 import { AdminError } from '~/lib/admin/service';
 import { createDossierSchema } from '~/lib/admin/ops';
 import { markOnboarded, needsCompanySetup } from '~/lib/onboarding';
-import { i18n } from '~/lib/i18n';
+import { i18n, LOCALES, LOCALE_NAME } from '~/lib/i18n';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 import { ICONS, type IconName } from '~/lib/ui/icons';
 import { stripMarkdown } from '~/lib/playbook/markdown';
@@ -23,7 +23,7 @@ const { admin, tenant } = Astro.locals;
 if (!admin || !tenant) return Astro.redirect('/admin/login');
 // Primer admin de un espacio vacío: antes que la bienvenida de comercial, preparar la empresa.
 if (Astro.request.method === 'GET' && await needsCompanySetup(admin)) return Astro.redirect('/admin/setup/ia?first=1');
-const { m, f } = i18n(Astro, welcomeMessages);
+const { m, f, locale } = i18n(Astro, welcomeMessages);
 const partner = admin.session.role === 'partner';
 const KEYS = ['hello', 'sell', 'who', 'how', 'terms', 'first'] as const;
 type Key = (typeof KEYS)[number];
@@ -87,6 +87,11 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
       <span><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {tenant.name}</span></span>
       <form method="post"><input type="hidden" name="action" value="skip" /><button class="co-btn co-btn--quiet co-btn--sm" type="submit" data-testid="welcome-skip">{m.skip}</button></form>
     </div>
+    <!-- Idioma: se elige aquí mismo y se guarda en la cuenta (por defecto, español). -->
+    <form method="post" action="/admin/locale" class="co-chips !gap-1.5" data-testid="welcome-locale">
+      <input type="hidden" name="back" value={Astro.url.pathname + Astro.url.search} />
+      {LOCALES.map((l) => <button type="submit" name="locale" value={l} class="co-chip !min-h-[28px] !px-2.5 !text-xs" aria-pressed={l === locale ? 'true' : 'false'} lang={l} data-testid={`welcome-locale-${l}`}>{LOCALE_NAME[l]}</button>)}
+    </form>
 
     <div class="grid gap-2">
       <span class="co-meta" data-testid="welcome-progress">{m.step(n, total)}</span>
