@@ -207,7 +207,7 @@
       topBar(o) + body +
       '<div class="es-qr-mini"><span class="es-qr-label pink">' + qrLabel + '</span>' +
         '<div class="es-qr-mini-card">' + qrTag('') + '</div></div>' +
-      '<div class="es-timebar"><span style="animation-duration:' + tierSeconds(30, tier) + 's"></span></div>' +
+      '<div class="es-timebar"><span style="animation-duration:' + (data.seconds || tierSeconds(30, tier)) + 's"></span></div>' +
     '</div>';
   }
 
@@ -224,7 +224,7 @@
       '</div>' +
       '<div class="es-qr-mini"><span class="es-qr-label">SUBE EL TUYO</span>' +
         '<div class="es-qr-mini-card">' + qrTag('') + '</div></div>' +
-      '<div class="es-timebar"><span style="animation-duration:' + tierSeconds(30, tier) + 's"></span></div>' +
+      '<div class="es-timebar"><span style="animation-duration:' + (data.seconds || tierSeconds(30, tier)) + 's"></span></div>' +
     '</div>';
   }
 
@@ -272,7 +272,7 @@
     return '<div class="es-npc ' + variant + (wide ? ' wide' : '') + ' tier-' + tier + (o.fx ? ' fx' : '') +
       '" style="' + posStyle(forcePos || o.position) + '">' +
       inner +
-      '<div class="es-npc-bar"><span style="animation-duration:' + tierSeconds(30, tier) + 's"></span></div>' +
+      '<div class="es-npc-bar"><span style="animation-duration:' + (data.seconds || tierSeconds(30, tier)) + 's"></span></div>' +
     '</div>';
   }
 

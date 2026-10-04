@@ -57,6 +57,8 @@ function loadEngine(cfg: Config) {
 
 const isRequest = (scene: string) => /\.(song|photo|message|full)$/.test(scene) || scene === 'club.toast';
 const isPromo = (scene: string) => scene === 'club.promo';
+/** Cuánto se queda cada pantalla (ms): ni a toda prisa ni pesado. */
+const HOLD = { scene: 3800, idle: 3200, video: 5500 };
 const phoneKey = (scene: string): 'song' | 'photo' | 'message' => (/photo|full/.test(scene) ? 'photo' : /message/.test(scene) ? 'message' : 'song');
 
 export function init(root: HTMLElement): () => void {
@@ -86,48 +88,57 @@ export function init(root: HTMLElement): () => void {
     if (says) says.textContent = saysList[i] ?? '';
   }
 
-  /** Enseña la pantalla i. Si es una petición, antes el móvil escanea el QR y la envía. */
+  /** Enseña la pantalla i. Si es una petición, antes el móvil escanea el QR (1,5 s) y la envía. */
   function go(i: number, withPhone: boolean) {
     clear();
     idx = (i + cfg.scenes.length) % cfg.scenes.length;
     const s = cfg.scenes[idx];
     mark(idx);
+    // Lo que se queda en pantalla; la barrita de abajo dura justo eso.
+    const hold = s.video ? HOLD.video : s.scene.endsWith('idle') ? HOLD.idle : HOLD.scene;
+    const seconds = auto && visible ? hold / 1000 : undefined;
     // Sin tramos de pago en la propuesta: nunca se enseñan importes.
     // Su texto (si lo trae): el mensaje, el pie de la foto o la dedicatoria; en club.promo, firmado por el local.
-    const show = () => { screen?.set('amount', 0); screen?.show(s.scene, isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : s.text ? { dedication: s.text } : undefined); };
+    const show = () => {
+      screen?.set('amount', 0);
+      screen?.show(s.scene, { ...(isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : s.text ? { dedication: s.text } : {}), seconds });
+    };
+    const box = root.querySelector<HTMLElement>('[data-phone-compose-text]');
+    let lead = 0;
     if (s.video && withPhone && !reduced && phone) {
       // Su vídeo: el móvil lo sube (barra), desaparece y el vídeo aparece de fondo en la pantalla.
       phoneState('is-in', 'is-upload');
-      later(1200, () => phoneState('is-in', 'is-upload', 'is-sent'));
-      later(1600, () => { phoneState(); show(); });
+      later(1600, () => phoneState('is-in', 'is-upload', 'is-sent'));
+      later(2000, () => { phoneState(); show(); });
+      lead = 2000;
     } else if (isPromo(s.scene) && withPhone && !reduced && phone) {
       // El local escribe a su pantalla desde su móvil: lo escribe, lo envía y sale.
-      const box = root.querySelector<HTMLElement>('[data-phone-compose-text]');
       if (box) box.textContent = s.text ?? '';
       phoneState('is-in', 'is-compose');
-      later(1000, () => phoneState('is-in', 'is-compose', 'is-sent'));
-      later(1300, show);
-      later(2600, () => phoneState());
+      later(1300, () => phoneState('is-in', 'is-compose', 'is-sent'));
+      later(1700, show);
+      later(2900, () => phoneState('is-compose', 'is-sent'));
+      lead = 1700;
     } else if (!withPhone || reduced || !phone || !isRequest(s.scene)) { phoneState(); show(); }
-    else if (phoneKey(s.scene) === 'photo' && cfg.ownPhoto) {
-      if (phoneImg) phoneImg.src = cfg.ownPhoto;
+    else {
+      // El invitado escanea el QR y, en el móvil, ve lo mismo que luego sale en la pantalla:
+      // su mensaje escrito, su foto o la canción que pide.
+      const key = phoneKey(s.scene);
+      const own = key === 'photo' && cfg.ownPhoto;
+      const typed = key === 'message' && !!s.text;
+      const src = own ? cfg.ownPhoto! : cfg.phone[key];
+      if (phoneImg && src && !typed) phoneImg.src = src;
+      if (box && typed) box.textContent = s.text ?? '';
+      const step = typed ? 'is-compose' : own ? 'is-own' : src ? 'is-app' : 'is-scan';
       phoneState('is-in', 'is-scan');
-      later(600, () => phoneState('is-in', 'is-own'));
-      later(1100, () => phoneState('is-in', 'is-own', 'is-sent'));
-      later(1400, show);
-      later(2600, () => phoneState());
-    } else {
-      const src = cfg.phone[phoneKey(s.scene)];
-      if (phoneImg && src) phoneImg.src = src;
-      phoneState('is-in', 'is-scan');
-      later(600, () => phoneState('is-in', src ? 'is-app' : 'is-scan'));
-      later(1100, () => phoneState('is-in', src ? 'is-app' : '', 'is-sent'));
-      later(1400, show);
-      later(2600, () => phoneState());
+      later(1500, () => phoneState('is-in', step));
+      later(2400, () => phoneState('is-in', step, 'is-sent'));
+      later(2700, show);
+      // Sale tal cual está (sin volver al marco del escáner mientras se va).
+      later(3900, () => phoneState(step, 'is-sent'));
+      lead = 2700;
     }
-    // Rápido: el móvil escanea y envía en ~1,5 s y cada pantalla se queda unos 3 s.
-    const lead = s.video ? 1600 : isPromo(s.scene) ? 1300 : isRequest(s.scene) ? 1400 : 0;
-    if (auto && visible) later(lead + (s.video ? 4500 : s.scene.endsWith('idle') ? 2500 : 3200), () => go(idx + 1, true));
+    if (auto && visible) later(lead + hold, () => go(idx + 1, true));
   }
 
   function setAuto(on: boolean) {
@@ -179,8 +190,9 @@ export function initMini(root: HTMLElement): () => void {
     stop();
     if (!screen) return;
     screen.set('amount', 0);
-    screen.show(cfg.scenes[idx % cfg.scenes.length].scene);
-    if (cfg.scenes.length > 1 && !reduced) timer = setTimeout(() => { idx++; step(); }, 4500);
+    const many = cfg.scenes.length > 1 && !reduced;
+    screen.show(cfg.scenes[idx % cfg.scenes.length].scene, many ? { seconds: 4.5 } : undefined);
+    if (many) timer = setTimeout(() => { idx++; step(); }, 4500);
   };
   let alive = true;
   let visible = false;
