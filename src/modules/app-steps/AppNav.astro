@@ -1,0 +1,19 @@
+---
+/** Barra de abajo de la app del buceador (Perfil · Centros · Logbook). */
+import { APP_ICONS } from './icons';
+interface Props { on: 'profile' | 'centres' | 'logbook' }
+const { on } = Astro.props;
+const ic = (n: 'user' | 'home' | 'book') => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
+const items = [['profile', 'user', 'Perfil'], ['centres', 'home', 'Centros'], ['logbook', 'book', 'Logbook']] as const;
+---
+<nav class="as-nav">
+  {items.map(([k, i, l]) => <span class:list={[on === k && 'on']}><Fragment set:html={ic(i)} /><i>{l}</i></span>)}
+</nav>
+<style>
+  .as-nav { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 10px 22px; border-top: 1px solid #e6e8ee; background: #fff; }
+  .as-nav span { display: grid; justify-items: center; gap: 3px; color: #a3a3a8; position: relative; }
+  .as-nav i { font-style: normal; font-size: 10px; padding: 1px 8px; border-radius: 99px; }
+  .as-nav .on { color: var(--ap); }
+  .as-nav .on i { background: var(--ap-tint); }
+  .as-nav .on::before { content: ''; position: absolute; top: -11px; left: 12%; right: 12%; height: 2px; background: var(--ap); }
+</style>

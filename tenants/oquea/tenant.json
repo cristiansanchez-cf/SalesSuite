@@ -60,12 +60,44 @@
     "ogImageUrl": "asset:og.jpg",
     "contact": {
       "whatsapp": "34673225293",
+      "phone": "+34 623 790 890",
       "email": "enrique@oquea.com",
-      "website": "https://oquea.com"
+      "website": "https://oquea.app"
     },
     "legal": "Oquea Technologies SL · Avenida Diego Fernández de Mendoza 11, 3º B, 29006 Málaga, España"
   },
-  "tour": [],
+  "tour": [
+    {
+      "title": "El centro pone su QR",
+      "body": "Uno por centro. En el barco, el mostrador o la entrada.",
+      "image": "asset:img/producto/app/12-qr-del-centro.png"
+    },
+    {
+      "title": "El buceador lo escanea",
+      "body": "Desde el navegador del móvil, sin descargar nada. Entra en la actividad del día.",
+      "image": "asset:img/producto/web/02-registro-qr-logbook.png"
+    },
+    {
+      "title": "Guarda la inmersión en su logbook",
+      "body": "Un toque. Su inmersión queda guardada, con tu centro dentro.",
+      "image": "asset:img/producto/app/19-inmersion-guardada.png"
+    },
+    {
+      "title": "El centro lo ve en su CRM",
+      "body": "Historial, inmersiones, certificaciones y datos de cada buceador.",
+      "image": "asset:img/producto/web/04-crm-perfil-buceador.png"
+    },
+    {
+      "title": "Comparte la inmersión, con el logo del centro",
+      "body": "Marketing orgánico para el centro.",
+      "image": "asset:img/fotos/share-card-aerea.png"
+    },
+    {
+      "title": "El centro organiza sus salidas",
+      "body": "Actividades ligadas a un dive site, programadas una vez.",
+      "image": "asset:img/producto/web/01-panel-centro-actividades.png"
+    }
+  ],
   "domains": [
     {
       "hostname": "oquea.ventas.cofundo.io",
@@ -73,11 +105,809 @@
     }
   ],
   "admins": [],
-  "catalog": [],
-  "market": [],
+  "catalog": [
+    {
+      "key": "portada",
+      "block_type": "app-steps",
+      "name": "Portada",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La primera diapositiva: para quién es y la promesa de la guía («en minutos»).",
+      "props": {
+        "tone": "dark",
+        "eyebrow": "Para {company}",
+        "title": "Empieza a usar Oquea en minutos.",
+        "highlight": "Oquea",
+        "lede": "Paso a paso, desde el registro hasta tener tu centro activo, tu QR listo y tus buceadores conectados.",
+        "screens": [
+          {
+            "screen": "access"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "como-funciona",
+      "block_type": "app-steps",
+      "name": "Cómo funciona: escanean, tú los ves",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El argumento en tres pasos (guía, diapositiva 13): escanean tu QR, los ves en tu CRM y comparten con tu logo.",
+      "props": {
+        "title": "Tus buceadores escanean, tú los ves",
+        "highlight": "buceadores",
+        "lede": "Cuando un buceador escanea tu QR, queda conectado a tu centro. Tú lo ves en tu CRM y él puede compartir su inmersión.",
+        "cards": [
+          {
+            "icon": "qr",
+            "title": "El buceador escanea el QR",
+            "body": "Entra en la actividad del día y registra su inmersión al momento."
+          },
+          {
+            "icon": "users",
+            "title": "Tú lo ves en tu CRM",
+            "body": "Historial, inmersiones, certificaciones y datos de cada buceador."
+          },
+          {
+            "icon": "share",
+            "title": "Ellos comparten la inmersión",
+            "body": "Con tu logo. Marketing orgánico para tu centro."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "dive-saved"
+          },
+          {
+            "screen": "share-card"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "registro-qr",
+      "block_type": "app-steps",
+      "name": "Registro de inmersiones por QR",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Lo que vive el buceador: escanea, ve la actividad del día y la guarda en su logbook. Sin instalar nada.",
+      "props": {
+        "title": "Un escaneo y la inmersión queda en su logbook",
+        "highlight": "un escaneo",
+        "lede": "Llega al centro, escanea el QR del día y la inmersión queda guardada en su perfil.",
+        "cards": [
+          {
+            "icon": "phone",
+            "title": "Sin descargar nada",
+            "body": "Se abre en el navegador del móvil: oquea.app."
+          },
+          {
+            "icon": "clock",
+            "title": "Al final del día",
+            "body": "Cada inmersión se guarda en el logbook con un solo escaneo."
+          },
+          {
+            "icon": "building",
+            "title": "Con tu centro dentro",
+            "body": "Al guardar, tu centro añade la inmersión a su historial."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "qr-activity"
+          },
+          {
+            "screen": "dive-saved"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "crm",
+      "block_type": "app-steps",
+      "name": "CRM del centro",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Cada buceador que escanea entra en el CRM del centro, con su historial y sus datos.",
+      "props": {
+        "title": "Cada buceador, en tu CRM",
+        "highlight": "tu CRM",
+        "lede": "Quien escanea tu QR queda conectado a tu centro. Ves quién vino, cuántas veces y qué ha buceado contigo.",
+        "cards": [
+          {
+            "icon": "users",
+            "title": "Historial con tu centro",
+            "body": "Inmersiones, primera y última visita, cursos."
+          },
+          {
+            "icon": "shield",
+            "title": "Certificaciones y datos",
+            "body": "Historial, inmersiones, certificaciones y datos de cada buceador."
+          },
+          {
+            "icon": "qr",
+            "title": "Escaneó el QR o lo añadiste tú",
+            "body": "Ves cómo llegó cada uno a tu lista."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "crm-list"
+          },
+          {
+            "screen": "crm-diver"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "compartir",
+      "block_type": "app-steps",
+      "name": "Compartir la inmersión",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La tarjeta para redes con los datos de la inmersión y el logo del centro.",
+      "props": {
+        "title": "Comparten la inmersión, con tu logo",
+        "highlight": "con tu logo",
+        "lede": "Datos de profundidad, tiempo y temperatura sobre su mejor foto: listo para Stories.",
+        "cards": [
+          {
+            "icon": "megaphone",
+            "title": "Marketing orgánico para tu centro",
+            "body": "Cada tarjeta que se comparte lleva tu nombre y tu logo."
+          },
+          {
+            "icon": "image",
+            "title": "Fotos y vídeos de la salida",
+            "body": "Desde la actividad, el buceador ve las fotos y vídeos."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "share-card"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "qr-del-centro",
+      "block_type": "app-steps",
+      "name": "Tu QR",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El QR único del centro: dónde ponerlo y para qué sirve.",
+      "props": {
+        "title": "Descarga tu QR y ponlo en tu centro",
+        "highlight": "QR",
+        "lede": "Cada centro tiene un QR único. Imprímelo y ponlo en el barco, en la entrada o en el mostrador. Los buceadores lo escanean, registran la actividad y se quedan conectados contigo.",
+        "cards": [
+          {
+            "icon": "qr",
+            "title": "Descarga el QR",
+            "body": "En el panel de tu centro, descárgalo en alta resolución para imprimirlo."
+          },
+          {
+            "icon": "anchor",
+            "title": "Ponlo donde más se use",
+            "body": "Barco, mostrador, entrada. Cuanto más visible, más escaneos."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "center-qr"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "actividades",
+      "block_type": "app-steps",
+      "name": "Actividades",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Crear actividades ligadas a un dive site, y programarlas una vez para todos los días.",
+      "props": {
+        "title": "Crea tus actividades en menos de un minuto",
+        "highlight": "menos de un minuto",
+        "lede": "Cada actividad está ligada a un punto de inmersión. Puedes programarlas con antelación para crearlas una sola vez.",
+        "cards": [
+          {
+            "icon": "calendar",
+            "title": "Crea una actividad",
+            "body": "Nombre, dive site, fecha y hora. Listo en menos de un minuto."
+          },
+          {
+            "icon": "repeat",
+            "title": "Prográmalas",
+            "body": "Define actividades recurrentes (salidas diarias) y no tendrás que crearlas cada vez."
+          }
+        ],
+        "tip": {
+          "kind": "bulb",
+          "text": "Después de crear la actividad, tus buceadores podrán unirse escaneando tu código QR.",
+          "strong": "¡Listo!"
+        },
+        "screens": [
+          {
+            "screen": "activities"
+          },
+          {
+            "screen": "create-activity"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "dive-sites",
+      "block_type": "app-steps",
+      "name": "Dive sites",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Los puntos de inmersión del centro. Si lo prefiere, Oquea se los da de alta.",
+      "props": {
+        "title": "Crea tus puntos de inmersión",
+        "highlight": "puntos de inmersión",
+        "lede": "Los dive sites son los lugares donde buceas. Los necesitas en Oquea para asociarlos a las actividades.",
+        "cards": [
+          {
+            "icon": "pin",
+            "title": "Ve a «Dive sites»",
+            "body": "En el panel de tu centro, pulsa Añadir dive site."
+          },
+          {
+            "icon": "headset",
+            "title": "¿Prefieres que lo hagamos por ti?",
+            "body": "Escríbenos y los creamos nosotros. Solo dinos los nombres y las coordenadas."
+          }
+        ],
+        "tip": {
+          "kind": "check",
+          "text": "Complétalos con profundidad, entorno, vida marina… Los demás podrán verlos en su logbook.",
+          "strong": "¡Compártelos con todos!"
+        },
+        "screens": [
+          {
+            "screen": "dive-sites"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "equipo",
+      "block_type": "app-steps",
+      "name": "Equipo del centro",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Instructores y divemasters dentro del centro, invitados con un enlace.",
+      "props": {
+        "title": "Añade a tu equipo al centro",
+        "highlight": "equipo",
+        "lede": "¿Trabajas con instructores o divemasters? Invítalos al centro para que puedan crear y gestionar actividades contigo.",
+        "cards": [
+          {
+            "icon": "link",
+            "title": "Envíales el enlace",
+            "body": "Pídeles que se unan. Una vez dentro, podréis colaborar en tiempo real."
+          },
+          {
+            "icon": "share",
+            "title": "Copia el enlace",
+            "body": "Panel → Equipo → copia el enlace de invitación y compártelo por WhatsApp o email."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "team"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "alta-centro",
+      "block_type": "app-steps",
+      "name": "Alta del centro",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Cómo queda el centro en Oquea: datos, unidades, logo y fotos, y verificación en menos de 24 h.",
+      "props": {
+        "title": "Tu centro en Oquea, verificado en menos de 24 h",
+        "highlight": "en menos de 24 h",
+        "lede": "Rellenas los datos una vez y los puedes editar cuando quieras. Cuanto más completo, más fácil será que los buceadores te encuentren.",
+        "cards": [
+          {
+            "icon": "building",
+            "title": "Datos básicos",
+            "body": "Nombre, ubicación y contacto del centro."
+          },
+          {
+            "icon": "ruler",
+            "title": "Tus unidades",
+            "body": "Metros o pies, temperatura, presión, duración habitual y presión de llenado."
+          },
+          {
+            "icon": "image",
+            "title": "Logo, redes y fotos",
+            "body": "Instalaciones, barco, equipo… La mejor cara de tu centro."
+          },
+          {
+            "icon": "send",
+            "title": "Envías la solicitud",
+            "body": "Nuestro equipo verifica tu centro en menos de 24 h y te avisa cuando está listo."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "image",
+            "src": "asset:img/producto/app/20-registro-centro-unidades-es.png",
+            "alt": "Registro del centro: unidades y valores por defecto"
+          },
+          {
+            "screen": "my-centres"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "cierre",
+      "block_type": "app-steps",
+      "name": "Cierre",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La última diapositiva: estamos aquí, con el contacto directo.",
+      "props": {
+        "tone": "dark",
+        "eyebrow": "¡Todo listo!",
+        "title": "¿Alguna duda? Estamos aquí.",
+        "mark": "asset:isotipo-blanco.svg",
+        "lede": "Cualquier pregunta, problema técnico o si prefieres que te ayudemos a configurar el centro o a añadir inmersiones, escríbenos. Lo resolvemos juntos.",
+        "pills": [
+          {
+            "icon": "mail",
+            "label": "enrique@oquea.com",
+            "href": "mailto:enrique@oquea.com"
+          },
+          {
+            "icon": "globe",
+            "label": "www.oquea.app",
+            "href": "https://oquea.app"
+          },
+          {
+            "icon": "phone",
+            "label": "+34 623 790 890",
+            "href": "tel:+34623790890"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    }
+  ],
+  "market": [
+    {
+      "key": "centros-buceo",
+      "name": "Centros de buceo",
+      "icon": "anchor",
+      "image": "asset:img/fotos/share-card-bg.webp",
+      "description": "Centros que organizan salidas, cursos e inmersiones, con su barco, su mostrador y su equipo.",
+      "value_prop": "Tus buceadores escanean tu QR y quedan conectados a tu centro: los ves en tu CRM y, cuando comparten la inmersión, sale tu logo. Marketing orgánico para tu centro.",
+      "icp": null,
+      "disqualifiers": null,
+      "buying_process": null,
+      "deal_size": null,
+      "sales_cycle": null,
+      "notice": "Contenido de partida, sacado de la guía de inicio y de la web. Faltan cliente ideal, actores, precios y casos (documentos 01–07 del negocio). No hables de precio hasta que esté la tarifa.",
+      "modules": [
+        {
+          "module_key": "como-funciona",
+          "priority": 1,
+          "fit": "El argumento entero en una diapositiva."
+        },
+        {
+          "module_key": "crm",
+          "priority": 1,
+          "fit": "Lo que gana quien paga: sus buceadores, por fin en una lista."
+        },
+        {
+          "module_key": "compartir",
+          "priority": 1,
+          "fit": "Marketing orgánico: cada tarjeta lleva su logo."
+        },
+        {
+          "module_key": "registro-qr",
+          "priority": 2,
+          "fit": "Para enseñar lo fácil que es para el buceador."
+        },
+        {
+          "module_key": "qr-del-centro",
+          "priority": 2,
+          "fit": "Lo único que tiene que hacer el centro: poner el QR."
+        },
+        {
+          "module_key": "actividades",
+          "priority": 2,
+          "fit": "Para centros con salidas diarias."
+        },
+        {
+          "module_key": "alta-centro",
+          "priority": 3,
+          "fit": "Para quitar el miedo a «otra herramienta»."
+        },
+        {
+          "module_key": "equipo",
+          "priority": 3,
+          "fit": "Centros con instructores y divemasters."
+        },
+        {
+          "module_key": "dive-sites",
+          "priority": 3,
+          "fit": "Si pregunta por el trabajo de montarlo."
+        }
+      ],
+      "personas": [],
+      "proposal": {
+        "blocks": {
+          "portada": {
+            "module": "portada",
+            "props": {}
+          },
+          "como-funciona": {
+            "module": "como-funciona",
+            "props": {}
+          },
+          "registro-qr": {
+            "module": "registro-qr",
+            "props": {}
+          },
+          "crm": {
+            "module": "crm",
+            "props": {}
+          },
+          "compartir": {
+            "module": "compartir",
+            "props": {}
+          },
+          "qr-del-centro": {
+            "module": "qr-del-centro",
+            "props": {}
+          },
+          "actividades": {
+            "module": "actividades",
+            "props": {}
+          },
+          "dive-sites": {
+            "module": "dive-sites",
+            "props": {}
+          },
+          "equipo": {
+            "module": "equipo",
+            "props": {}
+          },
+          "alta-centro": {
+            "module": "alta-centro",
+            "props": {}
+          },
+          "cierre": {
+            "module": "cierre",
+            "props": {}
+          }
+        },
+        "modes": {
+          "full": [
+            "portada",
+            "como-funciona",
+            "registro-qr",
+            "crm",
+            "compartir",
+            "qr-del-centro",
+            "alta-centro",
+            "cierre"
+          ],
+          "visual": [
+            "portada",
+            "como-funciona",
+            "crm",
+            "compartir",
+            "cierre"
+          ]
+        },
+        "max": {
+          "full": 9,
+          "visual": 6
+        },
+        "priority": [
+          "portada",
+          "cierre",
+          "como-funciona",
+          "crm",
+          "compartir",
+          "registro-qr",
+          "qr-del-centro",
+          "alta-centro",
+          "actividades",
+          "equipo",
+          "dive-sites"
+        ],
+        "questions": [
+          {
+            "key": "salidas-diarias",
+            "label": "¿Hace salidas todos los días?",
+            "hint": "Las actividades se programan una vez.",
+            "rules": [
+              {
+                "add": "actividades",
+                "after": [
+                  "qr-del-centro",
+                  "compartir"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "equipo",
+            "label": "¿Trabaja con instructores o divemasters?",
+            "rules": [
+              {
+                "add": "equipo",
+                "before": [
+                  "alta-centro",
+                  "cierre"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "montarlo",
+            "label": "¿Le preocupa el trabajo de montarlo?",
+            "hint": "Oquea le da de alta los dive sites.",
+            "rules": [
+              {
+                "add": "dive-sites",
+                "before": [
+                  "alta-centro",
+                  "cierre"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "varios-centros",
+            "label": "¿Tiene más de un centro?",
+            "rules": [
+              {
+                "patch": "alta-centro",
+                "set": {
+                  "tip": {
+                    "kind": "bulb",
+                    "strong": "Puedes tener más de un centro.",
+                    "text": "Crea uno por cada ubicación física para tenerlo todo ordenado."
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "price_options": [],
   "coupons": [],
   "facets": [],
-  "playbook": [],
+  "playbook": [
+    {
+      "key": "vision",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": true,
+      "pinned": null,
+      "title": "La visión",
+      "body": "Construimos el ecosistema digital global del buceo. Oquea conecta centros, buceadores y destinos oceánicos en una plataforma unificada que da forma al futuro del buceo.",
+      "when_to_use": null,
+      "why_it_works": "Web de Oquea (oquea.com), texto literal.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "oquea-en-una-frase",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 1,
+      "title": "Oquea en una frase",
+      "body": "La plataforma digital que conecta centros de buceo, buceadores y destinos.",
+      "when_to_use": "Cuando te pregunten «¿y esto qué es?». Después, el argumento en tres pasos.",
+      "why_it_works": "Web de Oquea (oquea.com), texto literal.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "escanean-tu-ves",
+      "module_key": "como-funciona",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 2,
+      "title": "Escanean, tú los ves, comparten con tu logo",
+      "body": "Cuando un buceador escanea tu QR, queda conectado a tu centro. Tú lo ves en tu CRM y él puede compartir su inmersión. Con tu logo: marketing orgánico para tu centro.",
+      "when_to_use": "El centro de la conversación: es lo que gana quien paga (clientes que vuelven y visibilidad gratis).",
+      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN]. Es la diapositiva con la que se ha validado la venta.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fideliza",
+      "module_key": "crm",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Un negocio que fideliza",
+      "body": "Convierte tu centro en un negocio que fideliza. CRM, planificación y comunidad para que cada inmersión se convierta en un cliente que vuelve.",
+      "when_to_use": null,
+      "why_it_works": "Web de Oquea (oquea.com), texto literal.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "sin-instalar",
+      "module_key": "registro-qr",
+      "kind": "tip",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Sin descargar nada",
+      "body": "La app se abre en el navegador del móvil: oquea.app. El buceador escanea el QR y entra en la actividad del día, sin instalar nada.",
+      "when_to_use": "Si el centro teme que sus buceadores no quieran «otra app».",
+      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN]. La entrega de la app confirma que el aterrizaje por QR funciona sin cuenta.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "qr-visible",
+      "module_key": "qr-del-centro",
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Cuanto más visible el QR, más escaneos",
+      "body": "Barco, mostrador, entrada. Cuanto más visible, más escaneos.",
+      "when_to_use": "Al cerrar y en el seguimiento de la primera semana: dónde poner el QR.",
+      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN].",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "lo-montamos",
+      "module_key": "dive-sites",
+      "kind": "tip",
+      "stage": "objeciones",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Si le da pereza montarlo, se lo montamos",
+      "body": "¿Prefieres que lo hagamos por ti? Escríbenos y creamos tus dive sites. Solo dinos los nombres y las coordenadas. También te ayudamos a configurar el centro o a añadir inmersiones.",
+      "when_to_use": "Cuando el centro dice que no tiene tiempo para dar de alta otra herramienta.",
+      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN]. Servicio que Oquea ofrece en su propia guía.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "verificacion-24h",
+      "module_key": "alta-centro",
+      "kind": "tip",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Verificado en menos de 24 h",
+      "body": "Envías la solicitud y nuestro equipo verifica tu centro en menos de 24 h. Una vez verificado, tu centro aparece en Oquea.",
+      "when_to_use": null,
+      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN]. Plazo confirmado por Cristian el 4 de octubre de 2026.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "en-minutos",
+      "module_key": "portada",
+      "kind": "script",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Empieza en minutos",
+      "body": "Empieza a usar Oquea en minutos: desde el registro hasta tener tu centro activo, tu QR listo y tus buceadores conectados.",
+      "when_to_use": null,
+      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN].",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "no-se-dice",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": 3,
+      "title": "Lo que no se vende (todavía)",
+      "body": "El mapa interactivo y los viajes y ofertas flash salen en la web como «Próximamente»: no se venden. Las reseñas están apagadas en la app. Tampoco se habla de precio ni de «gratis» hasta que esté la tarifa oficial.",
+      "when_to_use": null,
+      "why_it_works": "Web de Oquea («Próximamente») y entrega de la UI de la app (reseñas apagadas a propósito). La tarifa es el documento 04, pendiente.",
+      "technique_refs": [],
+      "status": "official"
+    }
+  ],
   "retired_plays": []
 }

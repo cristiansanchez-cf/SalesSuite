@@ -1,0 +1,171 @@
+---
+/**
+ * app-steps ← la diapositiva de la guía de inicio de Oquea (docs/ventas/oquea/agente/03-GUIA-INICIO-REFERENCIA.md):
+ * a la izquierda el paso (chip con número, titular a dos tonos, tarjetas con icono, aviso); a la derecha, sobre un
+ * fondo suave de la marca, 1–2 móviles con la pantalla real recreada (Screen.astro). En móvil va todo en columna.
+ * `tone: dark`: portada o cierre, sobre el color oscuro de la marca (--color-accent-contrast; en Oquea, el navy).
+ * Solo tokens del tema; las pantallas de la app son claras siempre (como la app).
+ */
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import { APP_ICONS } from './icons';
+import Screen from './Screen.astro';
+import type { AppStepsProps } from './schema';
+
+type Props = AppStepsProps & ModuleBaseProps;
+const { tone, step, eyebrow, title, highlight, lede, cards, tip, pills, screens, mark, photo, sample, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const center = (ctx.prospectCompany || ctx.prospectName || 'Tu centro de buceo').trim();
+const media = ctx.media ?? {};
+const logo = media.logo || null;
+const pic = (media.photos ?? []).find(Boolean) || photo || null;
+const ic = (n: keyof typeof APP_ICONS, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
+
+const fullTitle = t(title);
+const hl = highlight ? t(highlight) : '';
+const at = hl ? fullTitle.toLowerCase().indexOf(hl.toLowerCase()) : -1;
+const parts = at >= 0 ? [fullTitle.slice(0, at), fullTitle.slice(at, at + hl.length), fullTitle.slice(at + hl.length)] : [fullTitle, '', ''];
+const tipIcon = tip?.kind === 'info' ? 'info' : tip?.kind === 'bulb' ? 'bulb' : 'ok';
+const hasScreens = screens.length > 0;
+---
+<div data-module="app-steps" class="st-wrap">
+<div class:list={['st', `st--${tone}`, hasScreens && 'st--split', screens.length === 2 && 'st--two']}>
+  <div class="st__copy">
+    {(step || eyebrow) && (
+      <p class="st__chip">
+        {step ? <span class="st__num">{step}</span> : tone === 'dark' ? <span class="st__chipico" set:html={ic('anchor', 16)} /> : null}
+        {eyebrow && <span>{t(eyebrow)}</span>}
+      </p>
+    )}
+    <h2 class="st__title">{parts[0]}{parts[1] && <em>{parts[1]}</em>}{parts[2]}</h2>
+    {lede && <p class="st__lede">{t(lede)}</p>}
+    {cards.length > 0 && (
+      <ul class="st__cards">
+        {cards.map((c, i) => (
+          <li class="st__card" style={`--i:${i}`}>
+            <span class="st__ico" set:html={ic(c.icon)} />
+            <span><b>{t(c.title)}</b>{c.body && <span class="st__body">{t(c.body)}</span>}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+    {tip && (
+      <p class:list={['st__tip', `st__tip--${tip.kind}`]}>
+        <span class="st__tipico" set:html={ic(tipIcon as keyof typeof APP_ICONS, 18)} />
+        {tip.kind === 'bulb'
+          ? <span>{tip.strong && <Fragment><strong>{t(tip.strong)}</strong> </Fragment>}{t(tip.text)}</span>
+          : <span>{t(tip.text)}{tip.strong && <Fragment> <strong>{t(tip.strong)}</strong></Fragment>}</span>}
+      </p>
+    )}
+    {pills.length > 0 && (
+      <div class="st__pills">
+        {pills.map((p) => p.href
+          ? <a class="st__pill" href={p.href} target={p.href.startsWith('https://') ? '_blank' : undefined} rel="noopener"><Fragment set:html={ic(p.icon, 16)} />{t(p.label)}</a>
+          : <span class="st__pill"><Fragment set:html={ic(p.icon, 16)} />{t(p.label)}</span>)}
+      </div>
+    )}
+  </div>
+  {hasScreens ? (
+    <div class="st__stage">
+      <div class="st__phones">
+        {screens.map((sc, i) => (
+          <Fragment>
+            {i === 1 && <span class="st__arrow" set:html={ic('arrow', 16)} />}
+            <div class="st__phone" style={`--k:${i}`}>
+              <Screen screen={sc.screen} src={sc.src} alt={sc.alt} sample={sample} center={center} logo={logo} photo={pic} />
+            </div>
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  ) : tone === 'dark' ? (
+    <div class="st__stage st__stage--mark" aria-hidden="true"><span class="st__ring"></span><span class="st__ring st__ring--in"></span>{mark ? <img src={mark} alt="" /> : logo ? <img src={logo} alt="" /> : <span class="st__blob"></span>}</div>
+  ) : null}
+</div>
+</div>
+
+<style>
+  /* La presentación pone [data-module] en columna flexible: la rejilla va dentro y ocupa todo el alto. */
+  .st-wrap { display: flex; flex-direction: column; min-height: 100%; }
+  .st {
+    --st-p: rgb(var(--color-primary, 55 87 190));
+    --st-tint: color-mix(in srgb, var(--st-p) 7%, rgb(var(--color-bg, 255 255 255)));
+    --st-dark: rgb(var(--color-accent-contrast, 31 41 76));
+    position: relative; display: grid; grid-template-columns: minmax(0, 1fr); flex: 1 0 auto; min-height: 100%; overflow: hidden;
+    font-family: var(--font-sans, inherit);
+    background: rgb(var(--color-bg, 255 255 255)); color: rgb(var(--color-text, 41 41 41));
+  }
+  .st__copy { display: flex; flex-direction: column; justify-content: center; gap: 0; padding: clamp(1.75rem, 5vw, 4.5rem) clamp(1.25rem, 5vw, 4.5rem); }
+  .st__chip { display: inline-flex; align-self: flex-start; align-items: center; gap: .55rem; margin: 0 0 1.4rem; padding: .35rem .95rem .35rem .4rem; border-radius: 99px; background: var(--st-tint); color: var(--st-p); font-size: .95rem; font-weight: 500; }
+  .st__num { display: grid; place-items: center; min-width: 1.85rem; height: 1.85rem; padding: 0 .35rem; border-radius: 99px; background: rgb(var(--color-accent, 208 255 0)); color: rgb(var(--color-accent-contrast, 31 41 76)); font-weight: 700; font-size: .9rem; }
+  .st__title { margin: 0; max-width: 18ch; font-family: var(--font-display, inherit); font-size: clamp(2.1rem, 4.6vw, 3.9rem); font-weight: 700; line-height: 1.05; letter-spacing: -.025em; }
+  .st__title em { font-style: normal; color: var(--st-p); }
+  .st__lede { margin: 1.25rem 0 0; max-width: 46ch; font-size: clamp(1.02rem, 1.4vw, 1.2rem); line-height: 1.55; color: rgb(var(--color-muted, 124 124 124)); }
+  .st__cards { list-style: none; display: grid; gap: .75rem; margin: 1.75rem 0 0; padding: 0; max-width: 40rem; }
+  .st__card { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.15rem; border: 1px solid rgb(var(--color-border, 239 239 239)); border-radius: var(--radius-card, 16px); background: rgb(var(--color-surface, 251 251 251)); }
+  .st__card b { display: block; font-size: 1.05rem; font-weight: 600; }
+  .st__body { display: block; margin-top: .2rem; color: rgb(var(--color-text, 41 41 41) / .8); line-height: 1.45; }
+  .st__ico { display: grid; place-items: center; flex: none; width: 2.6rem; height: 2.6rem; border-radius: 12px; background: color-mix(in srgb, var(--st-p) 10%, rgb(var(--color-bg, 255 255 255))); color: var(--st-p); }
+  .st__tip { display: flex; align-items: flex-start; gap: .85rem; max-width: 40rem; margin: 1rem 0 0; padding: 1rem 1.15rem; border-radius: var(--radius-card, 16px); background: var(--st-tint); color: var(--st-p); line-height: 1.45; }
+  .st__tip strong { font-weight: 700; }
+  .st__tipico { display: grid; place-items: center; flex: none; }
+  .st__tip--bulb { background: rgb(var(--color-surface, 251 251 251)); border: 1px solid rgb(var(--color-border, 239 239 239)); color: rgb(var(--color-text, 41 41 41)); }
+  .st__tip--bulb .st__tipico { width: 2.1rem; height: 2.1rem; border-radius: 99px; background: rgb(var(--color-accent, 208 255 0)); color: rgb(var(--color-accent-contrast, 31 41 76)); }
+
+  /* Los móviles: fondo suave de la marca, a sangre por la derecha */
+  .st__stage { position: relative; display: grid; place-items: center; padding: 2rem 1rem 2.5rem; background: var(--st-tint); }
+  .st__phones { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+  .st__phone :global(.as-phone) { zoom: .62; }
+  .st--two .st__phone :global(.as-phone) { zoom: .42; }
+  .st--two .st__phones { gap: .5rem; }
+  .st__arrow { display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--st-p) 35%, transparent); color: var(--st-p); background: rgb(var(--color-bg, 255 255 255)); }
+  @media (min-width: 960px) {
+    .st--split { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); }
+    .st--two.st--split { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
+    .st__stage { padding: 2.5rem 2rem; }
+    .st__phone :global(.as-phone) { zoom: .82; }
+    .st--two .st__phone :global(.as-phone) { zoom: .7; }
+  }
+  @media (min-width: 960px) and (max-height: 820px) {
+    .st__phone :global(.as-phone) { zoom: .7; }
+    .st--two .st__phone :global(.as-phone) { zoom: .66; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .st__card { animation: st-in .45s cubic-bezier(.4,0,.2,1) both; animation-delay: calc(120ms + var(--i) * 80ms); }
+    .st__phone { animation: st-up .5s cubic-bezier(.4,0,.2,1) both; animation-delay: calc(150ms + var(--k) * 140ms); }
+  }
+  /* Pantallas bajas: las tarjetas, más juntas, para que quepan cuatro sin scroll */
+  @media (max-height: 940px) {
+    .st__copy { padding-block: 1.25rem; }
+    .st__title { font-size: clamp(2rem, 3.9vw, 3.3rem); }
+    .st__lede { margin-top: .9rem; font-size: 1rem; }
+    .st__cards { margin-top: 1.1rem; gap: .5rem; }
+    .st__card { padding: .7rem 1rem; }
+    .st__tip { padding: .75rem 1rem; }
+  }
+  @keyframes st-in { from { opacity: .001; transform: translateY(8px); } }
+  @keyframes st-up { from { opacity: .001; transform: translateY(18px); } }
+
+  /* Portada y cierre: fondo oscuro de la marca, chip de acento, titular blanco enorme */
+  .st--dark { background: var(--st-dark); color: #fff; }
+  .st--dark::before { content: ''; position: absolute; left: -9rem; bottom: -12rem; width: 26rem; height: 26rem; border-radius: 99px; background: rgb(255 255 255 / .05); }
+  .st--dark .st__copy { position: relative; }
+  .st--dark .st__chip { padding: .45rem 1.1rem; background: rgb(var(--color-accent, 208 255 0)); color: rgb(var(--color-accent-contrast, 31 41 76)); font-weight: 600; }
+  .st--dark .st__title { max-width: 14ch; font-size: clamp(2.6rem, 6.4vw, 5.6rem); line-height: 1; }
+  .st--dark .st__title em { color: rgb(var(--color-accent, 208 255 0)); }
+  .st--dark .st__lede { color: rgb(255 255 255 / .72); }
+  .st--dark .st__card { background: rgb(255 255 255 / .06); border-color: rgb(255 255 255 / .12); }
+  .st--dark .st__body { color: rgb(255 255 255 / .72); }
+  .st--dark .st__ico { background: rgb(255 255 255 / .1); color: rgb(var(--color-accent, 208 255 0)); }
+  .st--dark .st__stage { background: transparent; }
+  .st__pills { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+  .st__pill { display: inline-flex; align-items: center; gap: .55rem; padding: .8rem 1.3rem; border-radius: 99px; border: 1px solid rgb(255 255 255 / .2); background: rgb(255 255 255 / .06); color: #fff; font-size: 1.05rem; text-decoration: none; }
+  .st__pill:hover { background: rgb(255 255 255 / .12); }
+  .st:not(.st--dark) .st__pill { border-color: rgb(var(--color-border, 239 239 239)); background: rgb(var(--color-surface, 251 251 251)); color: inherit; }
+  .st__stage--mark { min-height: 16rem; }
+  .st__ring { position: absolute; width: min(30rem, 80vw); aspect-ratio: 1; border-radius: 50%; background: rgb(255 255 255 / .035); }
+  .st__ring--in { width: min(20rem, 55vw); background: rgb(255 255 255 / .05); }
+  .st__stage--mark img { position: relative; width: min(11rem, 40vw); max-height: 9rem; object-fit: contain; }
+  .st__blob { position: relative; width: 7rem; height: 5rem; background: radial-gradient(ellipse 22% 40% at 18% 50%, #fff 98%, transparent), radial-gradient(ellipse 30% 46% at 44% 50%, #fff 98%, transparent), radial-gradient(ellipse 34% 50% at 76% 50%, #fff 98%, transparent); }
+  @media (min-width: 960px) { .st--dark { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); } }
+</style>

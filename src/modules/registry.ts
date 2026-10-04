@@ -8,6 +8,7 @@ import { problemSolutionSchema } from './problem-solution/schema';
 import { caseStudySchema } from './case-study/schema';
 import { costMathSchema, hasFigures } from './cost-math/schema';
 import { mediaStripSchema } from './media-strip/schema';
+import { appStepsSchema } from './app-steps/schema';
 import { partsFor } from './phone-tour/steps';
 import type { ModuleContext } from './types';
 
@@ -73,6 +74,12 @@ export const REGISTRY = {
     schema: mediaStripSchema,
     example: { title: 'En directo', items: [{ src: '/demo/foto.webp', alt: 'El producto funcionando en un local' }] },
     load: () => import('./media-strip/Component.astro'),
+  },
+  'app-steps': {
+    label: 'Pasos con la app (móvil con la pantalla real)',
+    schema: appStepsSchema,
+    example: { title: 'Tu centro, en minutos', cards: [{ icon: 'qr', title: 'Un QR único', body: 'Lo imprimes y lo pones en el barco.' }], screens: [{ screen: 'center-qr' }] },
+    load: () => import('./app-steps/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

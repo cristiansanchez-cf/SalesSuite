@@ -1,0 +1,453 @@
+---
+/**
+ * Un móvil con una pantalla de la app de Oquea recreada en HTML (OqueaApp, docs/ventas/oquea/fuentes/02-entrega-UI-
+ * aplicacion.md y las capturas de la guía de inicio). La app es clara siempre: fondo blanco, texto casi negro, tarjetas
+ * de radio 16 con borde de 1 px y sin sombra; el azul y el acento salen del tema (--color-primary, --color-accent).
+ * Lo del cliente: su nombre ({company} ya resuelto en `center`), su logo y su primera foto (media).
+ * Se diseña a 375 px de ancho; `zoom` lo encoge.
+ */
+import { APP_ICONS, MASK_ICON, type AppIcon } from './icons';
+import type { AppSample, AppScreen } from './schema';
+import AppNav from './AppNav.astro';
+import CenterHead from './CenterHead.astro';
+
+interface Props {
+  screen: AppScreen; src?: string; alt?: string; sample: AppSample; center: string; logo?: string | null; photo?: string | null;
+  zoom?: number; class?: string;
+}
+const { screen, src, alt, sample: s, center, logo, photo, zoom = 1, class: cls } = Astro.props;
+const ic = (n: AppIcon, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
+const mask = (size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MASK_ICON}</svg>`;
+const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+const centerName = center.slice(0, 28);
+
+// QR de mentira, siempre el mismo para el mismo centro (no se puede escanear: no lleva a ningún sitio).
+const qr = (() => {
+  let h = 2166136261;
+  for (const ch of centerName) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const n = 25; const cells: string[] = [];
+  const finder = (x: number, y: number) => (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (finder(x, y)) continue;
+    h = Math.imul(h ^ (x * 31 + y), 2246822519) >>> 0;
+    if (h % 100 < 47 && !(x > 9 && x < 15 && y > 9 && y < 15)) cells.push(`M${x} ${y}h1v1h-1z`);
+  }
+  const f = (x: number, y: number) => `M${x} ${y}h7v7h-7zM${x + 1} ${y + 1}v5h5v-5zM${x + 2} ${y + 2}h3v3h-3z`;
+  return `<svg viewBox="-1 -1 ${n + 2} ${n + 2}" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${f(0, 0)}${f(n - 7, 0)}${f(0, n - 7)}${cells.join('')}"/></svg>`;
+})();
+
+const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
+---
+<div class:list={['as-phone', cls]} style={zoom !== 1 ? `zoom:${zoom}` : undefined} aria-hidden={screen === 'image' ? undefined : 'true'}>
+  <div class="as-notch"></div>
+  <div class:list={['as-screen', `as-screen--${screen}`]}>
+    {screen === 'image' ? (
+      src ? <img class="as-shot" src={src} alt={alt ?? ''} loading="lazy" decoding="async" /> : null
+    ) : screen === 'access' ? (
+      <div class="as-access" style={bg}>
+        <span class="as-access__bars"><i class="on"></i><i></i><i></i></span>
+        <span class="as-access__logo">oquea</span>
+        <div class="as-access__copy"><b>Regístrate</b><span>Todas tus inmersiones en un solo lugar</span></div>
+        <span class="as-access__btn">Continuar con email <Fragment set:html={ic('mail', 16)} /></span>
+        <span class="as-access__btn">Continuar con Google <b class="as-g">G</b></span>
+        <small class="as-access__legal">Al entrar, aceptas los Términos y condiciones y la Política de privacidad.</small>
+      </div>
+    ) : screen === 'qr-activity' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Actividades de hoy</span></div>
+        <div class="as-hero" style={bg}><span class="as-hero__fade"></span></div>
+        <div class="as-act">
+          <h3>{s.activity}</h3>
+          <span class="as-chip as-chip--ghost">{s.discipline}</span>
+          <p class="as-meta"><span><Fragment set:html={ic('pin', 14)} />{s.site}</span><span><Fragment set:html={ic('calendar', 14)} />{s.date}</span><span><Fragment set:html={ic('clock', 14)} />{s.time}</span></p>
+          <p class="as-pager"><i class="on"></i><i></i><i></i></p>
+        </div>
+        <div class="as-save"><span class="as-save__ico" set:html={mask(30)} /><span><b>Guardar en mi logbook</b><small><Fragment set:html={ic('globe', 13)} />Registra esta inmersión en Oquea</small></span></div>
+        <div class="as-tiles">
+          <span class="as-tile"><i set:html={ic('image')} /><b>Ver fotos y vídeos</b><small>125 archivos</small></span>
+          <span class="as-tile"><i set:html={ic('mobile')} /><b>Compartir inmersión</b><small>Tarjeta para tus redes</small></span>
+        </div>
+        <ul class="as-rows">
+          <li><Fragment set:html={ic('thermo', 16)} /><span>Temperatura</span><em>{s.temp} °C</em></li>
+          <li><Fragment set:html={ic('down', 16)} /><span>Profundidad</span><em>{s.depth} m</em></li>
+          <li><Fragment set:html={ic('fish', 16)} /><span>Vida marina</span><em>{s.life}</em></li>
+        </ul>
+        <p class="as-foot">Al guardar, {centerName} añadirá esta inmersión a tu historial.</p>
+      </Fragment>
+    ) : screen === 'dive-saved' ? (
+      <Fragment>
+        <div class="as-dim">
+          <div class="as-bar"><span class="as-iso"></span><span>Actividades de hoy</span></div>
+          <div class="as-hero as-hero--short" style={bg}><span class="as-hero__fade"></span></div>
+          <h3 class="as-dim__title">{s.activity}</h3>
+        </div>
+        <div class="as-sheet">
+          <span class="as-okdot" set:html={ic('check', 22)} />
+          <h4>¡Inmersión añadida a tu logbook!</h4>
+          <div class="as-divecard"><span class="as-divecard__ico" set:html={mask(26)} /><span><b>{s.activity}</b><small><span class="as-chip as-chip--sm">{s.discipline}</span> <Fragment set:html={ic('clock', 12)} />{s.time} · <Fragment set:html={ic('pin', 12)} />{s.site}</small></span></div>
+          <p class="as-ask">¿Qué quieres hacer ahora?</p>
+          <span class="as-btn"><Fragment set:html={ic('book', 16)} />Ver en mi logbook</span>
+          <span class="as-btn as-btn--line"><Fragment set:html={ic('image', 16)} />Ver fotos y vídeos</span>
+          <span class="as-btn as-btn--line"><Fragment set:html={ic('mobile', 16)} />Compartir en tus redes</span>
+          <span class="as-btn as-btn--line"><Fragment set:html={ic('back', 16)} />Volver a actividades</span>
+        </div>
+      </Fragment>
+    ) : screen === 'share-card' ? (
+      <div class="as-strava" style={bg}>
+        <span class="as-strava__shade"></span>
+        <div class="as-strava__head"><span class="as-iso as-iso--light"></span><span class="as-strava__loc"><Fragment set:html={ic('pin', 13)} />{s.site}</span></div>
+        <div class="as-strava__stats">
+          <span><small>Tiempo</small><b>{s.duration}<i>min</i></b></span>
+          <span><small>Profundidad</small><b>{s.depth}<i>m</i></b></span>
+          <span><small>Temperatura</small><b>{s.temp}<i>°C</i></b></span>
+        </div>
+        <div class="as-strava__foot">
+          <span class="as-strava__center"><small>Centro de buceo</small><b>{centerName}</b></span>
+          {logo ? <img class="as-strava__logo" src={logo} alt="" /> : <span class="as-strava__brand"><i></i>oquea</span>}
+        </div>
+      </div>
+    ) : screen === 'logbook' ? (
+      <Fragment>
+        <div class="as-bar as-bar--title"><span class="as-iso"></span><span>Logbook</span><span class="as-bar__end" set:html={ic('search')} /></div>
+        <div class="as-kpis">
+          <span><b>{s.dives}</b><small>Inmersiones</small></span>
+          <span><b>32 m</b><small>Prof. máx.</small></span>
+          <span><b>95 h</b><small>Bajo el agua</small></span>
+        </div>
+        <p class="as-month">Febrero 2026</p>
+        {[[s.site, s.date, s.depth], ['Shark Point', '24/02/2026', '22'], ['The Cathedral', '23/02/2026', '16'], ['Los Cañones', '12/02/2026', '28']].map(([site, date, d], i) => (
+          <div class="as-dive"><span class="as-dive__ico" set:html={mask(22)} /><span class="as-dive__txt"><b>{site}</b><small>{date} · {d} m</small></span>{i < 3 && <span class="as-chip as-chip--sm">{centerName}</span>}</div>
+        ))}
+        <AppNav on='logbook' />
+      </Fragment>
+    ) : screen === 'diver-profile' ? (
+      <Fragment>
+        <div class="as-bar as-bar--title"><span class="as-iso"></span><span>Perfil</span><span class="as-bar__end as-bar__end--pill" set:html={ic('menu')} /></div>
+        <div class="as-pcard"><span class="as-avatar" set:html={ic('user', 30)} /><b>{s.diver}</b><small>@{s.handle} · Instructor</small><p><em>{s.dives}</em> inmersiones</p></div>
+        <p class="as-h">Mis estadísticas</p>
+        <div class="as-stats">
+          {[['9h 30m', 'Tiempo de buceo', 'clock'], ['30 m', 'Prof. máxima', 'down'], ['8', 'Certificaciones', 'ok'], ['3', 'Países', 'globe'], ['2', 'Centros', 'building'], ['feb 26', 'Última', 'calendar']].map(([v, l, i]) => (
+            <span><b>{v}</b><small><Fragment set:html={ic(i as AppIcon, 12)} />{l}</small></span>
+          ))}
+        </div>
+        <div class="as-link"><span class="as-link__ico" set:html={ic('home', 16)} /><span>Mis centros</span><Fragment set:html={ic('next', 16)} /></div>
+        <AppNav on='profile' />
+      </Fragment>
+    ) : screen === 'activities' ? (
+      <Fragment>
+        <CenterHead center={centerName} logo={logo} tab='dives' />
+        <div class="as-toggle"><span class="on">Actividades</span><span>Dive site</span></div>
+        <div class="as-sec"><span><Fragment set:html={ic('calendar', 16)} />Actividades de hoy</span><em>Ver todas <Fragment set:html={ic('next', 13)} /></em></div>
+        {[['Salida en barco', s.time, s.site, '6'], ['Buceo nocturno', '20:00', 'Shark Point', '3']].map(([t, h, site, n], i) => (
+          <div class="as-acard">
+            <div class="as-acard__head"><b>{t}</b><span class="as-acard__clip" set:html={ic('clipboard', 16)} /></div>
+            <span class="as-chip"><Fragment set:html={mask(14)} />Inmersión</span>
+            <div class="as-acard__grid">
+              <span><Fragment set:html={ic('clock', 14)} />{h}</span><span><Fragment set:html={ic('calendar', 14)} />{s.date}</span>
+              <span><Fragment set:html={ic('pin', 14)} />{site}</span><span><Fragment set:html={ic('users', 14)} />{n} buceadores</span>
+            </div>
+            {i === 0 && <div class="as-acard__actions"><span class="as-chip as-chip--btn"><Fragment set:html={ic('edit', 13)} />Editar</span><span class="as-danger">Eliminar</span></div>}
+          </div>
+        ))}
+        <div class="as-sec as-sec--line"><span><Fragment set:html={ic('calendar', 16)} />Próximas actividades</span><em>Ver todas</em></div>
+        <div class="as-next"><span><b>Open Water — curso</b><small>09:00 · {s.site} · 1 alumno</small></span><em>28 feb</em></div>
+      </Fragment>
+    ) : screen === 'create-activity' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Información de la actividad</span></div>
+        <span class="as-progress"><i style="width:22%"></i></span>
+        <div class="as-form">
+          <span class="as-field as-field--filled">Salida en barco</span>
+          <span class="as-field as-field--filled">{s.discipline}<Fragment set:html={ic('caret', 16)} /></span>
+          <span class="as-field as-field--filled">{s.date} · {s.time}<Fragment set:html={ic('calendar', 16)} /></span>
+          <span class="as-field as-field--filled">Todos los días<Fragment set:html={ic('caret', 16)} /></span>
+          <span class="as-field">Dive site: {s.site}<Fragment set:html={ic('caret', 16)} /></span>
+        </div>
+        <span class="as-btn as-btn--bottom">Continuar</span>
+      </Fragment>
+    ) : screen === 'center-qr' ? (
+      <Fragment>
+        <CenterHead center={centerName} logo={logo} tab='centre' />
+        <div class="as-qr"><span class="as-qr__code"><Fragment set:html={qr} /><span class="as-qr__iso"></span></span></div>
+        <p class="as-qr__txt">Tus buceadores escanean este QR para registrar sus inmersiones y ver las actividades. Descárgalo e imprímelo para el centro o el barco.</p>
+        <div class="as-qr__btns"><span class="as-btn as-btn--sm">Compartir enlace</span><span class="as-btn as-btn--sm as-btn--line">Descargar</span></div>
+        <div class="as-list">
+          <span>Gestionar equipo<Fragment set:html={ic('next', 16)} /></span>
+          <span>Editar datos del centro<Fragment set:html={ic('next', 16)} /></span>
+        </div>
+        <AppNav on='centres' />
+      </Fragment>
+    ) : screen === 'crm-list' ? (
+      <Fragment>
+        <CenterHead center={centerName} logo={logo} tab='crm' />
+        <div class="as-search"><Fragment set:html={ic('search', 16)} />Buscar buceador</div>
+        <p class="as-count"><b>128</b> buceadores en tu centro</p>
+        {[[s.diver, s.level, '42', 'qr'], ['Tomás Ferreira', 'Open Water', '8', 'qr'], ['Marta Ruiz', 'Divemaster', '310', 'hand'], ['Kenji Sato', 'Rescue Diver', '57', 'qr'], ['Ana Lopes', 'Open Water', '3', 'qr']].map(([n, l, d, how]) => (
+          <div class="as-person">
+            <span class="as-ini">{initials(n!)}</span>
+            <span class="as-person__txt"><b>{n}</b><small>{l} · {d} inmersiones</small></span>
+            <span class:list={['as-chip as-chip--sm', how === 'hand' && 'as-chip--grey']}>{how === 'qr' ? 'Escaneó el QR' : 'Añadido a mano'}</span>
+          </div>
+        ))}
+      </Fragment>
+    ) : screen === 'crm-diver' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Perfil del buceador</span></div>
+        <div class="as-diver">
+          <span class="as-avatar as-avatar--lg" set:html={ic('user', 34)} />
+          <b>{s.diver}</b><small>@{s.handle}</small>
+          <span class="as-chip"><Fragment set:html={ic('shield', 13)} />{s.level}</span>
+          <span class="as-chip as-chip--line"><Fragment set:html={ic('eye', 14)} />Ver perfil público</span>
+        </div>
+        <div class="as-band"></div>
+        <p class="as-h"><Fragment set:html={ic('home', 16)} />En tu centro</p>
+        <div class="as-kpis as-kpis--grey"><span><b>8</b><small>Inmersiones aquí</small></span><span><b>10 jun 2023</b><small>Primera</small></span><span><b>{s.date.slice(0, 5)}</b><small>Última</small></span></div>
+        <div class="as-band"></div>
+        <p class="as-h"><Fragment set:html={ic('clipboard', 16)} />Historial de actividades</p>
+        {[[`Inmersión — ${s.site}`, s.date, 'Recreativa', false], ['Inmersión — Shark Point', '24/02/2026', 'Recreativa', false], ['Curso — Advanced', '03/02/2026', 'Curso', true]].map(([t, d, k, course]) => (
+          <div class="as-hist"><span class:list={['as-dive__ico', course && 'as-dive__ico--warm']} set:html={course ? ic('shield', 20) : mask(20)} /><span><b>{t}</b><small>{d} <span class:list={['as-chip as-chip--sm', course && 'as-chip--warm']}>{k}</span></small></span></div>
+        ))}
+      </Fragment>
+    ) : screen === 'my-centres' ? (
+      <Fragment>
+        <div class="as-bar as-bar--center"><Fragment set:html={ic('back')} /><span>Mis centros</span></div>
+        <p class="as-label">Propietario</p>
+        <div class="as-ccard"><span class="as-ccard__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 20)} /><span><b>{centerName}</b><small>Propietario · 3 actividades</small></span><Fragment set:html={ic('next', 18)} /></div>
+        <div class="as-ccard"><span class="as-ccard__ico" set:html={ic('waves', 20)} /><span><b>{centerName} · Puerto</b><small>Propietario · 0 actividades</small></span><Fragment set:html={ic('next', 18)} /></div>
+        <span class="as-dashed"><Fragment set:html={ic('add', 16)} />Crear nuevo centro</span>
+        <p class="as-label">Equipo</p>
+        <p class="as-muted">Ahora no formas parte del equipo de ningún centro. Cuando un centro te añada, aparecerá aquí.</p>
+      </Fragment>
+    ) : screen === 'team' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Gestionar equipo</span></div>
+        {[[s.diver, 'Propietario'], ['Carlos Vidal', 'Propietario'], ['Sandra García', 'Staff']].map(([n, r]) => (
+          <div class="as-member">
+            <div class="as-member__head"><span class="as-ini as-ini--sm">{initials(n!)}</span><b>{n}</b><span class="as-chip as-chip--grey as-chip--sm">{r}</span></div>
+            <div class="as-member__btns"><span class="as-btn as-btn--sm">Editar</span><span class="as-btn as-btn--sm as-btn--line">Eliminar</span></div>
+          </div>
+        ))}
+        <span class="as-btn as-btn--line as-btn--bottom">Añadir miembro</span>
+      </Fragment>
+    ) : screen === 'dive-sites' ? (
+      <Fragment>
+        <CenterHead center={centerName} logo={logo} tab='dives' />
+        <div class="as-toggle"><span>Actividades</span><span class="on">Dive site</span></div>
+        <div class="as-sec"><span><Fragment set:html={ic('anchor', 16)} />Dive sites</span><em>3</em></div>
+        {[[s.site, '12–30 m', 'Corriente suave · mantas'], ['Shark Point', '18–24 m', 'Pared · tiburones'], ['The Cathedral', '8–16 m', 'Cueva · luz']].map(([n, d, k]) => (
+          <div class="as-site"><span class="as-site__ico" set:html={ic('pin', 18)} /><span class="as-site__txt"><b>{n}</b><small>{k}</small></span><span class="as-chip as-chip--sm">{d}</span></div>
+        ))}
+        <span class="as-btn as-btn--sm as-site__add"><Fragment set:html={ic('plus', 15)} />Añadir dive site</span>
+        <AppNav on='centres' />
+      </Fragment>
+    ) : null}
+  </div>
+</div>
+
+<style>
+  /* El móvil: 375 de ancho de diseño. Marco oscuro fino, como los mockups de la web de Oquea. */
+  .as-phone {
+    --ap: rgb(var(--color-primary, 55 87 190));
+    --ap-tint: color-mix(in srgb, var(--ap) 7%, #fff);
+    --ap-chip: color-mix(in srgb, var(--ap) 12%, #fff);
+    --ap-acc: rgb(var(--color-accent, 208 255 0));
+    --ink: #111318; --mut: #7c7c7c; --hint: #a3a3a8; --line: #e6e8ee; --soft: #f6f7f9;
+    position: relative; width: 375px; height: 780px; flex: none; border-radius: 54px; padding: 12px;
+    background: #1d2130; box-shadow: inset 0 0 0 2px #3a3f52;
+    font-family: var(--font-sans, 'Gilroy', 'Inter', system-ui, sans-serif); color: var(--ink); text-align: left;
+  }
+  .as-notch { position: absolute; z-index: 3; top: 22px; left: 50%; width: 112px; height: 30px; margin-left: -56px; border-radius: 99px; background: #1d2130; }
+  .as-screen { position: relative; height: 100%; overflow: hidden; border-radius: 42px; background: #fff; padding: 56px 18px 0; font-size: 14px; line-height: 1.3; }
+  .as-screen--share-card { padding: 0; }
+  .as-screen--image { padding: 44px 0 0; }
+  .as-shot { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .as-screen :global(svg) { flex: none; }
+  b { font-weight: 700; }
+  small { display: block; font-size: 12px; color: var(--mut); }
+
+  .as-bar { display: flex; align-items: center; gap: 10px; height: 34px; margin-bottom: 8px; font-size: 16px; color: var(--ink); }
+  .as-bar :global(svg) { color: var(--ap); }
+  .as-bar--title { font-size: 17px; font-weight: 600; }
+  .as-bar--center { justify-content: center; position: relative; }
+  .as-bar--center :global(svg) { position: absolute; left: 0; }
+  .as-bar__end { margin-left: auto; display: grid; place-items: center; }
+  .as-bar__end--pill { width: 34px; height: 34px; border-radius: 99px; background: var(--ap-tint); }
+  .as-iso { width: 24px; height: 18px; border-radius: 9px 12px 12px 9px; background: radial-gradient(circle at 30% 50%, var(--ap) 0 4px, transparent 5px), radial-gradient(circle at 70% 50%, var(--ap) 0 8px, transparent 9px); }
+  .as-iso--light { background: radial-gradient(circle at 30% 50%, #fff 0 4px, transparent 5px), radial-gradient(circle at 70% 50%, #fff 0 8px, transparent 9px); }
+
+  .as-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 99px; background: var(--ap-chip); color: var(--ap); font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .as-chip--sm { padding: 2px 9px; font-size: 11px; }
+  .as-chip--ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); font-weight: 400; }
+  .as-chip--line { background: #fff; border: 1px solid color-mix(in srgb, var(--ap) 30%, #fff); }
+  .as-chip--grey { background: #f1f2f4; color: #5b5f6a; }
+  .as-chip--warm { background: #fff1e3; color: #d4620a; }
+  .as-chip--btn { padding: 7px 14px; }
+  .as-btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 99px; background: var(--ap); color: #fff; font-size: 15px; font-weight: 400; }
+  .as-btn--line { background: #fff; color: var(--ap); border: 1px solid color-mix(in srgb, var(--ap) 45%, #fff); }
+  .as-btn--sm { height: 34px; padding: 0 18px; font-size: 13px; }
+  .as-btn--bottom { position: absolute; left: 18px; right: 18px; bottom: 34px; }
+
+  /* Actividad tras escanear el QR */
+  .as-hero { height: 150px; margin: 0 -18px; position: relative; background: linear-gradient(180deg, #f59e0b 0%, #ea580c 28%, #7aa7c7 55%, #5ec8ef 72%, #fff6e2 100%); background-size: cover; background-position: center; }
+  .as-hero--short { height: 120px; }
+  .as-hero__fade { position: absolute; inset: auto 0 0; height: 60px; background: linear-gradient(transparent, #fff); }
+  .as-act { text-align: center; margin-top: -22px; position: relative; }
+  .as-act h3 { line-height: 1.1; }
+  .as-act h3 { margin: 0 0 8px; font-size: 26px; font-weight: 700; color: var(--ap); letter-spacing: -.01em; }
+  .as-meta { display: flex; justify-content: center; gap: 12px; margin: 10px 0 0; color: #555; font-size: 13px; }
+  .as-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .as-pager { display: flex; justify-content: center; gap: 6px; margin: 12px 0 14px; }
+  .as-pager i { width: 7px; height: 7px; border-radius: 99px; background: #e5e7eb; }
+  .as-pager i.on { background: var(--ap); }
+  .as-save { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 22px; background: var(--ap); color: #fff; }
+  .as-save b { font-size: 17px; font-weight: 500; }
+  .as-save small { display: flex; align-items: center; gap: 5px; margin-top: 3px; color: rgb(255 255 255 / .75); font-size: 12px; }
+  .as-save__ico { width: 52px; height: 52px; border-radius: 99px; display: grid; place-items: center; background: rgb(255 255 255 / .16); }
+  .as-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+  .as-tile { padding: 14px; border-radius: 20px; background: var(--ap-tint); }
+  .as-tile i { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 10px; border-radius: 10px; background: var(--ap-chip); color: var(--ap); }
+  .as-tile b { display: block; color: var(--ap); font-size: 14px; font-weight: 500; }
+  .as-rows { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 16px; background: #fbfbfb; }
+  .as-rows li { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  .as-rows li:first-child { border-top: 0; }
+  .as-rows em { margin-left: auto; font-style: normal; color: var(--mut); max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .as-foot { position: absolute; left: 18px; right: 18px; bottom: 16px; margin: 0; text-align: center; font-size: 11px; color: var(--hint); }
+
+  /* Inmersión guardada */
+  .as-dim { position: absolute; inset: 0; padding: 56px 18px 0; background: #fff; filter: brightness(.55) saturate(.8); }
+  .as-dim__title { margin: 6px 0; text-align: center; color: var(--ap); font-size: 18px; }
+  .as-sheet { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 20px 26px; border-radius: 30px 30px 0 0; background: #fff; text-align: center; }
+  .as-okdot { display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 99px; background: var(--ap-acc); color: #1f294c; animation: as-pop .45s cubic-bezier(.34,1.56,.64,1) both; }
+  .as-sheet h4 { margin: 12px 0 14px; font-size: 18px; font-weight: 600; }
+  .as-divecard { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 16px; text-align: left; }
+  .as-divecard small { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; }
+  .as-divecard__ico, .as-dive__ico { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--ap-chip); color: var(--ap); flex: none; }
+  .as-dive__ico--warm { background: #fff1e3; color: #d4620a; }
+  .as-ask { margin: 14px 0 10px; font-size: 12px; color: var(--mut); }
+  .as-sheet .as-btn { height: 40px; margin-top: 8px; font-size: 14px; }
+
+  /* Tarjeta para compartir (tipo Strava) */
+  .as-strava { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 64px 22px 30px; color: #fff; background: radial-gradient(ellipse at 30% 20%, #3fb4c9, transparent 55%), radial-gradient(ellipse at 70% 80%, #0d4a6b, transparent 60%), linear-gradient(170deg, #1a7a94, #082f4a); background-size: cover; background-position: center; }
+  .as-strava__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / .25), transparent 30%, transparent 55%, rgb(0 0 0 / .55)); }
+  .as-strava > *:not(.as-strava__shade) { position: relative; }
+  .as-strava__head { display: flex; align-items: center; justify-content: space-between; }
+  .as-strava__head .as-iso { width: 34px; height: 26px; }
+  .as-strava__loc { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 99px; background: rgb(255 255 255 / .18); backdrop-filter: blur(6px); font-size: 13px; }
+  .as-strava__stats { display: grid; gap: 18px; }
+  .as-strava__stats span { display: grid; gap: 4px; }
+  .as-strava__stats small { color: rgb(255 255 255 / .8); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+  .as-strava__stats b { font-size: 56px; line-height: 1; font-weight: 700; letter-spacing: -.02em; }
+  .as-strava__stats i { margin-left: 6px; font-size: 20px; font-style: normal; font-weight: 500; }
+  .as-strava__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .35); }
+  .as-strava__center small { color: rgb(255 255 255 / .75); }
+  .as-strava__center b { font-size: 17px; }
+  .as-strava__logo { width: 52px; height: 52px; border-radius: 14px; object-fit: contain; background: #fff; padding: 4px; }
+  .as-strava__brand { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--ap-acc); color: #1f294c; font-weight: 800; font-size: 13px; }
+  .as-strava__brand i { width: 8px; height: 8px; border-radius: 99px; background: #1f294c; }
+
+  /* Logbook y perfil */
+  .as-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 14px; }
+  .as-kpis span { padding: 12px 8px; border: 1px solid var(--line); border-radius: 16px; text-align: center; }
+  .as-kpis--grey span { border: 0; background: #f8f8f9; }
+  .as-kpis b { display: block; font-size: 17px; }
+  .as-month { margin: 4px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hint); }
+  .as-dive { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .as-dive__txt { flex: 1; min-width: 0; }
+  .as-dive .as-chip { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  .as-pcard { display: grid; justify-items: center; gap: 4px; padding: 18px; border-radius: 22px; background: #f8f8f9; text-align: center; }
+  .as-pcard p { margin: 6px 0 0; color: var(--mut); font-size: 12px; }
+  .as-pcard em { font-style: normal; font-size: 22px; font-weight: 700; color: var(--ap); margin-right: 4px; }
+  .as-avatar { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 99px; background: var(--ap-chip); color: #6b7280; margin-bottom: 6px; }
+  .as-avatar--lg { width: 84px; height: 84px; }
+  .as-h { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; font-size: 16px; font-weight: 600; }
+  .as-h :global(svg) { color: var(--ap); }
+  .as-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .as-stats span { padding: 10px; border-radius: 12px; background: #f8f8f9; }
+  .as-stats b { display: block; font-size: 16px; margin-bottom: 4px; }
+  .as-stats small { display: flex; align-items: center; gap: 3px; font-size: 10px; }
+  .as-link { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 18px; color: #555; }
+  .as-link > span:nth-child(2) { flex: 1; }
+  .as-link__ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--ap-tint); color: var(--ap); }
+
+  /* Panel del centro */
+  .as-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+  .as-toggle span { padding: 9px 18px; border-radius: 99px; border: 1px solid var(--line); font-size: 14px; font-weight: 500; }
+  .as-toggle .on { background: var(--ap); border-color: var(--ap); color: #fff; }
+  .as-sec { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 10px; font-weight: 600; font-size: 15px; }
+  .as-sec span { display: inline-flex; align-items: center; gap: 8px; }
+  .as-sec span :global(svg) { color: var(--ap); }
+  .as-sec em { display: inline-flex; align-items: center; gap: 3px; font-style: normal; font-weight: 400; font-size: 13px; color: var(--ap); }
+  .as-sec--line { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .as-acard { margin-bottom: 10px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--ap); border-radius: 16px; }
+  .as-acard__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 16px; }
+  .as-acard__clip { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--ap-tint); color: var(--ap); }
+  .as-acard .as-chip { border: 1px solid color-mix(in srgb, var(--ap) 30%, #fff); }
+  .as-acard__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin-top: 10px; color: #555; font-size: 13px; }
+  .as-acard__grid span { display: inline-flex; align-items: center; gap: 6px; }
+  .as-acard__actions { display: flex; align-items: center; gap: 14px; margin: 10px -14px 0; padding: 10px 14px 0; border-top: 1px solid var(--line); }
+  .as-danger { color: #e53935; font-size: 13px; }
+  .as-next { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-left: 4px solid color-mix(in srgb, var(--ap) 45%, #fff); border-radius: 12px; background: #fbfbfb; }
+  .as-next em { font-style: normal; padding: 5px 10px; border-radius: 10px; background: var(--ap-tint); color: var(--ap); font-weight: 600; font-size: 13px; }
+  .as-progress { display: block; height: 3px; margin: 0 -18px 18px; background: #eef0f4; }
+  .as-progress i { display: block; height: 100%; background: var(--ap); }
+  .as-form { display: grid; gap: 12px; }
+  .as-field { display: flex; align-items: center; justify-content: space-between; height: 50px; padding: 0 14px; border-radius: 12px; background: #f6f7f9; color: var(--hint); }
+  .as-field--filled { color: var(--ink); }
+  .as-field :global(svg) { color: #666; }
+
+  .as-qr { display: grid; place-items: center; margin: 6px 20px 12px; padding: 18px; border-radius: 22px; background: var(--ap-tint); }
+  .as-qr__code { position: relative; display: block; width: 200px; padding: 10px; border-radius: 8px; background: #fff; color: #111; }
+  .as-qr__iso { position: absolute; top: 50%; left: 50%; width: 30px; height: 22px; margin: -11px 0 0 -15px; border-radius: 6px; background: radial-gradient(circle at 30% 50%, var(--ap) 0 5px, transparent 6px), radial-gradient(circle at 70% 50%, var(--ap) 0 9px, transparent 10px), #fff; }
+  .as-qr__txt { margin: 0 6px; text-align: center; font-size: 13px; color: #333; }
+  .as-qr__btns { display: flex; justify-content: center; gap: 10px; margin: 14px 0 12px; }
+  .as-list { margin: 0 -18px; border-top: 6px solid #f3f4f6; }
+  .as-list span { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); color: #444; }
+
+  .as-search { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-radius: 99px; background: #f6f7f9; color: var(--hint); }
+  .as-count { margin: 12px 0 6px; color: var(--mut); font-size: 13px; }
+  .as-count b { color: var(--ink); }
+  .as-person { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .as-person__txt { flex: 1; min-width: 0; }
+  .as-ini { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--ap-tint); color: var(--ap); font-weight: 700; font-size: 14px; flex: none; }
+  .as-ini--sm { width: 32px; height: 32px; border-radius: 99px; font-size: 12px; }
+  .as-diver { display: grid; justify-items: center; gap: 6px; text-align: center; }
+  .as-diver b { font-size: 22px; }
+  .as-band { height: 6px; margin: 14px -18px 0; background: #f3f4f6; }
+  .as-hist { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .as-hist small { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .as-label { margin: 8px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
+  .as-ccard { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: #fbfbfb; }
+  .as-ccard > span:nth-child(2) { flex: 1; min-width: 0; }
+  .as-ccard b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .as-ccard__ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--ap-chip); color: var(--ap); overflow: hidden; }
+  .as-ccard__ico :global(img) { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+  .as-dashed { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; margin: 6px 0 18px; border: 1.5px dashed color-mix(in srgb, var(--ap) 40%, #fff); border-radius: 16px; background: var(--ap-tint); color: var(--ap); }
+  .as-muted { margin: 0; color: var(--hint); font-size: 13px; }
+  .as-member { margin-bottom: 10px; padding: 12px; border-radius: 16px; background: #f8f8f9; }
+  .as-member__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .as-member__head .as-chip { margin-left: auto; }
+  .as-member__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Acceso */
+  .as-screen--access { padding: 0; }
+  .as-access { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 12px; padding: 0 26px 30px; color: #fff; background: linear-gradient(180deg, #2b7e96, #0b3b55 70%, #08263a); background-size: cover; background-position: center; }
+  .as-access::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / .15), transparent 35%, rgb(0 0 0 / .55)); }
+  .as-access__copy, .as-access__btn, .as-access__legal { position: relative; }
+  .as-access__bars { position: absolute; top: 60px; left: 26px; right: 26px; display: flex; gap: 6px; }
+  .as-access__bars i { flex: 1; height: 3px; border-radius: 99px; background: rgb(255 255 255 / .35); }
+  .as-access__bars i.on { background: var(--ap); }
+  .as-access__logo { position: absolute; top: 78px; left: 26px; font-weight: 800; font-size: 18px; letter-spacing: -.02em; }
+  .as-access__copy { margin-bottom: 20px; }
+  .as-access__copy b { display: block; font-size: 22px; font-weight: 600; }
+  .as-access__copy span { font-size: 16px; opacity: .9; }
+  .as-access__btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 50px; border-radius: 99px; background: #fff; color: #333; font-size: 15px; }
+  .as-g { font-weight: 800; color: #ea4335; }
+  .as-access__legal { margin-top: 4px; text-align: center; color: rgb(255 255 255 / .8); font-size: 10px; }
+  /* Dive sites */
+  .as-site { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; }
+  .as-site__txt { flex: 1; min-width: 0; }
+  .as-site__ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--ap-tint); color: var(--ap); }
+  .as-site__add { width: max-content; margin-top: 6px; }
+  @keyframes as-pop { from { transform: scale(.4); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .as-okdot { animation: none; } }
+</style>
