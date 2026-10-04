@@ -491,10 +491,11 @@ main().catch((e) => fail(e instanceof Error ? e.message : String(e)));
 
 /**
  * Carátulas por canción (MUSIC_STYLES) desde la API pública de iTunes, subidas a tenant-assets/<espacio>/music/.
- * Si ya están subidas, no se descargan otra vez. Si una no aparece, esa canción va sin carátula (vinilo de color).
+ * Solo la de la canción original (mismo artista, sin karaokes ni covers). Si ya están subidas, no se descargan otra vez.
+ * Si una no aparece, esa canción va sin carátula (vinilo de color).
  */
 async function resolveCovers(sb: SupabaseClient, tenantId: string) {
-  const { MUSIC_STYLES } = await import('../src/modules/live-screen/music');
+  const { MUSIC_STYLES, pickOriginal } = await import('../src/modules/live-screen/music');
   const have = new Set(((await sb.storage.from('tenant-assets').list(`${tenantId}/music`, { limit: 1000 })).data ?? []).map((o) => o.name));
   const out: Record<string, { label: string; songs: Array<{ song: string; artist: string; cover: string | null }> }> = {};
   let found = 0;
@@ -503,7 +504,8 @@ async function resolveCovers(sb: SupabaseClient, tenantId: string) {
     const songs = [];
     for (const sg of st.songs) {
       total++;
-      const file = `${slugify(`${sg.artist}-${sg.song}`)}.jpg`;
+      // «-o»: solo la original (antes se cogía el primer resultado, que a veces era un cover).
+      const file = `${slugify(`${sg.artist}-${sg.song}`)}-o.jpg`;
       const path = `${tenantId}/music/${file}`;
       let cover: string | null = null;
       if (have.has(file)) cover = sb.storage.from('tenant-assets').getPublicUrl(path).data.publicUrl;
@@ -511,9 +513,9 @@ async function resolveCovers(sb: SupabaseClient, tenantId: string) {
         try {
           const country = key === 'francia' ? 'fr' : key === 'internacional' || key === 'rock' ? 'us' : 'es';
           const q = new URL('https://itunes.apple.com/search');
-          q.searchParams.set('term', `${sg.artist} ${sg.song}`); q.searchParams.set('entity', 'song'); q.searchParams.set('limit', '1'); q.searchParams.set('country', country);
+          q.searchParams.set('term', `${sg.artist} ${sg.song}`); q.searchParams.set('entity', 'song'); q.searchParams.set('limit', '25'); q.searchParams.set('country', country);
           const r = await fetch(q, { signal: AbortSignal.timeout(8000) });
-          const art = ((await r.json()) as { results?: Array<{ artworkUrl100?: string }> }).results?.[0]?.artworkUrl100;
+          const art = pickOriginal(((await r.json()) as { results?: Parameters<typeof pickOriginal>[0] }).results ?? [], sg.artist, sg.song)?.artworkUrl100;
           if (art) {
             const img = await fetch(art.replace('100x100bb', '600x600bb'), { signal: AbortSignal.timeout(8000) });
             if (img.ok) {

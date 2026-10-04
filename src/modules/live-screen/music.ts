@@ -81,3 +81,25 @@ export const DEFAULT_STYLE = 'exitos-es';
 export interface Features { songs: boolean; photos: boolean; messages: boolean; album: boolean }
 export const ALL_FEATURES: Features = { songs: true, photos: true, messages: true, album: true };
 export const featuresOf = (f: Partial<Features> | null | undefined): Features => ({ ...ALL_FEATURES, ...(f ?? {}) });
+
+/** Un resultado de la búsqueda de iTunes (lo que se usa). */
+export interface StoreTrack { artistName?: string; trackName?: string; collectionName?: string; artworkUrl100?: string }
+
+const norm = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+/** Versiones que no son la original: karaokes, covers, tributos, instrumentales… */
+const NOT_ORIGINAL = /karaoke|cover|tribute|tributo|made famous|in the style|originally performed|instrumental|version de|versión de|lullaby|piano/i;
+
+/**
+ * La carátula de la canción original: el artista tiene que ser el mismo (iTunes devuelve a veces antes una versión
+ * de otro) y el título, el de la canción. Si ninguna encaja, ninguna: mejor un vinilo de color que la portada de un cover.
+ */
+export function pickOriginal(results: StoreTrack[], artist: string, song: string): StoreTrack | null {
+  const a = norm(artist), s = norm(song);
+  return results.find((r) => {
+    const ra = norm(r.artistName ?? ''), rt = norm(r.trackName ?? '');
+    if (!r.artworkUrl100 || !ra || !rt) return false;
+    if (NOT_ORIGINAL.test(`${r.artistName} ${r.trackName} ${r.collectionName ?? ''}`)) return false;
+    const sameArtist = ra === a || ra.startsWith(`${a} `) || ra.split(/ (?:feat|ft|x|y|and|&) /)[0] === a || ra.includes(a);
+    return sameArtist && (rt === s || rt.startsWith(s));
+  }) ?? null;
+}
