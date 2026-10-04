@@ -40,7 +40,7 @@ El gerente lo ve clarísimo y empuja; el dueño no lo obstaculiza. Si el dueño 
 
 **Tamaño de la venta**
 
-99–499 €/mes (supuesto; hoy pagan 67–100 €/mes). Noche suelta 150 €. Caseta de feria 290 € la feria completa.
+99–499 €/mes (supuesto; hoy pagan 67–100 €/mes). Noche suelta 150 €. Caseta de feria 290 € la feria completa, 90 € el día suelto, o 50-50 sobre lo que generen las peticiones.
 
 **Ciclo de venta**
 

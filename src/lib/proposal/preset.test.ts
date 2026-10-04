@@ -17,7 +17,7 @@ const P = proposalSchema.parse({
       { key: 'privados', label: 'Privados', rules: [{ replace: 'problema', with: 'privados' }] },
     ] },
     { key: 'angulo', label: 'Ángulo', default: 'd', when: ['tipo:estandar'], options: [
-      { key: 'a', label: 'Líder', rules: [{ patch: 'portada', set: { title: 'A' } }] },
+      { key: 'a', label: 'Líder', rules: [{ patch: 'portada', set: { title: 'A' } }], priority: ['portada', 'problema', 'pantalla', 'gente', 'sala', 'precio', 'caso', 'dj', 'mesas'] },
       { key: 'd', label: 'Marca' },
     ] },
   ],
@@ -54,6 +54,9 @@ describe('propuesta por sector', () => {
     const r = planProposal(P, 'full', ['dj', 'mesas']);
     expect(keys(r)).toEqual(['portada', 'problema', 'pantalla', 'gente', 'sala', 'dj', 'mesas', 'precio']);
     expect(keys(planProposal(P, 'visual', ['dj', 'mesas']))).toEqual(['pantalla', 'gente', 'sala', 'dj', 'precio']);
+  });
+  test('una opción con orden propio cambia lo que se recorta (el condicional antes que el caso)', () => {
+    expect(keys(planProposal(P, 'full', ['angulo:a', 'dj', 'mesas']))).toEqual(['portada', 'problema', 'pantalla', 'gente', 'sala', 'dj', 'caso', 'precio']);
   });
   test('una regla que apunta a un bloque inexistente no pasa la validación', () => {
     expect(proposalSchema.safeParse({ blocks: { a: { module: 'x' } }, modes: { full: ['a', 'b'] } }).success).toBe(false);

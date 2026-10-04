@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 161 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 166 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,7 +11,7 @@ Las 161 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 135 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Reparto:** General: 140 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
 - **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
@@ -81,7 +81,7 @@ _etapa: Mentalidad_
 
 ## Generales («Cómo se vende», valen para todo)
 
-### Cómo presentarlo (18)
+### Cómo presentarlo (19)
 
 #### Enjoy en una frase · `empresa-pitch`
 
@@ -236,6 +236,18 @@ _etapa: Pitch / Demo · sectores: Promotoras de eventos_
 > 
 > **Las fotos se guardan 30 días.** Dentro de ese plazo se puede poner el enlace del álbum en el linktree o en el Instagram. Pasado el plazo, si quieren conservarlas tienen que descargarlas ellos. **Decirlo siempre: es parte de la expectativa.**
 
+#### Karaoke: la cola, en la pantalla · `noche-karaoke`
+
+_etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
+
+> **No existe un aviso de «te toca», y no hace falta.** El responsable pulsa **«Reproduciendo ahora»** en la siguiente canción unos veinte o treinta segundos antes de que termine la que suena. En la pantalla aparece **la carátula de la próxima canción y el nombre de quien la pidió**. El que la pidió lo entiende al instante, y el resto de la sala se motiva al ver lo que viene.
+> 
+> > «La gente pide su canción desde el móvil y pone su nombre. Cuando va a entrar, pulsas "Reproduciendo ahora" y en la pantalla sale la carátula de la siguiente y quién la canta. El que la pidió lo ve y viene solo a por el micro. Vosotros solo dais el micro.»
+> 
+> **Se monetiza:** precio mínimo de 1 € por canción. «Reproduciendo ahora» es además el disparador del cobro: solo se cobra cuando la canción entra.
+> 
+> **Nunca** prometas un aviso personal, una notificación ni una cola con posiciones numeradas.
+
 ### Para quién (y cuándo no) (7)
 
 #### Cuenta grande no es un local grande · `gen-cuenta-grande`
@@ -383,7 +395,7 @@ _etapa: Pitch / Demo_
 
 **Por qué funciona:** Es el único dato de participación que tenemos y es real.
 
-### Objeciones (19)
+### Objeciones (20)
 
 #### «Me lo tengo que pensar» · `empresa-obj-pensar`
 
@@ -545,6 +557,20 @@ _etapa: Objeciones · objeción: Desconfianza · sectores: Promotoras de eventos
 > 
 > **Lo que cambia la conversación:** no es contenido mejor, es **contenido que trae gente a tu perfil**. Una foto profesional no hace que nadie entre a buscarse.
 
+#### «¿Va automático?» · `gen-obj-automatico`
+
+_etapa: Objeciones · objeción: Desconfianza_
+
+> **No.** Cada canción, cada foto y cada mensaje que sale en pantalla pasa por validación manual. Y hay que decirlo corto:
+> 
+> > «Siempre hay validación manual. Es como sabes seguro lo que sale en tu pantalla. Y si hay pago, se libera justo al validarlo.»
+> 
+> **Punto. No se añade nada más.** Si insisten:
+> 
+> > «Estamos viendo acuerdos con proveedores de música para poder automatizarlo.»
+> 
+> **Nunca** expliques lo de Spotify y el uso comercial: es mucho texto, no lo entienden y les plantas el problema. Cuando se empezó a contestar corto, nadie volvió a preguntar.
+
 ### Precio y monetización (12)
 
 #### Antes del precio, deja de vender · `noche-puente`
@@ -661,7 +687,7 @@ _etapa: Negociación · sectores: Festivales_
 
 > > «Para un festival de vuestro tamaño, [X] €. Para que lo sitúes: una kiss cam clásica con pantalla, cámara y operario no baja de 8.000 € por evento, y cuando acaba no queda nada.»
 
-### Guiones (22)
+### Guiones (23)
 
 #### Después de la venta: la parte que hemos fallado · `gen-postventa`
 
@@ -901,7 +927,17 @@ _etapa: Cierre · sectores: Festivales_
 > 
 > **Es excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y no va en el módulo de precio como incluido.
 
-### Consejos (42)
+#### Con un casetero · `noche-caseta-argumento`
+
+_etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
+
+> Una caseta es un híbrido de local y promotora: **diez días para vender y un año entero para preparar la siguiente**. No cuidan sus redes. Lo que les mueve:
+> 
+> > «Diez días de fiesta te dejan un montón de contenido de la gente que quieres que venga, y sin pagar a un fotógrafo. Eso es lo que usas el resto del año para preparar la siguiente feria.»
+> 
+> **Con pantalla es cuando interesa de verdad.**
+
+### Consejos (44)
 
 #### Lo primero que se comprueba · `gen-cobertura`
 
@@ -1319,6 +1355,27 @@ _etapa: Seguimiento · sectores: Promotoras de eventos · la ven: Solo equipo in
 > Por eso **cada evento de promotora es un lead cualificado de local**, y hay que traer siempre de vuelta en qué sala monta cada fiesta.
 > 
 > **Idea en estudio, no vendible todavía:** tratar a las promotoras como canal (servicio a cambio de que lo lleven a locales, o comisión). **No se ofrece a nadie hasta que esté cerrado y autorizado por fundador.**
+
+#### Caseta: los dos modelos de pago · `noche-caseta-modelos`
+
+_etapa: Negociación · sectores: Locales de ocio nocturno · la ven: Solo equipo interno_
+
+> | Modelo | Cómo funciona | Resultado real |
+> |---|---|---|
+> | **Pago fijo** | Pagan 100 € y se quedan todo lo que se genere | Probado |
+> | **50-50** | Sin pago inicial; el ingreso de las peticiones se reparte a medias | Cada parte se queda entre 100 y 200 € |
+> 
+> **Es el único sitio donde usamos el 50-50.** Se ofrece cuando el casetero no quiere pagar por adelantado.
+> 
+> Tarifas: 290 € la feria completa (hasta 7 días) · 90 € el día suelto · o 50-50 sobre lo que generen las peticiones.
+
+#### El menú cerrado decide quién viene · `noche-menu-cerrado`
+
+_etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
+
+> Una caseta que un año fue de público infantil decidió al siguiente cerrar el menú a **música española y antigua** para que no entraran chavales. Resultado: los chavales dejaron de venir y **la feria le fue peor que la anterior**.
+> 
+> **El menú cerrado no solo protege el ambiente: decide quién viene.** Si lo cierras demasiado, cambias tu público. Avísalo siempre.
 
 ## Módulo: Pantalla en vivo
 

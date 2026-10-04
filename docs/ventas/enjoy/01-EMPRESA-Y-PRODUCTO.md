@@ -144,6 +144,17 @@ No es un cliente: es un canal. Lo que necesita, y nada más: qué es Enjoy en tr
 **Las fotos se guardan 30 días.** Dentro de ese plazo se puede poner el enlace del álbum en el linktree o en el Instagram. Pasado el plazo, si quieren conservarlas tienen que descargarlas ellos. **Decirlo siempre: es parte de la expectativa.**
 
 
+### Karaoke: la cola, en la pantalla · `noche-karaoke`
+
+**No existe un aviso de «te toca», y no hace falta.** El responsable pulsa **«Reproduciendo ahora»** en la siguiente canción unos veinte o treinta segundos antes de que termine la que suena. En la pantalla aparece **la carátula de la próxima canción y el nombre de quien la pidió**. El que la pidió lo entiende al instante, y el resto de la sala se motiva al ver lo que viene.
+
+> «La gente pide su canción desde el móvil y pone su nombre. Cuando va a entrar, pulsas "Reproduciendo ahora" y en la pantalla sale la carátula de la siguiente y quién la canta. El que la pidió lo ve y viene solo a por el micro. Vosotros solo dais el micro.»
+
+**Se monetiza:** precio mínimo de 1 € por canción. «Reproduciendo ahora» es además el disparador del cobro: solo se cobra cuando la canción entra.
+
+**Nunca** prometas un aviso personal, una notificación ni una cola con posiciones numeradas.
+
+
 ## 2. Por qué existimos (paso 0 de Aprende)
 
 Es lo primero que ve un comercial en Aprende, antes del recorrido del producto. No sale en el guion de la reunión: se aprende, no se dice.
@@ -325,6 +336,7 @@ Lo que el comercial elige en la propuesta: primero el tipo y luego la tarifa (�
 | Locales de ocio nocturno | Local | Noche suelta en local | 150 € /evento |
 | Locales de ocio nocturno | Caseta de feria | ★ Caseta · feria completa (hasta 7 días) | 290 € pago único |
 | Locales de ocio nocturno | Caseta de feria | Caseta · día suelto | 90 € /evento |
+| Locales de ocio nocturno | Caseta de feria | Caseta · 50-50 sobre las peticiones · **Sin pago inicial: lo que generen las peticiones, a medias** | A medida |
 | Promotoras de eventos | Promotora | ★ Promotora pequeña · evento suelto | 90 € /evento |
 | Promotoras de eventos | Promotora | Promotora asentada · evento suelto | 150 € /evento |
 | Promotoras de eventos | Promotora | Promotora · pack anual de 6 eventos · **Propuesta sin validar** | 490 € /año |

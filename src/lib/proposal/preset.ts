@@ -27,7 +27,11 @@ const rule = z.union([
 ]);
 export type PresetRule = z.infer<typeof rule>;
 
-const option = z.object({ key, label: z.string().min(1).max(80), hint: z.string().max(300).optional(), rules: z.array(rule).max(20).default([]) });
+const option = z.object({
+  key, label: z.string().min(1).max(80), hint: z.string().max(300).optional(), rules: z.array(rule).max(20).default([]),
+  /** Orden de recorte propio si se elige esta opción (p. ej. el caso antes que los condicionales). La última elección con orden propio manda. */
+  priority: z.array(key).max(30).optional(),
+});
 
 export const proposalSchema = z.object({
   /** Bloques: id local → módulo del catálogo (por clave) y sus textos para este sector. */
@@ -42,7 +46,7 @@ export const proposalSchema = z.object({
     default: key, options: z.array(option).min(2).max(10),
     when: z.array(answer).max(10).optional(),
   })).max(4).default([]),
-  questions: z.array(option.extend({ rules: z.array(rule).min(1).max(20), when: z.array(answer).max(10).optional() })).max(16).default([]),
+  questions: z.array(option.omit({ priority: true }).extend({ rules: z.array(rule).min(1).max(20), when: z.array(answer).max(10).optional() })).max(16).default([]),
 }).strict().superRefine((p, c) => {
   const ids = new Set(Object.keys(p.blocks));
   const check = (id: string, where: string) => { if (!ids.has(id)) c.addIssue({ code: 'custom', message: `${where}: el bloque «${id}» no existe` }); };
@@ -59,7 +63,7 @@ export const proposalSchema = z.object({
   });
   for (const ch of p.choices) {
     if (!ch.options.some((o) => o.key === ch.default)) c.addIssue({ code: 'custom', message: `choices.${ch.key}: la opción por defecto «${ch.default}» no existe` });
-    ch.options.forEach((o) => rules(o.rules, `choices.${ch.key}.${o.key}`));
+    ch.options.forEach((o) => { rules(o.rules, `choices.${ch.key}.${o.key}`); o.priority?.forEach((b) => check(b, `choices.${ch.key}.${o.key}.priority`)); });
   }
   p.questions.forEach((q) => rules(q.rules, `questions.${q.key}`));
 });
@@ -129,16 +133,19 @@ export function planProposal(p: Proposal, mode: PresetMode, answers: string[]): 
       edits.set(k, [...(edits.get(k) ?? []), r]);
     }
   };
+  let priority = p.priority;
   for (const ch of p.choices) {
     const picked = [...on].find((a) => a.startsWith(`${ch.key}:`));
-    ch.options.find((o) => `${ch.key}:${o.key}` === picked)?.rules.forEach(apply);
+    const opt = ch.options.find((o) => `${ch.key}:${o.key}` === picked);
+    opt?.rules.forEach(apply);
+    if (opt?.priority) priority = opt.priority;
   }
   for (const q of p.questions) if (on.has(q.key)) q.rules.forEach(apply);
 
   // Tope: lo que no cabe se queda fuera (no se comprime), empezando por lo de menos prioridad.
   const max = p.max[mode] ?? (mode === 'visual' ? p.max.full : undefined);
   if (max && list.length > max) {
-    const rank = (b: string) => { const i = p.priority.indexOf(b); return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
+    const rank = (b: string) => { const i = priority.indexOf(b); return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
     const keep = new Set([...list].sort((a, b) => rank(a) - rank(b) || list.indexOf(a) - list.indexOf(b)).slice(0, max));
     list = list.filter((b) => keep.has(b));
   }

@@ -31,7 +31,7 @@ Lo que eligió se guarda en `dossier.preset` (privado: la propuesta pública no 
   Así las jugadas de ese módulo siguen apareciendo en el guion.
 - **Elecciones** (`choices`): una opción por elección, con `default`; `when` = solo si otra respuesta está (p. ej. el ángulo solo con `tipo:estandar` o `tipo:grupo`). Las respuestas se guardan como `elección:opción`.
 - **Reglas** (primero las de las elecciones, luego las de las preguntas): `add` (con `after`/`before`, que aceptan alternativas: la primera que esté), `remove`, `replace` → `with`, `patch` → `set` (retoca textos), `insert` (mete un elemento en una lista: `into`, `at`, `value`). Cualquier regla admite `when` (solo si esa respuesta está).
-- **Tope** (`max` por modo) y **prioridad** (`priority`): si no caben, salen los de menos prioridad. No se comprime nada.
+- **Tope** (`max` por modo) y **prioridad** (`priority`): si no caben, salen los de menos prioridad. No se comprime nada. Una opción de una elección puede traer su propio orden (`priority`): si se elige, manda ese (la última elección con orden propio gana).
 - El alta valida que cada bloque, con sus textos encima de los del módulo, sea válido para su plantilla.
 
 Lógica pura en `src/lib/proposal/preset.ts` (`planProposal`), la usan el editor (`applyPreset`), las muestras y el alta.
@@ -49,6 +49,6 @@ Lógica pura en `src/lib/proposal/preset.ts` (`planProposal`), la usan el editor
 Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como módulos sin jugadas en el guion de la reunión.
 
 ## Hoy
-- **Locales de ocio nocturno:** receta del documento 08 (`scripts/apply-propuesta-08.py`): tipo (local, grupo, revende para privados), ángulo A–F, 8 preguntas, tope de 8 (5 en apoyo visual).
+- **Locales de ocio nocturno:** receta del documento 08 (`scripts/apply-propuesta-08.py`) con las respuestas del 12 encima (`scripts/apply-respuestas-12.py`, siempre después): tipo (local, grupo, revende para privados, caseta de feria), ángulo A–F, 9 preguntas (karaoke incluida), tope de 8 (5 en apoyo visual). En el ángulo D y en grupos el caso se queda antes que los condicionales.
 - **Promotoras de eventos:** receta del documento 09 (`scripts/apply-propuesta-09.py`): tipo (pequeña, asentada; la operación de escala la lleva fundador y no tiene receta), ángulo A–D, frecuencia (decide la tarifa: evento suelto, pack anual o suscripción), 4 preguntas, tope de 7 (5 en apoyo visual).
 - Resto de sectores: sin receta todavía (módulos recomendados como siempre). Siguiente: conciertos y festivales.

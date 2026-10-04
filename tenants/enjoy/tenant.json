@@ -417,7 +417,7 @@
       "icp": "- Pubs y salas de 150 a 500 personas con dueño o gerente que pisa el local\n- Locales con pantallas ya instaladas, aunque las lleve un VJ\n- Locales que abren varias noches por semana\n- Casetas de feria y eventos de temporada\n- Locales que necesitan diferenciarse",
       "disqualifiers": "- Sin cobertura: se comprueba antes y, si no hay, no se vende\n- Si te dicen que no van a poder estar pendientes de validar\n- Dueños de oficina sin aliado dentro de la sala\n- Locales con deudas o cerrando",
       "buying_process": "El gerente lo ve clarísimo y empuja; el dueño no lo obstaculiza. Si el dueño no pisa la sala, reunión con los dos: nunca dejes que el gerente se lo venda solo. El DJ puede tumbarlo en los dos sentidos. Se cierra con fecha de prueba antes de colgar.",
-      "deal_size": "99–499 €/mes (supuesto; hoy pagan 67–100 €/mes). Noche suelta 150 €. Caseta de feria 290 € la feria completa.",
+      "deal_size": "99–499 €/mes (supuesto; hoy pagan 67–100 €/mes). Noche suelta 150 €. Caseta de feria 290 € la feria completa, 90 € el día suelto, o 50-50 sobre lo que generen las peticiones.",
       "sales_cycle": "Días. En persona, miércoles por la mañana (llega el reparto del distribuidor: hay alguien con llaves y están receptivos). Jueves como segunda opción. Lunes y martes no: libran. Se cierra con **fecha de prueba** antes de colgar, aunque la prueba sea la siguiente noche que abran.",
       "modules": [
         {
@@ -840,6 +840,75 @@
               "smallPrint": "Suscripción con permanencia de 6 meses. Noches sueltas, pago único.",
               "footnote": "Tú decides si las peticiones son gratis o de pago. Ese dinero se queda en tu local."
             }
+          },
+          "karaoke": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Karaoke",
+              "title": "La cola, en la pantalla",
+              "tabs": [
+                {
+                  "label": "Karaoke",
+                  "title": "La cola, en la pantalla",
+                  "body": "La gente pide su canción desde el móvil y pone su nombre. Cuando va a entrar, pulsas \"Reproduciendo ahora\" y en la pantalla sale la carátula de la siguiente y quién la canta. El que la pidió lo ve y viene solo a por el micro. Vosotros solo dais el micro.",
+                  "bullets": [
+                    "Puedes dejarlo gratis o poner un mínimo de 1 € por canción. Ese dinero se queda en tu local."
+                  ],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/live/request-mobile-2.webp",
+                    "alt": "Petición de canción desde el móvil"
+                  }
+                }
+              ]
+            }
+          },
+          "caseta": {
+            "module": "lo-que-te-pasa",
+            "props": {
+              "eyebrow": "Tu caseta",
+              "title": "Diez días para vender y un año entero para preparar la siguiente",
+              "cards": [
+                {
+                  "problem": "Diez días para vender y un año entero para preparar la siguiente.",
+                  "solution": "Diez días de fiesta te dejan un montón de contenido de la gente que quieres que venga, y sin pagar a un fotógrafo."
+                }
+              ],
+              "note": "Eso es lo que usas el resto del año para preparar la siguiente feria."
+            }
+          },
+          "contenido-caseta": {
+            "module": "movil-invitado",
+            "props": {
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "eyebrow": "Tu caseta",
+              "title": "El contenido que te llevas",
+              "parts": [
+                {
+                  "title": "El contenido que te llevas",
+                  "steps": [
+                    {
+                      "key": "live",
+                      "says": "Su foto sale en grande delante de todos.",
+                      "owner": "Media sala mirando la pantalla a ver quién sale."
+                    },
+                    {
+                      "key": "album",
+                      "says": "Se queda en el álbum de la noche y todos lo ven.",
+                      "owner": "Esas fotos las tienes tú al día siguiente, listas para publicar."
+                    },
+                    {
+                      "key": "form",
+                      "label": "Con permiso",
+                      "says": "Al subirla acepta los términos de uso.",
+                      "owner": "Son fotos que puedes publicar. De tu gente, de tu local, cada noche que abras."
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         "modes": {
@@ -867,11 +936,14 @@
           "portada",
           "problema",
           "privados",
+          "caseta",
           "pantalla",
           "gente",
           "sala",
+          "contenido-caseta",
           "precio",
           "grupo",
+          "karaoke",
           "dj",
           "mesas",
           "cuesta",
@@ -883,7 +955,7 @@
             "key": "tipo",
             "label": "¿Qué tipo de cliente es?",
             "default": "estandar",
-            "hint": "Karaoke: pendiente de confirmar el aviso de turno y la cola con nombres. Caseta, charanga sin pantalla y chiringuito sin pantalla no llevan propuesta.",
+            "hint": "Charanga sin pantalla y chiringuito sin pantalla no llevan propuesta.",
             "options": [
               {
                 "key": "estandar",
@@ -900,12 +972,30 @@
                     "after": "problema",
                     "before": "precio"
                   }
+                ],
+                "priority": [
+                  "portada",
+                  "problema",
+                  "privados",
+                  "caseta",
+                  "pantalla",
+                  "gente",
+                  "sala",
+                  "contenido-caseta",
+                  "precio",
+                  "grupo",
+                  "caso-anon",
+                  "caso-nombre",
+                  "karaoke",
+                  "dj",
+                  "mesas",
+                  "cuesta"
                 ]
               },
               {
                 "key": "privados",
                 "label": "Revende para privados",
-                "hint": "No te compra para sus noches: te compra para revenderlo en despedidas, cumpleaños y cenas. Si el margen no es relevante frente a lo que factura por el privado, no lo vende.",
+                "hint": "No te compra para sus noches: te compra para revenderlo en despedidas, cumpleaños y cenas. Si el margen no es relevante frente a lo que factura por el privado, no lo vende. La parte del dinero (su precio, el cobro por nuestra pasarela, su wallet) está en desarrollo: no le pongas precio de reventa.",
                 "rules": [
                   {
                     "replace": "problema",
@@ -915,6 +1005,42 @@
                     "patch": "portada",
                     "set": {
                       "title": "{company}"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "caseta",
+                "label": "Caseta de feria",
+                "hint": "Diez días para vender y un año para preparar la siguiente. Con pantalla es cuando interesa de verdad. Sin ángulos. Si no quiere pagar por adelantado: 50-50 sobre lo que generen las peticiones. Avisa del menú cerrado: decide quién viene.",
+                "rules": [
+                  {
+                    "replace": "problema",
+                    "with": "caseta"
+                  },
+                  {
+                    "remove": "pantalla"
+                  },
+                  {
+                    "remove": "gente"
+                  },
+                  {
+                    "remove": "caso-anon"
+                  },
+                  {
+                    "replace": "sala",
+                    "with": "contenido-caseta"
+                  },
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "{company}"
+                    }
+                  },
+                  {
+                    "patch": "precio",
+                    "set": {
+                      "smallPrint": "Feria completa o día suelto, pago único."
                     }
                   }
                 ]
@@ -1103,6 +1229,24 @@
                       ]
                     }
                   }
+                ],
+                "priority": [
+                  "portada",
+                  "problema",
+                  "privados",
+                  "caseta",
+                  "pantalla",
+                  "gente",
+                  "sala",
+                  "contenido-caseta",
+                  "precio",
+                  "grupo",
+                  "caso-anon",
+                  "caso-nombre",
+                  "karaoke",
+                  "dj",
+                  "mesas",
+                  "cuesta"
                 ]
               },
               {
@@ -1286,6 +1430,11 @@
                 },
                 "when": "oficina"
               }
+            ],
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo",
+              "tipo:privados"
             ]
           },
           {
@@ -1352,6 +1501,29 @@
                 "set": {
                   "subtitle": "Tu público participa desde el móvil, y tú te quedas con el contenido."
                 }
+              },
+              {
+                "patch": "contenido-caseta",
+                "set": {
+                  "parts": [
+                    {
+                      "title": "El contenido que te llevas",
+                      "steps": [
+                        {
+                          "key": "album",
+                          "says": "Se queda en el álbum de la noche y todos lo ven.",
+                          "owner": "Las fotos se te quedan en el álbum de la noche, con permiso para publicarlas."
+                        },
+                        {
+                          "key": "form",
+                          "label": "Con permiso",
+                          "says": "Al subirla acepta los términos de uso.",
+                          "owner": "Son fotos que puedes publicar. De tu gente, de tu local, cada noche que abras."
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
             ]
           },
@@ -1370,6 +1542,27 @@
                   "says": "¿Ya tienes visuales y VJ? Nos ponemos encima sin tocarlos: el QR va en una tarjeta."
                 }
               }
+            ],
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo",
+              "tipo:privados"
+            ]
+          },
+          {
+            "key": "karaoke",
+            "label": "¿Es un karaoke o hace noches de karaoke?",
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo"
+            ],
+            "hint": "No hay aviso de «te toca» ni cola numerada: sale la carátula de la siguiente con el nombre de quien la canta.",
+            "rules": [
+              {
+                "add": "karaoke",
+                "after": "sala",
+                "before": "precio"
+              }
             ]
           },
           {
@@ -1378,9 +1571,17 @@
             "rules": [
               {
                 "add": "dj",
-                "after": "sala",
+                "after": [
+                  "karaoke",
+                  "sala"
+                ],
                 "before": "precio"
               }
+            ],
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo",
+              "tipo:privados"
             ]
           },
           {
@@ -1391,10 +1592,16 @@
                 "add": "mesas",
                 "after": [
                   "dj",
+                  "karaoke",
                   "sala"
                 ],
                 "before": "precio"
               }
+            ],
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo",
+              "tipo:privados"
             ]
           },
           {
@@ -1427,10 +1634,16 @@
                 "after": [
                   "mesas",
                   "dj",
+                  "karaoke",
                   "sala"
                 ],
                 "before": "precio"
               }
+            ],
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo",
+              "tipo:privados"
             ]
           }
         ]
@@ -2667,6 +2880,16 @@
       "segment": "ocio-nocturno",
       "kind": "Caseta de feria",
       "default": false
+    },
+    {
+      "label": "Caseta · 50-50 sobre las peticiones",
+      "amount": 0,
+      "currency": "EUR",
+      "period": "once",
+      "segment": "ocio-nocturno",
+      "kind": "Caseta de feria",
+      "quote_only": true,
+      "note": "Sin pago inicial: lo que generen las peticiones, a medias"
     },
     {
       "label": "Promotora pequeña · evento suelto",
@@ -5717,6 +5940,104 @@
       "pinned": null,
       "title": "La promotora como canal hacia el local",
       "body": "Esto no se le cuenta a la promotora. Una promotora monta su fiesta con todo, y **el local lo ve funcionar en su propia sala sin haber pagado nada.** La conversación que viene después no es una venta fría: «oye, lo de Paradox del martes molaba, ¿eso lo puedo tener yo todos los días?».\n\nPor eso **cada evento de promotora es un lead cualificado de local**, y hay que traer siempre de vuelta en qué sala monta cada fiesta.\n\n**Idea en estudio, no vendible todavía:** tratar a las promotoras como canal (servicio a cambio de que lo lleven a locales, o comisión). **No se ofrece a nadie hasta que esté cerrado y autorizado por fundador.**",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "noche-karaoke",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Karaoke: la cola, en la pantalla",
+      "body": "**No existe un aviso de «te toca», y no hace falta.** El responsable pulsa **«Reproduciendo ahora»** en la siguiente canción unos veinte o treinta segundos antes de que termine la que suena. En la pantalla aparece **la carátula de la próxima canción y el nombre de quien la pidió**. El que la pidió lo entiende al instante, y el resto de la sala se motiva al ver lo que viene.\n\n> «La gente pide su canción desde el móvil y pone su nombre. Cuando va a entrar, pulsas \"Reproduciendo ahora\" y en la pantalla sale la carátula de la siguiente y quién la canta. El que la pidió lo ve y viene solo a por el micro. Vosotros solo dais el micro.»\n\n**Se monetiza:** precio mínimo de 1 € por canción. «Reproduciendo ahora» es además el disparador del cobro: solo se cobra cuando la canción entra.\n\n**Nunca** prometas un aviso personal, una notificación ni una cola con posiciones numeradas.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "noche-caseta-argumento",
+      "module_key": null,
+      "kind": "script",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Con un casetero",
+      "body": "Una caseta es un híbrido de local y promotora: **diez días para vender y un año entero para preparar la siguiente**. No cuidan sus redes. Lo que les mueve:\n\n> «Diez días de fiesta te dejan un montón de contenido de la gente que quieres que venga, y sin pagar a un fotógrafo. Eso es lo que usas el resto del año para preparar la siguiente feria.»\n\n**Con pantalla es cuando interesa de verdad.**",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "noche-caseta-modelos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Caseta: los dos modelos de pago",
+      "body": "| Modelo | Cómo funciona | Resultado real |\n|---|---|---|\n| **Pago fijo** | Pagan 100 € y se quedan todo lo que se genere | Probado |\n| **50-50** | Sin pago inicial; el ingreso de las peticiones se reparte a medias | Cada parte se queda entre 100 y 200 € |\n\n**Es el único sitio donde usamos el 50-50.** Se ofrece cuando el casetero no quiere pagar por adelantado.\n\nTarifas: 290 € la feria completa (hasta 7 días) · 90 € el día suelto · o 50-50 sobre lo que generen las peticiones.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "noche-menu-cerrado",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "El menú cerrado decide quién viene",
+      "body": "Una caseta que un año fue de público infantil decidió al siguiente cerrar el menú a **música española y antigua** para que no entraran chavales. Resultado: los chavales dejaron de venir y **la feria le fue peor que la anterior**.\n\n**El menú cerrado no solo protege el ambiente: decide quién viene.** Si lo cierras demasiado, cambias tu público. Avísalo siempre.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "gen-obj-automatico",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«¿Va automático?»",
+      "body": "**No.** Cada canción, cada foto y cada mensaje que sale en pantalla pasa por validación manual. Y hay que decirlo corto:\n\n> «Siempre hay validación manual. Es como sabes seguro lo que sale en tu pantalla. Y si hay pago, se libera justo al validarlo.»\n\n**Punto. No se añade nada más.** Si insisten:\n\n> «Estamos viendo acuerdos con proveedores de música para poder automatizarlo.»\n\n**Nunca** expliques lo de Spotify y el uso comercial: es mucho texto, no lo entienden y les plantas el problema. Cuando se empezó a contestar corto, nadie volvió a preguntar.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
