@@ -1,43 +1,50 @@
 # Capturas de la app de Oquea · qué sacar y cómo
 
-> Para Cristian / Enrique. Con esto se recrean en HTML las pantallas de la app dentro de las propuestas (como la
-> pantalla en vivo y el móvil del invitado de Enjoy). Los 6 mockups de la web ya están cargados; esto es **la app real**.
+> Para Cristian / Enrique. Rehecho con la entrega 02 (`docs/ventas/oquea/fuentes/02-entrega-UI-aplicacion.md`):
+> medidas, colores, recorridos y textos ya están; **las capturas son lo único que falta para ir al píxel**.
+> Sácalas del simulador o de la app de producción (rama `ngo_event`).
 
 ## Cómo sacarlas
-- **Móvil**, en **español**, la app de producción (o el simulador). Captura a tamaño real (PNG, sin recortar ni comprimir).
-- **Con un centro de demo**, no con datos de clientes reales: nombres de buceadores inventados o tuyos. Si sale una
-  persona real, dímelo y lo tapo.
-- Si una pantalla tiene **scroll**, una captura arriba y otra abajo (`-a`, `-b`).
-- Si tiene **animación** (el QR al escanear, guardar en el logbook, la tarjeta al compartir), una **grabación de
-  pantalla** de 5–10 s (MP4). Vale más que 3 capturas.
-- Nombre: `<nn>-<momento>.png`, en dos carpetas: `buceador/` y `centro/`. Mándalo en un zip.
+- En **español**, con un **centro de demo** (no datos de clientes reales). Los textos de ejemplo de la propia app
+  valen: `Maaya Thila`, `Manta ray`, `Benalmádena, Málaga`, `Seabed clean-up – Cabo de Gata`.
+- PNG a tamaño real, sin recortar. Con scroll: arriba y abajo (`-a`, `-b`).
+- Lo que se mueve (escanear, guardar, compartir): **grabación de 5–10 s (MP4)**.
+- Carpetas `consola/`, `buceador/` y `qr/`. En un zip.
 
-## Buceador (el viaje que vende, en orden)
-| # | Pantalla | Vista en OqueaApp | Por qué |
-|---|---|---|---|
-| 01 | Escanear el QR del centro | `logbook/` → escáner QR | El momento «sin descargar nada / un gesto» |
-| 02 | Landing del centro o la actividad al escanear | `/divingcenter/:id` (Flutter web) | Lo primero que ve el buceador **del centro** (marca del cliente) |
-| 03 | Guardar la inmersión en el logbook (antes y después de pulsar) | `logbook/` → crear | El gancho de fidelización |
-| 04 | Detalle de la inmersión (profundidad, temperatura, vida marina, fotos) | `logbook/` → detalle | Lo que el buceador se lleva |
-| 05 | Logbook completo (lista de inmersiones) | `logbook/` | Por qué vuelve |
-| 06 | Tarjeta para compartir (y la pantalla de compartir) | `logbook/` → compartir social | El centro sale en las redes del buceador |
-| 07 | Álbum compartido de la salida | `activity/activity_album_view.dart` | Fotos que traen al grupo de vuelta |
-| 08 | Home / perfil del buceador | `home_view.dart`, `edit_profile_view.dart` | Contexto |
+## 1 · Consola de escritorio (lo que compra el centro) — a 1440 px de ancho
+| # | Pantalla | Fichero |
+|---|---|---|
+| 01 | Actividades de hoy | `activities/activities_list_view.dart` |
+| 02 | Detalle de actividad: participantes, quién escaneó y quién se añadió a mano | `activities/activity_details_view.dart` |
+| 03 | CRM: lista | `diving_centers/center_crm_views.dart` |
+| 04 | CRM: ficha del buceador con historial y notas internas | `diving_centers/center_crm_views.dart` |
+| 05 | Mi centro | `diving_centers/desktop_my_centre_view.dart` (sin el mapa dibujado, OQ-797) |
+| 06 | QR del centro | `diving_centers/center_qr_view.dart` |
+| 07 | «Cómo te ven los buceadores» (ficha pública) | `explore/explore_diving_center_detail_view.dart` |
+| 08 | Crear actividad / evento | `activities/create_activity_view.dart`, `create_event_view.dart` |
+| 09 | Dive sites | `diving_centers/dive_sites_list_view.dart` |
+| 10 | Equipo | `diving_centers/manage_team_members_view.dart` |
+| 11 | Centros colaboradores (evento de varios centros) | `diving_centers/collaborating_centres_view.dart` |
 
-## Centro (lo que compra quien paga)
-| # | Pantalla | Vista en OqueaApp | Por qué |
-|---|---|---|---|
-| 01 | Panel: actividades de hoy | `activities/` | El día a día del centro |
-| 02 | Crear una actividad (formulario) | `activities/` → crear | «Se hace en un minuto» |
-| 03 | Detalle de una actividad con los buceadores apuntados | `activities/` | Quién viene |
-| 04 | QR del centro (pantalla para imprimir o enseñar) | `diving_centers/` → QR | Cómo entra el buceador |
-| 05 | CRM: lista de buceadores | `diving_centers/` / CRM | Su base de clientes, por fin |
-| 06 | CRM: ficha de un buceador (historial, certificación, última inmersión) | CRM | El argumento de fidelización |
-| 07 | Dive sites (lista y mapa) | `diving_centers/` → dive sites | Su zona, bonita |
-| 08 | Equipo del centro | `diving_centers/` → equipo | Para centros con varios instructores |
-| 09 | Perfil público del centro | `diving_centers/` → vista pública | Lo que ve un buceador nuevo |
+## 2 · El QR, sin cuenta (recorrido A) — móvil
+| # | Pantalla | Ruta |
+|---|---|---|
+| 01 | Ficha del centro tras escanear | `/divingcenter/:centerId` |
+| 02 | Detalle de la actividad del día | `/divingcenter/:centerId/activities/:id` |
+| 03 | Alta por código de 5 dígitos | `verify_code_view.dart` |
+| 04 | Inmersión guardada en el logbook | `logbook/logbook_qr_scan_details_view.dart` |
+| 🎥 | **Grabación del recorrido entero, del escaneo al logbook** | — |
 
-## Si hay más
-- Promociones / mensajes a buceadores, viajes y ofertas flash: **solo si están EN PRODUCCIÓN**. Si son del mockup de la
-  web pero aún no existen en la app, dímelo: no salen en ninguna propuesta como si existieran.
-- Onboarding (splash, alta, código de verificación): una captura de cada, por si hace falta.
+## 3 · Buceador — móvil
+| # | Pantalla | Fichero |
+|---|---|---|
+| 01 | Logbook (lista) | `logbook/logbook_list_view.dart` |
+| 02 | Compartir: tarjeta tipo Strava (normal, transparente y carrusel de vida marina) | `logbook/logbook_social_share_view.dart` |
+| 03 | Mapa de explorar con el marcador del centro | `explore/explore_view.dart` |
+| 04 | Certificado de participación | `logbook/logbook_event_certificate_view.dart` |
+| 05 | Álbum compartido | `activity/activity_album_view.dart` |
+| 🎥 | **Grabación: abrir inmersión → compartir → tarjeta** | — |
+
+## No sacar
+Catálogo de vida marina (superadmin), reseñas (apagadas), el mapa dibujado de «Mi centro», el planificador de viajes
+(tiene datos de demo: ¿está EN PRODUCCIÓN?).

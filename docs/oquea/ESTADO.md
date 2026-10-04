@@ -11,6 +11,12 @@
 - Tokens de partida desde la skill `oquea-design` (SKILL.md): fondo `#FFFFFF`, CTA `#3757BE`, acento `#D0FF00` (solo
   fondo, nunca texto), botones y pills `999px`, sin sombras, sin modo oscuro, Gilroy + Inter.
 
+- **Entrega 02 · UI de la app** (`docs/ventas/oquea/fuentes/02-entrega-UI-aplicacion.md` + `ui-app/`): tokens de la
+  app (texto `#000`, borde `#E0E0E0`, tarjeta 16), anatomía de la consola de escritorio, 104 vistas, 5 recorridos y una
+  recreación HTML de la consola (`docs/oquea/img/consola-centro-recreacion.png`).
+- **Tema del dossier:** se quedan los tokens de la **web** (la propuesta es marketing). Los de la **app** van dentro de
+  las plantillas que recrean pantallas (consola, móvil), como hace Enjoy con su pantalla.
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)
@@ -20,7 +26,7 @@
 | A2 | Tokens que faltan: `text`, `muted`, `surface`, `border`, `accent-contrast`, `radius.card`. ¿Navy `#1F294C` es el texto? ¿`#406AD0` dónde se usa? | ✅ |
 | A3 | Gilroy en `.woff2` (300–700) + licencia web; Oquea Headline Bold y Billion Dreams si se usan en portadas | ✅ Gilroy (licencia ✅). Titulares: ¿DM Serif Display? PENDIENTE |
 | A4 | Logo SVG (claro/oscuro), isotipo, favicon, OG 1200×630 | ✅ (isotipo y favicon PNG también) |
-| A5 | Capturas de la app (o frames del Figma `cgUfyZggGl48N3OWugHOEz`): los 4–6 momentos que más venden de cada superficie | 🟡 6 mockups de la web ✅ · **app real PENDIENTE** → `docs/oquea/03-CAPTURAS-APP.md` |
+| A5 | Capturas de la app (o frames del Figma `cgUfyZggGl48N3OWugHOEz`): los 4–6 momentos que más venden de cada superficie | 🟡 6 mockups de la web ✅ · consola recreada ✅ · **capturas de la app PENDIENTES** → `docs/oquea/03-CAPTURAS-APP.md` |
 | A6 | Código Flutter de esas pantallas (o acceso al repo) | 🟡 rutas de `OqueaApp/lib/views/` ✅ · código PENDIENTE si hace falta |
 | A7 | Fotos/vídeos reales con permiso, web, deck actual, tono de voz | 🟡 fotos ✅, web ✅, tono ✅ · vídeos y deck PENDIENTES |
 | A8 | WhatsApp comercial, email, web, razón social, dominio de las propuestas (propuesto: `oquea.ventas.cofundo.io`) | 🟡 contacto ✅ · dominio PENDIENTE |

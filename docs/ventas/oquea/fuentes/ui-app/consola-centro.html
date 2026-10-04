@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oquea · consola del centro</title>
+<!--
+  Recreación de la consola de escritorio de Oquea, medida sobre el código real
+  (OqueaApp, rama ngo_event, commit 49b39dd).
+
+  PARA COFUNDO VENTAS
+  - Todo va por variables CSS: al llevarlo a una plantilla de módulo, sustituir
+    el bloque :root por los tokens del tema. No dejar colores fijos.
+  - Los textos marcados {company}, {logo} y las fotos son los que se personalizan
+    con los datos del cliente.
+  - Transiciones por debajo de 400 ms, como el resto de la web de Oquea.
+
+  LO QUE NO HAY QUE CAMBIAR SI SE QUIERE QUE PAREZCA OQUEA
+  - Lateral de 264 px y contenido con ancho máximo 1120.
+  - Tarjetas con borde de 1 px y SIN sombra. La sombra solo en lo que flota.
+  - Radio 16 en tarjetas (el 24 es del lenguaje de marketing, no de la app).
+  - El item activo del menú cambia tres cosas a la vez: fondo, color y peso.
+-->
+<style>
+:root{
+  /* Tokens reales de la consola de escritorio de la app */
+  --oq-navy:#1F294C;
+  --oq-primary:#3757BE;
+  --oq-muted:#6B7280;
+  --oq-hint:#8A8F9A;
+  --oq-card-border:#E6E8EE;
+  --oq-chip-bg:#EAF0FB;
+  --oq-chip-grey:#F4F6FA;
+  --oq-divider:#EEEEF2;
+  --oq-progress-track:#E8EEF8;
+  --oq-nav-active:#F1F6FD;
+  --oq-text-secondary:#7C7C7C;
+  --oq-bg:#FFFFFF;
+  --oq-accent:#D0FF00;
+
+  /* Estructura, medida en el código */
+  --oq-sidebar-w:264px;
+  --oq-content-max:1120px;
+  --oq-gutter:24px;
+  --oq-page-pad:28px;
+  --oq-radius-card:16px;
+  --oq-radius-control:12px;
+  --oq-radius-pill:999px;
+
+  --oq-ease:cubic-bezier(.4,0,.2,1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Gilroy",system-ui,-apple-system,sans-serif;
+  background:var(--oq-bg); color:var(--oq-navy);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ============================================================ ARMAZÓN */
+.oq-shell{display:flex;min-height:100vh}
+
+.oq-sidebar{
+  width:var(--oq-sidebar-w); flex:0 0 var(--oq-sidebar-w);
+  background:var(--oq-bg); padding:16px;
+  display:flex; flex-direction:column;
+  border-right:1px solid var(--oq-divider);
+}
+.oq-main{flex:1; min-width:0; background:var(--oq-bg)}
+
+/* El contenido NUNCA elige su propio ancho: pasa siempre por este marco */
+.oq-page{
+  max-width:var(--oq-content-max); margin:0 auto;
+  padding:20px var(--oq-page-pad) 40px;
+}
+
+/* ============================================================ LATERAL */
+.oq-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+.oq-logo-dot{color:var(--oq-primary)}
+
+/* Conmutador Gestión / Buceador: dos juegos de navegación, no un menú por permisos */
+.oq-mode{
+  display:flex;gap:4px;padding:4px;margin-top:20px;
+  background:var(--oq-chip-grey); border-radius:var(--oq-radius-pill);
+}
+.oq-mode button{
+  flex:1; border:0; cursor:pointer; font:inherit;
+  padding:8px 10px; border-radius:var(--oq-radius-pill);
+  background:transparent; color:var(--oq-muted); font-weight:500; font-size:13px;
+  transition:background .25s var(--oq-ease), color .25s var(--oq-ease);
+}
+.oq-mode button[aria-pressed="true"]{background:#fff;color:var(--oq-navy);font-weight:700}
+
+.oq-nav{margin-top:20px;display:flex;flex-direction:column}
+.oq-nav a{
+  display:flex;align-items:center;gap:12px;
+  padding:12px; margin-bottom:4px;
+  border-radius:var(--oq-radius-pill); text-decoration:none;
+  color:var(--oq-navy); font-size:14px; font-weight:500;
+  transition:background .25s var(--oq-ease);
+}
+.oq-nav a:hover{background:var(--oq-chip-grey)}
+/* Estado activo: fondo + color + peso. Tres señales, no una. */
+.oq-nav a[aria-current="page"]{
+  background:var(--oq-nav-active); color:var(--oq-primary); font-weight:600;
+}
+.oq-nav .ico{width:20px;height:20px;flex:0 0 20px;opacity:.9}
+.oq-nav .badge{
+  margin-left:auto; font-size:11px; font-weight:700;
+  background:var(--oq-chip-bg); color:var(--oq-primary);
+  padding:2px 8px; border-radius:var(--oq-radius-pill);
+}
+
+/* Identidad y contexto anclados abajo, en todas las pantallas */
+.oq-sidebar-bottom{margin-top:auto;padding-top:8px}
+.oq-switcher,.oq-profile{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:10px;border:1px solid var(--oq-card-border);
+  border-radius:var(--oq-radius-control);background:#fff;cursor:pointer;
+  font:inherit;text-align:left;margin-top:8px;
+  transition:border-color .25s var(--oq-ease);
+}
+.oq-switcher:hover,.oq-profile:hover{border-color:var(--oq-primary)}
+.oq-avatar{
+  width:36px;height:36px;flex:0 0 36px;border-radius:50%;
+  background:var(--oq-chip-bg);color:var(--oq-primary);
+  display:grid;place-items:center;font-weight:800;font-size:13px;
+}
+.oq-switcher .nm,.oq-profile .nm{font-size:13px;font-weight:600;line-height:1.2}
+.oq-switcher .sub,.oq-profile .sub{font-size:11px;color:var(--oq-hint)}
+
+/* ============================================================ CONTENIDO */
+.oq-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px}
+.oq-h1{font-size:22px;font-weight:800;line-height:1.15}
+.oq-sub{font-size:13px;color:var(--oq-muted);margin-top:4px;line-height:1.4}
+.oq-head .spacer{margin-left:auto}
+
+.oq-btn{
+  border:0;cursor:pointer;font:inherit;font-size:13px;font-weight:600;
+  padding:10px 18px;border-radius:var(--oq-radius-pill);
+  background:var(--oq-primary);color:#fff;
+  transition:opacity .25s var(--oq-ease);
+}
+.oq-btn:hover{opacity:.9}
+.oq-btn--ghost{background:#fff;color:var(--oq-navy);border:1px solid var(--oq-card-border)}
+
+/* Receta única de tarjeta: borde de pelo, sin sombra */
+.oq-card{
+  background:#fff;border:1px solid var(--oq-card-border);
+  border-radius:var(--oq-radius-card);padding:20px;
+}
+.oq-card + .oq-card{margin-top:12px}
+
+.oq-section{font-size:14px;font-weight:800;line-height:1.2;margin-bottom:12px}
+/* Mismo tamaño que la cabecera de sección: solo cambia el peso */
+.oq-row-title{font-size:14px;font-weight:600;line-height:1.25}
+.oq-body{font-size:13px;font-weight:400;line-height:1.4;color:var(--oq-muted)}
+.oq-caption{font-size:12px;line-height:1.35;color:var(--oq-muted)}
+
+/* Dos umbrales de columna, medidos contra el panel, no contra la ventana */
+.oq-grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media (min-width:720px){.oq-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1100px){.oq-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* Las filas accionables son tarjetas, no una tabla.
+   No hay ni una sola tabla de datos en toda la consola real. */
+.oq-list{display:flex;flex-direction:column;gap:12px}
+.oq-diver{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;background:#fff;
+  border:1px solid var(--oq-card-border);border-radius:var(--oq-radius-card);
+  cursor:pointer;transition:border-color .25s var(--oq-ease);
+}
+.oq-diver:hover{border-color:var(--oq-primary)}
+.oq-diver .pic{width:44px;height:44px;flex:0 0 44px;border-radius:12px;background:var(--oq-chip-bg)}
+.oq-diver .meta{margin-left:auto;text-align:right}
+.oq-chip{
+  display:inline-block;font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:var(--oq-radius-pill);
+  background:var(--oq-chip-bg);color:var(--oq-primary);
+}
+.oq-chip--grey{background:var(--oq-chip-grey);color:var(--oq-muted)}
+
+.oq-stat{display:flex;flex-direction:column;gap:2px}
+.oq-stat .n{font-size:22px;font-weight:800;line-height:1.15}
+.oq-stat .l{font-size:12px;color:var(--oq-muted)}
+
+.oq-progress{height:6px;border-radius:999px;background:var(--oq-progress-track);overflow:hidden;margin-top:10px}
+.oq-progress > i{display:block;height:100%;background:var(--oq-primary);border-radius:999px}
+
+@media (max-width:1023px){
+  .oq-sidebar{display:none}
+  .oq-page{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="oq-shell">
+
+  <aside class="oq-sidebar">
+    <div class="oq-logo">oquea<span class="oq-logo-dot">.</span></div>
+
+    <div class="oq-mode" role="group" aria-label="Modo">
+      <button aria-pressed="true">Gestión</button>
+      <button aria-pressed="false">Buceador</button>
+    </div>
+
+    <nav class="oq-nav">
+      <a href="#" aria-current="page">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Actividades <span class="badge">4</span>
+      </a>
+      <a href="#">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Calendario
+      </a>
+      <a href="#">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        CRM <span class="badge">128</span>
+      </a>
+      <a href="#">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Puntos de inmersión
+      </a>
+      <a href="#">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Mi centro
+      </a>
+      <a href="#">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/></svg>
+        Equipo
+      </a>
+    </nav>
+
+    <div class="oq-sidebar-bottom">
+      <button class="oq-switcher">
+        <span class="oq-avatar">{IN}</span>
+        <span><span class="nm">{company}</span><br><span class="sub">Centro activo</span></span>
+      </button>
+      <button class="oq-profile">
+        <span class="oq-avatar">CS</span>
+        <span><span class="nm">Cristian S.</span><br><span class="sub">Propietario</span></span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="oq-main">
+    <div class="oq-page">
+
+      <header class="oq-head">
+        <div>
+          <h1 class="oq-h1">Actividades de hoy</h1>
+          <p class="oq-sub">Jueves 4 de octubre · 3 salidas programadas</p>
+        </div>
+        <div class="spacer"></div>
+        <button class="oq-btn--ghost oq-btn">Ver QR del centro</button>
+        <button class="oq-btn">Crear actividad</button>
+      </header>
+
+      <div class="oq-grid" style="margin-bottom:24px">
+        <div class="oq-card"><div class="oq-stat"><span class="n">128</span><span class="l">Buceadores en tu CRM</span></div></div>
+        <div class="oq-card"><div class="oq-stat"><span class="n">1.204</span><span class="l">Inmersiones registradas</span></div></div>
+        <div class="oq-card">
+          <div class="oq-stat"><span class="n">5 de 6</span><span class="l">Perfil público completo</span></div>
+          <div class="oq-progress"><i style="width:83%"></i></div>
+        </div>
+      </div>
+
+      <h2 class="oq-section">Buceadores de hoy</h2>
+      <div class="oq-list">
+
+        <div class="oq-diver">
+          <span class="pic"></span>
+          <span>
+            <span class="oq-row-title">Laura Méndez</span><br>
+            <span class="oq-caption">Advanced Open Water · 42 inmersiones</span>
+          </span>
+          <span class="meta">
+            <span class="oq-chip">Escaneó el QR</span><br>
+            <span class="oq-caption">Maaya Thila · 09:30</span>
+          </span>
+        </div>
+
+        <div class="oq-diver">
+          <span class="pic"></span>
+          <span>
+            <span class="oq-row-title">Tomás Ferreira</span><br>
+            <span class="oq-caption">Open Water · 8 inmersiones</span>
+          </span>
+          <span class="meta">
+            <span class="oq-chip">Escaneó el QR</span><br>
+            <span class="oq-caption">Maaya Thila · 09:31</span>
+          </span>
+        </div>
+
+        <div class="oq-diver">
+          <span class="pic"></span>
+          <span>
+            <span class="oq-row-title">Marta Ruiz</span><br>
+            <span class="oq-caption">Divemaster · 310 inmersiones</span>
+          </span>
+          <span class="meta">
+            <span class="oq-chip oq-chip--grey">Añadida por ti</span><br>
+            <span class="oq-caption">Sin cuenta todavía</span>
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+</div>
+</body>
+</html>
