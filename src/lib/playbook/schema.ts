@@ -62,8 +62,8 @@ export const segmentInputSchema = z.object({
   icp: optText(2000),
   disqualifiers: optText(1000),
   buyingProcess: optText(2000),
-  dealSize: optText(200),
-  salesCycle: optText(200),
+  dealSize: optText(600),
+  salesCycle: optText(600),
   status: z.enum(['official', 'draft', 'archived']).default('official'),
 });
 

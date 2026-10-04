@@ -211,7 +211,8 @@ function validate(t: TenantFile, assetKeys: string[]) {
   for (const sg of t.market) {
     if (segKeys.has(sg.key)) errors.push(`market: sector duplicado ${sg.key}`);
     segKeys.add(sg.key);
-    const r = segmentInputSchema.safeParse({ key: sg.key, name: sg.name });
+    // Todos los textos (no solo el nombre): un límite de la base de datos se ve aquí, antes de escribir nada.
+    const r = segmentInputSchema.safeParse({ key: sg.key, name: sg.name, description: sg.description, valueProp: sg.value_prop, icp: sg.icp, disqualifiers: sg.disqualifiers, buyingProcess: sg.buying_process, dealSize: sg.deal_size, salesCycle: sg.sales_cycle });
     if (!r.success) errors.push(...r.error.issues.map((i) => `market.${sg.key}.${i.path.join('.')}: ${i.message}`));
     for (const m of sg.modules) if (!keys.has(m.module_key)) errors.push(`market.${sg.key}.modules: module_key "${m.module_key}" no está en catalog`);
     for (const p of sg.personas) {
