@@ -175,7 +175,7 @@ const og = {
   .deck .pt-phone { zoom: var(--phone-zoom, 1); }
   .deck .tabs-showcase__panel img { max-height: max(14rem, calc(var(--deck-h, 100dvh) - 22rem)); }
   .deck .tabs-showcase__panel { margin-top: 1.25rem; }
-  .deck .pt-layout { margin-top: 1.5rem; align-items: center; }
+  .deck .pt-layout { align-items: center; }
   @media (max-width: 640px) {
     .deck__arrow { top: auto; bottom: .35rem; translate: none; width: 2.6rem; height: 2.6rem; font-size: 1.6rem; }
     .deck__bar { gap: .6rem; padding: .45rem .8rem; } .deck__dots { display: none; }
@@ -200,7 +200,7 @@ const og = {
         deck.style.setProperty('--deck-h', `${h}px`);
         // El móvil del recorrido cabe con su título (y, apilado en móvil, con el paso debajo).
         const stacked = innerWidth < 900;
-        deck.style.setProperty('--phone-zoom', String(Math.min(1, Math.max(.5, (h - (stacked ? 430 : 330)) / 640))));
+        deck.style.setProperty('--phone-zoom', String(Math.min(stacked ? 1 : 1.15, Math.max(.5, (h - (stacked ? 430 : 200)) / 640))));
       };
       const set = (i: number) => {
         if (i === cur) return;
@@ -220,14 +220,21 @@ const og = {
       };
       const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) set(slides.indexOf(e.target as HTMLElement)); }), { root: track, threshold: 0.6 });
       slides.forEach((s) => io.observe(s));
-      prev?.addEventListener('click', () => go(cur - 1));
-      next?.addEventListener('click', () => go(cur + 1));
+      // Un módulo de la diapositiva puede quedarse el paso (p. ej. las pestañas: la siguiente antes que la diapositiva).
+      const step = (dir: number) => {
+        const ev = new CustomEvent('deck:step', { cancelable: true, detail: { dir } });
+        const host = slides[cur]?.querySelector<HTMLElement>('[data-deck-step]');
+        if (host && !host.dispatchEvent(ev)) return;
+        go(cur + dir);
+      };
+      prev?.addEventListener('click', () => step(-1));
+      next?.addEventListener('click', () => step(1));
       dots.forEach((d, i) => d.addEventListener('click', () => go(i)));
       addEventListener('keydown', (e) => {
         const t = e.target as HTMLElement;
         if (t.closest('input, textarea, select, [contenteditable]')) return;
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
-        if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); step(1); }
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
       });
       addEventListener('resize', () => { size(); go(cur); });
       size();

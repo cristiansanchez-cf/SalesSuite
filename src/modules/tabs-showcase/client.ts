@@ -64,6 +64,15 @@ export function init(root: HTMLElement): () => void {
   root.addEventListener('focusout', leave);
   const stopVis = onVisibility(root, (v) => { visible = v; schedule(); });
 
+  // Presentación: la flecha «siguiente» pasa antes por cada pestaña (y «anterior», hacia atrás).
+  const onDeckStep = (e: Event) => {
+    const dir = (e as CustomEvent<{ dir: number }>).detail.dir;
+    const to = active + dir;
+    if (to >= 0 && to < tabs.length) { e.preventDefault(); select(to); }
+  };
+  root.setAttribute('data-deck-step', '');
+  root.addEventListener('deck:step', onDeckStep);
+
   root.style.setProperty('--tabs-every', `${every}ms`);
   select(0);
 
@@ -75,5 +84,6 @@ export function init(root: HTMLElement): () => void {
     tablist.removeEventListener('pointerleave', leave);
     root.removeEventListener('focusin', focusIn);
     root.removeEventListener('focusout', leave);
+    root.removeEventListener('deck:step', onDeckStep);
   };
 }

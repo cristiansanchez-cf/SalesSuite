@@ -1,7 +1,7 @@
 ---
 /**
  * phone-tour ← la app del invitado de Enjoy (UI recreada de las capturas: «Aparece en pantalla», «¿Qué quieres hacer?»,
- * «Foto en pantalla», pendiente, en directo, álbum). Un móvil y, al lado, los pasos: se tocan o van solos.
+ * «Foto en pantalla», pendiente, en directo, álbum). Los pasos a la izquierda (se tocan o van solos) y el móvil, grande, a la derecha.
  * Se adapta a lo que tiene el cliente (ctx.media.features) y usa sus fotos, su nombre y su estilo musical.
  */
 import Section from '~/components/Section.astro';
@@ -34,41 +34,50 @@ const sub = part?.steps ? part.lede : part && part.n > 1 ? undefined : lede;
 ---
 <div data-module="phone-tour" class:list={['phone-tour', part && 'phone-tour--part']} data-autoplay={autoplay || part ? '1' : '0'}>
   <Section tone="surface">
-    {(eyebrow || part) && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{eyebrow ? t(eyebrow) : ''}{part && part.of > 1 && <span class="pt-part"> · {part.n}/{part.of}</span>}</p>}
-    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(heading)} /></h2>
-    {sub && <p class="mt-3 max-w-2xl text-lg text-muted">{t(sub)}</p>}
+    <div class="pt-layout">
+      <div class="pt-copy">
+        <div class="pt-head">
+        {(eyebrow || part) && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{eyebrow ? t(eyebrow) : ''}{part && part.of > 1 && <span class="pt-part"> · {part.n}/{part.of}</span>}</p>}
+        <h2 class="font-display text-[clamp(1.75rem,3.6vw,2.75rem)] font-extrabold tracking-tight"><Headline text={t(heading)} /></h2>
+        {sub && <p class="mt-3 max-w-xl text-lg text-muted">{t(sub)}</p>}
+        </div>
 
-    <div class="pt-layout mt-10">
-      <Phone djName={djName} price={price} photos={photos} qrImage={qrImage} musicStyles={musicStyles} media={media} venue={ctx.prospectCompany} float={!!part} />
-
-      <ol class="pt-steps" role="tablist">
-        {steps.map((s, i) => (
-          <li><button type="button" role="tab" class="pt-step" data-step-btn={s.key} aria-selected={i === 0 ? 'true' : 'false'}>
-            <span class="pt-step__n">{first + i + 1}</span><span class="pt-step__t"><b>{s.label}</b><small>{t(s.says)}</small>{s.owner && <em class="pt-step__owner"><span>{ownerLabel}</span> {t(s.owner)}</em>}</span><i class="pt-step__bar" aria-hidden="true"></i>
-          </button></li>
-        ))}
-      </ol>
+        <ol class="pt-steps" role="tablist">
+          {steps.map((s, i) => (
+            <li><button type="button" role="tab" class="pt-step" data-step-btn={s.key} aria-selected={i === 0 ? 'true' : 'false'}>
+              <span class="pt-step__n">{first + i + 1}</span><span class="pt-step__t"><b>{s.label}</b><small>{t(s.says)}</small>{s.owner && <em class="pt-step__owner" title={ownerLabel}>{t(s.owner)}</em>}</span><i class="pt-step__bar" aria-hidden="true"></i>
+            </button></li>
+          ))}
+        </ol>
+      </div>
+      <div class="pt-device">
+        <Phone djName={djName} price={price} photos={photos} qrImage={qrImage} musicStyles={musicStyles} media={media} venue={ctx.prospectCompany} float={!!part} />
+      </div>
     </div>
   </Section>
 </div>
 
 <style>
-  .pt-layout { display: grid; gap: 2rem; align-items: start; }
-  @media (min-width: 900px) { .pt-layout { grid-template-columns: 320px minmax(0, 1fr); gap: 3.5rem; } }
+  /* El texto a la izquierda (título y pasos), el móvil grande a la derecha: lo que se mira es la app. */
+  .pt-layout { display: grid; gap: 1.75rem; align-items: center; }
+  /* En móvil: título, móvil y pasos, en ese orden. */
+  @media (max-width: 899px) { .pt-copy { display: contents; } .pt-head { order: -2; } .pt-device { order: -1; } .pt-steps { margin-top: 0; } }
+  @media (min-width: 900px) { .pt-layout { grid-template-columns: minmax(0, 1fr) auto; gap: 4rem; } .pt-device { padding-right: 2rem; } }
   /* Los pasos: se tocan o van solos. */
-  .pt-steps { display: grid; gap: .5rem; padding: 0; list-style: none; }
-  .pt-step { width: 100%; display: flex; gap: .9rem; align-items: flex-start; text-align: left; padding: .8rem 1rem; border-radius: 14px; border: 1px solid transparent; background: transparent; color: inherit; cursor: pointer; opacity: .78; transition: opacity .2s, background .2s; }
-  .pt-step[aria-selected='true'] { opacity: 1; background: rgb(var(--color-bg, 8 3 12) / .6); border-color: rgb(var(--color-primary, 255 39 187) / .5); }
+  .pt-steps { display: grid; gap: .35rem; margin-top: 1.5rem; padding: 0; list-style: none; }
+  .pt-step { width: 100%; display: flex; gap: .85rem; align-items: flex-start; text-align: left; padding: .7rem .9rem; border-radius: 14px; border: 1px solid transparent; background: transparent; color: inherit; cursor: pointer; opacity: .6; transition: opacity .2s, background .2s; }
+  .pt-step[aria-selected='true'] { opacity: 1; background: rgb(var(--color-bg, 8 3 12) / .6); border-color: rgb(var(--color-primary, 255 39 187) / .45); }
   /* Va solo: una barra en el paso activo dice cuánto falta para el siguiente. */
   .pt-step { position: relative; overflow: hidden; }
   .pt-step__bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: rgb(var(--color-primary, 255 39 187)); }
   .is-auto .pt-step[aria-selected='true'] .pt-step__bar { animation: pt-bar var(--dur, 3500ms) linear forwards; }
   @keyframes pt-bar { to { width: 100%; } }
-  .pt-step__n { flex-shrink: 0; width: 1.9rem; height: 1.9rem; border-radius: 99px; display: grid; place-items: center; font-weight: 800; background: rgb(var(--color-primary, 255 39 187)); color: #fff; }
-  .pt-step__t b { display: block; font-size: 1.15rem; line-height: 1.3; } .pt-step__t small { display: block; opacity: .9; font-size: 1rem; line-height: 1.45; margin-top: .25rem; }
-  /* «Para ti»: lo que significa para quien paga, siempre a la vista (es lo que vende). */
-  .pt-step__owner { display: block; margin-top: .45rem; font-style: normal; font-weight: 700; font-size: 1.05rem; line-height: 1.4; }
-  .pt-step__owner span { display: inline-block; margin-right: .35rem; padding: .05rem .5rem; border-radius: 99px; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; background: rgb(var(--color-accent, 225 255 0)); color: rgb(var(--color-accent-contrast, 8 3 12)); vertical-align: .1em; }
+  .pt-step__n { flex-shrink: 0; width: 1.7rem; height: 1.7rem; border-radius: 99px; display: grid; place-items: center; font-size: .9rem; font-weight: 800; background: rgb(var(--color-primary, 255 39 187)); color: #fff; }
+  .pt-step__t b { display: block; font-size: 1.1rem; line-height: 1.3; } .pt-step__t small { display: block; opacity: .9; font-size: .98rem; line-height: 1.45; margin-top: .2rem; }
+  /* Lo que significa para quien paga: pequeño, y solo en el paso que se está viendo. */
+  .pt-step__owner { display: none; margin-top: .4rem; font-style: normal; font-size: .9rem; line-height: 1.4; color: rgb(var(--color-primary, 255 39 187)); }
+  .pt-step__owner::before { content: '→ '; }
+  .pt-step[aria-selected='true'] .pt-step__owner { display: block; }
   @media (max-width: 899px) { .pt-step__t small { display: none; } .pt-step[aria-selected='true'] .pt-step__t small { display: block; } }
   @media (prefers-reduced-motion: reduce) { :global(.pt-phone) { animation: none !important; } }
 </style>

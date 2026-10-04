@@ -22,7 +22,7 @@ export const tabsShowcaseSchema = z.object({
     mock: z.discriminatedUnion('kind', [chatMock, imageMock]).optional(),
   })).min(1).max(6),
   /** 0 = sin auto-advance. */
-  autoAdvanceMs: z.number().int().min(0).max(30000).default(6000),
+  autoAdvanceMs: z.number().int().min(0).max(30000).default(3500),
 });
 
 export type TabsShowcaseProps = z.infer<typeof tabsShowcaseSchema>;
