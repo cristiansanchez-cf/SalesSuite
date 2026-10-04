@@ -20,8 +20,9 @@ GRATIS = ('«Aquí el servicio va gratis para el huésped. Si en algún momento 
 proposal = {
     'blocks': {
         'portada': {'module': 'portada', 'props': {
-            'eyebrow': 'Entretenimiento interactivo para hoteles y resorts', 'title': 'Que la gente que no sale del hotel tenga algo que hacer',
-            'subtitle': 'Tus huéspedes participan desde el móvil y salen en la pantalla. Sin descargar nada.'}},
+            # Portada que propuso el agente de ventas después del 14 (sustituye a «Que la gente que no sale del hotel…»).
+            'eyebrow': 'Entretenimiento interactivo para hoteles y resorts', 'title': 'Lo que tus huéspedes van a contar cuando vuelvan a casa',
+            'subtitle': 'Participan desde el móvil, salen en la pantalla y se llevan las fotos.'}},
         'problema': {'module': 'lo-que-te-pasa', 'props': {'title': 'Lo que pasa hoy', 'cards': [
             {'problem': 'Tu equipo de animación entretiene a las mismas personas durante dos semanas.',
              'solution': 'Una actividad nueva que se renueva sola, porque la hacen ellos.'},

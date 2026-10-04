@@ -10,3 +10,5 @@
 2. Diapositiva 5: título de la pestaña «Sin tocar nada de lo que ya tenéis».
 3. Diapositiva 6: título «Hablemos», tu frase debajo y un botón «Escríbenos» a hola@enjoytheclub.es. ¿Es ese el contacto, o va el de Ángel?
 4. Pestañas: «Foto en pantalla», «Reto de fotos», «Mensajes».
+
+**Actualización:** portada cambiada a tu propuesta: «Lo que tus huéspedes van a contar cuando vuelvan a casa» / «Participan desde el móvil, salen en la pantalla y se llevan las fotos.». Sin fotos de ambiente (no sabemos a qué hotel se enseña).

@@ -4,23 +4,27 @@
  *   npm run tenant:samples -- enjoy [--dry-run]
  *   Autor: ADMIN_EMAILS (el primero) o, si no se indica, el admin más antiguo del espacio.
  *
- * Uno por sector prioritario (Locales, Promotoras, Conciertos), con sus módulos recomendados, una tarifa y
- * publicado con enlace (el del cliente, en «Compartir» del editor). Quedan en modo prueba: tus aperturas no cuentan. Idempotente: si ya existe el
- * ejemplo de ese sector (prospect_meta.sample), no lo duplica y vuelve a enseñar su enlace.
+ * Las combinaciones más típicas de cada receta (ver SAMPLES), con su tarifa y publicadas con enlace (el del cliente, en
+ * «Compartir» del editor). Idempotente: si ya existe el ejemplo (prospect_meta.sample), lo rehace sin duplicarlo ni
+ * cambiar su enlace; los que ya no están en la lista se borran.
  */
 import { parseProposal, planProposal } from '../src/lib/proposal/preset';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-/** `company`/`contact` vacíos: dossier genérico (se enseña a varios). `live`: las aperturas cuentan (no es de prueba). */
-interface Sample { key: string; segment: string; title: string; company: string | null; contact: string | null; tariff: string | null; coupon?: string; live?: boolean }
+/**
+ * `company`: el nombre que sale en la propuesta («Propuesta para tu sala»); null = ninguno (se enseña a varios).
+ * `answers`: la combinación de la receta del sector (tipo, ángulo, preguntas). `live`: las aperturas cuentan.
+ */
+interface Sample { key: string; segment: string; title: string; company: string | null; contact: string | null; tariff: string | null; coupon?: string; answers?: string[]; live?: boolean }
 
+/** Las combinaciones más típicas, para enseñar. Las que ya no están aquí se borran (con su enlace). */
 const SAMPLES: Sample[] = [
-  { key: 'locales', segment: 'ocio-nocturno', title: 'Propuesta para Sala Ejemplo', company: 'Sala Ejemplo', contact: 'Marta (gerente)', tariff: 'Local mediano (150–500)' },
-  { key: 'promotoras', segment: 'promotoras', title: 'Propuesta para Promotora Ejemplo', company: 'Promotora Ejemplo', contact: 'Javi (producción)', tariff: 'Promotora pequeña · evento suelto' },
+  { key: 'local-pequeno', segment: 'ocio-nocturno', title: 'Enjoy para tu local · pequeño', company: 'tu local', contact: null, tariff: 'Local pequeño (hasta 150)', answers: ['tipo:estandar', 'angulo:d'], live: true },
+  { key: 'local-mediano', segment: 'ocio-nocturno', title: 'Enjoy para tu local · mediano', company: 'tu local', contact: null, tariff: 'Local mediano (150–500)', answers: ['tipo:estandar', 'angulo:a', 'vj'], live: true },
+  { key: 'conciertos-sala', segment: 'conciertos', title: 'Enjoy para salas de conciertos', company: 'tu sala', contact: null, tariff: 'Sala de conciertos · suscripción (más de 500)', answers: ['tipo:sala', 'angulo:a', 'pantallas'], live: true },
+  { key: 'promotora', segment: 'promotoras', title: 'Enjoy para promotoras', company: 'tu promotora', contact: null, tariff: 'Promotora pequeña · evento suelto', answers: ['tipo:pequena', 'angulo:a', 'frecuencia:suelto'], live: true },
   // Hoteles: dossier de validación para un colaborador externo (documento 14). Sin precio, sin nombre de hotel.
-  { key: 'hoteles', segment: 'hoteles', title: 'Enjoy para hoteles y resorts', company: null, contact: null, tariff: null, live: true },
-  { key: 'festivales', segment: 'festivales', title: 'Propuesta para Recinto Ejemplo', company: 'Recinto Ejemplo', contact: 'Andrea (dirección)', tariff: 'Recinto · suscripción de temporada' },
-  { key: 'conciertos', segment: 'conciertos', title: 'Propuesta para Auditorio Ejemplo', company: 'Auditorio Ejemplo', contact: 'Lucía (programación)', tariff: 'Sala de conciertos · suscripción (más de 500)' },
+  { key: 'hoteles-angel', segment: 'hoteles', title: 'Enjoy para hoteles y resorts', company: null, contact: null, tariff: null, live: true },
 ];
 
 type Res<T> = { data: T; error: { message: string } | null };
@@ -68,6 +72,14 @@ async function main() {
   const host = (domains.find((d) => d.is_primary) ?? domains[0])?.hostname;
   const origin = host ? `https://${host}` : '';
 
+  // Los ejemplos que ya no están en la lista se borran (con sus módulos y su enlace).
+  const keep = new Set(SAMPLES.map((x) => x.key));
+  const old = (must(await sb.from('dossier').select('id, title, prospect_meta').eq('tenant_id', tid).not('prospect_meta->>sample', 'is', null), 'ejemplos') ?? []) as Array<{ id: string; title: string; prospect_meta: { sample?: string } }>;
+  for (const d of old.filter((x) => !keep.has(x.prospect_meta?.sample ?? ''))) {
+    if (!dry) must(await sb.from('dossier').delete().eq('id', d.id), `borrar ${d.title}`);
+    console.log(`• ${d.prospect_meta.sample}: ${dry ? 'se borraría' : 'borrado'} («${d.title}»)`);
+  }
+
   for (const s of SAMPLES) {
     const seg = segments.find((x) => x.key === s.segment);
     if (!seg) { console.log(`• ${s.key}: sin sector «${s.segment}», se salta`); continue; }
@@ -78,7 +90,7 @@ async function main() {
     const recipe = parseProposal(seg.proposal);
     if (recipe) {
       const keyToId = new Map(modules.map((m) => [m.key, m.id]));
-      const plan = planProposal(recipe, 'full', []).map((b) => ({ ...b, v: latest.get(keyToId.get(b.module) ?? '') }));
+      const plan = planProposal(recipe, 'full', s.answers ?? []).map((b) => ({ ...b, v: latest.get(keyToId.get(b.module) ?? '') }));
       const lost = plan.filter((b) => !b.v).map((b) => b.module);
       if (lost.length) { console.log(`• ${s.key}: faltan módulos del catálogo (${lost.join(', ')}), se salta`); continue; }
       const rows = (dossierId: string) => plan.map((b, i) => ({ dossier_id: dossierId, module_version_id: b.v!.id, position: (i + 1) * 1024, prop_overrides: b.props }));
@@ -93,7 +105,7 @@ async function main() {
       }
       must(await sb.from('dossier_item').insert(rows(id)), `módulos ${s.key}`);
       // La tarifa y el cupón, también a lo de ahora (una tarifa retirada no se queda en el ejemplo).
-      must(await sb.from('dossier').update({ preset: { mode: 'full', answers: [] }, status: 'published', published_at: new Date().toISOString(), price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null }).eq('id', id), `publicar ${s.key}`);
+      must(await sb.from('dossier').update({ preset: { mode: 'full', answers: s.answers ?? [] }, view_mode: s.live ? 'live' : 'test', status: 'published', published_at: new Date().toISOString(), price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null }).eq('id', id), `publicar ${s.key}`);
       if (!existing.length) must(await sb.from('share_link').insert({ dossier_id: id }).select('id').single(), `enlace ${s.key}`);
       console.log(`• ${s.key}: ${existing.length ? 'rehecha' : 'creada'} con la propuesta del sector (${plan.length} bloques) → ${origin}/admin/dossiers/${id}`);
       continue;
@@ -127,7 +139,7 @@ async function main() {
     must(await sb.from('share_link').insert({ dossier_id: d.id }).select('id').single(), `enlace ${s.key}`);
     console.log(`• ${s.key}: creado → ${origin}/admin/dossiers/${d.id}`);
   }
-  console.log(dry ? '\nEra una PRUEBA: no se ha escrito nada.' : '\n✓ Dossiers de ejemplo listos (en modo prueba: tus aperturas no cuentan).');
+  console.log(dry ? '\nEra una PRUEBA: no se ha escrito nada.' : '\n✓ Dossiers de ejemplo listos.');
 }
 
 main().catch((e) => { console.error(`✗ ${(e as Error).message}`); process.exit(1); });

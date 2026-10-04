@@ -3764,8 +3764,8 @@
             "module": "portada",
             "props": {
               "eyebrow": "Entretenimiento interactivo para hoteles y resorts",
-              "title": "Que la gente que no sale del hotel tenga algo que hacer",
-              "subtitle": "Tus huéspedes participan desde el móvil y salen en la pantalla. Sin descargar nada."
+              "title": "Lo que tus huéspedes van a contar cuando vuelvan a casa",
+              "subtitle": "Participan desde el móvil, salen en la pantalla y se llevan las fotos."
             }
           },
           "problema": {
@@ -3825,14 +3825,7 @@
                   ]
                 }
               ],
-              "photos": [
-                "asset:img/ambiente/piscina.webp",
-                "asset:img/album/album-01.webp",
-                "asset:img/album/album-03.webp",
-                "asset:img/album/album-02.webp",
-                "asset:img/album/album-04.webp",
-                "asset:img/album/album-07.webp"
-              ]
+              "photos": []
             }
           },
           "dinamicas": {
