@@ -1,0 +1,43 @@
+---
+/**
+ * case-study ← un caso real con nombre: qué pasó, cita y foto (opcionales). Solo tokens del tema.
+ */
+import Section from '~/components/Section.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { CaseStudyProps } from './schema';
+
+type Props = CaseStudyProps & ModuleBaseProps;
+const { eyebrow, title, client, place, body, quote, image, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="case-study" class="case-study">
+  <Section tone="surface">
+    <div class:list={['cs-layout', image && 'cs-layout--img']}>
+      <div class="min-w-0">
+        {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+        <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+        <p class="cs-client mt-5"><b>{client}</b>{place && <span> · {place}</span>}</p>
+        <p class="mt-4 max-w-2xl text-lg text-muted sm:text-xl">{t(body)}</p>
+        {quote && (
+          <blockquote class="cs-quote mt-8 max-w-2xl">
+            <p>«{t(quote.text)}»</p>
+            {quote.author && <cite>{quote.author}</cite>}
+          </blockquote>
+        )}
+      </div>
+      {image && <img class="cs-img rounded-card" src={image} alt="" loading="lazy" decoding="async" />}
+    </div>
+  </Section>
+</div>
+
+<style>
+  .cs-layout { display: grid; gap: 2rem; align-items: center; }
+  @media (min-width: 900px) { .cs-layout--img { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 3.5rem; } }
+  .cs-client { display: inline-flex; gap: .25rem; padding: .35rem .9rem; border-radius: 99px; background: rgb(var(--color-primary, 255 39 187) / .14); font-size: 1rem; }
+  .cs-client b { color: rgb(var(--color-primary, 255 39 187)); }
+  .cs-quote { margin-left: 0; padding-left: 1.25rem; border-left: 3px solid rgb(var(--color-primary, 255 39 187)); }
+  .cs-quote p { margin: 0; font-size: 1.35rem; font-weight: 700; line-height: 1.35; }
+  .cs-quote cite { display: block; margin-top: .6rem; font-style: normal; opacity: .75; }
+  .cs-img { width: 100%; max-height: 28rem; object-fit: cover; }
+</style>

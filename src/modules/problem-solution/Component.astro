@@ -1,0 +1,52 @@
+---
+/**
+ * problem-solution ← «Lo que te pasa hoy»: el problema del cliente y lo que cambia, en tarjetas.
+ * Solo tokens del tema (bg, surface, primary, accent, muted, line).
+ */
+import Section from '~/components/Section.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { ProblemSolutionProps } from './schema';
+
+type Props = ProblemSolutionProps & ModuleBaseProps;
+const { eyebrow, title, lede, beforeLabel, afterLabel, cards, note, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="problem-solution" class="problem-solution">
+  <Section tone="surface">
+    {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+    {lede && <p class="mt-3 max-w-2xl text-lg text-muted">{t(lede)}</p>}
+
+    <ol class:list={['ps-grid mt-8 p-0', `ps-grid--${cards.length}`]}>
+      {cards.map((c, i) => (
+        <li class="ps-card list-none rounded-card bg-bg shadow-card" style={`--i:${i}`}>
+          <div class="ps-before">
+            <span class="ps-label">{beforeLabel}</span>
+            <p>{t(c.problem)}</p>
+          </div>
+          <div class="ps-after">
+            <span class="ps-label ps-label--after">{afterLabel}</span>
+            <p>{t(c.solution)}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+    {note && <p class="ps-note mt-6 max-w-3xl rounded-card p-5 text-lg">{t(note)}</p>}
+  </Section>
+</div>
+
+<style>
+  .ps-grid { display: grid; gap: 1rem; }
+  @media (min-width: 900px) { .ps-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ps-grid--3, .ps-grid--4 { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); } .ps-grid--4 { --cols: 2; } }
+  .ps-card { display: grid; grid-template-rows: auto 1fr; overflow: hidden; border: 1px solid rgb(var(--color-line, 255 255 255) / .12); min-width: 0; }
+  .ps-before { padding: 1.25rem 1.4rem 1.1rem; color: rgb(var(--color-muted, 160 160 170)); }
+  .ps-before p { margin: .4rem 0 0; font-size: 1.1rem; line-height: 1.4; }
+  .ps-after { padding: 1.25rem 1.4rem 1.4rem; background: rgb(var(--color-primary, 255 39 187) / .1); border-top: 2px solid rgb(var(--color-primary, 255 39 187) / .55); }
+  .ps-after p { margin: .4rem 0 0; font-size: 1.2rem; line-height: 1.4; font-weight: 700; }
+  .ps-label { font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  .ps-label--after { color: rgb(var(--color-primary, 255 39 187)); }
+  .ps-note { background: rgb(var(--color-accent, 225 255 0) / .12); border: 1px solid rgb(var(--color-accent, 225 255 0) / .35); }
+  @media (prefers-reduced-motion: no-preference) { .ps-card { animation: ps-in .5s ease both; animation-delay: calc(var(--i) * 90ms); } }
+  @keyframes ps-in { from { opacity: .001; transform: translateY(10px); } }
+</style>

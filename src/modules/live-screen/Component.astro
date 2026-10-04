@@ -27,7 +27,7 @@ const scenes = media.video
   : visible;
 const config = screenConfig(
   { venueName: t(venueName), djName, qrImage, photos, covers, phone, musicStyles: Astro.props.musicStyles, venueVideo, autoplay },
-  media, scenes.map((s) => ({ scene: s.scene, video: 'video' in s && !!s.video })),
+  media, scenes.map((s) => ({ scene: s.scene, video: 'video' in s && !!s.video, text: 'text' in s && s.text ? t(s.text) : undefined })),
 );
 ---
 <div data-module="live-screen" class="live-screen">
@@ -43,6 +43,11 @@ const config = screenConfig(
           <div class="live-screen__scan" data-phone-scan><span class="live-screen__scan-line"></span></div>
           <img data-phone-img alt="" loading="lazy" decoding="async" />
           <div class="live-screen__upload" data-phone-upload><span class="live-screen__upload-icon">▲</span><span class="live-screen__upload-bar"><span></span></span></div>
+          <div class="live-screen__compose" data-phone-compose>
+            <span class="live-screen__compose-h">Mensaje a pantalla</span>
+            <span class="live-screen__compose-msg" data-phone-compose-text></span>
+            <span class="live-screen__compose-btn">Enviar</span>
+          </div>
           <span class="live-screen__sent" data-phone-sent>✓</span>
         </div>
       </div>
@@ -94,6 +99,13 @@ const config = screenConfig(
   .live-screen__upload-bar span { display: block; height: 100%; width: 0; background: #e1ff00; }
   .live-screen__phone.is-upload .live-screen__upload-bar span { animation: ls-up 1.6s ease-out forwards; }
   @keyframes ls-up { to { width: 100%; } }
+  /* El móvil del local escribiendo a su pantalla (club.promo). */
+  .live-screen__phone.is-compose { width: clamp(70px, 13%, 160px); }
+  .live-screen__compose { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8%; padding: 14% 9%; background: #120c18; color: #fff; opacity: 0; transition: opacity .25s; font-size: clamp(5px, .75vw, 11px); line-height: 1.25; }
+  .live-screen__phone.is-compose .live-screen__compose { opacity: 1; }
+  .live-screen__compose-h { font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #ff27bb; }
+  .live-screen__compose-msg { padding: 8%; border-radius: 8px; background: rgba(255,255,255,.1); font-weight: 700; min-height: 30%; }
+  .live-screen__compose-btn { margin-top: auto; align-self: stretch; text-align: center; padding: 6% 0; border-radius: 99px; background: #e1ff00; color: #111; font-weight: 800; }
   .live-screen__controls { display: flex; flex-wrap: wrap; gap: .5rem; }
   .live-screen__chip { min-height: 44px; border-radius: 999px; padding: .55rem 1.1rem; font-weight: 700; font-size: .95rem; border: 1px solid rgb(var(--color-line, 42 36 48)); background: rgb(var(--color-bg, 8 3 12)); color: inherit; cursor: pointer; }
   .live-screen__chip[aria-selected='true'] { background: rgb(var(--color-primary, 255 39 187)); border-color: transparent; color: rgb(var(--color-primary-contrast, 255 255 255)); }

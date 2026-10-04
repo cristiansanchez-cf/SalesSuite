@@ -47,6 +47,16 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
         <span class="thumb__chat">{firstChat.messages.slice(0, 3).map((m: { from: string; text: string }, i: number) => <i class:list={[m.from === 'me' && 'me']} style={`--k:${i}`}>{fill(m.text)}</i>)}</span>
       ) : firstImg ? <img src={firstImg} alt="" loading="lazy" decoding="async" /> : null}
     </div>
+  ) : blockType === 'problem-solution' ? (
+    <div class="thumb__ps">
+      <b>{fill(p.title)}</b>
+      {p.cards.slice(0, 2).map((c: { problem: string; solution: string }) => <span class="thumb__ps-card"><i>{fill(c.problem)}</i><em>{fill(c.solution)}</em></span>)}
+    </div>
+  ) : blockType === 'case-study' ? (
+    <div class="thumb__hero">
+      <span class="thumb__chip">{p.client}</span>
+      <b>{fill(p.title)}</b>
+    </div>
   ) : null}
 </div>
 
@@ -64,6 +74,10 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
   .thumb__btn { justify-self: start; margin-top: 4px; background: #ff27bb; border-radius: 99px; padding: 6px 12px; font-weight: 800; }
   .thumb__hero { position: absolute; left: 7%; right: 7%; top: 9%; display: grid; gap: 10px; }
   .thumb__chip { justify-self: start; background: #e1ff00; color: #08030c; font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 99px; padding: 4px 10px; }
+  .thumb__ps { position: absolute; left: 7%; right: 7%; top: 9%; display: grid; gap: 8px; }
+  .thumb__ps b { font-size: 22px; line-height: 1.1; font-weight: 800; }
+  .thumb__ps-card { display: grid; gap: 4px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); font-size: 11px; }
+  .thumb__ps-card i { font-style: normal; opacity: .65; } .thumb__ps-card em { font-style: normal; font-weight: 700; color: #ff27bb; }
   .thumb__price-title { font-size: 18px !important; line-height: 1.15 !important; }
   .thumb--sm > :not(.thumb__glow) { zoom: .58; }
   .thumb__hero b { font-size: 32px; line-height: 1.05; font-weight: 800; letter-spacing: -.02em; }

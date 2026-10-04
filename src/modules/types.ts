@@ -16,6 +16,8 @@ export interface ModuleContext {
   media?: import('~/lib/types').ClientMedia;
   /** «Pagar»: enlace de pago de la tarifa elegida, ya con la propuesta y el cupón (null = sin botón). */
   payUrl?: string | null;
+  /** Periodo de la tarifa elegida: once, event, month, year. */
+  pricePeriod?: string | null;
 }
 
 export interface ModuleBaseProps {

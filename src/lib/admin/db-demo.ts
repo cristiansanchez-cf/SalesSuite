@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { parseProposal } from '../proposal/preset';
 import { demoDb, type DemoDb, type DossierRow, type PartnerAccountRow, type PartnerProfileRow, type ShareLinkRow } from '../data/store';
 import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
@@ -26,6 +27,7 @@ const toDossier = (r: DossierRow): DossierRecord => ({
   viewMode: r.view_mode ?? 'live',
   priceOptionId: r.price_option_id ?? null,
   clientMedia: r.client_media ?? {},
+  preset: r.preset ?? {},
 });
 
 const toProfile = (r: PartnerProfileRow): PartnerProfile => ({
@@ -101,6 +103,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.viewMode !== undefined) d.view_mode = p.viewMode;
       if (p.priceOptionId !== undefined) d.price_option_id = p.priceOptionId;
       if (p.clientMedia !== undefined) d.client_media = p.clientMedia;
+      if (p.preset !== undefined) d.preset = p.preset;
       if (p.couponId !== undefined) demoApplyCoupon(d, p.couponId);  // = trigger dossier_coupon_apply
       demoAccountsOnDossier(prev, d);
       d.updated_at = new Date().toISOString();
@@ -246,6 +249,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       return true;
     },
     async segmentExists(t, id) { return db().segment.some((x) => x.tenant_id === t && x.id === id); },
+    async segmentProposal(t, id) { return parseProposal(db().segment.find((x) => x.tenant_id === t && x.id === id)?.proposal); },
     async personaExists(t, id) { return db().persona.some((x) => x.tenant_id === t && x.id === id); },
 
     // ---- gestión del tenant

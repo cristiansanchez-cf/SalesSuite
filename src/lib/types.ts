@@ -56,6 +56,8 @@ export interface PublicDossier {
   media?: ClientMedia;
   /** «Pagar»: enlace de pago de la tarifa con la propuesta y el cupón ya puestos (docs/COMMISSIONS.md §Stripe). */
   payUrl?: string | null;
+  /** Periodo de la tarifa elegida (para «/ mes», «/ evento» en la tarjeta de precio). */
+  pricePeriod?: string | null;
   /** Solo items visibles, ordenados por position. */
   items: RenderItem[];
 }

@@ -3,7 +3,7 @@ import { z } from 'zod';
 const url = z.string().refine((u) => /^(https:\/\/|\/)/.test(u), 'https o ruta absoluta');
 
 /** Estados de la pantalla del local (kit de Enjoy). club = pantalla completa; tp = encima de los visuales del local. */
-export const LIVE_SCENES = ['club.idle', 'club.song', 'club.photo', 'club.message', 'club.toast', 'tp.idle', 'tp.song', 'tp.photo', 'tp.message', 'tp.full'] as const;
+export const LIVE_SCENES = ['club.idle', 'club.song', 'club.photo', 'club.message', 'club.promo', 'club.toast', 'tp.idle', 'tp.song', 'tp.photo', 'tp.message', 'tp.full'] as const;
 export type LiveScene = (typeof LIVE_SCENES)[number];
 
 export const liveScreenSchema = z.object({
@@ -26,6 +26,8 @@ export const liveScreenSchema = z.object({
     scene: z.enum(LIVE_SCENES),
     label: z.string().min(1).max(30),
     says: z.string().max(220).default(''),
+    /** club.promo: lo que el local manda a su pantalla desde su móvil (p. ej. «Chupito a 2 € los próximos diez minutos»). */
+    text: z.string().max(120).optional(),
   })).min(1).max(10),
   /** Vídeo del local de ejemplo (los visuales sobre los que va el modo transparente). webm y mp4: cada navegador coge el suyo. */
   venueVideo: z.object({ webm: url.optional(), mp4: url.optional(), poster: url.optional() }).optional(),

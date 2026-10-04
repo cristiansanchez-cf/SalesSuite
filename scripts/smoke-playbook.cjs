@@ -74,7 +74,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.waitForSelector('[data-testid=track-line]');
   const track = await rep.textContent('[data-testid=talk-track]');
   assert(track.includes('Hola Laura') && track.includes('Sala X'), 'guion personalizado con el prospecto');
-  assert(track.includes('2. Enjoy para tu sala') && track.includes('3. Experiencias en directo'), 'guion sigue el orden del dossier');
+  assert(track.includes('1. Enjoy para tu sala') && track.includes('2. Experiencias en directo'), 'guion sigue el orden del dossier (la portada es contexto, no módulo)');
   assert(track.includes('700') && track.includes('"Es caro"'), 'guion incluye precio del dossier y objeciones');
   if (OUT) await rep.screenshot({ path: `${OUT}/builder-script.png`, fullPage: false });
   const sp = await rep.context().newPage();

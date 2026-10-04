@@ -31,7 +31,7 @@ Dónde aparece cada pieza de 01–03 dentro de la app, en qué orden, y el forma
    3. **Descubrimiento** — preguntas del sector (o generales) + las de los módulos de la propuesta.
    4. **Lo que se cuenta** — el relato del sector, en su orden (solo sectores con guion verificado).
    5. **Presentación** — por cada módulo, en el orden de la propuesta: 1 «Cómo presentarlo», 1 «Para quién», 1 «Prueba»,
-      1 «Consejo» y el mejor truco del equipo. **Si el módulo no tiene jugadas, sale vacío** (hoy: «Portada para bodas»).
+      1 «Consejo» y el mejor truco del equipo. **Si el módulo no tiene jugadas, sale vacío** (hoy: «Portada», «Lo que te pasa hoy», «Caso real», «Portada para bodas»).
    6. **Precio** — «Precio y monetización» de los módulos + las del sector (o generales). Regla: después del valor.
    7. **Objeciones probables** — las de los módulos y las del sector (o generales), ordenadas por lo que más ha funcionado.
    8. **Cierre y seguimiento** — guiones de cierre y seguimiento del sector (o generales).

@@ -1450,7 +1450,63 @@
       "position": 2048,
       "status": "official",
       "icon": "music",
-      "image": "/demo/enjoy/img/locales.webp"
+      "image": "/demo/enjoy/img/locales.webp",
+      "proposal": {
+        "blocks": {
+          "pantalla": {
+            "module": "pantalla-en-vivo",
+            "props": {
+              "title": "Tu pantalla, desde tu móvil"
+            }
+          },
+          "movil": {
+            "module": "movil-invitado",
+            "props": {
+              "price": 0,
+              "djName": ""
+            }
+          },
+          "dinamicas": {
+            "module": "tabs-experiencias"
+          },
+          "dj": {
+            "module": "tabs-experiencias",
+            "props": {
+              "title": "Tu DJ no tiene que ocuparse de nada",
+              "tabs": [
+                {
+                  "label": "DJ",
+                  "title": "Menú cerrado",
+                  "body": "Solo se puede pedir lo que tú metas en la lista."
+                }
+              ]
+            }
+          }
+        },
+        "modes": {
+          "full": [
+            "pantalla",
+            "movil"
+          ],
+          "visual": [
+            "pantalla",
+            "movil",
+            "dinamicas"
+          ]
+        },
+        "questions": [
+          {
+            "key": "dj",
+            "label": "¿Tiene DJ residente?",
+            "rules": [
+              {
+                "add": "dj",
+                "after": "movil"
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "00000000-0000-4000-8000-0000005e0003",

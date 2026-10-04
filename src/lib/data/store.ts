@@ -27,6 +27,7 @@ export interface DossierRow {
   view_mode?: 'test' | 'live';
   price_option_id?: string | null;
   client_media?: import('../types').ClientMedia;
+  preset?: { mode?: 'full' | 'visual'; answers?: string[] };
   situation?: Record<string, string[]>;
   account_id?: string | null; account_eligibility?: string | null; account_decision?: 'approved' | 'rejected' | null;
   account_decided_by?: string | null; account_decided_at?: string | null;
@@ -54,7 +55,7 @@ export interface SeenRow { tenant_id: string; user_id: string; seen_at: string }
 export interface SegmentRow {
   id: string; tenant_id: string; key: string; name: string; description: string | null; value_prop: string | null; icp: string | null;
   disqualifiers: string | null; buying_process: string | null; deal_size: string | null; sales_cycle: string | null; position: number; status: string;
-  icon?: string | null; image?: string | null; notice?: string | null;
+  icon?: string | null; image?: string | null; notice?: string | null; proposal?: unknown;
 }
 export interface PersonaRow {
   id: string; tenant_id: string; segment_id: string; key: string; name: string; role: string; goals: string | null; pains: string | null;

@@ -16,6 +16,8 @@
  *  4. Catálogo: crea módulos que falten; si el contenido/precio cambió respecto a la última versión publicada, publica una versión nueva.
  *  5. Admins: invita a quien no tenga cuenta y garantiza rol admin en el tenant.
  */
+import { proposalSchema } from '../src/lib/proposal/preset';
+import { deepMerge } from '../src/modules/resolve';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, relative, resolve } from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -60,6 +62,8 @@ const tenantFile = z.object({
     deal_size: z.string().nullable().default(null), sales_cycle: z.string().nullable().default(null),
     /** Aviso que el comercial tiene que ver en este sector (Aprende y guion de la reunión). */
     notice: z.string().max(600).nullable().default(null),
+    /** Propuesta del sector: bloques, modos y preguntas (docs/PROPOSAL_PRESETS.md). */
+    proposal: z.unknown().nullable().default(null),
     modules: z.array(z.object({ module_key: z.string(), priority: z.number().int().min(1).max(3).default(2), fit: z.string().nullable().default(null) })).default([]),
     personas: z.array(z.object({
       key: z.string(), name: z.string(), role: z.string(), goals: z.string().nullable().default(null), pains: z.string().nullable().default(null),
@@ -223,6 +227,19 @@ function validate(t: TenantFile, assetKeys: string[]) {
     const r = segmentInputSchema.safeParse({ key: sg.key, name: sg.name, description: sg.description, valueProp: sg.value_prop, icp: sg.icp, disqualifiers: sg.disqualifiers, buyingProcess: sg.buying_process, dealSize: sg.deal_size, salesCycle: sg.sales_cycle });
     if (!r.success) errors.push(...r.error.issues.map((i) => `market.${sg.key}.${i.path.join('.')}: ${i.message}`));
     for (const m of sg.modules) if (!keys.has(m.module_key)) errors.push(`market.${sg.key}.modules: module_key "${m.module_key}" no está en catalog`);
+    if (sg.proposal != null) {
+      const pr = proposalSchema.safeParse(sg.proposal);
+      if (!pr.success) errors.push(...pr.error.issues.map((i) => `market.${sg.key}.proposal.${i.path.join('.')}: ${i.message}`));
+      else for (const [id, b] of Object.entries(pr.data.blocks)) {
+        // Cada bloque, con sus textos encima de los del módulo, tiene que ser válido para su plantilla.
+        const mod = t.catalog.find((c) => c.key === b.module);
+        if (!mod) { errors.push(`market.${sg.key}.proposal.blocks.${id}: módulo "${b.module}" no está en catalog`); continue; }
+        if (!isBlockType(mod.block_type)) continue;
+        const merged = deepMerge(replaceAssets(mod.props, fake, missing) as Record<string, unknown>, replaceAssets(b.props, fake, missing) as Record<string, unknown>);
+        const rb = REGISTRY[mod.block_type].schema.safeParse(merged);
+        if (!rb.success) errors.push(...rb.error.issues.map((i) => `market.${sg.key}.proposal.blocks.${id}.props.${i.path.join('.')}: ${i.message}`));
+      }
+    }
     for (const p of sg.personas) {
       if (personaKeys.has(p.key)) errors.push(`market: actor duplicado ${p.key}`);
       personaKeys.add(p.key);
@@ -367,6 +384,7 @@ async function main() {
     const segRow = {
       tenant_id: tenantId, key: sg.key, name: sg.name, description: sg.description, value_prop: sg.value_prop, icp: sg.icp,
       disqualifiers: sg.disqualifiers, buying_process: sg.buying_process, deal_size: sg.deal_size, sales_cycle: sg.sales_cycle, notice: sg.notice,
+      proposal: sg.proposal == null ? null : replaceAssets(sg.proposal, urls, missing),
       position: (i + 1) * 1024, status: 'official', icon: sg.icon,
       image: (() => { const u = replaceAssets(sg.image, urls, missing); return typeof u === 'string' && !u.startsWith('asset:') ? u : null; })(),
     };

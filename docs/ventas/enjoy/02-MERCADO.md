@@ -48,10 +48,11 @@ Días. En persona, miércoles por la mañana (llega el reparto del distribuidor:
 
 **Qué enseñarle, en orden**
 
-1. Pantalla en vivo — Lo primero que tiene que ver: su pantalla, con su nombre, funcionando.
-1. Móvil del invitado — Cómo lo vive cada invitado: sin descargar nada, desde su móvil.
-1. Experiencias en directo — Canciones con menú cerrado, mensajes y fotos a pantalla, álbum descargable.
-2. Enjoy para tu sala — Para el local: Enjoy dentro de su oferta, con margen y algo que la competencia no tiene.
+1. Portada — El nombre del local y qué cambia para él.
+1. Lo que te pasa hoy — Sus problemas de hoy, contados desde su silla.
+1. Pantalla en vivo — Su pantalla, manejada desde su móvil.
+1. Móvil del invitado — Lo que va a hacer su gente y lo que significa para él.
+2. Experiencias en directo — Dinámicas que ya se hacen: por mesa, chupito por fotos, sorteo.
 3. Precio de la propuesta — Cuota mensual por tramo de aforo.
 
 ### Actores

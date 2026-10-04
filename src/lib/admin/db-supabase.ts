@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { parseProposal } from '../proposal/preset';
 import { env } from '../env';
 import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, PriceOption, ItemRecord, LinkRecord, MemberRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile, Role } from './types';
@@ -13,7 +14,7 @@ const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_c
  * Columnas de migraciones recientes (view_mode: 20261021; price_option_id: 20261022). Hasta aplicarlas se lee y se
  * escribe sin ellas: los despliegues de Vercel van antes que las migraciones.
  */
-const optionalCols = new Set(['view_mode', 'price_option_id', 'client_media']);
+const optionalCols = new Set(['view_mode', 'price_option_id', 'client_media', 'preset']);
 const dossierCols = () => [DOSSIER_COLS, ...optionalCols].join(', ');
 const hasCol = (c: string) => optionalCols.has(c);
 async function tolerant<R extends { error: any }>(q: (cols: string) => PromiseLike<R>): Promise<R> {
@@ -48,6 +49,7 @@ const toDossier = (r: Row): DossierRecord => ({
   viewMode: r.view_mode === 'test' ? 'test' : 'live',
   priceOptionId: r.price_option_id ?? null,
   clientMedia: r.client_media ?? {},
+  preset: r.preset ?? {},
 });
 
 const toPriceOption = (r: Row): PriceOption => ({
@@ -204,6 +206,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.viewMode !== undefined) patch.view_mode = p.viewMode;
       if (p.priceOptionId !== undefined) patch.price_option_id = p.priceOptionId;
       if (p.clientMedia !== undefined) patch.client_media = p.clientMedia;
+      if (p.preset !== undefined) patch.preset = p.preset;
       const rows = check(await tolerant((c) => sb.from('dossier').update(patch).eq('id', id).select(c))) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },
@@ -293,6 +296,11 @@ function full(sb: SupabaseClient): AdminDb {
       return rows.length > 0;
     },
     async segmentExists(t, id) { return !!check(await sb.from('segment').select('id').eq('tenant_id', t).eq('id', id).maybeSingle()); },
+    async segmentProposal(t, id) {
+      const res = await sb.from('segment').select('proposal').eq('tenant_id', t).eq('id', id).maybeSingle();
+      if (res.error) return null;  // columna aún sin migrar: sin receta
+      return parseProposal((res.data as { proposal?: unknown } | null)?.proposal);
+    },
     async personaExists(t, id) { return !!check(await sb.from('persona').select('id').eq('tenant_id', t).eq('id', id).maybeSingle()); },
 
     // ---- gestión del tenant

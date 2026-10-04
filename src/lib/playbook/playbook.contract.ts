@@ -161,8 +161,9 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       expect(apertura[0].text).toContain('Hola Laura');
       expect(apertura[0].text).toContain('de Sala X');
       const pres = t.sections.find((s) => s.id === 'presentacion')!.blocks.map((b) => b.title);
-      expect(pres).toEqual(['1. Portada para bodas', '2. Enjoy para tu sala', '3. Experiencias en directo', '4. Precio de la propuesta']);
-      expect(t.uncovered).toEqual(['Portada para bodas']);
+      // La portada es contexto para el cliente: no sale como módulo sin jugadas.
+      expect(pres).toEqual(['1. Enjoy para tu sala', '2. Experiencias en directo', '3. Precio de la propuesta']);
+      expect(t.uncovered).toEqual([]);
       expect(t.sections.find((s) => s.id === 'precio')!.blocks[0].note?.replace(/\s/g, ' ')).toMatch(/700 €/);
       const obj = t.sections.find((s) => s.id === 'objeciones')!.blocks[0].lines.map((l) => l.title);
       expect(obj).toEqual(expect.arrayContaining(['"Es caro"', '"Ya trabajamos con un DJ que hace cosas parecidas"', '"Mis invitados son mayores, no van a participar"']));

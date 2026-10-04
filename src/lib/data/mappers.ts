@@ -25,6 +25,7 @@ export interface PublicDossierRow {
   media?: PublicDossier['media'] | null;
   /** Enlace de pago de la tarifa elegida (si está activa). */
   payment_link?: string | null;
+  price_period?: string | null;
   items: Array<{
     id: string; position: number | string; block_type: string; module_key: string;
     default_props: Record<string, unknown> | null; prop_overrides: Record<string, unknown> | null;
@@ -46,6 +47,7 @@ export const toPublicDossier = (r: PublicDossierRow): PublicDossier => ({
   discount: r.discount ?? null,
   media: r.media ?? {},
   // «Pagar»: la tarifa + la propuesta (→ quien la vendió) + el cupón. Sin precio a la vista, no hay botón.
+  pricePeriod: r.price_period ?? null,
   payUrl: r.payment_link && r.price_mode !== 'none' ? paymentUrl(r.payment_link, { dossierId: r.id, couponCode: r.discount?.code ?? null }) : null,
   items: r.items
     .map((i): RenderItem => ({

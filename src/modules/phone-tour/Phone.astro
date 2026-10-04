@@ -57,7 +57,7 @@ const action = f.photos ? 'photo' : f.messages ? 'message' : null;
       </div>
     )}
     {f.album && <p class="pt-row"><b class="pt-lime">Ver todo el álbum</b> <small>{Math.max(3, pics.length)} fotos</small><span class="pt-lime ml-auto">›</span></p>}
-    <div class="pt-dj"><span class="pt-dj__av"></span><span><b>{djName}</b><small>Ver perfil y redes</small></span><span class="ml-auto">›</span></div>
+    {djName && <div class="pt-dj"><span class="pt-dj__av"></span><span><b>{djName}</b><small>Ver perfil y redes</small></span><span class="ml-auto">›</span></div>}
     {f.songs && (<>
       <p class="pt-divider"><span>También puedes pedir música</span></p>
       <div class="pt-search"><span class="pt-lime">⌕</span> Busca una canción…</div>
@@ -112,13 +112,13 @@ const action = f.photos ? 'photo' : f.messages ? 'message' : null;
       <div class="pt-top"><span>←</span><span class="pt-sign">Entrar</span></div>
       <div class="pt-card pt-status-card">
         <div class="pt-clock"><span class="pt-clock__hand"></span></div>
-        <div class="pt-timer"><span>30</span>:<span>00</span><small>Has pagado <b>{price} €</b></small></div>
+        {price > 0 && <div class="pt-timer"><span>30</span>:<span>00</span><small>Has pagado <b>{price} €</b></small></div>}
         <div class="pt-track"><i class="on"></i><b></b><i></i></div>
-        <p class="pt-st"><b>Petición</b><small>El DJ tiene 30 minutos para ponerla.</small></p>
+        <p class="pt-st"><b>Petición</b><small>{price > 0 ? 'El DJ tiene 30 minutos para ponerla.' : 'Pendiente de que el local la apruebe.'}</small></p>
       </div>
       {action === 'photo' && <><p class="pt-label pt-label--w">Tu foto:</p><div class="pt-photo pt-photo--wide">{pic(0) ? <img src={pic(0)!} alt="" /> : <span style={`background:${GRAD[0]}`}></span>}</div></>}
       <p class="pt-label pt-label--w">Tu mensaje:</p><p class="pt-msg">¡Felicidades Amaia, vaya noche! Te queremos 🎉</p>
-      <div class="pt-note">ⓘ Solo se cobra si se acepta. Rechazada = devolución.</div>
+      {price > 0 && <div class="pt-note">ⓘ Solo se cobra si se acepta. Rechazada = devolución.</div>}
     </div>
   )}
 
@@ -130,12 +130,12 @@ const action = f.photos ? 'photo' : f.messages ? 'message' : null;
         <div class="pt-confetti">{Array.from({ length: 14 }).map((_, i) => <i style={`--i:${i}`}></i>)}🎉</div>
         <h3 class="pt-h2">¡Tu {action === 'photo' ? 'foto' : 'mensaje'} está en pantalla!</h3>
         <div class="pt-track pt-track--done"><i class="on">✓</i><b></b><i class="on"></i></div>
-        <p class="pt-st"><b>En directo</b><small>El DJ lo está enseñando ahora.</small></p>
+        <p class="pt-st"><b>En directo</b><small>{djName ? 'El DJ lo está enseñando ahora.' : 'Lo está viendo toda la sala.'}</small></p>
       </div>
       {action === 'photo' && <div class="pt-photo pt-photo--wide">{pic(0) ? <img src={pic(0)!} alt="" /> : <span style={`background:${GRAD[0]}`}></span>}</div>}
       <div class="pt-card pt-done">
         {f.album && <p><span class="pt-ok">✓</span><span><b>Guardada en el álbum</b><small>Todo el evento puede verla</small></span><b class="pt-lime ml-auto">Ver →</b></p>}
-        <p><span class="pt-ok pt-ok--grey">▤</span><span><b>Cobrado {price} €</b><small>Pago completado</small></span><span class="pt-receipt">Recibo</span></p>
+        {price > 0 && <p><span class="pt-ok pt-ok--grey">▤</span><span><b>Cobrado {price} €</b><small>Pago completado</small></span><span class="pt-receipt">Recibo</span></p>}
       </div>
     </div>
   )}

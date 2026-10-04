@@ -40,6 +40,8 @@ export interface Segment {
   image: string | null;
   /** Aviso para quien vende este sector (p. ej. «aquí aún no hemos cerrado nada»). Lo pone el alta del espacio. */
   notice?: string | null;
+  /** Propuesta del sector: bloques, modos y preguntas (docs/PROPOSAL_PRESETS.md). La pone el alta del espacio. */
+  proposal?: import('../proposal/preset').Proposal | null;
 }
 
 export interface Persona {

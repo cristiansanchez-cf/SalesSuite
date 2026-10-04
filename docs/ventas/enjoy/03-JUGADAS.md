@@ -12,7 +12,7 @@ Las 153 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 ## Antes de empezar: lo que ya sé que hay que mirar
 
 - **Reparto:** General: 127 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
-- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada para bodas».
+- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
 Campos de cada jugada: **tipo** (Cómo presentarlo, Para quién (y cuándo no), Preguntas de descubrimiento, Pruebas y casos, Objeciones, Precio y monetización, Guiones, Consejos), **etapa** (Prospección, Primer contacto, Descubrimiento, Pitch / Demo, Objeciones, Negociación, Cierre, Seguimiento, Mentalidad), **objeción** si responde a una (Precio, Tiempo / me lo pienso, Desconfianza, No lo necesito, No decido yo, Quiere comparar opciones, Ya tengo proveedor), **para qué sectores/actores** (vacío = todos) y **quién la ve** (Todos, Solo equipo interno, Solo colaboradores).
@@ -1386,40 +1386,6 @@ _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Manager del 
 
 **Por qué funciona:** Forma parte de lo que vendes: protege al artista y al público.
 
-## Módulo: Enjoy para tu sala
-
-### Cómo presentarlo (1)
-
-#### Un extra que vendes tú y te diferencia de la finca de al lado · `loc-pitch`
-
-_etapa: Pitch / Demo · sectores: Bodas_
-
-> La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene.
-
-### Preguntas de descubrimiento (1)
-
-#### ¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala? · `loc-discovery`
-
-_etapa: Descubrimiento · sectores: Bodas_
-
-> Si pierden bodas por "diferenciación", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces.
-
-### Objeciones (1)
-
-#### "Ya trabajamos con un DJ que hace cosas parecidas" · `loc-obj-proveedor`
-
-_etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Bodas_
-
-> Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos.
-
-### Precio y monetización (1)
-
-#### Margen para la sala · `loc-monet`
-
-_etapa: Negociación · sectores: Bodas_
-
-> PENDIENTE · precio de bodas sin definir; nunca hemos cobrado una boda
-
 ## Módulo: Precio de la propuesta
 
 ### Precio y monetización (1)
@@ -1478,3 +1444,37 @@ _etapa: Mentalidad · la ven: Solo equipo interno_
 > **Todo lo demás es supuesto.** Las tarifas nuevas son entre 1,5 y 3 veces el histórico porque el producto es otro (fotos, álbum con descarga, mensajes, pantalla desde el móvil, consentimiento), pero no están validadas.
 > 
 > **Cómo se validan:** con los cinco primeros clientes a 99 €. Si firman tres de cinco, el precio está bajo y el siguiente lote va a tarifa. Si no firma ninguno, el problema es el argumento, no el precio.
+
+## Módulo: Enjoy para tu sala
+
+### Cómo presentarlo (1)
+
+#### Un extra que vendes tú y te diferencia de la finca de al lado · `loc-pitch`
+
+_etapa: Pitch / Demo · sectores: Bodas_
+
+> La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene.
+
+### Preguntas de descubrimiento (1)
+
+#### ¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala? · `loc-discovery`
+
+_etapa: Descubrimiento · sectores: Bodas_
+
+> Si pierden bodas por "diferenciación", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces.
+
+### Objeciones (1)
+
+#### "Ya trabajamos con un DJ que hace cosas parecidas" · `loc-obj-proveedor`
+
+_etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Bodas_
+
+> Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos.
+
+### Precio y monetización (1)
+
+#### Margen para la sala · `loc-monet`
+
+_etapa: Negociación · sectores: Bodas_
+
+> PENDIENTE · precio de bodas sin definir; nunca hemos cobrado una boda

@@ -8,6 +8,7 @@
  * publicado con enlace (el del cliente, en «Compartir» del editor). Quedan en modo prueba: tus aperturas no cuentan. Idempotente: si ya existe el
  * ejemplo de ese sector (prospect_meta.sample), no lo duplica y vuelve a enseñar su enlace.
  */
+import { parseProposal, planProposal } from '../src/lib/proposal/preset';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 interface Sample { key: string; segment: string; title: string; company: string; contact: string; tariff: string; coupon?: string }
@@ -49,7 +50,7 @@ async function main() {
   console.log(`• autor: ${email ? 'el email indicado' : 'el admin más antiguo'} (${author.role})`);
 
   const [segments, options, coupons, modules, versions, segMods, domains] = await Promise.all([
-    sb.from('segment').select('id, key').eq('tenant_id', tid),
+    sb.from('segment').select('id, key, proposal').eq('tenant_id', tid),
     sb.from('price_option').select('id, label, active').eq('tenant_id', tid),
     sb.from('coupon').select('id, code, active').eq('tenant_id', tid),
     sb.from('module').select('id, key').eq('tenant_id', tid),
@@ -67,9 +68,32 @@ async function main() {
     const seg = segments.find((x) => x.key === s.segment);
     if (!seg) { console.log(`• ${s.key}: sin sector «${s.segment}», se salta`); continue; }
     const existing = (must(await sb.from('dossier').select('id').eq('tenant_id', tid).eq('author_id', author.user_id).contains('prospect_meta', { sample: s.key }).limit(1), 'buscar ejemplo') ?? []) as Array<{ id: string }>;
-    const mods = segMods.filter((m) => m.segment_id === seg.id).sort((a, b) => a.priority - b.priority).map((m) => latest.get(m.module_id)).filter((v): v is { id: string; version: number } => !!v);
+    // Con receta del sector (docs/PROPOSAL_PRESETS.md): la propuesta «va sola», sin preguntas marcadas. Se rehace entera.
     const option = options.find((o) => o.label === s.tariff && o.active);
     const coupon = s.coupon ? coupons.find((c) => c.code === s.coupon && c.active) : undefined;
+    const recipe = parseProposal(seg.proposal);
+    if (recipe) {
+      const keyToId = new Map(modules.map((m) => [m.key, m.id]));
+      const plan = planProposal(recipe, 'full', []).map((b) => ({ ...b, v: latest.get(keyToId.get(b.module) ?? '') }));
+      const lost = plan.filter((b) => !b.v).map((b) => b.module);
+      if (lost.length) { console.log(`• ${s.key}: faltan módulos del catálogo (${lost.join(', ')}), se salta`); continue; }
+      const rows = (dossierId: string) => plan.map((b, i) => ({ dossier_id: dossierId, module_version_id: b.v!.id, position: (i + 1) * 1024, prop_overrides: b.props }));
+      if (dry) { console.log(`• ${s.key}: ${existing.length ? 'se rehará' : 'se crearía'} con la propuesta del sector (${plan.map((b) => b.block).join(' → ')})`); continue; }
+      let id = existing[0]?.id;
+      if (id) must(await sb.from('dossier_item').delete().eq('dossier_id', id), `vaciar ${s.key}`);
+      else {
+        id = (must(await sb.from('dossier').insert({
+          tenant_id: tid, author_id: author.user_id, title: s.title, prospect_name: s.contact, prospect_company: s.company,
+          prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: 'test', price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null,
+        }).select('id').single(), `crear ${s.key}`) as { id: string }).id;
+      }
+      must(await sb.from('dossier_item').insert(rows(id)), `módulos ${s.key}`);
+      must(await sb.from('dossier').update({ preset: { mode: 'full', answers: [] }, status: 'published', published_at: new Date().toISOString() }).eq('id', id), `publicar ${s.key}`);
+      if (!existing.length) must(await sb.from('share_link').insert({ dossier_id: id }).select('id').single(), `enlace ${s.key}`);
+      console.log(`• ${s.key}: ${existing.length ? 'rehecha' : 'creada'} con la propuesta del sector (${plan.length} bloques) → ${origin}/admin/dossiers/${id}`);
+      continue;
+    }
+    const mods = segMods.filter((m) => m.segment_id === seg.id).sort((a, b) => a.priority - b.priority).map((m) => latest.get(m.module_id)).filter((v): v is { id: string; version: number } => !!v);
     if (!mods.length) { console.log(`• ${s.key}: el sector no tiene módulos recomendados, se salta`); continue; }
     if (existing.length) {
       // Ya existía: se le añaden (delante) los recomendados que le falten (p. ej. un módulo nuevo del catálogo).

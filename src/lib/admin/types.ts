@@ -60,6 +60,8 @@ export interface AdminSession {
 export interface DossierRecord {
   /** Logo, fotos y vídeo del cliente (migración 20261024). */
   clientMedia?: import('../types').ClientMedia;
+  /** Lo que eligió el comercial al montar la propuesta del sector (modo y respuestas). Privado. */
+  preset?: { mode?: 'full' | 'visual'; answers?: string[] };
   id: string;
   tenantId: string;
   authorId: string | null;

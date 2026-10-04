@@ -36,6 +36,7 @@ export type DossierDbPatch = DossierPatch & {
   segmentId?: string | null;
   priceOptionId?: string | null;
   clientMedia?: import('../types').ClientMedia;
+  preset?: { mode?: 'full' | 'visual'; answers?: string[] };
   nextStep?: string | null;
   nextStepAt?: string | null;
   situation?: import('../evidence/types').Situation;
@@ -86,6 +87,8 @@ export interface AdminDb {
   deleteContact(id: string): Promise<boolean>;
   /** Existencia en el tenant (la demo no tiene FKs; en Supabase además lo garantizan las FKs compuestas). */
   segmentExists(tenantId: string, segmentId: string): Promise<boolean>;
+  /** Receta de propuesta del sector (null si no tiene). */
+  segmentProposal(tenantId: string, segmentId: string): Promise<import('../proposal/preset').Proposal | null>;
   personaExists(tenantId: string, personaId: string): Promise<boolean>;
 
   // ---- gestión del tenant (la RLS exige admin en Supabase; el servicio también)

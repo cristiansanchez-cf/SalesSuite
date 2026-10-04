@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { parseProposal } from '../proposal/preset';
 import { demoDb, type ContributionRow, type DemoDb, type PlayRow } from '../data/store';
 import type { PlaybookDb } from './db';
 import type { Contribution, Play, TechniqueRef } from './types';
@@ -23,7 +24,7 @@ const rowToContribution = (r: ContributionRow): Contribution => ({
 const rowToSegment = (r: SegmentRow): Segment => ({
   id: r.id, key: r.key, name: r.name, description: r.description, valueProp: r.value_prop, icp: r.icp, disqualifiers: r.disqualifiers,
   buyingProcess: r.buying_process, dealSize: r.deal_size, salesCycle: r.sales_cycle, position: Number(r.position), status: r.status as Segment['status'], icon: r.icon ?? null,
-  image: r.image ?? null, notice: r.notice ?? null,
+  image: r.image ?? null, notice: r.notice ?? null, proposal: parseProposal(r.proposal),
 });
 const rowToPersona = (r: PersonaRow): Persona => ({
   id: r.id, segmentId: r.segment_id, key: r.key, name: r.name, role: r.role as Persona['role'], goals: r.goals, pains: r.pains, kpis: r.kpis,

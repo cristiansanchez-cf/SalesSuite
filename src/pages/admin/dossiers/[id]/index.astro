@@ -1,4 +1,5 @@
 ---
+import { liteOf } from '~/lib/proposal/preset';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Builder from '~/components/admin/Builder.svelte';
 import Icon from '~/components/ui/Icon.astro';
@@ -42,7 +43,7 @@ try {
   facets = fs.map((f) => ({ key: f.key, label: f.label, question: f.question, scope: f.scope, multi: f.multi, options: f.options }));
   hasStory = !!story;
   market = {
-    segments: m.filter((x) => x.status !== 'archived').map((x) => ({ id: x.id, key: x.key, name: x.name, modules: [...x.modules].sort((p, q) => p.priority - q.priority).map((mo) => mo.moduleId) })),
+    segments: m.filter((x) => x.status !== 'archived').map((x) => ({ id: x.id, key: x.key, name: x.name, proposal: liteOf(x.proposal), modules: [...x.modules].sort((p, q) => p.priority - q.priority).map((mo) => mo.moduleId) })),
     personas: m.flatMap((x) => x.personas.map((p) => ({ id: p.id, segmentId: p.segmentId, name: p.name, role: p.role }))),
   };
 } catch (e) {

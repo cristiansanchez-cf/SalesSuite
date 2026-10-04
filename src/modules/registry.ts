@@ -4,6 +4,8 @@ import { tabsShowcaseSchema } from './tabs-showcase/schema';
 import { pricingCardSchema } from './pricing-card/schema';
 import { liveScreenSchema } from './live-screen/schema';
 import { phoneTourSchema } from './phone-tour/schema';
+import { problemSolutionSchema } from './problem-solution/schema';
+import { caseStudySchema } from './case-study/schema';
 import { partsFor } from './phone-tour/steps';
 import type { ModuleContext } from './types';
 
@@ -42,7 +44,19 @@ export const REGISTRY = {
     example: { title: 'Así lo vive cada invitado' },
     load: () => import('./phone-tour/Component.astro'),
     // En presentación, una diapositiva por trozo del recorrido (no un recorrido de 8 pasos en una).
-    parts: (props: Record<string, unknown>, ctx: ModuleContext) => partsFor(ctx.media, '', Number(props.price ?? 2)).map((part) => ({ part })),
+    parts: (props: Record<string, unknown>, ctx: ModuleContext) => partsFor(ctx.media, '', Number(props.price ?? 2), props.parts as never, props.djName !== '').map((part) => ({ part })),
+  },
+  'problem-solution': {
+    label: 'Problema → solución',
+    schema: problemSolutionSchema,
+    example: { title: 'Lo que te pasa hoy', cards: [{ problem: 'Lo que le pasa hoy al cliente.', solution: 'Lo que cambia.' }] },
+    load: () => import('./problem-solution/Component.astro'),
+  },
+  'case-study': {
+    label: 'Caso real',
+    schema: caseStudySchema,
+    example: { title: 'Lo que le pasó a…', client: 'Cliente', body: 'Qué pasó, con su permiso.' },
+    load: () => import('./case-study/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

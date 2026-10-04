@@ -189,6 +189,23 @@ Lo ve todo comercial nada más entrar. Cada paso: título (≤ 80), texto (≤ 2
 
 Cada módulo es un bloque de la propuesta que recibe el cliente. Aquí, lo que dice cada uno.
 
+### Portada · `portada`
+
+_La primera diapositiva: el nombre del cliente y una línea de qué cambia._  
+Tipo: `hero-pitch`
+
+- **Antetítulo:** Propuesta para {company}
+- **Título:** {company}
+- **Entradilla:** Tu público participa desde el móvil, sale en tus pantallas, y tú te quedas con el contenido.
+
+### Lo que te pasa hoy · `lo-que-te-pasa`
+
+_El problema del cliente y lo que cambia, en tarjetas. Contado desde su silla._  
+Tipo: `problem-solution`
+
+- **Antetítulo:** —
+- **Título:** Lo que te pasa hoy
+
 ### Pantalla en vivo · `pantalla-en-vivo`
 
 _La pantalla del local, interactiva: reclamo, canción, foto, dedicatoria y modo transparente._  
@@ -217,14 +234,33 @@ Tipo: `phone-tour`
 
 ### Experiencias en directo · `tabs-experiencias`
 
-_Kiss-cam, dedicatorias, peticiones y álbum: lo que vive cada invitado._  
+_Dedicatorias y dinámicas: lo que vive cada invitado._  
 Tipo: `tabs-showcase`
 
 - **Antetítulo:** Experiencias
 - **Título:** Todo lo que pasa en tu evento, en el móvil de cada invitado
-- **Pestaña «Kiss-cam»:** Kiss-cam en pantalla gigante — Los invitados envían su momento y aparece en directo. _(Moderación previa)_
 - **Pestaña «Dedicatorias»:** Dedicatorias que se leen en voz alta — Mensajes desde el móvil, proyectados en el momento justo. _(Sin descargar app)_
 - **Pestaña «Por mesa»:** Dinámicas por mesa — Un ejemplo de lo versátil que es: pon un número en cada mesa y que las mesas se escriban por la pantalla. _(«Los de la mesa 1 son muy guapos»)_
+
+### Caso real · `caso-real`
+
+_Un cliente con nombre. Solo con su autorización por escrito para la propuesta._  
+Tipo: `case-study`
+
+- **Antetítulo:** Lo que le pasó a La Biblioteca
+- **Título:** Una promotora los eligió a ellos
+
+### Precio de la propuesta · `pricing`
+
+_El precio de la propuesta, claro y sin sorpresas._  
+Tipo: `pricing-card`
+
+- **Antetítulo:** Inversión
+- **Título:** Propuesta para {company}
+- **Entradilla:** Lo dejamos configurado contigo, con vuestra marca, sin pedir nada a tu equipo.
+- **Incluye:** Configuración guiada contigo en 20 minutos · Personalización con vuestra marca · Analítica de participación de cada evento
+- **Letra pequeña:** Suscripciones con permanencia de 6 meses. Eventos puntuales, pago único.
+- **Botón:** Reservar fecha
 
 ### Enjoy para tu sala · `tabs-locales`
 
@@ -235,19 +271,7 @@ Tipo: `tabs-showcase`
 - **Título:** Tu sala, con algo que la competencia no tiene
 - **Pestaña «Pack sala»:** Enjoy incluido en tu oferta — Un extra diferencial que puedes vender o regalar. _(Margen para el local · Lo dejamos configurado contigo en una videollamada de 20 minutos)_
   - Chat de ejemplo: «Sábado tenemos lleno» → «Te lo dejo configurado y con vuestro logo»
-- **Pestaña «Datos»:** Datos de cada evento — Participación y momentos top de cada evento. _(Informe post-evento)_
-
-### Precio de la propuesta · `pricing`
-
-_El precio de la propuesta, claro y sin sorpresas._  
-Tipo: `pricing-card`
-
-- **Antetítulo:** Inversión
-- **Título:** Propuesta para {company}
-- **Entradilla:** Lo dejamos configurado contigo, con vuestra marca, sin pedir nada a tu equipo.
-- **Incluye:** Configuración guiada contigo en 20 minutos · Personalización con vuestra marca · Informe post-evento
-- **Letra pequeña:** Suscripciones con permanencia de 6 meses (sin permanencia si lo necesitáis). Eventos puntuales, pago único.
-- **Botón:** Reservar fecha
+- **Pestaña «Datos»:** Datos de cada evento — Participación y momentos top de cada evento. _(Analítica de participación de cada evento)_
 
 ### Portada para bodas · `hero-bodas`
 

@@ -115,6 +115,26 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       expect(await E.publicGet(link.token, ENJOY)).toBeNull();
     });
 
+    test('montar la propuesta con la receta del sector: modo, preguntas y textos del sector', async () => {
+      const rep = svc(USERS.rep);
+      const id = await rep.createDossier({ title: 'Sala Preset', prospectCompany: 'Sala Preset' });
+      await rejects(rep.apply(id, { op: 'applyPreset', mode: 'full', answers: [] }), 422);  // sin sector
+      await rep.apply(id, { op: 'setSegment', segmentId: '00000000-0000-4000-8000-0000005e0002' });
+      let st = await rep.apply(id, { op: 'applyPreset', mode: 'full', answers: ['dj', 'no-existe'] });
+      expect(st.items.map((i) => i.moduleKey)).toEqual(['pantalla-en-vivo', 'movil-invitado', 'tabs-experiencias']);
+      expect(st.items[0].propOverrides).toMatchObject({ title: 'Tu pantalla, desde tu móvil' });
+      expect(st.items[2].propOverrides).toMatchObject({ title: 'Tu DJ no tiene que ocuparse de nada' });
+      expect(st.dossier.preset).toEqual({ mode: 'full', answers: ['dj'] });
+      // Volver a montarla rehace la lista (no duplica).
+      st = await rep.apply(id, { op: 'applyPreset', mode: 'visual', answers: [] });
+      expect(st.items.map((i) => i.moduleKey)).toEqual(['pantalla-en-vivo', 'movil-invitado', 'tabs-experiencias']);
+      expect(st.items[2].propOverrides).toEqual({});
+      // Un sector sin receta: se avisa y no se toca nada.
+      await rep.apply(id, { op: 'setSegment', segmentId: '00000000-0000-4000-8000-0000005e0001' });
+      await rejects(rep.apply(id, { op: 'applyPreset', mode: 'full', answers: [] }), 422);
+      expect((await rep.getState(id)).items).toHaveLength(3);
+    });
+
     test('rep no edita dossiers ajenos; admin sí', async () => {
       const st = await svc(USERS.rep).getState(SALA_X);
       expect(st.canEdit).toBe(false);

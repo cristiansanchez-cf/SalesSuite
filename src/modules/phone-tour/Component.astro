@@ -10,26 +10,32 @@ import type { ModuleBaseProps } from '../types';
 import type { PhoneTourProps } from './schema';
 import { featuresOf } from '../live-screen/music';
 import Phone from './Phone.astro';
-import { stepsFor, type Part } from './steps';
+import { partsFor, stepsFor, type Part, type Step } from './steps';
 
 /** part: solo en modo presentación (DossierView), qué trozo del recorrido es esta diapositiva. */
 type Props = PhoneTourProps & ModuleBaseProps & { part?: Part };
-const { eyebrow, title, lede, djName, price, photos, qrImage, musicStyles, autoplay, ctx, part } = Astro.props;
+const { eyebrow, title, lede, djName, price, photos, qrImage, musicStyles, autoplay, parts, ownerLabel, ctx, part } = Astro.props;
 const t = (s: string) => interpolate(s, ctx);
 const media = ctx.media ?? {};
 const f = featuresOf(media.features);
 const venue = (ctx.prospectCompany || 'Tu local').slice(0, 24);
 
 // Los pasos, en orden; los que el cliente no tiene, fuera. En presentación, una diapositiva por grupo (part).
-const allSteps = stepsFor(f, venue, price);
-const steps = part ? allSteps.filter((s) => part.keys.includes(s.key)) : allSteps;
-const first = allSteps.findIndex((s) => s.key === steps[0]?.key);
+// Con grupos propios, sus textos (y la frase «para ti»); fuera de la presentación, todos seguidos.
+const dj = !!djName;
+const custom = parts?.length ? partsFor(media, venue, price, parts, dj) : null;
+const allSteps: Step[] = custom ? custom.flatMap((g) => g.steps ?? []) : stepsFor(f, venue, price, dj);
+const steps = part ? (part.steps ?? allSteps.filter((s) => part.keys.includes(s.key))) : allSteps;
+const first = Math.max(0, part?.steps ? custom?.slice(0, part.n - 1).reduce((n, g) => n + g.keys.length, 0) ?? 0 : allSteps.findIndex((s) => s.key === steps[0]?.key));
+// Título: con grupos propios, el de cada grupo (también el primero); si no, el del módulo y luego el del grupo.
+const heading = part ? (part.steps ? part.title : part.n > 1 ? part.title : t(title)) : t(title);
+const sub = part?.steps ? part.lede : part && part.n > 1 ? undefined : lede;
 ---
 <div data-module="phone-tour" class:list={['phone-tour', part && 'phone-tour--part']} data-autoplay={autoplay || part ? '1' : '0'}>
   <Section tone="surface">
     {(eyebrow || part) && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{eyebrow ? t(eyebrow) : ''}{part && part.of > 1 && <span class="pt-part"> · {part.n}/{part.of}</span>}</p>}
-    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{part && part.n > 1 ? part.title : t(title)}</h2>
-    {lede && !(part && part.n > 1) && <p class="mt-3 max-w-2xl text-lg text-muted">{t(lede)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(heading)}</h2>
+    {sub && <p class="mt-3 max-w-2xl text-lg text-muted">{t(sub)}</p>}
 
     <div class="pt-layout mt-10">
       <Phone djName={djName} price={price} photos={photos} qrImage={qrImage} musicStyles={musicStyles} media={media} venue={ctx.prospectCompany} float={!!part} />
@@ -37,7 +43,7 @@ const first = allSteps.findIndex((s) => s.key === steps[0]?.key);
       <ol class="pt-steps" role="tablist">
         {steps.map((s, i) => (
           <li><button type="button" role="tab" class="pt-step" data-step-btn={s.key} aria-selected={i === 0 ? 'true' : 'false'}>
-            <span class="pt-step__n">{first + i + 1}</span><span class="pt-step__t"><b>{s.label}</b><small>{s.says}</small></span><i class="pt-step__bar" aria-hidden="true"></i>
+            <span class="pt-step__n">{first + i + 1}</span><span class="pt-step__t"><b>{s.label}</b><small>{t(s.says)}</small>{s.owner && <em class="pt-step__owner"><span>{ownerLabel}</span> {t(s.owner)}</em>}</span><i class="pt-step__bar" aria-hidden="true"></i>
           </button></li>
         ))}
       </ol>
@@ -59,6 +65,9 @@ const first = allSteps.findIndex((s) => s.key === steps[0]?.key);
   @keyframes pt-bar { to { width: 100%; } }
   .pt-step__n { flex-shrink: 0; width: 1.9rem; height: 1.9rem; border-radius: 99px; display: grid; place-items: center; font-weight: 800; background: rgb(var(--color-primary, 255 39 187)); color: #fff; }
   .pt-step__t b { display: block; font-size: 1.15rem; line-height: 1.3; } .pt-step__t small { display: block; opacity: .9; font-size: 1rem; line-height: 1.45; margin-top: .25rem; }
+  /* «Para ti»: lo que significa para quien paga, siempre a la vista (es lo que vende). */
+  .pt-step__owner { display: block; margin-top: .45rem; font-style: normal; font-weight: 700; font-size: 1.05rem; line-height: 1.4; }
+  .pt-step__owner span { display: inline-block; margin-right: .35rem; padding: .05rem .5rem; border-radius: 99px; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; background: rgb(var(--color-accent, 225 255 0)); color: rgb(var(--color-accent-contrast, 8 3 12)); vertical-align: .1em; }
   @media (max-width: 899px) { .pt-step__t small { display: none; } .pt-step[aria-selected='true'] .pt-step__t small { display: block; } }
   @media (prefers-reduced-motion: reduce) { :global(.pt-phone) { animation: none !important; } }
 </style>

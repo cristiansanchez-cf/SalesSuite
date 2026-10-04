@@ -163,6 +163,32 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     await g.close();
   }
 
+  // montar la propuesta con la receta del sector (docs/PROPOSAL_PRESETS.md)
+  {
+    const g = await (await b.newContext({ viewport: { width: 1440, height: 1800 } })).newPage();
+    await g.goto(`${BASE}/admin/login`);
+    await g.click('[data-testid="demo-rep@enjoy.test"]');
+    await g.waitForURL(/\/admin/);
+    await g.goto(`${BASE}/admin`);
+    await g.click('[data-testid=new-dossier]');
+    await g.fill('[data-testid=create-form] [name=title]', 'Preset · E2E');
+    await g.click('[data-testid=create-form] button[type=submit]');
+    await g.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/);
+    await g.waitForTimeout(1000);
+    assert(!(await g.isVisible('[data-testid=preset]')), 'sin sector, no hay receta que montar');
+    await g.click('[data-testid=quick-start] .co-chip:has-text("ocio")').catch(async () => g.click('[data-testid=quick-start] .co-chip >> nth=1'));
+    await g.waitForSelector('[data-testid=preset]');
+    assert(await g.isVisible('[data-testid=preset-mode-visual]'), 'dos modos: va sola / apoyo visual');
+    await g.check('[data-testid=preset-q-dj]');
+    await g.click('[data-testid=preset-apply]');
+    await g.waitForTimeout(1500);
+    const keys = await g.$$eval('[data-testid=item]', (els) => els.map((e) => e.dataset.itemKey));
+    assert(JSON.stringify(keys) === JSON.stringify(['pantalla-en-vivo', 'movil-invitado', 'tabs-experiencias']), `propuesta montada con la pregunta del DJ: ${keys.join(' → ')}`);
+    assert((await g.textContent('[data-testid=preset-apply]')).includes('Volver'), 'se puede volver a montar');
+    if (OUT) await g.screenshot({ path: `${OUT}/builder-preset.png`, fullPage: true });
+    await g.close();
+  }
+
   // otro tenant no ve el dossier
   const other = await b.newContext();
   const o = await other.newPage();

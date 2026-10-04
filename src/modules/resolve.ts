@@ -43,6 +43,7 @@ export function resolveItem(item: RenderItem, dossier: PublicDossier, total: Res
       total,
       media: dossier.media ?? {},
       payUrl: dossier.payUrl ?? null,
+      pricePeriod: dossier.pricePeriod ?? null,
     },
   };
 }

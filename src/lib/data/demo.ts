@@ -31,6 +31,7 @@ export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossie
     locale: d.locale, price_mode: d.price_mode, total_price: d.total_price,
     currency: d.currency, theme_override: d.theme_override, discount: (d.discount as PublicDossierRow['discount']) ?? null, media: (d as { client_media?: PublicDossierRow['media'] }).client_media ?? {},
     payment_link: (db.price_option ?? []).find((o) => o.id === d.price_option_id && o.tenant_id === d.tenant_id && o.active)?.payment_link ?? null,
+    price_period: (db.price_option ?? []).find((o) => o.id === d.price_option_id && o.tenant_id === d.tenant_id)?.period ?? null,
     items,
   };
 }

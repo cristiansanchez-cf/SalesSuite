@@ -1,0 +1,47 @@
+# Propuesta por sector (preajustes)
+
+La propuesta no es una demo del producto: cuenta lo que gana **quien paga**, en su sector y en su situación
+(documento 07 del agente de ventas, `docs/ventas/enjoy/fuentes/propuesta-07.md`).
+
+## Cómo lo usa el comercial
+1. Elige el **sector** de la propuesta.
+2. Si el sector tiene receta, sale el panel **«Monta la propuesta para este cliente»**:
+   - **Cómo la vas a usar:** *Va sola* (argumentario: convence sin el comercial delante) o *Apoyo visual* (lo cuenta él).
+   - **Lo que sabes del cliente:** preguntas de sí/no (¿tiene DJ residente?, ¿pub con mesas?, ¿no tiene pantalla?…).
+3. **Montar la propuesta** rehace la lista de módulos con los textos del sector. Se puede volver a montar
+   (avisa de que lo cambiado a mano se pierde). Después se arrastra, oculta o añade como siempre.
+
+Lo que eligió se guarda en `dossier.preset` (privado: la propuesta pública no lo devuelve).
+
+## La receta (`segment.proposal`, desde `tenant.json` → `market[].proposal`)
+```json
+{
+  "blocks":  { "pantalla": { "module": "pantalla-en-vivo", "props": { "title": "Tu pantalla, desde tu móvil" } } },
+  "modes":   { "full": ["portada", "problema", "pantalla", "movil", "precio"], "visual": ["movil", "pantalla", "dinamicas", "precio"] },
+  "questions": [
+    { "key": "dj", "label": "¿Tiene DJ residente?", "rules": [{ "add": "dj", "after": "movil" }] }
+  ]
+}
+```
+- **Bloque** = un módulo del catálogo (por clave) + sus textos para ese sector (se guardan como personalización del módulo).
+  Un mismo módulo puede salir varias veces con textos distintos (p. ej. `tabs-experiencias` como «Dinámicas» y como «Tu DJ»).
+  Así las jugadas de ese módulo siguen apareciendo en el guion.
+- **Reglas** (en el orden de las preguntas): `add` (con `after`/`before`), `remove`, `replace` → `with`, `patch` → `set` (retoca textos).
+- El alta valida que cada bloque, con sus textos encima de los del módulo, sea válido para su plantilla.
+
+Lógica pura en `src/lib/proposal/preset.ts` (`planProposal`), la usan el editor (`applyPreset`), las muestras y el alta.
+
+## Plantillas nuevas
+| Plantilla | Para qué |
+|---|---|
+| `problem-solution` | «Lo que te pasa hoy»: 1–4 tarjetas problema → lo que cambia, y una nota opcional |
+| `case-study` | Caso real con nombre (solo con autorización por escrito), cita y foto opcionales |
+| `live-screen` · escena `club.promo` | El local escribe a su pantalla desde su móvil («chupito a 2 €…») |
+| `phone-tour` · `parts` | Grupos propios: cada paso con lo que hace el invitado y **«Para ti»** (lo que significa para quien paga). `price: 0` quita el pago; `djName: ""` quita el DJ |
+| `pricing-card` · `footnote` | Una línea final. El sufijo («/ mes», «/ evento») sale del periodo de la tarifa |
+
+Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como módulos sin jugadas en el guion de la reunión.
+
+## Hoy
+- **Locales de ocio nocturno:** receta completa del 07 (7 preguntas).
+- Resto de sectores: sin receta todavía (módulos recomendados como siempre). Siguiente: promotoras, conciertos y festivales.

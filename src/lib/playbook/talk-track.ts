@@ -40,6 +40,8 @@ export interface TalkTrack {
   empty: boolean;
 }
 
+const CONTEXT_BLOCKS = new Set(['hero-pitch', 'problem-solution', 'case-study']);
+
 const evidence = (s: { worked: number; didnt: number }) => s.worked - s.didnt;
 const byEvidenceThenPosition = (a: PlayView, b: PlayView) => evidence(b.score) - evidence(a.score) || a.position - b.position;
 
@@ -82,7 +84,8 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
 
   // Módulos visibles del dossier, en orden y sin repetir (dos instancias del mismo módulo = un bloque).
   const seen = new Set<string>();
-  const modules = state.items.filter((i) => i.visible && !seen.has(i.moduleId) && seen.add(i.moduleId))
+  // Portada, «lo que te pasa hoy» y caso real son contexto para el cliente: no tienen jugadas que decir.
+  const modules = state.items.filter((i) => i.visible && !CONTEXT_BLOCKS.has(i.blockType) && !seen.has(i.moduleId) && seen.add(i.moduleId))
     .map((i) => ({ id: i.moduleId, name: i.moduleName }));
   const moduleIds = new Set(modules.map((m) => m.id));
 

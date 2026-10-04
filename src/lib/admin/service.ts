@@ -13,6 +13,7 @@ import { createMediaService } from './media';
 import { can } from './permissions';
 import { paymentUrl } from './payment';
 import { inTeam } from '../org/scope';
+import { planProposal } from '../proposal/preset';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
@@ -353,6 +354,31 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         await assertWrote(await db.updateDossier(id, { segmentId: op.segmentId }));
         break;
       }
+      case 'applyPreset': {
+        if (!d.segmentId) throw new AdminError(422, 'Elige primero el sector del cliente');
+        const recipe = await db.segmentProposal(s.tenantId, d.segmentId);
+        if (!recipe) throw new AdminError(422, 'Este sector no tiene propuesta preparada: añade los módulos a mano');
+        const known = new Set(recipe.questions.map((q) => q.key));
+        const answers = op.answers.filter((a) => known.has(a));
+        const plan = planProposal(recipe, op.mode, answers);
+        const latest = new Map([...latestByModule(await db.listCatalog(s.tenantId)).values()].map((v) => [v.moduleKey, v]));
+        const missing = plan.filter((b) => !latest.has(b.module)).map((b) => b.module);
+        if (missing.length) throw new AdminError(422, `Faltan módulos en el catálogo: ${[...new Set(missing)].join(', ')}`);
+        // Se comprueba todo antes de tocar nada: si un bloque no es válido, la propuesta se queda como estaba.
+        const defaults = new Map((await db.listModuleVersions(s.tenantId)).map((v) => [v.id, v.defaultProps]));
+        for (const b of plan) {
+          const v = latest.get(b.module)!;
+          const r = resolveItem(toRenderItem({ id: 'check', dossierId: id, moduleVersionId: v.versionId, position: 0, visible: true, priceOverride: null, propOverrides: b.props, version: v.version, defaultProps: defaults.get(v.versionId) ?? {}, defaultPrice: v.defaultPrice, currency: v.currency, moduleId: v.moduleId, moduleKey: v.moduleKey, moduleName: v.moduleName, blockType: v.blockType }), toPublicDossier(d, []), null);
+          if (!r.ok) throw new AdminError(422, `El bloque «${b.block}» no es válido`, [r.reason]);
+        }
+        for (const it of await items(id)) await db.deleteItem(it.id);
+        const pos = rebalance(plan.length);
+        for (const [k, b] of plan.entries()) {
+          await db.insertItem({ dossierId: id, moduleVersionId: latest.get(b.module)!.versionId, position: pos[k], visible: true, priceOverride: null, propOverrides: b.props });
+        }
+        await assertWrote(await db.updateDossier(id, { preset: { mode: op.mode, answers } }));
+        break;
+      }
       case 'setNextStep': {
         if (op.at && !op.text) throw new AdminError(422, 'Describe el próximo paso (p. ej. «Llamar para cerrar fecha»)');
         await assertWrote(await db.updateDossier(id, { nextStep: op.text ?? null, nextStepAt: op.at }));
@@ -419,7 +445,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     const chosen = options.find((o) => o.id === d.priceOptionId && o.active);
     // Igual que la pública: con la tarifa activa y precio a la vista, botón «Pagar».
     const payUrl = chosen?.paymentLink && d.priceMode !== 'none' ? paymentUrl(chosen.paymentLink, { dossierId: d.id, couponCode: d.discount?.code ?? null }) : null;
-    return { ...toPublicDossier(d, list), payUrl };
+    return { ...toPublicDossier(d, list), payUrl, pricePeriod: chosen?.period ?? null };
   }
 
   /** Lo que se vende: la última versión publicada de cada módulo (al colaborador, solo los suyos y sin tarifa). */

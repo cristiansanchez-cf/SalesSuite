@@ -325,6 +325,8 @@
     'club.song':    function (o) { return sceneFull(o, 'song',  o._data); },
     'club.photo':   function (o) { return sceneFull(o, 'photo', o._data); },
     'club.message': function (o) { return sceneMessage(o, o._data); },
+    // El local escribe a su pantalla desde su móvil (promoción, aviso): mismo formato, firmado por el local.
+    'club.promo':   function (o) { return sceneMessage(o, o._data); },
     // Carátulas apagadas: la base idle NO se va, la canción asoma en pequeño.
     'club.toast':   function (o) { return sceneClubIdle(o) + sceneCompact(o, 'song', o._data, 'toast', 'bottom-center', true); },
     'tp.idle':      function (o) { return sceneTpIdle(o); },
@@ -471,6 +473,7 @@
     };
 
     function defaultData(scene) {
+      if (scene === 'club.promo') return { by: A.venueName || '', dedication: '' };
       if (scene.indexOf('photo') >= 0 || scene === 'tp.full') return pick(D.photos, o._i);
       if (scene.indexOf('message') >= 0) return pick(D.messages, o._i);
       return pick(D.songs, o._i);

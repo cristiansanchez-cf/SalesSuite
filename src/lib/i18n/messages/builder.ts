@@ -121,6 +121,13 @@ const es = {
     title: 'Empieza rápido', sector: '¿Para qué sector es?', recommended: (n: number) => `Añadir los ${n} recomendados`,
     all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
   },
+  preset: {
+    title: 'Monta la propuesta para este cliente', lede: 'Elige cómo la vas a usar y marca lo que sabes del cliente: los módulos y los textos salen solos.',
+    mode: '¿Cómo la vas a usar?', full: 'Va sola', fullHint: 'No vas a estar delante: tiene que convencer sola.',
+    visual: 'Apoyo visual', visualHint: 'La cuentas tú: solo lo que hay que enseñar.', questions: 'Lo que sabes del cliente',
+    apply: 'Montar la propuesta', reapply: 'Volver a montarla', warn: 'Rehace la lista de módulos: lo que hayas cambiado a mano en ellos se pierde.',
+    applied: (n: number) => `Montada con ${n} ${n === 1 ? 'respuesta' : 'respuestas'}.`,
+  },
   media: {
     title: (c: string) => `Personaliza para ${c}`, client: 'tu cliente',
     lede: 'Su logo, fotos de su local (o de su Instagram) y un vídeo con sus visuales. Salen en la pantalla de la propuesta: «wow, es mi local».',
@@ -267,6 +274,13 @@ export const builderMessages = defineMessages({
       title: 'Quick start', sector: 'Which sector is it for?', recommended: (n) => `Add the ${n} recommended`,
       all: (n) => `Add the whole catalog (${n})`, add: 'Add', dragHint: 'Drag to reorder, or drag in from «Add».',
     },
+    preset: {
+      title: 'Build the proposal for this client', lede: 'Choose how you will use it and tick what you know about the client: modules and copy come ready.',
+      mode: 'How will you use it?', full: 'On its own', fullHint: 'You will not be there: it has to convince on its own.',
+      visual: 'Visual support', visualHint: 'You tell the story: only what to show.', questions: 'What you know about the client',
+      apply: 'Build the proposal', reapply: 'Build it again', warn: 'Rebuilds the module list: manual changes to them are lost.',
+      applied: (n) => `Built with ${n} ${n === 1 ? 'answer' : 'answers'}.`,
+    },
     media: {
       title: (c) => `Personalise for ${c}`, client: 'your customer',
       lede: 'Their logo, photos of their venue (or from their Instagram) and a video with their visuals. They show up on the proposal screen: “wow, that is my place”.',
@@ -410,6 +424,13 @@ export const builderMessages = defineMessages({
       title: 'Comece rápido', sector: 'Para qual setor é?', recommended: (n) => `Adicionar os ${n} recomendados`,
       all: (n) => `Adicionar todo o catálogo (${n})`, add: 'Adicionar', dragHint: 'Arraste para ordenar, ou arraste de «Adicionar».',
     },
+    preset: {
+      title: 'Monte a proposta para este cliente', lede: 'Escolha como vai usá-la e marque o que sabe do cliente: módulos e textos saem prontos.',
+      mode: 'Como vai usá-la?', full: 'Vai sozinha', fullHint: 'Você não vai estar presente: tem de convencer sozinha.',
+      visual: 'Apoio visual', visualHint: 'Você conta: só o que é preciso mostrar.', questions: 'O que sabe do cliente',
+      apply: 'Montar a proposta', reapply: 'Montar de novo', warn: 'Refaz a lista de módulos: o que mudou à mão neles perde-se.',
+      applied: (n) => `Montada com ${n} ${n === 1 ? 'resposta' : 'respostas'}.`,
+    },
     media: {
       title: (c) => `Personalize para ${c}`, client: 'seu cliente',
       lede: 'O logo, fotos do local (ou do Instagram) e um vídeo com os visuais dele. Aparecem na tela da proposta: «uau, é o meu local».',
@@ -552,6 +573,13 @@ export const builderMessages = defineMessages({
     quick: {
       title: '빠르게 시작', sector: '어떤 업종인가요?', recommended: (n) => `추천 ${n}개 추가`,
       all: (n) => `카탈로그 전체 추가 (${n})`, add: '추가', dragHint: '끌어서 순서를 바꾸거나 «추가»에서 끌어오세요.',
+    },
+    preset: {
+      title: '이 고객을 위한 제안서 만들기', lede: '어떻게 쓸지 고르고 고객에 대해 아는 것을 체크하세요. 모듈과 문구가 자동으로 채워집니다.',
+      mode: '어떻게 쓰나요?', full: '단독으로', fullHint: '직접 설명하지 않아도 설득해야 합니다.',
+      visual: '시각 자료', visualHint: '설명은 직접 하고, 보여줄 것만.', questions: '고객에 대해 아는 것',
+      apply: '제안서 만들기', reapply: '다시 만들기', warn: '모듈 목록을 다시 만듭니다. 직접 바꾼 내용은 사라집니다.',
+      applied: (n) => `답변 ${n}개로 만들었습니다.`,
     },
     media: {
       title: (c) => `${c} 맞춤 설정`, client: '고객',

@@ -12,6 +12,8 @@ export const pricingCardSchema = z.object({
   taxNote: z.string().max(80).default('IVA no incluido'),
   /** Condiciones en letra pequeña bajo lo que incluye (permanencia, pago único…). */
   smallPrint: z.string().max(200).optional(),
+  /** Una línea final, después de todo (p. ej. «Tú decides si las peticiones son gratis o de pago…»). */
+  footnote: z.string().max(240).optional(),
   /** Botón de pago (sale solo si la tarifa tiene enlace de pago de Stripe). */
   payLabel: z.string().min(1).max(40).default('Pagar ahora'),
   cta: z.object({

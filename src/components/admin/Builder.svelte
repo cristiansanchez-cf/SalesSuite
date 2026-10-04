@@ -17,7 +17,7 @@
 
   interface MarketLite {
     /** modules: ids de módulo recomendados para el sector, por prioridad. */
-    segments: Array<{ id: string; key: string; name: string; modules?: string[] }>;
+    segments: Array<{ id: string; key: string; name: string; modules?: string[]; proposal?: { hasVisual: boolean; questions: Array<{ key: string; label: string; hint?: string }> } | null }>;
     personas: Array<{ id: string; segmentId: string; name: string; role: string }>;
   }
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
@@ -217,6 +217,14 @@
       .filter((c): c is BuilderState['catalog'][number] => !!c),
   );
   function addMany(cs: Array<{ versionId: string }>) { for (const c of cs) run({ op: 'addItem', moduleVersionId: c.versionId }); }
+
+  // ---------- montar la propuesta con la receta del sector (modo + lo que sabe del cliente)
+  const recipe = $derived(market.segments.find((x) => x.id === d.segmentId)?.proposal ?? null);
+  let presetMode = $state<'full' | 'visual'>(initial.dossier.preset?.mode ?? 'full');
+  let presetAnswers = $state<string[]>([...(initial.dossier.preset?.answers ?? [])]);
+  const presetDone = $derived(!!d.preset?.mode);
+  function toggleAnswer(k: string) { presetAnswers = presetAnswers.includes(k) ? presetAnswers.filter((x) => x !== k) : [...presetAnswers, k]; }
+  async function applyPreset() { await run({ op: 'applyPreset', mode: presetMode, answers: presetAnswers }); }
 
   // ---------- compartir: publicar y enlace en un paso; prueba o real
   const activeLinks = $derived(s.links.filter((l) => l.state === 'active'));
@@ -576,6 +584,36 @@
       <section class={card}>
         <h2 class="mb-1 co-card-title">{t.modules.title}</h2>
         <p class="co-meta mb-3">{t.quick.dragHint}</p>
+        {#if recipe && editable}
+          <div class="mb-4 grid gap-3 rounded-[var(--console-radius-control)] border-2 border-[color:var(--co-signal)] p-4" data-testid="preset">
+            <div><p class="co-card-title">{t.preset.title}</p><p class="co-meta">{t.preset.lede}</p></div>
+            {#if recipe.hasVisual}
+              <p class="text-sm font-semibold">{t.preset.mode}</p>
+              <div class="grid gap-2 sm:grid-cols-2">
+                {#each [['full', t.preset.full, t.preset.fullHint], ['visual', t.preset.visual, t.preset.visualHint]] as [k, label, hint] (k)}
+                  <button type="button" class="co-inset grid gap-0.5 text-left {presetMode === k ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed={presetMode === k} onclick={() => (presetMode = k as 'full' | 'visual')} data-testid="preset-mode-{k}">
+                    <span class="font-semibold">{label}</span><span class="co-meta">{hint}</span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+            {#if recipe.questions.length}
+              <p class="text-sm font-semibold">{t.preset.questions}</p>
+              <ul class="grid gap-1.5 p-0">
+                {#each recipe.questions as q (q.key)}
+                  <li class="list-none"><label class="flex items-start gap-2 text-sm">
+                    <input type="checkbox" class="mt-0.5" checked={presetAnswers.includes(q.key)} onchange={() => toggleAnswer(q.key)} data-testid="preset-q-{q.key}" />
+                    <span><span class="font-semibold">{q.label}</span>{#if q.hint}<span class="co-meta block">{q.hint}</span>{/if}</span>
+                  </label></li>
+                {/each}
+              </ul>
+            {/if}
+            <div class="flex flex-wrap items-center gap-3">
+              <button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={applyPreset} data-testid="preset-apply">{presetDone ? t.preset.reapply : t.preset.apply}</button>
+              {#if s.items.length}<span class="co-meta">{t.preset.warn}</span>{/if}
+            </div>
+          </div>
+        {/if}
         {#if s.items.length === 0 && editable}
           <div class="mb-3 grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-4" data-testid="quick-start">
             <p class="text-eyebrow">{t.quick.title}</p>

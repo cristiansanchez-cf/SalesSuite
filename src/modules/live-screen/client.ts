@@ -5,9 +5,9 @@ import { DEMO } from './demo';
  * Por instancia: una pantalla (motor del producto) + el móvil que escanea y pide + la botonera del vendedor.
  * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla, se queda en ella (▶︎ lo reanuda).
  */
-type Scene = { scene: string; video?: boolean };
+type Scene = { scene: string; video?: boolean; text?: string };
 interface Config {
-  assets: Record<string, unknown> & { covers: string[] };
+  assets: Record<string, unknown> & { covers: string[]; venueName?: string };
   phone: { song?: string; photo?: string; message?: string };
   /** Canciones del estilo del local (sustituyen a las de ejemplo del kit, en el mismo orden que las carátulas). */
   songs?: Array<{ song: string; artist: string }>;
@@ -56,6 +56,7 @@ function loadEngine(cfg: Config) {
 }
 
 const isRequest = (scene: string) => /\.(song|photo|message|full)$/.test(scene) || scene === 'club.toast';
+const isPromo = (scene: string) => scene === 'club.promo';
 const phoneKey = (scene: string): 'song' | 'photo' | 'message' => (/photo|full/.test(scene) ? 'photo' : /message/.test(scene) ? 'message' : 'song');
 
 export function init(root: HTMLElement): () => void {
@@ -92,12 +93,20 @@ export function init(root: HTMLElement): () => void {
     const s = cfg.scenes[idx];
     mark(idx);
     // Sin tramos de pago en la propuesta: nunca se enseñan importes.
-    const show = () => { screen?.set('amount', 0); screen?.show(s.scene); };
+    const show = () => { screen?.set('amount', 0); screen?.show(s.scene, isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : undefined); };
     if (s.video && withPhone && !reduced && phone) {
       // Su vídeo: el móvil lo sube (barra), desaparece y el vídeo aparece de fondo en la pantalla.
       phoneState('is-in', 'is-upload');
       later(1800, () => phoneState('is-in', 'is-upload', 'is-sent'));
       later(2300, () => { phoneState(); show(); });
+    } else if (isPromo(s.scene) && withPhone && !reduced && phone) {
+      // El local escribe a su pantalla desde su móvil: lo escribe, lo envía y sale.
+      const box = root.querySelector<HTMLElement>('[data-phone-compose-text]');
+      if (box) box.textContent = s.text ?? '';
+      phoneState('is-in', 'is-compose');
+      later(1700, () => phoneState('is-in', 'is-compose', 'is-sent'));
+      later(2200, show);
+      later(4200, () => phoneState());
     } else if (!withPhone || reduced || !phone || !isRequest(s.scene)) { phoneState(); show(); }
     else if (phoneKey(s.scene) === 'photo' && cfg.ownPhoto) {
       if (phoneImg) phoneImg.src = cfg.ownPhoto;
@@ -115,7 +124,7 @@ export function init(root: HTMLElement): () => void {
       later(2700, show);
       later(4200, () => phoneState());
     }
-    const lead = s.video ? 2300 : isRequest(s.scene) ? 2700 : 0;
+    const lead = s.video ? 2300 : isPromo(s.scene) ? 2200 : isRequest(s.scene) ? 2700 : 0;
     if (auto && visible) later(lead + (s.video ? 7000 : s.scene.endsWith('idle') ? 4500 : 6000), () => go(idx + 1, true));
   }
 
