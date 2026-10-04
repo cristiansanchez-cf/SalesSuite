@@ -1,15 +1,17 @@
 # Assets de Oquea
 
 El alta sube esta carpeta a Storage y cambia cada `"asset:<ruta>"` de `tenant.json` por su URL pública.
-Tipos: svg, png, jpg, webp, ico, woff2, woff, mp4, webm. Máximo 5 MB por archivo.
+Origen: entrega 00 (`docs/ventas/oquea/fuentes/00-entrega-marca-y-ui.md`), sacada de `oquea-web/public/`.
 
-| Archivo | Uso | Estado |
+| Archivo | Uso | Origen |
 |---|---|---|
-| `logo.svg` / `logo-dark.svg` | Cabecera y pie del dossier | PENDIENTE |
-| `favicon.svg` | Pestaña | PENDIENTE |
-| `og.jpg` | Al compartir por WhatsApp (1200×630) | PENDIENTE |
-| `fonts/gilroy-*.woff2` | UI (300–700). Licencia web en un dominio de Cofundo: PENDIENTE | PENDIENTE |
-| `img/producto/<superficie>/…` | Capturas de la app | PENDIENTE |
-| `img/real/…` | Fotos de uso real (con permiso) | PENDIENTE |
+| `logo.svg` | Logo navy, fondo claro | `img/brand/logo-navy.svg` |
+| `logo-dark.svg` | Logo blanco, fondo oscuro | `img/brand/logo.svg` |
+| `isotipo.svg` | Isotipo navy | `img/brand/isotipo-navy.svg` |
+| `favicon.svg` | Pestaña | `favicon.svg` |
+| `og.jpg` | Al compartir (1200×630) | Generada en la entrega |
+| `fonts/gilroy-*.woff2` | UI, 300–700. Licencia web ✅ (Oquea) | Convertidas de los `.otf` |
+| `img/fotos/*.webp` | Fotos de uso. Permiso ✅ | `img/photos/` |
+| `img/producto/web/*.png` | Mockups del producto de la web (2x, transparentes) | Render de los `oq-mock-*` |
 
-«Oquea Headline Bold» y «Billion Dreams» (fuentes de marca) solo para titulares y frases cortas, nunca en UI funcional.
+Reglas: `#D0FF00` solo como relleno, nunca texto. Sin sombras. Sin modo oscuro.

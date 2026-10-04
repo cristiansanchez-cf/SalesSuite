@@ -1,0 +1,221 @@
+/* ============================================================
+   OQUEA — Colors & Type Foundations
+   Source of truth: Branding/Design System/.../oquea-design-system.md (v1.4.0)
+   Brand essence: Profundo. Humano. Fluido.
+   ============================================================ */
+
+/* ---------- Gilroy (UI typeface) ---------- */
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Thin.otf") format("opentype");        font-weight:100; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-UltraLight.otf") format("opentype");  font-weight:200; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Light.otf") format("opentype");       font-weight:300; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-LightItalic.otf") format("opentype"); font-weight:300; font-style:italic; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Regular.otf") format("opentype");     font-weight:400; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-RegularItalic.otf") format("opentype"); font-weight:400; font-style:italic; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Medium.otf") format("opentype");      font-weight:500; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-MediumItalic.otf") format("opentype"); font-weight:500; font-style:italic; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Semibold.otf") format("opentype");    font-weight:600; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-SemiboldItalic.otf") format("opentype"); font-weight:600; font-style:italic; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Bold.otf") format("opentype");        font-weight:700; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-BoldItalic.otf") format("opentype");  font-weight:700; font-style:italic; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Extrabold.otf") format("opentype");   font-weight:800; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Heavy.otf") format("opentype");       font-weight:900; font-style:normal; font-display:swap; }
+@font-face { font-family:"Gilroy"; src:url("/fonts/Gilroy-Black.otf") format("opentype");       font-weight:900; font-style:normal; font-display:swap; }
+
+/* ---------- 403 Zorn (display) → DM Serif Display, and Billion Dreams → Caveat ---------- */
+/* Loaded via <link rel="stylesheet"> in BaseLayout (with preconnect) so we can avoid
+   nested @import rules and get parallel font requests. */
+
+:root {
+  /* ============================================================
+     COLOR — BASE TOKENS
+     ============================================================ */
+  --oq-accent: #D0FF00;
+
+  --oq-linkwater-0:   #F1F6FD;
+  --oq-linkwater-50:  #E4EDFA;
+  --oq-linkwater-100: #C8DBF5;
+  --oq-linkwater-200: #A1C4EF;
+  --oq-linkwater-300: #75A5E5;
+  --oq-linkwater-400: #5585DC;
+  --oq-linkwater-500: #406AD0;
+  --oq-linkwater-600: #3757BE;
+  --oq-linkwater-700: #32499B;
+  --oq-linkwater-800: #2D3F7B;
+  --oq-linkwater-900: #1F294C;
+
+  --oq-white: #FFFFFF;
+  --oq-grey-50:  #FBFBFB;
+  --oq-grey-100: #EFEFEF;
+  --oq-grey-200: #DCDCDC;
+  --oq-grey-300: #BDBDBD;
+  --oq-grey-400: #989898;
+  --oq-grey-500: #7C7C7C;
+  --oq-grey-600: #656565;
+  --oq-grey-800: #464646;
+  --oq-grey-900: #3D3D3D;
+  --oq-grey-950: #292929;
+  --oq-black: #000000;
+
+  --oq-error-50:  #FFF0F0;
+  --oq-error-400: #FF5757;
+  --oq-error-500: #FF2323;
+
+  /* ============================================================
+     COLOR — SEMANTIC ALIASES
+     ============================================================ */
+  --color-accent: var(--oq-accent);
+
+  --color-primary-darker:  var(--oq-linkwater-900);
+  --color-primary-dark-2:  var(--oq-linkwater-800);
+  --color-primary-dark-1:  var(--oq-linkwater-700);
+  --color-primary-dark:    var(--oq-linkwater-600);
+  --color-primary:         var(--oq-linkwater-500);
+  --color-primary-mid:     var(--oq-linkwater-400);
+  --color-primary-light-1: var(--oq-linkwater-300);
+  --color-primary-200:     var(--oq-linkwater-200);
+  --color-primary-100:     var(--oq-linkwater-100);
+  --color-primary-light:   var(--oq-linkwater-50);
+  --color-primary-lighter: var(--oq-linkwater-0);
+
+  --color-bg:              var(--oq-white);
+  --color-bg-secondary:    var(--oq-grey-50);
+
+  --color-text-primary:    var(--oq-grey-950);
+  --color-text-secondary:  var(--oq-grey-800);
+  --color-text-tertiary:   var(--oq-grey-400);
+  --color-text-muted:      var(--oq-grey-500);
+  --color-text-disabled:   var(--oq-grey-300);
+  --color-text-black:      var(--oq-black);
+  --color-text-on-dark:    var(--oq-white);
+  --color-text-on-dark-secondary: rgba(255,255,255,0.7);
+
+  --color-glass:           rgba(255,255,255,0.15);
+
+  --color-border:          var(--oq-grey-100);
+  --color-border-card:     #ECECEC;
+  --color-border-subtle:   var(--oq-grey-200);
+  --color-border-active:   var(--oq-linkwater-600);
+
+  --color-error-bg:        var(--oq-error-50);
+  --color-error:           var(--oq-error-500);
+  --color-error-light:     var(--oq-error-400);
+
+  --color-disabled-bg:     rgba(118, 118, 128, 0.12);
+
+  /* ============================================================
+     TYPOGRAPHY — FAMILIES
+     ============================================================ */
+  --font-headline: "DM Serif Display", "403 Zorn", serif;
+  --font-primary:  "Gilroy", "Inter", system-ui, sans-serif;
+  --font-detail:   "Caveat", "Billion Dreams", cursive;
+
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+  --fw-black: 900;
+
+  --text-xs:   10px;
+  --text-sm:   12px;
+  --text-md:   14px;
+  --text-base: 16px;
+  --text-lg:   18px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+
+  /* ============================================================
+     SPACING — only 4·8·12·16·20·24·32·40
+     ============================================================ */
+  --sp-xs:  4px;
+  --sp-sm:  8px;
+  --sp-md:  12px;
+  --sp-lg:  16px;
+  --sp-xl:  20px;
+  --sp-2xl: 24px;
+  --sp-3xl: 32px;
+  --sp-4xl: 40px;
+
+  /* ============================================================
+     RADII — 24 cards, 999 pills
+     ============================================================ */
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-3xl:  48px;
+  --radius-full: 999px;
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  --viewport: 375px;
+  --content-padding: 24px;
+  --content-width: 1200px;
+  --header-h: 64px;
+  --header-compact: 56px;
+  --navbar-h: 52px;
+  --divider-h: 4px;
+
+  /* ============================================================
+     ICONS
+     ============================================================ */
+  --icon-sm:  16px;
+  --icon-md:  20px;
+  --icon-lg:  24px;
+  --icon-xl:  32px;
+  --icon-2xl: 40px;
+  --icon-active:     var(--color-primary-dark);
+  --icon-brand:      var(--color-primary);
+  --icon-functional: var(--color-text-secondary);
+  --icon-inactive:   var(--oq-grey-600);
+  --icon-muted:      var(--color-text-tertiary);
+  --icon-dark:       var(--color-text-primary);
+  --icon-error:      var(--color-error-light);
+
+  /* ============================================================
+     MOTION — fluid like the ocean
+     ============================================================ */
+  --motion-fast:    150ms;
+  --motion-normal:  250ms;
+  --motion-slow:    400ms;
+  --motion-ease:    cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-out:cubic-bezier(0, 0, 0.2, 1);
+  --motion-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ============================================================
+     Z-INDEX
+     ============================================================ */
+  --z-card: 10;
+  --z-overlay: 100;
+  --z-ui: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+}
+
+/* ============================================================
+   SEMANTIC TYPE — ready-to-use classes
+   ============================================================ */
+.t-display    { font-family: var(--font-headline); font-weight: 400; font-size: 56px; line-height: 1.05; color: var(--color-primary-darker); letter-spacing: -0.01em; }
+.t-display-xs { font-family: var(--font-headline); font-weight: 400; font-size: 32px; line-height: 1.1;  color: var(--color-primary-darker); }
+.t-displayTitle { font-family: var(--font-primary); font-weight: 600; font-size: 24px; line-height: 1.2; color: var(--color-text-primary); }
+.t-ctaLarge   { font-family: var(--font-primary); font-weight: 400; font-size: 20px; line-height: 1.2; }
+.t-sectionTitle { font-family: var(--font-primary); font-weight: 500; font-size: 18px; line-height: 1.16; color: var(--color-text-primary); }
+.t-statNumber  { font-family: var(--font-primary); font-weight: 600; font-size: 18px; line-height: 1.16; color: var(--color-text-primary); }
+.t-cardTitle   { font-family: var(--font-primary); font-weight: 600; font-size: 16px; line-height: 1.4; color: var(--color-text-primary); }
+.t-headerTitle { font-family: var(--font-primary); font-weight: 400; font-size: 16px; line-height: 1.4; color: var(--color-text-primary); }
+.t-headerBold  { font-family: var(--font-primary); font-weight: 500; font-size: 16px; line-height: 1.4; color: var(--color-text-primary); }
+.t-body        { font-family: var(--font-primary); font-weight: 300; font-size: 16px; line-height: 1.48; color: var(--color-text-primary); }
+.t-bodyRegular { font-family: var(--font-primary); font-weight: 400; font-size: 16px; line-height: 1.48; color: var(--color-text-primary); }
+.t-buttonMd    { font-family: var(--font-primary); font-weight: 500; font-size: 16px; line-height: 24px; }
+.t-statBold    { font-family: var(--font-primary); font-weight: 700; font-size: 16px; line-height: 1.4; color: var(--color-text-primary); }
+.t-smallLabel  { font-family: var(--font-primary); font-weight: 400; font-size: 14px; line-height: 1.48; color: var(--color-text-secondary); }
+.t-buttonOutline { font-family: var(--font-primary); font-weight: 400; font-size: 14px; line-height: 1.16; }
+.t-caption     { font-family: var(--font-primary); font-weight: 300; font-size: 12px; line-height: 1.4; color: var(--color-text-tertiary); }
+.t-captionReg  { font-family: var(--font-primary); font-weight: 400; font-size: 12px; line-height: 1.16; color: var(--color-text-primary); }
+.t-overline    { font-family: var(--font-primary); font-weight: 700; font-size: 12px; line-height: 1.16; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary); }
+.t-navLabel    { font-family: var(--font-primary); font-weight: 400; font-size: 10px; line-height: 12px; }
+.t-legal       { font-family: var(--font-primary); font-weight: 300; font-size: 12px; line-height: normal; color: var(--color-text-muted); }
+.t-script      { font-family: var(--font-detail); font-weight: 500; font-style: italic; }

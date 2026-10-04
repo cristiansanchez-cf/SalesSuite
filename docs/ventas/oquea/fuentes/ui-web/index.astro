@@ -1,0 +1,1122 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/Container.astro';
+import Section from '../components/Section.astro';
+import Button from '../components/Button.astro';
+import Icon from '../components/Icon.astro';
+import HeroVisual from '../components/HeroVisual.astro';
+import AppBadges from '../components/AppBadges.astro';
+import { absoluteUrl, ROUTES } from '../i18n/routes';
+import { toJsonLd } from '../utils/jsonld';
+
+const lang = 'es' as const;
+
+const seo = {
+  title: 'Oquea — La plataforma digital del buceo',
+  description:
+    'Oquea conecta centros de buceo, buceadores y destinos en una plataforma digital. Organiza operaciones, descubre experiencias y construye tu vida bajo el agua dentro de un ecosistema global.',
+  lang,
+  ogImage: '/img/brand/logo-navy.svg',
+  ogImageAlt: 'Oquea',
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Inicio', item: absoluteUrl(ROUTES.home.es) },
+  ],
+};
+
+const cohort = [
+  { icon: 'handshake', title: 'Centros fundadores bienvenidos', body: 'Buscamos los primeros centros que quieran subir al barco antes que el resto. Acompañamiento cercano y trato directo con el equipo.' },
+  { icon: 'sparkle', title: 'Acceso anticipado para buceadores', body: 'Plazas limitadas para los primeros buceadores que quieran probar el logbook automático y descubrir centros de confianza.' },
+  { icon: 'briefcase', title: 'Construido con la industria', body: 'Profesionales del sector — instructores, dueños de centros y organizaciones — están moldeando Oquea con nosotros.' },
+];
+
+const features = [
+  {
+    icon: 'calendar',
+    title: 'Planificación de actividades',
+    body: 'Salidas y actividades donde tu comunidad se apunta y se guarda en su logbook al instante.',
+  },
+  {
+    icon: 'qr-code',
+    title: 'Registro de inmersiones por QR',
+    body: 'Cada inmersión se guarda en el logbook con un solo escaneo al final del día.',
+  },
+  {
+    icon: 'share',
+    title: 'Comparte tu inmersión',
+    body: 'Datos de profundidad, tiempo y temperatura sobre tu mejor foto — listo para Stories.',
+  },
+  {
+    icon: 'megaphone',
+    title: 'CRM y fidelización',
+    body: 'El motor de tu centro: convierte buceadores ocasionales en clientes que vuelven. Promociones, ofertas exclusivas y comunicación directa.',
+    featured: true,
+  },
+  {
+    icon: 'map',
+    title: 'Mapa interactivo de buceo',
+    body: 'Centros aliados, dive sites y rutas verificadas, listas para descubrir.',
+    soon: true,
+  },
+  {
+    icon: 'airplane',
+    title: 'Viajes, ofertas flash y destinos',
+    body: 'Conecta a tu comunidad con experiencias fuera del centro.',
+    soon: true,
+  },
+];
+const SOON_LABEL = 'Próximamente';
+
+const steps = [
+  { num: '01', icon: 'calendar', eyebrow: 'Centros', title: 'Los centros organizan actividades', body: 'Cada salida con su fecha, sitio, instructor y plazas. Todo en una pantalla.' },
+  { num: '02', icon: 'qr-code', eyebrow: 'Buceadores', title: 'Los buceadores se apuntan y registran al instante', body: 'Llega al centro, escanea el QR del día y la inmersión queda guardada en tu perfil.' },
+  { num: '03', icon: 'chart-line', eyebrow: 'Comunidad', title: 'Comunidad, viajes y conexión que crecen', body: 'Reseñas honestas, rankings, álbumes de salida y viajes que la gente quiere repetir.' },
+];
+---
+<BaseLayout {...seo} routeKey="home">
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={toJsonLd(breadcrumbJsonLd)} is:inline />
+  </Fragment>
+
+  <!-- 2 · HERO -->
+  <section class="oq-hero" aria-labelledby="hero-title">
+    <Container>
+      <div class="oq-hero__inner">
+        <div class="oq-hero__copy">
+          <h1 id="hero-title" class="oq-hero__title">
+            La plataforma digital que conecta centros de buceo, buceadores y destinos
+          </h1>
+          <p class="oq-hero__lede">
+            Organiza operaciones de buceo, descubre experiencias y construye tu vida bajo el agua
+            dentro de un ecosistema global en crecimiento.
+          </p>
+          <span class="oq-hero__microline">
+            Gratis para empezar · Sin instalación · En marcha en minutos
+          </span>
+          <div class="oq-hero__cta">
+            <Button href={ROUTES.centers.es} variant="primary">
+              Para centros de buceo
+              <Icon name="arrow-right" size={16} class="oq-btn__icon" />
+            </Button>
+            <Button href={ROUTES.divers.es} variant="ghost">Para buceadores</Button>
+          </div>
+        </div>
+
+        <div class="oq-hero__visual">
+          <HeroVisual lang={lang} />
+        </div>
+      </div>
+    </Container>
+  </section>
+
+  <!-- 3 · FOUNDING COHORT -->
+  <Section id="founding">
+    <div class="oq-section__head oq-section__head--center reveal">
+      <span class="oq-section__eyebrow">Red fundadora</span>
+      <h2 class="oq-section__title">Una red global de buceo en crecimiento</h2>
+      <p class="oq-section__lede">
+        Empezamos por los primeros centros y buceadores que se suman al ecosistema.
+        Sin métricas inventadas: cada miembro fundador cuenta.
+      </p>
+    </div>
+
+    <div class="oq-cohort reveal-stagger">
+      {cohort.map((item) => (
+        <article class="oq-cohort__item">
+          <span class="oq-cohort__icon"><Icon name={item.icon as any} size={22} /></span>
+          <h3 class="oq-cohort__title">{item.title}</h3>
+          <p class="oq-cohort__body">{item.body}</p>
+        </article>
+      ))}
+    </div>
+
+    <p class="oq-cohort__foot">
+      Únete a una nueva generación de centros que se digitaliza.
+    </p>
+  </Section>
+
+  <!-- 5 · ECOSYSTEM (heading inside left column · 6 rotating mockups) -->
+  <Section id="features" variant="soft">
+    <div class="oq-featshow reveal" data-oq-featshow>
+      <div class="oq-featshow__copy">
+        <span class="oq-section__eyebrow">Ecosistema</span>
+        <h2 class="oq-section__title">Una plataforma para operaciones, experiencias y comunidad</h2>
+        <p class="oq-section__lede">
+          Todo lo que un centro y un buceador necesitan, conectado de origen.
+        </p>
+        <ol class="oq-featshow__list" data-oq-featshow-items>
+          {features.map((f, i) => (
+            <li
+              class:list={['oq-featshow__item', i === 0 && 'is-active']}
+              role="button"
+              tabindex="0"
+              aria-pressed={i === 0 ? 'true' : 'false'}
+              data-idx={i}
+            >
+              <span class="oq-featshow__num">{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <span class="oq-featshow__item-title">
+                  {f.title}
+                  {f.featured && (
+                    <span class="oq-featshow__featured">
+                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="m12 2 2.6 6.6L21 9l-5 4.5L17.5 21 12 17.6 6.5 21 8 13.5 3 9l6.4-.4L12 2Z"/>
+                      </svg>
+                      Esencial
+                    </span>
+                  )}
+                  {f.soon && <span class="oq-featshow__soon">{SOON_LABEL}</span>}
+                </span>
+                <span class="oq-featshow__item-body">{f.body}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div class="oq-featshow__media" aria-hidden="true">
+        <span class="oq-featshow__halo"></span>
+        <div class="oq-phone oq-phone--compact">
+          <div class="oq-mock-screens" data-oq-featshow-screens>
+
+            <!-- 01 · Planificación de actividades (centre-side dashboard) -->
+            <div class="oq-mock-screen oq-mock-screen--plan is-active">
+              <div class="oq-mock-plan__topbar">
+                <span class="oq-mock-plan__brand">
+                  <span class="oq-mock-plan__brandDot"></span>
+                  <span class="oq-mock-plan__brandDot oq-mock-plan__brandDot--accent"></span>
+                </span>
+                <span class="oq-mock-plan__centreName">Cris Diving Center</span>
+                <svg class="oq-mock-plan__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </div>
+
+              <div class="oq-mock-plan__tabs">
+                <span class="oq-mock-plan__tab oq-mock-plan__tab--active">Buceos</span>
+                <span class="oq-mock-plan__tab">CRM</span>
+                <span class="oq-mock-plan__tab">Mi centro</span>
+              </div>
+
+              <div class="oq-mock-plan__toggle">
+                <span class="oq-mock-plan__pill oq-mock-plan__pill--active">Actividades</span>
+                <span class="oq-mock-plan__pill">Dive site</span>
+              </div>
+
+              <div class="oq-mock-plan__sectionHead">
+                <span class="oq-mock-plan__sectionTitle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <path d="M3 10h18M8 3v4M16 3v4"/>
+                  </svg>
+                  Actividades de hoy
+                </span>
+                <span class="oq-mock-plan__seeAll">
+                  Ver todas
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="m10 8 4 4-4 4"/>
+                  </svg>
+                </span>
+              </div>
+
+              <div class="oq-mock-plan__list">
+                <article class="oq-mock-plan__card">
+                  <div class="oq-mock-plan__cardHead">
+                    <span class="oq-mock-plan__cardTitle">Salida en barco</span>
+                    <span class="oq-mock-plan__logIcon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="6" y="3" width="12" height="18" rx="2"/>
+                        <rect x="9" y="2" width="6" height="3" rx="1"/>
+                        <path d="M9 10h6M9 14h4"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="oq-mock-plan__typeChip">
+                    <svg viewBox="0 0 36 36" fill="currentColor" aria-hidden="true">
+                      <path d="M23.95 7.61H12.5c-3.44 0-6.36 2.81-6.29 6.25.06 3.33 2.78 6.01 6.13 6.01 1.88 0 3.56-.85 4.68-2.18.59-.7 1.67-.67 2.27.02 1.2 1.42 3.05 2.28 5.09 2.14 3.06-.21 5.55-2.74 5.7-5.81.17-3.52-2.64-6.43-6.13-6.43Z"/>
+                      <path d="M17.02 25.02c0 4.2 3.41 7.6 7.6 7.6s7.6-3.47 7.6-7.67V4.68h-2.21l-.03 20.21c0 2.94-2.42 5.33-5.36 5.33s-5.33-2.39-5.33-5.33"/>
+                    </svg>
+                    Inmersión
+                  </span>
+                  <div class="oq-mock-plan__meta">
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M12 7v5l3 2"/>
+                      </svg>
+                      9:00
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                        <path d="M3 10h18M8 3v4M16 3v4"/>
+                      </svg>
+                      15/02/2026
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 21s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12Z"/>
+                        <circle cx="12" cy="9" r="2.5"/>
+                      </svg>
+                      Shark Point
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="9" cy="7" r="3"/>
+                        <path d="M2 21c0-3 3-5 7-5s7 2 7 5"/>
+                        <circle cx="17" cy="7" r="2.5"/>
+                      </svg>
+                      6 buceadores
+                    </span>
+                  </div>
+                  <div class="oq-mock-plan__cardSep"></div>
+                  <div class="oq-mock-plan__actions">
+                    <span class="oq-mock-plan__actionEdit">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m4 20 4-1 11-11-3-3L5 16l-1 4Z"/>
+                      </svg>
+                      Editar
+                    </span>
+                    <span class="oq-mock-plan__actionDelete">Eliminar</span>
+                  </div>
+                </article>
+
+                <article class="oq-mock-plan__card">
+                  <div class="oq-mock-plan__cardHead">
+                    <span class="oq-mock-plan__cardTitle">Buceo nocturno — Shark Point</span>
+                    <span class="oq-mock-plan__logIcon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="6" y="3" width="12" height="18" rx="2"/>
+                        <rect x="9" y="2" width="6" height="3" rx="1"/>
+                        <path d="M9 10h6M9 14h4"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="oq-mock-plan__typeChip">
+                    <svg viewBox="0 0 36 36" fill="currentColor" aria-hidden="true">
+                      <path d="M23.95 7.61H12.5c-3.44 0-6.36 2.81-6.29 6.25.06 3.33 2.78 6.01 6.13 6.01 1.88 0 3.56-.85 4.68-2.18.59-.7 1.67-.67 2.27.02 1.2 1.42 3.05 2.28 5.09 2.14 3.06-.21 5.55-2.74 5.7-5.81.17-3.52-2.64-6.43-6.13-6.43Z"/>
+                      <path d="M17.02 25.02c0 4.2 3.41 7.6 7.6 7.6s7.6-3.47 7.6-7.67V4.68h-2.21l-.03 20.21c0 2.94-2.42 5.33-5.36 5.33s-5.33-2.39-5.33-5.33"/>
+                    </svg>
+                    Inmersión
+                  </span>
+                  <div class="oq-mock-plan__meta">
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M12 7v5l3 2"/>
+                      </svg>
+                      20:00
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                        <path d="M3 10h18M8 3v4M16 3v4"/>
+                      </svg>
+                      15/02/2026
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 21s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12Z"/>
+                        <circle cx="12" cy="9" r="2.5"/>
+                      </svg>
+                      Shark Point
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="9" cy="7" r="3"/>
+                        <path d="M2 21c0-3 3-5 7-5s7 2 7 5"/>
+                        <circle cx="17" cy="7" r="2.5"/>
+                      </svg>
+                      3 buceadores
+                    </span>
+                  </div>
+                </article>
+              </div>
+
+              <div class="oq-mock-plan__sectionDiv"></div>
+
+              <div class="oq-mock-plan__sectionHead" style="padding-top: 8px;">
+                <span class="oq-mock-plan__sectionTitle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <path d="M3 10h18M8 3v4M16 3v4"/>
+                  </svg>
+                  Próximas actividades
+                </span>
+                <span class="oq-mock-plan__seeAll">Ver todas</span>
+              </div>
+
+              <div class="oq-mock-plan__peek">
+                <div class="oq-mock-plan__peekBody">
+                  <span class="oq-mock-plan__peekTitle">Open Water — Carlos</span>
+                  <span class="oq-mock-plan__peekMeta">9:00 · Shark Point · 1 alumno</span>
+                </div>
+                <span class="oq-mock-plan__peekDate">18 feb</span>
+              </div>
+            </div>
+
+            <!-- 02 · Registro de inmersiones por QR -->
+            <div class="oq-mock-screen oq-mock-screen--qr">
+              <div class="oq-mock-qr__topbar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m15 6-6 6 6 6"/>
+                </svg>
+                <span>Actividades de hoy</span>
+              </div>
+
+              <div class="oq-mock-qr__hero">
+                <div class="oq-mock-qr__sky"></div>
+                <div class="oq-mock-qr__shimmer"></div>
+                <div class="oq-mock-qr__beach"></div>
+                <div class="oq-mock-qr__fade"></div>
+                <div class="oq-mock-qr__heroContent">
+                  <span class="oq-mock-qr__heroTitle">Inmersión a las 9:00</span>
+                  <span class="oq-mock-qr__heroPill">Inmersión recreativa</span>
+                  <div class="oq-mock-qr__heroMeta">
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 21s7-6.5 7-11.5a7 7 0 0 0-14 0C5 14.5 12 21 12 21Z"/>
+                        <circle cx="12" cy="9.5" r="2.5"/>
+                      </svg>
+                      Maldivas
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3.5" y="5" width="17" height="15.5" rx="2"/>
+                        <path d="M3.5 10h17"/><path d="M8 3.5v3"/><path d="M16 3.5v3"/>
+                      </svg>
+                      26/02/2026
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                      </svg>
+                      08:35
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="oq-mock-qr__dots">
+                <span class="is-active"></span><span></span><span></span>
+              </div>
+
+              <div class="oq-mock-qr__content">
+                <div class="oq-mock-qr__cta">
+                  <span class="oq-mock-qr__ctaIcon">
+                    <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                      <path d="M31.99 17.28h-3.66V10.54h3.66c1.14 0 2.06.92 2.06 2.06v2.62c0 1.14-.92 2.06-2.06 2.06Z" fill="#FFFFFF"/>
+                      <path d="M7.96 17.27H4.31c-1.14 0-2.06-.92-2.06-2.06v-2.62c0-1.14.92-2.06 2.06-2.06h3.65v6.74Z" fill="#FFFFFF"/>
+                      <path d="M23.95 7.61H12.5c-3.44 0-6.36 2.81-6.29 6.25.06 3.33 2.78 6.01 6.13 6.01 1.88 0 3.56-.85 4.68-2.18.59-.7 1.67-.67 2.27.02 1.2 1.42 3.05 2.28 5.09 2.14 3.06-.21 5.55-2.74 5.7-5.81.17-3.52-2.64-6.43-6.13-6.43Z" fill="#C8DBF5" stroke="#FFFFFF" stroke-width="1.99" stroke-miterlimit="10"/>
+                      <path d="M10 7.5h2l-4 9-2-1.64L10 7.5Z" fill="#E4EDFA"/>
+                      <path d="m12.93 7.69 1.48.23-4.84 11.39-1.48-.23 4.84-11.39Z" fill="#E4EDFA"/>
+                      <path d="M17.02 25.02c0 4.2 3.41 7.6 7.6 7.6s7.6-3.47 7.6-7.67V4.68h-2.21l-.03 20.21c0 2.94-2.42 5.33-5.36 5.33s-5.33-2.39-5.33-5.33" fill="#FFFFFF"/>
+                      <path d="M21.13 24.02c0 .6-.49 1.08-1.09 1.08h-3.69c-.6 0-1.09-.49-1.09-1.08 0-.6.49-1.09 1.09-1.09h3.69c.6 0 1.09.49 1.09 1.09Z" fill="#FFFFFF"/>
+                      <path d="M32.75 4.12c0 .41-.33.75-.75.75h-1.75c-.41 0-.75-.33-.75-.75 0-.41.33-.75.75-.75H32c.41 0 .75.33.75.75Z" fill="#FFFFFF"/>
+                    </svg>
+                  </span>
+                  <div class="oq-mock-qr__ctaText">
+                    <span class="oq-mock-qr__ctaTitle">Guardar en mi logbook</span>
+                    <span class="oq-mock-qr__ctaSub">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M3.5 12h17"/>
+                        <path d="M12 3c2 3 3 6 3 9s-1 6-3 9c-2-3-3-6-3-9s1-6 3-9Z"/>
+                      </svg>
+                      Registra esta inmersión en OQUEA
+                    </span>
+                  </div>
+                </div>
+
+                <div class="oq-mock-qr__actions">
+                  <div class="oq-mock-qr__action">
+                    <span class="oq-mock-qr__actionIcon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/>
+                        <circle cx="9" cy="9.5" r="2"/>
+                        <path d="m21 16-5-5-9 9"/>
+                      </svg>
+                    </span>
+                    <span class="oq-mock-qr__actionTitle">Ver fotos y vídeos</span>
+                    <span class="oq-mock-qr__actionSub">125 archivos</span>
+                  </div>
+                  <div class="oq-mock-qr__action">
+                    <span class="oq-mock-qr__actionIcon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="6" y="3" width="12" height="18" rx="2.5"/>
+                        <path d="M10 17.5h4"/>
+                      </svg>
+                    </span>
+                    <span class="oq-mock-qr__actionTitle">Compartir inmersión</span>
+                    <span class="oq-mock-qr__actionSub">Tarjeta para tus redes</span>
+                  </div>
+                </div>
+
+                <div class="oq-mock-qr__stats">
+                  <div class="oq-mock-qr__statRow">
+                    <div class="oq-mock-qr__statLeft">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M11 5.5a2.5 2.5 0 0 1 5 0v8.5a4 4 0 1 1-5 0V5.5Z"/>
+                        <circle cx="13.5" cy="17.5" r="1.2" fill="currentColor"/>
+                      </svg>
+                      <span>Temperatura</span>
+                    </div>
+                    <span class="oq-mock-qr__statValue">16 °C</span>
+                  </div>
+                  <div class="oq-mock-qr__statRow">
+                    <div class="oq-mock-qr__statLeft">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 4v16"/>
+                        <path d="m6 14 6 6 6-6"/>
+                      </svg>
+                      <span>Profundidad</span>
+                    </div>
+                    <span class="oq-mock-qr__statValue">18,5 m</span>
+                  </div>
+                  <div class="oq-mock-qr__statRow">
+                    <div class="oq-mock-qr__statLeft">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12c2-3 4.5-4.5 8-4.5s6.5 1.5 9 4.5c-2.5 3-5.5 4.5-9 4.5s-6-1.5-8-4.5Z"/>
+                        <path d="m17 9 4-3v12l-4-3"/>
+                        <circle cx="14" cy="10.5" r="0.7" fill="currentColor"/>
+                      </svg>
+                      <span>Vida marina</span>
+                    </div>
+                    <span class="oq-mock-qr__statValue">Tortugas, tiburones…</span>
+                  </div>
+                </div>
+
+                <span class="oq-mock-qr__foot">Al guardar, Mar Azul añadirá esta inmersión a tu historial.</span>
+              </div>
+            </div>
+
+            <!-- 03 · Comparte tu inmersión (Strava-style full-bleed card) -->
+            <div class="oq-mock-screen oq-mock-screen--share">
+              <div class="oq-mock-strava">
+                <div class="oq-mock-strava__head">
+                  <svg class="oq-mock-strava__iso" viewBox="0 0 195 159" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M23.1252 107.632C21.5547 123.565 18.1455 130.585 12.1352 130.585C3.24327 130.585 0.000411987 115.34 0.000411987 78.792C0.000411987 41.854 3.27809 27 12.1352 27C18.4422 27 21.8982 34.5919 23.3554 52.4189C26.8384 26.0949 36.4424 15 54.9918 15C74.5473 15 84.0815 27.428 86.9949 57.187C90.7736 16.735 106.391 0 140.319 0C179.763 0 194.263 22.8 194.263 79.5C194.263 135.6 179.919 159 140.319 159C106.699 159 91.141 142.267 87.1389 103.177C84.4152 133.829 74.9423 147 54.9918 147C35.9616 147 26.3899 135.11 23.1252 107.632Z"/>
+                  </svg>
+                  <div class="oq-mock-strava__locpill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 21s7-6.5 7-11.5a7 7 0 0 0-14 0C5 14.5 12 21 12 21Z"/>
+                      <circle cx="12" cy="9.5" r="2.5"/>
+                    </svg>
+                    Inmersión en Azores
+                  </div>
+                </div>
+
+                <div class="oq-mock-strava__stats">
+                  <div class="oq-mock-strava__stat">
+                    <span class="oq-mock-strava__statLabel">Tiempo</span>
+                    <div class="oq-mock-strava__statValue"><b>48</b><span>min</span></div>
+                  </div>
+                  <div class="oq-mock-strava__stat">
+                    <span class="oq-mock-strava__statLabel">Profundidad</span>
+                    <div class="oq-mock-strava__statValue"><b>23</b><span>m</span></div>
+                  </div>
+                  <div class="oq-mock-strava__stat">
+                    <span class="oq-mock-strava__statLabel">Temperatura</span>
+                    <div class="oq-mock-strava__statValue"><b>23</b><span>°C</span></div>
+                  </div>
+                </div>
+
+                <div class="oq-mock-strava__foot">
+                  <hr class="oq-mock-strava__divider" />
+                  <div class="oq-mock-strava__footRow">
+                    <div class="oq-mock-strava__center">
+                      <span class="oq-mock-strava__centerLabel">Centro de buceo</span>
+                      <span class="oq-mock-strava__centerName">Diving Centre KR</span>
+                    </div>
+                    <div class="oq-mock-strava__brandPill">
+                      <span class="oq-mock-strava__brandDot"></span>
+                      oquea
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 04 · CRM y fidelización (Diver profile en el centro) -->
+            <div class="oq-mock-screen oq-mock-screen--crm">
+              <div class="oq-mock-crm__topbar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m15 6-6 6 6 6"/>
+                </svg>
+                <span>Perfil del buceador</span>
+              </div>
+
+              <div class="oq-mock-crm__profile">
+                <span class="oq-mock-crm__avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="9" r="3.5"/>
+                    <path d="M5.5 19c0-3 2.9-5 6.5-5s6.5 2 6.5 5"/>
+                  </svg>
+                </span>
+                <span class="oq-mock-crm__name">Enrique Fragero</span>
+                <span class="oq-mock-crm__username">@kike</span>
+                <span class="oq-mock-crm__roleChip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21s7-3 7-9V6L12 3.5 5 6v6c0 6 7 9 7 9Z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                  </svg>
+                  Instructor
+                </span>
+                <span class="oq-mock-crm__publicBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Ver perfil público
+                </span>
+              </div>
+
+              <div class="oq-mock-crm__band"></div>
+
+              <div class="oq-mock-crm__section">
+                <div class="oq-mock-crm__sectionHead">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 11.5 12 4l9 7.5"/>
+                    <path d="M5 10v9.5h14V10"/>
+                  </svg>
+                  En tu centro
+                </div>
+                <div class="oq-mock-crm__kpis">
+                  <div class="oq-mock-crm__kpi">
+                    <span class="oq-mock-crm__kpiValue">8</span>
+                    <span class="oq-mock-crm__kpiLabel">Inmersiones aquí</span>
+                  </div>
+                  <div class="oq-mock-crm__kpi">
+                    <span class="oq-mock-crm__kpiValue">10 Jun<br/>2023</span>
+                    <span class="oq-mock-crm__kpiLabel">Primera</span>
+                  </div>
+                  <div class="oq-mock-crm__kpi">
+                    <span class="oq-mock-crm__kpiValue">12 Feb<br/>2025</span>
+                    <span class="oq-mock-crm__kpiLabel">Última</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="oq-mock-crm__band"></div>
+
+              <div class="oq-mock-crm__section oq-mock-crm__section--grow">
+                <div class="oq-mock-crm__sectionHead">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="6" y="4" width="12" height="16" rx="2"/>
+                    <rect x="9" y="3" width="6" height="3" rx="1"/>
+                    <path d="M9 11h6"/><path d="M9 15h4"/>
+                  </svg>
+                  Historial de actividades
+                </div>
+
+                <div class="oq-mock-crm__monthHead">Febrero 2025</div>
+
+                <div class="oq-mock-crm__row">
+                  <span class="oq-mock-crm__rowIcon">
+                    <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                      <path d="M31.99 17.28h-3.66V10.54h3.66c1.14 0 2.06.92 2.06 2.06v2.62c0 1.14-.92 2.06-2.06 2.06Z" fill="#406AD0"/>
+                      <path d="M7.96 17.27H4.31c-1.14 0-2.06-.92-2.06-2.06v-2.62c0-1.14.92-2.06 2.06-2.06h3.65v6.74Z" fill="#406AD0"/>
+                      <path d="M23.95 7.61H12.5c-3.44 0-6.36 2.81-6.29 6.25.06 3.33 2.78 6.01 6.13 6.01 1.88 0 3.56-.85 4.68-2.18.59-.7 1.67-.67 2.27.02 1.2 1.42 3.05 2.28 5.09 2.14 3.06-.21 5.55-2.74 5.7-5.81.17-3.52-2.64-6.43-6.13-6.43Z" fill="#C8DBF5" stroke="#406AD0" stroke-width="1.99"/>
+                      <path d="M17.02 25.02c0 4.2 3.41 7.6 7.6 7.6s7.6-3.47 7.6-7.67V4.68h-2.21l-.03 20.21c0 2.94-2.42 5.33-5.36 5.33s-5.33-2.39-5.33-5.33" fill="#406AD0"/>
+                      <path d="M21.13 24.02c0 .6-.49 1.08-1.09 1.08h-3.69c-.6 0-1.09-.49-1.09-1.08 0-.6.49-1.09 1.09-1.09h3.69c.6 0 1.09.49 1.09 1.09Z" fill="#406AD0"/>
+                    </svg>
+                  </span>
+                  <div class="oq-mock-crm__rowBody">
+                    <span class="oq-mock-crm__rowTitle">Inmersión — Shark Point</span>
+                    <div class="oq-mock-crm__rowMeta">
+                      <span class="oq-mock-crm__rowDate">12 feb 2025</span>
+                      <span class="oq-mock-crm__rowType">Recreativa</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="oq-mock-crm__row">
+                  <span class="oq-mock-crm__rowIcon">
+                    <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                      <path d="M31.99 17.28h-3.66V10.54h3.66c1.14 0 2.06.92 2.06 2.06v2.62c0 1.14-.92 2.06-2.06 2.06Z" fill="#406AD0"/>
+                      <path d="M7.96 17.27H4.31c-1.14 0-2.06-.92-2.06-2.06v-2.62c0-1.14.92-2.06 2.06-2.06h3.65v6.74Z" fill="#406AD0"/>
+                      <path d="M23.95 7.61H12.5c-3.44 0-6.36 2.81-6.29 6.25.06 3.33 2.78 6.01 6.13 6.01 1.88 0 3.56-.85 4.68-2.18.59-.7 1.67-.67 2.27.02 1.2 1.42 3.05 2.28 5.09 2.14 3.06-.21 5.55-2.74 5.7-5.81.17-3.52-2.64-6.43-6.13-6.43Z" fill="#C8DBF5" stroke="#406AD0" stroke-width="1.99"/>
+                      <path d="M17.02 25.02c0 4.2 3.41 7.6 7.6 7.6s7.6-3.47 7.6-7.67V4.68h-2.21l-.03 20.21c0 2.94-2.42 5.33-5.36 5.33s-5.33-2.39-5.33-5.33" fill="#406AD0"/>
+                      <path d="M21.13 24.02c0 .6-.49 1.08-1.09 1.08h-3.69c-.6 0-1.09-.49-1.09-1.08 0-.6.49-1.09 1.09-1.09h3.69c.6 0 1.09.49 1.09 1.09Z" fill="#406AD0"/>
+                    </svg>
+                  </span>
+                  <div class="oq-mock-crm__rowBody">
+                    <span class="oq-mock-crm__rowTitle">Inmersión — The Cathedral</span>
+                    <div class="oq-mock-crm__rowMeta">
+                      <span class="oq-mock-crm__rowDate">11 feb 2025</span>
+                      <span class="oq-mock-crm__rowType">Recreativa</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="oq-mock-crm__row">
+                  <span class="oq-mock-crm__rowIcon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: #E65100;">
+                      <path d="M12 21s7-3 7-9V6L12 3.5 5 6v6c0 6 7 9 7 9Z"/>
+                      <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                  </span>
+                  <div class="oq-mock-crm__rowBody">
+                    <span class="oq-mock-crm__rowTitle">Curso — PADI Advanced</span>
+                    <div class="oq-mock-crm__rowMeta">
+                      <span class="oq-mock-crm__rowDate">3 feb 2025</span>
+                      <span class="oq-mock-crm__rowType oq-mock-crm__rowType--course">Curso</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="oq-mock-crm__viewAll">
+                  Ver historial completo
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m9 6 6 6-6 6"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- 05 · Mapa interactivo de buceo -->
+            <div class="oq-mock-screen oq-mock-screen--map">
+              <div class="oq-mock-divemap__topbar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m15 6-6 6 6 6"/>
+                </svg>
+                Añadir sitio de buceo
+              </div>
+
+              <div class="oq-mock-divemap__search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"/>
+                  <path d="m20 20-3.5-3.5"/>
+                </svg>
+                Buscar dive sites…
+              </div>
+
+              <div class="oq-mock-divemap__canvas">
+                <span class="oq-mock-divemap__land oq-mock-divemap__land--a"></span>
+                <span class="oq-mock-divemap__land oq-mock-divemap__land--b"></span>
+                <span class="oq-mock-divemap__grid"></span>
+
+                <span class="oq-mock-divemap__compass">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="m9 15 2-7 5 1-2 7-5-1Z"/>
+                  </svg>
+                </span>
+
+                <div class="oq-mock-divemap__zoom">
+                  <span class="oq-mock-divemap__zoomBtn">+</span>
+                  <span class="oq-mock-divemap__zoomBtn">−</span>
+                </div>
+
+                <span class="oq-mock-divemap__radius" style="left: 52%; top: 50%;"></span>
+                <span class="oq-mock-divemap__pin" style="left: 22%; top: 30%;"></span>
+                <span class="oq-mock-divemap__pin" style="left: 35%; top: 70%; animation-delay: -1s;"></span>
+                <span class="oq-mock-divemap__pin" style="left: 78%; top: 32%; animation-delay: -2s;"></span>
+                <span class="oq-mock-divemap__pin oq-mock-divemap__pin--active" style="left: 52%; top: 50%;">
+                  <span class="oq-mock-divemap__tooltip">Shark Point</span>
+                </span>
+
+                <div class="oq-mock-divemap__filters">
+                  <span class="oq-mock-divemap__chip oq-mock-divemap__chip--active">
+                    <span class="oq-mock-divemap__chipDot"></span>
+                    Disponibles
+                  </span>
+                  <span class="oq-mock-divemap__chip">Mis sitios</span>
+                </div>
+              </div>
+
+              <div class="oq-mock-divemap__list">
+                <div class="oq-mock-divemap__listHead">
+                  <span>4 sitios cerca</span>
+                  <span class="oq-mock-divemap__listSort">
+                    Distancia
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                  </span>
+                </div>
+
+                <article class="oq-mock-divemap__card">
+                  <div class="oq-mock-divemap__cardHead">
+                    <div>
+                      <span class="oq-mock-divemap__cardName">Shark Point</span>
+                      <span class="oq-mock-divemap__cardLoc">Costa Brava · Mediterráneo</span>
+                    </div>
+                    <span class="oq-mock-divemap__cardDist">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 21s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12Z"/>
+                        <circle cx="12" cy="9" r="2.5"/>
+                      </svg>
+                      2.4 km
+                    </span>
+                  </div>
+                  <div class="oq-mock-divemap__cardChips">
+                    <span class="oq-mock-divemap__cardChip oq-mock-divemap__cardChip--level">Intermedio</span>
+                    <span class="oq-mock-divemap__cardChip oq-mock-divemap__cardChip--type">Barco</span>
+                    <span class="oq-mock-divemap__cardChip">Salada</span>
+                  </div>
+                  <div class="oq-mock-divemap__cardMeta">
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 3v18"/><path d="m6 15 6 6 6-6"/>
+                      </svg>
+                      24 m
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 14.76V4a2 2 0 1 0-4 0v10.76a4 4 0 1 0 4 0Z"/>
+                      </svg>
+                      22 °C
+                    </span>
+                    <span>2 centros</span>
+                  </div>
+                  <div class="oq-mock-divemap__cardCta">
+                    <span class="oq-mock-divemap__cardJoin">+ Apuntarme</span>
+                    <span class="oq-mock-divemap__cardView">
+                      Ver
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m9 6 6 6-6 6"/>
+                      </svg>
+                    </span>
+                  </div>
+                </article>
+
+                <div class="oq-mock-divemap__peek">
+                  <span class="oq-mock-divemap__peekDot"></span>
+                  <div class="oq-mock-divemap__peekBody">
+                    <span class="oq-mock-divemap__peekName">The Cathedral</span>
+                    <span class="oq-mock-divemap__peekMeta">Avanzado · 32 m · 3.1 km</span>
+                  </div>
+                  <span class="oq-mock-divemap__peekArrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m9 6 6 6-6 6"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 06 · Viajes y experiencias -->
+            <div class="oq-mock-screen oq-mock-screen--trips">
+              <div class="oq-mock-trips__topbar">
+                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5Z"/>
+                  </svg>
+                  Viajes y experiencias
+                </span>
+                <span>Ofertas</span>
+              </div>
+
+              <div class="oq-mock-trips__flash">
+                <span class="oq-mock-trips__flashBadge">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="m13 2-9 12h6l-1 8 9-12h-6l1-8Z"/>
+                  </svg>
+                  Flash · 48 h
+                </span>
+                <span class="oq-mock-trips__flashTitle">Maldivas · Mantas</span>
+                <span class="oq-mock-trips__flashDates">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <path d="M3 10h18M8 3v4M16 3v4"/>
+                  </svg>
+                  14 — 21 mar 2025 · 7 días
+                </span>
+
+                <div class="oq-mock-trips__flashSpots">
+                  <div class="oq-mock-trips__flashBar">
+                    <span class="oq-mock-trips__flashFill"></span>
+                  </div>
+                  <span class="oq-mock-trips__flashSpotsLabel">4/8 plazas</span>
+                </div>
+
+                <div class="oq-mock-trips__flashFoot">
+                  <div class="oq-mock-trips__flashPrice">
+                    <span class="oq-mock-trips__flashPriceLabel">Desde</span>
+                    <span class="oq-mock-trips__flashPriceValue">1.890 €</span>
+                  </div>
+                  <span class="oq-mock-trips__flashCta">
+                    Reservar
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m9 6 6 6-6 6"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="oq-mock-trips__list">
+                <div class="oq-mock-trips__listHead">
+                  <span>Próximas salidas</span>
+                  <a>Ver todas</a>
+                </div>
+
+                <div class="oq-mock-trips__row">
+                  <span class="oq-mock-trips__rowThumb oq-mock-trips__rowThumb--reef">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M2 14c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>
+                      <path d="M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>
+                      <circle cx="8" cy="7" r="1.5"/>
+                    </svg>
+                  </span>
+                  <div class="oq-mock-trips__rowBody">
+                    <span class="oq-mock-trips__rowName">Mar Rojo · Liveaboard</span>
+                    <span class="oq-mock-trips__rowMeta">8 días · abril 2025</span>
+                  </div>
+                  <span class="oq-mock-trips__rowPrice">
+                    <span class="oq-mock-trips__rowPriceLabel">Desde</span>
+                    <span class="oq-mock-trips__rowPriceValue">2.200 €</span>
+                  </span>
+                </div>
+
+                <div class="oq-mock-trips__row">
+                  <span class="oq-mock-trips__rowThumb oq-mock-trips__rowThumb--volcano">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 20h18l-5-10-3 4-2-3-4 4-4 5Z"/>
+                      <path d="M8 6V3M12 5V2M16 6V3"/>
+                    </svg>
+                  </span>
+                  <div class="oq-mock-trips__rowBody">
+                    <span class="oq-mock-trips__rowName">Galápagos · Crucero</span>
+                    <span class="oq-mock-trips__rowMeta">10 días · junio 2025</span>
+                  </div>
+                  <span class="oq-mock-trips__rowPrice">
+                    <span class="oq-mock-trips__rowPriceLabel">Desde</span>
+                    <span class="oq-mock-trips__rowPriceValue">3.450 €</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  <!-- 6 · HOW IT WORKS -->
+  <Section id="how">
+    <div class="oq-section__head reveal">
+      <span class="oq-section__eyebrow">Paso a paso</span>
+      <h2 class="oq-section__title">Conectamos experiencias reales de buceo</h2>
+    </div>
+    <div class="oq-steps reveal-stagger">
+      {steps.map((s) => (
+        <article class="oq-step">
+          <span class="oq-step__num">{s.num}</span>
+          <span class="oq-step__icon"><Icon name={s.icon as any} size={28} /></span>
+          <span class="oq-step__eyebrow">{s.eyebrow}</span>
+          <h3 class="oq-step__title">{s.title}</h3>
+          <p class="oq-step__body">{s.body}</p>
+        </article>
+      ))}
+    </div>
+  </Section>
+
+  <!-- 7 · PRODUCT SPLIT -->
+  <Section id="audience" variant="soft">
+    <div class="oq-section__head reveal">
+      <span class="oq-section__eyebrow">Hecho para centros</span>
+      <h2 class="oq-section__title">Convierte tu centro en un negocio que fideliza.</h2>
+      <p class="oq-section__lede">
+        Oquea es la herramienta que pone al centro en el centro: CRM, planificación
+        y comunidad para que cada inmersión se convierta en un cliente que vuelve.
+      </p>
+    </div>
+
+    <div class="oq-split reveal-stagger">
+      <article class="oq-split__card">
+        <span class="oq-split__eyebrow">Para centros · Lo más importante</span>
+        <h3 class="oq-split__title">Fideliza con CRM, ofertas y comunicación directa.</h3>
+        <p class="oq-split__body">
+          Opera tu centro de forma digital, llena salidas con un clic, mide el
+          rendimiento y mantén la conversación con tus buceadores —
+          promociones, viajes y ofertas flash que convierten visitas en
+          relaciones a largo plazo.
+        </p>
+        <Button href={ROUTES.centers.es} variant="primary">
+          Descubre Oquea Centers
+          <Icon name="arrow-right" size={16} class="oq-btn__icon" />
+        </Button>
+        <div class="oq-split__media">
+          <img
+            src="/img/photos/dive-center-operation.webp"
+            alt="Instructor de buceo preparando una salida en el centro"
+            loading="lazy"
+            decoding="async"
+            width="1280"
+            height="800"
+          />
+        </div>
+      </article>
+
+      <article class="oq-split__card">
+        <span class="oq-split__eyebrow">Para buceadores</span>
+        <h3 class="oq-split__title">Regístrate gratis y lleva tu vida buceadora contigo.</h3>
+        <p class="oq-split__body">
+          Cada inmersión queda guardada, cada recuerdo se comparte y descubres
+          centros de confianza por todo el mundo — la experiencia de buceo,
+          unificada en una sola app.
+        </p>
+        <Button href={ROUTES.divers.es} variant="primary">
+          Crea tu cuenta gratis
+          <Icon name="arrow-right" size={16} class="oq-btn__icon" />
+        </Button>
+        <div class="oq-split__media">
+          <img
+            src="/img/photos/divers-connecting.webp"
+            alt="Buceadores compartiendo una experiencia bajo el agua"
+            loading="lazy"
+            decoding="async"
+            width="1280"
+            height="800"
+          />
+        </div>
+      </article>
+    </div>
+
+    <div class="oq-split__app">
+      <span class="oq-split__app-label">Descarga la app</span>
+      <AppBadges lang={lang} comingSoon />
+    </div>
+  </Section>
+
+  <!-- 8 · VISION -->
+  <Section id="vision">
+    <div class="oq-section__head oq-section__head--center reveal">
+      <span class="oq-section__eyebrow">Visión</span>
+      <h2 class="oq-section__title">Construimos el ecosistema digital global del buceo</h2>
+      <p class="oq-section__lede">
+        Oquea conecta centros, buceadores y destinos oceánicos en una plataforma unificada
+        que da forma al futuro del buceo.
+      </p>
+    </div>
+  </Section>
+
+  <!-- 8b · SUPPORT QUICK ACCESS -->
+  <section class="oq-help-strip" aria-labelledby="help-strip-title">
+    <Container>
+      <div class="oq-help-strip__inner reveal">
+        <span class="oq-help-strip__icon"><Icon name="lifebuoy" size={26} /></span>
+        <div class="oq-help-strip__copy">
+          <span id="help-strip-title" class="oq-help-strip__title">¿Tienes algún problema?</span>
+          <span class="oq-help-strip__body">
+            Cuenta, datos, tu centro o un fallo técnico — te ayudamos en menos de 24 h.
+          </span>
+        </div>
+        <div class="oq-help-strip__cta">
+          <Button href={ROUTES.support.es} variant="primary">
+            Ir a soporte
+            <Icon name="arrow-right" size={16} class="oq-btn__icon" />
+          </Button>
+        </div>
+      </div>
+    </Container>
+  </section>
+
+  <!-- 9 · FINAL CTA -->
+  <section class="oq-finalcta" aria-labelledby="finalcta-title">
+    <Container>
+      <div class="oq-finalcta__head">
+        <span class="oq-finalcta__eyebrow">Únete a Oquea</span>
+        <h2 id="finalcta-title" class="oq-finalcta__title">
+          Empieza tu próximo capítulo de buceo con Oquea
+        </h2>
+        <p class="oq-finalcta__lede">
+          Si eres centro o buceador, tu sitio en el ecosistema te está esperando.
+        </p>
+        <div class="oq-finalcta__cta">
+          <Button href={ROUTES.centers.es} variant="primary">
+            Para centros de buceo
+            <Icon name="arrow-right" size={16} class="oq-btn__icon" />
+          </Button>
+          <a class="oq-btn oq-btn--on-dark-ghost" href={ROUTES.divers.es}>Para buceadores</a>
+        </div>
+        <div class="oq-finalcta__app">
+          <AppBadges lang={lang} onDark comingSoon />
+        </div>
+      </div>
+    </Container>
+  </section>
+
+  <script is:inline>
+    /* Auto-rotator for §Ecosystem mockup.
+       - Starts (and resets to screen 1) when the section enters the
+         viewport.
+       - Pauses when the section is fully out of view.
+       - Each item is a button: clicking jumps to that screen and
+         resets the timer so the visitor has a full interval to read.
+       - Respects prefers-reduced-motion (animation off, click still
+         works). */
+    (function () {
+      var root = document.querySelector('[data-oq-featshow]');
+      if (!root) return;
+      var items = root.querySelectorAll('[data-oq-featshow-items] > li');
+      var screens = root.querySelectorAll('[data-oq-featshow-screens] > *');
+      var n = Math.min(items.length, screens.length);
+      if (n < 2) return;
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var INTERVAL = 2500;
+      var current = 0;
+      var timer = null;
+
+      function show(idx) {
+        current = idx;
+        for (var i = 0; i < n; i++) {
+          var on = i === idx;
+          items[i].classList.toggle('is-active', on);
+          items[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+          screens[i].classList.toggle('is-active', on);
+        }
+      }
+      function tick() { show((current + 1) % n); }
+      function start() {
+        if (prefersReduced) return;
+        if (timer) clearInterval(timer);
+        timer = setInterval(tick, INTERVAL);
+      }
+      function stop() { if (timer) { clearInterval(timer); timer = null; } }
+      function jumpTo(idx) {
+        show(idx);
+        start();   // reset timer so user gets a full interval to read
+      }
+
+      // Click + keyboard activation on each item
+      for (var k = 0; k < items.length; k++) {
+        (function (idx) {
+          items[idx].addEventListener('click', function () { jumpTo(idx); });
+          items[idx].addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              jumpTo(idx);
+            }
+          });
+        })(k);
+      }
+
+      // Run only when the section is actually visible. Reset to the
+      // first screen each time the user scrolls back into it.
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) {
+              show(0);
+              start();
+            } else {
+              stop();
+            }
+          });
+        }, { threshold: 0.25 });
+        io.observe(root);
+      } else {
+        start();
+      }
+    })();
+  </script>
+</BaseLayout>

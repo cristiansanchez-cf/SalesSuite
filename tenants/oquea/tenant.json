@@ -1,20 +1,77 @@
 {
-  "$comment": "Alta de Oquea en Cofundo Ventas (docs/oquea/00-HANDOFF.md). Esqueleto vacío: el contenido entra documento a documento con scripts/apply-oquea-NN.py, nunca a mano. Los tokens de partida salen de la skill oquea-design (SKILL.md §3 y §5); text, muted, surface, border y accent-contrast están PENDIENTES del design system (references/oquea.md o Figma cgUfyZggGl48N3OWugHOEz).",
+  "$comment": "Alta de Oquea en Cofundo Ventas (docs/oquea/00-HANDOFF.md). El contenido entra documento a documento con scripts/apply-oquea-NN.py, nunca a mano. Estado y pendientes: docs/oquea/ESTADO.md.",
   "slug": "oquea",
   "name": "Oquea",
   "default_locale": "es-ES",
   "theme_tokens": {
     "colors": {
       "bg": "#ffffff",
+      "surface": "#fbfbfb",
+      "text": "#292929",
+      "muted": "#7c7c7c",
+      "border": "#efefef",
       "primary": "#3757be",
       "primary-contrast": "#ffffff",
-      "accent": "#d0ff00"
+      "accent": "#d0ff00",
+      "accent-contrast": "#1f294c"
     },
-    "radius": { "button": "999px", "pill": "999px" }
+    "radius": {
+      "card": "24px",
+      "button": "999px",
+      "pill": "999px"
+    },
+    "font": {
+      "display": "'Gilroy', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "sans": "'Gilroy', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "faces": [
+        {
+          "family": "Gilroy",
+          "src": "asset:fonts/gilroy-light.woff2",
+          "weight": "300"
+        },
+        {
+          "family": "Gilroy",
+          "src": "asset:fonts/gilroy-regular.woff2",
+          "weight": "400"
+        },
+        {
+          "family": "Gilroy",
+          "src": "asset:fonts/gilroy-medium.woff2",
+          "weight": "500"
+        },
+        {
+          "family": "Gilroy",
+          "src": "asset:fonts/gilroy-semibold.woff2",
+          "weight": "600"
+        },
+        {
+          "family": "Gilroy",
+          "src": "asset:fonts/gilroy-bold.woff2",
+          "weight": "700"
+        }
+      ]
+    }
   },
-  "brand": { "logoAlt": "Oquea", "contact": {} },
+  "brand": {
+    "logoUrl": "asset:logo.svg",
+    "logoOnDarkUrl": "asset:logo-dark.svg",
+    "logoAlt": "Oquea",
+    "faviconUrl": "asset:favicon.svg",
+    "ogImageUrl": "asset:og.jpg",
+    "contact": {
+      "whatsapp": "34673225293",
+      "email": "enrique@oquea.com",
+      "website": "https://oquea.com"
+    },
+    "legal": "Oquea Technologies SL · Avenida Diego Fernández de Mendoza 11, 3º B, 29006 Málaga, España"
+  },
   "tour": [],
-  "domains": [{ "hostname": "oquea.ventas.cofundo.io", "is_primary": true }],
+  "domains": [
+    {
+      "hostname": "oquea.ventas.cofundo.io",
+      "is_primary": true
+    }
+  ],
   "admins": [],
   "catalog": [],
   "market": [],
