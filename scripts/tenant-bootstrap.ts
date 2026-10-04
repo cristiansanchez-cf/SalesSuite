@@ -76,6 +76,8 @@ const tenantFile = z.object({
     payment_link: z.string().regex(/^https:\/\/\S+$/).nullable().default(null), active: z.boolean().default(true),
     /** Tipo (primer paso al elegir precio) y si es la más típica de su tipo. */
     kind: z.string().min(1).max(60).nullable().default(null), default: z.boolean().default(false),
+    /** A medida: se ve con su aviso, pero no se elige en una propuesta. */
+    quote_only: z.boolean().default(false), note: z.string().min(1).max(120).nullable().default(null),
   })).default([]),
   /** Cupones (descuentos con contrapartida). Upsert por código; el mismo código tiene que existir en Stripe. */
   coupons: z.array(z.object({
@@ -391,7 +393,7 @@ async function main() {
     const row: Record<string, unknown> = {
       tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period,
       segment_id: o.segment ? segIds.get(o.segment) ?? null : null, position: i + 1, active: o.active,
-      kind: o.kind, is_default: o.default,
+      kind: o.kind, is_default: o.default, quote_only: o.quote_only, note: o.note,
     };
     if (o.payment_link) row.payment_link = o.payment_link;
     const cur = must(await sb.from('price_option').select('id').eq('tenant_id', tenantId).eq('label', o.label).maybeSingle(), `leer tarifa ${o.label}`);

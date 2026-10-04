@@ -1,6 +1,6 @@
 # 01 · La empresa y el producto
 
-_Enjoy the Club · exportado el 2026-10-03 de `tenants/enjoy/tenant.json`._
+_Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
 Qué es, qué vende, cómo funciona y cuánto cuesta. Es lo primero que aprende un comercial.
 
@@ -46,6 +46,13 @@ Está en producción y se puede enseñar:
 **Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.
 
 
+### Llegar con la marca detrás · `fest-modelo-b`
+
+Hay dos formas de vender un festival. Que lo pague el festival, o que lleguemos con una marca que ya quiere activar allí. En el segundo, el festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan por ponerlo: de gasto pasa a ingreso. Es lo que los propios festivales dijeron que preferirían.
+
+**Las conversaciones con marcas las lleva fundador.** El comercial detecta qué marca patrocina cada festival, quién lleva esa relación y si nos presentan, y lo pasa.
+
+
 ## 2. Visión, estrategia y objetivos
 
 > **HUECO — hoy no existe en la app.** Aprende explica el producto, a quién se vende y cómo, pero no **por qué** la empresa
@@ -77,7 +84,7 @@ Lo ve todo comercial nada más entrar. Cada paso: título (≤ 80), texto (≤ 2
    _Se enseña:_ `phone:sheet` (UI real del producto)
 3. **Aparece en la pantalla** — Lo que manda se ve en grande, en directo. Todo el mundo lo mira.  
    _Se enseña:_ `screen:club.message,club.song` (UI real del producto)
-4. **La kiss-cam lo convierte en espectáculo** — El momento que nadie olvida, en la pantalla gigante.  
+4. **Kiss cam, pero voluntaria** — Sale quien quiere salir, y al subir su foto acepta los términos. El momento que nadie olvida, sin el marrón.  
    _Se enseña:_ `screen:club.photo,tp.photo` (UI real del producto)
 5. **Todo queda en el álbum** — Fotos y mensajes de la noche, guardados para quien lo contrata.  
    _Se enseña:_ `phone:album` (UI real del producto)
@@ -117,24 +124,24 @@ Tipo: `phone-tour`
 ### Experiencias en directo · `tabs-experiencias`
 
 _Kiss-cam, dedicatorias, peticiones y álbum: lo que vive cada invitado._  
-Tipo: `tabs-showcase` · Precio por defecto: 450 €
+Tipo: `tabs-showcase`
 
 - **Antetítulo:** Experiencias
 - **Título:** Todo lo que pasa en tu evento, en el móvil de cada invitado
-- **Pestaña «Kiss-cam»:** Kiss-cam en pantalla gigante — Los invitados envían su momento y aparece en directo. _(Moderación previa · Branding del evento)_
-- **Pestaña «Dedicatorias»:** Dedicatorias que se leen en voz alta — Mensajes desde el móvil, proyectados en el momento justo. _(Sin descargar app · Exportables al final)_
-- **Pestaña «Retos»:** Retos y votaciones por mesa — Gamificación ligera para que nadie se quede sentado. _(Ranking en directo · Premios del local)_
+- **Pestaña «Kiss-cam»:** Kiss-cam en pantalla gigante — Los invitados envían su momento y aparece en directo. _(Moderación previa)_
+- **Pestaña «Dedicatorias»:** Dedicatorias que se leen en voz alta — Mensajes desde el móvil, proyectados en el momento justo. _(Sin descargar app)_
+- **Pestaña «Retos»:** Retos y votaciones por mesa — Gamificación ligera para que nadie se quede sentado. _(Premios del local)_
 
 ### Enjoy para tu sala · `tabs-locales`
 
 _Enjoy dentro de la oferta de la sala: un extra que vende o regala._  
-Tipo: `tabs-showcase` · Precio por defecto: 300 €
+Tipo: `tabs-showcase`
 
 - **Antetítulo:** Para {company}
 - **Título:** Tu sala, con algo que la competencia no tiene
-- **Pestaña «Pack sala»:** Enjoy incluido en tu oferta — Un extra diferencial que puedes vender o regalar. _(Margen para el local · Formación en 1 hora)_
-  - Chat de ejemplo: «Sábado: 180 invitados confirmados» → «Perfecto, pantalla montada a las 19h»
-- **Pestaña «Datos»:** Datos de cada evento — Participación, momentos top y reseñas al terminar. _(Informe automático)_
+- **Pestaña «Pack sala»:** Enjoy incluido en tu oferta — Un extra diferencial que puedes vender o regalar. _(Margen para el local · Lo dejamos configurado contigo en una videollamada de 20 minutos)_
+  - Chat de ejemplo: «Sábado tenemos lleno» → «Te lo dejo configurado y con vuestro logo»
+- **Pestaña «Datos»:** Datos de cada evento — Participación y momentos top de cada evento. _(Informe post-evento)_
 
 ### Precio de la propuesta · `pricing`
 
@@ -143,8 +150,9 @@ Tipo: `pricing-card`
 
 - **Antetítulo:** Inversión
 - **Título:** Propuesta para {company}
-- **Entradilla:** Todo lo necesario para el día del evento, sin sorpresas.
-- **Incluye:** Montaje y soporte en directo · Personalización con vuestra marca · Informe post-evento · Sin permanencia
+- **Entradilla:** Lo dejamos configurado contigo, con vuestra marca, sin pedir nada a tu equipo.
+- **Incluye:** Configuración guiada contigo en 20 minutos · Personalización con vuestra marca · Informe post-evento
+- **Letra pequeña:** Suscripciones con permanencia de 6 meses (sin permanencia si lo necesitáis). Eventos puntuales, pago único.
 - **Botón:** Reservar fecha
 
 ### Portada para bodas · `hero-bodas`
@@ -180,6 +188,11 @@ Lo que el comercial elige en la propuesta: primero el tipo y luego la tarifa (�
 | Festivales | Festival | Festival hasta 5.000 | 1200 € /evento |
 | Festivales | Festival | ★ Festival 5.000–20.000 | 2500 € /evento |
 | Festivales | Festival | Infraestructura de temporada | 1500 € /mes |
+| Conciertos y artistas | Sala de conciertos | Sala +20.000 · **A medida · no se cotiza sin prueba de carga** | A medida |
+| Festivales | Festival | Festival +20.000 · **A medida · no se cotiza sin prueba de carga** | A medida |
+| Festivales | Activación de marca | Activación de marca en festival · **Desde 3.000 € · la lleva fundador, no el equipo comercial** | desde 3000 € /evento |
+
+Las marcadas «a medida» se ven en la propuesta con su aviso, pero no se pueden elegir.
 
 ## 6. Descuentos (cupones)
 

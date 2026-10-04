@@ -1,6 +1,6 @@
 # 02 · A quién vendemos
 
-_Enjoy the Club · exportado el 2026-10-03 de `tenants/enjoy/tenant.json`._
+_Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
 Cada sector: por qué nos compra, a quién buscar, a quién no, cómo decide y quién es quién. Más las «situaciones» que cambian cómo se vende.
 
@@ -40,11 +40,11 @@ El gerente lo ve clarísimo y empuja; el dueño no lo obstaculiza. Si el dueño 
 
 **Tamaño de la venta**
 
-99–499 €/mes (supuesto; hoy pagan 67–100 €/mes)
+99–499 €/mes (supuesto; hoy pagan 67–100 €/mes). Noche suelta 150 €. Caseta de feria 290 € la feria completa.
 
 **Ciclo de venta**
 
-Días: en persona, miércoles por la mañana, y prueba el mismo día
+Días. En persona, miércoles por la mañana (llega el reparto del distribuidor: hay alguien con llaves y están receptivos). Jueves como segunda opción. Lunes y martes no: libran. Se cierra con **fecha de prueba** antes de colgar, aunque la prueba sea la siguiente noche que abran.
 
 **Qué enseñarle, en orden**
 
@@ -146,7 +146,7 @@ Decide quien lleva la promotora, rápido. El riesgo es el seguimiento: equipos d
 
 **Tamaño de la venta**
 
-Por evento (Paradox: dos eventos pagados)
+150 € por evento, o 390 €/mes con eventos ilimitados. Histórico: una promotora pequeña pagó 70 €/evento con el producto antiguo.
 
 **Ciclo de venta**
 
@@ -340,7 +340,7 @@ Dirección del festival decide; patrocinios lo vende a las marcas; producción t
 
 **Tamaño de la venta**
 
-3.000–20.000 € (ejemplo)
+1.200–2.500 € por evento; infraestructura de temporada desde 1.500 €/mes. Si entramos con una marca que lo paga, la activación va desde 3.000 €. Todas sin validar: no hemos cerrado ningún festival.
 
 **Ciclo de venta**
 
@@ -411,11 +411,11 @@ Deciden los dos novios, a menudo con la familia. La finca y el wedding planner p
 
 **Tamaño de la venta**
 
-300–900 € por boda (ejemplo)
+PENDIENTE · sector sin validar, nunca hemos cobrado una boda
 
 **Ciclo de venta**
 
-2–8 semanas
+PENDIENTE · sector sin validar, nunca hemos cobrado una boda
 
 **Qué enseñarle, en orden**
 

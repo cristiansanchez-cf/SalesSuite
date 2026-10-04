@@ -32,4 +32,5 @@ run supabase/tests/41_price_options.test.sql
 run supabase/tests/42_client_media.test.sql
 run supabase/tests/43_stripe.test.sql
 run supabase/tests/44_org.test.sql
+run supabase/tests/45_quote_only.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

@@ -8,7 +8,7 @@ import type { ModuleBaseProps } from '../types';
 import { pricingFigure, type PricingCardProps } from './schema';
 
 type Props = PricingCardProps & ModuleBaseProps;
-const { eyebrow, title, subtitle, features, priceSuffix, noPriceLabel, taxNote, cta, payLabel, ctx } = Astro.props;
+const { eyebrow, title, subtitle, features, priceSuffix, noPriceLabel, taxNote, smallPrint, cta, payLabel, ctx } = Astro.props;
 const figure = pricingFigure(ctx);
 // «Pagar»: la tarifa elegida, con la propuesta (→ comisión de quien la vendió) y el cupón ya puestos.
 const pay = figure ? ctx.payUrl ?? null : null;
@@ -37,7 +37,7 @@ const t = (s: string) => interpolate(s, ctx);
           </div>
         )}
       </div>
-      {(features.length > 0 || cta) && (
+      {(features.length > 0 || cta || smallPrint) && (
         <div class="p-8 sm:p-10">
           {features.length > 0 && (
             <ul class="grid gap-3 p-0 sm:grid-cols-2">
@@ -49,6 +49,7 @@ const t = (s: string) => interpolate(s, ctx);
               ))}
             </ul>
           )}
+          {smallPrint && <p class="mt-6 text-sm text-muted" data-testid="pricing-small-print">{t(smallPrint)}</p>}
           {cta && <div class="mt-8"><Button href={cta.href} variant={pay ? 'ghost' : 'primary'}>{cta.label} <Icon name="arrow" size={16} /></Button></div>}
         </div>
       )}

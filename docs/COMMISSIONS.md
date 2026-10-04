@@ -150,3 +150,9 @@ Pendiente en Stripe (Cristian): crear un Payment Link por tarifa, activar «Perm
    - `charge.refunded` → `refund` del ingreso original (por factura o `payment_intent`).
    Respuestas: 2xx si no hay que reintentar (incluido «evento que no nos toca»), 400 firma no válida, 404 espacio sin Stripe, 500 fallo nuestro (Stripe reintenta).
 4. **Cálculo.** Como cualquier ingreso: «Calcular» en Comisiones → equipo, atribuido al autor de la propuesta (§2), y se aprueba en el libro. Tests: `stripe.test.ts` (firma, venta, duplicados, suscripción con factura adelantada, devolución).
+
+### Tarifas «a medida»
+
+`price_option.quote_only` + `note` (migración `20261027000000_price_option_quote.sql`): la tarifa se ve en el editor, con su
+aviso («no se cotiza sin prueba de carga», «la lleva fundador»), pero no se puede elegir (servicio y `dossier_price_guard`).
+En `tenant.json`: `"quote_only": true, "note": "…"`. Test: `supabase/tests/45_quote_only.test.sql`.

@@ -74,8 +74,8 @@
           "ui": "screen:club.message,club.song"
         },
         {
-          "title": "La kiss-cam lo convierte en espectáculo",
-          "body": "El momento que nadie olvida, en la pantalla gigante.",
+          "title": "Kiss cam, pero voluntaria",
+          "body": "Sale quien quiere salir, y al subir su foto acepta los términos. El momento que nadie olvida, sin el marrón.",
           "image": "/demo/enjoy/img/kisscam-screen.webp",
           "ui": "screen:club.photo,tp.photo"
         },
@@ -335,8 +335,7 @@
             "title": "Kiss-cam en pantalla gigante",
             "body": "Los invitados envían su momento y aparece en directo.",
             "bullets": [
-              "Moderación previa",
-              "Branding del evento"
+              "Moderación previa"
             ],
             "mock": {
               "kind": "chat",
@@ -362,8 +361,7 @@
             "title": "Dedicatorias que se leen en voz alta",
             "body": "Mensajes desde el móvil, proyectados en el momento justo.",
             "bullets": [
-              "Sin descargar app",
-              "Exportables al final"
+              "Sin descargar app"
             ],
             "mock": {
               "kind": "chat",
@@ -385,7 +383,6 @@
             "title": "Retos y votaciones por mesa",
             "body": "Gamificación ligera para que nadie se quede sentado.",
             "bullets": [
-              "Ranking en directo",
               "Premios del local"
             ]
           }
@@ -410,7 +407,7 @@
             "body": "Un extra diferencial que puedes vender o regalar.",
             "bullets": [
               "Margen para el local",
-              "Formación en 1 hora"
+              "Lo dejamos configurado contigo en una videollamada de 20 minutos"
             ],
             "mock": {
               "kind": "chat",
@@ -418,11 +415,11 @@
               "messages": [
                 {
                   "from": "me",
-                  "text": "Sábado: 180 invitados confirmados"
+                  "text": "Sábado tenemos lleno"
                 },
                 {
                   "from": "them",
-                  "text": "Perfecto, pantalla montada a las 19h"
+                  "text": "Te lo dejo configurado y con vuestro logo"
                 }
               ]
             }
@@ -430,9 +427,9 @@
           {
             "label": "Datos",
             "title": "Datos de cada evento",
-            "body": "Participación, momentos top y reseñas al terminar.",
+            "body": "Participación y momentos top de cada evento.",
             "bullets": [
-              "Informe automático"
+              "Informe post-evento"
             ]
           }
         ]
@@ -450,16 +447,16 @@
         "title": "Propuesta para {company}",
         "subtitle": "Todo lo necesario para el día del evento, sin sorpresas.",
         "features": [
-          "Montaje y soporte en directo",
+          "Configuración guiada contigo en 20 minutos",
           "Personalización con vuestra marca",
-          "Informe post-evento",
-          "Sin permanencia"
+          "Informe post-evento"
         ],
         "priceSuffix": "/ evento",
         "cta": {
           "label": "Reservar fecha",
           "href": "mailto:hola@enjoytheclub.es"
-        }
+        },
+        "smallPrint": "Suscripciones con permanencia de 6 meses (sin permanencia si lo necesitáis). Eventos puntuales, pago único."
       }
     },
     {
@@ -1410,8 +1407,8 @@
       "icp": "- Bodas de 100+ invitados\n- Finca o sala con pantalla/proyector\n- Novios que buscan \"algo diferente\" y temen los tiempos muertos",
       "disqualifiers": "Menos de 40 invitados, sin pantalla ni cobertura, o novios que quieren una boda muy clásica y sin interacción.",
       "buying_process": "Deciden los dos novios, a menudo con la familia. La finca y el wedding planner prescriben (o vetan) proveedores. Suele cerrarse tras ver una demo.",
-      "deal_size": "300–900 € por boda (ejemplo)",
-      "sales_cycle": "2–8 semanas",
+      "deal_size": "PENDIENTE · sector sin validar, nunca hemos cobrado una boda",
+      "sales_cycle": "PENDIENTE · sector sin validar, nunca hemos cobrado una boda",
       "position": 1024,
       "status": "official",
       "icon": "heart",
@@ -1461,7 +1458,7 @@
       "icp": "- 5.000+ asistentes\n- Programa de patrocinios\n- Pantallas en escenarios o zonas comunes",
       "disqualifiers": "Festivales sin patrocinio ni pantallas, o con conectividad muy limitada sin solución.",
       "buying_process": "Dirección del festival decide; patrocinios lo vende a las marcas; producción técnica valida (y puede vetar).",
-      "deal_size": "3.000–20.000 € (ejemplo)",
+      "deal_size": "1.200–2.500 € por evento; infraestructura de temporada desde 1.500 €/mes. Si entramos con una marca que lo paga, la activación va desde 3.000 €. Todas sin validar: no hemos cerrado ningún festival.",
       "sales_cycle": "3–9 meses (se cierra antes de la temporada)",
       "position": 4096,
       "status": "official",

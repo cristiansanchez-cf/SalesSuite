@@ -1,8 +1,8 @@
 # 03 · Cómo se vende (las jugadas)
 
-_Enjoy the Club · exportado el 2026-10-03 de `tenants/enjoy/tenant.json`._
+_Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 116 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 123 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,7 +11,7 @@ Las 116 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 54 · Precio de la propuesta: 15 · Experiencias en directo: 43 · Enjoy para tu sala: 4.
+- **Reparto:** General: 61 · Precio de la propuesta: 15 · Experiencias en directo: 43 · Enjoy para tu sala: 4.
 - **Módulos sin ninguna jugada** (en el guion salen vacíos): «Pantalla en vivo», «Móvil del invitado», «Portada para bodas».
 - **Casi todo cuelga de un solo módulo** («Experiencias en directo», 43): muchas de esas jugadas son en realidad de la pantalla en vivo, del móvil del invitado o generales. Revisa el módulo de cada una.
 - **Tono:** hay frases escritas para nosotros (p. ej. «El activo es el consentimiento») que el comercial lee tal cual. Cada jugada debería poder decirse en voz alta o usarse sin traducir.
@@ -21,7 +21,7 @@ Campos de cada jugada: **tipo** (Cómo presentarlo, Para quién (y cuándo no), 
 
 ## Generales («Cómo se vende», valen para todo)
 
-### Cómo presentarlo (3)
+### Cómo presentarlo (4)
 
 #### Enjoy en una frase · `empresa-pitch`
 
@@ -64,7 +64,15 @@ _etapa: Pitch / Demo_
 > 
 > **Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.
 
-### Para quién (y cuándo no) (4)
+#### Llegar con la marca detrás · `fest-modelo-b`
+
+_etapa: Pitch / Demo · sectores: Festivales_
+
+> Hay dos formas de vender un festival. Que lo pague el festival, o que lleguemos con una marca que ya quiere activar allí. En el segundo, el festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan por ponerlo: de gasto pasa a ingreso. Es lo que los propios festivales dijeron que preferirían.
+> 
+> **Las conversaciones con marcas las lleva fundador.** El comercial detecta qué marca patrocina cada festival, quién lleva esa relación y si nos presentan, y lo pasa.
+
+### Para quién (y cuándo no) (5)
 
 #### Qué decir a cada uno · `conc-quien-que`
 
@@ -106,6 +114,12 @@ _etapa: Prospección · sectores: Bodas_
 > - **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.
 
 **Cuándo usarla:** Antes de invertir tiempo en un lead: cualifica.
+
+#### Lo que ha pasado hasta ahora en bodas · `bodas-aviso`
+
+_etapa: Mentalidad · sectores: Bodas_
+
+> Bodas es el sector del que menos sabemos y el único donde nunca hemos cobrado. Hubo 12 leads, pricing cerrado y resellers definidos: a los organizadores que iban a pagarnos 300 €/mes les pareció buena idea y no pagó ninguno; a los resellers con 100 € de base les pareció bien y no revendió ninguno. Cuando un precio le parece bien a todo el mundo y no compra nadie, el problema no es el precio. No es prioridad hasta 2027 y todo lo que hay aquí son hipótesis.
 
 ### Preguntas de descubrimiento (3)
 
@@ -156,7 +170,7 @@ _etapa: Objeciones · objeción: Precio_
 
 **Técnica (Cerebro de Ventas):** El cliente dice 'caro' porque traduce precio a horas trabajadas, no a valor — Alfonso y Cristian; El dinero nunca es el problema real — Alfonso y Cristian
 
-### Guiones (15)
+### Guiones (14)
 
 #### Después de la venta: la parte que hemos fallado · `gen-postventa`
 
@@ -211,20 +225,6 @@ _etapa: Cierre · sectores: Conciertos y artistas · actores: Promotor/a (Concie
 **Cuándo usarla:** Justo después de que el promotor o el manager digan que sí al concepto.
 
 **Por qué funciona:** Es el momento real en que se decide si entramos.
-
-#### Manda el vídeo antes de la llamada · `gen-video-fundamentos`
-
-_etapa: Prospección_
-
-> Técnica del Cerebro: pre-encuadre de la llamada por posicionamiento (Alfonso y Cristian). Guion literal:
-> 
-> «Una de las claves del posicionamiento: nunca recibas una llamada sin estar agendada. Si alguien te dice 'oye, ¿podemos hablar? tengo cinco minutitos', no. Agenda la llamada y prepárate bien para ella: haz una investigación previa. O dile a la persona: 'antes de que hablemos y veamos si te puedo ayudar, necesito que veas este vídeo de diez minutos donde explico los fundamentos, para que después en la llamada tú y yo hablemos el mismo lenguaje, porque yo uso unos términos concretos y, si no los entiendes, probablemente no nos sirva de nada esta llamada'. Cuanto mejor posicionado estés, menos venta tendrás que hacer: la persona llega ya en un 80-90% convencida».
-
-**Cuándo usarla:** Antes de cada primera llamada.
-
-**Por qué funciona:** Aportación de Enjoy: Enjoy es abstracto y cada uno se imagina una cosa. Un vídeo corto de la pantalla funcionando en una sala real quita media conversación: dejas de describir y pasas a preguntar. Prioridad: grabarlo antes de que el vendedor empiece a llamar.
-
-**Técnica (Cerebro de Ventas):** Pre-encuadre de la llamada con vídeo de fundamentos — Alfonso y Cristian
 
 #### Pregunta quién decide, al principio · `gen-precalificar`
 
@@ -327,17 +327,13 @@ _etapa: Cierre · sectores: Bodas_
 
 **Por qué funciona:** Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión.
 
-### Consejos (27)
+### Consejos (33)
 
-#### Sin cobertura no se vende · `gen-cobertura`
+#### Lo primero que se comprueba · `gen-cobertura`
 
 _etapa: Descubrimiento_
 
-> Es lo que más rompe, con diferencia. Antes de vender, comprueba la cobertura y el wifi del sitio.
-> 
-> «Es lo único que nos puede estropear la noche, y te lo digo yo antes de que lo descubras tú. Si no hay cobertura, te lo digo y no lo hacemos».
-> 
-> Un evento fallido se cuenta entre clientes.
+> La cobertura es lo que más rompe, con diferencia. Si no hay, no hay producto: la gente no puede escanear. Se comprueba antes de vender y, si no la hay, se dice y no se vende. Pasó en Pastrami y en El Portón, en plena calle de la feria.
 
 #### Lo que no se dice (en ningún sector) · `gen-no-decir`
 
@@ -415,6 +411,18 @@ _etapa: Mentalidad · sectores: Conciertos y artistas · la ven: Solo equipo int
 > - **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.
 > - **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.
 > - **Pie de foto en el álbum:** hasta que esté, no se vende.
+
+#### Manda el vídeo antes de la llamada · `gen-video-fundamentos`
+
+_etapa: Prospección_
+
+> Un vídeo corto de los fundamentos, visto antes de la llamada, hace que el cliente llegue casi convencido y que la llamada sea para preguntar y no para explicar *(Alfonso y Cristian)*. Para Enjoy: dos o tres minutos de la pantalla funcionando en una sala real. **PENDIENTE: ese vídeo todavía no existe.**
+
+**Cuándo usarla:** Antes de cada primera llamada.
+
+**Por qué funciona:** Aportación de Enjoy: Enjoy es abstracto y cada uno se imagina una cosa. Un vídeo corto de la pantalla funcionando en una sala real quita media conversación: dejas de describir y pasas a preguntar. Prioridad: grabarlo antes de que el vendedor empiece a llamar.
+
+**Técnica (Cerebro de Ventas):** Pre-encuadre de la llamada con vídeo de fundamentos — Alfonso y Cristian
 
 #### Si el decisor te escribe él · `gen-inbound`
 
@@ -617,6 +625,48 @@ _etapa: Prospección · sectores: Festivales · la ven: Solo equipo interno_
 > - **Detectar qué marcas patrocinan cada festival y pasarlas al fundador.**
 > 
 > El modelo B (entrar con una marca ya detrás) implica venderle primero a la marca: eso lo lleva el fundador.
+
+#### Acompañamiento presencial en festivales · `fest-acompanamiento`
+
+_etapa: Cierre · sectores: Festivales_
+
+> En locales no hace falta que vaya nadie: se configura en una videollamada de 20 minutos. En un festival, la primera edición es distinta — hay producción, patrocinadores y mucha gente preguntando. Ahí sí vamos presencialmente la primera vez.
+> 
+> **Es una excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes del propio festival. Y no aparece en el módulo de precio como algo incluido por defecto.
+
+#### Lo que de verdad nos ha hecho perder clientes · `gen-seguimiento`
+
+_etapa: Seguimiento_
+
+> Almería, Altare, Batiq Fest, Shark Events, Bresh, Topamin Fest, The Lab, Deep Delay y la tercera promotora: todos dijeron que sí, y todos se perdieron por no hacer seguimiento. Ninguno se perdió por precio, por producto ni por competencia.
+> 
+> Noche 1: mirar los datos y escribir al día siguiente **con el resultado**, no preguntando «¿qué tal?». Semana 1: llamada corta. Mes 1: revisión y petición de referencia. Cierre de temporada: contactar **antes** de que reabra — Altare se perdió exactamente ahí.
+
+#### Una pantalla, no el recinto · `fest-una-pantalla`
+
+_etapa: Pitch / Demo · sectores: Festivales_
+
+> Hoy manejamos una pantalla. Un festival tiene varias. La conversación es **en qué pantalla y en qué momento**, no «cubrimos vuestro recinto». Si no se acota en la primera reunión, el cliente se imagina todo el festival y lo descubre el día del montaje. El manejo múltiple está en roadmap: se cuenta como dirección, nunca con fecha.
+
+#### Estructura, no guion · `gen-no-robot`
+
+_etapa: Mentalidad_
+
+> Todo lo que hay en este playbook es estructura y munición, no texto para recitar.
+> 
+> *Alfonso y Cristian:* «Tú no necesitabas un script cuando conociste a tu pareja. 'Espérate, cita 17, seguimiento 17, cariño'. Qué absurdo sería. Quítate el script, fluye en la conversación. Tienes que tener una estructura, unas bases: preguntas abiertas, cerradas, de dirección, de psicología inversa. Y sabiendo que hay estos tipos de preguntas, yo sé cuándo tirar de una y cuándo de otra. Necesitaría tantos guiones como personas existen en el mundo.»
+
+#### Filtro antes de mandar nada · `gen-filtro-mensajes`
+
+_etapa: Primer contacto_
+
+> - Verbos de lo que hiciste («he mirado vuestro Instagram»), no de lo que sentiste («me quedé pensando en vuestro proyecto»).
+> - Si lo averiguaste después, dilo así. Fingir familiaridad previa se detecta.
+> - Nada de negar para plantar la idea: «no vengo a venderte nada».
+> - Adjetivos valorativos solo con el dato detrás.
+> - Una sola fecha concreta. «Hablamos la semana que viene» es un cierre inexistente.
+> 
+> Dos pruebas: si el mensaje sirve para otro cambiando solo el nombre, no está terminado. Y todo lo que diga que sabes tiene que ser cierto.
 
 ## Módulo: Experiencias en directo
 

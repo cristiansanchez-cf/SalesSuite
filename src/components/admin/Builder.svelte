@@ -239,7 +239,9 @@
     pickedKind = k;
     const inKind = s.priceOptions.filter((o) => kindOf(o) === k);
     if (chosenOption && kindOf(chosenOption) === k) return;
-    const def = inKind.find((o) => o.isDefault) ?? inKind[0];
+    // Las «a medida» no se eligen: se enseñan con su aviso (no se cotizan sin prueba de carga, las lleva fundador…).
+    const pickable = inKind.filter((o) => !o.quoteOnly);
+    const def = pickable.find((o) => o.isDefault) ?? pickable[0];
     if (def) run({ op: 'setPriceOption', priceOptionId: def.id });
   }
   let payCopied = $state(false);
@@ -823,12 +825,17 @@
               {#if shownKinds.length < kinds.length}<button type="button" class="co-chip co-chip--quiet" onclick={() => (allKinds = true)} data-testid="price-kinds-more">{t.tariff.otherSectors}</button>{/if}
               {#if s.customPrices}<button type="button" class="co-chip" aria-pressed={customOpen || (!d.priceOptionId && d.priceMode !== 'none')} disabled={!editable} onclick={() => (customOpen = !customOpen)} data-testid="price-custom">{t.tariff.custom}</button>{/if}
             </div>
-            {#if activeKind && s.priceOptions.filter((o) => kindOf(o) === activeKind).length > 1}
+            {#if activeKind && s.priceOptions.filter((o) => kindOf(o) === activeKind && !o.quoteOnly).length > 1}
               <div class="co-chips mt-1" data-testid="price-options">
-                {#each s.priceOptions.filter((o) => kindOf(o) === activeKind) as o (o.id)}
+                {#each s.priceOptions.filter((o) => kindOf(o) === activeKind && !o.quoteOnly) as o (o.id)}
                   <button type="button" class="co-chip" aria-pressed={d.priceOptionId === o.id} disabled={!editable} onclick={() => d.priceOptionId !== o.id && run({ op: 'setPriceOption', priceOptionId: o.id })} data-testid="price-option" data-label={o.label}>{o.kind && o.label.startsWith(o.kind + ' · ') ? o.label.slice(o.kind.length + 3) : o.label} · <strong>{money(o.amount, o.currency)}{t.tariff.period[o.period] ?? ''}</strong></button>
                 {/each}
               </div>
+            {/if}
+            {#if activeKind}
+              {#each s.priceOptions.filter((o) => kindOf(o) === activeKind && o.quoteOnly) as o (o.id)}
+                <p class="co-alert co-alert--attention mt-1 !py-2 text-sm" data-testid="price-quote-only"><strong>{o.label}</strong>{o.amount > 0 ? ` · ${t.tariff.from(money(o.amount, o.currency))}` : ''} — {o.note ?? t.tariff.quoteOnly}</p>
+              {/each}
             {/if}
           </div>
           {#if s.customPrices && (customOpen || (!d.priceOptionId && d.priceMode !== 'none'))}

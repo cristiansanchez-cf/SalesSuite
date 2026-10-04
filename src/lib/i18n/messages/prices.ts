@@ -9,7 +9,7 @@ const es = {
   period: 'Cómo se cobra', periods: { once: 'Pago único', event: 'Por evento', month: 'Al mes', year: 'Al año' } as Record<string, string>,
   link: 'Enlace de pago de Stripe', linkHelp: 'El Payment Link de Stripe. Le añadimos la propuesta (para saber quién lo vendió) y el cupón.',
   segment: 'Sector', anySegment: 'Todos los sectores', create: 'Crear tarifa',
-  active: 'Activa', inactive: 'Desactivada', activate: 'Activar', deactivate: 'Desactivar', noLink: 'Sin enlace de pago',
+  active: 'Activa', inactive: 'Desactivada', activate: 'Activar', deactivate: 'Desactivar', quoteOnly: 'A medida', noLink: 'Sin enlace de pago',
   couponsHint: 'Los descuentos son cupones: créalos en Comisiones → Cupones con el mismo código que en Stripe.', coupons: 'Ir a cupones',
   stripe: {
     title: 'Pagos y comisiones automáticas', on: (d: string) => `Conectado desde el ${d}. Cada pago desde una propuesta cuenta solo para la comisión de quien la vendió.`,
@@ -30,7 +30,7 @@ export const pricesMessages = defineMessages({
     period: 'How it is charged', periods: { once: 'One-off', event: 'Per event', month: 'Monthly', year: 'Yearly' },
     link: 'Stripe payment link', linkHelp: 'The Stripe Payment Link. We add the proposal (to know who sold it) and the coupon.',
     segment: 'Sector', anySegment: 'All sectors', create: 'Create price option',
-    active: 'Active', inactive: 'Off', activate: 'Turn on', deactivate: 'Turn off', noLink: 'No payment link',
+    active: 'Active', inactive: 'Off', activate: 'Turn on', deactivate: 'Turn off', quoteOnly: 'Custom quote', noLink: 'No payment link',
     couponsHint: 'Discounts are coupons: create them in Commissions → Coupons with the same code as in Stripe.', coupons: 'Go to coupons',
     stripe: {
       title: 'Payments and automatic commissions', on: (d) => `Connected since ${d}. Every payment from a proposal counts toward the commission of whoever sold it.`,
@@ -48,7 +48,7 @@ export const pricesMessages = defineMessages({
     period: 'Como se cobra', periods: { once: 'Pagamento único', event: 'Por evento', month: 'Mensal', year: 'Anual' },
     link: 'Link de pagamento da Stripe', linkHelp: 'O Payment Link da Stripe. Adicionamos a proposta (para saber quem vendeu) e o cupom.',
     segment: 'Setor', anySegment: 'Todos os setores', create: 'Criar tarifa',
-    active: 'Ativa', inactive: 'Desativada', activate: 'Ativar', deactivate: 'Desativar', noLink: 'Sem link de pagamento',
+    active: 'Ativa', inactive: 'Desativada', activate: 'Ativar', deactivate: 'Desativar', quoteOnly: 'Sob medida', noLink: 'Sem link de pagamento',
     couponsHint: 'Os descontos são cupons: crie-os em Comissões → Cupons com o mesmo código da Stripe.', coupons: 'Ir para cupons',
     stripe: {
       title: 'Pagamentos e comissões automáticas', on: (d) => `Conectado desde ${d}. Cada pagamento de uma proposta conta para a comissão de quem a vendeu.`,
@@ -66,7 +66,7 @@ export const pricesMessages = defineMessages({
     period: '청구 방식', periods: { once: '일시불', event: '이벤트당', month: '월간', year: '연간' },
     link: 'Stripe 결제 링크', linkHelp: 'Stripe Payment Link입니다. 판매자를 알 수 있도록 제안서와 쿠폰을 붙입니다.',
     segment: '업종', anySegment: '모든 업종', create: '요금 만들기',
-    active: '사용 중', inactive: '꺼짐', activate: '켜기', deactivate: '끄기', noLink: '결제 링크 없음',
+    active: '사용 중', inactive: '꺼짐', activate: '켜기', deactivate: '끄기', quoteOnly: '맞춤 견적', noLink: '결제 링크 없음',
     couponsHint: '할인은 쿠폰입니다. 커미션 → 쿠폰에서 Stripe와 같은 코드로 만드세요.', coupons: '쿠폰으로 가기',
     stripe: {
       title: '결제와 자동 커미션', on: (d) => `${d}부터 연결됨. 제안서에서 들어온 결제는 판매한 사람의 커미션으로 계산됩니다.`,

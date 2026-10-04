@@ -104,7 +104,7 @@ const es = {
     used: (used: number, won: number) => `Usada en ${used} cierres documentados · ganó ${won}`, noEvidence: 'Sin cierres documentados todavía',
   },
   tariff: {
-    title: 'Precio', none: 'Sin precio', custom: 'A medida', what: '¿Qué le ofreces?', otherSectors: 'Otros sectores', discount: 'Descuento', noDiscount: 'Sin descuento',
+    from: (p: string) => `desde ${p}`, quoteOnly: 'A medida: no se elige en la propuesta', title: 'Precio', none: 'Sin precio', custom: 'A medida', what: '¿Qué le ofreces?', otherSectors: 'Otros sectores', discount: 'Descuento', noDiscount: 'Sin descuento',
     period: { once: '', event: ' / evento', month: ' / mes', year: ' / año' } as Record<string, string>,
     empty: 'Tu empresa aún no ha puesto tarifas: pídeselas a tu responsable.',
     payment: 'Enlace de pago', paymentHelp: 'Va con tu propuesta y el cupón: el pago queda a tu nombre.',
@@ -250,7 +250,7 @@ export const builderMessages = defineMessages({
       used: (used, won) => `Used in ${used} documented deals · won ${won}`, noEvidence: 'No documented deals yet',
     },
     tariff: {
-      title: 'Price', none: 'No price', custom: 'Custom', what: 'What are you offering?', otherSectors: 'Other sectors', discount: 'Discount', noDiscount: 'No discount',
+      from: (p) => `from ${p}`, quoteOnly: 'Custom quote: not chosen in the proposal', title: 'Price', none: 'No price', custom: 'Custom', what: 'What are you offering?', otherSectors: 'Other sectors', discount: 'Discount', noDiscount: 'No discount',
       period: { once: '', event: ' / event', month: ' / month', year: ' / year' },
       empty: 'Your company has not set price options yet: ask your manager.',
       payment: 'Payment link', paymentHelp: 'It carries your proposal and the coupon: the payment is credited to you.',
@@ -393,7 +393,7 @@ export const builderMessages = defineMessages({
       used: (used, won) => `Usada em ${used} fechamentos documentados · ganhou ${won}`, noEvidence: 'Ainda sem fechamentos documentados',
     },
     tariff: {
-      title: 'Preço', none: 'Sem preço', custom: 'Sob medida', what: 'O que você oferece?', otherSectors: 'Outros setores', discount: 'Desconto', noDiscount: 'Sem desconto',
+      from: (p) => `a partir de ${p}`, quoteOnly: 'Sob medida: não se escolhe na proposta', title: 'Preço', none: 'Sem preço', custom: 'Sob medida', what: 'O que você oferece?', otherSectors: 'Outros setores', discount: 'Desconto', noDiscount: 'Sem desconto',
       period: { once: '', event: ' / evento', month: ' / mês', year: ' / ano' },
       empty: 'Sua empresa ainda não definiu tarifas: peça ao seu responsável.',
       payment: 'Link de pagamento', paymentHelp: 'Leva sua proposta e o cupom: o pagamento fica no seu nome.',
@@ -536,7 +536,7 @@ export const builderMessages = defineMessages({
       used: (used, won) => `기록된 거래 ${used}건에서 사용 · ${won}건 성사`, noEvidence: '아직 기록된 거래가 없습니다',
     },
     tariff: {
-      title: '가격', none: '가격 없음', custom: '맞춤', what: '무엇을 제안하나요?', otherSectors: '다른 업종', discount: '할인', noDiscount: '할인 없음',
+      from: (p) => `${p}부터`, quoteOnly: '맞춤 견적: 제안서에서 선택하지 않아요', title: '가격', none: '가격 없음', custom: '맞춤', what: '무엇을 제안하나요?', otherSectors: '다른 업종', discount: '할인', noDiscount: '할인 없음',
       period: { once: '', event: ' / 이벤트', month: ' / 월', year: ' / 년' },
       empty: '아직 회사에서 요금을 정하지 않았어요. 담당자에게 요청하세요.',
       payment: '결제 링크', paymentHelp: '제안서와 쿠폰이 함께 들어가 결제가 내 실적으로 잡혀요.',

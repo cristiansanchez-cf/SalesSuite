@@ -86,13 +86,18 @@ Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.pla
       for (const s of p.scenes) L.push(`  - **${s.label}** (\`${s.scene}\`): ${q(s.says)}`);
     }
     if (m.block_type === 'phone-tour') L.push('- **Pasos del móvil** (fijos en el código; dime si quieres cambiar el texto): Escanea · Llega al evento · ¿Qué quiere hacer? · Su foto/mensaje · Pendiente (paga 2 €, solo se cobra si se acepta) · ¡En pantalla! · Álbum · Pide su canción.');
+    if (p.smallPrint) L.push(`- **Letra pequeña:** ${p.smallPrint}`);
     if (p.cta) L.push(`- **Botón:** ${p.cta.label}`);
     L.push('');
   }
 
   L.push('## 5. Tarifas\n\nLo que el comercial elige en la propuesta: primero el tipo y luego la tarifa (★ = la típica, va preseleccionada).\n');
   L.push('| Sector | Tipo | Tarifa | Precio |\n|---|---|---|---|');
-  for (const o of t.price_options) L.push(`| ${segName.get(o.segment) ?? o.segment ?? '—'} | ${o.kind ?? '—'} | ${o.default ? '★ ' : ''}${o.label} | ${eur(o.amount)} ${PERIOD[o.period] ?? o.period ?? ''} |`);
+  for (const o of t.price_options) {
+    const price = o.quote_only ? (o.amount > 0 ? `desde ${eur(o.amount)} ${PERIOD[o.period] ?? ''}` : 'A medida') : `${eur(o.amount)} ${PERIOD[o.period] ?? o.period ?? ''}`;
+    L.push(`| ${segName.get(o.segment) ?? o.segment ?? '—'} | ${o.kind ?? '—'} | ${o.default ? '★ ' : ''}${o.label}${o.note ? ` · **${o.note}**` : ''} | ${price} |`);
+  }
+  L.push('\nLas marcadas «a medida» se ven en la propuesta con su aviso, pero no se pueden elegir.');
   L.push('\n## 6. Descuentos (cupones)\n\nRegla: ningún descuento sin contrapartida.\n');
   L.push('| Código | Qué es | Valor | Contrapartida |\n|---|---|---|---|');
   for (const c of t.coupons) L.push(`| \`${c.code}\` | ${c.label} | ${c.kind === 'percent' ? `${c.value / 100} %` : c.kind === 'fixed' ? eur(c.value / 100) : `${c.value} meses gratis`} | ${q(c.note) || '—'} |`);

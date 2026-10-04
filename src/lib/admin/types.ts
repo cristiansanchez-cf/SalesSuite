@@ -116,6 +116,10 @@ export interface PriceOption {
   kind?: string | null;
   /** La más típica de su tipo: sale marcada al elegir el tipo. */
   isDefault?: boolean;
+  /** A medida: se ve, con su aviso, pero no se elige en una propuesta. */
+  quoteOnly?: boolean;
+  /** Aviso que acompaña a la tarifa («no se cotiza sin prueba de carga»). */
+  note?: string | null;
   position: number;
   active: boolean;
 }

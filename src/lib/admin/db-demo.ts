@@ -166,7 +166,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
 
     async listPriceOptions(tenantId) {
       return db().price_option.filter((o) => o.tenant_id === tenantId)
-        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default }))
+        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default, quoteOnly: !!o.quote_only, note: o.note ?? null }))
         .sort((a, b) => a.position - b.position || a.amount - b.amount);
     },
     async stripeWebhookStatus(tenantId) { return demoStripe.secrets.get(tenantId)?.at ?? null; },

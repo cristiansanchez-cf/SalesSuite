@@ -121,6 +121,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await v.reload();
   assert((await v.textContent('body')).replace(/\s/g, ' ').includes('150 €'), 'cambio de tarifa reflejado en vivo en el enlace');
   assert(!(await v.$('[data-testid=pricing-pay]')), 'tarifa sin enlace de pago: sin botón «Pagar»');
+  // A medida: se ve con su aviso y no cambia el precio.
+  await p.locator('[data-testid=price-kind]', { hasText: 'Festival' }).click(); await settle();
+  assert((await p.textContent('[data-testid=price-quote-only]')).includes('prueba de carga'), 'tarifa a medida: se ve con su aviso');
+  await v.reload();
+  assert((await v.textContent('body')).replace(/\s/g, ' ').includes('150 €'), 'y no se elige: el precio sigue igual');
 
   // 6. Negativos: revocar → 404; despublicar → 404
   await p.click('text=Revocar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();

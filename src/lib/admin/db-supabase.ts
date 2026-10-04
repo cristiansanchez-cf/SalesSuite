@@ -53,7 +53,7 @@ const toDossier = (r: Row): DossierRecord => ({
 const toPriceOption = (r: Row): PriceOption => ({
   id: r.id, label: r.label, amount: Number(r.amount), currency: r.currency, period: r.period, paymentLink: r.payment_link ?? null,
   segmentId: r.segment_id ?? null, position: Number(r.position), active: !!r.active,
-  kind: r.kind ?? null, isDefault: !!r.is_default,
+  kind: r.kind ?? null, isDefault: !!r.is_default, quoteOnly: !!r.quote_only, note: r.note ?? null,
 });
 
 const PROFILE_COLS = 'tenant_id, user_id, module_ids, see_team_tips, welcome_note, expires_at, can_invite';

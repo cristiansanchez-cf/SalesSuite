@@ -1,6 +1,6 @@
 # 04 · Cómo lo usa el comercial (y cómo devolvérmelo)
 
-_Enjoy the Club · exportado el 2026-10-03 de `tenants/enjoy/tenant.json`._
+_Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
 Dónde aparece cada pieza de 01–03 dentro de la app, en qué orden, y el formato para devolverlo mejorado.
 

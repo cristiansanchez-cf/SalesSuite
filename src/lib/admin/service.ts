@@ -258,6 +258,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         }
         const o = (await db.listPriceOptions(s.tenantId)).find((x) => x.id === op.priceOptionId && x.active);
         if (!o) throw new AdminError(404, 'Tarifa no disponible');
+        if (o.quoteOnly) throw new AdminError(422, o.note ? `Tarifa a medida: ${o.note}` : 'Esta tarifa es a medida: no se elige en una propuesta');
         await assertWrote(await db.updateDossier(id, { priceOptionId: o.id, priceMode: 'total', totalPrice: o.amount, currency: o.currency }));
         break;
       }

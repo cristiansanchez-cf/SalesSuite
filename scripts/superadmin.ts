@@ -19,8 +19,9 @@ const must = <T>(r: { data: T; error: { message: string } | null }, what: string
 let user = must(await sb.from('users').select('id').ilike('email', email).maybeSingle(), 'buscar usuario') as { id: string } | null;
 if (!user && !REMOVE) {
   if (DRY) { console.log('• [prueba] no tiene usuario: se le invitaría por email'); process.exit(0); }
-  const inv = must(await sb.auth.admin.inviteUserByEmail(email), 'invitar');
-  user = { id: inv.user.id };
+  const inv = await sb.auth.admin.inviteUserByEmail(email);
+  if (inv.error || !inv.data.user) { console.error(`✗ invitar: ${inv.error?.message ?? 'sin usuario'}`); process.exit(1); }
+  user = { id: inv.data.user.id };
   // El trigger crea la fila en public.users; por si tarda, se asegura.
   await sb.from('users').upsert({ id: user.id, email }, { onConflict: 'id', ignoreDuplicates: true });
   console.log('• invitado: le llega un email para entrar');

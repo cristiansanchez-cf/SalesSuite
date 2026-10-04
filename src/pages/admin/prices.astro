@@ -57,13 +57,14 @@ const sectorName = new Map(market.map((s) => [s.id, s.name]));
         {options.length === 0 ? <p class="co-meta">{m.empty}</p> : options.map((o) => (
           <article class:list={['co-card flex flex-wrap items-center gap-4 !p-5', !o.active && 'opacity-60']} data-testid="price-option" data-label={o.label}>
             <span class="grid min-w-0 flex-1 gap-1">
-              <span class="co-entity">{o.label}</span>
+              <span class="co-entity">{o.label}{o.quoteOnly && <span class="co-badge co-badge--attention ml-2">{m.quoteOnly}</span>}</span>
+              {o.note && <span class="text-sm">{o.note}</span>}
               <span class="co-meta">{o.segmentId ? sectorName.get(o.segmentId) ?? '' : m.anySegment} · {m.periods[o.period]}</span>
               {o.paymentLink
                 ? <span class="flex items-center gap-1 truncate text-xs text-muted"><Icon name="link" size={12} /><span class="truncate">{o.paymentLink}</span></span>
                 : <span class="text-xs text-[color:var(--console-attention,#b42318)]">{m.noLink}</span>}
             </span>
-            <span class="co-figure text-3xl">{f.money(Math.round(o.amount * 100), o.currency)}</span>
+            <span class="co-figure text-3xl">{o.quoteOnly && !o.amount ? '—' : f.money(Math.round(o.amount * 100), o.currency)}</span>
             <form method="post">
               <input type="hidden" name="action" value="toggle" /><input type="hidden" name="id" value={o.id} /><input type="hidden" name="active" value={o.active ? '0' : '1'} />
               <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{o.active ? m.deactivate : m.activate}</button>
