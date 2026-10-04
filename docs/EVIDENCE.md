@@ -22,6 +22,10 @@ Se compara tu situación con la de cada cierre:
 
 Lo que no se sabe («no lo sé») no suma ni resta. A igualdad, primero lo ganado y después lo más reciente. Las jugadas se ordenan por cuántos cierres parecidos **ganaron** usándolas (los perdidos restan). En el ranking global se usa una tasa suavizada (Laplace), para que 1 de 1 no cuente como un 100 %. Con menos de tres casos parecidos, la pantalla avisa de que «es una pista, no una regla».
 
+**Umbral de 20 cierres** (`MIN_CLOSES`, variable `EVIDENCE_MIN_CLOSES`; 0 en demo): hasta tener 20 cierres documentados **no se ordena nada por datos** (ni jugadas recomendadas, ni ranking, ni el guion, ni «Preparar mensaje»). Los casos se siguen enseñando y la evidencia («ganó en 2») se ve, pero el orden es el del líder. «Qué ha funcionado» lo explica con una nota.
+
+**El sector filtra:** las jugadas que se recomiendan salen de cierres del mismo sector (o sin sector). Un cierre de bodas no empuja jugadas en una discoteca.
+
 ## 3. Dónde se ve
 
 - **Qué ha funcionado** (`/admin/wins`): describe tu situación (sector, con quién, cómo es…; todo opcional) y verás los cierres parecidos, con sus coincidencias y diferencias, y las jugadas que más ganan.

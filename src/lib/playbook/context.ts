@@ -49,14 +49,15 @@ export function pickPlays(plays: PlayView[], d: Pick<ContextData, 'segment' | 'p
   const stageKey = (Object.entries(STAGE_LABEL).find(([, v]) => v === etapa)?.[0]) ?? null;
   const segOk = (p: PlayView) => !p.segments.length || (d.segment && p.segments.includes(d.segment.key));
   const persOk = (p: PlayView) => !p.personas.length || (d.persona && p.personas.includes(d.persona.key));
-  const pool = plays.filter((p) => p.status === 'official' && segOk(p) && persOk(p));
+  const pool = plays.filter((p) => p.status === 'official' && !p.about && segOk(p) && persOk(p));
   const score = (p: PlayView) =>
     (d.persona && p.personas.includes(d.persona.key) ? 100 : 0)
     + (d.objection && p.objection === d.objection ? 60 : 0)
     + (stageKey && p.stage === stageKey ? 40 : 0)
-    + (d.segment && p.segments.includes(d.segment.key) ? 10 : 0)
     + (p.score.worked - p.score.didnt);
-  return pool.filter((p) => score(p) >= 10).sort((a, b) => score(b) - score(a)).slice(0, max);
+  // El sector no puntúa: filtra (segOk). Lo propio del sector va antes que lo general a igualdad.
+  const own = (p: PlayView) => (d.segment && p.segments.includes(d.segment.key) ? 1 : 0);
+  return pool.filter((p) => score(p) > 0 || own(p)).sort((a, b) => score(b) - score(a) || own(b) - own(a)).slice(0, max);
 }
 
 export function buildContext(d: ContextData): ContextBrief {

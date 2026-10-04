@@ -67,7 +67,12 @@ const [catalog, learn, segments, plays, terms] = await Promise.all([
   key === 'terms' ? admin.commissions.myConditions().catch(() => null) : null,
 ]);
 const sectors = segments.filter((s) => s.status !== 'archived').slice(0, 4);
-const topPlays = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 3);
+// Con datos suficientes, las que más ganan (el orden ya viene de la evidencia); sin ellos, las fijadas por el líder.
+const ranked = key === 'how' ? await admin.evidence.ranking().catch(() => []) : [];
+const pinned = plays.filter((p) => p.pinned).sort((a, b) => (a.pinned ?? 9) - (b.pinned ?? 9));
+const topPlays = ranked.length
+  ? ranked.slice(0, 3).map((r) => plays.find((p) => p.id === r.play.id)).filter((p): p is (typeof plays)[number] => !!p)
+  : (pinned.length ? pinned : [...plays].sort((a, b) => a.position - b.position)).slice(0, 3);
 const href = (i: number) => `/admin/welcome?step=${i}`;
 const sectorIcon = (i: string | null) => (i && i in ICONS ? i : 'target') as IconName;
 const priceOf = new Map(catalog.map((c) => [c.moduleId, c]));
@@ -158,7 +163,9 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
             <li class="co-inset grid list-none gap-2" data-testid="welcome-play">
               <a class="co-row-title underline-offset-2 hover:underline" href={`/admin/learn/${p.moduleId ?? 'general'}#play-${p.id}`}>{p.title}</a>
               <span class="co-meta">{firstLine(p.body)}</span>
-              {p.evidence.won > 0
+              {!ranked.length && p.pinned
+                ? <span class="co-badge co-badge--ink w-fit">{m.how.must}</span>
+                : p.evidence.won > 0
                 ? <span class="co-badge co-badge--signal w-fit">{m.how.proven(p.evidence.won)}</span>
                 : <span class="co-badge w-fit">{m.how.hypothesis}</span>}
             </li>))}

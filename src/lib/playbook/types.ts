@@ -37,7 +37,7 @@ export type TargetType = 'play' | 'contribution';
 /** 'general' o el id de un módulo. */
 export type Topic = string;
 
-/** Referencia a una ficha del Cerebro de Ventas: se enlaza y atribuye, nunca se copia su guion. */
+/** Referencia a una ficha del Cerebro de Ventas: título, creador y enlace. El guion literal del creador, si se usa, va en el texto de la jugada tal cual (uso interno). */
 export interface TechniqueRef {
   source: 'cerebro';
   id?: number;
@@ -59,6 +59,10 @@ export interface Play {
   personas: string[];
   /** Por defecto 'all'. */
   audience: Audience;
+  /** Paso 0 de Aprende: de la empresa (visión, estrategia), no de cómo se vende. */
+  about?: boolean;
+  /** Orden fijo en la bienvenida (1..9) mientras no haya cierres suficientes. */
+  pinned?: number | null;
   title: string;
   body: string;
   whenToUse: string | null;

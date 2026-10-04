@@ -23,13 +23,14 @@ if (!admin) return Astro.redirect('/admin/login');
 const pb = admin.playbook;
 const { m: msg, locale } = i18n(Astro, playbookMessages);
 const topicId = Astro.params.topic ?? '';
-if (topicId !== 'general' && !/^[0-9a-f-]{36}$/.test(topicId)) return Astro.rewrite('/404');
+const isGeneralTopic = topicId === 'general' || topicId === 'empresa';
+if (!isGeneralTopic && !/^[0-9a-f-]{36}$/.test(topicId)) return Astro.rewrite('/404');
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   let ok = '';
-  result = await formAction(async () => { ok = await learnAction(pb, f, { moduleId: topicId === 'general' ? null : topicId, topic: topicId }); });
+  result = await formAction(async () => { ok = await learnAction(pb, f, { moduleId: isGeneralTopic ? null : topicId, topic: topicId }); });
   if (!result.error) return Astro.redirect(`/admin/learn/${topicId}${ok && ok !== 'vote' ? `?ok=${ok}` : ''}${Astro.url.hash}`, 303);
 }
 
@@ -37,7 +38,7 @@ let view;
 let fit: Awaited<ReturnType<typeof pb.moduleFit>> = [];
 try {
   view = await pb.topic(topicId);
-  if (topicId !== 'general') fit = await pb.moduleFit(topicId);
+  if (!isGeneralTopic) fit = await pb.moduleFit(topicId);
 } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;

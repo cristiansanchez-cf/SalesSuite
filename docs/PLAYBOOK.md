@@ -40,6 +40,9 @@ Cada jugada lleva los **mismos campos que una ficha del Cerebro de Ventas**: *cu
   - Orden: **Antes de nada** (aviso del sector + mentalidad) → **Antes de ir** (prospección) → Con quién hablas → Apertura → Descubrimiento → **Lo que se cuenta** (relato del sector, si lo tiene) → Presentación por módulo → Precio → Objeciones → Cierre y seguimiento.
   - **El sector manda**: en cada apartado, si el sector de la cuenta tiene jugadas propias, salen solo esas; las generales solo cubren huecos. Así un guion verificado no se mezcla con una apertura o un «es caro» genérico.
 - **Guiones verificados** (Enjoy: locales, promotoras, conciertos, festivales): se cargan literales con `scripts/import-guiones.py` desde `docs/ventas/enjoy/fuentes/`. Las jugadas que sustituyen van en `retired_plays` de `tenant.json`: el alta las **archiva** (con revisión «Retirada…»), no las borra.
+- **Por qué existimos** (`play.about`): piezas de la empresa (visión, estrategia, modelo, objetivos). Son el **paso 0 de Aprende** (`/admin/learn/empresa`), no salen en «Cómo se vende», ni en el guion, ni en «Preparar mensaje»: se aprenden, no se dicen.
+- **Fijas en la bienvenida** (`play.pinned` 1..9): mientras no haya 20 cierres documentados, la bienvenida enseña estas en vez de «las que más ganan».
+- **Preparar mensaje**: el sector **filtra, no puntúa** (una jugada de otro sector no entra); entre las que quedan, actor +100, objeción +60, etapa +40.
 - **Aviso del sector** (`segment.notice`, máx. 600): lo pone el alta (`market[].notice`). Sale arriba de la ficha del sector en Aprende y al principio del guion. Ejemplo: conciertos y festivales, «aún no hemos cerrado ninguna venta».
 - **En "Aprende"**: una ficha de venta por módulo con la **vista previa en vivo del módulo** (el comercial ve exactamente lo que verá el cliente), sus jugadas y lo que ha aportado el equipo.
 
@@ -121,7 +124,7 @@ El Cerebro es conocimiento de **expertos** (técnicas generales y atribuidas). E
 
 | Dirección | Cómo | Estado |
 |---|---|---|
-| Cerebro → Playbook | Una jugada puede **referenciar fichas del Cerebro** (id, título, creador, enlace a la fuente), p. ej. la objeción "es caro" enlaza a *[707] El cliente dice 'caro' porque traduce precio a horas trabajadas*. Se muestra el título con atribución y enlace; **nunca se copia el guion literal del creador**. | ✅ |
+| Cerebro → Playbook | Una jugada puede **referenciar fichas del Cerebro** (id, título, creador, enlace a la fuente), p. ej. la objeción "es caro" enlaza a *[707] El cliente dice 'caro' porque traduce precio a horas trabajadas*. Se muestra el título con atribución y enlace. Si la jugada usa el guion del creador, va **literal** (no se reescribe ni se resume) y la adaptación propia se marca como tal; es material interno, no lo ve el cliente. | ✅ |
 | Cerebro → Playbook | Botón *"Sugerir técnicas"* en el editor de jugadas y en el guion: consulta el Cerebro por etapa y objeción. Necesita que el Cerebro exponga una API de servidor por tenant; la interfaz `TechniqueProvider` ya está prevista. | 🔜 |
 | Playbook → Cerebro | **Exportación** `GET /admin/api/playbook/export` con formato de ficha: técnica, cuándo usarla, por qué funciona, guion, etapa, objeción, evidencia del equipo. Así el Cerebro puede ingerir "el cerebro del equipo Enjoy" y aprender de los fallos y aciertos del equipo. | ✅ export · 🔜 ingesta |
 | Contexto → Cerebro | «Preparar mensaje»: petición con etapa y objeción del Cerebro + todo el contexto de empresa, sector, actor, cuenta y propuesta, para abrir en Claude/ChatGPT con el MCP. | ✅ |

@@ -38,7 +38,11 @@ export function evidenceByPlay(stories: WinStory[]): Map<string, PlayEvidence> {
   return m;
 }
 
-export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService }) {
+/** Cierres documentados a partir de los cuales se ordenan jugadas por datos. Con menos, dos ventas ponen arriba cualquier cosa. */
+export const MIN_CLOSES = 20;
+
+export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService; minCloses?: number }) {
+  const minCloses = deps.minCloses ?? MIN_CLOSES;
   const isAdmin = can(s.role).managePlaybook;
   const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo el líder (admin) configura las situaciones'); };
 
@@ -104,6 +108,8 @@ export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: Adm
     const official = new Map(plays.filter((p) => p.status === 'official').map((p) => [p.id, p]));
     const rec = new Map<string, PlayRecommendation>();
     for (const m of matches) {
+      // Las jugadas que se recomiendan son del mismo sector (o de cierres sin sector): el sector filtra, no puntúa.
+      if (q.segmentId && m.story.segmentId && m.story.segmentId !== q.segmentId) continue;
       for (const pid of m.story.playIds) {
         const p = official.get(pid);
         if (!p) continue;
@@ -113,7 +119,10 @@ export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: Adm
         rec.set(pid, r);
       }
     }
-    const playRecs = [...rec.values()].filter((r) => r.wonIn > 0)
+    // Con pocos cierres documentados no se ordena por datos: sería ruido.
+    const closes = stories.filter((x) => x.status === 'shared').length;
+    const enough = closes >= minCloses;
+    const playRecs = [...rec.values()].filter((r) => enough && r.wonIn > 0)
       .sort((a, b) => b.score - a.score || b.wonIn - a.wonIn || a.title.localeCompare(b.title));
     const limit = opts.limit ?? 20;
     return {
@@ -123,6 +132,7 @@ export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: Adm
       total: matches.length,
       won: matches.filter((m) => m.story.outcome === 'won').length,
       plays: playRecs.slice(0, 8),
+      closes, minCloses, enough,
       facets: n.facets,
     };
   }
@@ -191,6 +201,7 @@ export function createEvidenceService(edb: EvidenceDb, pdb: PlaybookDb, adb: Adm
   /** Jugadas por evidencia: ganadas/usadas, con tasa suavizada para no exagerar con pocos casos. */
   async function ranking() {
     const [stories, plays] = await Promise.all([visibleStories(), pdb.listPlays(s.tenantId)]);
+    if (stories.filter((x) => x.status === 'shared').length < minCloses) return [];
     const ev = evidenceByPlay(stories);
     return plays.filter((p) => p.status === 'official' && ev.has(p.id))
       .map((p) => ({ play: p, ...ev.get(p.id)!, rate: winRate(ev.get(p.id)!.won, ev.get(p.id)!.used) }))

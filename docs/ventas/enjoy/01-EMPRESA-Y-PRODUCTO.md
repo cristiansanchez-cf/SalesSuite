@@ -22,14 +22,6 @@ El público escanea un QR, sin descargar nada, y **sube fotos, manda mensajes y 
 **Cuándo:** Los primeros 30 segundos de cualquier conversación.
 **Por qué funciona:** Cuenta lo que pasa en la sala, no la herramienta: nadie compra «interactividad».
 
-### El activo es el consentimiento · `gen-consentimiento`
-
-Quien sube una foto acepta los términos de uso: quien organiza puede usar ese contenido en sus redes y su comunicación.
-
-Ninguna cámara, kiss cam ni fotomatón da eso.
-
-**Por qué funciona:** Es lo único que nadie más ofrece, y responde a «¿y los derechos de imagen?» antes de que salga.
-
 ### Lo que existe hoy (y a veces no se vende) · `gen-hoy`
 
 Está en producción y se puede enseñar:
@@ -46,38 +38,31 @@ Está en producción y se puede enseñar:
 **Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.
 
 
-### Primero: el contenido con permiso · `loc-pitch-contenido`
+### Primero: el contenido con permiso · `noche-pitch-contenido`
 
 > «La gente escanea un QR, sin descargar nada, y sube sus fotos. Salen en tu pantalla y se quedan todas en un álbum de la noche.
 >
 > Lo importante de eso: cuando suben la foto están aceptando los términos, así que **son fotos que puedes usar en tus redes**. De tu propia gente, de tu local, cada noche que abras.»
 
 
-### Segundo: la pantalla desde tu móvil · `loc-pitch-barra`
-
-El argumento más directo que tenemos con un dueño, y el que más se olvida:
-
-> «Y la pantalla la manejas tú desde el móvil. Un martes a la una y media ves la barra parada y mandas "chupito a 2 € los próximos diez minutos". Eso hoy no lo puedes hacer de ninguna otra forma.»
-
-
-### Tercero, y de pasada: las canciones · `loc-pitch-canciones`
+### Tercero, y de pasada: las canciones · `noche-pitch-canciones`
 
 > «Los mensajes y las peticiones de canciones van en el mismo QR. El DJ las ve si quiere usarlas para leer la sala, y si no quiere, ni las mira.»
 
 **Nunca se abre por aquí.** Un dueño no ve valor en que le pidan canciones: para eso ya tiene un DJ.
 
 
-### El consentimiento, si viene al caso · `loc-pitch-coldplay`
+### El consentimiento, si viene al caso · `noche-pitch-coldplay`
 
 > «Lo del concierto de Coldplay se lio porque fue sin consentimiento. Aquí es al revés: sube su foto quien quiere subirla.»
 
 
-### Adelántate antes de que lo saque él · `loc-dj-adelantar`
+### Adelántate antes de que lo saque él · `noche-dj-menu`
 
 > «Una cosa que te adelanto: tu DJ no tiene que ocuparse de esto. Quién aprueba lo que sale en pantalla lo decides tú — puede ser el encargado, el de la puerta, o va con Spotify sin DJ. Y las canciones van con menú cerrado: solo se puede pedir lo que tú metas en la lista, así que nadie te rompe el ambiente del local.»
 
 
-### El modelo de La Biblioteca · `loc-dj-propina`
+### El modelo de La Biblioteca · `noche-dj-propina`
 
 > «Lo que paga el público va a tu cuenta. Lo que hacen casi todos los locales es repartirlo como propina del equipo, así el DJ y la barra tienen interés en que funcione. Pero eso lo decides tú.»
 
@@ -94,38 +79,28 @@ Paradox encajó por aquí: ya hacían temporizadores y dinámicas en pantalla si
 > «Por lo que me cuentas ya hacéis dinámicas. Esto es la herramienta que os falta para montarlas sin pelearos con el ordenador: lo lanzáis desde el móvil en el momento.»
 
 
-### El pre-show, la punta de lanza · `con-pitch-preshow`
+### El pre-show, la punta de lanza · `conc-pitch-preshow`
 
 > «La parte fuerte ni siquiera es durante el show: es la hora de antes. El público ya está dentro, esperando, con el móvil en la mano, y en pantalla no hay nada que mirar. Eso hoy no lo monetiza nadie.»
 
 **Por qué se abre por aquí:** desactiva la objeción del manager antes de que exista. No competimos con el artista por la atención, porque el artista aún no ha salido. Y es lo más fácil de patrocinar.
 
 
-### Al promotor o la sala: inventario patrocinable · `con-pitch-promotor`
+### Al promotor o la sala: inventario patrocinable · `conc-pitch-promotor`
 
 > «Lo que te damos es un espacio en pantalla que la gente mira de verdad, porque está mirando a ver si sale su foto o su mensaje. Y datos de participación, que es lo que las marcas están pidiendo ahora para renovar: una activación física no te entrega nada de eso.»
 
 
-### Al manager o al artista: conexión, no distracción · `con-pitch-manager`
+### Al manager o al artista: conexión, no distracción · `conc-pitch-manager`
 
 > «Nosotros tampoco queremos que la gente esté pegada al móvil. Ya lo está, eso no lo decidimos ni tú ni yo. Lo que hacemos es que ese rato sirva para algo que pasa en la sala.
 >
 > Hoy él solo puede interactuar con las tres primeras filas; una pancarta a sesenta metros no la ve nadie. Con esto le llega un mensaje desde la grada de arriba a su panel y lo puede leer en directo.»
 
 
-### El álbum con backstage · `con-pitch-album`
+### El álbum con backstage · `conc-pitch-album`
 
 > «El equipo del artista va subiendo fotos de camerino al álbum y el público las ve en tiempo real mientras espera. La primera foto del álbum la sube él. Deja de ser "sube tus fotos" y pasa a ser "aquí hay algo que no está en ningún otro sitio".»
-
-
-### A producción: NDI · `con-pitch-produccion`
-
-> «No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en un lateral, en una tarjeta pequeña. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.»
-
-
-### El menú cerrado es el producto entero · `con-charanga-pitch`
-
-> «Metéis vuestro repertorio en una lista, la gente vota desde el móvil y vosotros tocáis lo más votado. Nadie puede pedir nada que no esté en vuestra lista. El público elige la siguiente, o la última de la noche.»
 
 
 ### Llegamos con la marca detrás · `fest-modelo-b`
@@ -147,33 +122,51 @@ El festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto l
 > «No os hace falta sobrevivir, os hace falta rentabilizar mejor el aforo que ya tenéis. Vuestra pantalla deja de ser soporte pasivo y pasa a ser activación: la gente la mira porque busca su foto. Y eso es lo que las marcas están comprando ahora, porque pueden medirlo.»
 
 
-### Acotar desde el principio · `fest-una-pantalla`
+## 2. Por qué existimos (paso 0 de Aprende)
 
-> «Una cosa que te digo ya: hoy manejamos una pantalla, no todo el recinto. Lo que tenemos que decidir es en qué pantalla y en qué momento.»
+Es lo primero que ve un comercial en Aprende, antes del recorrido del producto. No sale en el guion de la reunión: se aprende, no se dice.
 
-**Se dice en la primera reunión.** Si no, el cliente se imagina el festival entero y lo descubre el día del montaje.
+### La visión · `vision`
 
+La gente sale menos y, cuando sale, está con el móvil. Pelearse contra eso es perder. Enjoy no quiere que la gente mire menos el móvil: quiere que lo que haga con él pase en la sala y no en otro sitio. Que pida la canción que está sonando, que mande un mensaje que lee toda la pista, que suba una foto y la vea en pantalla a los diez segundos. Que alguien le diga «¿tú también has pedido esa?» y se conozcan. El móvil como excusa para una conexión real, no como sustituto.
 
-## 2. Visión, estrategia y objetivos
+### Por qué ahora · `por-que-ahora`
 
-> **HUECO — hoy no existe en la app.** Aprende explica el producto, a quién se vende y cómo, pero no **por qué** la empresa
-> hace lo que hace ni **qué objetivos** persigue. Es lo que convierte a un comercial en alguien que cree en lo que vende.
+El ocio nocturno se está copiando a sí mismo: las mismas fiestas temáticas, la misma música, los mismos carteles. Diferenciarse dejó de ser una ventaja y pasó a ser una condición. A la vez, los locales necesitan contenido para redes cada semana y lo resuelve el encargado con el móvil a las cuatro de la mañana. Y las marcas que patrocinan están exigiendo medir lo que compran. Las tres cosas se resuelven con lo mismo: que el público participe desde su móvil y deje su contenido con permiso.
 
-Rellenar (cada punto, 2–5 frases, en el tono de la empresa):
+### Plantar la bandera · `estrategia-bandera` · _solo equipo interno_
 
-- `vision` · **La visión:** por qué esto es tan grande. Qué cambia en una fiesta cuando el público es protagonista.
-- `estrategia-bandera` · **Plantar la bandera en todas partes:** por qué hay cosas gratis (p. ej. la pantalla «Lite» / el
-  modelo para bares) y qué se gana con estar en cada local antes que nadie.
-- `estrategia-djs` · **Los DJ como canal:** por qué importan, qué ganan ellos y cómo nos abren puertas.
-- `objetivos` · **Objetivos de este año:** cuántos locales/eventos, en qué ciudades, qué sector primero y por qué.
-- `modelo` · **Cómo gana dinero la empresa** (y el cliente): cuotas, comisión por peticiones, packs… y qué NO se vende todavía.
-- `por-que-ahora` · **Por qué ahora:** qué pasa en el mercado (ocio nocturno en caída, móviles, redes) que lo hace urgente.
-- `no-somos` · **Lo que no somos:** para no prometer de más.
+Queremos estar en el máximo número de sitios posible, cuanto antes, y por eso a veces vale la pena entrar sin cobrar lo que valdría.
 
-Dónde saldrá: un bloque nuevo al principio de Aprende («Por qué existimos») antes del recorrido del producto, y como
-contexto para el guion de cada reunión.
+En el peor de los casos, un sitio puede empezar solo con el QR de peticiones de canciones, sin pantalla y sin coste. Eso no es regalar el producto: es que cada sitio donde esto funciona es un sitio donde el dueño ve pasar algo en su propia sala, y la conversación de dentro de tres meses empieza mucho más arriba.
 
-Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): «Lo que existe hoy (y a veces no se vende)» (`gen-hoy`), «La venta en barra: existe hoy y está infravendida» (`gen-venta-barra`), «Roadmap 2027 (se cuenta, no se vende)» (`gen-roadmap`), «Qué precio está validado y cuál no» (`gen-precio-validado`), «"Ya trabajamos con un DJ que hace cosas parecidas"» (`loc-obj-proveedor`), «Adelántate antes de que lo saque él» (`loc-dj-adelantar`), «El modelo de La Biblioteca» (`loc-dj-propina`), «Lo que no se pregunta jamás» (`loc-dj-no-preguntar`).
+**Esto es contexto para que entiendas por qué hacemos lo que hacemos. No es una oferta que puedas poner tú sobre la mesa:** cualquier entrada por debajo de tarifa la autoriza el fundador.
+
+### Por qué los datos importan tanto · `estrategia-datos` · _solo equipo interno_
+
+Cada noche encendida son datos que nadie más tiene: qué se pide, dónde, a qué hora y con qué público. Eso tiene valor para gente que hoy no nos compra a nosotros — marcas de bebidas que llevan años intentando saber algo de quién consume en una discoteca, y discográficas a las que les interesa qué suena y qué piden en cada ciudad.
+
+Hemos tenido conversaciones en esa dirección. **Ninguna es un acuerdo cerrado y no se menciona a ningún cliente.** Está aquí para que entiendas por qué insistimos tanto en que cada sitio esté activo y en que la gente dé su consentimiento: el negocio de dentro de dos años se construye con lo que se enciende este año.
+
+### Los DJ como canal · `estrategia-djs`
+
+El DJ ha sido históricamente quien nos ha tumbado acuerdos, y fue culpa de cómo lo planteamos: le dábamos trabajo y no le dábamos nada. Ahora al revés. El menú cerrado hace que nadie le toque el repertorio. El dinero de las peticiones va a la cuenta del local, y lo que recomendamos —porque es lo que funciona en La Biblioteca— es que se reparta como propina de todo el equipo: así el DJ que no acepta peticiones está dejando sin propina a sus compañeros, y eso lo vigila la plantilla sola. De bloqueante a aliado.
+
+### Cómo gana dinero la empresa · `modelo`
+
+Cuota mensual por tramo de aforo en locales. Precio por evento en conciertos, festivales y promotoras puntuales. Suscripción cuando hay recurrencia: promotoras, agencias, infraestructuras de temporada.
+
+El dinero que paga el público por sus peticiones y mensajes **no es nuestro**: va a la cuenta del local. Cobramos por el servicio, no por el consumo de su público.
+
+Lo que todavía no vendemos: CRM de fidelización, remarketing, bonos de consumición y manejo múltiple de pantallas.
+
+### Los objetivos de este año · `objetivos` · _solo equipo interno_
+
+**PENDIENTE — lo rellena Cristian.** Formato: cuántos locales de pago a cierre de año, en qué ciudades, qué MRR, cuántos eventos de concierto o festival, y cuántos casos de éxito con nombre.
+
+### Lo que no somos · `no-somos`
+
+No somos una kiss cam: no grabamos a nadie sin que lo sepa. No somos una app de peticiones para DJs: es una parte, y la que menos vendemos. No somos una agencia de contenido ni montamos nada físico. No damos soporte 24 horas. Y no prometemos que el servicio se pague solo con las peticiones: depende del público y de la temporada, y quien lo prometió antes perdió al cliente cuando no se cumplió.
 
 ## 3. Así funciona, de principio a fin (el recorrido de 1 minuto)
 

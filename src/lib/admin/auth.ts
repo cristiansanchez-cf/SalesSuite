@@ -9,6 +9,12 @@ import type { AstroCookies } from 'astro';
 import { appMode } from '../mode';
 import { demoDb } from '../data/store';
 import { env } from '../env';
+
+/** Umbral de cierres para ordenar por datos: 20 en producción; 0 en demo (sus 4 cierres de ejemplo enseñan la función). */
+function minClosesFor(): number {
+  const v = Number(env('EVIDENCE_MIN_CLOSES'));
+  return Number.isFinite(v) && env('EVIDENCE_MIN_CLOSES') ? v : appMode() === 'supabase' ? 20 : 0;
+}
 import type { TenantContext } from '../types';
 import type { AdminDb } from './db';
 import type { AssetStore, Identity } from './db';
@@ -154,8 +160,8 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
     admin: {
       mode, session, supabase: deps.supabase, service,
       tenantAdmin: createTenantAdminService(db, session, { identity: deps.identity, assets: deps.assets }),
-      playbook: createPlaybookService(playbookDb, db, session, { admin: service, evidence: evidenceDb }),
-      evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service }),
+      playbook: createPlaybookService(playbookDb, db, session, { admin: service, evidence: evidenceDb, minCloses: minClosesFor() }),
+      evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service, minCloses: minClosesFor() }),
       notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
       accounts: createAccountsService(deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,

@@ -58,7 +58,8 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
   // Jugadas de otro sector fuera. Las dirigidas a un actor: si la cuenta ya tiene contactos mapeados,
   // solo las de actores presentes; si no hay mapa todavía, todas (no sabemos con quién hablará).
   const mapped = contactPersonas.size > 0;
-  const official = plays.filter((x) => x.status === 'official'
+  // Las piezas de «Por qué existimos» se aprenden, no se dicen en la reunión.
+  const official = plays.filter((x) => x.status === 'official' && !x.about
     && (!segKey || !x.segments.length || x.segments.includes(segKey))
     && (!mapped || !x.personas.length || x.personas.some((k) => contactPersonas.has(k))));
   const line = (x: PlayView): TrackLine => ({ source: 'official', id: x.id, kind: x.kind, title: p(x.title), text: p(x.body), refs: x.techniqueRefs, score: x.score });
@@ -159,7 +160,11 @@ export function buildTalkTrack(state: BuilderState, plays: PlayView[], tips: Con
       const mine = official.filter((x) => x.moduleId === m.id);
       const pick = (k: PlayKind, n: number) => mine.filter((x) => x.kind === k).sort(byEvidenceThenPosition).slice(0, n);
       const bestTip = sharedTips.filter((t) => t.moduleId === m.id).sort((a, b) => evidence(b.score) - evidence(a.score))[0];
-      const lines = [...pick('pitch', 1), ...pick('fit', 1), ...pick('proof', 1), ...pick('tip', 1)].map(line);
+      // Si el sector tiene piezas propias de este módulo, van todas y en su orden (guion verificado); si no, una de cada tipo.
+      const own = segKey ? mine.filter((x) => x.segments.includes(segKey) && ['pitch', 'fit', 'proof', 'tip'].includes(x.kind)).sort((a, b) => a.position - b.position) : [];
+      // Con piezas propias: primero «qué es» (el pitch común del módulo) y después las del sector.
+      const base = mine.filter((x) => !x.segments.length && x.kind === 'pitch').sort((a, b) => a.position - b.position).slice(0, 1);
+      const lines = (own.length ? [...base, ...own] : [...pick('pitch', 1), ...pick('fit', 1), ...pick('proof', 1), ...pick('tip', 1)]).map(line);
       if (bestTip) lines.push(tipLine(bestTip));
       if (!mine.length) uncovered.push(m.name);
       return { title: `${i + 1}. ${m.name}`, lines, note: mine.length ? undefined : 'Este módulo aún no tiene jugadas: pídeselas a tu líder o comparte las tuyas.' };

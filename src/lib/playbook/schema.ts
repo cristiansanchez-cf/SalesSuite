@@ -22,6 +22,8 @@ export const playInputSchema = z.object({
   segments: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,63}$/)).max(10).default([]),
   personas: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,63}$/)).max(20).default([]),
   audience: z.enum(AUDIENCES).default('all'),
+  about: z.boolean().optional(),
+  pinned: z.number().int().min(1).max(9).nullable().optional(),
   title: text(200).min(1, 'El título es obligatorio'),
   body: text(8000).default(''),
   whenToUse: optText(1000),

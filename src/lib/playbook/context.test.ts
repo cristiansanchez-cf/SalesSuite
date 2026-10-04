@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { buildContext, type ContextData } from './context';
+import { buildContext, pickPlays, type ContextData } from './context';
+import type { PersonaView, Segment } from './market';
+import type { PlayView } from './types';
 
 const base: ContextData = {
   tenantName: 'Enjoy', companyPitch: null, messageType: 'seguimiento', channel: 'whatsapp', objection: null, notes: null,
@@ -20,5 +22,29 @@ describe('contexto para el Cerebro', () => {
     const once = buildContext({ ...base, reading: { opens: 1, visitors: 1, lastAt: null, topSection: 'Galería', priceFocus: false } });
     expect(once.cerebro.situacion).toContain('ha abierto la propuesta una vez');
     expect(once.cerebro.situacion).not.toContain('precio');
+  });
+});
+
+describe('jugadas para el mensaje (pickPlays)', () => {
+  const pv = (key: string, o: Partial<PlayView> = {}): PlayView => ({
+    id: key, tenantId: 't', moduleId: null, key, kind: 'tip', stage: null, objection: null, segments: [], personas: [], audience: 'all',
+    title: key, body: '', whenToUse: null, whyItWorks: null, techniqueRefs: [], position: 0, status: 'official', version: 1,
+    authorId: null, updatedBy: null, createdAt: null, updatedAt: null, score: { worked: 0, didnt: 0, mine: null }, evidence: { used: 0, won: 0, lost: 0 }, ...o,
+  });
+  const seg = (key: string) => ({ key }) as Segment;
+  const persona = { key: 'dueno' } as PersonaView;
+
+  test('el sector filtra, no puntúa: una jugada de bodas con el actor exacto no entra en una discoteca', () => {
+    const plays = [
+      pv('bodas-dueno', { segments: ['bodas'], personas: ['dueno'] }),
+      pv('noche-general', { segments: ['ocio-nocturno'], stage: 'seguimiento' }),
+    ];
+    const r = pickPlays(plays, { segment: seg('ocio-nocturno'), persona, messageType: 'seguimiento', objection: null });
+    expect(r.map((p) => p.key)).toEqual(['noche-general']);
+  });
+
+  test('las piezas de «Por qué existimos» no entran en un mensaje', () => {
+    const r = pickPlays([pv('vision', { about: true, stage: 'seguimiento' }), pv('seg', { stage: 'seguimiento' })], { segment: null, persona: null, messageType: 'seguimiento', objection: null });
+    expect(r.map((p) => p.key)).toEqual(['seg']);
   });
 });

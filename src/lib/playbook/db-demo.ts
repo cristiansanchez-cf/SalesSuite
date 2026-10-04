@@ -8,7 +8,7 @@ import { demoEmitContribution } from '../notify/db-demo';
 
 export const rowToPlay = (r: PlayRow): Play => ({
   id: r.id, tenantId: r.tenant_id, moduleId: r.module_id, key: r.key, kind: r.kind as Play['kind'],
-  stage: r.stage as Play['stage'], objection: r.objection as Play['objection'], segments: r.segments ?? [], personas: r.personas ?? [], audience: r.audience ?? 'all',
+  stage: r.stage as Play['stage'], objection: r.objection as Play['objection'], segments: r.segments ?? [], personas: r.personas ?? [], audience: r.audience ?? 'all', about: r.about ?? false, pinned: r.pinned ?? null,
   title: r.title, body: r.body, whenToUse: r.when_to_use, whyItWorks: r.why_it_works,
   techniqueRefs: (r.technique_refs ?? []) as TechniqueRef[], position: Number(r.position), status: r.status as Play['status'],
   version: r.version, authorId: r.author_id, updatedBy: r.updated_by ?? null, createdAt: r.created_at ?? null, updatedAt: r.updated_at ?? null,
@@ -40,7 +40,7 @@ export function demoPlaybookDb(getDb: () => DemoDb = demoDb): PlaybookDb {
     async insertPlay(t, p) {
       const id = randomUUID();
       db().play.push({
-        id, tenant_id: t, module_id: p.moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, personas: p.personas, audience: p.audience,
+        id, tenant_id: t, module_id: p.moduleId, key: p.key, kind: p.kind, stage: p.stage, objection: p.objection, segments: p.segments, personas: p.personas, audience: p.audience, about: p.about ?? false, pinned: p.pinned ?? null,
         title: p.title, body: p.body, when_to_use: p.whenToUse, why_it_works: p.whyItWorks, technique_refs: p.techniqueRefs,
         position: p.position, status: p.status, version: p.version ?? 1, author_id: p.authorId, updated_by: p.updatedBy, created_at: now(), updated_at: now(),
       });
@@ -50,7 +50,7 @@ export function demoPlaybookDb(getDb: () => DemoDb = demoDb): PlaybookDb {
       const r = db().play.find((x) => x.id === id);
       if (!r) return false;
       const map: Record<string, keyof PlayRow> = {
-        moduleId: 'module_id', key: 'key', kind: 'kind', stage: 'stage', objection: 'objection', segments: 'segments', personas: 'personas', audience: 'audience', title: 'title', body: 'body',
+        moduleId: 'module_id', key: 'key', kind: 'kind', stage: 'stage', objection: 'objection', segments: 'segments', personas: 'personas', audience: 'audience', about: 'about', pinned: 'pinned', title: 'title', body: 'body',
         whenToUse: 'when_to_use', whyItWorks: 'why_it_works', techniqueRefs: 'technique_refs', position: 'position', status: 'status',
         version: 'version', authorId: 'author_id', updatedBy: 'updated_by',
       };

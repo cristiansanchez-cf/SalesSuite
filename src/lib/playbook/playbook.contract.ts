@@ -39,7 +39,7 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
     const svc = (u: (typeof U)[keyof typeof U], over: Partial<AdminSession> = {}) => {
       const s = sess(u, over);
       const adb = E.adminDbFor(u.id);
-      return createPlaybookService(E.playbookDbFor(u.id), adb, s, { admin: createAdminService(adb, s), evidence: E.evidenceDbFor(u.id) });
+      return createPlaybookService(E.playbookDbFor(u.id), adb, s, { admin: createAdminService(adb, s), evidence: E.evidenceDbFor(u.id), minCloses: 0 });
     };
     const playId = async (key: string) => (await svc(U.admin).listAll()).plays.find((p) => p.key === key)!.id;
 
@@ -53,9 +53,13 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       expect(idx.general.playCount).toBe(11);
       const exp = idx.modules.find((m) => m.moduleId === EXP)!;
       expect(exp.playCount).toBe(9);
-      // Recorrido del producto (tenant.tour) + 4 sectores + cómo se vende + cada módulo.
+      // Por qué existimos + recorrido del producto (tenant.tour) + 4 sectores + cómo se vende + cada módulo.
       expect(idx.tour.steps.length).toBeGreaterThanOrEqual(4);
-      expect(idx.progress).toEqual({ done: 0, total: 1 + 4 + 1 + idx.modules.length });
+      expect(idx.about.playCount).toBe(1);
+      expect(idx.progress).toEqual({ done: 0, total: 1 + 1 + 4 + 1 + idx.modules.length });
+      // El paso 0 tiene su ficha y no se repite en «Cómo se vende».
+      expect((await svc(U.rep).topic('empresa')).sections.flatMap((x) => x.plays).map((p) => p.key)).toEqual(['vision']);
+      expect((await svc(U.rep).topic('general')).sections.flatMap((x) => x.plays).some((p) => p.key === 'vision')).toBe(false);
 
       const g = await svc(U.rep).topic('general');
       expect(g.sections[0].kind).toBe('pitch');
@@ -140,6 +144,15 @@ export function playbookContract(name: string, env: () => PlaybookEnv) {
       expect(ev('loc-pitch')).toEqual({ used: 2, won: 1, lost: 1 });
       expect(ev('noche-pitch-propietario')).toEqual({ used: 2, won: 2, lost: 0 });
       expect(ev('empresa-pitch')).toEqual({ used: 0, won: 0, lost: 0 });
+    });
+
+    test('con menos de 20 cierres la evidencia se enseña pero no ordena', async () => {
+      const s = sess(U.rep);
+      const adb = E.adminDbFor(U.rep.id);
+      const strict = createPlaybookService(E.playbookDbFor(U.rep.id), adb, s, { admin: createAdminService(adb, s), evidence: E.evidenceDbFor(U.rep.id) });
+      const p = (await strict.listAllVisible()).find((x) => x.key === 'noche-pitch-propietario')!;
+      expect(p.evidence.won).toBe(2);
+      expect(p.score).toMatchObject({ worked: 0, didnt: 0 });
     });
 
     test('guion de venta del dossier Sala X: orden, personalización, precio y objeciones', async () => {

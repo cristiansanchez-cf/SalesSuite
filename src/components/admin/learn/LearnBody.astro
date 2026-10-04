@@ -29,6 +29,7 @@ const pct = Math.round((done / Math.max(1, total)) * 100);
 
 // Lo siguiente que toca, en el mismo orden que la página.
 const queue = [
+  ...(idx.about.playCount ? [{ id: 'empresa', name: m.steps.about, href: '/admin/learn/empresa', done: idx.about.learned }] : []),
   ...(idx.tour.steps.length ? [{ id: 'tour', name: m.tourCard.title, href: '/admin/learn/tour', done: idx.tour.learned }] : []),
   ...idx.modules.map((x) => ({ id: x.moduleId, name: x.name, href: `/admin/learn/${x.moduleId}`, done: x.learned })),
   ...sectors.map((x) => ({ id: `sector:${x.key}`, name: x.name, href: `/admin/learn/sector/${x.key}`, done: learnedSectors.has(x.key) })),
@@ -84,6 +85,26 @@ const step = () => `0${++n}`;
           ))}</ul>
           </details>
         )}
+      </section>
+    )}
+
+    {idx.about.playCount > 0 && (
+      <section class="grid gap-5">
+        <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.about}</h2>
+        <a href="/admin/learn/empresa" class="co-card co-card--link !flex min-w-0 items-center gap-4 !p-5 sm:gap-5 sm:!p-6" data-testid="topic-about">
+          <span class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="compass" size={26} /></span>
+          <span class="min-w-0 flex-1">
+            <span class="co-entity block text-lg">{m.aboutCard.title}</span>
+            <span class="co-meta">{m.aboutCard.meta(idx.about.playCount)}</span>
+            {(idx.about.learned || next?.id === 'empresa') && (
+              <span class="mt-2 flex flex-wrap gap-2">
+                {idx.about.learned && <span class="co-badge co-badge--ink">{m.learned}</span>}
+                {next?.id === 'empresa' && <span class="co-badge co-badge--signal">{nextLabel}</span>}
+              </span>
+            )}
+          </span>
+          <span class="shrink-0"><Icon name="chevron-right" /></span>
+        </a>
       </section>
     )}
 

@@ -12,14 +12,14 @@ Dónde aparece cada pieza de 01–03 dentro de la app, en qué orden, y el forma
 ## 1. El día a día del comercial
 
 1. **Bienvenida** (6 pasos, la primera vez): hola → qué vendemos (el recorrido + los módulos) → a quién (sectores) →
-   cómo se vende (las 3 jugadas que más han ganado) → sus condiciones → su perfil.
-2. **Aprende** (4 pasos, en orden, con progreso):
+   cómo se vende (3 jugadas fijas que elige el líder; las que más ganan solo cuando haya 20 cierres documentados) → sus condiciones → su perfil.
+2. **Aprende** (en orden, con progreso):
+   0. **Por qué existimos** — visión, estrategia, modelo y objetivos (01 · 2). Algunas piezas solo las ve el equipo interno.
    1. **Lo que vendes, en 1 minuto** — el recorrido «Así funciona» (01 · 3).
    2. **Qué ofrecemos** — una ficha por módulo (01 · 4) con sus jugadas (03, por módulo), ordenadas por tipo:
       «Cómo presentarlo» → «Para quién (y cuándo no)» → «Preguntas de descubrimiento» → «Pruebas y casos» → «Objeciones» → «Precio y monetización» → «Guiones» → «Consejos».
    3. **A quién vendemos** — una ficha por sector (02): propuesta de valor, cliente ideal, actores, qué enseñar.
    4. **Cómo se vende** — las jugadas generales (03, «Generales»).
-   > Hueco: no hay un paso 0 «Por qué existimos» (visión, estrategia, objetivos). Ver 01 · 2.
 3. **Crea la propuesta**: elige sector, tarifa y módulos (los recomendados del sector salen ya puestos), personaliza con el
    logo/fotos/vídeo del cliente y comparte el enlace. El cliente la ve como una presentación.
 4. **Guion de la reunión** (se genera solo, no inventa nada: ordena las jugadas oficiales según la propuesta):
@@ -31,14 +31,15 @@ Dónde aparece cada pieza de 01–03 dentro de la app, en qué orden, y el forma
    3. **Descubrimiento** — preguntas del sector (o generales) + las de los módulos de la propuesta.
    4. **Lo que se cuenta** — el relato del sector, en su orden (solo sectores con guion verificado).
    5. **Presentación** — por cada módulo, en el orden de la propuesta: 1 «Cómo presentarlo», 1 «Para quién», 1 «Prueba»,
-      1 «Consejo» y el mejor truco del equipo. **Si el módulo no tiene jugadas, sale vacío** (hoy: «Pantalla en vivo», «Móvil del invitado», «Portada para bodas»).
+      1 «Consejo» y el mejor truco del equipo. **Si el módulo no tiene jugadas, sale vacío** (hoy: «Portada para bodas»).
    6. **Precio** — «Precio y monetización» de los módulos + las del sector (o generales). Regla: después del valor.
    7. **Objeciones probables** — las de los módulos y las del sector (o generales), ordenadas por lo que más ha funcionado.
    8. **Cierre y seguimiento** — guiones de cierre y seguimiento del sector (o generales).
    > **El sector manda:** en cada apartado, si el sector tiene jugadas propias, salen solo esas. Las generales cubren huecos.
 5. **Preparar mensaje**: arma un texto con el contexto de la cuenta (sector, actor, situación, objeción, etapa) y las jugadas
-   que mejor encajan, para pegarlo en ChatGPT/Claude con el Cerebro de Ventas conectado. Puntúa así: actor exacto +100,
-   misma objeción +60, misma etapa +40, mismo sector +10, y lo que ha ganado en cierres reales.
+   que mejor encajan, para pegarlo en ChatGPT/Claude con el Cerebro de Ventas conectado. El sector **filtra, no puntúa**:
+   si la jugada es de otro sector, no entra. Entre las que quedan: actor exacto +100, misma objeción +60, misma etapa +40,
+   y lo que ha ganado en cierres reales (solo a partir de 20 cierres documentados).
 6. **Qué ha funcionado**: cada cierre ganado o perdido registra qué jugadas se usaron; las que ganan suben solas.
 
 ## 2. Formato para devolvérmelo
@@ -62,4 +63,6 @@ Reglas de estilo que ya sigue la app (para que lo nuevo encaje):
 - `{company}` se sustituye por el nombre del cliente y `{prospect}` por el de la persona.
 - Nada de importes altos ni tramos de pago en lo que ve el cliente (decisión de producto).
 - Cada objeción: qué dice el cliente (entre comillas) → qué contestas → cómo vuelves a la venta.
-- Si una técnica viene de un experto del Cerebro de Ventas, se cita (título y creador), no se copia su guion.
+- Si una técnica viene del Cerebro de Ventas, se carga **el guion literal del creador**, con su título y su nombre. No se
+  reescribe, no se resume y no se «mejora». Al lado puede ir la adaptación al contexto de la empresa, **marcada como tal**.
+  Es material interno: no sale en nada que vea el cliente.

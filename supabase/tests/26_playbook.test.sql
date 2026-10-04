@@ -8,7 +8,7 @@ insert into public.play (tenant_id, kind, title, status) values ('00000000-0000-
 -- ---------------------------------------------------------------- rep Enjoy
 set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
-select pg_temp.assert((select count(*) from public.play) = 25, 'rep ve las 25 jugadas oficiales (no borradores)');
+select pg_temp.assert((select count(*) from public.play) = 26, 'rep ve las 26 jugadas oficiales (no borradores)');
 do $$ begin
   insert into public.play (tenant_id, kind, title) values ('00000000-0000-4000-8000-000000000e01', 'tip', 'hack');
   raise exception 'ASSERT FAILED: rep creó jugada oficial';
@@ -57,7 +57,7 @@ exception when foreign_key_violation then null; end $$;
 set role authenticated;
 set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';  -- admin
 select pg_temp.assert((select count(*) from public.play_contribution where status = 'pending') = 1, 'admin ve la mejora pendiente');
-select pg_temp.assert((select count(*) from public.play) = 26, 'admin ve también el borrador');
+select pg_temp.assert((select count(*) from public.play) = 27, 'admin ve también el borrador');
 select pg_temp.assert((select count(*) from public.learning_progress) = 1, 'admin ve el progreso del equipo');
 update public.play_contribution set status = 'accepted', reviewed_by = '22222222-2222-4222-8222-222222222222', reviewed_at = now()
 where id = '44444444-0000-4000-8000-000000000002';

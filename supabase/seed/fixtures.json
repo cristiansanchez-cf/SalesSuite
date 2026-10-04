@@ -1394,6 +1394,27 @@
       "status": "official",
       "version": 1,
       "author_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000009a00f1",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "module_id": null,
+      "key": "vision",
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "title": "La visión",
+      "body": "La gente sale menos y, cuando sale, está con el móvil. Pelearse contra eso es perder. Enjoy no quiere que la gente mire menos el móvil: quiere que lo que haga con él pase en la sala y no en otro sitio.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "position": 512,
+      "status": "official",
+      "version": 1,
+      "author_id": null,
+      "personas": [],
+      "about": true
     }
   ],
   "segment": [

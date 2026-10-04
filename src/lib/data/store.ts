@@ -41,7 +41,7 @@ export interface PlayRow {
   id: string; tenant_id: string; module_id: string | null; key: string | null; kind: string; stage: string | null; objection: string | null;
   segments: string[]; personas?: string[]; title: string; body: string; when_to_use: string | null; why_it_works: string | null; technique_refs: unknown[];
   position: number; status: string; version: number; author_id: string | null; updated_by?: string | null; created_at?: string; updated_at?: string;
-  audience?: 'all' | 'team' | 'partners';
+  audience?: 'all' | 'team' | 'partners'; about?: boolean; pinned?: number | null;
 }
 export interface PlayRevisionRow { id: string; tenant_id: string; play_id: string; version: number; snapshot: Record<string, unknown>; change_note: string | null; changed_by: string | null; contribution_id: string | null; created_at: string }
 export interface ContributionRow {

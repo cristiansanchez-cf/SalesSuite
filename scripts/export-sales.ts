@@ -42,31 +42,15 @@ ${what}
 // ---------------------------------------------------------------- 01 · empresa y producto
 {
   const L: string[] = [header('01', 'La empresa y el producto', 'Qué es, qué vende, cómo funciona y cuánto cuesta. Es lo primero que aprende un comercial.')];
-  const pitch = t.playbook.filter((p: any) => !p.module_key && p.kind === 'pitch');
+  const pitch = t.playbook.filter((p: any) => !p.module_key && !p.about && p.kind === 'pitch');
   L.push('## 1. Qué es y cómo se presenta (jugadas generales de tipo «Cómo presentarlo»)\n');
   for (const p of pitch) L.push(`### ${p.title} · \`${p.key}\`\n\n${q(p.body)}\n${p.when_to_use ? `\n**Cuándo:** ${p.when_to_use}` : ''}${p.why_it_works ? `\n**Por qué funciona:** ${p.why_it_works}` : ''}\n`);
 
-  L.push(`## 2. Visión, estrategia y objetivos
-
-> **HUECO — hoy no existe en la app.** Aprende explica el producto, a quién se vende y cómo, pero no **por qué** la empresa
-> hace lo que hace ni **qué objetivos** persigue. Es lo que convierte a un comercial en alguien que cree en lo que vende.
-
-Rellenar (cada punto, 2–5 frases, en el tono de la empresa):
-
-- \`vision\` · **La visión:** por qué esto es tan grande. Qué cambia en una fiesta cuando el público es protagonista.
-- \`estrategia-bandera\` · **Plantar la bandera en todas partes:** por qué hay cosas gratis (p. ej. la pantalla «Lite» / el
-  modelo para bares) y qué se gana con estar en cada local antes que nadie.
-- \`estrategia-djs\` · **Los DJ como canal:** por qué importan, qué ganan ellos y cómo nos abren puertas.
-- \`objetivos\` · **Objetivos de este año:** cuántos locales/eventos, en qué ciudades, qué sector primero y por qué.
-- \`modelo\` · **Cómo gana dinero la empresa** (y el cliente): cuotas, comisión por peticiones, packs… y qué NO se vende todavía.
-- \`por-que-ahora\` · **Por qué ahora:** qué pasa en el mercado (ocio nocturno en caída, móviles, redes) que lo hace urgente.
-- \`no-somos\` · **Lo que no somos:** para no prometer de más.
-
-Dónde saldrá: un bloque nuevo al principio de Aprende («Por qué existimos») antes del recorrido del producto, y como
-contexto para el guion de cada reunión.
-
-Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.playbook.filter((p: any) => /roadmap|hoy|validado|bandera|gratis|dj/i.test(p.key + p.title)).map((p: any) => `«${p.title}» (\`${p.key}\`)`).join(', ') || '—'}.
-`);
+  const about = t.playbook.filter((p: any) => p.about);
+  L.push('## 2. Por qué existimos (paso 0 de Aprende)\n');
+  L.push('Es lo primero que ve un comercial en Aprende, antes del recorrido del producto. No sale en el guion de la reunión: se aprende, no se dice.\n');
+  for (const p of about) L.push(`### ${p.title} · \`${p.key}\`${p.audience === 'team' ? ' · _solo equipo interno_' : ''}\n\n${q(p.body)}\n`);
+  if (!about.length) L.push('> **HUECO:** no hay piezas de «Por qué existimos».\n');
 
   L.push('## 3. Así funciona, de principio a fin (el recorrido de 1 minuto)\n\nLo ve todo comercial nada más entrar. Cada paso: título (≤ 80), texto (≤ 240) y lo que se enseña al lado.\n');
   t.tour.forEach((s: any, i: number) => L.push(`${i + 1}. **${s.title}** — ${q(s.body)}  \n   _Se enseña:_ ${s.ui ? `\`${s.ui}\` (UI real del producto)` : s.image ? 'una imagen' : '—'}`));
@@ -158,16 +142,15 @@ Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.pla
   if (empty.length) L.push(`- **Módulos sin ninguna jugada** (en el guion salen vacíos): ${empty.map((m: any) => `«${m.name}»`).join(', ')}.`);
   const heavy = [...byModule].filter(([k, n]) => k !== 'general' && n > 20);
   if (heavy.length) L.push(`- **Casi todo cuelga de un solo módulo** (${heavy.map(([k, n]) => `«${modName(k)}», ${n}`).join(', ')}): muchas de esas jugadas son en realidad de la pantalla en vivo, del móvil del invitado o generales. Revisa el módulo de cada una.`);
-  L.push('- **Tono:** hay frases escritas para nosotros (p. ej. «El activo es el consentimiento») que el comercial lee tal cual. Cada jugada debería poder decirse en voz alta o usarse sin traducir.');
-  L.push('- **Falta la capa de «por qué»** (visión, estrategia, objetivos): ver «01 · 2».\n');
+  L.push(`- **Por qué existimos:** ${plays.filter((p) => p.about).length} piezas (01 · 2).${plays.some((p) => p.about && /PENDIENTE/.test(p.body)) ? ' Hay alguna PENDIENTE.' : ''}\n`);
 
   L.push(`Campos de cada jugada: **tipo** (${KIND_ORDER.map((k) => KIND_LABEL[k]).join(', ')}), **etapa** (${Object.values(STAGE_LABEL).join(', ')}), **objeción** si responde a una (${Object.values(OBJECTION_LABEL).join(', ')}), **para qué sectores/actores** (vacío = todos) y **quién la ve** (${Object.values(AUDIENCE_LABEL).join(', ')}).\n`);
 
-  const groups = [null, ...t.catalog.map((m: any) => m.key)];
+  const groups = ['about', null, ...t.catalog.map((m: any) => m.key)];
   for (const g of groups) {
-    const mine = plays.filter((p) => (p.module_key ?? null) === g);
+    const mine = g === 'about' ? plays.filter((p) => p.about) : plays.filter((p) => !p.about && (p.module_key ?? null) === g);
     if (!mine.length) continue;
-    L.push(`## ${g ? `Módulo: ${modName(g)}` : 'Generales («Cómo se vende», valen para todo)'}\n`);
+    L.push(`## ${g === 'about' ? 'Por qué existimos (paso 0 de Aprende)' : g ? `Módulo: ${modName(g)}` : 'Generales («Cómo se vende», valen para todo)'}\n`);
     for (const k of KIND_ORDER) {
       const list = mine.filter((p) => p.kind === k);
       if (!list.length) continue;
@@ -196,14 +179,14 @@ Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.pla
   L.push(`## 1. El día a día del comercial
 
 1. **Bienvenida** (6 pasos, la primera vez): hola → qué vendemos (el recorrido + los módulos) → a quién (sectores) →
-   cómo se vende (las 3 jugadas que más han ganado) → sus condiciones → su perfil.
-2. **Aprende** (4 pasos, en orden, con progreso):
+   cómo se vende (3 jugadas fijas que elige el líder; las que más ganan solo cuando haya 20 cierres documentados) → sus condiciones → su perfil.
+2. **Aprende** (en orden, con progreso):
+   0. **Por qué existimos** — visión, estrategia, modelo y objetivos (01 · 2). Algunas piezas solo las ve el equipo interno.
    1. **Lo que vendes, en 1 minuto** — el recorrido «Así funciona» (01 · 3).
    2. **Qué ofrecemos** — una ficha por módulo (01 · 4) con sus jugadas (03, por módulo), ordenadas por tipo:
       ${KIND_ORDER.map((k) => `«${KIND_LABEL[k]}»`).join(' → ')}.
    3. **A quién vendemos** — una ficha por sector (02): propuesta de valor, cliente ideal, actores, qué enseñar.
    4. **Cómo se vende** — las jugadas generales (03, «Generales»).
-   > Hueco: no hay un paso 0 «Por qué existimos» (visión, estrategia, objetivos). Ver 01 · 2.
 3. **Crea la propuesta**: elige sector, tarifa y módulos (los recomendados del sector salen ya puestos), personaliza con el
    logo/fotos/vídeo del cliente y comparte el enlace. El cliente la ve como una presentación.
 4. **Guion de la reunión** (se genera solo, no inventa nada: ordena las jugadas oficiales según la propuesta):
@@ -221,8 +204,9 @@ Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.pla
    8. **Cierre y seguimiento** — guiones de cierre y seguimiento del sector (o generales).
    > **El sector manda:** en cada apartado, si el sector tiene jugadas propias, salen solo esas. Las generales cubren huecos.
 5. **Preparar mensaje**: arma un texto con el contexto de la cuenta (sector, actor, situación, objeción, etapa) y las jugadas
-   que mejor encajan, para pegarlo en ChatGPT/Claude con el Cerebro de Ventas conectado. Puntúa así: actor exacto +100,
-   misma objeción +60, misma etapa +40, mismo sector +10, y lo que ha ganado en cierres reales.
+   que mejor encajan, para pegarlo en ChatGPT/Claude con el Cerebro de Ventas conectado. El sector **filtra, no puntúa**:
+   si la jugada es de otro sector, no entra. Entre las que quedan: actor exacto +100, misma objeción +60, misma etapa +40,
+   y lo que ha ganado en cierres reales (solo a partir de 20 cierres documentados).
 6. **Qué ha funcionado**: cada cierre ganado o perdido registra qué jugadas se usaron; las que ganan suben solas.
 
 ## 2. Formato para devolvérmelo
@@ -246,7 +230,9 @@ Reglas de estilo que ya sigue la app (para que lo nuevo encaje):
 - \`{company}\` se sustituye por el nombre del cliente y \`{prospect}\` por el de la persona.
 - Nada de importes altos ni tramos de pago en lo que ve el cliente (decisión de producto).
 - Cada objeción: qué dice el cliente (entre comillas) → qué contestas → cómo vuelves a la venta.
-- Si una técnica viene de un experto del Cerebro de Ventas, se cita (título y creador), no se copia su guion.
+- Si una técnica viene del Cerebro de Ventas, se carga **el guion literal del creador**, con su título y su nombre. No se
+  reescribe, no se resume y no se «mejora». Al lado puede ir la adaptación al contexto de la empresa, **marcada como tal**.
+  Es material interno: no sale en nada que vea el cliente.
 `);
   await writeFile(join(out, '04-COMO-LO-USA-EL-COMERCIAL.md'), L.join('\n'));
 }

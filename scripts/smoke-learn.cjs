@@ -24,10 +24,17 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }) {
   await p.goto(`${BASE}/admin/learn`);
   const prog = await p.textContent('[data-testid=progress]');
   assert(!/\b0\s*\/\s*\d/.test(prog) && !/0 de/.test(prog), `sin «0/N»: ${prog.trim().replace(/\s+/g, ' ')}`);
-  assert(await p.isVisible('[data-testid=tour-card]'), 'paso 1: el recorrido del producto, lo primero');
+  assert(await p.isVisible('[data-testid=topic-about]'), 'paso 0: por qué existimos, antes que nada');
+  assert(await p.isVisible('[data-testid=tour-card]'), 'paso 1: el recorrido del producto');
   const done0 = Number(await p.getAttribute('[data-testid=progress]', 'data-done'));
-  // En CI el servidor se comparte entre smokes: solo exigimos «empieza por el recorrido» si aún no está hecho.
-  if (done0 === 0) assert((await p.getAttribute('[data-testid=learn-next]', 'href')) === '/admin/learn/tour', '«Empieza aquí» lleva al recorrido');
+  // En CI el servidor se comparte entre smokes: solo exigimos «empieza por el paso 0» si aún no está hecho.
+  if (done0 === 0) assert((await p.getAttribute('[data-testid=learn-next]', 'href')) === '/admin/learn/empresa', '«Empieza aquí» lleva a «Por qué existimos»');
+  await p.goto(`${BASE}/admin/learn/empresa`);
+  assert((await p.textContent('h1')).includes('Por qué existimos'), 'el paso 0 abre su ficha');
+  assert((await p.textContent('main')).includes('La visión'), 'con sus piezas');
+  await p.goto(`${BASE}/admin/learn/general`);
+  assert(!(await p.textContent('main')).includes('La visión'), '«Cómo se vende» no repite el paso 0');
+  await p.goto(`${BASE}/admin/learn`);
   assert((await p.locator('[data-testid=segment] img').count()) === 4, 'cada sector con su foto de fondo');
   if (OUT) await p.screenshot({ path: `${OUT}/learn-index.png`, fullPage: true });
 

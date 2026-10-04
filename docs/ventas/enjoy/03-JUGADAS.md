@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 145 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 153 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,16 +11,77 @@ Las 145 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 127 · Precio de la propuesta: 5 · Experiencias en directo: 9 · Enjoy para tu sala: 4.
-- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Pantalla en vivo», «Móvil del invitado», «Portada para bodas».
-- **Tono:** hay frases escritas para nosotros (p. ej. «El activo es el consentimiento») que el comercial lee tal cual. Cada jugada debería poder decirse en voz alta o usarse sin traducir.
-- **Falta la capa de «por qué»** (visión, estrategia, objetivos): ver «01 · 2».
+- **Reparto:** General: 127 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada para bodas».
+- **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
 Campos de cada jugada: **tipo** (Cómo presentarlo, Para quién (y cuándo no), Preguntas de descubrimiento, Pruebas y casos, Objeciones, Precio y monetización, Guiones, Consejos), **etapa** (Prospección, Primer contacto, Descubrimiento, Pitch / Demo, Objeciones, Negociación, Cierre, Seguimiento, Mentalidad), **objeción** si responde a una (Precio, Tiempo / me lo pienso, Desconfianza, No lo necesito, No decido yo, Quiere comparar opciones, Ya tengo proveedor), **para qué sectores/actores** (vacío = todos) y **quién la ve** (Todos, Solo equipo interno, Solo colaboradores).
 
+## Por qué existimos (paso 0 de Aprende)
+
+### Consejos (8)
+
+#### La visión · `vision`
+
+_etapa: Mentalidad_
+
+> La gente sale menos y, cuando sale, está con el móvil. Pelearse contra eso es perder. Enjoy no quiere que la gente mire menos el móvil: quiere que lo que haga con él pase en la sala y no en otro sitio. Que pida la canción que está sonando, que mande un mensaje que lee toda la pista, que suba una foto y la vea en pantalla a los diez segundos. Que alguien le diga «¿tú también has pedido esa?» y se conozcan. El móvil como excusa para una conexión real, no como sustituto.
+
+#### Por qué ahora · `por-que-ahora`
+
+_etapa: Mentalidad_
+
+> El ocio nocturno se está copiando a sí mismo: las mismas fiestas temáticas, la misma música, los mismos carteles. Diferenciarse dejó de ser una ventaja y pasó a ser una condición. A la vez, los locales necesitan contenido para redes cada semana y lo resuelve el encargado con el móvil a las cuatro de la mañana. Y las marcas que patrocinan están exigiendo medir lo que compran. Las tres cosas se resuelven con lo mismo: que el público participe desde su móvil y deje su contenido con permiso.
+
+#### Plantar la bandera · `estrategia-bandera`
+
+_etapa: Mentalidad · la ven: Solo equipo interno_
+
+> Queremos estar en el máximo número de sitios posible, cuanto antes, y por eso a veces vale la pena entrar sin cobrar lo que valdría.
+> 
+> En el peor de los casos, un sitio puede empezar solo con el QR de peticiones de canciones, sin pantalla y sin coste. Eso no es regalar el producto: es que cada sitio donde esto funciona es un sitio donde el dueño ve pasar algo en su propia sala, y la conversación de dentro de tres meses empieza mucho más arriba.
+> 
+> **Esto es contexto para que entiendas por qué hacemos lo que hacemos. No es una oferta que puedas poner tú sobre la mesa:** cualquier entrada por debajo de tarifa la autoriza el fundador.
+
+#### Por qué los datos importan tanto · `estrategia-datos`
+
+_etapa: Mentalidad · la ven: Solo equipo interno_
+
+> Cada noche encendida son datos que nadie más tiene: qué se pide, dónde, a qué hora y con qué público. Eso tiene valor para gente que hoy no nos compra a nosotros — marcas de bebidas que llevan años intentando saber algo de quién consume en una discoteca, y discográficas a las que les interesa qué suena y qué piden en cada ciudad.
+> 
+> Hemos tenido conversaciones en esa dirección. **Ninguna es un acuerdo cerrado y no se menciona a ningún cliente.** Está aquí para que entiendas por qué insistimos tanto en que cada sitio esté activo y en que la gente dé su consentimiento: el negocio de dentro de dos años se construye con lo que se enciende este año.
+
+#### Los DJ como canal · `estrategia-djs`
+
+_etapa: Mentalidad_
+
+> El DJ ha sido históricamente quien nos ha tumbado acuerdos, y fue culpa de cómo lo planteamos: le dábamos trabajo y no le dábamos nada. Ahora al revés. El menú cerrado hace que nadie le toque el repertorio. El dinero de las peticiones va a la cuenta del local, y lo que recomendamos —porque es lo que funciona en La Biblioteca— es que se reparta como propina de todo el equipo: así el DJ que no acepta peticiones está dejando sin propina a sus compañeros, y eso lo vigila la plantilla sola. De bloqueante a aliado.
+
+#### Cómo gana dinero la empresa · `modelo`
+
+_etapa: Mentalidad_
+
+> Cuota mensual por tramo de aforo en locales. Precio por evento en conciertos, festivales y promotoras puntuales. Suscripción cuando hay recurrencia: promotoras, agencias, infraestructuras de temporada.
+> 
+> El dinero que paga el público por sus peticiones y mensajes **no es nuestro**: va a la cuenta del local. Cobramos por el servicio, no por el consumo de su público.
+> 
+> Lo que todavía no vendemos: CRM de fidelización, remarketing, bonos de consumición y manejo múltiple de pantallas.
+
+#### Los objetivos de este año · `objetivos`
+
+_etapa: Mentalidad · la ven: Solo equipo interno_
+
+> **PENDIENTE — lo rellena Cristian.** Formato: cuántos locales de pago a cierre de año, en qué ciudades, qué MRR, cuántos eventos de concierto o festival, y cuántos casos de éxito con nombre.
+
+#### Lo que no somos · `no-somos`
+
+_etapa: Mentalidad_
+
+> No somos una kiss cam: no grabamos a nadie sin que lo sepa. No somos una app de peticiones para DJs: es una parte, y la que menos vendemos. No somos una agencia de contenido ni montamos nada físico. No damos soporte 24 horas. Y no prometemos que el servicio se pague solo con las peticiones: depende del público y de la temporada, y quien lo prometió antes perdió al cliente cuando no se cumplió.
+
 ## Generales («Cómo se vende», valen para todo)
 
-### Cómo presentarlo (21)
+### Cómo presentarlo (16)
 
 #### Enjoy en una frase · `empresa-pitch`
 
@@ -35,16 +96,6 @@ _etapa: Pitch / Demo_
 **Cuándo usarla:** Los primeros 30 segundos de cualquier conversación.
 
 **Por qué funciona:** Cuenta lo que pasa en la sala, no la herramienta: nadie compra «interactividad».
-
-#### El activo es el consentimiento · `gen-consentimiento`
-
-_etapa: Pitch / Demo_
-
-> Quien sube una foto acepta los términos de uso: quien organiza puede usar ese contenido en sus redes y su comunicación.
-> 
-> Ninguna cámara, kiss cam ni fotomatón da eso.
-
-**Por qué funciona:** Es lo único que nadie más ofrece, y responde a «¿y los derechos de imagen?» antes de que salga.
 
 #### Lo que existe hoy (y a veces no se vende) · `gen-hoy`
 
@@ -63,7 +114,7 @@ _etapa: Pitch / Demo_
 > 
 > **Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.
 
-#### Primero: el contenido con permiso · `loc-pitch-contenido`
+#### Primero: el contenido con permiso · `noche-pitch-contenido`
 
 _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 
@@ -71,15 +122,7 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > >
 > > Lo importante de eso: cuando suben la foto están aceptando los términos, así que **son fotos que puedes usar en tus redes**. De tu propia gente, de tu local, cada noche que abras.»
 
-#### Segundo: la pantalla desde tu móvil · `loc-pitch-barra`
-
-_etapa: Pitch / Demo · sectores: Locales de ocio nocturno · actores: Dueño de sala (Locales de ocio nocturno), Gerente (Locales de ocio nocturno)_
-
-> El argumento más directo que tenemos con un dueño, y el que más se olvida:
-> 
-> > «Y la pantalla la manejas tú desde el móvil. Un martes a la una y media ves la barra parada y mandas "chupito a 2 € los próximos diez minutos". Eso hoy no lo puedes hacer de ninguna otra forma.»
-
-#### Tercero, y de pasada: las canciones · `loc-pitch-canciones`
+#### Tercero, y de pasada: las canciones · `noche-pitch-canciones`
 
 _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 
@@ -87,19 +130,19 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **Nunca se abre por aquí.** Un dueño no ve valor en que le pidan canciones: para eso ya tiene un DJ.
 
-#### El consentimiento, si viene al caso · `loc-pitch-coldplay`
+#### El consentimiento, si viene al caso · `noche-pitch-coldplay`
 
 _etapa: Pitch / Demo · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
 > > «Lo del concierto de Coldplay se lio porque fue sin consentimiento. Aquí es al revés: sube su foto quien quiere subirla.»
 
-#### Adelántate antes de que lo saque él · `loc-dj-adelantar`
+#### Adelántate antes de que lo saque él · `noche-dj-menu`
 
 _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 
 > > «Una cosa que te adelanto: tu DJ no tiene que ocuparse de esto. Quién aprueba lo que sale en pantalla lo decides tú — puede ser el encargado, el de la puerta, o va con Spotify sin DJ. Y las canciones van con menú cerrado: solo se puede pedir lo que tú metas en la lista, así que nadie te rompe el ambiente del local.»
 
-#### El modelo de La Biblioteca · `loc-dj-propina`
+#### El modelo de La Biblioteca · `noche-dj-propina`
 
 _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 
@@ -119,7 +162,7 @@ _etapa: Pitch / Demo · sectores: Promotoras de eventos_
 > 
 > > «Por lo que me cuentas ya hacéis dinámicas. Esto es la herramienta que os falta para montarlas sin pelearos con el ordenador: lo lanzáis desde el móvil en el momento.»
 
-#### El pre-show, la punta de lanza · `con-pitch-preshow`
+#### El pre-show, la punta de lanza · `conc-pitch-preshow`
 
 _etapa: Pitch / Demo · sectores: Conciertos y artistas_
 
@@ -127,13 +170,13 @@ _etapa: Pitch / Demo · sectores: Conciertos y artistas_
 > 
 > **Por qué se abre por aquí:** desactiva la objeción del manager antes de que exista. No competimos con el artista por la atención, porque el artista aún no ha salido. Y es lo más fácil de patrocinar.
 
-#### Al promotor o la sala: inventario patrocinable · `con-pitch-promotor`
+#### Al promotor o la sala: inventario patrocinable · `conc-pitch-promotor`
 
 _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Promotor/a (Conciertos y artistas), Recinto o sala (Conciertos y artistas)_
 
 > > «Lo que te damos es un espacio en pantalla que la gente mira de verdad, porque está mirando a ver si sale su foto o su mensaje. Y datos de participación, que es lo que las marcas están pidiendo ahora para renovar: una activación física no te entrega nada de eso.»
 
-#### Al manager o al artista: conexión, no distracción · `con-pitch-manager`
+#### Al manager o al artista: conexión, no distracción · `conc-pitch-manager`
 
 _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Manager del artista (Conciertos y artistas), Artista (Conciertos y artistas)_
 
@@ -141,23 +184,11 @@ _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Manager del 
 > >
 > > Hoy él solo puede interactuar con las tres primeras filas; una pancarta a sesenta metros no la ve nadie. Con esto le llega un mensaje desde la grada de arriba a su panel y lo puede leer en directo.»
 
-#### El álbum con backstage · `con-pitch-album`
+#### El álbum con backstage · `conc-pitch-album`
 
 _etapa: Pitch / Demo · sectores: Conciertos y artistas_
 
 > > «El equipo del artista va subiendo fotos de camerino al álbum y el público las ve en tiempo real mientras espera. La primera foto del álbum la sube él. Deja de ser "sube tus fotos" y pasa a ser "aquí hay algo que no está en ningún otro sitio".»
-
-#### A producción: NDI · `con-pitch-produccion`
-
-_etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Director/a de producción (Conciertos y artistas), Tour manager (Conciertos y artistas)_
-
-> > «No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en un lateral, en una tarjeta pequeña. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.»
-
-#### El menú cerrado es el producto entero · `con-charanga-pitch`
-
-_etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Charanga u orquesta (Conciertos y artistas)_
-
-> > «Metéis vuestro repertorio en una lista, la gente vota desde el móvil y vosotros tocáis lo más votado. Nadie puede pedir nada que no esté en vuestra lista. El público elige la siguiente, o la última de la noche.»
 
 #### Llegamos con la marca detrás · `fest-modelo-b`
 
@@ -181,15 +212,7 @@ _etapa: Pitch / Demo · sectores: Festivales_
 
 > > «No os hace falta sobrevivir, os hace falta rentabilizar mejor el aforo que ya tenéis. Vuestra pantalla deja de ser soporte pasivo y pasa a ser activación: la gente la mira porque busca su foto. Y eso es lo que las marcas están comprando ahora, porque pueden medirlo.»
 
-#### Acotar desde el principio · `fest-una-pantalla`
-
-_etapa: Pitch / Demo · sectores: Festivales_
-
-> > «Una cosa que te digo ya: hoy manejamos una pantalla, no todo el recinto. Lo que tenemos que decidir es en qué pantalla y en qué momento.»
-> 
-> **Se dice en la primera reunión.** Si no, el cliente se imagina el festival entero y lo descubre el día del montaje.
-
-### Para quién (y cuándo no) (7)
+### Para quién (y cuándo no) (6)
 
 #### Cuenta grande no es un local grande · `gen-cuenta-grande`
 
@@ -221,12 +244,6 @@ _etapa: Prospección · sectores: Bodas_
 > - **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.
 
 **Cuándo usarla:** Antes de invertir tiempo en un lead: cualifica.
-
-#### Lo que ha pasado hasta ahora en bodas · `bodas-aviso`
-
-_etapa: Mentalidad · sectores: Bodas_
-
-> Bodas es el sector del que menos sabemos y el único donde nunca hemos cobrado. Hubo 12 leads, pricing cerrado y resellers definidos: a los organizadores que iban a pagarnos 300 €/mes les pareció buena idea y no pagó ninguno; a los resellers con 100 € de base les pareció bien y no revendió ninguno. Cuando un precio le parece bien a todo el mundo y no compra nadie, el problema no es el precio. No es prioridad hasta 2027 y todo lo que hay aquí son hipótesis.
 
 #### Las cuatro diferencias con un local · `prom-diferencias`
 
@@ -269,7 +286,7 @@ _etapa: Descubrimiento · sectores: Bodas_
 
 > Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo.
 
-#### El contrato de diez minutos · `loc-contrato-10min`
+#### El contrato de diez minutos · `noche-contrato-10min`
 
 _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -281,7 +298,7 @@ _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de even
 
 **Técnica (Cerebro de Ventas):** Contrato de 10 minutos + 5 preguntas — Alfonso y Cristian
 
-#### Las cinco preguntas · `loc-cinco-preguntas`
+#### Las cinco preguntas · `noche-cinco-preguntas`
 
 _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -297,13 +314,13 @@ _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de even
 > - **La 5 es la que casi nadie hace.** Te dice cómo percibe el gasto antes de que tú digas un número. Apunta su respuesta literal.
 > - **La 1 y la 2 asignan el tramo de precio.**
 
-#### Cerrar el diagnóstico · `loc-cierre-diagnostico`
+#### Cerrar el diagnóstico · `noche-cierre-diagnostico`
 
 _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
 > > «Veo que aquí hay un punto interesante para vosotros. ¿Quieres que te lo cuente?»
 
-#### Reconstruir lo que ya le cuesta · `loc-reconstruir-coste`
+#### Reconstruir lo que ya le cuesta · `noche-reconstruir-coste`
 
 _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -317,7 +334,17 @@ _etapa: Descubrimiento · sectores: Locales de ocio nocturno, Promotoras de even
 
 **Técnica (Cerebro de Ventas):** Reconstrucción de la cifra por micro-datos — Alfonso y Cristian
 
-### Objeciones (22)
+### Pruebas y casos (1)
+
+#### El público sí escanea · `gen-prueba-escaneo`
+
+_etapa: Pitch / Demo_
+
+> En 2025 se registraron cerca de 30.000 peticiones de canciones con muy pocos eventos. Es lo que demuestra que el público sí escanea un QR dentro de un evento.
+
+**Por qué funciona:** Es el único dato de participación que tenemos y es real.
+
+### Objeciones (18)
 
 #### «Me lo tengo que pensar» · `empresa-obj-pensar`
 
@@ -327,19 +354,17 @@ _etapa: Objeciones · objeción: Tiempo / me lo pienso_
 
 **Técnica (Cerebro de Ventas):** Desglose del «déjame pensarlo» — Manuel Trejo
 
-#### "Es caro" · `empresa-obj-precio`
+#### «Es caro» · `empresa-obj-precio`
 
 _etapa: Objeciones · objeción: Precio_
 
-> No justifiques el precio. Pregunta con qué lo están comparando y vuelve a **lo que les preocupaba** del banquete (lo que dijeron en el descubrimiento). Enjoy cuesta menos por invitado que una ronda de chupitos.
-
-**Cuándo usarla:** Cuando aparece el precio antes de que hayan visto el valor.
-
-**Por qué funciona:** "Caro" casi nunca es el número: es valor no percibido todavía.
+> El precio no se argumenta: se cambia de línea.
+> 
+> Cada sector tiene su ancla: en locales, los dos meses sin permanencia; en conciertos, los 8.000 € de una kiss cam clásica.
 
 **Técnica (Cerebro de Ventas):** El cliente dice 'caro' porque traduce precio a horas trabajadas, no a valor — Alfonso y Cristian; El dinero nunca es el problema real — Alfonso y Cristian
 
-#### «Me va a romper el ambiente musical del local» · `loc-obj-ambiente`
+#### «Me va a romper el ambiente musical del local» · `noche-obj-ambiente`
 
 _etapa: Objeciones · objeción: Desconfianza · sectores: Locales de ocio nocturno · actores: DJ (Locales de ocio nocturno)_
 
@@ -347,7 +372,7 @@ _etapa: Objeciones · objeción: Desconfianza · sectores: Locales de ocio noctu
 > 
 > > «Las canciones van con menú cerrado: tú metes la lista y solo se puede pedir lo que esté ahí. Y si en algún momento la quieres abierta, se abre.»
 
-#### «No encaja con nuestra operativa» / «no tenemos tiempo» · `loc-obj-operativa`
+#### «No encaja con nuestra operativa» / «no tenemos tiempo» · `noche-obj-operativa`
 
 _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -355,19 +380,7 @@ _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Locales de o
 > 
 > **Si insisten en que no van a poder: no se vende.** Una foto que nadie valida mientras alguien mira la pantalla media hora deja peor sabor que no haberlo puesto.
 
-#### «Ya tenemos pantallas y un VJ» · `loc-obj-pantallas`
-
-_etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Locales de ocio nocturno, Promotoras de eventos_
-
-> > «Y mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales, en un lateral, y él sigue con lo suyo.»
-> 
-> *Y si la respuesta es pasiva, abre ventana (técnica de la ventana, Alfonso y Cristian):*
-> 
-> > «Perfecto, te agradezco que seas claro. Antes de irme, una última: ¿cuál sería la única razón por la que te plantearías probar algo así?»
-
-**Técnica (Cerebro de Ventas):** Técnica de la ventana — Alfonso y Cristian
-
-#### «¿Y qué gano yo con esto?» · `loc-obj-que-gano`
+#### «¿Y qué gano yo con esto?» · `noche-obj-que-gano`
 
 _etapa: Objeciones · objeción: No lo necesito · sectores: Locales de ocio nocturno_
 
@@ -375,7 +388,7 @@ _etapa: Objeciones · objeción: No lo necesito · sectores: Locales de ocio noc
 > 
 > > «A La Biblioteca le pasó algo que no esperábamos: una promotora los eligió a ellos para montar una fiesta porque podían ofrecer estas dinámicas y otros no. Una fiesta más al mes es dinero que antes no estaba.»
 
-#### «Es caro» · `loc-obj-precio`
+#### «Es caro» · `noche-obj-caro`
 
 _etapa: Objeciones · objeción: Precio · sectores: Locales de ocio nocturno_
 
@@ -387,7 +400,7 @@ _etapa: Objeciones · objeción: Precio · sectores: Locales de ocio nocturno_
 
 **Técnica (Cerebro de Ventas):** El precio no es argumentable + pedido de prueba — Alfonso y Cristian
 
-#### «Lo tengo que consultar con mi socio» · `loc-obj-socio`
+#### «Lo tengo que consultar con mi socio» · `noche-obj-socio`
 
 _etapa: Objeciones · objeción: No decido yo · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -399,7 +412,7 @@ _etapa: Objeciones · objeción: No decido yo · sectores: Locales de ocio noctu
 
 **Técnica (Cerebro de Ventas):** Sondeo del ausente — Alfonso y Cristian
 
-#### «Me lo tengo que pensar» · `loc-obj-pensar`
+#### «Me lo tengo que pensar» · `noche-obj-pensar`
 
 _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -413,19 +426,13 @@ _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Locales de o
 
 **Técnica (Cerebro de Ventas):** Desglose del «déjame pensarlo» — Manuel Trejo; Dar la salida al cliente — Alfonso y Cristian
 
-#### «Ya tenemos pantallas y un VJ» · `con-obj-pantallas`
-
-_etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Conciertos y artistas_
-
-> > «Y mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales con NDI, en un lateral, y él sigue haciendo lo suyo. Pero dime una cosa: si pudiera resolveros una o dos cosas concretas del show, ¿cuáles serían?»
-
-#### «El artista no quiere móviles en el concierto» · `con-obj-moviles`
+#### «El artista no quiere móviles en el concierto» · `conc-obj-moviles`
 
 _etapa: Objeciones · objeción: Desconfianza · sectores: Conciertos y artistas · actores: Manager del artista (Conciertos y artistas), Artista (Conciertos y artistas)_
 
 > > «Nosotros tampoco. La gente ya está con el móvil. Lo que hacemos es que ese rato pase en la sala. Y la parte fuerte es la hora de antes, cuando él ni siquiera ha salido.»
 
-#### «No hay cobertura en el recinto» · `con-obj-cobertura`
+#### «No hay cobertura en el recinto» · `conc-obj-cobertura`
 
 _etapa: Objeciones · sectores: Conciertos y artistas_
 
@@ -434,19 +441,19 @@ _etapa: Objeciones · sectores: Conciertos y artistas_
 > 
 > **Nunca se vende donde sabemos que no hay cobertura.** Un evento fallido se cuenta entre promotores.
 
-#### «¿Quién valida las fotos?» · `con-obj-validar`
+#### «¿Quién valida las fotos?» · `conc-obj-validar`
 
 _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Conciertos y artistas_
 
 > > «Quien tú digas, y desde el móvil. Alguien de tu equipo o de sala. No hace falta que sea nadie de producción ni el VJ.»
 
-#### «No tenemos tiempo en producción» · `con-obj-tiempo`
+#### «No tenemos tiempo en producción» · `conc-obj-tiempo`
 
 _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Conciertos y artistas · actores: Director/a de producción (Conciertos y artistas)_
 
 > > «Cero montaje. Si tenéis ordenador en la señal de vídeo, es instalar y conectar. El día del show no pedimos nada a tu equipo.»
 
-#### «Esto nos lo tiene que dar el patrocinador» · `con-obj-patrocinador`
+#### «Esto nos lo tiene que dar el patrocinador» · `conc-obj-patrocinador`
 
 _etapa: Objeciones · objeción: No decido yo · sectores: Conciertos y artistas_
 
@@ -455,20 +462,13 @@ _etapa: Objeciones · objeción: No decido yo · sectores: Conciertos y artistas
 > 
 > **Y ahí termina el trabajo del comercial:** las conversaciones con marcas las lleva fundador. Lo que se trae de vuelta: nombre de la marca, quién lleva la relación, si es acuerdo anual o por evento, y si nos presentan.
 
-#### «¿Y los derechos de imagen?» · `con-obj-derechos`
-
-_etapa: Objeciones · objeción: Desconfianza · sectores: Conciertos y artistas_
-
-> Nuestro mejor terreno.
-> > «Es lo que mejor tenemos resuelto. Sube la foto quien quiere, y al subirla acepta los términos que permiten usarla en comunicación. No grabamos a nadie sin que lo sepa. Esa es la diferencia con una kiss cam.»
-
-#### «¿Podéis hacer una pedida de mano en directo?» · `con-obj-directo`
+#### «¿Podéis hacer una pedida de mano en directo?» · `conc-obj-directo`
 
 _etapa: Objeciones · sectores: Conciertos y artistas_
 
 > > «En vídeo en directo no, eso no lo tenemos. Lo que sí: puede subir una foto con el mensaje y la sacamos en grande cuando toque.»
 
-#### «Es caro» · `con-obj-precio`
+#### «Es caro» · `conc-obj-caro`
 
 _etapa: Objeciones · objeción: Precio · sectores: Conciertos y artistas_
 
@@ -480,12 +480,6 @@ _etapa: Objeciones · objeción: Precio · sectores: Festivales_
 
 > En modelo B cambia la conversación entera:
 > > «A ti no te cuesta, lo paga la marca.»
-
-#### «Ya tenemos pantallas y VJ» · `fest-obj-pantallas`
-
-_etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Festivales_
-
-> > «No lo sustituimos: con NDI nos ponemos encima, en un lateral.»
 
 #### «No hay cobertura» · `fest-obj-cobertura`
 
@@ -502,7 +496,7 @@ _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Festivales_
 
 ### Precio y monetización (12)
 
-#### Antes del precio, deja de vender · `loc-puente`
+#### Antes del precio, deja de vender · `noche-puente`
 
 _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -512,7 +506,7 @@ _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de evento
 
 **Técnica (Cerebro de Ventas):** Pregunta puente venta → cierre — Alfonso y Cristian
 
-#### El compromiso, antes del número · `loc-compromiso`
+#### El compromiso, antes del número · `noche-compromiso`
 
 _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -524,7 +518,7 @@ _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de evento
 
 **Técnica (Cerebro de Ventas):** Compromiso condicional antes de la propuesta — Alfonso y Cristian
 
-#### Decir la cifra · `loc-precio`
+#### Decir la cifra · `noche-precios`
 
 _etapa: Negociación · sectores: Locales de ocio nocturno_
 
@@ -534,7 +528,7 @@ _etapa: Negociación · sectores: Locales de ocio nocturno_
 > >
 > > ¿Te encaja así?»
 
-#### Y ahora te callas · `loc-silencio`
+#### Y ahora te callas · `noche-silencio`
 
 _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -546,7 +540,7 @@ _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de evento
 
 **Técnica (Cerebro de Ventas):** El silencio tras el precio — Alfonso y Cristian; No justificar el precio — Alfonso y Cristian
 
-#### Si pide precio antes de tiempo · `loc-precio-pronto`
+#### Si pide precio antes de tiempo · `noche-precio-pronto`
 
 _etapa: Negociación · objeción: Precio · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -556,7 +550,7 @@ _etapa: Negociación · objeción: Precio · sectores: Locales de ocio nocturno,
 
 **Técnica (Cerebro de Ventas):** Analogía del mecánico — Alfonso y Cristian
 
-#### Ni caro ni barato · `loc-no-etiquetar`
+#### Ni caro ni barato · `noche-no-etiquetar`
 
 _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -568,19 +562,19 @@ _etapa: Negociación · sectores: Promotoras de eventos_
 
 > > «150 € el evento. Si montáis varios al mes, 390 € y los que queráis.»
 
-#### El ancla, siempre antes · `con-ancla`
+#### El ancla, siempre antes · `conc-ancla`
 
 _etapa: Negociación · sectores: Conciertos y artistas_
 
 > > «Para que lo sitúes: una kiss cam de las clásicas —pantalla, cámara y realizador— en un recinto como el vuestro ronda los 8.000 € por noche. Y cuando acaba, no queda nada.»
 
-#### Compromiso condicional, antes del precio · `con-compromiso`
+#### Compromiso condicional, antes del precio · `conc-compromiso`
 
 _etapa: Negociación · sectores: Conciertos y artistas_
 
 > > «Si te lo montamos así — [lo que te haya dicho que quiere], sin tocar vuestros visuales y sin que vuestro equipo tenga que hacer nada — ¿esto lo decidiríais para esta gira o lo dejaríais para más adelante?»
 
-#### La cifra · `con-precio`
+#### La cifra · `conc-precio`
 
 _etapa: Negociación · sectores: Conciertos y artistas_
 
@@ -590,7 +584,7 @@ _etapa: Negociación · sectores: Conciertos y artistas_
 
 **Técnica (Cerebro de Ventas):** El silencio tras el precio — Alfonso y Cristian
 
-#### Precio para charangas y orquestas · `con-charanga-precio`
+#### Precio para charangas y orquestas · `conc-charanga-precio`
 
 _etapa: Negociación · sectores: Conciertos y artistas · actores: Charanga u orquesta (Conciertos y artistas)_
 
@@ -686,7 +680,7 @@ _etapa: Cierre · sectores: Bodas_
 
 **Por qué funciona:** Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión.
 
-#### Manda la demo antes de ir, si puedes · `loc-demo-previa`
+#### Manda la demo antes de ir, si puedes · `noche-demo-previa`
 
 _etapa: Prospección · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -702,7 +696,7 @@ _etapa: Prospección · sectores: Locales de ocio nocturno, Promotoras de evento
 
 **Técnica (Cerebro de Ventas):** Pre-encuadre de la llamada (demo o vídeo previo) — Alfonso y Cristian
 
-#### Los primeros treinta segundos · `loc-apertura`
+#### Los primeros treinta segundos · `noche-apertura`
 
 _etapa: Primer contacto · sectores: Locales de ocio nocturno_
 
@@ -714,7 +708,7 @@ _etapa: Primer contacto · sectores: Locales de ocio nocturno_
 
 **Técnica (Cerebro de Ventas):** Preguntar sin intrusión — Alfonso y Cristian
 
-#### Si te cortan con «¿pero qué es?» · `loc-apertura-que-es`
+#### Si te cortan con «¿pero qué es?» · `noche-apertura-que-es`
 
 _etapa: Primer contacto · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -722,7 +716,7 @@ _etapa: Primer contacto · sectores: Locales de ocio nocturno, Promotoras de eve
 > 
 > > «Que tu público interactúe con las pantallas desde el móvil, sin descargar nada: fotos, mensajes y peticiones de canciones. Pero encaja de formas muy distintas según el local, así que cuéntame un poco del vuestro.»
 
-#### No salgas sin fecha · `loc-prueba`
+#### No salgas sin fecha · `noche-prueba-hoy`
 
 _etapa: Cierre · sectores: Locales de ocio nocturno_
 
@@ -732,7 +726,7 @@ _etapa: Cierre · sectores: Locales de ocio nocturno_
 > 
 > Y funciona como cualificación: quien da largas para probar algo que no le cuesta nada y se configura en veinte minutos, normalmente no compra.
 
-#### Al día siguiente de la primera noche · `loc-msg-seguimiento-noche1`
+#### Al día siguiente de la primera noche · `noche-msg-seguimiento-noche1`
 
 _etapa: Seguimiento · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -742,7 +736,7 @@ _etapa: Seguimiento · sectores: Locales de ocio nocturno, Promotoras de eventos
 > >
 > > Dos cosas: [algo concreto que mejorar la próxima noche], y si te parece el [día] lo vemos cinco minutos.»
 
-#### Local que se enfrió · `loc-msg-reactivacion`
+#### Local que se enfrió · `noche-msg-reactivacion`
 
 _etapa: Seguimiento · sectores: Locales de ocio nocturno_
 
@@ -772,7 +766,7 @@ _etapa: Cierre · sectores: Promotoras de eventos_
 > 
 > **Nunca se cierra sin fecha de evento concreta.** Así se perdieron todas las de ForVenues: les gustó a todas, no se agendó ninguna.
 
-#### Manda la demo antes de la llamada · `con-demo-previa`
+#### Manda la demo antes de la llamada · `conc-demo-previa`
 
 _etapa: Prospección · sectores: Conciertos y artistas_
 
@@ -784,7 +778,7 @@ _etapa: Prospección · sectores: Conciertos y artistas_
 
 **Técnica (Cerebro de Ventas):** Pre-encuadre de la llamada (demo o vídeo previo) — Alfonso y Cristian
 
-#### Primeros treinta segundos · `con-apertura`
+#### Primeros treinta segundos · `conc-apertura`
 
 _etapa: Primer contacto · sectores: Conciertos y artistas_
 
@@ -792,7 +786,7 @@ _etapa: Primer contacto · sectores: Conciertos y artistas_
 > >
 > > Antes de contarte nada de lo nuestro: ¿qué hacéis ahora mismo con las pantallas antes de que salga el artista?»
 
-#### Precalificar al decisor, al principio · `con-decisor`
+#### Precalificar al decisor, al principio · `conc-decisor`
 
 _etapa: Primer contacto · objeción: No decido yo · sectores: Conciertos y artistas_
 
@@ -808,7 +802,7 @@ _etapa: Primer contacto · objeción: No decido yo · sectores: Conciertos y art
 
 **Técnica (Cerebro de Ventas):** Precalificación del decisor — Alfonso y Cristian
 
-#### Si te atiende la oficina · `con-gatekeeper`
+#### Si te atiende la oficina · `conc-gatekeeper`
 
 _etapa: Prospección · sectores: Conciertos y artistas_
 
@@ -818,7 +812,7 @@ _etapa: Prospección · sectores: Conciertos y artistas_
 
 **Técnica (Cerebro de Ventas):** Validación de interés indirecta (gatekeeper) — Alfonso y Cristian
 
-#### Pedir entrar en el advance · `con-advance`
+#### Pedir entrar en el advance · `conc-advance`
 
 _etapa: Cierre · sectores: Conciertos y artistas_
 
@@ -844,7 +838,7 @@ _etapa: Cierre · sectores: Festivales_
 > 
 > **Es excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y no va en el módulo de precio como incluido.
 
-### Consejos (37)
+### Consejos (38)
 
 #### Lo primero que se comprueba · `gen-cobertura`
 
@@ -1033,6 +1027,12 @@ _etapa: Seguimiento_
 > 
 > Noche 1: mirar los datos y escribir al día siguiente **con el resultado**, no preguntando «¿qué tal?». Semana 1: llamada corta. Mes 1: revisión y petición de referencia. Cierre de temporada: contactar **antes** de que reabra — Altare se perdió exactamente ahí.
 
+#### Lo que ha pasado hasta ahora en bodas · `bodas-aviso`
+
+_etapa: Mentalidad · sectores: Bodas · la ven: Solo equipo interno_
+
+> Bodas es el sector del que menos sabemos y el único donde nunca hemos cobrado. Hubo 12 leads, pricing cerrado y resellers definidos: a los organizadores que iban a pagarnos 300 €/mes les pareció buena idea y no pagó ninguno; a los resellers con 100 € de base les pareció bien y no revendió ninguno. Cuando un precio le parece bien a todo el mundo y no compra nadie, el problema no es el precio. Todo lo que hay en este sector son hipótesis.
+
 #### Estructura, no guion · `gen-no-robot`
 
 _etapa: Mentalidad_
@@ -1053,7 +1053,7 @@ _etapa: Primer contacto_
 > 
 > Dos pruebas: si el mensaje sirve para otro cambiando solo el nombre, no está terminado. Y todo lo que diga que sabes tiene que ser cierto.
 
-#### Esto es estructura, no un guion para recitar · `loc-no-recitar`
+#### Esto es estructura, no un guion para recitar · `noche-no-recitar`
 
 _etapa: Mentalidad · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -1063,7 +1063,7 @@ _etapa: Mentalidad · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
 **Técnica (Cerebro de Ventas):** Estructura en lugar de guion — Alfonso y Cristian
 
-#### Cinco minutos antes de entrar · `loc-preparacion`
+#### Cinco minutos antes de entrar · `noche-preparacion`
 
 _etapa: Prospección · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -1074,7 +1074,7 @@ _etapa: Prospección · sectores: Locales de ocio nocturno, Promotoras de evento
 > 
 > Lo vas a usar en la primera frase, y tiene que ser verdad.
 
-#### El miércoles por la mañana · `loc-cuando-ir`
+#### El miércoles por la mañana · `noche-calendario`
 
 _etapa: Prospección · sectores: Locales de ocio nocturno_
 
@@ -1084,14 +1084,14 @@ _etapa: Prospección · sectores: Locales de ocio nocturno_
 > 
 > **Presencial.** Es lo único que ha funcionado: todos los clientes han entrado por puerta fría presencial. Por Instagram no contestan — el DM lo lleva quien atiende dudas del público.
 
-#### Lo que no se dice al abrir · `loc-no-apertura`
+#### Lo que no se dice al abrir · `noche-no-apertura`
 
 _etapa: Primer contacto · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
 > - Nada de «no vengo a venderte nada» ni «no te voy a hacer perder el tiempo». Negar para plantar la idea se detecta.
 > - Nada de «me pareció muy interesante vuestro proyecto». Un sentimiento no se verifica; una acción sí.
 
-#### Lo que no se pregunta jamás · `loc-dj-no-preguntar`
+#### Lo que no se pregunta jamás · `noche-dj-no-preguntar`
 
 _etapa: Pitch / Demo · sectores: Locales de ocio nocturno · actores: DJ (Locales de ocio nocturno)_
 
@@ -1099,7 +1099,7 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno · actores: DJ (Local
 > 
 > Le das un motivo para dudar y un tercero tras el que esconderse. El DJ nos ha tumbado dos acuerdos ya cerrados.
 
-#### Si se cae la venta · `loc-obj-referido`
+#### Si se cae la venta · `noche-obj-referido`
 
 _etapa: Seguimiento · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -1107,7 +1107,7 @@ _etapa: Seguimiento · sectores: Locales de ocio nocturno, Promotoras de eventos
 > 
 > Los dueños de local se conocen entre ellos.
 
-#### Filtro antes de mandar nada · `loc-msg-filtro`
+#### Filtro antes de mandar nada · `noche-msg-filtro`
 
 _etapa: Primer contacto · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -1119,7 +1119,7 @@ _etapa: Primer contacto · sectores: Locales de ocio nocturno, Promotoras de eve
 > 
 > Dos pruebas: si el mensaje sirve para otro cambiando solo el nombre, no está terminado. Y todo lo que diga que sabes tiene que ser cierto.
 
-#### Lo que no se dice nunca · `loc-no-decir`
+#### Lo que no se dice nunca · `noche-no-decir`
 
 _etapa: Mentalidad · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
@@ -1145,7 +1145,7 @@ _etapa: Seguimiento · sectores: Promotoras de eventos_
 > 
 > Funciona en los dos sentidos: a La Biblioteca una promotora la eligió para montar una fiesta **porque ya ofrecían estas dinámicas**.
 
-#### Lo que miras antes · `con-preparacion`
+#### Lo que miras antes · `conc-preparacion`
 
 _etapa: Prospección · sectores: Conciertos y artistas_
 
@@ -1153,7 +1153,7 @@ _etapa: Prospección · sectores: Conciertos y artistas_
 > - Si hay patrocinador visible en el cartel.
 > - Si el artista o la sala suben contenido del público a sus redes.
 
-#### Lo que no se le cuenta · `con-charanga-no`
+#### Lo que no se le cuenta · `conc-charanga-no`
 
 _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Charanga u orquesta (Conciertos y artistas)_
 
@@ -1213,9 +1213,15 @@ _etapa: Seguimiento · sectores: Conciertos y artistas, Festivales_
 > 
 > Un sí sin fecha no es un sí.
 
-## Módulo: Experiencias en directo
+## Módulo: Pantalla en vivo
 
-### Cómo presentarlo (2)
+### Cómo presentarlo (5)
+
+#### Lo que se ve en la pantalla · `pantalla-que-ve`
+
+_etapa: Pitch / Demo_
+
+> El 90 % de la noche la pantalla enseña un QR grande: ese es el anzuelo, sin eso no entra nadie. Cuando alguien pide algo, salta a pantalla completa con su nombre y su dedicatoria, y vuelve al QR. Si ya tienes visuales, nos ponemos encima en una tarjeta pequeña sin taparlos.
 
 #### La venta en barra: existe hoy y está infravendida · `gen-venta-barra`
 
@@ -1231,6 +1237,83 @@ _etapa: Pitch / Demo · actores: Dueño de sala (Locales de ocio nocturno), Due�
 
 **Por qué funciona:** Son tickets del mismo día, no contenido para la semana que viene. Con el dueño de oficina funciona mejor que las fotos.
 
+#### Segundo: la pantalla desde tu móvil · `noche-pantalla-movil`
+
+_etapa: Pitch / Demo · sectores: Locales de ocio nocturno · actores: Dueño de sala (Locales de ocio nocturno), Gerente (Locales de ocio nocturno)_
+
+> El argumento más directo que tenemos con un dueño, y el que más se olvida:
+> 
+> > «Y la pantalla la manejas tú desde el móvil. Un martes a la una y media ves la barra parada y mandas "chupito a 2 € los próximos diez minutos". Eso hoy no lo puedes hacer de ninguna otra forma.»
+
+#### A producción: NDI · `conc-ndi`
+
+_etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Director/a de producción (Conciertos y artistas), Tour manager (Conciertos y artistas)_
+
+> > «No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en un lateral, en una tarjeta pequeña. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.»
+
+#### Acotar desde el principio · `conc-multipantalla`
+
+_etapa: Pitch / Demo · sectores: Festivales_
+
+> > «Una cosa que te digo ya: hoy manejamos una pantalla, no todo el recinto. Lo que tenemos que decidir es en qué pantalla y en qué momento.»
+> 
+> **Se dice en la primera reunión.** Si no, el cliente se imagina el festival entero y lo descubre el día del montaje.
+
+### Objeciones (1)
+
+#### «Ya tenemos pantallas y un VJ» · `conc-obj-pantallas`
+
+_etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Locales de ocio nocturno, Promotoras de eventos, Conciertos y artistas, Festivales_
+
+> > «Y mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales con NDI, en un lateral, y él sigue haciendo lo suyo. Pero dime una cosa: si pudiera resolveros una o dos cosas concretas del show, ¿cuáles serían?»
+> 
+> *Y si la respuesta es pasiva, abre ventana (técnica de la ventana, Alfonso y Cristian):*
+> 
+> > «Perfecto, te agradezco que seas claro. Antes de irme, una última: ¿cuál sería la única razón por la que te plantearías probar algo así?»
+
+**Técnica (Cerebro de Ventas):** Técnica de la ventana — Alfonso y Cristian
+
+## Módulo: Móvil del invitado
+
+### Cómo presentarlo (2)
+
+#### Sin app y sin registro · `movil-sin-app`
+
+_etapa: Pitch / Demo_
+
+> Abre la cámara, apunta al QR y ya está dentro. Sin descargar nada y sin registrarse. Elige qué quiere hacer, lo manda, y si alguien lo valida sale en pantalla en segundos. Todo lo que ha subido se le queda en el álbum.
+
+#### El activo es el consentimiento · `gen-consentimiento`
+
+_etapa: Pitch / Demo_
+
+> Quien sube una foto acepta los términos de uso: quien organiza puede usar ese contenido en sus redes y su comunicación.
+> 
+> Ninguna cámara, kiss cam ni fotomatón da eso.
+
+**Por qué funciona:** Es lo único que nadie más ofrece, y responde a «¿y los derechos de imagen?» antes de que salga.
+
+### Objeciones (1)
+
+#### «¿Y los derechos de imagen?» · `conc-obj-derechos`
+
+_etapa: Objeciones · objeción: Desconfianza · sectores: Conciertos y artistas_
+
+> Nuestro mejor terreno.
+> > «Es lo que mejor tenemos resuelto. Sube la foto quien quiere, y al subirla acepta los términos que permiten usarla en comunicación. No grabamos a nadie sin que lo sepa. Esa es la diferencia con una kiss cam.»
+
+### Consejos (1)
+
+#### Enseña el móvil, no la pantalla · `exp-demo`
+
+_etapa: Pitch / Demo · sectores: Bodas_
+
+> En la demo, pásale TU móvil y que envíe algo: lo ve aparecer en la vista previa de la propuesta. Vender la experiencia > describirla.
+
+## Módulo: Experiencias en directo
+
+### Cómo presentarlo (2)
+
 #### Kiss-cam, dedicatorias y retos: el banquete se convierte en juego · `exp-pitch`
 
 _etapa: Pitch / Demo · sectores: Bodas_
@@ -1238,6 +1321,12 @@ _etapa: Pitch / Demo · sectores: Bodas_
 > Cada invitado participa desde su móvil (sin app) y lo que envía sale en la pantalla en directo. Nadie se queda mirando el plato.
 
 **Cuándo usarla:** Cuando han mencionado tiempos muertos o mesas que no se mezclan.
+
+#### El menú cerrado es el producto entero · `conc-menu-cerrado`
+
+_etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Charanga u orquesta (Conciertos y artistas)_
+
+> > «Metéis vuestro repertorio en una lista, la gente vota desde el móvil y vosotros tocáis lo más votado. Nadie puede pedir nada que no esté en vuestra lista. El público elige la siguiente, o la última de la noche.»
 
 ### Para quién (y cuándo no) (2)
 
@@ -1265,14 +1354,6 @@ _etapa: Descubrimiento · sectores: Bodas_
 
 > Bodas de 100+ invitados, con pantalla o proyector en el salón. Con menos de 60 invitados, ofrece solo dedicatorias.
 
-### Pruebas y casos (1)
-
-#### Participación media 92 % · `exp-prueba`
-
-_etapa: Pitch / Demo · sectores: Bodas_
-
-> Dato de ejemplo (sustituir por el real de Enjoy): 9 de cada 10 invitados envían al menos una kiss-cam o dedicatoria.
-
 ### Objeciones (1)
 
 #### "Mis invitados son mayores, no van a participar" · `exp-obj-mayores`
@@ -1283,15 +1364,15 @@ _etapa: Objeciones · objeción: No lo necesito · sectores: Bodas_
 
 ### Precio y monetización (1)
 
-#### Pack Kiss-cam + Retos · `exp-upsell`
+#### Las experiencias, en pack · `exp-upsell`
 
 _etapa: Negociación · sectores: Bodas_
 
-> Vende las experiencias en pack (no sueltas): el pack completo sube el ticket medio ~30 % y el coste marginal es casi cero. Descuento máximo autorizado: 10 %.
+> Vende las experiencias en pack, no sueltas. El coste marginal de añadir una es casi cero y una experiencia suelta compite con lo que ya hace el DJ.
+> 
+> **Descuentos: los de la tabla oficial, ninguno más.**
 
-**Por qué funciona:** El margen está en el pack; las experiencias sueltas compiten con el DJ.
-
-### Consejos (2)
+### Consejos (1)
 
 #### Regla de moderación: nunca señalar a nadie · `conc-moderacion`
 
@@ -1304,12 +1385,6 @@ _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Manager del 
 > Y en la primera reunión **no propongas subir gente al escenario**: es seguridad y seguro, y el tour manager frena en seco. Si lo propone el cliente, perfecto.
 
 **Por qué funciona:** Forma parte de lo que vendes: protege al artista y al público.
-
-#### Enseña el móvil, no la pantalla · `exp-demo`
-
-_etapa: Pitch / Demo · sectores: Bodas_
-
-> En la demo, pásale TU móvil con la kiss-cam abierta y que envíe algo: lo ve aparecer en la vista previa del dossier. Vender la experiencia > describirla.
 
 ## Módulo: Enjoy para tu sala
 
@@ -1343,7 +1418,7 @@ _etapa: Objeciones · objeción: Ya tengo proveedor · sectores: Bodas_
 
 _etapa: Negociación · sectores: Bodas_
 
-> Precio a la sala por evento + PVP recomendado a los novios. La sala decide si lo regala (diferenciación) o lo cobra (margen). Ejemplo: coste 250 €, PVP 450 €.
+> PENDIENTE · precio de bodas sin definir; nunca hemos cobrado una boda
 
 ## Módulo: Precio de la propuesta
 

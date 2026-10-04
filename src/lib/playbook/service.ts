@@ -19,7 +19,7 @@ import {
 import type { z } from 'zod';
 import { can } from '../admin/permissions';
 import type { EvidenceDb } from '../evidence/db';
-import { evidenceByPlay } from '../evidence/service';
+import { evidenceByPlay, MIN_CLOSES } from '../evidence/service';
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -58,6 +58,8 @@ export interface UiKit { phone: Record<string, unknown> | null; screen: Record<s
 export interface LearnIndex {
   /** «Lo que vendes, en 1 minuto» (tenant.tour). Vacío = la empresa aún no lo ha preparado. */
   tour: { steps: TourStep[]; learned: boolean };
+  /** Paso 0: por qué existimos (visión, estrategia, modelo). */
+  about: { playCount: number; learned: boolean };
   general: { playCount: number; learned: boolean };
   /** cover: primera imagen de producto del módulo (para el fondo de su tarjeta). */
   modules: Array<TopicModule & { playCount: number; tipCount: number; learned: boolean; cover: string | null; props: Record<string, unknown>; price: string | null }>;
@@ -80,7 +82,7 @@ export interface TopicView {
   learned: boolean;
 }
 
-export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService; evidence?: EvidenceDb }) {
+export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService; evidence?: EvidenceDb; minCloses?: number }) {
   /** Admin o gerente (src/lib/admin/permissions.ts). */
   const isAdmin = can(s.role).managePlaybook;
   const isPartner = s.role === 'partner';
@@ -108,11 +110,13 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const score = scores(feedback);
     // Evidencia objetiva: cierres ganados/perdidos en los que se usó cada jugada (docs/EVIDENCE.md).
     const ev = evidenceByPlay(stories);
+    // Con pocos cierres documentados, la evidencia se enseña pero no ordena (sería ruido): todo va por posición.
+    const ranks = stories.filter((x) => x.status === 'shared').length >= (deps.minCloses ?? MIN_CLOSES);
     const names = await adb.userNames([...new Set(contributions.map((c) => c.authorId))]);
     const playTitle = new Map(plays.map((p) => [p.id, p.title]));
     const pv: PlayView[] = plays.map((p) => {
       const e = ev.get(p.id) ?? { used: 0, won: 0, lost: 0 };
-      return { ...p, score: { worked: e.won, didnt: e.lost, mine: null }, evidence: e };
+      return { ...p, score: ranks ? { worked: e.won, didnt: e.lost, mine: null } : { worked: 0, didnt: 0, mine: null }, evidence: e };
     });
     const cv: ContributionView[] = contributions.map((c) => ({
       ...c, score: score('contribution', c.id), authorName: names.get(c.authorId) ?? null, playTitle: c.playId ? playTitle.get(c.playId) ?? null : null,
@@ -165,6 +169,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       };
     });
     const tour = { steps: tourOf(tenant?.tour), learned: mine.has('tour') };
+    const aboutCount = off.filter((p) => p.about).length;
     const sectorKeys = segs.segments.filter((x) => x.status !== 'archived').map((x) => x.key);
     const sectorsLearned = sectorKeys.filter((k) => mine.has(`sector:${k}`));
     const propsOf = (type: string) => modules.find((x) => x.blockType === type)?.props ?? null;
@@ -173,13 +178,14 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     return {
       tour,
       kit,
-      general: { playCount: off.filter((p) => p.moduleId === null).length, learned: mine.has('general') },
+      about: { playCount: aboutCount, learned: mine.has('empresa') },
+      general: { playCount: off.filter((p) => p.moduleId === null && !p.about).length, learned: mine.has('general') },
       modules,
       sectorsLearned,
       // Lo que cuenta: el recorrido (si existe), cada sector, cómo se vende (general) y cada módulo.
       progress: {
-        done: (tour.steps.length && tour.learned ? 1 : 0) + sectorsLearned.length + (mine.has('general') ? 1 : 0) + modules.filter((m) => m.learned).length,
-        total: (tour.steps.length ? 1 : 0) + sectorKeys.length + 1 + modules.length,
+        done: (aboutCount && mine.has('empresa') ? 1 : 0) + (tour.steps.length && tour.learned ? 1 : 0) + sectorsLearned.length + (mine.has('general') ? 1 : 0) + modules.filter((m) => m.learned).length,
+        total: (aboutCount ? 1 : 0) + (tour.steps.length ? 1 : 0) + sectorKeys.length + 1 + modules.length,
       },
       news,
       newTips: contributions.filter((c) => visibleTip(c) && (!seenAt || c.createdAt > seenAt) && c.authorId !== s.userId).length,
@@ -188,20 +194,21 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   async function topic(topicId: string): Promise<TopicView> {
     const { plays, contributions, latest } = await load();
-    const isGeneral = topicId === 'general';
+    const isAbout = topicId === 'empresa';
+    const isGeneral = topicId === 'general' || isAbout;
     const module = isGeneral ? null : topicModule(latest, topicId);
     if (!isGeneral && !module) throw new AdminError(404, 'Módulo no encontrado en el catálogo');
     const moduleId = isGeneral ? null : topicId;
-    const mine = plays.filter((p) => official(p) && p.moduleId === moduleId);
+    const mine = plays.filter((p) => official(p) && p.moduleId === moduleId && !!p.about === isAbout);
     const playIds = new Set(mine.map((p) => p.id));
     const sections = KIND_ORDER
       .map((k) => ({ kind: k, label: KIND_LABEL[k], plays: mine.filter((p) => p.kind === k).sort((a, b) => a.position - b.position) }))
       .filter((x) => x.plays.length);
-    const related = (c: ContributionView) => (c.moduleId === moduleId && (c.playId === null || playIds.has(c.playId))) || (c.playId !== null && playIds.has(c.playId));
+    const related = (c: ContributionView) => (!isAbout && c.moduleId === moduleId && (c.playId === null || playIds.has(c.playId))) || (c.playId !== null && playIds.has(c.playId));
     const progress = await pdb.listProgress(s.tenantId);
     return {
       topic: topicId,
-      name: module?.name ?? 'Empieza aquí: la empresa',
+      name: module?.name ?? (isAbout ? 'Por qué existimos' : 'Cómo se vende'),
       module,
       sections,
       tips: contributions.filter((c) => visibleTip(c) && related(c)).sort((a, b) => (b.score.worked - b.score.didnt) - (a.score.worked - a.score.didnt) || b.createdAt.localeCompare(a.createdAt)),
@@ -214,7 +221,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (topicId.startsWith('sector:')) {
       const { segments } = await loadMarket();
       if (!segments.some((x) => `sector:${x.key}` === topicId)) throw new AdminError(404, 'Sector no encontrado');
-    } else if (topicId !== 'general' && topicId !== 'tour') {
+    } else if (topicId !== 'general' && topicId !== 'tour' && topicId !== 'empresa') {
       const { latest } = await load();
       if (!latest.has(topicId)) throw new AdminError(404, 'Módulo no encontrado');
     }
@@ -458,7 +465,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const position = Math.max(0, ...plays.filter((x) => x.moduleId === p.moduleId).map((x) => x.position)) + 1024;
     const row = {
       moduleId: p.moduleId, key: p.key ?? null, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
-      audience: p.audience, title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
+      audience: p.audience, about: p.about ?? false, pinned: p.pinned ?? null, title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
       position, status: p.status, authorId: s.userId, updatedBy: s.userId,
     };
     const id = await pdb.insertPlay(s.tenantId, row);
@@ -476,7 +483,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (p.key && plays.some((x) => x.key === p.key && x.id !== id)) throw new AdminError(409, 'Ya existe una jugada con esa clave');
     const next = {
       moduleId: p.moduleId, key: p.key ?? cur.key, kind: p.kind, stage: p.stage ?? null, objection: p.objection ?? null, segments: p.segments, personas: p.personas,
-      audience: p.audience, title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
+      audience: p.audience, about: p.about, pinned: p.pinned, title: p.title, body: p.body, whenToUse: p.whenToUse ?? null, whyItWorks: p.whyItWorks ?? null, techniqueRefs: p.techniqueRefs,
       status: p.status, version: cur.version + 1, updatedBy: s.userId,
     };
     wrote(await pdb.updatePlay(id, next));

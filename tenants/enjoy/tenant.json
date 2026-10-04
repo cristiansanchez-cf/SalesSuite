@@ -1396,6 +1396,204 @@
   ],
   "playbook": [
     {
+      "key": "vision",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": true,
+      "pinned": null,
+      "title": "La visión",
+      "body": "La gente sale menos y, cuando sale, está con el móvil. Pelearse contra eso es perder. Enjoy no quiere que la gente mire menos el móvil: quiere que lo que haga con él pase en la sala y no en otro sitio. Que pida la canción que está sonando, que mande un mensaje que lee toda la pista, que suba una foto y la vea en pantalla a los diez segundos. Que alguien le diga «¿tú también has pedido esa?» y se conozcan. El móvil como excusa para una conexión real, no como sustituto.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "por-que-ahora",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": true,
+      "pinned": null,
+      "title": "Por qué ahora",
+      "body": "El ocio nocturno se está copiando a sí mismo: las mismas fiestas temáticas, la misma música, los mismos carteles. Diferenciarse dejó de ser una ventaja y pasó a ser una condición. A la vez, los locales necesitan contenido para redes cada semana y lo resuelve el encargado con el móvil a las cuatro de la mañana. Y las marcas que patrocinan están exigiendo medir lo que compran. Las tres cosas se resuelven con lo mismo: que el público participe desde su móvil y deje su contenido con permiso.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "estrategia-bandera",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": true,
+      "pinned": null,
+      "title": "Plantar la bandera",
+      "body": "Queremos estar en el máximo número de sitios posible, cuanto antes, y por eso a veces vale la pena entrar sin cobrar lo que valdría.\n\nEn el peor de los casos, un sitio puede empezar solo con el QR de peticiones de canciones, sin pantalla y sin coste. Eso no es regalar el producto: es que cada sitio donde esto funciona es un sitio donde el dueño ve pasar algo en su propia sala, y la conversación de dentro de tres meses empieza mucho más arriba.\n\n**Esto es contexto para que entiendas por qué hacemos lo que hacemos. No es una oferta que puedas poner tú sobre la mesa:** cualquier entrada por debajo de tarifa la autoriza el fundador.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "estrategia-datos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": true,
+      "pinned": null,
+      "title": "Por qué los datos importan tanto",
+      "body": "Cada noche encendida son datos que nadie más tiene: qué se pide, dónde, a qué hora y con qué público. Eso tiene valor para gente que hoy no nos compra a nosotros — marcas de bebidas que llevan años intentando saber algo de quién consume en una discoteca, y discográficas a las que les interesa qué suena y qué piden en cada ciudad.\n\nHemos tenido conversaciones en esa dirección. **Ninguna es un acuerdo cerrado y no se menciona a ningún cliente.** Está aquí para que entiendas por qué insistimos tanto en que cada sitio esté activo y en que la gente dé su consentimiento: el negocio de dentro de dos años se construye con lo que se enciende este año.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "estrategia-djs",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": true,
+      "pinned": null,
+      "title": "Los DJ como canal",
+      "body": "El DJ ha sido históricamente quien nos ha tumbado acuerdos, y fue culpa de cómo lo planteamos: le dábamos trabajo y no le dábamos nada. Ahora al revés. El menú cerrado hace que nadie le toque el repertorio. El dinero de las peticiones va a la cuenta del local, y lo que recomendamos —porque es lo que funciona en La Biblioteca— es que se reparta como propina de todo el equipo: así el DJ que no acepta peticiones está dejando sin propina a sus compañeros, y eso lo vigila la plantilla sola. De bloqueante a aliado.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "modelo",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": true,
+      "pinned": null,
+      "title": "Cómo gana dinero la empresa",
+      "body": "Cuota mensual por tramo de aforo en locales. Precio por evento en conciertos, festivales y promotoras puntuales. Suscripción cuando hay recurrencia: promotoras, agencias, infraestructuras de temporada.\n\nEl dinero que paga el público por sus peticiones y mensajes **no es nuestro**: va a la cuenta del local. Cobramos por el servicio, no por el consumo de su público.\n\nLo que todavía no vendemos: CRM de fidelización, remarketing, bonos de consumición y manejo múltiple de pantallas.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "objetivos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": true,
+      "pinned": null,
+      "title": "Los objetivos de este año",
+      "body": "**PENDIENTE — lo rellena Cristian.** Formato: cuántos locales de pago a cierre de año, en qué ciudades, qué MRR, cuántos eventos de concierto o festival, y cuántos casos de éxito con nombre.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "no-somos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": true,
+      "pinned": null,
+      "title": "Lo que no somos",
+      "body": "No somos una kiss cam: no grabamos a nadie sin que lo sepa. No somos una app de peticiones para DJs: es una parte, y la que menos vendemos. No somos una agencia de contenido ni montamos nada físico. No damos soporte 24 horas. Y no prometemos que el servicio se pague solo con las peticiones: depende del público y de la temporada, y quien lo prometió antes perdió al cliente cuando no se cumplió.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "pantalla-que-ve",
+      "module_key": "pantalla-en-vivo",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Lo que se ve en la pantalla",
+      "body": "El 90 % de la noche la pantalla enseña un QR grande: ese es el anzuelo, sin eso no entra nadie. Cuando alguien pide algo, salta a pantalla completa con su nombre y su dedicatoria, y vuelve al QR. Si ya tienes visuales, nos ponemos encima en una tarjeta pequeña sin taparlos.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "movil-sin-app",
+      "module_key": "movil-invitado",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Sin app y sin registro",
+      "body": "Abre la cámara, apunta al QR y ya está dentro. Sin descargar nada y sin registrarse. Elige qué quiere hacer, lo manda, y si alguien lo valida sale en pantalla en segundos. Todo lo que ha subido se le queda en el álbum.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "gen-prueba-escaneo",
+      "module_key": null,
+      "kind": "proof",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "El público sí escanea",
+      "body": "En 2025 se registraron cerca de 30.000 peticiones de canciones con muy pocos eventos. Es lo que demuestra que el público sí escanea un QR dentro de un evento.",
+      "when_to_use": null,
+      "why_it_works": "Es el único dato de participación que tenemos y es real.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
       "key": "empresa-pitch",
       "module_key": null,
       "kind": "pitch",
@@ -1403,16 +1601,18 @@
       "title": "Enjoy en una frase",
       "body": "El público escanea un QR, sin descargar nada, y **sube fotos, manda mensajes y pide canciones** que salen en la pantalla. Quien organiza lo controla todo desde su móvil.\n\n- **Pantalla Lite:** navegador o Smart TV, se abre y listo.\n- **Pantalla Desktop:** en un ordenador; con NDI se pone encima de los visuales que ya hay.\n- **Álbum:** todas las fotos de la noche, descargables.",
       "when_to_use": "Los primeros 30 segundos de cualquier conversación.",
-      "why_it_works": "Cuenta lo que pasa en la sala, no la herramienta: nadie compra «interactividad»."
+      "why_it_works": "Cuenta lo que pasa en la sala, no la herramienta: nadie compra «interactividad».",
+      "pinned": null
     },
     {
       "key": "gen-consentimiento",
-      "module_key": null,
+      "module_key": "movil-invitado",
       "kind": "pitch",
       "stage": "pitch_demo",
       "title": "El activo es el consentimiento",
       "body": "Quien sube una foto acepta los términos de uso: quien organiza puede usar ese contenido en sus redes y su comunicación.\n\nNinguna cámara, kiss cam ni fotomatón da eso.",
-      "why_it_works": "Es lo único que nadie más ofrece, y responde a «¿y los derechos de imagen?» antes de que salga."
+      "why_it_works": "Es lo único que nadie más ofrece, y responde a «¿y los derechos de imagen?» antes de que salga.",
+      "pinned": null
     },
     {
       "key": "gen-cobertura",
@@ -1420,7 +1620,8 @@
       "kind": "tip",
       "stage": "descubrimiento",
       "title": "Lo primero que se comprueba",
-      "body": "La cobertura es lo que más rompe, con diferencia. Si no hay, no hay producto: la gente no puede escanear. Se comprueba antes de vender y, si no la hay, se dice y no se vende. Pasó en Pastrami y en El Portón, en plena calle de la feria."
+      "body": "La cobertura es lo que más rompe, con diferencia. Si no hay, no hay producto: la gente no puede escanear. Se comprueba antes de vender y, si no la hay, se dice y no se vende. Pasó en Pastrami y en El Portón, en plena calle de la feria.",
+      "pinned": null
     },
     {
       "key": "gen-cobro",
@@ -1428,7 +1629,8 @@
       "kind": "tip",
       "stage": "cierre",
       "title": "Cobrar es más difícil que vender",
-      "body": "La tarjeta de empresa la tiene alguien que no está, y las facturas las llevan mal.\n\n1. **Siempre por adelantado**, como Netflix. Sin cobro no hay servicio.\n2. **Enlace de pago en el momento**, no «ya te lo paso».\n3. Si hay peticiones acumuladas, se liquidan a final de mes **siempre que nos den la factura**. Se dice desde el primer día.\n4. **Por escrito** quién paga y con qué tarjeta, antes de la fecha."
+      "body": "La tarjeta de empresa la tiene alguien que no está, y las facturas las llevan mal.\n\n1. **Siempre por adelantado**, como Netflix. Sin cobro no hay servicio.\n2. **Enlace de pago en el momento**, no «ya te lo paso».\n3. Si hay peticiones acumuladas, se liquidan a final de mes **siempre que nos den la factura**. Se dice desde el primer día.\n4. **Por escrito** quién paga y con qué tarjeta, antes de la fecha.",
+      "pinned": null
     },
     {
       "key": "gen-postventa",
@@ -1436,7 +1638,8 @@
       "kind": "script",
       "stage": "seguimiento",
       "title": "Después de la venta: la parte que hemos fallado",
-      "body": "Tres de las bajas fueron por no hacer seguimiento. No es opcional.\n\n- **Noche 1:** mira los datos y escríbele al día siguiente con el resultado, no con «¿qué tal?».\n- **Semana 1:** llamada corta: qué ha funcionado y qué no.\n- **Mes 1:** revisión y, si va bien, pide una referencia.\n- **Cada mes:** algo útil para él, no para nosotros.\n- **Cierre de temporada:** contacta antes de que reabra. Altare se perdió exactamente aquí."
+      "body": "Tres de las bajas fueron por no hacer seguimiento. No es opcional.\n\n- **Noche 1:** mira los datos y escríbele al día siguiente con el resultado, no con «¿qué tal?».\n- **Semana 1:** llamada corta: qué ha funcionado y qué no.\n- **Mes 1:** revisión y, si va bien, pide una referencia.\n- **Cada mes:** algo útil para él, no para nosotros.\n- **Cierre de temporada:** contacta antes de que reabra. Altare se perdió exactamente aquí.",
+      "pinned": null
     },
     {
       "key": "empresa-obj-pensar",
@@ -1453,7 +1656,8 @@
           "creator": "Manuel Trejo",
           "url": "https://www.tiktok.com/@manueltrejove/video/7648050248446790933"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "empresa-descubrir-2",
@@ -1462,7 +1666,8 @@
       "stage": "descubrimiento",
       "objection": "no_decido_yo",
       "title": "¿Quién más decide?",
-      "body": "Pregunta pronto si deciden ambos novios, la familia o el coordinador de la sala. Evita la objeción \"lo tengo que consultar\" al final."
+      "body": "Pregunta pronto si deciden ambos novios, la familia o el coordinador de la sala. Evita la objeción \"lo tengo que consultar\" al final.",
+      "pinned": null
     },
     {
       "key": "empresa-obj-precio",
@@ -1470,10 +1675,10 @@
       "kind": "objection",
       "stage": "objeciones",
       "objection": "precio",
-      "title": "\"Es caro\"",
-      "body": "No justifiques el precio. Pregunta con qué lo están comparando y vuelve a **lo que les preocupaba** del banquete (lo que dijeron en el descubrimiento). Enjoy cuesta menos por invitado que una ronda de chupitos.",
-      "when_to_use": "Cuando aparece el precio antes de que hayan visto el valor.",
-      "why_it_works": "\"Caro\" casi nunca es el número: es valor no percibido todavía.",
+      "title": "«Es caro»",
+      "body": "El precio no se argumenta: se cambia de línea.\n\nCada sector tiene su ancla: en locales, los dos meses sin permanencia; en conciertos, los 8.000 € de una kiss cam clásica.",
+      "when_to_use": null,
+      "why_it_works": null,
       "technique_refs": [
         {
           "source": "cerebro",
@@ -1489,7 +1694,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.tiktok.com/@alfonsoychristian"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "precio-presentar",
@@ -1498,7 +1704,8 @@
       "stage": "negociacion",
       "objection": "precio",
       "title": "Presenta el precio después del valor",
-      "body": "La tarjeta de precio va siempre al final del dossier. Si te piden precio al principio, da una horquilla y vuelve al descubrimiento."
+      "body": "La tarjeta de precio va siempre al final del dossier. Si te piden precio al principio, da una horquilla y vuelve al descubrimiento.",
+      "pinned": null
     },
     {
       "key": "seguimiento-48h",
@@ -1507,7 +1714,8 @@
       "stage": "seguimiento",
       "title": "Seguimiento a las 48 h de enviar el dossier",
       "body": "Hola {prospect}, ¿pudisteis verlo juntos? Te dejo una idea concreta para {company}: [un detalle del dossier que encaje con lo que te contó]. ¿Te va bien el jueves a las 18:00 y lo cerramos?",
-      "when_to_use": "Si no han respondido 48 h después de enviar el enlace."
+      "when_to_use": "Si no han respondido 48 h después de enviar el enlace.",
+      "pinned": null
     },
     {
       "key": "conc-moderacion",
@@ -1523,7 +1731,8 @@
       ],
       "title": "Regla de moderación: nunca señalar a nadie",
       "body": "**Nada que identifique o localice a una persona que no se haya identificado ella misma.**\n\nQuien sube un mensaje aceptó los términos; no aceptó que 3.000 personas le busquen con la mirada. Si sale mal una vez, se cae el argumento del consentimiento.\n\nY en la primera reunión **no propongas subir gente al escenario**: es seguridad y seguro, y el tour manager frena en seco. Si lo propone el cliente, perfecto.",
-      "why_it_works": "Forma parte de lo que vendes: protege al artista y al público."
+      "why_it_works": "Forma parte de lo que vendes: protege al artista y al público.",
+      "pinned": null
     },
     {
       "key": "conc-pendiente",
@@ -1535,7 +1744,8 @@
       ],
       "audience": "team",
       "title": "Lo que falta para vender sin miedo",
-      "body": "- **Prueba de carga:** sin ella no se vende por encima de 20.000.\n- **% que paga y ticket medio:** sin esto no se habla de monetización.\n- **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.\n- **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.\n- **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.\n- **Pie de foto en el álbum:** hasta que esté, no se vende."
+      "body": "- **Prueba de carga:** sin ella no se vende por encima de 20.000.\n- **% que paga y ticket medio:** sin esto no se habla de monetización.\n- **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.\n- **Caso de éxito con nombre:** en este sector nadie quiere ser el primero.\n- **Listado de promotoras, salas y charangas objetivo:** no existe. Primer trabajo del vendedor.\n- **Pie de foto en el álbum:** hasta que esté, no se vende.",
+      "pinned": null
     },
     {
       "key": "gen-video-fundamentos",
@@ -1553,7 +1763,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/14KepcZYdwbA2bGrNYkaPe"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "gen-precalificar",
@@ -1571,7 +1782,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=_kevP_Tlfgg&t=1567"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "gen-gatekeeper",
@@ -1588,7 +1800,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=zF4M8ZRuXIk&t=70"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "gen-frio",
@@ -1610,7 +1823,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=byXpCoddWoE&t=4903"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "gen-inbound",
@@ -1626,7 +1840,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/1gqrGaBTfYEO7R1Ry4J4tq"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "gen-lenguaje",
@@ -1634,7 +1849,8 @@
       "kind": "tip",
       "stage": "primer_contacto",
       "title": "Filtro de lenguaje antes de enviar",
-      "body": "- **Verbos de lo que hiciste, no de lo que sentiste.** «He mirado vuestro cartel», no «me quedé pensando en vuestro proyecto».\n- **Si lo averiguaste después, dilo así.** Fingir familiaridad se detecta.\n- **No niegues para plantar la idea.** Nada de «no vengo a venderte nada».\n- **Adjetivos solo con el dato detrás.** «Muy potente» no dice nada.\n- **Una sola fecha concreta.** «Hablamos la semana que viene» no es un cierre.\n\n**Dos pruebas antes de enviar:** si el mensaje vale para otro cambiando solo el nombre, no está terminado. Y todo lo que dice que hiciste o sabes tiene que ser cierto."
+      "body": "- **Verbos de lo que hiciste, no de lo que sentiste.** «He mirado vuestro cartel», no «me quedé pensando en vuestro proyecto».\n- **Si lo averiguaste después, dilo así.** Fingir familiaridad se detecta.\n- **No niegues para plantar la idea.** Nada de «no vengo a venderte nada».\n- **Adjetivos solo con el dato detrás.** «Muy potente» no dice nada.\n- **Una sola fecha concreta.** «Hablamos la semana que viene» no es un cierre.\n\n**Dos pruebas antes de enviar:** si el mensaje vale para otro cambiando solo el nombre, no está terminado. Y todo lo que dice que hiciste o sabes tiene que ser cierto.",
+      "pinned": null
     },
     {
       "key": "gen-no-vender-por",
@@ -1651,7 +1867,8 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/6v6B2Cizpozb34m0eZot3I"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "noche-bajas",
@@ -1663,7 +1880,8 @@
       ],
       "audience": "team",
       "title": "Por qué se fueron los que se fueron",
-      "body": "Hemos tenido unos diez locales. **Ni una baja fue por precio ni por «no funciona».** Por orden:\n\n- **Falta de seguimiento:** La Parada, Altare, Batiq Málaga Fest.\n- **El DJ:** Tennessee, Habana Cánovas.\n- **Cobertura:** Pastrami.\n- **El dueño de oficina:** el grupo de Juan Rambla (5–8 locales).\n- **Deudas o cierre:** Catedral, Jumanji, Enjoy (el local).\n\nEl trabajo no termina cuando firma: ahí es donde lo hemos perdido todo."
+      "body": "Hemos tenido unos diez locales. **Ni una baja fue por precio ni por «no funciona».** Por orden:\n\n- **Falta de seguimiento:** La Parada, Altare, Batiq Málaga Fest.\n- **El DJ:** Tennessee, Habana Cánovas.\n- **Cobertura:** Pastrami.\n- **El dueño de oficina:** el grupo de Juan Rambla (5–8 locales).\n- **Deudas o cierre:** Catedral, Jumanji, Enjoy (el local).\n\nEl trabajo no termina cuando firma: ahí es donde lo hemos perdido todo.",
+      "pinned": null
     },
     {
       "key": "noche-casetas",
@@ -1675,7 +1893,8 @@
       ],
       "title": "Casetas de feria: se venden allí, en mitad del follón",
       "body": "Dos de nuestros tres mejores casos:\n\n- **El Andén:** pantalla gigante, funcionó muy bien.\n- **Batiq Málaga Fest (caseta):** sin pantalla, y funcionó muy bien, con peticiones de pago incluidas.\n- **El Portón (Córdoba):** falló por cobertura en plena calle de la feria.\n\nSe vendieron presentándose allí durante la feria: lo vieron y al día siguiente estaban funcionando. La decisión es inmediata y la toma quien está allí. Funciona sin pantalla porque la gracia son las canciones y la impaciencia. Y se repiten cada año: una venta bien hecha es un cliente anual.\n\n**Precio** (sin validar): feria completa (hasta 7 días) **290 €**; día suelto **90 €**. Se tiene que poder defender de palabra, sin dossier.\n\nEl Andén y Batiq autorizan su caso con nombre.",
-      "why_it_works": "La cobertura es el único riesgo real, y en feria de calle es el peor escenario: compruébala antes."
+      "why_it_works": "La cobertura es el único riesgo real, y en feria de calle es el peor escenario: compruébala antes.",
+      "pinned": null
     },
     {
       "key": "noche-pendiente",
@@ -1687,7 +1906,8 @@
       ],
       "audience": "team",
       "title": "Pendiente en locales",
-      "body": "- **Techos de interacciones reales:** sacarlos de los datos, no estimarlos.\n- **Probar el teléfono y medirlo.**\n- **Vídeo corto de la pantalla funcionando.**\n- **El plan gratuito para DJs** (90 % para el DJ, 10 % para nosotros, la pasarela la paga el usuario): no se anuncia hasta que salga."
+      "body": "- **Techos de interacciones reales:** sacarlos de los datos, no estimarlos.\n- **Probar el teléfono y medirlo.**\n- **Vídeo corto de la pantalla funcionando.**\n- **El plan gratuito para DJs** (90 % para el DJ, 10 % para nosotros, la pasarela la paga el usuario): no se anuncia hasta que salga.",
+      "pinned": null
     },
     {
       "key": "fest-desconocido",
@@ -1699,7 +1919,8 @@
       ],
       "audience": "team",
       "title": "Festivales: lo que no sabemos",
-      "body": "Un solo contacto real (Selvatic). No tenemos precios de referencia propios, ni ciclo de decisión, ni quién compra. Lo de actores y calendario viene de investigación (manual de Conciertos), no de experiencia.\n\nEntra a aprender: cada conversación debe traer quién decide, cuándo y con qué presupuesto."
+      "body": "Un solo contacto real (Selvatic). No tenemos precios de referencia propios, ni ciclo de decisión, ni quién compra. Lo de actores y calendario viene de investigación (manual de Conciertos), no de experiencia.\n\nEntra a aprender: cada conversación debe traer quién decide, cuándo y con qué presupuesto.",
+      "pinned": null
     },
     {
       "key": "gen-cuentas-abiertas",
@@ -1708,7 +1929,8 @@
       "stage": "seguimiento",
       "audience": "team",
       "title": "Cuentas grandes que dijeron que sí",
-      "body": "Bresh, Selvatic, Shark Events, Topamin Fest y The Lab (Madrid) dijeron que sí. Ninguno se perdió por precio, producto ni competencia: **todos se perdieron en el seguimiento**, igual que La Parada, Altare y Batiq.\n\n- **Shark Events:** le dieron la oportunidad a Webit; con Webit la gente no pedía y lo dejaron.\n- **Topamin Fest:** quería ponerlo.\n- **The Lab:** discoteca grande, quería ponerlo.\n\nRetomarlas es trabajo de seguimiento, no de venta."
+      "body": "Bresh, Selvatic, Shark Events, Topamin Fest y The Lab (Madrid) dijeron que sí. Ninguno se perdió por precio, producto ni competencia: **todos se perdieron en el seguimiento**, igual que La Parada, Altare y Batiq.\n\n- **Shark Events:** le dieron la oportunidad a Webit; con Webit la gente no pedía y lo dejaron.\n- **Topamin Fest:** quería ponerlo.\n- **The Lab:** discoteca grande, quería ponerlo.\n\nRetomarlas es trabajo de seguimiento, no de venta.",
+      "pinned": null
     },
     {
       "key": "gen-webit",
@@ -1717,7 +1939,8 @@
       "stage": "objeciones",
       "objection": "ya_tengo_proveedor",
       "title": "Competencia: Webit",
-      "body": "El único competidor que nos hemos encontrado dentro de un cliente potencial. Aplicación bastante mal hecha: el local la dejó porque la gente no pedía.\n\nSi sale, no la ataques: pregunta qué pasó con las peticiones. La respuesta trabaja por ti."
+      "body": "El único competidor que nos hemos encontrado dentro de un cliente potencial. Aplicación bastante mal hecha: el local la dejó porque la gente no pedía.\n\nSi sale, no la ataques: pregunta qué pasó con las peticiones. La respuesta trabaja por ti.",
+      "pinned": null
     },
     {
       "key": "gen-congresos",
@@ -1725,7 +1948,8 @@
       "kind": "tip",
       "stage": "prospeccion",
       "title": "Congresos del sector: el otro canal que funciona",
-      "body": "ForVenues (congreso de ocio nocturno) nos dio contacto directo con varias promotoras y con Shark Events, que de otra forma no habrían atendido. Junto con la puerta fría presencial, es el canal que más conversaciones con cuentas grandes ha producido.\n\nVe con fechas para proponer: lo que se pierde ahí se pierde en el seguimiento."
+      "body": "ForVenues (congreso de ocio nocturno) nos dio contacto directo con varias promotoras y con Shark Events, que de otra forma no habrían atendido. Junto con la puerta fría presencial, es el canal que más conversaciones con cuentas grandes ha producido.\n\nVe con fechas para proponer: lo que se pierde ahí se pierde en el seguimiento.",
+      "pinned": null
     },
     {
       "key": "gen-frontera-vision",
@@ -1734,7 +1958,8 @@
       "stage": "mentalidad",
       "title": "La frontera: dirección sí, promesas no",
       "body": "**Se puede compartir la dirección del producto. No se puede prometer un resultado, ni una fecha, ni meter el futuro en el precio.**\n\n- Sí: «Hacia dónde vamos es fidelización y datos». No: «En marzo tendrás el CRM».\n- Sí: «Esto es lo que hay hoy; esto es lo que estamos construyendo». No: «Con esto vas a recuperar la cuota».\n- Sí: «Queremos crecer con vosotros». No: «Te lo incluyo cuando salga».\n\n**Tres reglas duras:**\n1. Lo que está en roadmap no entra en el contrato ni en el precio. Se cobra lo que funciona hoy.\n2. Nunca una fecha concreta. «Estamos trabajando en ello» sí; «en el primer trimestre» no.\n3. Si un cliente compra por el roadmap y no por lo que hay hoy, es una alarma, no una venta: cuando llegue el retraso, se da de baja.\n\nSi te oyes diciendo «cuando salga X vas a conseguir Y», has cruzado la línea.",
-      "why_it_works": "Prometer de más es lo que más clientes nos ha costado: el error no fue hablar del futuro, fue prometer un resultado con número."
+      "why_it_works": "Prometer de más es lo que más clientes nos ha costado: el error no fue hablar del futuro, fue prometer un resultado con número.",
+      "pinned": null
     },
     {
       "key": "gen-hoy",
@@ -1742,11 +1967,12 @@
       "kind": "pitch",
       "stage": "pitch_demo",
       "title": "Lo que existe hoy (y a veces no se vende)",
-      "body": "Está en producción y se puede enseñar:\n\n- Fotos del público en pantalla, con validación.\n- Álbum colaborativo, **con descarga de las fotos**.\n- Mensajes en pantalla, con o sin foto.\n- Peticiones de canciones, con menú abierto o cerrado, con o sin dedicatoria.\n- **Mensajes a pantalla en tiempo real desde el móvil del responsable.**\n- Pantalla Lite (navegador, Smart TV) y Desktop (NDI sobre los visuales).\n- Consentimiento de uso comercial del contenido.\n- Analítica de participación.\n\n**Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento."
+      "body": "Está en producción y se puede enseñar:\n\n- Fotos del público en pantalla, con validación.\n- Álbum colaborativo, **con descarga de las fotos**.\n- Mensajes en pantalla, con o sin foto.\n- Peticiones de canciones, con menú abierto o cerrado, con o sin dedicatoria.\n- **Mensajes a pantalla en tiempo real desde el móvil del responsable.**\n- Pantalla Lite (navegador, Smart TV) y Desktop (NDI sobre los visuales).\n- Consentimiento de uso comercial del contenido.\n- Analítica de participación.\n\n**Una pantalla:** hoy se controla una sola. En recintos con varias, la conversación es qué pantalla y en qué momento.",
+      "pinned": null
     },
     {
       "key": "gen-venta-barra",
-      "module_key": "tabs-experiencias",
+      "module_key": "pantalla-en-vivo",
       "kind": "pitch",
       "stage": "pitch_demo",
       "personas": [
@@ -1756,7 +1982,8 @@
       ],
       "title": "La venta en barra: existe hoy y está infravendida",
       "body": "Que el responsable lance mensajes a la pantalla desde su móvil es venta en el momento, y es de hoy:\n\n- «Chupito a 2 € los próximos diez minutos».\n- La copa que sobra, justo cuando la barra está parada.\n- Entretener a quien hace cola: pide canción, sube foto o manda mensaje mientras le sirven.\n\n«Un martes a la una y media ves la barra parada y mandas a la pantalla, desde tu móvil, “chupito a 2 € los próximos diez minutos”. Eso hoy no lo puedes hacer de ninguna otra forma».",
-      "why_it_works": "Son tickets del mismo día, no contenido para la semana que viene. Con el dueño de oficina funciona mejor que las fotos."
+      "why_it_works": "Son tickets del mismo día, no contenido para la semana que viene. Con el dueño de oficina funciona mejor que las fotos.",
+      "pinned": null
     },
     {
       "key": "gen-roadmap",
@@ -1765,7 +1992,8 @@
       "stage": "mentalidad",
       "audience": "team",
       "title": "Roadmap 2027 (se cuenta, no se vende)",
-      "body": "Nada de esto se vende; solo se cuenta a cuentas grandes (ver «Con quién se habla de visión»).\n\n- **Varias pantallas a la vez** desde el mismo panel, con contenidos por zona. Hoy no existe: es la limitación más seria para festivales.\n- **Datos y fidelización:** el consentimiento del público como CRM del local o del evento, por segmentos (edad, música, frecuencia), no por persona.\n- **Remarketing:** volver a contactar a quien pasó por allí.\n- **Bono copa y red de locales:** a largo plazo. **No se menciona a clientes**: un bono prepago válido en varios locales tiene implicaciones de IVA y posible normativa de dinero electrónico; primero abogado y gestoría."
+      "body": "Nada de esto se vende; solo se cuenta a cuentas grandes (ver «Con quién se habla de visión»).\n\n- **Varias pantallas a la vez** desde el mismo panel, con contenidos por zona. Hoy no existe: es la limitación más seria para festivales.\n- **Datos y fidelización:** el consentimiento del público como CRM del local o del evento, por segmentos (edad, música, frecuencia), no por persona.\n- **Remarketing:** volver a contactar a quien pasó por allí.\n- **Bono copa y red de locales:** a largo plazo. **No se menciona a clientes**: un bono prepago válido en varios locales tiene implicaciones de IVA y posible normativa de dinero electrónico; primero abogado y gestoría.",
+      "pinned": null
     },
     {
       "key": "gen-cuenta-grande",
@@ -1773,7 +2001,8 @@
       "kind": "fit",
       "stage": "descubrimiento",
       "title": "Cuenta grande no es un local grande",
-      "body": "- **Ciclo:** días o semanas en un local; meses en una cuenta grande.\n- **Decisión:** una o dos personas; o una estructura con varios niveles.\n- **Ticket:** decenas o cientos de euros; o miles.\n- **Qué compran:** que funcione el sábado; o un socio con recorrido.\n- **La visión:** ruido en un local; parte central en una cuenta grande.\n- **El riesgo:** churn rápido; o una temporada entera perdida si falla el seguimiento.\n\nCon un local pierdes 99 €/mes; con un grupo de festivales pierdes la temporada y una puerta que no se vuelve a abrir."
+      "body": "- **Ciclo:** días o semanas en un local; meses en una cuenta grande.\n- **Decisión:** una o dos personas; o una estructura con varios niveles.\n- **Ticket:** decenas o cientos de euros; o miles.\n- **Qué compran:** que funcione el sábado; o un socio con recorrido.\n- **La visión:** ruido en un local; parte central en una cuenta grande.\n- **El riesgo:** churn rápido; o una temporada entera perdida si falla el seguimiento.\n\nCon un local pierdes 99 €/mes; con un grupo de festivales pierdes la temporada y una puerta que no se vuelve a abrir.",
+      "pinned": null
     },
     {
       "key": "gen-quien-vende",
@@ -1782,7 +2011,8 @@
       "stage": "mentalidad",
       "audience": "team",
       "title": "Quién vende qué",
-      "body": "**Lo lleva el fundador:** acuerdos marco con marcas (cerveceras, espirituosas, energéticas), agencias de patrocinio, grupos grandes y promotoras internacionales (Superstruct, Live Nation, Bresh), y cualquier conversación con exclusividad, equity, reventa o marca blanca.\n\n**Lo lleva el equipo comercial:** locales de todos los tramos, promotoras locales y regionales, festivales medianos independientes en modelo A (paga el festival), infraestructuras de temporada tipo Selvatic, casetas y eventos de temporada, artistas, charangas, orquestas y salas."
+      "body": "**Lo lleva el fundador:** acuerdos marco con marcas (cerveceras, espirituosas, energéticas), agencias de patrocinio, grupos grandes y promotoras internacionales (Superstruct, Live Nation, Bresh), y cualquier conversación con exclusividad, equity, reventa o marca blanca.\n\n**Lo lleva el equipo comercial:** locales de todos los tramos, promotoras locales y regionales, festivales medianos independientes en modelo A (paga el festival), infraestructuras de temporada tipo Selvatic, casetas y eventos de temporada, artistas, charangas, orquestas y salas.",
+      "pinned": null
     },
     {
       "key": "gen-pendientes",
@@ -1791,7 +2021,8 @@
       "stage": "mentalidad",
       "audience": "team",
       "title": "Pendientes que bloquean ventas",
-      "body": "- **Vídeo corto de la pantalla en una sala real:** a todos; resuelve media reunión.\n- **% de asistentes que pagan y ticket medio:** a todos; sin él no se habla de monetización.\n- **Techos de interacciones reales:** locales; hoy están estimados.\n- **Prueba de carga:** conciertos y festivales de más de 20.000.\n- **Un caso de éxito en concierto o festival:** no hay ninguno."
+      "body": "- **Vídeo corto de la pantalla en una sala real:** a todos; resuelve media reunión.\n- **% de asistentes que pagan y ticket medio:** a todos; sin él no se habla de monetización.\n- **Techos de interacciones reales:** locales; hoy están estimados.\n- **Prueba de carga:** conciertos y festivales de más de 20.000.\n- **Un caso de éxito en concierto o festival:** no hay ninguno.",
+      "pinned": null
     },
     {
       "key": "fest-sano",
@@ -1802,7 +2033,8 @@
         "festivales"
       ],
       "title": "Festivales: busca al sano, no al que se está muriendo",
-      "body": "Un festival que cancela por viabilidad no es un cliente: es un impago. Veinte se han cancelado este año por no salirles las cuentas.\n\nEl bueno es **el independiente que está sano y quiere diferenciarse**. Señales: repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes y paga a proveedores a tiempo."
+      "body": "Un festival que cancela por viabilidad no es un cliente: es un impago. Veinte se han cancelado este año por no salirles las cuentas.\n\nEl bueno es **el independiente que está sano y quiere diferenciarse**. Señales: repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes y paga a proveedores a tiempo.",
+      "pinned": null
     },
     {
       "key": "gen-precio-reglas",
@@ -1811,7 +2043,8 @@
       "stage": "negociacion",
       "title": "Antes de dar un precio",
       "body": "1. **El ancla va siempre antes.** Una kiss cam clásica —pantalla, cámara, realizador y operario— cuesta del orden de 8.000 € por evento. Esa cifra, antes de la nuestra.\n2. **Después del precio, silencio.** Nada de «y además incluye» ni «comparado con».\n3. **Ni caro ni barato.** Ni «es muy económico» ni «desde X»: que lo valore el cliente.\n4. **Todo descuento es un intercambio.** Sin contrapartida no hay descuento.\n5. **La monetización nunca entra en la cuenta del precio.** Ni «se paga solo» ni cifras de retorno.",
-      "why_it_works": "El precio no se argumenta: se ancla, se dice y se calla."
+      "why_it_works": "El precio no se argumenta: se ancla, se dice y se calla.",
+      "pinned": 3
     },
     {
       "key": "gen-descuentos",
@@ -1820,7 +2053,8 @@
       "stage": "negociacion",
       "audience": "team",
       "title": "Descuentos: los de la tabla, y siempre a cambio de algo",
-      "body": "Un comercial aplica estos; no inventa otros. En la propuesta son cupones.\n\n- **5 primeros clientes del producto nuevo (locales):** hasta 99 €/mes · feedback mensual, grabación, referencia con nombre.\n- **Primera fecha de gira o primer año de festival:** −50 % (PRIMERA50) · caso con nombre, testimonio a cámara, derecho de tanteo.\n- **Ciudad de menos poder adquisitivo:** −20 % (CIUDAD20) · sin contrapartida, es ajuste de mercado.\n- **Pack de 5 o más fechas:** −20 % (PACK5) · fechas por escrito.\n- **Grupo con varios locales:** −25 % (GRUPO25) · todos los locales.\n- **Patrocinador ya confirmado:** 0 % · ahí hay presupuesto."
+      "body": "Un comercial aplica estos; no inventa otros. En la propuesta son cupones.\n\n- **5 primeros clientes del producto nuevo (locales):** hasta 99 €/mes · feedback mensual, grabación, referencia con nombre.\n- **Primera fecha de gira o primer año de festival:** −50 % (PRIMERA50) · caso con nombre, testimonio a cámara, derecho de tanteo.\n- **Ciudad de menos poder adquisitivo:** −20 % (CIUDAD20) · sin contrapartida, es ajuste de mercado.\n- **Pack de 5 o más fechas:** −20 % (PACK5) · fechas por escrito.\n- **Grupo con varios locales:** −25 % (GRUPO25) · todos los locales.\n- **Patrocinador ya confirmado:** 0 % · ahí hay presupuesto.",
+      "pinned": null
     },
     {
       "key": "gen-suelos",
@@ -1829,7 +2063,8 @@
       "stage": "negociacion",
       "audience": "team",
       "title": "Suelos: por debajo, solo el fundador",
-      "body": "- Locales: **99 €/mes**\n- Conciertos (salas): **500 €/evento**\n- Charangas y orquestas: **90 €/evento**\n- Festivales: **800 €/evento**\n- Casetas: **200 €/feria**\n\nPor debajo del suelo, solo con autorización del fundador."
+      "body": "- Locales: **99 €/mes**\n- Conciertos (salas): **500 €/evento**\n- Charangas y orquestas: **90 €/evento**\n- Festivales: **800 €/evento**\n- Casetas: **200 €/feria**\n\nPor debajo del suelo, solo con autorización del fundador.",
+      "pinned": null
     },
     {
       "key": "gen-precio-validado",
@@ -1838,7 +2073,8 @@
       "stage": "mentalidad",
       "audience": "team",
       "title": "Qué precio está validado y cuál no",
-      "body": "**Cobrado de verdad** (producto antiguo, solo canciones): La Biblioteca 70 €/mes; tres locales 67 €/mes; un local de grupo 100 €/mes; una promotora pequeña 70 €/evento; casetas unos 100 €/evento.\n\n**Todo lo demás es supuesto.** Las tarifas nuevas son entre 1,5 y 3 veces el histórico porque el producto es otro (fotos, álbum con descarga, mensajes, pantalla desde el móvil, consentimiento), pero no están validadas.\n\n**Cómo se validan:** con los cinco primeros clientes a 99 €. Si firman tres de cinco, el precio está bajo y el siguiente lote va a tarifa. Si no firma ninguno, el problema es el argumento, no el precio."
+      "body": "**Cobrado de verdad** (producto antiguo, solo canciones): La Biblioteca 70 €/mes; tres locales 67 €/mes; un local de grupo 100 €/mes; una promotora pequeña 70 €/evento; casetas unos 100 €/evento.\n\n**Todo lo demás es supuesto.** Las tarifas nuevas son entre 1,5 y 3 veces el histórico porque el producto es otro (fotos, álbum con descarga, mensajes, pantalla desde el móvil, consentimiento), pero no están validadas.\n\n**Cómo se validan:** con los cinco primeros clientes a 99 €. Si firman tres de cinco, el precio está bajo y el siguiente lote va a tarifa. Si no firma ninguno, el problema es el argumento, no el precio.",
+      "pinned": null
     },
     {
       "key": "empresa-icp",
@@ -1850,7 +2086,8 @@
       ],
       "title": "Cliente ideal (y cuándo no)",
       "body": "- **Novios** con 100+ invitados que quieren una boda \"diferente\" y temen los tiempos muertos.\n- **Salas y fincas** que compiten por bodas y buscan un extra vendible.\n- **No encaja**: bodas íntimas (<40), invitados sin móvil o eventos sin pantalla.",
-      "when_to_use": "Antes de invertir tiempo en un lead: cualifica."
+      "when_to_use": "Antes de invertir tiempo en un lead: cualifica.",
+      "pinned": null
     },
     {
       "key": "empresa-apertura",
@@ -1863,7 +2100,8 @@
       "title": "Apertura de la reunión",
       "body": "Hola {prospect}, gracias por el rato. Antes de enseñarte nada: ¿qué es lo que más os importa que recuerden vuestros invitados de {company}?",
       "when_to_use": "Al empezar la llamada o la visita.",
-      "why_it_works": "Abre con su objetivo, no con tu producto: lo que digan es tu guion para el resto de la reunión."
+      "why_it_works": "Abre con su objetivo, no con tu producto: lo que digan es tu guion para el resto de la reunión.",
+      "pinned": null
     },
     {
       "key": "empresa-descubrir-1",
@@ -1874,7 +2112,8 @@
         "bodas"
       ],
       "title": "¿Qué te preocupa que pase en el banquete?",
-      "body": "Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo."
+      "body": "Escucha si aparecen: tiempos muertos, mesas que no se mezclan, invitados mayores que no participan. Cada respuesta se conecta con un módulo.",
+      "pinned": null
     },
     {
       "key": "empresa-cierre",
@@ -1886,7 +2125,8 @@
       ],
       "title": "Cierre con fecha",
       "body": "¿Os parece que dejemos reservada la fecha de vuestra boda y el jueves te llamo a las 18:00 para cerrar los detalles con vosotros dos?",
-      "why_it_works": "Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión."
+      "why_it_works": "Una sola fecha concreta: un menú de opciones hace trabajar al otro y retrasa la decisión.",
+      "pinned": null
     },
     {
       "key": "exp-pitch",
@@ -1898,7 +2138,8 @@
       "when_to_use": "Cuando han mencionado tiempos muertos o mesas que no se mezclan.",
       "segments": [
         "bodas"
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "exp-fit",
@@ -1909,18 +2150,20 @@
         "bodas"
       ],
       "title": "Encaja mejor en…",
-      "body": "Bodas de 100+ invitados, con pantalla o proyector en el salón. Con menos de 60 invitados, ofrece solo dedicatorias."
+      "body": "Bodas de 100+ invitados, con pantalla o proyector en el salón. Con menos de 60 invitados, ofrece solo dedicatorias.",
+      "pinned": null
     },
     {
       "key": "exp-demo",
-      "module_key": "tabs-experiencias",
+      "module_key": "movil-invitado",
       "kind": "tip",
       "stage": "pitch_demo",
       "title": "Enseña el móvil, no la pantalla",
-      "body": "En la demo, pásale TU móvil con la kiss-cam abierta y que envíe algo: lo ve aparecer en la vista previa del dossier. Vender la experiencia > describirla.",
+      "body": "En la demo, pásale TU móvil y que envíe algo: lo ve aparecer en la vista previa de la propuesta. Vender la experiencia > describirla.",
       "segments": [
         "bodas"
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "exp-obj-mayores",
@@ -1932,30 +2175,21 @@
       "body": "Las dedicatorias son el módulo que más usan los mayores: escribir unas palabras a los novios. Los nietos les ayudan con el móvil y eso también es parte del recuerdo.",
       "segments": [
         "bodas"
-      ]
-    },
-    {
-      "key": "exp-prueba",
-      "module_key": "tabs-experiencias",
-      "kind": "proof",
-      "stage": "pitch_demo",
-      "title": "Participación media 92 %",
-      "body": "Dato de ejemplo (sustituir por el real de Enjoy): 9 de cada 10 invitados envían al menos una kiss-cam o dedicatoria.",
-      "segments": [
-        "bodas"
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "exp-upsell",
       "module_key": "tabs-experiencias",
       "kind": "monetization",
       "stage": "negociacion",
-      "title": "Pack Kiss-cam + Retos",
-      "body": "Vende las experiencias en pack (no sueltas): el pack completo sube el ticket medio ~30 % y el coste marginal es casi cero. Descuento máximo autorizado: 10 %.",
-      "why_it_works": "El margen está en el pack; las experiencias sueltas compiten con el DJ.",
+      "title": "Las experiencias, en pack",
+      "body": "Vende las experiencias en pack, no sueltas. El coste marginal de añadir una es casi cero y una experiencia suelta compite con lo que ya hace el DJ.\n\n**Descuentos: los de la tabla oficial, ninguno más.**",
+      "why_it_works": null,
       "segments": [
         "bodas"
-      ]
+      ],
+      "pinned": null
     },
     {
       "key": "loc-pitch",
@@ -1966,7 +2200,8 @@
         "bodas"
       ],
       "title": "Un extra que vendes tú y te diferencia de la finca de al lado",
-      "body": "La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene."
+      "body": "La sala incluye Enjoy en su oferta de bodas: lo vende como propio, se queda margen y tiene un argumento que la competencia no tiene.",
+      "pinned": null
     },
     {
       "key": "loc-discovery",
@@ -1977,7 +2212,8 @@
         "bodas"
       ],
       "title": "¿Cuántas bodas hacéis al año y cuántas perdéis contra otra sala?",
-      "body": "Si pierden bodas por \"diferenciación\", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces."
+      "body": "Si pierden bodas por \"diferenciación\", Enjoy es su argumento. Calcula con ellos: 3 bodas más al año pagan Enjoy varias veces.",
+      "pinned": null
     },
     {
       "key": "loc-obj-proveedor",
@@ -1989,7 +2225,8 @@
         "bodas"
       ],
       "title": "\"Ya trabajamos con un DJ que hace cosas parecidas\"",
-      "body": "Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos."
+      "body": "Enjoy no sustituye al DJ: se apoya en él (la pantalla y el micro). Propón una boda piloto con su DJ para que lo vea funcionar juntos.",
+      "pinned": null
     },
     {
       "key": "loc-monet",
@@ -2000,7 +2237,10 @@
         "bodas"
       ],
       "title": "Margen para la sala",
-      "body": "Precio a la sala por evento + PVP recomendado a los novios. La sala decide si lo regala (diferenciación) o lo cobra (margen). Ejemplo: coste 250 €, PVP 450 €."
+      "body": "PENDIENTE · precio de bodas sin definir; nunca hemos cobrado una boda",
+      "when_to_use": null,
+      "why_it_works": null,
+      "pinned": null
     },
     {
       "key": "gen-seguimiento",
@@ -2008,18 +2248,21 @@
       "kind": "tip",
       "stage": "seguimiento",
       "title": "Lo que de verdad nos ha hecho perder clientes",
-      "body": "Almería, Altare, Batiq Fest, Shark Events, Bresh, Topamin Fest, The Lab, Deep Delay y la tercera promotora: todos dijeron que sí, y todos se perdieron por no hacer seguimiento. Ninguno se perdió por precio, por producto ni por competencia.\n\nNoche 1: mirar los datos y escribir al día siguiente **con el resultado**, no preguntando «¿qué tal?». Semana 1: llamada corta. Mes 1: revisión y petición de referencia. Cierre de temporada: contactar **antes** de que reabra — Altare se perdió exactamente ahí."
+      "body": "Almería, Altare, Batiq Fest, Shark Events, Bresh, Topamin Fest, The Lab, Deep Delay y la tercera promotora: todos dijeron que sí, y todos se perdieron por no hacer seguimiento. Ninguno se perdió por precio, por producto ni por competencia.\n\nNoche 1: mirar los datos y escribir al día siguiente **con el resultado**, no preguntando «¿qué tal?». Semana 1: llamada corta. Mes 1: revisión y petición de referencia. Cierre de temporada: contactar **antes** de que reabra — Altare se perdió exactamente ahí.",
+      "pinned": 1
     },
     {
       "key": "bodas-aviso",
       "module_key": null,
-      "kind": "fit",
+      "kind": "tip",
       "stage": "mentalidad",
       "segments": [
         "bodas"
       ],
       "title": "Lo que ha pasado hasta ahora en bodas",
-      "body": "Bodas es el sector del que menos sabemos y el único donde nunca hemos cobrado. Hubo 12 leads, pricing cerrado y resellers definidos: a los organizadores que iban a pagarnos 300 €/mes les pareció buena idea y no pagó ninguno; a los resellers con 100 € de base les pareció bien y no revendió ninguno. Cuando un precio le parece bien a todo el mundo y no compra nadie, el problema no es el precio. No es prioridad hasta 2027 y todo lo que hay aquí son hipótesis."
+      "body": "Bodas es el sector del que menos sabemos y el único donde nunca hemos cobrado. Hubo 12 leads, pricing cerrado y resellers definidos: a los organizadores que iban a pagarnos 300 €/mes les pareció buena idea y no pagó ninguno; a los resellers con 100 € de base les pareció bien y no revendió ninguno. Cuando un precio le parece bien a todo el mundo y no compra nadie, el problema no es el precio. Todo lo que hay en este sector son hipótesis.",
+      "audience": "team",
+      "pinned": null
     },
     {
       "key": "gen-no-robot",
@@ -2027,7 +2270,8 @@
       "kind": "tip",
       "stage": "mentalidad",
       "title": "Estructura, no guion",
-      "body": "Todo lo que hay en este playbook es estructura y munición, no texto para recitar.\n\n*Alfonso y Cristian:* «Tú no necesitabas un script cuando conociste a tu pareja. 'Espérate, cita 17, seguimiento 17, cariño'. Qué absurdo sería. Quítate el script, fluye en la conversación. Tienes que tener una estructura, unas bases: preguntas abiertas, cerradas, de dirección, de psicología inversa. Y sabiendo que hay estos tipos de preguntas, yo sé cuándo tirar de una y cuándo de otra. Necesitaría tantos guiones como personas existen en el mundo.»"
+      "body": "Todo lo que hay en este playbook es estructura y munición, no texto para recitar.\n\n*Alfonso y Cristian:* «Tú no necesitabas un script cuando conociste a tu pareja. 'Espérate, cita 17, seguimiento 17, cariño'. Qué absurdo sería. Quítate el script, fluye en la conversación. Tienes que tener una estructura, unas bases: preguntas abiertas, cerradas, de dirección, de psicología inversa. Y sabiendo que hay estos tipos de preguntas, yo sé cuándo tirar de una y cuándo de otra. Necesitaría tantos guiones como personas existen en el mundo.»",
+      "pinned": null
     },
     {
       "key": "gen-filtro-mensajes",
@@ -2035,10 +2279,11 @@
       "kind": "tip",
       "stage": "primer_contacto",
       "title": "Filtro antes de mandar nada",
-      "body": "- Verbos de lo que hiciste («he mirado vuestro Instagram»), no de lo que sentiste («me quedé pensando en vuestro proyecto»).\n- Si lo averiguaste después, dilo así. Fingir familiaridad previa se detecta.\n- Nada de negar para plantar la idea: «no vengo a venderte nada».\n- Adjetivos valorativos solo con el dato detrás.\n- Una sola fecha concreta. «Hablamos la semana que viene» es un cierre inexistente.\n\nDos pruebas: si el mensaje sirve para otro cambiando solo el nombre, no está terminado. Y todo lo que diga que sabes tiene que ser cierto."
+      "body": "- Verbos de lo que hiciste («he mirado vuestro Instagram»), no de lo que sentiste («me quedé pensando en vuestro proyecto»).\n- Si lo averiguaste después, dilo así. Fingir familiaridad previa se detecta.\n- Nada de negar para plantar la idea: «no vengo a venderte nada».\n- Adjetivos valorativos solo con el dato detrás.\n- Una sola fecha concreta. «Hablamos la semana que viene» es un cierre inexistente.\n\nDos pruebas: si el mensaje sirve para otro cambiando solo el nombre, no está terminado. Y todo lo que diga que sabes tiene que ser cierto.",
+      "pinned": null
     },
     {
-      "key": "loc-no-recitar",
+      "key": "noche-no-recitar",
       "module_key": null,
       "kind": "tip",
       "stage": "mentalidad",
@@ -2059,10 +2304,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=byXpCoddWoE&t=2247"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-preparacion",
+      "key": "noche-preparacion",
       "module_key": null,
       "kind": "tip",
       "stage": "prospeccion",
@@ -2076,10 +2322,11 @@
       "body": "Mira su Instagram y apunta tres cosas:\n- Cuántas publicaciones ha subido este mes y si sale gente o el local vacío.\n- Qué noche parece la fuerte.\n- Si en las fotos del interior se ven pantallas.\n\nLo vas a usar en la primera frase, y tiene que ser verdad.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-demo-previa",
+      "key": "noche-demo-previa",
       "module_key": null,
       "kind": "script",
       "stage": "prospeccion",
@@ -2100,10 +2347,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/14KepcZYdwbA2bGrNYkaPe"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-cuando-ir",
+      "key": "noche-calendario",
       "module_key": null,
       "kind": "tip",
       "stage": "prospeccion",
@@ -2116,10 +2364,11 @@
       "body": "Miércoles, y jueves como segunda opción. Por la mañana o a primera hora de la tarde. El miércoles por la mañana llega el reparto del distribuidor a los locales que abren fines de semana: está abierto, hay alguien con llaves y están receptivos. **No a primerísima hora**, que es cuando les llega todo el mundo.\n\n**Lunes y martes no.** Trabajan los fines de semana y libran a principio de semana.\n\n**Presencial.** Es lo único que ha funcionado: todos los clientes han entrado por puerta fría presencial. Por Instagram no contestan — el DM lo lleva quien atiende dudas del público.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-apertura",
+      "key": "noche-apertura",
       "module_key": null,
       "kind": "script",
       "stage": "primer_contacto",
@@ -2139,10 +2388,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=DShgDzY-iy8&t=3661"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-apertura-que-es",
+      "key": "noche-apertura-que-es",
       "module_key": null,
       "kind": "script",
       "stage": "primer_contacto",
@@ -2156,10 +2406,11 @@
       "body": "Una frase y devuelves la pregunta:\n\n> «Que tu público interactúe con las pantallas desde el móvil, sin descargar nada: fotos, mensajes y peticiones de canciones. Pero encaja de formas muy distintas según el local, así que cuéntame un poco del vuestro.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-no-apertura",
+      "key": "noche-no-apertura",
       "module_key": null,
       "kind": "tip",
       "stage": "primer_contacto",
@@ -2173,10 +2424,11 @@
       "body": "- Nada de «no vengo a venderte nada» ni «no te voy a hacer perder el tiempo». Negar para plantar la idea se detecta.\n- Nada de «me pareció muy interesante vuestro proyecto». Un sentimiento no se verifica; una acción sí.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-contrato-10min",
+      "key": "noche-contrato-10min",
       "module_key": null,
       "kind": "discovery",
       "stage": "descubrimiento",
@@ -2197,10 +2449,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/4NZ9JFpI5uMqFtIh0p47mp"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-cinco-preguntas",
+      "key": "noche-cinco-preguntas",
       "module_key": null,
       "kind": "discovery",
       "stage": "descubrimiento",
@@ -2214,10 +2467,11 @@
       "body": "> 1. «¿Cuántas noches abrís y cuál es la que de verdad os funciona?»\n> 2. «¿Cuánta gente te entra una noche buena?»\n> 3. «Las fotos y los vídeos que subís a redes, ¿de dónde salen? ¿Los haces tú, tienes a alguien, o lo que pillas del móvil?»\n> 4. «Si hubiera algo que quisieras de vuestras noches y ahora no tengas, ¿qué sería?»\n> 5. «Cuando hablamos de precio, ¿qué pasa ahora mismo por tu cabeza?»\n\nValida cada respuesta sin pitchear: «perfecto», «vale», y a la siguiente.\n\n- **La 3 decide la venta.** Si las hace él, la venta está hecha por el lado del contenido. Si paga a alguien, te ha dado el ancla de precio.\n- **La 5 es la que casi nadie hace.** Te dice cómo percibe el gasto antes de que tú digas un número. Apunta su respuesta literal.\n- **La 1 y la 2 asignan el tramo de precio.**",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-cierre-diagnostico",
+      "key": "noche-cierre-diagnostico",
       "module_key": null,
       "kind": "discovery",
       "stage": "descubrimiento",
@@ -2231,10 +2485,11 @@
       "body": "> «Veo que aquí hay un punto interesante para vosotros. ¿Quieres que te lo cuente?»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-reconstruir-coste",
+      "key": "noche-reconstruir-coste",
       "module_key": null,
       "kind": "discovery",
       "stage": "descubrimiento",
@@ -2255,10 +2510,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/0bMCxPZTmVfk4vCRldwp1D"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-pitch-contenido",
+      "key": "noche-pitch-contenido",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -2271,11 +2527,12 @@
       "body": "> «La gente escanea un QR, sin descargar nada, y sube sus fotos. Salen en tu pantalla y se quedan todas en un álbum de la noche.\n>\n> Lo importante de eso: cuando suben la foto están aceptando los términos, así que **son fotos que puedes usar en tus redes**. De tu propia gente, de tu local, cada noche que abras.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-pitch-barra",
-      "module_key": null,
+      "key": "noche-pantalla-movil",
+      "module_key": "pantalla-en-vivo",
       "kind": "pitch",
       "stage": "pitch_demo",
       "objection": null,
@@ -2290,10 +2547,11 @@
       "body": "El argumento más directo que tenemos con un dueño, y el que más se olvida:\n\n> «Y la pantalla la manejas tú desde el móvil. Un martes a la una y media ves la barra parada y mandas \"chupito a 2 € los próximos diez minutos\". Eso hoy no lo puedes hacer de ninguna otra forma.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-pitch-canciones",
+      "key": "noche-pitch-canciones",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -2306,10 +2564,11 @@
       "body": "> «Los mensajes y las peticiones de canciones van en el mismo QR. El DJ las ve si quiere usarlas para leer la sala, y si no quiere, ni las mira.»\n\n**Nunca se abre por aquí.** Un dueño no ve valor en que le pidan canciones: para eso ya tiene un DJ.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-pitch-coldplay",
+      "key": "noche-pitch-coldplay",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -2323,10 +2582,11 @@
       "body": "> «Lo del concierto de Coldplay se lio porque fue sin consentimiento. Aquí es al revés: sube su foto quien quiere subirla.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-dj-adelantar",
+      "key": "noche-dj-menu",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -2339,10 +2599,11 @@
       "body": "> «Una cosa que te adelanto: tu DJ no tiene que ocuparse de esto. Quién aprueba lo que sale en pantalla lo decides tú — puede ser el encargado, el de la puerta, o va con Spotify sin DJ. Y las canciones van con menú cerrado: solo se puede pedir lo que tú metas en la lista, así que nadie te rompe el ambiente del local.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-dj-propina",
+      "key": "noche-dj-propina",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -2355,10 +2616,11 @@
       "body": "> «Lo que paga el público va a tu cuenta. Lo que hacen casi todos los locales es repartirlo como propina del equipo, así el DJ y la barra tienen interés en que funcione. Pero eso lo decides tú.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-dj-no-preguntar",
+      "key": "noche-dj-no-preguntar",
       "module_key": null,
       "kind": "tip",
       "stage": "pitch_demo",
@@ -2373,10 +2635,11 @@
       "body": "**Nunca:** «¿Crees que a tu DJ le parecerá bien?»\n\nLe das un motivo para dudar y un tercero tras el que esconderse. El DJ nos ha tumbado dos acuerdos ya cerrados.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-puente",
+      "key": "noche-puente",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -2397,10 +2660,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/5kD92FKCcyPg9DXglfWtu1"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-compromiso",
+      "key": "noche-compromiso",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -2421,10 +2685,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/7vg6Hkzu81tz7Cvjiryicf"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-precio",
+      "key": "noche-precios",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -2437,10 +2702,11 @@
       "body": "> «Nuestra tarifa para locales de vuestro tamaño son [X] al mes, noches ilimitadas.\n>\n> Te cuento una cosa siendo claro: la parte de fotos y álbum es nueva. Estoy metiendo a cinco locales a 99 al mes sin permanencia los dos primeros meses, y a cambio les pido tres cosas: que me cuentes una vez al mes qué funciona y qué no, que me dejes grabar contenido una noche, y que pueda decir que trabajáis con nosotros.\n>\n> ¿Te encaja así?»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-silencio",
+      "key": "noche-silencio",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -2467,10 +2733,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=DShgDzY-iy8&t=4576"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-precio-pronto",
+      "key": "noche-precio-pronto",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -2491,10 +2758,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/2y59HltuOngnq5H0EjR8k6"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-no-etiquetar",
+      "key": "noche-no-etiquetar",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -2508,10 +2776,11 @@
       "body": "No se dice «es muy económico» ni «desde 50 €». Que lo valore él.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-prueba",
+      "key": "noche-prueba-hoy",
       "module_key": null,
       "kind": "script",
       "stage": "cierre",
@@ -2524,10 +2793,11 @@
       "body": "> «¿Qué te parece si lo dejamos configurado y lo probáis el viernes? Son veinte minutos por videollamada, o lo hacemos ahora mismo si tienes el ordenador a mano.»\n\nEl denominador común de todos los clientes que se quedaron: **no dieron largas para probarlo**. A veces es el mismo día; a veces el local está cerrado y la prueba es la siguiente noche que abren.\n\nY funciona como cualificación: quien da largas para probar algo que no le cuesta nada y se configura en veinte minutos, normalmente no compra.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": 2
     },
     {
-      "key": "loc-obj-ambiente",
+      "key": "noche-obj-ambiente",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -2542,10 +2812,11 @@
       "body": "**La número uno históricamente.** Va contestada antes de que la hagan, dentro del pitch:\n\n> «Las canciones van con menú cerrado: tú metes la lista y solo se puede pedir lo que esté ahí. Y si en algún momento la quieres abierta, se abre.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-obj-operativa",
+      "key": "noche-obj-operativa",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -2559,34 +2830,11 @@
       "body": "> «¿Quién está en la puerta los sábados? En otros locales lo lleva el de la puerta, o el encargado. Es un botón: aceptar o no aceptar. Y si no hay nadie, va con Spotify y nadie tiene que tocar nada.»\n\n**Si insisten en que no van a poder: no se vende.** Una foto que nadie valida mientras alguien mira la pantalla media hora deja peor sabor que no haberlo puesto.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-obj-pantallas",
-      "module_key": null,
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "ya_tengo_proveedor",
-      "segments": [
-        "ocio-nocturno",
-        "promotoras"
-      ],
-      "personas": [],
-      "title": "«Ya tenemos pantallas y un VJ»",
-      "body": "> «Y mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales, en un lateral, y él sigue con lo suyo.»\n\n*Y si la respuesta es pasiva, abre ventana (técnica de la ventana, Alfonso y Cristian):*\n\n> «Perfecto, te agradezco que seas claro. Antes de irme, una última: ¿cuál sería la única razón por la que te plantearías probar algo así?»",
-      "when_to_use": null,
-      "why_it_works": null,
-      "technique_refs": [
-        {
-          "source": "cerebro",
-          "title": "Técnica de la ventana",
-          "creator": "Alfonso y Cristian",
-          "url": "https://open.spotify.com/episode/3mEDQoF29pC8r8cZeWuM0U"
-        }
-      ]
-    },
-    {
-      "key": "loc-obj-que-gano",
+      "key": "noche-obj-que-gano",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -2599,10 +2847,11 @@
       "body": "No se contesta con monetización. Se contesta con el caso:\n\n> «A La Biblioteca le pasó algo que no esperábamos: una promotora los eligió a ellos para montar una fiesta porque podían ofrecer estas dinámicas y otros no. Una fiesta más al mes es dinero que antes no estaba.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-obj-precio",
+      "key": "noche-obj-caro",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -2622,10 +2871,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/0qeNfVC9WdspykfNqHClJ8"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-obj-socio",
+      "key": "noche-obj-socio",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -2646,10 +2896,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=_kevP_Tlfgg&t=1321"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-obj-pensar",
+      "key": "noche-obj-pensar",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -2676,10 +2927,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=DShgDzY-iy8&t=4089"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-obj-referido",
+      "key": "noche-obj-referido",
       "module_key": null,
       "kind": "tip",
       "stage": "seguimiento",
@@ -2693,10 +2945,11 @@
       "body": "> «Oye, ¿conoces a alguien que creas que esto le podría encajar?»\n\nLos dueños de local se conocen entre ellos.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-msg-seguimiento-noche1",
+      "key": "noche-msg-seguimiento-noche1",
       "module_key": null,
       "kind": "script",
       "stage": "seguimiento",
@@ -2710,10 +2963,11 @@
       "body": "No se pregunta «¿qué tal ha ido?». Se llevan los datos.\n\n> «[Nombre], he mirado los datos de anoche: [X] peticiones de canciones, [Y] fotos en el álbum y varios mensajes. Las fotos las tienes en el álbum para lo que quieras.\n>\n> Dos cosas: [algo concreto que mejorar la próxima noche], y si te parece el [día] lo vemos cinco minutos.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-msg-reactivacion",
+      "key": "noche-msg-reactivacion",
       "module_key": null,
       "kind": "script",
       "stage": "seguimiento",
@@ -2733,10 +2987,11 @@
           "creator": "Manuel Trejo",
           "url": "https://www.tiktok.com/@manueltrejove/video/7625702617200545045"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "loc-msg-filtro",
+      "key": "noche-msg-filtro",
       "module_key": null,
       "kind": "tip",
       "stage": "primer_contacto",
@@ -2750,10 +3005,11 @@
       "body": "- Verbos de lo que hiciste («he mirado vuestro Instagram»), no de lo que sentiste.\n- Si lo averiguaste después, dilo así.\n- Nada de negar para plantar la idea.\n- Adjetivos solo con el dato detrás.\n- **Una sola fecha concreta.** «Hablamos la semana que viene» es un cierre inexistente.\n\nDos pruebas: si el mensaje sirve para otro cambiando solo el nombre, no está terminado. Y todo lo que diga que sabes tiene que ser cierto.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "loc-no-decir",
+      "key": "noche-no-decir",
       "module_key": null,
       "kind": "tip",
       "stage": "mentalidad",
@@ -2767,7 +3023,8 @@
       "body": "- **Cifras de monetización.** Ni «se paga solo», ni «lo recuperas». Si hay que dar un número: La Biblioteca genera 150–300 €/mes en temporada alta pero **10–50 € el resto del año**. Se da el bajo, nunca el alto. Prometer el alto es lo que nos costó la cartera.\n- **Soporte 24h u horarios.**\n- **Funcionalidades que no están en producción.** Multipantalla, CRM, remarketing, bonos.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-diferencias",
@@ -2783,7 +3040,8 @@
       "body": "| | Local | Promotora |\n|---|---|---|\n| Qué compra | Que su sala sea distinta todas las noches | Material y dinámicas para **vender entradas de la siguiente** |\n| Formato | Suscripción mensual | Por evento, o suscripción si hace varios al mes |\n| Quién decide | Dueño o gerente, con el DJ pudiendo vetar | Quien lleva la promotora, rápido y solo |\n| El riesgo | Que nadie valide | **Que se enfríe en el seguimiento** |",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-quien-encaja",
@@ -2799,7 +3057,8 @@
       "body": "- Promotoras **comerciales**: reggaetón y música de público amplio.\n- Las que ponen el foco **en el público**, no en el artista o el DJ que pincha.\n- Las que ya hacen **fiestas temáticas y dinámicas**: solteros, juegos, cuentas atrás en pantalla.\n\n**No encajan:** perfil rock o de nicho de artista, ni eventos donde lo importante es quién pincha.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-apertura",
@@ -2817,7 +3076,8 @@
       "body": "> «Hola [nombre], soy Cristian de Enjoy the Club. He visto lo que montasteis en [local/fiesta concreta].\n>\n> Una pregunta antes de nada: el contenido que usáis para vender la siguiente fiesta, ¿de dónde lo sacáis?»\n\n**Esa pregunta es la venta entera.** Su negocio es vender entradas, y venden entradas con contenido en redes.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-pitch",
@@ -2833,7 +3093,8 @@
       "body": "> «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, votaciones, mensajes entre mesas, cuentas atrás.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-pitch-dinamicas",
@@ -2849,7 +3110,8 @@
       "body": "Paradox encajó por aquí: ya hacían temporizadores y dinámicas en pantalla sin herramienta.\n\n> «Por lo que me cuentas ya hacéis dinámicas. Esto es la herramienta que os falta para montarlas sin pelearos con el ordenador: lo lanzáis desde el móvil en el momento.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-precio",
@@ -2865,7 +3127,8 @@
       "body": "> «150 € el evento. Si montáis varios al mes, 390 € y los que queráis.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-cierre",
@@ -2881,7 +3144,8 @@
       "body": "> «¿Cuándo es la siguiente? Lo dejamos configurado y lo probáis ahí.»\n\n**Nunca se cierra sin fecha de evento concreta.** Así se perdieron todas las de ForVenues: les gustó a todas, no se agendó ninguna.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-seguimiento",
@@ -2897,7 +3161,8 @@
       "body": "Los equipos de promotora están dispersos y siempre ocupados. No es desinterés, es su forma de trabajar. Con Paradox costó el seguimiento y acabaron siendo clientes.\n\n> Regla: si no contestan, no es un no. Se vuelve a escribir con una fecha concreta, no con un «¿cómo lo veis?».",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "prom-canal",
@@ -2913,10 +3178,11 @@
       "body": "**En qué local monta cada evento.** Una promotora que lleva Enjoy a un local deja el producto visto por ese local, y ese local es un lead cualificado gratis.\n\nFunciona en los dos sentidos: a La Biblioteca una promotora la eligió para montar una fiesta **porque ya ofrecían estas dinámicas**.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-preparacion",
+      "key": "conc-preparacion",
       "module_key": null,
       "kind": "tip",
       "stage": "prospeccion",
@@ -2929,10 +3195,11 @@
       "body": "- Qué aforo tiene el recinto y cuántas pantallas se ven en las fotos.\n- Si hay patrocinador visible en el cartel.\n- Si el artista o la sala suben contenido del público a sus redes.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-demo-previa",
+      "key": "conc-demo-previa",
       "module_key": null,
       "kind": "script",
       "stage": "prospeccion",
@@ -2952,10 +3219,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://open.spotify.com/episode/14KepcZYdwbA2bGrNYkaPe"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "con-apertura",
+      "key": "conc-apertura",
       "module_key": null,
       "kind": "script",
       "stage": "primer_contacto",
@@ -2968,10 +3236,11 @@
       "body": "> «Hola [nombre], soy Cristian de Enjoy the Club. He estado mirando [dato concreto: vuestro cartel de la gira / la sala / que programáis los jueves].\n>\n> Antes de contarte nada de lo nuestro: ¿qué hacéis ahora mismo con las pantallas antes de que salga el artista?»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-decisor",
+      "key": "conc-decisor",
       "module_key": null,
       "kind": "script",
       "stage": "primer_contacto",
@@ -2991,10 +3260,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=_kevP_Tlfgg&t=1567"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "con-gatekeeper",
+      "key": "conc-gatekeeper",
       "module_key": null,
       "kind": "script",
       "stage": "prospeccion",
@@ -3014,10 +3284,11 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=zF4M8ZRuXIk&t=70"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "con-pitch-preshow",
+      "key": "conc-pitch-preshow",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -3030,10 +3301,11 @@
       "body": "> «La parte fuerte ni siquiera es durante el show: es la hora de antes. El público ya está dentro, esperando, con el móvil en la mano, y en pantalla no hay nada que mirar. Eso hoy no lo monetiza nadie.»\n\n**Por qué se abre por aquí:** desactiva la objeción del manager antes de que exista. No competimos con el artista por la atención, porque el artista aún no ha salido. Y es lo más fácil de patrocinar.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-pitch-promotor",
+      "key": "conc-pitch-promotor",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -3049,10 +3321,11 @@
       "body": "> «Lo que te damos es un espacio en pantalla que la gente mira de verdad, porque está mirando a ver si sale su foto o su mensaje. Y datos de participación, que es lo que las marcas están pidiendo ahora para renovar: una activación física no te entrega nada de eso.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-pitch-manager",
+      "key": "conc-pitch-manager",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -3068,10 +3341,11 @@
       "body": "> «Nosotros tampoco queremos que la gente esté pegada al móvil. Ya lo está, eso no lo decidimos ni tú ni yo. Lo que hacemos es que ese rato sirva para algo que pasa en la sala.\n>\n> Hoy él solo puede interactuar con las tres primeras filas; una pancarta a sesenta metros no la ve nadie. Con esto le llega un mensaje desde la grada de arriba a su panel y lo puede leer en directo.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-pitch-album",
+      "key": "conc-pitch-album",
       "module_key": null,
       "kind": "pitch",
       "stage": "pitch_demo",
@@ -3084,11 +3358,12 @@
       "body": "> «El equipo del artista va subiendo fotos de camerino al álbum y el público las ve en tiempo real mientras espera. La primera foto del álbum la sube él. Deja de ser \"sube tus fotos\" y pasa a ser \"aquí hay algo que no está en ningún otro sitio\".»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-pitch-produccion",
-      "module_key": null,
+      "key": "conc-ndi",
+      "module_key": "pantalla-en-vivo",
       "kind": "pitch",
       "stage": "pitch_demo",
       "objection": null,
@@ -3103,10 +3378,11 @@
       "body": "> «No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en un lateral, en una tarjeta pequeña. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-advance",
+      "key": "conc-advance",
       "module_key": null,
       "kind": "script",
       "stage": "cierre",
@@ -3119,10 +3395,11 @@
       "body": "Vendido el concepto al promotor o al manager:\n\n> «¿Quién lleva el advance? Que me meta en esa conversación y lo dejamos cerrado con producción, para que el día del show no tengáis que hablar de esto.»\n\n**El advance es donde se decide si entras.** Si lo que necesitamos no está en el rider y el contra-rider, el día del show no existe.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-ancla",
+      "key": "conc-ancla",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -3135,10 +3412,11 @@
       "body": "> «Para que lo sitúes: una kiss cam de las clásicas —pantalla, cámara y realizador— en un recinto como el vuestro ronda los 8.000 € por noche. Y cuando acaba, no queda nada.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-compromiso",
+      "key": "conc-compromiso",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -3151,10 +3429,11 @@
       "body": "> «Si te lo montamos así — [lo que te haya dicho que quiere], sin tocar vuestros visuales y sin que vuestro equipo tenga que hacer nada — ¿esto lo decidiríais para esta gira o lo dejaríais para más adelante?»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-precio",
+      "key": "conc-precio",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -3174,11 +3453,12 @@
           "creator": "Alfonso y Cristian",
           "url": "https://www.youtube.com/watch?v=DShgDzY-iy8&t=4392"
         }
-      ]
+      ],
+      "pinned": null
     },
     {
-      "key": "con-charanga-pitch",
-      "module_key": null,
+      "key": "conc-menu-cerrado",
+      "module_key": "tabs-experiencias",
       "kind": "pitch",
       "stage": "pitch_demo",
       "objection": null,
@@ -3192,10 +3472,11 @@
       "body": "> «Metéis vuestro repertorio en una lista, la gente vota desde el móvil y vosotros tocáis lo más votado. Nadie puede pedir nada que no esté en vuestra lista. El público elige la siguiente, o la última de la noche.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-charanga-precio",
+      "key": "conc-charanga-precio",
       "module_key": null,
       "kind": "monetization",
       "stage": "negociacion",
@@ -3210,10 +3491,11 @@
       "body": "> «120 € el bolo, o 390 € la temporada entera de mayo a septiembre con las fechas que queráis. A veinte bolos os sale a menos de veinte euros la fecha.»\n\n**Empuja siempre la temporada.** Por evento suelto, la fricción se repite cada semana.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-charanga-no",
+      "key": "conc-charanga-no",
       "module_key": null,
       "kind": "tip",
       "stage": "pitch_demo",
@@ -3228,26 +3510,38 @@
       "body": "Nada de inventario patrocinable, datos, NDI ni pre-show. Menú cerrado, álbum de la verbena, precio y fecha.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-pantallas",
-      "module_key": null,
+      "key": "conc-obj-pantallas",
+      "module_key": "pantalla-en-vivo",
       "kind": "objection",
       "stage": "objeciones",
       "objection": "ya_tengo_proveedor",
       "segments": [
-        "conciertos"
+        "ocio-nocturno",
+        "promotoras",
+        "conciertos",
+        "festivales"
       ],
       "personas": [],
       "title": "«Ya tenemos pantallas y un VJ»",
-      "body": "> «Y mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales con NDI, en un lateral, y él sigue haciendo lo suyo. Pero dime una cosa: si pudiera resolveros una o dos cosas concretas del show, ¿cuáles serían?»",
+      "body": "> «Y mejor, porque esto no lo sustituye: nos metemos por encima de sus visuales con NDI, en un lateral, y él sigue haciendo lo suyo. Pero dime una cosa: si pudiera resolveros una o dos cosas concretas del show, ¿cuáles serían?»\n\n*Y si la respuesta es pasiva, abre ventana (técnica de la ventana, Alfonso y Cristian):*\n\n> «Perfecto, te agradezco que seas claro. Antes de irme, una última: ¿cuál sería la única razón por la que te plantearías probar algo así?»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Técnica de la ventana",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/3mEDQoF29pC8r8cZeWuM0U"
+        }
+      ],
+      "pinned": null
     },
     {
-      "key": "con-obj-moviles",
+      "key": "conc-obj-moviles",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3263,10 +3557,11 @@
       "body": "> «Nosotros tampoco. La gente ya está con el móvil. Lo que hacemos es que ese rato pase en la sala. Y la parte fuerte es la hora de antes, cuando él ni siquiera ha salido.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-cobertura",
+      "key": "conc-obj-cobertura",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3279,10 +3574,11 @@
       "body": "**La más peligrosa, porque muchas veces es cierta.**\n> «Es lo único que nos puede estropear la noche, y te lo digo yo antes de que lo descubras tú. Por eso lo primero que miramos es la cobertura y el wifi del recinto. Si no hay, te lo digo y no lo hacemos.»\n\n**Nunca se vende donde sabemos que no hay cobertura.** Un evento fallido se cuenta entre promotores.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-validar",
+      "key": "conc-obj-validar",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3295,10 +3591,11 @@
       "body": "> «Quien tú digas, y desde el móvil. Alguien de tu equipo o de sala. No hace falta que sea nadie de producción ni el VJ.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-tiempo",
+      "key": "conc-obj-tiempo",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3313,10 +3610,11 @@
       "body": "> «Cero montaje. Si tenéis ordenador en la señal de vídeo, es instalar y conectar. El día del show no pedimos nada a tu equipo.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-patrocinador",
+      "key": "conc-obj-patrocinador",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3329,11 +3627,12 @@
       "body": "Buena señal, no es un no.\n> «Tiene todo el sentido que lo pague él, porque es quien más se lleva. ¿Me presentas a quien lleva el patrocinio y se lo planteo yo?»\n\n**Y ahí termina el trabajo del comercial:** las conversaciones con marcas las lleva fundador. Lo que se trae de vuelta: nombre de la marca, quién lleva la relación, si es acuerdo anual o por evento, y si nos presentan.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-derechos",
-      "module_key": null,
+      "key": "conc-obj-derechos",
+      "module_key": "movil-invitado",
       "kind": "objection",
       "stage": "objeciones",
       "objection": "desconfianza",
@@ -3345,10 +3644,11 @@
       "body": "Nuestro mejor terreno.\n> «Es lo que mejor tenemos resuelto. Sube la foto quien quiere, y al subirla acepta los términos que permiten usarla en comunicación. No grabamos a nadie sin que lo sepa. Esa es la diferencia con una kiss cam.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-directo",
+      "key": "conc-obj-directo",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3361,10 +3661,11 @@
       "body": "> «En vídeo en directo no, eso no lo tenemos. Lo que sí: puede subir una foto con el mensaje y la sacamos en grande cuando toque.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "con-obj-precio",
+      "key": "conc-obj-caro",
       "module_key": null,
       "kind": "objection",
       "stage": "objeciones",
@@ -3377,7 +3678,8 @@
       "body": "No se argumenta el precio. Ancla de los 8.000 € y piloto de la primera fecha con contrapartidas.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-cuando",
@@ -3393,7 +3695,8 @@
       "body": "| Periodo | Qué pasa |\n|---|---|\n| Mayo–septiembre | Temporada, pico junio–agosto. **Imposible vender** |\n| **Septiembre–noviembre** | **La ventana.** Es cuando las grandes cuentas cierran presupuesto del año siguiente |\n| Noviembre–diciembre | Partidas de marketing sin ejecutar que se pierden si no se gastan |\n| Enero–abril | Se cierran carteles y producción |\n\nLlamar en julio a un festival es quemar el contacto. La respuesta correcta en temporada es pedir fecha concreta de septiembre, no «ya hablamos».",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-modelo-a",
@@ -3409,7 +3712,8 @@
       "body": "El festival compra el servicio y, si quiere, lo usa como palanca con sus marcas. **Problema:** le estás dando a él el trabajo de vender algo nuevo a sus patrocinadores.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-modelo-b",
@@ -3425,7 +3729,8 @@
       "body": "> «A ti no te cuesta. Lo paga la marca. Lo que tenemos que ver es cuánto te interesa a ti que lo pongamos.»\n\nEl festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. De gasto a ingreso. **Es lo que los propios festivales dijeron que preferirían.**\n\n**Las conversaciones con marcas las lleva fundador.** El comercial detecta, cualifica y pasa.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-apertura",
@@ -3441,7 +3746,8 @@
       "body": "> «Hola [nombre], soy Cristian de Enjoy the Club. Os escribo ahora y no en junio porque imagino que es cuando estáis cerrando lo del año que viene.\n>\n> Antes de contarte nada: ¿qué pasa en vuestras pantallas entre concierto y concierto?»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-pitch-independiente",
@@ -3457,7 +3763,8 @@
       "body": "> «El sector se está copiando a sí mismo: mismos carteles, mismas fiestas. Lo que os damos es algo que la gente hace, no que mira — su foto y su mensaje en vuestra pantalla, y un álbum del festival que se queda.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-pitch-grande",
@@ -3473,11 +3780,12 @@
       "body": "> «No os hace falta sobrevivir, os hace falta rentabilizar mejor el aforo que ya tenéis. Vuestra pantalla deja de ser soporte pasivo y pasa a ser activación: la gente la mira porque busca su foto. Y eso es lo que las marcas están comprando ahora, porque pueden medirlo.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
-      "key": "fest-una-pantalla",
-      "module_key": null,
+      "key": "conc-multipantalla",
+      "module_key": "pantalla-en-vivo",
       "kind": "pitch",
       "stage": "pitch_demo",
       "objection": null,
@@ -3489,7 +3797,8 @@
       "body": "> «Una cosa que te digo ya: hoy manejamos una pantalla, no todo el recinto. Lo que tenemos que decidir es en qué pantalla y en qué momento.»\n\n**Se dice en la primera reunión.** Si no, el cliente se imagina el festival entero y lo descubre el día del montaje.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-presencial",
@@ -3505,7 +3814,8 @@
       "body": "> «En la primera edición vamos nosotros allí. No porque haya que montar nada, sino porque va a haber preguntas y prefiero estar.»\n\n**Es excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y no va en el módulo de precio como incluido.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-precio",
@@ -3521,7 +3831,8 @@
       "body": "> «Para un festival de vuestro tamaño, [X] €. Para que lo sitúes: una kiss cam clásica con pantalla, cámara y operario no baja de 8.000 € por evento, y cuando acaba no queda nada.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-obj-cuesta",
@@ -3537,23 +3848,8 @@
       "body": "En modelo B cambia la conversación entera:\n> «A ti no te cuesta, lo paga la marca.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
-    },
-    {
-      "key": "fest-obj-pantallas",
-      "module_key": null,
-      "kind": "objection",
-      "stage": "objeciones",
-      "objection": "ya_tengo_proveedor",
-      "segments": [
-        "festivales"
-      ],
-      "personas": [],
-      "title": "«Ya tenemos pantallas y VJ»",
-      "body": "> «No lo sustituimos: con NDI nos ponemos encima, en un lateral.»",
-      "when_to_use": null,
-      "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-obj-cobertura",
@@ -3569,7 +3865,8 @@
       "body": "Riesgo real en recinto grande o en campo. Se comprueba antes y, si no la hay, no se vende.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-obj-ano-viene",
@@ -3585,7 +3882,8 @@
       "body": "Es la respuesta normal en temporada y es la correcta. Hay que convertirla en fecha:\n> «Me parece lo lógico. ¿Te va bien que te llame el [día concreto de septiembre]? Lo apunto y no te molesto hasta entonces.»",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "fest-no-vender",
@@ -3601,7 +3899,8 @@
       "body": "- **«Encuentra y gana»** (dos personas tienen un minuto para encontrarse y mandarse un selfie). Está previsto para 2027. Gustó cuando se contó como idea, pero **no existe**.\n- **Manejo múltiple de pantallas.** Roadmap.\n- Aforos de +20.000 sin prueba de carga.\n- Cifras de retorno de patrocinio. El mecanismo sí; los números, no.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "gen-no-decir",
@@ -3615,7 +3914,8 @@
       "body": "- **Cifras de monetización o retorno.** Mecanismo sí, números no.\n- **Multipantalla, CRM, remarketing, bonos, «encuentra y gana».** No existen.\n- **Soporte 24h u horarios.**\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos. La única excepción es el acompañamiento presencial en la primera edición de un festival.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Fechas de entrega** de cualquier cosa futura.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "gen-traer-vuelta",
@@ -3632,7 +3932,8 @@
       "body": "En estos dos sectores no hay histórico. Cada reunión tiene que rellenar huecos:\n\n1. ¿Quién decidió realmente?\n2. ¿En qué momento del año se decide una compra así?\n3. ¿Cuál fue la primera objeción, literal?\n4. ¿Qué presupuesto manejan para activaciones de público?\n5. ¿Tienen patrocinador? ¿Quién lo lleva?\n6. Reacción exacta al precio: cara, silencio, contraoferta.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     },
     {
       "key": "gen-seguimiento-cf",
@@ -3649,33 +3950,21 @@
       "body": "Deep Delay, Selvatic Fest, Shark Events, Topamin Fest, The Lab y Bresh: **todos dijeron que sí y todos se perdieron por no hacer seguimiento.** Ninguno por precio, producto ni competencia.\n\nUn sí sin fecha no es un sí.",
       "when_to_use": null,
       "why_it_works": null,
-      "technique_refs": []
+      "technique_refs": [],
+      "pinned": null
     }
   ],
   "retired_plays": [
     "b2b-apertura",
     "b2b-cierre",
-    "conc-advance",
-    "conc-ancla",
     "conc-calendario",
     "conc-charangas-precio",
     "conc-descuentos",
     "conc-durante",
     "conc-manager",
     "conc-marca",
-    "conc-menu-cerrado",
-    "conc-multipantalla",
-    "conc-ndi",
     "conc-no-decir",
-    "conc-obj-caro",
-    "conc-obj-cobertura",
-    "conc-obj-derechos",
-    "conc-obj-moviles",
-    "conc-obj-pantallas",
-    "conc-obj-patrocinador",
     "conc-obj-pedida",
-    "conc-obj-tiempo",
-    "conc-obj-validar",
     "conc-precios",
     "conc-preshow",
     "conc-promotor",
@@ -3693,22 +3982,15 @@
     "gen-traspaso-marca",
     "gen-vision-quien",
     "noche-biblioteca",
-    "noche-calendario",
     "noche-descuentos",
     "noche-diferenciarse",
     "noche-dinero-peticiones",
-    "noche-dj-menu",
     "noche-fidelizacion",
     "noche-nombres",
-    "noche-obj-caro",
     "noche-obj-dj",
     "noche-obj-gano",
-    "noche-obj-operativa",
     "noche-obj-vj",
-    "noche-pantalla-movil",
     "noche-pitch-propietario",
-    "noche-precios",
-    "noche-prueba-hoy",
     "noche-redes",
     "noche-reunion-dos",
     "noche-temporada-baja",
@@ -3716,6 +3998,72 @@
     "promo-encaje",
     "promo-paradox",
     "promo-precios",
-    "promo-seguimiento"
+    "promo-seguimiento",
+    "loc-obj-pantallas",
+    "fest-obj-pantallas",
+    "loc-no-recitar",
+    "loc-preparacion",
+    "loc-demo-previa",
+    "loc-cuando-ir",
+    "loc-apertura",
+    "loc-apertura-que-es",
+    "loc-no-apertura",
+    "loc-contrato-10min",
+    "loc-cinco-preguntas",
+    "loc-cierre-diagnostico",
+    "loc-reconstruir-coste",
+    "loc-pitch-contenido",
+    "loc-pitch-barra",
+    "loc-pitch-canciones",
+    "loc-pitch-coldplay",
+    "loc-dj-adelantar",
+    "loc-dj-propina",
+    "loc-dj-no-preguntar",
+    "loc-puente",
+    "loc-compromiso",
+    "loc-precio",
+    "loc-silencio",
+    "loc-precio-pronto",
+    "loc-no-etiquetar",
+    "loc-prueba",
+    "loc-obj-ambiente",
+    "loc-obj-operativa",
+    "loc-obj-que-gano",
+    "loc-obj-precio",
+    "loc-obj-socio",
+    "loc-obj-pensar",
+    "loc-obj-referido",
+    "loc-msg-seguimiento-noche1",
+    "loc-msg-reactivacion",
+    "loc-msg-filtro",
+    "loc-no-decir",
+    "con-preparacion",
+    "con-demo-previa",
+    "con-apertura",
+    "con-decisor",
+    "con-gatekeeper",
+    "con-pitch-preshow",
+    "con-pitch-promotor",
+    "con-pitch-manager",
+    "con-pitch-album",
+    "con-pitch-produccion",
+    "con-advance",
+    "con-ancla",
+    "con-compromiso",
+    "con-precio",
+    "con-charanga-pitch",
+    "con-charanga-precio",
+    "con-charanga-no",
+    "con-obj-pantallas",
+    "con-obj-moviles",
+    "con-obj-cobertura",
+    "con-obj-validar",
+    "con-obj-tiempo",
+    "con-obj-patrocinador",
+    "con-obj-derechos",
+    "con-obj-directo",
+    "con-obj-precio",
+    "fest-una-pantalla",
+    "exp-prueba"
   ]
 }

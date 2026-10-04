@@ -63,6 +63,9 @@ const sel = (key: string, v: string) => (situation[key] ?? []).includes(v);
 
   <div class="co-split">
     <section class="grid content-start gap-4">
+      {!r.enough && r.closes > 0 && (
+        <p class="co-alert co-alert--info text-sm" data-testid="win-few">{m.wins.few(r.closes, r.minCloses)}</p>
+      )}
       {r.plays.length > 0 && (
         <div class="co-card co-card--soft grid gap-3" data-testid="win-plays">
           <p class="text-eyebrow">{r.described ? m.wins.topSimilar : m.wins.top}</p>
