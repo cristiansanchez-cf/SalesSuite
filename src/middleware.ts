@@ -1,5 +1,6 @@
 import { LOCALE_COOKIE } from './lib/i18n';
 import { resolveLocale } from './lib/i18n/core';
+import { withRequestLocale } from './lib/i18n/request';
 import { defineMiddleware } from 'astro:middleware';
 import { authenticate } from './lib/admin/auth';
 import { publicRepository } from './lib/data';
@@ -80,7 +81,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   timing.mark('prep');
-  const res = await next();
+  // Los errores del servidor salen en el idioma de quien lee (src/lib/i18n/errors.ts).
+  const res = context.locals.locale ? await withRequestLocale(context.locals.locale, next) : await next();
   timing.mark('page');
   // Cuánto tarda cada parte (DevTools → Network → Timing) y aviso en los registros si una página va lenta.
   res.headers.set('Server-Timing', timing.header());

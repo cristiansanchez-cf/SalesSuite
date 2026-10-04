@@ -2,8 +2,8 @@
 /** El texto de un título a dos tonos (ver headline.ts); la etiqueta (h1/h2) la pone cada módulo. `text` ya viene interpolado. */
 import { splitHeadline } from './headline';
 
-interface Props { text: string }
-const [head, tail] = splitHeadline(Astro.props.text);
+interface Props { text: string; loose?: boolean }
+const [head, tail] = splitHeadline(Astro.props.text, Astro.props.loose);
 ---
 {head}{tail && <span class="headline-tail">{tail}</span>}
 

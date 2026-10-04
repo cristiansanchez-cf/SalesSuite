@@ -8,7 +8,8 @@ import type { AdminSession } from '../admin/types';
 import type { EvidenceService } from '../evidence/service';
 import type { PlaybookService } from '../playbook/service';
 import { slug } from '../evidence/schema';
-import { PRESETS } from './presets';
+import { localizePreset, PRESETS } from './presets';
+import type { Locale } from '../i18n/core';
 
 export function createSetupService(s: AdminSession, deps: { playbook: PlaybookService; evidence: EvidenceService }) {
   const requireAdmin = () => { if (!can(s.role).managePlaybook) throw new AdminError(403, 'Solo un admin o el/la gerente configura la empresa'); };
@@ -31,10 +32,12 @@ export function createSetupService(s: AdminSession, deps: { playbook: PlaybookSe
     };
   }
 
-  async function applyPreset(key: string) {
+  /** Se guarda en el idioma de quien lo aplica; las claves (también las de las opciones) salen del español. */
+  async function applyPreset(key: string, locale: Locale = 'es') {
     requireAdmin();
-    const preset = PRESETS.find((p) => p.key === key);
-    if (!preset) throw new AdminError(404, 'Punto de partida no encontrado');
+    const base = PRESETS.find((p) => p.key === key);
+    if (!base) throw new AdminError(404, 'Punto de partida no encontrado');
+    const preset = localizePreset(base, locale);
     const st = await status();
     const created = { segments: 0, personas: 0, facets: 0 };
     const segKeys = new Map(st.segments.map((x) => [x.key, x.id]));
@@ -54,9 +57,9 @@ export function createSetupService(s: AdminSession, deps: { playbook: PlaybookSe
       }
     }
     const facetKeys = new Set(st.facets.map((f) => f.key));
-    for (const f of preset.facets) {
+    for (const [fi, f] of preset.facets.entries()) {
       if (facetKeys.has(f.key)) continue;
-      await deps.evidence.saveFacet({ ...f, options: f.options.map((o) => ({ ...o, key: slug(o.label) })) });
+      await deps.evidence.saveFacet({ ...f, options: f.options.map((o, oi) => ({ ...o, key: slug(base.facets[fi].options[oi].label) })) });
       created.facets++;
     }
     return created;

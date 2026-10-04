@@ -33,6 +33,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForLoadState();
   assert((await p.getAttribute('html', 'lang')) === 'ko' && (await p.textContent('h1')).includes('내 계정'), 'Mi cuenta en coreano');
   if (OUT) await p.screenshot({ path: `${OUT}/i18n-ko.png`, fullPage: true });
+  // Los errores del servidor también (src/lib/i18n/errors.ts).
+  const err = await p.evaluate(() => fetch('/admin/api/dossiers/00000000-0000-4000-8000-000000000000/talk-track').then((r) => r.json()));
+  assert(/[가-힣]/.test(err.error ?? ''), `error del servidor en coreano («${err.error}»)`);
   await ctx.clearCookies({ name: 'ss_locale' }).catch(() => {});
   const p2 = await ctx.newPage();
   await p2.goto(`${BASE}/admin/login`);

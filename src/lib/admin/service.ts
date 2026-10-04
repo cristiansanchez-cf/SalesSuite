@@ -14,12 +14,15 @@ import { can } from './permissions';
 import { paymentUrl } from './payment';
 import { inTeam } from '../org/scope';
 import { effectiveAnswers, planProposal } from '../proposal/preset';
+import { localizeError } from '../i18n/errors';
+import { requestLocale } from '../i18n/request';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
+/** `message` va en español; sale en el idioma de quien hace la petición (src/lib/i18n/errors.ts). */
 export class AdminError extends Error {
   constructor(public status: 400 | 403 | 404 | 409 | 422 | 501 | 503, message: string, public details?: string[]) {
-    super(message);
+    super(localizeError(message, requestLocale()));
   }
 }
 

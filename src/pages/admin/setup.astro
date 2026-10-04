@@ -16,7 +16,7 @@ import { PERSONA_ROLES } from '~/lib/playbook/market';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { setupAiMessages } from '~/lib/i18n/messages/setupAi';
-import { PRESETS, ROLE_ICON, SEGMENT_ICONS } from '~/lib/setup/presets';
+import { localizePreset, PRESETS, ROLE_ICON, SEGMENT_ICONS } from '~/lib/setup/presets';
 import { createSetupService } from '~/lib/setup/service';
 import { isIconName } from '~/lib/ui/icons';
 
@@ -45,7 +45,7 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     switch (str('action')) {
       case 'preset': {
-        const c = await setup.applyPreset(str('preset'));
+        const c = await setup.applyPreset(str('preset'), locale);
         ok = `preset-${c.segments}-${c.personas}-${c.facets}`;
         next = 2;
         break;
@@ -108,7 +108,7 @@ const SCOPE = msg.setup.scope;
     <section class="grid gap-4" data-testid="setup-presets">
       <p class="co-lede">{msg.setup.start.lede}</p>
       <div class="co-grid co-grid--3">
-        {PRESETS.map((p) => (
+        {localizePreset(PRESETS, locale).map((p) => (
           <article class="co-card grid content-start gap-3">
             <span class="co-option__icon"><Icon name={p.icon} /></span>
             <h2 class="co-card-title">{p.name}</h2>
