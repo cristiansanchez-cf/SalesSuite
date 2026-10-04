@@ -17,6 +17,10 @@
 - **Tema del dossier:** se quedan los tokens de la **web** (la propuesta es marketing). Los de la **app** van dentro de
   las plantillas que recrean pantallas (consola, móvil), como hace Enjoy con su pantalla.
 
+- **Guía de inicio PT** (`docs/ventas/oquea/fuentes/03-guia-de-inicio-PT.pdf`): la presentación que validó la venta.
+  Referencia de relato y de maqueta (`docs/ventas/oquea/agente/03-GUIA-INICIO-REFERENCIA.md`) y **19 capturas reales**
+  de la app (`tenants/oquea/assets/img/producto/app/`).
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)
