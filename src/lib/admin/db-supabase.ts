@@ -296,6 +296,19 @@ function full(sb: SupabaseClient): AdminDb {
       return rows.length > 0;
     },
     async segmentExists(t, id) { return !!check(await sb.from('segment').select('id').eq('tenant_id', t).eq('id', id).maybeSingle()); },
+    async listProposalTemplates(t, segmentId) {
+      const res = await sb.from('proposal_template').select('*').eq('tenant_id', t).eq('segment_id', segmentId);
+      if (res.error) return [];  // tabla aún sin migrar
+      return (res.data ?? []).map((r: Row) => ({ id: r.id, segmentId: r.segment_id, name: r.name, mode: r.mode, answers: r.answers ?? [], priceOptionId: r.price_option_id ?? null, createdBy: r.created_by ?? null, createdAt: r.created_at ?? null }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    async insertProposalTemplate(t, r) {
+      const row = checkOne(await sb.from('proposal_template').insert({ tenant_id: t, segment_id: r.segmentId, name: r.name, mode: r.mode, answers: r.answers, price_option_id: r.priceOptionId, created_by: r.createdBy }).select('id').single());
+      return row.id as string;
+    },
+    async deleteProposalTemplate(id) {
+      return (check(await sb.from('proposal_template').delete().eq('id', id).select('id')) ?? []).length > 0;
+    },
     async segmentProposal(t, id) {
       const res = await sb.from('segment').select('proposal').eq('tenant_id', t).eq('id', id).maybeSingle();
       if (res.error) return null;  // columna aún sin migrar: sin receta

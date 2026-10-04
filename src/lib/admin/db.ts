@@ -89,6 +89,9 @@ export interface AdminDb {
   segmentExists(tenantId: string, segmentId: string): Promise<boolean>;
   /** Receta de propuesta del sector (null si no tiene). */
   segmentProposal(tenantId: string, segmentId: string): Promise<import('../proposal/preset').Proposal | null>;
+  listProposalTemplates(tenantId: string, segmentId: string): Promise<import('./types').ProposalTemplate[]>;
+  insertProposalTemplate(tenantId: string, row: Omit<import('./types').ProposalTemplate, 'id' | 'createdAt'>): Promise<string>;
+  deleteProposalTemplate(id: string): Promise<boolean>;
   personaExists(tenantId: string, personaId: string): Promise<boolean>;
 
   // ---- gestión del tenant (la RLS exige admin en Supabase; el servicio también)

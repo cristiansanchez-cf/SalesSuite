@@ -6,6 +6,7 @@ import { liveScreenSchema } from './live-screen/schema';
 import { phoneTourSchema } from './phone-tour/schema';
 import { problemSolutionSchema } from './problem-solution/schema';
 import { caseStudySchema } from './case-study/schema';
+import { costMathSchema, hasFigures } from './cost-math/schema';
 import { partsFor } from './phone-tour/steps';
 import type { ModuleContext } from './types';
 
@@ -58,6 +59,14 @@ export const REGISTRY = {
     example: { title: 'Lo que le pasó a…', client: 'Cliente', body: 'Qué pasó, con su permiso.' },
     load: () => import('./case-study/Component.astro'),
   },
+  'cost-math': {
+    label: 'Lo que ya te cuesta',
+    schema: costMathSchema,
+    example: { title: 'Lo que ya te cuesta' },
+    load: () => import('./cost-math/Component.astro'),
+    // Sin cifras del cliente no hay diapositiva (nunca se inventa una).
+    hidden: (props: Record<string, unknown>) => !hasFigures(props as never),
+  },
 } as const satisfies Record<string, {
   label: string;
   schema: z.ZodTypeAny;
@@ -66,6 +75,8 @@ export const REGISTRY = {
   load: () => Promise<{ default: unknown }>;
   /** Modo presentación: si el módulo se parte en varias diapositivas, las props extra de cada una. */
   parts?: (props: Record<string, unknown>, ctx: ModuleContext) => Array<Record<string, unknown>>;
+  /** Si devuelve true, el módulo no se enseña (p. ej. sin las cifras que tiene que poner el comercial). */
+  hidden?: (props: Record<string, unknown>) => boolean;
 }>;
 
 export type BlockType = keyof typeof REGISTRY;

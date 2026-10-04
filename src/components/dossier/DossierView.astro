@@ -25,7 +25,9 @@ const blocks = await Promise.all(
       console.error(`[dossier ${dossier.id}] item ${r.item.id} omitido: ${r.reason}`);
       return null;
     }
-    const entry = REGISTRY[r.blockType] as (typeof REGISTRY)[keyof typeof REGISTRY] & { parts?: (p: Record<string, unknown>, c: import('~/modules/types').ModuleContext) => Array<Record<string, unknown>> };
+    const entry = REGISTRY[r.blockType] as (typeof REGISTRY)[keyof typeof REGISTRY] & { parts?: (p: Record<string, unknown>, c: import('~/modules/types').ModuleContext) => Array<Record<string, unknown>>; hidden?: (p: Record<string, unknown>) => boolean };
+    // Un módulo que no tiene qué enseñar (p. ej. «Lo que ya te cuesta» sin cifras) no ocupa diapositiva.
+    if (entry.hidden?.(r.props as Record<string, unknown>)) return null;
     const mod = await entry.load();
     return { ...r, parts: entry.parts, Comp: mod.default as unknown as (props: Record<string, unknown>) => unknown };
   }),

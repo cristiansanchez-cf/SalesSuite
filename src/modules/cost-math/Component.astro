@@ -1,0 +1,56 @@
+---
+/**
+ * cost-math ← «Lo que ya te cuesta»: la cuenta con las cifras que dio el cliente (pregunta 3 del guion de locales).
+ * Frase del guion verificado: «Esto ahora mismo te cuesta [X] € las noches que traes a alguien, más un domingo tuyo».
+ */
+import Section from '~/components/Section.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import { hasFigures, type CostMathProps } from './schema';
+import { pricingFigure } from '../pricing-card/schema';
+
+type Props = CostMathProps & ModuleBaseProps;
+const { eyebrow, title, perNight, nightsPerMonth, sundayHours, compare, afterLabel, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const eur = (v: number) => `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(v)} €`;
+const monthly = perNight && nightsPerMonth ? perNight * nightsPerMonth : null;
+const figure = compare ? pricingFigure(ctx) : null;
+const PERIOD: Record<string, string> = { month: '/ mes', event: '/ evento', year: '/ año', once: 'pago único' };
+---
+{hasFigures({ perNight, nightsPerMonth, sundayHours }) && (
+  <div data-module="cost-math" class="cost-math">
+    <Section tone="surface">
+      {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+      <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+      <div class="cm-grid mt-8">
+        <div class="cm-card rounded-card bg-bg shadow-card">
+          <p class="cm-label">Hoy</p>
+          {monthly && <p class="cm-big">{eur(monthly)}<small> al mes</small></p>}
+          <ul class="cm-rows p-0">
+            {monthly && <li>{`Las noches que traes a alguien: ${nightsPerMonth} × ${eur(perNight!)}`}</li>}
+            {sundayHours ? <li>{`Más ${sundayHours} ${sundayHours === 1 ? 'hora tuya' : 'horas tuyas'} cada domingo editando fotos`}</li> : null}
+          </ul>
+        </div>
+        {figure && (
+          <div class="cm-card cm-card--after rounded-card shadow-card">
+            <p class="cm-label cm-label--after">{afterLabel}</p>
+            <p class="cm-big">{figure.formatted}<small> {ctx.pricePeriod ? PERIOD[ctx.pricePeriod] ?? '' : ''}</small></p>
+            <ul class="cm-rows p-0"><li>Las fotos las sube tu gente, cada noche, con permiso para publicarlas.</li></ul>
+          </div>
+        )}
+      </div>
+    </Section>
+  </div>
+)}
+
+<style>
+  .cm-grid { display: grid; gap: 1rem; }
+  @media (min-width: 900px) { .cm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .cm-card { padding: 1.6rem; border: 1px solid rgb(var(--color-line, 255 255 255) / .12); min-width: 0; }
+  .cm-card--after { background: rgb(var(--color-primary, 255 39 187) / .1); border-color: rgb(var(--color-primary, 255 39 187) / .5); }
+  .cm-label { font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+  .cm-label--after { color: rgb(var(--color-primary, 255 39 187)); opacity: 1; }
+  .cm-big { margin: .4rem 0 0; font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; line-height: 1.05; }
+  .cm-big small { font-size: 1rem; font-weight: 600; opacity: .7; }
+  .cm-rows { display: grid; gap: .4rem; margin: 1rem 0 0; list-style: none; font-size: 1.1rem; }
+</style>

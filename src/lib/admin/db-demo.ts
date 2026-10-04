@@ -249,6 +249,25 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       return true;
     },
     async segmentExists(t, id) { return db().segment.some((x) => x.tenant_id === t && x.id === id); },
+    async listProposalTemplates(t, segmentId) {
+      return (db().proposal_template ?? []).filter((x) => x.tenant_id === t && x.segment_id === segmentId)
+        .map((r) => ({ id: r.id, segmentId: r.segment_id, name: r.name, mode: r.mode, answers: [...r.answers], priceOptionId: r.price_option_id, createdBy: r.created_by, createdAt: r.created_at }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    async insertProposalTemplate(t, r) {
+      const list = (db().proposal_template ??= []);
+      if (list.some((x) => x.tenant_id === t && x.segment_id === r.segmentId && x.name === r.name)) throw new Error('duplicate key value violates unique constraint');
+      const id = randomUUID();
+      list.push({ id, tenant_id: t, segment_id: r.segmentId, name: r.name, mode: r.mode, answers: [...r.answers], price_option_id: r.priceOptionId, created_by: r.createdBy, created_at: new Date().toISOString() });
+      return id;
+    },
+    async deleteProposalTemplate(id) {
+      const list = db().proposal_template ?? [];
+      const i = list.findIndex((x) => x.id === id);
+      if (i < 0) return false;
+      list.splice(i, 1);
+      return true;
+    },
     async segmentProposal(t, id) { return parseProposal(db().segment.find((x) => x.tenant_id === t && x.id === id)?.proposal); },
     async personaExists(t, id) { return db().persona.some((x) => x.tenant_id === t && x.id === id); },
 

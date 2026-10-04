@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Aplica a tenants/enjoy/tenant.json el documento 07 «Cómo debe ser la propuesta»
-(docs/ventas/enjoy/fuentes/propuesta-07.md). Idempotente.
+(docs/ventas/enjoy/fuentes/propuesta-07.md). Idempotente. SUSTITUIDO por apply-propuesta-08.py: no volver a ejecutar.
 
 - Corrige lo que contradice lo ya decidido en todos los sectores: sin kiss-cam, sin «informe post-evento»,
   sin «sin permanencia si lo necesitáis», sin DJ inventado y sin el pago del invitado en el recorrido.

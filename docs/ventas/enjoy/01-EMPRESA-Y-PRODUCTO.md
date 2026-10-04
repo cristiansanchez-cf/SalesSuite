@@ -122,6 +122,17 @@ El festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto l
 > «No os hace falta sobrevivir, os hace falta rentabilizar mejor el aforo que ya tenéis. Vuestra pantalla deja de ser soporte pasivo y pasa a ser activación: la gente la mira porque busca su foto. Y eso es lo que las marcas están comprando ahora, porque pueden medirlo.»
 
 
+### Para el DJ colaborador (PENDIENTE antes de dárselo) · `dj-colaborador`
+
+No es un cliente: es un canal. Lo que necesita, y nada más: qué es Enjoy en treinta segundos, la demo para enseñarla en el móvil, qué se lleva él, y a quién tiene que preguntarle en su local.
+
+> «Tú lo enseñas en tu local y nosotros cerramos. Si entra, cobras durante el primer año. No tienes que saber precios ni negociar nada: nos pasas el contacto del dueño y lo llevamos nosotros.»
+
+**Sin precios.** Un DJ que negocia mal te quema el local.
+
+**PENDIENTE de cerrar por escrito antes de dárselo:** si cobra por traer el local o solo si se cierra, y qué pasa cuando deja de pinchar allí. Hasta entonces, solo la ve el equipo interno.
+
+
 ## 2. Por qué existimos (paso 0 de Aprende)
 
 Es lo primero que ve un comercial en Aprende, antes del recorrido del producto. No sale en el guion de la reunión: se aprende, no se dice.
@@ -242,12 +253,20 @@ Tipo: `tabs-showcase`
 - **Pestaña «Dedicatorias»:** Dedicatorias que se leen en voz alta — Mensajes desde el móvil, proyectados en el momento justo. _(Sin descargar app)_
 - **Pestaña «Por mesa»:** Dinámicas por mesa — Un ejemplo de lo versátil que es: pon un número en cada mesa y que las mesas se escriban por la pantalla. _(«Los de la mesa 1 son muy guapos»)_
 
+### Lo que ya te cuesta · `lo-que-ya-te-cuesta`
+
+_La cuenta con las cifras que dio el cliente (pregunta 3). Sin cifras no sale: nunca se inventa una._  
+Tipo: `cost-math`
+
+- **Antetítulo:** —
+- **Título:** Lo que ya te cuesta
+
 ### Caso real · `caso-real`
 
-_Un cliente con nombre. Solo con su autorización por escrito para la propuesta._  
+_Un cliente parecido, con qué es, dónde está y su tamaño. Con nombre solo con autorización por escrito._  
 Tipo: `case-study`
 
-- **Antetítulo:** Lo que le pasó a La Biblioteca
+- **Antetítulo:** Un caso real
 - **Título:** Una promotora los eligió a ellos
 
 ### Precio de la propuesta · `pricing`

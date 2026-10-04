@@ -140,7 +140,7 @@ El repositorio tiene un botón (*Actions → Producción*) que aplica la base de
   - What: `migraciones`.
   - Dry run: **marcado**.
   - *Run workflow*.
-- [ ] **4.2** Abre la ejecución. En el paso «Migraciones (qué se aplicaría)» debe salir la lista de migraciones, desde `20261002000000_init.sql` hasta `20261031000000_proposal_presets.sql`.
+- [ ] **4.2** Abre la ejecución. En el paso «Migraciones (qué se aplicaría)» debe salir la lista de migraciones, desde `20261002000000_init.sql` hasta `20261101000000_proposal_template.sql`.
 - [ ] **4.3** Repite el 4.1 con **Dry run desmarcado**. Debe acabar en verde.
 - [ ] **Comprobación 4:** en Supabase → *Table Editor* aparecen, entre otras, `tenant`, `dossier`, `dossier_view` y `member_conditions_history`, con el candado de seguridad activado. En *Storage* existe el bucket `tenant-assets`.
 

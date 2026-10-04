@@ -40,7 +40,7 @@ export interface TalkTrack {
   empty: boolean;
 }
 
-const CONTEXT_BLOCKS = new Set(['hero-pitch', 'problem-solution', 'case-study']);
+const CONTEXT_BLOCKS = new Set(['hero-pitch', 'problem-solution', 'case-study', 'cost-math']);
 
 const evidence = (s: { worked: number; didnt: number }) => s.worked - s.didnt;
 const byEvidenceThenPosition = (a: PlayView, b: PlayView) => evidence(b.score) - evidence(a.score) || a.position - b.position;

@@ -173,6 +173,7 @@ export interface DemoDb {
   connector: ConnectorRow[];
   coupon: CouponRow[];
   price_option: PriceOptionRow[];
+  proposal_template?: Array<{ id: string; tenant_id: string; segment_id: string; name: string; mode: 'full' | 'visual'; answers: string[]; price_option_id: string | null; created_by: string | null; created_at: string }>;
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
   dossier_view: DossierViewRow[];
   team_ip: TeamIpRow[];

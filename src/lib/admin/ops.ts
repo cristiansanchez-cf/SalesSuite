@@ -57,7 +57,11 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('setAccount'), accountId: id.nullable() }),
   z.object({ op: z.literal('setCoupon'), couponId: id.nullable() }),
   /** Monta la propuesta con la receta del sector: rehace la lista de módulos (docs/PROPOSAL_PRESETS.md). */
-  z.object({ op: z.literal('applyPreset'), mode: z.enum(['full', 'visual']).default('full'), answers: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/)).max(12).default([]) }),
+  /** Combinaciones guardadas: guardar lo elegido con nombre, aplicarla de golpe (modo, respuestas y tarifa), borrarla. */
+  z.object({ op: z.literal('saveTemplate'), name: z.string().trim().min(1, 'Ponle un nombre').max(60) }),
+  z.object({ op: z.literal('applyTemplate'), templateId: id }),
+  z.object({ op: z.literal('deleteTemplate'), templateId: id }),
+  z.object({ op: z.literal('applyPreset'), mode: z.enum(['full', 'visual']).default('full'), answers: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}(:[a-z0-9][a-z0-9-]{0,62})?$/)).max(20).default([]) }),
 ]);
 
 export type BuilderOp = z.infer<typeof builderOpSchema>;

@@ -11,13 +11,14 @@
   import type { TalkTrack, TrackLine } from '~/lib/playbook/talk-track';
   import { renderMarkdown, stripMarkdown } from '~/lib/playbook/markdown';
   import { sectorRank } from '~/lib/playbook/market';
+  import { effectiveAnswers, type ProposalLite } from '~/lib/proposal/preset';
   import { DEFAULT_STYLE, MUSIC_STYLES } from '~/modules/live-screen/music';
   import { INTL_LOCALE, type Locale } from '~/lib/i18n/core';
   import { builderMessages } from '~/lib/i18n/messages/builder';
 
   interface MarketLite {
     /** modules: ids de módulo recomendados para el sector, por prioridad. */
-    segments: Array<{ id: string; key: string; name: string; modules?: string[]; proposal?: { hasVisual: boolean; questions: Array<{ key: string; label: string; hint?: string }> } | null }>;
+    segments: Array<{ id: string; key: string; name: string; modules?: string[]; proposal?: ProposalLite | null }>;
     personas: Array<{ id: string; segmentId: string; name: string; role: string }>;
   }
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
@@ -194,6 +195,11 @@
     propsDraft = JSON.stringify(item.propOverrides, null, 2);
     propsError = null;
   }
+  async function saveCost(item: BuilderItem, k: string, raw: string) {
+    const v = raw.trim() === '' ? null : Number(raw.replace(',', '.'));
+    if (v !== null && !(v >= 0)) return;
+    await run({ op: 'setProps', itemId: item.id, propOverrides: { ...(item.propOverrides ?? {}), [k]: v } });
+  }
   async function saveProps(item: BuilderItem) {
     let parsed: unknown;
     try { parsed = JSON.parse(propsDraft || '{}'); } catch { propsError = t.invalidJson; return; }
@@ -224,7 +230,17 @@
   let presetAnswers = $state<string[]>([...(initial.dossier.preset?.answers ?? [])]);
   const presetDone = $derived(!!d.preset?.mode);
   function toggleAnswer(k: string) { presetAnswers = presetAnswers.includes(k) ? presetAnswers.filter((x) => x !== k) : [...presetAnswers, k]; }
+  function pickOption(ch: string, opt: string) { presetAnswers = [...presetAnswers.filter((a) => !a.startsWith(`${ch}:`)), `${ch}:${opt}`]; }
+  /** Lo que cuenta ahora (con los valores por defecto): decide qué elecciones y preguntas se enseñan. */
+  const presetOn = $derived(recipe ? effectiveAnswers(recipe, presetAnswers) : []);
+  const shows = (w?: string[]) => !w?.length || w.some((a) => presetOn.includes(a));
+  const chosen = (ch: string) => presetOn.find((a) => a.startsWith(`${ch}:`))?.slice(ch.length + 1);
   async function applyPreset() { await run({ op: 'applyPreset', mode: presetMode, answers: presetAnswers }); }
+  let templateName = $state('');
+  async function saveTemplate() { if (await run({ op: 'saveTemplate', name: templateName })) templateName = ''; }
+  async function applyTemplate(tpl: { id: string; mode: 'full' | 'visual'; answers: string[] }) {
+    if (await run({ op: 'applyTemplate', templateId: tpl.id })) { presetMode = tpl.mode; presetAnswers = [...tpl.answers]; }
+  }
 
   // ---------- compartir: publicar y enlace en un paso; prueba o real
   const activeLinks = $derived(s.links.filter((l) => l.state === 'active'));
@@ -587,6 +603,19 @@
         {#if recipe && editable}
           <div class="mb-4 grid gap-3 rounded-[var(--console-radius-control)] border-2 border-[color:var(--co-signal)] p-4" data-testid="preset">
             <div><p class="co-card-title">{t.preset.title}</p><p class="co-meta">{t.preset.lede}</p></div>
+            {#if s.templates?.length}
+              <div class="grid gap-1.5" data-testid="preset-saved">
+                <p class="text-sm font-semibold">{t.preset.saved} <span class="co-meta font-normal">· {t.preset.useSaved}</span></p>
+                <div class="flex flex-wrap gap-2">
+                  {#each s.templates as tpl (tpl.id)}
+                    <span class="inline-flex items-center gap-1">
+                      <button type="button" class="co-chip" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">{tpl.name}</button>
+                      {#if tpl.mine}<button type="button" class="text-xs text-muted" disabled={busy} onclick={() => run({ op: 'deleteTemplate', templateId: tpl.id })} aria-label={t.preset.remove(tpl.name)}>✕</button>{/if}
+                    </span>
+                  {/each}
+                </div>
+              </div>
+            {/if}
             {#if recipe.hasVisual}
               <p class="text-sm font-semibold">{t.preset.mode}</p>
               <div class="grid gap-2 sm:grid-cols-2">
@@ -597,10 +626,23 @@
                 {/each}
               </div>
             {/if}
-            {#if recipe.questions.length}
+            {#each recipe.choices.filter((c) => shows(c.when)) as ch (ch.key)}
+              <div class="grid gap-1.5" data-testid="preset-choice-{ch.key}">
+                <p class="text-sm font-semibold">{ch.label}</p>
+                {#if ch.hint}<p class="co-meta -mt-1">{ch.hint}</p>{/if}
+                <div class="grid gap-2 sm:grid-cols-2">
+                  {#each ch.options as o (o.key)}
+                    <button type="button" class="co-inset grid gap-0.5 text-left {chosen(ch.key) === o.key ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed={chosen(ch.key) === o.key} onclick={() => pickOption(ch.key, o.key)} data-testid="preset-opt-{ch.key}-{o.key}">
+                      <span class="font-semibold">{o.label}</span>{#if o.hint}<span class="co-meta">{o.hint}</span>{/if}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+            {#if recipe.questions.some((q) => shows(q.when))}
               <p class="text-sm font-semibold">{t.preset.questions}</p>
               <ul class="grid gap-1.5 p-0">
-                {#each recipe.questions as q (q.key)}
+                {#each recipe.questions.filter((q) => shows(q.when)) as q (q.key)}
                   <li class="list-none"><label class="flex items-start gap-2 text-sm">
                     <input type="checkbox" class="mt-0.5" checked={presetAnswers.includes(q.key)} onchange={() => toggleAnswer(q.key)} data-testid="preset-q-{q.key}" />
                     <span><span class="font-semibold">{q.label}</span>{#if q.hint}<span class="co-meta block">{q.hint}</span>{/if}</span>
@@ -612,6 +654,14 @@
               <button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={applyPreset} data-testid="preset-apply">{presetDone ? t.preset.reapply : t.preset.apply}</button>
               {#if s.items.length}<span class="co-meta">{t.preset.warn}</span>{/if}
             </div>
+            {#if presetDone}
+              <form class="flex flex-wrap items-end gap-2 border-t border-line pt-3" onsubmit={(e) => { e.preventDefault(); saveTemplate(); }} data-testid="preset-save">
+                <label class="grid flex-1 gap-1 text-sm"><span class="font-semibold">{t.preset.saveAs}</span>
+                  <input class="co-input" maxlength="60" required bind:value={templateName} placeholder={t.preset.namePh} data-testid="preset-save-name" />
+                </label>
+                <button class="co-btn co-btn--sm" type="submit" disabled={busy || !templateName.trim()}>{t.preset.save}</button>
+              </form>
+            {/if}
           </div>
         {/if}
         {#if s.items.length === 0 && editable}
@@ -645,6 +695,7 @@
                 <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
                 <div class="min-w-0 flex-1">
                   <p class="truncate font-semibold">{item.moduleName}</p>
+                  {#if typeof item.propOverrides?.title === 'string' && item.propOverrides.title !== item.moduleName}<p class="truncate text-xs text-muted" data-testid="item-title">{String(item.propOverrides.title).replace(/\{company\}/g, d.prospectCompany || '…')}</p>{/if}
                   {#if !item.visible || item.price}<p class="truncate text-xs text-muted">
                     {#if !item.visible}<span class="font-semibold">{t.modules.hidden}</span>{/if}
                     {#if item.price}{!item.visible ? ' · ' : ''}{item.price.formatted}{/if}
@@ -672,6 +723,18 @@
                   <button class={btn} disabled={!editable} onclick={() => run({ op: 'upgradeItem', itemId: item.id })}>{t.modules.upgrade(item.upgradeTo.version)}</button>
                 {/if}
               </div>
+              {/if}
+              {#if item.blockType === 'cost-math'}
+                <!-- «Lo que ya te cuesta»: las cifras que dio el cliente. Sin ninguna, la diapositiva no sale. -->
+                <div class="grid gap-2 border-t border-line px-3 py-2 text-sm sm:grid-cols-3" data-testid="cost-form">
+                  {#each [['perNight', t.cost.perNight], ['nightsPerMonth', t.cost.nights], ['sundayHours', t.cost.hours]] as [k, label] (k)}
+                    <label class="grid gap-1"><span class="text-xs text-muted">{label}</span>
+                      <input class="co-input !min-h-[32px] !py-1" inputmode="decimal" disabled={!editable} value={item.propOverrides?.[k] ?? ''}
+                        onchange={(e) => saveCost(item, k, e.currentTarget.value)} data-testid="cost-{k}" />
+                    </label>
+                  {/each}
+                  <p class="co-meta sm:col-span-3">{t.cost.help}</p>
+                </div>
               {/if}
               {#if openProps === item.id}
                 <div class="space-y-2 border-t border-line p-3 text-sm">

@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 153 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 154 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,8 +11,8 @@ Las 153 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 127 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
-- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Caso real», «Portada para bodas».
+- **Reparto:** General: 128 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
 Campos de cada jugada: **tipo** (Cómo presentarlo, Para quién (y cuándo no), Preguntas de descubrimiento, Pruebas y casos, Objeciones, Precio y monetización, Guiones, Consejos), **etapa** (Prospección, Primer contacto, Descubrimiento, Pitch / Demo, Objeciones, Negociación, Cierre, Seguimiento, Mentalidad), **objeción** si responde a una (Precio, Tiempo / me lo pienso, Desconfianza, No lo necesito, No decido yo, Quiere comparar opciones, Ya tengo proveedor), **para qué sectores/actores** (vacío = todos) y **quién la ve** (Todos, Solo equipo interno, Solo colaboradores).
@@ -81,7 +81,7 @@ _etapa: Mentalidad_
 
 ## Generales («Cómo se vende», valen para todo)
 
-### Cómo presentarlo (16)
+### Cómo presentarlo (17)
 
 #### Enjoy en una frase · `empresa-pitch`
 
@@ -211,6 +211,18 @@ _etapa: Pitch / Demo · sectores: Festivales_
 _etapa: Pitch / Demo · sectores: Festivales_
 
 > > «No os hace falta sobrevivir, os hace falta rentabilizar mejor el aforo que ya tenéis. Vuestra pantalla deja de ser soporte pasivo y pasa a ser activación: la gente la mira porque busca su foto. Y eso es lo que las marcas están comprando ahora, porque pueden medirlo.»
+
+#### Para el DJ colaborador (PENDIENTE antes de dárselo) · `dj-colaborador`
+
+_etapa: Primer contacto · sectores: Locales de ocio nocturno · la ven: Solo equipo interno_
+
+> No es un cliente: es un canal. Lo que necesita, y nada más: qué es Enjoy en treinta segundos, la demo para enseñarla en el móvil, qué se lleva él, y a quién tiene que preguntarle en su local.
+> 
+> > «Tú lo enseñas en tu local y nosotros cerramos. Si entra, cobras durante el primer año. No tienes que saber precios ni negociar nada: nos pasas el contacto del dueño y lo llevamos nosotros.»
+> 
+> **Sin precios.** Un DJ que negocia mal te quema el local.
+> 
+> **PENDIENTE de cerrar por escrito antes de dárselo:** si cobra por traer el local o solo si se cierra, y qué pasa cuando deja de pinchar allí. Hasta entonces, solo la ve el equipo interno.
 
 ### Para quién (y cuándo no) (6)
 

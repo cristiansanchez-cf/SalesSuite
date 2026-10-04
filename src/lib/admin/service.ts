@@ -13,7 +13,7 @@ import { createMediaService } from './media';
 import { can } from './permissions';
 import { paymentUrl } from './payment';
 import { inTeam } from '../org/scope';
-import { planProposal } from '../proposal/preset';
+import { effectiveAnswers, planProposal } from '../proposal/preset';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
@@ -122,6 +122,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       items(id), db.listCatalog(s.tenantId), db.listLinks([id]), db.listContacts([id]), partnerAccountOf(d),
       isPartner ? Promise.resolve([]) : db.listPriceOptions(s.tenantId).catch(() => []),
     ]);
+    const templates = d.segmentId ? await db.listProposalTemplates(s.tenantId, d.segmentId).catch(() => []) : [];
     // Las del sector de la propuesta, primero.
     const priceOptions = options.filter((o) => o.active || o.id === d.priceOptionId)
       .sort((a, b) => Number(b.segmentId === d.segmentId && !!d.segmentId) - Number(a.segmentId === d.segmentId && !!d.segmentId) || a.position - b.position);
@@ -167,6 +168,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       priceOptions,
       payment: payUrl && chosen ? { url: payUrl, label: chosen.label } : null,
       customPrices: !isPartner && !pricesFromOptions,
+      templates: templates.map((x) => ({ ...x, mine: x.createdBy === s.userId })),
     };
   }
 
@@ -230,6 +232,31 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     const d = await loadEditable(id);
     if (d.status === 'published') throw new AdminError(409, 'Despublica o archiva el dossier antes de borrarlo');
     await assertWrote(await db.deleteDossier(id));
+  }
+
+  /** Monta la propuesta con la receta del sector: rehace la lista de módulos (docs/PROPOSAL_PRESETS.md). */
+  async function mountPreset(id: string, d: DossierRecord, mode: 'full' | 'visual', rawAnswers: string[]) {
+    if (!d.segmentId) throw new AdminError(422, 'Elige primero el sector del cliente');
+    const recipe = await db.segmentProposal(s.tenantId, d.segmentId);
+    if (!recipe) throw new AdminError(422, 'Este sector no tiene propuesta preparada: añade los módulos a mano');
+    const answers = effectiveAnswers(recipe, rawAnswers);
+    const plan = planProposal(recipe, mode, answers);
+    const latest = new Map([...latestByModule(await db.listCatalog(s.tenantId)).values()].map((v) => [v.moduleKey, v]));
+    const missing = plan.filter((b) => !latest.has(b.module)).map((b) => b.module);
+    if (missing.length) throw new AdminError(422, `Faltan módulos en el catálogo: ${[...new Set(missing)].join(', ')}`);
+    // Se comprueba todo antes de tocar nada: si un bloque no es válido, la propuesta se queda como estaba.
+    const defaults = new Map((await db.listModuleVersions(s.tenantId)).map((v) => [v.id, v.defaultProps]));
+    for (const b of plan) {
+      const v = latest.get(b.module)!;
+      const r = resolveItem(toRenderItem({ id: 'check', dossierId: id, moduleVersionId: v.versionId, position: 0, visible: true, priceOverride: null, propOverrides: b.props, version: v.version, defaultProps: defaults.get(v.versionId) ?? {}, defaultPrice: v.defaultPrice, currency: v.currency, moduleId: v.moduleId, moduleKey: v.moduleKey, moduleName: v.moduleName, blockType: v.blockType }), toPublicDossier(d, []), null);
+      if (!r.ok) throw new AdminError(422, `El bloque «${b.block}» no es válido`, [r.reason]);
+    }
+    for (const it of await items(id)) await db.deleteItem(it.id);
+    const pos = rebalance(plan.length);
+    for (const [k, b] of plan.entries()) {
+      await db.insertItem({ dossierId: id, moduleVersionId: latest.get(b.module)!.versionId, position: pos[k], visible: true, priceOverride: null, propOverrides: b.props });
+    }
+    await assertWrote(await db.updateDossier(id, { preset: { mode: mode, answers } }));
   }
 
   async function apply(id: string, input: BuilderOpInput): Promise<BuilderState> {
@@ -355,28 +382,32 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         break;
       }
       case 'applyPreset': {
+        await mountPreset(id, d, op.mode, op.answers);
+        break;
+      }
+      case 'saveTemplate': {
+        if (!d.segmentId || !d.preset?.mode) throw new AdminError(422, 'Monta antes la propuesta con la receta del sector');
+        if ((await db.listProposalTemplates(s.tenantId, d.segmentId)).some((x) => x.name.toLowerCase() === op.name.toLowerCase())) throw new AdminError(409, 'Ya hay una combinación con ese nombre');
+        await db.insertProposalTemplate(s.tenantId, { segmentId: d.segmentId, name: op.name, mode: d.preset.mode, answers: d.preset.answers ?? [], priceOptionId: d.priceOptionId ?? null, createdBy: s.userId });
+        break;
+      }
+      case 'applyTemplate': {
         if (!d.segmentId) throw new AdminError(422, 'Elige primero el sector del cliente');
-        const recipe = await db.segmentProposal(s.tenantId, d.segmentId);
-        if (!recipe) throw new AdminError(422, 'Este sector no tiene propuesta preparada: añade los módulos a mano');
-        const known = new Set(recipe.questions.map((q) => q.key));
-        const answers = op.answers.filter((a) => known.has(a));
-        const plan = planProposal(recipe, op.mode, answers);
-        const latest = new Map([...latestByModule(await db.listCatalog(s.tenantId)).values()].map((v) => [v.moduleKey, v]));
-        const missing = plan.filter((b) => !latest.has(b.module)).map((b) => b.module);
-        if (missing.length) throw new AdminError(422, `Faltan módulos en el catálogo: ${[...new Set(missing)].join(', ')}`);
-        // Se comprueba todo antes de tocar nada: si un bloque no es válido, la propuesta se queda como estaba.
-        const defaults = new Map((await db.listModuleVersions(s.tenantId)).map((v) => [v.id, v.defaultProps]));
-        for (const b of plan) {
-          const v = latest.get(b.module)!;
-          const r = resolveItem(toRenderItem({ id: 'check', dossierId: id, moduleVersionId: v.versionId, position: 0, visible: true, priceOverride: null, propOverrides: b.props, version: v.version, defaultProps: defaults.get(v.versionId) ?? {}, defaultPrice: v.defaultPrice, currency: v.currency, moduleId: v.moduleId, moduleKey: v.moduleKey, moduleName: v.moduleName, blockType: v.blockType }), toPublicDossier(d, []), null);
-          if (!r.ok) throw new AdminError(422, `El bloque «${b.block}» no es válido`, [r.reason]);
+        const tpl = (await db.listProposalTemplates(s.tenantId, d.segmentId)).find((x) => x.id === op.templateId);
+        if (!tpl) throw new AdminError(404, 'Combinación no encontrada');
+        await mountPreset(id, d, tpl.mode, tpl.answers);
+        if (tpl.priceOptionId && !isPartner) {
+          const o = (await db.listPriceOptions(s.tenantId)).find((x) => x.id === tpl.priceOptionId && x.active && !x.quoteOnly);
+          if (o) await assertWrote(await db.updateDossier(id, { priceOptionId: o.id, priceMode: 'total', totalPrice: o.amount, currency: o.currency }));
         }
-        for (const it of await items(id)) await db.deleteItem(it.id);
-        const pos = rebalance(plan.length);
-        for (const [k, b] of plan.entries()) {
-          await db.insertItem({ dossierId: id, moduleVersionId: latest.get(b.module)!.versionId, position: pos[k], visible: true, priceOverride: null, propOverrides: b.props });
-        }
-        await assertWrote(await db.updateDossier(id, { preset: { mode: op.mode, answers } }));
+        break;
+      }
+      case 'deleteTemplate': {
+        if (!d.segmentId) throw new AdminError(404, 'Combinación no encontrada');
+        const tpl = (await db.listProposalTemplates(s.tenantId, d.segmentId)).find((x) => x.id === op.templateId);
+        if (!tpl) throw new AdminError(404, 'Combinación no encontrada');
+        if (tpl.createdBy !== s.userId && s.role !== 'admin') throw new AdminError(403, 'Solo quien la guardó (o un admin) la borra');
+        if (!(await db.deleteProposalTemplate(tpl.id))) throw new AdminError(403, 'Sin permiso para borrarla');
         break;
       }
       case 'setNextStep': {

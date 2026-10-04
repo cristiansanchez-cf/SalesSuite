@@ -121,12 +121,14 @@ const es = {
     title: 'Empieza rápido', sector: '¿Para qué sector es?', recommended: (n: number) => `Añadir los ${n} recomendados`,
     all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
   },
+  cost: { perNight: 'Lo que cobra quien viene a hacer fotos (€ por noche)', nights: 'Noches al mes que lo trae', hours: 'Horas suyas editando cada domingo', help: 'Solo las cifras que te dio el cliente. Sin ninguna, esta diapositiva no sale.' },
   preset: {
     title: 'Monta la propuesta para este cliente', lede: 'Elige cómo la vas a usar y marca lo que sabes del cliente: los módulos y los textos salen solos.',
     mode: '¿Cómo la vas a usar?', full: 'Va sola', fullHint: 'No vas a estar delante: tiene que convencer sola.',
     visual: 'Apoyo visual', visualHint: 'La cuentas tú: solo lo que hay que enseñar.', questions: 'Lo que sabes del cliente',
     apply: 'Montar la propuesta', reapply: 'Volver a montarla', warn: 'Rehace la lista de módulos: lo que hayas cambiado a mano en ellos se pierde.',
     applied: (n: number) => `Montada con ${n} ${n === 1 ? 'respuesta' : 'respuestas'}.`,
+    saved: 'Combinaciones guardadas', useSaved: 'Un clic: tipo, ángulo, preguntas y tarifa de golpe.', saveAs: 'Guardar esta combinación', namePh: 'Ej.: pub con DJ, ángulo líder', save: 'Guardar', remove: (n: string) => `Borrar «${n}»`,
   },
   media: {
     title: (c: string) => `Personaliza para ${c}`, client: 'tu cliente',
@@ -274,12 +276,14 @@ export const builderMessages = defineMessages({
       title: 'Quick start', sector: 'Which sector is it for?', recommended: (n) => `Add the ${n} recommended`,
       all: (n) => `Add the whole catalog (${n})`, add: 'Add', dragHint: 'Drag to reorder, or drag in from «Add».',
     },
+    cost: { perNight: 'What the photographer charges (€ per night)', nights: 'Nights a month', hours: 'Their hours editing each Sunday', help: 'Only figures the client gave you. With none, this slide is not shown.' },
     preset: {
       title: 'Build the proposal for this client', lede: 'Choose how you will use it and tick what you know about the client: modules and copy come ready.',
       mode: 'How will you use it?', full: 'On its own', fullHint: 'You will not be there: it has to convince on its own.',
       visual: 'Visual support', visualHint: 'You tell the story: only what to show.', questions: 'What you know about the client',
       apply: 'Build the proposal', reapply: 'Build it again', warn: 'Rebuilds the module list: manual changes to them are lost.',
       applied: (n) => `Built with ${n} ${n === 1 ? 'answer' : 'answers'}.`,
+      saved: 'Saved combinations', useSaved: 'One click: type, angle, questions and price at once.', saveAs: 'Save this combination', namePh: 'E.g. pub with DJ, leader angle', save: 'Save', remove: (n) => `Delete «${n}»`,
     },
     media: {
       title: (c) => `Personalise for ${c}`, client: 'your customer',
@@ -424,12 +428,14 @@ export const builderMessages = defineMessages({
       title: 'Comece rápido', sector: 'Para qual setor é?', recommended: (n) => `Adicionar os ${n} recomendados`,
       all: (n) => `Adicionar todo o catálogo (${n})`, add: 'Adicionar', dragHint: 'Arraste para ordenar, ou arraste de «Adicionar».',
     },
+    cost: { perNight: 'Quanto cobra quem faz as fotos (€ por noite)', nights: 'Noites por mês', hours: 'Horas dele editando cada domingo', help: 'Só os números que o cliente deu. Sem nenhum, este slide não aparece.' },
     preset: {
       title: 'Monte a proposta para este cliente', lede: 'Escolha como vai usá-la e marque o que sabe do cliente: módulos e textos saem prontos.',
       mode: 'Como vai usá-la?', full: 'Vai sozinha', fullHint: 'Você não vai estar presente: tem de convencer sozinha.',
       visual: 'Apoio visual', visualHint: 'Você conta: só o que é preciso mostrar.', questions: 'O que sabe do cliente',
       apply: 'Montar a proposta', reapply: 'Montar de novo', warn: 'Refaz a lista de módulos: o que mudou à mão neles perde-se.',
       applied: (n) => `Montada com ${n} ${n === 1 ? 'resposta' : 'respostas'}.`,
+      saved: 'Combinações guardadas', useSaved: 'Um clique: tipo, ângulo, perguntas e preço de uma vez.', saveAs: 'Guardar esta combinação', namePh: 'Ex.: pub com DJ, ângulo líder', save: 'Guardar', remove: (n) => `Apagar «${n}»`,
     },
     media: {
       title: (c) => `Personalize para ${c}`, client: 'seu cliente',
@@ -574,12 +580,14 @@ export const builderMessages = defineMessages({
       title: '빠르게 시작', sector: '어떤 업종인가요?', recommended: (n) => `추천 ${n}개 추가`,
       all: (n) => `카탈로그 전체 추가 (${n})`, add: '추가', dragHint: '끌어서 순서를 바꾸거나 «추가»에서 끌어오세요.',
     },
+    cost: { perNight: '사진 촬영 비용 (1박 €)', nights: '월 횟수', hours: '일요일마다 편집하는 시간', help: '고객이 알려준 숫자만 넣으세요. 없으면 이 슬라이드는 표시되지 않습니다.' },
     preset: {
       title: '이 고객을 위한 제안서 만들기', lede: '어떻게 쓸지 고르고 고객에 대해 아는 것을 체크하세요. 모듈과 문구가 자동으로 채워집니다.',
       mode: '어떻게 쓰나요?', full: '단독으로', fullHint: '직접 설명하지 않아도 설득해야 합니다.',
       visual: '시각 자료', visualHint: '설명은 직접 하고, 보여줄 것만.', questions: '고객에 대해 아는 것',
       apply: '제안서 만들기', reapply: '다시 만들기', warn: '모듈 목록을 다시 만듭니다. 직접 바꾼 내용은 사라집니다.',
       applied: (n) => `답변 ${n}개로 만들었습니다.`,
+      saved: '저장된 조합', useSaved: '한 번에: 유형, 관점, 질문, 요금.', saveAs: '이 조합 저장', namePh: '예: DJ 있는 펍, 리더 관점', save: '저장', remove: (n) => `«${n}» 삭제`,
     },
     media: {
       title: (c) => `${c} 맞춤 설정`, client: '고객',

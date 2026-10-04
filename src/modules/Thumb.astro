@@ -52,6 +52,12 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
       <b>{fill(p.title)}</b>
       {p.cards.slice(0, 2).map((c: { problem: string; solution: string }) => <span class="thumb__ps-card"><i>{fill(c.problem)}</i><em>{fill(c.solution)}</em></span>)}
     </div>
+  ) : blockType === 'cost-math' ? (
+    <div class="thumb__ps">
+      <b>{fill(p.title)}</b>
+      <span class="thumb__ps-card"><i>Hoy</i><em>— € al mes</em></span>
+      <span class="thumb__ps-card"><i>{p.afterLabel}</i><em>Tu tarifa</em></span>
+    </div>
   ) : blockType === 'case-study' ? (
     <div class="thumb__hero">
       <span class="thumb__chip">{p.client}</span>

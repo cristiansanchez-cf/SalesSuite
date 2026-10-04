@@ -182,9 +182,17 @@ export interface BuilderItem extends ItemRecord {
   error: string | null;
 }
 
+/** Combinación guardada («hazme un José María»): tipo, ángulo, preguntas, modo y tarifa con nombre. */
+export interface ProposalTemplate {
+  id: string; segmentId: string; name: string; mode: 'full' | 'visual'; answers: string[]; priceOptionId: string | null;
+  createdBy: string | null; createdAt: string | null;
+}
+
 export interface BuilderState {
   dossier: DossierRecord;
   items: BuilderItem[];
+  /** Combinaciones guardadas del sector de la propuesta. */
+  templates?: Array<ProposalTemplate & { mine: boolean }>;
   /** Una entrada por módulo: su última versión publicada. */
   catalog: CatalogVersion[];
   links: Array<LinkRecord & { state: 'active' | 'revoked' | 'expired' }>;

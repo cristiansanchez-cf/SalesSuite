@@ -185,6 +185,10 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     const keys = await g.$$eval('[data-testid=item]', (els) => els.map((e) => e.dataset.itemKey));
     assert(JSON.stringify(keys) === JSON.stringify(['pantalla-en-vivo', 'movil-invitado', 'tabs-experiencias']), `propuesta montada con la pregunta del DJ: ${keys.join(' → ')}`);
     assert((await g.textContent('[data-testid=preset-apply]')).includes('Volver'), 'se puede volver a montar');
+    await g.fill('[data-testid=preset-save-name]', 'José María');
+    await g.click('[data-testid=preset-save] button[type=submit]');
+    await g.waitForSelector('[data-testid=preset-tpl]');
+    assert((await g.textContent('[data-testid=preset-saved]')).includes('José María'), 'combinación guardada con nombre, lista para aplicar de golpe');
     if (OUT) await g.screenshot({ path: `${OUT}/builder-preset.png`, fullPage: true });
     await g.close();
   }

@@ -280,19 +280,31 @@
       }
     },
     {
+      "key": "lo-que-ya-te-cuesta",
+      "block_type": "cost-math",
+      "name": "Lo que ya te cuesta",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La cuenta con las cifras que dio el cliente (pregunta 3). Sin cifras no sale: nunca se inventa una.",
+      "props": {
+        "title": "Lo que ya te cuesta"
+      }
+    },
+    {
       "key": "caso-real",
       "block_type": "case-study",
       "name": "Caso real",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
-      "description": "Un cliente con nombre. Solo con su autorización por escrito para la propuesta.",
+      "description": "Un cliente parecido, con qué es, dónde está y su tamaño. Con nombre solo con autorización por escrito.",
       "props": {
-        "eyebrow": "Lo que le pasó a La Biblioteca",
+        "eyebrow": "Un caso real",
         "title": "Una promotora los eligió a ellos",
-        "client": "La Biblioteca",
-        "place": "Málaga",
-        "body": "La Biblioteca es un pub de Málaga. Una promotora de eventos eligió su local para montar una fiesta porque podían ofrecer estas dinámicas y otros no. Una fiesta más es facturación que antes no estaba."
+        "client": "Un pub de Málaga",
+        "place": "unas 300 personas",
+        "body": "A un pub de ocio nocturno de Málaga, de unas 300 personas, una promotora de eventos lo eligió para montar una fiesta porque podía ofrecer estas dinámicas y otros no. Una fiesta más es facturación que antes no estaba."
       }
     },
     {
@@ -575,7 +587,7 @@
             "module": "portada",
             "props": {
               "eyebrow": "Propuesta para {company}",
-              "title": "Que el sábado en {company} no se parezca al de al lado",
+              "title": "El contenido de tus noches, hecho por tu gente",
               "subtitle": "Tu público participa desde el móvil, sale en tus pantallas, y tú te quedas con el contenido."
             }
           },
@@ -586,33 +598,45 @@
               "cards": [
                 {
                   "problem": "Las fotos para Instagram las acabas haciendo tú el domingo.",
-                  "solution": "Cada noche te deja cientos de fotos subidas por tu propia gente, con permiso para usarlas."
+                  "solution": "Cientos de fotos cada noche, subidas por tu propia gente."
                 },
                 {
-                  "problem": "Hay horas en las que la barra está parada y no puedes hacer nada.",
-                  "solution": "Mandas un mensaje a la pantalla desde tu móvil: «chupito a 2 € los próximos diez minutos»."
+                  "problem": "Pagas a alguien cuando quieres contenido decente.",
+                  "solution": "Sin fotógrafo y sin pedir permiso: lo aceptan al subirlas."
                 },
                 {
-                  "problem": "Esta semana haces la misma fiesta que el local de al lado.",
-                  "solution": "Algo que pasa en tu sala y que en la de al lado no."
+                  "problem": "Las promotoras eligen otros locales para sus fiestas.",
+                  "solution": "Tienes algo que ofrecerle a una promotora que el local de al lado no tiene."
                 }
               ]
             }
           },
-          "problema-oficina": {
+          "grupo": {
             "module": "lo-que-te-pasa",
             "props": {
-              "title": "Lo que te pasa hoy",
+              "eyebrow": "Varios locales",
+              "title": "Cada sala, comparada con las otras",
               "cards": [
                 {
-                  "problem": "Las fotos para Instagram las acabas haciendo tú el domingo.",
-                  "solution": "Cada noche te deja cientos de fotos subidas por tu propia gente, con permiso para usarlas."
-                },
-                {
-                  "problem": "Esta semana haces la misma fiesta que el local de al lado.",
-                  "solution": "Algo que pasa en tu sala y que en la de al lado no."
+                  "problem": "Cada local va por su cuenta y no sabes comparar.",
+                  "solution": "Lo pones en los cinco y al mes ves cuál se mueve y cuál no. No por lo que te cuente cada encargado, sino por lo que pide la gente en cada sala."
                 }
-              ]
+              ],
+              "note": "Para grupos, 25 % sobre el total. Todos los locales, no uno de prueba."
+            }
+          },
+          "privados": {
+            "module": "lo-que-te-pasa",
+            "props": {
+              "eyebrow": "Despedidas, cumpleaños, cenas de empresa",
+              "title": "Para tus privados",
+              "cards": [
+                {
+                  "problem": "Un privado tiene tiempos muertos y gente que no se conoce.",
+                  "solution": "Dedicatorias y fotos en pantalla resuelven exactamente eso."
+                }
+              ],
+              "note": "Cuando te pidan presupuesto para una despedida, lo metes como extra. Te cuesta lo mismo que una noche normal y lo revendes dentro del paquete."
             }
           },
           "pantalla": {
@@ -626,8 +650,8 @@
                 {
                   "scene": "club.promo",
                   "label": "Tu mensaje",
-                  "says": "Un martes a la una y media ves la barra parada y mandas «chupito a 2 € los próximos diez minutos». Desde tu móvil, sin tocar el ordenador.",
-                  "text": "Chupito a 2 € los próximos diez minutos"
+                  "text": "Chupito a 2 € los próximos diez minutos",
+                  "says": "Un martes a la una y media ves la barra parada y mandas «chupito a 2 € los próximos diez minutos». Desde tu móvil, sin tocar el ordenador."
                 },
                 {
                   "scene": "club.photo",
@@ -652,56 +676,14 @@
               ]
             }
           },
-          "pantalla-visuales": {
-            "module": "pantalla-en-vivo",
-            "props": {
-              "eyebrow": "Para ti",
-              "title": "Tu pantalla, desde tu móvil",
-              "lede": "",
-              "djName": "",
-              "scenes": [
-                {
-                  "scene": "club.promo",
-                  "label": "Tu mensaje",
-                  "says": "Un martes a la una y media ves la barra parada y mandas «chupito a 2 € los próximos diez minutos». Desde tu móvil, sin tocar el ordenador.",
-                  "text": "Chupito a 2 € los próximos diez minutos"
-                },
-                {
-                  "scene": "tp.idle",
-                  "label": "Encima de tus visuales",
-                  "says": "¿Ya tienes visuales y VJ? Nos ponemos encima sin tocarlos: el QR va en una tarjeta."
-                },
-                {
-                  "scene": "tp.photo",
-                  "label": "Foto en tarjeta",
-                  "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
-                },
-                {
-                  "scene": "club.photo",
-                  "label": "Foto",
-                  "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum de la noche: fotos con permiso que el local puede usar en sus redes."
-                },
-                {
-                  "scene": "club.message",
-                  "label": "Dedicatoria",
-                  "says": "Un mensaje delante de toda la sala, con o sin foto."
-                },
-                {
-                  "scene": "club.song",
-                  "label": "Canción",
-                  "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
-                }
-              ]
-            }
-          },
-          "movil": {
+          "gente": {
             "module": "movil-invitado",
             "props": {
-              "eyebrow": "Tu gente",
-              "title": "Lo que va a hacer tu gente",
               "lede": "",
               "djName": "",
               "price": 0,
+              "eyebrow": "Tu gente",
+              "title": "Lo que va a hacer tu gente",
               "parts": [
                 {
                   "title": "Lo que va a hacer tu gente",
@@ -723,7 +705,19 @@
                       "owner": "Tu encargado la aprueba desde su móvil en un segundo."
                     }
                   ]
-                },
+                }
+              ]
+            }
+          },
+          "sala": {
+            "module": "movil-invitado",
+            "props": {
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "eyebrow": "Tu sala",
+              "title": "Y lo que pasa en tu sala",
+              "parts": [
                 {
                   "title": "Y lo que pasa en tu sala",
                   "steps": [
@@ -734,82 +728,16 @@
                     },
                     {
                       "key": "album",
-                      "says": "Se queda en el álbum de la noche, y todos lo ven.",
-                      "owner": "Al día siguiente la gente entra en tu Instagram a buscarse."
+                      "says": "Se queda en el álbum de la noche y todos lo ven.",
+                      "owner": "Esas fotos las tienes tú al día siguiente, listas para publicar."
                     },
                     {
                       "key": "form",
                       "label": "Con permiso",
                       "says": "Al subirla acepta los términos de uso.",
-                      "owner": "Son fotos que puedes publicar. De tu propia gente, cada noche que abras."
+                      "owner": "Son fotos que puedes publicar. De tu gente, de tu local, cada noche que abras."
                     }
                   ]
-                }
-              ]
-            }
-          },
-          "dinamicas": {
-            "module": "tabs-experiencias",
-            "props": {
-              "eyebrow": "Dinámicas",
-              "title": "Dinámicas que ya se hacen con Enjoy",
-              "tabs": [
-                {
-                  "label": "Por mesa",
-                  "title": "Dinámicas por mesa",
-                  "body": "Pon un número en cada mesa y deja que se escriban por la pantalla.",
-                  "bullets": [
-                    "«Los de la mesa 1 son muy guapos»"
-                  ],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/messages-screen.webp",
-                    "alt": "Mensajes entre mesas en la pantalla"
-                  }
-                },
-                {
-                  "label": "Chupito por fotos",
-                  "title": "Chupito a cambio de subir fotos al álbum",
-                  "body": "",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-mobile.webp",
-                    "alt": "Álbum de la noche en el móvil"
-                  }
-                },
-                {
-                  "label": "Sorteo",
-                  "title": "Sorteo por participación",
-                  "body": "Verificable: la app enseña al staff cuántas fotos ha subido cada persona, con hora y segundos.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-grid.webp",
-                    "alt": "Fotos subidas por el público"
-                  }
-                }
-              ]
-            }
-          },
-          "mesas": {
-            "module": "tabs-experiencias",
-            "props": {
-              "eyebrow": "Dinámicas",
-              "title": "Dinámicas por mesa",
-              "tabs": [
-                {
-                  "label": "Por mesa",
-                  "title": "Dinámicas por mesa",
-                  "body": "Pon un número en cada mesa y deja que se escriban por la pantalla.",
-                  "bullets": [
-                    "«Los de la mesa 1 son muy guapos»"
-                  ],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/messages-screen.webp",
-                    "alt": "Mensajes entre mesas en la pantalla"
-                  }
                 }
               ]
             }
@@ -822,9 +750,12 @@
               "tabs": [
                 {
                   "label": "Tu DJ",
-                  "title": "Lo decides tú",
-                  "body": "Quién aprueba lo que sale en pantalla lo decides tú: el encargado, el de la puerta, o va automático. Y las canciones van con menú cerrado: solo se puede pedir lo que tú metas en la lista.",
-                  "bullets": [],
+                  "title": "Quién aprueba lo decides tú",
+                  "body": "El encargado, el de la puerta.",
+                  "bullets": [
+                    "Menú cerrado: nadie te rompe el ambiente",
+                    "Lo que paga el público va a tu cuenta, y casi todos lo reparten como propina del equipo"
+                  ],
                   "mock": {
                     "kind": "image",
                     "src": "asset:img/live/request-mobile-2.webp",
@@ -834,9 +765,66 @@
               ]
             }
           },
-          "caso": {
+          "mesas": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Dinámicas",
+              "title": "Lo que montan otros locales con esto",
+              "tabs": [
+                {
+                  "label": "Por mesa",
+                  "title": "Las mesas se hablan por la pantalla",
+                  "body": "Pon un número en cada mesa y deja que se escriban por la pantalla.",
+                  "bullets": [
+                    "«Los de la mesa 1 son muy guapos»"
+                  ],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/messages-screen.webp",
+                    "alt": "Mensajes entre mesas en la pantalla"
+                  }
+                },
+                {
+                  "label": "Chupito por fotos",
+                  "title": "Chupito por fotos",
+                  "body": "Con el contador que valida el camarero en dos segundos.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/album-mobile.webp",
+                    "alt": "Álbum de la noche en el móvil"
+                  }
+                },
+                {
+                  "label": "Sorteo",
+                  "title": "Sorteo por participación",
+                  "body": "Verificable: la app enseña al staff cuántas fotos ha subido esa persona, con hora y segundos.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/album-grid.webp",
+                    "alt": "Fotos subidas por el público"
+                  }
+                }
+              ]
+            }
+          },
+          "cuesta": {
+            "module": "lo-que-ya-te-cuesta",
+            "props": {}
+          },
+          "caso-anon": {
             "module": "caso-real",
             "props": {}
+          },
+          "caso-nombre": {
+            "module": "caso-real",
+            "props": {
+              "eyebrow": "Un caso real",
+              "client": "La Biblioteca",
+              "place": "pub de Málaga · unas 300 personas",
+              "body": "La Biblioteca es un pub de ocio nocturno de Málaga, de unas 300 personas. Una promotora de eventos eligió su local para montar una fiesta porque podían ofrecer estas dinámicas y otros no. Una fiesta más es facturación que antes no estaba."
+            }
           },
           "precio": {
             "module": "pricing",
@@ -845,7 +833,7 @@
               "title": "Propuesta para {company}",
               "subtitle": "Lo dejamos configurado contigo en una videollamada de 20 minutos. Tu equipo no tiene que hacer nada.",
               "features": [
-                "Configuración guiada contigo en 20 minutos",
+                "Configuración guiada en 20 minutos",
                 "Personalización con tu marca",
                 "Analítica de participación de cada noche"
               ],
@@ -859,50 +847,390 @@
             "portada",
             "problema",
             "pantalla",
-            "movil",
+            "gente",
+            "sala",
+            "caso-anon",
             "precio"
           ],
           "visual": [
-            "movil",
             "pantalla",
-            "dinamicas",
+            "gente",
+            "sala",
             "precio"
           ]
         },
-        "questions": [
+        "max": {
+          "full": 8,
+          "visual": 5
+        },
+        "priority": [
+          "portada",
+          "problema",
+          "privados",
+          "pantalla",
+          "gente",
+          "sala",
+          "precio",
+          "grupo",
+          "dj",
+          "mesas",
+          "cuesta",
+          "caso-anon",
+          "caso-nombre"
+        ],
+        "choices": [
           {
-            "key": "oficina",
-            "label": "¿Decide un dueño que no pisa la sala?",
-            "hint": "Cambia el argumento: facturación y contenido, no ambiente.",
-            "rules": [
+            "key": "tipo",
+            "label": "¿Qué tipo de cliente es?",
+            "default": "estandar",
+            "hint": "Karaoke: pendiente de confirmar el aviso de turno y la cola con nombres. Caseta, charanga sin pantalla y chiringuito sin pantalla no llevan propuesta.",
+            "options": [
               {
-                "replace": "problema",
-                "with": "problema-oficina"
+                "key": "estandar",
+                "label": "Local",
+                "hint": "Pub, discoteca o sala que abre varias noches."
+              },
+              {
+                "key": "grupo",
+                "label": "Grupo con varios locales",
+                "hint": "Le vendes poder comparar entre sus salas. Reunión con el dueño y los gerentes: nunca se la mandes al gerente para que se la pase. Nunca un piloto en un local. Cupón de grupo (−25 %), todos los locales.",
+                "rules": [
+                  {
+                    "add": "grupo",
+                    "after": "problema",
+                    "before": "precio"
+                  }
+                ]
+              },
+              {
+                "key": "privados",
+                "label": "Revende para privados",
+                "hint": "No te compra para sus noches: te compra para revenderlo en despedidas, cumpleaños y cenas. Si el margen no es relevante frente a lo que factura por el privado, no lo vende.",
+                "rules": [
+                  {
+                    "replace": "problema",
+                    "with": "privados"
+                  },
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "{company}"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "key": "sin-pantalla",
-            "label": "¿No tiene pantalla?",
-            "hint": "Fuera la pantalla: el móvil y el álbum al centro.",
+            "key": "angulo",
+            "label": "¿Qué le mueve a este cliente? (pregunta 4)",
+            "default": "d",
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo"
+            ],
+            "hint": "Uno solo, nunca mezclados.",
+            "options": [
+              {
+                "key": "a",
+                "label": "A · Líder",
+                "hint": "El local de referencia de su zona: su miedo es que le alcancen. Precio: tarifa limpia, sin descuentos. Nunca: que se parece a otro, que el sector está en caída ni que necesita diferenciarse.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Lo próximo que van a copiarte"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Lo que montas hoy, en seis meses lo tienen todos.",
+                          "solution": "Vuelves a ser el primero en tener algo que nadie tiene."
+                        },
+                        {
+                          "problem": "Tus pantallas enseñan lo mismo que las de cualquiera.",
+                          "solution": "Tus pantallas pasan a ser el sitio donde todo el mundo quiere salir."
+                        },
+                        {
+                          "problem": "El contenido que se mueve de tu local no lo controlas tú.",
+                          "solution": "Cientos de fotos al mes, de tu gente, con permiso para publicarlas."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "patch": "pantalla",
+                    "set": {
+                      "scenes": [
+                        {
+                          "scene": "club.promo",
+                          "label": "Tu mensaje",
+                          "text": "Chupito a 2 € los próximos diez minutos",
+                          "says": "Lanzas lo que quieras a tu pantalla desde el móvil, en el momento."
+                        },
+                        {
+                          "scene": "club.photo",
+                          "label": "Foto",
+                          "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum de la noche: fotos con permiso que el local puede usar en sus redes."
+                        },
+                        {
+                          "scene": "club.message",
+                          "label": "Dedicatoria",
+                          "says": "Un mensaje delante de toda la sala, con o sin foto."
+                        },
+                        {
+                          "scene": "club.idle",
+                          "label": "Reclamo",
+                          "says": "Lo que se ve la mayor parte de la noche: un QR gigante. El anzuelo: sin esto no entra nadie."
+                        },
+                        {
+                          "scene": "club.song",
+                          "label": "Canción",
+                          "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "patch": "caso-anon",
+                    "set": {
+                      "body": "A un pub de Málaga de 300 personas, bastante más pequeño que vosotros, una promotora los eligió por poder ofrecer esto."
+                    }
+                  },
+                  {
+                    "patch": "caso-nombre",
+                    "set": {
+                      "body": "A La Biblioteca, un pub de Málaga de 300 personas, bastante más pequeño que vosotros, una promotora los eligió por poder ofrecer esto."
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "b",
+                "label": "B · Noches flojas",
+                "hint": "Caja justa, entre semana muerto, temporada baja larga. Nunca nombres «dificultad económica». Precio: validación si queda cupo, y los dos primeros meses sin permanencia. Nunca prometas que se quedan más ni que consumen más.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que un martes en {company} pase algo"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Hay horas en las que la barra está parada y no puedes hacer nada.",
+                          "solution": "Mandas a tu pantalla «chupito a 2 € los próximos diez minutos», desde el móvil."
+                        },
+                        {
+                          "problem": "Entre semana la sala está muerta y la gente se va pronto.",
+                          "solution": "Con quince personas, las peticiones entre ellos y los mensajes en pantalla les dan algo que hacer."
+                        },
+                        {
+                          "problem": "Montar algo especial te cuesta dinero cada vez.",
+                          "solution": "Esto funciona todas las noches sin que tengas que montar nada."
+                        }
+                      ],
+                      "note": "Las fotos lucen con la sala llena; las canciones funcionan igual con la sala vacía."
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "c",
+                "label": "C · Que vuelvan",
+                "hint": "Rotación alta, poca clientela fija. Precio: suscripción mensual, nunca noche suelta. Nunca: CRM, remarketing ni base de datos de clientes (es roadmap).",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que el que viene un sábado vuelva al siguiente"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Entra gente nueva cada finde y no vuelve ninguna.",
+                          "solution": "Se van con su foto en tu álbum y con algo que contar."
+                        },
+                        {
+                          "problem": "No sabes quién viene ni qué le gusta.",
+                          "solution": "Ves qué piden, a qué hora y cuánta gente participa cada noche."
+                        },
+                        {
+                          "problem": "Cuidas a los de siempre a ojo.",
+                          "solution": "Puedes montarles algo en pantalla cuando los veas entrar."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "d",
+                "label": "D · Marca y contenido",
+                "hint": "El que cuida su Instagram, trabaja con promotoras o tiene alguien de marketing. Y el dueño de oficina. Si dudas, este: es el único que no presupone nada sobre cómo le va al local.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "El contenido de tus noches, hecho por tu gente"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Las fotos para Instagram las acabas haciendo tú el domingo.",
+                          "solution": "Cientos de fotos cada noche, subidas por tu propia gente."
+                        },
+                        {
+                          "problem": "Pagas a alguien cuando quieres contenido decente.",
+                          "solution": "Sin fotógrafo y sin pedir permiso: lo aceptan al subirlas."
+                        },
+                        {
+                          "problem": "Las promotoras eligen otros locales para sus fiestas.",
+                          "solution": "Tienes algo que ofrecerle a una promotora que el local de al lado no tiene."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "e",
+                "label": "E · Público que no conoces",
+                "hint": "Costa con extranjeros, fiestas Erasmus, temáticas de país. Se vende como «ves qué canciones te piden y cuáles no tienes»; nunca como perfil demográfico (eso es roadmap).",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que te digan ellos qué quieren oír"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Montas una temática de un país y pones el top 10 de allí, a ciegas.",
+                          "solution": "Te piden ellos lo que quieren, y la próxima vez ya lo tienes."
+                        },
+                        {
+                          "problem": "Tu público cambia cada semana y no sabes qué pinchar.",
+                          "solution": "Ves qué te pidieron y qué no pudiste poner."
+                        },
+                        {
+                          "problem": "El DJ va a ojo con gente que no conoce.",
+                          "solution": "Lee la sala con lo que la propia sala está pidiendo."
+                        }
+                      ],
+                      "note": "Si el primer día te piden cinco canciones que no tienes, el segundo ya las tienes."
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "f",
+                "label": "F · Público adulto que paga",
+                "hint": "Público de 30 a 45: participa menos y paga más. Objeción «mi gente no usa el móvil»: lo manda uno por mesa. Enseña que alguien de la casa valida.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Tu gente paga por salir en tu pantalla"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Tienes público que gasta y no le ofreces nada distinto.",
+                          "solution": "Lo que mandan no es cachondeo: es «te quiero, Trini» o «¿te quieres casar conmigo?». Por eso pagan."
+                        },
+                        {
+                          "problem": "Las promociones que pones no las ve nadie.",
+                          "solution": "Este público sí compra lo que sale en pantalla."
+                        },
+                        {
+                          "problem": "Sale una vez al mes y no sabes si volverá.",
+                          "solution": "Si se lo pasó bien, vuelve. Son los más leales que tienes."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "patch": "pantalla",
+                    "set": {
+                      "scenes": [
+                        {
+                          "scene": "club.message",
+                          "label": "Dedicatoria",
+                          "says": "Un mensaje delante de toda la sala, con o sin foto."
+                        },
+                        {
+                          "scene": "club.promo",
+                          "label": "Tu mensaje",
+                          "text": "Chupito a 2 € los próximos diez minutos",
+                          "says": "Un martes a la una y media ves la barra parada y mandas «chupito a 2 € los próximos diez minutos». Desde tu móvil, sin tocar el ordenador."
+                        },
+                        {
+                          "scene": "club.photo",
+                          "label": "Foto",
+                          "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum de la noche: fotos con permiso que el local puede usar en sus redes."
+                        },
+                        {
+                          "scene": "club.idle",
+                          "label": "Reclamo",
+                          "says": "Lo que se ve la mayor parte de la noche: un QR gigante. El anzuelo: sin esto no entra nadie."
+                        },
+                        {
+                          "scene": "club.song",
+                          "label": "Canción",
+                          "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "key": "oficina",
+            "label": "¿Decide un dueño que no pisa la sala?",
+            "when": [
+              "tipo:estandar",
+              "tipo:grupo"
+            ],
+            "hint": "Las tarjetas pasan a las de marca y contenido. Fuera el argumento de ambiente. Reunión con los dos.",
             "rules": [
-              {
-                "remove": "pantalla"
-              },
-              {
-                "remove": "pantalla-visuales"
-              },
               {
                 "patch": "problema",
                 "set": {
                   "cards": [
                     {
                       "problem": "Las fotos para Instagram las acabas haciendo tú el domingo.",
-                      "solution": "Cada noche te deja cientos de fotos subidas por tu propia gente, con permiso para usarlas."
+                      "solution": "Cientos de fotos cada noche, subidas por tu propia gente."
                     },
                     {
-                      "problem": "Esta semana haces la misma fiesta que el local de al lado.",
-                      "solution": "Algo que pasa en tu sala y que en la de al lado no."
+                      "problem": "Pagas a alguien cuando quieres contenido decente.",
+                      "solution": "Sin fotógrafo y sin pedir permiso: lo aceptan al subirlas."
+                    },
+                    {
+                      "problem": "Las promotoras eligen otros locales para sus fiestas.",
+                      "solution": "Tienes algo que ofrecerle a una promotora que el local de al lado no tiene."
                     }
                   ]
                 }
@@ -910,45 +1238,175 @@
             ]
           },
           {
-            "key": "visuales",
-            "label": "¿Ya tiene visuales o VJ?",
-            "hint": "Se enseña cómo nos ponemos encima sin taparlos.",
+            "key": "autorizado",
+            "label": "¿La Biblioteca ha autorizado por escrito salir con su nombre?",
+            "hint": "Sin autorización escrita, el caso sale anónimo: funciona casi igual.",
             "rules": [
               {
-                "replace": "pantalla",
-                "with": "pantalla-visuales"
+                "replace": "caso-anon",
+                "with": "caso-nombre"
+              },
+              {
+                "patch": "problema",
+                "set": {
+                  "cards": [
+                    {
+                      "problem": "Las fotos para Instagram las acabas haciendo tú el domingo.",
+                      "solution": "Cientos de fotos cada noche, subidas por tu propia gente."
+                    },
+                    {
+                      "problem": "Pagas a alguien cuando quieres contenido decente.",
+                      "solution": "Sin fotógrafo y sin pedir permiso: lo aceptan al subirlas."
+                    },
+                    {
+                      "problem": "Las promotoras eligen otros locales para sus fiestas.",
+                      "solution": "A un pub de Málaga una promotora lo eligió por poder ofrecer estas dinámicas."
+                    }
+                  ]
+                },
+                "when": "angulo:d"
+              },
+              {
+                "patch": "problema",
+                "set": {
+                  "cards": [
+                    {
+                      "problem": "Las fotos para Instagram las acabas haciendo tú el domingo.",
+                      "solution": "Cientos de fotos cada noche, subidas por tu propia gente."
+                    },
+                    {
+                      "problem": "Pagas a alguien cuando quieres contenido decente.",
+                      "solution": "Sin fotógrafo y sin pedir permiso: lo aceptan al subirlas."
+                    },
+                    {
+                      "problem": "Las promotoras eligen otros locales para sus fiestas.",
+                      "solution": "A un pub de Málaga una promotora lo eligió por poder ofrecer estas dinámicas."
+                    }
+                  ]
+                },
+                "when": "oficina"
               }
             ]
           },
           {
-            "key": "mesas",
-            "label": "¿Es un pub con la gente sentada en mesas?",
-            "hint": "Dinámicas por mesa en lugar de las generales.",
+            "key": "sin-pantalla",
+            "label": "¿No tiene pantalla?",
+            "hint": "Fuera la pantalla. Un chiringuito sin pantalla no se vende.",
             "rules": [
               {
-                "replace": "dinamicas",
-                "with": "mesas"
+                "remove": "pantalla"
               },
               {
-                "add": "mesas",
-                "before": "precio"
+                "patch": "gente",
+                "set": {
+                  "parts": [
+                    {
+                      "title": "Lo que va a hacer tu gente",
+                      "steps": [
+                        {
+                          "key": "scan",
+                          "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                          "owner": "El QR va en la barra y en las mesas. Batiq lo montó así, sin pantalla, y funcionó igual."
+                        },
+                        {
+                          "key": "sheet",
+                          "says": "Elige: foto en pantalla, mensaje, o subir al álbum.",
+                          "owner": "Tres motivos distintos para sacar el móvil en tu local."
+                        },
+                        {
+                          "key": "form",
+                          "label": "Su dedicatoria",
+                          "says": "Escribe su dedicatoria y la manda.",
+                          "owner": "Tu encargado la aprueba desde su móvil en un segundo."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "patch": "sala",
+                "set": {
+                  "parts": [
+                    {
+                      "title": "Y lo que pasa en tu sala",
+                      "steps": [
+                        {
+                          "key": "album",
+                          "says": "Se queda en el álbum de la noche y todos lo ven.",
+                          "owner": "Las fotos se te quedan en el álbum de la noche, con permiso para publicarlas."
+                        },
+                        {
+                          "key": "form",
+                          "label": "Con permiso",
+                          "says": "Al subirla acepta los términos de uso.",
+                          "owner": "Son fotos que puedes publicar. De tu gente, de tu local, cada noche que abras."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "patch": "portada",
+                "set": {
+                  "subtitle": "Tu público participa desde el móvil, y tú te quedas con el contenido."
+                }
+              }
+            ]
+          },
+          {
+            "key": "vj",
+            "label": "¿Ya tiene visuales o VJ?",
+            "hint": "Segunda escena: nos ponemos encima sin tocarlos.",
+            "rules": [
+              {
+                "insert": "pantalla",
+                "into": "scenes",
+                "at": 1,
+                "value": {
+                  "scene": "tp.idle",
+                  "label": "Encima de tus visuales",
+                  "says": "¿Ya tienes visuales y VJ? Nos ponemos encima sin tocarlos: el QR va en una tarjeta."
+                }
               }
             ]
           },
           {
             "key": "dj",
             "label": "¿Tiene DJ residente?",
-            "hint": "Una diapositiva para que el DJ no sea un problema.",
             "rules": [
               {
                 "add": "dj",
-                "after": "movil"
+                "after": "sala",
+                "before": "precio"
+              }
+            ]
+          },
+          {
+            "key": "mesas",
+            "label": "¿Es un pub con la gente sentada en mesas?",
+            "rules": [
+              {
+                "add": "mesas",
+                "after": [
+                  "dj",
+                  "sala"
+                ],
+                "before": "precio"
               }
             ]
           },
           {
             "key": "flojas",
-            "label": "¿Tiene noches flojas?",
+            "label": "¿Te ha hablado de noches flojas?",
+            "when": [
+              "angulo:a",
+              "angulo:c",
+              "angulo:d",
+              "angulo:e",
+              "angulo:f"
+            ],
             "hint": "Se añade a «Lo que te pasa hoy». Sin prometer consumo.",
             "rules": [
               {
@@ -956,22 +1414,21 @@
                 "set": {
                   "note": "Con quince personas en el local, las peticiones entre ellos y los mensajes en pantalla les dan algo que hacer. Las fotos lucen con la sala llena; las canciones funcionan igual con la sala vacía."
                 }
-              },
-              {
-                "patch": "problema-oficina",
-                "set": {
-                  "note": "Con quince personas en el local, las peticiones entre ellos y los mensajes en pantalla les dan algo que hacer. Las fotos lucen con la sala llena; las canciones funcionan igual con la sala vacía."
-                }
               }
             ]
           },
           {
-            "key": "caso",
-            "label": "Incluir el caso de La Biblioteca",
-            "hint": "Solo con su autorización por escrito para la propuesta.",
+            "key": "cifras",
+            "label": "¿Te ha dado cifras de lo que ya le cuesta el contenido? (pregunta 3)",
+            "hint": "Luego mete sus cifras en «Lo que ya te cuesta». Sin cifras, no sale.",
             "rules": [
               {
-                "add": "caso",
+                "add": "cuesta",
+                "after": [
+                  "mesas",
+                  "dj",
+                  "sala"
+                ],
                 "before": "precio"
               }
             ]
@@ -4413,6 +4870,26 @@
       "why_it_works": null,
       "technique_refs": [],
       "pinned": null
+    },
+    {
+      "key": "dj-colaborador",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "primer_contacto",
+      "objection": null,
+      "segments": [
+        "ocio-nocturno"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Para el DJ colaborador (PENDIENTE antes de dárselo)",
+      "body": "No es un cliente: es un canal. Lo que necesita, y nada más: qué es Enjoy en treinta segundos, la demo para enseñarla en el móvil, qué se lleva él, y a quién tiene que preguntarle en su local.\n\n> «Tú lo enseñas en tu local y nosotros cerramos. Si entra, cobras durante el primer año. No tienes que saber precios ni negociar nada: nos pasas el contacto del dueño y lo llevamos nosotros.»\n\n**Sin precios.** Un DJ que negocia mal te quema el local.\n\n**PENDIENTE de cerrar por escrito antes de dárselo:** si cobra por traer el local o solo si se cierra, y qué pasa cuando deja de pinchar allí. Hasta entonces, solo la ve el equipo interno.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
     }
   ],
   "retired_plays": [

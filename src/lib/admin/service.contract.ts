@@ -129,6 +129,22 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       st = await rep.apply(id, { op: 'applyPreset', mode: 'visual', answers: [] });
       expect(st.items.map((i) => i.moduleKey)).toEqual(['pantalla-en-vivo', 'movil-invitado', 'tabs-experiencias']);
       expect(st.items[2].propOverrides).toEqual({});
+      // Combinación guardada: con nombre, la ve el equipo, se aplica de golpe y solo la borra quien la hizo (o un admin).
+      await rep.apply(id, { op: 'applyPreset', mode: 'full', answers: ['dj'] });
+      st = await rep.apply(id, { op: 'saveTemplate', name: 'José María' });
+      expect(st.templates?.map((x) => [x.name, x.mode, x.answers, x.mine])).toEqual([['José María', 'full', ['dj'], true]]);
+      await rejects(rep.apply(id, { op: 'saveTemplate', name: 'josé maría' }), 409);
+      const other = await svc(USERS.admin).createDossier({ title: 'Otra sala', prospectCompany: 'Otra' });
+      const admin = svc(USERS.admin);
+      await admin.apply(other, { op: 'setSegment', segmentId: '00000000-0000-4000-8000-0000005e0002' });
+      const tpl = (await admin.getState(other)).templates![0];
+      expect(tpl.mine).toBe(false);
+      st = await admin.apply(other, { op: 'applyTemplate', templateId: tpl.id });
+      expect(st.items.map((i) => i.moduleKey)).toEqual(['pantalla-en-vivo', 'movil-invitado', 'tabs-experiencias']);
+      expect(st.dossier.preset).toEqual({ mode: 'full', answers: ['dj'] });
+      st = await admin.apply(other, { op: 'deleteTemplate', templateId: tpl.id });
+      expect(st.templates).toEqual([]);
+      await rep.apply(id, { op: 'applyPreset', mode: 'visual', answers: [] });
       // Un sector sin receta: se avisa y no se toca nada.
       await rep.apply(id, { op: 'setSegment', segmentId: '00000000-0000-4000-8000-0000005e0001' });
       await rejects(rep.apply(id, { op: 'applyPreset', mode: 'full', answers: [] }), 422);
