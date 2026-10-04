@@ -80,7 +80,7 @@ const es = {
     compose: 'Preparar mensaje de seguimiento →',
   },
   publish: {
-    title: 'Publicación', blockers: 'Antes de publicar:', publish: 'Publicar', unpublish: 'Despublicar', archive: 'Archivar', delete: 'Borrar',
+    title: 'Publicación', blockers: 'Antes de publicar:', needModule: 'Añade al menos un módulo visible', needPrice: 'Indica el precio total (o cambia el modo de precio)', invalid: (name: string, err: string) => `«${name}» tiene contenido inválido: ${err}`, publish: 'Publicar', unpublish: 'Despublicar', archive: 'Archivar', delete: 'Borrar',
     publishedOn: (date: string) => `Publicado el ${date}. Los cambios se ven al instante en los enlaces.`,
     outcome: 'Resultado', reviewStory: 'Revisar lo que funcionó', writeStory: 'Documenta qué funcionó (2 minutos)',
     reviewStoryHint: 'Ya cuenta para el equipo', writeStoryHint: 'Es lo que convierte esta venta en una recomendación para tus compañeros',
@@ -235,7 +235,7 @@ export const builderMessages = defineMessages({
       compose: 'Write a follow-up message →',
     },
     publish: {
-      title: 'Publishing', blockers: 'Before publishing:', publish: 'Publish', unpublish: 'Unpublish', archive: 'Archive', delete: 'Delete',
+      title: 'Publishing', blockers: 'Before publishing:', needModule: 'Add at least one visible module', needPrice: 'Enter the total price (or change the price mode)', invalid: (name, err) => `“${name}” has invalid content: ${err}`, publish: 'Publish', unpublish: 'Unpublish', archive: 'Archive', delete: 'Delete',
       publishedOn: (date) => `Published on ${date}. Changes show up instantly on the links.`,
       outcome: 'Outcome', reviewStory: 'Review what worked', writeStory: 'Write up what worked (2 minutes)',
       reviewStoryHint: 'It already counts for the team', writeStoryHint: 'This is what turns this sale into a recommendation for your colleagues',
@@ -387,7 +387,7 @@ export const builderMessages = defineMessages({
       compose: 'Preparar mensagem de acompanhamento →',
     },
     publish: {
-      title: 'Publicação', blockers: 'Antes de publicar:', publish: 'Publicar', unpublish: 'Despublicar', archive: 'Arquivar', delete: 'Excluir',
+      title: 'Publicação', blockers: 'Antes de publicar:', needModule: 'Adicione pelo menos um módulo visível', needPrice: 'Informe o preço total (ou mude o modo de preço)', invalid: (name, err) => `“${name}” tem conteúdo inválido: ${err}`, publish: 'Publicar', unpublish: 'Despublicar', archive: 'Arquivar', delete: 'Excluir',
       publishedOn: (date) => `Publicada em ${date}. As alterações aparecem na hora nos links.`,
       outcome: 'Resultado', reviewStory: 'Revisar o que funcionou', writeStory: 'Documente o que funcionou (2 minutos)',
       reviewStoryHint: 'Já conta para a equipe', writeStoryHint: 'É o que transforma esta venda em uma recomendação para seus colegas',
@@ -539,7 +539,7 @@ export const builderMessages = defineMessages({
       compose: '후속 메시지 작성 →',
     },
     publish: {
-      title: '게시', blockers: '게시하기 전에:', publish: '게시', unpublish: '게시 취소', archive: '보관', delete: '삭제',
+      title: '게시', blockers: '게시하기 전에:', needModule: '보이는 모듈을 하나 이상 추가하세요', needPrice: '총 가격을 입력하세요 (또는 가격 방식을 바꾸세요)', invalid: (name, err) => `“${name}”의 내용이 올바르지 않습니다: ${err}`, publish: '게시', unpublish: '게시 취소', archive: '보관', delete: '삭제',
       publishedOn: (date) => `${date}에 게시했습니다. 변경 사항은 링크에 바로 반영됩니다.`,
       outcome: '결과', reviewStory: '효과 있었던 것 검토', writeStory: '효과 있었던 것 기록하기 (2분)',
       reviewStoryHint: '이미 팀에 반영되었습니다', writeStoryHint: '이 판매를 동료를 위한 추천으로 바꿔 줍니다',

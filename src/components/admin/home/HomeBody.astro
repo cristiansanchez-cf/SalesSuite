@@ -24,7 +24,7 @@ const now = new Date();
 
 // Todo lo independiente, a la vez: cada consulta en serie es un viaje más a la base de datos.
 const [dossiers, events, feed, members, team, mine, myAccounts, onboarded] = await Promise.all([
-  admin.service.listDossiers(), admin.commissions.events().catch(() => []), admin.notifications.feed({ onlyOpen: true, limit: 6 }),
+  admin.service.listDossiers(), admin.commissions.events().catch(() => []), admin.notifications.feed({ onlyOpen: true, limit: 6, locale: Astro.locals.locale }),
   manager ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
   manager ? admin.commissions.team().catch(() => null) : Promise.resolve(null),
   admin.commissions.mine(),

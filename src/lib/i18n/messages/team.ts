@@ -64,7 +64,7 @@ const es = {
     adjustHelp: '−10 = un 10 % más barato; 15 = un 15 % más caro.',
   },
   catalog: {
-    eyebrow: 'Configurar', title: 'Catálogo',
+    eyebrow: 'Configurar', title: 'Catálogo', blockTypes: { 'hero-pitch': 'Portada', 'tabs-showcase': 'Pestañas', 'pricing-card': 'Tarjeta de precio', 'live-screen': 'Pantalla en vivo', 'phone-tour': 'Móvil del invitado', 'problem-solution': 'Problema → solución', 'case-study': 'Caso real', 'cost-math': 'Lo que ya te cuesta', 'media-strip': 'En directo (fotos y vídeos)' } as Record<string, string>,
     introA: 'Los comerciales solo ven la última versión ', introStrong: 'publicada', introB: ' de cada módulo visible. Una versión publicada no se modifica: se crea otra.',
     okPublished: 'Versión publicada: ya aparece en el builder.', okArchived: 'Versión archivada. Las propuestas que la usan siguen funcionando.',
     okVisibility: 'Visibilidad actualizada.', okSaved: 'Borrador guardado.', okCreated: 'Módulo creado con contenido de ejemplo: edítalo y publícalo.',
@@ -168,7 +168,7 @@ export const teamMessages = defineMessages({
       adjustHelp: '−10 = 10 % cheaper; 15 = 15 % more expensive.',
     },
     catalog: {
-      eyebrow: 'Configure', title: 'Catalog',
+      eyebrow: 'Configure', title: 'Catalog', blockTypes: { 'hero-pitch': 'Cover', 'tabs-showcase': 'Tabs', 'pricing-card': 'Price card', 'live-screen': 'Live screen', 'phone-tour': 'Guest phone', 'problem-solution': 'Problem → solution', 'case-study': 'Case study', 'cost-math': 'What it already costs you', 'media-strip': 'Live (photos and videos)' },
       introA: 'Sales reps only see the latest ', introStrong: 'published', introB: ' version of each visible module. A published version cannot be changed: you create a new one.',
       okPublished: 'Version published: it now appears in the builder.', okArchived: 'Version archived. Proposals that use it keep working.',
       okVisibility: 'Visibility updated.', okSaved: 'Draft saved.', okCreated: 'Module created with sample content: edit it and publish it.',
@@ -269,7 +269,7 @@ export const teamMessages = defineMessages({
       adjustHelp: '−10 = 10 % mais barato; 15 = 15 % mais caro.',
     },
     catalog: {
-      eyebrow: 'Configurar', title: 'Catálogo',
+      eyebrow: 'Configurar', title: 'Catálogo', blockTypes: { 'hero-pitch': 'Capa', 'tabs-showcase': 'Abas', 'pricing-card': 'Cartão de preço', 'live-screen': 'Tela ao vivo', 'phone-tour': 'Celular do convidado', 'problem-solution': 'Problema → solução', 'case-study': 'Caso real', 'cost-math': 'O que já te custa', 'media-strip': 'Ao vivo (fotos e vídeos)' },
       introA: 'Os vendedores só veem a última versão ', introStrong: 'publicada', introB: ' de cada módulo visível. Uma versão publicada não se altera: cria-se outra.',
       okPublished: 'Versão publicada: já aparece no builder.', okArchived: 'Versão arquivada. As propostas que a usam continuam funcionando.',
       okVisibility: 'Visibilidade atualizada.', okSaved: 'Rascunho salvo.', okCreated: 'Módulo criado com conteúdo de exemplo: edite e publique.',
@@ -370,7 +370,7 @@ export const teamMessages = defineMessages({
       adjustHelp: '−10 = 10 % 저렴하게, 15 = 15 % 비싸게.',
     },
     catalog: {
-      eyebrow: '설정', title: '카탈로그',
+      eyebrow: '설정', title: '카탈로그', blockTypes: { 'hero-pitch': '표지', 'tabs-showcase': '탭', 'pricing-card': '가격 카드', 'live-screen': '라이브 스크린', 'phone-tour': '게스트 휴대폰', 'problem-solution': '문제 → 해결', 'case-study': '실제 사례', 'cost-math': '이미 들고 있는 비용', 'media-strip': '라이브 (사진·영상)' },
       introA: '영업 담당자는 표시된 각 모듈의 최신 ', introStrong: '게시', introB: ' 버전만 봅니다. 게시된 버전은 수정할 수 없으며 새 버전을 만들어야 합니다.',
       okPublished: '버전을 게시했습니다. 이제 빌더에 표시됩니다.', okArchived: '버전을 보관했습니다. 이 버전을 쓰는 제안서는 계속 작동합니다.',
       okVisibility: '표시 여부를 변경했습니다.', okSaved: '초안을 저장했습니다.', okCreated: '예시 콘텐츠로 모듈을 만들었습니다. 편집한 뒤 게시하세요.',

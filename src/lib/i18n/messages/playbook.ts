@@ -121,7 +121,7 @@ const es = {
     priorityOf: (name: string) => `Prioridad de ${name}`, noFit: 'No encaja',
   },
   learn: {
-    title: 'Aprende a vender', eyebrow: 'Vender',
+    title: 'Aprende a vender', eyebrow: 'Vender', aboutName: 'Por qué existimos', generalName: 'Cómo se vende',
     lede: 'Todo lo que necesitas para vender cada módulo: qué es, para quién, cómo presentarlo, objeciones y precio. Lo mantiene tu líder y lo mejora el equipo.',
     progress: 'Tu formación', news: 'Novedades desde tu última visita', markSeen: 'Marcar como vistas',
     newTips: (n: number) => `${n} ${n === 1 ? 'truco nuevo' : 'trucos nuevos'} del equipo`,
@@ -338,7 +338,7 @@ export const playbookMessages = defineMessages({
       priorityOf: (name) => `Priority of ${name}`, noFit: 'Does not fit',
     },
     learn: {
-      title: 'Learn to sell', eyebrow: 'Sell',
+      title: 'Learn to sell', eyebrow: 'Sell', aboutName: 'Why we exist', generalName: 'How we sell',
       lede: 'Everything you need to sell each module: what it is, who it is for, how to present it, objections and pricing. Your lead maintains it and the team improves it.',
       progress: 'Your training', news: 'What’s new since your last visit', markSeen: 'Mark as seen',
       newTips: (n) => `${n} new ${n === 1 ? 'tip' : 'tips'} from the team`,
@@ -552,7 +552,7 @@ export const playbookMessages = defineMessages({
       priorityOf: (name) => `Prioridade de ${name}`, noFit: 'Não encaixa',
     },
     learn: {
-      title: 'Aprenda a vender', eyebrow: 'Vender',
+      title: 'Aprenda a vender', eyebrow: 'Vender', aboutName: 'Por que existimos', generalName: 'Como se vende',
       lede: 'Tudo o que você precisa para vender cada módulo: o que é, para quem, como apresentar, objeções e preço. Seu líder mantém e a equipe melhora.',
       progress: 'Sua formação', news: 'Novidades desde sua última visita', markSeen: 'Marcar como vistas',
       newTips: (n) => `${n} ${n === 1 ? 'dica nova' : 'dicas novas'} da equipe`,
@@ -766,7 +766,7 @@ export const playbookMessages = defineMessages({
       priorityOf: (name) => `${name} 우선순위`, noFit: '맞지 않음',
     },
     learn: {
-      title: '판매 배우기', eyebrow: '판매',
+      title: '판매 배우기', eyebrow: '판매', aboutName: '우리가 존재하는 이유', generalName: '판매하는 방법',
       lede: '각 모듈을 판매하는 데 필요한 모든 것: 무엇인지, 누구를 위한 것인지, 소개 방법, 반론과 가격. 리더가 관리하고 팀이 함께 개선합니다.',
       progress: '내 학습 현황', news: '지난 방문 이후 새 소식', markSeen: '확인함으로 표시',
       newTips: (n) => `팀의 새 팁 ${n}개`,

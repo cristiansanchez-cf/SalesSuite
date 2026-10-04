@@ -50,9 +50,11 @@ const lm = learnMessages[locale];
 // Portada: la captura del módulo; si no tiene, su propia propuesta en vivo, difuminada.
 const card = view.module ? (await pb.learnIndex().catch(() => null))?.modules.find((x) => x.moduleId === topicId) ?? null : null;
 const cover = card?.cover ?? null;
+// Las dos fichas generales, en el idioma de quien lee (los módulos llevan el nombre que les puso el espacio).
+const viewName = view.module ? view.name : view.topic === 'empresa' ? msg.learn.aboutName : msg.learn.generalName;
 const firstTab = view.sections[0]?.kind ?? 'team';
 ---
-<AdminLayout title={view.name} wide>
+<AdminLayout title={viewName} wide>
   <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-12 pb-10">
     <a href="/admin/learn" class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{msg.common.backLearn.replace(/^←\s*/, '')}</a>
 
@@ -66,7 +68,7 @@ const firstTab = view.sections[0]?.kind ?? 'team';
       <span class="learn-card__shade"></span>
       <div class="learn-card__body !gap-4 sm:!p-10">
         <p class="text-xs font-semibold uppercase tracking-wider text-white/70">{lm.topic.eyebrow}</p>
-        <h1 class="text-4xl font-bold leading-none sm:text-6xl">{view.name}</h1>
+        <h1 class="text-4xl font-bold leading-none sm:text-6xl">{viewName}</h1>
         {view.module?.description && <p class="max-w-2xl text-lg text-white/85">{view.module.description}</p>}
         <div class="flex flex-wrap items-center gap-3">
           {view.module && <button type="button" class="learn-cta !mt-0" data-testid="client-view" data-open-preview>{lm.topic.see} <span aria-hidden="true">→</span></button>}
@@ -162,7 +164,7 @@ const firstTab = view.sections[0]?.kind ?? 'team';
         <p class="co-entity">{msg.topic.clientView}</p>
         <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-close-preview>{lm.topic.close}</button>
       </div>
-      <iframe title={msg.topic.previewOf(view.name)} data-src={`/admin/learn/preview/${view.module.moduleId}`}></iframe>
+      <iframe title={msg.topic.previewOf(viewName)} data-src={`/admin/learn/preview/${view.module.moduleId}`}></iframe>
     </dialog>
   )}
 </AdminLayout>

@@ -27,6 +27,11 @@
     { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale } = $props();
   // Los textos se importan aquí: las funciones (plurales) no viajan como props de una isla.
   const t = builderMessages[locale] ?? builderMessages.es;
+  /** Los avisos de «antes de publicar» llegan del servidor en español: aquí, en el idioma de quien edita. */
+  const blockerText = (b: string) => {
+    const bad = b.match(/^«(.+)» tiene contenido inválido: (.*)$/s);
+    return b === 'Añade al menos un módulo visible' ? t.publish.needModule : b.startsWith('Indica el precio total') ? t.publish.needPrice : bad ? t.publish.invalid(bad[1], bad[2]) : b;
+  };
 
   // Copia JSON: las props llegan como proxies y structuredClone no puede clonarlas.
   let s = $state<BuilderState>(JSON.parse(JSON.stringify(initial)));
@@ -464,7 +469,7 @@
         <h2 class="mb-3 co-card-title">{t.share.title}</h2>
         {#if d.status !== 'published'}
           {#if s.publishBlockers.length}
-            <div class="co-alert co-alert--rejection mb-3 block"><p class="font-semibold">{t.publish.blockers}</p><ul>{#each s.publishBlockers as b}<li>{b}</li>{/each}</ul></div>
+            <div class="co-alert co-alert--rejection mb-3 block"><p class="font-semibold">{t.publish.blockers}</p><ul>{#each s.publishBlockers as b}<li>{blockerText(b)}</li>{/each}</ul></div>
           {:else}
             <p class="co-meta mb-3">{t.share.draftHelp}</p>
           {/if}

@@ -57,7 +57,7 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
             <div class="flex flex-wrap items-start gap-3">
               <div class="min-w-0 flex-1">
                 <h2 class="co-card-title">{m.name} {!m.isCatalog && <span class="ml-1 co-badge co-badge--soft">{M.hidden}</span>}</h2>
-                <p class="text-xs text-muted"><code>{m.key}</code> · {m.blockLabel}</p>
+                <p class="text-xs text-muted"><code>{m.key}</code> · {M.blockTypes[m.blockType] ?? m.blockLabel}</p>
                 {m.description && <p class="mt-1 text-sm text-muted">{m.description}</p>}
               </div>
               <form method="post">
@@ -110,7 +110,7 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
         <h2 class="co-card-title">{M.newModule}</h2>
         <p class="text-xs text-muted">{M.newModuleHelp}</p>
         <label class="block text-sm font-medium">{M.blockType}
-          <select class={field} name="blockType">{Object.entries(REGISTRY).map(([k, v]) => <option value={k}>{v.label}</option>)}</select>
+          <select class={field} name="blockType">{Object.entries(REGISTRY).map(([k, v]) => <option value={k}>{M.blockTypes[k] ?? v.label}</option>)}</select>
         </label>
         <label class="block text-sm font-medium">{M.name}<input class={field} name="name" required maxlength="80" placeholder={M.namePlaceholder} /></label>
         <label class="block text-sm font-medium">{M.key}<input class={field} name="key" required pattern="[a-z0-9][a-z0-9\-]{1,62}" placeholder={M.keyPlaceholder} /></label>
