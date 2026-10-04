@@ -15,7 +15,7 @@ interface Sample { key: string; segment: string; title: string; company: string;
 
 const SAMPLES: Sample[] = [
   { key: 'locales', segment: 'ocio-nocturno', title: 'Propuesta para Sala Ejemplo', company: 'Sala Ejemplo', contact: 'Marta (gerente)', tariff: 'Local mediano (150–500)' },
-  { key: 'promotoras', segment: 'promotoras', title: 'Propuesta para Promotora Ejemplo', company: 'Promotora Ejemplo', contact: 'Javi (producción)', tariff: 'Evento de promotora', coupon: 'PACK5' },
+  { key: 'promotoras', segment: 'promotoras', title: 'Propuesta para Promotora Ejemplo', company: 'Promotora Ejemplo', contact: 'Javi (producción)', tariff: 'Promotora pequeña · evento suelto' },
   { key: 'conciertos', segment: 'conciertos', title: 'Propuesta para Auditorio Ejemplo', company: 'Auditorio Ejemplo', contact: 'Lucía (programación)', tariff: 'Sala 1.000–5.000' },
 ];
 
@@ -88,7 +88,8 @@ async function main() {
         }).select('id').single(), `crear ${s.key}`) as { id: string }).id;
       }
       must(await sb.from('dossier_item').insert(rows(id)), `módulos ${s.key}`);
-      must(await sb.from('dossier').update({ preset: { mode: 'full', answers: [] }, status: 'published', published_at: new Date().toISOString() }).eq('id', id), `publicar ${s.key}`);
+      // La tarifa y el cupón, también a lo de ahora (una tarifa retirada no se queda en el ejemplo).
+      must(await sb.from('dossier').update({ preset: { mode: 'full', answers: [] }, status: 'published', published_at: new Date().toISOString(), price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null }).eq('id', id), `publicar ${s.key}`);
       if (!existing.length) must(await sb.from('share_link').insert({ dossier_id: id }).select('id').single(), `enlace ${s.key}`);
       console.log(`• ${s.key}: ${existing.length ? 'rehecha' : 'creada'} con la propuesta del sector (${plan.length} bloques) → ${origin}/admin/dossiers/${id}`);
       continue;

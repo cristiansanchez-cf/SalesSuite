@@ -1443,10 +1443,10 @@
       "image": "asset:img/usecases/promotoras.webp",
       "description": "Montan eventos puntuales en locales de otros. Venden entradas a base de contenido en redes.",
       "value_prop": "Necesitan material visual de sus propias fiestas y dinámicas que diferencien su evento del de la semana siguiente. Y cada evento que montan con Enjoy deja el producto visto por el local que las aloja.",
-      "icp": "- Promotoras comerciales: reggaetón y música de público amplio\n- Foco en el público, no en el artista o el DJ que pincha\n- Ya hacen fiestas temáticas y dinámicas: solteros, juegos, cuentas atrás en pantalla",
-      "disqualifiers": "- Perfil rock o de nicho de artista\n- Eventos donde lo importante es quién pincha",
+      "icp": "- Promotoras pequeñas o que empiezan: deciden en el momento y compran eventos sueltos\n- Promotoras asentadas: varias fiestas al mes, pack anual o suscripción\n- Comerciales (reggaetón, público amplio), las que ya montan dinámicas, underground y fiestas de público que no conocen",
+      "disqualifiers": "- Operación de escala (tipo Bresh): no es para el equipo comercial, la lleva fundador",
       "buying_process": "Decide quien lleva la promotora, rápido. El riesgo es el seguimiento: equipos dispersos y siempre ocupados.",
-      "deal_size": "150 € por evento, o 390 €/mes con eventos ilimitados. Histórico: una promotora pequeña pagó 70 €/evento con el producto antiguo.",
+      "deal_size": "Por frecuencia: 1–4 fiestas al año, evento suelto (90 € pequeña · 150 € asentada); 5–12 al año, pack anual (490 € por 6 · 890 € por 12, sin validar); 4 o más al mes, 390 €/mes ilimitados. Paradox pagó 50 € con el producto antiguo.",
       "sales_cycle": "Días; se pierden en el seguimiento",
       "modules": [
         {
@@ -1492,7 +1492,654 @@
             }
           ]
         }
-      ]
+      ],
+      "proposal": {
+        "blocks": {
+          "portada": {
+            "module": "portada",
+            "props": {
+              "eyebrow": "Propuesta para {company}",
+              "title": "El contenido de tu fiesta, para llenar la siguiente",
+              "subtitle": "Tu público participa desde el móvil, sale en la pantalla, y tú te quedas con el contenido."
+            }
+          },
+          "problema": {
+            "module": "lo-que-te-pasa",
+            "props": {
+              "title": "Lo que te pasa hoy",
+              "cards": [
+                {
+                  "problem": "Para vender la siguiente necesitas contenido, y acabas pidiendo fotos a los amigos.",
+                  "solution": "Cada fiesta te deja cientos de fotos subidas por tu propio público, con permiso para usarlas."
+                },
+                {
+                  "problem": "Montas en salas distintas y cada una te deja lo que puede.",
+                  "solution": "Llevas lo tuyo: tu QR, tus dinámicas, tu contenido. La sala pone el espacio."
+                },
+                {
+                  "problem": "Tu fiesta se parece a la de la semana siguiente.",
+                  "solution": "Algo que pasa en tu fiesta y en la de al lado no."
+                }
+              ]
+            }
+          },
+          "tu-enjoy": {
+            "module": "pantalla-en-vivo",
+            "props": {
+              "eyebrow": "Para ti",
+              "title": "Tu Enjoy, en cualquier sala",
+              "lede": "",
+              "djName": "",
+              "scenes": [
+                {
+                  "scene": "club.idle",
+                  "label": "Tu Enjoy",
+                  "says": "Llegas a la sala, cambias el identificador en la pantalla y ya está apuntando a tu Enjoy. Tus dinámicas, tu QR, tu marca. Si el local ya tiene Enjoy, se usa el tuyo: como el confeti, el que lo trae lo pone."
+                },
+                {
+                  "scene": "club.promo",
+                  "label": "Tu reto",
+                  "text": "Solteros, manos arriba",
+                  "says": "Lo lanzas desde tu móvil, en el momento, sin tocar nada de la sala."
+                },
+                {
+                  "scene": "club.photo",
+                  "label": "Foto",
+                  "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum de la fiesta."
+                },
+                {
+                  "scene": "club.message",
+                  "label": "Dedicatoria",
+                  "says": "Un mensaje delante de toda la sala, con o sin foto."
+                },
+                {
+                  "scene": "club.song",
+                  "label": "Canción",
+                  "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
+                }
+              ]
+            }
+          },
+          "gente": {
+            "module": "movil-invitado",
+            "props": {
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "eyebrow": "Tu gente",
+              "title": "Lo que va a hacer tu gente",
+              "parts": [
+                {
+                  "title": "Lo que va a hacer tu gente",
+                  "steps": [
+                    {
+                      "key": "scan",
+                      "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                      "owner": "Entra todo el mundo, también el que no se baja apps."
+                    },
+                    {
+                      "key": "sheet",
+                      "says": "Elige: foto en pantalla, mensaje, o subir al álbum.",
+                      "owner": "Tres motivos distintos para sacar el móvil en tu fiesta."
+                    },
+                    {
+                      "key": "form",
+                      "label": "Su dedicatoria",
+                      "says": "Escribe su dedicatoria y la manda.",
+                      "owner": "Tu equipo la aprueba desde su móvil en un segundo."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "llevas": {
+            "module": "movil-invitado",
+            "props": {
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "eyebrow": "Para ti",
+              "title": "Y lo que te llevas",
+              "parts": [
+                {
+                  "title": "Y lo que te llevas",
+                  "steps": [
+                    {
+                      "key": "live",
+                      "says": "Su foto sale en grande delante de todos.",
+                      "owner": "Media pista mirando la pantalla a ver quién sale."
+                    },
+                    {
+                      "key": "album",
+                      "says": "Se queda en el álbum de la fiesta.",
+                      "owner": "Cientos de fotos de tu fiesta, listas para vender la siguiente."
+                    },
+                    {
+                      "key": "form",
+                      "label": "Con permiso",
+                      "says": "Al subirla acepta los términos de uso.",
+                      "owner": "Son tuyas, no de la sala. Y se van contigo."
+                    }
+                  ]
+                }
+              ],
+              "ownerLabel": "Lo que te llevas tú"
+            }
+          },
+          "caso-anon": {
+            "module": "caso-real",
+            "props": {
+              "eyebrow": "Un caso real",
+              "title": "Lo vieron al momento",
+              "client": "Una promotora",
+              "place": "Albacete",
+              "body": "Una promotora de Albacete que ya montaba sus propias dinámicas lo vio al momento y lleva dos eventos."
+            }
+          },
+          "caso-nombre": {
+            "module": "caso-real",
+            "props": {
+              "eyebrow": "Un caso real",
+              "title": "Lo vieron al momento",
+              "client": "Paradox",
+              "place": "Albacete",
+              "body": "Paradox es una promotora de Albacete que ya montaba dinámicas en pantalla. Lo vieron al momento y han hecho ya dos eventos con nosotros."
+            }
+          },
+          "dinamicas": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Dinámicas",
+              "title": "Lo que montan otras promotoras",
+              "tabs": [
+                {
+                  "label": "Entre mesas",
+                  "title": "Mensajes entre mesas",
+                  "body": "",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/messages-screen.webp",
+                    "alt": "Mensajes entre mesas en la pantalla"
+                  }
+                },
+                {
+                  "label": "Por fotos",
+                  "title": "Chupito o entrada por subir fotos",
+                  "body": "",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/album-mobile.webp",
+                    "alt": "Álbum de la fiesta en el móvil"
+                  }
+                },
+                {
+                  "label": "Sorteo",
+                  "title": "Sorteo por participación",
+                  "body": "Con el contador que valida tu staff en dos segundos.",
+                  "bullets": [],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/album-grid.webp",
+                    "alt": "Fotos subidas por el público"
+                  }
+                }
+              ]
+            }
+          },
+          "artista": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Tu artista",
+              "title": "El artista en pantalla",
+              "tabs": [
+                {
+                  "label": "Carátula",
+                  "title": "La carátula del tema mientras suena",
+                  "body": "",
+                  "bullets": []
+                },
+                {
+                  "label": "Quién pincha",
+                  "title": "El nombre de quien pincha, visible al escanear",
+                  "body": "",
+                  "bullets": []
+                },
+                {
+                  "label": "Sus redes",
+                  "title": "Sus redes, a un toque desde el móvil del público",
+                  "body": "",
+                  "bullets": []
+                }
+              ]
+            }
+          },
+          "datos": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Tus datos",
+              "title": "Los datos se van contigo",
+              "tabs": [
+                {
+                  "label": "Tus datos",
+                  "title": "Los datos se van contigo",
+                  "body": "Qué te pidieron, a qué hora y cuánta gente participó. En tu cuenta, no en la de la sala. La siguiente fiesta la montas sabiendo algo.",
+                  "bullets": []
+                }
+              ]
+            }
+          },
+          "precio": {
+            "module": "pricing",
+            "props": {
+              "eyebrow": "Cómo empezamos",
+              "title": "Propuesta para {company}",
+              "subtitle": "Lo dejamos configurado contigo a distancia antes de tu fiesta. No hace falta que vayamos.",
+              "features": [
+                "Tu cuenta, tu QR y tus dinámicas",
+                "Personalización con tu marca",
+                "Analítica de participación de cada fiesta"
+              ],
+              "smallPrint": "Evento suelto, pago único."
+            }
+          }
+        },
+        "modes": {
+          "full": [
+            "portada",
+            "problema",
+            "tu-enjoy",
+            "gente",
+            "llevas",
+            "caso-anon",
+            "precio"
+          ],
+          "visual": [
+            "tu-enjoy",
+            "gente",
+            "llevas",
+            "precio"
+          ]
+        },
+        "max": {
+          "full": 7,
+          "visual": 5
+        },
+        "priority": [
+          "portada",
+          "problema",
+          "tu-enjoy",
+          "gente",
+          "llevas",
+          "precio",
+          "dinamicas",
+          "artista",
+          "datos",
+          "caso-anon",
+          "caso-nombre"
+        ],
+        "choices": [
+          {
+            "key": "tipo",
+            "label": "¿Qué tipo de promotora es?",
+            "default": "pequena",
+            "hint": "Operación de escala (tipo Bresh: la misma fiesta en muchas ciudades): no es una promotora grande, es otra venta. La lleva fundador y no lleva propuesta. Promotora grande o internacional: ve tú al primer evento a montarlo.",
+            "options": [
+              {
+                "key": "pequena",
+                "label": "Pequeña o que empieza",
+                "hint": "Pocas fiestas, decisión rápida y sin presupuesto. Compran eventos sueltos. El riesgo es el seguimiento, no el precio."
+              },
+              {
+                "key": "asentada",
+                "label": "Asentada",
+                "hint": "Varias fiestas al mes, estructura, alguien que lleva las cuentas. Aquí sí: pack anual o suscripción. Pregunta: «¿Cuántas fiestas montáis al año?»"
+              }
+            ]
+          },
+          {
+            "key": "angulo",
+            "label": "¿Qué le mueve a esta promotora?",
+            "default": "a",
+            "hint": "Uno solo, nunca mezclados.",
+            "options": [
+              {
+                "key": "a",
+                "label": "A · Comercial",
+                "hint": "Vender las entradas de la siguiente. Reggaetón y público amplio: foco en el público, no en quién pincha. Precio: evento suelto, y si hace varias al mes, el salto a suscripción.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "El contenido de tu fiesta, para llenar la siguiente"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Para vender la siguiente necesitas contenido, y acabas pidiendo fotos a los amigos.",
+                          "solution": "Cada fiesta te deja cientos de fotos subidas por tu propio público, con permiso para usarlas."
+                        },
+                        {
+                          "problem": "Montas en salas distintas y cada una te deja lo que puede.",
+                          "solution": "Llevas lo tuyo: tu QR, tus dinámicas, tu contenido. La sala pone el espacio."
+                        },
+                        {
+                          "problem": "Tu fiesta se parece a la de la semana siguiente.",
+                          "solution": "Algo que pasa en tu fiesta y en la de al lado no."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "b",
+                "label": "B · Dinámicas",
+                "hint": "Montar dinámicas que nadie monta: las que ya hacen temporizadores, juegos, retos. Paradox encajó por aquí y fue inmediato. Entra siempre «Lo que montan otras promotoras».",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "La herramienta que te faltaba para lo que ya montas"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Las dinámicas las montas peleándote con el ordenador del local.",
+                          "solution": "Lo lanzas desde tu móvil, en el momento, sin tocar nada de la sala."
+                        },
+                        {
+                          "problem": "Cada sala tiene su cacharro y nunca sabes qué te vas a encontrar.",
+                          "solution": "Llegas, cambias el identificador de la pantalla y ya es tuya. Dos minutos."
+                        },
+                        {
+                          "problem": "Se te ocurren cosas y no hay forma de hacerlas.",
+                          "solution": "Mensajes entre mesas, retos de fotos, sorteos por participación."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "add": "dinamicas",
+                    "after": "llevas",
+                    "before": "precio"
+                  }
+                ]
+              },
+              {
+                "key": "c",
+                "label": "C · Underground",
+                "hint": "Que se recuerde al artista que trae: afters, sesiones, artistas nuevos. Aquí el DJ es el producto. Peticiones de canciones: nunca como argumento de entrada (marca la pregunta del reto solo si el artista está por la labor).",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que se acuerden de quién pinchó"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Traes artistas que nadie conoce y nadie se queda con su nombre.",
+                          "solution": "La carátula del tema sale en pantalla mientras suena. Se quedan con el disco y con el artista."
+                        },
+                        {
+                          "problem": "La gente te pregunta qué está sonando y nadie contesta.",
+                          "solution": "Lo ven en su móvil al escanear, con el nombre de quien está pinchando."
+                        },
+                        {
+                          "problem": "Tu DJ pincha y se va sin ganar seguidores.",
+                          "solution": "Desde el móvil pueden seguirle las redes ahí mismo."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "patch": "tu-enjoy",
+                    "set": {
+                      "scenes": [
+                        {
+                          "scene": "club.idle",
+                          "label": "Tu Enjoy",
+                          "says": "Llegas a la sala, cambias el identificador en la pantalla y ya está apuntando a tu Enjoy. Tus dinámicas, tu QR, tu marca. Si el local ya tiene Enjoy, se usa el tuyo: como el confeti, el que lo trae lo pone."
+                        },
+                        {
+                          "scene": "club.promo",
+                          "label": "Tu reto",
+                          "text": "Solteros, manos arriba",
+                          "says": "Lo lanzas desde tu móvil, en el momento, sin tocar nada de la sala."
+                        },
+                        {
+                          "scene": "club.photo",
+                          "label": "Foto",
+                          "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum de la fiesta."
+                        },
+                        {
+                          "scene": "club.message",
+                          "label": "Dedicatoria",
+                          "says": "Un mensaje delante de toda la sala, con o sin foto."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "add": "artista",
+                    "after": "llevas",
+                    "before": "precio"
+                  },
+                  {
+                    "add": "datos",
+                    "after": [
+                      "artista",
+                      "llevas"
+                    ],
+                    "before": "precio"
+                  }
+                ]
+              },
+              {
+                "key": "d",
+                "label": "D · Público que no conoces",
+                "hint": "Fiestas de país, Erasmus, extranjeros, temáticas. Se vende como «ves qué canciones te piden y cuáles no tienes»; nunca como perfil demográfico (necesita registro: roadmap).",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que te digan ellos qué quieren oír"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Montas una temática de un país y pones el top 10 de allí, a ciegas.",
+                          "solution": "Te lo piden ellos, y la próxima vez ya lo tienes."
+                        },
+                        {
+                          "problem": "Tu público cambia cada fiesta y no sabes qué pinchar.",
+                          "solution": "Ves qué te pidieron y qué no pudiste poner."
+                        },
+                        {
+                          "problem": "Cambias de sala y empiezas de cero.",
+                          "solution": "Los datos son tuyos y se van contigo a la siguiente."
+                        }
+                      ],
+                      "note": "Si el primer día te piden cinco canciones que no tienes, el segundo ya las tienes."
+                    }
+                  },
+                  {
+                    "add": "datos",
+                    "after": "llevas",
+                    "before": "precio"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "frecuencia",
+            "label": "¿Cuántas fiestas montáis al año?",
+            "default": "suelto",
+            "hint": "La frecuencia decide el formato de precio, no el tamaño. Nunca un mensual a quien hace pocas fiestas al año: Paradox hace seis, lo suyo es el pack.",
+            "options": [
+              {
+                "key": "suelto",
+                "label": "1 a 4 al año · evento suelto",
+                "hint": "Tarifa: 90 € promotora pequeña · 150 € asentada."
+              },
+              {
+                "key": "pack",
+                "label": "5 a 12 al año · pack anual",
+                "hint": "Tarifa: 490 € por 6 eventos · 890 € por 12. Propuesta sin validar.",
+                "rules": [
+                  {
+                    "patch": "precio",
+                    "set": {
+                      "smallPrint": "Pack anual de eventos, pago único."
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "mensual",
+                "label": "4 o más al mes · suscripción",
+                "hint": "Tarifa: 390 € al mes, eventos ilimitados.",
+                "rules": [
+                  {
+                    "patch": "precio",
+                    "set": {
+                      "smallPrint": "Suscripción con permanencia de 6 meses. Eventos ilimitados."
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "key": "autorizado",
+            "label": "¿Paradox ha autorizado por escrito salir con su nombre?",
+            "hint": "Sin autorización escrita, el caso sale anónimo.",
+            "rules": [
+              {
+                "replace": "caso-anon",
+                "with": "caso-nombre"
+              }
+            ]
+          },
+          {
+            "key": "dinamicas",
+            "label": "¿Te ha hablado de dinámicas que ya monta?",
+            "hint": "Solo estas tres. Votaciones y cuentas atrás: pendiente de confirmar.",
+            "rules": [
+              {
+                "add": "dinamicas",
+                "after": "llevas",
+                "before": "precio"
+              }
+            ]
+          },
+          {
+            "key": "reto",
+            "label": "¿El artista quiere el formato de reto con peticiones?",
+            "when": [
+              "angulo:c"
+            ],
+            "hint": "Solo si el artista está por la labor. Nunca como argumento de entrada.",
+            "rules": [
+              {
+                "insert": "tu-enjoy",
+                "into": "scenes",
+                "at": 4,
+                "value": {
+                  "scene": "club.song",
+                  "label": "Reto del DJ",
+                  "says": "Hay DJs que lo activan solo los días que les apetece el reto: la gente pide lo que quiera y él demuestra que lo mezcla todo."
+                }
+              }
+            ]
+          },
+          {
+            "key": "sin-pantalla",
+            "label": "¿La sala no tiene pantalla?",
+            "hint": "Fuera «Tu Enjoy, en cualquier sala» y la parte de pantalla. El QR va en barra y mesas.",
+            "rules": [
+              {
+                "remove": "tu-enjoy"
+              },
+              {
+                "patch": "gente",
+                "set": {
+                  "parts": [
+                    {
+                      "title": "Lo que va a hacer tu gente",
+                      "steps": [
+                        {
+                          "key": "scan",
+                          "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                          "owner": "El QR va en la barra y en las mesas."
+                        },
+                        {
+                          "key": "sheet",
+                          "says": "Elige: foto en pantalla, mensaje, o subir al álbum.",
+                          "owner": "Tres motivos distintos para sacar el móvil en tu fiesta."
+                        },
+                        {
+                          "key": "form",
+                          "label": "Su dedicatoria",
+                          "says": "Escribe su dedicatoria y la manda.",
+                          "owner": "Tu equipo la aprueba desde su móvil en un segundo."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "patch": "llevas",
+                "set": {
+                  "parts": [
+                    {
+                      "title": "Y lo que te llevas",
+                      "steps": [
+                        {
+                          "key": "album",
+                          "says": "Se queda en el álbum de la fiesta.",
+                          "owner": "Cientos de fotos de tu fiesta, listas para vender la siguiente."
+                        },
+                        {
+                          "key": "form",
+                          "label": "Con permiso",
+                          "says": "Al subirla acepta los términos de uso.",
+                          "owner": "Son tuyas, no de la sala. Y se van contigo."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "patch": "portada",
+                "set": {
+                  "subtitle": "Tu público participa desde el móvil, y tú te quedas con el contenido."
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "conciertos",
@@ -2022,13 +2669,42 @@
       "default": false
     },
     {
-      "label": "Evento de promotora",
-      "amount": 150,
+      "label": "Promotora pequeña · evento suelto",
+      "amount": 90,
       "currency": "EUR",
       "period": "event",
       "segment": "promotoras",
       "kind": "Promotora",
       "default": true
+    },
+    {
+      "label": "Promotora asentada · evento suelto",
+      "amount": 150,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "promotoras",
+      "kind": "Promotora",
+      "default": false
+    },
+    {
+      "label": "Promotora · pack anual de 6 eventos",
+      "amount": 490,
+      "currency": "EUR",
+      "period": "year",
+      "segment": "promotoras",
+      "kind": "Promotora",
+      "default": false,
+      "note": "Propuesta sin validar"
+    },
+    {
+      "label": "Promotora · pack anual de 12 eventos",
+      "amount": 890,
+      "currency": "EUR",
+      "period": "year",
+      "segment": "promotoras",
+      "kind": "Promotora",
+      "default": false,
+      "note": "Propuesta sin validar"
     },
     {
       "label": "Promotora · eventos ilimitados",
@@ -2038,6 +2714,16 @@
       "segment": "promotoras",
       "kind": "Promotora",
       "default": false
+    },
+    {
+      "label": "Evento de promotora",
+      "amount": 150,
+      "currency": "EUR",
+      "period": "event",
+      "segment": "promotoras",
+      "kind": "Promotora",
+      "default": false,
+      "active": false
     },
     {
       "label": "Charanga u orquesta · evento",
@@ -3955,11 +4641,12 @@
       ],
       "personas": [],
       "title": "Las cuatro diferencias con un local",
-      "body": "| | Local | Promotora |\n|---|---|---|\n| Qué compra | Que su sala sea distinta todas las noches | Material y dinámicas para **vender entradas de la siguiente** |\n| Formato | Suscripción mensual | Por evento, o suscripción si hace varios al mes |\n| Quién decide | Dueño o gerente, con el DJ pudiendo vetar | Quien lleva la promotora, rápido y solo |\n| El riesgo | Que nadie valide | **Que se enfríe en el seguimiento** |",
+      "body": "| | Local | Promotora |\n|---|---|---|\n| Qué compra | Que su sala sea distinta todas las noches | Material y dinámicas para **vender entradas de la siguiente** |\n| Formato | Suscripción mensual | **Lo decide la frecuencia**: evento suelto, pack anual o suscripción |\n| Quién decide | Dueño o gerente, con el DJ pudiendo vetar | Quien lleva la promotora, rápido y solo |\n| El riesgo | Que nadie valide | **Que se enfríe en el seguimiento** |",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "prom-quien-encaja",
@@ -3971,12 +4658,13 @@
         "promotoras"
       ],
       "personas": [],
-      "title": "Quién encaja (y quién no)",
-      "body": "- Promotoras **comerciales**: reggaetón y música de público amplio.\n- Las que ponen el foco **en el público**, no en el artista o el DJ que pincha.\n- Las que ya hacen **fiestas temáticas y dinámicas**: solteros, juegos, cuentas atrás en pantalla.\n\n**No encajan:** perfil rock o de nicho de artista, ni eventos donde lo importante es quién pincha.",
+      "title": "Tipos de promotora",
+      "body": "**Pequeña o que empieza.** Chavales, pocas fiestas, decisión rápida y sin presupuesto. Deciden en el momento (a Paradox, 50 € le pareció bien al instante) y compran eventos sueltos. El riesgo es el seguimiento, no el precio.\n\n**Asentada.** Varias fiestas al mes, estructura, alguien que lleva las cuentas. Aquí sí tiene sentido plantear suscripción o pack anual. La pregunta que lo decide: **¿cuántos eventos hacéis al año?**\n\n**Operación de escala** (Bresh y equivalentes: la misma fiesta en muchas ciudades y países). **No es una promotora grande: es otra venta.** Lo que compra es saber qué pide cada ciudad antes de montar allí. **La lleva fundador, no el equipo comercial.** Está en proceso: puedes contarlo como prueba de que el producto interesa arriba, pero no la toques.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "prom-apertura",
@@ -4008,11 +4696,12 @@
       ],
       "personas": [],
       "title": "Lo que se cuenta",
-      "body": "> «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, votaciones, mensajes entre mesas, cuentas atrás.»",
+      "body": "> «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, mensajes entre mesas.»\n\nVotaciones y cuentas atrás: **PENDIENTE** de confirmar que existen. No las nombres.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "prom-pitch-dinamicas",
@@ -4041,12 +4730,13 @@
         "promotoras"
       ],
       "personas": [],
-      "title": "Precio",
-      "body": "> «150 € el evento. Si montáis varios al mes, 390 € y los que queráis.»",
+      "title": "Precio: lo decide la frecuencia",
+      "body": "La primera pregunta no es el tamaño:\n\n> «¿Cuántas fiestas montáis al año?»\n\n| Frecuencia | Formato | Precio |\n|---|---|---|\n| 1-4 al año | Evento suelto | **90 €** promotora pequeña · **150 €** asentada |\n| 5-12 al año | Pack anual | **490 €** por 6 eventos · **890 €** por 12 (sin validar) |\n| 4 o más al mes | Suscripción mensual | **390 €**, eventos ilimitados |\n\n**El error que hay que evitar:** ofrecerle un mensual de 390 € a quien hace seis fiestas al año. Paradox hace seis: su formato es el pack anual, no el mensual.\n\n**El salto:** «pruebo un evento a un precio razonable, y si funciona me paso al pack porque me sale mejor».",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "prom-cierre",
@@ -4076,11 +4766,12 @@
       ],
       "personas": [],
       "title": "El riesgo específico de este sector",
-      "body": "Los equipos de promotora están dispersos y siempre ocupados. No es desinterés, es su forma de trabajar. Con Paradox costó el seguimiento y acabaron siendo clientes.\n\n> Regla: si no contestan, no es un no. Se vuelve a escribir con una fecha concreta, no con un «¿cómo lo veis?».",
+      "body": "El seguimiento es el riesgo de este sector, no el precio. Los equipos están dispersos y siempre ocupados. No es desinterés, es su forma de trabajar. Con Paradox costó el seguimiento y acabaron siendo clientes.\n\n> Regla: si no contestan, no es un no. Se vuelve a escribir con una fecha concreta, nunca con un «¿cómo lo veis?».",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "prom-canal",
@@ -4886,6 +5577,146 @@
       "pinned": null,
       "title": "Para el DJ colaborador (PENDIENTE antes de dárselo)",
       "body": "No es un cliente: es un canal. Lo que necesita, y nada más: qué es Enjoy en treinta segundos, la demo para enseñarla en el móvil, qué se lleva él, y a quién tiene que preguntarle en su local.\n\n> «Tú lo enseñas en tu local y nosotros cerramos. Si entra, cobras durante el primer año. No tienes que saber precios ni negociar nada: nos pasas el contacto del dueño y lo llevamos nosotros.»\n\n**Sin precios.** Un DJ que negocia mal te quema el local.\n\n**PENDIENTE de cerrar por escrito antes de dárselo:** si cobra por traer el local o solo si se cierra, y qué pasa cuando deja de pinchar allí. Hasta entonces, solo la ve el equipo interno.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-entender",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Lo que hay que entender antes de vender a una promotora",
+      "body": "**El local se queda la barra. La promotora se queda la mayor parte de las entradas.** Lo habitual: de cada 10 € de entrada, unos 6 van para la promotora y el resto para el local.\n\n- **La venta in situ en barra le interesa poco.** Ese dinero no es suyo. Lo que sí puede montar es «solteros, manos arriba» o retos en pantalla, que le sirven para el ambiente y para el contenido.\n- **Todo lo que le vendas tiene que acabar en llenar la siguiente fiesta.** Esa es su única cuenta.\n\n**Su miedo: la marca.** Su activo es su nombre, y esa decisión se gana en redes. **Su trabajo de verdad empieza después del evento**: el contenido es lo que llena la siguiente.\n\n**Lleva su propio Enjoy a donde vaya.** Al llegar a la sala, en la pantalla se cambia el identificador: donde ponía `VIP01` (el del local) se pone `PRX01` (el de la promotora). **Dos minutos.** Si la sala también tiene Enjoy, manda el de la promotora: es como el confeti, si traes el tuyo, se usa el tuyo. **La analítica la ven los dos**, cada uno la de su cuenta.\n\n**Se configuran solas:** Paradox se vendió y se montó a distancia, con un par de tutoriales antes del evento. **Excepción:** promotora grande o con operativa internacional. Ahí el comercial va al primer evento a montarlo; a los siguientes, no.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-precio-referencias",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "De dónde salen los precios",
+      "body": "- Paradox vio **50 €** y dijo que sí al momento, con el producto antiguo.\n- **70-80 €** no habría tenido problema.\n- **100-150 €** es el rango para promotoras más asentadas.\n\nLos 90 € salen de ahí. **Los packs anuales están sin validar.**",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-nunca",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Nunca con una promotora",
+      "body": "| Qué | Por qué |\n|---|---|\n| **Mensual a quien hace pocas fiestas al año** | Le estás diciendo que no entiendes su negocio |\n| **Vender «para tu local»** | No tiene local |\n| **Peticiones de canciones en el ángulo underground** | Ahí el que sabe es el artista |\n| **Perfiles demográficos o CRM** | Roadmap |\n| **Cifras de lo que puede generar** | No las tenemos |\n| **Bresh como cliente** | La lleva fundador. Como referencia de que el interés existe, sí se puede contar |\n| Y todo lo del «nunca» de locales | Kiss-cam, informe post-evento, sin permanencia, 2 € en el recorrido |",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-obj-fotos",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«¿Y si las fotos de la gente son malas?»",
+      "body": "Es la objeción real de este sector. Una promotora se cuida el contenido, contrata fotógrafo, y le preocupa que el contenido de móvil le baje el nivel de marca. **No se rebate diciendo que las fotos están bien. Se reorienta:**\n\n> «No va de sustituir a tu fotógrafo. Va de que alguien que vino por un amigo y que jamás habría entrado en tu Instagram, entra. Porque sabe que su foto está ahí. Y la comparte con su grupo.\n>\n> No tiene por qué ir en el feed. Lo normal es un carrusel: la primera, la del fotógrafo o un diseño que diga \"así fue la fiesta del sábado\", y detrás el montaje con las fotos de todo el mundo. O el enlace al álbum en tu linktree para que se las descarguen ellos.»\n\n**Lo que cambia la conversación:** no es contenido mejor, es **contenido que trae gente a tu perfil**. Una foto profesional no hace que nadie entre a buscarse.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-durante-despues",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Contenido durante y contenido después",
+      "body": "**Durante:** material grabable. Alguien que se declara en la pantalla, un reto de solteros con las manos arriba, un match en pantalla entre dos selfies, el ganador de un reto de fotos. Son TikToks que se graban solos.\n\n**Después:** el álbum. La gente entra en sus redes a buscarse, comparte con su grupo, y eso es tráfico hacia su perfil en los días en que ella está vendiendo la siguiente.\n\n**Las fotos se guardan 30 días.** Dentro de ese plazo se puede poner el enlace del álbum en el linktree o en el Instagram. Pasado el plazo, si quieren conservarlas tienen que descargarlas ellos. **Decirlo siempre: es parte de la expectativa.**",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-agentes-dj",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Los agentes de DJ (condiciones PENDIENTES)",
+      "body": "Los agentes de DJ mueven a sus artistas por varias promotoras, y esas promotoras montan en varios locales. **Un agente puede meterte en promotoras, y esas promotoras te meten en locales.** Es el mismo papel que el DJ colaborador, un escalón más arriba.\n\n**Lo que traes de vuelta:** si el DJ que trae la promotora tiene agente, el nombre y el contacto.\n\nCondiciones **PENDIENTES** de definir: no le ofrezcas nada todavía.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "prom-canal-local",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "promotoras"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "La promotora como canal hacia el local",
+      "body": "Esto no se le cuenta a la promotora. Una promotora monta su fiesta con todo, y **el local lo ve funcionar en su propia sala sin haber pagado nada.** La conversación que viene después no es una venta fría: «oye, lo de Paradox del martes molaba, ¿eso lo puedo tener yo todos los días?».\n\nPor eso **cada evento de promotora es un lead cualificado de local**, y hay que traer siempre de vuelta en qué sala monta cada fiesta.\n\n**Idea en estudio, no vendible todavía:** tratar a las promotoras como canal (servicio a cambio de que lo lleven a locales, o comisión). **No se ofrece a nadie hasta que esté cerrado y autorizado por fundador.**",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],

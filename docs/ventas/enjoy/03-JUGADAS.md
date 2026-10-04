@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 154 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 161 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,7 +11,7 @@ Las 154 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 128 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Reparto:** General: 135 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
 - **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
@@ -81,7 +81,7 @@ _etapa: Mentalidad_
 
 ## Generales («Cómo se vende», valen para todo)
 
-### Cómo presentarlo (17)
+### Cómo presentarlo (18)
 
 #### Enjoy en una frase · `empresa-pitch`
 
@@ -152,7 +152,9 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 
 _etapa: Pitch / Demo · sectores: Promotoras de eventos_
 
-> > «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, votaciones, mensajes entre mesas, cuentas atrás.»
+> > «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, mensajes entre mesas.»
+> 
+> Votaciones y cuentas atrás: **PENDIENTE** de confirmar que existen. No las nombres.
 
 #### Si ya hacen dinámicas · `prom-pitch-dinamicas`
 
@@ -224,7 +226,17 @@ _etapa: Primer contacto · sectores: Locales de ocio nocturno · la ven: Solo eq
 > 
 > **PENDIENTE de cerrar por escrito antes de dárselo:** si cobra por traer el local o solo si se cierra, y qué pasa cuando deja de pinchar allí. Hasta entonces, solo la ve el equipo interno.
 
-### Para quién (y cuándo no) (6)
+#### Contenido durante y contenido después · `prom-durante-despues`
+
+_etapa: Pitch / Demo · sectores: Promotoras de eventos_
+
+> **Durante:** material grabable. Alguien que se declara en la pantalla, un reto de solteros con las manos arriba, un match en pantalla entre dos selfies, el ganador de un reto de fotos. Son TikToks que se graban solos.
+> 
+> **Después:** el álbum. La gente entra en sus redes a buscarse, comparte con su grupo, y eso es tráfico hacia su perfil en los días en que ella está vendiendo la siguiente.
+> 
+> **Las fotos se guardan 30 días.** Dentro de ese plazo se puede poner el enlace del álbum en el linktree o en el Instagram. Pasado el plazo, si quieren conservarlas tienen que descargarlas ellos. **Decirlo siempre: es parte de la expectativa.**
+
+### Para quién (y cuándo no) (7)
 
 #### Cuenta grande no es un local grande · `gen-cuenta-grande`
 
@@ -264,25 +276,40 @@ _etapa: Descubrimiento · sectores: Promotoras de eventos_
 > | | Local | Promotora |
 > |---|---|---|
 > | Qué compra | Que su sala sea distinta todas las noches | Material y dinámicas para **vender entradas de la siguiente** |
-> | Formato | Suscripción mensual | Por evento, o suscripción si hace varios al mes |
+> | Formato | Suscripción mensual | **Lo decide la frecuencia**: evento suelto, pack anual o suscripción |
 > | Quién decide | Dueño o gerente, con el DJ pudiendo vetar | Quien lleva la promotora, rápido y solo |
 > | El riesgo | Que nadie valide | **Que se enfríe en el seguimiento** |
 
-#### Quién encaja (y quién no) · `prom-quien-encaja`
+#### Tipos de promotora · `prom-quien-encaja`
 
 _etapa: Prospección · sectores: Promotoras de eventos_
 
-> - Promotoras **comerciales**: reggaetón y música de público amplio.
-> - Las que ponen el foco **en el público**, no en el artista o el DJ que pincha.
-> - Las que ya hacen **fiestas temáticas y dinámicas**: solteros, juegos, cuentas atrás en pantalla.
+> **Pequeña o que empieza.** Chavales, pocas fiestas, decisión rápida y sin presupuesto. Deciden en el momento (a Paradox, 50 € le pareció bien al instante) y compran eventos sueltos. El riesgo es el seguimiento, no el precio.
 > 
-> **No encajan:** perfil rock o de nicho de artista, ni eventos donde lo importante es quién pincha.
+> **Asentada.** Varias fiestas al mes, estructura, alguien que lleva las cuentas. Aquí sí tiene sentido plantear suscripción o pack anual. La pregunta que lo decide: **¿cuántos eventos hacéis al año?**
+> 
+> **Operación de escala** (Bresh y equivalentes: la misma fiesta en muchas ciudades y países). **No es una promotora grande: es otra venta.** Lo que compra es saber qué pide cada ciudad antes de montar allí. **La lleva fundador, no el equipo comercial.** Está en proceso: puedes contarlo como prueba de que el producto interesa arriba, pero no la toques.
 
 #### Paga el festival · `fest-modelo-a`
 
 _etapa: Descubrimiento · sectores: Festivales_
 
 > El festival compra el servicio y, si quiere, lo usa como palanca con sus marcas. **Problema:** le estás dando a él el trabajo de vender algo nuevo a sus patrocinadores.
+
+#### Lo que hay que entender antes de vender a una promotora · `prom-entender`
+
+_etapa: Descubrimiento · sectores: Promotoras de eventos_
+
+> **El local se queda la barra. La promotora se queda la mayor parte de las entradas.** Lo habitual: de cada 10 € de entrada, unos 6 van para la promotora y el resto para el local.
+> 
+> - **La venta in situ en barra le interesa poco.** Ese dinero no es suyo. Lo que sí puede montar es «solteros, manos arriba» o retos en pantalla, que le sirven para el ambiente y para el contenido.
+> - **Todo lo que le vendas tiene que acabar en llenar la siguiente fiesta.** Esa es su única cuenta.
+> 
+> **Su miedo: la marca.** Su activo es su nombre, y esa decisión se gana en redes. **Su trabajo de verdad empieza después del evento**: el contenido es lo que llena la siguiente.
+> 
+> **Lleva su propio Enjoy a donde vaya.** Al llegar a la sala, en la pantalla se cambia el identificador: donde ponía `VIP01` (el del local) se pone `PRX01` (el de la promotora). **Dos minutos.** Si la sala también tiene Enjoy, manda el de la promotora: es como el confeti, si traes el tuyo, se usa el tuyo. **La analítica la ven los dos**, cada uno la de su cuenta.
+> 
+> **Se configuran solas:** Paradox se vendió y se montó a distancia, con un par de tutoriales antes del evento. **Excepción:** promotora grande o con operativa internacional. Ahí el comercial va al primer evento a montarlo; a los siguientes, no.
 
 ### Preguntas de descubrimiento (6)
 
@@ -356,7 +383,7 @@ _etapa: Pitch / Demo_
 
 **Por qué funciona:** Es el único dato de participación que tenemos y es real.
 
-### Objeciones (18)
+### Objeciones (19)
 
 #### «Me lo tengo que pensar» · `empresa-obj-pensar`
 
@@ -506,6 +533,18 @@ _etapa: Objeciones · objeción: Tiempo / me lo pienso · sectores: Festivales_
 > Es la respuesta normal en temporada y es la correcta. Hay que convertirla en fecha:
 > > «Me parece lo lógico. ¿Te va bien que te llame el [día concreto de septiembre]? Lo apunto y no te molesto hasta entonces.»
 
+#### «¿Y si las fotos de la gente son malas?» · `prom-obj-fotos`
+
+_etapa: Objeciones · objeción: Desconfianza · sectores: Promotoras de eventos_
+
+> Es la objeción real de este sector. Una promotora se cuida el contenido, contrata fotógrafo, y le preocupa que el contenido de móvil le baje el nivel de marca. **No se rebate diciendo que las fotos están bien. Se reorienta:**
+> 
+> > «No va de sustituir a tu fotógrafo. Va de que alguien que vino por un amigo y que jamás habría entrado en tu Instagram, entra. Porque sabe que su foto está ahí. Y la comparte con su grupo.
+> >
+> > No tiene por qué ir en el feed. Lo normal es un carrusel: la primera, la del fotógrafo o un diseño que diga "así fue la fiesta del sábado", y detrás el montaje con las fotos de todo el mundo. O el enlace al álbum en tu linktree para que se las descarguen ellos.»
+> 
+> **Lo que cambia la conversación:** no es contenido mejor, es **contenido que trae gente a tu perfil**. Una foto profesional no hace que nadie entre a buscarse.
+
 ### Precio y monetización (12)
 
 #### Antes del precio, deja de vender · `noche-puente`
@@ -568,11 +607,23 @@ _etapa: Negociación · sectores: Locales de ocio nocturno, Promotoras de evento
 
 > No se dice «es muy económico» ni «desde 50 €». Que lo valore él.
 
-#### Precio · `prom-precio`
+#### Precio: lo decide la frecuencia · `prom-precio`
 
 _etapa: Negociación · sectores: Promotoras de eventos_
 
-> > «150 € el evento. Si montáis varios al mes, 390 € y los que queráis.»
+> La primera pregunta no es el tamaño:
+> 
+> > «¿Cuántas fiestas montáis al año?»
+> 
+> | Frecuencia | Formato | Precio |
+> |---|---|---|
+> | 1-4 al año | Evento suelto | **90 €** promotora pequeña · **150 €** asentada |
+> | 5-12 al año | Pack anual | **490 €** por 6 eventos · **890 €** por 12 (sin validar) |
+> | 4 o más al mes | Suscripción mensual | **390 €**, eventos ilimitados |
+> 
+> **El error que hay que evitar:** ofrecerle un mensual de 390 € a quien hace seis fiestas al año. Paradox hace seis: su formato es el pack anual, no el mensual.
+> 
+> **El salto:** «pruebo un evento a un precio razonable, y si funciona me paso al pack porque me sale mejor».
 
 #### El ancla, siempre antes · `conc-ancla`
 
@@ -850,7 +901,7 @@ _etapa: Cierre · sectores: Festivales_
 > 
 > **Es excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y no va en el módulo de precio como incluido.
 
-### Consejos (38)
+### Consejos (42)
 
 #### Lo primero que se comprueba · `gen-cobertura`
 
@@ -1145,9 +1196,9 @@ _etapa: Mentalidad · sectores: Locales de ocio nocturno, Promotoras de eventos_
 
 _etapa: Seguimiento · sectores: Promotoras de eventos_
 
-> Los equipos de promotora están dispersos y siempre ocupados. No es desinterés, es su forma de trabajar. Con Paradox costó el seguimiento y acabaron siendo clientes.
+> El seguimiento es el riesgo de este sector, no el precio. Los equipos están dispersos y siempre ocupados. No es desinterés, es su forma de trabajar. Con Paradox costó el seguimiento y acabaron siendo clientes.
 > 
-> > Regla: si no contestan, no es un no. Se vuelve a escribir con una fecha concreta, no con un «¿cómo lo veis?».
+> > Regla: si no contestan, no es un no. Se vuelve a escribir con una fecha concreta, nunca con un «¿cómo lo veis?».
 
 #### Lo que hay que traer de vuelta siempre · `prom-canal`
 
@@ -1224,6 +1275,50 @@ _etapa: Seguimiento · sectores: Conciertos y artistas, Festivales_
 > Deep Delay, Selvatic Fest, Shark Events, Topamin Fest, The Lab y Bresh: **todos dijeron que sí y todos se perdieron por no hacer seguimiento.** Ninguno por precio, producto ni competencia.
 > 
 > Un sí sin fecha no es un sí.
+
+#### De dónde salen los precios · `prom-precio-referencias`
+
+_etapa: Negociación · sectores: Promotoras de eventos · la ven: Solo equipo interno_
+
+> - Paradox vio **50 €** y dijo que sí al momento, con el producto antiguo.
+> - **70-80 €** no habría tenido problema.
+> - **100-150 €** es el rango para promotoras más asentadas.
+> 
+> Los 90 € salen de ahí. **Los packs anuales están sin validar.**
+
+#### Nunca con una promotora · `prom-nunca`
+
+_etapa: Mentalidad · sectores: Promotoras de eventos_
+
+> | Qué | Por qué |
+> |---|---|
+> | **Mensual a quien hace pocas fiestas al año** | Le estás diciendo que no entiendes su negocio |
+> | **Vender «para tu local»** | No tiene local |
+> | **Peticiones de canciones en el ángulo underground** | Ahí el que sabe es el artista |
+> | **Perfiles demográficos o CRM** | Roadmap |
+> | **Cifras de lo que puede generar** | No las tenemos |
+> | **Bresh como cliente** | La lleva fundador. Como referencia de que el interés existe, sí se puede contar |
+> | Y todo lo del «nunca» de locales | Kiss-cam, informe post-evento, sin permanencia, 2 € en el recorrido |
+
+#### Los agentes de DJ (condiciones PENDIENTES) · `prom-agentes-dj`
+
+_etapa: Seguimiento · sectores: Promotoras de eventos_
+
+> Los agentes de DJ mueven a sus artistas por varias promotoras, y esas promotoras montan en varios locales. **Un agente puede meterte en promotoras, y esas promotoras te meten en locales.** Es el mismo papel que el DJ colaborador, un escalón más arriba.
+> 
+> **Lo que traes de vuelta:** si el DJ que trae la promotora tiene agente, el nombre y el contacto.
+> 
+> Condiciones **PENDIENTES** de definir: no le ofrezcas nada todavía.
+
+#### La promotora como canal hacia el local · `prom-canal-local`
+
+_etapa: Seguimiento · sectores: Promotoras de eventos · la ven: Solo equipo interno_
+
+> Esto no se le cuenta a la promotora. Una promotora monta su fiesta con todo, y **el local lo ve funcionar en su propia sala sin haber pagado nada.** La conversación que viene después no es una venta fría: «oye, lo de Paradox del martes molaba, ¿eso lo puedo tener yo todos los días?».
+> 
+> Por eso **cada evento de promotora es un lead cualificado de local**, y hay que traer siempre de vuelta en qué sala monta cada fiesta.
+> 
+> **Idea en estudio, no vendible todavía:** tratar a las promotoras como canal (servicio a cambio de que lo lleven a locales, o comisión). **No se ofrece a nadie hasta que esté cerrado y autorizado por fundador.**
 
 ## Módulo: Pantalla en vivo
 

@@ -36,7 +36,7 @@ const t = (s: string) => interpolate(s, ctx);
       <div
         role="tabpanel" id={`${uid}-panel-${i}`} aria-labelledby={`${uid}-tab-${i}`} hidden={i !== 0}
         data-active={i === 0 ? '' : undefined}
-        class="tabs-showcase__panel mt-8 grid items-center gap-10 rounded-card bg-bg p-6 shadow-card md:grid-cols-2 md:p-10"
+        class:list={['tabs-showcase__panel mt-8 grid items-center gap-10 rounded-card bg-bg p-6 shadow-card md:p-10', tab.mock && 'md:grid-cols-2']}
       >
         <div>
           <h3 class="font-display text-2xl font-extrabold sm:text-3xl">{t(tab.title)}</h3>

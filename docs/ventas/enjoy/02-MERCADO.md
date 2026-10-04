@@ -132,14 +132,13 @@ Necesitan material visual de sus propias fiestas y dinámicas que diferencien su
 
 **Cliente ideal**
 
-- Promotoras comerciales: reggaetón y música de público amplio
-- Foco en el público, no en el artista o el DJ que pincha
-- Ya hacen fiestas temáticas y dinámicas: solteros, juegos, cuentas atrás en pantalla
+- Promotoras pequeñas o que empiezan: deciden en el momento y compran eventos sueltos
+- Promotoras asentadas: varias fiestas al mes, pack anual o suscripción
+- Comerciales (reggaetón, público amplio), las que ya montan dinámicas, underground y fiestas de público que no conocen
 
 **Cuándo NO venderle**
 
-- Perfil rock o de nicho de artista
-- Eventos donde lo importante es quién pincha
+- Operación de escala (tipo Bresh): no es para el equipo comercial, la lleva fundador
 
 **Cómo decide (proceso de compra)**
 
@@ -147,7 +146,7 @@ Decide quien lleva la promotora, rápido. El riesgo es el seguimiento: equipos d
 
 **Tamaño de la venta**
 
-150 € por evento, o 390 €/mes con eventos ilimitados. Histórico: una promotora pequeña pagó 70 €/evento con el producto antiguo.
+Por frecuencia: 1–4 fiestas al año, evento suelto (90 € pequeña · 150 € asentada); 5–12 al año, pack anual (490 € por 6 · 890 € por 12, sin validar); 4 o más al mes, 390 €/mes ilimitados. Paradox pagó 50 € con el producto antiguo.
 
 **Ciclo de venta**
 

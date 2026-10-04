@@ -69,7 +69,9 @@ Está en producción y se puede enseñar:
 
 ### Lo que se cuenta · `prom-pitch`
 
-> «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, votaciones, mensajes entre mesas, cuentas atrás.»
+> «Cada fiesta que montáis os deja cientos de fotos y vídeos subidos por vuestro propio público, aceptando los términos. Material de vuestra fiesta, para vender la siguiente. Y en pantalla podéis montar lo que queráis: retos, mensajes entre mesas.»
+
+Votaciones y cuentas atrás: **PENDIENTE** de confirmar que existen. No las nombres.
 
 
 ### Si ya hacen dinámicas · `prom-pitch-dinamicas`
@@ -131,6 +133,15 @@ No es un cliente: es un canal. Lo que necesita, y nada más: qué es Enjoy en tr
 **Sin precios.** Un DJ que negocia mal te quema el local.
 
 **PENDIENTE de cerrar por escrito antes de dárselo:** si cobra por traer el local o solo si se cierra, y qué pasa cuando deja de pinchar allí. Hasta entonces, solo la ve el equipo interno.
+
+
+### Contenido durante y contenido después · `prom-durante-despues`
+
+**Durante:** material grabable. Alguien que se declara en la pantalla, un reto de solteros con las manos arriba, un match en pantalla entre dos selfies, el ganador de un reto de fotos. Son TikToks que se graban solos.
+
+**Después:** el álbum. La gente entra en sus redes a buscarse, comparte con su grupo, y eso es tráfico hacia su perfil en los días en que ella está vendiendo la siguiente.
+
+**Las fotos se guardan 30 días.** Dentro de ese plazo se puede poner el enlace del álbum en el linktree o en el Instagram. Pasado el plazo, si quieren conservarlas tienen que descargarlas ellos. **Decirlo siempre: es parte de la expectativa.**
 
 
 ## 2. Por qué existimos (paso 0 de Aprende)
@@ -314,8 +325,12 @@ Lo que el comercial elige en la propuesta: primero el tipo y luego la tarifa (�
 | Locales de ocio nocturno | Local | Noche suelta en local | 150 € /evento |
 | Locales de ocio nocturno | Caseta de feria | ★ Caseta · feria completa (hasta 7 días) | 290 € pago único |
 | Locales de ocio nocturno | Caseta de feria | Caseta · día suelto | 90 € /evento |
-| Promotoras de eventos | Promotora | ★ Evento de promotora | 150 € /evento |
+| Promotoras de eventos | Promotora | ★ Promotora pequeña · evento suelto | 90 € /evento |
+| Promotoras de eventos | Promotora | Promotora asentada · evento suelto | 150 € /evento |
+| Promotoras de eventos | Promotora | Promotora · pack anual de 6 eventos · **Propuesta sin validar** | 490 € /año |
+| Promotoras de eventos | Promotora | Promotora · pack anual de 12 eventos · **Propuesta sin validar** | 890 € /año |
 | Promotoras de eventos | Promotora | Promotora · eventos ilimitados | 390 € /mes |
+| Promotoras de eventos | Promotora | Evento de promotora | 150 € /evento |
 | Conciertos y artistas | Charanga u orquesta | ★ Charanga u orquesta · evento | 120 € /evento |
 | Conciertos y artistas | Charanga u orquesta | Charanga u orquesta · temporada (mayo–septiembre) | 390 € pago único |
 | Conciertos y artistas | Sala de conciertos | ★ Sala hasta 1.000 | 600 € /evento |
