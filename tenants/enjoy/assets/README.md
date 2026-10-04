@@ -13,3 +13,7 @@ cada `"asset:<ruta>"` de `tenant.json` por su URL pública. Archivos esperados:
 | `img/*` *(opcional)* | Imágenes usadas en módulos (`"asset:img/…"`) | WEBP/JPG/PNG ≤ 5 MB |
 
 Tipos permitidos: svg, png, jpg, webp, ico, woff2, woff. Máximo 5 MB por archivo.
+
+## img/real/
+Fotos reales del producto funcionando en locales, pasadas por Cristian (4 de octubre de 2026). Las tres de pantalla
+salen de un tríptico partido en tres. Las usa el módulo «En directo» (plantilla media-strip).

@@ -255,6 +255,14 @@ Tipo: `live-screen`
   - **Encima de tus visuales** (`tp.idle`): ¿Ya tienes visuales y VJ? Nos ponemos encima sin tocarlos: el QR va en una tarjeta.
   - **Foto en tarjeta** (`tp.photo`): En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show.
 
+### En directo · `en-directo`
+
+_Fotos reales del producto funcionando en locales. Diapositiva solo visual: un vistazo._  
+Tipo: `media-strip`
+
+- **Antetítulo:** Fotos reales
+- **Título:** En directo, en locales de verdad
+
 ### Móvil del invitado · `movil-invitado`
 
 _El recorrido del invitado en su móvil: escanea, pide, sube su foto y sale en pantalla._  

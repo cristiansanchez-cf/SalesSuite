@@ -4,6 +4,7 @@
  * Frase del guion verificado: «Esto ahora mismo te cuesta [X] € las noches que traes a alguien, más un domingo tuyo».
  */
 import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
 import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import { hasFigures, type CostMathProps } from './schema';
@@ -21,7 +22,7 @@ const PERIOD: Record<string, string> = { month: '/ mes', event: '/ evento', year
   <div data-module="cost-math" class="cost-math">
     <Section tone="surface">
       {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
-      <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+      <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
       <div class="cm-grid mt-8">
         <div class="cm-card rounded-card bg-bg shadow-card">
           <p class="cm-label">Hoy</p>

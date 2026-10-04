@@ -4,6 +4,7 @@
  */
 import Button from '~/components/Button.astro';
 import Container from '~/components/Container.astro';
+import Headline from '../Headline.astro';
 import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { HeroPitchProps } from './schema';
@@ -25,7 +26,7 @@ const t = (s: string) => interpolate(s, ctx);
       </p>
     )}
     <h1 class="hero-pitch__in font-display text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold tracking-tight" style="--d:80ms">
-      {t(title)}
+      <Headline text={t(title)} />
       {rotatingWords.length > 0 && (
         <span class="hero-pitch__words text-primary">
           {rotatingWords.map((w, i) => <span data-hero-word data-active={i === 0 ? '' : undefined}>{w}</span>)}

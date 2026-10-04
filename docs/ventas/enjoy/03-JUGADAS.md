@@ -12,7 +12,7 @@ Las 190 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 ## Antes de empezar: lo que ya sé que hay que mirar
 
 - **Reparto:** General: 164 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
-- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
+- **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «En directo», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
 Campos de cada jugada: **tipo** (Cómo presentarlo, Para quién (y cuándo no), Preguntas de descubrimiento, Pruebas y casos, Objeciones, Precio y monetización, Guiones, Consejos), **etapa** (Prospección, Primer contacto, Descubrimiento, Pitch / Demo, Objeciones, Negociación, Cierre, Seguimiento, Mentalidad), **objeción** si responde a una (Precio, Tiempo / me lo pienso, Desconfianza, No lo necesito, No decido yo, Quiere comparar opciones, Ya tengo proveedor), **para qué sectores/actores** (vacío = todos) y **quién la ve** (Todos, Solo equipo interno, Solo colaboradores).

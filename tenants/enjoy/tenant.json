@@ -214,6 +214,41 @@
       }
     },
     {
+      "key": "en-directo",
+      "block_type": "media-strip",
+      "name": "En directo",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Fotos reales del producto funcionando en locales. Diapositiva solo visual: un vistazo.",
+      "props": {
+        "eyebrow": "Fotos reales",
+        "title": "En directo, en locales de verdad",
+        "items": [
+          {
+            "src": "asset:img/real/pantalla-sala.webp",
+            "alt": "Pantalla de un local con el QR para pedir canción",
+            "caption": "El QR, en la pantalla del local"
+          },
+          {
+            "src": "asset:img/real/escanea-qr.webp",
+            "alt": "Alguien escanea el QR de la pantalla con la cámara del móvil",
+            "caption": "Se escanea con la cámara, sin descargar nada"
+          },
+          {
+            "src": "asset:img/real/pide-cancion-movil.webp",
+            "alt": "Un móvil pidiendo una canción en un local",
+            "caption": "Se pide desde el móvil"
+          },
+          {
+            "src": "asset:img/real/lista-peticiones.webp",
+            "alt": "La lista de peticiones de canciones en la pantalla de un local",
+            "caption": "Y la lista de peticiones, en pantalla"
+          }
+        ]
+      }
+    },
+    {
       "key": "movil-invitado",
       "block_type": "phone-tour",
       "name": "Móvil del invitado",
@@ -909,6 +944,10 @@
                 }
               ]
             }
+          },
+          "en-directo": {
+            "module": "en-directo",
+            "props": {}
           }
         },
         "modes": {
@@ -916,6 +955,7 @@
             "portada",
             "problema",
             "pantalla",
+            "en-directo",
             "gente",
             "sala",
             "caso-anon",
@@ -923,6 +963,7 @@
           ],
           "visual": [
             "pantalla",
+            "en-directo",
             "gente",
             "sala",
             "precio"
@@ -948,7 +989,8 @@
           "mesas",
           "cuesta",
           "caso-anon",
-          "caso-nombre"
+          "caso-nombre",
+          "en-directo"
         ],
         "choices": [
           {
@@ -989,7 +1031,8 @@
                   "karaoke",
                   "dj",
                   "mesas",
-                  "cuesta"
+                  "cuesta",
+                  "en-directo"
                 ]
               },
               {
@@ -1042,6 +1085,9 @@
                     "set": {
                       "smallPrint": "Feria completa o día suelto, pago único."
                     }
+                  },
+                  {
+                    "remove": "en-directo"
                   }
                 ]
               }
@@ -1246,7 +1292,8 @@
                   "karaoke",
                   "dj",
                   "mesas",
-                  "cuesta"
+                  "cuesta",
+                  "en-directo"
                 ]
               },
               {
@@ -1524,6 +1571,9 @@
                     }
                   ]
                 }
+              },
+              {
+                "remove": "en-directo"
               }
             ]
           },
@@ -2786,6 +2836,10 @@
                 }
               ]
             }
+          },
+          "en-directo": {
+            "module": "en-directo",
+            "props": {}
           }
         },
         "modes": {
@@ -2793,6 +2847,7 @@
             "portada",
             "problema",
             "visuales",
+            "en-directo",
             "publico",
             "llevas",
             "preshow",
@@ -2800,6 +2855,7 @@
           ],
           "visual": [
             "visuales",
+            "en-directo",
             "publico",
             "llevas",
             "precio"
@@ -2819,7 +2875,8 @@
           "barra",
           "menu",
           "preshow",
-          "marca"
+          "marca",
+          "en-directo"
         ],
         "choices": [
           {
@@ -2871,6 +2928,9 @@
                     "set": {
                       "title": "{company}"
                     }
+                  },
+                  {
+                    "remove": "en-directo"
                   }
                 ]
               }
@@ -3329,6 +3389,10 @@
               "eyebrow": "Cómo empezamos",
               "title": "Propuesta para {company}"
             }
+          },
+          "en-directo": {
+            "module": "en-directo",
+            "props": {}
           }
         },
         "modes": {
@@ -3336,12 +3400,14 @@
             "portada",
             "problema",
             "zonas",
+            "en-directo",
             "publico",
             "llevas",
             "precio"
           ],
           "visual": [
             "zonas",
+            "en-directo",
             "publico",
             "llevas",
             "precio"
@@ -3360,7 +3426,8 @@
           "precio",
           "patrocinador",
           "visuales",
-          "acompanamiento"
+          "acompanamiento",
+          "en-directo"
         ],
         "choices": [
           {

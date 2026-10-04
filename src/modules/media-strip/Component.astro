@@ -1,0 +1,46 @@
+---
+/**
+ * media-strip ← fotos/vídeos reales en tira (en móvil, se desliza). Solo tokens del tema. Sin JS: los vídeos van en
+ * bucle, sin sonido, y solo se cargan cuando hace falta (preload="none" + póster).
+ */
+import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { MediaStripProps } from './schema';
+
+type Props = MediaStripProps & ModuleBaseProps;
+const { eyebrow, title, lede, items, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="media-strip">
+  <Section>
+    {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
+    {lede && <p class="mt-4 max-w-2xl text-lg text-muted sm:text-xl">{t(lede)}</p>}
+    <ul class="ms-strip" style={`--n:${items.length}`}>
+      {items.map((it) => (
+        <li class="ms-item">
+          <figure class="m-0">
+            <div class="ms-frame rounded-card">
+              {it.video
+                ? <video src={it.video} poster={it.src} autoplay muted loop playsinline preload="none" aria-label={it.alt}></video>
+                : <img src={it.src} alt={it.alt} loading="lazy" decoding="async" />}
+            </div>
+            {it.caption && <figcaption class="ms-cap">{t(it.caption)}</figcaption>}
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </Section>
+</div>
+
+<style>
+  .ms-strip { list-style: none; margin: 2.25rem 0 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: min(72%, 280px); gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .ms-strip::-webkit-scrollbar { display: none; }
+  @media (min-width: 900px) { .ms-strip { grid-auto-flow: row; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); overflow: visible; gap: 1.25rem; } }
+  .ms-item { scroll-snap-align: start; }
+  .ms-frame { position: relative; overflow: hidden; aspect-ratio: 9 / 16; max-height: 62vh; margin-inline: auto; background: rgb(var(--color-surface, 20 16 25)); box-shadow: 0 24px 60px -24px rgb(0 0 0 / .6); }
+  .ms-frame img, .ms-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ms-cap { margin-top: .75rem; font-size: .95rem; font-weight: 600; line-height: 1.35; }
+</style>

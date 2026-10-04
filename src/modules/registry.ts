@@ -7,6 +7,7 @@ import { phoneTourSchema } from './phone-tour/schema';
 import { problemSolutionSchema } from './problem-solution/schema';
 import { caseStudySchema } from './case-study/schema';
 import { costMathSchema, hasFigures } from './cost-math/schema';
+import { mediaStripSchema } from './media-strip/schema';
 import { partsFor } from './phone-tour/steps';
 import type { ModuleContext } from './types';
 
@@ -66,6 +67,12 @@ export const REGISTRY = {
     load: () => import('./cost-math/Component.astro'),
     // Sin cifras del cliente no hay diapositiva (nunca se inventa una).
     hidden: (props: Record<string, unknown>) => !hasFigures(props as never),
+  },
+  'media-strip': {
+    label: 'En directo (fotos y vídeos reales)',
+    schema: mediaStripSchema,
+    example: { title: 'En directo', items: [{ src: '/demo/foto.webp', alt: 'El producto funcionando en un local' }] },
+    load: () => import('./media-strip/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

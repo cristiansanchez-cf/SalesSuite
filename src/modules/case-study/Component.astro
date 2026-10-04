@@ -3,6 +3,7 @@
  * case-study ← un caso real con nombre: qué pasó, cita y foto (opcionales). Solo tokens del tema.
  */
 import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
 import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { CaseStudyProps } from './schema';
@@ -16,7 +17,7 @@ const t = (s: string) => interpolate(s, ctx);
     <div class:list={['cs-layout', image && 'cs-layout--img']}>
       <div class="min-w-0">
         {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
-        <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+        <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
         <p class="cs-client mt-5"><b>{client}</b>{place && <span> · {place}</span>}</p>
         <p class="mt-4 max-w-2xl text-lg text-muted sm:text-xl">{t(body)}</p>
         {quote && (

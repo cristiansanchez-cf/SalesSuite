@@ -5,6 +5,7 @@
  * Se adapta a lo que tiene el cliente (ctx.media.features) y usa sus fotos, su nombre y su estilo musical.
  */
 import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
 import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { PhoneTourProps } from './schema';
@@ -34,7 +35,7 @@ const sub = part?.steps ? part.lede : part && part.n > 1 ? undefined : lede;
 <div data-module="phone-tour" class:list={['phone-tour', part && 'phone-tour--part']} data-autoplay={autoplay || part ? '1' : '0'}>
   <Section tone="surface">
     {(eyebrow || part) && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{eyebrow ? t(eyebrow) : ''}{part && part.of > 1 && <span class="pt-part"> · {part.n}/{part.of}</span>}</p>}
-    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(heading)}</h2>
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(heading)} /></h2>
     {sub && <p class="mt-3 max-w-2xl text-lg text-muted">{t(sub)}</p>}
 
     <div class="pt-layout mt-10">

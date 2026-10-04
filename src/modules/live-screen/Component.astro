@@ -5,6 +5,7 @@
  * El motor (engine.js) es el del producto, por instancia; los assets salen de las props (los del espacio).
  */
 import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
 import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { LiveScreenProps } from './schema';
@@ -33,7 +34,7 @@ const config = screenConfig(
 <div data-module="live-screen" class="live-screen">
   <Section tone="surface">
     {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
-    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight">{t(title)}</h2>
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
     {lede && <p class="mt-3 max-w-2xl text-lg text-muted">{t(lede)}</p>}
 
     <div class="live-screen__frame mt-8">

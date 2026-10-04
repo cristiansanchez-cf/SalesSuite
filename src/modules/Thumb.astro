@@ -58,6 +58,10 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
       <span class="thumb__ps-card"><i>Hoy</i><em>— € al mes</em></span>
       <span class="thumb__ps-card"><i>{p.afterLabel}</i><em>Tu tarifa</em></span>
     </div>
+  ) : blockType === 'media-strip' ? (
+    <div class="thumb__media">
+      {p.items.slice(0, 3).map((it: { src: string }) => <img src={it.src} alt="" loading="lazy" />)}
+    </div>
   ) : blockType === 'case-study' ? (
     <div class="thumb__hero">
       <span class="thumb__chip">{p.client}</span>
@@ -68,6 +72,8 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
 
 <style>
   .thumb { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #0d0a12; }
+  .thumb__media { position: absolute; right: 5%; top: 8%; display: flex; gap: 8px; width: 62%; }
+  .thumb__media img { flex: 1; min-width: 0; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 12px; }
   .thumb__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 22%, rgba(255,39,187,.35), transparent 55%), radial-gradient(ellipse at 18% 90%, rgba(225,255,0,.12), transparent 50%); }
   .thumb__screen { position: absolute; right: -4%; top: 7%; width: 74%; transform: rotate(-3deg); }
   .thumb__phones { position: absolute; right: 4%; top: 6%; display: flex; align-items: flex-start; }
