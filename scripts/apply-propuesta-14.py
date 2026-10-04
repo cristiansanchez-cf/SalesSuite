@@ -52,10 +52,11 @@ proposal = {
             'body': 'Se abre en un navegador o en una Smart TV, o se instala en el ordenador que ya tenéis conectado a la pantalla.',
             'bullets': ['Lo lleva quien vosotros digáis, desde su móvil.', 'Todo lo que sale en pantalla lo valida una persona. Siempre.',
                         'El servicio va gratis para el huésped.', 'Cada huésped lo ve en su idioma: la app detecta el del móvil.']}]}},
+        # Cierre que propuso el agente de ventas: una pregunta concreta que invite a contestar, no solo un «Hablemos».
         'hablemos': {'module': 'portada', 'props': {
-            'eyebrow': 'Enjoy para hoteles y resorts', 'title': 'Hablemos',
-            'subtitle': 'Cuéntanos cómo funciona vuestro programa de animación y os decimos si esto encaja.',
-            'ctas': [{'label': 'Escríbenos', 'href': 'mailto:hola@enjoytheclub.es', 'variant': 'primary'}]}},
+            'eyebrow': 'Hablemos', 'title': '¿Cuántas pantallas tenéis y en qué zonas?',
+            'subtitle': 'Con eso te decimos en una llamada de quince minutos si esto os encaja.',
+            'ctas': [{'label': 'Contestar', 'href': 'mailto:hola@enjoytheclub.es', 'variant': 'primary'}]}},
     },
     'modes': {'full': ['portada', 'problema', 'huespedes', 'dinamicas', 'por-dentro', 'hablemos']},
     'max': {'full': 6},

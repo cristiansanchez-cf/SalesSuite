@@ -3,7 +3,7 @@ import { DEMO } from './demo';
 
 /**
  * Por instancia: una pantalla (motor del producto) + el móvil que escanea y pide + la botonera del vendedor.
- * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla, se queda en ella (▶︎ lo reanuda).
+ * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla (o pasa con la flecha), se queda en ella.
  */
 type Scene = { scene: string; video?: boolean; text?: string };
 interface Config {
@@ -93,39 +93,41 @@ export function init(root: HTMLElement): () => void {
     const s = cfg.scenes[idx];
     mark(idx);
     // Sin tramos de pago en la propuesta: nunca se enseñan importes.
-    const show = () => { screen?.set('amount', 0); screen?.show(s.scene, isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : undefined); };
+    // Su texto (si lo trae): el mensaje, el pie de la foto o la dedicatoria; en club.promo, firmado por el local.
+    const show = () => { screen?.set('amount', 0); screen?.show(s.scene, isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : s.text ? { dedication: s.text } : undefined); };
     if (s.video && withPhone && !reduced && phone) {
       // Su vídeo: el móvil lo sube (barra), desaparece y el vídeo aparece de fondo en la pantalla.
       phoneState('is-in', 'is-upload');
-      later(1800, () => phoneState('is-in', 'is-upload', 'is-sent'));
-      later(2300, () => { phoneState(); show(); });
+      later(1200, () => phoneState('is-in', 'is-upload', 'is-sent'));
+      later(1600, () => { phoneState(); show(); });
     } else if (isPromo(s.scene) && withPhone && !reduced && phone) {
       // El local escribe a su pantalla desde su móvil: lo escribe, lo envía y sale.
       const box = root.querySelector<HTMLElement>('[data-phone-compose-text]');
       if (box) box.textContent = s.text ?? '';
       phoneState('is-in', 'is-compose');
-      later(1700, () => phoneState('is-in', 'is-compose', 'is-sent'));
-      later(2200, show);
-      later(4200, () => phoneState());
+      later(1000, () => phoneState('is-in', 'is-compose', 'is-sent'));
+      later(1300, show);
+      later(2600, () => phoneState());
     } else if (!withPhone || reduced || !phone || !isRequest(s.scene)) { phoneState(); show(); }
     else if (phoneKey(s.scene) === 'photo' && cfg.ownPhoto) {
       if (phoneImg) phoneImg.src = cfg.ownPhoto;
       phoneState('is-in', 'is-scan');
-      later(1100, () => phoneState('is-in', 'is-own'));
-      later(2200, () => phoneState('is-in', 'is-own', 'is-sent'));
-      later(2700, show);
-      later(4200, () => phoneState());
+      later(600, () => phoneState('is-in', 'is-own'));
+      later(1100, () => phoneState('is-in', 'is-own', 'is-sent'));
+      later(1400, show);
+      later(2600, () => phoneState());
     } else {
       const src = cfg.phone[phoneKey(s.scene)];
       if (phoneImg && src) phoneImg.src = src;
       phoneState('is-in', 'is-scan');
-      later(1100, () => phoneState('is-in', src ? 'is-app' : 'is-scan'));
-      later(2200, () => phoneState('is-in', src ? 'is-app' : '', 'is-sent'));
-      later(2700, show);
-      later(4200, () => phoneState());
+      later(600, () => phoneState('is-in', src ? 'is-app' : 'is-scan'));
+      later(1100, () => phoneState('is-in', src ? 'is-app' : '', 'is-sent'));
+      later(1400, show);
+      later(2600, () => phoneState());
     }
-    const lead = s.video ? 2300 : isPromo(s.scene) ? 2200 : isRequest(s.scene) ? 2700 : 0;
-    if (auto && visible) later(lead + (s.video ? 7000 : s.scene.endsWith('idle') ? 4500 : 6000), () => go(idx + 1, true));
+    // Rápido: el móvil escanea y envía en ~1,5 s y cada pantalla se queda unos 3 s.
+    const lead = s.video ? 1600 : isPromo(s.scene) ? 1300 : isRequest(s.scene) ? 1400 : 0;
+    if (auto && visible) later(lead + (s.video ? 4500 : s.scene.endsWith('idle') ? 2500 : 3200), () => go(idx + 1, true));
   }
 
   function setAuto(on: boolean) {
@@ -136,6 +138,13 @@ export function init(root: HTMLElement): () => void {
 
   btns.forEach((b, i) => b.addEventListener('click', () => { auto = false; play?.setAttribute('aria-pressed', 'false'); go(i, true); }));
   play?.addEventListener('click', () => setAuto(!auto));
+  // Presentación: la flecha «siguiente» pasa antes por cada pantalla de la lista.
+  const onDeckStep = (e: Event) => {
+    const to = idx + (e as CustomEvent<{ dir: number }>).detail.dir;
+    if (to >= 0 && to < cfg.scenes.length) { e.preventDefault(); auto = false; go(to, true); }
+  };
+  root.setAttribute('data-deck-step', '');
+  root.addEventListener('deck:step', onDeckStep);
 
   let alive = true;
   loadEngine(cfg).then((EnjoyScreen) => {
@@ -149,7 +158,7 @@ export function init(root: HTMLElement): () => void {
     if (v && auto) go(idx, false); else clear();
   });
 
-  return () => { alive = false; clear(); stopVis(); screen?.destroy(); };
+  return () => { alive = false; clear(); stopVis(); root.removeEventListener('deck:step', onDeckStep); screen?.destroy(); };
 }
 
 /**

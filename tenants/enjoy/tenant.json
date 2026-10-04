@@ -735,7 +735,7 @@
                   "steps": [
                     {
                       "key": "scan",
-                      "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                      "says": "Escanea y entra. Sin descargar nada.",
                       "owner": "Entra todo el mundo, también el que no se baja apps."
                     },
                     {
@@ -827,45 +827,30 @@
             }
           },
           "mesas": {
-            "module": "tabs-experiencias",
+            "module": "pantalla-en-vivo",
             "props": {
-              "eyebrow": "Dinámicas",
+              "eyebrow": "Imagínatelo",
               "title": "Lo que montan otros locales con esto",
-              "tabs": [
+              "lede": "",
+              "djName": "",
+              "scenes": [
                 {
+                  "scene": "club.message",
                   "label": "Por mesa",
-                  "title": "Las mesas se hablan por la pantalla",
-                  "body": "Pon un número en cada mesa y deja que se escriban por la pantalla.",
-                  "bullets": [
-                    "«Los de la mesa 1 son muy guapos»"
-                  ],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/messages-screen.webp",
-                    "alt": "Mensajes entre mesas en la pantalla"
-                  }
+                  "says": "Pon un número en cada mesa y deja que se escriban por la pantalla.",
+                  "text": "Los de la mesa 1 son muy guapos"
                 },
                 {
+                  "scene": "club.promo",
                   "label": "Chupito por fotos",
-                  "title": "Chupito por fotos",
-                  "body": "Con el contador que valida el camarero en dos segundos.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-mobile.webp",
-                    "alt": "Álbum de la noche en el móvil"
-                  }
+                  "says": "Con el contador que valida el camarero en dos segundos.",
+                  "text": "Chupito por fotos"
                 },
                 {
+                  "scene": "club.promo",
                   "label": "Sorteo",
-                  "title": "Sorteo por participación",
-                  "body": "Verificable: la app enseña al staff cuántas fotos ha subido esa persona, con hora y segundos.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-grid.webp",
-                    "alt": "Fotos subidas por el público"
-                  }
+                  "says": "Verificable: la app enseña al staff cuántas fotos ha subido esa persona, con hora y segundos.",
+                  "text": "Sorteo por participación"
                 }
               ]
             }
@@ -1881,7 +1866,7 @@
                   "steps": [
                     {
                       "key": "scan",
-                      "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                      "says": "Escanea y entra. Sin descargar nada.",
                       "owner": "Entra todo el mundo, también el que no se baja apps."
                     },
                     {
@@ -1971,43 +1956,30 @@
             }
           },
           "dinamicas": {
-            "module": "tabs-experiencias",
+            "module": "pantalla-en-vivo",
             "props": {
-              "eyebrow": "Dinámicas",
+              "eyebrow": "Imagínatelo",
               "title": "Lo que montan otras promotoras",
-              "tabs": [
+              "lede": "",
+              "djName": "",
+              "scenes": [
                 {
+                  "scene": "club.message",
                   "label": "Entre mesas",
-                  "title": "Mensajes entre mesas",
-                  "body": "",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/messages-screen.webp",
-                    "alt": "Mensajes entre mesas en la pantalla"
-                  }
+                  "says": "Mensajes entre mesas.",
+                  "text": "Los de la mesa 1 son muy guapos"
                 },
                 {
+                  "scene": "club.promo",
                   "label": "Por fotos",
-                  "title": "Chupito o entrada por subir fotos",
-                  "body": "",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-mobile.webp",
-                    "alt": "Álbum de la fiesta en el móvil"
-                  }
+                  "says": "Chupito o entrada por subir fotos.",
+                  "text": "Chupito o entrada por subir fotos"
                 },
                 {
+                  "scene": "club.promo",
                   "label": "Sorteo",
-                  "title": "Sorteo por participación",
-                  "body": "Con el contador que valida tu staff en dos segundos.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-grid.webp",
-                    "alt": "Fotos subidas por el público"
-                  }
+                  "says": "Sorteo por participación, con el contador que valida tu staff en dos segundos.",
+                  "text": "Sorteo por participación"
                 }
               ]
             }
@@ -2758,7 +2730,7 @@
                   "steps": [
                     {
                       "key": "scan",
-                      "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                      "says": "Escanea y entra. Sin descargar nada.",
                       "owner": "Entra todo el mundo, también el que no se baja apps."
                     },
                     {
@@ -2813,26 +2785,34 @@
             }
           },
           "preshow": {
-            "module": "tabs-experiencias",
+            "module": "pantalla-en-vivo",
             "props": {
-              "eyebrow": "Antes del show",
+              "eyebrow": "Imagínatelo",
               "title": "El pre-show",
-              "tabs": [
+              "lede": "La hora anterior al artista: público dentro, con el móvil en la mano y una playlist en pantalla.",
+              "djName": "",
+              "scenes": [
                 {
-                  "label": "Pre-show",
-                  "title": "La hora en la que no pasa nada",
-                  "body": "La hora anterior al artista: público dentro, con el móvil en la mano y una playlist en pantalla.",
-                  "bullets": [
-                    "Álbum con fotos de camerino en tiempo real",
-                    "«Contadnos cómo lo estáis viviendo»",
-                    "Reto de marca",
-                    "Mensajes a la grada"
-                  ],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-mobile.webp",
-                    "alt": "Álbum del concierto en el móvil"
-                  }
+                  "scene": "club.photo",
+                  "label": "Álbum de camerino",
+                  "says": "Álbum con fotos de camerino en tiempo real."
+                },
+                {
+                  "scene": "club.promo",
+                  "label": "¿Cómo lo vivís?",
+                  "says": "Lo lanzas a la pantalla y la grada contesta desde el móvil.",
+                  "text": "Contadnos cómo lo estáis viviendo"
+                },
+                {
+                  "scene": "club.promo",
+                  "label": "Reto de marca",
+                  "says": "Un reto de la marca, en pantalla, antes de que salga el artista.",
+                  "text": "Reto de marca"
+                },
+                {
+                  "scene": "club.message",
+                  "label": "Mensajes a la grada",
+                  "says": "Mensajes a la grada, delante de todos."
                 }
               ]
             }
@@ -3340,7 +3320,7 @@
                   "steps": [
                     {
                       "key": "scan",
-                      "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                      "says": "Escanea y entra. Sin descargar nada.",
                       "owner": "Entra todo el mundo, también el que no se baja apps."
                     },
                     {
@@ -3803,7 +3783,7 @@
                   "steps": [
                     {
                       "key": "scan",
-                      "says": "Apunta con la cámara al QR de la mesa. Sin descargar nada.",
+                      "says": "Escanea y entra. Sin descargar nada.",
                       "owner": "Participa todo el mundo, de cualquier edad"
                     },
                     {
@@ -3811,6 +3791,12 @@
                       "label": "Su foto o su mensaje",
                       "says": "Sube su foto o manda su mensaje.",
                       "owner": "Tu equipo decide qué sale, desde el móvil"
+                    },
+                    {
+                      "key": "songs",
+                      "label": "Su canción",
+                      "says": "O pide la canción que quiere oír.",
+                      "owner": "Lo que suena, lo eligen ellos"
                     },
                     {
                       "key": "live",
@@ -3829,45 +3815,37 @@
             }
           },
           "dinamicas": {
-            "module": "tabs-experiencias",
+            "module": "pantalla-en-vivo",
             "props": {
-              "eyebrow": "Tu equipo",
+              "eyebrow": "Imagínatelo",
               "title": "Lo que puede montar tu equipo",
-              "tabs": [
+              "lede": "",
+              "djName": "",
+              "scenes": [
                 {
+                  "scene": "club.photo",
                   "label": "Foto en pantalla",
-                  "title": "Foto en pantalla durante el show",
-                  "body": "El huésped sube la suya y sale en grande.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/live/kisscam-mobile.webp",
-                    "alt": "Su foto, en la pantalla"
-                  }
+                  "says": "Durante el show, el huésped sube la suya y sale en grande."
                 },
                 {
+                  "scene": "club.promo",
                   "label": "Reto de fotos",
-                  "title": "Reto de fotos",
-                  "body": "«Sube tres fotos de hoy y entras en el sorteo.» La app enseña al animador cuántas ha subido esa persona, con la hora, para validarlo en dos segundos.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/album-grid.webp",
-                    "alt": "Fotos subidas por los huéspedes"
-                  }
+                  "says": "La app enseña al animador cuántas ha subido esa persona, con la hora, para validarlo en dos segundos.",
+                  "text": "Sube tres fotos de hoy y entras en el sorteo"
                 },
                 {
+                  "scene": "club.message",
                   "label": "Mensajes",
-                  "title": "Mensajes en pantalla",
-                  "body": "Felicitaciones, cumpleaños, aniversarios. Lo que hoy se hace por megafonía.",
-                  "bullets": [],
-                  "mock": {
-                    "kind": "image",
-                    "src": "asset:img/tabs/messages-screen.webp",
-                    "alt": "Mensajes de los huéspedes en pantalla"
-                  }
+                  "says": "Felicitaciones, cumpleaños, aniversarios. Lo que hoy se hace por megafonía.",
+                  "text": "¡Feliz aniversario, Carmen y Luis!"
+                },
+                {
+                  "scene": "club.song",
+                  "label": "Canciones",
+                  "says": "Piden su canción desde el móvil y sale en pantalla."
                 }
-              ]
+              ],
+              "venueName": "Tu hotel"
             }
           },
           "por-dentro": {
@@ -3893,12 +3871,12 @@
           "hablemos": {
             "module": "portada",
             "props": {
-              "eyebrow": "Enjoy para hoteles y resorts",
-              "title": "Hablemos",
-              "subtitle": "Cuéntanos cómo funciona vuestro programa de animación y os decimos si esto encaja.",
+              "eyebrow": "Hablemos",
+              "title": "¿Cuántas pantallas tenéis y en qué zonas?",
+              "subtitle": "Con eso te decimos en una llamada de quince minutos si esto os encaja.",
               "ctas": [
                 {
-                  "label": "Escríbenos",
+                  "label": "Contestar",
                   "href": "mailto:hola@enjoytheclub.es",
                   "variant": "primary"
                 }

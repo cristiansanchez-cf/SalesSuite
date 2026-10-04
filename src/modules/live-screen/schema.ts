@@ -26,7 +26,10 @@ export const liveScreenSchema = z.object({
     scene: z.enum(LIVE_SCENES),
     label: z.string().min(1).max(30),
     says: z.string().max(220).default(''),
-    /** club.promo: lo que el local manda a su pantalla desde su móvil (p. ej. «Chupito a 2 € los próximos diez minutos»). */
+    /**
+     * Texto que sale en la pantalla: en club.promo, lo que el local manda desde su móvil («Chupito a 2 € los próximos diez
+     * minutos»); en el resto, el mensaje, el pie de la foto o la dedicatoria de la canción (las dinámicas de «Imagínatelo»).
+     */
     text: z.string().max(120).optional(),
   })).min(1).max(10),
   /** Vídeo del local de ejemplo (los visuales sobre los que va el modo transparente). webm y mp4: cada navegador coge el suyo. */

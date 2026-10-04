@@ -169,9 +169,8 @@ const og = {
   .deck__switch--float { position: fixed; left: 1rem; bottom: 1rem; z-index: 40; opacity: 1; text-decoration: none; padding: .55rem 1rem; border-radius: 999px; font-size: .85rem; font-weight: 700;
     background: rgb(var(--color-surface) / .92); color: rgb(var(--color-text)); border: 1px solid rgb(var(--color-text) / .18); backdrop-filter: blur(6px); }
   /* Lo grande, a la altura de la pantalla: la pantalla en vivo y el móvil caben sin bajar. */
-  .deck .live-screen__frame { max-width: max(18rem, calc((var(--deck-h, 100dvh) - 25rem) * 16 / 9)); margin-inline: auto; margin-top: 1.25rem; }
-  .deck .live-screen__controls, .deck .live-screen__says { margin-inline: auto; justify-content: center; text-align: center; max-width: max(18rem, calc((var(--deck-h, 100dvh) - 14rem) * 16 / 9)); }
-  .deck .live-screen__says { margin-top: .5rem; min-height: 2.6em; }
+  .deck .live-screen__frame { width: 100%; max-width: max(18rem, calc((var(--deck-h, 100dvh) - 9rem) * 16 / 9)); margin-inline: auto; }
+  @media (max-width: 899px) { .deck .live-screen__frame { max-width: max(16rem, calc((var(--deck-h, 100dvh) - 22rem) * 16 / 9)); } }
   .deck .pt-phone { zoom: var(--phone-zoom, 1); }
   .deck .tabs-showcase__panel img { max-height: max(14rem, calc(var(--deck-h, 100dvh) - 22rem)); }
   .deck .tabs-showcase__panel { margin-top: 1.25rem; }

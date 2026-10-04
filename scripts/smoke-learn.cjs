@@ -63,8 +63,8 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }) {
   const icp = await p.textContent('[data-testid=sector-icp]');
   assert(icp.includes('Cliente ideal') && icp.includes('Ideal Customer Profile'), 'cliente ideal en español e inglés');
   assert(await p.isVisible('[data-testid=sector-imagine]'), '«Imagínatelo»');
-  const frame = p.frameLocator('[data-testid=imagine-preview] iframe >> nth=0');
-  assert(await frame.locator('[data-block-type]').first().isVisible(), 'Imagínatelo: la propuesta real, dentro');
+  assert(await p.locator('[data-testid=imagine-ui] > *').first().isVisible(), 'Imagínatelo: la UI del producto, sin marco');
+  assert((await p.locator('[data-testid=imagine-ui] iframe').count()) === 0, 'Imagínatelo: sin ventana de navegador');
   if (OUT) await p.screenshot({ path: `${OUT}/learn-sector.png`, fullPage: true });
   if (await p.isVisible('[data-testid=sector-got]')) {
     await p.click('[data-testid=sector-got]');

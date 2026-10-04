@@ -4,7 +4,8 @@ import { onVisibility, prefersReducedMotion } from '../runtime';
  * Por instancia: pasos del móvil del invitado. Va solo mientras se ve; tocar un paso lo deja ahí.
  * En cada paso: la pantalla entra, el texto se escribe solo y un dedo toca lo que toca (la acción siguiente).
  */
-const DURATION: Record<string, number> = { scan: 3200, home: 4200, sheet: 3200, form: 4600, pending: 3600, live: 4200, album: 3800, songs: 4400 };
+// Rápido: escanear es casi una transición; ninguna pantalla pasa de ~3 s.
+const DURATION: Record<string, number> = { scan: 1500, home: 2800, sheet: 2400, form: 3200, pending: 2400, live: 2800, album: 2600, songs: 3000 };
 
 export function init(root: HTMLElement): () => void {
   const phone = root.querySelector<HTMLElement>('.pt-phone');
@@ -51,11 +52,11 @@ export function init(root: HTMLElement): () => void {
       scr.querySelectorAll<HTMLElement>('[data-type]').forEach((el) => type(el, el.dataset.type ?? '', key === 'songs' ? 70 : 40));
       scr.querySelectorAll<HTMLElement>('.pt-pill[data-pending]').forEach((p) => { p.classList.remove('is-pending'); p.textContent = 'PEDIR'; });
       const target = scr.querySelector<HTMLElement>('[data-tap]');
-      const dur = DURATION[key] ?? 3500;
+      const dur = DURATION[key] ?? 2800;
       if (key === 'songs') tap(target, 1600, () => { if (target) { target.classList.add('is-pending'); target.textContent = target.dataset.pending ?? ''; } });
       else tap(target, dur - 1300);
     }
-    const dur = DURATION[key] ?? 3500;
+    const dur = DURATION[key] ?? 2800;
     btns[idx].style.setProperty('--dur', `${dur}ms`);
     root.classList.toggle('is-auto', auto && visible);
     if (auto && visible) later(dur, () => show(idx + 1));

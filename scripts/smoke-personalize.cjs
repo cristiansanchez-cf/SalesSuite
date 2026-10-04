@@ -45,7 +45,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await pub.goto(url, { waitUntil: 'networkidle' });
   await pub.waitForSelector('[data-module=live-screen] .es-stage');
   assert((await pub.getAttribute('[data-module=live-screen] .es-venue-logo', 'src'))?.startsWith('/demo-media/'), 'su logo arriba en la pantalla');
-  const labels = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => e.textContent.trim()));
+  const labels = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => (e.querySelector('b') ?? e).textContent.trim()));
   assert(labels[1] === 'Su vídeo', `«Su vídeo» entre las pantallas (${labels.join(', ')})`);
   await pub.click('[data-scene-btn="1"]');
   await pub.waitForTimeout(3200);
@@ -68,7 +68,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForFunction(() => document.querySelector('[data-testid=feature-songs]')?.getAttribute('aria-pressed') === 'false');
   assert(!(await p.isVisible('[data-testid=media-style]')), 'sin canciones, no se pregunta el estilo musical');
   await pub.reload({ waitUntil: 'networkidle' });
-  const labels2 = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => e.textContent.trim()));
+  const labels2 = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => (e.querySelector('b') ?? e).textContent.trim()));
   const steps2 = await pub.$$eval('[data-step-btn]', (els) => els.map((e) => e.dataset.stepBtn));
   assert(!labels2.includes('Canción') && !steps2.includes('songs') && steps2.includes('scan'), `sin canciones: ${labels2.join(', ')} · ${steps2.join(', ')}`);
   await p.click('[data-testid=feature-songs]');
