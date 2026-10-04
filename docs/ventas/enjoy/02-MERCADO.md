@@ -335,6 +335,9 @@ Activaciones de marca medibles y experiencia en zonas comunes y entre conciertos
 
 **Cliente ideal**
 
+- Recintos que acogen varios festivales y eventos al año: tienen la barra y quieren que la gente vuelva
+- Infraestructuras de temporada que operan todo el verano
+- Festivales independientes sanos: repiten edición, venden con antelación, patrocinadores recurrentes, pagan a tiempo
 - 5.000+ asistentes
 - Programa de patrocinios
 - Pantallas en escenarios o zonas comunes
@@ -349,7 +352,7 @@ Dirección del festival decide; patrocinios lo vende a las marcas; producción t
 
 **Tamaño de la venta**
 
-1.200–2.500 € por evento; infraestructura de temporada desde 1.500 €/mes. Si entramos con una marca que lo paga, la activación va desde 3.000 €. Todas sin validar: no hemos cerrado ningún festival.
+Recinto o infraestructura de temporada: desde 1.500 €/mes. Festival hasta 5.000: 1.200 €; de 5.000 a 20.000: 2.500 €; más de 20.000, a medida tras prueba de carga. Activación de marca (modelo B) desde 3.000 €. Todo sin validar.
 
 **Ciclo de venta**
 

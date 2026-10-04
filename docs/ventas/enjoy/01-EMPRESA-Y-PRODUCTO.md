@@ -109,9 +109,9 @@ Paradox encajó por aquí: ya hacían temporizadores y dinámicas en pantalla si
 
 > «A ti no te cuesta. Lo paga la marca. Lo que tenemos que ver es cuánto te interesa a ti que lo pongamos.»
 
-El festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. De gasto a ingreso. **Es lo que los propios festivales dijeron que preferirían.**
+El festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. **De gasto a ingreso.**
 
-**Las conversaciones con marcas las lleva fundador.** El comercial detecta, cualifica y pasa.
+**Las conversaciones con marcas las lleva fundador.** Tú detectas qué marca patrocina cada festival, quién lleva esa relación y si nos presentan, y lo pasas. **Eso es todo tu trabajo en el modelo B, y es mucho.**
 
 
 ### Al festival mediano independiente · `fest-pitch-independiente`
@@ -351,6 +351,7 @@ Lo que el comercial elige en la propuesta: primero el tipo y luego la tarifa (�
 | Conciertos y artistas | Sala de conciertos | Sala 1.000–5.000 | 1200 € /evento |
 | Conciertos y artistas | Sala de conciertos | Sala 5.000–20.000 | 2500 € /evento |
 | Conciertos y artistas | Agencia de conciertos | ★ Agencia o promotora · fechas ilimitadas | 1500 € /mes |
+| Festivales | Recinto | ★ Recinto · suscripción de temporada · **Desde 1.500 €/mes** | 1500 € /mes |
 | Festivales | Festival | Festival hasta 5.000 | 1200 € /evento |
 | Festivales | Festival | ★ Festival 5.000–20.000 | 2500 € /evento |
 | Festivales | Festival | Infraestructura de temporada | 1500 € /mes |

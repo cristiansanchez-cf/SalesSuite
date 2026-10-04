@@ -3045,10 +3045,10 @@
       "name": "Festivales",
       "description": "Festivales de música con patrocinadores y zonas comunes.",
       "value_prop": "Activaciones de marca medibles y experiencia en zonas comunes y entre conciertos.",
-      "icp": "- 5.000+ asistentes\n- Programa de patrocinios\n- Pantallas en escenarios o zonas comunes",
+      "icp": "- Recintos que acogen varios festivales y eventos al año: tienen la barra y quieren que la gente vuelva\n- Infraestructuras de temporada que operan todo el verano\n- Festivales independientes sanos: repiten edición, venden con antelación, patrocinadores recurrentes, pagan a tiempo\n- 5.000+ asistentes\n- Programa de patrocinios\n- Pantallas en escenarios o zonas comunes",
       "disqualifiers": "Festivales sin patrocinio ni pantallas, o con conectividad muy limitada sin solución.",
       "buying_process": "Dirección del festival decide; patrocinios lo vende a las marcas; producción técnica valida (y puede vetar).",
-      "deal_size": "1.200–2.500 € por evento; infraestructura de temporada desde 1.500 €/mes. Si entramos con una marca que lo paga, la activación va desde 3.000 €. Todas sin validar: no hemos cerrado ningún festival.",
+      "deal_size": "Recinto o infraestructura de temporada: desde 1.500 €/mes. Festival hasta 5.000: 1.200 €; de 5.000 a 20.000: 2.500 €; más de 20.000, a medida tras prueba de carga. Activación de marca (modelo B) desde 3.000 €. Todo sin validar.",
       "sales_cycle": "3–9 meses (se cierra antes de la temporada)",
       "modules": [
         {
@@ -3134,7 +3134,463 @@
       ],
       "icon": "party-popper",
       "image": "asset:img/usecases/festivales.webp",
-      "notice": "En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta."
+      "notice": "En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta.",
+      "proposal": {
+        "blocks": {
+          "portada": {
+            "module": "portada",
+            "props": {
+              "eyebrow": "Propuesta para {company}",
+              "title": "Tu pantalla, vendiendo",
+              "subtitle": "Tu público participa desde el móvil, sale en pantalla, y tú te quedas con el contenido."
+            }
+          },
+          "problema": {
+            "module": "lo-que-te-pasa",
+            "props": {
+              "title": "Lo que te pasa hoy",
+              "cards": [
+                {
+                  "problem": "Entre concierto y concierto la barra se vacía y no puedes hacer nada.",
+                  "solution": "Mandas a la pantalla \"los próximos diez minutos, dos por uno\", desde tu móvil."
+                },
+                {
+                  "problem": "Tus pantallas enseñan un logo fijo durante horas.",
+                  "solution": "Pasan a ser el sitio donde la gente mira a ver si sale."
+                },
+                {
+                  "problem": "Tienes cinco zonas y solo controlas lo que suena.",
+                  "solution": "Contenido distinto en cada pantalla: escenario, barras, accesos."
+                }
+              ]
+            }
+          },
+          "zonas": {
+            "module": "pantalla-en-vivo",
+            "props": {
+              "eyebrow": "Tus pantallas",
+              "title": "Tus pantallas, por zonas",
+              "lede": "Contenido distinto en cada pantalla: una cosa en el escenario, otra en las barras, otra en los accesos. Todo desde el móvil.",
+              "djName": "",
+              "scenes": [
+                {
+                  "scene": "club.idle",
+                  "label": "Reclamo",
+                  "says": "Lo que se ve la mayor parte de la noche: un QR gigante. El anzuelo: sin esto no entra nadie."
+                },
+                {
+                  "scene": "club.photo",
+                  "label": "Foto",
+                  "says": "Su foto en grande y entera (nunca se recorta una cara). Y se queda en el álbum del festival."
+                },
+                {
+                  "scene": "club.message",
+                  "label": "Dedicatoria",
+                  "says": "Un mensaje delante de toda la sala, con o sin foto."
+                },
+                {
+                  "scene": "club.song",
+                  "label": "Canción",
+                  "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
+                }
+              ]
+            }
+          },
+          "publico": {
+            "module": "movil-invitado",
+            "props": {
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "eyebrow": "Tu público",
+              "title": "Lo que va a hacer tu público",
+              "parts": [
+                {
+                  "title": "Lo que va a hacer tu público",
+                  "steps": [
+                    {
+                      "key": "scan",
+                      "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
+                      "owner": "Entra todo el mundo, también el que no se baja apps."
+                    },
+                    {
+                      "key": "sheet",
+                      "says": "Elige: foto en pantalla, mensaje, o subir al álbum.",
+                      "owner": "Tres motivos distintos para sacar el móvil durante el festival."
+                    },
+                    {
+                      "key": "form",
+                      "label": "Su mensaje",
+                      "says": "Escribe su mensaje y lo manda.",
+                      "owner": "Tu equipo lo aprueba desde su móvil en un segundo."
+                    }
+                  ]
+                }
+              ],
+              "ownerLabel": "Lo que significa para ti"
+            }
+          },
+          "llevas": {
+            "module": "movil-invitado",
+            "props": {
+              "lede": "",
+              "djName": "",
+              "price": 0,
+              "eyebrow": "Para ti",
+              "title": "Y lo que te llevas",
+              "parts": [
+                {
+                  "title": "Y lo que te llevas",
+                  "steps": [
+                    {
+                      "key": "live",
+                      "says": "Su mensaje sale en pantalla delante de todos.",
+                      "owner": "Interacción con gente a la que hoy no llegas."
+                    },
+                    {
+                      "key": "album",
+                      "says": "Sus fotos quedan en el álbum del festival.",
+                      "owner": "Contenido del festival con permiso para usarlo."
+                    },
+                    {
+                      "key": "songs",
+                      "label": "Participa",
+                      "says": "Pide, participa, vota.",
+                      "owner": "Datos de cuánta gente participa y cuándo."
+                    }
+                  ]
+                }
+              ],
+              "ownerLabel": "Lo que te llevas tú"
+            }
+          },
+          "visuales": {
+            "module": "pantalla-en-vivo",
+            "props": {
+              "eyebrow": "Para producción",
+              "title": "Encima de vuestros visuales",
+              "lede": "No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en una tarjeta pequeña en un lateral. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.",
+              "djName": "",
+              "scenes": [
+                {
+                  "scene": "tp.idle",
+                  "label": "Encima de tus visuales",
+                  "says": "¿Ya tienes visuales y VJ? Nos ponemos encima sin tocarlos: el QR va en una tarjeta."
+                },
+                {
+                  "scene": "tp.photo",
+                  "label": "Foto en tarjeta",
+                  "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
+                }
+              ]
+            }
+          },
+          "patrocinador": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "Para tu patrocinador",
+              "title": "Para tu patrocinador",
+              "tabs": [
+                {
+                  "label": "Patrocinador",
+                  "title": "Interacción, no espacio",
+                  "body": "Un patrocinador ya no compra espacio, compra interacción.",
+                  "bullets": [
+                    "Una activación en la que la gente participa",
+                    "Datos de cuánta gente participa, cuándo y en qué"
+                  ],
+                  "mock": {
+                    "kind": "image",
+                    "src": "asset:img/tabs/messages-screen.webp",
+                    "alt": "El público participa en la pantalla"
+                  }
+                }
+              ]
+            }
+          },
+          "acompanamiento": {
+            "module": "tabs-experiencias",
+            "props": {
+              "eyebrow": "La primera edición",
+              "title": "Acompañamiento la primera edición",
+              "tabs": [
+                {
+                  "label": "Primera edición",
+                  "title": "Vamos nosotros",
+                  "body": "«En la primera edición vamos nosotros allí. No porque haya que montar nada, sino porque va a haber preguntas y prefiero estar.»",
+                  "bullets": []
+                }
+              ]
+            }
+          },
+          "precio": {
+            "module": "pricing",
+            "props": {
+              "eyebrow": "Cómo empezamos",
+              "title": "Propuesta para {company}"
+            }
+          }
+        },
+        "modes": {
+          "full": [
+            "portada",
+            "problema",
+            "zonas",
+            "publico",
+            "llevas",
+            "precio"
+          ],
+          "visual": [
+            "zonas",
+            "publico",
+            "llevas",
+            "precio"
+          ]
+        },
+        "max": {
+          "full": 8,
+          "visual": 5
+        },
+        "priority": [
+          "portada",
+          "problema",
+          "zonas",
+          "publico",
+          "llevas",
+          "precio",
+          "patrocinador",
+          "visuales",
+          "acompanamiento"
+        ],
+        "choices": [
+          {
+            "key": "tipo",
+            "label": "¿Qué tipo de cliente es?",
+            "default": "recinto",
+            "hint": "Sector sin validar: cero ventas cerradas. Busca el independiente sano, no el que está en apuros: un festival que está cancelando es un impago. Sin cobertura, no se vende. Las conversaciones con marcas (modelo B) las lleva fundador.",
+            "options": [
+              {
+                "key": "recinto",
+                "label": "Recinto",
+                "hint": "Quien pone el espacio: tiene la barra, acoge varios festivales al año y quiere que la gente vuelva. Suscripción de temporada, desde 1.500 €/mes. Por donde se empieza el sector."
+              },
+              {
+                "key": "mediano",
+                "label": "Festival mediano independiente",
+                "hint": "Angustia de diferenciarse, decisión rápida, bolsillo pequeño. Modelo A: paga él. 1.200 € hasta 5.000 personas, 2.500 € hasta 20.000."
+              },
+              {
+                "key": "grande",
+                "label": "Festival grande o de grupo",
+                "hint": "Rentabilidad y estructura. Ciclo largo, varios niveles de decisión. Inventario patrocinable y datos. Más de 20.000: a medida y solo tras prueba de carga."
+              },
+              {
+                "key": "infraestructura",
+                "label": "Infraestructura de temporada",
+                "hint": "Tipo Selvatic Fest: opera todo el verano con conciertos y festivales pequeños dentro. Suscripción de temporada, desde 1.500 €/mes."
+              }
+            ]
+          },
+          {
+            "key": "angulo",
+            "label": "¿Qué le mueve a este cliente?",
+            "default": "a",
+            "hint": "Uno solo.",
+            "options": [
+              {
+                "key": "a",
+                "label": "A · La barra",
+                "hint": "Que la barra no pare. Para el recinto y los festivales con barra propia: el que mejor conocemos, porque es el de los locales.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Tu pantalla, vendiendo"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Entre concierto y concierto la barra se vacía y no puedes hacer nada.",
+                          "solution": "Mandas a la pantalla \"los próximos diez minutos, dos por uno\", desde tu móvil."
+                        },
+                        {
+                          "problem": "Tus pantallas enseñan un logo fijo durante horas.",
+                          "solution": "Pasan a ser el sitio donde la gente mira a ver si sale."
+                        },
+                        {
+                          "problem": "Tienes cinco zonas y solo controlas lo que suena.",
+                          "solution": "Contenido distinto en cada pantalla: escenario, barras, accesos."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "insert": "zonas",
+                    "into": "scenes",
+                    "at": 1,
+                    "value": {
+                      "scene": "club.promo",
+                      "label": "Tu mensaje",
+                      "text": "Los próximos diez minutos, dos por uno",
+                      "says": "Mandas a la pantalla \"los próximos diez minutos, dos por uno\", desde tu móvil."
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "b",
+                "label": "B · Inventario patrocinable",
+                "hint": "Rentabilizar mejor a sus patrocinadores. Festival grande. Nunca prometas una cifra de aumento de patrocinio: la palanca existe, el número no. Entra siempre «Para tu patrocinador».",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Lo que tu patrocinador no puede comprar en otro sitio"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "A tu marca le das un logo y un photocall.",
+                          "solution": "Le das una activación en la que la gente participa."
+                        },
+                        {
+                          "problem": "Te piden medir el retorno y no tienes con qué.",
+                          "solution": "Datos de cuánta gente participa, cuándo y en qué."
+                        },
+                        {
+                          "problem": "Cada año te piden más por el mismo dinero.",
+                          "solution": "Algo que no estaba en el paquete del año pasado."
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "add": "patrocinador",
+                    "after": "llevas",
+                    "before": "precio"
+                  }
+                ]
+              },
+              {
+                "key": "c",
+                "label": "C · Diferenciarse",
+                "hint": "Festival mediano independiente. Nunca digas que el sector está en caída ni insinúes que está en apuros.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que no te comparen solo por el cartel"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Tu cartel se parece al de otros tres festivales del mismo mes.",
+                          "solution": "Algo que pasa en el tuyo y en el de al lado no."
+                        },
+                        {
+                          "problem": "La gente llega, ve el concierto y se va.",
+                          "solution": "Participan, salen en pantalla y se llevan el álbum del festival."
+                        },
+                        {
+                          "problem": "El contenido de tus redes lo produces tú.",
+                          "solution": "Cientos de fotos de tu público, con permiso para usarlas."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "d",
+                "label": "D · Que vuelvan al recinto",
+                "hint": "Para el recinto. Avisar a los de la última edición NO existe todavía: nunca en el dossier ni en el precio; solo en conversación, con fecha y por contrato (jugada «Las comunicaciones al público»).",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Que el de junio vuelva en septiembre"
+                    }
+                  },
+                  {
+                    "patch": "problema",
+                    "set": {
+                      "cards": [
+                        {
+                          "problem": "Cada evento empieza de cero: no sabes quién vino al anterior.",
+                          "solution": "Ves quién participó, qué pidió y cuándo."
+                        },
+                        {
+                          "problem": "Tu recinto es el sitio, pero la gente recuerda el festival.",
+                          "solution": "Un álbum de la noche con tu recinto dentro."
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "key": "vj",
+            "label": "¿Tiene VJ o realización propia?",
+            "hint": "Va contestada antes de que pregunten: es la primera objeción técnica.",
+            "rules": [
+              {
+                "add": "visuales",
+                "after": [
+                  "patrocinador",
+                  "llevas"
+                ],
+                "before": "precio"
+              }
+            ]
+          },
+          {
+            "key": "patrocinador",
+            "label": "¿Tiene patrocinadores?",
+            "hint": "La conversación con la marca la lleva fundador. Tú detectas qué marca, quién lleva la relación y si nos presentan.",
+            "when": [
+              "angulo:a",
+              "angulo:c",
+              "angulo:d"
+            ],
+            "rules": [
+              {
+                "add": "patrocinador",
+                "after": "llevas",
+                "before": "precio"
+              }
+            ]
+          },
+          {
+            "key": "primera",
+            "label": "¿Es su primera edición con nosotros?",
+            "hint": "Excepción de festivales: en la primera edición vamos. No en ediciones siguientes, y no va en el precio como incluido.",
+            "rules": [
+              {
+                "add": "acompanamiento",
+                "after": [
+                  "visuales",
+                  "patrocinador",
+                  "llevas"
+                ],
+                "before": "precio"
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "hoteles",
@@ -3773,6 +4229,16 @@
       "segment": "conciertos",
       "kind": "Agencia de conciertos",
       "default": true
+    },
+    {
+      "label": "Recinto · suscripción de temporada",
+      "amount": 1500,
+      "currency": "EUR",
+      "period": "month",
+      "segment": "festivales",
+      "kind": "Recinto",
+      "default": true,
+      "note": "Desde 1.500 €/mes"
     },
     {
       "label": "Festival hasta 5.000",
@@ -4632,9 +5098,11 @@
       "segments": [
         "festivales"
       ],
-      "title": "Festivales: busca al sano, no al que se está muriendo",
-      "body": "Un festival que cancela por viabilidad no es un cliente: es un impago. Veinte se han cancelado este año por no salirles las cuentas.\n\nEl bueno es **el independiente que está sano y quiere diferenciarse**. Señales: repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes y paga a proveedores a tiempo.",
-      "pinned": null
+      "title": "Busca al sano, no al que se está muriendo",
+      "body": "Un festival que está cancelando **no es un cliente, es un impago.**\n\nSeñales de sano: **repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes, paga a proveedores a tiempo.**",
+      "pinned": null,
+      "objection": null,
+      "audience": "all"
     },
     {
       "key": "gen-precio-reglas",
@@ -6298,11 +6766,12 @@
       ],
       "personas": [],
       "title": "Cuándo se llama",
-      "body": "| Periodo | Qué pasa |\n|---|---|\n| Mayo–septiembre | Temporada, pico junio–agosto. **Imposible vender** |\n| **Septiembre–noviembre** | **La ventana.** Es cuando las grandes cuentas cierran presupuesto del año siguiente |\n| Noviembre–diciembre | Partidas de marketing sin ejecutar que se pierden si no se gastan |\n| Enero–abril | Se cierran carteles y producción |\n\nLlamar en julio a un festival es quemar el contacto. La respuesta correcta en temporada es pedir fecha concreta de septiembre, no «ya hablamos».",
+      "body": "| Periodo | Qué hacer |\n|---|---|\n| Mayo-septiembre | Temporada, pico junio-agosto. **Imposible vender** |\n| **Septiembre-noviembre** | **La ventana.** Las grandes cuentas cierran presupuesto del año siguiente |\n| Noviembre-diciembre | Partidas de marketing sin ejecutar que se pierden |\n| Enero-abril | Se cierran carteles y producción |\n\n«Lo vemos el año que viene» es la respuesta normal en temporada, y se convierte en fecha:\n\n> «Me parece lo lógico. ¿Te va bien que te llame el [día concreto]? Lo apunto y no te molesto hasta entonces.»",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "fest-modelo-a",
@@ -6332,11 +6801,12 @@
       ],
       "personas": [],
       "title": "Llegamos con la marca detrás",
-      "body": "> «A ti no te cuesta. Lo paga la marca. Lo que tenemos que ver es cuánto te interesa a ti que lo pongamos.»\n\nEl festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. De gasto a ingreso. **Es lo que los propios festivales dijeron que preferirían.**\n\n**Las conversaciones con marcas las lleva fundador.** El comercial detecta, cualifica y pasa.",
+      "body": "> «A ti no te cuesta. Lo paga la marca. Lo que tenemos que ver es cuánto te interesa a ti que lo pongamos.»\n\nEl festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. **De gasto a ingreso.**\n\n**Las conversaciones con marcas las lleva fundador.** Tú detectas qué marca patrocina cada festival, quién lleva esa relación y si nos presentan, y lo pasas. **Eso es todo tu trabajo en el modelo B, y es mucho.**",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "fest-apertura",
@@ -6417,11 +6887,12 @@
       ],
       "personas": [],
       "title": "El acompañamiento la primera vez",
-      "body": "> «En la primera edición vamos nosotros allí. No porque haya que montar nada, sino porque va a haber preguntas y prefiero estar.»\n\n**Es excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y no va en el módulo de precio como incluido.",
+      "body": "> «En la primera edición vamos nosotros allí. No porque haya que montar nada, sino porque va a haber preguntas y prefiero estar.»\n\n**Excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y **no va en el módulo de precio como incluido**.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "fest-precio",
@@ -6501,12 +6972,13 @@
         "festivales"
       ],
       "personas": [],
-      "title": "Lo que NO se vende en festivales",
-      "body": "- **«Encuentra y gana»** (dos personas tienen un minuto para encontrarse y mandarse un selfie). Está previsto para 2027. Gustó cuando se contó como idea, pero **no existe**.\n- **Manejo múltiple de pantallas.** Roadmap.\n- Aforos de +20.000 sin prueba de carga.\n- Cifras de retorno de patrocinio. El mecanismo sí; los números, no.",
+      "title": "Nunca en festivales",
+      "body": "| Qué | Por qué |\n|---|---|\n| **Vender a un festival que está cancelando** | No es un cliente, es un impago |\n| **Decirle a un festival grande que el sector está en caída** | Él está creciendo |\n| **Prometer un aumento del patrocinio con número** | La palanca existe, el número no |\n| **Vender +20.000 sin prueba de carga** | Un «votad todos» nos tumba el servicio |\n| **Vender sin comprobar cobertura** | Es el riesgo real en campo |\n| **Las comunicaciones al público** | Solo con las condiciones de su jugada |\n| **«Encuentra y gana»** | Previsto para 2027. No existe |\n| **Cerrar con marcas** | Lo lleva fundador |\n| **Decir que algo va automático** | Todo lleva validación manual |",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
-      "pinned": null
+      "pinned": null,
+      "audience": "all"
     },
     {
       "key": "gen-no-decir",
@@ -7132,6 +7604,166 @@
       "pinned": null,
       "title": "Pendientes de hoteles",
       "body": "| Qué | Estado |\n|---|---|\n| Tarifa para el sector | No existe. Hasta tenerla, el dossier va sin precio |\n| Conectividad en cruceros | Sin mirar |\n\nNada de esto frena a Ángel: puede empezar a enseñar el dossier ya.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-sector",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Cómo está el sector",
+      "body": "**No está hundido: está partido en dos.** La música en vivo facturó más de **807 M€** en entradas, un **+11,2 %**. A la vez, una veintena de festivales se han cancelado este año por viabilidad.\n\n**La concentración:** Superstruct (comprada por KKR por 1.300 M€) opera unos 30 festivales en España: FIB, Arenal Sound, Sónar, Les Arts, SanSan.\n\n- **Festival grande o de grupo:** no tiene problema de supervivencia; tiene objetivos de rentabilidad y decisiones que pasan por estructura.\n- **Festival mediano independiente:** angustia de viabilidad real.\n\n**De dónde sale su dinero** (grandes eventos en España): 57 % entradas, 11 % patrocinios, 7 % ayudas públicas. **El patrocinio es una línea minoritaria:** útil, pero no es la palanca principal de un festival grande. Lo que sí sube su valor: **un patrocinador ya no compra espacio, compra interacción.**\n\n*Fuentes en el documento 15. Sin validar en campo.*",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-tipos",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Tipos de cliente en festivales",
+      "body": "**El recinto: el cliente recurrente, y el que más se nos escapaba.** No es el festival: es quien pone el espacio. **Tiene la barra** (márgenes del 70-80 % en consumiciones), **acoge varios festivales al año** (una venta, muchos eventos) y **quiere que la gente vuelva a su recinto**. Suscripción de temporada. Hereda casi todo de la sala de conciertos. **Es por donde se empieza el sector:** el festival pasa una vez al año; el recinto está todo el año.\n\n**Festival mediano independiente.** Angustia de diferenciarse, decisión rápida, bolsillo pequeño. Paga él.\n\n**Festival grande o de grupo.** Rentabilidad y estructura. Ciclo largo, varios niveles de decisión.\n\n**Infraestructura de temporada** (tipo Selvatic Fest): opera todo el verano. Suscripción de temporada; el mejor formato después del recinto.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-precio-tabla",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Precios de festivales",
+      "body": "| Formato | PVP |\n|---|---|\n| Festival pequeño o de un día (hasta 5.000) | 1.200 € |\n| Festival mediano (5.000-20.000) | 2.500 € |\n| Festival grande (+20.000) | A medida, **solo tras prueba de carga** |\n| **Recinto · suscripción de temporada** | **desde 1.500 €/mes** |\n| Infraestructura de temporada | desde 1.500 €/mes |\n| Activación de marca (modelo B) | desde 3.000 € |\n\n**El ancla, siempre antes:** una kiss cam clásica con pantalla, cámara y operario no baja de 8.000 € por evento, y cuando acaba no queda nada.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-descuento",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Descuento y suelo en festivales",
+      "body": "**Descuento máximo primer año: 50 %**, solo a cambio de caso con nombre, material grabado y derecho de tanteo en la edición siguiente.\n\n**Suelo: 800 € por evento.** Por debajo, fundador.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-comunicaciones",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Las comunicaciones al público: solo con condiciones",
+      "body": "Para un recinto, poder avisar a quien vino a la última edición es un argumento muy fuerte. **No existe todavía: está previsto para el verano que viene.** Se puede vender, pero solo así:\n\n1. **Nunca en el dossier ni en el precio.** El dossier vende lo que hay hoy.\n2. **Solo en conversación**, y como compromiso con fecha: «para la edición de [mes] lo tendréis».\n3. **Si es decisivo para que firme, va en el contrato con fecha de entrega.** Si no está para esa fecha, el cliente tiene derecho a algo (meses sin cuota, devolución, lo que se pacte).\n4. **Si no se puede poner por escrito, no se promete.**\n\nLa única vez que vendimos algo que todavía no existía, perdimos clientes cuando no se cumplió. Ponerlo por escrito es lo que convierte una promesa en un compromiso.",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-canal",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Cómo se entra de verdad en este sector",
+      "body": "No se entra por puerta fría. Se entra por quien ya está dentro:\n\n- **Agentes de artistas** (Bruno, Balaunka). Mueven artistas por festivales y recintos.\n- **El comercial de conciertos.** Los mismos interlocutores sirven para los dos sectores.\n- **Agencias de patrocinio.** Una puede abrir varios festivales a la vez.\n- **Marcas**, en modelo B. Lo lleva fundador.\n\n**Si alguno nos hace una intro, se recompensa.** Las condiciones de colaborador están pendientes: hoy no se ofrece nada por escrito. «Lo tenemos montado para gente como tú, te lo paso cuando lo cerremos.»",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-historial",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Historial: todos dijeron que sí",
+      "body": "- **Deep Delay:** marca que opera varios festivales. Al gerente le gustaron sobre todo las peticiones de canciones. **Pidieron retomarlo en septiembre: pendiente de llamar. La ventana se cierra en noviembre.**\n- **Selvatic Fest:** dijo que sí. Infraestructura que opera todo el verano. Nunca se acordó precio; buscaban un primer año gratis a cambio de validación.\n- **Topamin Fest:** quería ponerlo. Por su número de marcas, perfil claro de modelo A o B.\n- **Shark Events:** dijo que sí; habían probado antes a un competidor que no funcionó.\n- **B-Combinator Fest (caseta):** funcionó.\n\n**Ninguno se perdió por precio, producto ni competencia. Todos por no hacer seguimiento.**",
+      "when_to_use": null,
+      "why_it_works": null,
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "fest-pendiente",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "festivales"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Pendientes de festivales",
+      "body": "| Qué | Estado |\n|---|---|\n| **Llamar a Deep Delay** | Lo pidieron para septiembre. **La ventana se cierra en noviembre** |\n| Prueba de carga | Todo lo de +20.000 |\n| Un caso de éxito en festival | No hay ninguno |\n| Condiciones de colaborador | Hoy no se ofrece nada por escrito |\n| Fecha real de las comunicaciones al público | Sin ella no se puede comprometer por contrato |",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],

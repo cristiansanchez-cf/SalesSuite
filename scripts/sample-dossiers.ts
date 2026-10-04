@@ -19,6 +19,7 @@ const SAMPLES: Sample[] = [
   { key: 'promotoras', segment: 'promotoras', title: 'Propuesta para Promotora Ejemplo', company: 'Promotora Ejemplo', contact: 'Javi (producción)', tariff: 'Promotora pequeña · evento suelto' },
   // Hoteles: dossier de validación para un colaborador externo (documento 14). Sin precio, sin nombre de hotel.
   { key: 'hoteles', segment: 'hoteles', title: 'Enjoy para hoteles y resorts', company: null, contact: null, tariff: null, live: true },
+  { key: 'festivales', segment: 'festivales', title: 'Propuesta para Recinto Ejemplo', company: 'Recinto Ejemplo', contact: 'Andrea (dirección)', tariff: 'Recinto · suscripción de temporada' },
   { key: 'conciertos', segment: 'conciertos', title: 'Propuesta para Auditorio Ejemplo', company: 'Auditorio Ejemplo', contact: 'Lucía (programación)', tariff: 'Sala de conciertos · suscripción (más de 500)' },
 ];
 

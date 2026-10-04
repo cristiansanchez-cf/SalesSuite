@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 182 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 190 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,7 +11,7 @@ Las 182 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 156 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Reparto:** General: 164 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
 - **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
@@ -198,9 +198,9 @@ _etapa: Pitch / Demo · sectores: Festivales_
 
 > > «A ti no te cuesta. Lo paga la marca. Lo que tenemos que ver es cuánto te interesa a ti que lo pongamos.»
 > 
-> El festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. De gasto a ingreso. **Es lo que los propios festivales dijeron que preferirían.**
+> El festival deja de preguntarse cuánto le cuesta y pasa a preguntarse cuánto le dan. **De gasto a ingreso.**
 > 
-> **Las conversaciones con marcas las lleva fundador.** El comercial detecta, cualifica y pasa.
+> **Las conversaciones con marcas las lleva fundador.** Tú detectas qué marca patrocina cada festival, quién lleva esa relación y si nos presentan, y lo pasas. **Eso es todo tu trabajo en el modelo B, y es mucho.**
 
 #### Al festival mediano independiente · `fest-pitch-independiente`
 
@@ -248,7 +248,7 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **Nunca** prometas un aviso personal, una notificación ni una cola con posiciones numeradas.
 
-### Para quién (y cuándo no) (10)
+### Para quién (y cuándo no) (12)
 
 #### Cuenta grande no es un local grande · `gen-cuenta-grande`
 
@@ -263,13 +263,13 @@ _etapa: Descubrimiento_
 > 
 > Con un local pierdes 99 €/mes; con un grupo de festivales pierdes la temporada y una puerta que no se vuelve a abrir.
 
-#### Festivales: busca al sano, no al que se está muriendo · `fest-sano`
+#### Busca al sano, no al que se está muriendo · `fest-sano`
 
 _etapa: Prospección · sectores: Festivales_
 
-> Un festival que cancela por viabilidad no es un cliente: es un impago. Veinte se han cancelado este año por no salirles las cuentas.
+> Un festival que está cancelando **no es un cliente, es un impago.**
 > 
-> El bueno es **el independiente que está sano y quiere diferenciarse**. Señales: repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes y paga a proveedores a tiempo.
+> Señales de sano: **repite edición desde hace años, vende entradas con antelación, tiene patrocinadores recurrentes, paga a proveedores a tiempo.**
 
 #### Cliente ideal (y cuándo no) · `empresa-icp`
 
@@ -377,6 +377,33 @@ _etapa: Descubrimiento · sectores: Hoteles y resorts_
 > **Por eso aquí no vendemos monetización, vendemos satisfacción y contenido.** Y el programa de animación lo reciben todos los departamentos del hotel: lo que entra en animación lo ve toda la casa.
 > 
 > *Tesis sin validar, con fuentes en el documento 14.*
+
+#### Cómo está el sector · `fest-sector`
+
+_etapa: Descubrimiento · sectores: Festivales_
+
+> **No está hundido: está partido en dos.** La música en vivo facturó más de **807 M€** en entradas, un **+11,2 %**. A la vez, una veintena de festivales se han cancelado este año por viabilidad.
+> 
+> **La concentración:** Superstruct (comprada por KKR por 1.300 M€) opera unos 30 festivales en España: FIB, Arenal Sound, Sónar, Les Arts, SanSan.
+> 
+> - **Festival grande o de grupo:** no tiene problema de supervivencia; tiene objetivos de rentabilidad y decisiones que pasan por estructura.
+> - **Festival mediano independiente:** angustia de viabilidad real.
+> 
+> **De dónde sale su dinero** (grandes eventos en España): 57 % entradas, 11 % patrocinios, 7 % ayudas públicas. **El patrocinio es una línea minoritaria:** útil, pero no es la palanca principal de un festival grande. Lo que sí sube su valor: **un patrocinador ya no compra espacio, compra interacción.**
+> 
+> *Fuentes en el documento 15. Sin validar en campo.*
+
+#### Tipos de cliente en festivales · `fest-tipos`
+
+_etapa: Prospección · sectores: Festivales_
+
+> **El recinto: el cliente recurrente, y el que más se nos escapaba.** No es el festival: es quien pone el espacio. **Tiene la barra** (márgenes del 70-80 % en consumiciones), **acoge varios festivales al año** (una venta, muchos eventos) y **quiere que la gente vuelva a su recinto**. Suscripción de temporada. Hereda casi todo de la sala de conciertos. **Es por donde se empieza el sector:** el festival pasa una vez al año; el recinto está todo el año.
+> 
+> **Festival mediano independiente.** Angustia de diferenciarse, decisión rápida, bolsillo pequeño. Paga él.
+> 
+> **Festival grande o de grupo.** Rentabilidad y estructura. Ciclo largo, varios niveles de decisión.
+> 
+> **Infraestructura de temporada** (tipo Selvatic Fest): opera todo el verano. Suscripción de temporada; el mejor formato después del recinto.
 
 ### Preguntas de descubrimiento (6)
 
@@ -992,7 +1019,7 @@ _etapa: Cierre · sectores: Festivales_
 
 > > «En la primera edición vamos nosotros allí. No porque haya que montar nada, sino porque va a haber preguntas y prefiero estar.»
 > 
-> **Es excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y no va en el módulo de precio como incluido.
+> **Excepción de festivales y se dice como tal.** No se promete en locales, ni en conciertos de sala, ni en ediciones siguientes. Y **no va en el módulo de precio como incluido**.
 
 #### Con un casetero · `noche-caseta-argumento`
 
@@ -1012,7 +1039,7 @@ _etapa: Pitch / Demo · sectores: Hoteles y resorts_
 > 
 > > «Aquí el servicio va gratis para el huésped. Si en algún momento queréis dejar que alguien deje una propina, se puede, y ese dinero se queda en el hotel. Pero por defecto, gratis.»
 
-### Consejos (55)
+### Consejos (61)
 
 #### Lo primero que se comprueba · `gen-cobertura`
 
@@ -1346,23 +1373,32 @@ _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Charanga u o
 
 _etapa: Prospección · sectores: Festivales_
 
-> | Periodo | Qué pasa |
+> | Periodo | Qué hacer |
 > |---|---|
-> | Mayo–septiembre | Temporada, pico junio–agosto. **Imposible vender** |
-> | **Septiembre–noviembre** | **La ventana.** Es cuando las grandes cuentas cierran presupuesto del año siguiente |
-> | Noviembre–diciembre | Partidas de marketing sin ejecutar que se pierden si no se gastan |
-> | Enero–abril | Se cierran carteles y producción |
+> | Mayo-septiembre | Temporada, pico junio-agosto. **Imposible vender** |
+> | **Septiembre-noviembre** | **La ventana.** Las grandes cuentas cierran presupuesto del año siguiente |
+> | Noviembre-diciembre | Partidas de marketing sin ejecutar que se pierden |
+> | Enero-abril | Se cierran carteles y producción |
 > 
-> Llamar en julio a un festival es quemar el contacto. La respuesta correcta en temporada es pedir fecha concreta de septiembre, no «ya hablamos».
+> «Lo vemos el año que viene» es la respuesta normal en temporada, y se convierte en fecha:
+> 
+> > «Me parece lo lógico. ¿Te va bien que te llame el [día concreto]? Lo apunto y no te molesto hasta entonces.»
 
-#### Lo que NO se vende en festivales · `fest-no-vender`
+#### Nunca en festivales · `fest-no-vender`
 
 _etapa: Mentalidad · sectores: Festivales_
 
-> - **«Encuentra y gana»** (dos personas tienen un minuto para encontrarse y mandarse un selfie). Está previsto para 2027. Gustó cuando se contó como idea, pero **no existe**.
-> - **Manejo múltiple de pantallas.** Roadmap.
-> - Aforos de +20.000 sin prueba de carga.
-> - Cifras de retorno de patrocinio. El mecanismo sí; los números, no.
+> | Qué | Por qué |
+> |---|---|
+> | **Vender a un festival que está cancelando** | No es un cliente, es un impago |
+> | **Decirle a un festival grande que el sector está en caída** | Él está creciendo |
+> | **Prometer un aumento del patrocinio con número** | La palanca existe, el número no |
+> | **Vender +20.000 sin prueba de carga** | Un «votad todos» nos tumba el servicio |
+> | **Vender sin comprobar cobertura** | Es el riesgo real en campo |
+> | **Las comunicaciones al público** | Solo con las condiciones de su jugada |
+> | **«Encuentra y gana»** | Previsto para 2027. No existe |
+> | **Cerrar con marcas** | Lo lleva fundador |
+> | **Decir que algo va automático** | Todo lleva validación manual |
 
 #### Lo que no se dice nunca · `gen-no-decir`
 
@@ -1603,6 +1639,79 @@ _etapa: Mentalidad · sectores: Hoteles y resorts · la ven: Solo equipo interno
 > | Conectividad en cruceros | Sin mirar |
 > 
 > Nada de esto frena a Ángel: puede empezar a enseñar el dossier ya.
+
+#### Precios de festivales · `fest-precio-tabla`
+
+_etapa: Negociación · sectores: Festivales_
+
+> | Formato | PVP |
+> |---|---|
+> | Festival pequeño o de un día (hasta 5.000) | 1.200 € |
+> | Festival mediano (5.000-20.000) | 2.500 € |
+> | Festival grande (+20.000) | A medida, **solo tras prueba de carga** |
+> | **Recinto · suscripción de temporada** | **desde 1.500 €/mes** |
+> | Infraestructura de temporada | desde 1.500 €/mes |
+> | Activación de marca (modelo B) | desde 3.000 € |
+> 
+> **El ancla, siempre antes:** una kiss cam clásica con pantalla, cámara y operario no baja de 8.000 € por evento, y cuando acaba no queda nada.
+
+#### Descuento y suelo en festivales · `fest-descuento`
+
+_etapa: Negociación · sectores: Festivales · la ven: Solo equipo interno_
+
+> **Descuento máximo primer año: 50 %**, solo a cambio de caso con nombre, material grabado y derecho de tanteo en la edición siguiente.
+> 
+> **Suelo: 800 € por evento.** Por debajo, fundador.
+
+#### Las comunicaciones al público: solo con condiciones · `fest-comunicaciones`
+
+_etapa: Negociación · sectores: Festivales_
+
+> Para un recinto, poder avisar a quien vino a la última edición es un argumento muy fuerte. **No existe todavía: está previsto para el verano que viene.** Se puede vender, pero solo así:
+> 
+> 1. **Nunca en el dossier ni en el precio.** El dossier vende lo que hay hoy.
+> 2. **Solo en conversación**, y como compromiso con fecha: «para la edición de [mes] lo tendréis».
+> 3. **Si es decisivo para que firme, va en el contrato con fecha de entrega.** Si no está para esa fecha, el cliente tiene derecho a algo (meses sin cuota, devolución, lo que se pacte).
+> 4. **Si no se puede poner por escrito, no se promete.**
+> 
+> La única vez que vendimos algo que todavía no existía, perdimos clientes cuando no se cumplió. Ponerlo por escrito es lo que convierte una promesa en un compromiso.
+
+#### Cómo se entra de verdad en este sector · `fest-canal`
+
+_etapa: Prospección · sectores: Festivales · la ven: Solo equipo interno_
+
+> No se entra por puerta fría. Se entra por quien ya está dentro:
+> 
+> - **Agentes de artistas** (Bruno, Balaunka). Mueven artistas por festivales y recintos.
+> - **El comercial de conciertos.** Los mismos interlocutores sirven para los dos sectores.
+> - **Agencias de patrocinio.** Una puede abrir varios festivales a la vez.
+> - **Marcas**, en modelo B. Lo lleva fundador.
+> 
+> **Si alguno nos hace una intro, se recompensa.** Las condiciones de colaborador están pendientes: hoy no se ofrece nada por escrito. «Lo tenemos montado para gente como tú, te lo paso cuando lo cerremos.»
+
+#### Historial: todos dijeron que sí · `fest-historial`
+
+_etapa: Seguimiento · sectores: Festivales · la ven: Solo equipo interno_
+
+> - **Deep Delay:** marca que opera varios festivales. Al gerente le gustaron sobre todo las peticiones de canciones. **Pidieron retomarlo en septiembre: pendiente de llamar. La ventana se cierra en noviembre.**
+> - **Selvatic Fest:** dijo que sí. Infraestructura que opera todo el verano. Nunca se acordó precio; buscaban un primer año gratis a cambio de validación.
+> - **Topamin Fest:** quería ponerlo. Por su número de marcas, perfil claro de modelo A o B.
+> - **Shark Events:** dijo que sí; habían probado antes a un competidor que no funcionó.
+> - **B-Combinator Fest (caseta):** funcionó.
+> 
+> **Ninguno se perdió por precio, producto ni competencia. Todos por no hacer seguimiento.**
+
+#### Pendientes de festivales · `fest-pendiente`
+
+_etapa: Mentalidad · sectores: Festivales · la ven: Solo equipo interno_
+
+> | Qué | Estado |
+> |---|---|
+> | **Llamar a Deep Delay** | Lo pidieron para septiembre. **La ventana se cierra en noviembre** |
+> | Prueba de carga | Todo lo de +20.000 |
+> | Un caso de éxito en festival | No hay ninguno |
+> | Condiciones de colaborador | Hoy no se ofrece nada por escrito |
+> | Fecha real de las comunicaciones al público | Sin ella no se puede comprometer por contrato |
 
 ## Módulo: Pantalla en vivo
 
