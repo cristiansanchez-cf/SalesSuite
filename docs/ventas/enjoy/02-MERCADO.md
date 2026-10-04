@@ -176,6 +176,10 @@ Días; se pierden en el seguimiento
 
 _Promotores, salas y giras. Y la puerta de entrada: charangas, orquestas y tributos._
 
+**⚠️ Aviso para quien vende**
+
+En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta.
+
 **Por qué nos compra (propuesta de valor)**
 
 La hora antes del artista no la monetiza nadie: el público ya está dentro, esperando, con el móvil en la mano. La llenamos con sus fotos y mensajes en pantalla y con un espacio que las marcas pueden patrocinar. Nos ponemos encima de sus visuales, sin tocar la producción, y lo que sube el público se puede usar porque lo ha consentido.
@@ -320,6 +324,10 @@ Días con charangas; meses con promotores y marcas
 
 _Festivales de música con patrocinadores y zonas comunes._
 
+**⚠️ Aviso para quien vende**
+
+En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta.
+
 **Por qué nos compra (propuesta de valor)**
 
 Activaciones de marca medibles y experiencia en zonas comunes y entre conciertos.
@@ -350,7 +358,7 @@ Dirección del festival decide; patrocinios lo vende a las marcas; producción t
 
 1. Pantalla en vivo — Lo primero que tiene que ver: su pantalla, con su nombre, funcionando.
 1. Móvil del invitado — Cómo lo vive cada invitado: sin descargar nada, desde su móvil.
-1. Experiencias en directo — Retos y kiss-cam en zonas comunes y entre conciertos.
+1. Experiencias en directo — Fotos y mensajes del público en pantalla, en zonas comunes y entre conciertos.
 
 ### Actores
 
@@ -385,7 +393,7 @@ Dirección del festival decide; patrocinios lo vende a las marcas; producción t
 - **Cómo lo puede tumbar:** Veto técnico: "no hay red", "la pantalla no es vuestra".
 - **Evita:** Prometer cosas técnicas sin haber visto el recinto.
 - **Objeciones típicas:** Desconfianza
-- **Ángulo con «Experiencias en directo»:** Montaje cerrado, plan B sin conexión y prueba previa.
+- **Ángulo con «Experiencias en directo»:** Cero montaje para producción. Y antes de nada, comprobar la cobertura y el wifi del recinto: si no hay, no se hace.
 
 ## Bodas · `bodas`
 

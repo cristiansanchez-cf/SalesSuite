@@ -112,6 +112,7 @@ Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.pla
   for (const s of t.market) {
     L.push(`## ${s.name} · \`${s.key}\`\n\n_${q(s.description)}_\n`);
     const f = (label: string, v: string | undefined) => v && L.push(`**${label}**\n\n${q(v)}\n`);
+    f('⚠️ Aviso para quien vende', s.notice);
     f('Por qué nos compra (propuesta de valor)', s.value_prop);
     f('Cliente ideal', s.icp);
     f('Cuándo NO venderle', s.disqualifiers);
@@ -206,15 +207,19 @@ Piezas que ya rozan esto (están en «03»; quizá deban moverse aquí): ${t.pla
 3. **Crea la propuesta**: elige sector, tarifa y módulos (los recomendados del sector salen ya puestos), personaliza con el
    logo/fotos/vídeo del cliente y comparte el enlace. El cliente la ve como una presentación.
 4. **Guion de la reunión** (se genera solo, no inventa nada: ordena las jugadas oficiales según la propuesta):
+   0. **Antes de nada** — el aviso del sector (si lo tiene) y su mentalidad. **Antes de ir** — lo que se mira y se manda
+      antes de la llamada o la visita.
    1. **Con quién hablas** — cada contacto de la cuenta con su papel, qué quiere, qué le duele, cómo abordarle y su ángulo
       con cada módulo (02 · actores).
-   2. **Apertura** — guiones de prospección/primer contacto + «Cómo presentarlo» generales.
-   3. **Descubrimiento** — preguntas generales + las de los módulos de la propuesta.
-   4. **Presentación** — por cada módulo, en el orden de la propuesta: 1 «Cómo presentarlo», 1 «Para quién», 1 «Prueba»,
+   2. **Apertura** — guiones de primer contacto (si el sector no tiene relato propio, también el «Cómo presentarlo» general).
+   3. **Descubrimiento** — preguntas del sector (o generales) + las de los módulos de la propuesta.
+   4. **Lo que se cuenta** — el relato del sector, en su orden (solo sectores con guion verificado).
+   5. **Presentación** — por cada módulo, en el orden de la propuesta: 1 «Cómo presentarlo», 1 «Para quién», 1 «Prueba»,
       1 «Consejo» y el mejor truco del equipo. **Si el módulo no tiene jugadas, sale vacío** (hoy: ${t.catalog.filter((m: any) => !t.playbook.some((p: any) => p.module_key === m.key)).map((m: any) => `«${m.name}»`).join(', ') || 'ninguno'}).
-   5. **Precio** — «Precio y monetización» de los módulos + generales + consejos de negociación. Regla: después del valor.
-   6. **Objeciones probables** — las de los módulos y generales, ordenadas por lo que más ha funcionado.
-   7. **Cierre** — guiones de cierre y seguimiento.
+   6. **Precio** — «Precio y monetización» de los módulos + las del sector (o generales). Regla: después del valor.
+   7. **Objeciones probables** — las de los módulos y las del sector (o generales), ordenadas por lo que más ha funcionado.
+   8. **Cierre y seguimiento** — guiones de cierre y seguimiento del sector (o generales).
+   > **El sector manda:** en cada apartado, si el sector tiene jugadas propias, salen solo esas. Las generales cubren huecos.
 5. **Preparar mensaje**: arma un texto con el contexto de la cuenta (sector, actor, situación, objeción, etapa) y las jugadas
    que mejor encajan, para pegarlo en ChatGPT/Claude con el Cerebro de Ventas conectado. Puntúa así: actor exacto +100,
    misma objeción +60, misma etapa +40, mismo sector +10, y lo que ha ganado en cierres reales.
