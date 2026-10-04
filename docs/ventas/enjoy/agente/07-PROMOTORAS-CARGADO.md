@@ -73,3 +73,19 @@ Nuevas o reescritas con tu texto: lo que hay que entender antes de vender, los t
 - Los packs anuales siguen **sin validar**.
 - Autorización escrita de Paradox.
 - El cupón PACK5 (−20 % por 5 o más fechas) sigue activo para todos los sectores. ¿Convive con el pack anual o se retira para promotoras?
+
+---
+
+# Anexo · Lo cargado de tu 12 (respuestas al 08)
+
+- **Karaoke:** nueva pregunta en locales, «¿Es un karaoke o hace noches de karaoke?». Añade «La cola, en la pantalla» con tu frase y el precio del público, literales. Va antes que DJ, mesas y «Lo que ya te cuesta» al recortar (**orden mío, confírmalo**).
+- **Caseta de feria:** nuevo tipo de cliente. Propuesta de 4: portada (con el nombre de la caseta), «Diez días para vender y un año entero para preparar la siguiente», «El contenido que te llevas» y precio. Sin ángulos, sin caso y sin preguntas de DJ, mesas, VJ ni cifras. Tarifa nueva «Caseta · 50-50 sobre las peticiones» (a medida: se ve, pero no se elige como precio).
+- **«¿Va automático?»:** jugada nueva con tus dos frases, literales. No había ningún «automático» en la app que quitar.
+- **Privados:** la guía avisa de que la parte del dinero está en desarrollo y de que no se pone precio de reventa.
+- **Prioridad:** en el ángulo D y en grupos el caso se queda; sale antes el condicional.
+- **Jugadas nuevas:** karaoke, con un casetero, modelos de pago de caseta (solo equipo: 100 €, 50-50, 100-200 €) y el menú cerrado decide quién viene.
+
+**Textos míos en la caseta (corrígelos):**
+1. La tarjeta «Lo que te pasa hoy»: tu frase «diez días para vender…» arriba y tu argumento del casetero debajo; la última frase («Eso es lo que usas el resto del año…») va como nota.
+2. «El contenido que te llevas» reutiliza las filas de locales («Media sala mirando la pantalla…», «Esas fotos las tienes tú al día siguiente…», «…cada noche que abras»).
+3. Letra pequeña del precio: «Feria completa o día suelto, pago único.»
