@@ -17,3 +17,8 @@ Tipos permitidos: svg, png, jpg, webp, ico, woff2, woff. Máximo 5 MB por archiv
 ## img/real/
 Fotos reales del producto funcionando en locales, pasadas por Cristian (4 de octubre de 2026). Las tres de pantalla
 salen de un tríptico partido en tres. Las usa el módulo «En directo» (plantilla media-strip).
+
+## img/ambiente/
+Fotos de ambiente (público en discoteca, festival de noche y de día, fiesta en piscina) pasadas por Cristian el
+4 de octubre de 2026 para la pantalla y el móvil de la propuesta. **Pendiente: confirmar que se pueden usar** (no son
+de clientes de Enjoy; la de la piscina lleva vasos con marca de otro club).

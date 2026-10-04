@@ -708,6 +708,16 @@
                   "label": "Canción",
                   "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp",
+                "asset:img/album/album-05.webp",
+                "asset:img/album/album-08.webp"
               ]
             }
           },
@@ -741,6 +751,14 @@
                     }
                   ]
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp"
               ]
             }
           },
@@ -774,6 +792,14 @@
                     }
                   ]
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp"
               ]
             }
           },
@@ -942,6 +968,14 @@
                     }
                   ]
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp"
               ]
             }
           },
@@ -1820,6 +1854,16 @@
                   "label": "Canción",
                   "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp",
+                "asset:img/album/album-05.webp",
+                "asset:img/album/album-08.webp"
               ]
             }
           },
@@ -1853,6 +1897,14 @@
                     }
                   ]
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp"
               ]
             }
           },
@@ -1887,7 +1939,15 @@
                   ]
                 }
               ],
-              "ownerLabel": "Lo que te llevas tú"
+              "ownerLabel": "Lo que te llevas tú",
+              "photos": [
+                "asset:img/ambiente/discoteca-noche.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp"
+              ]
             }
           },
           "caso-anon": {
@@ -3253,6 +3313,16 @@
                   "label": "Canción",
                   "says": "Su canción a pantalla completa, con su nombre y su dedicatoria. El momento de cine."
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/festival-noche.webp",
+                "asset:img/ambiente/festival-dia.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp",
+                "asset:img/album/album-05.webp"
               ]
             }
           },
@@ -3287,7 +3357,15 @@
                   ]
                 }
               ],
-              "ownerLabel": "Lo que significa para ti"
+              "ownerLabel": "Lo que significa para ti",
+              "photos": [
+                "asset:img/ambiente/festival-noche.webp",
+                "asset:img/ambiente/festival-dia.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp"
+              ]
             }
           },
           "llevas": {
@@ -3321,7 +3399,15 @@
                   ]
                 }
               ],
-              "ownerLabel": "Lo que te llevas tú"
+              "ownerLabel": "Lo que te llevas tú",
+              "photos": [
+                "asset:img/ambiente/festival-noche.webp",
+                "asset:img/ambiente/festival-dia.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp"
+              ]
             }
           },
           "visuales": {
@@ -3738,6 +3824,14 @@
                     }
                   ]
                 }
+              ],
+              "photos": [
+                "asset:img/ambiente/piscina.webp",
+                "asset:img/album/album-01.webp",
+                "asset:img/album/album-03.webp",
+                "asset:img/album/album-02.webp",
+                "asset:img/album/album-04.webp",
+                "asset:img/album/album-07.webp"
               ]
             }
           },
