@@ -14,7 +14,7 @@ import { markOnboarded, needsCompanySetup } from '~/lib/onboarding';
 import { i18n, LOCALES, LOCALE_NAME } from '~/lib/i18n';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 import { ICONS, type IconName } from '~/lib/ui/icons';
-import { stripMarkdown } from '~/lib/playbook/markdown';
+import { summarize } from '~/lib/playbook/markdown';
 import Thumb from '~/modules/Thumb.astro';
 import KitCover from '~/modules/KitCover.astro';
 import { isBlockType } from '~/modules/registry';
@@ -79,7 +79,6 @@ const priceOf = new Map(catalog.map((c) => [c.moduleId, c]));
 const offer = (learn?.modules ?? []).filter((x) => priceOf.has(x.moduleId)).slice(0, 4);
 const tourSteps = learn?.tour.steps.filter((x) => x.image) ?? [];
 const tourCover = tourSteps[Math.floor(tourSteps.length / 2)]?.image ?? null;
-const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slice(0, 140) ?? '';
 ---
 <AdminLayout title={m.title} bare>
   <div class="mx-auto mt-4 grid max-w-xl grid-cols-[minmax(0,1fr)] gap-6 sm:mt-10" data-testid="welcome" data-step={key}>
@@ -165,14 +164,17 @@ const firstLine = (s: string) => stripMarkdown(s).split(/(?<=[.!?])\s/)[0]?.slic
         <p class="co-lede">{m.how.lede}</p>
         {topPlays.length === 0 ? <p class="co-help">{m.how.empty}</p> : (
           <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0">{topPlays.map((p) => (
-            <li class="co-inset grid list-none gap-2" data-testid="welcome-play">
-              <a class="co-row-title underline-offset-2 hover:underline" href={`/admin/learn/${p.moduleId ?? 'general'}#play-${p.id}`}>{p.title}</a>
-              <span class="co-meta">{firstLine(p.body)}</span>
-              {!ranked.length && p.pinned
-                ? <span class="co-badge co-badge--ink w-fit">{m.how.must}</span>
-                : p.evidence.won > 0
-                ? <span class="co-badge co-badge--signal w-fit">{m.how.proven(p.evidence.won)}</span>
-                : <span class="co-badge w-fit">{m.how.hypothesis}</span>}
+            <li class="list-none" data-testid="welcome-play">
+              <a class="co-card co-card--link !grid gap-2 !p-4" href={`/admin/learn/${p.moduleId ?? 'general'}#play-${p.id}`}>
+                {!ranked.length && p.pinned
+                  ? <span class="co-badge co-badge--ink w-fit">{m.how.must}</span>
+                  : p.evidence.won > 0
+                  ? <span class="co-badge co-badge--signal w-fit">{m.how.proven(p.evidence.won)}</span>
+                  : <span class="co-badge w-fit">{m.how.hypothesis}</span>}
+                <span class="co-row-title">{p.title}</span>
+                <span class="text-sm leading-relaxed text-muted">{summarize(p.body, 260)}</span>
+                <span class="flex items-center gap-1 text-sm font-semibold">{m.how.read} <Icon name="chevron-right" size={14} /></span>
+              </a>
             </li>))}
           </ul>
         )}

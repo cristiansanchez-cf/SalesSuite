@@ -14,3 +14,15 @@ describe('markdown seguro', () => {
     expect(stripMarkdown('**a** *b*')).toBe('a b');
   });
 });
+
+describe('summarize: lo principal de un vistazo', async () => {
+  const { summarize } = await import('./markdown');
+  test('no corta a media frase ni se queda en el «1.» de una lista', () => {
+    const s = summarize('Almería, Altare, Selvatic Fest, Shark Events, Bresh, Dopamine Fest, The Lab, Deep Delay y la tercera promotora: todos dijeron que sí, y todos se perdieron por no hacer seguimiento. Ninguno se perdió por precio, por producto ni por competencia.\n\nNoche 1: mirar los datos.', 220);
+    expect(s.endsWith('seguimiento.') || s.endsWith('competencia.')).toBe(true);
+    expect(summarize('1. Pregunta primero.\n2. Escucha.')).toBe('Pregunta primero. Escucha.');
+  });
+  test('quita citas y negritas', () => {
+    expect(summarize('> «¿Qué te parece si lo dejamos configurado y lo probáis el **viernes**?»')).toBe('«¿Qué te parece si lo dejamos configurado y lo probáis el viernes?»');
+  });
+});

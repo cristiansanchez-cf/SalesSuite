@@ -48,7 +48,7 @@ export function tourOf(raw: unknown): TourStep[] {
   });
 }
 
-export interface TopicModule { moduleId: string; name: string; description: string | null; blockType: string; versionId: string }
+export interface TopicModule { moduleId: string; moduleKey: string; name: string; description: string | null; blockType: string; versionId: string }
 
 export interface TourStep { title: string; body: string | null; image: string | null; ui?: string | null }
 
@@ -127,7 +127,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   const topicModule = (latest: Map<string, CatalogVersion>, moduleId: string): TopicModule | null => {
     const v = latest.get(moduleId);
-    return v ? { moduleId, name: v.moduleName, description: v.description, blockType: v.blockType, versionId: v.versionId } : null;
+    return v ? { moduleId, moduleKey: v.moduleKey, name: v.moduleName, description: v.description, blockType: v.blockType, versionId: v.versionId } : null;
   };
   const visibleTip = (c: ContributionView) => c.type === 'tip' && (c.status === 'shared' || c.status === 'accepted');
   const official = (p: PlayView) => p.status === 'official';

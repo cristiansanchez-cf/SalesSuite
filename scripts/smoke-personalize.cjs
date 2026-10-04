@@ -55,10 +55,10 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/personalize-video.png` });
   const photoBtn = labels.indexOf('Foto');
   await pub.click(`[data-scene-btn="${photoBtn}"]`);
-  await pub.waitForTimeout(1400);
-  assert((await pub.getAttribute('[data-phone-img]', 'src'))?.startsWith('/demo-media/'), 'el móvil envía SU foto');
+  await pub.waitForTimeout(1900);
+  assert((await pub.getAttribute('[data-req-img]', 'src'))?.startsWith('/demo-media/'), 'el móvil envía SU foto');
   if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/personalize-phone.png` });
-  await pub.waitForTimeout(2000);
+  await pub.waitForTimeout(1500);
   assert((await pub.$eval('[data-module=live-screen] .es-stage img.es-np-img, [data-module=live-screen] .es-stage .es-np-img', (i) => i.getAttribute('src') || '').catch(() => '')).startsWith('/demo-media/'), 'su foto en «Foto»');
   if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/personalize-photo.png` });
 

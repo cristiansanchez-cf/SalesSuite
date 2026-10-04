@@ -19,11 +19,12 @@ export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<
   const styles = p.musicStyles ?? MUSIC_STYLES;
   const style = styles[media.musicStyle ?? ''] ?? styles[DEFAULT_STYLE] ?? Object.values(styles)[0];
   const songs = style.songs;
-  const covered = songs.every((x) => 'cover' in x && x.cover);
+  // Carátula canción a canción (la que no tenga, vinilo de color en el cliente): antes, si faltaba una, se perdían todas.
+  const resolved = songs.some((x) => 'cover' in x);
   return {
     assets: {
       venueName: p.venueName.toUpperCase().slice(0, 40), venueLogo: media.logo ?? '', djName: p.djName, showEnjoyLogo: true, qrImage: p.qrImage ?? '',
-      photos: ownPhotos.length ? ownPhotos : p.photos, covers: covered ? songs.map((x) => x.cover as string) : p.covers, avatars: [], videos: [] as string[],
+      photos: ownPhotos.length ? ownPhotos : p.photos, covers: resolved ? songs.map((x) => x.cover ?? '') : p.covers, avatars: [], videos: [] as string[],
     },
     songs: songs.map((x) => ({ song: x.song, artist: x.artist })),
     // Sus visuales: su vídeo si lo han subido; si no, uno de ejemplo de un local (el navegador elige el formato).

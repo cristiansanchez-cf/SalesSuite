@@ -34,3 +34,23 @@ export function renderMarkdown(src: string): string {
 export function stripMarkdown(src: string): string {
   return src.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1$2');
 }
+
+/**
+ * Lo principal de un texto, en plano y para leer de un vistazo (tarjetas, listas): sin marcas de Markdown, en una línea,
+ * y cortado en un final de frase (o de palabra, con «…») cerca de `max`. Nunca deja una lista en su «1.».
+ */
+export function summarize(src: string, max = 220): string {
+  const plain = stripMarkdown(src)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .split('\n')
+    .map((l) => l.replace(/^\s*(?:>\s*|#{1,6}\s+|[-*•]\s+|\d+[.)]\s+)+/, '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (plain.length <= max) return plain;
+  const cut = plain.slice(0, max);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '), cut.lastIndexOf('» '));
+  if (end >= max * 0.45) return cut.slice(0, end + 1).trim();
+  return `${cut.slice(0, cut.lastIndexOf(' ')).replace(/[,;:—–-]+$/, '')}…`;
+}

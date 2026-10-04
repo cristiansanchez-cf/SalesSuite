@@ -12,7 +12,7 @@ import ScreenMini from '~/modules/live-screen/ScreenMini.astro';
 import Phone from '~/modules/phone-tour/Phone.astro';
 import { isBlockType } from '~/modules/registry';
 import { AdminError } from '~/lib/admin/service';
-import { stripMarkdown } from '~/lib/playbook/markdown';
+import { renderMarkdown, stripMarkdown, summarize } from '~/lib/playbook/markdown';
 import { type PersonaRole } from '~/lib/playbook/market';
 import { ROLE_ICON } from '~/lib/setup/presets';
 import { ICONS, type IconName } from '~/lib/ui/icons';
@@ -55,16 +55,31 @@ const GROUPS: Array<{ key: 'decide' | 'influence' | 'veto'; roles: PersonaRole[]
 ];
 const room = GROUPS.map((g) => ({ ...g, people: sg.personas.filter((p) => g.roles.includes(p.role)).sort((a, b) => a.position - b.position) })).filter((g) => g.people.length);
 const plays = v.plays.slice(0, 6);
-// Imagínatelo: los módulos del sector por prioridad, hasta tres (lo que de verdad verá este cliente).
-const imagine = [...sg.modules].sort((a, b) => a.priority - b.priority).slice(0, 3);
-// La UI del producto tal cual (la pantalla, el móvil), sin ventana ni propuesta alrededor; la explicación, en pequeño al lado.
-const cards = imagine.length ? ((await admin.playbook.learnIndex().catch(() => null))?.modules ?? []) : [];
+// Imagínatelo: las pantallas de SU propuesta (la receta del sector), contadas enteras, con la UI del producto al lado.
+// Sin receta, los módulos del sector por prioridad (hasta tres), como antes.
+const cards = sg.modules.length || sg.proposal ? ((await admin.playbook.learnIndex().catch(() => null))?.modules ?? []) : [];
 const cardOf = (id: string) => cards.find((c) => c.moduleId === id) ?? null;
+const PRODUCT = new Set(['live-screen', 'phone-tour', 'tabs-showcase', 'media-strip']);
+const recipe = sg.proposal ?? null;
+const blockKeys = recipe ? [...new Set([...recipe.priority, ...Object.keys(recipe.blocks)])] : [];
+const generic = (x: unknown) => (typeof x === 'string' ? x.replace(/\{company\}/g, lm.sector.yourClient).replace(/\{prospect\}/g, '') : '');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const explain = (props: any): Array<{ t: string; d: string }> =>
-  Array.isArray(props?.scenes) ? props.scenes.slice(0, 5).map((x: { label: string; says?: string }) => ({ t: x.label, d: x.says ?? '' }))
-  : Array.isArray(props?.parts) ? props.parts.flatMap((g: { steps: Array<{ label?: string; says: string }> }) => g.steps).slice(0, 5).map((x: { label?: string; says: string }) => ({ t: x.label ?? '', d: x.says }))
-  : Array.isArray(props?.tabs) ? props.tabs.slice(0, 5).map((x: { label: string; title: string }) => ({ t: x.label, d: x.title })) : [];
+type Shot = { key: string; bt: string; moduleId: string; name: string; props: any };
+const shots: Shot[] = blockKeys.flatMap((k) => {
+  const b = recipe!.blocks[k];
+  const c = b && cards.find((x) => x.moduleKey === b.module);
+  return c && PRODUCT.has(c.blockType) ? [{ key: k, bt: c.blockType, moduleId: c.moduleId, name: c.name, props: { ...c.props, ...b.props } }] : [];
+});
+const imagine = shots.length ? [] : [...sg.modules].sort((a, b) => a.priority - b.priority).slice(0, 3);
+// Todo lo que hace cada pantalla, sin recortar: escena por escena, paso a paso, pestaña a pestaña.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const explain = (props: any): Array<{ t: string; d: string; q?: string }> =>
+  Array.isArray(props?.scenes) ? props.scenes.map((x: { label: string; says?: string; text?: string }) => ({ t: generic(x.label), d: generic(x.says ?? ''), q: generic(x.text ?? '') }))
+  : Array.isArray(props?.parts) ? props.parts.flatMap((g: { steps: Array<{ label?: string; says: string; owner?: string }> }) => g.steps).map((x: { label?: string; says: string; owner?: string }) => ({ t: generic(x.label ?? ''), d: [generic(x.says), generic(x.owner ?? '')].filter(Boolean).join(' ') }))
+  : Array.isArray(props?.tabs) ? props.tabs.map((x: { label: string; title: string; body?: string; bullets?: string[] }) => ({ t: generic(x.title || x.label), d: [summarize(generic(x.body ?? ''), 400), ...(x.bullets ?? []).map(generic)].filter(Boolean).join(' · ') }))
+  : Array.isArray(props?.items) ? props.items.filter((x: { caption?: string }) => x.caption).map((x: { caption: string; alt: string }) => ({ t: generic(x.caption), d: generic(x.alt) })) : [];
+// Las ideas del equipo para contarlo (jugadas «Cómo presentarlo» del sector), enteras.
+const ideas = v.plays.filter((pl) => pl.kind === 'pitch');
 let n = 0;
 const step = () => ++n;
 ---
@@ -85,8 +100,8 @@ const step = () => ++n;
             {sg.description && <p class="max-w-2xl text-lg text-white/85">{sg.description}</p>}
             {(sg.dealSize || sg.salesCycle) && (
               <div class="flex flex-wrap gap-8">
-                {sg.dealSize && <div><p class="text-xs font-semibold uppercase tracking-wider text-white/70">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.dealSize}</p></div>}
-                {sg.salesCycle && <div><p class="text-xs font-semibold uppercase tracking-wider text-white/70">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.salesCycle}</p></div>}
+                {sg.dealSize && <div><p class="text-xs font-semibold uppercase tracking-wider text-white/70">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{stripMarkdown(sg.dealSize)}</p></div>}
+                {sg.salesCycle && <div><p class="text-xs font-semibold uppercase tracking-wider text-white/70">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{stripMarkdown(sg.salesCycle)}</p></div>}
               </div>
             )}
           </div>
@@ -98,8 +113,8 @@ const step = () => ++n;
           {sg.description && <p class="co-lede max-w-2xl !text-lg">{sg.description}</p>}
           {(sg.dealSize || sg.salesCycle) && (
             <div class="flex flex-wrap gap-6">
-              {sg.dealSize && <div><p class="text-eyebrow">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.dealSize}</p></div>}
-              {sg.salesCycle && <div><p class="text-eyebrow">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{sg.salesCycle}</p></div>}
+              {sg.dealSize && <div><p class="text-eyebrow">{msg.sector.ticket.replace(/:$/, '')}</p><p class="text-lg font-semibold">{stripMarkdown(sg.dealSize)}</p></div>}
+              {sg.salesCycle && <div><p class="text-eyebrow">{msg.sector.cycle.replace(/^⏱\s*/, '').replace(/:$/, '')}</p><p class="text-lg font-semibold">{stripMarkdown(sg.salesCycle)}</p></div>}
             </div>
           )}
         </header>
@@ -181,35 +196,65 @@ const step = () => ++n;
       </section>
     )}
 
-    {sg.modules.length > 0 && (
-      <section class="grid gap-6" data-testid="sector-imagine">
+    {(shots.length > 0 || imagine.length > 0) && (
+      <section class="grid gap-8" data-testid="sector-imagine">
         <div class="grid gap-2">
           <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{lm.sector.imagine}</h2>
-          <p class="co-meta">{lm.sector.imagineLede}</p>
+          <p class="max-w-2xl text-lg leading-relaxed">{lm.sector.imagineLede}</p>
         </div>
-        <ol class="grid gap-12 p-0">{imagine.map((mo, i) => {
-          const card = cardOf(mo.moduleId);
-          const bt = card && isBlockType(card.blockType) ? card.blockType : null;
-          const items = explain(card?.props);
+        <ol class="grid gap-14 p-0">{(shots.length ? shots : imagine.map((mo) => { const c = cardOf(mo.moduleId); return { key: mo.moduleId, bt: c?.blockType ?? '', moduleId: mo.moduleId, name: mo.moduleName, props: c?.props ?? {} }; })).map((sh, i) => {
+          const items = explain(sh.props);
+          const head = generic(sh.props?.title) || sh.name;
           return (
-          <li class="grid list-none items-center gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <div class:list={['grid content-center gap-3', i % 2 === 1 && 'md:order-2']}>
-              <span class="co-figure text-5xl text-[color:var(--co-signal)]">{i + 1}</span>
-              <p class="text-2xl font-semibold leading-snug">{mo.fit ?? mo.moduleName}</p>
+          <li class="grid list-none items-start gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" data-testid="imagine-block">
+            <div class:list={['grid content-start gap-3', i % 2 === 1 && 'md:order-2']}>
+              <span class="flex items-baseline gap-3"><span class="co-figure text-5xl text-[color:var(--co-signal)]">{i + 1}</span>{sh.props?.eyebrow && <span class="text-eyebrow">{generic(sh.props.eyebrow)}</span>}</span>
+              <p class="text-2xl font-semibold leading-snug">{head}</p>
+              {sh.props?.lede && <p class="text-[15px] leading-relaxed text-muted">{generic(sh.props.lede)}</p>}
               {items.length > 0 && (
-                <ul class="grid gap-1.5 p-0 text-sm">{items.map((x) => <li class="list-none text-muted"><b class="text-[color:var(--co-ink,inherit)]">{x.t}</b>{x.d && <span> · {x.d}</span>}</li>)}</ul>
+                <ul class="grid gap-3 p-0" data-testid="imagine-items">{items.map((x) => (
+                  <li class="list-none border-l-2 border-[color:var(--console-divider)] pl-3 text-[15px] leading-relaxed">
+                    {x.t && <b class="block">{x.t}</b>}
+                    {x.d && <span class="text-muted">{x.d}</span>}
+                    {x.q && <span class="mt-1 block italic">«{x.q}»</span>}
+                  </li>))}
+                </ul>
               )}
-              <a class="text-sm font-semibold underline" href={`/admin/learn/preview/${mo.moduleId}`} target="_blank" rel="noopener" data-testid="imagine-preview">{mo.moduleName} ↗</a>
+              <a class="text-sm font-semibold underline" href={`/admin/learn/preview/${sh.moduleId}`} target="_blank" rel="noopener" data-testid="imagine-preview">{sh.name} ↗</a>
             </div>
-            <div class="imagine-ui" data-testid="imagine-ui">
-              {bt === 'live-screen' ? <ScreenMini props={card!.props} venue="Tu local" />
-              : bt === 'phone-tour' ? <div class="imagine-ui__phone"><Phone {...(card!.props as object)} venue="Tu local" only="sheet" zoom={0.85} float /></div>
-              : bt ? <div class="imagine-ui__thumb"><Thumb blockType={bt} props={card!.props} price={card!.price} /></div>
-              : <iframe class="imagine-ui__frame" src={`/admin/learn/preview/${mo.moduleId}`} title={mo.moduleName} loading="lazy" tabindex="-1"></iframe>}
+            <div class="imagine-ui md:sticky md:top-6" data-testid="imagine-ui">
+              {sh.bt === 'live-screen' ? <ScreenMini props={sh.props} venue={lm.sector.yourClient} />
+              : sh.bt === 'phone-tour' ? <div class="imagine-ui__phone"><Phone {...(sh.props as object)} venue={lm.sector.yourClient} only="sheet" zoom={0.85} float /></div>
+              : sh.bt === 'media-strip' && Array.isArray(sh.props?.items) ? <div class="imagine-ui__strip">{sh.props.items.slice(0, 3).map((x: { src: string; alt: string }) => <img src={x.src} alt={x.alt} class="co-img" loading="lazy" decoding="async" />)}</div>
+              : sh.bt === 'tabs-showcase' && Array.isArray(sh.props?.tabs) && sh.props.tabs.some((x: { mock?: { kind?: string } }) => x.mock?.kind === 'image')
+                ? <div class="imagine-ui__thumb"><img src={sh.props.tabs.find((x: { mock?: { kind?: string } }) => x.mock?.kind === 'image').mock.src} alt="" class="co-img h-full w-full object-cover" loading="lazy" decoding="async" /></div>
+              : sh.bt === 'tabs-showcase' && Array.isArray(sh.props?.tabs) ? (
+                <div class="imagine-ui__tabs">
+                  <div class="flex flex-wrap gap-2">{sh.props.tabs.map((x: { label: string }, j: number) => <span class:list={['imagine-ui__chip', j === 0 && 'is-on']}>{generic(x.label)}</span>)}</div>
+                  <p class="text-2xl font-bold leading-tight">{generic(sh.props.tabs[0].title)}</p>
+                  {sh.props.tabs[0].body && <p class="text-[15px] leading-relaxed opacity-75">{summarize(generic(sh.props.tabs[0].body), 220)}</p>}
+                </div>)
+              : null}
             </div>
           </li>
         ); })}
         </ol>
+
+        {ideas.length > 0 && (
+          <div class="grid gap-4" data-testid="imagine-ideas">
+            <div class="grid gap-1">
+              <h3 class="text-xl font-semibold">{lm.sector.ideas}</h3>
+              <p class="co-meta">{lm.sector.ideasLede}</p>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">{ideas.map((pl) => (
+              <article class="co-card grid content-start gap-2 !p-6" id={`idea-${pl.id}`}>
+                <p class="co-entity">{pl.title}</p>
+                <div class="prose-play text-[15px] leading-relaxed" set:html={renderMarkdown(pl.body)} />
+              </article>))}
+            </div>
+          </div>
+        )}
+        <p class="co-help">{lm.sector.keysNote}</p>
       </section>
     )}
 
@@ -220,6 +265,7 @@ const step = () => ++n;
           <a class="co-card co-card--link !grid content-start gap-3 !p-5" href={`/admin/learn/${pl.moduleId ?? 'general'}#play-${pl.id}`}>
             <span class="co-badge w-fit">{msg.kind[pl.kind]}</span>
             <span class="co-entity">{pl.title}</span>
+            <span class="text-sm leading-relaxed text-muted">{summarize(pl.body, 180)}</span>
           </a>))}
         </div>
         {v.plays.length > plays.length && <a class="text-sm font-semibold underline" href="/admin/learn">{msg.sector.seeAll(v.plays.length)}</a>}
@@ -239,11 +285,17 @@ const step = () => ++n;
 <style>
   .sector-hero { position: relative; isolation: isolate; display: flex; align-items: flex-end; min-height: 22rem; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; color: #fff; }
   .sector-hero__bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; filter: blur(2px); transform: scale(1.04); }
-  .sector-hero__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.35) 60%, rgba(0,0,0,.15)); }
+  .sector-hero__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(0,0,0,.92), rgba(0,0,0,.72) 55%, rgba(0,0,0,.5)); }
+  /* Sobre la foto, la letra se lee siempre (fondo oscurecido + sombra). */
+  .sector-hero, .sector-hero p, .sector-hero h1 { text-shadow: 0 1px 2px rgba(0,0,0,.55), 0 2px 18px rgba(0,0,0,.45); }
   .sector-hero__pill { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; background: rgba(255,255,255,.18); padding: .25rem .7rem; font-size: .8rem; font-weight: 600; }
   /* La UI del producto, sin marco: la pantalla, el móvil o la miniatura del módulo. */
   .imagine-ui { position: relative; display: grid; place-items: center; }
   .imagine-ui__phone { display: grid; place-items: center; padding: 1rem 0; }
   .imagine-ui__thumb { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; isolation: isolate; }
-  .imagine-ui__frame { display: block; width: 100%; height: 26rem; border: 0; border-radius: 12px; pointer-events: none; }
+  .imagine-ui__strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; width: 100%; }
+  .imagine-ui__strip img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; }
+  .imagine-ui__tabs { display: grid; gap: 1rem; width: 100%; padding: 1.75rem; border-radius: 12px; background: #120c18; color: #fff; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+  .imagine-ui__chip { padding: .45rem .9rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); font-size: .85rem; font-weight: 700; }
+  .imagine-ui__chip.is-on { background: #fff; color: #111; }
 </style>
