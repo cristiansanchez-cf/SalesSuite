@@ -69,3 +69,21 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
     </div>
   </details>
 </div>
+
+<script>
+  // Menú de perfil en la barra lateral: fijo sobre la página, justo encima de su botón (no lo recorta el scroll de la barra).
+  for (const d of document.querySelectorAll<HTMLDetailsElement>('.co-sidebar details.co-popover')) {
+    const menu = d.querySelector<HTMLElement>('.co-popover__menu');
+    const place = () => {
+      if (!menu || !d.open) return;
+      const r = d.querySelector('summary')!.getBoundingClientRect();
+      menu.style.left = `${Math.max(8, r.left)}px`;
+      menu.style.top = `${Math.max(8, r.top - menu.offsetHeight - 8)}px`;
+    };
+    d.addEventListener('toggle', place);
+    addEventListener('resize', place);
+    // Se cierra al pulsar fuera.
+    document.addEventListener('click', (e) => { if (d.open && !d.contains(e.target as Node)) d.open = false; });
+  }
+</script>
+

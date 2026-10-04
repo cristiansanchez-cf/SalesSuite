@@ -270,6 +270,10 @@ html.console:lang(ko) .co-page-title { letter-spacing: 0; line-height: 1.1; }
   background: var(--console-surface); box-shadow: var(--console-overlay-shadow);
 }
 
+/* En la barra lateral (que tiene su propio scroll y recortaría el menú), el menú flota sobre la página:
+   se coloca encima de su botón al abrirse (ConsoleNav). */
+.co-sidebar .co-popover__menu { position: fixed; bottom: auto; z-index: 60; }
+
 /* ------------------------------------------------------------------ superficies */
 .co-card {
   background: var(--console-surface); border: 1px solid var(--console-card-border);
