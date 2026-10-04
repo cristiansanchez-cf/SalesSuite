@@ -186,6 +186,7 @@ La hora antes del artista no la monetiza nadie: el público ya está dentro, esp
 
 **Cliente ideal**
 
+- Salas de conciertos: el más fácil, compran como un local (suscripción) y ganan de barra
 - Promotor o sala que programa a menudo en recintos de 1.000 a 10.000 personas, con pantallas propias y patrocinadores a los que rendir cuentas
 - Salas y recintos de 500 a 20.000 personas
 - Charangas, orquestas, bandas de pueblo y tributos: deciden ellos y se cierra en días
@@ -208,7 +209,7 @@ Se decide en el advance: la reunión previa al show entre la producción del art
 
 **Tamaño de la venta**
 
-600–2.500 € por fecha (supuesto, sin validar)
+Sala de conciertos: suscripción mensual de 249 € o 499 € según aforo, como un local. Por fecha: 600–2.500 € según aforo. Charangas 120 € el evento. Agencia desde 1.500 €/mes. Todo sin validar.
 
 **Ciclo de venta**
 

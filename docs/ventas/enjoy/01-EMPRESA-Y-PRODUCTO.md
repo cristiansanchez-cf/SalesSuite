@@ -343,6 +343,8 @@ Lo que el comercial elige en la propuesta: primero el tipo y luego la tarifa (�
 | Promotoras de eventos | Promotora | Promotora · pack anual de 12 eventos · **Propuesta sin validar** | 890 € /año |
 | Promotoras de eventos | Promotora | Promotora · eventos ilimitados | 390 € /mes |
 | Promotoras de eventos | Promotora | Evento de promotora | 150 € /evento |
+| Conciertos y artistas | Sala de conciertos · suscripción | ★ Sala de conciertos · suscripción (150–500) | 249 € /mes |
+| Conciertos y artistas | Sala de conciertos · suscripción | Sala de conciertos · suscripción (más de 500) | 499 € /mes |
 | Conciertos y artistas | Charanga u orquesta | ★ Charanga u orquesta · evento | 120 € /evento |
 | Conciertos y artistas | Charanga u orquesta | Charanga u orquesta · temporada (mayo–septiembre) | 390 € pago único |
 | Conciertos y artistas | Sala de conciertos | ★ Sala hasta 1.000 | 600 € /evento |

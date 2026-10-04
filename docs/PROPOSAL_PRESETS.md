@@ -51,4 +51,5 @@ Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como mód
 ## Hoy
 - **Locales de ocio nocturno:** receta del documento 08 (`scripts/apply-propuesta-08.py`) con las respuestas del 12 encima (`scripts/apply-respuestas-12.py`, siempre después): tipo (local, grupo, revende para privados, caseta de feria), ángulo A–F, 9 preguntas (karaoke incluida), tope de 8 (5 en apoyo visual). En el ángulo D y en grupos el caso se queda antes que los condicionales.
 - **Promotoras de eventos:** receta del documento 09 (`scripts/apply-propuesta-09.py`): tipo (pequeña, asentada; la operación de escala la lleva fundador y no tiene receta), ángulo A–D, frecuencia (decide la tarifa: evento suelto, pack anual o suscripción), 4 preguntas, tope de 7 (5 en apoyo visual).
-- Resto de sectores: sin receta todavía (módulos recomendados como siempre). Siguiente: conciertos y festivales.
+- **Conciertos y artistas:** receta del documento 11 (`scripts/apply-propuesta-11.py`): tipo (sala, promotor, artista o manager, agencia, charanga), ángulo A, B o D (el C, paquete VIP, bloqueado), 2 preguntas (menú cerrado, patrocinador), tope de 8. La pantalla de la barra no se ofrece hasta que exista el multipantalla.
+- Resto de sectores: sin receta todavía. Siguiente: festivales.

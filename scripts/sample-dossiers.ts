@@ -16,7 +16,7 @@ interface Sample { key: string; segment: string; title: string; company: string;
 const SAMPLES: Sample[] = [
   { key: 'locales', segment: 'ocio-nocturno', title: 'Propuesta para Sala Ejemplo', company: 'Sala Ejemplo', contact: 'Marta (gerente)', tariff: 'Local mediano (150–500)' },
   { key: 'promotoras', segment: 'promotoras', title: 'Propuesta para Promotora Ejemplo', company: 'Promotora Ejemplo', contact: 'Javi (producción)', tariff: 'Promotora pequeña · evento suelto' },
-  { key: 'conciertos', segment: 'conciertos', title: 'Propuesta para Auditorio Ejemplo', company: 'Auditorio Ejemplo', contact: 'Lucía (programación)', tariff: 'Sala 1.000–5.000' },
+  { key: 'conciertos', segment: 'conciertos', title: 'Propuesta para Auditorio Ejemplo', company: 'Auditorio Ejemplo', contact: 'Lucía (programación)', tariff: 'Sala de conciertos · suscripción (más de 500)' },
 ];
 
 type Res<T> = { data: T; error: { message: string } | null };

@@ -2,7 +2,7 @@
 
 _Enjoy the Club · exportado el 2026-10-04 de `tenants/enjoy/tenant.json`._
 
-Las 166 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
+Las 175 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas como las ve el comercial: primero las generales, luego por módulo; dentro, por tipo.
 
 > **Para quien revise esto (persona o agente):** cambia el texto todo lo que quieras, pero **no cambies las `key`** (así sé qué
 > pieza sustituye a cuál). Si algo sobra, márcalo **[QUITAR]**; si falta, añádelo como **[NUEVO]** con una `key` inventada
@@ -11,7 +11,7 @@ Las 166 piezas que salen en Aprende y en el guion de cada reunión. Agrupadas co
 
 ## Antes de empezar: lo que ya sé que hay que mirar
 
-- **Reparto:** General: 140 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
+- **Reparto:** General: 149 · Pantalla en vivo: 6 · Móvil del invitado: 4 · Precio de la propuesta: 5 · Experiencias en directo: 7 · Enjoy para tu sala: 4.
 - **Módulos sin ninguna jugada** (en el guion salen vacíos): «Portada», «Lo que te pasa hoy», «Lo que ya te cuesta», «Caso real», «Portada para bodas».
 - **Por qué existimos:** 8 piezas (01 · 2). Hay alguna PENDIENTE.
 
@@ -248,7 +248,7 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **Nunca** prometas un aviso personal, una notificación ni una cola con posiciones numeradas.
 
-### Para quién (y cuándo no) (7)
+### Para quién (y cuándo no) (9)
 
 #### Cuenta grande no es un local grande · `gen-cuenta-grande`
 
@@ -322,6 +322,49 @@ _etapa: Descubrimiento · sectores: Promotoras de eventos_
 > **Lleva su propio Enjoy a donde vaya.** Al llegar a la sala, en la pantalla se cambia el identificador: donde ponía `VIP01` (el del local) se pone `PRX01` (el de la promotora). **Dos minutos.** Si la sala también tiene Enjoy, manda el de la promotora: es como el confeti, si traes el tuyo, se usa el tuyo. **La analítica la ven los dos**, cada uno la de su cuenta.
 > 
 > **Se configuran solas:** Paradox se vendió y se montó a distancia, con un par de tutoriales antes del evento. **Excepción:** promotora grande o con operativa internacional. Ahí el comercial va al primer evento a montarlo; a los siguientes, no.
+
+#### Cómo funciona el dinero en un concierto · `conc-dinero`
+
+_etapa: Descubrimiento · sectores: Conciertos y artistas_
+
+> Un comercial que no sepa esto va a pedirle dinero a quien no lo tiene.
+> 
+> - El artista cobra **caché**, y muchas veces caché **más un porcentaje del neto de taquilla**: lo habitual, entre el **75 % y el 85 % del neto**.
+> - **La SGAE se lleva el 8,5 % de la recaudación de taquilla.**
+> - De lo que le queda al promotor salen recinto, publicidad, logística y personal. **El riesgo es suyo:** si no llena, el caché se paga igual.
+> 
+> | De dónde salen los ingresos de una gira | Peso aproximado |
+> |---|---|
+> | Venta de entradas | 60-75 % |
+> | Merchandising | 15-30 % |
+> | **Experiencias VIP** | **3-10 %** |
+> | Patrocinios | 0-8 % |
+> | Otros | 1-5 % |
+> 
+> **Los cuatro bolsillos:**
+> 
+> | Quién paga | Cuándo tiene sentido |
+> |---|---|
+> | **La marca patrocinadora** | Siempre que haya patrocinador. **Lo lleva fundador** |
+> | **El público, vía paquete VIP** | Giras y salas que ya venden VIP (bloqueado hasta confirmar quién los monta) |
+> | **La sala** | Gana de barra, con márgenes del 70-80 % en consumiciones. Comprador distinto del promotor |
+> | **El promotor**, de su partida de promoción | Solo si lo ve como marketing para vender entradas, no como producción |
+> 
+> *Datos de sector con fuentes en el documento 11. Sin validar en campo.*
+
+#### Tipos de cliente en conciertos · `conc-tipos`
+
+_etapa: Prospección · sectores: Conciertos y artistas_
+
+> **Sala de conciertos: el más fácil, y por el que se empieza.** Programa de forma recurrente, tiene pantallas propias y gana de barra. Vive en el ecosistema de conciertos pero **compra como un local**: suscripción, y el argumento de barra pesa más que el de contenido. Nada de DJ residente ni de menú cerrado: aquí manda la producción del show.
+> 
+> **Promotor.** Asume el riesgo y decide si entra algo nuevo. Margen estrecho: llévale el dinero de otro bolsillo o entra por su partida de promoción.
+> 
+> **Artista y manager.** Casi nunca deciden, pero pueden vetar por imagen. Se les vende para que no bloqueen, no para que paguen.
+> 
+> **Agencia o management con varios artistas.** El mejor formato del sector: una venta, muchos eventos.
+> 
+> **Charangas, orquestas, tributos y bandas.** Deciden ellos y se cierra en días: la puerta de entrada. Sin pantalla no hay propuesta.
 
 ### Preguntas de descubrimiento (6)
 
@@ -571,7 +614,7 @@ _etapa: Objeciones · objeción: Desconfianza_
 > 
 > **Nunca** expliques lo de Spotify y el uso comercial: es mucho texto, no lo entienden y les plantas el problema. Cuando se empezó a contestar corto, nadie volvió a preguntar.
 
-### Precio y monetización (12)
+### Precio y monetización (13)
 
 #### Antes del precio, deja de vender · `noche-puente`
 
@@ -686,6 +729,18 @@ _etapa: Negociación · sectores: Conciertos y artistas · actores: Charanga u o
 _etapa: Negociación · sectores: Festivales_
 
 > > «Para un festival de vuestro tamaño, [X] €. Para que lo sitúes: una kiss cam clásica con pantalla, cámara y operario no baja de 8.000 € por evento, y cuando acaba no queda nada.»
+
+#### «¿De qué partida sale esto?» · `conc-partida`
+
+_etapa: Negociación · sectores: Conciertos y artistas_
+
+> La pregunta que decide la venta no es «¿te interesa?», es:
+> 
+> > «¿De qué partida sale esto?»
+> 
+> Va con el precio. Si la respuesta es «de la mía», se mira si entra en promoción. Si es «no tengo», se mira marca o VIP.
+> 
+> **Nunca** le vendas al promotor como un coste de producción más.
 
 ### Guiones (23)
 
@@ -937,7 +992,7 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **Con pantalla es cuando interesa de verdad.**
 
-### Consejos (44)
+### Consejos (50)
 
 #### Lo primero que se comprueba · `gen-cobertura`
 
@@ -960,6 +1015,17 @@ _etapa: Cierre_
 
 _etapa: Mentalidad · sectores: Conciertos y artistas · la ven: Solo equipo interno_
 
+> | Qué | Bloquea |
+> |---|---|
+> | Reunión con Bruno (documento 13) | Quién decide, quién controla la pantalla, de qué partida sale, quién monta los VIP |
+> | Multipantalla (unos cinco días de desarrollo) | La pantalla de la barra |
+> | Prueba de carga | Todo lo de +20.000 |
+> | Un caso de éxito en concierto | No hay ninguno. El piloto con un artista de Balaunka sería el primero |
+> | Precio real de charangas | 120/390 € es propuesta |
+> | Condiciones de agentes y colaboradores | Hoy no se puede ofrecer nada por escrito |
+> 
+> **De antes:**
+> 
 > - **Prueba de carga:** sin ella no se vende por encima de 20.000.
 > - **% que paga y ticket medio:** sin esto no se habla de monetización.
 > - **Soporte de noche:** un fallo en un concierto se cuenta entre promotores.
@@ -1377,6 +1443,86 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno_
 > 
 > **El menú cerrado no solo protege el ambiente: decide quién viene.** Si lo cierras demasiado, cambias tu público. Avísalo siempre.
 
+#### Agentes de artistas y de DJ: canal, no cliente · `conc-agentes`
+
+_etapa: Seguimiento · sectores: Conciertos y artistas_
+
+> Mueven a sus artistas por varias salas y promotores. **Un agente te mete en promotores y esos te meten en salas.**
+> 
+> **Lo que traes:** nombre, con qué artistas trabaja y en qué salas tocan.
+> 
+> Condiciones **PENDIENTES**: hoy no se le ofrece nada por escrito.
+
+#### Precios de conciertos · `conc-precio-tabla`
+
+_etapa: Negociación · sectores: Conciertos y artistas_
+
+> | Formato | PVP |
+> |---|---|
+> | Charanga u orquesta · evento | 120 € |
+> | Charanga u orquesta · temporada mayo-septiembre | 390 € |
+> | Sala hasta 1.000 · evento | 600 € |
+> | Sala 1.000-5.000 · evento | 1.200 € |
+> | Sala 5.000-20.000 · evento | 2.500 € |
+> | **Sala de conciertos · suscripción mensual** | **249 € / 499 € según aforo, como un local** |
+> | Pack 5 fechas | −20 % |
+> | Agencia o promotora · fechas ilimitadas | desde 1.500 €/mes |
+> | +20.000 | A medida, **solo tras prueba de carga** |
+> 
+> **Siempre antes del precio, el ancla** (la kiss cam clásica de 8.000 € por noche). **Suelo: 500 € por evento en sala, 90 € en charanga.** Por debajo, fundador. Precios sin validar.
+
+#### Hoy manejamos una pantalla · `conc-una-pantalla`
+
+_etapa: Descubrimiento · sectores: Conciertos y artistas_
+
+> Hoy un mismo contenido va a todas las pantallas del evento. **Nunca prometas varias.** Se acota desde la primera reunión:
+> 
+> > «Hoy manejamos una pantalla. Lo que tenemos que decidir es en cuál y en qué momento.»
+> 
+> **La pantalla de la barra** (promociones y felicitaciones sin tocar la del escenario) está **bloqueada hasta que exista el multipantalla**. Prometerlo antes de tiempo es exactamente el error que nos ha costado clientes.
+
+#### Los datos: a quién le importan de verdad · `conc-datos`
+
+_etapa: Pitch / Demo · sectores: Conciertos y artistas_
+
+> | Quién | ¿Le sirven? |
+> |---|---|
+> | **La sala** | **Sí.** Cien noches al año, misma ciudad, mismo público |
+> | **El promotor** | **Sí.** Repite ciudad cada temporada |
+> | **El artista en gira** | **No.** Pasa por una ciudad una vez y vuelve en dos años |
+> | **La marca** | **Es lo que más valora.** Es con lo único que justifica su inversión |
+> 
+> El remarketing se le vendería a quien repite en ese recinto. **Y hoy no se vende a nadie: es roadmap.**
+
+#### El paquete VIP (BLOQUEADO) · `conc-vip`
+
+_etapa: Mentalidad · sectores: Conciertos y artistas · la ven: Solo equipo interno_
+
+> Una entrada VIP cuesta entre un 80 % y un 150 % más que la general y supone del 5 % al 15 % de las entradas vendidas. **Si Enjoy entra en el paquete VIP, lo paga el fan.**
+> 
+> Se montaría con dos QR: uno general (álbum y foto en pantalla) y otro VIP (mensaje al artista con prioridad, álbum de camerino, su foto en el álbum oficial).
+> 
+> **Lo que falta por validar es quién lo compra.** Si en España los VIP los monta una empresa de hospitality y no el promotor, se le vende a esa empresa. **No se vende hasta confirmarlo** (documento 13, preguntas 11 y 12).
+
+#### Nunca en conciertos · `conc-nunca`
+
+_etapa: Mentalidad · sectores: Conciertos y artistas_
+
+> | Qué | Por qué |
+> |---|---|
+> | **Vender a un promotor como coste de producción** | Margen estrecho y riesgo propio |
+> | **Prometer que duplica el patrocinio** | La palanca existe, el número no |
+> | **Vender +20.000 sin prueba de carga** | Un «votad todos» nos tumba el servicio |
+> | **Vender donde no hay cobertura** | Un evento fallido se cuenta entre promotores |
+> | **Prometer varias pantallas** | Hoy es una |
+> | **El ángulo VIP** | Hasta confirmar quién los monta |
+> | **Proponer subir gente al escenario** | Seguridad y responsabilidad civil |
+> | **Señalar a una persona concreta en pantalla** | Aceptó subir su mensaje, no que 3.000 personas la busquen |
+> | **Vídeo en directo** | No existe |
+> | **Decir que algo va automático** | Todo lleva validación manual. «Siempre hay validación manual, es como sabes seguro lo que sale en tu pantalla». Punto |
+> | **Cerrar con marcas** | Lo lleva fundador |
+> | **CRM, remarketing, perfiles demográficos** | Roadmap |
+
 ## Módulo: Pantalla en vivo
 
 ### Cómo presentarlo (5)
@@ -1413,7 +1559,9 @@ _etapa: Pitch / Demo · sectores: Locales de ocio nocturno · actores: Dueño de
 
 _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Director/a de producción (Conciertos y artistas), Tour manager (Conciertos y artistas)_
 
-> > «No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en un lateral, en una tarjeta pequeña. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.»
+> > «No sustituimos a vuestro VJ ni tocamos vuestros visuales. Con NDI nos ponemos por encima, en una tarjeta pequeña en un lateral. Si tenéis ordenador en la señal de vídeo es instalar y conectar; si no, se abre en un navegador.»
+> 
+> **Es la primera objeción técnica siempre.** Va contestada antes de que la hagan.
 
 #### Acotar desde el principio · `conc-multipantalla`
 
@@ -1491,6 +1639,10 @@ _etapa: Pitch / Demo · sectores: Bodas_
 _etapa: Pitch / Demo · sectores: Conciertos y artistas · actores: Charanga u orquesta (Conciertos y artistas)_
 
 > > «Metéis vuestro repertorio en una lista, la gente vota desde el móvil y vosotros tocáis lo más votado. Nadie puede pedir nada que no esté en vuestra lista. El público elige la siguiente, o la última de la noche.»
+> 
+> **Para un artista que lo quiera como reto:**
+> 
+> > «Metes cinco o seis canciones tuyas y el público elige el cierre del show. Nadie puede pedir nada que no esté en tu lista.»
 
 ### Para quién (y cuándo no) (2)
 
