@@ -79,7 +79,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   const now = opts.now ?? (() => new Date());
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
-  const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o jefe/a de ventas'); };
+  const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
   const requireZones = () => { if (!perms.manageZones) throw new AdminError(403, 'Solo un/a admin define el territorio'); };
 
   async function territory() {
@@ -139,7 +139,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const v = parse(accountSchema, input);
     let ok: boolean;
     try { ok = await db.updateAccount(accountId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null }); } catch (e) { mapError(e); }
-    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a jefe/a puede editarla');
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
   }
   async function touch(accountId: string, kind: 'contact' | 'claim' | 'release', note?: string | null): Promise<Eligibility> {
     requireUse();

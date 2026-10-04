@@ -12,6 +12,7 @@ import type { AdminDb, AssetStore } from './db';
 import { createMediaService } from './media';
 import { can } from './permissions';
 import { paymentUrl } from './payment';
+import { inTeam } from '../org/scope';
 import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
@@ -70,9 +71,10 @@ export function latestByModule(catalog: CatalogVersion[]): Map<string, CatalogVe
 
 export function createAdminService(db: AdminDb, s: AdminSession, opts: { defaultLocale?: string; now?: () => Date; assets?: AssetStore } = {}) {
   const now = opts.now ?? (() => new Date());
-  const canEdit = (d: DossierRecord) => can(s.role).editAllDossiers || d.authorId === s.userId;
+  // Gerente de delegación: solo las de su equipo (= RLS de 20261026000000_org.sql).
+  const canEdit = (d: DossierRecord) => (can(s.role).editAllDossiers && inTeam(s, d.authorId)) || d.authorId === s.userId;
   const isPartner = s.role === 'partner';
-  /** Comercial y jefe/a de ventas: el precio sale de una tarifa (docs/COMMISSIONS.md §Tarifas). */
+  /** Comercial y gerente: el precio sale de una tarifa (docs/COMMISSIONS.md §Tarifas). */
   const pricesFromOptions = s.role === 'rep' || s.role === 'lead';
   const PRICE_FROM_OPTIONS = 'El precio lo fija tu empresa: elige una tarifa';
   const PRICES_LOCKED = 'Los precios de tus cuentas los gestiona la empresa';
@@ -87,7 +89,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   async function load(id: string): Promise<DossierRecord> {
     const d = await db.getDossier(id);
-    if (!d || d.tenantId !== s.tenantId) throw new AdminError(404, 'Dossier no encontrado');
+    if (!d || d.tenantId !== s.tenantId || (s.team && d.authorId && !inTeam(s, d.authorId))) throw new AdminError(404, 'Dossier no encontrado');
     return d;
   }
 
@@ -168,7 +170,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
   }
 
   async function listDossiers(): Promise<DossierSummary[]> {
-    const ds = await db.listDossiers(s.tenantId);
+    const ds = (await db.listDossiers(s.tenantId)).filter((d) => !s.team || !d.authorId || inTeam(s, d.authorId));
     const ids = ds.map((d) => d.id);
     const [its, links, names] = await Promise.all([
       ids.length ? db.listItems(ids) : Promise.resolve([]),

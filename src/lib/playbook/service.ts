@@ -81,10 +81,10 @@ export interface TopicView {
 }
 
 export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSession, deps: { admin: AdminService; evidence?: EvidenceDb }) {
-  /** Admin o jefe/a de ventas (src/lib/admin/permissions.ts). */
+  /** Admin o gerente (src/lib/admin/permissions.ts). */
   const isAdmin = can(s.role).managePlaybook;
   const isPartner = s.role === 'partner';
-  const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo un admin o el jefe/a de ventas puede editar el playbook oficial'); };
+  const requireAdmin = () => { if (!isAdmin) throw new AdminError(403, 'Solo un admin o el/la gerente puede editar el playbook oficial'); };
   const wrote = (ok: boolean) => { if (!ok) throw new AdminError(403, 'Sin permiso para esta operación'); };
   const now = () => new Date().toISOString();
 
@@ -249,7 +249,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     if (t.moduleId && !latest.has(t.moduleId)) throw new AdminError(404, 'Módulo no encontrado');
     if (t.playId && !plays.some((p) => p.id === t.playId && official(p))) throw new AdminError(404, 'Jugada no encontrada');
     return pdb.insertContribution(s.tenantId, {
-      // Los colaboradores aportan, pero su truco espera a que el admin o el jefe/a de ventas lo apruebe.
+      // Los colaboradores aportan, pero su truco espera a que el admin o el/la gerente lo apruebe.
       type: 'tip', playId: t.playId ?? null, moduleId: t.moduleId, kind: t.kind, title: t.title, body: t.body, status: isPartner ? 'pending' : 'shared', authorId: s.userId,
     });
   }

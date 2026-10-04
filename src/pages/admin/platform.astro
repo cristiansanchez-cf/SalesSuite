@@ -1,0 +1,57 @@
+---
+/**
+ * Plataforma (docs/ORG.md): solo el superadmin. Todos los espacios con sus cifras y un «Entrar» a cada uno
+ * (por su dominio; dentro, el superadmin es admin aunque no sea miembro).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { orgMessages } from '~/lib/i18n/messages/org';
+
+const { admin, tenant } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+const { m: { platform: m }, f } = i18n(Astro, orgMessages);
+const spaces = await admin.org.platform();
+const local = /^(localhost|127\.|.*\.localhost$)/.test(Astro.url.hostname);
+const hrefOf = (domain: string | null) => (domain ? (local ? `http://${domain}${Astro.url.port ? `:${Astro.url.port}` : ''}/admin` : `https://${domain}/admin`) : null);
+const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossiers: a.dossiers + x.dossiers, revenue: a.revenue + x.revenueCents }), { members: 0, dossiers: 0, revenue: 0 });
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 pb-10" data-testid="platform">
+    <header class="grid gap-2">
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{m.title}</h1>
+      <p class="co-lede !text-lg">{m.lede}</p>
+    </header>
+
+    <div class="grid grid-cols-3 gap-3">
+      <div class="co-card grid !p-5"><span class="co-figure text-4xl">{spaces.length}</span><span class="co-meta">{m.spaces}</span></div>
+      <div class="co-card grid !p-5"><span class="co-figure text-4xl">{total.members}</span><span class="co-meta">{m.members}</span></div>
+      <div class="co-card grid !p-5"><span class="co-figure text-4xl">{f.money(total.revenue, 'EUR')}</span><span class="co-meta">{m.revenue}</span></div>
+    </div>
+
+    <ul class="grid gap-3 p-0 sm:grid-cols-2">{spaces.map((x) => {
+      const href = hrefOf(x.domain);
+      const here = x.id === tenant?.id;
+      return (
+        <li class="co-card grid list-none gap-4 !p-6" data-testid="platform-space" data-slug={x.slug}>
+          <div class="flex items-start justify-between gap-3">
+            <div class="grid gap-1 min-w-0">
+              <h2 class="co-entity !text-xl">{x.name}</h2>
+              <span class="co-meta truncate">{x.domain ?? x.slug}{x.status !== 'active' && <> · <b>{m.suspended}</b></>}</span>
+            </div>
+            {here ? <span class="co-badge co-badge--signal">{m.here}</span>
+              : href && <a class="co-btn co-btn--primary co-btn--sm" href={href} data-testid="platform-open">{m.open} <Icon name="external-link" size={14} /></a>}
+          </div>
+          <dl class="grid grid-cols-4 gap-2 text-center">
+            {[[x.members, m.members], [x.delegations, m.delegations], [x.dossiers, m.dossiers], [x.published, m.published]].map(([v, l]) => (
+              <div class="grid rounded-xl bg-[var(--console-chip-bg)] p-2"><dt class="co-meta order-2 !text-xs">{l}</dt><dd class="co-figure text-2xl">{v}</dd></div>
+            ))}
+          </dl>
+          <p class="co-meta">{m.revenue}: <b>{f.money(x.revenueCents, 'EUR')}</b></p>
+        </li>
+      );
+    })}</ul>
+  </div>
+</AdminLayout>

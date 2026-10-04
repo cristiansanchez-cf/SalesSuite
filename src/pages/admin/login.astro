@@ -125,7 +125,7 @@ const roleName = m.login.roles;
               <input type="hidden" name="action" value="demo" />
               <input type="hidden" name="userId" value={u.id} />
               <button type="submit" class="co-action !min-h-[56px]" data-testid={`demo-${u.email}`}>
-                <span class="co-action__label">{u.display_name}<small>{u.email} · {u.memberships.map((ms) => m.login.roleIn(roleName[ms.role], tenantName(ms.tenant_id))).join(', ') || m.login.noAccess}</small></span>
+                <span class="co-action__label">{u.display_name}<small>{u.email} · {u.platform_admin ? 'Superadmin · todos los espacios' : u.memberships.map((ms) => m.login.roleIn(roleName[ms.role], tenantName(ms.tenant_id))).join(', ') || m.login.noAccess}</small></span>
               </button>
             </form>
           ))}

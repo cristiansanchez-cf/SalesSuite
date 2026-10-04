@@ -5,7 +5,7 @@ const es = {
   dossierStatus: { draft: 'Borrador', published: 'Publicado', archived: 'Archivado' },
   team: {
     eyebrow: 'Configurar', title: 'Equipo',
-    lede: 'Admins: todo. Jefes de ventas: equipo, colaboradores, playbook y todas las propuestas (no marca, catálogo ni precios). Comerciales: sus propuestas. Colaboradores: solo sus módulos y cuentas.',
+    lede: 'Admins: todo. Gerentes: su equipo (o todo, si son globales), colaboradores, playbook y sus propuestas (no marca, catálogo ni precios). Comerciales: sus propuestas. Colaboradores: solo sus módulos y cuentas.',
     invitePartner: 'Invitar colaborador', inviteTeam: 'Invitar al equipo',
     okInvited: 'Invitación enviada por email.', okAdded: 'Ya tenía cuenta: añadido al equipo (puede entrar con su acceso actual).',
     okRole: 'Rol actualizado.', okRemoved: 'Persona quitada del equipo.',
@@ -109,7 +109,7 @@ export const teamMessages = defineMessages({
     dossierStatus: { draft: 'Draft', published: 'Published', archived: 'Archived' },
     team: {
       eyebrow: 'Configure', title: 'Team',
-      lede: 'Admins: everything. Sales leads: team, partners, playbook and every proposal (not brand, catalog or prices). Sales reps: their own proposals. Partners: only their modules and accounts.',
+      lede: 'Admins: everything. Managers: team, partners, playbook and every proposal (not brand, catalog or prices). Sales reps: their own proposals. Partners: only their modules and accounts.',
       invitePartner: 'Invite partner', inviteTeam: 'Invite to the team',
       okInvited: 'Invitation sent by email.', okAdded: 'They already had an account: added to the team (they can sign in with their current access).',
       okRole: 'Role updated.', okRemoved: 'Person removed from the team.',

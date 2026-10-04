@@ -5,10 +5,10 @@ type P = Record<string, string>;
 const es = {
   fallback: 'Novedad en tu espacio',
   reason: { claimed_by_other: 'la trabajaba otra persona', blocked: 'la cuenta está bloqueada', out_of_zone: 'está fuera de su zona', no_account: 'no tiene cuenta del CRM', other: 'no cumple las reglas' },
-  role: { admin: 'admin', lead: 'jefe/a de ventas', rep: 'comercial', partner: 'colaborador/a' },
+  role: { admin: 'admin', lead: 'gerente', rep: 'comercial', partner: 'colaborador/a' },
   contribution_pending: { title: (p: P) => `${p.author || 'Alguien del equipo'} propone ${p.type === 'change' ? 'una mejora' : 'un truco'} para el playbook` },
   partner_referred: { title: (p: P) => `${p.name || 'Un colaborador nuevo'} se ha unido, invitado por ${p.inviter || 'otro colaborador'}`, detail: 'Revisa sus módulos y asígnale cuentas.' },
-  member_added: { title: (p: P, role: string) => `${p.inviter || 'Tu jefe/a de ventas'} ha añadido a ${p.name || 'alguien'} como ${role}` },
+  member_added: { title: (p: P, role: string) => `${p.inviter || 'Tu gerente'} ha añadido a ${p.name || 'alguien'} como ${role}` },
   account_conflict: {
     title: (p: P, reason: string) => `${p.seller || 'Alguien'} ha ganado ${p.account ? `«${p.account}»` : 'una venta'}, pero ${reason}`,
     detail: (p: P) => `Sin comisión hasta que decidas${p.holder && p.reason === 'claimed_by_other' ? ` · la trabajaba ${p.holder}` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,
@@ -58,10 +58,10 @@ export const notifyMessages = defineMessages({
   en: {
     fallback: 'Something new in your workspace',
     reason: { claimed_by_other: 'someone else was working it', blocked: 'the account is blocked', out_of_zone: 'it is outside their territory', no_account: 'it has no CRM account', other: 'it does not meet the rules' },
-    role: { admin: 'admin', lead: 'sales lead', rep: 'sales rep', partner: 'partner' },
+    role: { admin: 'admin', lead: 'manager', rep: 'sales rep', partner: 'partner' },
     contribution_pending: { title: (p) => `${p.author || 'Someone on the team'} suggests ${p.type === 'change' ? 'an improvement' : 'a tip'} for the playbook` },
     partner_referred: { title: (p) => `${p.name || 'A new partner'} has joined, invited by ${p.inviter || 'another partner'}`, detail: 'Review their modules and assign them accounts.' },
-    member_added: { title: (p, role) => `${p.inviter || 'Your sales lead'} added ${p.name || 'someone'} as ${role}` },
+    member_added: { title: (p, role) => `${p.inviter || 'Your manager'} added ${p.name || 'someone'} as ${role}` },
     account_conflict: {
       title: (p, reason) => `${p.seller || 'Someone'} won ${p.account ? `“${p.account}”` : 'a deal'}, but ${reason}`,
       detail: (p) => `No commission until you decide${p.holder && p.reason === 'claimed_by_other' ? ` · ${p.holder} was working it` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,

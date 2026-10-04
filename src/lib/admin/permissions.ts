@@ -2,7 +2,7 @@
  * Qué puede hacer cada rol (docs/TEAM.md). Un único sitio: las páginas, los servicios y el menú preguntan aquí.
  * La RLS de Postgres repite estas reglas (defensa en profundidad).
  *  - admin: todo.
- *  - lead (jefe/a de ventas): equipo comercial y colaboradores, playbook, mercado, situaciones y todos los dossiers.
+ *  - lead (gerente): equipo comercial y colaboradores, playbook, mercado, situaciones y todos los dossiers.
  *    No toca marca, catálogo, roles de admin ni precios.
  *  - rep: sus dossiers y las cuentas de su zona.
  *  - partner: sus cuentas (docs/PARTNERS.md).
@@ -36,4 +36,4 @@ export function can(role: Role) {
   };
 }
 
-export const ROLE_LABEL: Record<Role, string> = { admin: 'Admin', lead: 'Jefe/a de ventas', rep: 'Comercial', partner: 'Colaborador' };
+export const ROLE_LABEL: Record<Role, string> = { admin: 'Admin', lead: 'Gerente', rep: 'Comercial', partner: 'Colaborador' };

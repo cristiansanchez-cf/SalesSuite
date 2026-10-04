@@ -84,8 +84,9 @@ export interface PartnerAccountRow {
   id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
-export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string }>; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string; onboarding?: Record<string, string> }
-export interface ZoneRow { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number }
+export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string; delegation_id?: string | null }>; platform_admin?: boolean; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string; onboarding?: Record<string, string> }
+export interface ZoneRow { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number; delegation_id?: string | null }
+export interface DelegationRow { id: string; tenant_id: string; name: string; manager_id: string | null; position: number }
 export interface MembershipZoneRow { tenant_id: string; user_id: string; zone_id: string }
 export interface AccountRulesRow { tenant_id: string; claim_days: number; strict_zones: boolean; require_account: boolean }
 export interface AccountRow {
@@ -157,6 +158,7 @@ export interface DemoDb {
   win_story: WinStoryRow[];
   notification: NotificationRow[];
   zone: ZoneRow[];
+  delegation: DelegationRow[];
   membership_zone: MembershipZoneRow[];
   account_rules: AccountRulesRow[];
   account: AccountRow[];
@@ -186,6 +188,8 @@ export const DEMO_USERS: DemoUser[] = [
   { id: '22222222-2222-4222-8222-222222222222', email: 'admin@enjoy.test', display_name: 'Admin Enjoy', memberships: [{ tenant_id: ENJOY, role: 'admin' }] },
   { id: '33333333-3333-4333-8333-333333333333', email: 'rep@retheme.test', display_name: 'Comercial Re-tema', memberships: [{ tenant_id: ALT, role: 'rep' }] },
   { id: '55555555-5555-4555-8555-555555555555', email: 'dj@enjoy.test', display_name: 'DJ Dani (colaborador)', memberships: [{ tenant_id: ENJOY, role: 'partner' }] },
+  // Superadmin de la plataforma (docs/ORG.md): sin membresía, entra en todos los espacios como admin.
+  { id: '99999999-9999-4999-8999-0000000000aa', email: 'super@cofundo.test', display_name: 'Superadmin Cofundo', memberships: [], platform_admin: true },
 ];
 
 /** Colaborador de demo: DJ que vende en sus tres locales (docs/PARTNERS.md). */
@@ -315,6 +319,7 @@ export function freshDemoDb(): DemoDb {
     }] : [],
     // Territorio y cuentas de ejemplo (docs/ACCOUNTS.md).
     zone: DEMO_ZONES.map((z) => ({ ...z })),
+    delegation: [],
     membership_zone: [{ tenant_id: ENJOY, user_id: REP, zone_id: Z.cv }],
     account_rules: [],
     account: [

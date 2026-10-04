@@ -42,6 +42,11 @@ import { createAnalyticsService, type AnalyticsService } from '../analytics/serv
 import { emptyAnalyticsDb, type AnalyticsDb } from '../analytics/db';
 import { demoAnalyticsDb } from '../analytics/db-demo';
 import { supabaseAnalyticsDb } from '../analytics/db-supabase';
+import type { OrgDb } from '../org/db';
+import { demoOrgDb } from '../org/db-demo';
+import { supabaseOrgDb } from '../org/db-supabase';
+import { createOrgService, type OrgService } from '../org/service';
+import { emptyOrgDb } from '../org/empty';
 
 export const DEMO_COOKIE = 'ss_demo_user';
 
@@ -67,6 +72,8 @@ export interface AdminContext {
   accounts: AccountsService;
   /** Comisiones (docs/COMMISSIONS.md). */
   commissions: CommissionsService;
+  /** Organigrama: delegaciones, gerentes y (superadmin) la plataforma (docs/ORG.md). */
+  org: OrgService;
   /** Analítica de dossiers: aperturas, tiempo y secciones (docs/ANALYTICS.md). */
   analytics: AnalyticsService;
   /** Cliente Supabase con la sesión del usuario (solo modo supabase). */
@@ -103,13 +110,27 @@ export interface Deps {
   commissionsDb?: (userId: string) => CommissionsDb;
   /** Visitas a dossiers (opcional). */
   analyticsDb?: AnalyticsDb;
+  /** Organigrama y superadmin (opcional). */
+  orgDb?: OrgDb;
 }
 
 /** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
 export async function buildAdminContext(baseDb: AdminDb, user: { id: string; email: string; name: string | null }, tenant: TenantContext, mode: AdminContext['mode'], deps: Deps): Promise<AuthResult> {
-  const role = await baseDb.membershipRole(user.id, tenant.id);
+  const org = deps.orgDb ?? emptyOrgDb;
+  const [member, superadmin] = await Promise.all([baseDb.membershipRole(user.id, tenant.id), org.isSuperadmin(user.id).catch(() => false)]);
+  // El superadmin entra en cualquier espacio como admin (aunque no sea miembro).
+  const role = superadmin ? 'admin' : member;
   if (!role) return { kind: 'forbidden', email: user.email };
-  const session: AdminSession = { userId: user.id, email: user.email, displayName: user.name, tenantId: tenant.id, role };
+  const session: AdminSession = { userId: user.id, email: user.email, displayName: user.name, tenantId: tenant.id, role, superadmin };
+  if (role === 'lead' || role === 'rep') {
+    const byUser = await org.memberDelegations(tenant.id).catch(() => new Map<string, string>());
+    session.delegationId = byUser.get(user.id) ?? null;
+    // Gerente de delegación: ve a los suyos (y a sí mismo). El global (sin delegación) ve todo.
+    if (role === 'lead' && session.delegationId) {
+      session.team = [...byUser].filter(([, d]) => d === session.delegationId).map(([u]) => u).concat(user.id);
+      session.delegationName = (await org.listDelegations(tenant.id).catch(() => [])).find((d) => d.id === session.delegationId)?.name ?? null;
+    }
+  }
   let db = baseDb;
   let playbookDb = deps.playbookDb;
   let evidenceDb = deps.evidenceDb;
@@ -140,6 +161,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
         { admin: db, accounts: deps.accountsDb?.(user.id) ?? emptyAccountsDb }, session),
       analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),
+      org: createOrgService(org, db, session, { zones: async () => (await (deps.accountsDb?.(user.id) ?? emptyAccountsDb).listZones(tenant.id)).map((z) => ({ id: z.id, name: z.name, parentId: z.parentId })) }),
     },
   };
 }
@@ -155,14 +177,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb() });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

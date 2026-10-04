@@ -14,11 +14,13 @@ export type NavMode = 'sell' | 'setup';
 
 const SETUP_PREFIXES = ['/admin/setup', '/admin/playbook', '/admin/catalog', '/admin/team', '/admin/territory', '/admin/commissions/team', '/admin/prices', '/admin/brand'];
 
-export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number } = {}, L = shellMessages.es.nav) {
+export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number; superadmin?: boolean } = {}, L = shellMessages.es.nav) {
   const on = (p: string) => path === p || path.startsWith(`${p}/`);
   const perms = can(role);
   const mode: NavMode = perms.configure && SETUP_PREFIXES.some(on) ? 'setup' : 'sell';
   const sell: NavItem[] = [
+    // Superadmin (docs/ORG.md): todos los espacios de la plataforma.
+    ...(counts.superadmin ? [{ href: '/admin/platform', label: L.platform, icon: 'shield-check' as IconName, on: on('/admin/platform'), testid: 'nav-platform' }] : []),
     { href: '/admin/start', label: L.start, icon: 'compass', on: on('/admin/start'), testid: 'nav-start' },
     ...(role !== 'partner' ? [{ href: '/admin/inicio', label: L.home, icon: 'gauge' as IconName, on: on('/admin/inicio') }] : []),
     role === 'partner'
@@ -35,7 +37,8 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
     { href: '/admin/setup', label: L.setup, icon: 'wand-sparkles', on: on('/admin/setup') },
     { href: '/admin/playbook', label: L.playbook, icon: 'book-open', on: on('/admin/playbook'), count: counts.pendingPlaybook || undefined },
     ...(perms.manageTenant ? [{ href: '/admin/catalog', label: L.catalog, icon: 'boxes' as IconName, on: on('/admin/catalog') }] : []),
-    { href: '/admin/team', label: L.team, icon: 'users', on: on('/admin/team') },
+    { href: '/admin/team', label: L.team, icon: 'users', on: on('/admin/team') && !on('/admin/team/org') },
+    { href: '/admin/team/org', label: L.org, icon: 'network', on: on('/admin/team/org'), testid: 'nav-org' },
     ...(perms.manageAccounts ? [{ href: '/admin/territory', label: L.territory, icon: 'map' as IconName, on: on('/admin/territory') }] : []),
     { href: '/admin/commissions/team', label: L.commissions, icon: 'wallet', on: on('/admin/commissions/team') },
     ...(perms.manageTenant ? [{ href: '/admin/prices', label: L.prices, icon: 'tag' as IconName, on: on('/admin/prices'), testid: 'nav-prices' }] : []),

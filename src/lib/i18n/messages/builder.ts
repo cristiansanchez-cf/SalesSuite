@@ -134,7 +134,7 @@ const es = {
   preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa de la propuesta' },
   page: {
     approved: 'Comisión aprobada a pesar del conflicto', noCommission: (reason: string) => `Esta venta no genera comisión: ${reason}`,
-    decided: 'Ya está decidido.', decide: 'Decide si se paga. Hasta entonces, no cuenta para comisiones.', leadDecides: 'Un/a jefe/a de ventas decidirá si se paga.',
+    decided: 'Ya está decidido.', decide: 'Decide si se paga. Hasta entonces, no cuenta para comisiones.', leadDecides: 'Un/a gerente decidirá si se paga.',
     pay: 'Pagar comisión', dontPay: 'Sin comisión',
     eligibility: { eligible: 'Genera comisión', claimed_by_other: 'La trabaja otra persona', blocked: 'Cuenta bloqueada', out_of_zone: 'Fuera de tu zona', no_account: 'Sin cuenta del CRM' },
     sale: 'Venta', myCommissions: 'Mis comisiones', confirmed: 'Confirmada', void: 'Anulada', pending: 'Pendiente de confirmar',
@@ -280,7 +280,7 @@ export const builderMessages = defineMessages({
     preview: { title: 'Preview', mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop', open: 'Open ↗', frame: 'Proposal preview' },
     page: {
       approved: 'Commission approved despite the conflict', noCommission: (reason) => `This sale earns no commission: ${reason}`,
-      decided: 'This has been decided.', decide: 'Decide whether to pay it. Until then, it does not count towards commissions.', leadDecides: 'A sales lead will decide whether to pay it.',
+      decided: 'This has been decided.', decide: 'Decide whether to pay it. Until then, it does not count towards commissions.', leadDecides: 'A manager will decide whether to pay it.',
       pay: 'Pay commission', dontPay: 'No commission',
       eligibility: { eligible: 'Earns commission', claimed_by_other: 'Someone else is working it', blocked: 'Account blocked', out_of_zone: 'Outside your territory', no_account: 'No CRM account' },
       sale: 'Sale', myCommissions: 'My commissions', confirmed: 'Confirmed', void: 'Cancelled', pending: 'Awaiting confirmation',

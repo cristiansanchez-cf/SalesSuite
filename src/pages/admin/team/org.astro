@@ -1,0 +1,177 @@
+---
+/**
+ * Organigrama (docs/ORG.md): arriba la dirección (admin y gerentes globales), debajo cada delegación con su gerente,
+ * sus zonas y su equipo. La dirección lo monta aquí; un gerente de delegación ve solo la suya.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import MoveForm from '~/components/admin/org/MoveForm.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { orgMessages } from '~/lib/i18n/messages/org';
+import type { MemberRecord } from '~/lib/admin/types';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).configure) return Astro.rewrite('/admin/forbidden');
+const o = admin.org;
+const { m } = i18n(Astro, orgMessages);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let ok = '';
+  result = await formAction(async () => {
+    switch (str('action')) {
+      case 'create': await o.saveDelegation({ name: str('name'), managerId: str('managerId') }); ok = 'created'; break;
+      case 'save': await o.saveDelegation({ name: str('name'), managerId: str('managerId') }, str('id')); ok = 'saved'; break;
+      case 'delete': await o.deleteDelegation(str('id')); ok = 'removed'; break;
+      case 'move': await o.moveMember(str('userId'), str('delegationId') || null); ok = 'moved'; break;
+      case 'zone': await o.setZone(str('zoneId'), str('delegationId') || null); ok = 'zone'; break;
+    }
+  });
+  if (!result.error) return Astro.redirect(`/admin/team/org${ok ? `?ok=${ok}` : ''}`, 303);
+}
+const okMsg = flash(Astro.url, m.ok);
+const [chart, terr] = await Promise.all([o.chart(), admin.accounts.territory().catch(() => null)]);
+// Para repartir: las zonas de primer y segundo nivel (país → región), que es como se reparten los equipos.
+const zones = (terr?.zones ?? []).filter((z) => !z.parentId || (terr?.zones ?? []).some((p) => p.id === z.parentId && !p.parentId));
+const freeZones = zones.filter((z) => !chart.delegations.some((d) => d.zones.some((x) => x.id === z.id)));
+const candidates = [...chart.unassigned, ...chart.globals.filter((x) => x.role === 'lead'), ...chart.delegations.flatMap((d) => d.members)];
+const nameOf = (x: MemberRecord) => x.displayName || x.email.split('@')[0];
+const initials = (x: MemberRecord) => nameOf(x).split(/[\s.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+const delegations = chart.delegations;
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 pb-10" data-testid="org">
+    <header class="grid gap-2">
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{m.title}</h1>
+      <p class="co-lede !text-lg max-w-2xl">{chart.canEdit ? m.lede : m.readOnly}</p>
+    </header>
+    {okMsg && <p class="co-alert co-alert--success w-fit" role="status">{okMsg}</p>}
+    {result.error && <Alert kind="rejection" title={result.error} details={result.details} />}
+
+    <!-- Dirección -->
+    {chart.canEdit && (
+      <section class="org-top grid justify-items-center gap-3" data-testid="org-top">
+        <p class="text-eyebrow">{m.top}</p>
+        <div class="flex flex-wrap justify-center gap-3">
+          {chart.globals.map((x) => (
+            <span class="org-person org-person--lg"><span class="org-avatar org-avatar--ink">{initials(x)}</span><span class="grid"><b>{nameOf(x)}</b><small>{x.role === 'admin' ? m.admin : m.global}</small></span></span>
+          ))}
+        </div>
+        <p class="co-meta">{m.topHint}</p>
+        {delegations.length > 0 && <span class="org-stem" aria-hidden="true"></span>}
+      </section>
+    )}
+
+    <!-- Delegaciones -->
+    <section class="org-row grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="org-delegations">
+      {delegations.map((d) => (
+        <article class="co-card org-card grid content-start gap-4 !p-5" data-testid="delegation" data-name={d.name}>
+          {chart.canEdit ? (
+            <form method="post" class="grid gap-2">
+              <input type="hidden" name="action" value="save" /><input type="hidden" name="id" value={d.id} />
+              <input class="co-input !text-xl !font-bold" name="name" value={d.name} maxlength="80" required aria-label={m.name} />
+              <label class="org-manager">
+                <span class="org-avatar">{d.manager ? initials(d.manager) : '?'}</span>
+                <select class="co-select flex-1" name="managerId" aria-label={m.manager} data-testid="delegation-manager" onchange="this.form.requestSubmit()">
+                  <option value="">{m.noManager}</option>
+                  {d.manager && <option value={d.manager.userId} selected>{nameOf(d.manager)} · {m.manager}</option>}
+                  {candidates.filter((x) => x.userId !== d.managerId).map((x) => <option value={x.userId}>{nameOf(x)}</option>)}
+                </select>
+              </label>
+              <noscript><button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{m.rename}</button></noscript>
+            </form>
+          ) : (
+            <div class="grid gap-2">
+              <h2 class="text-xl font-bold">{d.name}</h2>
+              <span class="org-person">{d.manager ? <><span class="org-avatar">{initials(d.manager)}</span><span class="grid"><b>{nameOf(d.manager)}</b><small>{m.manager}</small></span></> : <span class="co-meta">{m.noManager}</span>}</span>
+            </div>
+          )}
+
+          <div class="grid gap-2">
+            <p class="text-eyebrow">{m.zones}</p>
+            <div class="co-chips">
+              {d.zones.length === 0 && <span class="co-meta">{m.noZones}</span>}
+              {d.zones.map((z) => chart.canEdit ? (
+                <form method="post"><input type="hidden" name="action" value="zone" /><input type="hidden" name="zoneId" value={z.id} /><input type="hidden" name="delegationId" value="" />
+                  <button class="co-chip" type="submit" title={m.remove}>{z.name} <span aria-hidden="true">×</span></button></form>
+              ) : <span class="co-chip">{z.name}</span>)}
+              {chart.canEdit && freeZones.length > 0 && (
+                <form method="post"><input type="hidden" name="action" value="zone" /><input type="hidden" name="delegationId" value={d.id} />
+                  <select class="co-select !min-h-[32px] !py-1 !text-sm" name="zoneId" aria-label={m.addZone} onchange="this.form.requestSubmit()" data-testid="delegation-zone">
+                    <option value="">{m.addZone}</option>{freeZones.map((z) => <option value={z.id}>{z.name}</option>)}
+                  </select></form>
+              )}
+            </div>
+          </div>
+
+          <div class="grid gap-2">
+            <p class="text-eyebrow">{m.people(d.members.length)}</p>
+            {d.members.length === 0 ? <p class="co-meta">{m.empty}</p> : (
+              <ul class="grid gap-1.5 p-0">{d.members.map((x) => (
+                <li class="org-member list-none" data-testid="delegation-member">
+                  <span class="org-person"><span class="org-avatar org-avatar--sm">{initials(x)}</span><b>{nameOf(x)}</b></span>
+                  {chart.canEdit && <MoveForm userId={x.userId} current={d.id} delegations={delegations} label={m.moveTo} none={m.none} />}
+                </li>))}
+              </ul>
+            )}
+          </div>
+
+          {chart.canEdit && (
+            <form method="post" class="mt-auto" onsubmit={`return confirm(${JSON.stringify(m.removeConfirm)})`}>
+              <input type="hidden" name="action" value="delete" /><input type="hidden" name="id" value={d.id} />
+              <button class="co-btn co-btn--quiet co-btn--sm" type="submit"><Icon name="trash2" size={14} />{m.remove}</button>
+            </form>
+          )}
+        </article>
+      ))}
+
+      {chart.canEdit && (
+        <form method="post" class="co-card org-card org-card--new grid content-start gap-3 !p-5" data-testid="delegation-new">
+          <input type="hidden" name="action" value="create" />
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="plus" size={20} /></span>
+          <h2 class="co-entity">{m.newTitle}</h2>
+          <label class="co-field">{m.name}<input class="co-input" name="name" required maxlength="80" placeholder={m.namePlaceholder} /></label>
+          <label class="co-field">{m.manager}<select class="co-select" name="managerId"><option value="">{m.pickManager}</option>{candidates.map((x) => <option value={x.userId}>{nameOf(x)}</option>)}</select></label>
+          <button class="co-btn co-btn--primary w-fit" type="submit">{m.create}</button>
+        </form>
+      )}
+    </section>
+
+    {chart.canEdit && chart.unassigned.length > 0 && (
+      <section class="grid gap-3" data-testid="org-unassigned">
+        <div class="grid gap-1"><p class="text-eyebrow">{m.unassigned}</p><p class="co-meta">{m.unassignedHint}</p></div>
+        <ul class="grid gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3">{chart.unassigned.map((x) => (
+          <li class="co-card org-member list-none !p-3" data-testid="unassigned-member">
+            <span class="org-person"><span class="org-avatar org-avatar--sm">{initials(x)}</span><b>{nameOf(x)}</b></span>
+            <MoveForm userId={x.userId} current="" delegations={delegations} label={m.moveTo} none={m.none} />
+          </li>))}
+        </ul>
+      </section>
+    )}
+  </div>
+</AdminLayout>
+
+<style>
+  .org-top { position: relative; }
+  .org-stem { width: 2px; height: 1.75rem; background: var(--console-divider, #e5e5e5); }
+  .org-row { position: relative; }
+  .org-card { border-top: 3px solid var(--co-signal, #6d28d9); }
+  .org-card--new { border-top-style: dashed; border-top-color: var(--console-divider, #ddd); }
+  .org-person { display: inline-flex; align-items: center; gap: .6rem; min-width: 0; }
+  .org-person b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .org-person small { color: var(--console-muted, #666); font-size: .8rem; }
+  .org-person--lg { padding: .6rem .9rem; border-radius: 999px; background: var(--console-surface, #fff); border: 1px solid var(--console-divider, #e5e5e5); }
+  .org-avatar { width: 2.25rem; height: 2.25rem; flex-shrink: 0; border-radius: 999px; display: grid; place-items: center; font-weight: 700; font-size: .8rem;
+    background: var(--co-signal-soft, #efe9ff); color: var(--co-signal, #6d28d9); }
+  .org-avatar--ink { background: var(--console-ink, #111); color: var(--console-bg, #fff); }
+  .org-avatar--sm { width: 1.75rem; height: 1.75rem; font-size: .7rem; }
+  .org-manager { display: flex; align-items: center; gap: .6rem; }
+  .org-member { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-width: 0; }
+</style>

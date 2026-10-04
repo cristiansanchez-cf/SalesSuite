@@ -9,14 +9,14 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, superadmin]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
         type: string
         default: enjoy
       admin_email:
-        description: Email del admin al que invitar (opcional). En dossiers-ejemplo, su autor (si no, el admin más antiguo)
+        description: Email del admin al que invitar (opcional). En dossiers-ejemplo, su autor (si no, el admin más antiguo). En superadmin, quién lo será
         type: string
         default: ''
       dry_run:
@@ -45,7 +45,7 @@ jobs:
           WHAT: ${{ inputs.what }}
         run: |
           missing=""
-          if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
+          if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
           if [ "$WHAT" != "migraciones" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
           if [ "$WHAT" != "migraciones" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
@@ -115,3 +115,13 @@ jobs:
         run: |
           case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
           if [ "$DRY" = "true" ]; then npm run tenant:samples -- "$TENANT" --dry-run; else npm run tenant:samples -- "$TENANT"; fi
+
+      - name: Superadmin
+        if: ${{ inputs.what == 'superadmin' }}
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ inputs.admin_email }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY" = "true" ]; then npx tsx scripts/superadmin.ts --dry-run; else npx tsx scripts/superadmin.ts; fi

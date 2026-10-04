@@ -16,7 +16,7 @@ import { shellMessages } from '~/lib/i18n/messages/shell';
 interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean; feed: NotificationFeed; back: string }
 const { admin, tenantName, path, pending, primary = false, feed, back } = Astro.props;
 const { m, locale } = i18n(Astro, shellMessages);
-const nav = navFor(admin.session.role, path, { pendingPlaybook: pending }, m.nav);
+const nav = navFor(admin.session.role, path, { pendingPlaybook: pending, superadmin: admin.session.superadmin }, m.nav);
 
 const name = admin.session.displayName || admin.session.email;
 const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
@@ -50,7 +50,7 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
   <details class="co-popover">
     <summary class="co-anchor" data-testid={primary ? 'profile' : undefined}>
       <span class="co-anchor__avatar">{initials}</span>
-      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{m.role[admin.session.role]}</span></span>
+      <span class="co-anchor__text"><span class="co-row-title">{name}</span><span class="co-meta" data-testid={primary ? 'role' : undefined}>{admin.session.superadmin ? 'Superadmin' : m.role[admin.session.role]}{admin.session.role === 'lead' && !admin.session.superadmin ? (admin.session.delegationId ? ` · ${admin.session.delegationName ?? m.shell.delegation}` : ` · ${m.shell.global}`) : ''}</span></span>
       <Icon name="chevron-down" size={16} />
     </summary>
     <div class="co-popover__menu">

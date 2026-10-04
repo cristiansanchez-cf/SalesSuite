@@ -45,6 +45,14 @@ export interface AdminSession {
   displayName: string | null;
   tenantId: string;
   role: Role;
+  /** Superadmin de la plataforma (docs/ORG.md): entra en todos los espacios como admin. */
+  superadmin?: boolean;
+  /** Su delegación (organigrama). Un gerente con delegación solo ve a su equipo. */
+  delegationId?: string | null;
+  /** Su nombre, para enseñarlo («Gerente · Levante»). */
+  delegationName?: string | null;
+  /** Gerente de delegación: las personas que ve (él incluido). null/undefined = todo el espacio. */
+  team?: string[] | null;
   /** Solo si role === 'partner': su perfil y sus cuentas. */
   partner?: PartnerProfile & { accounts: PartnerAccount[] };
 }

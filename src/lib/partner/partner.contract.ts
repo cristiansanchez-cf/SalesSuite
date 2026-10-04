@@ -196,7 +196,7 @@ export function partnerContract(name: string, env: () => PartnerEnv) {
       expect((await login(DJ)).kind).toBe('forbidden');
     });
 
-    test('jefe/a de ventas: gestiona equipo y colaboradores, pero no precios ni marca', async () => {
+    test('gerente: gestiona equipo y colaboradores, pero no precios ni marca', async () => {
       const admin = await ctx(ADMIN);
       await admin.tenantAdmin.invite({ email: 'jefa@enjoy.test', role: 'lead' }, 'https://x/admin');
       const leadId = (await admin.tenantAdmin.listMembers()).find((m) => m.email === 'jefa@enjoy.test')!.userId;

@@ -5,13 +5,13 @@ const es = {
   nav: {
     start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'Cuentas', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
     learn: 'Aprende', myCommissions: 'Mis comisiones', setup: 'Configuración guiada', playbook: 'Playbook y mercado', catalog: 'Catálogo',
-    team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
+    org: 'Organigrama', platform: 'Plataforma', team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
   },
-  role: { admin: 'Admin', lead: 'Jefe/a de ventas', rep: 'Comercial', partner: 'Colaborador' },
+  role: { admin: 'Admin', lead: 'Gerente', rep: 'Comercial', partner: 'Colaborador' },
   shell: {
     navigation: 'Navegación', openMenu: 'Abrir menú', loading: 'Cargando…', closeMenu: 'Cerrar menú', menu: 'Menú', workspace: 'Espacio de trabajo',
-    workspaceHint: 'Espacio en el que trabajas', myAccount: 'Mi cuenta', logout: 'Salir', language: 'Idioma',
+    delegation: 'de delegación', global: 'global', workspaceHint: 'Espacio en el que trabajas', myAccount: 'Mi cuenta', logout: 'Salir', language: 'Idioma',
     demo: 'Modo demo: los datos viven en memoria y se pierden al reiniciar el servidor.',
   },
   bell: {
@@ -49,13 +49,13 @@ export const shellMessages = defineMessages({
     nav: {
       start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'Accounts', compose: 'Write a message', wins: 'What worked',
       learn: 'Learn', myCommissions: 'My commissions', setup: 'Guided setup', playbook: 'Playbook & market', catalog: 'Catalog',
-      team: 'Team', territory: 'Territory', commissions: 'Commissions', prices: 'Pricing', brand: 'Brand', sell: 'Sell', configure: 'Configure',
+      org: 'Org chart', platform: 'Platform', team: 'Team', territory: 'Territory', commissions: 'Commissions', prices: 'Pricing', brand: 'Brand', sell: 'Sell', configure: 'Configure',
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
     },
-    role: { admin: 'Admin', lead: 'Sales lead', rep: 'Sales rep', partner: 'Partner' },
+    role: { admin: 'Admin', lead: 'Manager', rep: 'Sales rep', partner: 'Partner' },
     shell: {
       navigation: 'Navigation', openMenu: 'Open menu', loading: 'Loading…', closeMenu: 'Close menu', menu: 'Menu', workspace: 'Workspace',
-      workspaceHint: 'The workspace you are in', myAccount: 'My account', logout: 'Log out', language: 'Language',
+      delegation: 'of a branch', global: 'global', workspaceHint: 'The workspace you are in', myAccount: 'My account', logout: 'Log out', language: 'Language',
       demo: 'Demo mode: data lives in memory and is lost when the server restarts.',
     },
     bell: {
@@ -90,13 +90,13 @@ export const shellMessages = defineMessages({
     nav: {
       start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'Contas', compose: 'Preparar mensagem', wins: 'O que funcionou',
       learn: 'Aprenda', myCommissions: 'Minhas comissões', setup: 'Configuração guiada', playbook: 'Playbook e mercado', catalog: 'Catálogo',
-      team: 'Equipe', territory: 'Território', commissions: 'Comissões', prices: 'Tarifas', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
+      org: 'Organograma', platform: 'Plataforma', team: 'Equipe', territory: 'Território', commissions: 'Comissões', prices: 'Tarifas', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
     },
     role: { admin: 'Admin', lead: 'Gerente de vendas', rep: 'Vendedor(a)', partner: 'Parceiro(a)' },
     shell: {
       navigation: 'Navegação', openMenu: 'Abrir menu', loading: 'Carregando…', closeMenu: 'Fechar menu', menu: 'Menu', workspace: 'Espaço de trabalho',
-      workspaceHint: 'O espaço em que você trabalha', myAccount: 'Minha conta', logout: 'Sair', language: 'Idioma',
+      delegation: 'de delegação', global: 'global', workspaceHint: 'O espaço em que você trabalha', myAccount: 'Minha conta', logout: 'Sair', language: 'Idioma',
       demo: 'Modo demo: os dados ficam na memória e se perdem ao reiniciar o servidor.',
     },
     bell: {
@@ -131,13 +131,13 @@ export const shellMessages = defineMessages({
     nav: {
       start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: '계정', compose: '메시지 작성', wins: '효과 있었던 것',
       learn: '학습', myCommissions: '내 커미션', setup: '가이드 설정', playbook: '플레이북과 시장', catalog: '카탈로그',
-      team: '팀', territory: '담당 지역', commissions: '커미션', prices: '요금과 결제', brand: '브랜드', sell: '판매', configure: '설정',
+      org: '조직도', platform: '플랫폼', team: '팀', territory: '담당 지역', commissions: '커미션', prices: '요금과 결제', brand: '브랜드', sell: '판매', configure: '설정',
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,
     },
     role: { admin: '관리자', lead: '영업 리더', rep: '영업 담당자', partner: '파트너' },
     shell: {
       navigation: '내비게이션', openMenu: '메뉴 열기', loading: '불러오는 중…', closeMenu: '메뉴 닫기', menu: '메뉴', workspace: '워크스페이스',
-      workspaceHint: '현재 작업 중인 워크스페이스', myAccount: '내 계정', logout: '로그아웃', language: '언어',
+      delegation: '지사', global: '전체', workspaceHint: '현재 작업 중인 워크스페이스', myAccount: '내 계정', logout: '로그아웃', language: '언어',
       demo: '데모 모드: 데이터는 메모리에만 저장되며 서버를 다시 시작하면 사라집니다.',
     },
     bell: {

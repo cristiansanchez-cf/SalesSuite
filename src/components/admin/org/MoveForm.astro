@@ -1,0 +1,14 @@
+---
+/** Mover a alguien de delegación: un desplegable que se envía solo (sin JS, con botón). */
+interface Props { userId: string; current: string; delegations: Array<{ id: string; name: string }>; label: string; none: string }
+const { userId, current, delegations, label, none } = Astro.props;
+---
+<form method="post" class="shrink-0">
+  <input type="hidden" name="action" value="move" /><input type="hidden" name="userId" value={userId} />
+  <select class="co-select !min-h-[32px] !py-1 !text-sm" name="delegationId" aria-label={label} onchange="this.form.requestSubmit()" data-testid="move-member">
+    <option value="" selected={!current}>{current ? none : label}</option>
+    {delegations.filter((d) => d.id !== current).map((d) => <option value={d.id}>{d.name}</option>)}
+    {current && <option value={current} selected>· {delegations.find((d) => d.id === current)?.name}</option>}
+  </select>
+  <noscript><button class="co-btn co-btn--ghost co-btn--sm" type="submit">OK</button></noscript>
+</form>

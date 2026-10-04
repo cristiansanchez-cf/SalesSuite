@@ -48,7 +48,9 @@ const okMsg = flash(Astro.url, {
   role: M.okRole,
   removed: M.okRemoved,
 });
-const [members, partners, catalog] = await Promise.all([t.listMembers(), t.listPartners(), t.listCatalog()]);
+const [members, partners, catalog, chart] = await Promise.all([t.listMembers(), t.listPartners(), t.listCatalog(), admin.org.chart().catch(() => null)]);
+// Delegación de cada persona (organigrama).
+const delegationOf = new Map((chart?.delegations ?? []).flatMap((d) => [...d.members, ...(d.manager ? [d.manager] : [])].map((x) => [x.userId, d.name] as const)));
 const modules = catalog.filter((m) => m.isCatalog && m.versions.some((v) => v.status === 'published'));
 const dateFmt = (iso: string) => fmt.date(iso);
 const perms = can(admin.session.role);
@@ -58,6 +60,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede}>
+    <a class="co-btn co-btn--ghost" href="/admin/team/org" data-testid="team-org"><Icon name="network" size={16} />{S.nav.org}</a>
     <button type="button" class="co-btn co-btn--ghost" data-dialog-open="invite-partner"><Icon name="handshake" size={16} />{M.invitePartner}</button>
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="invite"><Icon name="user-plus" size={16} />{M.inviteTeam}</button>
   </PageHeader>
@@ -74,6 +77,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
             <span class="co-row-title">{m.displayName || m.email}{m.userId === admin.session.userId && <span class="co-meta"> {M.you}</span>}</span>
             <span class="co-meta">{m.email}{m.invitedBy && nameOf(m.invitedBy) ? ` · ${M.invitedByLower(nameOf(m.invitedBy)!)}` : ''}</span>
           </span>
+          {delegationOf.get(m.userId) && <span class="co-badge" data-testid="member-delegation"><Icon name="network" size={12} />{delegationOf.get(m.userId)}</span>}
           <span class:list={['co-badge', m.role !== 'rep' && 'co-badge--ink']}>{S.role[m.role]}</span>
           {perms.manageTenant && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`role-${m.userId}`}>{M.changeRole}</button>}
           <button type="button" class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-dialog-open={`remove-${m.userId}`} data-testid="remove-open">{M.remove}</button>

@@ -207,7 +207,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
     async decide(dossierId, decision) {
       const d = db().dossier.find((x) => x.id === dossierId);
       if (!d) return false;
-      if (!isManager(d.tenant_id, actorId)) throw new Error('permission denied: Solo un/a admin o jefe/a decide sobre la comisión');
+      if (!isManager(d.tenant_id, actorId)) throw new Error('permission denied: Solo un/a admin o gerente decide sobre la comisión');
       d.account_decision = decision; d.account_decided_by = actorId; d.account_decided_at = iso();
       resolveNotifications(d.tenant_id, 'account_conflict', d.id);
       return true;

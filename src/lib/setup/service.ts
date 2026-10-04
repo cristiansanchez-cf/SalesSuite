@@ -11,7 +11,7 @@ import { slug } from '../evidence/schema';
 import { PRESETS } from './presets';
 
 export function createSetupService(s: AdminSession, deps: { playbook: PlaybookService; evidence: EvidenceService }) {
-  const requireAdmin = () => { if (!can(s.role).managePlaybook) throw new AdminError(403, 'Solo un admin o el jefe/a de ventas configura la empresa'); };
+  const requireAdmin = () => { if (!can(s.role).managePlaybook) throw new AdminError(403, 'Solo un admin o el/la gerente configura la empresa'); };
 
   async function status() {
     requireAdmin();

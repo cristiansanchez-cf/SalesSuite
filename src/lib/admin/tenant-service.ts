@@ -2,6 +2,7 @@
  * Gestión del tenant desde la consola: equipo, catálogo de módulos y marca/tema. Solo admins.
  * Igual que service.ts: reglas aquí, datos vía AdminDb (RLS en Supabase como segunda barrera).
  */
+import { inTeam } from '../org/scope';
 import { REGISTRY, isBlockType } from '../../modules/registry';
 import type { PublicDossier } from '../types';
 import type { AdminDb, AssetStore, Identity } from './db';
@@ -56,7 +57,7 @@ export function createTenantAdminService(
     if (!perms.manageTenant) throw new AdminError(403, 'Solo los admins pueden gestionar el tenant');
   }
   function requireTeam() {
-    if (!perms.manageTeam) throw new AdminError(403, 'Solo un admin o un jefe/a de ventas gestiona el equipo');
+    if (!perms.manageTeam) throw new AdminError(403, 'Solo un admin o un/a gerente gestiona el equipo');
   }
   const wrote = (ok: boolean) => { if (!ok) throw new AdminError(403, 'Sin permiso para esta operación'); };
 
@@ -64,14 +65,14 @@ export function createTenantAdminService(
   async function listMembers(): Promise<MemberRecord[]> {
     requireTeam();
     // Equipo interno; los colaboradores se gestionan aparte (listPartners).
-    const list = (await db.listMembers(s.tenantId)).filter((m) => m.role !== 'partner');
+    const list = (await db.listMembers(s.tenantId)).filter((m) => m.role !== 'partner' && inTeam(s, m.userId));
     return list.sort((a, b) => (a.role === b.role ? a.email.localeCompare(b.email) : ROLE_ORDER[a.role] - ROLE_ORDER[b.role]));
   }
 
   async function invite(input: unknown, redirectTo: string): Promise<{ invited: boolean }> {
     requireTeam();
     const { email, role } = parse(inviteSchema, input);
-    if (role !== 'rep' && !perms.manageTenant) throw new AdminError(403, 'Un jefe/a de ventas invita comerciales y colaboradores; los admins y jefes los da de alta un admin');
+    if (role !== 'rep' && !perms.manageTenant) throw new AdminError(403, 'Un gerente invita comerciales y colaboradores; los admins y jefes los da de alta un admin');
     if (!deps.identity) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
     const members = await db.listMembers(s.tenantId);
     if (members.some((m) => m.email.toLowerCase() === email)) throw new AdminError(409, 'Esa persona ya está en el equipo');
@@ -320,7 +321,7 @@ export function createTenantAdminService(
     const p = await partner(userId);
     const cur = accountId ? p.accounts.find((a) => a.id === accountId) : undefined;
     if (accountId && !cur) throw new AdminError(404, 'Cuenta no encontrada');
-    // El precio lo decide el admin: un jefe/a de ventas asigna cuentas, pero no toca su precio (= trigger partner_account_price_guard).
+    // El precio lo decide el admin: un/a gerente asigna cuentas, pero no toca su precio (= trigger partner_account_price_guard).
     const v = perms.setPrices ? parsed : { ...parsed, pricePolicy: cur?.pricePolicy ?? 'hidden' as const, priceAdjustPct: cur?.priceAdjustPct ?? 0 };
     if (v.segmentId && !(await db.segmentExists(s.tenantId, v.segmentId))) throw new AdminError(404, 'Sector no encontrado');
     const priceAdjustPct = v.pricePolicy === 'adjusted' ? v.priceAdjustPct : 0;

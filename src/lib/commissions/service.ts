@@ -3,6 +3,7 @@
  * El cálculo es del motor puro (engine.ts); aquí se carga el contexto, se valida y se escribe.
  * Postgres impide duplicados y cambios en lo aprobado aunque este código fallara.
  */
+import { inTeam } from '../org/scope';
 import { createHash, randomBytes } from 'node:crypto';
 import type { AccountsDb } from '../accounts/db';
 import type { AdminDb } from '../admin/db';
@@ -245,7 +246,11 @@ export function createCommissionsService(db: CommissionsDb, deps: { admin: Admin
   }
   async function team() {
     requireRead();
-    const [entries, payouts, ms, p] = await Promise.all([db.listEntries(s.tenantId), db.listPayouts(s.tenantId), members(), plans()]);
+    const [allEntries, allPayouts, allMs, p] = await Promise.all([db.listEntries(s.tenantId), db.listPayouts(s.tenantId), members(), plans()]);
+    // Gerente de delegación: las de su equipo (= RLS).
+    const entries = allEntries.filter((e) => inTeam(s, e.userId));
+    const payouts = allPayouts.filter((x) => inTeam(s, x.userId));
+    const ms = new Map([...allMs].filter(([id]) => inTeam(s, id)));
     const planOf = new Map(p.assignments.map((a) => [a.userId, a.planId]));
     const def = p.plans.find((x) => x.isDefault);
     const people = [...ms.values()].map((m) => ({
