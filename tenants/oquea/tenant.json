@@ -102,6 +102,10 @@
     {
       "hostname": "oquea.ventas.cofundo.io",
       "is_primary": true
+    },
+    {
+      "hostname": "oquea-ventas.vercel.app",
+      "is_primary": false
     }
   ],
   "admins": [],
