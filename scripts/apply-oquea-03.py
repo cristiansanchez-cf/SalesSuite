@@ -4,8 +4,8 @@ Aplica a tenants/oquea/tenant.json la guía de inicio (docs/ventas/oquea/fuentes
 03-guia-de-inicio-ES.md) y la web de Oquea (fuentes/ui-web/index.astro, copy literal en español). Va después de
 apply-oquea-00.py. Idempotente: rehace el catálogo, el sector, el recorrido y las jugadas que carga (por clave).
 
-- Pie: teléfono y web de la guía (Cristian, 4-oct-2026: «todo de la guía»). El WhatsApp comercial sigue siendo el de la
-  entrega 00 (la guía no dice que el teléfono tenga WhatsApp).
+- Pie: teléfono, WhatsApp y web de la guía (Cristian, 4 y 5-oct-2026: «todo de la guía»; el WhatsApp es el de la
+  presentación en portugués).
 - Consola del centro (plantilla center-console): la pantalla de escritorio que compra un centro.
 - Catálogo: diapositivas «Pasos con la app» (plantilla app-steps) con las pantallas de la app recreadas en español
   (las capturas de la guía están casi todas en inglés; solo se usa tal cual una que está en español).
@@ -23,7 +23,7 @@ t = json.loads(P.read_text())
 
 # ---------------------------------------------------------------- 0. pie
 t['brand']['contact'] = {
-    'whatsapp': '34673225293',
+    'whatsapp': '34623790890',
     'phone': '+34 623 790 890',
     'email': 'enrique@oquea.com',
     'website': 'https://oquea.app',

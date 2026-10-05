@@ -4,7 +4,8 @@ Fuentes: `fuentes/03-guia-de-inicio-PT.pdf` (traducida en `fuentes/03-guia-de-in
 (`fuentes/ui-web/index.astro.txt`, texto literal en español). Script: `scripts/apply-oquea-03.py` (va después del 00).
 
 ## Cargado
-- **Pie:** WhatsApp +34 673 225 293 (entrega 00) · teléfono +34 623 790 890 · enrique@oquea.com · oquea.app (guía).
+- **Pie:** WhatsApp y teléfono +34 623 790 890 · enrique@oquea.com · oquea.app (todo de la guía; WhatsApp confirmado por
+  Cristian el 5-oct-2026).
 - **Catálogo (12):** portada · cómo funciona (escanean, tú los ves) · consola del centro · registro por QR · CRM ·
   compartir · tu QR · actividades · dive sites · equipo · alta del centro (verificado en menos de 24 h) · cierre.
   Plantillas nuevas: `app-steps` (pasos con 1–2 móviles y la pantalla real recreada) y `center-console` (la consola de
