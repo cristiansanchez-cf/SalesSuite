@@ -25,6 +25,8 @@ const SAMPLES: Sample[] = [
   { key: 'promotora', segment: 'promotoras', title: 'Enjoy para promotoras', company: 'tu promotora', contact: null, tariff: 'Promotora pequeña · evento suelto', answers: ['tipo:pequena', 'angulo:a', 'frecuencia:suelto'], live: true },
   // Hoteles: dossier de validación para un colaborador externo (documento 14). Sin precio, sin nombre de hotel.
   { key: 'hoteles-angel', segment: 'hoteles', title: 'Enjoy para hoteles y resorts', company: null, contact: null, tariff: null, live: true },
+  // Oquea (espacio «oquea»): centro de buceo con salidas diarias y equipo. Sin tarifa hasta el documento 04.
+  { key: 'centro-buceo', segment: 'centros-buceo', title: 'Oquea para tu centro de buceo', company: 'tu centro', contact: null, tariff: null, answers: ['salidas-diarias', 'equipo'], live: false },
 ];
 
 type Res<T> = { data: T; error: { message: string } | null };

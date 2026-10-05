@@ -56,4 +56,6 @@ Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como mód
 - **Festivales:** receta del documento 15 (`scripts/apply-propuesta-15.py`): tipo (recinto, festival mediano, festival grande, infraestructura de temporada), ángulo A–D, 3 preguntas (VJ → encima de vuestros visuales, patrocinadores, primera edición → acompañamiento), tope de 8.
 - **En directo** (`scripts/apply-en-directo.py`, después de todas): fotos reales en tira (plantilla `media-strip`) justo después de la pantalla en locales, conciertos y festivales. Es lo primero que sale si no cabe; no entra sin pantalla, en caseta ni en charanga.
 - **Fotos de ambiente** (`scripts/apply-fotos-ambiente.py`, después de todas): discoteca en locales y promotoras, festival de noche y de día en festivales, piscina en hoteles. Van como fotos del público en la pantalla y el móvil; no añaden diapositivas.
+- **Oquea · Centros de buceo:** receta de la guía de inicio (`scripts/apply-oquea-03.py`): completa (9) y apoyo visual
+  (5); 4 preguntas (salidas diarias, equipo, montarlo, varios centros). Sin precio hasta su documento 04.
 - Bodas: sin receta todavía (módulos recomendados como siempre).

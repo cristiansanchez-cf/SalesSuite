@@ -1,0 +1,80 @@
+/* ============================================================
+   OQUEA · tokens de la APLICACIÓN (no de la web de marketing)
+   Medidos sobre OqueaApp, rama ngo_event, commit 49b39dd.
+
+   Usar estos valores para recrear pantallas DE LA APP.
+   Para recrear la web de marketing, usar el tokens.css de la
+   entrega anterior: no son iguales.
+   ============================================================ */
+:root{
+  /* --- coincide con la web --- */
+  --oq-primary:          #3757BE;   /* AppColors.primary */
+  --oq-navy:             #1F294C;   /* AppColors.exploreNavy */
+  --oq-accent:           #D0FF00;   /* AppColors.exploreLime */
+  --oq-linkwater-0:      #F1F6FD;   /* AppColors.secondaryLight */
+  --oq-bg:               #FFFFFF;   /* AppColors.background */
+
+  /* --- DIFIERE de la web: usar estos en pantallas de la app --- */
+  --oq-text:             #000000;   /* la web usa #292929 */
+  --oq-border:           #E0E0E0;   /* la web usa #EFEFEF */
+  --oq-radius-card:      16px;      /* la web usa 24px */
+
+  /* --- resto del tema de la app --- */
+  --oq-text-secondary:   #7C7C7C;
+  --oq-text-tertiary:    #999999;
+  --oq-surface-muted:    #F8F8F9;
+  --oq-surface-desktop:  #FBFBFB;
+  --oq-success:          #4CAF50;
+  --oq-error:            #E53935;
+  --oq-warning:          #FF9800;
+  --oq-info:             #2196F3;
+  --oq-disabled:         #BDBDBD;
+
+  /* --- capa semántica de la consola de escritorio --- */
+  --oq-card-border:      #E6E8EE;
+  --oq-muted:            #6B7280;
+  --oq-hint:             #8A8F9A;
+  --oq-chip-bg:          #EAF0FB;
+  --oq-chip-grey:        #F4F6FA;
+  --oq-divider:          #EEEEF2;
+  --oq-progress-track:   #E8EEF8;
+  --oq-alert-bg:         #FFF1F0;
+  --oq-alert-border:     #FFD4D2;
+
+  /* --- estructura --- */
+  --oq-sidebar-w:        264px;
+  --oq-content-max:      1120px;
+  --oq-gutter:           24px;
+  --oq-page-pad:         28px;
+  --oq-popup-w:          280px;
+  --oq-radius-control:   12px;
+  --oq-radius-pill:      999px;
+
+  /* --- espaciado (escala cerrada de la app) --- */
+  --oq-s4:4px; --oq-s8:8px; --oq-s12:12px; --oq-s16:16px;
+  --oq-s20:20px; --oq-s24:24px; --oq-s32:32px; --oq-s40:40px;
+
+  /* --- tipografía --- */
+  --oq-font:"Gilroy",system-ui,-apple-system,sans-serif;
+  --oq-t-entity:22px;   /* peso 800, interlineado 1.15 */
+  --oq-t-name:20px;     /* peso 800, 1.15 */
+  --oq-t-card:16px;     /* peso 700, 1.20 */
+  --oq-t-section:14px;  /* peso 800, 1.20  <- mismo tamaño que la fila */
+  --oq-t-row:14px;      /* peso 600, 1.25  <- solo cambia el peso */
+  --oq-t-body:13px;     /* peso 400, 1.40 */
+  --oq-t-caption:12px;  /* peso 400, 1.35 */
+
+  /* --- movimiento, igual que la web --- */
+  --oq-fast:150ms; --oq-normal:250ms; --oq-slow:400ms;
+  --oq-ease:cubic-bezier(.4,0,.2,1);
+}
+
+/* Umbrales de columna. Se miden contra el PANEL de contenido,
+   no contra la ventana: el chrome ya ha restado su espacio. */
+/* >=1100 -> 3 columnas · >=720 -> 2 · <720 -> 1 */
+
+/* Panel secundario: 36% del ancho, con topes de 340 y 380 px. */
+
+/* REGLA QUE MÁS DEFINE EL PRODUCTO:
+   las superficies se separan con un borde de 1 px, nunca con sombra.
+   La sombra se reserva a lo que flota de verdad (popups y menús). */

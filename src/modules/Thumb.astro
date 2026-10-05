@@ -6,6 +6,7 @@
  */
 import Phone from './phone-tour/Phone.astro';
 import ScreenMini from './live-screen/ScreenMini.astro';
+import AppScreen from './app-steps/Screen.astro';
 import { REGISTRY, isBlockType } from './registry';
 
 /** small: tarjetas pequeñas (bienvenida), todo a escala. */
@@ -62,6 +63,12 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
     <div class="thumb__media">
       {p.items.slice(0, 3).map((it: { src: string }) => <img src={it.src} alt="" loading="lazy" />)}
     </div>
+  ) : blockType === 'app-steps' ? (
+    p.screens.length ? (
+      <div class="thumb__phones">
+        <AppScreen screen={p.screens[0].screen} src={p.screens[0].src} sample={p.sample} center={venue === 'Tu local' ? 'Tu centro' : venue} photo={p.photo} zoom={small ? 0.4 : 0.5} class="thumb__phone" />
+      </div>
+    ) : <div class="thumb__hero"><b>{fill(p.title)}</b></div>
   ) : blockType === 'case-study' ? (
     <div class="thumb__hero">
       <span class="thumb__chip">{p.client}</span>

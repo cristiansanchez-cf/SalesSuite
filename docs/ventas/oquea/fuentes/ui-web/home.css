@@ -1,0 +1,5143 @@
+/* ============================================================
+   OQUEA — Shared component styles (BEM, namespaced `oq-`)
+
+   ⚠️  DS exceptions deliberately applied (marketing site only):
+   - Soft `box-shadow` on floating cards, primary CTA, and the phone
+     mockup, to create marketing-grade depth.
+   - H1/H2 font-sizes can break the 10–24 px UI scale (hero ≈ 56 px,
+     section H2 ≈ 32–48 px).
+
+   These exceptions DO NOT apply to product UI. See README §"Design
+   system exceptions".
+
+   Brand essence: "Profundo. Humano. Fluido." → motion is fluid (slow
+   ease-in-out, oceanic). All idle animations stop with
+   `prefers-reduced-motion: reduce`.
+   ============================================================ */
+
+/* ---------- Fluid keyframes (idle motion) ---------- */
+@keyframes oq-fluid-halo {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50%      { transform: translateX(-50%) scale(1.085); }
+}
+@keyframes oq-fluid-halo-wide {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50%      { transform: translateX(-50%) scale(1.10); }
+}
+@keyframes oq-fluid-float-up {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes oq-fluid-float-down {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(9px); }
+}
+@keyframes oq-fluid-card-up {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+@keyframes oq-fluid-card-down {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+@keyframes oq-fluid-pill {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oq-phone,
+  .oq-floatcard,
+  .oq-actpill,
+  .oq-hero-viz__halo--1,
+  .oq-hero-viz__halo--2,
+  .oq-hero-viz__halo--3 {
+    animation: none !important;
+  }
+}
+
+/* ---------- Buttons ---------- */
+.oq-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-md) var(--sp-2xl);
+  border-radius: var(--radius-full);
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-base);
+  line-height: 1;
+  white-space: nowrap;
+  transition: background var(--motion-fast) var(--motion-ease),
+              color var(--motion-fast) var(--motion-ease),
+              transform var(--motion-fast) var(--motion-ease),
+              border-color var(--motion-fast) var(--motion-ease),
+              box-shadow var(--motion-fast) var(--motion-ease);
+}
+.oq-btn:active { transform: translateY(1px); }
+.oq-btn--primary {
+  background: var(--color-primary-dark);
+  color: var(--color-text-on-dark);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.14); /* DS exception, marketing only */
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+.oq-btn--primary:hover {
+  background: var(--color-primary-darker);
+  box-shadow: 0 4px 12px rgba(31, 41, 76, 0.22);
+}
+.oq-btn--ghost {
+  background: var(--color-bg);
+  color: var(--color-primary-darker);
+  border: 1px solid var(--color-bg);
+}
+.oq-btn--ghost:hover { color: var(--color-primary-dark); }
+.oq-btn--accent {
+  background: var(--color-accent);
+  color: var(--color-primary-darker);
+}
+.oq-btn--accent:hover { background: #BFEC00; }
+.oq-btn__icon { width: 18px; height: 18px; }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.oq-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-ui);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--color-border);
+}
+.oq-header__inner {
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2xl);
+}
+.oq-header__brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-primary-darker);
+  transition: color var(--motion-normal) var(--motion-ease),
+              transform var(--motion-fast) var(--motion-ease);
+}
+.oq-header__brand:hover { color: var(--color-primary-dark); }
+.oq-header__brand:active { transform: scale(0.97); }
+
+.oq-header__nav {
+  display: none;
+  gap: var(--sp-3xl);
+  margin-inline: auto;
+}
+.oq-header__nav a {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+.oq-header__nav a:hover { color: var(--color-primary-dark); }
+
+.oq-header__end {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-md);
+}
+
+.oq-header__lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+.oq-header__lang a {
+  color: var(--color-text-tertiary);
+  padding: var(--sp-xs) var(--sp-sm);
+  border-radius: var(--radius-full);
+  font-weight: var(--fw-medium);
+  transition: color var(--motion-fast) var(--motion-ease), background var(--motion-fast) var(--motion-ease);
+}
+.oq-header__lang a:hover { color: var(--color-primary-dark); }
+.oq-header__lang a[aria-current='page'] {
+  color: var(--color-primary-darker);
+  background: var(--color-primary-lighter);
+}
+
+.oq-header__signin {
+  display: none;
+  font-family: var(--font-primary);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  padding-inline: var(--sp-sm);
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+.oq-header__signin:hover { color: var(--color-primary-dark); }
+
+.oq-header__cta { display: none; }
+
+.oq-header__burger {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+}
+.oq-header__burger span {
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: var(--color-text-primary);
+  transition: transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+  border-radius: 2px;
+}
+.oq-header__burger[aria-expanded='true'] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.oq-header__burger[aria-expanded='true'] span:nth-child(2) { opacity: 0; }
+.oq-header__burger[aria-expanded='true'] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+@media (min-width: 768px) {
+  .oq-header__nav { display: inline-flex; }
+  .oq-header__signin { display: inline-flex; }
+}
+@media (min-width: 960px) {
+  .oq-header__cta { display: inline-flex; padding: 10px 18px; font-size: var(--text-md); }
+  .oq-header__burger { display: none; }
+}
+
+/* Mobile drawer */
+.oq-mobnav {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding-block: var(--sp-2xl);
+}
+.oq-mobnav[hidden] { display: none; }
+.oq-mobnav .oq-container { display: flex; flex-direction: column; gap: var(--sp-2xl); }
+.oq-mobnav__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+}
+.oq-mobnav__nav a {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+}
+.oq-mobnav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  padding-block: var(--sp-md);
+  border-block: 1px solid var(--color-border);
+}
+@media (min-width: 960px) { .oq-mobnav { display: none !important; } }
+
+/* ============================================================
+   HERO — centred layout (copy + visual stacked)
+   ============================================================ */
+.oq-hero {
+  position: relative;
+  min-height: clamp(540px, 70vh, 680px);
+  padding-block: clamp(var(--sp-2xl), 4vw, 40px) clamp(var(--sp-3xl), 4vw, 40px);
+  background: var(--color-primary-lighter);
+  overflow: hidden;
+}
+.oq-hero__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(var(--sp-2xl), 3vw, 40px);
+}
+
+.oq-hero__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-lg);
+  max-width: 760px;
+}
+.oq-hero__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(34px, 5.4vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+  color: var(--color-primary-darker);
+  text-wrap: balance;
+}
+.oq-hero__lede {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-medium);
+  font-size: clamp(var(--text-base), 1.4vw, var(--text-xl));
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  max-width: 60ch;
+}
+.oq-hero__microline {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-sm);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  margin-top: var(--sp-xs);
+}
+.oq-hero__microline::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--color-accent);
+}
+.oq-hero__cta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-md);
+  margin-top: var(--sp-md);
+}
+.oq-hero__app {
+  margin-top: var(--sp-md);
+  display: flex;
+  justify-content: center;
+}
+
+/* ============================================================
+   HERO VISUAL — phone + floating cards + dense haloes + glass pill
+   ============================================================ */
+.oq-hero__visual { width: 100%; display: flex; justify-content: center; }
+
+.oq-hero-viz {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  aspect-ratio: 1 / 0.62;
+  margin-inline: auto;
+  isolation: isolate;
+}
+/* Compact composition for everything below desktop (phones + tablets).
+   Keeps the floating cards small and pushed to the edges so the phone
+   stays visible. Identical layout in es and en. */
+@media (max-width: 1023px) {
+  .oq-hero-viz { aspect-ratio: 1 / 1.18; max-width: 360px; }
+}
+
+/* Linkwater concentric haloes — denser, behind the phone */
+.oq-hero-viz__halo {
+  position: absolute;
+  left: 50%; top: 6%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  z-index: -1;
+}
+.oq-hero-viz__halo--1 {
+  width: 38%; aspect-ratio: 1; top: 22%;
+  background: radial-gradient(ellipse at 50% 35%, var(--oq-linkwater-300) 0%, var(--oq-linkwater-100) 50%, rgba(241, 246, 253, 0) 92%);
+  opacity: 0.95;
+  animation: oq-fluid-halo 6s ease-in-out infinite;
+}
+.oq-hero-viz__halo--2 {
+  width: 60%; aspect-ratio: 1; top: 12%;
+  background: radial-gradient(ellipse at 50% 35%, var(--oq-linkwater-200) 0%, var(--oq-linkwater-50) 58%, rgba(241, 246, 253, 0) 88%);
+  opacity: 0.85;
+  animation: oq-fluid-halo 8s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+.oq-hero-viz__halo--3 {
+  width: 84%; aspect-ratio: 1; top: 4%;
+  background: radial-gradient(ellipse at 50% 35%, var(--oq-linkwater-100) 0%, rgba(241, 246, 253, 0) 72%);
+  opacity: 0.7;
+  animation: oq-fluid-halo-wide 10s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+/* Phone */
+.oq-phone {
+  position: relative;
+  width: clamp(190px, 28%, 250px);
+  margin-inline: auto;
+  margin-top: 2%;
+  aspect-ratio: 9 / 19;
+  background: var(--oq-grey-950);
+  border-radius: 32px;
+  padding: 7px;
+  border: 1.5px solid #0E1530;
+  z-index: 2;
+  /* Make the phone a *vertical* flex container so its single screen
+     child reliably fills the height regardless of the aspect-ratio
+     descendant-sizing quirk that bit us with `height: 100%`. */
+  display: flex;
+  flex-direction: column;
+  /* DS exception: subtle floating shadow */
+  box-shadow: 0 20px 48px rgba(31, 41, 76, 0.18), 0 5px 14px rgba(31, 41, 76, 0.08);
+  animation: oq-fluid-float-up 5.5s ease-in-out infinite;
+}
+/* Three sizing parents are valid inside the phone:
+   - .oq-phone__screen — the legacy single-screen mock
+   - .oq-mock-screens  — the rotating-stack container (home §Ecosystem)
+   - .oq-mock-screen   — a bespoke single screen used directly inside
+     the phone on Centers (§Ops agenda, §Comms CRM diver profile).
+   All three must grow to fill the phone, otherwise the dark phone
+   bezel shows through below the UI. */
+.oq-phone > .oq-phone__screen,
+.oq-phone > .oq-mock-screens,
+.oq-phone > .oq-mock-screen {
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 1023px) {
+  .oq-phone {
+    width: clamp(190px, 60%, 230px);
+    margin-top: 5%;
+    border-radius: 28px;
+    padding: 6px;
+  }
+  .oq-phone__screen { border-radius: 22px; padding: 14px 12px 10px; }
+  .oq-phone__screen::before { top: 5px; width: 60px; height: 16px; }
+}
+.oq-phone__screen {
+  position: relative;
+  height: 100%;
+  border-radius: 28px;
+  background: var(--oq-white);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px 12px;
+  gap: 10px;
+}
+.oq-phone__screen::before {
+  content: '';
+  position: absolute;
+  top: 6px; left: 50%;
+  transform: translateX(-50%);
+  width: 70px; height: 18px;
+  background: var(--oq-grey-950);
+  border-radius: 999px;
+}
+.oq-phone__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 12px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  color: var(--color-text-primary);
+}
+.oq-phone__logomark {
+  display: inline-flex; gap: 2px;
+  width: 22px; height: 14px;
+  align-items: center;
+}
+.oq-phone__logodot { width: 9px; height: 9px; border-radius: 999px; background: var(--color-primary-dark); }
+.oq-phone__logodot--accent { background: var(--color-accent); }
+.oq-phone__title { font-weight: var(--fw-medium); }
+.oq-phone__more { color: var(--color-text-tertiary); }
+
+.oq-phone__profile {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px;
+}
+.oq-phone__avatar {
+  width: 36px; height: 36px; border-radius: 999px;
+  background: linear-gradient(135deg, var(--oq-linkwater-200), var(--oq-linkwater-500));
+  flex-shrink: 0;
+}
+.oq-phone__person { display: flex; flex-direction: column; min-width: 0; }
+.oq-phone__name { font-size: 11px; font-weight: var(--fw-semibold); color: var(--color-text-primary); }
+.oq-phone__bio { font-size: 9px; color: var(--color-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.oq-phone__stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  font-family: var(--font-primary);
+}
+.oq-phone__stat { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.oq-phone__stat b { font-size: 12px; font-weight: var(--fw-semibold); color: var(--color-text-primary); }
+.oq-phone__stat span { font-size: 8px; color: var(--color-text-tertiary); }
+
+.oq-phone__pillrow { display: flex; gap: 6px; }
+.oq-phone__pill {
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  border: 1px solid var(--color-primary-100);
+  font-weight: var(--fw-medium);
+}
+
+.oq-phone__activity { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.oq-phone__activity-label {
+  font-size: 9px; font-weight: var(--fw-medium); color: var(--color-text-secondary);
+}
+.oq-phone__chart {
+  width: 100%; height: auto; aspect-ratio: 220 / 90;
+  border: 1px solid var(--color-border); border-radius: 8px;
+  background: var(--oq-grey-50); padding: 4px;
+}
+.oq-phone__chart-axis {
+  display: flex; justify-content: space-around; font-size: 7.5px; color: var(--color-text-tertiary);
+}
+
+/* Floating cards — extend out beyond the phone */
+.oq-floatcard {
+  position: absolute;
+  background: var(--color-bg);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-primary-100);
+  padding: var(--sp-lg);
+  z-index: 3;
+  font-family: var(--font-primary);
+  /* DS exception: marketing depth */
+  box-shadow: 0 12px 32px rgba(31, 41, 76, 0.10), 0 4px 8px rgba(31, 41, 76, 0.04);
+}
+.oq-floatcard--trip {
+  left: 2%;
+  top: 14%;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  animation: oq-fluid-card-up 7s ease-in-out infinite;
+  animation-delay: -1s;
+}
+@media (min-width: 1024px) { .oq-floatcard--trip { left: 4%; width: 220px; } }
+@media (max-width: 1023px) {
+  .oq-floatcard--trip {
+    left: -16%;
+    top: 8%;
+    width: 144px;
+    padding: 10px 12px;
+    gap: 4px;
+  }
+  .oq-floatcard--trip .oq-floatcard__title { font-size: 12px; }
+  .oq-floatcard--trip .oq-floatcard__rows { gap: 3px; }
+  .oq-floatcard--trip .oq-floatcard__rows li { font-size: 10px; gap: 5px; }
+  .oq-floatcard--trip .oq-floatcard__rows li svg { width: 11px; height: 11px; }
+  .oq-floatcard--trip .oq-floatcard__chip { font-size: 10px; padding: 2px 9px; }
+}
+
+.oq-floatcard__title {
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+.oq-floatcard__rows { display: flex; flex-direction: column; gap: 6px; }
+.oq-floatcard__rows li {
+  display: inline-flex; align-items: center; gap: var(--sp-sm);
+  font-size: var(--text-sm); color: var(--color-text-secondary); font-weight: var(--fw-regular);
+}
+.oq-floatcard__rows li svg { color: var(--color-primary-dark); flex-shrink: 0; }
+.oq-floatcard__chip {
+  align-self: flex-start;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+}
+
+.oq-floatcard--stats {
+  right: 2%;
+  top: 32%;
+  display: flex;
+  gap: var(--sp-sm);
+  padding: var(--sp-md);
+  animation: oq-fluid-card-down 8s ease-in-out infinite;
+  animation-delay: -3s;
+}
+@media (min-width: 1024px) { .oq-floatcard--stats { right: 4%; } }
+@media (max-width: 1023px) {
+  .oq-floatcard--stats {
+    right: -14%;
+    top: 46%;
+    flex-direction: column;
+    padding: 6px;
+    gap: 4px;
+  }
+  .oq-statbox {
+    min-width: 96px;
+    padding: 8px 10px;
+    gap: 1px;
+    border-radius: 6px;
+  }
+  .oq-statbox__label { font-size: 10px; }
+  .oq-statbox__value { font-size: 14px; }
+}
+@media (max-width: 1023px) {
+  .oq-actpill { padding: 5px 12px; gap: 8px; }
+  .oq-actpill__cell { width: 26px; height: 26px; }
+  .oq-actpill__cell svg { width: 13px; height: 13px; }
+}
+.oq-statbox {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: var(--sp-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary-100);
+  background: var(--oq-grey-50);
+  min-width: 108px;
+}
+.oq-statbox__label { font-size: var(--text-sm); font-weight: var(--fw-regular); color: var(--color-text-secondary); }
+.oq-statbox__value { font-size: var(--text-xl); font-weight: var(--fw-semibold); color: var(--color-text-primary); }
+
+/* Activity-icon pill — white/glass with light Linkwater icon cells */
+.oq-actpill {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  gap: var(--sp-md);
+  padding: 10px var(--sp-lg);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--color-primary-100);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-radius: var(--radius-full);
+  z-index: 4;
+  box-shadow: 0 8px 24px rgba(31, 41, 76, 0.08);
+  animation: oq-fluid-pill 10s ease-in-out infinite;
+  animation-delay: -2s;
+}
+.oq-actpill__cell svg { transition: transform var(--motion-normal) var(--motion-spring); }
+.oq-actpill:hover .oq-actpill__cell svg { transform: scale(1.08); }
+.oq-actpill__cell {
+  width: 36px; height: 36px;
+  border-radius: 999px;
+  background: var(--oq-linkwater-50);
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   APP BADGES
+   ============================================================ */
+.oq-badges { display: inline-flex; flex-wrap: wrap; gap: var(--sp-md); }
+
+.oq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  border-radius: var(--radius-xl);
+  background: var(--color-text-primary);
+  color: var(--color-text-on-dark);
+  border: 1px solid var(--color-text-primary);
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+.oq-badge[aria-disabled='true'] { cursor: default; opacity: 0.92; }
+.oq-badge[aria-disabled='true']:hover { opacity: 1; }
+.oq-badge__icon { width: 22px; height: 22px; flex-shrink: 0; }
+.oq-badge__text { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
+.oq-badge__eyebrow {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.oq-badge__store { font-size: var(--text-md); font-weight: var(--fw-semibold); }
+.oq-badges--sm .oq-badge { padding: var(--sp-sm) var(--sp-md); }
+.oq-badges--sm .oq-badge__icon { width: 18px; height: 18px; }
+.oq-badges--sm .oq-badge__store { font-size: var(--text-sm); }
+.oq-badges--on-dark .oq-badge {
+  background: var(--color-bg);
+  color: var(--color-primary-darker);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ============================================================
+   SECTION (kept for upcoming sections — see Word doc)
+   ============================================================ */
+.oq-section { padding-block: clamp(var(--sp-4xl), 8vw, 96px); }
+.oq-section--soft { background: var(--color-bg-secondary); }
+/* Strong-blue accent variant: deliberately breaks the white/cream
+   rhythm of the surrounding sections so a featured section pops.
+   Used in Home §Ecosystem. Inner borders/haloes are tweaked further
+   below so they remain visible on this background. */
+.oq-section--accent {
+  background: var(--oq-linkwater-200);
+  position: relative;
+  overflow: hidden;
+}
+.oq-section__head { display: grid; gap: var(--sp-md); margin-bottom: var(--sp-4xl); max-width: 720px; }
+.oq-section__eyebrow {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-primary-dark);
+}
+.oq-section__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.1;
+  color: var(--color-primary-darker);
+}
+.oq-section__lede {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-regular);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.oq-pending {
+  padding-block: var(--sp-4xl);
+  text-align: center;
+  background: var(--color-bg);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+  border-block: 1px solid var(--color-border);
+}
+
+.oq-section__head--center {
+  text-align: center;
+  margin-inline: auto;
+  justify-items: center;
+}
+
+/* ============================================================
+   SECTION 3 — Founding cohort
+   ============================================================ */
+.oq-cohort {
+  display: grid;
+  gap: var(--sp-2xl);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .oq-cohort { grid-template-columns: repeat(3, 1fr); }
+}
+.oq-cohort__item {
+  display: grid;
+  gap: var(--sp-md);
+  padding: var(--sp-2xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-2xl);
+  transition: border-color var(--motion-normal) var(--motion-ease),
+              transform var(--motion-normal) var(--motion-ease),
+              box-shadow var(--motion-normal) var(--motion-ease);
+}
+.oq-cohort__item:hover {
+  border-color: var(--color-primary-300, var(--color-primary-200));
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(31, 41, 76, 0.06);
+}
+.oq-cohort__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-cohort__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+}
+.oq-cohort__body {
+  font-size: var(--text-md);
+  font-weight: var(--fw-regular);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.oq-cohort__foot {
+  text-align: center;
+  margin-top: var(--sp-3xl);
+  font-size: var(--text-md);
+  color: var(--color-text-tertiary);
+}
+
+/* ============================================================
+   SECTION 5 — Ecosystem features (6-grid)
+   ============================================================ */
+.oq-features {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) { .oq-features { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .oq-features { grid-template-columns: repeat(3, 1fr); } }
+.oq-feature {
+  display: grid;
+  gap: var(--sp-md);
+  padding: var(--sp-2xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-xl);
+  transition: border-color var(--motion-normal) var(--motion-ease),
+              transform var(--motion-normal) var(--motion-ease),
+              box-shadow var(--motion-normal) var(--motion-ease);
+}
+.oq-feature:hover {
+  border-color: var(--color-primary-200);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(31, 41, 76, 0.06);
+}
+.oq-feature__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--motion-normal) var(--motion-spring),
+              background var(--motion-normal) var(--motion-ease);
+}
+.oq-feature:hover .oq-feature__icon {
+  transform: scale(1.08) rotate(-4deg);
+  background: var(--color-primary-100);
+}
+.oq-feature__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+.oq-feature__body {
+  font-size: var(--text-md);
+  font-weight: var(--fw-regular);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SECTION 6 — How Oquea Works (3 steps)
+   ============================================================ */
+.oq-steps {
+  display: grid;
+  gap: var(--sp-2xl);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) { .oq-steps { grid-template-columns: repeat(3, 1fr); } }
+
+.oq-step {
+  position: relative;
+  display: grid;
+  gap: var(--sp-md);
+  padding: var(--sp-3xl) var(--sp-2xl);
+  background: var(--color-primary-lighter);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  transition: transform var(--motion-normal) var(--motion-ease),
+              box-shadow var(--motion-normal) var(--motion-ease);
+}
+.oq-step:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(31, 41, 76, 0.08);
+}
+/* Subtle accent stroke top-right of each step card */
+.oq-step::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  width: 80px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transform: rotate(38deg);
+  opacity: 0.45;
+  pointer-events: none;
+}
+.oq-step__num {
+  position: absolute;
+  top: var(--sp-2xl);
+  right: var(--sp-2xl);
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-200);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-md);
+  color: var(--color-primary-dark);
+}
+.oq-step__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-100);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-step__eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-step__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+  line-height: 1.25;
+}
+.oq-step__body {
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SECTION 7 — Product split (2 large cards + app badges)
+   ============================================================ */
+.oq-split {
+  display: grid;
+  gap: var(--sp-2xl);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) { .oq-split { grid-template-columns: repeat(2, 1fr); } }
+
+.oq-split__card {
+  position: relative;
+  background: var(--color-primary-lighter);
+  border-radius: var(--radius-2xl);
+  padding: var(--sp-3xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  overflow: hidden;
+  min-height: 460px;
+  transition: transform var(--motion-normal) var(--motion-ease),
+              box-shadow var(--motion-normal) var(--motion-ease);
+}
+.oq-split__card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(31, 41, 76, 0.10);
+}
+.oq-split__eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-split__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(20px, 2.4vw, 24px);
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+.oq-split__body {
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  flex-grow: 1;
+}
+.oq-split__media {
+  margin-top: var(--sp-lg);
+  height: 260px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, var(--oq-linkwater-100) 0%, var(--oq-linkwater-50) 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-primary-100);
+}
+.oq-split__media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Photos sit above the placeholder yellow strokes so they only show
+     if the image fails to load. */
+  z-index: 2;
+  transition: transform var(--motion-slow) var(--motion-ease);
+}
+.oq-split__card:hover .oq-split__media img {
+  transform: scale(1.02);
+}
+/* Yellow gestural stroke (designer-style) — adds brand personality
+   to the still-empty photo placeholders. Will sit behind the photo
+   when real images are dropped in. */
+.oq-split__media::before {
+  content: '';
+  position: absolute;
+  left: -8%;
+  top: 60%;
+  width: 60%;
+  height: 6px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transform: rotate(-12deg);
+  opacity: 0.55;
+}
+.oq-split__media::after {
+  content: '';
+  position: absolute;
+  right: -4%;
+  top: 18%;
+  width: 36%;
+  height: 6px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transform: rotate(28deg);
+  opacity: 0.4;
+}
+.oq-split__placeholder {
+  text-align: center;
+  padding: var(--sp-md);
+  color: var(--color-primary-dark);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  display: grid;
+  gap: var(--sp-xs);
+  justify-items: center;
+}
+.oq-split__placeholder b {
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-darker);
+}
+.oq-split__placeholder span {
+  color: var(--color-text-tertiary);
+  max-width: 28ch;
+}
+
+.oq-split__app {
+  margin-top: var(--sp-3xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-md);
+  text-align: center;
+}
+.oq-split__app-label {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* ============================================================
+   SECTION 9 — Final CTA (dark ocean)
+   ============================================================ */
+.oq-finalcta {
+  position: relative;
+  background: var(--color-primary-darker);
+  color: var(--color-text-on-dark);
+  padding-block: clamp(64px, 8vw, 96px);
+  overflow: hidden;
+}
+.oq-finalcta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 0%, rgba(85, 133, 220, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 100%, rgba(50, 73, 155, 0.5) 0%, transparent 50%);
+  z-index: 0;
+}
+.oq-finalcta > .oq-container { position: relative; z-index: 1; }
+.oq-finalcta__head {
+  text-align: center;
+  max-width: 720px;
+  margin-inline: auto;
+  display: grid;
+  gap: var(--sp-md);
+}
+.oq-finalcta__eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.oq-finalcta__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.1;
+  color: var(--color-bg);
+  text-wrap: balance;
+}
+.oq-finalcta__lede {
+  color: var(--color-text-on-dark-secondary);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+}
+.oq-finalcta__cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-md);
+  margin-top: var(--sp-md);
+}
+.oq-finalcta__app {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-lg);
+}
+
+/* On-dark ghost button (used inside finalcta) */
+.oq-btn--on-dark-ghost {
+  background: transparent;
+  color: var(--color-text-on-dark);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: none;
+}
+.oq-btn--on-dark-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================================================
+   PAGE HERO — used by inner pages (About, Centers, Divers, Contact).
+   Text-only hero with subtle Linkwater haloes.
+   ============================================================ */
+@keyframes oq-page-halo {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+.oq-page-hero {
+  position: relative;
+  background: var(--color-primary-lighter);
+  padding-block: clamp(64px, 9vw, 112px) clamp(56px, 7vw, 88px);
+  overflow: hidden;
+  text-align: center;
+}
+.oq-page-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--sp-lg);
+  max-width: 760px;
+  margin-inline: auto;
+  justify-items: center;
+}
+.oq-page-hero__eyebrow {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-page-hero__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(34px, 5.4vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+  color: var(--color-primary-darker);
+  text-wrap: balance;
+}
+.oq-page-hero__lede {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  max-width: 60ch;
+}
+.oq-page-hero::before,
+.oq-page-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  z-index: 0;
+  pointer-events: none;
+}
+.oq-page-hero::before {
+  width: 480px;
+  height: 480px;
+  top: -180px;
+  left: -10%;
+  background: radial-gradient(circle, var(--oq-linkwater-200) 0%, rgba(241, 246, 253, 0) 68%);
+  opacity: 0.55;
+  animation: oq-page-halo 12s ease-in-out infinite;
+}
+.oq-page-hero::after {
+  width: 360px;
+  height: 360px;
+  bottom: -140px;
+  right: -8%;
+  background: radial-gradient(circle, var(--oq-linkwater-100) 0%, rgba(241, 246, 253, 0) 70%);
+  opacity: 0.65;
+  animation: oq-page-halo 14s ease-in-out infinite;
+  animation-delay: -3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oq-page-hero::before,
+  .oq-page-hero::after { animation: none !important; }
+}
+
+/* ============================================================
+   BULLETS LIST — used in About §"What is Oquea"
+   ============================================================ */
+.oq-bullets {
+  display: grid;
+  gap: var(--sp-md);
+  grid-template-columns: 1fr;
+  max-width: 880px;
+  margin-inline: auto;
+}
+@media (min-width: 720px) { .oq-bullets { grid-template-columns: repeat(2, 1fr); } }
+
+.oq-bullet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--motion-fast) var(--motion-ease),
+              transform var(--motion-fast) var(--motion-ease);
+}
+.oq-bullet:hover {
+  border-color: var(--color-primary-200);
+  transform: translateX(2px);
+}
+.oq-bullet__icon {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-bullet__text {
+  font-family: var(--font-primary);
+  font-size: var(--text-md);
+  color: var(--color-text-primary);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   FOUNDER — image left + text right (stacks on mobile)
+   ============================================================ */
+.oq-founder {
+  display: grid;
+  gap: clamp(var(--sp-2xl), 5vw, 64px);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+@media (min-width: 768px) {
+  .oq-founder { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+}
+.oq-founder__media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  background: var(--color-primary-lighter);
+  max-width: 460px;
+  width: 100%;
+  margin-inline: auto;
+}
+.oq-founder__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--motion-slow) var(--motion-ease);
+}
+.oq-founder__media:hover img { transform: scale(1.02); }
+
+/* Yellow gestural stroke overlay (designer touch). Sits under the
+   bottom edge of the photo, peeking just past it. */
+.oq-founder__media::before {
+  content: '';
+  position: absolute;
+  left: -8%;
+  bottom: 6%;
+  width: 50%;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transform: rotate(-9deg);
+  opacity: 0.55;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.oq-founder__content {
+  display: grid;
+  gap: var(--sp-lg);
+}
+.oq-founder__eyebrow {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-founder__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.1;
+  color: var(--color-primary-darker);
+}
+.oq-founder__name {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-primary-darker);
+}
+.oq-founder__body {
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+  max-width: 60ch;
+}
+.oq-founder__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  margin-top: var(--sp-sm);
+}
+
+/* ============================================================
+   CALLOUT — left-accent inline notice (used in Centers §Daily Ops
+   for the "we work with WhatsApp too" reassurance line)
+   ============================================================ */
+.oq-callout {
+  margin-top: var(--sp-2xl);
+  padding: var(--sp-lg) var(--sp-2xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-100);
+  border-left: 4px solid var(--color-primary-dark);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-md);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+.oq-callout__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   FEATSHOW — split layout (text + product mockup) used in:
+   Home §Ecosystem, Centers §Daily Ops / §Comms / §Visibility.
+   Mobile: text on top, mockup below. Desktop: side by side.
+   `--reverse` swaps the columns at desktop.
+   ============================================================ */
+.oq-featshow {
+  display: grid;
+  gap: clamp(var(--sp-3xl), 5vw, 64px);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+@media (min-width: 880px) {
+  .oq-featshow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .oq-featshow--reverse .oq-featshow__copy { order: 2; }
+  .oq-featshow--reverse .oq-featshow__media { order: 1; }
+}
+
+.oq-featshow__copy { display: grid; gap: var(--sp-lg); max-width: 560px; }
+.oq-featshow__intro { font-size: var(--text-md); color: var(--color-text-secondary); line-height: 1.55; }
+
+.oq-featshow__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0;
+}
+.oq-featshow__item {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: var(--sp-md);
+  padding-block: var(--sp-md);
+  border-top: 1px solid var(--color-border);
+}
+/* Hide the top divider on the first item but keep symmetric padding,
+   so when the active highlight lands on it the box looks balanced. */
+.oq-featshow__item:first-child { border-top: 0; }
+.oq-featshow__num {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-md);
+  color: var(--color-primary-dark);
+  letter-spacing: 0.04em;
+  padding-top: 1px;
+}
+.oq-featshow__item-title {
+  display: block;
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+.oq-featshow__item-body {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+.oq-featshow__media {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-block: var(--sp-2xl);
+}
+
+/* Heading-as-column-header: smaller title size when the section title
+   lives inside the .oq-featshow__copy column (Home §Ecosystem). */
+.oq-featshow__copy .oq-section__title {
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.12;
+}
+.oq-featshow__copy .oq-section__lede {
+  font-size: var(--text-md);
+  line-height: 1.55;
+}
+
+/* Active-item highlight when the auto-rotator is on. Goes bold —
+   primary-dark blue background + white copy + accent-yellow number,
+   so the selected feature is unambiguously the visual focus on the
+   left column. */
+.oq-featshow__item {
+  border-radius: var(--radius-md);
+  padding-inline: var(--sp-md);
+  margin-inline: calc(-1 * var(--sp-md));
+  transition: background var(--motion-normal) var(--motion-ease),
+              border-color var(--motion-normal) var(--motion-ease);
+}
+/* Items that act as buttons (Home §Ecosystem rotator). The Centers
+   featshow keeps its plain list-item items unchanged. */
+.oq-featshow__item[role="button"] {
+  cursor: pointer;
+  outline: none;
+}
+.oq-featshow__item[role="button"]:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+.oq-featshow__item[role="button"]:hover:not(.is-active) {
+  background: rgba(31, 41, 76, 0.04);
+}
+.oq-featshow__num,
+.oq-featshow__item-title,
+.oq-featshow__item-body {
+  transition: color var(--motion-normal) var(--motion-ease);
+}
+.oq-featshow__item.is-active {
+  background: var(--color-primary-dark);
+  border-top-color: transparent;
+}
+/* Avoid a visible 1-px gap between the active item and the next
+   one's top border. */
+.oq-featshow__item.is-active + .oq-featshow__item { border-top-color: transparent; }
+.oq-featshow__item.is-active .oq-featshow__num { color: var(--color-accent); }
+.oq-featshow__item.is-active .oq-featshow__item-title { color: var(--color-bg); }
+.oq-featshow__item.is-active .oq-featshow__item-body {
+  color: var(--color-text-on-dark-secondary);
+}
+
+/* "Próximamente" badge next to the title (items 5-6 in Home Ecosystem). */
+.oq-featshow__soon {
+  display: inline-block;
+  vertical-align: 2px;
+  margin-left: var(--sp-sm);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-100);
+  padding: 2px 8px;
+  border-radius: 999px;
+  transition: color var(--motion-normal), background var(--motion-normal);
+}
+.oq-featshow__item.is-active .oq-featshow__soon {
+  color: var(--color-primary-darker);
+  background: var(--color-accent);
+}
+
+/* Featured pill on the CRM item — visually marks "lo más importante"
+   for dive centres so it's the first thing centre owners read. Same
+   shape as the soon pill but uses the accent colour and a small star. */
+.oq-featshow__featured {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: 2px;
+  margin-left: var(--sp-sm);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-darker);
+  background: var(--color-accent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  transition: color var(--motion-normal), background var(--motion-normal);
+}
+.oq-featshow__featured svg {
+  width: 9px; height: 9px;
+  flex-shrink: 0;
+}
+.oq-featshow__item.is-active .oq-featshow__featured {
+  color: var(--color-primary-darker);
+  background: var(--color-accent);
+}
+
+/* Translucent "coming soon" overlay used on mock screens of the
+   próximamente features so the visitor understands those screens
+   describe future functionality without losing the visual frame. */
+.oq-mock-soon {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.oq-mock-soon__pill {
+  background: var(--color-primary-darker);
+  color: var(--color-bg);
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   QR-LOGGING SCREEN — bespoke mock for Home §Ecosystem item 02.
+   Replaces the generic placeholder with the founder-supplied
+   "Activities for today / Save in my Logbook" UI: sky→sea
+   gradient hero, dive title overlay, primary CTA, two action
+   cards and a stats list. All hand-crafted in HTML/CSS so we
+   can swap content without touching layout.
+   ============================================================ */
+/* NOTE: doubled-class selectors below (.oq-mock-screen.oq-mock-screen--X)
+   bump specificity above the .oq-mock-screen base rule, which is defined
+   later in the file — without this, the base padding/gap/background
+   silently overrode every bespoke screen and produced visible white
+   margins around the inner UIs. */
+.oq-mock-screen.oq-mock-screen--qr {
+  padding: 0;
+  gap: 0;
+  background: var(--oq-white);
+}
+
+.oq-mock-qr__topbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 22px 12px 6px; /* extra top so the notch clears */
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  position: relative;
+  z-index: 3;
+  background: var(--oq-white);
+}
+.oq-mock-qr__topbar svg {
+  color: var(--color-primary-dark);
+  width: 14px; height: 14px;
+  flex-shrink: 0;
+}
+
+/* Sky → sea gradient hero */
+.oq-mock-qr__hero {
+  position: relative;
+  height: 168px;
+  overflow: hidden;
+}
+.oq-mock-qr__sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #F59E0B 0%, #EA580C 25%, #4CC9F0 55%, #0284C7 100%);
+}
+.oq-mock-qr__beach {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 50px;
+  background: linear-gradient(90deg, #FDE68A 0%, #F5DEB3 100%);
+}
+.oq-mock-qr__shimmer {
+  position: absolute;
+  left: -20%; right: -20%;
+  top: 70%;
+  height: 12px;
+  background: rgba(129, 212, 250, 0.4);
+}
+.oq-mock-qr__fade {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: linear-gradient(0deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.8) 40%, rgba(255,255,255,0) 100%);
+  z-index: 1;
+}
+.oq-mock-qr__heroContent {
+  position: absolute;
+  bottom: 6px; left: 0; right: 0;
+  z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 0 10px;
+  font-family: var(--font-primary);
+}
+.oq-mock-qr__heroTitle {
+  font-size: 17px;
+  font-weight: var(--fw-bold);
+  color: var(--color-primary-dark);
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.oq-mock-qr__heroPill {
+  font-size: 8.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #ECECEC;
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(2px);
+}
+.oq-mock-qr__heroMeta {
+  display: flex; gap: 8px;
+  font-size: 8.5px;
+  color: var(--color-text-secondary);
+}
+.oq-mock-qr__heroMeta > span {
+  display: inline-flex; align-items: center; gap: 3px;
+}
+.oq-mock-qr__heroMeta svg {
+  width: 9px; height: 9px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Pagination dots */
+.oq-mock-qr__dots {
+  display: flex; justify-content: center; gap: 4px;
+  padding: 5px 0 6px;
+  background: var(--oq-white);
+  z-index: 2;
+  position: relative;
+}
+.oq-mock-qr__dots span {
+  width: 5px; height: 5px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+.oq-mock-qr__dots span.is-active {
+  background: var(--color-primary-dark);
+}
+
+/* Content section below the hero — distributes the cta / actions /
+   stats / foot stack vertically so the bottom of the screen is filled
+   instead of leaving white space below the last item. */
+.oq-mock-qr__content {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 7px;
+  justify-content: space-between;
+  padding: 4px 12px 10px;
+  background: var(--oq-white);
+  font-family: var(--font-primary);
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Primary CTA: Save in my Logbook */
+.oq-mock-qr__cta {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  background: var(--color-primary-dark);
+  border-radius: 14px;
+  color: var(--oq-white);
+}
+.oq-mock-qr__ctaIcon {
+  width: 32px; height: 32px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.oq-mock-qr__ctaIcon svg { width: 22px; height: 22px; display: block; }
+.oq-mock-qr__ctaText { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.oq-mock-qr__ctaTitle { font-size: 11px; font-weight: var(--fw-medium); }
+.oq-mock-qr__ctaSub {
+  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex; align-items: center; gap: 3px;
+}
+.oq-mock-qr__ctaSub svg { width: 9px; height: 9px; opacity: 0.7; flex-shrink: 0; }
+
+/* Two action cards */
+.oq-mock-qr__actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+.oq-mock-qr__action {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 10px;
+  background: var(--color-primary-lighter);
+  border-radius: 14px;
+}
+.oq-mock-qr__actionIcon {
+  width: 22px; height: 22px;
+  background: var(--oq-linkwater-50);
+  color: var(--color-primary-dark);
+  border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 1px;
+}
+.oq-mock-qr__actionIcon svg { width: 12px; height: 12px; }
+.oq-mock-qr__actionTitle {
+  font-size: 9.5px;
+  font-weight: var(--fw-medium);
+  color: var(--color-primary-dark);
+  line-height: 1.2;
+}
+.oq-mock-qr__actionSub {
+  font-size: 8px;
+  font-weight: var(--fw-light);
+  color: var(--color-text-tertiary);
+  line-height: 1.3;
+}
+
+/* Stats list */
+.oq-mock-qr__stats {
+  border: 1px solid #ECECEC;
+  border-radius: 14px;
+  background: var(--oq-grey-50);
+  overflow: hidden;
+}
+.oq-mock-qr__statRow {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 10px;
+  border-bottom: 1px solid #EFEFEF;
+}
+.oq-mock-qr__statRow:last-child { border-bottom: 0; }
+.oq-mock-qr__statLeft { display: flex; align-items: center; gap: 7px; }
+.oq-mock-qr__statLeft svg {
+  width: 11px; height: 11px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.oq-mock-qr__statLeft span {
+  font-size: 9.5px;
+  color: var(--color-text-primary);
+}
+.oq-mock-qr__statValue {
+  font-size: 9.5px;
+  color: var(--color-text-tertiary);
+  text-align: right;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Footer line */
+.oq-mock-qr__foot {
+  font-size: 8px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  line-height: 1.4;
+  font-weight: var(--fw-light);
+  padding: 0 6px;
+}
+
+/* ============================================================
+   STRAVA-STYLE SHARE SCREEN — full-bleed photo background with a
+   stats overlay (used by Home §Ecosystem item 03). The photo lives
+   at /img/photos/share-card-bg.webp; if missing, the deep-navy
+   fallback below shows so the screen never looks broken.
+   ============================================================ */
+/* Full-bleed share card. Photo lives directly on the outer screen
+   container so it always reaches the rounded corners — even if any
+   inner padding ever creeps back in, the photo edge does not move. */
+.oq-mock-screen.oq-mock-screen--share {
+  padding: 0;
+  gap: 0;
+  background-color: #0F1B3A; /* fallback if photo missing */
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.55) 100%),
+    url('/img/photos/share-card-bg.webp');
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat;
+}
+
+.oq-mock-strava {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 18px 14px 14px;
+  /* No background here: it lives on the parent .oq-mock-screen--share. */
+  font-family: var(--font-primary);
+  color: var(--oq-white);
+}
+
+.oq-mock-strava__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.oq-mock-strava__iso {
+  width: 32px;
+  height: auto;
+  display: block;
+  color: var(--oq-white);
+}
+.oq-mock-strava__locpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-primary-dark);
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  color: var(--oq-white);
+}
+.oq-mock-strava__locpill svg {
+  width: 9px;
+  height: 9px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+
+.oq-mock-strava__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  justify-content: center;
+}
+.oq-mock-strava__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.oq-mock-strava__statLabel {
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.oq-mock-strava__statValue {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.oq-mock-strava__statValue b {
+  font-size: 32px;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--oq-white);
+}
+.oq-mock-strava__statValue span {
+  font-size: 12px;
+  font-weight: var(--fw-regular);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.oq-mock-strava__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.oq-mock-strava__divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 0;
+  margin: 0;
+}
+.oq-mock-strava__footRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.oq-mock-strava__center {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.oq-mock-strava__centerLabel {
+  font-size: 7.5px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.oq-mock-strava__centerName {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  color: var(--oq-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-strava__brandPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-primary-dark);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  text-transform: lowercase;
+  flex-shrink: 0;
+  color: var(--oq-white);
+}
+.oq-mock-strava__brandDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-primary-dark);
+}
+
+/* ============================================================
+   DIVER PROFILE (CRM) — bespoke mock for Home §Ecosystem item 04.
+   Centre-side view of one diver: avatar + name, role pills, stats
+   block "At your centre" with three KPIs, then the start of the
+   activities history (truncated to fit the small phone screen).
+   ============================================================ */
+.oq-mock-screen.oq-mock-screen--crm { padding: 0; gap: 0; background: var(--oq-white); }
+
+.oq-mock-crm__topbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 22px 12px 6px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  background: var(--oq-white);
+  position: relative;
+  z-index: 1;
+}
+.oq-mock-crm__topbar svg {
+  width: 12px; height: 12px;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+.oq-mock-crm__profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 12px;
+  font-family: var(--font-primary);
+}
+.oq-mock-crm__avatar {
+  width: 48px; height: 48px;
+  background: var(--color-primary-lighter);
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-crm__avatar svg { width: 24px; height: 24px; }
+.oq-mock-crm__name {
+  font-size: 13px; font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+}
+.oq-mock-crm__username {
+  font-size: 9px; font-weight: var(--fw-regular);
+  color: var(--color-text-tertiary);
+}
+.oq-mock-crm__roleChip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--oq-linkwater-50);
+  color: var(--color-primary-dark);
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+}
+.oq-mock-crm__roleChip svg { width: 9px; height: 9px; flex-shrink: 0; }
+.oq-mock-crm__publicBtn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  color: var(--color-primary-dark);
+  font-size: 9.5px;
+  font-weight: var(--fw-regular);
+}
+.oq-mock-crm__publicBtn svg { width: 9px; height: 9px; flex-shrink: 0; }
+
+/* Section divider band (4 px grey strip) */
+.oq-mock-crm__band {
+  height: 3px;
+  background: var(--oq-grey-100);
+}
+
+/* Section block */
+.oq-mock-crm__section {
+  padding: 10px 12px;
+  font-family: var(--font-primary);
+}
+/* The last section (activity history) grows to fill the screen so the
+   white background does not leave a gap at the bottom of the phone. */
+.oq-mock-crm__section--grow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.oq-mock-crm__sectionHead {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+.oq-mock-crm__sectionHead svg {
+  width: 12px; height: 12px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+
+/* Three KPI tiles inside "At your centre" */
+.oq-mock-crm__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.oq-mock-crm__kpi {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px;
+  padding: 7px 4px;
+  background: var(--oq-grey-50);
+  border-radius: 6px;
+  text-align: center;
+}
+.oq-mock-crm__kpiValue {
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  line-height: 1.1;
+}
+.oq-mock-crm__kpiLabel {
+  font-size: 7.5px;
+  color: var(--color-text-tertiary);
+  line-height: 1.2;
+}
+
+/* Month header + activity rows */
+.oq-mock-crm__monthHead {
+  font-size: 8.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  padding: 6px 0 4px;
+}
+.oq-mock-crm__row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.oq-mock-crm__row:last-child { border-bottom: 0; }
+.oq-mock-crm__rowIcon {
+  width: 26px; height: 26px;
+  background: var(--color-primary-lighter);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.oq-mock-crm__rowIcon svg { width: 18px; height: 18px; }
+.oq-mock-crm__rowBody {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.oq-mock-crm__rowTitle {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-crm__rowMeta {
+  display: flex; align-items: center; gap: 6px;
+}
+.oq-mock-crm__rowDate {
+  font-size: 8.5px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-crm__rowType {
+  font-size: 8px;
+  font-weight: var(--fw-medium);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--oq-linkwater-50);
+  color: var(--color-primary-dark);
+}
+.oq-mock-crm__rowType--course {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+/* "View full history" footer link inside the historial section.
+   margin-top: auto pushes it to the bottom of the flex column so the
+   section visually fills the remaining phone height. */
+.oq-mock-crm__viewAll {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  align-self: center;
+  padding: 8px 12px 4px;
+  font-size: 9.5px;
+  font-weight: var(--fw-medium);
+  color: var(--color-primary-dark);
+}
+.oq-mock-crm__viewAll svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+/* ============================================================
+   INTERACTIVE DIVE-MAP SCREEN — bespoke mock for Home §Ecosystem
+   item 05. Topbar + search input, stylised map canvas with animated
+   pins (one selected with a tooltip), filter chips, zoom controls,
+   then a list of nearby dive sites with chips, depth/temp meta and
+   a primary "Join this site" CTA.
+   ============================================================ */
+.oq-mock-screen.oq-mock-screen--map {
+  padding: 0;
+  gap: 0;
+  background: var(--oq-white);
+}
+
+/* Top action bar with back chevron and screen title. */
+.oq-mock-divemap__topbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 22px 12px 6px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  background: var(--oq-white);
+  position: relative;
+  z-index: 3;
+}
+.oq-mock-divemap__topbar svg {
+  width: 14px; height: 14px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+
+/* Search bar */
+.oq-mock-divemap__search {
+  display: flex; align-items: center; gap: 6px;
+  margin: 2px 12px 8px;
+  padding: 7px 10px;
+  background: var(--oq-grey-50);
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  font-family: var(--font-primary);
+  font-size: 9.5px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-divemap__search svg {
+  width: 11px; height: 11px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+/* The map canvas — an oceanic gradient with subtle land shapes,
+   crosshair grid, animated pins and overlay UI (chips + zoom). */
+.oq-mock-divemap__canvas {
+  position: relative;
+  margin: 0 12px;
+  height: 188px;
+  border-radius: 14px;
+  border: 1px solid #DCE6F2;
+  overflow: hidden;
+  background:
+    /* lighter gradient highlights for water variation */
+    radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%),
+    radial-gradient(ellipse at 75% 75%, rgba(64,106,208,0.18) 0%, rgba(64,106,208,0) 60%),
+    /* base ocean blue */
+    linear-gradient(180deg, #DDE9F9 0%, #C8DBF5 100%);
+}
+/* Soft "land" blobs (warm sand colour) */
+.oq-mock-divemap__land {
+  position: absolute;
+  background: linear-gradient(135deg, #F5E6C8 0%, #E8D4A8 100%);
+  border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+  opacity: 0.75;
+}
+.oq-mock-divemap__land--a { top: -22px; right: -32px; width: 110px; height: 90px; }
+.oq-mock-divemap__land--b { bottom: -28px; left: -28px; width: 130px; height: 88px;
+  border-radius: 50% 60% 40% 55% / 55% 45% 60% 40%; }
+/* Faint dotted grid suggesting nautical lines */
+.oq-mock-divemap__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(64, 106, 208, 0.18) 0.7px, transparent 0.7px),
+    radial-gradient(rgba(64, 106, 208, 0.10) 0.5px, transparent 0.5px);
+  background-size: 18px 18px, 9px 9px;
+  background-position: 0 0, 4px 4px;
+  pointer-events: none;
+}
+/* Dashed search radius around the active pin */
+.oq-mock-divemap__radius {
+  position: absolute;
+  width: 84px; height: 84px;
+  border-radius: 999px;
+  border: 1px dashed rgba(64, 106, 208, 0.45);
+  background: radial-gradient(circle, rgba(64, 106, 208, 0.10) 0%, rgba(64, 106, 208, 0) 70%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Pin marker (animated pulse). The active pin is bigger with a white
+   ring and a tooltip. */
+.oq-mock-divemap__pin {
+  position: absolute;
+  width: 9px; height: 9px;
+  background: var(--color-primary-dark);
+  border-radius: 999px;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(31, 41, 76, 0.35);
+  transform: translate(-50%, -50%);
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+.oq-mock-divemap__pin::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-primary-dark);
+  opacity: 0.35;
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+.oq-mock-divemap__pin--active {
+  width: 14px; height: 14px;
+  background: var(--color-accent);
+  border-color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(64, 106, 208, 0.5);
+  animation: none;
+  z-index: 2;
+}
+.oq-mock-divemap__pin--active::after {
+  inset: -6px;
+  border-color: var(--color-accent);
+  opacity: 0.45;
+}
+.oq-mock-divemap__tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--color-text-primary);
+  color: var(--oq-white);
+  border-radius: 6px;
+  font-family: var(--font-primary);
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+.oq-mock-divemap__tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--color-text-primary);
+}
+
+/* Filter chip pair, bottom-left of the canvas */
+.oq-mock-divemap__filters {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 3;
+}
+.oq-mock-divemap__chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(64, 106, 208, 0.18);
+  font-family: var(--font-primary);
+  font-size: 8.5px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.oq-mock-divemap__chip--active {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: var(--oq-white);
+}
+.oq-mock-divemap__chipDot {
+  width: 5px; height: 5px;
+  border-radius: 999px;
+  background: #34C759;
+  flex-shrink: 0;
+}
+.oq-mock-divemap__chip--active .oq-mock-divemap__chipDot { background: #FFFFFF; }
+
+/* Zoom controls, right side */
+.oq-mock-divemap__zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(64, 106, 208, 0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 3;
+}
+.oq-mock-divemap__zoomBtn {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid rgba(64, 106, 208, 0.18);
+}
+.oq-mock-divemap__zoomBtn:last-child { border-bottom: 0; }
+
+/* "Compass" badge top-left for extra map flavour */
+.oq-mock-divemap__compass {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(64, 106, 208, 0.18);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 3;
+  color: var(--color-primary-dark);
+}
+.oq-mock-divemap__compass svg { width: 12px; height: 12px; }
+
+/* List section below the canvas */
+.oq-mock-divemap__list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  font-family: var(--font-primary);
+  min-height: 0;
+}
+.oq-mock-divemap__listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-divemap__listSort {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: var(--fw-regular);
+  font-size: 8.5px;
+  color: var(--color-text-secondary);
+}
+
+/* Dive-site card */
+.oq-mock-divemap__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 10px;
+  background: var(--oq-grey-50);
+  border: 1px solid #ECECEC;
+  border-radius: 12px;
+}
+.oq-mock-divemap__cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+.oq-mock-divemap__cardName {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  display: block;
+  line-height: 1.2;
+}
+.oq-mock-divemap__cardLoc {
+  font-size: 8.5px;
+  color: var(--color-text-tertiary);
+  display: block;
+  margin-top: 1px;
+}
+.oq-mock-divemap__cardDist {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  font-size: 8.5px;
+  font-weight: var(--fw-medium);
+}
+.oq-mock-divemap__cardDist svg { width: 8px; height: 8px; flex-shrink: 0; }
+
+.oq-mock-divemap__cardChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.oq-mock-divemap__cardChip {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--oq-white);
+  border: 1px solid #E5E9F0;
+  font-size: 8px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+.oq-mock-divemap__cardChip--level {
+  background: #FFF3E0;
+  border-color: #FFE0B2;
+  color: #E65100;
+}
+.oq-mock-divemap__cardChip--type {
+  background: var(--oq-linkwater-50);
+  border-color: var(--color-primary-100);
+  color: var(--color-primary-dark);
+}
+
+.oq-mock-divemap__cardMeta {
+  display: flex;
+  gap: 10px;
+  font-size: 8.5px;
+  color: var(--color-text-secondary);
+}
+.oq-mock-divemap__cardMeta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.oq-mock-divemap__cardMeta svg {
+  width: 9px; height: 9px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+
+.oq-mock-divemap__cardCta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 1px;
+}
+.oq-mock-divemap__cardJoin {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--color-primary-dark);
+  color: var(--oq-white);
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+}
+.oq-mock-divemap__cardView {
+  flex-shrink: 0;
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Compact peek of the next card (below the primary one) */
+.oq-mock-divemap__peek {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--oq-white);
+  border: 1px solid #ECECEC;
+  border-radius: 12px;
+}
+.oq-mock-divemap__peekDot {
+  width: 8px; height: 8px;
+  background: var(--color-primary-dark);
+  border-radius: 999px;
+  border: 1.5px solid var(--oq-white);
+  box-shadow: 0 1px 3px rgba(31, 41, 76, 0.25);
+  flex-shrink: 0;
+}
+.oq-mock-divemap__peekBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.oq-mock-divemap__peekName {
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-divemap__peekMeta {
+  font-size: 8px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-divemap__peekArrow {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+.oq-mock-divemap__peekArrow svg { width: 10px; height: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .oq-mock-divemap__pin,
+  .oq-mock-divemap__pin::after { animation: none !important; }
+}
+
+/* ============================================================
+   ALBUM / GALLERY SCREEN — bespoke mock for Divers §Album.
+   Trip photo gallery: topbar with title + download all, stats row
+   (photos · divers · countdown chip), one large hero photo, then
+   a 2-col grid of square thumbnails (each with avatar + name +
+   download glyph; "Tu foto" pill for the diver's own photos), and
+   a sticky "Add media" CTA at the bottom.
+   ============================================================ */
+.oq-mock-screen.oq-mock-screen--album {
+  padding: 0;
+  gap: 0;
+  background: var(--oq-white);
+}
+
+/* Topbar — back arrow · trip title · download-all icon */
+.oq-mock-album__topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 12px 8px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  background: var(--oq-white);
+  position: relative;
+  z-index: 3;
+}
+.oq-mock-album__topbar svg {
+  width: 14px; height: 14px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+.oq-mock-album__title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Stats row — photos · divers · countdown */
+.oq-mock-album__stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 8px;
+  font-family: var(--font-primary);
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-album__stats > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.oq-mock-album__stats svg {
+  width: 10px; height: 10px;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-album__countdown {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #FFE4E1;
+  color: #DC2626;
+  font-size: 8.5px;
+  font-weight: var(--fw-bold);
+}
+
+/* Photo grid (fills remaining space) */
+.oq-mock-album__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 70px;
+  gap: 6px;
+  padding: 0 12px 6px;
+  font-family: var(--font-primary);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* A single photo tile */
+.oq-mock-album__tile {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #75A5E5 0%, #406AD0 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 7px;
+}
+.oq-mock-album__tile--hero {
+  grid-column: 1 / -1;
+  grid-row: span 2;
+  background: linear-gradient(135deg, #5585DC 0%, #2D3F7B 60%, #1F294C 100%);
+}
+.oq-mock-album__tile--mine {
+  background: linear-gradient(135deg, #1F294C 0%, #2D3F7B 100%);
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: -2px;
+}
+.oq-mock-album__tile--warm {
+  background: linear-gradient(135deg, #6B4F3A 0%, #3F2E22 100%);
+}
+.oq-mock-album__tile--sunset {
+  background: linear-gradient(135deg, #D97706 0%, #92400E 70%, #4C1D0E 100%);
+}
+.oq-mock-album__tile--lagoon {
+  background: linear-gradient(135deg, #06B6D4 0%, #0EA5E9 60%, #075985 100%);
+}
+.oq-mock-album__tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.45) 100%);
+  pointer-events: none;
+}
+.oq-mock-album__tile--hero::after {
+  background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%);
+}
+
+/* "My photo" pill at top-left of the diver's own tiles */
+.oq-mock-album__minePill {
+  position: absolute;
+  top: 6px; left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(31, 41, 76, 0.80);
+  backdrop-filter: blur(4px);
+  font-size: 8px;
+  font-weight: var(--fw-semibold);
+  color: var(--oq-white);
+  z-index: 2;
+}
+.oq-mock-album__minePill svg { width: 8px; height: 8px; flex-shrink: 0; }
+
+/* Tile footer — avatar + author + download icon */
+.oq-mock-album__tileFoot {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+.oq-mock-album__tileAuthor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.oq-mock-album__tileAvatar {
+  width: 14px; height: 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+.oq-mock-album__tileName {
+  font-size: 8px;
+  font-weight: var(--fw-semibold);
+  color: var(--oq-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-album__tileDl {
+  width: 14px; height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oq-white);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+.oq-mock-album__tileDl svg { width: 11px; height: 11px; }
+
+/* Sticky add-media CTA */
+.oq-mock-album__cta {
+  margin: 6px 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: var(--color-primary-dark);
+  color: var(--oq-white);
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  box-shadow: 0 4px 12px rgba(64, 106, 208, 0.32);
+}
+.oq-mock-album__cta svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+/* ============================================================
+   PLANNING DASHBOARD — bespoke mock for Home §Ecosystem item 01.
+   Centre-side activity dashboard inspired by Cris Diving Center:
+   brand topbar (centre name + caret), Dives/CRM/My centre tab nav,
+   Activities/Dive site pill toggle, "Today's activities" section
+   with two activity cards (left accent bar, type chip, log icon,
+   2-col meta grid, Edit/Delete actions), then "Scheduled" section
+   header with one peek card. Compact scale for the phone mock.
+   ============================================================ */
+.oq-mock-screen.oq-mock-screen--plan {
+  padding: 0;
+  gap: 0;
+  background: var(--oq-white);
+}
+
+/* Brand topbar — Oquea isologo + centre name + caret */
+.oq-mock-plan__topbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 12px 8px;
+  font-family: var(--font-primary);
+  background: var(--oq-white);
+  position: relative;
+  z-index: 3;
+}
+.oq-mock-plan__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.oq-mock-plan__brandDot {
+  width: 9px; height: 9px;
+  border-radius: 999px;
+  background: var(--color-primary-dark);
+}
+.oq-mock-plan__brandDot--accent { background: var(--color-accent); }
+.oq-mock-plan__centreName {
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.oq-mock-plan__topbar > svg.oq-mock-plan__caret {
+  width: 12px; height: 12px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Tab nav row (Dives / CRM / My centre) */
+.oq-mock-plan__tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  font-family: var(--font-primary);
+  border-bottom: 1px solid var(--color-border);
+}
+.oq-mock-plan__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 8px;
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-tertiary);
+  position: relative;
+}
+.oq-mock-plan__tab--active {
+  color: var(--color-primary-dark);
+  font-weight: var(--fw-bold);
+}
+.oq-mock-plan__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -1px;
+  height: 2px;
+  background: var(--color-primary-dark);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Pill toggle (Activities / Dive site) */
+.oq-mock-plan__toggle {
+  display: flex;
+  gap: 6px;
+  padding: 9px 12px 7px;
+}
+.oq-mock-plan__pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid #E5E9F0;
+  background: var(--oq-white);
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+}
+.oq-mock-plan__pill--active {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: var(--oq-white);
+}
+
+/* Section header inside the body (calendar icon · title · See all link) */
+.oq-mock-plan__sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 12px 6px;
+  font-family: var(--font-primary);
+}
+.oq-mock-plan__sectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+}
+.oq-mock-plan__sectionTitle svg {
+  width: 12px; height: 12px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+.oq-mock-plan__seeAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  color: var(--color-primary-dark);
+}
+.oq-mock-plan__seeAll svg {
+  width: 11px; height: 11px;
+  flex-shrink: 0;
+}
+
+/* Activity list region (fills remaining space) */
+.oq-mock-plan__list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 4px;
+  font-family: var(--font-primary);
+  min-height: 0;
+}
+
+/* Activity card */
+.oq-mock-plan__card {
+  position: relative;
+  padding: 8px 10px 7px 12px;
+  border: 1px solid #ECECEC;
+  border-radius: 12px;
+  background: var(--oq-white);
+  box-shadow: 0 1px 3px rgba(31, 41, 76, 0.04);
+}
+.oq-mock-plan__card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: var(--color-primary-dark);
+  border-radius: 0 3px 3px 0;
+}
+.oq-mock-plan__cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.oq-mock-plan__cardTitle {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+}
+.oq-mock-plan__logIcon {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: var(--color-primary-lighter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-dark);
+}
+.oq-mock-plan__logIcon svg { width: 12px; height: 12px; }
+
+/* Type chip ("Scuba Diving") */
+.oq-mock-plan__typeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  color: var(--color-primary-dark);
+  font-size: 8.5px;
+  font-weight: var(--fw-semibold);
+  margin-bottom: 6px;
+}
+.oq-mock-plan__typeChip svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+/* Two-column meta grid */
+.oq-mock-plan__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  font-size: 9px;
+  color: var(--color-text-secondary);
+}
+.oq-mock-plan__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.oq-mock-plan__meta svg {
+  width: 10px; height: 10px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Divider before actions */
+.oq-mock-plan__cardSep {
+  height: 1px;
+  background: #F0F0F0;
+  margin: 7px -10px 6px -12px;
+}
+
+/* Action row: Edit pill + Delete link */
+.oq-mock-plan__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.oq-mock-plan__actionEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  color: var(--color-primary-dark);
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+}
+.oq-mock-plan__actionEdit svg { width: 9px; height: 9px; flex-shrink: 0; }
+.oq-mock-plan__actionDelete {
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+  color: #DC2626;
+}
+
+/* Soft horizontal divider between Today and Scheduled sections */
+.oq-mock-plan__sectionDiv {
+  height: 1px;
+  background: var(--color-border);
+  margin: 8px 12px 0;
+}
+
+/* Compact scheduled-activity peek row */
+.oq-mock-plan__peek {
+  margin: 0 12px 12px;
+  padding: 7px 9px 7px 11px;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  background: var(--oq-grey-50);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  font-family: var(--font-primary);
+}
+.oq-mock-plan__peek::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 5px; bottom: 5px;
+  width: 3px;
+  background: var(--color-primary-dark);
+  opacity: 0.5;
+  border-radius: 0 3px 3px 0;
+}
+.oq-mock-plan__peekBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.oq-mock-plan__peekTitle {
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-plan__peekMeta {
+  font-size: 8.5px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-plan__peekDate {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-lighter);
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+/* ============================================================
+   AGENDA / TODAY SCREEN — bespoke mock for Centers §Ops. Centre-
+   side day view: weekday tabs, stats strip, three activity cards
+   with time / title / instructor + diver counts and chips, then a
+   "+ Nueva actividad" CTA. Uses the same doubled-class trick as the
+   other bespoke screens to override the .oq-mock-screen base.
+   ============================================================ */
+.oq-mock-screen.oq-mock-screen--agenda {
+  padding: 0;
+  gap: 0;
+  background: var(--oq-white);
+}
+
+.oq-mock-agenda__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 12px 6px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  background: var(--oq-white);
+  position: relative;
+  z-index: 3;
+}
+.oq-mock-agenda__topbar svg {
+  width: 14px; height: 14px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+.oq-mock-agenda__topbar > span:last-child {
+  font-size: 9px;
+  font-weight: var(--fw-regular);
+  color: var(--color-text-tertiary);
+}
+
+/* Weekday strip */
+.oq-mock-agenda__days {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 4px 12px 8px;
+  font-family: var(--font-primary);
+}
+.oq-mock-agenda__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 0;
+  border-radius: 8px;
+  background: var(--oq-grey-50);
+  border: 1px solid #ECECEC;
+}
+.oq-mock-agenda__dayLabel {
+  font-size: 7.5px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-agenda__dayNum {
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+.oq-mock-agenda__day--active {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+.oq-mock-agenda__day--active .oq-mock-agenda__dayLabel,
+.oq-mock-agenda__day--active .oq-mock-agenda__dayNum {
+  color: var(--oq-white);
+}
+
+/* Stats strip */
+.oq-mock-agenda__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0 12px 8px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  font-family: var(--font-primary);
+}
+.oq-mock-agenda__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.oq-mock-agenda__statValue {
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  color: var(--color-primary-darker);
+  line-height: 1;
+}
+.oq-mock-agenda__statLabel {
+  font-size: 7.5px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* Activity list (fills remaining space) */
+.oq-mock-agenda__list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 10px;
+  font-family: var(--font-primary);
+  min-height: 0;
+}
+
+.oq-mock-agenda__card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 9px;
+  padding: 8px 10px 8px 10px;
+  background: var(--oq-grey-50);
+  border: 1px solid #ECECEC;
+  border-radius: 12px;
+  position: relative;
+}
+.oq-mock-agenda__card--accent {
+  background: linear-gradient(135deg, rgba(248, 167, 71, 0.10) 0%, rgba(248, 167, 71, 0) 100%), var(--oq-grey-50);
+  border-color: rgba(248, 167, 71, 0.35);
+}
+.oq-mock-agenda__time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-right: 9px;
+  border-right: 1px solid #E5E9F0;
+  min-width: 38px;
+}
+.oq-mock-agenda__timeHour {
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  color: var(--color-primary-dark);
+  line-height: 1;
+}
+.oq-mock-agenda__timeDur {
+  margin-top: 2px;
+  font-size: 7.5px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-tertiary);
+}
+.oq-mock-agenda__cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.oq-mock-agenda__cardTitle {
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+.oq-mock-agenda__cardMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 8.5px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-agenda__cardMeta svg {
+  width: 9px; height: 9px;
+  flex-shrink: 0;
+}
+.oq-mock-agenda__chips {
+  display: flex;
+  gap: 4px;
+  margin-top: 1px;
+  flex-wrap: wrap;
+}
+.oq-mock-agenda__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 7.5px;
+  font-weight: var(--fw-semibold);
+  background: var(--oq-white);
+  border: 1px solid #E5E9F0;
+  color: var(--color-text-secondary);
+}
+.oq-mock-agenda__chip--qr {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-primary-darker);
+}
+.oq-mock-agenda__chip svg { width: 8px; height: 8px; flex-shrink: 0; }
+.oq-mock-agenda__chipDot {
+  width: 5px; height: 5px;
+  border-radius: 999px;
+  background: #34C759;
+  flex-shrink: 0;
+}
+
+/* Sticky CTA at the bottom of the screen */
+.oq-mock-agenda__cta {
+  margin: 0 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--color-primary-dark);
+  color: var(--oq-white);
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+}
+.oq-mock-agenda__cta svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+/* ============================================================
+   GLOBAL MAP — bigger, prettier visualisation for Centers §Visibility.
+   Built on top of the existing .oq-mock-map shell but adds: stylised
+   continents (soft blobs), labelled pins, animated route lines,
+   floating live stats card and a "new this month" footer ribbon.
+   ============================================================ */
+.oq-mock-map--global {
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 18px 44px rgba(31, 41, 76, 0.14), 0 6px 16px rgba(31, 41, 76, 0.06);
+  background: var(--oq-white);
+}
+.oq-mock-map--global .oq-mock-map__canvas {
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 22% 18%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%),
+    radial-gradient(ellipse at 82% 78%, rgba(64, 106, 208, 0.18) 0%, rgba(64, 106, 208, 0) 60%),
+    linear-gradient(160deg, var(--oq-linkwater-50) 0%, var(--oq-linkwater-100) 55%, var(--oq-linkwater-200) 100%);
+  overflow: hidden;
+}
+
+/* Subtle landmass blobs — kept on-brand with a soft pale wash
+   instead of sand (founder feedback: keep the whole canvas blue,
+   the sand colours weren't corporate). They read as shallow water
+   highlights rather than literal continents. */
+.oq-mock-map__continent {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.30) 100%);
+  border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+  filter: blur(1px);
+}
+.oq-mock-map__continent--americas {
+  top: 14%; left: 8%;
+  width: 22%; height: 76%;
+  border-radius: 55% 45% 70% 30% / 60% 35% 65% 40%;
+}
+.oq-mock-map__continent--europe {
+  top: 12%; left: 38%;
+  width: 14%; height: 38%;
+  border-radius: 60% 40% 55% 45% / 55% 50% 50% 45%;
+}
+.oq-mock-map__continent--africa {
+  top: 32%; left: 40%;
+  width: 16%; height: 50%;
+  border-radius: 50% 50% 55% 45% / 50% 50% 55% 45%;
+}
+.oq-mock-map__continent--asia {
+  top: 12%; left: 56%;
+  width: 30%; height: 50%;
+  border-radius: 55% 45% 60% 40% / 50% 60% 40% 50%;
+}
+.oq-mock-map__continent--oceania {
+  top: 64%; left: 76%;
+  width: 14%; height: 22%;
+  border-radius: 65% 35% 55% 45% / 55% 50% 50% 45%;
+}
+
+/* Faint dotted overlay (nautical chart feel) */
+.oq-mock-map__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(64, 106, 208, 0.18) 0.7px, transparent 0.7px),
+    radial-gradient(rgba(64, 106, 208, 0.08) 0.5px, transparent 0.5px);
+  background-size: 22px 22px, 11px 11px;
+  background-position: 0 0, 6px 6px;
+  pointer-events: none;
+}
+
+/* Larger labelled pins for the global map */
+.oq-mock-map__pin--lg {
+  width: 12px; height: 12px;
+  border: 2px solid #FFFFFF;
+  background: var(--color-primary-dark);
+  border-radius: 999px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 6px rgba(31, 41, 76, 0.35);
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+.oq-mock-map__pin--lg::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-primary-dark);
+  opacity: 0.35;
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+.oq-mock-map__pin--lg.oq-mock-map__pin--featured {
+  width: 16px; height: 16px;
+  background: var(--color-accent);
+  border-color: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(248, 167, 71, 0.55);
+  z-index: 3;
+}
+.oq-mock-map__pinLabel {
+  position: absolute;
+  top: calc(50% - 26px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-family: var(--font-primary);
+  font-size: 8.5px;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+}
+.oq-mock-map__pin--featured .oq-mock-map__pinLabel {
+  background: var(--color-text-primary);
+  color: var(--oq-white);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* Animated dashed route lines */
+.oq-mock-map__route {
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+}
+.oq-mock-map__route path {
+  fill: none;
+  stroke: var(--color-primary-dark);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+  opacity: 0.55;
+  animation: oq-mock-route-flow 18s linear infinite;
+}
+@keyframes oq-mock-route-flow {
+  to { stroke-dashoffset: -200; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oq-mock-map__route path { animation: none; }
+  .oq-mock-map__pin--lg,
+  .oq-mock-map__pin--lg::after { animation: none !important; }
+}
+
+/* Floating stats card */
+.oq-mock-map__statsCard {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 6px 18px rgba(31, 41, 76, 0.14);
+  font-family: var(--font-primary);
+  z-index: 4;
+}
+.oq-mock-map__statsRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.oq-mock-map__statsValue {
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-primary);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.oq-mock-map__statsLabel {
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-map__statsDivider {
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* "Live" indicator */
+.oq-mock-map__live {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(31, 41, 76, 0.10);
+  font-family: var(--font-primary);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  z-index: 4;
+}
+.oq-mock-map__liveDot {
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: #34C759;
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.5);
+  animation: oq-mock-live-pulse 2s ease-in-out infinite;
+}
+@keyframes oq-mock-live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(52, 199, 89, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oq-mock-map__liveDot { animation: none; }
+}
+
+/* Bottom ribbon — newest centres */
+.oq-mock-map__ribbon {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 14px rgba(31, 41, 76, 0.10);
+  font-family: var(--font-primary);
+  z-index: 4;
+}
+.oq-mock-map__ribbonLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.oq-mock-map__ribbonEyebrow {
+  font-size: 7.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-map__ribbonText {
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-map__avatars {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.oq-mock-map__avatar {
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  border: 2px solid var(--oq-white);
+  margin-left: -7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  color: var(--oq-white);
+  background: var(--color-primary-dark);
+}
+.oq-mock-map__avatar:first-child { margin-left: 0; }
+.oq-mock-map__avatar--a { background: linear-gradient(135deg, #14B8A6 0%, #0EA5E9 100%); }
+.oq-mock-map__avatar--b { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); }
+.oq-mock-map__avatar--c { background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); }
+.oq-mock-map__avatar--more {
+  background: var(--oq-grey-100);
+  color: var(--color-text-secondary);
+  font-size: 8.5px;
+}
+
+/* ============================================================
+   TRIPS SCREEN — bespoke mock for Home §Ecosystem item 06.
+   Hero "flash 48 H" featured trip on a tropical gradient with a
+   spots-left bar and primary "Reservar" CTA, then a compact list
+   of upcoming destinations. Kept simple but rich enough to read
+   as a real product UI.
+   ============================================================ */
+.oq-mock-screen.oq-mock-screen--trips {
+  padding: 0;
+  gap: 0;
+  background: var(--oq-white);
+}
+
+.oq-mock-trips__topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 12px 8px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  background: var(--oq-white);
+  position: relative;
+  z-index: 3;
+}
+.oq-mock-trips__topbar svg {
+  width: 14px; height: 14px;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+.oq-mock-trips__topbar > span:last-child {
+  font-size: 9px;
+  font-weight: var(--fw-regular);
+  color: var(--color-text-tertiary);
+}
+
+/* Featured "flash" hero card (sunset gradient + photo overlay feel) */
+.oq-mock-trips__flash {
+  position: relative;
+  margin: 0 12px;
+  padding: 14px 12px 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  font-family: var(--font-primary);
+  color: var(--oq-white);
+  background:
+    radial-gradient(ellipse at 90% 10%, rgba(255, 200, 130, 0.55) 0%, rgba(255, 200, 130, 0) 55%),
+    radial-gradient(ellipse at 10% 90%, rgba(13, 148, 136, 0.45) 0%, rgba(13, 148, 136, 0) 60%),
+    linear-gradient(135deg, #1F3A8A 0%, #2563EB 50%, #06B6D4 100%);
+  box-shadow: 0 8px 18px rgba(31, 41, 76, 0.18);
+}
+/* Subtle moving shimmer to feel premium */
+.oq-mock-trips__flash::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 70%);
+  transform: rotate(8deg);
+  animation: oq-mock-trips-shimmer 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes oq-mock-trips-shimmer {
+  0%   { transform: translateX(-30%) rotate(8deg); }
+  100% { transform: translateX(280%) rotate(8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oq-mock-trips__flash::before { animation: none; }
+}
+
+.oq-mock-trips__flashBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-primary-darker);
+  font-size: 8px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.oq-mock-trips__flashBadge svg { width: 9px; height: 9px; flex-shrink: 0; }
+
+.oq-mock-trips__flashTitle {
+  display: block;
+  font-size: 16px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin-bottom: 3px;
+}
+.oq-mock-trips__flashDates {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8.5px;
+  font-weight: var(--fw-regular);
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 10px;
+}
+.oq-mock-trips__flashDates svg { width: 9px; height: 9px; flex-shrink: 0; }
+
+.oq-mock-trips__flashSpots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.oq-mock-trips__flashBar {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+.oq-mock-trips__flashFill {
+  display: block;
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(90deg, var(--color-accent) 0%, #FBBF24 100%);
+  border-radius: 999px;
+}
+.oq-mock-trips__flashSpotsLabel {
+  font-size: 8px;
+  font-weight: var(--fw-medium);
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+
+.oq-mock-trips__flashFoot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.oq-mock-trips__flashPrice {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.oq-mock-trips__flashPriceLabel {
+  font-size: 7.5px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+.oq-mock-trips__flashPriceValue {
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--oq-white);
+}
+.oq-mock-trips__flashCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--oq-white);
+  color: var(--color-primary-dark);
+  font-size: 9.5px;
+  font-weight: var(--fw-bold);
+}
+.oq-mock-trips__flashCta svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+/* Upcoming destinations list */
+.oq-mock-trips__list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 12px 10px;
+  font-family: var(--font-primary);
+  min-height: 0;
+}
+.oq-mock-trips__listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: 1px;
+}
+.oq-mock-trips__listHead a {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: var(--fw-regular);
+  font-size: 8.5px;
+  color: var(--color-primary-dark);
+}
+
+.oq-mock-trips__row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: var(--oq-grey-50);
+  border: 1px solid #ECECEC;
+  border-radius: 12px;
+}
+.oq-mock-trips__rowThumb {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--oq-white);
+}
+.oq-mock-trips__rowThumb--reef {
+  background: linear-gradient(135deg, #14B8A6 0%, #0EA5E9 100%);
+}
+.oq-mock-trips__rowThumb--reef svg { width: 18px; height: 18px; }
+.oq-mock-trips__rowThumb--volcano {
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+}
+.oq-mock-trips__rowThumb--volcano svg { width: 18px; height: 18px; }
+
+.oq-mock-trips__rowBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.oq-mock-trips__rowName {
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.oq-mock-trips__rowMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-trips__rowMeta svg { width: 8px; height: 8px; flex-shrink: 0; }
+
+.oq-mock-trips__rowPrice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  flex-shrink: 0;
+}
+.oq-mock-trips__rowPriceLabel {
+  font-size: 7px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.oq-mock-trips__rowPriceValue {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-primary-dark);
+  line-height: 1.1;
+}
+
+/* Old smaller Strava preview (kept for QR screen 02 hero) */
+.oq-mock-share {
+  position: relative;
+  border-radius: 8px;
+  height: 130px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--oq-linkwater-300) 0%, var(--oq-linkwater-700) 70%, var(--oq-linkwater-900) 100%);
+}
+.oq-mock-share__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px 10px;
+  color: var(--color-bg);
+  background: linear-gradient(transparent 40%, rgba(0, 0, 0, 0.45) 100%);
+}
+.oq-mock-share__brand {
+  position: absolute;
+  top: 8px; left: 10px;
+  font-family: var(--font-primary);
+  font-weight: var(--fw-bold);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
+.oq-mock-share__title {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+.oq-mock-share__stats {
+  display: flex;
+  gap: var(--sp-md);
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  opacity: 0.95;
+}
+.oq-mock-share__stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Strong-blue accent variant carry-over (still defined for any future
+   page that wants the bolder backdrop, but currently unused). */
+.oq-section--accent .oq-featshow__item {
+  border-top-color: rgba(255, 255, 255, 0.5);
+}
+.oq-section--accent .oq-featshow__halo {
+  background: radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(241, 246, 253, 0) 70%);
+  opacity: 0.95;
+}
+
+/* ============================================================
+   ROTATING MOCKUP — 6 screens stacked, one visible at a time.
+   Driven by the inline rotator script in the page.
+   ============================================================ */
+/* Use CSS grid stacking instead of absolute positioning so each
+   mock screen reliably fills the phone height. All children share the
+   same 1×1 grid cell; only the .is-active one is visible. */
+.oq-mock-screens {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+/* All screens share the same 1×1 grid cell. Inactive screens are
+   fully hidden — no opacity transition — so they cannot bleed
+   through the active one mid-fade (which previously made the active
+   screen look semi-transparent and produced apparent "lateral
+   margins" while the cross-fade was running). */
+.oq-mock-screens > * {
+  grid-column: 1;
+  grid-row: 1;
+  visibility: hidden;
+}
+.oq-mock-screens > .is-active {
+  visibility: visible;
+}
+
+/* QR placeholder — three finder patterns + scattered data cells */
+.oq-mock-qr {
+  display: block;
+  width: 92px;
+  height: 92px;
+  margin: var(--sp-sm) auto;
+  padding: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+.oq-mock-qr svg { width: 100%; height: 100%; display: block; }
+
+/* Mini-map (used inside Ecosystem rotator screen 4 — distinct from
+   the larger Centers visibility map) */
+.oq-mock-mini-map {
+  position: relative;
+  width: 100%;
+  height: 96px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background:
+    radial-gradient(ellipse at 30% 30%, var(--oq-linkwater-50) 0%, rgba(241,246,253,0) 60%),
+    radial-gradient(ellipse at 70% 70%, var(--oq-linkwater-100) 0%, rgba(241,246,253,0) 70%),
+    var(--color-primary-lighter);
+}
+.oq-mock-mini-map > span {
+  position: absolute;
+  width: 8px; height: 8px;
+  background: var(--color-primary-dark);
+  border: 2px solid var(--color-bg);
+  border-radius: 999px;
+}
+.oq-mock-mini-map > span::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-primary-dark);
+  opacity: 0.4;
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+
+/* Featured/flash card variant (used in trips screen) */
+.oq-mock-card--feature {
+  background: linear-gradient(135deg, var(--color-primary-darker), var(--color-primary-dark));
+  border-color: var(--color-primary-dark);
+}
+.oq-mock-card--feature .oq-mock-card__title { color: var(--color-bg); }
+.oq-mock-card--feature .oq-mock-card__row { color: var(--color-text-on-dark-secondary); }
+
+/* Compact phone variant for use inside featshow sections (smaller than hero). */
+.oq-phone--compact { width: clamp(220px, 72%, 280px); margin-top: 0; }
+@media (min-width: 880px) {
+  .oq-phone--compact { width: clamp(240px, 78%, 300px); }
+}
+
+/* Linkwater halo backdrop behind a featshow phone — denser two-stop
+   gradient so it reads as a clearly-visible glow, not a flat wash. */
+.oq-featshow__halo {
+  position: absolute;
+  width: 92%;
+  aspect-ratio: 1;
+  top: 0%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at 50% 38%,
+    var(--oq-linkwater-200) 0%,
+    var(--oq-linkwater-100) 30%,
+    var(--oq-linkwater-50) 55%,
+    rgba(241, 246, 253, 0) 75%
+  );
+  opacity: 0.95;
+  border-radius: 999px;
+  z-index: -1;
+  animation: oq-fluid-halo-wide 12s ease-in-out infinite;
+}
+
+/* ============================================================
+   MOCK — small UI primitives used inside the placeholder phone
+   screens. Kept generic so each section can compose its own
+   product UI quickly until the real screenshots arrive.
+   ============================================================ */
+.oq-mock-screen {
+  position: relative;
+  border-radius: 26px;
+  background: var(--oq-white);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px 12px;
+  gap: 10px;
+  font-family: var(--font-primary);
+}
+.oq-mock-screen::before {
+  content: '';
+  position: absolute;
+  top: 6px; left: 50%;
+  transform: translateX(-50%);
+  width: 70px; height: 18px;
+  background: var(--oq-grey-950);
+  border-radius: 999px;
+  /* Always above any screen content, including topbars and full-bleed
+     hero gradients/photos. */
+  z-index: 10;
+}
+.oq-mock-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 12px;
+  font-size: 10px;
+  color: var(--color-text-primary);
+}
+.oq-mock-topbar b {
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-darker);
+  font-size: 11px;
+}
+.oq-mock-tabs {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+.oq-mock-tab {
+  flex: 1;
+  font-size: 9px;
+  text-align: center;
+  padding: 4px 0;
+  color: var(--color-text-tertiary);
+  border-bottom: 1px solid transparent;
+}
+.oq-mock-tab--active {
+  color: var(--color-primary-dark);
+  border-bottom-color: var(--color-primary-dark);
+  font-weight: var(--fw-semibold);
+}
+.oq-mock-card {
+  background: var(--oq-grey-50);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 4px;
+}
+.oq-mock-card__title {
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+.oq-mock-card__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--color-text-secondary);
+}
+.oq-mock-card__row svg { color: var(--color-primary-dark); flex-shrink: 0; }
+.oq-mock-chip-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.oq-mock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  border: 1px solid var(--color-primary-100);
+}
+.oq-mock-chip--accent {
+  background: var(--color-accent);
+  color: var(--color-primary-darker);
+  border-color: transparent;
+}
+.oq-mock-textarea {
+  background: var(--oq-grey-50);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 9.5px;
+  color: var(--color-text-secondary);
+  flex: 1;
+  display: block;
+  line-height: 1.4;
+  min-height: 80px;
+}
+.oq-mock-button {
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--color-primary-dark);
+  color: var(--color-text-on-dark);
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.oq-mock-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+.oq-mock-stat {
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: grid;
+  gap: 1px;
+}
+.oq-mock-stat__label { font-size: 8.5px; color: var(--color-text-secondary); }
+.oq-mock-stat__value { font-size: 12px; font-weight: var(--fw-semibold); color: var(--color-primary-darker); }
+
+/* ============================================================
+   MOCK MAP — stylised world map for Centers §Visibility.
+   ============================================================ */
+.oq-mock-map {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 16 / 11;
+  margin-inline: auto;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--sp-lg);
+  box-shadow: 0 12px 32px rgba(31, 41, 76, 0.10), 0 4px 8px rgba(31, 41, 76, 0.04);
+  overflow: hidden;
+  animation: oq-fluid-float-up 7s ease-in-out infinite;
+}
+.oq-mock-map__topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--sp-md);
+}
+.oq-mock-map__topbar b {
+  color: var(--color-primary-darker);
+  font-weight: var(--fw-semibold);
+}
+.oq-mock-map__canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 30% 30%, var(--oq-linkwater-50) 0%, rgba(241,246,253,0) 60%),
+    radial-gradient(ellipse at 70% 70%, var(--oq-linkwater-100) 0%, rgba(241,246,253,0) 70%),
+    var(--color-primary-lighter);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+.oq-mock-map__pin {
+  position: absolute;
+  width: 12px; height: 12px;
+  background: var(--color-primary-dark);
+  border-radius: 999px;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 2px 6px rgba(31, 41, 76, 0.25);
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+.oq-mock-map__pin::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 2px solid var(--color-primary-dark);
+  opacity: 0.3;
+  animation: oq-mock-pin-pulse 4s ease-in-out infinite;
+}
+@keyframes oq-mock-pin-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oq-mock-map, .oq-mock-map__pin, .oq-mock-map__pin::after { animation: none !important; }
+}
+
+/* ============================================================
+   CONTACT CHANNELS — direct-channel grid for the Contact page.
+   Each card surfaces a channel (WhatsApp, Email, LinkedIn, Instagram)
+   with an icon disc, channel name, handle/value and a small action
+   row. Hover lifts gently like .oq-cohort__item.
+   ============================================================ */
+.oq-channels {
+  display: grid;
+  gap: var(--sp-md);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .oq-channels { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .oq-channels { grid-template-columns: repeat(4, 1fr); }
+}
+
+.oq-channel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  padding: var(--sp-lg) var(--sp-lg) var(--sp-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-2xl);
+  transition:
+    border-color var(--motion-normal) var(--motion-ease),
+    transform var(--motion-normal) var(--motion-ease),
+    box-shadow var(--motion-normal) var(--motion-ease);
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+}
+.oq-channel:hover {
+  border-color: var(--color-primary-200);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(31, 41, 76, 0.08);
+}
+.oq-channel:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 3px;
+}
+
+.oq-channel__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--oq-white);
+}
+.oq-channel__icon svg { width: 22px; height: 22px; }
+.oq-channel__icon--whatsapp { background: #25D366; }
+.oq-channel__icon--email    { background: var(--color-primary-dark); }
+.oq-channel__icon--linkedin { background: #0A66C2; }
+.oq-channel__icon--instagram {
+  background: linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%);
+}
+
+.oq-channel__name {
+  font-family: var(--font-primary);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+.oq-channel__value {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+.oq-channel__cta {
+  margin-top: auto;
+  padding-top: var(--sp-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-dark);
+}
+.oq-channel__cta svg {
+  width: 14px; height: 14px;
+  transition: transform var(--motion-normal) var(--motion-ease);
+}
+.oq-channel:hover .oq-channel__cta svg {
+  transform: translateX(3px);
+}
+
+/* ============================================================
+   AUDIENCE-PICKER — three large cards (Centro / Buceador / Prensa)
+   for the Contact page. Re-uses the cohort-card pattern but adds
+   a stacked CTA + secondary email link at the bottom.
+   ============================================================ */
+.oq-audience {
+  display: grid;
+  gap: var(--sp-2xl);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .oq-audience { grid-template-columns: repeat(3, 1fr); }
+}
+.oq-audience__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  padding: var(--sp-2xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-2xl);
+  transition:
+    border-color var(--motion-normal) var(--motion-ease),
+    transform var(--motion-normal) var(--motion-ease),
+    box-shadow var(--motion-normal) var(--motion-ease);
+}
+.oq-audience__card:hover {
+  border-color: var(--color-primary-200);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(31, 41, 76, 0.06);
+}
+.oq-audience__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-audience__eyebrow {
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-audience__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+  line-height: 1.25;
+}
+.oq-audience__body {
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.oq-audience__cta {
+  margin-top: auto;
+  padding-top: var(--sp-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  align-items: flex-start;
+}
+/* Secondary "or by email" link below the primary WhatsApp CTA.
+   Reads as a proper second option (not a footnote) — brand-blue
+   colour, semibold, text-md, with a visible icon. */
+.oq-audience__email {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-primary);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  transition: color var(--motion-normal) var(--motion-ease),
+              text-decoration-thickness var(--motion-normal) var(--motion-ease);
+}
+.oq-audience__email:hover {
+  color: var(--color-primary-darker);
+  text-decoration-thickness: 2px;
+}
+.oq-audience__email svg {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   FOUNDER DIRECT — split layout used on Contact (and About) to
+   surface the founder's own channel. Photo on one side, copy +
+   CTAs on the other. Reuses the existing .oq-split__card grid
+   when wrapped in .oq-split.
+   ============================================================ */
+.oq-founder-direct {
+  display: grid;
+  gap: var(--sp-2xl);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+@media (min-width: 880px) {
+  .oq-founder-direct { grid-template-columns: 1fr 1.4fr; gap: var(--sp-3xl); }
+}
+.oq-founder-direct__media {
+  position: relative;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: var(--color-primary-lighter);
+}
+.oq-founder-direct__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.oq-founder-direct__media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.30) 100%);
+  pointer-events: none;
+}
+.oq-founder-direct__badge {
+  position: absolute;
+  bottom: var(--sp-md);
+  left: var(--sp-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  z-index: 2;
+}
+.oq-founder-direct__badge::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: #25D366;
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5);
+  animation: oq-mock-live-pulse 2s ease-in-out infinite;
+}
+.oq-founder-direct__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+.oq-founder-direct__eyebrow {
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-founder-direct__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-3xl);
+  color: var(--color-text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.oq-founder-direct__body {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.oq-founder-direct__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-sm);
+  margin-top: var(--sp-sm);
+}
+
+/* ============================================================
+   OFFICE CARD — single-block address card on the Contact page.
+   Eyebrow, address lines and a "View on Maps" link.
+   ============================================================ */
+.oq-office {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: 1fr;
+  align-items: center;
+  padding: var(--sp-2xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 8px 22px rgba(31, 41, 76, 0.06);
+}
+@media (min-width: 720px) {
+  .oq-office { grid-template-columns: auto 1fr auto; gap: var(--sp-2xl); }
+}
+.oq-office__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-office__icon svg { width: 28px; height: 28px; }
+.oq-office__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.oq-office__eyebrow {
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+.oq-office__name {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+}
+.oq-office__address {
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   PROSE — long-form text (legal pages, future blog content).
+   ============================================================ */
+.oq-prose {
+  max-width: 720px;
+  margin-inline: auto;
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--fw-light);
+  line-height: 1.7;
+  color: var(--color-text-primary);
+}
+.oq-prose > * + * { margin-top: var(--sp-md); }
+.oq-prose h2 {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-2xl);
+  color: var(--color-primary-darker);
+  line-height: 1.25;
+  margin-top: var(--sp-4xl);
+  margin-bottom: var(--sp-md);
+}
+.oq-prose h2:first-child { margin-top: 0; }
+.oq-prose h3 {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+  margin-top: var(--sp-2xl);
+  margin-bottom: var(--sp-sm);
+  line-height: 1.3;
+}
+.oq-prose ul, .oq-prose ol {
+  margin: var(--sp-md) 0 var(--sp-md) var(--sp-2xl);
+  padding-left: 0;
+}
+.oq-prose ul li, .oq-prose ol li {
+  list-style: disc;
+  margin-bottom: var(--sp-sm);
+  line-height: 1.6;
+}
+.oq-prose ol li { list-style: decimal; }
+.oq-prose a {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+.oq-prose a:hover { color: var(--color-primary-darker); }
+.oq-prose strong { font-weight: var(--fw-semibold); color: var(--color-primary-darker); }
+.oq-prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: var(--sp-3xl) 0;
+}
+.oq-prose__last-updated {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  margin-top: var(--sp-md);
+}
+.oq-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block: var(--sp-2xl);
+  font-size: var(--text-md);
+  font-weight: var(--fw-regular);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.oq-prose th,
+.oq-prose td {
+  text-align: left;
+  padding: var(--sp-md);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+  line-height: 1.55;
+  color: var(--color-text-primary);
+}
+.oq-prose tbody tr:last-child td { border-bottom: 0; }
+.oq-prose th {
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary-darker);
+  background: var(--color-bg-secondary);
+  font-size: var(--text-sm);
+  letter-spacing: 0.01em;
+}
+.oq-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+  padding: 1px 6px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-darker);
+  border-radius: 4px;
+}
+.oq-prose em { font-style: italic; }
+@media (max-width: 640px) {
+  .oq-prose table { font-size: var(--text-sm); }
+  .oq-prose th, .oq-prose td { padding: var(--sp-sm); }
+}
+
+/* ============================================================
+   PROSE LIST — heading + bullet list, simpler than .oq-bullets
+   (used in Centers §Communication, §Visibility)
+   ============================================================ */
+.oq-prose-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--sp-md);
+  max-width: 720px;
+}
+.oq-prose-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-md);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+.oq-prose-list li::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  flex-shrink: 0;
+  background: var(--color-accent);
+  border-radius: 999px;
+}
+
+/* ============================================================
+   FOOTER — dark navy, 3 cols + tagline + badges
+   ============================================================ */
+.oq-footer {
+  background: var(--color-primary-darker);
+  color: var(--color-text-on-dark);
+  padding-block: var(--sp-4xl) var(--sp-3xl);
+}
+.oq-footer__top {
+  display: grid;
+  gap: var(--sp-3xl);
+  grid-template-columns: 1fr;
+  margin-bottom: var(--sp-3xl);
+  padding-bottom: var(--sp-3xl);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+@media (min-width: 768px) {
+  .oq-footer__top { grid-template-columns: 1.6fr 1fr 1fr; }
+}
+.oq-footer__brand-link {
+  display: inline-flex;
+  color: var(--color-bg);
+  transition: color var(--motion-normal) var(--motion-ease);
+}
+.oq-footer__brand-link:hover { color: var(--color-accent); }
+.oq-footer__tagline {
+  margin-top: var(--sp-md);
+  margin-bottom: var(--sp-2xl);
+  color: var(--color-text-on-dark-secondary);
+  font-size: var(--text-md);
+  max-width: 36ch;
+}
+.oq-footer__col h4 {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-on-dark-secondary);
+  margin-bottom: var(--sp-md);
+}
+.oq-footer__col ul { display: grid; gap: var(--sp-sm); }
+.oq-footer__col a {
+  font-size: var(--text-md);
+  color: var(--color-text-on-dark);
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+.oq-footer__col a:hover { color: var(--color-accent); }
+.oq-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-text-on-dark-secondary);
+  font-size: var(--text-sm);
+}
+.oq-footer__legal {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-sm);
+  row-gap: 4px;
+}
+.oq-footer__legal a {
+  color: var(--color-text-on-dark-secondary);
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+.oq-footer__legal a:hover { color: var(--color-text-on-dark); }
+.oq-footer__legal-sep { opacity: 0.45; }
+
+/* ============================================================
+   SUPPORT PAGE (/soporte, /en/support)
+   "¿Qué ha pasado?" category picker + contact form.
+   Reuses .oq-page-hero, .oq-section, .oq-finalcta.
+   ============================================================ */
+
+/* ---- Category picker ---- */
+.oq-support-cats {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .oq-support-cats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .oq-support-cats { grid-template-columns: repeat(3, 1fr); }
+}
+.oq-support-cat {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-md);
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-xl);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-2xl);
+  transition:
+    border-color var(--motion-normal) var(--motion-ease),
+    transform var(--motion-normal) var(--motion-ease),
+    background var(--motion-normal) var(--motion-ease);
+}
+.oq-support-cat:hover {
+  border-color: var(--color-primary-200);
+  transform: translateY(-3px);
+}
+.oq-support-cat.is-selected {
+  border-color: var(--color-primary-dark);
+  background: var(--color-primary-lighter);
+}
+.oq-support-cat__icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--motion-normal) var(--motion-ease),
+              color var(--motion-normal) var(--motion-ease);
+}
+.oq-support-cat.is-selected .oq-support-cat__icon {
+  background: var(--color-primary-dark);
+  color: var(--color-text-on-dark);
+}
+.oq-support-cat__body { display: grid; gap: 4px; }
+.oq-support-cat__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-base);
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+.oq-support-cat__desc {
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+.oq-support-cat__arrow {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  transition: color var(--motion-normal) var(--motion-ease),
+              transform var(--motion-normal) var(--motion-ease);
+}
+.oq-support-cat__arrow svg { width: 20px; height: 20px; }
+.oq-support-cat:hover .oq-support-cat__arrow { color: var(--color-primary-dark); transform: translateX(2px); }
+.oq-support-cat.is-selected .oq-support-cat__arrow { color: var(--color-primary-dark); }
+
+/* ---- Grid: form + aside ---- */
+.oq-support-grid {
+  display: grid;
+  gap: var(--sp-2xl);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .oq-support-grid { grid-template-columns: 1.6fr 1fr; gap: var(--sp-3xl); }
+}
+
+.oq-support-formwrap {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-2xl);
+  padding: clamp(var(--sp-xl), 4vw, var(--sp-3xl));
+}
+.oq-support-formwrap__head { display: grid; gap: var(--sp-sm); margin-bottom: var(--sp-2xl); }
+.oq-support-formwrap__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+  color: var(--color-primary-darker);
+}
+.oq-support-formwrap__lede {
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+.oq-support-formwrap__lede strong { color: var(--color-text-primary); font-weight: var(--fw-semibold); }
+
+/* ---- Form primitives ---- */
+.oq-form { display: grid; gap: var(--sp-lg); }
+.oq-form__row {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 560px) {
+  .oq-form__row { grid-template-columns: 1fr 1fr; }
+}
+.oq-field { display: grid; gap: var(--sp-sm); }
+.oq-field__label {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-md);
+  color: var(--color-text-primary);
+}
+.oq-field__opt { color: var(--color-text-tertiary); font-weight: var(--fw-regular); }
+
+.oq-input,
+.oq-textarea,
+.oq-select {
+  width: 100%;
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--fw-regular);
+  color: var(--color-text-primary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  transition: border-color var(--motion-fast) var(--motion-ease),
+              box-shadow var(--motion-fast) var(--motion-ease);
+}
+.oq-textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+.oq-input::placeholder,
+.oq-textarea::placeholder { color: var(--color-text-tertiary); }
+.oq-input:focus,
+.oq-textarea:focus,
+.oq-select:focus {
+  outline: none;
+  border-color: var(--color-border-active);
+  box-shadow: 0 0 0 3px rgba(64, 106, 208, 0.16);
+}
+.oq-input:user-invalid,
+.oq-textarea:user-invalid,
+.oq-select:user-invalid { border-color: var(--color-error-light); }
+
+/* Select with custom caret */
+.oq-select-wrap { position: relative; }
+.oq-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--sp-4xl);
+  cursor: pointer;
+}
+.oq-select-wrap__caret {
+  position: absolute;
+  top: 50%;
+  right: var(--sp-lg);
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+}
+.oq-select-wrap__caret svg { width: 18px; height: 18px; }
+
+/* Consent checkbox */
+.oq-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-md);
+  cursor: pointer;
+}
+.oq-consent__box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--color-primary-dark);
+  cursor: pointer;
+}
+.oq-consent__text {
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+.oq-consent__text a {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.oq-consent__text a:hover { color: var(--color-primary-darker); }
+
+.oq-form__error {
+  font-size: var(--text-md);
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-light);
+  border-radius: var(--radius-md);
+  padding: var(--sp-sm) var(--sp-md);
+}
+
+.oq-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  margin-top: var(--sp-xs);
+}
+.oq-support-wa { gap: 6px; }
+.oq-support-wa__icon { width: 18px; height: 18px; color: #25D366; }
+
+.oq-form__foot {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+.oq-form__foot a { color: var(--color-primary-dark); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---- Aside ---- */
+.oq-support-aside { display: grid; gap: var(--sp-lg); align-content: start; }
+.oq-support-note {
+  padding: var(--sp-xl);
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-2xl);
+  display: grid;
+  gap: var(--sp-sm);
+}
+.oq-support-note__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-support-note__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-primary-darker);
+}
+.oq-support-note__body {
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.oq-support-links { display: grid; gap: var(--sp-md); }
+.oq-support-links > li > a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-xl);
+  transition: border-color var(--motion-fast) var(--motion-ease),
+              transform var(--motion-fast) var(--motion-ease);
+}
+.oq-support-links > li > a:hover {
+  border-color: var(--color-primary-200);
+  transform: translateX(2px);
+}
+.oq-support-links__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-on-dark);
+}
+.oq-support-links__icon svg { width: 20px; height: 20px; }
+.oq-support-links__icon--wa { background: #25D366; }
+.oq-support-links__icon--email { background: var(--color-primary-dark); }
+.oq-support-links__body { display: grid; gap: 2px; }
+.oq-support-links__name {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-md);
+  color: var(--color-text-primary);
+}
+.oq-support-links__value {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.oq-support-legal {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+.oq-support-legal strong { color: var(--color-text-secondary); font-weight: var(--fw-semibold); }
+.oq-support-legal a { color: var(--color-primary-dark); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ============================================================
+   HOME — support quick-access strip (§before final CTA)
+   ============================================================ */
+.oq-help-strip { padding-block: clamp(var(--sp-3xl), 6vw, 72px); background: var(--color-bg); }
+.oq-help-strip__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-lg);
+  padding: clamp(var(--sp-xl), 3vw, var(--sp-2xl)) clamp(var(--sp-xl), 4vw, var(--sp-3xl));
+  background: var(--color-primary-lighter);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-2xl);
+}
+.oq-help-strip__icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.oq-help-strip__copy { display: grid; gap: 2px; min-width: 200px; flex: 1 1 260px; }
+.oq-help-strip__title {
+  font-family: var(--font-primary);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-primary-darker);
+}
+.oq-help-strip__body {
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+.oq-help-strip__cta { flex-shrink: 0; }
