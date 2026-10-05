@@ -186,7 +186,8 @@
   function sceneFull(o, kind, data) {
     var tier = tierOf(data.amount || 0);
     var isPhoto = kind === 'photo';
-    var img = isPhoto ? pick(A.photos, o._i) : pick(A.covers, o._i);
+    // `data.img`: la foto o carátula que ya enseñó el móvil (la misma en los dos sitios).
+    var img = data.img || (isPhoto ? pick(A.photos, o._i) : pick(A.covers, o._i));
     var label = isPhoto ? 'Foto del cliente' : 'Carátula';
     var qrLabel = isPhoto ? 'SUBE LA TUYA' : (kind === 'song' ? 'PIDE LA TUYA' : 'SUBE EL TUYO');
 
@@ -237,7 +238,8 @@
     // ancho: la rejilla de 9 posiciones es solo del modo transparente.
     var tier = tierOf(data.amount || 0);
     var isPhoto = kind === 'photo';
-    var img = isPhoto ? pick(A.photos, o._i) : pick(A.covers, o._i);
+    // `data.img`: la foto o carátula que ya enseñó el móvil (la misma en los dos sitios).
+    var img = data.img || (isPhoto ? pick(A.photos, o._i) : pick(A.covers, o._i));
     var inner;
 
     if (tier === 'platinum') {

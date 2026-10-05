@@ -201,8 +201,8 @@
           },
           {
             "scene": "tp.photo",
-            "label": "Foto en tarjeta",
-            "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
+            "label": "Modo transparente",
+            "says": "Nos ponemos encima de lo que ya tengas en pantalla: tus visuales, tus vídeos, el karaoke o tus promociones. Las peticiones salen en una tarjeta pequeña que lo complementa sin tapar el show."
           }
         ],
         "autoplay": true,
@@ -1521,7 +1521,7 @@
                         {
                           "key": "scan",
                           "says": "Apunta con la cámara al QR. Sin descargar nada y sin registrarse.",
-                          "owner": "El QR va en la barra y en las mesas. Batiq lo montó así, sin pantalla, y funcionó igual."
+                          "owner": "El QR va en la barra y en las mesas. Selvatic lo montó así, sin pantalla, y funcionó igual."
                         },
                         {
                           "key": "sheet",
@@ -2700,8 +2700,8 @@
                 },
                 {
                   "scene": "tp.photo",
-                  "label": "Foto en tarjeta",
-                  "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
+                  "label": "Modo transparente",
+                  "says": "Nos ponemos encima de lo que ya tengas en pantalla: tus visuales, tus vídeos, el karaoke o tus promociones. Las peticiones salen en una tarjeta pequeña que lo complementa sin tapar el show."
                 },
                 {
                   "scene": "club.message",
@@ -3405,8 +3405,8 @@
                 },
                 {
                   "scene": "tp.photo",
-                  "label": "Foto en tarjeta",
-                  "says": "En modo transparente las peticiones salen en tarjeta pequeña: no tapan el show."
+                  "label": "Modo transparente",
+                  "says": "Nos ponemos encima de lo que ya tengas en pantalla: tus visuales, tus vídeos, el karaoke o tus promociones. Las peticiones salen en una tarjeta pequeña que lo complementa sin tapar el show."
                 }
               ]
             }
@@ -5078,7 +5078,7 @@
       ],
       "audience": "team",
       "title": "Por qué se fueron los que se fueron",
-      "body": "Hemos tenido unos diez locales. **Ni una baja fue por precio ni por «no funciona».** Por orden:\n\n- **Falta de seguimiento:** La Parada, Altare, Batiq Málaga Fest.\n- **El DJ:** Tennessee, Habana Cánovas.\n- **Cobertura:** Pastrami.\n- **El dueño de oficina:** el grupo de Juan Rambla (5–8 locales).\n- **Deudas o cierre:** Catedral, Jumanji, Enjoy (el local).\n\nEl trabajo no termina cuando firma: ahí es donde lo hemos perdido todo.",
+      "body": "Hemos tenido unos diez locales. **Ni una baja fue por precio ni por «no funciona».** Por orden:\n\n- **Falta de seguimiento:** La Parada, Altare, Selvatic Málaga Fest.\n- **El DJ:** Tennessee, Habana Cánovas.\n- **Cobertura:** Pastrami.\n- **El dueño de oficina:** el grupo de Juan Rambla (5–8 locales).\n- **Deudas o cierre:** Catedral, Jumanji, Enjoy (el local).\n\nEl trabajo no termina cuando firma: ahí es donde lo hemos perdido todo.",
       "pinned": null
     },
     {
@@ -5090,7 +5090,7 @@
         "ocio-nocturno"
       ],
       "title": "Casetas de feria: se venden allí, en mitad del follón",
-      "body": "Dos de nuestros tres mejores casos:\n\n- **El Andén:** pantalla gigante, funcionó muy bien.\n- **Batiq Málaga Fest (caseta):** sin pantalla, y funcionó muy bien, con peticiones de pago incluidas.\n- **El Portón (Córdoba):** falló por cobertura en plena calle de la feria.\n\nSe vendieron presentándose allí durante la feria: lo vieron y al día siguiente estaban funcionando. La decisión es inmediata y la toma quien está allí. Funciona sin pantalla porque la gracia son las canciones y la impaciencia. Y se repiten cada año: una venta bien hecha es un cliente anual.\n\n**Precio** (sin validar): feria completa (hasta 7 días) **290 €**; día suelto **90 €**. Se tiene que poder defender de palabra, sin dossier.\n\nEl Andén y Batiq autorizan su caso con nombre.",
+      "body": "Dos de nuestros tres mejores casos:\n\n- **El Andén:** pantalla gigante, funcionó muy bien.\n- **Selvatic Málaga Fest (caseta):** sin pantalla, y funcionó muy bien, con peticiones de pago incluidas.\n- **El Portón (Córdoba):** falló por cobertura en plena calle de la feria.\n\nSe vendieron presentándose allí durante la feria: lo vieron y al día siguiente estaban funcionando. La decisión es inmediata y la toma quien está allí. Funciona sin pantalla porque la gracia son las canciones y la impaciencia. Y se repiten cada año: una venta bien hecha es un cliente anual.\n\n**Precio** (sin validar): feria completa (hasta 7 días) **290 €**; día suelto **90 €**. Se tiene que poder defender de palabra, sin dossier.\n\nEl Andén y Selvatic autorizan su caso con nombre.",
       "why_it_works": "La cobertura es el único riesgo real, y en feria de calle es el peor escenario: compruébala antes.",
       "pinned": null
     },
@@ -5127,7 +5127,7 @@
       "stage": "seguimiento",
       "audience": "team",
       "title": "Cuentas grandes que dijeron que sí",
-      "body": "Bresh, Selvatic, Shark Events, Topamin Fest y The Lab (Madrid) dijeron que sí. Ninguno se perdió por precio, producto ni competencia: **todos se perdieron en el seguimiento**, igual que La Parada, Altare y Batiq.\n\n- **Shark Events:** le dieron la oportunidad a Webit; con Webit la gente no pedía y lo dejaron.\n- **Topamin Fest:** quería ponerlo.\n- **The Lab:** discoteca grande, quería ponerlo.\n\nRetomarlas es trabajo de seguimiento, no de venta.",
+      "body": "Bresh, Selvatic, Shark Events, Dopamine Fest y The Lab (Madrid) dijeron que sí. Ninguno se perdió por precio, producto ni competencia: **todos se perdieron en el seguimiento**, igual que La Parada, Altare y Selvatic.\n\n- **Shark Events:** le dieron la oportunidad a Webit; con Webit la gente no pedía y lo dejaron.\n- **Dopamine Fest:** quería ponerlo.\n- **The Lab:** discoteca grande, quería ponerlo.\n\nRetomarlas es trabajo de seguimiento, no de venta.",
       "pinned": null
     },
     {
@@ -5448,7 +5448,7 @@
       "kind": "tip",
       "stage": "seguimiento",
       "title": "Lo que de verdad nos ha hecho perder clientes",
-      "body": "Almería, Altare, Batiq Fest, Shark Events, Bresh, Topamin Fest, The Lab, Deep Delay y la tercera promotora: todos dijeron que sí, y todos se perdieron por no hacer seguimiento. Ninguno se perdió por precio, por producto ni por competencia.\n\nNoche 1: mirar los datos y escribir al día siguiente **con el resultado**, no preguntando «¿qué tal?». Semana 1: llamada corta. Mes 1: revisión y petición de referencia. Cierre de temporada: contactar **antes** de que reabra — Altare se perdió exactamente ahí.",
+      "body": "Almería, Altare, Selvatic Fest, Shark Events, Bresh, Dopamine Fest, The Lab, Deep Delay y la tercera promotora: todos dijeron que sí, y todos se perdieron por no hacer seguimiento. Ninguno se perdió por precio, por producto ni por competencia.\n\nNoche 1: mirar los datos y escribir al día siguiente **con el resultado**, no preguntando «¿qué tal?». Semana 1: llamada corta. Mes 1: revisión y petición de referencia. Cierre de temporada: contactar **antes** de que reabra — Altare se perdió exactamente ahí.",
       "pinned": 1
     },
     {
@@ -6220,7 +6220,7 @@
       ],
       "personas": [],
       "title": "Lo que no se dice nunca",
-      "body": "- **Cifras de monetización.** Ni «se paga solo», ni «lo recuperas». Si hay que dar un número: La Biblioteca genera 150–300 €/mes en temporada alta pero **10–50 € el resto del año**. Se da el bajo, nunca el alto. Prometer el alto es lo que nos costó la cartera.\n- **Soporte 24h u horarios.**\n- **Funcionalidades que no están en producción.** CRM, remarketing, bonos.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos.",
+      "body": "- **Cifras de monetización.** Ni «se paga solo», ni «lo recuperas». Si hay que dar un número: La Biblioteca genera 150–300 €/mes en temporada alta pero **10–50 € el resto del año**. Se da el bajo, nunca el alto. Prometer el alto es lo que nos costó la cartera.\n- **Soporte 24h u horarios.**\n- **Funcionalidades que no están en producción.** CRM, remarketing, bonos.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Selvatic.\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -7121,7 +7121,7 @@
       "segments": [],
       "personas": [],
       "title": "Lo que no se dice nunca",
-      "body": "- **Cifras de monetización o retorno.** Mecanismo sí, números no.\n- **CRM, remarketing, bonos, «encuentra y gana».** No existen.\n- **Soporte 24h u horarios.**\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos. La única excepción es el acompañamiento presencial en la primera edición de un festival.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Batiq.\n- **Fechas de entrega** de cualquier cosa futura.",
+      "body": "- **Cifras de monetización o retorno.** Mecanismo sí, números no.\n- **CRM, remarketing, bonos, «encuentra y gana».** No existen.\n- **Soporte 24h u horarios.**\n- **Que montamos pantallas.** No montamos nada: se configura en una videollamada de 20 minutos. La única excepción es el acompañamiento presencial en la primera edición de un festival.\n- **Nombres de clientes** que no sean La Biblioteca, El Andén o Selvatic.\n- **Fechas de entrega** de cualquier cosa futura.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -7157,7 +7157,7 @@
       ],
       "personas": [],
       "title": "La causa número uno de pérdidas",
-      "body": "Deep Delay, Selvatic Fest, Shark Events, Topamin Fest, The Lab y Bresh: **todos dijeron que sí y todos se perdieron por no hacer seguimiento.** Ninguno por precio, producto ni competencia.\n\nUn sí sin fecha no es un sí.",
+      "body": "Deep Delay, Selvatic Fest, Shark Events, Dopamine Fest, The Lab y Bresh: **todos dijeron que sí y todos se perdieron por no hacer seguimiento.** Ninguno por precio, producto ni competencia.\n\nUn sí sin fecha no es un sí.",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],
@@ -7875,7 +7875,7 @@
       "about": false,
       "pinned": null,
       "title": "Historial: todos dijeron que sí",
-      "body": "- **Deep Delay:** marca que opera varios festivales. Al gerente le gustaron sobre todo las peticiones de canciones. **Pidieron retomarlo en septiembre: pendiente de llamar. La ventana se cierra en noviembre.**\n- **Selvatic Fest:** dijo que sí. Infraestructura que opera todo el verano. Nunca se acordó precio; buscaban un primer año gratis a cambio de validación.\n- **Topamin Fest:** quería ponerlo. Por su número de marcas, perfil claro de modelo A o B.\n- **Shark Events:** dijo que sí; habían probado antes a un competidor que no funcionó.\n- **B-Combinator Fest (caseta):** funcionó.\n\n**Ninguno se perdió por precio, producto ni competencia. Todos por no hacer seguimiento.**",
+      "body": "- **Deep Delay:** marca que opera varios festivales. Al gerente le gustaron sobre todo las peticiones de canciones. **Pidieron retomarlo en septiembre: pendiente de llamar. La ventana se cierra en noviembre.**\n- **Selvatic Fest:** dijo que sí. Infraestructura que opera todo el verano. Nunca se acordó precio; buscaban un primer año gratis a cambio de validación.\n- **Dopamine Fest:** quería ponerlo. Por su número de marcas, perfil claro de modelo A o B.\n- **Shark Events:** dijo que sí; habían probado antes a un competidor que no funcionó.\n- **B-Combinator Fest (caseta):** funcionó.\n\n**Ninguno se perdió por precio, producto ni competencia. Todos por no hacer seguimiento.**",
       "when_to_use": null,
       "why_it_works": null,
       "technique_refs": [],

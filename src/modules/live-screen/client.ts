@@ -48,7 +48,9 @@ function loadEngine(cfg: Config) {
       ? cfg.songs.map((x, i) => ({ ...x, by: BY[i % BY.length], dedication: DED[i % DED.length] }))
       : DEMO.songs;
     const ranking = cfg.songs?.length ? cfg.songs.map((x, i) => ({ ...x, votes: [12, 8, 5, 3, 2, 1][i] ?? 1 })) : DEMO.ranking;
-    w.ASSETS = { ...cfg.assets, videos: pickVideo(cfg.video), covers: cfg.assets.covers.length ? cfg.assets.covers : songs.map((s, i) => coverFor(s.song, i)) };
+    // Una carátula por canción, en el mismo orden; la que falte, vinilo de color.
+    const covers = songs.map((s, i) => cfg.assets.covers[i] || coverFor(s.song, i));
+    w.ASSETS = { ...cfg.assets, videos: pickVideo(cfg.video), covers };
     w.DEMO = { ...DEMO, songs, ranking };
     engineReady = import('./engine.js').then(() => w.EnjoyScreen as (el: HTMLElement, o?: Record<string, unknown>) => Screen);
   }
@@ -71,7 +73,12 @@ export function init(root: HTMLElement): () => void {
   const says = root.querySelector<HTMLElement>('[data-says]');
   const saysList = JSON.parse(root.querySelector('template[data-says-list]')?.innerHTML || '[]') as string[];
   const phone = root.querySelector<HTMLElement>('[data-phone]');
-  const phoneImg = root.querySelector<HTMLImageElement>('[data-phone-img]');
+  const req = {
+    h: root.querySelector<HTMLElement>('[data-req-h]'), img: root.querySelector<HTMLImageElement>('[data-req-img]'),
+    t: root.querySelector<HTMLElement>('[data-req-t]'), s: root.querySelector<HTMLElement>('[data-req-s]'), btn: root.querySelector<HTMLElement>('[data-req-btn]'),
+  };
+  /** Cuántas peticiones lleva: cada una enseña la siguiente foto o canción (la misma en el móvil y en la pantalla). */
+  let nth = 0;
   const reduced = prefersReducedMotion();
 
   let screen: Screen | null = null;
@@ -82,6 +89,14 @@ export function init(root: HTMLElement): () => void {
   const later = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)); };
   const clear = () => { timers.splice(0).forEach(clearTimeout); };
   const phoneState = (...cls: string[]) => { if (phone) phone.className = ['live-screen__phone', ...cls].join(' '); };
+
+  function fillReq(h: string, img: string, t: string, sub: string, btn: string) {
+    if (req.h) req.h.textContent = h;
+    if (req.img) { req.img.src = img || ''; req.img.parentElement!.hidden = !img; }
+    if (req.t) req.t.textContent = t;
+    if (req.s) req.s.textContent = sub;
+    if (req.btn) req.btn.textContent = btn;
+  }
 
   function mark(i: number) {
     btns.forEach((b, j) => b.setAttribute('aria-selected', String(j === i)));
@@ -99,9 +114,11 @@ export function init(root: HTMLElement): () => void {
     const seconds = auto && visible ? hold / 1000 : undefined;
     // Sin tramos de pago en la propuesta: nunca se enseñan importes.
     // Su texto (si lo trae): el mensaje, el pie de la foto o la dedicatoria; en club.promo, firmado por el local.
+    // Lo que enseña la pantalla; si el móvil ya ha enseñado una foto o canción, la misma (`data`).
+    let data: Record<string, unknown> = {};
     const show = () => {
       screen?.set('amount', 0);
-      screen?.show(s.scene, { ...(isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : s.text ? { dedication: s.text } : {}), seconds });
+      screen?.show(s.scene, { ...(isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : s.text ? { dedication: s.text } : {}), ...data, seconds });
     };
     const box = root.querySelector<HTMLElement>('[data-phone-compose-text]');
     let lead = 0;
@@ -122,14 +139,34 @@ export function init(root: HTMLElement): () => void {
     } else if (!withPhone || reduced || !phone || !isRequest(s.scene)) { phoneState(); show(); }
     else {
       // El invitado escanea el QR y, en el móvil, ve lo mismo que luego sale en la pantalla:
-      // su mensaje escrito, su foto o la canción que pide.
+      // su mensaje escrito, su foto o la canción que pide (UI, no una captura: así siempre coincide).
       const key = phoneKey(s.scene);
-      const own = key === 'photo' && cfg.ownPhoto;
-      const typed = key === 'message' && !!s.text;
-      const src = own ? cfg.ownPhoto! : cfg.phone[key];
-      if (phoneImg && src && !typed) phoneImg.src = src;
-      if (box && typed) box.textContent = s.text ?? '';
-      const step = typed ? 'is-compose' : own ? 'is-own' : src ? 'is-app' : 'is-scan';
+      const k = nth++;
+      type Said = { by?: string; dedication?: string };
+      const w = window as unknown as { ASSETS?: { photos?: string[]; covers?: string[] }; DEMO?: { songs?: Array<{ song: string; artist: string } & Said>; photos?: Said[]; messages?: Said[] } };
+      const at = <T,>(xs: T[] | undefined): T | undefined => (xs?.length ? xs[k % xs.length] : undefined);
+      let step = 'is-compose';
+      if (key === 'message') {
+        // Su mensaje (el del bloque o uno de ejemplo): lo escribe en el móvil y sale tal cual.
+        const m = s.text ? { dedication: s.text } : at(w.DEMO?.messages) ?? {};
+        if (box) box.textContent = m.dedication ?? '';
+        data = { ...m };
+      } else if (key === 'photo') {
+        const img = at(w.ASSETS?.photos) ?? '';
+        const said = at(w.DEMO?.photos) ?? {};
+        const caption = s.text || said.dedication || '';
+        fillReq('Tu foto en pantalla', img, caption, '', 'Enviar');
+        data = { ...said, dedication: caption, img };
+        step = 'is-req';
+      } else if (key === 'song') {
+        const songs = w.DEMO?.songs ?? [];
+        const i = songs.length ? k % songs.length : 0;
+        const sg = songs[i];
+        const img = w.ASSETS?.covers?.[i] ?? '';
+        fillReq('Pide tu canción', img, sg?.song ?? '', sg?.artist ?? '', 'Pedir');
+        if (sg) data = { ...sg, img };
+        step = 'is-req';
+      }
       phoneState('is-in', 'is-scan');
       later(1500, () => phoneState('is-in', step));
       later(2400, () => phoneState('is-in', step, 'is-sent'));
@@ -191,7 +228,9 @@ export function initMini(root: HTMLElement): () => void {
     if (!screen) return;
     screen.set('amount', 0);
     const many = cfg.scenes.length > 1 && !reduced;
-    screen.show(cfg.scenes[idx % cfg.scenes.length].scene, many ? { seconds: 4.5 } : undefined);
+    const sc = cfg.scenes[idx % cfg.scenes.length];
+    const said = isPromo(sc.scene) ? { dedication: sc.text ?? '', by: cfg.assets?.venueName ?? '' } : sc.text ? { dedication: sc.text } : {};
+    screen.show(sc.scene, many ? { ...said, seconds: 4.5 } : said);
     if (many) timer = setTimeout(() => { idx++; step(); }, 4500);
   };
   let alive = true;

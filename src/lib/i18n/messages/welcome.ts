@@ -12,7 +12,7 @@ const es = {
   who: { title: 'A quién', lede: 'Dónde encaja mejor. Empieza por aquí.', tap: 'Toca un sector: cliente ideal, quién decide y cómo queda su propuesta.', icp: 'Cliente ideal', avoid: 'Mejor no', empty: 'Aún no hay sectores definidos.' },
   how: {
     title: 'Cómo se vende', lede: 'Lo que ya ha funcionado, y lo que todavía es una idea del equipo.',
-    must: 'Imprescindible', proven: (n: number) => `Comprobado · ganó en ${n}`, hypothesis: 'Hipótesis: pruébala y cuéntanos', empty: 'El equipo está preparando el playbook.',
+    must: 'Imprescindible', read: 'Leer entera', proven: (n: number) => `Comprobado · ganó en ${n}`, hypothesis: 'Hipótesis: pruébala y cuéntanos', empty: 'El equipo está preparando el playbook.',
   },
   terms: {
     title: 'Lo que ganas', pendingTitle: 'Tus condiciones, cuando hayas probado',
@@ -46,7 +46,7 @@ export const welcomeMessages = defineMessages({
     who: { title: 'Who to', lede: 'Where it fits best. Start here.', tap: 'Tap a sector to see its full sheet: ideal customer, who decides and how to handle each person.', icp: 'Ideal customer', avoid: 'Better not', empty: 'No sectors defined yet.' },
     how: {
       title: 'How it sells', lede: 'What has already worked, and what is still a team idea.',
-      must: 'Must-know', proven: (n) => `Proven · won ${n}`, hypothesis: 'Hypothesis: try it and tell us', empty: 'The team is preparing the playbook.',
+      must: 'Must-know', read: 'Read it all', proven: (n) => `Proven · won ${n}`, hypothesis: 'Hypothesis: try it and tell us', empty: 'The team is preparing the playbook.',
     },
     terms: {
       title: 'What you earn', pendingTitle: 'Your terms, once you have tried it',
@@ -77,7 +77,7 @@ export const welcomeMessages = defineMessages({
     who: { title: 'Para quem', lede: 'Onde encaixa melhor. Comece por aqui.', tap: 'Toque em um setor para ver a ficha completa: cliente ideal, quem decide e como tratar cada pessoa.', icp: 'Cliente ideal', avoid: 'Melhor não', empty: 'Ainda não há setores definidos.' },
     how: {
       title: 'Como se vende', lede: 'O que já funcionou e o que ainda é uma ideia da equipe.',
-      must: 'Imprescindível', proven: (n) => `Comprovado · ganhou em ${n}`, hypothesis: 'Hipótese: teste e conte para nós', empty: 'A equipe está preparando o playbook.',
+      must: 'Imprescindível', read: 'Ler inteira', proven: (n) => `Comprovado · ganhou em ${n}`, hypothesis: 'Hipótese: teste e conte para nós', empty: 'A equipe está preparando o playbook.',
     },
     terms: {
       title: 'O que você ganha', pendingTitle: 'Suas condições, depois de testar',
@@ -108,7 +108,7 @@ export const welcomeMessages = defineMessages({
     who: { title: '누구에게', lede: '가장 잘 맞는 곳입니다. 여기서 시작하세요.', tap: '업종을 눌러 전체 정보를 보세요: 이상적인 고객, 결정권자, 사람마다 대하는 방법.', icp: '이상적인 고객', avoid: '피하는 게 좋은 경우', empty: '아직 정의된 업종이 없습니다.' },
     how: {
       title: '어떻게 파나요', lede: '이미 효과가 있었던 것과 아직 팀의 아이디어인 것입니다.',
-      must: '필수', proven: (n) => `검증됨 · ${n}건 성사`, hypothesis: '가설: 시도해 보고 알려 주세요', empty: '팀이 플레이북을 준비하고 있습니다.',
+      must: '필수', read: '전체 읽기', proven: (n) => `검증됨 · ${n}건 성사`, hypothesis: '가설: 시도해 보고 알려 주세요', empty: '팀이 플레이북을 준비하고 있습니다.',
     },
     terms: {
       title: '얻는 것', pendingTitle: '직접 해 본 뒤에 정하는 조건',

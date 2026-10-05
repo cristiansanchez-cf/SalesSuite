@@ -48,7 +48,8 @@ if (Astro.request.method === 'POST') {
       const sb = supabaseServerClient(Astro);
       const redirectTo = `${origin}/admin/auth/confirm?next=${encodeURIComponent(next)}`;
       const { error: e } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
-      // Mismo mensaje exista o no la cuenta (no enumerar usuarios).
+      // Mismo mensaje exista o no la cuenta (no enumerar usuarios). El motivo real, al registro del servidor (Vercel → Logs).
+      if (e) console.warn('[login] código no enviado:', e.status, e.code ?? '', e.message);
       if (e && e.status !== 400 && e.status !== 422) error = e.status === 429 ? rateMessage(e.message) : m.login.errSend;
       else { codeEmail = email; info = SENT; }
     }

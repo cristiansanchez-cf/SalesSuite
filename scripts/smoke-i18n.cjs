@@ -1,6 +1,6 @@
 /**
  * Smoke de idiomas (docs/I18N.md): cambiar a inglés, portugués y coreano desde el menú de perfil y desde Mi cuenta;
- * la preferencia se guarda; el navegador decide antes de elegir.
+ * la preferencia se guarda; el navegador no decide (español hasta que se elige otro).
  *   npm run build && npm run start:demo ; node scripts/smoke-i18n.cjs
  */
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -10,14 +10,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
 (async () => {
   const b = await chromium.launch();
-  // Navegador en portugués, sin preferencia guardada → portugués.
+  // Navegador en portugués, sin preferencia guardada → español (el navegador no decide).
   const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'pt-BR' });
   const p = await ctx.newPage();
   await p.goto(`${BASE}/admin/login`);
   await p.click('[data-testid="demo-rep@enjoy.test"]');
   await p.waitForURL(/\/admin/);
   await p.goto(`${BASE}/admin/notifications`);
-  assert((await p.getAttribute('html', 'lang')) === 'pt' && (await p.textContent('nav[aria-label]')).includes('Início'), 'navegador en portugués → consola en portugués');
+  assert((await p.getAttribute('html', 'lang')) === 'es' && (await p.textContent('nav[aria-label]')).includes('Inicio'), 'navegador en portugués → consola en español');
 
   // Menú de perfil → English.
   await p.click('[data-testid=profile]');
