@@ -39,7 +39,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const text = await (await p.request.get(`${BASE}/api/dev/outbox?tag=daily&to=rep@enjoy.test&format=text`)).text();
   assert(/^Enjoy the Club: \d+ cosas? para hoy/.test(text), 'asunto: cuántas cosas para hoy');
   assert(text.includes('Club Sol') && text.includes('TE HAN ABIERTO LA PROPUESTA'), 'Club Sol: la han abierto');
-  assert(text.includes('Hotel Mar Azul') && text.includes('SIN PRÓXIMO PASO'), 'Mar Azul: sin próximo paso');
+  // Cada propuesta sale una vez, en su motivo más urgente (src/lib/notify/daily.ts): si smoke-analytics ya abrió
+  // Mar Azul como cliente, sale en «Te han abierto»; si no, en «Sin próximo paso».
+  const section = (name) => text.split(/\n(?=[A-ZÁÉÍÓÚÑ ]+ · \d+\n)/).find((s) => s.startsWith(name)) ?? '';
+  const marAzul = section('SIN PRÓXIMO PASO').includes('Hotel Mar Azul') ? 'sin próximo paso' : section('TE HAN ABIERTO').includes('Hotel Mar Azul') ? 'abierta' : '';
+  assert(marAzul !== '', `Mar Azul: ${marAzul || 'no aparece'}`);
   const page = await ctx.newPage();
   await page.goto(`${BASE}/api/dev/outbox?tag=daily&to=rep@enjoy.test`);
   if (OUT) await page.screenshot({ path: `${OUT}/daily-email.png`, fullPage: true });
