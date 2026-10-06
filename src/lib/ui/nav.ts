@@ -32,7 +32,11 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
     { href: '/admin', label: partner ? L.myAccounts : L.dossiers, icon: (partner ? 'store' : 'file-text') as IconName, testid: 'nav-dossiers', tabs: [
       { href: '/admin', label: partner ? L.myAccounts : L.dossiers, exact: true }, { href: '/admin/dossiers', label: '', show: false }, { href: '/admin/analytics', label: L.analytics, testid: 'tab-analytics' },
     ] },
-    ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, testid: 'nav-accounts', tabs: [] }] : []),
+    // Cuentas = empresas + personas + importar (docs/CRM_DINAMICO.md fase 2).
+    ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, testid: 'nav-accounts', tabs: [
+      { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/people', label: L.people, testid: 'tab-people' },
+      { href: '/admin/import', label: L.import, show: perms.manageAccounts, testid: 'tab-import' },
+    ] }] : []),
     { href: '/admin/learn', label: L.learn, icon: 'graduation-cap', testid: 'nav-learn', tabs: [{ href: '/admin/learn', label: L.learn }, { href: '/admin/wins', label: L.wins, testid: 'tab-wins' }] },
     { href: '/admin/commissions', label: L.myCommissions, icon: 'wallet', testid: 'nav-my-commissions', tabs: [{ href: '/admin/commissions', label: L.myCommissions, exact: true }] },
   ];

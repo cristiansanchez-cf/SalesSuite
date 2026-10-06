@@ -1,0 +1,84 @@
+---
+/** Importar al CRM (docs/CRM_DINAMICO.md §Importar): subir un CSV, revisarlo y deshacer lo importado. */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { i18n } from '~/lib/i18n';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.manageAccounts) return Astro.rewrite('/admin/forbidden');
+const { m, f: fmt } = i18n(Astro, peopleMessages);
+const I = m.import;
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const undone: { people: number; companies: number }[] = [];
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let to = '';
+  result = await formAction(async () => {
+    if (str('action') === 'upload') {
+      const file = f.get('file');
+      if (!(file instanceof File) || file.size === 0) throw new AdminError(422, 'El archivo está vacío');
+      const id = await admin.crm.importStart(file.name, await file.text(), str('target') === 'contact' ? 'contact' : 'account');
+      to = `/admin/import/${id}`;
+    } else if (str('action') === 'undo') {
+      const r = await admin.crm.importUndo(str('id'));
+      if (r) undone.push(r);
+    }
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+const history = await admin.crm.imports();
+---
+<AdminLayout title={I.title}>
+  <PageHeader eyebrow={I.eyebrow} title={I.title} lede={I.lede} />
+  {undone[0] && <div class="mb-4"><Alert kind="success" title={I.okUndone(undone[0].people, undone[0].companies)} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  <form method="post" enctype="multipart/form-data" class="co-card mb-6 grid max-w-2xl gap-4" data-testid="import-upload">
+    <input type="hidden" name="action" value="upload" />
+    <fieldset class="grid gap-2">
+      <legend class="co-field mb-1">{I.what}</legend>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <label class="co-option !p-3"><input type="radio" name="target" value="account" checked /><span class="flex items-center gap-2 co-row-title"><Icon name="store" size={16} />{I.accounts}</span></label>
+        <label class="co-option !p-3" data-testid="import-target-contact"><input type="radio" name="target" value="contact" /><span class="flex items-center gap-2 co-row-title"><Icon name="user" size={16} />{I.contacts}</span></label>
+      </div>
+    </fieldset>
+    <label class="co-field">{I.file} <span class="co-help">{I.fileHelp}</span>
+      <input class="co-input" type="file" name="file" accept=".csv,text/csv" required data-testid="import-file" /></label>
+    <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="import-submit"><Icon name="upload" size={16} />{I.upload}</button>
+  </form>
+
+  <section class="co-section">
+    <div class="co-section__head"><h2 class="text-eyebrow">{I.history}</h2></div>
+    {history.length === 0 ? <p class="co-meta">{I.noHistory}</p> : (
+      <ul class="co-rows" data-testid="import-history">
+        {history.map((h) => (
+          <li class="co-row" data-status={h.status}>
+            <span class="co-row__lead"><Icon name={h.target === 'contact' ? 'user' : 'store'} /></span>
+            <a class="co-row__main text-inherit !no-underline" href={`/admin/import/${h.id}`}>
+              <span class="co-row-title">{h.fileName}</span>
+              <span class="co-meta">{I.status[h.status]} · {fmt.relative(h.createdAt)}{h.stats.rows ? ` · ${I.rows(h.stats.rows)}` : ''}
+                {h.status === 'done' && h.stats.accountsCreated !== undefined ? ` · +${(h.stats.accountsCreated ?? 0)} ${I.stat.accountsCreated.toLowerCase()} · +${h.stats.contactsCreated ?? 0} ${I.stat.contactsCreated.toLowerCase()}` : ''}</span>
+            </a>
+            {h.status === 'done' && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`undo-${h.id}`} data-testid="import-undo"><Icon name="rotate-ccw" size={14} />{I.undo}</button>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+  {history.filter((h) => h.status === 'done').map((h) => (
+    <ConfirmDialog id={`undo-${h.id}`} title={I.undoTitle(h.fileName)} confirmLabel={I.undo} danger does={I.undoDoes} doesNot={I.undoDoesNot} testid="undo-dialog">
+      <input type="hidden" name="action" value="undo" /><input type="hidden" name="id" value={h.id} />
+    </ConfirmDialog>
+  ))}
+</AdminLayout>

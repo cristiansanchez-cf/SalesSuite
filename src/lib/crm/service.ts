@@ -219,6 +219,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const ok = kind === 'account' ? await accounts.updateAccount(id, { tags: clean }).catch(mapError) : await db.updateContact(id, { tags: clean }).catch(mapError);
     if (!ok) throw new AdminError(403, 'Sin permiso para esta operación');
   }
+  /** Nombres de unas empresas (p. ej. los grupos de una lista). */
+  async function names(ids: string[]): Promise<Map<string, string>> {
+    requireUse();
+    const want = [...new Set(ids.filter(Boolean))];
+    if (!want.length) return new Map();
+    const rows = want.length <= 100 ? await accounts.listAccounts(t, { ids: want, limit: want.length }) : await allAccounts();
+    return new Map(rows.filter((a) => want.includes(a.id)).map((a) => [a.id, a.name]));
+  }
   /** Listas que existen en el espacio (para elegir vista o al importar). */
   async function lists(): Promise<Array<{ tag: string; accounts: number; people: number }>> {
     requireUse();
@@ -411,7 +419,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
-    company, moveToGroup, setTags, lists,
+    company, moveToGroup, setTags, lists, names,
     imports, importStart, importDraft, importPreview, importRun, importUndo,
   };
 }

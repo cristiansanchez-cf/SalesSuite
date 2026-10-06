@@ -559,3 +559,8 @@ html.console select:not([multiple]):not([size]) {
   background-repeat: no-repeat; background-position: right .85rem center; background-size: 16px; text-overflow: ellipsis;
 }
 .co-chip--quiet { border-style: dashed; color: var(--co-ink-dim); }
+
+/* Barra de selección en bloque (Cuentas → mover a un grupo). */
+.co-bulkbar { position: fixed; z-index: 40; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 14px; background: var(--co-canvas-elevated); border: 1px solid var(--co-rule); box-shadow: 0 12px 32px rgb(0 0 0 / .18); }
+.co-bulkbar[hidden] { display: none; }

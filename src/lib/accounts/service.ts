@@ -42,7 +42,9 @@ export interface AccountView extends Account {
 export interface Colleague { userId: string; name: string; email: string; phone: string | null; role: MemberRecord['role']; zones: string[] }
 export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: AccountState | 'all'; q?: string; zoneId?: string; limit?: number;
   /** Filtros por campo del CRM: clave → valor (opción, «yes»/«no» o texto). */
-  fields?: Record<string, string> }
+  fields?: Record<string, string>;
+  /** Solo las de una lista (etiqueta). */
+  tag?: string }
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -105,9 +107,9 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     let scope = f.scope ?? 'zone';
     if (scope === 'zone' && !t.myZoneIds.length) scope = 'all';
     const zoneIds = f.zoneId ? [...withDescendants(t.zones, [f.zoneId])] : scope === 'zone' ? [...withDescendants(t.zones, t.myZoneIds)] : undefined;
-    const rows = await db.listAccounts(s.tenantId, { zoneIds, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, limit: Math.min(f.limit ?? 500, 2000) });
+    const rows = await db.listAccounts(s.tenantId, { zoneIds, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, tag: f.tag || undefined, limit: Math.min(f.limit ?? 5000, 20000) });
     const members = await names();
-    const crm = f.fields && Object.values(f.fields).some(Boolean) ? await db.listFields(s.tenantId) : [];
+    const crm = f.fields && Object.values(f.fields).some(Boolean) ? (await db.listFields(s.tenantId)).filter((x) => x.target === 'account' && f.fields?.[x.key]) : [];
     const byField = (a: Account) => crm.every((fd) => matches(fd, a.fields[fd.key], f.fields?.[fd.key] ?? ''));
     const all = rows.filter(byField).map((a) => view(a, t.zones, members));
     const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 3, customer: 4, blocked: 5 };
