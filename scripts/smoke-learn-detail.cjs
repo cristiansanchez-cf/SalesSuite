@@ -97,11 +97,17 @@ function expectedShots(sg, catalog) {
   await p.goto(`${BASE}/admin/learn`);
   await p.waitForSelector('[data-testid=segment]');
   const listed = await p.$$eval('[data-testid=segment]', (els) => els.map((e) => e.getAttribute('href').split('/').pop()));
-  const same = (src) => src.segments.length === listed.length && src.segments.every((x) => listed.includes(x.key));
+  // Otros smokes pueden añadir sectores (puntos de partida, configuración con IA…): basta con que estén todos los de Enjoy.
+  const same = (src) => src.segments.every((x) => listed.includes(x.key));
   const src = [fromTenant(), fromFixtures()].find(same);
   assert(!!src, `Aprende lista todos los sectores de Enjoy (${listed.join(', ')})`);
   if (!src) { await b.close(); return; }
   console.log(`nota: datos esperados de ${src.name}`);
+  const extra = listed.filter((k) => !src.segments.some((x) => x.key === k));
+  for (const k of extra) {
+    await p.goto(`${BASE}/admin/learn/sector/${k}`, { waitUntil: 'domcontentloaded' });
+    assert((await p.locator('iframe').count()) === 0, `[${k}] (sector añadido por otro smoke) ningún <iframe>`);
+  }
   const { catalog, plays } = src;
   const playByTitle = new Map(plays.map((pl) => [pl.title, pl]));
 
