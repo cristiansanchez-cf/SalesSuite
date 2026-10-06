@@ -55,10 +55,10 @@ describe('screenConfig: carátulas canción a canción', () => {
     expect(c.songs).toEqual(MUSIC_STYLES[DEFAULT_STYLE].songs.map(({ song, artist }) => ({ song, artist })));
     expect(c.assets.covers).toEqual(['https://c/1', 'https://c/2']);
   });
-  // KNOWN BUG: musicStyles: {} pasa el schema (z.record) pero rompe la pantalla (style undefined → .songs).
-  test.fails('musicStyles vacío (válido según el schema) no rompe: caen las canciones de music.ts', () => {
+  test('musicStyles vacío (válido según el schema) no rompe: caen las canciones de music.ts', () => {
     expect(liveScreenSchema.shape.musicStyles.safeParse({}).success).toBe(true);
-    expect(() => screenConfig(base({ musicStyles: {} }), {}, SCENES)).not.toThrow();
+    const c = screenConfig(base({ musicStyles: {} }), {}, SCENES);
+    expect(c.songs).toEqual(MUSIC_STYLES[DEFAULT_STYLE].songs.map(({ song, artist }) => ({ song, artist })));
   });
 });
 

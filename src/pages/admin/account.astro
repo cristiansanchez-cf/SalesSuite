@@ -60,6 +60,7 @@ if (form?.get('action') === 'locale') {
   } else {
     const u = demoDb().users.find((x) => x.id === admin.session.userId);
     if (u) { u.display_name = name; u.phone = phone || null; }
+    if (setup) return Astro.redirect(setupParam === '1' ? '/admin/welcome' : '/admin', 303);
     ok = password ? m.account.savedDemo : m.account.saved;
   }
 }

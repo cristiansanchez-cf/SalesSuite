@@ -95,11 +95,11 @@ function tr(es, locale) {
       const want = tr(es, loc);
       assert(r.status >= 400 && r.error === want, `${loc}: error «${es}» → «${r.error}»`);
     }
-    // Validación del esquema en la propia ruta (api/dossiers/[id].ts): devuelve el texto literal, sin pasar por AdminError.
+    // Validación del esquema en la propia ruta (api/dossiers/[id].ts), también traducida.
     const r = await call(dossierId, { op: 'setVisible', itemId: 'no-es-uuid', visible: 1 });
-    if (r.error === tr('Datos no válidos', loc)) assert(true, `${loc}: «Datos no válidos» traducido`);
-    // KNOWN BUG: api/dossiers/[id].ts responde 'Datos no válidos' (y 'Dossier no encontrado' con id mal formado) sin traducir (docs/TESTING.md → Bugs encontrados)
-    else console.log('KNOWN:', `${loc}: error de validación del builder sin traducir («${r.error}», esperado «${tr('Datos no válidos', loc)}»)`);
+    assert(r.error === tr('Datos no válidos', loc), `${loc}: «Datos no válidos» traducido («${r.error}»)`);
+    const bad = await call('no-es-un-uuid', { op: 'setVisible', itemId: 'x', visible: true });
+    assert(bad.error === tr('Dossier no encontrado', loc), `${loc}: id mal formado → «${bad.error}»`);
   };
   await check('pt');
 

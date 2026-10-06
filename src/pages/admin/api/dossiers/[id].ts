@@ -18,25 +18,25 @@ const UUID = /^[0-9a-f-]{36}$/i;
 
 export const GET: APIRoute = async ({ params, locals }) => {
   if (!locals.admin) return json({ error: 'No autenticado' }, 401);
-  if (!UUID.test(params.id ?? '')) return json({ error: 'Dossier no encontrado' }, 404);
+  if (!UUID.test(params.id ?? '')) return fail(new AdminError(404, 'Dossier no encontrado'));
   try { return json(await locals.admin.service.getState(params.id!)); } catch (e) { return fail(e); }
 };
 
 export const POST: APIRoute = async ({ params, locals, request }) => {
   if (!locals.admin) return json({ error: 'No autenticado' }, 401);
   if (!request.headers.get('content-type')?.startsWith('application/json')) return json({ error: 'Content-Type debe ser application/json' }, 415);
-  if (!UUID.test(params.id ?? '')) return json({ error: 'Dossier no encontrado' }, 404);
+  if (!UUID.test(params.id ?? '')) return fail(new AdminError(404, 'Dossier no encontrado'));
   const body = await request.json().catch(() => null);
   const parsed = builderOpSchema.safeParse(body);
   if (!parsed.success) {
-    return json({ error: 'Datos no válidos', details: parsed.error.issues.map((i) => `${i.path.join('.') || 'op'}: ${i.message}`) }, 400);
+    return fail(new AdminError(400, 'Datos no válidos', parsed.error.issues.map((i) => `${i.path.join('.') || 'op'}: ${i.message}`)));
   }
   try { return json(await locals.admin.service.apply(params.id!, parsed.data)); } catch (e) { return fail(e); }
 };
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
   if (!locals.admin) return json({ error: 'No autenticado' }, 401);
-  if (!UUID.test(params.id ?? '')) return json({ error: 'Dossier no encontrado' }, 404);
+  if (!UUID.test(params.id ?? '')) return fail(new AdminError(404, 'Dossier no encontrado'));
   try {
     await locals.admin.service.deleteDossier(params.id!);
     return new Response(null, { status: 204 });

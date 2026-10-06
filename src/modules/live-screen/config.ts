@@ -16,7 +16,8 @@ export interface ScreenSource {
 export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<{ scene: string; video?: boolean; text?: string }>) {
   const ownPhotos = (media.photos ?? []).filter(Boolean);
   // Canciones del estilo de SU local (Personalizar → estilo musical).
-  const styles = p.musicStyles ?? MUSIC_STYLES;
+  // Sin estilos propios (o con la lista vacía, que el schema admite), los de music.ts.
+  const styles = p.musicStyles && Object.keys(p.musicStyles).length ? p.musicStyles : MUSIC_STYLES;
   const style = styles[media.musicStyle ?? ''] ?? styles[DEFAULT_STYLE] ?? Object.values(styles)[0];
   const songs = style.songs;
   // Carátula canción a canción (la que no tenga, vinilo de color en el cliente): antes, si faltaba una, se perdían todas.

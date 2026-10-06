@@ -94,8 +94,8 @@ const veto = p.role === 'guardian';
     )}
 
     <div class="flex flex-wrap gap-3">
-      <a class="co-btn co-btn--primary" href={`/admin/compose?persona=${p.id}`} data-testid="compose-persona">{msg.personaCard.compose(p.name)} <span aria-hidden="true">→</span></a>
-      <a class="co-btn co-btn--ghost" href={`/admin/learn/sector/${v.segment.key}${qs}`}>{msg.sector.backSector(v.segment.name)}</a>
+      <a class="co-btn co-btn--primary max-w-full !whitespace-normal py-2 text-center !leading-tight" href={`/admin/compose?persona=${p.id}`} data-testid="compose-persona">{msg.personaCard.compose(p.name)} <span aria-hidden="true">→</span></a>
+      <a class="co-btn co-btn--ghost max-w-full !whitespace-normal py-2 text-center !leading-tight" href={`/admin/learn/sector/${v.segment.key}${qs}`}>{msg.sector.backSector(v.segment.name)}</a>
     </div>
   </div>
 </AdminLayout>

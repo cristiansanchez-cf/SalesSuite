@@ -25,10 +25,10 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
       <p class="co-lede !text-lg">{m.lede}</p>
     </header>
 
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <div class="co-card grid !p-5"><span class="co-figure text-4xl">{spaces.length}</span><span class="co-meta">{m.spaces}</span></div>
       <div class="co-card grid !p-5"><span class="co-figure text-4xl">{total.members}</span><span class="co-meta">{m.members}</span></div>
-      <div class="co-card grid !p-5"><span class="co-figure text-4xl">{f.money(total.revenue, 'EUR')}</span><span class="co-meta">{m.revenue}</span></div>
+      <div class="co-card col-span-2 grid !p-5 sm:col-span-1"><span class="co-figure text-4xl">{f.money(total.revenue, 'EUR')}</span><span class="co-meta">{m.revenue}</span></div>
     </div>
 
     <ul class="grid gap-3 p-0 sm:grid-cols-2">{spaces.map((x) => {

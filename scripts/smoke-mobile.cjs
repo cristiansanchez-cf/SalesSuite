@@ -38,21 +38,7 @@ const EXCLUDED_ASTRO = {
  * Desbordes conocidos: clave «ruta-o-fichero» → motivo. No fallan el CI, salen como KNOWN.
  * KNOWN BUG: ... (docs/TESTING.md → Bugs encontrados)
  */
-const KNOWN = {
-  // KNOWN BUG: el bloque del webhook de Stripe no encoge: <code class="co-input !w-auto flex-1 truncate"> con la URL entera
-  // dentro de un flex-wrap sin min-w-0 (el truncate no actúa) → la página mide ~549px. (docs/TESTING.md → Bugs encontrados)
-  '/admin/prices': 'code.co-input con la URL del webhook de Stripe (Pagos y comisiones automáticas) no se trunca',
-  // KNOWN BUG: el botón «Preparar un mensaje para locales de ocio nocturno →» (a.co-btn, sin salto de línea) es más ancho que
-  // el móvil cuando el nombre del sector es largo → ~417px. (docs/TESTING.md → Bugs encontrados)
-  '/admin/learn/sector/ocio-nocturno': 'a.co-btn «Preparar un mensaje para locales de ocio nocturno →» no parte la línea',
-  // KNOWN BUG: igual en la ficha del interlocutor: «Preparar mensaje para un/a propietario/gerente del local →» → ~454px.
-  // (docs/TESTING.md → Bugs encontrados)
-  // KNOWN BUG: en la plataforma, la cifra de ingresos (span.co-figure.text-4xl en un grid-cols-3) no cabe en cuanto pasa de
-  // ~1.000 € («1200,00 €» tras smoke-commissions) → ~410px. Con el servidor recién arrancado (0,00 €) cabe.
-  // (docs/TESTING.md → Bugs encontrados)
-  '/admin/platform': 'span.co-figure.text-4xl de ingresos en la rejilla de 3 columnas, con importes de 4+ cifras',
-  '/admin/learn/sector/ocio-nocturno/propietario-local':'a.co-btn--primary «Preparar mensaje para un/a propietario/gerente del local →» no parte la línea',
-};
+const KNOWN = {};
 
 const A = 'admin@enjoy.test', R = 'rep@enjoy.test', D = 'dj@enjoy.test', S = 'super@cofundo.test';
 const UUID = '[0-9a-f-]{36}';

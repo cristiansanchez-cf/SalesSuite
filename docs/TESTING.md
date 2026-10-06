@@ -108,28 +108,20 @@ Los smokes nuevos usan nombres únicos (`Date.now().toString(36)`) y pasan tanto
 
 ## Bugs encontrados
 
-No están arreglados (este checkpoint no toca `src/`). Cada uno está marcado en su test: `test.fails` en vitest o `KNOWN:` en el log del smoke. Cuando se arregle, el `test.fails` empieza a fallar, y hay que cambiarlo a `test` (o el `KNOWN` a `assert`).
+Todos están **arreglados**, y su test (antes `test.fails` o `KNOWN:`) ahora es una comprobación normal: si el bug vuelve, el CI falla. Para un bug nuevo que no se arregle en el momento: márcalo como `test.fails` (vitest) o con `console.log('KNOWN: …')` (smoke) y apúntalo aquí, con los pasos para reproducirlo.
 
-1. **Errores de validación del editor de propuestas sin traducir.** `src/pages/admin/api/dossiers/[id].ts` responde el texto literal `'Datos no válidos'` cuando falla el schema, y `'Dossier no encontrado'` con un id mal formado. No pasa por `localizeError`, aunque las traducciones existen en `src/lib/i18n/errors.ts`. `talk-track.ts` y `similar.ts` hacen lo mismo con ids que no son UUID.
-   *Reproducir:* entrar, cambiar a English desde el menú de perfil. En la consola del navegador: `fetch('/admin/api/dossiers/<id de una propuesta tuya>', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({op:'setVisible', itemId:'x', visible:1})}).then(r => r.json())` → `{error: 'Datos no válidos'}`; se espera «Invalid data». *Test:* `smoke-profile` (KNOWN).
-2. **En DEMO, guardar «Mi cuenta» con `?setup=1` no lleva a la bienvenida.** La redirección a `/admin/welcome` solo está en la rama Supabase de `src/pages/admin/account.astro`. Es menor y solo pasa en demo.
-   *Reproducir:* `npm run start:demo`, entrar, abrir `/admin/account?setup=1`, poner un nombre y guardar → te quedas en la misma página. *Test:* `smoke-auth` (KNOWN).
-3. **`/admin/prices` desborda en el móvil (549 px de ancho en una pantalla de 390).** Lo causa el bloque «Pagos y comisiones automáticas»: la URL del webhook de Stripe (`code.co-input.!w-auto.flex-1.truncate`) está dentro de un `span.flex.flex-wrap` sin `min-w-0`, así que el `truncate` no actúa.
-   *Reproducir:* admin@enjoy.test en un móvil de 390 px → `/admin/prices` → hay scroll horizontal. *Test:* `smoke-mobile` (KNOWN).
-4. **Ficha del sector «Locales de ocio nocturno» desborda en el móvil (417 px).** El botón «Preparar un mensaje para locales de ocio nocturno →» (`a.co-btn.co-btn--ghost`) no parte la línea. Con «Bodas» cabe porque el nombre es más corto.
-   *Reproducir:* cualquier rol, 390 px → `/admin/learn/sector/ocio-nocturno`. *Test:* `smoke-mobile` (KNOWN).
-5. **Ficha del actor «propietario/gerente del local» desborda en el móvil (454 px).** Pasa lo mismo con «Preparar mensaje para un/a propietario/gerente del local →» (`a.co-btn.co-btn--primary`).
-   *Reproducir:* 390 px → `/admin/learn/sector/ocio-nocturno/propietario-local`. *Test:* `smoke-mobile` (KNOWN).
-6. **`/admin/platform` desborda en el móvil (410 px) en cuanto los ingresos tienen 4 cifras.** La cifra `span.co-figure.text-4xl` («1200,00 €») está en un `grid-cols-3` (`src/pages/admin/platform.astro:31`).
-   *Reproducir:* servidor demo recién arrancado → `node scripts/smoke-commissions.cjs` → super@cofundo.test a 390 px → `/admin/platform`. *Test:* `smoke-mobile` (KNOWN, solo cuando hay ingresos).
-7. **`screenConfig` rompe con `musicStyles: {}`**, aunque el schema lo da por bueno (`z.record` acepta un objeto vacío): `style` queda `undefined` y salta un error en `style.songs`. Una personalización con estilos musicales vacíos tumbaría la pantalla en vivo.
-   *Reproducir:* `screenConfig({venueName:'a', djName:'', photos:[], covers:[], autoplay:true, musicStyles:{}}, {}, [])` → `Cannot read properties of undefined (reading 'songs')`. *Test:* `src/modules/live-screen/config.test.ts` (`test.fails`).
-8. **`summarize` recorta por palabra una frase que termina justo en el máximo.** Busca `'. '` con espacio, así que no ve el punto del último carácter.
-   *Reproducir:* `summarize('Uno dos tres. Cuatro cinco seis.', 13)` → `'Uno dos…'`; se espera `'Uno dos tres.'`. *Test:* `summarize.test.ts` (`test.fails`).
-9. **`summarize` parte un emoji por la mitad** cuando no hay espacios: corta por unidades UTF-16.
-   *Reproducir:* `summarize('😀'.repeat(40), 10)` → deja medio emoji (`.isWellFormed() === false`). *Test:* `summarize.test.ts` (`test.fails`).
-10. **(Menor) `summarize` deja el `!` de una imagen Markdown.**
-    *Reproducir:* `summarize('![logo](https://x.test/l.png) Hola')` → `'!logo Hola'`. *Test:* `summarize.test.ts` (`test.fails`).
+| # | Bug | Arreglo | Test |
+|---|---|---|---|
+| 1 | Errores de validación del editor de propuestas sin traducir: `api/dossiers/[id].ts` respondía el texto literal «Datos no válidos» y «Dossier no encontrado» (con un id mal formado). `talk-track.ts` y `similar.ts` hacían lo mismo | Pasan por `AdminError`, que traduce al idioma de la petición | `smoke-profile` |
+| 2 | En DEMO, guardar «Mi cuenta» con `?setup=1` no llevaba a la bienvenida (la redirección solo estaba en la rama Supabase de `account.astro`) | La rama demo también redirige | `smoke-auth` |
+| 3 | `/admin/prices` desbordaba en el móvil (549 px): la URL del webhook de Stripe no se truncaba porque le faltaba `min-w-0` | `min-w-0` en la lista, el paso y el `code` | `smoke-mobile` |
+| 4 | Ficha del sector «Locales de ocio nocturno» desbordaba en el móvil (417 px): el botón «Preparar un mensaje para…» no partía la línea | Ese botón puede partir línea (solo en esa ficha; el estilo global de `.co-btn` no cambia) | `smoke-mobile` |
+| 5 | Ficha del actor «propietario/gerente del local» desbordaba en el móvil (454 px), por la misma causa | Igual, en sus dos botones | `smoke-mobile` |
+| 6 | `/admin/platform` desbordaba en el móvil (410 px) en cuanto los ingresos tenían 4 cifras | En el móvil, las cifras van en 2 columnas y los ingresos ocupan su propia fila; en escritorio sigue habiendo 3 | `smoke-mobile` |
+| 7 | `screenConfig` rompía con `musicStyles: {}` (el schema lo admite) y tumbaba la pantalla en vivo | Con la lista vacía usa los estilos de `music.ts` | `config.test.ts` |
+| 8 | `summarize` cortaba por palabra una frase que terminaba justo en el máximo | El final de frase en el último carácter también cuenta | `summarize.test.ts` |
+| 9 | `summarize` partía un emoji por la mitad | El corte nunca separa las dos mitades de un carácter | `summarize.test.ts` |
+| 10 | `summarize` dejaba el `!` de una imagen Markdown | La imagen deja solo su texto alternativo | `summarize.test.ts` |
 
 ### Datos del modo DEMO desfasados (no es un fallo de la app, pero limita los tests)
 

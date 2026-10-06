@@ -156,10 +156,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await g.goto(`${BASE}/admin/account?setup=1`);
   const nameInput = g.locator('form:has([name=name]) [name=name]').first();
   await nameInput.fill(`Nueva ${RUN}`);
-  await Promise.all([g.waitForLoadState(), nameInput.evaluate((i) => i.form.requestSubmit())]);
-  if (new URL(g.url()).pathname === '/admin/welcome') assert(true, 'Mi cuenta (setup=1) → bienvenida');
-  // KNOWN BUG: en DEMO, guardar Mi cuenta con ?setup=1 no redirige a /admin/welcome (solo lo hace la rama Supabase de account.astro) (docs/TESTING.md → Bugs encontrados)
-  else console.log('KNOWN:', `demo: Mi cuenta con ?setup=1 no lleva a la bienvenida al guardar (se queda en ${path(g)})`);
+  await Promise.all([g.waitForNavigation(), nameInput.evaluate((i) => i.form.requestSubmit())]);
+  assert(new URL(g.url()).pathname === '/admin/welcome', `Mi cuenta (setup=1) → bienvenida (${path(g)})`);
 
   assert(errors.length === 0, `sin errores JS (${errors.join(' | ')})`);
   await b.close();

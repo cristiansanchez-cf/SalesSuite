@@ -95,18 +95,13 @@ describe('summarize: más casos', () => {
     expect(s.endsWith('…')).toBe(true);
     expect(s.length).toBeLessThanOrEqual(51);
   });
-  // KNOWN BUG: si la frase termina justo en el carácter `max`, no se ve como final de frase (busca «. » con espacio)
-  // y se corta por palabra, perdiendo la última (docs/TESTING.md → Bugs encontrados).
-  test.fails('una frase que acaba exactamente en el máximo se queda entera', () => {
+  test('una frase que acaba exactamente en el máximo se queda entera', () => {
     expect(summarize('Uno dos tres. Cuatro cinco seis.', 13)).toBe('Uno dos tres.');
   });
-  // KNOWN BUG: con una «palabra» sin espacios (p. ej. una ristra de emojis) corta por unidades UTF-16 y deja medio emoji
-  // (docs/TESTING.md → Bugs encontrados).
-  test.fails('no parte un emoji por la mitad', () => {
+  test('no parte un emoji por la mitad', () => {
     expect(summarize('😀'.repeat(40), 10).isWellFormed()).toBe(true);
   });
-  // KNOWN BUG (menor): la imagen ![alt](src) deja el «!» delante del texto alternativo (docs/TESTING.md → Bugs encontrados).
-  test.fails('una imagen en Markdown no deja el «!»', () => {
+  test('una imagen en Markdown no deja el «!»', () => {
     expect(summarize('![logo](https://x.test/l.png) Hola')).toBe('logo Hola');
   });
   test('el código en línea conserva las comillas invertidas (el Markdown de jugadas no lo interpreta)', () => {

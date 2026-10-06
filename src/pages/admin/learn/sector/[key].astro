@@ -276,7 +276,7 @@ const step = () => ++n;
       {v.learned
         ? <span class="co-badge co-badge--ink" data-testid="sector-learned">{lm.sector.learned}</span>
         : <form method="post"><button class="co-btn co-btn--primary" type="submit" data-testid="sector-got">{lm.sector.got} <span aria-hidden="true">→</span></button></form>}
-      <a class:list={['co-btn', v.learned ? 'co-btn--primary' : 'co-btn--ghost']} href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)} <span aria-hidden="true">→</span></a>
+      <a class:list={['co-btn max-w-full !whitespace-normal py-2 text-center !leading-tight', v.learned ? 'co-btn--primary' : 'co-btn--ghost']} href={`/admin/compose?segment=${sg.id}`}>{msg.sector.compose(sg.name)} <span aria-hidden="true">→</span></a>
       {fromWelcome && <a class="co-btn co-btn--ghost" href={back.href}>{back.label}</a>}
     </div>
   </div>
