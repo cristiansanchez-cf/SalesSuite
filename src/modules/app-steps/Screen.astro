@@ -135,6 +135,12 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         </div>
       </Fragment>
     ) : screen === 'share-card' ? (
+      (s.exports ?? []).length ? (
+      <div class="as-cards" data-cards={s.exports.length}>
+        {s.exports.map((u, i) => <div class="as-card as-card--png" style={`--i:${i};background-image:url('${u.replace(/'/g, '%27')}')`}></div>)}
+        {s.exports.length > 1 && <span class="as-cards__dots">{s.exports.map((_, i) => <i style={`--i:${i}`}></i>)}</span>}
+      </div>
+      ) :
       <div class="as-cards" style={`--n:${cards.length}`} data-cards={cards.length}>
         {cards.map((k, i) => (
           <div class:list={['as-card', `as-card--${k}`]} style={`--i:${i};${cardBg(i)}`}>
@@ -480,6 +486,8 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-cards { position: absolute; inset: 0; overflow: hidden; background: #0b2a44; }
   .as-card { position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, #3fb4c9, transparent 55%), linear-gradient(170deg, #1a7a94, #082f4a); background-size: cover; background-position: center; color: #fff; opacity: 0; }
   .as-card:first-child { opacity: 1; }
+  /* Las exportadas (600 × 1066): llenan la pantalla, centradas */
+  .as-card--png { background-size: cover; background-position: center; }
   .as-card__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / .1), rgb(0 0 0 / .3) 45%, transparent 75%); }
   .as-stk { position: absolute; left: 24px; right: 24px; top: 92px; display: grid; justify-items: start; gap: 9px; font-family: var(--font-sans, inherit); text-shadow: 0 0 12px rgb(0 0 0 / .55); }
   .as-stk p { margin: 0; }
@@ -518,14 +526,18 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
     [data-cards='3'] .as-card { animation: as-cyc-3 9.6s infinite; } [data-cards='3'] .as-cards__dots i { animation: as-dot-3 9.6s infinite; }
     [data-cards='4'] .as-card { animation: as-cyc-4 12.8s infinite; } [data-cards='4'] .as-cards__dots i { animation: as-dot-4 12.8s infinite; }
     [data-cards='5'] .as-card { animation: as-cyc-5 16s infinite; } [data-cards='5'] .as-cards__dots i { animation: as-dot-5 16s infinite; }
+    [data-cards='6'] .as-card { animation: as-cyc-6 19.2s infinite; } [data-cards='6'] .as-cards__dots i { animation: as-dot-6 19.2s infinite; }
     .as-card, .as-cards__dots i { animation-delay: calc(var(--i) * 3.2s) !important; }
     .as-card:first-child, .as-cards__dots i:first-child { opacity: 0; background: rgb(255 255 255 / .45); }
     .as-card:first-child { animation-delay: 0s; }
   }
-  @keyframes as-cyc-2 { 0% { opacity: 0; transform: scale(1.06); } 4%, 48% { opacity: 1; } 52%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-3 { 0% { opacity: 0; transform: scale(1.06); } 3%, 31% { opacity: 1; } 35%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-4 { 0% { opacity: 0; transform: scale(1.06); } 2.5%, 23% { opacity: 1; } 26%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-5 { 0% { opacity: 0; transform: scale(1.06); } 2%, 18% { opacity: 1; } 21%, 100% { opacity: 0; transform: scale(1); } }
+  /* Cada tarjeta entra encima de la anterior y la anterior no se va hasta que la nueva está entera (sin el «fundido a oscuro») */
+  @keyframes as-cyc-2 { 0% { opacity: 0; transform: scale(1.06); } 5%, 54% { opacity: 1; } 55%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-3 { 0% { opacity: 0; transform: scale(1.06); } 3.5%, 36.5% { opacity: 1; } 37.5%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-4 { 0% { opacity: 0; transform: scale(1.06); } 2.5%, 27.5% { opacity: 1; } 28.5%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-5 { 0% { opacity: 0; transform: scale(1.06); } 2%, 22% { opacity: 1; } 23%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-6 { 0% { opacity: 0; transform: scale(1.06); } 2%, 18.6% { opacity: 1; } 19.4%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-dot-6 { 0%, 16% { background: #fff; } 16.7%, 100% { background: rgb(255 255 255 / .45); } }
   @keyframes as-dot-2 { 0%, 49% { background: #fff; } 50%, 100% { background: rgb(255 255 255 / .45); } }
   @keyframes as-dot-3 { 0%, 32% { background: #fff; } 33%, 100% { background: rgb(255 255 255 / .45); } }
   @keyframes as-dot-4 { 0%, 24% { background: #fff; } 25%, 100% { background: rgb(255 255 255 / .45); } }
