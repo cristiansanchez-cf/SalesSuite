@@ -9,6 +9,19 @@ type T = [en: string, pt: string, ko: string];
 
 /** Español → [inglés, portugués, coreano]. */
 const EXACT: Record<string, T> = {
+  // ------------------------------------------------------------ CRM: personas, grupos e importación
+  'Persona no encontrada': ['Person not found', 'Pessoa não encontrada', '사람을 찾을 수 없습니다'],
+  'Importación no encontrada': ['Import not found', 'Importação não encontrada', '가져오기를 찾을 수 없습니다'],
+  'Una empresa no puede ser su propio grupo': ['A company cannot be its own group', 'Uma empresa não pode ser o seu próprio grupo', '회사는 자기 자신의 그룹이 될 수 없습니다'],
+  'Ese grupo ya está dentro de otro grupo': ['That group is already inside another group', 'Esse grupo já está dentro de outro grupo', '그 그룹은 이미 다른 그룹에 속해 있습니다'],
+  'Esta empresa ya es grupo de otras': ['This company is already a group for others', 'Esta empresa já é grupo de outras', '이 회사는 이미 다른 회사들의 그룹입니다'],
+  'Elige una empresa o escribe su nombre': ['Pick a company or type its name', 'Escolha uma empresa ou escreva o nome', '회사를 고르거나 이름을 입력하세요'],
+  'El archivo está vacío': ['The file is empty', 'O arquivo está vazio', '파일이 비어 있습니다'],
+  'Máximo 5000 filas por importación': ['Up to 5000 rows per import', 'Máximo de 5000 linhas por importação', '한 번에 최대 5000행까지 가져올 수 있습니다'],
+  'Esta importación ya se hizo': ['This import has already been run', 'Esta importação já foi feita', '이미 실행된 가져오기입니다'],
+  'Esta importación no se puede deshacer': ['This import cannot be undone', 'Esta importação não pode ser desfeita', '이 가져오기는 되돌릴 수 없습니다'],
+  'No hay filas que importar': ['There are no rows to import', 'Não há linhas para importar', '가져올 행이 없습니다'],
+  'Solo un admin puede crear campos nuevos': ['Only an admin can create new fields', 'Só um admin pode criar campos novos', '관리자만 새 필드를 만들 수 있습니다'],
   // ------------------------------------------------------------ no encontrado
   'Sector no encontrado': ['Sector not found', 'Setor não encontrado', '업종을 찾을 수 없습니다'],
   'Módulo no encontrado': ['Module not found', 'Módulo não encontrado', '모듈을 찾을 수 없습니다'],

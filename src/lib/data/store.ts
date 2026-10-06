@@ -97,10 +97,22 @@ export interface AccountRow {
   created_by: string | null; created_at: string;
   /** Valores de los campos del CRM (docs/CRM_DINAMICO.md). */
   fields?: Record<string, unknown>;
+  /** Grupo (otra empresa), listas e importación de origen (fase 2). */
+  parent_id?: string | null; tags?: string[]; import_id?: string | null;
 }
 export interface CrmFieldRow {
   id: string; tenant_id: string; key: string; label: string; type: string; options: Array<{ key: string; label: string }>; grp: string | null;
   position: number; help: string | null; required: boolean; in_list: boolean; filterable: boolean; segments: string[]; archived_at: string | null; created_at: string;
+  target?: 'account' | 'contact'; tags?: string[]; is_stage?: boolean;
+}
+export interface CrmContactRow {
+  id: string; tenant_id: string; name: string; email: string | null; phone: string | null; instagram: string | null; linkedin: string | null; city: string | null; notes: string | null;
+  fields: Record<string, unknown>; tags: string[]; owner_id: string | null; import_id: string | null; created_by: string | null; created_at: string; updated_at: string;
+}
+export interface CrmContactAccountRow { tenant_id: string; contact_id: string; account_id: string; role: string | null; created_at: string }
+export interface CrmImportRow {
+  id: string; tenant_id: string; created_by: string | null; file_name: string; target: 'account' | 'contact'; headers: string[]; rows: string[][];
+  mapping: Record<string, unknown>; status: 'draft' | 'done' | 'undone'; stats: Record<string, unknown>; created_at: string; done_at: string | null;
 }
 export interface AccountTouchRow { id: string; tenant_id: string; account_id: string; user_id: string | null; kind: string; note: string | null; created_at: string }
 export interface RevenueEventRow {
@@ -170,6 +182,9 @@ export interface DemoDb {
   account_rules: AccountRulesRow[];
   account: AccountRow[];
   crm_field: CrmFieldRow[];
+  crm_contact: CrmContactRow[];
+  crm_contact_account: CrmContactAccountRow[];
+  crm_import: CrmImportRow[];
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];
@@ -339,6 +354,15 @@ export function freshDemoDb(): DemoDb {
       demoAccount('00000000-0000-4000-8000-0000000ac005', 'Sala Gran Vía', Z.mad, { status: 'blocked', blocked_reason: 'El dueño ha pedido no recibir más comerciales.' }),
     ],
     account_touch: [],
+    // Personas de ejemplo (fase 2): Marta lleva Club Sol.
+    crm_contact: [
+      { id: '00000000-0000-4000-8000-0000000cc501', tenant_id: ENJOY, name: 'Marta Ruiz', email: null, phone: null, instagram: null, linkedin: null, city: 'Valencia',
+        notes: null, fields: {}, tags: [], owner_id: REP, import_id: null, created_by: REP, created_at: ago(10), updated_at: ago(10) },
+    ],
+    crm_contact_account: [
+      { tenant_id: ENJOY, contact_id: '00000000-0000-4000-8000-0000000cc501', account_id: '00000000-0000-4000-8000-0000000ac001', role: 'Gerente', created_at: ago(10) },
+    ],
+    crm_import: [],
     // Campos del CRM de ejemplo (docs/CRM_DINAMICO.md): los define cada espacio.
     crm_field: [
       { id: '00000000-0000-4000-8000-0000000cf001', tenant_id: ENJOY, key: 'tiene-pantalla', label: '¿Tiene pantalla?', type: 'checkbox', options: [], grp: 'El local',

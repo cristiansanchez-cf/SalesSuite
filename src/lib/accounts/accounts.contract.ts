@@ -8,6 +8,7 @@ import type { NotifyDb } from '../notify/db';
 import type { PlaybookDb } from '../playbook/db';
 import type { TenantContext } from '../types';
 import type { AccountsDb } from './db';
+import type { CrmDb } from '../crm/db';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const U = {
@@ -25,6 +26,7 @@ export interface AccountsEnv {
   evidenceDbFor(userId: string): EvidenceDb;
   notifyDbFor(userId: string): NotifyDb;
   accountsDbFor(userId: string): AccountsDb;
+  crmDbFor(userId: string): CrmDb;
   /** Segundo comercial (lo crea el entorno). */
   rep2: { id: string; email: string };
   /** Simula el paso del tiempo: caduca la reserva de una cuenta. */
@@ -44,7 +46,7 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const r = await buildAdminContext(E.adminDbFor(u.id), { id: u.id, email: u.email, name: null }, tenant, 'demo', {
         identity: null, assets: { async upload() { throw new Error('x'); } }, supabase: null,
         playbookDb: E.playbookDbFor(u.id), evidenceDb: E.evidenceDbFor(u.id), partnerDb: () => E.partnerDbFor(u.id),
-        notifyDb: E.notifyDbFor(u.id), accountsDb: (id) => E.accountsDbFor(id),
+        notifyDb: E.notifyDbFor(u.id), accountsDb: (id) => E.accountsDbFor(id), crmDb: (id) => E.crmDbFor(id),
       });
       if (r.kind !== 'ok') throw new Error(`login ${u.email}: ${r.kind}`);
       return r.admin;
@@ -223,6 +225,100 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect((await rep.accounts.get(sol)).account.fields['tiene-pantalla']).toBe(true);
       await admin.accounts.moveField((await admin.accounts.crmFields()).find((f) => f.key === 'aforo')!.id, -1);
       expect((await admin.accounts.crmFields()).map((f) => f.key)).toEqual(['aforo', 'noches']);
+    });
+    test('CRM fase 2: personas en varias empresas, grupos de un nivel, alta rápida y bandeja', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      // Alta rápida: la persona y «¿dónde?» con una empresa nueva al vuelo.
+      const bruno = await rep.crm.quickAdd({ name: 'Bruno', company: 'La Brecha', role: 'Fundador', email: 'BRUNO@brecha.test', tag: 'FBD' });
+      expect(bruno.accountId).toBeTruthy();
+      const again = await rep.crm.quickAdd({ name: 'Eva', company: 'la brecha', role: 'Sala' });
+      expect(again.accountId).toBe(bruno.accountId);  // misma empresa, no un duplicado
+      await rep.crm.quickAdd({ name: 'Sin Sitio' });
+      await rep.crm.link(bruno.id, { company: 'Club Faro', role: 'DJ' });
+      const p = await rep.crm.person(bruno.id);
+      expect(p.person).toMatchObject({ email: 'bruno@brecha.test', tags: ['fbd'], ownerId: U.rep.id });
+      expect(p.person.companies.map((c) => `${c.name}:${c.role}`).sort()).toEqual(['Club Faro:DJ', 'La Brecha:Fundador']);
+      const all = await rep.crm.people();
+      expect(all.tray).toBe(1);
+      expect((await rep.crm.people({ company: 'none' })).items.map((x) => x.name)).toEqual(['Sin Sitio']);
+      expect((await rep.crm.people({ tag: 'fbd' })).items.map((x) => x.name)).toEqual(['Bruno']);
+      expect((await rep.crm.similar('bruno')).map((x) => x.name)).toEqual(['Bruno']);
+
+      // Grupo de un nivel: el comercial agrupa sus empresas; un grupo no entra en otro.
+      const faro = p.person.companies.find((c) => c.name === 'Club Faro')!.accountId;
+      const g = await rep.crm.moveToGroup([bruno.accountId!, faro], { groupName: 'Grupo Costa' });
+      expect(g.moved).toBe(2);
+      const brecha = await rep.crm.company(bruno.accountId!);
+      expect(brecha.group?.name).toBe('Grupo Costa');
+      expect(brecha.people.map((x) => x.name).sort()).toEqual(['Bruno', 'Eva']);
+      expect((await rep.crm.company(g.groupId!)).locales.map((a) => a.name).sort()).toEqual(['Club Faro', 'La Brecha']);
+      const otro = await admin.accounts.create({ name: 'Holding' });
+      await rejects(admin.crm.moveToGroup([g.groupId!], { groupId: otro }), 422);
+      await rejects(admin.crm.moveToGroup([otro], { groupId: bruno.accountId! }), 422);
+
+      // Permisos: el comercial no borra personas ni importa.
+      await rejects(rep.crm.deletePerson(bruno.id), 403);
+      await rejects(rep.crm.importStart('x.csv', 'Nombre\nA', 'account'), 403);
+      await admin.crm.deletePerson(again.id);
+      expect((await rep.crm.company(bruno.accountId!)).people.map((x) => x.name)).toEqual(['Bruno']);
+    });
+
+    test('CRM fase 2: importar empresas y personas, fusionar con lo que hay y deshacer', async () => {
+      const admin = await ctx(U.admin);
+      const es = await admin.accounts.saveZone({ name: 'España', kind: 'country' });
+      await admin.accounts.saveZone({ name: 'Valencia', parentId: es });
+      const viejo = await admin.accounts.create({ name: 'Beat DJ', notes: 'Ya hablamos' });
+
+      // Empresas: duplicados fuera, estado como etapa, tipos unificados, ciudad nueva como zona, lista propia.
+      const csv = 'Nombre,Ciudad,Estado Lead,Tipo,Precio desde €,Email\n'
+        + 'Luz y Ritmo,Valencia,🆕 Sin contactar,DJ/AV,"€1,200.00",hola@luz.test\n'
+        + 'Luz y Ritmo,Valencia,🆕 Sin contactar,DJ/AV,"€1,200.00",hola@luz.test\n'
+        + 'Sonido Sur,Sevilla,✅ Interesado,DJ / AV,€300.00,correo-raro\n'
+        + 'Beat DJ,Málaga,🆕 Sin contactar,DJ,€250.00,\n';
+      const imp = await admin.crm.importStart('proveedores.csv', csv, 'account');
+      const draft = await admin.crm.importDraft(imp);
+      expect(draft.rowCount).toBe(4);
+      const { plan, mapping } = await admin.crm.importPreview(imp);
+      expect(plan.stats).toMatchObject({ duplicates: 1, accountsCreated: 2, accountsMerged: 1, toNotes: 1 });
+      await admin.crm.importPreview(imp, { ...mapping, tag: 'proveedores-bodas', options: { 'Estado Lead': ['Sin contactar', 'Interesado', 'Acuerdo cerrado'] } });
+      const st = await admin.crm.importRun(imp);
+      expect(st).toMatchObject({ accountsCreated: 2, accountsMerged: 1, zonesCreated: 2, fieldsCreated: 4 });
+      await rejects(admin.crm.importRun(imp), 409);
+      const fields = await admin.accounts.crmFields();
+      const estado = fields.find((f) => f.key === 'estado-lead')!;
+      expect(estado).toMatchObject({ isStage: true, tags: ['proveedores-bodas'], target: 'account' });
+      expect(estado.options.map((o) => o.label)).toEqual(['Sin contactar', 'Interesado', 'Acuerdo cerrado']);
+      const list = (await admin.accounts.list({ scope: 'all' })).items;
+      const luz = list.find((a) => a.name === 'Luz y Ritmo')!;
+      expect(luz).toMatchObject({ tags: ['proveedores-bodas'], fields: { 'precio-desde': 1200, tipo: 'dj-av', 'estado-lead': 'sin-contactar' } });
+      expect(luz.zonePath).toBe('España › Valencia');
+      expect(list.find((a) => a.name === 'Sonido Sur')!.notes).toBe('Email: correo-raro');
+      const beat = list.find((a) => a.id === viejo)!;
+      expect(beat).toMatchObject({ notes: 'Ya hablamos', tags: ['proveedores-bodas'], fields: { 'precio-desde': 250 } });
+      expect(beat.zonePath).toContain('Málaga');
+
+      // Personas: una persona en una empresa que ya existe; los cargos en «Empresa» no crean empresas.
+      const people = 'Name,Empresa/Local,Rol,Ciudad,Status\nBruno,Luz y Ritmo,Owner,Valencia,No comenzado\nCarla,CEO,,Valencia,Investigado\nDani,Nueva Sala,Artist,Valencia,Hablando\n';
+      const imp2 = await admin.crm.importStart('fbd.csv', people, 'contact');
+      const pv = await admin.crm.importPreview(imp2);
+      await admin.crm.importPreview(imp2, { ...pv.mapping, tag: 'fbd' });
+      expect(await admin.crm.importRun(imp2)).toMatchObject({ contactsCreated: 3, accountsCreated: 1, accountsMerged: 1, links: 2, noCompany: 1 });
+      const ps = (await admin.crm.people({ tag: 'fbd' })).items;
+      expect(ps.find((x) => x.name === 'Carla')!.companies).toEqual([]);
+      expect(ps.find((x) => x.name === 'Bruno')!.companies.map((c) => `${c.name}:${c.role}`)).toEqual(['Luz y Ritmo:Owner']);
+      expect(ps.find((x) => x.name === 'Bruno')!.fields).toMatchObject({ status: 'no-comenzado' });
+
+      // Deshacer: lo creado se va, lo fusionado vuelve a como estaba, los campos nuevos se archivan.
+      expect(await admin.crm.importUndo(imp2)).toMatchObject({ people: 3, companies: 1 });
+      expect((await admin.crm.people()).items).toHaveLength(0);
+      expect(await admin.crm.importUndo(imp)).toMatchObject({ companies: 2 });
+      const after = (await admin.accounts.list({ scope: 'all' })).items;
+      expect(after.map((a) => a.name)).toEqual(['Beat DJ']);
+      expect(after[0]).toMatchObject({ notes: 'Ya hablamos', tags: [], fields: {}, zoneId: null });
+      expect((await admin.accounts.crmFields()).map((f) => f.key)).toEqual([]);
+      expect((await admin.accounts.territory()).zones.map((z) => z.name).sort()).toEqual(['España', 'Valencia']);
+      await rejects(admin.crm.importUndo(imp), 409);
     });
   });
 }

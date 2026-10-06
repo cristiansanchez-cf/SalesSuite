@@ -36,6 +36,10 @@ import type { AccountsDb } from '../accounts/db';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { supabaseAccountsDb } from '../accounts/db-supabase';
 import { createAccountsService, emptyAccountsDb, type AccountsService } from '../accounts/service';
+import { createCrmService, emptyCrmDb, type CrmService } from '../crm/service';
+import type { CrmDb } from '../crm/db';
+import { demoCrmDb } from '../crm/db-demo';
+import { supabaseCrmDb } from '../crm/db-supabase';
 import type { CommissionsDb } from '../commissions/db';
 import { demoCommissionsDb } from '../commissions/db-demo';
 import { supabaseCommissionsDb } from '../commissions/db-supabase';
@@ -76,6 +80,7 @@ export interface AdminContext {
   notifications: NotifyService;
   /** Cuentas del CRM y territorio (docs/ACCOUNTS.md). */
   accounts: AccountsService;
+  crm: CrmService;
   /** Comisiones (docs/COMMISSIONS.md). */
   commissions: CommissionsService;
   /** Organigrama: delegaciones, gerentes y (superadmin) la plataforma (docs/ORG.md). */
@@ -112,6 +117,7 @@ export interface Deps {
   notifyDb?: NotifyDb;
   /** Cuentas (opcional, igual que los avisos). Recibe el usuario: en demo replica auth.uid(). */
   accountsDb?: (userId: string) => AccountsDb;
+  crmDb?: (userId: string) => CrmDb;
   /** Comisiones (opcional). Recibe el usuario: en demo replica auth.uid(). */
   commissionsDb?: (userId: string) => CommissionsDb;
   /** Visitas a dossiers (opcional). */
@@ -164,6 +170,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service, minCloses: minClosesFor() }),
       notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
       accounts: createAccountsService(deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
+      crm: createCrmService(deps.crmDb?.(user.id) ?? emptyCrmDb, deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
         { admin: db, accounts: deps.accountsDb?.(user.id) ?? emptyAccountsDb }, session),
       analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),
@@ -183,14 +190,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb() });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

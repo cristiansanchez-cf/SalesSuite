@@ -33,6 +33,11 @@ export interface Account {
   createdAt: string;
   /** Valores de los campos del CRM del espacio (clave → valor). */
   fields: FieldValues;
+  /** Grupo al que pertenece (otra empresa). Un solo nivel. */
+  parentId: string | null;
+  /** Listas en las que está (p. ej. «proveedores-bodas»). */
+  tags: string[];
+  importId: string | null;
 }
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }

@@ -9,6 +9,7 @@ const REP2 = { id: 'abababab-0000-4000-8000-000000000002', email: 'rep2@enjoy.te
 import { supabasePlaybookDb } from '../playbook/db-supabase';
 import { supabaseNotifyDb } from "../notify/db-supabase";
 import { supabaseAccountsDb } from "./db-supabase";
+import { supabaseCrmDb } from "../crm/db-supabase";
 import { accountsContract } from './accounts.contract';
 
 const URL = process.env.SUPABASE_IT_URL;
@@ -42,6 +43,7 @@ if (!URL || !SECRET || !DB_URL) {
     evidenceDbFor: (u) => supabaseEvidenceDb(user(u)),
     notifyDbFor: (u) => supabaseNotifyDb(user(u)),
     accountsDbFor: (u) => supabaseAccountsDb(user(u)),
+    crmDbFor: (u) => supabaseCrmDb(user(u)),
     rep2: REP2,
     async expireClaim(id) {
       execFileSync('psql', [DB_URL, '-q', '-c', `update public.account set claimed_until = now() - interval '1 second' where id = '${id}'`]);

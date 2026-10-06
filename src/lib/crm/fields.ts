@@ -26,7 +26,14 @@ export interface CrmField {
   /** Claves de sector en los que aplica. Vacío = todos. */
   segments: string[];
   archivedAt: string | null;
+  /** De qué es el campo: de la empresa o de la persona. */
+  target: FieldTarget;
+  /** Listas (etiquetas) en las que aplica, p. ej. «fbd». Vacío = todas. */
+  tags: string[];
+  /** Es la etapa del embudo de su lista (selección): sale como estado y se filtra. */
+  isStage: boolean;
 }
+export type FieldTarget = 'account' | 'contact';
 export type FieldValue = string | number | boolean | string[];
 export type FieldValues = Record<string, FieldValue>;
 
@@ -55,8 +62,12 @@ export const fieldInputSchema = z.object({
   inList: z.boolean().default(false),
   filterable: z.boolean().default(false),
   segments: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/)).max(20).default([]),
+  target: z.enum(['account', 'contact']).default('account'),
+  tags: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,47}$/)).max(20).default([]),
+  isStage: z.boolean().default(false),
 }).superRefine((v, ctx) => {
   if (OPTION_TYPES.includes(v.type) && v.options.length === 0) ctx.addIssue({ code: 'custom', path: ['options'], message: 'Añade al menos una opción (una por línea)' });
+  if (v.isStage && v.type !== 'select') ctx.addIssue({ code: 'custom', path: ['isStage'], message: 'La etapa tiene que ser una selección' });
 });
 export type FieldInput = z.infer<typeof fieldInputSchema>;
 
@@ -151,11 +162,18 @@ export function matches(f: Pick<CrmField, 'type'>, v: FieldValue | undefined, wa
   return String(v ?? '').toLowerCase().includes(want.toLowerCase());
 }
 
-/** Campos que aplican a una cuenta de este sector, en orden, sin archivados. */
-export function fieldsFor(fields: CrmField[], segmentKey: string | null): CrmField[] {
-  return fields.filter((f) => !f.archivedAt && (!f.segments.length || (segmentKey !== null && f.segments.includes(segmentKey))))
+/** Campos que aplican a una empresa (por su sector y sus listas) o a una persona (por sus listas), en orden, sin archivados. */
+export function fieldsFor(fields: CrmField[], segmentKey: string | null, opts: { target?: FieldTarget; tags?: string[] } = {}): CrmField[] {
+  const target = opts.target ?? 'account';
+  const tags = opts.tags ?? [];
+  return fields.filter((f) => !f.archivedAt && (f.target ?? 'account') === target
+      && (!f.segments.length || (segmentKey !== null && f.segments.includes(segmentKey)))
+      && (!(f.tags ?? []).length || f.tags.some((t) => tags.includes(t))))
     .sort((a, b) => a.position - b.position || a.label.localeCompare(b.label, 'es'));
 }
+
+/** «Fan Business Days» → «fan-business-days»: clave de lista. */
+export const tagKey = (s: string) => slugKey(s);
 
 /** Lo que llega de un formulario con FieldInput (`present:<clave>` + `f:<clave>`) → entrada para parseValues. */
 export function valuesFromForm(fields: CrmField[], form: FormData): Record<string, unknown> {
