@@ -57,6 +57,8 @@ export interface UiKit {
   phone: Record<string, unknown> | null; screen: Record<string, unknown> | null; photo: string | null;
   /** Oquea: props de un app-steps con pantallas (sample y foto) y de la consola del centro (center-console). */
   app?: Record<string, unknown> | null; console?: Record<string, unknown> | null;
+  /** Todos los app-steps con pantallas: cada paso usa los datos del módulo que enseña esa pantalla. */
+  apps?: Array<Record<string, unknown>>;
 }
 
 export interface LearnIndex {
@@ -178,8 +180,9 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const sectorsLearned = sectorKeys.filter((k) => mine.has(`sector:${k}`));
     const propsOf = (type: string) => modules.find((x) => x.blockType === type)?.props ?? null;
     const phone = propsOf('phone-tour');
-    const app = modules.find((x) => x.blockType === 'app-steps' && Array.isArray(x.props.screens) && x.props.screens.length)?.props ?? null;
-    const kit: UiKit = { phone, screen: propsOf('live-screen'), photo: (phone?.photos as string[] | undefined)?.[0] ?? null, app, console: propsOf('center-console') };
+    const apps = modules.filter((x) => x.blockType === 'app-steps' && Array.isArray(x.props.screens) && x.props.screens.length).map((x) => x.props);
+    const app = apps[0] ?? null;
+    const kit: UiKit = { phone, screen: propsOf('live-screen'), photo: (phone?.photos as string[] | undefined)?.[0] ?? null, app, apps, console: propsOf('center-console') };
     return {
       tour,
       kit,

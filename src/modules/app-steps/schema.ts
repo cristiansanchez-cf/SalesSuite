@@ -4,10 +4,12 @@ const url = z.string().max(500).refine((u) => /^(https:\/\/|\/)/.test(u), 'https
 
 /** Pantallas de la app recreadas en HTML (Screen.astro). `image`: una captura real (src). */
 export const APP_SCREENS = [
-  'access', 'qr-activity', 'dive-saved', 'share-card', 'logbook', 'diver-profile',
+  'access', 'qr-pick', 'qr-activity', 'dive-saved', 'dive-detail', 'share-card', 'logbook', 'diver-profile', 'album-photo',
   'activities', 'create-activity', 'center-qr', 'crm-list', 'crm-diver', 'my-centres', 'team', 'dive-sites', 'map', 'album', 'event', 'badge', 'image',
 ] as const;
 
+/** Tarjetas para redes que exporta el buceador (sticker sobre su foto). Confirmadas en producción: dive, record, milestone. */
+export const SHARE_CARDS = ['dive', 'record', 'milestone', 'trip', 'species'] as const;
 export const STEP_ICONS = [
   'qr', 'users', 'share', 'calendar', 'repeat', 'pin', 'building', 'phone', 'mail', 'image', 'logo', 'link', 'anchor',
   'headset', 'check', 'clock', 'ruler', 'send', 'book', 'shield', 'chart', 'megaphone', 'globe', 'heart', 'star', 'sparkle',
@@ -52,6 +54,7 @@ export const appStepsSchema = z.object({
     diver: z.string().max(40).default('Laura Méndez'),
     handle: z.string().max(30).default('lauramendez'),
     level: z.string().max(40).default('Advanced Open Water'),
+    album: z.string().max(40).default('Maldivas 2025 – Mantas'),
     activity: z.string().max(60).default('Inmersión a las 9:00'),
     discipline: z.string().max(40).default('Fun dive'),
     site: z.string().max(40).default('Maaya Thila'),
@@ -63,6 +66,10 @@ export const appStepsSchema = z.object({
     temp: z.string().max(10).default('16'),
     life: z.string().max(80).default('Tortugas, tiburones, mantas'),
     dives: z.string().max(10).default('124'),
+    /** share-card: las tarjetas que pasan una tras otra en el móvil, sus fotos de fondo (una por tarjeta, en orden) y el logo blanco de la marca. */
+    cards: z.array(z.enum(SHARE_CARDS)).min(1).max(5).default(['dive', 'record', 'milestone']),
+    photos: z.array(url).max(8).default([]),
+    brand: url.optional(),
   }).default({}),
 });
 

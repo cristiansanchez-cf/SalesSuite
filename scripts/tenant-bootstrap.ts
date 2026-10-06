@@ -189,6 +189,23 @@ function replaceAssets<T>(v: T, map: Map<string, string>, missing: Set<string>):
   return v;
 }
 
+/**
+ * «stock:<búsqueda>» (o «stock:<búsqueda>#<n>», el n-ésimo resultado): una foto libre de derechos que el alta busca y
+ * sube a Storage (resolveStock). Solo dentro de listas (p. ej. sample.photos): si no se encuentra, se quita de la lista.
+ */
+const isStock = (v: unknown): v is string => typeof v === 'string' && v.startsWith('stock:');
+function replaceStock<T>(v: T, map: Map<string, string>): T {
+  if (Array.isArray(v)) return v.flatMap((x) => (isStock(x) ? (map.has(x) ? [map.get(x)!] : []) : [replaceStock(x, map)])) as T;
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, replaceStock(x, map)])) as T;
+  return v;
+}
+function stockRefs(v: unknown, out = new Set<string>(), inList = false, bad: string[] = []): { refs: Set<string>; bad: string[] } {
+  if (isStock(v)) { if (inList) out.add(v); else bad.push(v); }
+  else if (Array.isArray(v)) v.forEach((x) => stockRefs(x, out, true, bad));
+  else if (v && typeof v === 'object') Object.values(v).forEach((x) => stockRefs(x, out, false, bad));
+  return { refs: out, bad };
+}
+
 async function listFiles(root: string): Promise<string[]> {
   const out: string[] = [];
   const walk = async (d: string) => {
@@ -216,6 +233,9 @@ function validate(t: TenantFile, assetKeys: string[]) {
   replaceAssets([t.theme_tokens, t.brand, t.catalog.map((m) => m.props), t.tour, t.market.map((m) => m.image)], new Map(assetKeys.map((k) => [k, 'x'])), missing);
   const fake = new Map([...assetKeys, ...missing].map((k) => [k, `https://assets.invalid/${k}`]));
   const errors: string[] = [];
+  const stock = stockRefs(t.catalog.map((m) => m.props));
+  errors.push(...stock.bad.map((x) => `${x}: «stock:» solo dentro de una lista (p. ej. sample.photos)`));
+  const fakeStock = new Map([...stock.refs].map((x) => [x, 'https://stock.invalid/foto.jpg']));
   const theme = themeTokensSchema.safeParse(replaceAssets(t.theme_tokens ?? {}, fake, missing));
   if (!theme.success) errors.push(...theme.error.issues.map((i) => `theme_tokens.${i.path.join('.')}: ${i.message}`));
   const brand = brandSchema.safeParse(replaceAssets(t.brand ?? {}, fake, missing));
@@ -226,7 +246,7 @@ function validate(t: TenantFile, assetKeys: string[]) {
     if (keys.has(m.key)) errors.push(`catalog: clave duplicada ${m.key}`);
     keys.add(m.key);
     if (!isBlockType(m.block_type)) { errors.push(`catalog.${m.key}: block_type desconocido "${m.block_type}" (disponibles: ${Object.keys(REGISTRY).join(', ')})`); continue; }
-    const r = REGISTRY[m.block_type].schema.safeParse(replaceAssets(m.props, fake, missing));
+    const r = REGISTRY[m.block_type].schema.safeParse(replaceStock(replaceAssets(m.props, fake, missing), fakeStock));
     if (!r.success) errors.push(...r.error.issues.map((i) => `catalog.${m.key}.props.${i.path.join('.')}: ${i.message}`));
   }
   const segKeys = new Set<string>();
@@ -246,7 +266,7 @@ function validate(t: TenantFile, assetKeys: string[]) {
         const mod = t.catalog.find((c) => c.key === b.module);
         if (!mod) { errors.push(`market.${sg.key}.proposal.blocks.${id}: módulo "${b.module}" no está en catalog`); continue; }
         if (!isBlockType(mod.block_type)) continue;
-        const merged = deepMerge(replaceAssets(mod.props, fake, missing) as Record<string, unknown>, replaceAssets(b.props, fake, missing) as Record<string, unknown>);
+        const merged = replaceStock(deepMerge(replaceAssets(mod.props, fake, missing) as Record<string, unknown>, replaceAssets(b.props, fake, missing) as Record<string, unknown>), fakeStock);
         const rb = REGISTRY[mod.block_type].schema.safeParse(merged);
         if (!rb.success) errors.push(...rb.error.issues.map((i) => `market.${sg.key}.proposal.blocks.${id}.props.${i.path.join('.')}: ${i.message}`));
       }
@@ -370,8 +390,11 @@ async function main() {
   // Carátulas de las canciones de ejemplo (pantalla en vivo y móvil del invitado): una vez, a Storage; URLs fijas.
   const needsMusic = t.catalog.some((m) => (m.block_type === 'live-screen' || m.block_type === 'phone-tour') && !(m.props as Record<string, unknown>).musicStyles);
   const musicStyles = needsMusic && !SKIP_ASSETS ? await resolveCovers(sb, tenantId) : null;
+  // Fotos libres de derechos (stock:<búsqueda>) para las pantallas de ejemplo: una vez, a Storage; URLs fijas.
+  const stockWanted = stockRefs(t.catalog.map((m) => m.props)).refs;
+  const stockUrls = stockWanted.size && !SKIP_ASSETS ? await resolveStock(sb, tenantId, [...stockWanted]) : new Map<string, string>();
   for (const m of t.catalog) {
-    let props = replaceAssets(m.props, urls, missing);
+    let props = replaceStock(replaceAssets(m.props, urls, missing), stockUrls);
     if (musicStyles && (m.block_type === 'live-screen' || m.block_type === 'phone-tour') && !(props as Record<string, unknown>).musicStyles) props = { ...(props as object), musicStyles };
     const found = must(await sb.from('module').select('id, block_type').eq('tenant_id', tenantId).eq('key', m.key).maybeSingle(), `leer módulo ${m.key}`);
     if (found && found.block_type !== m.block_type) fail(`módulo ${m.key}: block_type no se puede cambiar (${found.block_type} → ${m.block_type}); usa otra clave`);
@@ -559,6 +582,55 @@ async function resolveCovers(sb: SupabaseClient, tenantId: string) {
     out[key] = { label: st.label, songs };
   }
   log(`carátulas: ${found}/${total} (iTunes → tenant-assets/${tenantId}/music/)`);
+  return out;
+}
+
+/**
+ * Fotos libres de derechos para los ejemplos (fondos de las tarjetas, logbook, álbum): Openverse (Wikimedia Commons,
+ * Flickr…), solo CC0 o dominio público (sin atribución obligatoria). Se suben a tenant-assets/<espacio>/stock/ con un
+ * credits.json (autor, licencia y origen de cada una). Si ya están subidas, no se descargan otra vez; si una búsqueda
+ * no da nada, esa foto no sale (la pantalla usa las demás o un degradado de mar).
+ */
+async function resolveStock(sb: SupabaseClient, tenantId: string, refs: string[]) {
+  const bucket = sb.storage.from('tenant-assets');
+  const have = new Set(((await bucket.list(`${tenantId}/stock`, { limit: 1000 })).data ?? []).map((o) => o.name));
+  const credits: Array<Record<string, unknown>> = [];
+  const out = new Map<string, string>();
+  const cache = new Map<string, Array<Record<string, unknown>>>();
+  for (const ref of refs) {
+    const [query, nth] = ref.slice(6).split('#');
+    const n = Math.max(0, Number(nth ?? 1) - 1) || 0;
+    const file = `${slugify(query!)}-${n + 1}.jpg`;
+    const path = `${tenantId}/stock/${file}`;
+    if (have.has(file)) { out.set(ref, bucket.getPublicUrl(path).data.publicUrl); continue; }
+    try {
+      if (!cache.has(query!)) {
+        const q = new URL('https://api.openverse.org/v1/images/');
+        q.searchParams.set('q', query!); q.searchParams.set('license', 'cc0,pdm'); q.searchParams.set('page_size', '20'); q.searchParams.set('mature', 'false');
+        const r = await fetch(q, { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': 'CofundoVentas/1.0 (tenant-bootstrap)' } });
+        const res = ((await r.json()) as { results?: Array<Record<string, unknown>> }).results ?? [];
+        // Fotos de verdad y grandes: fuera las pequeñas y las muy apaisadas (van en vertical, dentro de un móvil).
+        cache.set(query!, res.filter((x) => Number(x.width) >= 900 && Number(x.height) >= 700 && Number(x.width) / Number(x.height) < 2));
+      }
+      const hit = cache.get(query!)![n];
+      if (!hit) continue;
+      const img = await fetch(String(hit.url), { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'CofundoVentas/1.0 (tenant-bootstrap)' } });
+      const type = img.headers.get('content-type') ?? '';
+      if (!img.ok || !type.startsWith('image/')) continue;
+      const bytes = new Uint8Array(await img.arrayBuffer());
+      if (bytes.byteLength > 8 * 1024 * 1024) continue;
+      const up = await bucket.upload(path, bytes, { contentType: type, upsert: true, cacheControl: '31536000' });
+      if (up.error) continue;
+      out.set(ref, bucket.getPublicUrl(path).data.publicUrl);
+      credits.push({ file, query, title: hit.title, creator: hit.creator, license: hit.license, source: hit.foreign_landing_url });
+    } catch { /* sin esa foto */ }
+  }
+  if (credits.length) {
+    const prev = await bucket.download(`${tenantId}/stock/credits.json`).then((r) => (r.data ? r.data.text() : '[]')).catch(() => '[]');
+    const all = [...(JSON.parse(prev) as Array<Record<string, unknown>>).filter((c) => !credits.some((x) => x.file === c.file)), ...credits];
+    await bucket.upload(`${tenantId}/stock/credits.json`, new TextEncoder().encode(JSON.stringify(all, null, 2)), { contentType: 'application/json', upsert: true });
+  }
+  log(`fotos libres: ${out.size}/${refs.length} (Openverse, CC0/dominio público → tenant-assets/${tenantId}/stock/)`);
   return out;
 }
 

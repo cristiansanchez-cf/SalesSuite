@@ -77,7 +77,7 @@
       "title": "El buceador escanea el QR",
       "body": "Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.",
       "image": "asset:img/producto/web/02-registro-qr-logbook.png",
-      "ui": "app:qr-activity"
+      "ui": "app:qr-pick"
     },
     {
       "title": "La inmersión queda en su logbook",
@@ -92,8 +92,8 @@
       "ui": "app:crm-diver"
     },
     {
-      "title": "Su nombre y su logo en cada tarjeta",
-      "body": "Cada vez que un buceador comparte su inmersión, salen el nombre y el logo del centro.",
+      "title": "Su nombre en cada tarjeta",
+      "body": "Cada vez que un buceador comparte su inmersión, sale el nombre del centro.",
       "image": "asset:img/fotos/share-card-aerea.png",
       "ui": "app:share-card"
     }
@@ -165,7 +165,19 @@
             "screen": "crm-list"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -183,15 +195,36 @@
         "cards": [
           {
             "icon": "check",
-            "title": "En todas aparecen el nombre y el logo de tu centro."
+            "title": "En todas aparece el nombre de tu centro."
           }
         ],
         "screens": [
           {
+            "screen": "logbook"
+          },
+          {
             "screen": "share-card"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "cards": [
+            "dive",
+            "record",
+            "milestone"
+          ],
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ],
+          "brand": "asset:logo-dark.svg"
+        }
       }
     },
     {
@@ -225,7 +258,19 @@
             "screen": "crm-diver"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -252,7 +297,19 @@
             "screen": "map"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -270,9 +327,36 @@
         "screens": [
           {
             "screen": "album"
+          },
+          {
+            "screen": "album-photo"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "cards": [
+          {
+            "icon": "image",
+            "title": "Útil para tus buceadores.",
+            "body": "Descargan sus fotos y las de sus compañeros de salida."
+          },
+          {
+            "icon": "megaphone",
+            "title": "Y lo comparten.",
+            "body": "Cada foto que comparten lleva la inmersión con tu centro: publicidad que no pagas."
+          }
+        ],
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -292,7 +376,19 @@
             "screen": "event"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -462,7 +558,19 @@
             "screen": "dive-saved"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -502,7 +610,19 @@
             "screen": "crm-diver"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -512,16 +632,16 @@
       "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
-      "description": "La tarjeta para redes con los datos de la inmersión y el logo del centro.",
+      "description": "La tarjeta para redes con los datos de la inmersión y el nombre del centro.",
       "props": {
-        "title": "Comparten la inmersión, con tu logo",
-        "highlight": "con tu logo",
+        "title": "Comparten la inmersión, con tu nombre",
+        "highlight": "con tu nombre",
         "lede": "Datos de profundidad, tiempo y temperatura sobre su mejor foto: listo para Stories.",
         "cards": [
           {
             "icon": "megaphone",
             "title": "Marketing orgánico para tu centro",
-            "body": "Cada tarjeta que se comparte lleva tu nombre y tu logo."
+            "body": "Cada tarjeta que se comparte lleva el nombre de tu centro."
           },
           {
             "icon": "image",
@@ -534,7 +654,25 @@
             "screen": "share-card"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "cards": [
+            "dive",
+            "record",
+            "milestone"
+          ],
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ],
+          "brand": "asset:logo-dark.svg"
+        }
       }
     },
     {
@@ -566,7 +704,19 @@
             "screen": "center-qr"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -606,7 +756,19 @@
             "screen": "create-activity"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -643,7 +805,19 @@
             "screen": "dive-sites"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -675,7 +849,19 @@
             "screen": "team"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -722,7 +908,19 @@
             "screen": "my-centres"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -793,7 +991,19 @@
             "screen": "event"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -813,7 +1023,19 @@
             "screen": "badge"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -840,7 +1062,19 @@
             "screen": "crm-list"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -860,7 +1094,19 @@
             "screen": "map"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fotos/share-card-bg.webp",
+        "sample": {
+          "photos": [
+            "stock:scuba diver underwater",
+            "stock:sea turtle underwater",
+            "stock:coral reef fish",
+            "stock:manta ray",
+            "stock:dive boat sea",
+            "stock:scuba divers reef",
+            "asset:img/fotos/share-card-bg.webp",
+            "asset:img/fotos/share-card-aerea.png"
+          ]
+        }
       }
     },
     {
@@ -1758,7 +2004,7 @@
       "about": false,
       "pinned": null,
       "title": "Qué recibe el centro hoy",
-      "body": "- Todo lo de la lista cerrada del producto, sin coste.\n- Su nombre y su logo en cada tarjeta que sus buceadores comparten.\n- La lista de quién ha buceado con él.\n- Su perfil en el mapa de Oquea.\n- La condición de centro fundador de la red internacional.",
+      "body": "- Todo lo de la lista cerrada del producto, sin coste.\n- Su nombre en cada tarjeta que sus buceadores comparten.\n- La lista de quién ha buceado con él.\n- Su perfil en el mapa de Oquea.\n- La condición de centro fundador de la red internacional.",
       "when_to_use": null,
       "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
       "technique_refs": [],
@@ -2343,7 +2589,7 @@
       "about": false,
       "pinned": null,
       "title": "La tarjeta: sale tu nombre",
-      "body": "«Cada vez que uno de tus buceadores comparte esto, sale tu nombre.» Y tu logo: la tarjeta lleva los dos.",
+      "body": "«Cada vez que uno de tus buceadores comparte esto, sale tu nombre.»",
       "when_to_use": "Mientras señalas la línea «with [nombre del centro]».",
       "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
       "technique_refs": [],

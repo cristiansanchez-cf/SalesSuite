@@ -18,6 +18,8 @@
 | `learn/sector/[key].astro` | «Imagínatelo» pinta `app-steps` (con pantallas) y `center-console`; sin UI, una columna (sin hueco) | Ninguno: Enjoy siempre tiene UI |
 | `src/modules/app-steps/Component.astro` | Diapositivas sin pantalla: una columna centrada (condiciones, la red) | Ninguno |
 | `supabase/seed/fixtures.json` (+ `seed.sql`), `public/demo/oquea-logo.svg` | Espacio de demo `oquea-demo` (`oquea.localhost`) con 3 módulos y el recorrido, para el smoke | Ninguno: sin miembros; Enjoy y retheme igual |
+| `scripts/tenant-bootstrap.ts` | `stock:<búsqueda>` en listas de props: fotos libres de Openverse (solo CC0 / dominio público) subidas a `tenant-assets/<espacio>/stock/` con `credits.json`; si no aparece, se quita de la lista | Ninguno: Enjoy no usa `stock:` |
+| `src/modules/app-steps/**` | Pantallas nuevas (qr-pick, dive-detail, album-photo), logbook/álbum/mapa/tarjetas rehechos, `SeaMap`, `MapSheet`, marcadores SVG | Ninguno (plantilla de Oquea) |
 | `scripts/smoke-learn.cjs` | Caso Oquea: los 5 pasos con UI (no capturas), azul del tema, 1440 y 375 px sin scroll | Ninguno |
 
 ## Pendiente (no lo he tocado)

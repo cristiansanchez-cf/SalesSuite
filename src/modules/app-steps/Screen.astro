@@ -11,6 +11,9 @@ import { fakeQr } from './qr';
 import type { AppSample, AppScreen } from './schema';
 import AppNav from './AppNav.astro';
 import CenterHead from './CenterHead.astro';
+import SeaMap from './SeaMap.astro';
+import MapSheet from './MapSheet.astro';
+import SITE_PIN from './markers/punto-inmersion.svg?raw';
 
 interface Props {
   screen: AppScreen; src?: string; alt?: string; sample: AppSample; center: string; logo?: string | null; photo?: string | null;
@@ -24,6 +27,19 @@ const centerName = center.slice(0, 28);
 
 const qr = fakeQr(centerName);
 
+// share-card: cada tarjeta con su foto (las de ejemplo, en orden; si faltan, la foto del centro o la del módulo).
+const cards = s.cards ?? ['dive'];
+const cardPhotos = s.photos ?? [];
+const cardBg = (i: number) => { const u = cardPhotos.length ? cardPhotos[i % cardPhotos.length] : photo; return u ? `background-image:url('${u.replace(/'/g, '%27')}')` : ''; };
+// Fotos de ejemplo para logbook y álbum: las del módulo en orden; sin fotos, degradados de mar (como el diseño).
+const SEA = ['linear-gradient(146deg,#0ea5e9,#0369a1)', 'linear-gradient(180deg,#1e3a5f,#0c4a6e)', 'linear-gradient(131deg,#0ea5e9,#1e40af)', 'linear-gradient(180deg,#78716c,#44403c)', 'linear-gradient(131deg,#f59e0b,#0ea5e9)', 'linear-gradient(180deg,#0ea5e9,#164e63)', 'linear-gradient(180deg,#22d3ee,#0c4a6e)'];
+const photoPool = [...cardPhotos, ...(photo ? [photo] : [])];
+const pool = (i: number) => (photoPool.length ? `background-image:url('${photoPool[i % photoPool.length]!.replace(/'/g, '%27')}')` : `background-image:${SEA[i % SEA.length]}`);
+const me = s.diver.split(/\s+/).map((w, i) => (i === 0 ? w : `${w[0]}.`)).slice(0, 2).join(' ');
+const ALBUM: Array<[string, boolean, string]> = [['Lucía F.', false, ''], [me, true, '5'], ['Lucía F.', false, ''], ['Carlos M.', false, ''], ['María L.', false, '12'], [me, true, '']];
+const DEPTH_CHART = '<svg viewBox="0 0 256 62" preserveAspectRatio="none" aria-hidden="true"><g stroke="currentColor" stroke-opacity=".35" stroke-width="1"><line x1="0" y1="18" x2="256" y2="18"/><line x1="0" y1="34" x2="256" y2="34"/><line x1="0" y1="50" x2="256" y2="50"/></g><path d="M6 8 L50 20 L95 28 L136 48 L178 40 L220 26 L250 10 L250 62 L6 62 Z" fill="currentColor" fill-opacity=".1"/><polyline points="6,8 50,20 95,28 136,48 178,40 220,26 250,10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="136" cy="48" r="6" fill="currentColor"/></svg>';
+const TRIP_CHART = '<svg viewBox="0 0 256 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#4d7ad6" stroke-width="1.5"><path d="M0 22 Q64 14 128 22 T256 22"/><path d="M0 44 Q64 36 128 44 T256 44"/></g><polyline points="30,44 68,24 104,48 140,20 176,40 210,30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4"/><g fill="currentColor"><circle cx="30" cy="44" r="6"/><circle cx="68" cy="24" r="6"/><circle cx="104" cy="48" r="6"/><circle cx="140" cy="20" r="6"/><circle cx="176" cy="40" r="6"/><circle cx="210" cy="30" r="6" fill-opacity=".7"/></g></svg>';
+const FISH = '<svg viewBox="0 0 120 60" aria-hidden="true"><path d="M8 30 C30 8 78 6 100 26 L116 12 L112 30 L116 48 L100 34 C78 54 30 52 8 30 Z" fill="#9fb3c8"/><path d="M52 14 L60 2 L66 16 Z" fill="#9fb3c8"/><g fill="#fff" fill-opacity=".85"><circle cx="34" cy="24" r="1.6"/><circle cx="44" cy="20" r="1.6"/><circle cx="54" cy="26" r="1.6"/><circle cx="64" cy="20" r="1.6"/><circle cx="74" cy="27" r="1.6"/><circle cx="40" cy="34" r="1.6"/><circle cx="60" cy="36" r="1.6"/><circle cx="82" cy="32" r="1.6"/></g><circle cx="20" cy="28" r="2" fill="#1f294c"/></svg>';
 const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
 ---
 <div class:list={['as-phone', cls]} style={zoom !== 1 ? `zoom:${zoom}` : undefined} aria-hidden={screen === 'image' ? undefined : 'true'}>
@@ -62,6 +78,44 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         </ul>
         <p class="as-foot">Al guardar, {centerName} añadirá esta inmersión a tu historial.</p>
       </Fragment>
+    ) : screen === 'qr-pick' ? (
+      <Fragment>
+        <div class="qp">
+          <div class="qp-centre"><span class="qp-centre__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 16)} /><span><b>{centerName}</b><small><Fragment set:html={ic('pin', 10)} />{s.place}</small></span></div>
+          <h3 class="qp-title">¿Qué actividad haces hoy?</h3>
+          <p class="qp-date">Jueves, 26 de febrero de 2026</p>
+          {[[s.activity, s.time, s.site, 'Juan'], ['Bautismo de buceo', '11:30', 'Playa del centro', 'Ana'], ['Inmersión nocturna', '20:00', 'Shark Point', 'Juan']].map(([a, h, site, by], i) => (
+            <div class:list={['qp-act', i === 0 && 'is-on']}>
+              <span class="qp-act__ico" set:html={mask(18)} />
+              <span class="qp-act__txt"><em class="qp-by"><Fragment set:html={ic('person', 9)} />Añadida por {by}</em><b>{a}</b><small>{h} · {site}</small></span>
+              <Fragment set:html={ic('next', 14)} />
+            </div>
+          ))}
+          <div class="qp-miss"><span class="qp-miss__ico" set:html={ic('search', 16)} /><span><b>¿No encuentras tu inmersión?</b><small>Mira en días anteriores o añádela</small></span><Fragment set:html={ic('next', 14)} /></div>
+        </div>
+      </Fragment>
+    ) : screen === 'dive-detail' ? (
+      <Fragment>
+        <div class="dd-bar"><Fragment set:html={ic('back')} /><span>Logbook</span></div>
+        <div class="dd-tabs"><span class="on">Inmersión</span><span>Participantes</span></div>
+        <div class="as-hero dd-hero" style={bg}><span class="as-hero__fade"></span></div>
+        <div class="as-act dd-act">
+          <h3>{s.activity}</h3>
+          <span class="as-chip as-chip--ghost">{s.discipline}</span>
+          <p class="as-meta"><span><Fragment set:html={ic('pin', 14)} />{s.site}</span><span><Fragment set:html={ic('calendar', 14)} />{s.date}</span><span><Fragment set:html={ic('clock', 14)} />{s.time}</span></p>
+          <p class="as-pager"><i class="on"></i><i></i><i></i></p>
+        </div>
+        <div class="as-save"><span class="as-save__ico" set:html={mask(30)} /><span><b>Ver mis datos</b><small><Fragment set:html={ic('history', 13)} />Ver o editar los datos de la inmersión</small></span></div>
+        <div class="as-tiles">
+          <span class="as-tile"><i set:html={ic('image')} /><b>Ver fotos y vídeos</b><small>125 archivos</small></span>
+          <span class="as-tile"><i set:html={ic('mobile')} /><b>Compartir inmersión</b><small>En una tarjeta para tus redes</small></span>
+        </div>
+        <ul class="as-rows">
+          <li><Fragment set:html={ic('thermo', 16)} /><span>Temperatura</span><em>{s.temp} °C</em></li>
+          <li><Fragment set:html={ic('down', 16)} /><span>Profundidad</span><em>{s.depth} m</em></li>
+          <li><Fragment set:html={ic('fish', 16)} /><span>Vida marina</span><em>{s.life}</em></li>
+        </ul>
+      </Fragment>
     ) : screen === 'dive-saved' ? (
       <Fragment>
         <div class="as-dim">
@@ -81,32 +135,88 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         </div>
       </Fragment>
     ) : screen === 'share-card' ? (
-      <div class="as-strava" style={bg}>
-        <span class="as-strava__shade"></span>
-        <div class="as-strava__head"><span class="as-iso as-iso--light"></span><span class="as-strava__loc"><Fragment set:html={ic('pin', 13)} />{s.site}</span></div>
-        <div class="as-strava__stats">
-          <span><small>Tiempo</small><b>{s.duration}<i>min</i></b></span>
-          <span><small>Profundidad</small><b>{s.depth}<i>m</i></b></span>
-          <span><small>Temperatura</small><b>{s.temp}<i>°C</i></b></span>
-        </div>
-        <div class="as-strava__foot">
-          <span class="as-strava__center">{logo && <img class="as-strava__logo" src={logo} alt="" />}<span><small>with</small><b>{centerName}</b></span></span>
-          <span class="as-strava__brand"><i></i>oquea</span>
-        </div>
+      <div class="as-cards" style={`--n:${cards.length}`} data-cards={cards.length}>
+        {cards.map((k, i) => (
+          <div class:list={['as-card', `as-card--${k}`]} style={`--i:${i};${cardBg(i)}`}>
+            <span class="as-card__shade"></span>
+            <div class="as-stk">
+              {k === 'dive' ? (
+                <Fragment>
+                  <p class="as-stk__loc"><Fragment set:html={ic('pin', 13)} />Buceando en {s.site}</p>
+                  <p class="as-stk__hero"><b>47</b><span>Inmersión</span></p>
+                  <div class="as-stk__stats">
+                    <span><b>{s.duration}<i>min</i></b><small>Tiempo</small></span>
+                    <span><b>{s.depth}<i>m</i></b><small>Profundidad</small></span>
+                    <span><b>{s.temp}<i>°C</i></b><small>Temp.</small></span>
+                  </div>
+                  <p class="as-stk__life">{s.life.replace(/,\s*/g, ' · ')}</p>
+                  <p class="as-stk__foot"><span>Con {centerName}</span><span>26 feb 26</span></p>
+                </Fragment>
+              ) : k === 'record' ? (
+                <Fragment>
+                  <span class="as-stk__chart" set:html={DEPTH_CHART} />
+                  <span class="as-stk__pill">Nuevo récord personal</span>
+                  <p class="as-stk__hero as-stk__hero--xl"><b>42</b><span class="as-stk__unit">m</span></p>
+                  <p class="as-stk__label">Profundidad máxima</p>
+                  <p class="as-stk__life">Récord anterior 38 m · Inmersión #47 · {s.site}</p>
+                  <p class="as-stk__foot"><span>Con {centerName}</span><span>16 sep 26</span></p>
+                </Fragment>
+              ) : k === 'milestone' ? (
+                <Fragment>
+                  <p class="as-stk__label as-stk__label--hi">Hito conseguido</p>
+                  <p class="as-stk__hero as-stk__hero--xxl"><b>100</b><span class="as-stk__unit">inmersiones</span></p>
+                  <p class="as-stk__sub">Buceando desde 2019 · 34 puntos · 6 países</p>
+                  <div class="as-stk__stats">
+                    <span><b>82h</b><small>Bajo el agua</small></span>
+                    <span><b>42 m</b><small>La más profunda</small></span>
+                  </div>
+                  <p class="as-stk__life">Inmersión 100 en {s.site}</p>
+                  <p class="as-stk__foot"><span>Con {centerName}</span></p>
+                </Fragment>
+              ) : k === 'trip' ? (
+                <Fragment>
+                  <span class="as-stk__chart" set:html={TRIP_CHART} />
+                  <p class="as-stk__label">El viaje</p>
+                  <p class="as-stk__title">Maldivas 2025</p>
+                  <div class="as-stk__stats as-stk__stats--hi">
+                    <span><b>12</b><small>Inmersiones</small></span>
+                    <span><b>6</b><small>Puntos</small></span>
+                    <span><b>8h 40m</b><small>Bajo el agua</small></span>
+                  </div>
+                  <p class="as-stk__life">Mantas · Tiburón ballena · Tortugas</p>
+                  <p class="as-stk__foot"><span>Con {centerName}</span><span>feb 2025</span></p>
+                </Fragment>
+              ) : (
+                <Fragment>
+                  <span class="as-stk__tile" set:html={FISH} />
+                  <span class="as-stk__pill">Visto en el 3 % de las inmersiones</span>
+                  <p class="as-stk__title">Tiburón ballena</p>
+                  <p class="as-stk__sub">Inmersión #47 · {s.site}</p>
+                  <p class="as-stk__foot"><span>Con {centerName}</span></p>
+                </Fragment>
+              )}
+              {s.brand ? <img class="as-stk__brand" src={s.brand} alt="Oquea" /> : <b class="as-stk__brand as-stk__brand--txt">oquea</b>}
+            </div>
+          </div>
+        ))}
+        {cards.length > 1 && <span class="as-cards__dots">{cards.map((_, i) => <i style={`--i:${i}`}></i>)}</span>}
       </div>
     ) : screen === 'logbook' ? (
       <Fragment>
-        <div class="as-bar as-bar--title"><span class="as-iso"></span><span>Logbook</span><span class="as-bar__end" set:html={ic('search')} /></div>
-        <div class="as-kpis">
-          <span><b>{s.dives}</b><small>Inmersiones</small></span>
-          <span><b>32 m</b><small>Prof. máx.</small></span>
-          <span><b>95 h</b><small>Bajo el agua</small></span>
+        <div class="lb-head"><span class="as-iso"></span><b>Logbook</b><span class="lb-qr" set:html={ic('qr', 18)} /><span class="lb-add"><Fragment set:html={ic('add', 16)} />Inmersión</span></div>
+        <div class="lb-tools"><span class="lb-search"><Fragment set:html={ic('search', 14)} />Busca centros y puntos de inmersión</span><span class="lb-view"><i class="on" set:html={ic('grid', 14)} /><i set:html={ic('list', 14)} /></span></div>
+        <div class="lb-years"><span class="on">Todos</span><span>2026</span><span>2025</span><span>2024</span></div>
+        <p class="lb-year"><b>2026</b><i></i><small>12 inmersiones</small></p>
+        <div class="lb-card">
+          <div class="lb-card__top"><span class="lb-num"><small>Inmersión</small><b>47</b></span><span class="lb-card__txt"><b>Inmersión a la luz de la luna</b><span class="lb-chips"><em class="lb-chip lb-chip--acc">{centerName}</em><em class="lb-chip lb-chip--blue">Evento</em><em class="lb-chip">{s.level}</em></span><small>16 sep 2026 · {centerName}</small></span></div>
+          <span class="lb-pic" style={pool(0)}><span class="lb-pic__badge" set:html={ic('award', 22)} /></span>
+          <span class="lb-share"><Fragment set:html={ic('export', 16)} />Compartir esta inmersión</span>
         </div>
-        <p class="as-month">Febrero 2026</p>
-        {[[s.site, s.date, s.depth], ['Shark Point', '24/02/2026', '22'], ['The Cathedral', '23/02/2026', '16'], ['Los Cañones', '12/02/2026', '28']].map(([site, date, d], i) => (
-          <div class="as-dive"><span class="as-dive__ico" set:html={mask(22)} /><span class="as-dive__txt"><b>{site}</b><small>{date} · {d} m</small></span>{i < 3 && <span class="as-chip as-chip--sm">{centerName}</span>}</div>
-        ))}
-        <AppNav on='logbook' />
+        <div class="lb-card">
+          <div class="lb-card__top"><span class="lb-num"><small>Inmersión</small><b>46</b></span><span class="lb-card__txt"><b>{s.site}</b><small>12 sep 2026 · {centerName}</small></span></div>
+          <span class="lb-map"><span class="lb-map__one" set:html={SITE_PIN} /><span class="lb-map__tag"><Fragment set:html={ic('pin', 13)} />{s.site}</span></span>
+          <span class="lb-share"><Fragment set:html={ic('export', 16)} />Compartir esta inmersión</span>
+        </div>
       </Fragment>
     ) : screen === 'diver-profile' ? (
       <Fragment>
@@ -230,27 +340,36 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
       </Fragment>
     ) : screen === 'map' ? (
       <div class="as-map">
-        <div class="as-map__sea" aria-hidden="true">
-          {[[22, 30, 'site'], [64, 22, 'center'], [48, 48, 'site'], [30, 62, 'site'], [72, 58, 'ngo'], [56, 36, 'me']].map(([x, y, k]) => (
-            <span class:list={['as-pin', `as-pin--${k}`]} style={`left:${x}%;top:${y}%`}>{k === 'me' ? <Fragment set:html={ic('anchor', 14)} /> : null}</span>
-          ))}
-        </div>
-        <div class="as-map__search"><Fragment set:html={ic('search', 15)} />Buscar centros, dive sites…</div>
-        <div class="as-map__legend"><span><i class="as-dot as-dot--center"></i>Centros</span><span><i class="as-dot as-dot--site"></i>Dive sites</span><span><i class="as-dot as-dot--ngo"></i>ONG</span></div>
-        <div class="as-ficha">
-          <div class="as-ficha__head"><span class="as-ccard__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 20)} /><span><b>{centerName}</b><small><Fragment set:html={ic('pin', 12)} />{s.place}</small></span></div>
-          <div class="as-ficha__chips"><span class="as-chip as-chip--sm">Español</span><span class="as-chip as-chip--sm">English</span><span class="as-chip as-chip--sm as-chip--grey">Certificadoras</span></div>
-          <div class="as-ficha__rows"><span><Fragment set:html={ic('globe', 14)} />Web</span><span><Fragment set:html={ic('users', 14)} />Equipo</span><span><Fragment set:html={ic('phone', 14)} />Contacto</span></div>
-        </div>
+        <SeaMap center={centerName} site={s.site} focus='centre' />
+        <div class="as-map__search"><Fragment set:html={ic('search', 15)} />Busca centros y puntos de inmersión</div>
+        
+        <MapSheet kind='centre' name={centerName} place={s.place} event={{ label: 'Evento en marcha', title: 'Limpieza de la playa', when: 'Sáb 14 sep · 09:00' }} />
       </div>
     ) : screen === 'album' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Álbum · {s.activity}</span></div>
-        <p class="as-album__meta"><Fragment set:html={ic('clock', 13)} />Compartido 30 días · {centerName} y el grupo</p>
-        <div class="as-album">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => <span class="as-album__ph" style={`${photo ? `background-image:url('${photo.replace(/'/g, '%27')}');` : ''}background-position:${(i % 3) * 50}% ${Math.floor(i / 3) * 50}%`}></span>)}
+        <div class="al-bar"><Fragment set:html={ic('back')} /><b>{s.album}</b><Fragment set:html={ic('download', 20)} /></div>
+        <p class="al-meta"><span><Fragment set:html={ic('images', 14)} />8 fotos</span><span><Fragment set:html={ic('users', 14)} />3 buceadores</span><em>Quedan 23 días</em></p>
+        <div class="al-grid">
+          {ALBUM.map(([who, mine, likes], i) => (
+            <span class:list={['al-ph', i === 0 && 'al-ph--big', mine && 'al-ph--mine']} style={pool(i)}>
+              {mine && <em class="al-mine"><Fragment set:html={ic('person', 10)} />Tu foto</em>}
+              <span class="al-ph__foot"><span><i class="al-av"></i>{who}</span><span>{likes && <Fragment><Fragment set:html={ic('heart', 12)} />{likes}</Fragment>}<Fragment set:html={ic('download', 13)} /></span></span>
+            </span>
+          ))}
         </div>
-        <span class="as-btn as-btn--bottom"><Fragment set:html={ic('camera', 16)} />Subir fotos</span>
+        <span class="al-add"><Fragment set:html={ic('imageAdd', 18)} />Añadir fotos</span>
+      </Fragment>
+    ) : screen === 'album-photo' ? (
+      <Fragment>
+        <div class="al-bar al-bar--dim"><Fragment set:html={ic('back')} /><b>{s.album}</b><Fragment set:html={ic('download', 20)} /></div>
+        <div class="ap">
+          <div class="ap-card" style={pool(1)}>
+            <span class="ap-who"><i class="al-av al-av--lg"></i><b>Lucía Fernández</b><em>Seguir</em></span>
+            <span class="ap-foot"><span><Fragment set:html={ic('heart', 20)} />15</span><Fragment set:html={ic('download', 20)} /></span>
+          </div>
+          <span class="ap-add"><Fragment set:html={ic('add', 18)} />Añadir fotos</span>
+        </div>
+        <AppNav on='logbook' />
       </Fragment>
     ) : screen === 'badge' ? (
       <Fragment>
@@ -266,18 +385,8 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
       </Fragment>
     ) : screen === 'event' ? (
       <div class="as-map">
-        <div class="as-map__sea" aria-hidden="true">
-          {[[30, 28, 'center'], [62, 34, 'center'], [46, 54, 'me'], [70, 62, 'center']].map(([x, y, k]) => (
-            <span class:list={['as-pin', `as-pin--${k}`]} style={`left:${x}%;top:${y}%`}>{k === 'me' ? <Fragment set:html={ic('anchor', 14)} /> : null}</span>
-          ))}
-        </div>
-        <div class="as-ficha">
-          <span class="as-chip as-chip--sm">Evento · ONG</span>
-          <b class="as-ficha__title">Limpieza de fondos</b>
-          <small><Fragment set:html={ic('calendar', 12)} />{s.date} · varios centros</small>
-          <div class="as-ficha__rows as-ficha__rows--col"><span><Fragment set:html={ic('anchor', 14)} />{centerName}<em>Centro más cercano</em></span></div>
-          <span class="as-btn as-btn--sm">Inscribirme en este centro</span>
-        </div>
+        <SeaMap center={centerName} site={s.site} focus='ngo' />
+        <MapSheet kind='ngo' name='Mar Limpio' place={s.place} event={{ label: 'Evento en marcha', title: 'Limpieza de fondos', when: 'Dom 21 sep · 08:30' }} />
       </div>
     ) : null}
   </div>
@@ -290,6 +399,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
     --ap-tint: color-mix(in srgb, var(--ap) 7%, #fff);
     --ap-chip: color-mix(in srgb, var(--ap) 12%, #fff);
     --ap-acc: rgb(var(--color-accent, 208 255 0));
+    --ap-navy: rgb(var(--color-accent-contrast, 31 41 76));
     --ink: #111318; --mut: #7c7c7c; --hint: #a3a3a8; --line: #e6e8ee; --soft: #f6f7f9;
     position: relative; width: 375px; height: 780px; flex: none; border-radius: 54px; padding: 12px;
     background: #1d2130; box-shadow: inset 0 0 0 2px #3a3f52;
@@ -366,24 +476,60 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-sheet .as-btn { height: 40px; margin-top: 8px; font-size: 14px; }
 
   /* Tarjeta para compartir (tipo Strava) */
-  .as-strava { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 64px 22px 30px; color: #fff; background: radial-gradient(ellipse at 30% 20%, #3fb4c9, transparent 55%), radial-gradient(ellipse at 70% 80%, #0d4a6b, transparent 60%), linear-gradient(170deg, #1a7a94, #082f4a); background-size: cover; background-position: center; }
-  .as-strava__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / .25), transparent 30%, transparent 55%, rgb(0 0 0 / .55)); }
-  .as-strava > *:not(.as-strava__shade) { position: relative; }
-  .as-strava__head { display: flex; align-items: center; justify-content: space-between; }
-  .as-strava__head .as-iso { width: 34px; height: 26px; }
-  .as-strava__loc { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 99px; background: rgb(255 255 255 / .18); backdrop-filter: blur(6px); font-size: 13px; }
-  .as-strava__stats { display: grid; gap: 18px; }
-  .as-strava__stats span { display: grid; gap: 4px; }
-  .as-strava__stats small { color: rgb(255 255 255 / .8); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
-  .as-strava__stats b { font-size: 56px; line-height: 1; font-weight: 700; letter-spacing: -.02em; }
-  .as-strava__stats i { margin-left: 6px; font-size: 20px; font-style: normal; font-weight: 500; }
-  .as-strava__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .35); }
-  .as-strava__center { display: flex; align-items: center; gap: 10px; }
-  .as-strava__center small { color: rgb(255 255 255 / .75); }
-  .as-strava__center b { font-size: 17px; }
-  .as-strava__logo { width: 52px; height: 52px; border-radius: 14px; object-fit: contain; background: #fff; padding: 4px; }
-  .as-strava__brand { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--ap-acc); color: #1f294c; font-weight: 800; font-size: 13px; }
-  .as-strava__brand i { width: 8px; height: 8px; border-radius: 99px; background: #1f294c; }
+  /* share-card: las tarjetas para redes (sticker de Oquea sobre la foto del buceador), una tras otra */
+  .as-cards { position: absolute; inset: 0; overflow: hidden; background: #0b2a44; }
+  .as-card { position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, #3fb4c9, transparent 55%), linear-gradient(170deg, #1a7a94, #082f4a); background-size: cover; background-position: center; color: #fff; opacity: 0; }
+  .as-card:first-child { opacity: 1; }
+  .as-card__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / .1), rgb(0 0 0 / .3) 45%, transparent 75%); }
+  .as-stk { position: absolute; left: 24px; right: 24px; top: 92px; display: grid; justify-items: start; gap: 9px; font-family: var(--font-sans, inherit); text-shadow: 0 0 12px rgb(0 0 0 / .55); }
+  .as-stk p { margin: 0; }
+  .as-stk__loc { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .as-stk__hero { display: flex; align-items: baseline; gap: 10px; line-height: .95; }
+  .as-stk__hero b { color: var(--ap-acc); font-size: 56px; font-weight: 700; letter-spacing: -.02em; }
+  .as-stk__hero span { color: rgb(255 255 255 / .75); font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .as-stk__hero--xl b { font-size: 66px; } .as-stk__hero--xxl b { font-size: 74px; }
+  .as-stk__unit { font-size: 23px !important; font-weight: 400 !important; letter-spacing: 0 !important; text-transform: none !important; color: rgb(255 255 255 / .88) !important; }
+  .as-stk__stats { display: flex; gap: 22px; }
+  .as-stk__stats span { display: grid; gap: 3px; }
+  .as-stk__stats b { font-size: 32px; font-weight: 700; line-height: 1; }
+  .as-stk__stats i { margin-left: 4px; font-size: 14px; font-style: normal; }
+  .as-stk__stats small { color: rgb(255 255 255 / .65); font-size: 9.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+  .as-stk__stats--hi b { color: var(--ap-acc); }
+  .as-stk__life { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: rgb(255 255 255 / .86); }
+  .as-stk__label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgb(255 255 255 / .75); }
+  .as-stk__label--hi { color: #fff; }
+  .as-stk__sub { font-size: 14px; color: rgb(255 255 255 / .85); }
+  .as-stk__title { font-size: 34px; font-weight: 700; line-height: 1.05; letter-spacing: -.01em; }
+  .as-stk__foot { display: flex; justify-content: space-between; gap: 10px; width: 100%; font-size: 9.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: rgb(255 255 255 / .7); }
+  .as-stk__chart { display: block; width: 100%; height: 68px; padding: 6px 8px; border-radius: 18px; background: #08182b; color: var(--ap-acc); box-shadow: 0 10px 28px rgb(0 0 0 / .4); }
+  .as-stk__chart :global(svg) { display: block; width: 100%; height: 100%; }
+  .as-stk__pill { padding: 6px 14px; border-radius: 99px; background: var(--ap-acc); color: #1f294c; font-size: 12px; font-weight: 700; text-shadow: none; }
+  .as-stk__tile { display: grid; place-items: center; width: 116px; height: 96px; border-radius: 20px; background: linear-gradient(180deg, #3a5a7c, #1c3350); box-shadow: 0 10px 28px rgb(0 0 0 / .35); }
+  .as-stk__tile :global(svg) { width: 92px; }
+  .as-stk__brand { height: 18px; width: auto; margin-top: 2px; }
+  .as-stk__brand--txt { height: auto; font-size: 17px; font-weight: 800; letter-spacing: -.03em; }
+  .as-card--species .as-stk, .as-card--milestone .as-stk { top: auto; bottom: 56px; }
+  .as-cards__dots { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; gap: 6px; }
+  .as-cards__dots i { width: 6px; height: 6px; border-radius: 99px; background: rgb(255 255 255 / .45); }
+  .as-cards__dots i:first-child { background: #fff; }
+  /* Una tras otra: cada tarjeta se ve 1/n del ciclo (3,2 s cada una), con la foto acercándose despacio */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-cards='2'] .as-card { animation: as-cyc-2 6.4s infinite; } [data-cards='2'] .as-cards__dots i { animation: as-dot-2 6.4s infinite; }
+    [data-cards='3'] .as-card { animation: as-cyc-3 9.6s infinite; } [data-cards='3'] .as-cards__dots i { animation: as-dot-3 9.6s infinite; }
+    [data-cards='4'] .as-card { animation: as-cyc-4 12.8s infinite; } [data-cards='4'] .as-cards__dots i { animation: as-dot-4 12.8s infinite; }
+    [data-cards='5'] .as-card { animation: as-cyc-5 16s infinite; } [data-cards='5'] .as-cards__dots i { animation: as-dot-5 16s infinite; }
+    .as-card, .as-cards__dots i { animation-delay: calc(var(--i) * 3.2s) !important; }
+    .as-card:first-child, .as-cards__dots i:first-child { opacity: 0; background: rgb(255 255 255 / .45); }
+    .as-card:first-child { animation-delay: 0s; }
+  }
+  @keyframes as-cyc-2 { 0% { opacity: 0; transform: scale(1.06); } 4%, 48% { opacity: 1; } 52%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-3 { 0% { opacity: 0; transform: scale(1.06); } 3%, 31% { opacity: 1; } 35%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-4 { 0% { opacity: 0; transform: scale(1.06); } 2.5%, 23% { opacity: 1; } 26%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-5 { 0% { opacity: 0; transform: scale(1.06); } 2%, 18% { opacity: 1; } 21%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-dot-2 { 0%, 49% { background: #fff; } 50%, 100% { background: rgb(255 255 255 / .45); } }
+  @keyframes as-dot-3 { 0%, 32% { background: #fff; } 33%, 100% { background: rgb(255 255 255 / .45); } }
+  @keyframes as-dot-4 { 0%, 24% { background: #fff; } 25%, 100% { background: rgb(255 255 255 / .45); } }
+  @keyframes as-dot-5 { 0%, 19% { background: #fff; } 20%, 100% { background: rgb(255 255 255 / .45); } }
 
   /* Logbook y perfil */
   .as-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 14px; }
@@ -534,4 +680,102 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-album__ph { aspect-ratio: 1; border-radius: 8px; background-color: #2b7e96; background-image: linear-gradient(160deg, #3fb4c9, #0d4a6b); background-size: 300% 300%; }
   @keyframes as-pop { from { transform: scale(.4); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .as-okdot { animation: none; } }
+
+  /* Logbook público (el que ve el buceador): tarjetas por inmersión con foto o mapa del punto */
+  .lb-head { display: flex; align-items: center; gap: 8px; height: 40px; margin-bottom: 10px; }
+  .lb-head b { flex: 1; font-size: 16px; }
+  .lb-head .as-iso { width: 28px; height: 16px; background: radial-gradient(circle at 30% 50%, var(--ap-navy) 0 7px, transparent 7.5px), radial-gradient(circle at 62% 50%, var(--ap) 0 7px, transparent 7.5px); }
+  .lb-qr { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 99px; background: var(--ap-chip); color: var(--ap); }
+  .lb-add { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 99px; background: var(--ap); color: #fff; font-size: 13px; }
+  .lb-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+  .lb-search { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; padding: 9px 12px; border-radius: 99px; background: #f5f6f8; color: #8a8f9c; font-size: 11.5px; white-space: nowrap; overflow: hidden; }
+  .lb-view { display: flex; gap: 2px; padding: 4px; border-radius: 99px; background: #f5f6f8; }
+  .lb-view i { display: grid; place-items: center; width: 30px; border-radius: 99px; color: #8a8f9c; }
+  .lb-view i.on { background: #fff; color: var(--ap); }
+  .lb-years { display: flex; gap: 8px; margin-bottom: 12px; }
+  .lb-years span { padding: 7px 13px; border-radius: 99px; background: #f5f6f8; color: #464646; font-size: 13px; }
+  .lb-years .on { background: var(--ap-navy); color: #fff; }
+  .lb-year { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; color: var(--ap-navy); }
+  .lb-year i { flex: 1; height: 1px; background: #efefef; }
+  .lb-year small { color: #8a8f9c; font-size: 11px; }
+  .lb-card { display: grid; gap: 10px; margin-bottom: 12px; padding: 14px; border: 1px solid #ececec; border-radius: 20px; }
+  .lb-card__top { display: flex; gap: 12px; }
+  .lb-num { display: grid; place-items: center; align-content: center; width: 50px; height: 50px; flex: none; border-radius: 12px; background: var(--ap-navy); color: #fff; }
+  .lb-num small { font-size: 7.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: rgb(255 255 255 / .6); }
+  .lb-num b { font-size: 20px; line-height: 1; }
+  .lb-card__txt { display: grid; gap: 6px; min-width: 0; }
+  .lb-card__txt > b { font-size: 15px; }
+  .lb-card__txt > small { color: #8a8f9c; font-size: 11.5px; }
+  .lb-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .lb-chip { padding: 3px 8px; border-radius: 10px; background: #f5f6f8; color: #464646; font-size: 9.5px; font-weight: 700; font-style: normal; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .lb-chip--acc { background: var(--ap-acc); color: var(--ap-navy); }
+  .lb-chip--blue { background: var(--ap-chip); color: var(--ap); }
+  .lb-pic { position: relative; height: 128px; border-radius: 12px; background-size: cover; background-position: center; }
+  .lb-pic__badge { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 40px; height: 38px; border-radius: 14px; background: rgb(255 255 255 / .94); color: var(--ap-navy); }
+  .lb-share { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px; border-radius: 99px; background: var(--ap-tint); color: var(--ap); font-size: 13px; }
+  .lb-map { position: relative; height: 128px; overflow: hidden; border-radius: 12px; background: #dceaf9; }
+  .lb-map { background: linear-gradient(180deg, #e9f1dc 0 32%, #dceaf9 32%); }
+  .lb-map__one { position: absolute; left: 50%; top: 22%; width: 40px; height: 54px; margin-left: -20px; }
+  .lb-map__one :global(svg) { width: 100%; height: 100%; }
+  .lb-map__land { position: absolute; left: -10px; right: -10px; top: -8px; height: 46px; border-radius: 0 0 40% 60%; background: #e9f1dc; }
+  .lb-map__line { position: absolute; left: -20px; right: -20px; top: 52px; height: 8px; border-top: 2px solid #c8dbf5; border-radius: 50%; }
+  .lb-map__line--2 { top: 86px; right: 60px; opacity: .6; }
+  .lb-map__pin { position: absolute; left: 50%; top: 48px; display: grid; place-items: center; width: 32px; height: 32px; margin-left: -16px; border-radius: 99px; background: #406ad0; color: #fff; box-shadow: 0 0 0 3px #fff; }
+  .lb-map__tag { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 99px; background: rgb(255 255 255 / .94); color: var(--ap-navy); font-size: 11px; }
+
+  /* Al escanear el QR: qué actividad haces hoy */
+  .qp { display: flex; flex-direction: column; gap: 12px; height: calc(100% - 20px); }
+  .qp-centre { display: flex; align-items: center; gap: 8px; }
+  .qp-centre__ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--ap-navy); color: #fff; overflow: hidden; }
+  .qp-centre__ico :global(img) { width: 100%; height: 100%; object-fit: cover; }
+  .qp-centre b { display: block; font-size: 13px; }
+  .qp-centre small { display: flex; align-items: center; gap: 3px; color: #8a8f9c; font-size: 10.5px; }
+  .qp-title { margin: 6px 0 0; font-size: 21px; line-height: 1.15; }
+  .qp-date { margin: -4px 0 4px; color: #8a8f9c; font-size: 11px; }
+  .qp-act { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #ececec; border-radius: 12px; color: #8a8f9c; }
+  .qp-act.is-on { background: var(--ap-tint); border-color: #c8dbf5; }
+  .qp-act__ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: #fff; color: #406ad0; }
+  .qp-act__txt { flex: 1; display: grid; gap: 3px; justify-items: start; }
+  .qp-act__txt b { color: #292929; font-size: 13.5px; font-weight: 500; }
+  .qp-act__txt small { font-size: 11px; }
+  .qp-by { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 7px; background: var(--ap-chip); color: var(--ap); font-size: 8.5px; font-weight: 700; font-style: normal; }
+  .qp-miss { display: flex; align-items: center; gap: 10px; margin-top: auto; margin-bottom: 14px; padding: 12px; border: 1px solid #c8dbf5; border-radius: 12px; background: var(--ap-tint); color: #8a8f9c; }
+  .qp-miss__ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 99px; background: #fff; color: #406ad0; }
+  .qp-miss span:nth-child(2) { flex: 1; } .qp-miss b { display: block; color: var(--ap-navy); font-size: 13px; font-weight: 500; } .qp-miss small { color: #464646; font-size: 11px; }
+
+  /* La inmersión, ya en el logbook: pestañas Inmersión · Participantes */
+  .dd-bar { display: flex; align-items: center; gap: 6px; height: 30px; font-size: 16px; }
+  .dd-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: 0 -18px; text-align: center; font-size: 14px; }
+  .dd-tabs span { padding: 8px; border-bottom: 1px solid #bdbdbd; color: #bdbdbd; }
+  .dd-tabs .on { color: var(--ap); border-bottom: 2px solid var(--ap); }
+  .dd-hero { height: 140px; }
+  .dd-act { margin-top: -30px; }
+
+  /* Álbum compartido de la salida: fotos de todos, «Tu foto», me gusta y descarga */
+  .al-bar { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 15px; }
+  .al-bar b { flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .al-meta { display: flex; align-items: center; gap: 12px; margin: 2px 0 10px; color: #989898; font-size: 11.5px; }
+  .al-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .al-meta em { margin-left: auto; padding: 2px 10px; border-radius: 99px; background: var(--ap-chip); color: var(--ap); font-size: 10px; font-style: normal; font-weight: 500; }
+  .al-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .al-ph { position: relative; height: 150px; overflow: hidden; border-radius: 12px; background-size: cover; background-position: center; color: #fff; }
+  .al-ph--big { grid-column: 1 / -1; height: 180px; border-radius: 22px; }
+  .al-ph--mine { box-shadow: inset 0 0 0 2px var(--ap); }
+  .al-mine { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 9px; border-radius: 99px; background: var(--ap); font-size: 9.5px; font-style: normal; font-weight: 500; }
+  .al-ph__foot { position: absolute; inset: auto 0 0; display: flex; justify-content: space-between; align-items: center; padding: 18px 10px 8px; background: linear-gradient(transparent, rgb(0 0 0 / .55)); font-size: 10px; }
+  .al-ph__foot span { display: inline-flex; align-items: center; gap: 4px; }
+  .al-av { display: inline-block; width: 18px; height: 18px; border-radius: 99px; background: #5585dc; box-shadow: 0 0 0 1.5px #fff; }
+  .al-av--lg { width: 30px; height: 30px; }
+  .al-add { position: absolute; left: 18px; right: 18px; bottom: 26px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border-radius: 99px; background: var(--ap); color: #fff; font-size: 15px; font-weight: 500; box-shadow: 0 4px 20px color-mix(in srgb, var(--ap) 35%, transparent); }
+  .al-bar--dim { opacity: .45; }
+  .ap { position: absolute; inset: 96px 14px 84px; display: grid; grid-template-rows: 1fr auto; gap: 0; }
+  .ap-card { position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; border-radius: 22px; background-size: cover; background-position: center; color: #fff; box-shadow: 0 12px 40px rgb(0 0 0 / .35); }
+  .ap-who { display: flex; align-items: center; gap: 10px; text-shadow: 0 1px 6px rgb(0 0 0 / .5); }
+  .ap-who b { flex: 1; font-size: 15px; font-weight: 500; }
+  .ap-who em { padding: 5px 14px; border-radius: 99px; background: rgb(255 255 255 / .92); color: var(--ap); font-size: 13px; font-style: normal; text-shadow: none; }
+  .ap-foot { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+  .ap-foot span { display: inline-flex; align-items: center; gap: 6px; }
+  .ap-add { display: flex; align-items: center; justify-content: center; gap: 6px; margin: -8px 6px 0; padding: 16px 12px 10px; border-radius: 0 0 22px 22px; background: #f3f4f6; color: #464646; font-size: 14px; }
+  .as-screen--album-photo { background: #e9eaee; }
+  .as-screen--qr-pick { padding-top: 60px; }
 </style>

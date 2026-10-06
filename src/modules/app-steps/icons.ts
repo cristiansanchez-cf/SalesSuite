@@ -7,6 +7,7 @@ import {
   Check, Clock, Ruler, Send, BookOpen, ShieldCheck, ChartLine, Megaphone, Globe, Heart, Star, Sparkles, Thermometer,
   ArrowDown, Fish, Smartphone, ChevronLeft, ChevronRight, ChevronDown, CircleCheck, Info, Lightbulb, CirclePlus, House,
   User, Download, Pencil, ClipboardList, Eye, Menu, ArrowRight, Waves, Camera, Ellipsis, Search, StickyNote, Plus,
+  LayoutGrid, List, Award, Share, ImagePlus, History, UserRound, Images,
 } from 'lucide-static';
 
 const inner = (svg: string) => svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').trim();
@@ -22,6 +23,8 @@ export const APP_ICONS = {
   bulb: inner(Lightbulb), add: inner(CirclePlus), home: inner(House), user: inner(User), download: inner(Download),
   edit: inner(Pencil), clipboard: inner(ClipboardList), eye: inner(Eye), menu: inner(Menu), arrow: inner(ArrowRight),
   waves: inner(Waves), camera: inner(Camera), more: inner(Ellipsis), search: inner(Search), note: inner(StickyNote), plus: inner(Plus),
+  grid: inner(LayoutGrid), list: inner(List), award: inner(Award), export: inner(Share), imageAdd: inner(ImagePlus),
+  history: inner(History), person: inner(UserRound), images: inner(Images),
 } as const;
 
 export type AppIcon = keyof typeof APP_ICONS;

@@ -30,9 +30,12 @@ const { tour, kit } = await pb.learnIndex();
 const steps = tour.steps;
 // Cada paso, con la UI de verdad cuando la hay (móvil, pantalla, informe); si no, su foto.
 const phoneProps = kit.phone ? phoneTourSchema.safeParse(kit.phone) : null;
-const appKit = kit.app ? appStepsSchema.partial().safeParse(kit.app) : null;
-const appSample = appStepsSchema.shape.sample.parse(appKit?.success ? appKit.data.sample ?? {} : {});
-const appPhoto = appKit?.success ? appKit.data.photo ?? null : null;
+// Cada pantalla, con los datos de ejemplo del módulo que la enseña (si no, los del primero).
+const appFor = (screen: string) => {
+  const raw = (kit.apps ?? []).find((x) => Array.isArray(x.screens) && (x.screens as Array<{ screen?: string }>).some((y) => y.screen === screen)) ?? kit.app ?? {};
+  const r = appStepsSchema.partial().safeParse(raw);
+  return { sample: appStepsSchema.shape.sample.parse(r.success ? r.data.sample ?? {} : {}), photo: r.success ? r.data.photo ?? null : null };
+};
 const uiOf = (ui: string | null | undefined) => {
   if (!ui) return null;
   if (ui.startsWith('phone:') && phoneProps?.success) return { kind: 'phone' as const, only: ui.slice(6) };
@@ -70,7 +73,7 @@ const uiOf = (ui: string | null | undefined) => {
                 {u.kind === 'phone' && phoneProps?.success && <Phone {...phoneProps.data} only={u.only} zoom={0.78} float />}
                 {u.kind === 'screen' && <div class="tour__screen"><ScreenMini props={kit.screen} scenes={u.scenes} /></div>}
                 {u.kind === 'report' && <ReportMini photo={kit.photo} />}
-                {u.kind === 'app' && <div class="tn-ui tour__app"><AppScreen screen={u.screen} sample={appSample} center={m.tour.yourCentre} photo={appPhoto} zoom={0.78} /></div>}
+                {u.kind === 'app' && <div class="tn-ui tour__app"><AppScreen screen={u.screen} sample={appFor(u.screen).sample} center={m.tour.yourCentre} photo={appFor(u.screen).photo} zoom={0.78} /></div>}
                 {u.kind === 'console' && <div class="tn-ui tour__screen"><ConsoleMini props={kit.console} view={u.view} center={m.tour.yourCentre} /></div>}
               </figure>
             ); })() : s.image ? (
