@@ -90,7 +90,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
           <span><small>Temperatura</small><b>{s.temp}<i>°C</i></b></span>
         </div>
         <div class="as-strava__foot">
-          <span class="as-strava__center"><small>with</small><b>{centerName}</b></span>
+          <span class="as-strava__center">{logo && <img class="as-strava__logo" src={logo} alt="" />}<span><small>with</small><b>{centerName}</b></span></span>
           <span class="as-strava__brand"><i></i>oquea</span>
         </div>
       </div>
@@ -252,6 +252,18 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         </div>
         <span class="as-btn as-btn--bottom"><Fragment set:html={ic('camera', 16)} />Subir fotos</span>
       </Fragment>
+    ) : screen === 'badge' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Insignia de asistencia</span></div>
+        <div class="as-badge">
+          <span class="as-badge__medal"><Fragment set:html={ic('heart', 40)} /></span>
+          <small>{centerName}</small>
+          <b>Limpieza de fondos</b>
+          <span class="as-chip">Asististe · {s.date}</span>
+          <p>{s.diver} ha participado en este evento.</p>
+        </div>
+        <div class="as-list as-list--flat"><span><Fragment set:html={ic('anchor', 16)} />Con {s.site}</span><span><Fragment set:html={ic('share', 16)} />Compartir</span></div>
+      </Fragment>
     ) : screen === 'event' ? (
       <div class="as-map">
         <div class="as-map__sea" aria-hidden="true">
@@ -366,6 +378,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-strava__stats b { font-size: 56px; line-height: 1; font-weight: 700; letter-spacing: -.02em; }
   .as-strava__stats i { margin-left: 6px; font-size: 20px; font-style: normal; font-weight: 500; }
   .as-strava__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .35); }
+  .as-strava__center { display: flex; align-items: center; gap: 10px; }
   .as-strava__center small { color: rgb(255 255 255 / .75); }
   .as-strava__center b { font-size: 17px; }
   .as-strava__logo { width: 52px; height: 52px; border-radius: 14px; object-fit: contain; background: #fff; padding: 4px; }
@@ -508,6 +521,13 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-ficha__rows em { margin-left: auto; font-style: normal; color: var(--ap); font-size: 11px; }
   .as-ficha__title { font-size: 18px; }
   .as-ficha .as-chip { width: max-content; }
+  /* Insignia */
+  .as-badge { display: grid; justify-items: center; gap: 8px; margin: 24px 0 18px; padding: 26px 18px; border-radius: 24px; background: var(--ap-tint); text-align: center; }
+  .as-badge__medal { display: grid; place-items: center; width: 110px; height: 110px; border-radius: 99px; background: var(--ap); color: #fff; box-shadow: 0 0 0 8px var(--ap-acc); margin-bottom: 10px; }
+  .as-badge b { font-size: 22px; }
+  .as-badge p { margin: 6px 0 0; color: var(--mut); font-size: 13px; }
+  .as-list--flat { border-top: 0; margin: 0; }
+  .as-list--flat span { justify-content: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px; }
   /* Álbum */
   .as-album__meta { display: flex; align-items: center; gap: 5px; margin: 0 0 12px; color: var(--mut); font-size: 12px; }
   .as-album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }

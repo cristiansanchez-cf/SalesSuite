@@ -64,7 +64,7 @@ CATALOG = [
     mod('tu-nombre', 'Tu nombre en cada inmersión', 'Las tarjetas que exporta el buceador, con el nombre del centro.',
         title='Tu nombre en cada inmersión', highlight='Tu nombre',
         lede='El buceador puede exportar una tarjeta de su inmersión para compartirla. Hay tres: la de la inmersión, la de récord personal y la de hito.',
-        cards=[{'icon': 'check', 'title': 'En todas aparece el nombre de tu centro.'}],
+        cards=[{'icon': 'check', 'title': 'En todas aparecen el nombre y el logo de tu centro.'}],
         screens=[{'screen': 'share-card'}]),
     mod('tus-buceadores', 'Tus buceadores', 'La lista de quién ha buceado con el centro y cuántas veces.',
         title='Tus buceadores', highlight='buceadores',
@@ -111,6 +111,7 @@ B = {m['key']: {'module': m['key'], 'props': {}} for m in CATALOG}
 # Apoyo visual: titular y captura, sin párrafos (condiciones y siguiente paso, completos).
 B['como-funciona-v'] = {'module': 'como-funciona', 'props': {'cards': [{'icon': 'calendar', 'title': '1. Creas la inmersión.'}, {'icon': 'qr', 'title': '2. El buceador escanea tu QR.'}, {'icon': 'users', 'title': '3. A ti te queda el registro.'}]}}
 B['red-fundadores-v'] = {'module': 'red-fundadores', 'props': {'lede': ''}}
+B['tu-nombre-v'] = {'module': 'tu-nombre', 'props': {'lede': '', 'cards': []}}
 # En apoyo visual (tope 5) solo caben los 5 obligatorios: los condicionales no entran.
 
 
@@ -126,16 +127,18 @@ SEG['proposal'] = {
     'blocks': B,
     'modes': {
         'full': ['portada', 'como-funciona', 'tu-nombre', 'red-fundadores', 'condiciones', 'siguiente-paso'],
-        'visual': ['portada', 'como-funciona-v', 'red-fundadores-v', 'condiciones', 'siguiente-paso'],
+        'visual': ['portada', 'como-funciona-v', 'tu-nombre-v', 'red-fundadores-v', 'condiciones', 'siguiente-paso'],
     },
-    'max': {'full': 7, 'visual': 5},
+    'max': {'full': 7, 'visual': 6},  # visual: 6 (Cristian, 6-oct-2026; el 05 decía 5)
     # Orden del 05: obligatorios → tu nombre → tus buceadores → perfil y mapa → álbum → eventos → en preparación.
     'priority': ['portada', 'como-funciona', 'como-funciona-v', 'red-fundadores', 'red-fundadores-v', 'condiciones', 'siguiente-paso',
-                 'tu-nombre', 'tus-buceadores', 'perfil-y-mapa', 'album', 'eventos', 'en-preparacion'],
+                 'tu-nombre', 'tu-nombre-v', 'tus-buceadores', 'perfil-y-mapa', 'album', 'eventos', 'en-preparacion'],
     'choices': [
         {'key': 'mercado', 'label': 'Mercado', 'hint': 'Fuera de España, «En preparación» no entra hasta cerrar la revisión legal de pagos.',
          'default': 'espana', 'options': [
-             {'key': 'espana', 'label': 'España', 'rules': []},
+             # España: el porcentaje no está cerrado (en torno al 5 %, sin decidir). Regla del 05: si el acuerdo de ese mercado
+             # no recoge el 10 %, el bloque de la comisión no entra.
+             {'key': 'espana', 'label': 'España', 'rules': [{'patch': 'condiciones', 'set': {'cards': [c for c in CONDICIONES if not c['title'].startswith('Cuando')]}}]},
              {'key': 'latam', 'label': 'Latinoamérica', 'rules': []},
              {'key': 'corea', 'label': 'Corea', 'rules': []},
              {'key': 'otro', 'label': 'Otro', 'rules': []},
@@ -186,7 +189,7 @@ t['tour'] = [
     {'title': 'El buceador escanea el QR', 'body': 'Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.', 'image': WEB + '02-registro-qr-logbook.png'},
     {'title': 'La inmersión queda en su logbook', 'body': 'Con los datos del punto de inmersión ya rellenos.', 'image': APP + '19-inmersion-guardada.png'},
     {'title': 'Al centro le queda la lista', 'body': 'Quién ha buceado con él y cuántas veces, con su histórico.', 'image': WEB + '04-crm-perfil-buceador.png'},
-    {'title': 'Su nombre en cada tarjeta', 'body': 'Cada vez que un buceador comparte su inmersión, sale el nombre del centro.', 'image': 'asset:img/fotos/share-card-aerea.png'},
+    {'title': 'Su nombre y su logo en cada tarjeta', 'body': 'Cada vez que un buceador comparte su inmersión, salen el nombre y el logo del centro.', 'image': 'asset:img/fotos/share-card-aerea.png'},
 ]
 
 P.write_text(json.dumps(t, ensure_ascii=False, indent=2) + '\n')

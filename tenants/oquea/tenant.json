@@ -88,8 +88,8 @@
       "image": "asset:img/producto/web/04-crm-perfil-buceador.png"
     },
     {
-      "title": "Su nombre en cada tarjeta",
-      "body": "Cada vez que un buceador comparte su inmersión, sale el nombre del centro.",
+      "title": "Su nombre y su logo en cada tarjeta",
+      "body": "Cada vez que un buceador comparte su inmersión, salen el nombre y el logo del centro.",
       "image": "asset:img/fotos/share-card-aerea.png"
     }
   ],
@@ -178,7 +178,7 @@
         "cards": [
           {
             "icon": "check",
-            "title": "En todas aparece el nombre de tu centro."
+            "title": "En todas aparecen el nombre y el logo de tu centro."
           }
         ],
         "screens": [
@@ -753,6 +753,169 @@
         ],
         "photo": "asset:img/fotos/share-card-bg.webp"
       }
+    },
+    {
+      "key": "ong-portada",
+      "block_type": "app-steps",
+      "name": "ONG · Portada",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Portada para una ONG.",
+      "props": {
+        "tone": "dark",
+        "eyebrow": "Oquea para ONGs",
+        "title": "{company}: tu evento, en todos tus centros a la vez",
+        "highlight": "{company}",
+        "mark": "asset:isotipo-blanco.svg",
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "ong-eventos",
+      "block_type": "app-steps",
+      "name": "ONG · El evento",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El evento con varios centros y la inscripción desde el mapa.",
+      "props": {
+        "title": "Tu evento, con varios centros a la vez",
+        "highlight": "varios centros",
+        "lede": "Creas el evento en Oquea, como una limpieza, y participan tus centros de buceo a la vez. La gente se inscribe desde el mapa en el centro más cercano, y cada centro ve quién va a venir.",
+        "screens": [
+          {
+            "screen": "event"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "ong-insignia",
+      "block_type": "app-steps",
+      "name": "ONG · Insignia de asistencia",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La insignia que recibe cada persona que asiste.",
+      "props": {
+        "title": "Cada asistente se lleva su insignia",
+        "highlight": "su insignia",
+        "lede": "Quien asiste a tu evento recibe en Oquea una insignia que dice que ha participado. Se queda en su perfil.",
+        "screens": [
+          {
+            "screen": "badge"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "ong-participantes",
+      "block_type": "app-steps",
+      "name": "ONG · Participantes",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Todos los que han participado, de todos los centros.",
+      "props": {
+        "title": "Todos tus participantes, en una lista",
+        "highlight": "en una lista",
+        "lede": "Tienes a todas las personas que han participado en tus eventos, en todos los centros.",
+        "cards": [
+          {
+            "icon": "sparkle",
+            "title": "Seréis los primeros en las herramientas de remarketing.",
+            "body": "Para volver a contactar con quien ha participado. Se avisará a las ONGs cuando estén."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "crm-list"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "ong-mapa",
+      "block_type": "app-steps",
+      "name": "ONG · El mapa",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La ONG en el mapa para que la gente se apunte antes.",
+      "props": {
+        "title": "En el mapa, para llegar a más gente",
+        "highlight": "el mapa",
+        "lede": "Tu ONG y tus eventos aparecen en el mapa de Oquea, junto a los centros y los puntos de inmersión, para que la gente se apunte más rápido.",
+        "screens": [
+          {
+            "screen": "map"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "ong-condiciones",
+      "block_type": "app-steps",
+      "name": "ONG · Condiciones",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Qué da la ONG y qué recibe, sin coste.",
+      "props": {
+        "title": "Condiciones",
+        "cards": [
+          {
+            "icon": "check",
+            "title": "Sin coste.",
+            "body": "Los eventos, las insignias, la lista de participantes y tu lugar en el mapa no tienen coste."
+          },
+          {
+            "icon": "sparkle",
+            "title": "Los primeros.",
+            "body": "Seréis los primeros en las herramientas de remarketing cuando lleguen."
+          },
+          {
+            "icon": "send",
+            "title": "Lo que pedimos.",
+            "body": "Que tus centros de buceo usen Oquea en tus eventos."
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "ong-siguiente-paso",
+      "block_type": "app-steps",
+      "name": "ONG · Siguiente paso",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Los pasos para empezar.",
+      "props": {
+        "tone": "dark",
+        "title": "Siguiente paso",
+        "mark": "asset:isotipo-blanco.svg",
+        "cards": [
+          {
+            "icon": "send",
+            "title": "1. Firmamos el acuerdo."
+          },
+          {
+            "icon": "users",
+            "title": "2. Damos de alta tus centros de buceo."
+          },
+          {
+            "icon": "calendar",
+            "title": "3. Creamos tu primer evento."
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
     }
   ],
   "market": [
@@ -766,7 +929,7 @@
       "icp": "Centro destino: quiere recibir buceadores de otros países (Latinoamérica, validado en la feria de Brasil; Corea, SUPUESTO). Centro emisor: tiene buceadores locales que viajan (España, SUPUESTO; aún no se le ha planteado a nadie).",
       "disqualifiers": null,
       "buying_process": "Decide el dueño o el instructor jefe (SUPUESTO del sector). Lo ejecuta la persona que está en el barco y dice «escanead el QR»: si le supone trabajo extra, el QR no se usa (SUPUESTO).",
-      "deal_size": "Sin coste: acuerdo de centro fundador. Comisión del 10 % solo sobre clientes nuevos que lleve Oquea, en los términos del acuerdo.",
+      "deal_size": "Sin coste: acuerdo de centro fundador. Comisión solo sobre clientes nuevos que lleve Oquea, en los términos del acuerdo: 10 % fuera de España; en España, sin cerrar.",
       "sales_cycle": "Una visita: acuerdo firmado y QR puesto con una inmersión creada. Si no, un siguiente paso con fecha.",
       "notice": "Oquea no tiene todavía clientes de pago ni datos de uso: no hay casos, cifras ni testimonios que citar. Solo se enseña la lista cerrada del producto. El objetivo de la visita: acuerdo firmado y QR puesto.",
       "modules": [
@@ -912,6 +1075,13 @@
             "props": {
               "lede": ""
             }
+          },
+          "tu-nombre-v": {
+            "module": "tu-nombre",
+            "props": {
+              "lede": "",
+              "cards": []
+            }
           }
         },
         "modes": {
@@ -926,6 +1096,7 @@
           "visual": [
             "portada",
             "como-funciona-v",
+            "tu-nombre-v",
             "red-fundadores-v",
             "condiciones",
             "siguiente-paso"
@@ -933,7 +1104,7 @@
         },
         "max": {
           "full": 7,
-          "visual": 5
+          "visual": 6
         },
         "priority": [
           "portada",
@@ -944,6 +1115,7 @@
           "condiciones",
           "siguiente-paso",
           "tu-nombre",
+          "tu-nombre-v",
           "tus-buceadores",
           "perfil-y-mapa",
           "album",
@@ -960,7 +1132,30 @@
               {
                 "key": "espana",
                 "label": "España",
-                "rules": []
+                "rules": [
+                  {
+                    "patch": "condiciones",
+                    "set": {
+                      "cards": [
+                        {
+                          "icon": "check",
+                          "title": "Hoy.",
+                          "body": "El alta, el QR, el logbook de tus buceadores, la lista y el perfil en el mapa no tienen coste."
+                        },
+                        {
+                          "icon": "sparkle",
+                          "title": "Más adelante.",
+                          "body": "Habrá funciones de pago. Se presentarán antes a los centros fundadores, y cada centro decidirá si las contrata."
+                        },
+                        {
+                          "icon": "send",
+                          "title": "Lo que pedimos.",
+                          "body": "El acuerdo firmado, el QR a la vista en el barco o en el local, y que el equipo lo mencione en el briefing."
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "key": "latam",
@@ -1167,6 +1362,170 @@
               }
             ]
           }
+        ]
+      }
+    },
+    {
+      "key": "ong",
+      "name": "ONGs",
+      "icon": "heart",
+      "image": "asset:img/fotos/share-card-bg.webp",
+      "description": "ONGs que organizan eventos con centros de buceo, como limpiezas de fondos.",
+      "value_prop": "Su evento en todos sus centros a la vez: la gente se apunta desde el mapa en el centro más cercano, cada asistente se lleva su insignia y la ONG tiene a todos los participantes. Sin coste.",
+      "icp": "ONG con varios centros de buceo colaboradores que organiza eventos (limpiezas u otras acciones).",
+      "disqualifiers": null,
+      "buying_process": "Decide la ONG. Los centros colaboradores son los que usan Oquea el día del evento.",
+      "deal_size": "Sin coste. A cambio, la ONG da acceso a sus centros de buceo, que usan Oquea en sus eventos.",
+      "sales_cycle": null,
+      "notice": "Tipo de cliente nuevo, contado de palabra por Cristian (6-oct-2026): sin documento ni ventas todavía. El remarketing es lo que viene: sin fechas.",
+      "modules": [
+        {
+          "module_key": "ong-eventos",
+          "priority": 1,
+          "fit": "El evento con varios centros a la vez."
+        },
+        {
+          "module_key": "ong-participantes",
+          "priority": 1,
+          "fit": "Todos los participantes, de todos los centros."
+        },
+        {
+          "module_key": "ong-insignia",
+          "priority": 2,
+          "fit": "Lo que se lleva cada asistente."
+        },
+        {
+          "module_key": "ong-mapa",
+          "priority": 2,
+          "fit": "Para que la gente se apunte antes."
+        }
+      ],
+      "personas": [
+        {
+          "key": "responsable-ong",
+          "name": "Responsable de la ONG",
+          "role": "decisor",
+          "goals": "Llegar a más gente en sus eventos.",
+          "pains": null,
+          "kpis": null,
+          "objections": [],
+          "how_to_approach": null,
+          "avoid": "Prometer fechas del remarketing.",
+          "can_help": "Trae a todos sus centros de buceo.",
+          "can_block": null,
+          "angles": []
+        },
+        {
+          "key": "centro-colaborador",
+          "name": "Centro colaborador de la ONG",
+          "role": "usuario",
+          "goals": null,
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Es un centro de buceo: lo de los centros vale para él.",
+          "avoid": null,
+          "can_help": "Usa Oquea el día del evento.",
+          "can_block": "Si no lo usa, el evento no queda en Oquea.",
+          "angles": []
+        }
+      ],
+      "proposal": {
+        "blocks": {
+          "ong-portada": {
+            "module": "ong-portada",
+            "props": {}
+          },
+          "ong-eventos": {
+            "module": "ong-eventos",
+            "props": {}
+          },
+          "ong-insignia": {
+            "module": "ong-insignia",
+            "props": {}
+          },
+          "ong-participantes": {
+            "module": "ong-participantes",
+            "props": {}
+          },
+          "ong-mapa": {
+            "module": "ong-mapa",
+            "props": {}
+          },
+          "ong-condiciones": {
+            "module": "ong-condiciones",
+            "props": {}
+          },
+          "ong-siguiente-paso": {
+            "module": "ong-siguiente-paso",
+            "props": {}
+          },
+          "ong-eventos-v": {
+            "module": "ong-eventos",
+            "props": {
+              "lede": "",
+              "cards": []
+            }
+          },
+          "ong-insignia-v": {
+            "module": "ong-insignia",
+            "props": {
+              "lede": "",
+              "cards": []
+            }
+          },
+          "ong-participantes-v": {
+            "module": "ong-participantes",
+            "props": {
+              "lede": "",
+              "cards": []
+            }
+          },
+          "ong-mapa-v": {
+            "module": "ong-mapa",
+            "props": {
+              "lede": "",
+              "cards": []
+            }
+          }
+        },
+        "modes": {
+          "full": [
+            "ong-portada",
+            "ong-eventos",
+            "ong-participantes",
+            "ong-insignia",
+            "ong-mapa",
+            "ong-condiciones",
+            "ong-siguiente-paso"
+          ],
+          "visual": [
+            "ong-portada",
+            "ong-eventos-v",
+            "ong-participantes-v",
+            "ong-insignia-v",
+            "ong-condiciones",
+            "ong-siguiente-paso"
+          ]
+        },
+        "max": {
+          "full": 7,
+          "visual": 6
+        },
+        "priority": [
+          "ong-portada",
+          "ong-eventos",
+          "ong-eventos-v",
+          "ong-condiciones",
+          "ong-siguiente-paso",
+          "ong-participantes",
+          "ong-participantes-v",
+          "ong-insignia",
+          "ong-insignia-v",
+          "ong-mapa",
+          "ong-mapa-v"
         ]
       }
     }
@@ -1394,7 +1753,7 @@
       "about": false,
       "pinned": null,
       "title": "Qué recibe el centro hoy",
-      "body": "- Todo lo de la lista cerrada del producto, sin coste.\n- Su nombre en cada tarjeta que sus buceadores comparten.\n- La lista de quién ha buceado con él.\n- Su perfil en el mapa de Oquea.\n- La condición de centro fundador de la red internacional.",
+      "body": "- Todo lo de la lista cerrada del producto, sin coste.\n- Su nombre y su logo en cada tarjeta que sus buceadores comparten.\n- La lista de quién ha buceado con él.\n- Su perfil en el mapa de Oquea.\n- La condición de centro fundador de la red internacional.",
       "when_to_use": null,
       "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
       "technique_refs": [],
@@ -1564,7 +1923,7 @@
       "about": true,
       "pinned": null,
       "title": "Cómo gana dinero Oquea",
-      "body": "Hoy ningún centro paga por Oquea. El alta, el QR, el logbook y la lista de buceadores son gratuitos. Nada de lo que sigue se ha cobrado todavía.\n\n- Comisión por clientes nuevos: 10 %. Aceptado de palabra en la feria de Brasil y recogido en los acuerdos firmados. Base exacta del cálculo PENDIENTE. No cobrado.\n- Comisión dentro de la red: en torno al 2 %, cifra no cerrada. SUPUESTO, sin funcionalidad.\n- Pasarela de pago: porcentaje PENDIENTE. Interés declarado; no existe todavía.\n- Suscripción de fidelización: cuota PENDIENTE. Idea, después de la fase gratuita.\n- Suscripción de facturación: 100–200 €/mes en España, adaptado por país. Idea. No se menciona.\n\nOrden estratégico: (1) acuerdos firmados y QR puesto en el mayor número de centros, en España, Latinoamérica y Corea; (2) con pasarela y trips, transacciones entre centros de la red; (3) con uso real, suscripción de fidelización; (4) facturación en 2027. La prioridad declarada ahora es generar ingresos reales cuanto antes.",
+      "body": "Hoy ningún centro paga por Oquea. El alta, el QR, el logbook y la lista de buceadores son gratuitos. Nada de lo que sigue se ha cobrado todavía.\n\n- Comisión por clientes nuevos: 10 % sobre todo lo generado (Cristian, 6-oct-2026). Aceptado de palabra en la feria de Brasil y recogido en los acuerdos firmados. No cobrado. **En España no está decidido:** en torno al 5 %; la competencia pone el 10 %. No se sabe cómo responderá el mercado: en España no se dice ninguna cifra.\n- Comisión dentro de la red: en torno al 2 %, cifra no cerrada. SUPUESTO, sin funcionalidad.\n- Pasarela de pago: porcentaje PENDIENTE. Interés declarado; no existe todavía.\n- Suscripción de fidelización: cuota PENDIENTE. Idea, después de la fase gratuita.\n- Suscripción de facturación: 100–200 €/mes en España, adaptado por país. Idea. No se menciona.\n\nOrden estratégico: (1) acuerdos firmados y QR puesto en el mayor número de centros, en España, Latinoamérica y Corea; (2) con pasarela y trips, transacciones entre centros de la red; (3) con uso real, suscripción de fidelización; (4) facturación en 2027. La prioridad declarada ahora es generar ingresos reales cuanto antes.",
       "when_to_use": null,
       "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
       "technique_refs": [],
@@ -1979,7 +2338,7 @@
       "about": false,
       "pinned": null,
       "title": "La tarjeta: sale tu nombre",
-      "body": "«Cada vez que uno de tus buceadores comparte esto, sale tu nombre.»",
+      "body": "«Cada vez que uno de tus buceadores comparte esto, sale tu nombre.» Y tu logo: la tarjeta lleva los dos.",
       "when_to_use": "Mientras señalas la línea «with [nombre del centro]».",
       "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
       "technique_refs": [],
@@ -2119,7 +2478,7 @@
       "about": false,
       "pinned": 8,
       "title": "Condiciones: lo que hoy hace las veces de precio",
-      "body": "No hay precio. Por eso mismo hay que decir las condiciones completas antes de que pregunte dónde está el truco. Se dice, en este orden:\n\n«Todo lo que has visto hoy no tiene coste.»\n\n«El día que Oquea te lleve una reserva de un cliente nuevo, nos quedamos un 10 % de esa reserva. Si no te llevamos nada, no pagas nada.»\n\n«Más adelante habrá funciones de pago. Te las enseñaremos antes y decidirás si las quieres. Lo que tienes hoy sigue como está.»\n\nY después, silencio. Espera a que hable él.\n\n- PENDIENTE: la base exacta del 10 % y qué cuenta como «cliente nuevo» en cada mercado. Hasta que esté cerrado, se lee la cláusula del acuerdo y no se explica de memoria.\n- PENDIENTE: confirmar que «lo que tienes hoy sigue como está» es una decisión de empresa. Si no lo es, se quita.\n- No se mencionan cifras de futuras suscripciones.",
+      "body": "No hay precio. Por eso mismo hay que decir las condiciones completas antes de que pregunte dónde está el truco. Se dice, en este orden:\n\n«Todo lo que has visto hoy no tiene coste.»\n\n«El día que Oquea te lleve una reserva de un cliente nuevo, nos quedamos un 10 % de esa reserva. Si no te llevamos nada, no pagas nada.»\n\n«Más adelante habrá funciones de pago. Te las enseñaremos antes y decidirás si las quieres.»\n\nY después, silencio. Espera a que hable él.\n\n- El 10 % es sobre todo lo generado (Cristian, 6-oct-2026). PENDIENTE: qué cuenta como «cliente nuevo» en cada mercado; hasta que esté cerrado, se lee la cláusula del acuerdo y no se explica de memoria.\n- **En España no se da la cifra:** el porcentaje no está cerrado (en torno al 5 %). Se dice «un porcentaje, en los términos del acuerdo».\n- Quitada «Lo que tienes hoy sigue como está» (Cristian, 6-oct-2026).\n- No se mencionan cifras de futuras suscripciones.",
       "when_to_use": null,
       "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
       "technique_refs": [],
@@ -2307,7 +2666,7 @@
       "about": false,
       "pinned": null,
       "title": "«¿Dónde está el truco? ¿Qué gano yo y qué ganáis vosotros?»",
-      "body": "Las tres frases de las condiciones, completas: no tiene coste; el 10 % solo si Oquea te lleva una reserva de un cliente nuevo; más adelante habrá funciones de pago y decidirás si las quieres.\n\n**Cómo vuelves:** silencio.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "body": "Las tres frases de las condiciones, completas: no tiene coste; la comisión solo si Oquea te lleva una reserva de un cliente nuevo (el 10 %; en España, sin cifra: «en los términos del acuerdo»); más adelante habrá funciones de pago y decidirás si las quieres.\n\n**Cómo vuelves:** silencio.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
       "when_to_use": null,
       "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
       "technique_refs": [],
@@ -2597,6 +2956,66 @@
       "body": "Este guion se corrige con lo que traigas:\n\n1. La objeción literal que más pesó.\n2. Qué parte de la demo le hizo reaccionar.\n3. Quién decidió y quién va a decir «escanead el QR».\n4. Si firmó: su cifra de éxito a treinta días y la fecha de revisión.\n5. Día y hora en que te atendió bien.",
       "when_to_use": null,
       "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "ong-pitch",
+      "module_key": "ong-eventos",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Oquea para una ONG",
+      "body": "Tu evento en todos tus centros a la vez. La gente se apunta desde el mapa en el centro más cercano, cada asistente se lleva su insignia en la aplicación y tú tienes a todos los que han participado. Sin coste.",
+      "when_to_use": null,
+      "why_it_works": "Cristian, 6-oct-2026 (de palabra; sin documento). Texto redactado por la sesión: revisar.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "ong-acuerdo",
+      "module_key": "ong-condiciones",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "El acuerdo con una ONG",
+      "body": "La ONG nos da acceso a todos sus centros de buceo, que usarán Oquea cuando hagan sus eventos.\n\nA cambio, todo gratis:\n- La lista de quién ha participado, en todos los centros.\n- Serán los primeros en el remarketing.\n- Su ONG en el mapa, para que la gente se apunte más rápido y llegar a más gente.",
+      "when_to_use": null,
+      "why_it_works": "Cristian, 6-oct-2026 (de palabra; sin documento). Texto redactado por la sesión: revisar.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "ong-remarketing",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Remarketing: lo que viene, sin fechas",
+      "body": "A las ONGs se les dice que serán las primeras en el remarketing. No se da fecha ni se dice que hoy envía campañas: el documento de producto dice que hoy la lista no hace remarketing. PENDIENTE confirmar qué existe hoy para las ONGs.",
+      "when_to_use": null,
+      "why_it_works": "Cristian, 6-oct-2026 (de palabra; sin documento). Texto redactado por la sesión: revisar.",
       "technique_refs": [],
       "status": "official"
     }

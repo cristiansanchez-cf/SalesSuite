@@ -5,7 +5,7 @@ const url = z.string().max(500).refine((u) => /^(https:\/\/|\/)/.test(u), 'https
 /** Pantallas de la app recreadas en HTML (Screen.astro). `image`: una captura real (src). */
 export const APP_SCREENS = [
   'access', 'qr-activity', 'dive-saved', 'share-card', 'logbook', 'diver-profile',
-  'activities', 'create-activity', 'center-qr', 'crm-list', 'crm-diver', 'my-centres', 'team', 'dive-sites', 'map', 'album', 'event', 'image',
+  'activities', 'create-activity', 'center-qr', 'crm-list', 'crm-diver', 'my-centres', 'team', 'dive-sites', 'map', 'album', 'event', 'badge', 'image',
 ] as const;
 
 export const STEP_ICONS = [

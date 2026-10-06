@@ -27,6 +27,7 @@ const SAMPLES: Sample[] = [
   { key: 'hoteles-angel', segment: 'hoteles', title: 'Enjoy para hoteles y resorts', company: null, contact: null, tariff: null, live: true },
   // Oquea (espacio «oquea»): centro de buceo, sin tarifa (acuerdo de centro fundador, sin coste). Documento 05.
   { key: 'centro-buceo', segment: 'centros-buceo', title: 'Oquea para tu centro de buceo · España', company: 'Tu centro', contact: null, tariff: null, answers: ['mercado:espana', 'angulo:que-vuelvan', 'fotos'], live: false },
+  { key: 'ong', segment: 'ong', title: 'Oquea para tu ONG', company: 'Tu ONG', contact: null, tariff: null, live: false },
   { key: 'centro-buceo-destino', segment: 'centros-buceo', title: 'Oquea para tu centro de buceo · abrir mercado', company: 'Tu centro', contact: null, tariff: null, answers: ['mercado:latam', 'angulo:abrir-mercado'], live: false },
 ];
 
