@@ -16,6 +16,10 @@ jobs:
       - run: npm run lint:copy
       - run: npm test
       - run: npm run build
+      - name: Todos los scripts/smoke-*.cjs están en el CI
+        run: |
+          diff <(ls scripts/smoke-*.cjs | sed 's|scripts/smoke-||; s|\.cjs$||' | sort) \
+               <(grep -E '^ +smokes:' .github/workflows/ci.yml | sed 's/.*smokes://' | tr ' ' '\n' | grep . | sort)
 
   db:
     runs-on: ubuntu-latest
@@ -49,7 +53,21 @@ jobs:
         run: bash supabase/tests/run-it.sh
 
   e2e:
+    # Los smokes van en 3 tandas en paralelo, cada una con su servidor DEMO (estado en memoria, propio).
+    # Dentro de una tanda el orden importa: smoke-e2e antes que smoke-tenant-admin (cambia el color de la marca)
+    # y smoke-org al final (convierte a rep@enjoy.test en gerente). docs/TESTING.md.
+    name: e2e (${{ matrix.shard }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1
+            smokes: e2e admin tenant-admin playbook market partner evidence mobile recipes org
+          - shard: 2
+            smokes: notifications accounts commissions i18n start analytics daily welcome learn learn-detail auth profile
+          - shard: 3
+            smokes: personalize setup-ai live-screen rep admin-config
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,30 +76,24 @@ jobs:
       - run: npm run build
       - run: npm i --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
       - name: Guardia de producción (sin Supabase ni DEMO_MODE → 503)
+        if: matrix.shard == 1
         run: |
           PORT=4322 HOST=127.0.0.1 node dist/server/entry.mjs &
           for _ in $(seq 1 30); do curl -s http://127.0.0.1:4322/api/health >/dev/null && break; sleep 1; done
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4322/admin/login)" = 503
-      - name: Smoke E2E (modo DEMO)
+      - name: Smokes E2E (modo DEMO)
         run: |
           DEMO_MODE=1 DEV_TENANT_SLUG=enjoy PORT=4321 HOST=127.0.0.1 node dist/server/entry.mjs &
           for _ in $(seq 1 30); do curl -sf http://127.0.0.1:4321/admin/login >/dev/null && break; sleep 1; done
-          node scripts/smoke-e2e.cjs
-          node scripts/smoke-admin.cjs
-          node scripts/smoke-tenant-admin.cjs
-          node scripts/smoke-playbook.cjs
-          node scripts/smoke-market.cjs
-          node scripts/smoke-partner.cjs
-          node scripts/smoke-evidence.cjs
-          node scripts/smoke-mobile.cjs
-          node scripts/smoke-notifications.cjs
-          node scripts/smoke-accounts.cjs
-          node scripts/smoke-commissions.cjs
-          node scripts/smoke-i18n.cjs
-          node scripts/smoke-start.cjs
-          node scripts/smoke-analytics.cjs
-          node scripts/smoke-daily.cjs
-          node scripts/smoke-welcome.cjs
-          node scripts/smoke-learn.cjs
+          rc=0
+          for s in ${{ matrix.smokes }}; do
+            echo "::group::smoke-$s"
+            start=$SECONDS
+            node scripts/smoke-$s.cjs || { echo "::error::smoke-$s falla"; rc=1; }
+            echo "::endgroup::"
+            echo "smoke-$s: $((SECONDS - start)) s"
+          done
+          exit $rc
       - name: Build para Vercel
+        if: matrix.shard == 1
         run: DEPLOY_TARGET=vercel npm run build
