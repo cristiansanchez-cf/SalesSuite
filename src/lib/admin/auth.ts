@@ -59,6 +59,8 @@ import { createOrgService, type OrgService } from '../org/service';
 import { emptyOrgDb } from '../org/empty';
 
 export const DEMO_COOKIE = 'ss_demo_user';
+/** Demo: espacio elegido en «Cambiar de espacio» (en producción el espacio lo decide el dominio). */
+export const DEMO_TENANT_COOKIE = 'ss_demo_tenant';
 
 export interface RequestLike {
   request: Request;
@@ -98,7 +100,7 @@ export type AuthResult =
 
 export const authMode = (): 'supabase' | 'demo' => (appMode() === 'supabase' ? 'supabase' : 'demo');
 
-const cookieBase = (url: URL) => ({ path: '/', httpOnly: true, sameSite: 'lax' as const, secure: url.protocol === 'https:' });
+export const cookieBase = (url: URL) => ({ path: '/', httpOnly: true, sameSite: 'lax' as const, secure: url.protocol === 'https:' });
 
 export function supabaseServerClient(ctx: RequestLike): SupabaseClient {
   return createServerClient(env('PUBLIC_SUPABASE_URL')!, env('PUBLIC_SUPABASE_ANON_KEY')!, {
@@ -180,7 +182,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
 }
 
 /** Service role SOLO para invitar usuarios. Si falta, invitar devuelve un 503 explicativo. */
-function serviceIdentity(): Identity | null {
+export function serviceIdentity(): Identity | null {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   return key ? supabaseIdentity(env('PUBLIC_SUPABASE_URL')!, key) : null;
 }

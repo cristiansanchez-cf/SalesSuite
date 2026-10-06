@@ -10,7 +10,7 @@ const es = {
   },
   role: { admin: 'Admin', lead: 'Gerente', rep: 'Comercial', partner: 'Colaborador' },
   shell: {
-    navigation: 'Navegación', openMenu: 'Abrir menú', loading: 'Cargando…', closeMenu: 'Cerrar menú', menu: 'Menú', workspace: 'Espacio de trabajo',
+    navigation: 'Navegación', openMenu: 'Abrir menú', loading: 'Cargando…', closeMenu: 'Cerrar menú', menu: 'Menú', workspace: 'Espacio de trabajo', switchSpace: 'Cambiar de espacio', yourSpaces: 'Tus espacios', hereNow: 'Aquí estás',
     delegation: 'de delegación', global: 'global', workspaceHint: 'Espacio en el que trabajas', myAccount: 'Mi cuenta', logout: 'Salir', language: 'Idioma',
     demo: 'Modo demo: los datos viven en memoria y se pierden al reiniciar el servidor.',
   },
@@ -54,7 +54,7 @@ export const shellMessages = defineMessages({
     },
     role: { admin: 'Admin', lead: 'Manager', rep: 'Sales rep', partner: 'Partner' },
     shell: {
-      navigation: 'Navigation', openMenu: 'Open menu', loading: 'Loading…', closeMenu: 'Close menu', menu: 'Menu', workspace: 'Workspace',
+      navigation: 'Navigation', openMenu: 'Open menu', loading: 'Loading…', closeMenu: 'Close menu', menu: 'Menu', workspace: 'Workspace', switchSpace: 'Switch workspace', yourSpaces: 'Your workspaces', hereNow: 'You are here',
       delegation: 'of a branch', global: 'global', workspaceHint: 'The workspace you are in', myAccount: 'My account', logout: 'Log out', language: 'Language',
       demo: 'Demo mode: data lives in memory and is lost when the server restarts.',
     },
@@ -95,7 +95,7 @@ export const shellMessages = defineMessages({
     },
     role: { admin: 'Admin', lead: 'Gerente de vendas', rep: 'Vendedor(a)', partner: 'Parceiro(a)' },
     shell: {
-      navigation: 'Navegação', openMenu: 'Abrir menu', loading: 'Carregando…', closeMenu: 'Fechar menu', menu: 'Menu', workspace: 'Espaço de trabalho',
+      navigation: 'Navegação', openMenu: 'Abrir menu', loading: 'Carregando…', closeMenu: 'Fechar menu', menu: 'Menu', workspace: 'Espaço de trabalho', switchSpace: 'Mudar de espaço', yourSpaces: 'Seus espaços', hereNow: 'Você está aqui',
       delegation: 'de delegação', global: 'global', workspaceHint: 'O espaço em que você trabalha', myAccount: 'Minha conta', logout: 'Sair', language: 'Idioma',
       demo: 'Modo demo: os dados ficam na memória e se perdem ao reiniciar o servidor.',
     },
@@ -136,7 +136,7 @@ export const shellMessages = defineMessages({
     },
     role: { admin: '관리자', lead: '영업 리더', rep: '영업 담당자', partner: '파트너' },
     shell: {
-      navigation: '내비게이션', openMenu: '메뉴 열기', loading: '불러오는 중…', closeMenu: '메뉴 닫기', menu: '메뉴', workspace: '워크스페이스',
+      navigation: '내비게이션', openMenu: '메뉴 열기', loading: '불러오는 중…', closeMenu: '메뉴 닫기', menu: '메뉴', workspace: '워크스페이스', switchSpace: '워크스페이스 전환', yourSpaces: '내 워크스페이스', hereNow: '현재 위치',
       delegation: '지사', global: '전체', workspaceHint: '현재 작업 중인 워크스페이스', myAccount: '내 계정', logout: '로그아웃', language: '언어',
       demo: '데모 모드: 데이터는 메모리에만 저장되며 서버를 다시 시작하면 사라집니다.',
     },

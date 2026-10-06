@@ -459,6 +459,12 @@ export function supabaseIdentity(url: string, serviceRoleKey: string): Identity 
       if (error || !data.user) throw new Error(`[supabase] invitación: ${error?.message ?? 'sin usuario'}`);
       return { userId: data.user.id, invited: true };
     },
+    async oneTimeLogin(email) {
+      const { data, error } = await admin.auth.admin.generateLink({ type: 'magiclink', email: email.trim().toLowerCase() });
+      const hash = data?.properties?.hashed_token;
+      if (error || !hash) throw new Error(`[supabase] enlace de acceso: ${error?.message ?? 'sin token'}`);
+      return hash;
+    },
   };
 }
 

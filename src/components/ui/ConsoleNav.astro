@@ -12,6 +12,7 @@ import type { NotificationFeed } from '~/lib/notify/service';
 import NotificationBell from './NotificationBell.astro';
 import { i18n, LOCALES, LOCALE_NAME } from '~/lib/i18n';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { mySpaces } from '~/lib/admin/spaces';
 
 interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean; feed: NotificationFeed; back: string }
 const { admin, tenantName, path, pending, primary = false, feed, back } = Astro.props;
@@ -19,6 +20,9 @@ const { m, locale } = i18n(Astro, shellMessages);
 const nav = navFor(admin.session.role, path, { pendingPlaybook: pending, superadmin: admin.session.superadmin }, m.nav);
 
 const name = admin.session.displayName || admin.session.email;
+// Espacios a los que tiene acceso (docs/ORG.md §Cambiar de espacio): con más de uno, la tarjeta del espacio es un menú.
+const spaces = await mySpaces(admin);
+const roleLabel = (r: (typeof spaces)[number]['role']) => (r === 'superadmin' ? 'Superadmin' : m.role[r]);
 const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 ---
 <div class="co-sidebar__head">
@@ -43,10 +47,35 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
 </nav>
 
 <div class="co-sidebar__anchors">
-  <div class="co-anchor" title={m.shell.workspaceHint}>
-    <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="building2" size={16} /></span>
-    <span class="co-anchor__text"><span class="co-row-title">{tenantName}</span><span class="co-meta">{m.shell.workspace}</span></span>
-  </div>
+  {spaces.length > 1 ? (
+    <details class="co-popover" data-testid={primary ? 'workspace' : undefined}>
+      <summary class="co-anchor" title={m.shell.switchSpace}>
+        <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="building2" size={16} /></span>
+        <span class="co-anchor__text"><span class="co-row-title">{tenantName}</span><span class="co-meta">{m.shell.switchSpace}</span></span>
+        <Icon name="chevron-down" size={16} />
+      </summary>
+      <div class="co-popover__menu">
+        <p class="text-eyebrow px-2 pb-2">{m.shell.yourSpaces}</p>
+        <div class="co-actions" data-testid={primary ? 'spaces' : undefined}>
+          {spaces.map((sp) => (
+            <form method="post" action="/admin/switch">
+              <input type="hidden" name="tenant" value={sp.id} />
+              <button class="co-action" type="submit" disabled={sp.current} aria-current={sp.current ? 'true' : undefined} data-space={sp.slug}>
+                <Icon name={sp.current ? 'circle-check' : 'building2'} />
+                <span class="co-action__label">{sp.name}<small>{sp.current ? m.shell.hereNow : roleLabel(sp.role)}</small></span>
+                {!sp.current && <Icon name="chevron-right" size={16} />}
+              </button>
+            </form>
+          ))}
+        </div>
+      </div>
+    </details>
+  ) : (
+    <div class="co-anchor" title={m.shell.workspaceHint}>
+      <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="building2" size={16} /></span>
+      <span class="co-anchor__text"><span class="co-row-title">{tenantName}</span><span class="co-meta">{m.shell.workspace}</span></span>
+    </div>
+  )}
   <details class="co-popover">
     <summary class="co-anchor" data-testid={primary ? 'profile' : undefined}>
       <span class="co-anchor__avatar">{initials}</span>
