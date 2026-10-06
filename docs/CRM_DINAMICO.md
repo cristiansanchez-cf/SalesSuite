@@ -1,0 +1,221 @@
+# CRM dinámico: arquitectura (propuesta para decidir)
+
+> Estado: **propuesta**, nada implementado todavía. Objetivo: que cada espacio (Enjoy, Oquea…) tenga **su propio CRM**
+> con **sus propios campos**, como una base de datos de Notion, pero dentro de Cofundo Ventas y conectado a lo que ya
+> existe: propuestas, territorio, comisiones, Aprende, Preparar mensaje y el resumen diario.
+>
+> Lo que más importa al fundador: **no olvidar ningún seguimiento** y que vender le cueste ~20 minutos de cabeza al día.
+> Todo el diseño está pensado para llegar ahí por fases.
+
+---
+
+## 1. Qué hay hoy (y se reutiliza)
+
+| Pieza | Hoy | En el CRM |
+|---|---|---|
+| **Cuenta** (`account`) | Nombre, zona, sector, dirección, referencia externa, notas, dueño, reserva, cliente/bloqueada | Es el **registro** del CRM. Sus columnas fijas se quedan (las reglas de territorio y comisión dependen de ellas) |
+| **Toques** (`account_touch`) | Quién y cuándo contactó una cuenta (renueva la reserva) | Pasa a ser la **actividad** (llamada, WhatsApp, visita, nota…) |
+| **Importar CSV** (Territorio) | Columnas fijas: nombre, ciudad/zona, dirección, referencia, notas | Se convierte en el **asistente de importación** con mapeo de columnas |
+| **Situaciones** (`facets`) | Selecciones por tenant (personalidad, región, «tiene pantalla»…) para comparar ventas | Las de alcance *cuenta* son **campos del CRM** de tipo selección. Se unifican (§3.4) |
+| **Contactos** (`dossier_contact`) | Personas de una propuesta, con su papel y rasgos | Se cuelgan de la **cuenta** (y siguen enlazados a cada propuesta) |
+| **Próximo paso** (`dossier.next_step_at`) + resumen diario | Por propuesta | Pasa a la **cuenta** (una cuenta sin propuesta también tiene próximo paso) |
+
+Nada se tira: el CRM es la capa que une piezas que hoy están sueltas.
+
+---
+
+## 2. Principio de diseño
+
+**Núcleo fijo + campos dinámicos por espacio.**
+
+- **Núcleo fijo** (igual en todos los espacios, porque el sistema razona con él): nombre, sector, zona, dueño, etapa,
+  próximo paso, estado de reserva/cliente, referencia externa.
+- **Campos dinámicos** (cada espacio define los suyos, sin programar): en Enjoy «¿Tiene pantalla?», «DJ residente»,
+  «Aforo», «Noches que abre», «Instagram»; en Oquea «Certificadora (PADI/SSI/CMAS)», «Nº de instructores»,
+  «Buceadores al mes», «Idiomas»…
+
+Así un espacio nuevo arranca con un CRM útil desde el minuto uno y cada empresa lo adapta a su negocio.
+
+---
+
+## 3. Modelo de datos
+
+### 3.1 Definición de campos: `crm_field`
+
+| Columna | Qué es |
+|---|---|
+| `tenant_id`, `id` | De qué espacio es |
+| `key` | Clave estable (`tiene-pantalla`). **No cambia nunca**: renombrar la etiqueta no toca los datos |
+| `label` | Lo que se ve («¿Tiene pantalla?») |
+| `type` | `text`, `long_text`, `number`, `money`, `checkbox`, `select`, `multi_select`, `date`, `url`, `email`, `phone`, `rating`, `person` (alguien del equipo) |
+| `options` | Para `select`/`multi_select`: `[{ key, label, color }]`. Se guarda la **clave** de la opción, no la etiqueta |
+| `group` | Sección en la ficha («El local», «Contacto», «Redes») |
+| `position` | Orden |
+| `help` | Una línea de ayuda («Pantalla propia, no la del DJ») |
+| `required` | Si hay que rellenarlo para crear la cuenta |
+| `in_list` / `filterable` | Si sale como columna en la lista y si se puede filtrar |
+| `use_as_situation` | Si cuenta como «situación» para comparar ventas (§3.4) |
+| `segments` | Si solo aplica a algunos sectores (p. ej. «Aforo» solo en locales y conciertos). Vacío = todos |
+| `archived_at` | Archivar en vez de borrar: los datos se conservan |
+
+### 3.2 Valores: columna `fields jsonb` en `account`
+
+```
+account.fields = { "tiene-pantalla": true, "aforo": 450, "estilo": ["reggaeton","comercial"], "instagram": "https://…" }
+```
+
+**Por qué JSONB y no una tabla de valores (EAV):** una sola lectura por cuenta, filtros e índices en Postgres
+(`GIN`), el mismo modelo que Notion por dentro, y nada de joins por cada columna. Con decenas de campos y miles de
+cuentas por espacio va sobrado.
+
+**Validación** en una sola implementación (como el resto de la app): el servidor construye un esquema Zod a partir de
+`crm_field` y valida cada escritura. En la base de datos, un *trigger* comprueba que las claves existen en el espacio
+(defensa en profundidad) y la RLS de `account` sigue igual.
+
+### 3.3 Etapas del embudo: `crm_stage`
+
+Configurables por espacio, con orden y tipo (`open` / `won` / `lost`). Separadas de la **reserva** (de quién es la
+cuenta) y de la **publicación** de una propuesta. Por defecto: *Por contactar → Contactado → Reunión → Propuesta enviada
+→ En prueba → Ganado / Perdido*. «Ganado» sigue disparando lo que ya existe (cliente, comisiones).
+
+### 3.4 Situaciones = campos de selección (unificación)
+
+Hoy las «situaciones» de alcance *cuenta* son selecciones definidas por el espacio. Con el CRM, **son campos `select` /
+`multi_select` con `use_as_situation = true`**. La pantalla «Qué ha funcionado» y las recomendaciones de Preparar
+mensaje los siguen leyendo igual. Las de alcance *persona* (tipo de personalidad) se quedan en contactos. Migración: cada
+faceta de cuenta se convierte en un campo con la misma clave y sus valores pasan de `dossier.situation` a
+`account.fields`.
+
+### 3.5 Contactos de la cuenta: `crm_contact`
+
+Personas de la cuenta (nombre, papel —los actores del sector—, teléfono, email, notas y, más adelante, sus propios campos
+dinámicos). `dossier_contact` apunta a ellas: la persona se crea una vez y aparece en todas sus propuestas.
+
+### 3.6 Actividad: `crm_activity` (evoluciona `account_touch`)
+
+| Columna | Qué es |
+|---|---|
+| `kind` | `call`, `whatsapp`, `email`, `visit`, `meeting`, `note`, y automáticas: `proposal_sent`, `proposal_opened`, `stage_changed`, `imported` |
+| `account_id`, `contact_id`, `dossier_id` | A qué va |
+| `at`, `by`, `body`, `outcome` | Cuándo, quién, qué y resultado («respondió», «no contesta», «quiere precio») |
+
+Cada actividad **renueva la reserva** (como hoy los toques) y **pide el próximo paso** (§5).
+
+### 3.7 Próximo paso de la cuenta
+
+En `account`: `next_step` (texto), `next_step_at` (fecha y hora) y `next_step_by` (quién). Es lo que alimenta «Hoy», el
+resumen diario y los avisos. Una cuenta abierta **sin próximo paso** es una alerta para el líder.
+
+### 3.8 Vistas guardadas: `crm_view`
+
+Filtros + orden + columnas + agrupación (por etapa = tablero tipo kanban; por zona; por dueño). Personales o del
+equipo. Vistas por defecto: **Hoy** (próximos pasos vencidos y de hoy), **Mis cuentas**, **Por etapa** (tablero),
+**Sin próximo paso**. Ejemplo tuyo: «Foco Valencia» = zona Valencia + sector locales + etapa «Por contactar».
+
+---
+
+## 4. Importar (Notion, CSV, Google Sheets)
+
+Un asistente de 4 pasos que sirve para cualquier espacio y cualquier CSV:
+
+1. **Subir** el CSV (exportación de Notion: *⋯ → Export → Markdown & CSV*, o cualquier hoja de cálculo).
+2. **Mapear columnas.** Para cada columna, la app propone: *campo del núcleo* (Nombre, Zona, Sector, Etapa…), *campo
+   existente*, **crear campo nuevo** (con el tipo adivinado: ≤ 20 valores distintos → selección; «Sí/No» → casilla;
+   fechas; números; URLs; emails; teléfonos) o *ignorar*. Las listas de Notion separadas por comas → selección múltiple.
+   La columna de estado de Notion → **etapa** (con su tabla de equivalencias).
+3. **Duplicados.** Por referencia externa (id de Notion o de Google Maps) o por nombre + ciudad normalizados. Para cada
+   duplicado: *saltar*, *actualizar* o *crear igualmente*.
+4. **Vista previa** de 10 filas tal y como quedarán, con los errores marcados («Aforo: "unos 300" no es un número» → se
+   guarda en notas). **Importar** crea un lote (`import_batch`) que se puede **deshacer** entero.
+
+Lo mismo sirve para cargar locales investigados («foco Valencia») y para Oquea con sus campos.
+
+---
+
+## 5. Seguimiento: lo que de verdad te quita carga mental
+
+| Fase | Qué | Resultado para ti |
+|---|---|---|
+| **«Hoy»** (en Inicio) | Lista única: vencidos → hoy → mañana, con el **contexto en una línea** y botones: *Llamar*, *WhatsApp*, *Preparar mensaje*, *Hecho → ¿siguiente paso?* | Abres la app y sabes qué hacer, en orden |
+| **Cerrar el bucle** | Al registrar una actividad, la app propone el próximo paso según la etapa («Mandada la propuesta → seguimiento en 2 días») | Ninguna cuenta se queda sin próximo paso |
+| **Resumen diario** | Ya existe para propuestas: se amplía a cuentas | Un email (o WhatsApp) a primera hora con lo de hoy |
+| **Cadencias por sector** | Secuencias definidas en el playbook (D+0 enlace, D+2 WhatsApp, D+5 llamada…) con la jugada adecuada de cada paso | Seguimientos que se proponen solos |
+| **Disparadores** | «Ha abierto la propuesta 3 veces hoy» → aviso «llama ahora» con el contexto preparado | Llamas en el momento justo |
+| **Cerebro de Ventas** | Preparar mensaje ya monta el contexto; después, el mensaje propuesto | 20 minutos al día |
+
+---
+
+## 6. Multiespacio (Enjoy, Oquea y los que vengan)
+
+- Cada espacio define **sus** campos, etapas y vistas. Nada se comparte entre espacios.
+- **Puntos de partida por sector** en la configuración guiada (como hoy los sectores y actores de ejemplo): «Ocio
+  nocturno» propone pantalla, DJ, aforo, noches, estilo e Instagram; «Buceo» propone certificadora, instructores,
+  buceadores al mes, idiomas y temporada. Se aplican con un clic y se ajustan.
+- En `tenants/<espacio>/tenant.json` habrá `crm.fields`, `crm.stages` y `crm.views`, cargados por el alta del espacio
+  como el resto (idempotente, con `--dry-run`).
+- **Permisos**: los campos los define el admin (y el líder); los valores, quien trabaja la cuenta o un responsable; los
+  colaboradores solo ven sus cuentas asignadas (como hoy).
+
+---
+
+## 7. Fases de implementación
+
+| Fase | Qué incluye | Pruebas |
+|---|---|---|
+| **1 · Campos** | `crm_field` + `account.fields`, editor de campos (estilo Notion: «+ Añadir propiedad», tipo, opciones), ficha de cuenta con secciones, columnas y filtros en la lista | Unitarios del esquema dinámico, RLS, contrato, smoke del editor |
+| **2 · Importar** | Asistente de 4 pasos con mapeo, duplicados, vista previa y deshacer. **Aquí cargamos tu Notion** | Smoke con un CSV de Notion real (anonimizado) |
+| **3 · Etapas, actividad y «Hoy»** | `crm_stage`, `crm_activity`, próximo paso en la cuenta, «Hoy» en Inicio, resumen diario ampliado | Smoke del ciclo completo |
+| **4 · Vistas** | Vistas guardadas, tablero por etapa, «Foco Valencia» | Smoke de filtros y tablero |
+| **5 · Automatizar** | Cadencias, disparadores, contactos con campos propios, unificación total con situaciones | Por regla |
+
+Cada fase sale a producción sola y no rompe lo anterior (el checkpoint de tests del agente en paralelo lo vigila).
+
+---
+
+## 8. Menú: propuesta para simplificar (antes del CRM)
+
+Hoy hay **9 destinos en Vender** y **9 en Configurar**. Con el CRM se añadiría uno más. Propuesta: bajar a **5 y 5**
+sin perder ninguna función. Cada página que desaparece del menú **se convierte en una pestaña o en una tarjeta** de otra,
+y su dirección antigua redirige a la nueva (los enlaces de los emails siguen funcionando).
+
+### Vender (de 9 a 5)
+
+| Hoy | Propuesta | Dónde queda |
+|---|---|---|
+| Empieza aquí | **Inicio** | Tarjeta «Empieza aquí» arriba en Inicio mientras no esté completo; luego, en el menú del perfil |
+| Inicio | **Inicio** | Con «Hoy» (seguimientos) como lo primero |
+| Cuentas | **Cuentas** (el CRM) | Lista, tablero por etapa y vistas |
+| Propuestas | **Propuestas** | Igual; la analítica de cada una, dentro de la propuesta |
+| Analítica | → Propuestas | Pestaña «Analítica» en Propuestas |
+| Preparar mensaje | → dentro de Cuentas y Propuestas | Botón en cada cuenta, propuesta y en «Hoy». Sigue existiendo la página para usarla suelta (enlace en Inicio) |
+| Qué ha funcionado | → Aprende | Pestaña «Lo que funciona» en Aprende |
+| Aprende | **Aprende** | — |
+| Mis comisiones | **Mis comisiones** | Se queda (es dinero: mejor a la vista) |
+
+### Configurar (de 9 a 5)
+
+| Hoy | Propuesta | Dónde queda |
+|---|---|---|
+| Configuración guiada | **Empresa** | Pestañas: Configuración guiada · Marca |
+| Marca | → Empresa | Pestaña |
+| Playbook | **Mercado y playbook** | Igual |
+| Catálogo | **Catálogo y precios** | Pestañas: Módulos · Tarifas y cupones |
+| Precios | → Catálogo y precios | Pestaña |
+| Equipo | **Equipo** | Pestañas: Personas · Organigrama · Territorio · **Campos del CRM** |
+| Organigrama | → Equipo | Pestaña |
+| Territorio | → Equipo | Pestaña |
+| Comisiones | **Comisiones** | Igual |
+
+**Cuidado que se tiene:** ninguna función desaparece; las direcciones antiguas redirigen; los smokes del agente de tests
+cubren cada pantalla antes y después del cambio.
+
+---
+
+## 9. Lo que necesito de ti para empezar
+
+1. **El CSV de Notion** (exportación completa, con todas las propiedades) y, si puedes, una captura de la vista de la
+   base de datos para ver qué tipo es cada columna.
+2. En una línea por propiedad: **qué significa** y si es imprescindible.
+3. **Tus etapas** reales del embudo (cómo las llamas tú).
+4. **Cómo haces hoy el seguimiento** (qué miras, cada cuánto, qué se te escapa).
+5. Para el foco Valencia: **qué zonas y qué tipo de local** son prioridad.
