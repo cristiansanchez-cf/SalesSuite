@@ -9,6 +9,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, DossierRecord, MemberRecord } from '../admin/types';
 import type { AccountsDb } from './db';
+import { fieldInputSchema, matches, parseValues, slugKey, type CrmField, type FieldValues } from '../crm/fields';
 import { stateFor, withDescendants, zoneCovers, zonePath } from './rules';
 import type { Account, AccountDecision, AccountRules, AccountState, AccountTouch, Eligibility, Zone, ZoneAssignment } from './types';
 
@@ -39,7 +40,9 @@ export interface AccountView extends Account {
   wonByName: string | null;
 }
 export interface Colleague { userId: string; name: string; email: string; phone: string | null; role: MemberRecord['role']; zones: string[] }
-export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: AccountState | 'all'; q?: string; zoneId?: string; limit?: number }
+export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: AccountState | 'all'; q?: string; zoneId?: string; limit?: number;
+  /** Filtros por campo del CRM: clave → valor (opción, «yes»/«no» o texto). */
+  fields?: Record<string, string> }
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -52,6 +55,7 @@ function mapError(e: unknown): never {
   if (/duplicate key|unique/i.test(msg)) throw new AdminError(409, /zone/i.test(msg) ? 'Ya hay una zona con ese nombre en ese nivel' : 'Ya hay una cuenta con esa referencia externa');
   if (/permission denied|insufficient|row-level/i.test(msg)) throw new AdminError(403, msg.replace(/^.*permission denied:\s*/i, '').replace(/^\[supabase\]\s*/, '') || 'Sin permiso para esta operación');
   if (/foreign key/i.test(msg)) throw new AdminError(404, 'Zona o sector no encontrado');
+  if (/Campo desconocido/i.test(msg)) throw new AdminError(422, 'Ese campo no existe en este espacio');
   throw e;
 }
 const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').trim().toLowerCase();
@@ -103,7 +107,9 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const zoneIds = f.zoneId ? [...withDescendants(t.zones, [f.zoneId])] : scope === 'zone' ? [...withDescendants(t.zones, t.myZoneIds)] : undefined;
     const rows = await db.listAccounts(s.tenantId, { zoneIds, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, limit: Math.min(f.limit ?? 500, 2000) });
     const members = await names();
-    const all = rows.map((a) => view(a, t.zones, members));
+    const crm = f.fields && Object.values(f.fields).some(Boolean) ? await db.listFields(s.tenantId) : [];
+    const byField = (a: Account) => crm.every((fd) => matches(fd, a.fields[fd.key], f.fields?.[fd.key] ?? ''));
+    const all = rows.filter(byField).map((a) => view(a, t.zones, members));
     const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 3, customer: 4, blocked: 5 };
     const items = all.filter((a) => !f.state || f.state === 'all' || a.state === f.state)
       .sort((a, b) => ORDER[a.state] - ORDER[b.state] || a.name.localeCompare(b.name, 'es'));
@@ -114,8 +120,8 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     requireUse();
     const a = await db.getAccount(accountId);
     if (!a || a.tenantId !== s.tenantId) throw new AdminError(404, 'Cuenta no encontrada');
-    const [t, members, touches, dossiers, elig] = await Promise.all([
-      territory(), names(), db.listTouches(accountId, 50), admin.listDossiers(s.tenantId), db.preview(accountId).catch(() => null),
+    const [t, members, touches, dossiers, elig, crm] = await Promise.all([
+      territory(), names(), db.listTouches(accountId, 50), admin.listDossiers(s.tenantId), db.preview(accountId).catch(() => null), db.listFields(s.tenantId),
     ]);
     return {
       account: view(a, t.zones, members),
@@ -124,6 +130,8 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
       dossiers: dossiers.filter((d: DossierRecord) => d.accountId === accountId).map((d) => ({ ...d, authorName: label(members.get(d.authorId ?? '')) })),
       canEdit: perms.manageAccounts || a.ownerId === s.userId,
       rules: t.rules,
+      // Campos del CRM activos (docs/CRM_DINAMICO.md); la ficha se queda con los de su sector (fieldsFor).
+      crmFields: crm.filter((f) => !f.archivedAt).sort((x, y) => x.position - y.position || x.label.localeCompare(y.label, 'es')),
     };
   }
 
@@ -246,6 +254,67 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
 
   /** Ventas ganadas que no generan comisión y esperan decisión. */
+  // ------------------------------------------------------------------ campos del CRM (docs/CRM_DINAMICO.md)
+  async function crmFields(opts: { archived?: boolean } = {}): Promise<CrmField[]> {
+    requireUse();
+    const all = await db.listFields(s.tenantId);
+    return (opts.archived ? all : all.filter((f) => !f.archivedAt)).sort((a, b) => a.position - b.position || a.label.localeCompare(b.label, 'es'));
+  }
+  function requireAdmin() {
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin del espacio');
+  }
+  async function saveField(input: unknown, fieldId?: string): Promise<string> {
+    requireAdmin();
+    const v = parse(fieldInputSchema, input);
+    const all = await db.listFields(s.tenantId);
+    const prev = fieldId ? all.find((f) => f.id === fieldId) : undefined;
+    if (fieldId && !prev) throw new AdminError(404, 'Clave no encontrada');
+    // La clave nace de la etiqueta y no cambia nunca (renombrar no toca los datos). El tipo tampoco: sería otro campo.
+    let key = prev?.key ?? slugKey(v.label);
+    for (let i = 2; !prev && all.some((f) => f.key === key); i++) key = `${slugKey(v.label)}-${i}`;
+    const type = prev?.type ?? v.type;
+    // Las opciones que ya tenían datos se conservan por clave aunque cambie su etiqueta.
+    const options = prev && Array.isArray(v.options) ? v.options.map((o) => prev.options.find((x) => x.label.toLowerCase() === o.label.toLowerCase()) ?? o) : v.options;
+    try {
+      return await db.saveField(s.tenantId, {
+        key, label: v.label, type, options, group: v.group ?? null, help: v.help ?? null, required: v.required, inList: v.inList, filterable: v.filterable,
+        segments: v.segments, position: prev?.position ?? (all.reduce((m, f) => Math.max(m, f.position), -1) + 1),
+      }, fieldId);
+    } catch (e) { mapError(e); }
+  }
+  async function archiveField(fieldId: string, archived = true) {
+    requireAdmin();
+    if (!(await db.archiveField(fieldId, archived))) throw new AdminError(404, 'Clave no encontrada');
+  }
+  /** Sube o baja un campo en el orden (intercambia la posición con el vecino). */
+  async function moveField(fieldId: string, dir: -1 | 1) {
+    requireAdmin();
+    const all = (await db.listFields(s.tenantId)).filter((f) => !f.archivedAt).sort((a, b) => a.position - b.position || a.label.localeCompare(b.label, 'es'));
+    const i = all.findIndex((f) => f.id === fieldId);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= all.length) return;
+    const rec = (f: CrmField, position: number) => ({ key: f.key, label: f.label, type: f.type, options: f.options, group: f.group, help: f.help, required: f.required, inList: f.inList, filterable: f.filterable, segments: f.segments, position });
+    const [a, b] = [all[i], all[j]];
+    await db.saveField(s.tenantId, rec(a, j), a.id);
+    await db.saveField(s.tenantId, rec(b, i), b.id);
+    // Normaliza el resto (por si había empates).
+    for (const [k, f] of all.entries()) if (k !== i && k !== j && f.position !== k) await db.saveField(s.tenantId, rec(f, k), f.id);
+  }
+  /** Guarda valores de campos de una cuenta: solo los que llegan; los vacíos se borran; errores juntos. */
+  async function setFields(accountId: string, input: Record<string, unknown>) {
+    requireUse();
+    const a = await db.getAccount(accountId);
+    if (!a || a.tenantId !== s.tenantId) throw new AdminError(404, 'Cuenta no encontrada');
+    const fields = await db.listFields(s.tenantId);
+    const r = parseValues(fields, input);
+    if (r.errors.length) throw new AdminError(422, 'Datos no válidos', r.errors);
+    const next: FieldValues = { ...a.fields, ...r.values };
+    for (const k of r.cleared) delete next[k];
+    let ok: boolean;
+    try { ok = await db.updateAccount(accountId, { fields: next }); } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+  }
+
   async function conflicts() {
     requireManager();
     const [ds, members] = await Promise.all([admin.listDossiers(s.tenantId), names()]);
@@ -262,6 +331,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   return {
     territory, list, get, create, update, touch, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
+    crmFields, saveField, archiveField, moveField, setFields,
     preview: (accountId: string) => db.preview(accountId).catch(mapError),
     mine: async () => (perms.useAccounts ? (await list({ scope: 'mine' })).items : []),
     get rulesFor() { return db.getRules(s.tenantId); },
@@ -276,5 +346,6 @@ export const emptyAccountsDb: AccountsDb = {
   async saveRules() {}, async listAccounts() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
   async updateAccount() { return false; }, async deleteAccount() { return false; }, async touch() { return 'eligible'; }, async listTouches() { return []; },
   async preview() { return 'eligible'; }, async decide() { return false; },
+  async listFields() { return []; }, async saveField() { throw new Error('sin cuentas'); }, async archiveField() { return false; },
 };
 export type { ZoneAssignment };

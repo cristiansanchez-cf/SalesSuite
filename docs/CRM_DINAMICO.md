@@ -1,6 +1,6 @@
 # CRM dinámico: arquitectura (propuesta para decidir)
 
-> Estado: **propuesta**, nada implementado todavía. Objetivo: que cada espacio (Enjoy, Oquea…) tenga **su propio CRM**
+> Estado: **fase 1 hecha** (campos por espacio, ficha, columnas y filtros) y **menú corto** hecho. Lo demás, propuesta. Objetivo: que cada espacio (Enjoy, Oquea…) tenga **su propio CRM**
 > con **sus propios campos**, como una base de datos de Notion, pero dentro de Cofundo Ventas y conectado a lo que ya
 > existe: propuestas, territorio, comisiones, Aprende, Preparar mensaje y el resumen diario.
 >
@@ -162,7 +162,7 @@ Lo mismo sirve para cargar locales investigados («foco Valencia») y para Oquea
 
 | Fase | Qué incluye | Pruebas |
 |---|---|---|
-| **1 · Campos** | `crm_field` + `account.fields`, editor de campos (estilo Notion: «+ Añadir propiedad», tipo, opciones), ficha de cuenta con secciones, columnas y filtros en la lista | Unitarios del esquema dinámico, RLS, contrato, smoke del editor |
+| **1 · Campos** ✅ | `crm_field` + `account.fields` (migración `20261102000000_crm_fields.sql`), editor en *Equipo → Campos del CRM*, «Ficha» en cada cuenta con secciones, columnas y filtros en la lista, `crm.fields` en `tenant.json` | `src/lib/crm/fields.test.ts`, `supabase/tests/47_crm_fields.test.sql`, contrato de cuentas (demo y Postgres), `scripts/smoke-crm.cjs` |
 | **2 · Importar** | Asistente de 4 pasos con mapeo, duplicados, vista previa y deshacer. **Aquí cargamos tu Notion** | Smoke con un CSV de Notion real (anonimizado) |
 | **3 · Etapas, actividad y «Hoy»** | `crm_stage`, `crm_activity`, próximo paso en la cuenta, «Hoy» en Inicio, resumen diario ampliado | Smoke del ciclo completo |
 | **4 · Vistas** | Vistas guardadas, tablero por etapa, «Foco Valencia» | Smoke de filtros y tablero |
@@ -210,6 +210,20 @@ y su dirección antigua redirige a la nueva (los enlaces de los emails siguen fu
 cubren cada pantalla antes y después del cambio.
 
 ---
+
+## 8 bis. Cómo quedó la fase 1 (para quien lo toque)
+
+- **Lógica de campos**: `src/lib/crm/fields.ts` (tipos, `fieldInputSchema`, `parseValue(s)`, `formatValue`, `matches`,
+  `fieldsFor`, `valuesFromForm`). Una sola implementación para demo y Supabase.
+- **Servicio**: `admin.accounts.crmFields() / saveField() / archiveField() / moveField() / setFields()` y
+  `list({ fields: { clave: valor } })` para filtrar.
+- **Reglas**: la clave nace de la etiqueta y no cambia; el tipo no se cambia (sería otro campo); las opciones conservan
+  su clave aunque se renombren; archivar no borra datos; en la cuenta solo se guardan claves de campos del espacio
+  (trigger `account_fields_check`).
+- **Formularios**: `components/crm/FieldInput.astro` pinta el control de cada tipo (`present:<clave>` + `f:<clave>`).
+- **Alta del espacio**: `tenant.json → crm.fields[]` (upsert por clave). Enjoy arranca con `tiene-pantalla`,
+  `dj-residente` y `aforo` (`scripts/apply-crm-17.py`); Oquea puede añadir los suyos en su `tenant.json`.
+- **Menú**: `src/lib/ui/nav.ts` (`groups`, `navFor`, `sectionTabs`); las pestañas las pinta `AdminLayout`.
 
 ## 9. Lo que necesito de ti para empezar
 

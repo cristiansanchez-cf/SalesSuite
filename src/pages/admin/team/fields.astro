@@ -1,0 +1,180 @@
+---
+/**
+ * Campos del CRM (docs/CRM_DINAMICO.md): los datos que cada espacio guarda de sus cuentas, como las propiedades de una
+ * base de datos de Notion. Los define el admin; el núcleo (nombre, zona, sector, quién la trabaja) ya viene de serie.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { FIELD_TYPES, OPTION_TYPES, type CrmField, type FieldType } from '~/lib/crm/fields';
+import type { IconName } from '~/lib/ui/icons';
+import { i18n } from '~/lib/i18n';
+import { crmMessages } from '~/lib/i18n/messages/crm';
+import { shellMessages } from '~/lib/i18n/messages/shell';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
+const acc = admin.accounts;
+const { m, locale } = i18n(Astro, crmMessages);
+const E = m.editor;
+const S = shellMessages[locale];
+const ICON: Record<FieldType, IconName> = {
+  text: 'pencil', long_text: 'file-text', number: 'gauge', money: 'wallet', checkbox: 'circle-check', select: 'list-checks',
+  multi_select: 'layers', date: 'calendar', url: 'link', email: 'mail', phone: 'phone', rating: 'star',
+};
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let ok = '';
+  result = await formAction(async () => {
+    const input = () => ({
+      label: str('label'), type: str('type'), options: str('options'), group: str('group'), help: str('help'),
+      required: f.has('required'), inList: f.has('inList'), filterable: f.has('filterable'), segments: f.getAll('segments').map(String),
+    });
+    switch (str('action')) {
+      case 'create': await acc.saveField(input()); ok = 'saved'; break;
+      case 'save': await acc.saveField(input(), str('id')); ok = 'saved'; break;
+      case 'up': await acc.moveField(str('id'), -1); break;
+      case 'down': await acc.moveField(str('id'), 1); break;
+      case 'archive': await acc.archiveField(str('id'), true); ok = 'archived'; break;
+      case 'restore': await acc.archiveField(str('id'), false); ok = 'restored'; break;
+    }
+  });
+  if (!result.error) return Astro.redirect(`/admin/team/fields${ok ? `?ok=${ok}` : ''}`, 303);
+}
+const okMsg = flash(Astro.url, { saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
+const [all, segments] = await Promise.all([acc.crmFields({ archived: true }), admin.playbook.market()]);
+const active = all.filter((x) => !x.archivedAt);
+const archived = all.filter((x) => x.archivedAt);
+const segName = new Map(segments.map((sg) => [sg.key, sg.name]));
+const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
+---
+<AdminLayout title={E.title}>
+  <PageHeader eyebrow={E.eyebrow} title={E.title} lede={E.lede}>
+    <button type="button" class="co-btn co-btn--primary" data-dialog-open="field-new" data-testid="field-add"><Icon name="plus" size={16} />{E.add}</button>
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {active.length === 0
+    ? <EmptyState kind="create" title={E.emptyTitle} detail={E.emptyDetail} action={{ dialog: 'field-new', label: E.add }} />
+    : <ul class="co-rows" data-testid="fields">
+        {active.map((x, i) => (
+          <li class="co-row" data-testid="field" data-key={x.key}>
+            <span class="co-row__lead"><Icon name={ICON[x.type]} /></span>
+            <span class="co-row__main">
+              <span class="co-row-title">{x.label}</span>
+              <span class="co-meta">{m.types[x.type]}{x.group ? ` · ${x.group}` : ''}{x.options.length ? ` · ${x.options.map((o) => o.label).join(', ')}` : ''}{x.segments.length ? ` · ${x.segments.map((k) => segName.get(k) ?? k).join(', ')}` : ''}</span>
+              {(x.inList || x.filterable || x.required) && (
+                <span class="mt-1 flex flex-wrap gap-1.5">
+                  {x.inList && <span class="co-badge">{E.flags.inList}</span>}
+                  {x.filterable && <span class="co-badge">{E.flags.filterable}</span>}
+                  {x.required && <span class="co-badge">{E.flags.required}</span>}
+                </span>
+              )}
+            </span>
+            <span class="flex items-center gap-1">
+              <form method="post"><input type="hidden" name="action" value="up" /><input type="hidden" name="id" value={x.id} />
+                <button class="co-btn co-btn--ghost co-btn--icon co-btn--sm" type="submit" disabled={i === 0} aria-label={`${E.up}: ${x.label}`}><Icon name="arrow-up" size={14} /></button></form>
+              <form method="post"><input type="hidden" name="action" value="down" /><input type="hidden" name="id" value={x.id} />
+                <button class="co-btn co-btn--ghost co-btn--icon co-btn--sm" type="submit" disabled={i === active.length - 1} aria-label={`${E.down}: ${x.label}`}><Icon name="arrow-down" size={14} /></button></form>
+              <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`field-${x.id}`} data-testid="field-edit">{E.edit}</button>
+              <button type="button" class="co-btn co-btn--quiet co-btn--icon co-btn--sm" data-dialog-open={`archive-${x.id}`} aria-label={`${E.archive}: ${x.label}`}><Icon name="archive" size={14} /></button>
+            </span>
+          </li>
+        ))}
+      </ul>}
+
+  {archived.length > 0 && (
+    <details class="mt-8" data-testid="fields-archived">
+      <summary class="text-eyebrow cursor-pointer">{E.archived(archived.length)}</summary>
+      <p class="co-help mt-2">{E.archivedHelp}</p>
+      <ul class="co-rows mt-3">
+        {archived.map((x) => (
+          <li class="co-row">
+            <span class="co-row__lead"><Icon name={ICON[x.type]} /></span>
+            <span class="co-row__main"><span class="co-row-title">{x.label}</span><span class="co-meta">{m.types[x.type]}</span></span>
+            <form method="post"><input type="hidden" name="action" value="restore" /><input type="hidden" name="id" value={x.id} />
+              <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{E.restore}</button></form>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )}
+
+  {[null, ...active].map((x) => {
+    const id = x ? `field-${x.id}` : 'field-new';
+    return (
+      <dialog id={id} class="co-dialog co-dialog--wide" aria-labelledby={`${id}-title`} data-testid={x ? undefined : 'field-dialog'}>
+        <form method="post">
+          <input type="hidden" name="action" value={x ? 'save' : 'create'} />
+          {x && <input type="hidden" name="id" value={x.id} />}
+          <div class="co-dialog__body">
+            <h2 id={`${id}-title`} class="co-entity">{x ? x.label : E.add}</h2>
+            <label class="co-field">{E.label}<input class="co-input" name="label" required maxlength="60" value={x?.label ?? ''} placeholder="¿Tiene pantalla?" /></label>
+            <fieldset class="grid gap-2">
+              <legend class="co-field mb-1">{E.type}</legend>
+              {x ? (
+                <><input type="hidden" name="type" value={x.type} /><p class="co-meta flex items-center gap-2"><Icon name={ICON[x.type]} size={16} />{m.types[x.type]} · {E.typeLocked}</p></>
+              ) : (
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {FIELD_TYPES.map((t, j) => (
+                    <label class="co-option !p-3" data-testid={`field-type-${t}`}>
+                      <input type="radio" name="type" value={t} checked={j === 0} />
+                      <span class="flex items-center gap-2 co-row-title"><Icon name={ICON[t]} size={16} />{m.types[t]}</span>
+                      <span class="co-meta">{m.typeHints[t]}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+            {(!x || OPTION_TYPES.includes(x.type)) && (
+              <label class="co-field">{E.options} <span class="co-help">{E.optionsHelp}</span>
+                <textarea class="co-textarea" name="options" rows="4" placeholder={'Sí\nNo\nNo lo sé'}>{x ? optionsText(x) : ''}</textarea></label>
+            )}
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="co-field">{E.group} <span class="co-help">{E.groupHelp}</span><input class="co-input" name="group" maxlength="40" value={x?.group ?? ''} /></label>
+              <label class="co-field">{E.help} <span class="co-help">{E.helpHelp}</span><input class="co-input" name="help" maxlength="200" value={x?.help ?? ''} /></label>
+            </div>
+            <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <label class="flex items-center gap-2"><input type="checkbox" name="inList" checked={x?.inList ?? false} />{E.inList}</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="filterable" checked={x?.filterable ?? false} />{E.filterable}</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="required" checked={x?.required ?? false} />{E.required}</label>
+            </div>
+            {segments.length > 0 && (
+              <fieldset class="grid gap-2">
+                <legend class="co-field">{E.segments} <span class="co-help">{E.segmentsHelp}</span></legend>
+                <div class="co-chips">
+                  {segments.map((sg) => <label class="co-chip seg"><input type="checkbox" class="sr-only" name="segments" value={sg.key} checked={x?.segments.includes(sg.key) ?? false} />{sg.name}</label>)}
+                </div>
+              </fieldset>
+            )}
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+            <button class="co-btn co-btn--primary" type="submit" data-testid={x ? undefined : 'field-create'}>{x ? E.save : E.create}</button>
+          </div>
+        </form>
+      </dialog>
+    );
+  })}
+
+  {active.map((x) => (
+    <ConfirmDialog id={`archive-${x.id}`} title={E.archiveTitle(x.label)} confirmLabel={E.archive} does={E.archiveDoes} doesNot={E.archiveDoesNot}>
+      <input type="hidden" name="action" value="archive" />
+      <input type="hidden" name="id" value={x.id} />
+    </ConfirmDialog>
+  ))}
+</AdminLayout>
+
+<style>
+  .seg:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+</style>

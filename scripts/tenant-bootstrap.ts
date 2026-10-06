@@ -16,6 +16,7 @@
  *  4. Catálogo: crea módulos que falten; si el contenido/precio cambió respecto a la última versión publicada, publica una versión nueva.
  *  5. Admins: invita a quien no tenga cuenta y garantiza rol admin en el tenant.
  */
+import { FIELD_TYPES } from '../src/lib/crm/fields';
 import { proposalSchema } from '../src/lib/proposal/preset';
 import { deepMerge } from '../src/modules/resolve';
 import { readFile, readdir, stat } from 'node:fs/promises';
@@ -94,6 +95,16 @@ const tenantFile = z.object({
   retired_plays: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/)).default([]),
   /** Situaciones (docs/EVIDENCE.md): tipo de personalidad, región, rasgos de la cuenta… Upsert por key. */
   facets: z.array(z.unknown()).default([]),
+  /** CRM (docs/CRM_DINAMICO.md): campos de las cuentas de este espacio. Upsert por key; los que no están se quedan. */
+  crm: z.object({
+    fields: z.array(z.object({
+      key: z.string().regex(/^[a-z0-9][a-z0-9-]{0,47}$/), label: z.string().min(1).max(60), type: z.enum(FIELD_TYPES),
+      options: z.array(z.object({ key: z.string().regex(/^[a-z0-9][a-z0-9-]{0,47}$/), label: z.string().min(1).max(60) })).max(60).default([]),
+      group: z.string().max(40).nullable().default(null), help: z.string().max(200).nullable().default(null),
+      required: z.boolean().default(false), in_list: z.boolean().default(false), filterable: z.boolean().default(false),
+      segments: z.array(z.string()).max(20).default([]),
+    })).max(100).default([]),
+  }).default({ fields: [] }),
   /** Playbook de ventas (docs/PLAYBOOK.md). `module_key` null = jugada general. */
   playbook: z.array(z.object({
     key: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
@@ -268,6 +279,13 @@ function validate(t: TenantFile, assetKeys: string[]) {
     if (facetKeys.has(r.data.key)) errors.push(`facets: clave duplicada ${r.data.key}`);
     facetKeys.add(r.data.key);
   }
+  const crmKeys = new Set<string>();
+  for (const f of t.crm.fields) {
+    if (crmKeys.has(f.key)) errors.push(`crm.fields: clave duplicada ${f.key}`);
+    crmKeys.add(f.key);
+    if ((f.type === 'select' || f.type === 'multi_select') && !f.options.length) errors.push(`crm.fields.${f.key}: una selección necesita opciones`);
+    for (const k of f.segments) if (!segKeys.has(k)) errors.push(`crm.fields.${f.key}: sector "${k}" no está en market`);
+  }
   for (const k of missing) errors.push(`asset:${k} no existe en ${'assets/'} (ver assets/README.md)`);
   return errors;
 }
@@ -412,6 +430,15 @@ async function main() {
     }, { onConflict: 'tenant_id,key' }), `situación ${f.key}`);
   }
   if (t.facets.length) log(`situaciones: ${t.facets.length} sincronizadas`);
+
+  // 5b-bis. campos del CRM (upsert por key; los que no están en el JSON se quedan como estén)
+  for (const [i, f] of t.crm.fields.entries()) {
+    must(await sb.from('crm_field').upsert({
+      tenant_id: tenantId, key: f.key, label: f.label, type: f.type, options: f.options, grp: f.group, help: f.help, required: f.required,
+      in_list: f.in_list, filterable: f.filterable, segments: f.segments, position: i,
+    }, { onConflict: 'tenant_id,key' }), `campo ${f.key}`);
+  }
+  if (t.crm.fields.length) log(`CRM: ${t.crm.fields.length} campos sincronizados`);
 
   // 5c. tarifas (por nombre) y cupones (por código)
   const segIds = new Map<string, string>(

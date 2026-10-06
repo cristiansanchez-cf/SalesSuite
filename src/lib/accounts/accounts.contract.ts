@@ -190,5 +190,39 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const dj = await ctx(U.dj);
       await rejects(dj.service.createDossier({ title: 'x', partnerAccountId: dj.session.partner!.accounts[0].id, accountId: sol }), 422);
     });
+    test('CRM: el admin define campos; quien trabaja la cuenta rellena su ficha; la lista filtra por campo', async () => {
+      const { vlc } = await territory();
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      await rejects(rep.accounts.saveField({ label: 'Mío', type: 'text' }), 403);
+      const pantalla = await admin.accounts.saveField({ label: '¿Tiene pantalla?', type: 'checkbox', inList: true, filterable: true });
+      await admin.accounts.saveField({ label: 'Noches', type: 'multi_select', options: 'Viernes\nSábado', filterable: true });
+      await admin.accounts.saveField({ label: 'Aforo', type: 'number' });
+      const keys = (await rep.accounts.crmFields()).map((f) => f.key);
+      expect(keys).toEqual(['tiene-pantalla', 'noches', 'aforo']);
+
+      const sol = await rep.accounts.create({ name: 'Club Sol', zoneId: vlc });
+      const luna = await rep.accounts.create({ name: 'Sala Luna', zoneId: vlc });
+      await rep.accounts.setFields(sol, { 'tiene-pantalla': true, noches: ['viernes', 'sabado'], aforo: '450' });
+      await rejects(rep.accounts.setFields(luna, { aforo: 'muchos' }), 422);
+      expect((await rep.accounts.get(sol)).account.fields).toEqual({ 'tiene-pantalla': true, noches: ['viernes', 'sabado'], aforo: 450 });
+      // Vaciar borra; lo que no llega se conserva.
+      await rep.accounts.setFields(sol, { noches: [] });
+      expect((await rep.accounts.get(sol)).account.fields).toEqual({ 'tiene-pantalla': true, aforo: 450 });
+
+      const conPantalla = await rep.accounts.list({ scope: 'all', fields: { 'tiene-pantalla': 'yes' } });
+      expect(conPantalla.items.map((a) => a.name)).toEqual(['Club Sol']);
+      const sin = await rep.accounts.list({ scope: 'all', fields: { 'tiene-pantalla': 'no' } });
+      expect(sin.items.map((a) => a.name)).toEqual(['Sala Luna']);
+
+      // Renombrar no toca los datos; archivar no los borra.
+      await admin.accounts.saveField({ label: 'Pantalla propia', type: 'checkbox', inList: true }, pantalla);
+      expect((await rep.accounts.crmFields()).find((f) => f.id === pantalla)?.key).toBe('tiene-pantalla');
+      await admin.accounts.archiveField(pantalla, true);
+      expect((await rep.accounts.crmFields()).map((f) => f.key)).not.toContain('tiene-pantalla');
+      expect((await rep.accounts.get(sol)).account.fields['tiene-pantalla']).toBe(true);
+      await admin.accounts.moveField((await admin.accounts.crmFields()).find((f) => f.key === 'aforo')!.id, -1);
+      expect((await admin.accounts.crmFields()).map((f) => f.key)).toEqual(['aforo', 'noches']);
+    });
   });
 }

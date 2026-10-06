@@ -8013,5 +8013,36 @@
     "con-obj-precio",
     "fest-una-pantalla",
     "exp-prueba"
-  ]
+  ],
+  "crm": {
+    "fields": [
+      {
+        "key": "tiene-pantalla",
+        "label": "¿Tiene pantalla?",
+        "type": "checkbox",
+        "group": "El local",
+        "help": "Pantalla o proyector propio en la sala (aunque lo lleve un VJ).",
+        "in_list": true,
+        "filterable": true
+      },
+      {
+        "key": "dj-residente",
+        "label": "¿Tiene DJ residente?",
+        "type": "checkbox",
+        "group": "El local",
+        "help": "Un DJ fijo varias noches: es aliado o puede tumbarlo.",
+        "in_list": true,
+        "filterable": true
+      },
+      {
+        "key": "aforo",
+        "label": "Aforo",
+        "type": "number",
+        "group": "El local",
+        "help": "Personas. Decide el tramo de la tarifa.",
+        "in_list": true,
+        "filterable": false
+      }
+    ]
+  }
 }

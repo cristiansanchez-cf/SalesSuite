@@ -1,4 +1,5 @@
-/** Zonas y cuentas (docs/ACCOUNTS.md). */
+/** Zonas y cuentas (docs/ACCOUNTS.md) y campos del CRM (docs/CRM_DINAMICO.md). */
+import type { FieldValues } from '../crm/fields';
 export type ZoneKind = 'country' | 'region' | 'province' | 'city' | 'area';
 export type AccountStatus = 'open' | 'customer' | 'blocked';
 export type Eligibility = 'eligible' | 'claimed_by_other' | 'blocked' | 'out_of_zone' | 'no_account';
@@ -30,6 +31,8 @@ export interface Account {
   wonDossierId: string | null;
   createdBy: string | null;
   createdAt: string;
+  /** Valores de los campos del CRM del espacio (clave → valor). */
+  fields: FieldValues;
 }
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }

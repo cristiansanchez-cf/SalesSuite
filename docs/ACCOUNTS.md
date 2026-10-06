@@ -6,7 +6,7 @@ El objetivo es que nadie «bombardee» un local que ya trabaja un compañero, qu
 
 - **Zona:** árbol libre por espacio de trabajo (país › región › provincia › ciudad › zona). Una zona incluye todo lo que tiene dentro: quien cubre la Comunidad Valenciana cubre Valencia y Castellón. Sirve igual para Corea o Brasil.
 - **Zonas de cada persona** (`membership_zone`): definen «Mi zona» en Cuentas y quiénes son tus **vendedores de zona**, con teléfono (WhatsApp, llamada) y email. El teléfono se pone en *Mi cuenta*.
-- **Cuenta:** el local o centro (Club Sol, un centro de buceo…), con zona, sector, dirección, referencia externa (id de Google Maps o del CRM, para importar sin duplicados) y notas.
+- **Cuenta:** el local o centro (Club Sol, un centro de buceo…), con zona, sector, dirección, referencia externa (id de Google Maps o del CRM, para importar sin duplicados) y notas. Además, su **ficha** con los campos propios del espacio (docs/CRM_DINAMICO.md).
 - **Reserva:** quien contacta una cuenta la tiene reservada **N días** (30 por defecto, configurable). Cada contacto o propuesta renueva la reserva. Si caduca, la cuenta vuelve a estar libre.
 - **Bloqueo:** el admin o jefe/a puede bloquear una cuenta con un motivo («El dueño ha pedido no recibir más comerciales»). Nadie puede reservarla y ninguna venta en ella genera comisión.
 - **Cliente:** al ganar una venta elegible, la cuenta pasa a ser cliente de quien la vendió. Si se deshace la venta, vuelve a estar en trabajo.
