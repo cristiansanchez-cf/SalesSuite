@@ -8,6 +8,7 @@ sacada de los repos oquea-web (Astro) y OqueaApp (Flutter). Idempotente.
   van por Google Fonts y el tema solo admite woff2 propios (PENDIENTE decidir si las portadas las usan).
 - Logo navy (fondo claro) y blanco (fondo oscuro), favicon, OG 1200×630 generada en la entrega.
 - Contacto y razón social del pie.
+- Dominios: oquea.ventas.cofundo.io (definitivo) y oquea-ventas.vercel.app (para verlo ya).
 Los archivos ya están en tenants/oquea/assets/ (copiados tal cual de la entrega).
 
     python3 scripts/apply-oquea-00.py
@@ -53,6 +54,13 @@ t['brand'] = {
     },
     'legal': 'Oquea Technologies SL · Avenida Diego Fernández de Mendoza 11, 3º B, 29006 Málaga, España',
 }
+
+# Dominios: el definitivo (DNS de cofundo.io) y uno de vercel.app para verlo ya, sin tocar DNS (Cristian, 5-oct-2026).
+# El de vercel.app hay que añadirlo también en Vercel → proyecto «ventas» → Settings → Domains.
+t['domains'] = [
+    {'hostname': 'oquea.ventas.cofundo.io', 'is_primary': True},
+    {'hostname': 'oquea-ventas.vercel.app', 'is_primary': False},
+]
 
 t['$comment'] = ('Alta de Oquea en Cofundo Ventas (docs/oquea/00-HANDOFF.md). El contenido entra documento a documento con '
                  'scripts/apply-oquea-NN.py, nunca a mano. Estado y pendientes: docs/oquea/ESTADO.md.')

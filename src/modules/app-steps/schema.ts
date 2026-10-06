@@ -5,7 +5,7 @@ const url = z.string().max(500).refine((u) => /^(https:\/\/|\/)/.test(u), 'https
 /** Pantallas de la app recreadas en HTML (Screen.astro). `image`: una captura real (src). */
 export const APP_SCREENS = [
   'access', 'qr-activity', 'dive-saved', 'share-card', 'logbook', 'diver-profile',
-  'activities', 'create-activity', 'center-qr', 'crm-list', 'crm-diver', 'my-centres', 'team', 'dive-sites', 'image',
+  'activities', 'create-activity', 'center-qr', 'crm-list', 'crm-diver', 'my-centres', 'team', 'dive-sites', 'map', 'album', 'event', 'badge', 'image',
 ] as const;
 
 export const STEP_ICONS = [
@@ -43,7 +43,7 @@ export const appStepsSchema = z.object({
     screen: z.enum(APP_SCREENS),
     src: url.optional(),
     alt: z.string().max(140).optional(),
-  })).max(2).default([]),
+  })).max(3).default([]),
   /** Portada o cierre sin pantallas: la marca en grande a la derecha (p. ej. el isotipo en blanco). */
   mark: url.optional(),
   /** Foto de ejemplo (cabecera de la actividad, tarjeta para compartir). Si el cliente sube fotos, van las suyas. */
@@ -53,7 +53,7 @@ export const appStepsSchema = z.object({
     handle: z.string().max(30).default('lauramendez'),
     level: z.string().max(40).default('Advanced Open Water'),
     activity: z.string().max(60).default('Inmersión a las 9:00'),
-    discipline: z.string().max(40).default('Inmersión recreativa'),
+    discipline: z.string().max(40).default('Fun dive'),
     site: z.string().max(40).default('Maaya Thila'),
     place: z.string().max(40).default('Benalmádena, Málaga'),
     date: z.string().max(20).default('26/02/2026'),

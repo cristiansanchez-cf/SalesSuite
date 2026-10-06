@@ -90,8 +90,8 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
           <span><small>Temperatura</small><b>{s.temp}<i>°C</i></b></span>
         </div>
         <div class="as-strava__foot">
-          <span class="as-strava__center"><small>Centro de buceo</small><b>{centerName}</b></span>
-          {logo ? <img class="as-strava__logo" src={logo} alt="" /> : <span class="as-strava__brand"><i></i>oquea</span>}
+          <span class="as-strava__center">{logo && <img class="as-strava__logo" src={logo} alt="" />}<span><small>with</small><b>{centerName}</b></span></span>
+          <span class="as-strava__brand"><i></i>oquea</span>
         </div>
       </div>
     ) : screen === 'logbook' ? (
@@ -142,14 +142,14 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
       </Fragment>
     ) : screen === 'create-activity' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Información de la actividad</span></div>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Nueva inmersión</span></div>
         <span class="as-progress"><i style="width:22%"></i></span>
         <div class="as-form">
-          <span class="as-field as-field--filled">Salida en barco</span>
+          <span class="as-field as-field--filled">{s.date} · {s.time}<Fragment set:html={ic('clock', 16)} /></span>
+          <span class="as-field as-field--filled">{s.site}<Fragment set:html={ic('pin', 16)} /></span>
+          <span class="as-field as-field--filled">Scuba<Fragment set:html={ic('caret', 16)} /></span>
           <span class="as-field as-field--filled">{s.discipline}<Fragment set:html={ic('caret', 16)} /></span>
-          <span class="as-field as-field--filled">{s.date} · {s.time}<Fragment set:html={ic('calendar', 16)} /></span>
-          <span class="as-field as-field--filled">Todos los días<Fragment set:html={ic('caret', 16)} /></span>
-          <span class="as-field">Dive site: {s.site}<Fragment set:html={ic('caret', 16)} /></span>
+          <div class="as-preset"><small>Datos del punto, ya cargados</small><span><b>30 m</b><i>Prof. máx.</i></span><span><b>45 min</b><i>Tiempo</i></span><span><b>20 m</b><i>Visibilidad</i></span><span class="as-preset__life"><b>{s.life}</b><i>Vida marina</i></span></div>
         </div>
         <span class="as-btn as-btn--bottom">Continuar</span>
       </Fragment>
@@ -209,7 +209,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
     ) : screen === 'team' ? (
       <Fragment>
         <div class="as-bar"><Fragment set:html={ic('back')} /><span>Gestionar equipo</span></div>
-        {[[s.diver, 'Propietario'], ['Carlos Vidal', 'Propietario'], ['Sandra García', 'Staff']].map(([n, r]) => (
+        {[[s.diver, 'Owner'], ['Carlos Vidal', 'Admin'], ['Sandra García', 'Admin']].map(([n, r]) => (
           <div class="as-member">
             <div class="as-member__head"><span class="as-ini as-ini--sm">{initials(n!)}</span><b>{n}</b><span class="as-chip as-chip--grey as-chip--sm">{r}</span></div>
             <div class="as-member__btns"><span class="as-btn as-btn--sm">Editar</span><span class="as-btn as-btn--sm as-btn--line">Eliminar</span></div>
@@ -228,6 +228,57 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         <span class="as-btn as-btn--sm as-site__add"><Fragment set:html={ic('plus', 15)} />Añadir dive site</span>
         <AppNav on='centres' />
       </Fragment>
+    ) : screen === 'map' ? (
+      <div class="as-map">
+        <div class="as-map__sea" aria-hidden="true">
+          {[[22, 30, 'site'], [64, 22, 'center'], [48, 48, 'site'], [30, 62, 'site'], [72, 58, 'ngo'], [56, 36, 'me']].map(([x, y, k]) => (
+            <span class:list={['as-pin', `as-pin--${k}`]} style={`left:${x}%;top:${y}%`}>{k === 'me' ? <Fragment set:html={ic('anchor', 14)} /> : null}</span>
+          ))}
+        </div>
+        <div class="as-map__search"><Fragment set:html={ic('search', 15)} />Buscar centros, dive sites…</div>
+        <div class="as-map__legend"><span><i class="as-dot as-dot--center"></i>Centros</span><span><i class="as-dot as-dot--site"></i>Dive sites</span><span><i class="as-dot as-dot--ngo"></i>ONG</span></div>
+        <div class="as-ficha">
+          <div class="as-ficha__head"><span class="as-ccard__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 20)} /><span><b>{centerName}</b><small><Fragment set:html={ic('pin', 12)} />{s.place}</small></span></div>
+          <div class="as-ficha__chips"><span class="as-chip as-chip--sm">Español</span><span class="as-chip as-chip--sm">English</span><span class="as-chip as-chip--sm as-chip--grey">Certificadoras</span></div>
+          <div class="as-ficha__rows"><span><Fragment set:html={ic('globe', 14)} />Web</span><span><Fragment set:html={ic('users', 14)} />Equipo</span><span><Fragment set:html={ic('phone', 14)} />Contacto</span></div>
+        </div>
+      </div>
+    ) : screen === 'album' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Álbum · {s.activity}</span></div>
+        <p class="as-album__meta"><Fragment set:html={ic('clock', 13)} />Compartido 30 días · {centerName} y el grupo</p>
+        <div class="as-album">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => <span class="as-album__ph" style={`${photo ? `background-image:url('${photo.replace(/'/g, '%27')}');` : ''}background-position:${(i % 3) * 50}% ${Math.floor(i / 3) * 50}%`}></span>)}
+        </div>
+        <span class="as-btn as-btn--bottom"><Fragment set:html={ic('camera', 16)} />Subir fotos</span>
+      </Fragment>
+    ) : screen === 'badge' ? (
+      <Fragment>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Insignia de asistencia</span></div>
+        <div class="as-badge">
+          <span class="as-badge__medal"><Fragment set:html={ic('heart', 40)} /></span>
+          <small>{centerName}</small>
+          <b>Limpieza de fondos</b>
+          <span class="as-chip">Asististe · {s.date}</span>
+          <p>{s.diver} ha participado en este evento.</p>
+        </div>
+        <div class="as-list as-list--flat"><span><Fragment set:html={ic('anchor', 16)} />Con {s.site}</span><span><Fragment set:html={ic('share', 16)} />Compartir</span></div>
+      </Fragment>
+    ) : screen === 'event' ? (
+      <div class="as-map">
+        <div class="as-map__sea" aria-hidden="true">
+          {[[30, 28, 'center'], [62, 34, 'center'], [46, 54, 'me'], [70, 62, 'center']].map(([x, y, k]) => (
+            <span class:list={['as-pin', `as-pin--${k}`]} style={`left:${x}%;top:${y}%`}>{k === 'me' ? <Fragment set:html={ic('anchor', 14)} /> : null}</span>
+          ))}
+        </div>
+        <div class="as-ficha">
+          <span class="as-chip as-chip--sm">Evento · ONG</span>
+          <b class="as-ficha__title">Limpieza de fondos</b>
+          <small><Fragment set:html={ic('calendar', 12)} />{s.date} · varios centros</small>
+          <div class="as-ficha__rows as-ficha__rows--col"><span><Fragment set:html={ic('anchor', 14)} />{centerName}<em>Centro más cercano</em></span></div>
+          <span class="as-btn as-btn--sm">Inscribirme en este centro</span>
+        </div>
+      </div>
     ) : null}
   </div>
 </div>
@@ -327,6 +378,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-strava__stats b { font-size: 56px; line-height: 1; font-weight: 700; letter-spacing: -.02em; }
   .as-strava__stats i { margin-left: 6px; font-size: 20px; font-style: normal; font-weight: 500; }
   .as-strava__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .35); }
+  .as-strava__center { display: flex; align-items: center; gap: 10px; }
   .as-strava__center small { color: rgb(255 255 255 / .75); }
   .as-strava__center b { font-size: 17px; }
   .as-strava__logo { width: 52px; height: 52px; border-radius: 14px; object-fit: contain; background: #fff; padding: 4px; }
@@ -436,6 +488,50 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-site__txt { flex: 1; min-width: 0; }
   .as-site__ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--ap-tint); color: var(--ap); }
   .as-site__add { width: max-content; margin-top: 6px; }
+  /* Crear inmersión: datos del punto */
+  .as-preset { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; border-radius: 16px; background: var(--ap-tint); }
+  .as-preset small { grid-column: 1 / -1; color: var(--ap); font-weight: 600; }
+  .as-preset span { display: grid; gap: 2px; }
+  .as-preset i { font-style: normal; font-size: 11px; color: var(--mut); }
+  .as-preset__life { grid-column: 1 / -1; }
+  /* Mapa, perfil y evento */
+  .as-screen--map, .as-screen--event { padding: 0; }
+  .as-map { position: absolute; inset: 0; }
+  .as-map__sea { position: absolute; inset: 0; background:
+    radial-gradient(ellipse 38% 26% at 18% 78%, #e9eedb 98%, transparent), radial-gradient(ellipse 30% 40% at 92% 20%, #e9eedb 98%, transparent),
+    radial-gradient(circle at 50% 40%, #cfe6f3, #a9d3ea 70%); }
+  .as-pin { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 99px; border: 3px solid #fff; background: #5585dc; }
+  .as-pin--center { background: var(--ap); }
+  .as-pin--ngo { background: #2e9e6b; }
+  .as-pin--me { display: grid; place-items: center; width: 34px; height: 34px; margin: -17px 0 0 -17px; background: var(--ap); color: #fff; box-shadow: 0 0 0 6px color-mix(in srgb, var(--ap) 25%, transparent); }
+  .as-map__search { position: absolute; top: 58px; left: 16px; right: 16px; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-radius: 99px; background: #fff; color: var(--hint); font-size: 13px; }
+  .as-map__legend { position: absolute; top: 110px; left: 16px; display: flex; gap: 6px; }
+  .as-map__legend span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; background: #fff; font-size: 11px; }
+  .as-dot { width: 8px; height: 8px; border-radius: 99px; background: #5585dc; }
+  .as-dot--center { background: var(--ap); }
+  .as-dot--ngo { background: #2e9e6b; }
+  .as-ficha { position: absolute; left: 12px; right: 12px; bottom: 16px; display: grid; gap: 10px; padding: 16px; border-radius: 22px; background: #fff; }
+  .as-ficha__head { display: flex; align-items: center; gap: 12px; }
+  .as-ficha__head small, .as-ficha > small { display: flex; align-items: center; gap: 4px; }
+  .as-ficha__chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .as-ficha__rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .as-ficha__rows span { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; border-radius: 12px; background: #f6f7f9; font-size: 12px; color: #444; }
+  .as-ficha__rows--col { grid-template-columns: 1fr; }
+  .as-ficha__rows--col span { justify-content: flex-start; }
+  .as-ficha__rows em { margin-left: auto; font-style: normal; color: var(--ap); font-size: 11px; }
+  .as-ficha__title { font-size: 18px; }
+  .as-ficha .as-chip { width: max-content; }
+  /* Insignia */
+  .as-badge { display: grid; justify-items: center; gap: 8px; margin: 24px 0 18px; padding: 26px 18px; border-radius: 24px; background: var(--ap-tint); text-align: center; }
+  .as-badge__medal { display: grid; place-items: center; width: 110px; height: 110px; border-radius: 99px; background: var(--ap); color: #fff; box-shadow: 0 0 0 8px var(--ap-acc); margin-bottom: 10px; }
+  .as-badge b { font-size: 22px; }
+  .as-badge p { margin: 6px 0 0; color: var(--mut); font-size: 13px; }
+  .as-list--flat { border-top: 0; margin: 0; }
+  .as-list--flat span { justify-content: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px; }
+  /* Álbum */
+  .as-album__meta { display: flex; align-items: center; gap: 5px; margin: 0 0 12px; color: var(--mut); font-size: 12px; }
+  .as-album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .as-album__ph { aspect-ratio: 1; border-radius: 8px; background-color: #2b7e96; background-image: linear-gradient(160deg, #3fb4c9, #0d4a6b); background-size: 300% 300%; }
   @keyframes as-pop { from { transform: scale(.4); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .as-okdot { animation: none; } }
 </style>
