@@ -136,6 +136,9 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       }
       return (check(await sb.from('crm_field').insert(row).select('id').single()) as Row).id;
     },
+    async deleteField(id) {
+      return (check(await sb.from('crm_field').delete().eq('id', id).select('id')) ?? []).length > 0;
+    },
     async archiveField(id, archived) {
       return (check(await sb.from('crm_field').update({ archived_at: archived ? new Date().toISOString() : null }).eq('id', id).select('id')) ?? []).length > 0;
     },

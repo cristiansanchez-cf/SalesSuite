@@ -266,6 +266,13 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       s.crm_field = [...s.crm_field.filter((x) => x.id !== row.id), row];
       return row.id;
     },
+    async deleteField(id) {
+      const s = db();
+      const f = s.crm_field.find((x) => x.id === id);
+      if (!f || roleOf(f.tenant_id, actorId) !== 'admin') return false;
+      s.crm_field = s.crm_field.filter((x) => x.id !== id);
+      return true;
+    },
     async archiveField(id, archived) {
       const f = db().crm_field.find((x) => x.id === id);
       if (!f || roleOf(f.tenant_id, actorId) !== 'admin') return false;

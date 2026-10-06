@@ -388,32 +388,41 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       }
       await db.saveLinks(t, links.filter((l) => !oldLinks.has(`${l.contactId}|${l.accountId}`)));
     } catch (e) {
-      // Lo que se llegó a crear se queda marcado con la importación: deshacer lo limpia.
-      await db.updateImport(id, { status: 'done', stats: { ...stats, undo }, doneAt: new Date().toISOString() }).catch(() => {});
-      mapError(e);
+      // Todo o nada: lo que se llegó a crear se deshace y la importación vuelve a estar lista para reintentar.
+      const why = e instanceof Error ? e.message.replace(/^\[supabase\]\s*/, '') : String(e);
+      console.warn('[import] falló, se deshace lo creado:', why);
+      await rollback(id, undo).catch((err) => console.warn('[import] no se pudo deshacer del todo:', err instanceof Error ? err.message : err));
+      await db.updateImport(id, { status: 'draft', stats: {} }).catch(() => {});
+      throw new AdminError(422, 'No se pudo importar: no se ha guardado nada', [why]);
     }
     await db.updateImport(id, { status: 'done', stats, doneAt: new Date().toISOString() });
     return stats;
   }
 
   /** Deshacer: borra lo creado, devuelve lo fusionado a como estaba y archiva los campos nuevos. */
+  /** Borra lo creado por una importación y devuelve lo fusionado a como estaba. */
+  async function rollback(id: string, u: ImportUndo) {
+    for (const l of u.links) await db.removeLink(l.contactId, l.accountId);
+    const people = await db.deleteContactsByImport(id);
+    const companies = await accounts.deleteAccountsByImport(id);
+    for (const a of u.accounts) await accounts.updateAccount(a.id, a.before);
+    for (const c of u.contacts) await db.updateContact(c.id, c.before);
+    // Los campos que creó la importación se quitan (sus valores se fueron con lo importado): reimportar los recrea igual.
+    for (const f of u.fieldIds) await accounts.deleteField(f);
+    if (u.zoneIds.length) {
+      const used = new Set((await allAccounts()).map((a) => a.zoneId));
+      for (const z of u.zoneIds) if (!used.has(z)) await accounts.deleteZone(z);
+    }
+    return { people, companies };
+  }
+  /** Deshacer: borra lo creado, devuelve lo fusionado a como estaba y quita los campos y ciudades nuevos. */
   async function importUndo(id: string) {
     const imp = await loadImport(id);
     if (imp.status !== 'done') throw new AdminError(409, 'Esta importación no se puede deshacer');
-    const u = imp.stats.undo ?? { fieldIds: [], zoneIds: [], accounts: [], contacts: [], links: [] };
     try {
-      for (const l of u.links) await db.removeLink(l.contactId, l.accountId);
-      const people = await db.deleteContactsByImport(id);
-      const companies = await accounts.deleteAccountsByImport(id);
-      for (const a of u.accounts) await accounts.updateAccount(a.id, a.before);
-      for (const c of u.contacts) await db.updateContact(c.id, c.before);
-      for (const f of u.fieldIds) await accounts.archiveField(f, true);
-      if (u.zoneIds.length) {
-        const used = new Set((await allAccounts()).map((a) => a.zoneId));
-        for (const z of u.zoneIds) if (!used.has(z)) await accounts.deleteZone(z);
-      }
+      const r = await rollback(id, imp.stats.undo ?? { fieldIds: [], zoneIds: [], accounts: [], contacts: [], links: [] });
       await db.updateImport(id, { status: 'undone' });
-      return { people, companies };
+      return r;
     } catch (e) { mapError(e); }
   }
 

@@ -228,9 +228,36 @@ export function matchMember(v: string, members: PlanContext['members']): string 
   const hit = members.find((m) => norm(m.email) === n)
     ?? members.find((m) => norm(m.name) === n)
     ?? members.filter((m) => { const mw = words(m.name); return mw.length >= 2 && mw.every((w) => vw.has(w)); }).at(0)
-    ?? members.filter((m) => { const mw = new Set(words(m.name)); const w = [...vw]; return w.length >= 2 && w.every((x) => mw.has(x)); }).at(0);
+    ?? members.filter((m) => { const mw = new Set(words(m.name)); const w = [...vw]; return w.length >= 2 && w.every((x) => mw.has(x)); }).at(0)
+    // Un miembro con un solo nombre («Cristian») vale si es el único que empieza así.
+    ?? (() => { const first = words(v)[0]; const hits = members.filter((m) => { const mw = words(m.name); return mw.length === 1 && mw[0] === first; }); return hits.length === 1 ? hits[0] : undefined; })();
   return hit?.userId ?? null;
 }
+/** Particulas que van en minúscula dentro de un nombre («Sala de la Luz»). */
+const SMALL = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'en', 'da', 'do', 'dos', 'van', 'von', 'di', 'and', 'of', 'the']);
+/**
+ * Mayúsculas uniformes: solo toca lo que viene TODO en mayúsculas o TODO en minúsculas («LA RÍTMICA CLUB» → «La Rítmica
+ * Club», «aaron ruiz» → «Aaron Ruiz»). Lo que ya viene mezclado se respeta («DJ Mikel», «McDonald's»). En mayúsculas,
+ * las siglas sin vocales se quedan («BCN», «DJ»).
+ */
+export function niceCase(s: string): string {
+  const v = s.replace(/\s+/g, ' ').trim();
+  const letters = v.replace(/[^\p{L}]/gu, '');
+  if (!letters) return v;
+  const upper = letters === letters.toUpperCase();
+  const lower = letters === letters.toLowerCase();
+  if (!upper && !lower) return v;
+  return v.split(' ').map((w, i) => {
+    const l = w.toLowerCase();
+    if (i > 0 && SMALL.has(l)) return l;
+    if (upper && w.length <= 4 && !/[AEIOUÁÉÍÓÚÜ]/i.test(w) && /\p{L}/u.test(w)) return w; // siglas
+    return l.replace(/(^|[-'’(])(\p{L})/gu, (_, a: string, b: string) => a + b.toUpperCase());
+  }).join(' ');
+}
+/** Primera letra en mayúscula (papeles: «owner» → «Owner»). */
+const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+/** Límites de las columnas de serie (lo que no cabe va a notas, nunca rompe la importación). */
+export const CORE_MAX = { name: 160, city: 80, role: 80, email: 200, phone: 40, instagram: 300, linkedin: 300, address: 300, externalRef: 120, company: 160, group: 160 } as const;
 const cleanUrl = (s: string) => s.trim().split(/\s+/)[0]?.replace(/[)\],;]+$/, '') ?? '';
 const appendNote = (prev: string | null, line: string) => (prev ? (prev.includes(line) ? prev : `${prev}\n${line}`) : line).slice(0, 4000);
 
@@ -317,14 +344,23 @@ export function buildPlan(headers: string[], rows: string[][], mapping: ImportMa
     const sig = JSON.stringify(r.map((x) => x.trim()));
     if (seen.has(sig)) { stats.duplicates++; return; }
     seen.add(sig);
-    const name = at(r, 'name');
+    // Lo que no cabe en su columna va a notas con su nombre de columna (nunca rompe la importación).
+    let notes: string | null = at(r, 'notes') || null;
+    const fit = (k: keyof typeof CORE_MAX, v: string): string => {
+      if (v.length <= CORE_MAX[k]) return v;
+      notes = appendNote(notes, `${headers[col(k as CoreKey)] ?? k}: ${v}`);
+      issues.push({ row, column: headers[col(k as CoreKey)] ?? k, value: v.slice(0, 80), error: `Demasiado largo (máx. ${CORE_MAX[k]})` });
+      stats.toNotes++;
+      return '';
+    };
+    const name = niceCase(fit('name', at(r, 'name')));
     if (!name) { issues.push({ row, column: '', value: '', error: 'Sin nombre: fila omitida' }); return; }
-    const city = at(r, 'city') || null;
+    const city = niceCase(fit('city', at(r, 'city'))) || null;
     if (city) cities.add(city);
 
     // Campos y notas.
     const values: FieldValues = {};
-    let notes: string | null = at(r, 'notes') || null;
+
     headers.forEach((h, ci) => {
       const f = colField.get(h);
       const v = (r[ci] ?? '').trim();
@@ -338,12 +374,12 @@ export function buildPlan(headers: string[], rows: string[][], mapping: ImportMa
 
     if (ctx.target === 'account') {
       const a = companyRef(name, city, row, true);
-      a.address ||= at(r, 'address') || null;
-      a.externalRef ||= at(r, 'externalRef') || null;
+      a.address ||= fit('address', at(r, 'address')) || null;
+      a.externalRef ||= fit('externalRef', at(r, 'externalRef')) || null;
       a.ownerId ||= ownerId;
       if (notes) a.notes = appendNote(a.notes, notes);
       for (const [k, v] of Object.entries(values)) if (a.fields[k] === undefined) a.fields[k] = v;
-      const group = at(r, 'group');
+      const group = niceCase(fit('group', at(r, 'group')));
       if (group && norm(group) !== norm(name)) {
         const g = companyRef(group, null, row, false);
         g.isGroup = true;
@@ -353,19 +389,20 @@ export function buildPlan(headers: string[], rows: string[][], mapping: ImportMa
     }
 
     // Personas: la empresa (si lo es) y su papel en ella.
-    let company = at(r, 'company');
-    let role = at(r, 'role') || null;
+    let company = fit('company', at(r, 'company'));
+    let role = capFirst(fit('role', at(r, 'role'))) || null;
     if (company && norm(company) === norm(name)) company = ''; // su propio nombre (artistas): no es una empresa
     if (company && isJunkCompany(company, name)) {
       junk.add(company);
-      if (!role) role = company.replace(/[.\s]+$/, '');
+      if (!role) role = capFirst(company.replace(/[.\s]+$/, ''));
       else notes = appendNote(notes, `${headers[col('company')]}: ${company}`);
       company = '';
     }
-    const email = at(r, 'email').toLowerCase() || null;
-    const linkedin = /linkedin\.com\//i.test(at(r, 'linkedin')) ? cleanUrl(at(r, 'linkedin')) : null;
+    company = niceCase(company);
+    const email = fit('email', at(r, 'email')).toLowerCase() || null;
+    const linkedin = /linkedin\.com\//i.test(at(r, 'linkedin')) ? fit('linkedin', cleanUrl(at(r, 'linkedin'))) || null : null;
     if (at(r, 'linkedin') && !linkedin) notes = appendNote(notes, `${headers[col('linkedin')]}: ${at(r, 'linkedin')}`);
-    const insta = at(r, 'instagram') ? rawFor('url', cleanUrl(at(r, 'instagram'))) as string : null;
+    const insta = at(r, 'instagram') ? fit('instagram', rawFor('url', cleanUrl(at(r, 'instagram'))) as string) || null : null;
     const ks = [email && `e:${norm(email)}`, linkedin && `l:${norm(linkedin)}`, `n:${norm(name)}|${norm(company)}`].filter(Boolean) as string[];
     const ref = ks.map((k) => contactKey.get(k)).find(Boolean);
     let c = ref ? contacts.get(ref) : undefined;
@@ -377,7 +414,7 @@ export function buildPlan(headers: string[], rows: string[][], mapping: ImportMa
     for (const k of ks) if (!contactKey.has(k)) contactKey.set(k, c.ref);
     c.rows.push(row);
     c.email ||= email; c.linkedin ||= linkedin; c.city ||= city; c.ownerId ||= ownerId;
-    c.phone ||= at(r, 'phone') || null;
+    c.phone ||= fit('phone', at(r, 'phone')) || null;
     c.instagram ||= insta;
     if (notes) c.notes = appendNote(c.notes, notes);
     for (const [k, v] of Object.entries(values)) if (c.fields[k] === undefined) c.fields[k] = v;

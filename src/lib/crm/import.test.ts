@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { CrmField } from './fields';
-import { buildPlan, canonicalOption, cleanLabel, isJunkCompany, matchMember, profileColumns, rawFor, readCsv, suggestMapping, toIsoDate, toNumber, type PlanContext } from './import';
+import { buildPlan, niceCase, canonicalOption, cleanLabel, isJunkCompany, matchMember, profileColumns, rawFor, readCsv, suggestMapping, toIsoDate, toNumber, type PlanContext } from './import';
 
 // Datos inventados: los CSV reales no entran en el repo.
 const PROVEEDORES = `﻿Nombre,Ciudad,Estado Lead,Tipo,Precio desde €,Tiene Contacto,Último Post IG,Email,Canal Contacto,Responsable
@@ -141,3 +141,27 @@ describe('importar personas (congreso)', () => {
     expect(plan.contacts.find((c) => c.name === 'Fer')!.fields.accion).toBe('omitir');
   });
 });
+
+describe('importar: datos limpios', () => {
+  test('mayúsculas uniformes sin romper lo que ya viene bien', () => {
+    expect(niceCase('LA RÍTMICA CLUB')).toBe('La Rítmica Club');
+    expect(niceCase('aaron ruiz')).toBe('Aaron Ruiz');
+    expect(niceCase('SALA DE LA LUZ BCN')).toBe('Sala de la Luz BCN');
+    expect(niceCase('DJ Mikel')).toBe('DJ Mikel');
+    expect(niceCase('McDonald\'s')).toBe('McDonald\'s');
+    expect(niceCase('  club   faro ')).toBe('Club Faro');
+  });
+
+  test('lo que no cabe en su columna va a notas y no rompe la importación', () => {
+    const long = 'Valencia, aunque también trabaja en Alicante, Castellón y alrededores durante toda la temporada de verano';
+    const { headers, rows } = readCsv(`Name,Empresa/Local,Rol,Ciudad\nLUCÍA PÉREZ,SALA MARINA,owner,"${long}"\n`);
+    const m = suggestMapping(profileColumns(headers, rows, 'contact', []), []);
+    const plan = buildPlan(headers, rows, m, { target: 'contact', fields: [], accounts: [], contacts: [], members });
+    const c = plan.contacts[0];
+    expect(c).toMatchObject({ name: 'Lucía Pérez', city: null, notes: `Ciudad: ${long}` });
+    expect(c.companies[0].role).toBe('Owner');
+    expect(plan.accounts[0].name).toBe('Sala Marina');
+    expect(plan.issues[0]).toMatchObject({ row: 2, column: 'Ciudad', error: 'Demasiado largo (máx. 80)' });
+  });
+});
+

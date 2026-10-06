@@ -57,4 +57,6 @@ export interface AccountsDb {
   listFields(tenantId: string): Promise<CrmField[]>;
   saveField(tenantId: string, f: CrmFieldRecord, id?: string): Promise<string>;
   archiveField(id: string, archived: boolean): Promise<boolean>;
+  /** Solo al deshacer una importación (los campos que creó, ya sin valores). */
+  deleteField(id: string): Promise<boolean>;
 }

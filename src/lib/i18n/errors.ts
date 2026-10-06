@@ -20,6 +20,7 @@ const EXACT: Record<string, T> = {
   'Máximo 5000 filas por importación': ['Up to 5000 rows per import', 'Máximo de 5000 linhas por importação', '한 번에 최대 5000행까지 가져올 수 있습니다'],
   'Esta importación ya se hizo': ['This import has already been run', 'Esta importação já foi feita', '이미 실행된 가져오기입니다'],
   'Esta importación no se puede deshacer': ['This import cannot be undone', 'Esta importação não pode ser desfeita', '이 가져오기는 되돌릴 수 없습니다'],
+  'No se pudo importar: no se ha guardado nada': ['Could not import: nothing was saved', 'Não foi possível importar: nada foi salvo', '가져오지 못했습니다: 아무것도 저장되지 않았습니다'],
   'No hay filas que importar': ['There are no rows to import', 'Não há linhas para importar', '가져올 행이 없습니다'],
   'Solo un admin puede crear campos nuevos': ['Only an admin can create new fields', 'Só um admin pode criar campos novos', '관리자만 새 필드를 만들 수 있습니다'],
   // ------------------------------------------------------------ no encontrado
