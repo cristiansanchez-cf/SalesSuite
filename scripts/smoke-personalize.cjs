@@ -84,8 +84,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await pub.locator('[data-module=phone-tour]').count()) === 3, 'móvil del invitado en 3 diapositivas');
   const count = async () => (await pub.textContent('[data-count]')).trim();
   const before = await count();
+  // La 1.ª diapositiva es la pantalla en vivo: la flecha recorre antes sus pantallas (no cambia de diapositiva).
+  const scene = () => pub.$$eval('[data-scene-btn]', (els) => els.findIndex((e) => e.getAttribute('aria-selected') === 'true'));
+  const s0 = await scene();
   await pub.click('[data-next]'); await pub.waitForTimeout(900);
-  assert((await count()) !== before, `flecha → siguiente diapositiva (${before} → ${await count()})`);
+  assert((await count()) === before && (await scene()) === s0 + 1, `flecha en la pantalla en vivo → su siguiente pantalla (${s0} → ${await scene()}, ${await count()})`);
+  const scenes = await pub.locator('[data-scene-btn]').count();
+  for (let i = 0; i < scenes && (await count()) === before; i++) { await pub.click('[data-next]'); await pub.waitForTimeout(700); }
+  assert((await count()) !== before, `tras la última pantalla, flecha → siguiente diapositiva (${before} → ${await count()})`);
   await pub.keyboard.press('ArrowLeft'); await pub.waitForTimeout(900);
   assert((await count()) === before, 'teclado ← vuelve');
   await p.click('[data-testid=layout-scroll]');
