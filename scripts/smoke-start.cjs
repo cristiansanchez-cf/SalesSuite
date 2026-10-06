@@ -21,8 +21,13 @@ async function login(b, email) {
 (async () => {
   const b = await chromium.launch();
   const rep = await login(b, 'rep@enjoy.test');
-  await rep.click('[data-testid=nav-start]');
+  // Menú corto (docs/CRM_DINAMICO.md §8): 5 destinos; «Empieza aquí» es una pestaña de Inicio.
+  assert((await rep.locator('.co-sidebar .co-nav a').count()) <= 5, 'menú de Vender con 5 destinos como mucho');
+  await rep.click('[data-testid=nav-home]');
+  await rep.waitForURL(/\/admin\/inicio/);
+  await rep.click('[data-testid=tab-start]');
   await rep.waitForURL(/\/admin\/start/);
+  assert((await rep.getAttribute('[data-testid=nav-home]', 'aria-current')) === 'page', 'en «Empieza aquí», Inicio sigue marcado');
   for (const s of ['what', 'who', 'how', 'terms', 'steps']) assert(await rep.isVisible(`[data-testid=start-${s}]`), `sección ${s}`);
   assert((await rep.locator('[data-testid=start-what] li').count()) > 0, 'qué vendemos: el catálogo');
   const plays = await rep.locator('[data-testid=start-play]').count();

@@ -5,7 +5,7 @@ const es = {
   nav: {
     start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'Cuentas', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
     learn: 'Aprende', myCommissions: 'Mis comisiones', setup: 'Configuración guiada', playbook: 'Playbook y mercado', catalog: 'Catálogo',
-    org: 'Organigrama', platform: 'Plataforma', team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
+    org: 'Organigrama', platform: 'Plataforma', team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar', company: 'Empresa', catalogPrices: 'Catálogo y precios', crmFields: 'Campos del CRM', sectionTabs: 'Apartados de la sección',
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
   },
   role: { admin: 'Admin', lead: 'Gerente', rep: 'Comercial', partner: 'Colaborador' },
@@ -49,7 +49,7 @@ export const shellMessages = defineMessages({
     nav: {
       start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'Accounts', compose: 'Write a message', wins: 'What worked',
       learn: 'Learn', myCommissions: 'My commissions', setup: 'Guided setup', playbook: 'Playbook & market', catalog: 'Catalog',
-      org: 'Org chart', platform: 'Platform', team: 'Team', territory: 'Territory', commissions: 'Commissions', prices: 'Pricing', brand: 'Brand', sell: 'Sell', configure: 'Configure',
+      org: 'Org chart', platform: 'Platform', team: 'Team', territory: 'Territory', commissions: 'Commissions', prices: 'Pricing', brand: 'Brand', sell: 'Sell', configure: 'Configure', company: 'Company', catalogPrices: 'Catalog & pricing', crmFields: 'CRM fields', sectionTabs: 'Section pages',
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
     },
     role: { admin: 'Admin', lead: 'Manager', rep: 'Sales rep', partner: 'Partner' },
@@ -90,7 +90,7 @@ export const shellMessages = defineMessages({
     nav: {
       start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'Contas', compose: 'Preparar mensagem', wins: 'O que funcionou',
       learn: 'Aprenda', myCommissions: 'Minhas comissões', setup: 'Configuração guiada', playbook: 'Playbook e mercado', catalog: 'Catálogo',
-      org: 'Organograma', platform: 'Plataforma', team: 'Equipe', territory: 'Território', commissions: 'Comissões', prices: 'Tarifas', brand: 'Marca', sell: 'Vender', configure: 'Configurar',
+      org: 'Organograma', platform: 'Plataforma', team: 'Equipe', territory: 'Território', commissions: 'Comissões', prices: 'Tarifas', brand: 'Marca', sell: 'Vender', configure: 'Configurar', company: 'Empresa', catalogPrices: 'Catálogo e preços', crmFields: 'Campos do CRM', sectionTabs: 'Partes da seção',
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
     },
     role: { admin: 'Admin', lead: 'Gerente de vendas', rep: 'Vendedor(a)', partner: 'Parceiro(a)' },
@@ -131,7 +131,7 @@ export const shellMessages = defineMessages({
     nav: {
       start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: '계정', compose: '메시지 작성', wins: '효과 있었던 것',
       learn: '학습', myCommissions: '내 커미션', setup: '가이드 설정', playbook: '플레이북과 시장', catalog: '카탈로그',
-      org: '조직도', platform: '플랫폼', team: '팀', territory: '담당 지역', commissions: '커미션', prices: '요금과 결제', brand: '브랜드', sell: '판매', configure: '설정',
+      org: '조직도', platform: '플랫폼', team: '팀', territory: '담당 지역', commissions: '커미션', prices: '요금과 결제', brand: '브랜드', sell: '판매', configure: '설정', company: '회사', catalogPrices: '카탈로그와 가격', crmFields: 'CRM 필드', sectionTabs: '섹션 페이지',
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,
     },
     role: { admin: '관리자', lead: '영업 리더', rep: '영업 담당자', partner: '파트너' },

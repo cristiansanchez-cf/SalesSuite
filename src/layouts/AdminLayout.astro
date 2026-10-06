@@ -15,6 +15,7 @@ import Icon from '~/components/ui/Icon.astro';
 import { BRAND } from '~/lib/site';
 import { i18n } from '~/lib/i18n';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { sectionTabs } from '~/lib/ui/nav';
 
 interface Props {
   title: string;
@@ -37,6 +38,8 @@ const [pending, feed] = await Promise.all([
 const back = Astro.url.pathname + Astro.url.search;
 const tenantName = tenant?.name ?? BRAND.app;
 const shell = !!admin && !bare;
+// Pestañas de la sección (menú corto: cada destino agrupa páginas afines).
+const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!.session.superadmin }, m.nav) : [];
 ---
 <!doctype html>
 <html lang={locale} class="console">
@@ -61,7 +64,14 @@ const shell = !!admin && !bare;
             <a href="/admin/notifications" class="co-bell" aria-label={m.bell.label(feed.open)} data-testid="bell-mobile"><Icon name="bell" size={18} />{feed.open > 0 && <span class="co-bell__count">{feed.open > 9 ? '9+' : feed.open}</span>}</a>
           </div>
           {admin?.mode === 'demo' && <p class="co-demo-banner">{m.shell.demo}</p>}
-          <main class:list={['co-page', `co-page--${width}`]}><Shimmer variant="page" class="co-nav-skeleton" label={m.shell.loading} /><slot /></main>
+          <main class:list={['co-page', `co-page--${width}`]}>
+            {tabs.length > 0 && (
+              <nav class="co-section-tabs" aria-label={m.nav.sectionTabs} data-testid="section-tabs" data-scroll-x>
+                {tabs.map((t) => <a href={t.href} aria-current={t.on ? 'page' : undefined} data-testid={t.testid}>{t.label}</a>)}
+              </nav>
+            )}
+            <Shimmer variant="page" class="co-nav-skeleton" label={m.shell.loading} /><slot />
+          </main>
         </div>
       </div>
       <dialog id="co-drawer" class="co-dialog co-drawer" aria-label={m.shell.menu}>
