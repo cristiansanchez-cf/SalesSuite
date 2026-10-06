@@ -10,6 +10,8 @@ import { appMode } from './lib/mode';
 import { resolveTenant } from './lib/tenant';
 import { noteTeamNetwork } from './lib/analytics/internal';
 import { serverTiming } from './lib/timing';
+import { isSetupPath, onboardedAt } from './lib/onboarding';
+import { can } from './lib/admin/permissions';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
 // y la sesión de consola exige membership en ese tenant.
@@ -70,6 +72,26 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.admin = auth.admin;
   }
   timing.mark('auth');
+
+  // La primera vez en un espacio (docs/FOUNDATIONS.md §4.1): al entrar, la bienvenida; la primera vez en Configurar (admins),
+  // la bienvenida de Configurar. Se mira una vez por navegador (cookie por espacio) y solo con acceso real (en la demo y en
+  // los smokes se entra a mano por /admin/welcome y /admin/setup/welcome).
+  const admin0 = context.locals.admin;
+  if (admin0 && admin0.mode === 'supabase' && !admin0.session.superadmin && context.request.method === 'GET' && !isIsland && !path.startsWith('/admin/api/')) {
+    const tid = admin0.session.tenantId;
+    const once = { path: '/admin', maxAge: 60 * 60 * 24 * 365, httpOnly: true, sameSite: 'lax' as const, secure: context.url.protocol === 'https:' };
+    const landing = path === '/admin' || path === '/admin/inicio' || path === '/admin/start';
+    const wk = `ss_wel_${tid.slice(0, 8)}`;
+    if (landing && !context.url.searchParams.size && context.cookies.get(wk)?.value !== '1') {
+      context.cookies.set(wk, '1', once);
+      if (!(await onboardedAt(admin0).catch(() => 'x'))) return context.redirect('/admin/welcome');
+    }
+    const ck = `ss_cfg_${tid.slice(0, 8)}`;
+    if (can(admin0.session.role).configure && isSetupPath(path) && context.cookies.get(ck)?.value !== '1') {
+      context.cookies.set(ck, '1', once);
+      if (!(await onboardedAt(admin0, 'setup').catch(() => 'x'))) return context.redirect(`/admin/setup/welcome?next=${encodeURIComponent(path)}`);
+    }
+  }
 
   // Idioma (docs/I18N.md): preferencia guardada → cookie → navegador → idioma del espacio → español.
   if (isAdmin) {

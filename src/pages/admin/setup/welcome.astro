@@ -1,0 +1,96 @@
+---
+/**
+ * Bienvenida de Configurar: la primera vez que un admin (o manager) entra en «Configurar», una idea por pantalla de lo que
+ * hay en cada parte (empresa, playbook, mercado, catálogo, precios, comisiones), con lo que tiene hoy y un enlace a
+ * cada una. La de comercial (/admin/welcome) es la misma para todos; esta es solo de quien configura.
+ * Se marca hecha en users.onboarding («<espacio>:setup»). La redirección de la primera vez está en el middleware.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { BRAND } from '~/lib/site';
+import { can } from '~/lib/admin/permissions';
+import { markOnboarded } from '~/lib/onboarding';
+import { i18n } from '~/lib/i18n';
+import { setupWelcomeMessages } from '~/lib/i18n/messages/setupWelcome';
+import type { IconName } from '~/lib/ui/icons';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.configure) return Astro.redirect('/admin');
+const { m } = i18n(Astro, setupWelcomeMessages);
+const rawNext = Astro.url.searchParams.get('next') ?? '';
+const next = /^\/admin(\/[\w\-/]*)?$/.test(rawNext) && !rawNext.startsWith('/admin/setup/welcome') ? rawNext : '/admin/setup';
+
+if (Astro.request.method === 'POST') {
+  await markOnboarded(admin, 'setup');
+  return Astro.redirect(next, 303);
+}
+
+type Key = 'company' | 'playbook' | 'market' | 'catalog' | 'prices' | 'commissions';
+const ALL: Array<{ key: Key; href: string; icon: IconName; show: boolean }> = [
+  { key: 'company', href: '/admin/setup', icon: 'building2', show: true },
+  { key: 'playbook', href: '/admin/playbook?tab=plays', icon: 'book-open', show: perms.managePlaybook },
+  { key: 'market', href: '/admin/playbook?tab=market', icon: 'target', show: perms.managePlaybook },
+  { key: 'catalog', href: '/admin/catalog', icon: 'boxes', show: perms.manageTenant },
+  { key: 'prices', href: '/admin/prices', icon: 'tag', show: perms.setPrices },
+  { key: 'commissions', href: '/admin/commissions/team', icon: 'wallet', show: perms.manageCommissions },
+];
+const parts = ALL.filter((x) => x.show);
+const total = parts.length + 2;
+const n = Math.min(total, Math.max(1, Number(Astro.url.searchParams.get('step') ?? '1') || 1));
+const part = n > 1 && n < total ? parts[n - 2]! : null;
+const href = (i: number) => `/admin/setup/welcome?step=${i}${rawNext ? `&next=${encodeURIComponent(next)}` : ''}`;
+
+// Lo que hay hoy en esa parte (solo la que se ve; sin datos, no se dice nada).
+const count = part?.key === 'playbook' ? await admin.playbook.listAllVisible().then((x) => m.counts.plays(x.length)).catch(() => null)
+  : part?.key === 'market' ? await admin.playbook.market().then((x) => m.counts.sectors(x.filter((s) => s.status !== 'archived').length)).catch(() => null)
+  : part?.key === 'catalog' ? await admin.service.catalog().then((x) => m.counts.modules(x.length)).catch(() => null)
+  : null;
+const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
+const step = part ? m.steps[part.key] : null;
+---
+<AdminLayout title={m.title} bare>
+  <div class="mx-auto mt-4 grid max-w-xl grid-cols-[minmax(0,1fr)] gap-6 sm:mt-10" data-testid="setup-welcome" data-step={part?.key ?? (n === 1 ? 'hello' : 'done')}>
+    <div class="flex items-center justify-between gap-3">
+      <span><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {tenant.name}</span></span>
+      <form method="post"><button class="co-btn co-btn--quiet co-btn--sm" type="submit" data-testid="setup-welcome-skip">{m.skip}</button></form>
+    </div>
+
+    <div class="grid gap-2">
+      <span class="co-meta" data-testid="setup-welcome-progress">{m.step(n, total)}</span>
+      <div class="co-progress" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={n}><span style={`width:${Math.round((n / total) * 100)}%`}></span></div>
+    </div>
+
+    <section class="co-card grid grid-cols-[minmax(0,1fr)] gap-5 !p-6 sm:!p-8">
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--co-signal-soft,#efe9ff)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={part?.icon ?? (n === 1 ? 'settings' : 'check')} size={24} /></span>
+      {n === 1 && <>
+        <h1 class="co-page-title">{m.hello.title(first)}</h1>
+        <p class="co-lede">{m.hello.lede(tenant.name)}</p>
+        <ol class="grid gap-2 p-0">{parts.map((x, i) => (
+          <li class="flex list-none items-center gap-3"><span class="co-figure w-6 text-lg text-[color:var(--co-signal)]">{i + 1}</span><Icon name={x.icon} size={18} /><span class="co-entity">{m.steps[x.key].title}</span></li>
+        ))}</ol>
+      </>}
+      {part && step && <>
+        <h1 class="co-page-title">{step.title}</h1>
+        <p class="co-lede">{step.lede}</p>
+        <ul class="grid gap-3 p-0">{step.points.map((t) => <li class="list-none border-l-2 border-[color:var(--console-divider)] pl-3 text-[15px] leading-relaxed">{t}</li>)}</ul>
+        {count && <p class="co-meta" data-testid="setup-welcome-count">{m.now}: <b class="text-ink">{count}</b></p>}
+        <a class="co-btn co-btn--ghost w-fit" href={part.href} target="_blank" rel="noopener" data-testid="setup-welcome-open">{step.go} <span aria-hidden="true">↗</span></a>
+      </>}
+      {n === total && <>
+        <h1 class="co-page-title">{m.done.title}</h1>
+        <p class="co-lede">{m.done.lede}</p>
+        <form method="post"><button class="co-btn co-btn--primary" type="submit" data-testid="setup-welcome-finish">{m.done.go} <span aria-hidden="true">→</span></button></form>
+      </>}
+    </section>
+
+    {n < total && (
+      <div class="flex items-center justify-between gap-3">
+        {n > 1 ? <a class="co-btn co-btn--ghost" href={href(n - 1)} data-testid="setup-welcome-back"><Icon name="chevron-left" size={16} />{m.back}</a> : <span></span>}
+        <a class="co-btn co-btn--primary" href={href(n + 1)} data-testid="setup-welcome-next">{n === 1 ? m.start : m.next} <span aria-hidden="true">→</span></a>
+      </div>
+    )}
+    {n === total && <a class="co-btn co-btn--ghost w-fit" href={href(n - 1)} data-testid="setup-welcome-back"><Icon name="chevron-left" size={16} />{m.back}</a>}
+  </div>
+</AdminLayout>
