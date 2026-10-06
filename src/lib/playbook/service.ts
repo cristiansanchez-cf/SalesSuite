@@ -53,7 +53,11 @@ export interface TopicModule { moduleId: string; moduleKey: string; name: string
 export interface TourStep { title: string; body: string | null; image: string | null; ui?: string | null }
 
 /** Props del módulo (las de su última versión) para pintar su UI: miniaturas y recorrido. */
-export interface UiKit { phone: Record<string, unknown> | null; screen: Record<string, unknown> | null; photo: string | null }
+export interface UiKit {
+  phone: Record<string, unknown> | null; screen: Record<string, unknown> | null; photo: string | null;
+  /** Oquea: props de un app-steps con pantallas (sample y foto) y de la consola del centro (center-console). */
+  app?: Record<string, unknown> | null; console?: Record<string, unknown> | null;
+}
 
 export interface LearnIndex {
   /** «Lo que vendes, en 1 minuto» (tenant.tour). Vacío = la empresa aún no lo ha preparado. */
@@ -174,7 +178,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const sectorsLearned = sectorKeys.filter((k) => mine.has(`sector:${k}`));
     const propsOf = (type: string) => modules.find((x) => x.blockType === type)?.props ?? null;
     const phone = propsOf('phone-tour');
-    const kit: UiKit = { phone, screen: propsOf('live-screen'), photo: (phone?.photos as string[] | undefined)?.[0] ?? null };
+    const app = modules.find((x) => x.blockType === 'app-steps' && Array.isArray(x.props.screens) && x.props.screens.length)?.props ?? null;
+    const kit: UiKit = { phone, screen: propsOf('live-screen'), photo: (phone?.photos as string[] | undefined)?.[0] ?? null, app, console: propsOf('center-console') };
     return {
       tour,
       kit,

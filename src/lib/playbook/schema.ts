@@ -108,4 +108,5 @@ export const contextInputSchema = z.object({
 export type ContextInput = z.infer<typeof contextInputSchema>;
 
 /** Recorrido del producto (tenant.tour): UI en lugar de foto — «phone:<pantalla>», «screen:<escena>[,<escena>…]» o «report». */
-export const TOUR_UI = /^(phone:[a-z]+|screen:[a-z]+\.[a-z]+(,[a-z]+\.[a-z]+)*|report)$/;
+// phone:/screen:/report → UI de Enjoy; app:<pantalla> y console:<vista> → app y consola de Oquea (app-steps, center-console).
+export const TOUR_UI = /^(phone:[a-z]+|screen:[a-z]+\.[a-z]+(,[a-z]+\.[a-z]+)*|report|app:[a-z]+(-[a-z]+)*|console:[a-z]+)$/;

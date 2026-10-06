@@ -10,6 +10,9 @@ import Icon from '~/components/ui/Icon.astro';
 import Thumb from '~/modules/Thumb.astro';
 import ScreenMini from '~/modules/live-screen/ScreenMini.astro';
 import Phone from '~/modules/phone-tour/Phone.astro';
+import AppScreen from '~/modules/app-steps/Screen.astro';
+import ConsoleMini from '~/modules/center-console/ConsoleMini.astro';
+import { appStepsSchema } from '~/modules/app-steps/schema';
 import { isBlockType } from '~/modules/registry';
 import { AdminError } from '~/lib/admin/service';
 import { renderMarkdown, stripMarkdown, summarize } from '~/lib/playbook/markdown';
@@ -59,7 +62,12 @@ const plays = v.plays.slice(0, 6);
 // Sin receta, los módulos del sector por prioridad (hasta tres), como antes.
 const cards = sg.modules.length || sg.proposal ? ((await admin.playbook.learnIndex().catch(() => null))?.modules ?? []) : [];
 const cardOf = (id: string) => cards.find((c) => c.moduleId === id) ?? null;
-const PRODUCT = new Set(['live-screen', 'phone-tour', 'tabs-showcase', 'media-strip']);
+const PRODUCT = new Set(['live-screen', 'phone-tour', 'tabs-showcase', 'media-strip', 'app-steps', 'center-console']);
+// app-steps solo cuenta como producto si enseña pantallas (portada, condiciones o cierre no son producto).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isProduct = (bt: string, props: any) => PRODUCT.has(bt) && (bt !== 'app-steps' || (Array.isArray(props?.screens) && props.screens.length > 0));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const appOf = (props: any) => { const r = appStepsSchema.safeParse(props); return r.success ? r.data : null; };
 const recipe = sg.proposal ?? null;
 const blockKeys = recipe ? [...new Set([...recipe.priority, ...Object.keys(recipe.blocks)])] : [];
 const generic = (x: unknown) => (typeof x === 'string' ? x.replace(/\{company\}/g, lm.sector.yourClient).replace(/\{prospect\}/g, '') : '');
@@ -68,7 +76,8 @@ type Shot = { key: string; bt: string; moduleId: string; name: string; props: an
 const shots: Shot[] = blockKeys.flatMap((k) => {
   const b = recipe!.blocks[k];
   const c = b && cards.find((x) => x.moduleKey === b.module);
-  return c && PRODUCT.has(c.blockType) ? [{ key: k, bt: c.blockType, moduleId: c.moduleId, name: c.name, props: { ...c.props, ...b.props } }] : [];
+  const props = c ? { ...c.props, ...b.props } : null;
+  return c && isProduct(c.blockType, props) ? [{ key: k, bt: c.blockType, moduleId: c.moduleId, name: c.name, props }] : [];
 });
 const imagine = shots.length ? [] : [...sg.modules].sort((a, b) => a.priority - b.priority).slice(0, 3);
 // Todo lo que hace cada pantalla, sin recortar: escena por escena, paso a paso, pestaña a pestaña.
@@ -77,6 +86,8 @@ const explain = (props: any): Array<{ t: string; d: string; q?: string }> =>
   Array.isArray(props?.scenes) ? props.scenes.map((x: { label: string; says?: string; text?: string }) => ({ t: generic(x.label), d: generic(x.says ?? ''), q: generic(x.text ?? '') }))
   : Array.isArray(props?.parts) ? props.parts.flatMap((g: { steps: Array<{ label?: string; says: string; owner?: string }> }) => g.steps).map((x: { label?: string; says: string; owner?: string }) => ({ t: generic(x.label ?? ''), d: [generic(x.says), generic(x.owner ?? '')].filter(Boolean).join(' ') }))
   : Array.isArray(props?.tabs) ? props.tabs.map((x: { label: string; title: string; body?: string; bullets?: string[] }) => ({ t: generic(x.title || x.label), d: [summarize(generic(x.body ?? ''), 400), ...(x.bullets ?? []).map(generic)].filter(Boolean).join(' · ') }))
+  : Array.isArray(props?.views) ? props.views.map((x: { label: string; says: string }) => ({ t: generic(x.label), d: generic(x.says) }))
+  : Array.isArray(props?.cards) ? props.cards.map((x: { title: string; body?: string }) => ({ t: generic(x.title), d: generic(x.body ?? '') }))
   : Array.isArray(props?.items) ? props.items.filter((x: { caption?: string }) => x.caption).map((x: { caption: string; alt: string }) => ({ t: generic(x.caption), d: generic(x.alt) })) : [];
 // Las ideas del equipo para contarlo (jugadas «Cómo presentarlo» del sector), enteras.
 const ideas = v.plays.filter((pl) => pl.kind === 'pitch');
@@ -205,9 +216,11 @@ const step = () => ++n;
         <ol class="grid gap-14 p-0">{(shots.length ? shots : imagine.map((mo) => { const c = cardOf(mo.moduleId); return { key: mo.moduleId, bt: c?.blockType ?? '', moduleId: mo.moduleId, name: mo.moduleName, props: c?.props ?? {} }; })).map((sh, i) => {
           const items = explain(sh.props);
           const head = generic(sh.props?.title) || sh.name;
+          // Sin UI que enseñar, una sola columna (sin el hueco al lado).
+          const withUi = isProduct(sh.bt, sh.props);
           return (
-          <li class="grid list-none items-start gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" data-testid="imagine-block">
-            <div class:list={['grid content-start gap-3', i % 2 === 1 && 'md:order-2']}>
+          <li class:list={['grid list-none items-start gap-6', withUi && 'md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]']} data-testid="imagine-block">
+            <div class:list={['grid content-start gap-3', withUi && i % 2 === 1 && 'md:order-2', !withUi && 'max-w-3xl']}>
               <span class="flex items-baseline gap-3"><span class="co-figure text-5xl text-[color:var(--co-signal)]">{i + 1}</span>{sh.props?.eyebrow && <span class="text-eyebrow">{generic(sh.props.eyebrow)}</span>}</span>
               <p class="text-2xl font-semibold leading-snug">{head}</p>
               {sh.props?.lede && <p class="text-[15px] leading-relaxed text-muted">{generic(sh.props.lede)}</p>}
@@ -222,9 +235,12 @@ const step = () => ++n;
               )}
               <a class="text-sm font-semibold underline" href={`/admin/learn/preview/${sh.moduleId}`} target="_blank" rel="noopener" data-testid="imagine-preview">{sh.name} ↗</a>
             </div>
-            <div class="imagine-ui md:sticky md:top-6" data-testid="imagine-ui">
+            {withUi && <div class="imagine-ui md:sticky md:top-6" data-testid="imagine-ui">
               {sh.bt === 'live-screen' ? <ScreenMini props={sh.props} venue={lm.sector.yourClient} />
               : sh.bt === 'phone-tour' ? <div class="imagine-ui__phone"><Phone {...(sh.props as object)} venue={lm.sector.yourClient} only="sheet" zoom={0.85} float /></div>
+              : sh.bt === 'app-steps' && appOf(sh.props)?.screens.length ? (() => { const ap = appOf(sh.props)!; return (
+                <div class="tn-ui imagine-ui__app">{ap.screens.slice(0, 2).map((x) => <AppScreen screen={x.screen} src={x.src} alt={x.alt} sample={ap.sample} center={lm.sector.yourClient} photo={ap.photo ?? null} zoom={ap.screens.length > 1 ? 0.5 : 0.7} />)}</div>); })()
+              : sh.bt === 'center-console' ? <div class="tn-ui w-full"><ConsoleMini props={sh.props} view={sh.props?.views?.[0]?.view ?? 'today'} center={lm.sector.yourClient} /></div>
               : sh.bt === 'media-strip' && Array.isArray(sh.props?.items) ? <div class="imagine-ui__strip">{sh.props.items.slice(0, 3).map((x: { src: string; alt: string }) => <img src={x.src} alt={x.alt} class="co-img" loading="lazy" decoding="async" />)}</div>
               : sh.bt === 'tabs-showcase' && Array.isArray(sh.props?.tabs) && sh.props.tabs.some((x: { mock?: { kind?: string } }) => x.mock?.kind === 'image')
                 ? <div class="imagine-ui__thumb"><img src={sh.props.tabs.find((x: { mock?: { kind?: string } }) => x.mock?.kind === 'image').mock.src} alt="" class="co-img h-full w-full object-cover" loading="lazy" decoding="async" /></div>
@@ -235,7 +251,7 @@ const step = () => ++n;
                   {sh.props.tabs[0].body && <p class="text-[15px] leading-relaxed opacity-75">{summarize(generic(sh.props.tabs[0].body), 220)}</p>}
                 </div>)
               : null}
-            </div>
+            </div>}
           </li>
         ); })}
         </ol>
@@ -283,7 +299,7 @@ const step = () => ++n;
 </AdminLayout>
 
 <style>
-  .sector-hero { position: relative; isolation: isolate; display: flex; align-items: flex-end; min-height: 22rem; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; color: #fff; }
+  .sector-hero { position: relative; isolation: isolate; display: flex; align-items: flex-end; min-height: 22rem; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: var(--tn-dark, #121014); color: #fff; }
   .sector-hero__bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; filter: blur(2px); transform: scale(1.04); }
   .sector-hero__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(0,0,0,.92), rgba(0,0,0,.72) 55%, rgba(0,0,0,.5)); }
   /* Sobre la foto, la letra se lee siempre (fondo oscurecido + sombra). */
@@ -292,6 +308,7 @@ const step = () => ++n;
   /* La UI del producto, sin marco: la pantalla, el móvil o la miniatura del módulo. */
   .imagine-ui { position: relative; display: grid; place-items: center; }
   .imagine-ui__phone { display: grid; place-items: center; padding: 1rem 0; }
+  .imagine-ui__app { display: flex; justify-content: center; gap: .75rem; padding: 1rem 0; filter: drop-shadow(0 18px 32px rgb(0 0 0 / .2)); }
   .imagine-ui__thumb { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; isolation: isolate; }
   .imagine-ui__strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; width: 100%; }
   .imagine-ui__strip img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; }

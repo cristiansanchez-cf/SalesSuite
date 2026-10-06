@@ -10,6 +10,9 @@ import Phone from '~/modules/phone-tour/Phone.astro';
 import ScreenMini from '~/modules/live-screen/ScreenMini.astro';
 import ReportMini from '~/modules/live-screen/ReportMini.astro';
 import { phoneTourSchema } from '~/modules/phone-tour/schema';
+import AppScreen from '~/modules/app-steps/Screen.astro';
+import ConsoleMini from '~/modules/center-console/ConsoleMini.astro';
+import { APP_SCREENS, appStepsSchema, type AppScreen as AppScreenName } from '~/modules/app-steps/schema';
 import { i18n } from '~/lib/i18n';
 import { learnMessages } from '~/lib/i18n/messages/learn';
 
@@ -27,11 +30,17 @@ const { tour, kit } = await pb.learnIndex();
 const steps = tour.steps;
 // Cada paso, con la UI de verdad cuando la hay (móvil, pantalla, informe); si no, su foto.
 const phoneProps = kit.phone ? phoneTourSchema.safeParse(kit.phone) : null;
+const appKit = kit.app ? appStepsSchema.partial().safeParse(kit.app) : null;
+const appSample = appStepsSchema.shape.sample.parse(appKit?.success ? appKit.data.sample ?? {} : {});
+const appPhoto = appKit?.success ? appKit.data.photo ?? null : null;
 const uiOf = (ui: string | null | undefined) => {
   if (!ui) return null;
   if (ui.startsWith('phone:') && phoneProps?.success) return { kind: 'phone' as const, only: ui.slice(6) };
   if (ui.startsWith('screen:') && kit.screen) return { kind: 'screen' as const, scenes: ui.slice(7).split(',') };
   if (ui === 'report') return { kind: 'report' as const };
+  // Oquea: un móvil con la pantalla de la app (app-steps) o la consola del centro en pequeño (center-console).
+  if (ui.startsWith('app:') && kit.app && (APP_SCREENS as readonly string[]).includes(ui.slice(4))) return { kind: 'app' as const, screen: ui.slice(4) as AppScreenName };
+  if (ui.startsWith('console:') && kit.console) return { kind: 'console' as const, view: ui.slice(8) };
   return null;
 };
 ---
@@ -61,6 +70,8 @@ const uiOf = (ui: string | null | undefined) => {
                 {u.kind === 'phone' && phoneProps?.success && <Phone {...phoneProps.data} only={u.only} zoom={0.78} float />}
                 {u.kind === 'screen' && <div class="tour__screen"><ScreenMini props={kit.screen} scenes={u.scenes} /></div>}
                 {u.kind === 'report' && <ReportMini photo={kit.photo} />}
+                {u.kind === 'app' && <div class="tn-ui tour__app"><AppScreen screen={u.screen} sample={appSample} center={m.tour.yourCentre} photo={appPhoto} zoom={0.78} /></div>}
+                {u.kind === 'console' && <div class="tn-ui tour__screen"><ConsoleMini props={kit.console} view={u.view} center={m.tour.yourCentre} /></div>}
               </figure>
             ); })() : s.image ? (
               <figure class:list={['tour__frame', i % 2 === 1 && 'md:order-2']}>
@@ -87,11 +98,13 @@ const uiOf = (ui: string | null | undefined) => {
 
 <style>
   /* Marco de imagen: la misma foto, difuminada, rellena el fondo; delante, entera. Sirve para móvil vertical y pantalla. */
-  .tour__frame { position: relative; isolation: isolate; margin: 0; display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: #121014; }
+  .tour__frame { position: relative; isolation: isolate; margin: 0; display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: var(--tn-dark, #121014); }
   .tour__blur { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; filter: blur(24px) saturate(1.2); opacity: .7; transform: scale(1.2); }
   /* Con UI: el producto de verdad, sobre un brillo de su color. */
-  .tour__frame--ui { aspect-ratio: auto; min-height: 22rem; padding: 1.5rem; background: #0d0a12; }
-  .tour__glow { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 35%, rgba(255,39,187,.32), transparent 60%), radial-gradient(ellipse at 20% 90%, rgba(225,255,0,.12), transparent 50%); }
+  .tour__frame--ui { aspect-ratio: auto; min-height: 22rem; padding: 1.5rem; background: var(--tn-dark, #0d0a12); }
+  .tour__glow { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--tn-primary, #ff27bb) 32%, transparent), transparent 60%), radial-gradient(ellipse at 20% 90%, color-mix(in srgb, var(--tn-accent, #e1ff00) 12%, transparent), transparent 50%); }
   .tour__screen { width: 100%; }
+  .tour__app { display: grid; place-items: center; filter: drop-shadow(0 24px 40px rgb(0 0 0 / .35)); }
+  @media (max-width: 480px) { .tour__app :global(.as-phone) { zoom: .62 !important; } }
   .tour__img { max-width: 88%; max-height: 88%; object-fit: contain; border-radius: .75rem; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
 </style>

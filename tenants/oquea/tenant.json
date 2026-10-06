@@ -70,27 +70,32 @@
     {
       "title": "El centro crea la inmersión",
       "body": "Hora, punto de inmersión y tipo. Los datos del punto ya están cargados.",
-      "image": "asset:img/producto/web/01-panel-centro-actividades.png"
+      "image": "asset:img/producto/web/01-panel-centro-actividades.png",
+      "ui": "app:create-activity"
     },
     {
       "title": "El buceador escanea el QR",
       "body": "Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.",
-      "image": "asset:img/producto/web/02-registro-qr-logbook.png"
+      "image": "asset:img/producto/web/02-registro-qr-logbook.png",
+      "ui": "app:qr-activity"
     },
     {
       "title": "La inmersión queda en su logbook",
       "body": "Con los datos del punto de inmersión ya rellenos.",
-      "image": "asset:img/producto/app/19-inmersion-guardada.png"
+      "image": "asset:img/producto/app/22-inmersion-guardada-es.png",
+      "ui": "app:dive-saved"
     },
     {
       "title": "Al centro le queda la lista",
       "body": "Quién ha buceado con él y cuántas veces, con su histórico.",
-      "image": "asset:img/producto/web/04-crm-perfil-buceador.png"
+      "image": "asset:img/producto/web/04-crm-perfil-buceador.png",
+      "ui": "app:crm-diver"
     },
     {
       "title": "Su nombre y su logo en cada tarjeta",
       "body": "Cada vez que un buceador comparte su inmersión, salen el nombre y el logo del centro.",
-      "image": "asset:img/fotos/share-card-aerea.png"
+      "image": "asset:img/fotos/share-card-aerea.png",
+      "ui": "app:share-card"
     }
   ],
   "domains": [

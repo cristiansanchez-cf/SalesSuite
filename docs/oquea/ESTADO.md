@@ -30,6 +30,10 @@
   dossier de 11 módulos con texto literal y receta por ángulo, 66 jugadas. Detalle:
   `docs/ventas/oquea/agente/01-05-GUION-CARGADO.md`. Preguntas abiertas: **`docs/oquea/PREGUNTAS.md`**.
 
+- **Aprende con la UI de Oquea** (6-oct-2026): el recorrido «Así funciona» pinta las pantallas de la app recreadas,
+  no capturas (`scripts/apply-oquea-06.py`); miniaturas, portadas y sector con los colores de Oquea; diapositivas sin
+  pantalla en una columna. Capturas: `docs/oquea/img/aprende-recorrido-ui-escritorio.png` y `-movil.png`.
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)

@@ -16,6 +16,8 @@ const parsed = isBlockType(blockType) ? REGISTRY[blockType].schema.safeParse(pro
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p: any = parsed?.success ? parsed.data : null;
 const fill = (s: string | undefined) => (s ?? '').replace(/\{(company|prospect)\}/g, venue);
+// app-steps es de otro producto (buceo): sin cliente, «Tu centro», no «Tu local».
+const appFill = (x: string | undefined) => (x ?? '').replace(/\{(company|prospect)\}/g, venue === 'Tu local' ? 'Tu centro' : venue);
 const firstChat = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind === 'chat')?.mock ?? null;
 const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind === 'image')?.mock?.src ?? null;
 ---
@@ -68,7 +70,9 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
       <div class="thumb__phones">
         <AppScreen screen={p.screens[0].screen} src={p.screens[0].src} sample={p.sample} center={venue === 'Tu local' ? 'Tu centro' : venue} photo={p.photo} zoom={small ? 0.4 : 0.5} class="thumb__phone" />
       </div>
-    ) : <div class="thumb__hero"><b>{fill(p.title)}</b></div>
+    ) : p.cards.length ? (
+      <div class="thumb__ps">{p.cards.slice(0, 3).map((c: { title: string }) => <span class="thumb__ps-card thumb__ps-card--plain"><em>{appFill(c.title)}</em></span>)}</div>
+    ) : <div class="thumb__hero"><b>{appFill(p.title)}</b></div>
   ) : blockType === 'case-study' ? (
     <div class="thumb__hero">
       <span class="thumb__chip">{p.client}</span>
@@ -78,29 +82,30 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
 </div>
 
 <style>
-  .thumb { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #0d0a12; }
+  .thumb { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: var(--tn-dark, #0d0a12); }
   .thumb__media { position: absolute; right: 5%; top: 8%; display: flex; gap: 8px; width: 62%; }
   .thumb__media img { flex: 1; min-width: 0; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 12px; }
-  .thumb__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 22%, rgba(255,39,187,.35), transparent 55%), radial-gradient(ellipse at 18% 90%, rgba(225,255,0,.12), transparent 50%); }
+  .thumb__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 22%, color-mix(in srgb, var(--tn-primary, #ff27bb) 35%, transparent), transparent 55%), radial-gradient(ellipse at 18% 90%, color-mix(in srgb, var(--tn-accent, #e1ff00) 12%, transparent), transparent 50%); }
   .thumb__screen { position: absolute; right: -4%; top: 7%; width: 74%; transform: rotate(-3deg); }
   .thumb__phones { position: absolute; right: 4%; top: 6%; display: flex; align-items: flex-start; }
   .thumb__phones :global(.thumb__phone--back) { margin-right: -60px; margin-top: 40px; opacity: .55; transform: rotate(-8deg); }
   .thumb__price { position: absolute; right: 6%; top: 8%; width: 58%; max-width: 260px; display: grid; gap: 6px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,.06);
     border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(6px); transform: rotate(2deg); font-size: 12px; }
-  .thumb__price small { color: #ff27bb; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; }
+  .thumb__price small { color: var(--tn-primary, #ff27bb); font-weight: 800; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; }
   .thumb__price b { font-size: 30px; font-weight: 800; line-height: 1; } .thumb__price em { font-style: normal; font-size: 12px; font-weight: 400; opacity: .7; margin-left: 4px; }
   .thumb__price ul { display: grid; gap: 3px; padding: 0; margin: 0; list-style: none; opacity: .85; }
-  .thumb__btn { justify-self: start; margin-top: 4px; background: #ff27bb; border-radius: 99px; padding: 6px 12px; font-weight: 800; }
+  .thumb__btn { justify-self: start; margin-top: 4px; background: var(--tn-primary, #ff27bb); border-radius: 99px; padding: 6px 12px; font-weight: 800; }
   .thumb__hero { position: absolute; left: 7%; right: 7%; top: 9%; display: grid; gap: 10px; }
-  .thumb__chip { justify-self: start; background: #e1ff00; color: #08030c; font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 99px; padding: 4px 10px; }
+  .thumb__chip { justify-self: start; background: var(--tn-accent, #e1ff00); color: var(--tn-accent-ink, #08030c); font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 99px; padding: 4px 10px; }
   .thumb__ps { position: absolute; left: 7%; right: 7%; top: 9%; display: grid; gap: 8px; }
   .thumb__ps b { font-size: 22px; line-height: 1.1; font-weight: 800; }
   .thumb__ps-card { display: grid; gap: 4px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); font-size: 11px; }
-  .thumb__ps-card i { font-style: normal; opacity: .65; } .thumb__ps-card em { font-style: normal; font-weight: 700; color: #ff27bb; }
+  .thumb__ps-card i { font-style: normal; opacity: .65; } .thumb__ps-card em { font-style: normal; font-weight: 700; color: var(--tn-primary, #ff27bb); }
+  .thumb__ps-card--plain em { color: #fff; font-size: 13px; }
   .thumb__price-title { font-size: 18px !important; line-height: 1.15 !important; }
   .thumb--sm > :not(.thumb__glow) { zoom: .58; }
   .thumb__hero b { font-size: 32px; line-height: 1.05; font-weight: 800; letter-spacing: -.02em; }
-  .thumb__words { position: relative; display: inline-grid; color: #ff27bb; }
+  .thumb__words { position: relative; display: inline-grid; color: var(--tn-primary, #ff27bb); }
   .thumb__words i { grid-area: 1 / 1; font-style: normal; opacity: 0; animation: thumb-word calc(var(--n) * 2.2s) infinite; animation-delay: calc(var(--i) * 2.2s); }
   @keyframes thumb-word { 0%, 4% { opacity: 0; transform: translateY(40%); } 8%, 30% { opacity: 1; transform: none; } 34%, 100% { opacity: 0; transform: translateY(-40%); } }
   .thumb__tabs { position: absolute; right: 6%; top: 8%; width: 62%; display: grid; gap: 10px; }
@@ -108,7 +113,7 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
   .thumb__pills i.on { background: #fff; color: #111; border-color: #fff; }
   .thumb__chat { display: grid; gap: 6px; padding: 12px; border-radius: 18px; border: 2px solid rgba(255,255,255,.2); background: #17191d; }
   .thumb__chat i { justify-self: start; max-width: 85%; font-style: normal; font-size: 11px; border-radius: 12px; padding: 6px 9px; background: #2a2630; animation: thumb-msg .5s ease-out calc(var(--k) * 500ms + 200ms) both; }
-  .thumb__chat i.me { justify-self: end; background: #ff27bb; }
+  .thumb__chat i.me { justify-self: end; background: var(--tn-primary, #ff27bb); }
   @keyframes thumb-msg { from { opacity: 0; transform: translateY(8px) scale(.96); } }
   .thumb__tabs img { width: 100%; max-height: 11rem; object-fit: contain; border-radius: 12px; }
   @media (prefers-reduced-motion: reduce) { .thumb__words i:first-child { opacity: 1; } .thumb__words i { animation: none; } .thumb__chat i { animation: none; } }

@@ -187,7 +187,7 @@ for p in t['playbook']:
 t['tour'] = [
     {'title': 'El centro crea la inmersión', 'body': 'Hora, punto de inmersión y tipo. Los datos del punto ya están cargados.', 'image': WEB + '01-panel-centro-actividades.png'},
     {'title': 'El buceador escanea el QR', 'body': 'Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.', 'image': WEB + '02-registro-qr-logbook.png'},
-    {'title': 'La inmersión queda en su logbook', 'body': 'Con los datos del punto de inmersión ya rellenos.', 'image': APP + '19-inmersion-guardada.png'},
+    {'title': 'La inmersión queda en su logbook', 'body': 'Con los datos del punto de inmersión ya rellenos.', 'image': APP + '22-inmersion-guardada-es.png'},
     {'title': 'Al centro le queda la lista', 'body': 'Quién ha buceado con él y cuántas veces, con su histórico.', 'image': WEB + '04-crm-perfil-buceador.png'},
     {'title': 'Su nombre y su logo en cada tarjeta', 'body': 'Cada vez que un buceador comparte su inmersión, salen el nombre y el logo del centro.', 'image': 'asset:img/fotos/share-card-aerea.png'},
 ]

@@ -48,3 +48,5 @@
 ## No sacar
 Catálogo de vida marina (superadmin), reseñas (apagadas), el mapa dibujado de «Mi centro», el planificador de viajes
 (tiene datos de demo: ¿está EN PRODUCCIÓN?).
+
+- `22-inmersion-guardada-es.png`: «¡Inmersión añadida a tu logbook!» en español, sacada de la pantalla recreada (`app-steps`, `dive-saved`). Sustituye a la 19 (en inglés) en el tour «Mira lo que vendes».

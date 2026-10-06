@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { hexToChannels, mergeTheme, parseTheme, themeToCss } from './theme';
+import { brandVars, hexToChannels, mergeTheme, parseTheme, themeToCss } from './theme';
 
 describe('theme', () => {
   test('hex → canales RGB', () => {
@@ -10,6 +10,12 @@ describe('theme', () => {
   test('serializa tokens del tenant como CSS vars sobre .ds-root', () => {
     const css = themeToCss(parseTheme({ colors: { primary: '#ff27bb', accent: '#e1ff00' }, radius: { card: '28px' } }));
     expect(css).toBe('.ds-root{--color-primary: 255 39 187;--color-accent: 225 255 0;--radius-card: 28px;}');
+  });
+
+  test('colores de marca para la consola: el oscuro sale del fondo o del contraste del acento', () => {
+    expect(brandVars({ colors: { bg: '#08030c', primary: '#ff27bb' } })).toContain('--tn-dark:#08030c;');
+    expect(brandVars({ colors: { bg: '#ffffff', primary: '#3757be', 'accent-contrast': '#1f294c' } })).toBe('--tn-primary:#3757be;--tn-accent:#e1ff00;--tn-accent-ink:#1f294c;--tn-dark:#1f294c;');
+    expect(brandVars({})).toContain('--tn-primary:#ff27bb;');
   });
 
   test('override de dossier gana al tenant', () => {

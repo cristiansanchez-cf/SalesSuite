@@ -29,7 +29,7 @@ const tipIcon = tip?.kind === 'info' ? 'info' : tip?.kind === 'bulb' ? 'bulb' : 
 const hasScreens = screens.length > 0;
 ---
 <div data-module="app-steps" class="st-wrap">
-<div class:list={['st', `st--${tone}`, hasScreens && 'st--split', screens.length >= 2 && 'st--two', screens.length === 3 && 'st--three']}>
+<div class:list={['st', `st--${tone}`, hasScreens && 'st--split', !hasScreens && tone !== 'dark' && 'st--solo', screens.length >= 2 && 'st--two', screens.length === 3 && 'st--three']}>
   <div class="st__copy">
     {(step || eyebrow) && (
       <p class="st__chip">
@@ -147,6 +147,12 @@ const hasScreens = screens.length > 0;
     .st__card { padding: .7rem 1rem; }
     .st__tip { padding: .75rem 1rem; }
   }
+  /* Sin pantallas (condiciones, la red…): una sola columna centrada, sin el hueco de la derecha; tarjetas en dos columnas. */
+  .st--solo .st__copy { width: 100%; max-width: 72rem; margin-inline: auto; }
+  .st--solo .st__title { max-width: 24ch; }
+  .st--solo .st__lede { max-width: 62ch; }
+  .st--solo .st__cards, .st--solo .st__tip { max-width: none; }
+  @media (min-width: 960px) { .st--solo .st__cards:has(> :nth-child(2)) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @keyframes st-in { from { opacity: .001; transform: translateY(8px); } }
   @keyframes st-up { from { opacity: .001; transform: translateY(18px); } }
 
