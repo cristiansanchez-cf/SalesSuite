@@ -20,6 +20,9 @@
 | `supabase/seed/fixtures.json` (+ `seed.sql`), `public/demo/oquea-logo.svg` | Espacio de demo `oquea-demo` (`oquea.localhost`) con 3 módulos y el recorrido, para el smoke | Ninguno: sin miembros; Enjoy y retheme igual |
 | `scripts/tenant-bootstrap.ts` | `stock:<búsqueda>` en listas de props: fotos libres de Openverse (solo CC0 / dominio público) subidas a `tenant-assets/<espacio>/stock/` con `credits.json`; si no aparece, se quita de la lista | Ninguno: Enjoy no usa `stock:` |
 | `src/modules/app-steps/**` | Pantallas nuevas (qr-pick, dive-detail, album-photo), logbook/álbum/mapa/tarjetas rehechos, `SeaMap`, `MapSheet`, marcadores SVG | Ninguno (plantilla de Oquea) |
+| `src/middleware.ts`, `src/lib/onboarding.ts` | Primera vez en un espacio → `/admin/welcome`; primera vez en Configurar (admins y managers) → `/admin/setup/welcome`. Una vez por navegador (cookie por espacio), solo con acceso real (Supabase) y nunca al superadmin | Bajo: afecta a Enjoy igual (lo pidió Cristian «para todos los tenants»); en demo y smokes, nada cambia |
+| `src/pages/admin/setup/welcome.astro`, `messages/setupWelcome.ts`, `setup.astro` | Bienvenida de Configurar: empresa, playbook, mercado, catálogo, precios y comisiones (según permisos), con lo que hay hoy; enlace para volver a verla | Ninguno (página nueva) |
+| `scripts/smoke-welcome.cjs` | Caso de la bienvenida de Configurar | Ninguno |
 | `scripts/smoke-learn.cjs` | Caso Oquea: los 5 pasos con UI (no capturas), azul del tema, 1440 y 375 px sin scroll | Ninguno |
 
 ## Pendiente (no lo he tocado)

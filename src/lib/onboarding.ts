@@ -2,8 +2,13 @@
 import type { AdminContext } from './admin/auth';
 import { demoDb } from './data/store';
 
-export async function onboardedAt(admin: AdminContext): Promise<string | null> {
-  const { userId, tenantId } = admin.session;
+/** scope 'setup': la bienvenida de Configurar (solo admins), guardada aparte: «<espacio>:setup». */
+export type OnboardingScope = 'sell' | 'setup';
+const keyOf = (tenantId: string, scope: OnboardingScope) => (scope === 'setup' ? `${tenantId}:setup` : tenantId);
+
+export async function onboardedAt(admin: AdminContext, scope: OnboardingScope = 'sell'): Promise<string | null> {
+  const { userId } = admin.session;
+  const tenantId = keyOf(admin.session.tenantId, scope);
   if (admin.mode === 'supabase' && admin.supabase) {
     const { data, error } = await admin.supabase.from('users').select('onboarding').eq('id', userId).maybeSingle();
     // Migración pendiente: se trata como terminada para no mandar a nadie a la bienvenida en bucle.
@@ -13,8 +18,9 @@ export async function onboardedAt(admin: AdminContext): Promise<string | null> {
   return demoDb().users.find((u) => u.id === userId)?.onboarding?.[tenantId] ?? null;
 }
 
-export async function markOnboarded(admin: AdminContext): Promise<void> {
-  const { userId, tenantId } = admin.session;
+export async function markOnboarded(admin: AdminContext, scope: OnboardingScope = 'sell'): Promise<void> {
+  const { userId } = admin.session;
+  const tenantId = keyOf(admin.session.tenantId, scope);
   const at = new Date().toISOString();
   if (admin.mode === 'supabase' && admin.supabase) {
     const { data } = await admin.supabase.from('users').select('onboarding').eq('id', userId).maybeSingle();
@@ -36,3 +42,8 @@ export async function needsCompanySetup(admin: AdminContext): Promise<boolean> {
   const market = await admin.playbook.market().catch(() => [{}]);
   return market.length === 0;
 }
+
+/** Páginas de Configurar (modo «Configurar» de la consola). La bienvenida de Configurar sale la primera vez que se entra. */
+export const SETUP_PATHS = ['/admin/setup', '/admin/brand', '/admin/playbook', '/admin/catalog', '/admin/prices', '/admin/team', '/admin/commissions/team', '/admin/territory'];
+export const isSetupPath = (path: string) => path !== '/admin/setup/ia' && path !== '/admin/setup/welcome'
+  && SETUP_PATHS.some((p) => path === p || path.startsWith(`${p}/`));

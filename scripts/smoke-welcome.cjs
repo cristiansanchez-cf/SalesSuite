@@ -88,5 +88,25 @@ async function login(b, email, mobile = false) {
   await a.click('[data-testid=welcome-skip]');
   await a.waitForURL(/\/admin\/inicio/);
   assert(!(await a.isVisible('[data-testid=welcome-resume]')), 'saltar la bienvenida la da por vista');
+
+  // Bienvenida de Configurar (solo quien configura): una pantalla por parte, con lo que hay hoy y su enlace.
+  await a.goto(`${BASE}/admin/setup/welcome?next=/admin/playbook`);
+  assert((await a.textContent('[data-testid=setup-welcome-progress]')).includes('de 8'), 'Configurar: hola + 6 partes + listo');
+  const cfgSeen = [];
+  for (let i = 0; i < 7; i++) { cfgSeen.push(await a.getAttribute('[data-testid=setup-welcome]', 'data-step')); await a.click('[data-testid=setup-welcome-next]'); }
+  cfgSeen.push(await a.getAttribute('[data-testid=setup-welcome]', 'data-step'));
+  assert(cfgSeen.join(',') === 'hello,company,playbook,market,catalog,prices,commissions,done', `Configurar: empresa, playbook, mercado, catálogo, precios y comisiones (${cfgSeen.join(',')})`);
+  await a.goto(`${BASE}/admin/setup/welcome?step=3`);
+  assert(/\d+ jugadas?/.test(await a.textContent('[data-testid=setup-welcome-count]')), 'Configurar: dice lo que hay hoy (jugadas)');
+  if (OUT) await a.screenshot({ path: `${OUT}/setup-welcome.png`, fullPage: true });
+  await a.goto(`${BASE}/admin/setup/welcome?step=8&next=/admin/playbook`);
+  await a.click('[data-testid=setup-welcome-finish]');
+  await a.waitForURL(/\/admin\/playbook/);
+  assert(true, 'Configurar: al terminar, sigue a donde iba');
+  await a.goto(`${BASE}/admin/setup`);
+  assert(await a.isVisible('[data-testid=setup-welcome-again]'), 'Configurar: se puede volver a ver');
+  const r = await login(b, 'rep@enjoy.test');
+  await r.goto(`${BASE}/admin/setup/welcome`);
+  assert(!r.url().includes('/setup/welcome'), 'un comercial no la ve');
   await b.close();
 })();

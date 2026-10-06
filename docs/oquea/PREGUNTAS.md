@@ -39,8 +39,8 @@
 - [ ] 27. Documentos que faltan: 02 (mercado completo), 04 (tarifas cuando las haya), 06 (casos, cuando existan), 07 (equipo comercial).
 
 ## D2 · UI nueva (6-oct, tarde)
-- [ ] 32. Tarjetas para redes: ¿**viaje** y **especie** están en producción? Hoy solo salen inmersión, récord e hito (las confirmadas).
-- [ ] 33. Fotos de ejemplo **sin** el sticker (las 5 que mandaste ya lo llevan, y en inglés): pásalas como archivo y las pongo de fondo. Mientras, las busca el alta en Openverse (CC0 / dominio público).
+- [x] 32. ✅ Por defecto, las 5 tarjetas exportadas por Cristian (inmersión, récord, viaje, hito, especie) tal cual (`apply-oquea-09.py`). Las de HTML quedan para la versión personalizable.
+- [x] 33. ✅ Las 5 exportadas van tal cual (con el sticker). Fotos de ejemplo **sin** el sticker: solo harían falta para la versión personalizable (las 5 que mandaste ya lo llevan, y en inglés): pásalas como archivo y las pongo de fondo. Mientras, las busca el alta en Openverse (CC0 / dominio público).
 - [ ] 34. La pestaña **Feed** de la barra de abajo (sale en la foto del álbum): ¿en producción? No la he puesto.
 - [ ] 35. Mapa interactivo con **MapTiler** (el mismo estilo que la app): necesita la clave de MapTiler y el ID del estilo. Lo dejamos para después, como dijiste.
 - [ ] 36. Álbum: «Útil para tus buceadores» / «Y lo comparten: publicidad que no pagas» los he redactado yo a partir de lo que dijiste. ¿Valen?

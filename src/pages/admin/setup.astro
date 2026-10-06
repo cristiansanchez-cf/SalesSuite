@@ -16,6 +16,7 @@ import { PERSONA_ROLES } from '~/lib/playbook/market';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { setupAiMessages } from '~/lib/i18n/messages/setupAi';
+import { setupWelcomeMessages } from '~/lib/i18n/messages/setupWelcome';
 import { localizePreset, PRESETS, ROLE_ICON, SEGMENT_ICONS } from '~/lib/setup/presets';
 import { createSetupService } from '~/lib/setup/service';
 import { isIconName } from '~/lib/ui/icons';
@@ -89,6 +90,7 @@ const SCOPE = msg.setup.scope;
 ---
 <AdminLayout title={msg.setup.title}>
   <PageHeader eyebrow={msg.setup.eyebrow} title={msg.setup.title} lede={msg.setup.lede} />
+  <a class="co-btn co-btn--ghost co-btn--sm w-fit" href="/admin/setup/welcome" data-testid="setup-welcome-again"><Icon name="sparkles" size={16} />{i18n(Astro, setupWelcomeMessages).m.again}</a>
   <nav aria-label={msg.setup.stepsLabel} class="mb-6">
     <ol class="co-steps">
       {STEPS.map((s) => (

@@ -223,7 +223,14 @@
             "asset:img/fotos/share-card-bg.webp",
             "asset:img/fotos/share-card-aerea.png"
           ],
-          "brand": "asset:logo-dark.svg"
+          "brand": "asset:logo-dark.svg",
+          "exports": [
+            "asset:img/exportables/1-inmersion.webp",
+            "asset:img/exportables/2-record.webp",
+            "asset:img/exportables/3-viaje.webp",
+            "asset:img/exportables/4-hito.webp",
+            "asset:img/exportables/5-especie.webp"
+          ]
         }
       }
     },
@@ -671,7 +678,14 @@
             "asset:img/fotos/share-card-bg.webp",
             "asset:img/fotos/share-card-aerea.png"
           ],
-          "brand": "asset:logo-dark.svg"
+          "brand": "asset:logo-dark.svg",
+          "exports": [
+            "asset:img/exportables/1-inmersion.webp",
+            "asset:img/exportables/2-record.webp",
+            "asset:img/exportables/3-viaje.webp",
+            "asset:img/exportables/4-hito.webp",
+            "asset:img/exportables/5-especie.webp"
+          ]
         }
       }
     },
