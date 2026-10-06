@@ -89,6 +89,7 @@ const EXACT: Record<string, T> = {
 
   // ------------------------------------------------------------ ya existe / estado
   'Ya existe': ['It already exists', 'Já existe', '이미 존재합니다'],
+  'Ese campo no existe en este espacio': ['That field does not exist in this workspace', 'Esse campo não existe neste espaço', '이 워크스페이스에 없는 필드입니다'],
   'Ya hay un plan por defecto': ['There is already a default plan', 'Já existe um plano padrão', '기본 플랜이 이미 있습니다'],
   'Ya hay una cuenta con esa referencia externa': ['There is already an account with that external reference', 'Já existe uma conta com essa referência externa', '같은 외부 참조의 계정이 이미 있습니다'],
   'Ya hay una liquidación de ese periodo para esa persona': ['There is already a payout for that period for that person', 'Já existe uma liquidação desse período para essa pessoa', '해당 기간에 이 사람의 정산이 이미 있습니다'],

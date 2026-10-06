@@ -3,7 +3,8 @@
  * account_guard, account_audit, account_touch y dossier_account_sync, con las reglas de rules.ts.
  */
 import { randomUUID } from 'node:crypto';
-import { demoDb, type AccountRow, type DossierRow } from '../data/store';
+import { demoDb, type AccountRow, type CrmFieldRow, type DossierRow } from '../data/store';
+import type { CrmField, FieldType } from '../crm/fields';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
 import type { AccountsDb } from './db';
 import { eligibility } from './rules';
@@ -18,7 +19,19 @@ const toAccount = (r: AccountRow): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
+  fields: (r.fields ?? {}) as Account['fields'],
 });
+const toField = (r: CrmFieldRow): CrmField => ({
+  id: r.id, tenantId: r.tenant_id, key: r.key, label: r.label, type: r.type as FieldType, options: r.options, group: r.grp, position: r.position,
+  help: r.help, required: r.required, inList: r.in_list, filterable: r.filterable, segments: r.segments, archivedAt: r.archived_at,
+});
+/** = trigger account_fields_check: solo claves de campos del espacio. */
+function checkFields(t: string, fields: Record<string, unknown>) {
+  const keys = new Set(db().crm_field.filter((f) => f.tenant_id === t).map((f) => f.key));
+  const unknown = Object.keys(fields).find((k) => !keys.has(k));
+  if (unknown) throw new Error(`check constraint: Campo desconocido: ${unknown}`);
+  return { ...fields };
+}
 const toZone = (z: { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number }): Zone =>
   ({ id: z.id, tenantId: z.tenant_id, parentId: z.parent_id, name: z.name, kind: z.kind as ZoneKind, position: z.position });
 
@@ -134,7 +147,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       const row: AccountRow = {
         id: randomUUID(), tenant_id: t, name: a.name, zone_id: a.zoneId, segment_id: a.segmentId, address: a.address, external_ref: a.externalRef, notes: a.notes,
         status: 'open', blocked_reason: null, owner_id: null, claimed_until: null, last_touch_at: null, last_touch_by: null,
-        won_at: null, won_by: null, won_dossier_id: null, created_by: actorId, created_at: iso(),
+        won_at: null, won_by: null, won_dossier_id: null, created_by: actorId, created_at: iso(), fields: checkFields(t, a.fields ?? {}),
       };
       // = account_guard: el manager puede asignarla; el comercial se la queda.
       if (manager) { if (a.ownerId) { row.owner_id = a.ownerId; row.claimed_until = plusDays(rulesOf(t).claimDays); } }
@@ -161,6 +174,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (p.blockedReason !== undefined) a.blocked_reason = p.blockedReason;
       if (p.ownerId !== undefined) a.owner_id = p.ownerId;
       if (p.claimedUntil !== undefined) a.claimed_until = p.claimedUntil;
+      if (p.fields !== undefined) a.fields = checkFields(a.tenant_id, p.fields);
       // = account_audit
       if (a.status === 'blocked' && prev.status !== 'blocked') logTouch(a, actorId, 'block', a.blocked_reason);
       else if (prev.status === 'blocked' && a.status !== 'blocked') logTouch(a, actorId, 'unblock');
@@ -203,6 +217,26 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       const a = db().account.find((x) => x.id === accountId);
       if (!a || !['admin', 'lead', 'rep'].includes(roleOf(a.tenant_id, actorId) ?? '')) throw new Error('permission denied: Cuenta no encontrada');
       return eligibilityFor(a.tenant_id, a.id, actorId);
+    },
+    async listFields(t) {
+      return db().crm_field.filter((f) => f.tenant_id === t).sort((a, b) => a.position - b.position || a.label.localeCompare(b.label, 'es')).map(toField);
+    },
+    async saveField(t, f, id) {
+      const s = db();
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');
+      if (s.crm_field.some((x) => x.tenant_id === t && x.key === f.key && x.id !== id)) throw new Error('duplicate key: crm_field_tenant_id_key_key');
+      const prev = id ? s.crm_field.find((x) => x.id === id && x.tenant_id === t) : undefined;
+      if (id && !prev) return id;
+      const row: CrmFieldRow = { id: id ?? randomUUID(), tenant_id: t, key: f.key, label: f.label, type: f.type, options: f.options, grp: f.group, position: f.position,
+        help: f.help, required: f.required, in_list: f.inList, filterable: f.filterable, segments: f.segments, archived_at: prev?.archived_at ?? null, created_at: prev?.created_at ?? iso() };
+      s.crm_field = [...s.crm_field.filter((x) => x.id !== row.id), row];
+      return row.id;
+    },
+    async archiveField(id, archived) {
+      const f = db().crm_field.find((x) => x.id === id);
+      if (!f || roleOf(f.tenant_id, actorId) !== 'admin') return false;
+      f.archived_at = archived ? iso() : null;
+      return true;
     },
     async decide(dossierId, decision) {
       const d = db().dossier.find((x) => x.id === dossierId);

@@ -16,6 +16,8 @@ import type { AccountState as State } from '~/lib/accounts/types';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { crmMessages } from '~/lib/i18n/messages/crm';
+import { formatValue } from '~/lib/crm/fields';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -24,6 +26,7 @@ if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
 const { m: { list: M }, locale } = i18n(Astro, accountsMessages);
 const S = shellMessages[locale];
+const CF = crmMessages[locale].filters;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -46,14 +49,20 @@ const q = Astro.url.searchParams;
 const scope = (['zone', 'mine', 'all'].includes(q.get('ver') ?? '') ? q.get('ver') : 'zone') as 'zone' | 'mine' | 'all';
 const stateF = (q.get('estado') ?? 'all') as State | 'all';
 const search = q.get('q') ?? '';
+// Campos del CRM (docs/CRM_DINAMICO.md): los marcados salen como columna y los filtrables como filtro (?c.<clave>=valor).
+const crm = await acc.crmFields();
+const filterable = crm.filter((x) => x.filterable);
+const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
+const columns = crm.filter((x) => x.inList);
 const [{ items, total, scope: effective }, t, colleagues, segments] = await Promise.all([
-  acc.list({ scope, q: search }), acc.territory(), acc.colleagues(), admin.playbook.market(),
+  acc.list({ scope, q: search, fields: fieldFilter }), acc.territory(), acc.colleagues(), admin.playbook.market(),
 ]);
 const shown = items.filter((a) => stateF === 'all' || a.state === stateF);
 const count = (s: State) => items.filter((a) => a.state === s).length;
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
 const href = (p: Record<string, string>) => {
-  const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...p });
+  const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}),
+    ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
   for (const [k, v] of [...u]) if (!v || (k === 'ver' && v === 'zone') || (k === 'estado' && v === 'all')) u.delete(k);
   return `/admin/accounts${u.size ? `?${u}` : ''}`;
 };
@@ -104,10 +113,31 @@ const okMsg = flash(Astro.url, {});
     </div>
     <form method="get" class="ml-auto flex min-w-[14rem] flex-1 sm:flex-none" role="search">
       {scope !== 'zone' && <input type="hidden" name="ver" value={scope} />}
+      {Object.entries(fieldFilter).map(([k, v]) => <input type="hidden" name={`c.${k}`} value={v} />)}
       <label class="sr-only" for="acc-q">{M.search}</label>
       <input id="acc-q" class="co-input" type="search" name="q" value={search} placeholder={M.search} />
     </form>
   </div>
+  {filterable.length > 0 && (
+    <form method="get" class="mb-5 flex flex-wrap items-end gap-3" data-testid="crm-filters" aria-label={CF.title}>
+      {scope !== 'zone' && <input type="hidden" name="ver" value={scope} />}
+      {stateF !== 'all' && <input type="hidden" name="estado" value={stateF} />}
+      {search && <input type="hidden" name="q" value={search} />}
+      {filterable.map((fd) => (
+        <label class="co-field !gap-1 text-xs">{fd.label}
+          {fd.type === 'checkbox' ? (
+            <select class="co-select !min-h-[34px]" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option><option value="yes" selected={fieldFilter[fd.key] === 'yes'}>{crmMessages[locale].card.yes}</option><option value="no" selected={fieldFilter[fd.key] === 'no'}>{crmMessages[locale].card.no}</option></select>
+          ) : fd.type === 'select' || fd.type === 'multi_select' ? (
+            <select class="co-select !min-h-[34px]" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option>{fd.options.map((o) => <option value={o.key} selected={fieldFilter[fd.key] === o.key}>{o.label}</option>)}</select>
+          ) : (
+            <input class="co-input !min-h-[34px]" name={`c.${fd.key}`} value={fieldFilter[fd.key] ?? ''} placeholder={CF.search} data-field={fd.key} />
+          )}
+        </label>
+      ))}
+      <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="crm-filter-apply">{CF.apply}</button>
+      {Object.keys(fieldFilter).length > 0 && <a class="co-meta underline" href={href(Object.fromEntries(Object.keys(fieldFilter).map((k) => [`c.${k}`, ''])))}>{CF.clear}</a>}
+    </form>
+  )}
 
   {shown.length === 0
     ? (total === 0
@@ -120,6 +150,11 @@ const okMsg = flash(Astro.url, {});
             <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}`}>
               <span class="co-row-title">{a.name}</span>
               <span class="co-meta">{a.zonePath ? `${a.zonePath.split(' › ').slice(-2).join(' › ')} · ` : ''}<AccountState a={a} detail /></span>
+              {columns.some((c) => formatValue(c, a.fields[c.key], locale)) && (
+                <span class="mt-1 flex flex-wrap gap-1.5" data-testid="account-columns">
+                  {columns.map((c) => { const v = formatValue(c, a.fields[c.key], locale); return v ? <span class="co-tag">{c.type === 'checkbox' ? c.label.replace(/^¿|\?$/g, '') : `${c.label}: ${v}`}</span> : null; })}
+                </span>
+              )}
             </a>
             <AccountState a={a} />
             {a.state === 'free' && (

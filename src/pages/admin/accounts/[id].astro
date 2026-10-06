@@ -14,6 +14,9 @@ import { ELIGIBILITY_LABELS, zonePath } from '~/lib/accounts/rules';
 import type { TouchKind } from '~/lib/accounts/types';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
+import { crmMessages } from '~/lib/i18n/messages/crm';
+import FieldInput from '~/components/crm/FieldInput.astro';
+import { fieldsFor, formatValue, valuesFromForm } from '~/lib/crm/fields';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -24,6 +27,7 @@ const id = Astro.params.id ?? '';
 const { m: msg, f: fmt, locale } = i18n(Astro, accountsMessages);
 const M = msg.detail;
 const ELIGIBILITY_LABEL = ELIGIBILITY_LABELS[locale];
+const C = crmMessages[locale].card;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -37,6 +41,7 @@ if (Astro.request.method === 'POST') {
       case 'release': await acc.touch(id, 'release'); to += '?ok=released'; break;
       case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
       case 'assign': await acc.assign(id, str('userId') || null); to += '?ok=assigned'; break;
+      case 'fields': await acc.setFields(id, valuesFromForm(await acc.crmFields(), f)); to += '?ok=fields'; break;
       case 'block': await acc.block(id, str('reason')); to += '?ok=blocked'; break;
       case 'unblock': await acc.unblock(id); to += '?ok=unblocked'; break;
       case 'delete': await acc.remove(id); to = '/admin/accounts'; break;
@@ -56,15 +61,19 @@ try { data = await acc.get(id); } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;
 }
-const { account: a, eligibility, touches, dossiers, canEdit, rules } = data;
+const { account: a, eligibility, touches, dossiers, canEdit, rules, crmFields } = data;
 const [t, segments, members] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([])]);
+// Ficha (campos del CRM): los de su sector, agrupados por sección.
+const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
+const sheet = fieldsFor(crmFields, segKey);
+const sections = [...new Set(sheet.map((x) => x.group ?? ''))].map((g) => ({ title: g || (sheet.some((x) => x.group) ? C.other : ''), fields: sheet.filter((x) => (x.group ?? '') === g) }));
 const day = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'long' });
 const NOT = (e: string) => M.notClaimed(ELIGIBILITY_LABEL[e as keyof typeof ELIGIBILITY_LABEL]?.toLowerCase() ?? e);
 const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: M.okContact(day(a.claimedUntil)),
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  saved: M.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
+  saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
 });
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
@@ -108,6 +117,30 @@ const STATE_ALERT = {
           </div>
         </form>
       )}
+
+      <section class="co-card grid gap-4" data-testid="account-sheet">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="co-entity">{C.title}</h2>
+          {perms.manageTenant && <a class="co-meta underline" href="/admin/team/fields">{C.manage}</a>}
+        </div>
+        {sheet.length === 0 ? <p class="co-meta">{C.noFields} {perms.manageTenant && C.noFieldsAdmin}</p>
+        : canEdit ? (
+          <form method="post" class="grid gap-5" data-testid="sheet-form">
+            <input type="hidden" name="action" value="fields" />
+            {sections.map((sec) => (
+              <fieldset class="grid gap-4 sm:grid-cols-2">
+                {sec.title && <legend class="text-eyebrow mb-1 sm:col-span-2">{sec.title}</legend>}
+                {sec.fields.map((fd) => <div class:list={[(fd.type === 'long_text' || fd.type === 'multi_select') && 'sm:col-span-2']}><FieldInput field={fd} value={a.fields[fd.key]} labels={C} /></div>)}
+              </fieldset>
+            ))}
+            <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="sheet-save">{C.save}</button>
+          </form>
+        ) : (
+          <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            {sheet.map((fd) => <div><dt class="co-meta">{fd.label}</dt><dd class="text-sm font-medium">{formatValue(fd, a.fields[fd.key], fmt.tag) || C.empty}</dd></div>)}
+          </dl>
+        )}
+      </section>
 
       <section class="co-section">
         <div class="co-section__head"><h2 class="text-eyebrow">{M.proposals(dossiers.length)}</h2></div>

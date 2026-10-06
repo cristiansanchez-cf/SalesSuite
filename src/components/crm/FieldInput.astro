@@ -1,0 +1,49 @@
+---
+/**
+ * Control de un campo del CRM según su tipo (docs/CRM_DINAMICO.md). Se nombra `f:<clave>`; un `present:<clave>` oculto
+ * dice que el campo estaba en el formulario (así una casilla desmarcada o una selección vacía también se guardan).
+ */
+import type { CrmField, FieldValue } from '~/lib/crm/fields';
+
+interface Props { field: CrmField; value: FieldValue | undefined; labels: { yes: string; no: string; choose: string } }
+const { field: f, value: v, labels } = Astro.props;
+const name = `f:${f.key}`;
+const list = Array.isArray(v) ? v : v === undefined || v === null ? [] : [String(v)];
+const str = v === undefined || v === null || Array.isArray(v) ? '' : String(v);
+---
+<div class="co-field" data-testid="crm-field" data-field={f.key}>
+  <span>{f.label}{f.required && <span aria-hidden="true"> *</span>}</span>
+  {f.help && <span class="co-help">{f.help}</span>}
+  <input type="hidden" name={`present:${f.key}`} value="1" />
+  {f.type === 'checkbox' ? (
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name={name} checked={v === true} /> {labels.yes}</label>
+  ) : f.type === 'select' ? (
+    <select class="co-select" name={name} required={f.required} aria-label={f.label}>
+      <option value="">{labels.choose}</option>
+      {f.options.map((o) => <option value={o.key} selected={o.key === str}>{o.label}</option>)}
+    </select>
+  ) : f.type === 'multi_select' ? (
+    <div class="co-chips" role="group" aria-label={f.label}>
+      {f.options.map((o) => (
+        <label class="co-chip"><input type="checkbox" class="sr-only" name={name} value={o.key} checked={list.includes(o.key)} />{o.label}</label>
+      ))}
+    </div>
+  ) : f.type === 'long_text' ? (
+    <textarea class="co-textarea" name={name} maxlength="4000" required={f.required} aria-label={f.label}>{str}</textarea>
+  ) : f.type === 'rating' ? (
+    <select class="co-select" name={name} aria-label={f.label}>
+      <option value="">{labels.choose}</option>
+      {[0, 1, 2, 3, 4, 5].map((n) => <option value={n} selected={str === String(n)}>{'★'.repeat(n) + '☆'.repeat(5 - n)}</option>)}
+    </select>
+  ) : (
+    <input class="co-input" name={name} value={str} required={f.required} aria-label={f.label}
+      type={f.type === 'number' || f.type === 'money' ? 'number' : f.type === 'date' ? 'date' : f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : 'text'}
+      step={f.type === 'money' ? '0.01' : f.type === 'number' ? 'any' : undefined}
+      inputmode={f.type === 'url' ? 'url' : undefined} maxlength={f.type === 'text' || f.type === 'url' ? 500 : undefined} />
+  )}
+</div>
+
+<style>
+  /* Chip de selección múltiple: marcado = activo. */
+  .co-chip:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+</style>

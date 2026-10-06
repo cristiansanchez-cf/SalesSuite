@@ -1,3 +1,4 @@
+import type { CrmField, FieldValues } from '../crm/fields';
 import type { Account, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind } from './types';
 
 export interface AccountFilter { zoneIds?: string[]; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; limit: number }
@@ -5,12 +6,16 @@ export interface AccountInsert {
   name: string; zoneId: string | null; segmentId: string | null; address: string | null; externalRef: string | null; notes: string | null;
   /** Solo managers: asignar al dar de alta (un comercial siempre se la queda él). */
   ownerId?: string | null;
+  fields?: FieldValues;
 }
 export interface AccountPatch {
   name?: string; zoneId?: string | null; segmentId?: string | null; address?: string | null; externalRef?: string | null; notes?: string | null;
   /** Solo managers (en Postgres lo impide account_guard). */
   status?: AccountStatus; blockedReason?: string | null; ownerId?: string | null; claimedUntil?: string | null;
+  /** Todos los valores de los campos del CRM (reemplaza el objeto entero). */
+  fields?: FieldValues;
 }
+export type CrmFieldRecord = Omit<CrmField, 'id' | 'tenantId' | 'archivedAt'>;
 
 /**
  * Cuentas y territorio. Implementación por usuario: en Supabase lo decide la sesión (RLS + triggers);
@@ -36,4 +41,8 @@ export interface AccountsDb {
   preview(accountId: string): Promise<Eligibility>;
   /** Decisión de un manager sobre una venta con conflicto. */
   decide(dossierId: string, decision: AccountDecision | null): Promise<boolean>;
+  /** Campos del CRM (los define el admin; los lee todo el equipo). */
+  listFields(tenantId: string): Promise<CrmField[]>;
+  saveField(tenantId: string, f: CrmFieldRecord, id?: string): Promise<string>;
+  archiveField(id: string, archived: boolean): Promise<boolean>;
 }

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AccountsDb } from './db';
+import type { CrmField, FieldType } from '../crm/fields';
 import { DEFAULT_RULES, type Account, type Eligibility, type TouchKind, type Zone, type ZoneKind } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -12,11 +13,16 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
-const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at';
+const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
+  fields: r.fields ?? {},
+});
+const toField = (r: Row): CrmField => ({
+  id: r.id, tenantId: r.tenant_id, key: r.key, label: r.label, type: r.type as FieldType, options: r.options ?? [], group: r.grp, position: r.position,
+  help: r.help, required: r.required, inList: r.in_list, filterable: r.filterable, segments: r.segments ?? [], archivedAt: r.archived_at,
 });
 const toZone = (r: Row): Zone => ({ id: r.id, tenantId: r.tenant_id, parentId: r.parent_id, name: r.name, kind: r.kind as ZoneKind, position: r.position });
 /** Búsqueda por nombre sin comodines del usuario. */
@@ -65,7 +71,7 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
     async insertAccount(t, a) {
       const r = check(await sb.from('account').insert({
         tenant_id: t, name: a.name, zone_id: a.zoneId, segment_id: a.segmentId, address: a.address, external_ref: a.externalRef, notes: a.notes,
-        owner_id: a.ownerId ?? null,
+        owner_id: a.ownerId ?? null, fields: a.fields ?? {},
       }).select('id').single()) as Row;
       return r.id;
     },
@@ -81,6 +87,7 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       if (p.blockedReason !== undefined) patch.blocked_reason = p.blockedReason;
       if (p.ownerId !== undefined) patch.owner_id = p.ownerId;
       if (p.claimedUntil !== undefined) patch.claimed_until = p.claimedUntil;
+      if (p.fields !== undefined) patch.fields = p.fields;
       return (check(await sb.from('account').update(patch).eq('id', id).select('id')) ?? []).length > 0;
     },
     async deleteAccount(id) { return (check(await sb.from('account').delete().eq('id', id).select('id')) ?? []).length > 0; },
@@ -92,6 +99,22 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
         .map((r: Row) => ({ id: r.id, accountId: r.account_id, userId: r.user_id, kind: r.kind as TouchKind, note: r.note, createdAt: r.created_at }));
     },
     async preview(accountId) { return check(await sb.rpc('account_eligibility_preview', { p_account: accountId })) as Eligibility; },
+    async listFields(t) {
+      return (check(await sb.from('crm_field').select('*').eq('tenant_id', t).order('position').order('label')) ?? []).map(toField);
+    },
+    async saveField(t, f, id) {
+      const row = { tenant_id: t, key: f.key, label: f.label, type: f.type, options: f.options, grp: f.group, position: f.position, help: f.help,
+        required: f.required, in_list: f.inList, filterable: f.filterable, segments: f.segments };
+      if (id) {
+        const rows = check(await sb.from('crm_field').update(row).eq('id', id).select('id')) ?? [];
+        if (!rows.length) throw new Error('permission denied: Solo un admin del espacio');
+        return id;
+      }
+      return (check(await sb.from('crm_field').insert(row).select('id').single()) as Row).id;
+    },
+    async archiveField(id, archived) {
+      return (check(await sb.from('crm_field').update({ archived_at: archived ? new Date().toISOString() : null }).eq('id', id).select('id')) ?? []).length > 0;
+    },
     async decide(dossierId, decision) {
       return (check(await sb.from('dossier').update({ account_decision: decision }).eq('id', dossierId).select('id')) ?? []).length > 0;
     },

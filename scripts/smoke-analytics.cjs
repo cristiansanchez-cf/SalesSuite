@@ -17,7 +17,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.goto(`${BASE}/admin/login`);
   await rep.click('[data-testid="demo-rep@enjoy.test"]');
   await rep.waitForURL(/\/admin/);
-  await rep.click('[data-testid=nav-analytics]');
+  await rep.click('[data-testid=nav-dossiers]');
+  await rep.click('[data-testid=tab-analytics]');
   await rep.waitForURL(/\/admin\/analytics/);
   assert((await rep.textContent('[data-testid=list-never]')).includes('Hotel Mar Azul'), 'antes: Mar Azul sin abrir');
   assert((await rep.textContent('[data-testid=list-follow-up]')).includes('Club Sol'), 'Club Sol: abierta y sin próximo paso → escríbele hoy');

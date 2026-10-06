@@ -95,6 +95,12 @@ export interface AccountRow {
   notes: string | null; status: 'open' | 'customer' | 'blocked'; blocked_reason: string | null; owner_id: string | null; claimed_until: string | null;
   last_touch_at: string | null; last_touch_by: string | null; won_at: string | null; won_by: string | null; won_dossier_id: string | null;
   created_by: string | null; created_at: string;
+  /** Valores de los campos del CRM (docs/CRM_DINAMICO.md). */
+  fields?: Record<string, unknown>;
+}
+export interface CrmFieldRow {
+  id: string; tenant_id: string; key: string; label: string; type: string; options: Array<{ key: string; label: string }>; grp: string | null;
+  position: number; help: string | null; required: boolean; in_list: boolean; filterable: boolean; segments: string[]; archived_at: string | null; created_at: string;
 }
 export interface AccountTouchRow { id: string; tenant_id: string; account_id: string; user_id: string | null; kind: string; note: string | null; created_at: string }
 export interface RevenueEventRow {
@@ -163,6 +169,7 @@ export interface DemoDb {
   membership_zone: MembershipZoneRow[];
   account_rules: AccountRulesRow[];
   account: AccountRow[];
+  crm_field: CrmFieldRow[];
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];
@@ -325,13 +332,20 @@ export function freshDemoDb(): DemoDb {
     membership_zone: [{ tenant_id: ENJOY, user_id: REP, zone_id: Z.cv }],
     account_rules: [],
     account: [
-      demoAccount('00000000-0000-4000-8000-0000000ac001', 'Club Sol', Z.vlc, { owner_id: REP, claimed_until: ago(-20), last_touch_at: ago(10), last_touch_by: REP, notes: 'Tiene DJ residente los viernes.' }),
+      demoAccount('00000000-0000-4000-8000-0000000ac001', 'Club Sol', Z.vlc, { owner_id: REP, claimed_until: ago(-20), last_touch_at: ago(10), last_touch_by: REP, notes: 'Tiene DJ residente los viernes.', fields: { 'tiene-pantalla': true, aforo: 450 } }),
       demoAccount('00000000-0000-4000-8000-0000000ac002', 'Sala Marina', Z.vlc, {}),
       demoAccount('00000000-0000-4000-8000-0000000ac003', 'Terraza Azahar', Z.cs, {}),
       demoAccount('00000000-0000-4000-8000-0000000ac004', 'Discoteca Faro', Z.bcn, {}),
       demoAccount('00000000-0000-4000-8000-0000000ac005', 'Sala Gran Vía', Z.mad, { status: 'blocked', blocked_reason: 'El dueño ha pedido no recibir más comerciales.' }),
     ],
     account_touch: [],
+    // Campos del CRM de ejemplo (docs/CRM_DINAMICO.md): los define cada espacio.
+    crm_field: [
+      { id: '00000000-0000-4000-8000-0000000cf001', tenant_id: ENJOY, key: 'tiene-pantalla', label: '¿Tiene pantalla?', type: 'checkbox', options: [], grp: 'El local',
+        position: 0, help: 'Pantalla propia en la sala.', required: false, in_list: true, filterable: true, segments: [], archived_at: null, created_at: ago(30) },
+      { id: '00000000-0000-4000-8000-0000000cf002', tenant_id: ENJOY, key: 'aforo', label: 'Aforo', type: 'number', options: [], grp: 'El local',
+        position: 1, help: null, required: false, in_list: true, filterable: false, segments: [], archived_at: null, created_at: ago(30) },
+    ],
     // Comisiones de ejemplo (docs/COMMISSIONS.md): «todo igual, 30 %».
     commission_plan: [{ id: '00000000-0000-4000-8000-0000000cc001', tenant_id: ENJOY, name: 'General', is_default: true, updated_at: ago(30),
       rules: [{ id: 'todo-igual', label: 'Todo igual: 30 %', when: {}, pay: { type: 'percent', bps: 3000 } }], referral: null }],

@@ -27,6 +27,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const rep = await login('rep@enjoy.test');
   // ---- sectores y actores
   await rep.goto(`${BASE}/admin/learn`);
+  // El cuerpo de Aprende llega en un segundo bloque (server island): se espera a que estén los sectores.
+  await rep.waitForSelector('[data-testid=segment]');
   // Otros smokes pueden haber añadido sectores (punto de partida «buceo»): basta con que estén los 4 de Enjoy.
   const segs = await rep.$$eval('[data-testid=segment]', (els) => els.map((e) => e.textContent));
   assert(['Bodas', 'Locales de ocio nocturno', 'Conciertos', 'Festivales'].every((n) => segs.some((t) => t.includes(n))), 'Aprende: los 4 sectores de Enjoy');
