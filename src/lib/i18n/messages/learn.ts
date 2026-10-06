@@ -20,7 +20,7 @@ const es = {
     eyebrow: 'Lo que vendes', title: 'Así funciona, de principio a fin', lede: 'Lo que vive el invitado y lo que gana quien lo contrata.',
     got: 'Entendido', gotNext: 'Entendido: ahora, qué ofrecemos', back: 'Volver a Aprende', backWelcome: 'Volver a la bienvenida',
     empty: 'Tu empresa aún no ha preparado este recorrido. Mientras, mira qué ofrecemos.', seeOffer: 'Ver qué ofrecemos',
-    flash: 'Hecho: ya sabes lo que vendes.',
+    flash: 'Hecho: ya sabes lo que vendes.', yourCentre: 'Tu centro',
   },
   topic: {
     eyebrow: 'Aprende', fit: 'Dónde encaja', star: 'Estrella', see: 'Verlo como el cliente', close: 'Cerrar', why: 'Cuándo usarla y por qué funciona',
@@ -55,7 +55,7 @@ export const learnMessages = defineMessages({
       eyebrow: 'What you sell', title: 'How it works, end to end', lede: 'What the guest experiences and what the buyer gets.',
       got: 'Got it', gotNext: 'Got it: now, what we offer', back: 'Back to Learn', backWelcome: 'Back to the welcome',
       empty: 'Your company has not prepared this tour yet. Meanwhile, see what we offer.', seeOffer: 'See what we offer',
-      flash: 'Done: you know what you sell.',
+      flash: 'Done: you know what you sell.', yourCentre: 'Your centre',
     },
     topic: {
       eyebrow: 'Learn', fit: 'Where it fits', star: 'Star', see: 'See it as the customer', close: 'Close', why: 'When to use it and why it works',
@@ -87,7 +87,7 @@ export const learnMessages = defineMessages({
       eyebrow: 'O que você vende', title: 'Como funciona, do início ao fim', lede: 'O que o convidado vive e o que ganha quem contrata.',
       got: 'Entendi', gotNext: 'Entendi: agora, o que oferecemos', back: 'Voltar para Aprenda', backWelcome: 'Voltar às boas-vindas',
       empty: 'Sua empresa ainda não preparou este percurso. Enquanto isso, veja o que oferecemos.', seeOffer: 'Ver o que oferecemos',
-      flash: 'Feito: você já sabe o que vende.',
+      flash: 'Feito: você já sabe o que vende.', yourCentre: 'Seu centro',
     },
     topic: {
       eyebrow: 'Aprenda', fit: 'Onde encaixa', star: 'Estrela', see: 'Ver como o cliente', close: 'Fechar', why: 'Quando usar e por que funciona',
@@ -119,7 +119,7 @@ export const learnMessages = defineMessages({
       eyebrow: '무엇을 파나요', title: '처음부터 끝까지, 이렇게 작동합니다', lede: '게스트가 경험하는 것과 계약한 사람이 얻는 것.',
       got: '이해했어요', gotNext: '이해했어요: 이제 제공하는 것 보기', back: '판매 배우기로 돌아가기', backWelcome: '환영 안내로 돌아가기',
       empty: '아직 회사에서 이 안내를 준비하지 않았습니다. 그동안 제공하는 것을 살펴보세요.', seeOffer: '제공하는 것 보기',
-      flash: '완료: 이제 무엇을 파는지 알아요.',
+      flash: '완료: 이제 무엇을 파는지 알아요.', yourCentre: '우리 센터',
     },
     topic: {
       eyebrow: '배우기', fit: '잘 맞는 곳', star: '핵심', see: '고객 화면으로 보기', close: '닫기', why: '언제 쓰고 왜 효과가 있는지',

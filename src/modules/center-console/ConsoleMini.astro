@@ -1,0 +1,54 @@
+---
+/**
+ * La consola del centro en pequeño, fija en una vista (Aprende: recorrido, sector). La misma app que la diapositiva
+ * (ConsoleApp.astro), con su marco de navegador; se escala al ancho que tenga (en móvil, la versión compacta sin lateral).
+ * Las cifras y los nombres son de ejemplo: lo dice la etiqueta.
+ */
+import ConsoleApp from './ConsoleApp.astro';
+import { centerConsoleSchema, CONSOLE_VIEWS, type CenterConsoleProps } from './schema';
+
+interface Props { props?: unknown; view: string; center?: string; logo?: string | null; class?: string }
+const { props, view, center = 'Tu centro de buceo', logo = null, class: cls } = Astro.props;
+const parsed = centerConsoleSchema.safeParse(props ?? {});
+const p: CenterConsoleProps | null = parsed.success ? parsed.data : null;
+const first = (CONSOLE_VIEWS as readonly string[]).includes(view) ? (view as CenterConsoleProps['views'][number]['view']) : 'today';
+const sample = p?.sample ?? centerConsoleSchema.shape.sample.parse({});
+const label = p?.exampleLabel ?? 'Datos de ejemplo';
+---
+<div class:list={['cm', cls]} data-console-mini>
+  <div class="cm__chrome" aria-hidden="true"><i></i><i></i><i></i><span>oquea.app</span></div>
+  <div class="cm__viewport" data-viewport>
+    <ConsoleApp first={first} sample={sample} center={center} logo={logo} />
+  </div>
+  {label && <span class="cm__example">{label}</span>}
+</div>
+
+<script>
+  // Escala la consola (1180 de ancho, o 720 en compacto) al ancho de su marco.
+  const fit = (root: HTMLElement) => {
+    const viewport = root.querySelector<HTMLElement>('[data-viewport]');
+    const app = root.querySelector<HTMLElement>('[data-app]');
+    if (!viewport || !app) return;
+    const w = viewport.clientWidth || 1;
+    const compact = w < 520;
+    app.classList.toggle('is-compact', compact);
+    viewport.style.setProperty('--s', String(Math.min(1, w / (compact ? 720 : 1180))));
+  };
+  const mount = () => document.querySelectorAll<HTMLElement>('[data-console-mini]').forEach((root) => {
+    if (root.dataset.ready) return;
+    root.dataset.ready = '1';
+    fit(root);
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => fit(root)).observe(root);
+  });
+  mount();
+  document.addEventListener('astro:page-load', mount);
+</script>
+
+<style>
+  .cm { position: relative; width: 100%; border-radius: 14px; border: 1px solid #e6e8ee; background: #fff; overflow: hidden; box-shadow: 0 20px 50px rgb(0 0 0 / .28); }
+  .cm__chrome { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-bottom: 1px solid #eeeef2; background: #fbfbfb; }
+  .cm__chrome i { width: 8px; height: 8px; border-radius: 99px; background: #e2e4ea; }
+  .cm__chrome span { margin-left: 10px; padding: 2px 10px; border-radius: 99px; background: #f1f2f5; font-size: 10px; color: #8a8f9a; }
+  .cm__viewport { position: relative; overflow: hidden; height: calc(640px * var(--s, .5)); }
+  .cm__example { position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 99px; background: rgb(31 41 76 / .75); color: #fff; font-size: 10px; }
+</style>

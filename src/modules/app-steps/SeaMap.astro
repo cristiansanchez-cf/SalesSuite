@@ -1,0 +1,73 @@
+---
+/**
+ * El mapa de Oquea en pequeño, con su sistema de marcadores («the buoy», entrega de Cristian del 6-oct-2026):
+ * el agua habla en formas redondas que flotan (punto de inmersión: boya azul con bandera y ola) y la tierra en etiquetas
+ * cuadradas (centro: navy; ONG: acento; evento suelto: azul CTA). Un evento es una insignia arriba a la derecha, no otro
+ * marcador. El seleccionado crece con un halo del acento. Los grupos son un círculo con el número. Contorno blanco, sin
+ * sombras. SVG originales en tenants/oquea/assets/img/mapa/ (copia aquí, en markers/).
+ * Fondo: costa (tierra #EFEBE0), agua #DCEAF9 y líneas de profundidad, como el mapa de la app (MapTiler).
+ */
+import SITE from './markers/punto-inmersion.svg?raw';
+import CENTRE from './markers/centro.svg?raw';
+import NGO from './markers/ong.svg?raw';
+import EVENT from './markers/evento.svg?raw';
+import CENTRE_EV from './markers/centro-evento.svg?raw';
+import NGO_EV from './markers/ong-evento.svg?raw';
+import SITE_EV from './markers/punto-evento.svg?raw';
+
+type Kind = 'site' | 'centre' | 'ngo' | 'event';
+interface Marker { kind: Kind; x: number; y: number; label?: string; badge?: boolean; selected?: boolean }
+interface Props { center: string; site: string; focus?: 'centre' | 'site' | 'ngo'; class?: string }
+const { center, site, focus = 'centre', class: cls } = Astro.props;
+const SVG: Record<Kind, string> = { site: SITE, centre: CENTRE, ngo: NGO, event: EVENT };
+// Con evento: los SVG de la entrega que ya llevan la insignia (centro y ONG en 56×56; punto de inmersión en 64×64).
+const SVG_EV: Partial<Record<Kind, string>> = { centre: CENTRE_EV, ngo: NGO_EV, site: SITE_EV };
+const BADGE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#3757BE" stroke="#fff" stroke-width="2.6"/><path transform="translate(4.6 4.4) scale(.42)" d="M24.0004 18.4355L26.7135 24.0703L32.87 24.9051L28.383 28.8703L29.6352 34.8182L24.0004 31.6877L18.3656 34.8182L19.6178 28.8703L15.1309 24.9051L21.2874 24.0703L24.0004 18.4355Z" fill="#D0FF00"/></svg>';
+const markers: Marker[] = [
+  { kind: 'centre', x: 26, y: 25, label: center, badge: true, selected: focus === 'centre' },
+  { kind: 'ngo', x: 76, y: 22, label: 'Mar Limpio ONG', badge: true, selected: focus === 'ngo' },
+  { kind: 'site', x: 22, y: 52, label: site, selected: focus === 'site' },
+  { kind: 'site', x: 64, y: 60, label: 'Shark Point', badge: true },
+  { kind: 'site', x: 84, y: 44 },
+  { kind: 'site', x: 40, y: 78, label: 'Los Cañones' },
+];
+---
+<div class:list={['sm', cls]} aria-hidden="true">
+  <svg class="sm__bg" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <rect width="100" height="100" fill="#dceaf9" />
+    <path d="M0 0H100V36C88 40 80 32 68 37S48 44 36 39 14 33 0 39Z" fill="#efebe0" />
+    <path d="M0 40C14 34 28 41 40 39S64 33 74 38 92 41 100 37" fill="none" stroke="#c8dbf5" stroke-width=".7" />
+    <path d="M0 66C16 60 30 68 46 64S70 58 82 63 96 66 100 62" fill="none" stroke="#c8dbf5" stroke-width=".7" opacity=".6" />
+  </svg>
+  <span class="sm__depth" style="top:42%">-25</span><span class="sm__depth" style="top:68%">-50</span>
+  <span class="sm__cluster" style="left:50%;top:38%"><b>7</b></span>
+  {markers.map((m) => (
+    <span class:list={['sm__m', `sm__m--${m.kind}`, m.selected && 'is-sel']} style={`left:${m.x}%;top:${m.y}%`}>
+      {m.badge && SVG_EV[m.kind] ? <span class:list={['sm__pin', 'sm__pin--ev', `sm__pin--ev-${m.kind}`]} set:html={SVG_EV[m.kind]} /> : <span class="sm__pin" set:html={SVG[m.kind]} />}
+      {m.badge && !SVG_EV[m.kind] && <span class="sm__badge" set:html={BADGE} />}
+      {m.label && <b class="sm__label">{m.label}</b>}
+    </span>
+  ))}
+</div>
+
+<style>
+  .sm { position: absolute; inset: 0; overflow: hidden; font-family: var(--font-sans, inherit); }
+  .sm__bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sm__depth { position: absolute; left: 6%; color: #8a8f9c; font-size: 10px; font-style: italic; font-weight: 600; }
+  .sm__m { position: absolute; width: 40px; height: 54px; margin: -27px 0 0 -20px; display: grid; justify-items: center; }
+  .sm__pin { display: block; width: 40px; height: 54px; }
+  .sm__pin :global(svg) { width: 100%; height: 100%; }
+  /* Los de evento: centro y ONG 56×56 (la etiqueta a la izquierda), punto 64×64 */
+  .sm__pin--ev-centre, .sm__pin--ev-ngo { width: 47px; height: 47px; margin-left: 7px; }
+  .sm__pin--ev-site { width: 53px; height: 53px; margin-left: 6px; }
+  .sm__badge { position: absolute; top: 2px; right: -8px; width: 20px; height: 20px; }
+  .sm__badge :global(svg) { width: 100%; height: 100%; }
+  .sm__m--site .sm__badge { top: 12px; right: -10px; }
+  .sm__label { position: absolute; top: 100%; margin-top: -2px; padding: 2px 8px; border-radius: 6px; background: #fff; color: #292929; font-size: 10.5px; font-weight: 700; white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+  /* Seleccionado: más grande y con el halo del acento (el único sitio donde el acento se extiende) */
+  .sm__m.is-sel { z-index: 2; transform: scale(1.3); }
+  .sm__m.is-sel::before { content: ''; position: absolute; left: 50%; top: 52%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 99px; background: rgb(208 255 0 / .28); }
+  .sm__m.is-sel .sm__label { transform: scale(.78); transform-origin: top center; }
+  .sm__cluster { position: absolute; display: grid; place-items: center; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 99px; background: rgb(200 219 245 / .3); }
+  .sm__cluster b { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 99px; background: #3757be; box-shadow: 0 0 0 3px #fff; color: #fff; font-size: 14px; }
+</style>

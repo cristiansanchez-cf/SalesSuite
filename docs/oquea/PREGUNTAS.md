@@ -23,7 +23,7 @@
 - [ ] 15. Cuándo contactar a un centro (día y hora): sin dato validado.
 
 ## C · Choques con lo cargado antes (decide)
-- [x] 16. ✅ Nombre y logo. La guía decía que la tarjeta lleva el **logo** del centro; el 01, el **nombre**. He dejado el nombre. ¿Lleva también el logo?
+- [x] 16. ✅ **Solo el nombre** (Cristian, 6-oct, tarde: «el centro puede quedar fatal»; `apply-oquea-07.py`). Antes: nombre y logo. La guía decía que la tarjeta lleva el **logo** del centro; el 01, el **nombre**. He dejado el nombre. ¿Lleva también el logo?
 - [x] 17. ✅ Vale. «Verificado en menos de 24 h» (lo confirmaste) no está en el 01 ni en el 05. Está como jugada, no en el dossier. ¿Así?
 - [ ] 18. «¿Prefieres que lo hagamos por ti?» (Oquea da de alta los dive sites y ayuda a configurar), de la guía: ¿sigue siendo un servicio? Está como jugada.
 - [ ] 19. Actividades recurrentes («Prográmalas», de la guía): no están en la lista cerrada y las he quitado. ¿Existen?
@@ -37,6 +37,13 @@
 - [ ] 25. 🟡 ONG cargada de palabra (`apply-oquea-ong.py`): falta documento y confirmar qué remarketing existe hoy. Catálogos para ONG, tour operador y federación o certificadora.
 - [ ] 26. Traducciones: coreano, portugués de Brasil e inglés, revisadas por alguien del país.
 - [ ] 27. Documentos que faltan: 02 (mercado completo), 04 (tarifas cuando las haya), 06 (casos, cuando existan), 07 (equipo comercial).
+
+## D2 · UI nueva (6-oct, tarde)
+- [ ] 32. Tarjetas para redes: ¿**viaje** y **especie** están en producción? Hoy solo salen inmersión, récord e hito (las confirmadas).
+- [ ] 33. Fotos de ejemplo **sin** el sticker (las 5 que mandaste ya lo llevan, y en inglés): pásalas como archivo y las pongo de fondo. Mientras, las busca el alta en Openverse (CC0 / dominio público).
+- [ ] 34. La pestaña **Feed** de la barra de abajo (sale en la foto del álbum): ¿en producción? No la he puesto.
+- [ ] 35. Mapa interactivo con **MapTiler** (el mismo estilo que la app): necesita la clave de MapTiler y el ID del estilo. Lo dejamos para después, como dijiste.
+- [ ] 36. Álbum: «Útil para tus buceadores» / «Y lo comparten: publicidad que no pagas» los he redactado yo a partir de lo que dijiste. ¿Valen?
 
 ## E · Puesta en marcha (tuyo)
 - [ ] 28. DNS de `oquea.ventas.cofundo.io` en GoDaddy y dominio en Vercel.

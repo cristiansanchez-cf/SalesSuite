@@ -170,7 +170,7 @@ const firstTab = view.sections[0]?.kind ?? 'team';
 </AdminLayout>
 
 <style>
-  .topic-general-bg { background: radial-gradient(circle at 20% 20%, var(--co-signal, #7c3aed), transparent 60%), radial-gradient(circle at 80% 70%, var(--co-signal-badge, #cbb6ff), transparent 55%), #121014; filter: none; }
+  .topic-general-bg { background: radial-gradient(circle at 20% 20%, var(--tn-primary, #7c3aed), transparent 60%), radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--tn-accent, #cbb6ff) 45%, transparent), transparent 55%), var(--tn-dark, #121014); filter: none; }
   .topic-tabs { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
   .topic-tab { display: inline-flex; flex-shrink: 0; align-items: center; gap: .5rem; border: 1px solid var(--console-border, rgba(127,127,127,.3)); border-radius: 999px; padding: .55rem 1.1rem; font-weight: 600; white-space: nowrap; }
   .topic-tab[aria-selected='true'] { border-color: transparent; background: var(--console-ink, #111); color: var(--console-bg, #fff); }

@@ -24,6 +24,8 @@ describe('Aprende: recorrido y portadas', () => {
     // UI en vez de foto: solo las formas conocidas.
     const u = tourOf([{ title: 'a', ui: 'phone:scan' }, { title: 'b', ui: 'screen:club.photo,tp.photo' }, { title: 'c', ui: 'report' }, { title: 'd', ui: '<script>' }]);
     expect(u.map((x) => x.ui)).toEqual(['phone:scan', 'screen:club.photo,tp.photo', 'report', null]);
+    const o = tourOf([{ title: 'a', ui: 'app:dive-saved' }, { title: 'b', ui: 'console:crm' }, { title: 'c', ui: 'app:' }, { title: 'd', ui: 'console:a b' }]);
+    expect(o.map((x) => x.ui)).toEqual(['app:dive-saved', 'console:crm', null, null]);
     expect(tourOf({ title: 'x' })).toEqual([]);
   });
 });

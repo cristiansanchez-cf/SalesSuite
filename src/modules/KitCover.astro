@@ -21,8 +21,8 @@ const phone = kit.phone ? phoneTourSchema.safeParse(kit.phone) : null;
 )}
 
 <style>
-  .kc { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #0d0a12; }
-  .kc__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 20%, rgba(255,39,187,.3), transparent 55%); }
+  .kc { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: var(--tn-dark, #0d0a12); }
+  .kc__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 20%, color-mix(in srgb, var(--tn-primary, #ff27bb) 30%, transparent), transparent 55%); }
   .kc__screen { position: absolute; right: 8%; top: 7%; width: 76%; }
   .kc__phone { position: absolute; right: 3%; top: 22%; transform: rotate(5deg); }
 </style>

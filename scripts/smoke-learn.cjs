@@ -1,6 +1,7 @@
 /**
  * Smoke de Aprende (docs/PLAYBOOK.md §Aprender): en orden, con fotos, progreso en positivo y un «sigue por aquí».
  * Recorrido del producto → «Entendido» → sector con foto, cliente ideal (ES/EN), «Imagínatelo» con la propuesta real.
+ * Oquea (demo, oquea.localhost): el recorrido pinta la UI de su app y de su consola (app:/console:), no capturas.
  *   npm run build && npm run start:demo ; node scripts/smoke-learn.cjs
  */
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -8,10 +9,13 @@ const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
 
-async function login(b, email, viewport = { width: 1440, height: 1000 }) {
+// Otro espacio = otro host (el tenant se resuelve por dominio); *.localhost apunta a la máquina.
+const OQUEA = BASE.replace(/\/\/[^:/]+/, '//oquea.localhost');
+
+async function login(b, email, viewport = { width: 1440, height: 1000 }, base = BASE) {
   const ctx = await b.newContext({ viewport, locale: 'es-ES' });
   const p = await ctx.newPage();
-  await p.goto(`${BASE}/admin/login`);
+  await p.goto(`${base}/admin/login`);
   await p.click(`[data-testid="demo-${email}"]`);
   await p.waitForURL(/\/admin/);
   return p;
@@ -81,5 +85,24 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }) {
     assert(over <= 1, `móvil ${path}: sin scroll horizontal (${over}px)`);
   }
   if (OUT) { await m.goto(`${BASE}/admin/learn`); await m.screenshot({ path: `${OUT}/learn-mobile.png`, fullPage: true }); }
+
+  // ---- Oquea: el recorrido con la UI de su app (móvil) y de su consola, con los colores de su tema
+  for (const viewport of [{ width: 1440, height: 1000 }, { width: 375, height: 812 }]) {
+    const o = await login(b, 'super@cofundo.test', viewport, OQUEA);
+    await o.goto(`${OQUEA}/admin/learn/tour`);
+    const kinds = await o.$$eval('[data-testid=tour-step]', (els) => els.map((e) => e.querySelector('[data-testid=tour-ui]')?.getAttribute('data-ui') ?? (e.querySelector('img') ? 'img' : 'nada')));
+    const w = viewport.width;
+    assert(kinds.length === 5 && kinds.every((k) => k === 'app' || k === 'console'), `Oquea ${w}px: los 5 pasos con UI, sin capturas (${kinds.join(', ')})`);
+    assert(kinds.includes('app') && kinds.includes('console'), `Oquea ${w}px: móvil de la app y consola del centro`);
+    assert((await o.locator('[data-testid=tour-ui] .as-phone').count()) === 4, `Oquea ${w}px: cuatro móviles con su pantalla`);
+    const cm = await o.locator('[data-testid=tour-ui] [data-console-mini] [data-viewport]').evaluate((e) => e.getBoundingClientRect().height);
+    assert(cm > 80, `Oquea ${w}px: la consola, escalada a su hueco (${Math.round(cm)}px de alto)`);
+    const blue = await o.locator('[data-testid=tour-ui] .tn-ui').first().evaluate((e) => getComputedStyle(e).getPropertyValue('--color-primary').trim());
+    assert(blue === '55 87 190', `Oquea ${w}px: la UI con el azul de su tema, no el de la consola (${blue})`);
+    const over = await o.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    assert(over <= 1, `Oquea ${w}px: sin scroll horizontal (${over}px)`);
+    if (OUT) await o.screenshot({ path: `${OUT}/learn-tour-oquea-${w}.png`, fullPage: true });
+    await o.context().close();
+  }
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

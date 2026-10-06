@@ -52,3 +52,11 @@ El **01 es la lista cerrada**: lo que no está en su sección 2 no se enseña. C
 - **Fecha** en la portada, **fecha de revisión** y **«[Nombre del comercial] · [teléfono]»** en el siguiente paso: la
   propuesta solo sabe poner el nombre del cliente. Por la regla del 05 («variable sin valor, no entra»), no salen.
   Hacen falta variables nuevas (comercial y fecha): ver `docs/oquea/PREGUNTAS.md`.
+
+## 6-oct-2026 (tarde) · UI nueva en el contenido (`apply-oquea-07.py`, `apply-oquea-08.py`)
+- La tarjeta lleva el **nombre** del centro, no su logo: fuera «y su logo» en el recorrido, «Tu nombre», «Compartir» y
+  las jugadas `campo-tarjeta` y `que-recibe-el-centro`.
+- Álbum: el texto literal del 05 se queda. Tarjetas redactadas por la sesión a partir de Cristian: «Útil para tus
+  buceadores. Descargan sus fotos y las de sus compañeros de salida.» · «Y lo comparten. Cada foto que comparten lleva
+  la inmersión con tu centro: publicidad que no pagas.» **Revisar.**
+- Datos de ejemplo de las pantallas (nombres, cifras, «Mar Limpio ONG», «Maldivas 2025 – Mantas»): inventados.

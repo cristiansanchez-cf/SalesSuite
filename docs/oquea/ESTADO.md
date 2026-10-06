@@ -30,6 +30,16 @@
   dossier de 11 módulos con texto literal y receta por ángulo, 66 jugadas. Detalle:
   `docs/ventas/oquea/agente/01-05-GUION-CARGADO.md`. Preguntas abiertas: **`docs/oquea/PREGUNTAS.md`**.
 
+- **Aprende con la UI de Oquea** (6-oct-2026): el recorrido «Así funciona» pinta las pantallas de la app recreadas,
+  no capturas (`scripts/apply-oquea-06.py`); miniaturas, portadas y sector con los colores de Oquea; diapositivas sin
+  pantalla en una columna. Capturas: `docs/oquea/img/aprende-recorrido-ui-escritorio.png` y `-movil.png`.
+
+- **UI de la app, 2ª entrega** (6-oct-2026, tarde): tarjetas para redes («estilo Strava»: un móvil que pasa de una a
+  otra; el nombre del centro, no su logo), logbook público, «¿qué actividad haces hoy?», la inmersión en el logbook,
+  álbum y foto, mapa con los marcadores de la entrega (`tenants/oquea/assets/img/mapa/`) y la ficha del marcador.
+  Scripts `apply-oquea-07.py` y `apply-oquea-08.py`. Fotos libres: `stock:<búsqueda>` (las resuelve el alta).
+  Capturas: `docs/oquea/img/app-*.png` y `tarjetas-redes-*.png`.
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)
