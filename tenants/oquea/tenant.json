@@ -68,34 +68,29 @@
   },
   "tour": [
     {
-      "title": "El centro pone su QR",
-      "body": "Uno por centro. En el barco, el mostrador o la entrada.",
-      "image": "asset:img/producto/app/12-qr-del-centro.png"
+      "title": "El centro crea la inmersión",
+      "body": "Hora, punto de inmersión y tipo. Los datos del punto ya están cargados.",
+      "image": "asset:img/producto/web/01-panel-centro-actividades.png"
     },
     {
-      "title": "El buceador lo escanea",
-      "body": "Desde el navegador del móvil, sin descargar nada. Entra en la actividad del día.",
+      "title": "El buceador escanea el QR",
+      "body": "Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.",
       "image": "asset:img/producto/web/02-registro-qr-logbook.png"
     },
     {
-      "title": "Guarda la inmersión en su logbook",
-      "body": "Un toque. Su inmersión queda guardada, con tu centro dentro.",
+      "title": "La inmersión queda en su logbook",
+      "body": "Con los datos del punto de inmersión ya rellenos.",
       "image": "asset:img/producto/app/19-inmersion-guardada.png"
     },
     {
-      "title": "El centro lo ve en su CRM",
-      "body": "Historial, inmersiones, certificaciones y datos de cada buceador.",
+      "title": "Al centro le queda la lista",
+      "body": "Quién ha buceado con él y cuántas veces, con su histórico.",
       "image": "asset:img/producto/web/04-crm-perfil-buceador.png"
     },
     {
-      "title": "Comparte la inmersión, con el logo del centro",
-      "body": "Marketing orgánico para el centro.",
+      "title": "Su nombre en cada tarjeta",
+      "body": "Cada vez que un buceador comparte su inmersión, sale el nombre del centro.",
       "image": "asset:img/fotos/share-card-aerea.png"
-    },
-    {
-      "title": "El centro organiza sus salidas",
-      "body": "Actividades ligadas a un dive site, programadas una vez.",
-      "image": "asset:img/producto/web/01-panel-centro-actividades.png"
     }
   ],
   "domains": [
@@ -117,56 +112,272 @@
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
-      "description": "La primera diapositiva: para quién es y la promesa de la guía («en minutos»).",
+      "description": "Titular según el ángulo, con el nombre del centro.",
       "props": {
         "tone": "dark",
-        "eyebrow": "Para {company}",
-        "title": "Empieza a usar Oquea en minutos.",
-        "highlight": "Oquea",
-        "lede": "Paso a paso, desde el registro hasta tener tu centro activo, tu QR listo y tus buceadores conectados.",
-        "screens": [
-          {
-            "screen": "access"
-          }
-        ],
+        "eyebrow": "Oquea",
+        "title": "{company}: quién bucea contigo, y cuántas veces",
+        "highlight": "{company}",
+        "mark": "asset:isotipo-blanco.svg",
         "photo": "asset:img/fotos/share-card-bg.webp"
       }
     },
     {
       "key": "como-funciona",
       "block_type": "app-steps",
-      "name": "Cómo funciona: escanean, tú los ves",
+      "name": "Cómo funciona",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
-      "description": "El argumento en tres pasos (guía, diapositiva 13): escanean tu QR, los ves en tu CRM y comparten con tu logo.",
+      "description": "Los tres pasos: creas la inmersión, el buceador escanea, a ti te queda el registro.",
       "props": {
-        "title": "Tus buceadores escanean, tú los ves",
-        "highlight": "buceadores",
-        "lede": "Cuando un buceador escanea tu QR, queda conectado a tu centro. Tú lo ves en tu CRM y él puede compartir su inmersión.",
+        "title": "Cómo funciona",
         "cards": [
           {
+            "icon": "calendar",
+            "title": "1. Creas la inmersión.",
+            "body": "Hora, punto de inmersión y tipo. Los datos del punto ya están cargados: profundidad máxima, tiempo habitual, visibilidad, vida marina."
+          },
+          {
             "icon": "qr",
-            "title": "El buceador escanea el QR",
-            "body": "Entra en la actividad del día y registra su inmersión al momento."
+            "title": "2. El buceador escanea tu QR.",
+            "body": "Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada."
           },
           {
             "icon": "users",
-            "title": "Tú lo ves en tu CRM",
-            "body": "Historial, inmersiones, certificaciones y datos de cada buceador."
-          },
-          {
-            "icon": "share",
-            "title": "Ellos comparten la inmersión",
-            "body": "Con tu logo. Marketing orgánico para tu centro."
+            "title": "3. A ti te queda el registro.",
+            "body": "Cada buceador que guarda una inmersión entra en tu lista, con todo lo que ha hecho contigo."
           }
         ],
         "screens": [
           {
-            "screen": "dive-saved"
+            "screen": "create-activity"
           },
           {
+            "screen": "qr-activity"
+          },
+          {
+            "screen": "crm-list"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "tu-nombre",
+      "block_type": "app-steps",
+      "name": "Tu nombre en cada inmersión",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Las tarjetas que exporta el buceador, con el nombre del centro.",
+      "props": {
+        "title": "Tu nombre en cada inmersión",
+        "highlight": "Tu nombre",
+        "lede": "El buceador puede exportar una tarjeta de su inmersión para compartirla. Hay tres: la de la inmersión, la de récord personal y la de hito.",
+        "cards": [
+          {
+            "icon": "check",
+            "title": "En todas aparece el nombre de tu centro."
+          }
+        ],
+        "screens": [
+          {
             "screen": "share-card"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "tus-buceadores",
+      "block_type": "app-steps",
+      "name": "Tus buceadores",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La lista de quién ha buceado con el centro y cuántas veces.",
+      "props": {
+        "title": "Tus buceadores",
+        "highlight": "buceadores",
+        "lede": "Tu lista de buceadores se llena sola: cada persona que guarda una inmersión con tu QR aparece en ella, con su histórico en tu centro.",
+        "cards": [
+          {
+            "icon": "mail",
+            "title": "También puedes añadir buceadores a mano.",
+            "body": "Reciben un correo para confirmar."
+          },
+          {
+            "icon": "users",
+            "title": "Hoy la lista sirve para saber quién ha buceado contigo y cuántas veces."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "crm-list"
+          },
+          {
+            "screen": "crm-diver"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "perfil-y-mapa",
+      "block_type": "app-steps",
+      "name": "Tu perfil y el mapa",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El perfil público del centro y el mapa de Oquea.",
+      "props": {
+        "title": "Tu perfil y el mapa",
+        "highlight": "el mapa",
+        "lede": "Tu centro tiene un perfil público en Oquea: web, idiomas, ubicación, equipo, certificadoras y contacto.",
+        "cards": [
+          {
+            "icon": "pin",
+            "title": "Aparece en el mapa junto a los puntos de inmersión y los demás centros.",
+            "body": "Hoy el mapa cubre España, Latinoamérica y Corea."
+          }
+        ],
+        "screens": [
+          {
+            "screen": "map"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "album",
+      "block_type": "app-steps",
+      "name": "El álbum",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El álbum compartido de cada inmersión, 30 días.",
+      "props": {
+        "title": "El álbum de cada inmersión",
+        "highlight": "álbum",
+        "lede": "Cada inmersión tiene un álbum compartido. El centro y los buceadores suben sus fotos y todo el grupo las ve, durante treinta días. Sin pedir teléfonos.",
+        "screens": [
+          {
+            "screen": "album"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "eventos",
+      "block_type": "app-steps",
+      "name": "Eventos de ONG",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Los eventos que organizan las ONGs con varios centros.",
+      "props": {
+        "title": "Eventos con varios centros",
+        "highlight": "Eventos",
+        "lede": "Las ONGs organizan eventos en Oquea, como limpiezas, en los que participan varios centros a la vez. La gente se inscribe desde el mapa en el centro más cercano, y tú ves quién va a venir al tuyo.",
+        "screens": [
+          {
+            "screen": "event"
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "red-fundadores",
+      "block_type": "app-steps",
+      "name": "Red de centros fundadores",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La red, contada según el ángulo. Sin cifras.",
+      "props": {
+        "title": "La red de centros fundadores",
+        "highlight": "centros fundadores",
+        "lede": "Lo que venga después de la lista de buceadores lo vamos a construir con los centros fundadores. Sois los que decís qué hace falta.",
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "en-preparacion",
+      "block_type": "app-steps",
+      "name": "En preparación",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Solo con el ángulo de cobro online, en España y en argumentario.",
+      "props": {
+        "title": "En preparación.",
+        "lede": "Reserva y cobro online desde Oquea. No está disponible todavía. Se avisará a los centros fundadores cuando lo esté.",
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "condiciones",
+      "block_type": "app-steps",
+      "name": "Condiciones",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Lo que hoy hace las veces de precio: qué no cuesta, la comisión, lo que vendrá y lo que pedimos.",
+      "props": {
+        "title": "Condiciones",
+        "cards": [
+          {
+            "icon": "check",
+            "title": "Hoy.",
+            "body": "El alta, el QR, el logbook de tus buceadores, la lista y el perfil en el mapa no tienen coste."
+          },
+          {
+            "icon": "users",
+            "title": "Cuando Oquea te lleve un cliente nuevo.",
+            "body": "Oquea se queda un 10 % de esa reserva, en los términos del acuerdo. Si no hay reserva, no hay comisión."
+          },
+          {
+            "icon": "sparkle",
+            "title": "Más adelante.",
+            "body": "Habrá funciones de pago. Se presentarán antes a los centros fundadores, y cada centro decidirá si las contrata."
+          },
+          {
+            "icon": "send",
+            "title": "Lo que pedimos.",
+            "body": "El acuerdo firmado, el QR a la vista en el barco o en el local, y que el equipo lo mencione en el briefing."
+          }
+        ],
+        "photo": "asset:img/fotos/share-card-bg.webp"
+      }
+    },
+    {
+      "key": "siguiente-paso",
+      "block_type": "app-steps",
+      "name": "Siguiente paso",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Los tres gestos de la visita.",
+      "props": {
+        "tone": "dark",
+        "title": "Siguiente paso",
+        "mark": "asset:isotipo-blanco.svg",
+        "cards": [
+          {
+            "icon": "send",
+            "title": "1. Firmamos el acuerdo de centro fundador."
+          },
+          {
+            "icon": "calendar",
+            "title": "2. Damos de alta el centro y creamos tu primera inmersión."
+          },
+          {
+            "icon": "qr",
+            "title": "3. Dejamos el QR puesto."
           }
         ],
         "photo": "asset:img/fotos/share-card-bg.webp"
@@ -176,7 +387,7 @@
       "key": "consola",
       "block_type": "center-console",
       "name": "Consola del centro",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "La consola de escritorio: lo de hoy, quién viene, el CRM y tu centro. Interactiva.",
@@ -213,7 +424,7 @@
       "key": "registro-qr",
       "block_type": "app-steps",
       "name": "Registro de inmersiones por QR",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "Lo que vive el buceador: escanea, ve la actividad del día y la guarda en su logbook. Sin instalar nada.",
@@ -253,7 +464,7 @@
       "key": "crm",
       "block_type": "app-steps",
       "name": "CRM del centro",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "Cada buceador que escanea entra en el CRM del centro, con su historial y sus datos.",
@@ -293,7 +504,7 @@
       "key": "compartir",
       "block_type": "app-steps",
       "name": "Compartir la inmersión",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "La tarjeta para redes con los datos de la inmersión y el logo del centro.",
@@ -325,7 +536,7 @@
       "key": "qr-del-centro",
       "block_type": "app-steps",
       "name": "Tu QR",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "El QR único del centro: dónde ponerlo y para qué sirve.",
@@ -357,7 +568,7 @@
       "key": "actividades",
       "block_type": "app-steps",
       "name": "Actividades",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "Crear actividades ligadas a un dive site, y programarlas una vez para todos los días.",
@@ -397,7 +608,7 @@
       "key": "dive-sites",
       "block_type": "app-steps",
       "name": "Dive sites",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "Los puntos de inmersión del centro. Si lo prefiere, Oquea se los da de alta.",
@@ -434,7 +645,7 @@
       "key": "equipo",
       "block_type": "app-steps",
       "name": "Equipo del centro",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "Instructores y divemasters dentro del centro, invitados con un enlace.",
@@ -466,7 +677,7 @@
       "key": "alta-centro",
       "block_type": "app-steps",
       "name": "Alta del centro",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "Cómo queda el centro en Oquea: datos, unidades, logo y fotos, y verificación en menos de 24 h.",
@@ -513,7 +724,7 @@
       "key": "cierre",
       "block_type": "app-steps",
       "name": "Cierre",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
       "description": "La última diapositiva: estamos aquí, con el contacto directo.",
@@ -550,67 +761,87 @@
       "name": "Centros de buceo",
       "icon": "anchor",
       "image": "asset:img/fotos/share-card-bg.webp",
-      "description": "Centros que organizan salidas, cursos e inmersiones, con su barco, su mostrador y su equipo.",
-      "value_prop": "Tus buceadores escanean tu QR y quedan conectados a tu centro: los ves en tu CRM y, cuando comparten la inmersión, sale tu logo. Marketing orgánico para tu centro.",
-      "icp": null,
+      "description": "Centros de buceo que crean sus inmersiones y quieren saber quién bucea con ellos. Un mismo centro puede ser destino (recibe buceadores de fuera) y emisor (sus buceadores viajan).",
+      "value_prop": "El buceador escanea el QR del centro y la inmersión se guarda en su logbook digital ya rellena. El centro obtiene la lista de los buceadores que han pasado por él, con su histórico.",
+      "icp": "Centro destino: quiere recibir buceadores de otros países (Latinoamérica, validado en la feria de Brasil; Corea, SUPUESTO). Centro emisor: tiene buceadores locales que viajan (España, SUPUESTO; aún no se le ha planteado a nadie).",
       "disqualifiers": null,
-      "buying_process": null,
-      "deal_size": null,
-      "sales_cycle": null,
-      "notice": "Contenido de partida, sacado de la guía de inicio y de la web. Faltan cliente ideal, actores, precios y casos (documentos 01–07 del negocio). No hables de precio hasta que esté la tarifa.",
+      "buying_process": "Decide el dueño o el instructor jefe (SUPUESTO del sector). Lo ejecuta la persona que está en el barco y dice «escanead el QR»: si le supone trabajo extra, el QR no se usa (SUPUESTO).",
+      "deal_size": "Sin coste: acuerdo de centro fundador. Comisión del 10 % solo sobre clientes nuevos que lleve Oquea, en los términos del acuerdo.",
+      "sales_cycle": "Una visita: acuerdo firmado y QR puesto con una inmersión creada. Si no, un siguiente paso con fecha.",
+      "notice": "Oquea no tiene todavía clientes de pago ni datos de uso: no hay casos, cifras ni testimonios que citar. Solo se enseña la lista cerrada del producto. El objetivo de la visita: acuerdo firmado y QR puesto.",
       "modules": [
         {
           "module_key": "como-funciona",
           "priority": 1,
-          "fit": "El argumento entero en una diapositiva."
+          "fit": "Siempre: los tres pasos."
         },
         {
-          "module_key": "consola",
+          "module_key": "tu-nombre",
           "priority": 1,
-          "fit": "Lo que compra un centro: su día a día en el ordenador."
+          "fit": "Siempre que quepa: su nombre en cada tarjeta."
         },
         {
-          "module_key": "crm",
+          "module_key": "condiciones",
           "priority": 1,
-          "fit": "Lo que gana quien paga: sus buceadores, por fin en una lista."
+          "fit": "Siempre: lo que hoy hace las veces de precio."
         },
         {
-          "module_key": "compartir",
-          "priority": 1,
-          "fit": "Marketing orgánico: cada tarjeta lleva su logo."
-        },
-        {
-          "module_key": "registro-qr",
+          "module_key": "tus-buceadores",
           "priority": 2,
-          "fit": "Para enseñar lo fácil que es para el buceador."
+          "fit": "Ángulo «que vuelvan» o si no guarda datos de sus buceadores."
         },
         {
-          "module_key": "qr-del-centro",
+          "module_key": "perfil-y-mapa",
           "priority": 2,
-          "fit": "Lo único que tiene que hacer el centro: poner el QR."
+          "fit": "Ángulos «abrir mercado» y «viaje de club»."
         },
         {
-          "module_key": "actividades",
-          "priority": 2,
-          "fit": "Para centros con salidas diarias."
-        },
-        {
-          "module_key": "alta-centro",
+          "module_key": "album",
           "priority": 3,
-          "fit": "Para quitar el miedo a «otra herramienta»."
+          "fit": "Si comparte fotos con sus clientes."
         },
         {
-          "module_key": "equipo",
+          "module_key": "eventos",
           "priority": 3,
-          "fit": "Centros con instructores y divemasters."
-        },
-        {
-          "module_key": "dive-sites",
-          "priority": 3,
-          "fit": "Si pregunta por el trabajo de montarlo."
+          "fit": "Si colabora con una ONG."
         }
       ],
-      "personas": [],
+      "personas": [
+        {
+          "key": "dueno-centro",
+          "name": "Dueño o instructor jefe",
+          "role": "decisor",
+          "goals": "Abrir mercado internacional (centro destino). PENDIENTE en el centro emisor.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "desconfianza",
+            "tiempo",
+            "ya_tengo_proveedor"
+          ],
+          "how_to_approach": "En persona, con el móvil en la mano: primero se pregunta, luego se enseña. SUPUESTO general del sector, sin validar por cuenta.",
+          "avoid": "Abrir con lo que está por llegar (pasarela, red internacional): entiende que hoy no hay nada.",
+          "can_help": "Firma el acuerdo de centro fundador.",
+          "can_block": "No firma o firma y no pone el QR.",
+          "angles": []
+        },
+        {
+          "key": "quien-esta-en-el-barco",
+          "name": "Quien está en el barco",
+          "role": "usuario",
+          "goals": null,
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Pregunta en el descubrimiento quién dirá «escanead el QR» y enséñale lo único que tiene que hacer. SUPUESTO por validar en campo.",
+          "avoid": "Que le suponga trabajo extra.",
+          "can_help": "Lo menciona en el briefing y el QR se usa.",
+          "can_block": "Si le supone trabajo extra, el QR no se usa.",
+          "angles": []
+        }
+      ],
       "proposal": {
         "blocks": {
           "portada": {
@@ -621,139 +852,317 @@
             "module": "como-funciona",
             "props": {}
           },
-          "consola": {
-            "module": "consola",
+          "tu-nombre": {
+            "module": "tu-nombre",
             "props": {}
           },
-          "registro-qr": {
-            "module": "registro-qr",
+          "tus-buceadores": {
+            "module": "tus-buceadores",
             "props": {}
           },
-          "crm": {
-            "module": "crm",
+          "perfil-y-mapa": {
+            "module": "perfil-y-mapa",
             "props": {}
           },
-          "compartir": {
-            "module": "compartir",
+          "album": {
+            "module": "album",
             "props": {}
           },
-          "qr-del-centro": {
-            "module": "qr-del-centro",
+          "eventos": {
+            "module": "eventos",
             "props": {}
           },
-          "actividades": {
-            "module": "actividades",
+          "red-fundadores": {
+            "module": "red-fundadores",
             "props": {}
           },
-          "dive-sites": {
-            "module": "dive-sites",
+          "en-preparacion": {
+            "module": "en-preparacion",
             "props": {}
           },
-          "equipo": {
-            "module": "equipo",
+          "condiciones": {
+            "module": "condiciones",
             "props": {}
           },
-          "alta-centro": {
-            "module": "alta-centro",
+          "siguiente-paso": {
+            "module": "siguiente-paso",
             "props": {}
           },
-          "cierre": {
-            "module": "cierre",
-            "props": {}
+          "como-funciona-v": {
+            "module": "como-funciona",
+            "props": {
+              "cards": [
+                {
+                  "icon": "calendar",
+                  "title": "1. Creas la inmersión."
+                },
+                {
+                  "icon": "qr",
+                  "title": "2. El buceador escanea tu QR."
+                },
+                {
+                  "icon": "users",
+                  "title": "3. A ti te queda el registro."
+                }
+              ]
+            }
+          },
+          "red-fundadores-v": {
+            "module": "red-fundadores",
+            "props": {
+              "lede": ""
+            }
           }
         },
         "modes": {
           "full": [
             "portada",
             "como-funciona",
-            "consola",
-            "registro-qr",
-            "crm",
-            "compartir",
-            "qr-del-centro",
-            "alta-centro",
-            "cierre"
+            "tu-nombre",
+            "red-fundadores",
+            "condiciones",
+            "siguiente-paso"
           ],
           "visual": [
             "portada",
-            "como-funciona",
-            "consola",
-            "compartir",
-            "cierre"
+            "como-funciona-v",
+            "red-fundadores-v",
+            "condiciones",
+            "siguiente-paso"
           ]
         },
         "max": {
-          "full": 10,
-          "visual": 6
+          "full": 7,
+          "visual": 5
         },
         "priority": [
           "portada",
-          "cierre",
           "como-funciona",
-          "consola",
-          "crm",
-          "compartir",
-          "registro-qr",
-          "qr-del-centro",
-          "alta-centro",
-          "actividades",
-          "equipo",
-          "dive-sites"
+          "como-funciona-v",
+          "red-fundadores",
+          "red-fundadores-v",
+          "condiciones",
+          "siguiente-paso",
+          "tu-nombre",
+          "tus-buceadores",
+          "perfil-y-mapa",
+          "album",
+          "eventos",
+          "en-preparacion"
+        ],
+        "choices": [
+          {
+            "key": "mercado",
+            "label": "Mercado",
+            "hint": "Fuera de España, «En preparación» no entra hasta cerrar la revisión legal de pagos.",
+            "default": "espana",
+            "options": [
+              {
+                "key": "espana",
+                "label": "España",
+                "rules": []
+              },
+              {
+                "key": "latam",
+                "label": "Latinoamérica",
+                "rules": []
+              },
+              {
+                "key": "corea",
+                "label": "Corea",
+                "rules": []
+              },
+              {
+                "key": "otro",
+                "label": "Otro",
+                "rules": []
+              }
+            ]
+          },
+          {
+            "key": "angulo",
+            "label": "Ángulo: lo que le mueve (uno solo)",
+            "hint": "Si no lo has elegido: «Que vuelvan» en España y «Abrir mercado» fuera (PROPUESTA, por validar).",
+            "default": "que-vuelvan",
+            "options": [
+              {
+                "key": "que-vuelvan",
+                "label": "Que vuelvan",
+                "hint": "Le preocupa no saber quién bucea con él ni volver a contactarles. SUPUESTO.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "{company}: quién bucea contigo, y cuántas veces"
+                    }
+                  },
+                  {
+                    "patch": "red-fundadores",
+                    "set": {
+                      "lede": "Lo que venga después de la lista de buceadores lo vamos a construir con los centros fundadores. Sois los que decís qué hace falta."
+                    }
+                  },
+                  {
+                    "add": "tus-buceadores",
+                    "after": [
+                      "tu-nombre",
+                      "como-funciona"
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "abrir-mercado",
+                "label": "Abrir mercado",
+                "hint": "Recibe o quiere recibir buceadores de otros países. Validado en la feria de Brasil.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "{company}, centro fundador de la red internacional de Oquea"
+                    }
+                  },
+                  {
+                    "patch": "red-fundadores",
+                    "set": {
+                      "lede": "Oquea está firmando con centros de distintos países para que los buceadores de unos conozcan a los otros. Los primeros en firmar son los centros fundadores de la red.",
+                      "tip": {
+                        "kind": "info",
+                        "text": "Es un proyecto internacional y va por fases. Hoy empieza con tu centro en el mapa y tu QR en el barco."
+                      }
+                    }
+                  },
+                  {
+                    "add": "perfil-y-mapa",
+                    "after": [
+                      "tus-buceadores",
+                      "tu-nombre",
+                      "como-funciona"
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "cobro-online",
+                "label": "Cobro online",
+                "hint": "Cobra solo en persona y le interesa cobrar online. 3 de los firmantes lo han pedido.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "{company} en Oquea: del QR en el barco al cobro online"
+                    }
+                  },
+                  {
+                    "patch": "red-fundadores",
+                    "set": {
+                      "lede": "Los centros fundadores serán los primeros en probar lo que Oquea está preparando, empezando por la reserva y el cobro online.",
+                      "tip": {
+                        "kind": "info",
+                        "text": "Si te interesa, queda escrito en el acuerdo."
+                      }
+                    }
+                  },
+                  {
+                    "add": "en-preparacion",
+                    "after": "red-fundadores",
+                    "when": "mercado:espana"
+                  }
+                ]
+              },
+              {
+                "key": "viaje-de-club",
+                "label": "Viaje de club",
+                "hint": "Organiza viajes de buceo con sus clientes. SUPUESTO: aún no se ha planteado a ningún centro.",
+                "rules": [
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "{company} y la red de centros fundadores de Oquea"
+                    }
+                  },
+                  {
+                    "patch": "red-fundadores",
+                    "set": {
+                      "lede": "Los centros fundadores de otros países quieren recibir grupos. Si organizas viajes con tus buceadores, la red es un lugar donde encontrar a quién ir."
+                    }
+                  },
+                  {
+                    "add": "perfil-y-mapa",
+                    "after": [
+                      "tus-buceadores",
+                      "tu-nombre",
+                      "como-funciona"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         ],
         "questions": [
           {
-            "key": "salidas-diarias",
-            "label": "¿Hace salidas todos los días?",
-            "hint": "Las actividades se programan una vez.",
+            "key": "no-guarda-datos",
+            "label": "¿Dijo que no guarda datos de quien bucea con él?",
             "rules": [
               {
-                "add": "actividades",
+                "add": "tus-buceadores",
                 "after": [
-                  "qr-del-centro",
-                  "compartir"
+                  "tu-nombre",
+                  "como-funciona"
                 ]
               }
             ]
           },
           {
-            "key": "equipo",
-            "label": "¿Trabaja con instructores o divemasters?",
+            "key": "fotos",
+            "label": "¿Comparte fotos con sus clientes por WhatsApp o hace fotos en las inmersiones?",
             "rules": [
               {
-                "add": "equipo",
+                "add": "album",
                 "before": [
-                  "alta-centro",
-                  "cierre"
+                  "red-fundadores"
                 ]
               }
             ]
           },
           {
-            "key": "montarlo",
-            "label": "¿Le preocupa el trabajo de montarlo?",
-            "hint": "Oquea le da de alta los dive sites.",
+            "key": "ong",
+            "label": "¿Colabora con una ONG o participa en limpiezas u otras acciones?",
             "rules": [
               {
-                "add": "dive-sites",
+                "add": "eventos",
                 "before": [
-                  "alta-centro",
-                  "cierre"
+                  "red-fundadores"
                 ]
               }
             ]
           },
           {
-            "key": "varios-centros",
-            "label": "¿Tiene más de un centro?",
+            "key": "sin-comision",
+            "label": "¿El acuerdo de su mercado NO recoge el 10 %?",
+            "hint": "Si no lo recoge, ese bloque de condiciones no entra.",
             "rules": [
               {
-                "patch": "alta-centro",
+                "patch": "condiciones",
                 "set": {
-                  "tip": {
-                    "kind": "bulb",
-                    "strong": "Puedes tener más de un centro.",
-                    "text": "Crea uno por cada ubicación física para tenerlo todo ordenado."
-                  }
+                  "cards": [
+                    {
+                      "icon": "check",
+                      "title": "Hoy.",
+                      "body": "El alta, el QR, el logbook de tus buceadores, la lista y el perfil en el mapa no tienen coste."
+                    },
+                    {
+                      "icon": "sparkle",
+                      "title": "Más adelante.",
+                      "body": "Habrá funciones de pago. Se presentarán antes a los centros fundadores, y cada centro decidirá si las contrata."
+                    },
+                    {
+                      "icon": "send",
+                      "title": "Lo que pedimos.",
+                      "body": "El acuerdo firmado, el QR a la vista en el barco o en el local, y que el equipo lo mencione en el briefing."
+                    }
+                  ]
                 }
               }
             ]
@@ -764,7 +1173,56 @@
   ],
   "price_options": [],
   "coupons": [],
-  "facets": [],
+  "facets": [
+    {
+      "key": "situacion-centro",
+      "label": "Situación del centro",
+      "question": "¿Recibe buceadores de fuera o sus buceadores viajan?",
+      "icon": "globe",
+      "scope": "account",
+      "multi": true,
+      "weight": 4,
+      "options": [
+        {
+          "key": "destino",
+          "label": "Centro destino",
+          "hint": "Quiere recibir buceadores de otros países."
+        },
+        {
+          "key": "emisor",
+          "label": "Centro emisor",
+          "hint": "Tiene buceadores locales que viajan. SUPUESTO."
+        }
+      ]
+    },
+    {
+      "key": "mercado",
+      "label": "Mercado",
+      "question": "¿En qué mercado está el centro?",
+      "icon": "map-pin",
+      "scope": "account",
+      "multi": false,
+      "weight": 3,
+      "options": [
+        {
+          "key": "espana",
+          "label": "España"
+        },
+        {
+          "key": "latam",
+          "label": "Latinoamérica"
+        },
+        {
+          "key": "corea",
+          "label": "Corea"
+        },
+        {
+          "key": "otro",
+          "label": "Otro"
+        }
+      ]
+    }
+  ],
   "playbook": [
     {
       "key": "vision",
@@ -785,66 +1243,8 @@
       "status": "official"
     },
     {
-      "key": "oquea-en-una-frase",
-      "module_key": null,
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "objection": null,
-      "segments": [],
-      "personas": [],
-      "audience": "all",
-      "about": false,
-      "pinned": 1,
-      "title": "Oquea en una frase",
-      "body": "La plataforma digital que conecta centros de buceo, buceadores y destinos.",
-      "when_to_use": "Cuando te pregunten «¿y esto qué es?». Después, el argumento en tres pasos.",
-      "why_it_works": "Web de Oquea (oquea.com), texto literal.",
-      "technique_refs": [],
-      "status": "official"
-    },
-    {
-      "key": "escanean-tu-ves",
-      "module_key": "como-funciona",
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "objection": null,
-      "segments": [
-        "centros-buceo"
-      ],
-      "personas": [],
-      "audience": "all",
-      "about": false,
-      "pinned": 2,
-      "title": "Escanean, tú los ves, comparten con tu logo",
-      "body": "Cuando un buceador escanea tu QR, queda conectado a tu centro. Tú lo ves en tu CRM y él puede compartir su inmersión. Con tu logo: marketing orgánico para tu centro.",
-      "when_to_use": "El centro de la conversación: es lo que gana quien paga (clientes que vuelven y visibilidad gratis).",
-      "why_it_works": "Guía de inicio, traducida del portugués [TRADUCCIÓN]. Es la diapositiva con la que se ha validado la venta.",
-      "technique_refs": [],
-      "status": "official"
-    },
-    {
-      "key": "fideliza",
-      "module_key": "crm",
-      "kind": "pitch",
-      "stage": "pitch_demo",
-      "objection": null,
-      "segments": [
-        "centros-buceo"
-      ],
-      "personas": [],
-      "audience": "all",
-      "about": false,
-      "pinned": null,
-      "title": "Un negocio que fideliza",
-      "body": "Convierte tu centro en un negocio que fideliza. CRM, planificación y comunidad para que cada inmersión se convierta en un cliente que vuelve.",
-      "when_to_use": null,
-      "why_it_works": "Web de Oquea (oquea.com), texto literal.",
-      "technique_refs": [],
-      "status": "official"
-    },
-    {
       "key": "sin-instalar",
-      "module_key": "registro-qr",
+      "module_key": null,
       "kind": "tip",
       "stage": "pitch_demo",
       "objection": null,
@@ -864,7 +1264,7 @@
     },
     {
       "key": "qr-visible",
-      "module_key": "qr-del-centro",
+      "module_key": "siguiente-paso",
       "kind": "tip",
       "stage": "seguimiento",
       "objection": null,
@@ -884,7 +1284,7 @@
     },
     {
       "key": "lo-montamos",
-      "module_key": "dive-sites",
+      "module_key": null,
       "kind": "tip",
       "stage": "objeciones",
       "objection": null,
@@ -904,7 +1304,7 @@
     },
     {
       "key": "verificacion-24h",
-      "module_key": "alta-centro",
+      "module_key": null,
       "kind": "tip",
       "stage": "cierre",
       "objection": null,
@@ -924,7 +1324,7 @@
     },
     {
       "key": "en-minutos",
-      "module_key": "portada",
+      "module_key": null,
       "kind": "script",
       "stage": "cierre",
       "objection": null,
@@ -943,7 +1343,253 @@
       "status": "official"
     },
     {
+      "key": "oquea-en-una-frase",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 1,
+      "title": "Oquea en una frase",
+      "body": "Oquea es una plataforma para buceadores y centros de buceo. El buceador escanea el QR del centro y la inmersión se guarda en su logbook digital ya rellena. El centro obtiene la lista de los buceadores que han pasado por él, con su histórico.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "objetivo-visita",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 2,
+      "title": "Qué vende hoy el comercial",
+      "body": "Hoy no se vende una suscripción. En la misma visita se consiguen dos cosas:\n\n1. El acuerdo de centro fundador firmado.\n2. El QR puesto y funcionando, con al menos una inmersión creada.\n\nUna firma sin QR en uso no cuenta como resultado. Un centro que firma y no usa Oquea se enfría, y a seis semanas vista no recuerda qué firmó.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "que-recibe-el-centro",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Qué recibe el centro hoy",
+      "body": "- Todo lo de la lista cerrada del producto, sin coste.\n- Su nombre en cada tarjeta que sus buceadores comparten.\n- La lista de quién ha buceado con él.\n- Su perfil en el mapa de Oquea.\n- La condición de centro fundador de la red internacional.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "que-pide-oquea",
+      "module_key": null,
+      "kind": "monetization",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Qué pide Oquea a cambio",
+      "body": "- La firma del acuerdo.\n- El QR visible en el barco o en el local, y que el equipo lo mencione en el briefing.\n- PROPUESTA: un criterio de éxito a 30 días, escrito en el momento de la firma: número de inmersiones registradas con el QR. La cifra la fija cada centro con el comercial según su volumen.\n- Si el centro quiere la pasarela: que lo deje por escrito («cuando esté disponible, la usaremos»).",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "como-se-describe-la-lista",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Cómo se describe la lista de buceadores",
+      "body": "«La lista de quién ha buceado contigo y cuántas veces.»\n\nNo se le llama remarketing ni fidelización automática: hoy el centro la consulta y contacta él mismo.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "lo-que-no-existe",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 4,
+      "title": "Lo que no existe hoy (no se vende)",
+      "body": "Ninguno de estos puntos se presenta como disponible, ni como «próximamente», salvo compromiso con fecha y por escrito en el acuerdo:\n\n- Reservas online.\n- Pasarela de pago o enlaces de pago.\n- Trips (viajes) y cursos como productos propios.\n- Campañas de email, descuentos automáticos o cualquier automatización sobre la lista de buceadores.\n- Integración con WhatsApp.\n- Descuentos cruzados entre centros. La asociación existe en la aplicación pero no hace nada.\n- Facturación.\n- Lectura de ordenadores de buceo.\n- Eventos creados por centros que no sean ONG.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
       "key": "no-se-dice",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 3,
+      "title": "Lo que no se dice nunca",
+      "body": "- Que Oquea trae clientes, o cuántos. Se explica el mecanismo: perfil en el mapa, red de centros y, cuando existan, reservas.\n- Un porcentaje de descuento entre centros. No hay ninguno firmado.\n- Una fecha de pasarela, reservas o trips como compromiso.\n- Que la lista de buceadores hace remarketing, campañas o algo «automático».\n- Cifras de uso, de centros activos o de buceadores. No existen.\n- El precio de futuras suscripciones.\n- Que Oquea es «el mejor» o «el más adaptado» del mercado. Se dice qué hace, y se enseña.\n- El nombre de un centro firmante sin su permiso por escrito.\n- «Cooperativa».\n- Cualquier función que no esté en la lista cerrada del producto.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026). Sección 10, y sección 9 del guion de campo v0.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "sin-casos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "No hay casos ni cifras que citar",
+      "body": "Oquea no tiene todavía clientes de pago ni datos de uso: no hay casos de éxito, cifras ni testimonios. No se inventan.\n\nLos centros firmantes solo se nombran con su permiso por escrito; por defecto, versión anónima: «operadores de Galápagos y Brasil».",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "perfiles-oquea",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Tres perfiles: buceador, centro y ONG",
+      "body": "Hay tres tipos de perfil: buceador, centro de buceo y ONG. Una misma persona puede gestionar uno o varios centros y tener además su perfil de buceador.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "destino-o-emisor",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Centro destino o centro emisor",
+      "body": "No son segmentos de tamaño: un mismo centro puede ser las dos cosas.\n\n- **Centro destino**: quiere recibir buceadores de otros países. Latinoamérica (validado), Corea (SUPUESTO). Le mueve abrir mercado internacional. En la feria de Brasil fue la primera necesidad que expresaron los centros; muchos pueden montar el paquete completo salvo el vuelo: recogida, alojamiento, buceo.\n- **Centro emisor**: tiene buceadores locales que viajan. España (SUPUESTO). Qué le mueve: PENDIENTE (hipótesis: organizar los viajes de su club a destinos de la red con condiciones ya negociadas). A los centros de España aún no se les ha planteado.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "quien-decide",
+      "module_key": null,
+      "kind": "fit",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Quién decide y quién lo ejecuta",
+      "body": "Decide habitualmente el dueño o el instructor jefe (SUPUESTO general del sector, sin validar por cuenta).\n\nLo ejecuta la persona que está en el barco y dice «escanead el QR». Si a esa persona le supone trabajo extra, el QR no se usa (SUPUESTO por validar en campo).",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "modelo-de-negocio",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": true,
+      "pinned": null,
+      "title": "Cómo gana dinero Oquea",
+      "body": "Hoy ningún centro paga por Oquea. El alta, el QR, el logbook y la lista de buceadores son gratuitos. Nada de lo que sigue se ha cobrado todavía.\n\n- Comisión por clientes nuevos: 10 %. Aceptado de palabra en la feria de Brasil y recogido en los acuerdos firmados. Base exacta del cálculo PENDIENTE. No cobrado.\n- Comisión dentro de la red: en torno al 2 %, cifra no cerrada. SUPUESTO, sin funcionalidad.\n- Pasarela de pago: porcentaje PENDIENTE. Interés declarado; no existe todavía.\n- Suscripción de fidelización: cuota PENDIENTE. Idea, después de la fase gratuita.\n- Suscripción de facturación: 100–200 €/mes en España, adaptado por país. Idea. No se menciona.\n\nOrden estratégico: (1) acuerdos firmados y QR puesto en el mayor número de centros, en España, Latinoamérica y Corea; (2) con pasarela y trips, transacciones entre centros de la red; (3) con uso real, suscripción de fidelización; (4) facturación en 2027. La prioridad declarada ahora es generar ingresos reales cuanto antes.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "previsiones-internas",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "objeciones",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Previsiones internas (no se venden)",
+      "body": "Estimaciones del equipo de producto. No son compromisos:\n\n- Reservas sobre un slot con enlace de pago (pasarela): finales de noviembre de 2026.\n- Mejoras de la lista de buceadores: noviembre de 2026 (alcance PENDIENTE).\n- Eventos creables por cualquier centro: noviembre de 2026.\n- Trips: diciembre de 2026 – enero de 2027. Prioritarios porque desbloquean la red internacional.\n- Suscripción de fidelización: sin fecha.\n- Facturación: primer o segundo trimestre de 2027.\n- Cursos como producto propio: sin fecha.\n- Integración con un CRM de WhatsApp de terceros: idea, sin decidir.\n\nA los centros que ya han firmado se les dijo que la parte internacional «a lo mejor llegaba para diciembre».\n\nPROPUESTA de comunicación: si un cliente pregunta por fechas, se da siempre la fecha tardía del rango y se presenta como previsión. Pagos internacionales: pendientes de revisión legal; fuera de España no se da fecha hasta que esté cerrada.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "situacion-real",
       "module_key": null,
       "kind": "tip",
       "stage": "mentalidad",
@@ -952,14 +1598,1011 @@
       "personas": [],
       "audience": "team",
       "about": false,
-      "pinned": 3,
-      "title": "Lo que no se vende (todavía)",
-      "body": "El mapa interactivo y los viajes y ofertas flash salen en la web como «Próximamente»: no se venden. Las reseñas están apagadas en la app. Tampoco se habla de precio ni de «gratis» hasta que esté la tarifa oficial.",
+      "pinned": null,
+      "title": "Situación comercial real (6 de octubre de 2026)",
+      "body": "- Cero clientes de pago.\n- Acuerdos firmados en Latinoamérica (Galápagos, Brasil y otros): 5, cifra por verificar. 3 han dicho que quieren usar la pasarela.\n- Unos 12 centros en España han dicho que empezarán a usar el QR cuando salga la versión mejorada. Ninguno lo está usando todavía.\n- Ningún dato de uso: ni inmersiones registradas, ni escaneos.\n- A ningún centro de España se le ha hablado todavía de la red internacional.\n- Ningún descuento cruzado ni acuerdo entre centros firmado.",
       "when_to_use": null,
-      "why_it_works": "Web de Oquea («Próximamente») y entrega de la UI de la app (reseñas apagadas a propósito). La tarifa es el documento 04, pendiente.",
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "acuerdo-hoy",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Qué es lo firmado hasta ahora",
+      "body": "Cartas de intención sin compromiso económico: comisión del 10 % sobre clientes nuevos europeos y permiso de exposición a la red de centros.\n\nTexto literal del acuerdo: PENDIENTE. Hasta que esté cargado, no se describen cláusulas de memoria. Versiones para España y Corea (qué es «cliente nuevo» en cada mercado): PENDIENTE.\n\nNombre de la red: provisional, «red de centros fundadores». Nunca «cooperativa»: es una figura jurídica concreta y no es lo que se firma.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "condiciones-del-comercial",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [],
+      "personas": [],
+      "audience": "team",
+      "about": false,
+      "pinned": null,
+      "title": "Condiciones del comercial",
+      "body": "Intención declarada: el comercial que consiga un centro que use la pasarela se queda la mayor parte del porcentaje de Oquea durante al menos un año. Se ha mencionado el 70 % como ejemplo, no como cifra cerrada.\n\nPENDIENTE, y se cierra por escrito antes de salir a campo: porcentaje definitivo; base de cálculo (margen neto de Oquea después del proveedor de pagos, no el bruto); qué lo devenga (volumen procesado, no la firma); desde cuándo cuenta el año; qué se cobra por un acuerdo con QR en uso pero sin pasarela; quién lleva la cuenta si el comercial deja de estar; contrato de colaboración por país.",
+      "when_to_use": null,
+      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-estructura",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 5,
+      "title": "Es una estructura, no un texto para recitar",
+      "body": "Si lo dices palabra por palabra, suenas a robot y el dueño de un centro de buceo lo nota en diez segundos. Aprende el orden y el porqué de cada paso, y dilo con tus palabras.\n\nNo está verificado en campo: sale de lo que pasó en la feria de Brasil, del producto real y de técnicas del Cerebro de Ventas. Las primeras visitas son también para corregirlo: apunta qué funciona y qué no.\n\n**Objetivo de la visita:** salir con el acuerdo firmado **y** el QR puesto con una inmersión creada. Si no se consigue, salir con un siguiente paso con fecha.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-corea",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "mentalidad",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Corea y otros mercados: adaptar las frases",
+      "body": "Las técnicas vienen de vendedores de España y Latinoamérica. El registro local no está cubierto. La estructura vale; las frases hay que adaptarlas con alguien del país antes de usarlas.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-antes-de-ir",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Antes de ir: diez minutos",
+      "body": "- Su web e Instagram: ¿publican inmersiones a diario?, ¿tienen fotos de clientes?\n- Certificadora o certificadoras con las que trabajan.\n- Si organizan viajes de buceo. Si lo hacen, apunta a dónde.\n- Si en su web se puede reservar o pagar. Si no hay botón de pago, apúntalo.\n- De dónde son sus clientes, por las reseñas: locales, turistas nacionales, extranjeros.\n- Un detalle que solo exista en ese centro: un pecio, una especie, un punto de inmersión propio. Lo vas a usar en la apertura y en el mensaje posterior.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-cuando-y-como",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Cuándo, por qué canal y qué llevar",
+      "body": "**Cuándo:** PENDIENTE, no hay dato validado de día u hora. SUPUESTO: fuera de las horas de salida y llegada de barcos, y fuera de la temporada alta de la zona.\n\n**Canal:** presencial. La demo del QR dura medio minuto y se entiende viéndola.\n\n**Qué llevar:** el móvil con la aplicación abierta, un QR de ejemplo y el acuerdo listo para firmar. Nada más.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-visita-ligera",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Visita ligera",
+      "body": "A la primera visita en frío se va sin maletín ni folletos; un vendedor cargado de material pone al cliente a la defensiva. Si piden más información: «Te lo envío por email esta tarde».",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Alfonso y Cristian, tal como la recoge el guion de campo v0.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Primera visita como entrevista; visita ligera",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/1qEbOhyXy2uxMXxIz0cv5Y"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-apertura",
+      "module_key": null,
+      "kind": "script",
+      "stage": "primer_contacto",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 6,
+      "title": "Apertura: treinta segundos",
+      "body": "Estructura: situar → decir quién eres → pedir un favor pequeño: una sola pregunta de veinte segundos.\n\n«Hola, soy [nombre], de Oquea. Trabajo con centros de buceo de [zona]. Te pido veinte segundos para una pregunta.»\n\n«De los buceadores que salieron con vosotros esta semana, ¿de cuántos os queda algo más que el nombre en la hoja de salida?»\n\nSea cual sea la respuesta, escucha y apunta. Si la conversación sigue, la segunda pregunta:\n\n«Y si mañana uno de ellos sube una foto de la inmersión a Instagram, ¿aparece en algún sitio que fue con vosotros?»\n\nSi el dueño está con clientes o cargando el barco, no insistas: una sola fecha concreta para volver.",
+      "when_to_use": null,
+      "why_it_works": "Estructura de Alfonso y Cristian (apertura de puerta fría presencial). Su guion original desactiva la venta con «no vengo a venderle absolutamente nada»; en Oquea esa frase no se usa, porque nombrar la venta para negarla planta la idea. La adaptación y las preguntas son de Oquea, no de los creadores. SUPUESTO, sin validar.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Apertura de puerta fría presencial",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/2N4ZLA1GesZckmsN8MTDTk"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-primera-visita",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "primer_contacto",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Primero se pregunta, luego se enseña",
+      "body": "«En la primera llamada o visita nunca debes intentar vender.» Se va a preguntar y a tomar notas a la vista: «más vale un lápiz corto que una memoria larga».\n\nEn Oquea, con un matiz: como hoy no se cobra nada, la primera visita sí puede terminar en firma. Pero el orden no cambia: primero se pregunta, luego se enseña.",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Alfonso y Cristian (frases literales). El matiz es de Oquea.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Primera visita como entrevista; visita ligera",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/1qEbOhyXy2uxMXxIz0cv5Y"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-desc-1",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "¿De qué vive más el centro?",
+      "body": "«¿De qué vive más el centro: bautizos, cursos, salidas de buceadores certificados, viajes?»",
+      "when_to_use": "Pregunta 1 de 6, en este orden. Toma notas delante de él.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores. Para qué sirve: saber qué le importa. Decide el ángulo.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-desc-2",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "¿De dónde viene la gente que bucea con vosotros?",
+      "body": "«¿De dónde viene la gente que bucea con vosotros: de aquí, de otras ciudades, de fuera del país?»",
+      "when_to_use": "Pregunta 2 de 6.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores. Para qué sirve: distingue centro destino de centro emisor.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-desc-3",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "¿Organizáis viajes de buceo?",
+      "body": "«¿Organizáis viajes de buceo con vuestros clientes? ¿A dónde habéis ido?»",
+      "when_to_use": "Pregunta 3 de 6.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores. Para qué sirve: abre el ángulo del viaje de club.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-desc-4",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "¿Cómo paga quien reserva?",
+      "body": "«Cuando alguien reserva con vosotros, ¿cómo paga?»",
+      "when_to_use": "Pregunta 4 de 6.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores. Para qué sirve: detecta si cobran solo en persona. No se ofrece nada todavía: se apunta.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-desc-5",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "¿Qué os queda de esa persona?",
+      "body": "«Después de la inmersión, ¿qué os queda de esa persona?»",
+      "when_to_use": "Pregunta 5 de 6.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores. Para qué sirve: prepara la demo del QR y de la lista de buceadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-desc-6",
+      "module_key": null,
+      "kind": "discovery",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "¿Quién les dirá que escaneen el QR?",
+      "body": "«Si ponemos un QR en el barco, ¿quién sería la persona que les dice a los buceadores que lo escaneen?»",
+      "when_to_use": "Pregunta 6 de 6.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores. Para qué sirve: identifica a quien lo va a ejecutar. Si no hay nadie, el QR no se usará.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-una-idea",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "descubrimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Una sola idea nueva por visita",
+      "body": "Si en el descubrimiento salen tres necesidades, se elige una y las otras se guardan para el seguimiento.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-demo",
+      "module_key": "como-funciona",
+      "kind": "script",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 7,
+      "title": "Lo que se cuenta, y en qué orden",
+      "body": "Se enseña, no se explica. Con el móvil en la mano.\n\n1. **El QR.** Escaneas, aparece la inmersión de hoy, la guardas, y el logbook queda relleno con los datos del punto de inmersión. Medio minuto.\n2. **La tarjeta.** Enséñala y señala la línea «with [nombre del centro]».\n3. **La lista de buceadores.**\n4. **El álbum.**\n5. **El mapa y el perfil del centro.** Solo si es un centro destino.\n6. **La red de centros fundadores.** Al final, y según el ángulo.\n\n**Lo que nunca va primero:** la pasarela, la comisión, la red internacional ni nada de lo que está por llegar. Si abres con el futuro, el dueño entiende que hoy no hay nada.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-tarjeta",
+      "module_key": "tu-nombre",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La tarjeta: sale tu nombre",
+      "body": "«Cada vez que uno de tus buceadores comparte esto, sale tu nombre.»",
+      "when_to_use": "Mientras señalas la línea «with [nombre del centro]».",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-lista",
+      "module_key": "tus-buceadores",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La lista: lo que te queda",
+      "body": "«Y a ti te queda esto: quién ha buceado contigo y cuántas veces.»",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-album",
+      "module_key": "album",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "El álbum: treinta días",
+      "body": "«Las fotos del día las suben aquí y las ve todo el grupo, durante treinta días.»",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-red-abrir-mercado",
+      "module_key": "red-fundadores",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La red · Abrir mercado",
+      "body": "«Estamos firmando con centros de varios países para que los buceadores de unos conozcan a los otros. Los primeros que firman son los centros fundadores.»\n\n**Nunca:** cuántos clientes va a recibir, ni cuándo.",
+      "when_to_use": "Recibe o quiere recibir buceadores de fuera. Elige un solo ángulo: no se mezclan.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-red-cobro-online",
+      "module_key": "red-fundadores",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La red · Cobro online",
+      "body": "«Estamos preparando que tus clientes puedan reservar y pagar online desde Oquea. Si te interesa, lo dejamos escrito en el acuerdo y eres de los primeros en probarlo.»\n\n**Nunca:** una fecha como compromiso. El porcentaje. Fuera de España: nada de fechas hasta que la revisión legal de pagos esté cerrada.",
+      "when_to_use": "Ha dicho que cobra solo en persona. Elige un solo ángulo.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-red-que-vuelvan",
+      "module_key": "red-fundadores",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La red · Que vuelvan",
+      "body": "«Hoy tienes la lista y el histórico. Lo que venga después lo construimos con los centros fundadores.»\n\n**Nunca:** que Oquea envía campañas o hace remarketing.",
+      "when_to_use": "Le preocupa no saber quién bucea con él. Elige un solo ángulo.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-red-viaje-de-club",
+      "module_key": "red-fundadores",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La red · Viaje de club (SUPUESTO)",
+      "body": "«Los centros fundadores de otros países quieren recibir grupos. Si organizas un viaje, puedes hacerlo a un centro de la red.»\n\n**Nunca:** descuentos concretos. No hay ninguno firmado.",
+      "when_to_use": "Organiza viajes con sus clientes. SUPUESTO. Elige un solo ángulo.",
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-condiciones",
+      "module_key": "condiciones",
+      "kind": "monetization",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 8,
+      "title": "Condiciones: lo que hoy hace las veces de precio",
+      "body": "No hay precio. Por eso mismo hay que decir las condiciones completas antes de que pregunte dónde está el truco. Se dice, en este orden:\n\n«Todo lo que has visto hoy no tiene coste.»\n\n«El día que Oquea te lleve una reserva de un cliente nuevo, nos quedamos un 10 % de esa reserva. Si no te llevamos nada, no pagas nada.»\n\n«Más adelante habrá funciones de pago. Te las enseñaremos antes y decidirás si las quieres. Lo que tienes hoy sigue como está.»\n\nY después, silencio. Espera a que hable él.\n\n- PENDIENTE: la base exacta del 10 % y qué cuenta como «cliente nuevo» en cada mercado. Hasta que esté cerrado, se lee la cláusula del acuerdo y no se explica de memoria.\n- PENDIENTE: confirmar que «lo que tienes hoy sigue como está» es una decisión de empresa. Si no lo es, se quita.\n- No se mencionan cifras de futuras suscripciones.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-a-cambio",
+      "module_key": "condiciones",
+      "kind": "script",
+      "stage": "negociacion",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "A cambio se pide, en voz alta",
+      "body": "«Lo que te pido yo: la firma, el QR en el barco y que quien da el briefing lo mencione.»\n\nDilo en voz alta; lo que se cede sin nombrarlo no se valora.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-cerrar-o-acordar",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Si no cierra, acuerda",
+      "body": "«El vendedor, si no cierra, acuerda. Tu trabajo en venta es cerrar o acordar. Si tú no cerraste o acordaste, te convertiste en un comunicador social, eres un periodista, solamente estás informando.»",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Manuel Trejo, ley de cerrar o acordar (literal).",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Ley de cerrar o acordar; el que no cierra, acuerda; seguimiento con valor nuevo",
+          "creator": "Manuel Trejo",
+          "url": "https://www.youtube.com/watch?v=889o05Z04v8&t=2013"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-una-cta",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Una sola llamada a la acción",
+      "body": "«Una mente confusa jamás toma acción.» Se pide una cosa, no un menú.",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Alfonso y Cristian (literal).",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Una sola llamada a la acción",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/46JdjBSJXp2Zao9nUliskK"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-tres-gestos",
+      "module_key": "siguiente-paso",
+      "kind": "script",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": 9,
+      "title": "El cierre: tres gestos en la misma visita",
+      "body": "1. Firma el acuerdo.\n2. Se da de alta el centro y se crea la inmersión de mañana.\n3. El QR queda puesto donde lo ven los buceadores.\n\n**Si no firma hoy:** se acuerda un siguiente paso con día y hora. «Ya hablamos» no es un acuerdo.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-criterio-exito",
+      "module_key": "siguiente-paso",
+      "kind": "script",
+      "stage": "cierre",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Criterio de éxito por escrito",
+      "body": "Antes de empezar, el cliente define qué tendría que pasar para pasar de la duda al compromiso, se cuantifica y se fija cuándo se revisa, para que no quede en un «ya hablaremos».\n\nPregunta de Oquea: «Dentro de treinta días, ¿cuántas inmersiones registradas con el QR tendrías que ver para decir que esto te sirve?»\n\nApunta su cifra en el acuerdo o en el mensaje posterior, y fija el día de la revisión. Una sola fecha.",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Alfonso y Cristian (criterios de éxito antes de la prueba). La pregunta es adaptación de Oquea.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Criterios de éxito antes de la prueba",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/3n5l7dpxFqkJOlYq0wVOtu"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-certificadora",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "ya_tengo_proveedor",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«Ya uso la aplicación de mi certificadora / otro programa»",
+      "body": "«Sigue con ello. Esto es un QR en el barco: no cambia nada de lo que ya usas.»\n\n**Cómo vuelves:** demo del QR.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-tiempo",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«No tengo tiempo para otra herramienta»",
+      "body": "«Lo entiendo. Dame medio minuto y te enseño lo único que tendrías que hacer.»\n\n**Cómo vuelves:** demo, y la pregunta 6 del descubrimiento (quién les dirá que escaneen).\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Estructura de Alfonso y Cristian: validar y pasar a la acción en vez de pedir otra cita. Su frase original habla de generar más ingresos; en Oquea no se promete, por eso se cambia.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Respuesta a «no tengo tiempo»",
+          "creator": "Alfonso y Cristian",
+          "url": "https://open.spotify.com/episode/5kD92FKCcyPg9DXglfWtu1"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-truco",
+      "module_key": "condiciones",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«¿Dónde está el truco? ¿Qué gano yo y qué ganáis vosotros?»",
+      "body": "Las tres frases de las condiciones, completas: no tiene coste; el 10 % solo si Oquea te lleva una reserva de un cliente nuevo; más adelante habrá funciones de pago y decidirás si las quieres.\n\n**Cómo vuelves:** silencio.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-datos",
+      "module_key": "tus-buceadores",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«¿Los datos de mis clientes de quién son?»",
+      "body": "«Tuyos. Tú eres el responsable de los datos de tus clientes y Oquea los trata por tu cuenta. Puedes verlos y exportarlos.»\n\nHECHO: decisión de producto para España y la Unión Europea. PENDIENTE: confirmar que el contrato de encargo de tratamiento está disponible para firmar, y la normativa aplicable en Corea y Latinoamérica.\n\n**Cómo vuelves:** la lista de buceadores.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-cuantos-clientes",
+      "module_key": "tu-nombre",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«¿Cuántos clientes me vais a traer?»",
+      "body": "«Ese número todavía no existe; la red está empezando. Lo que sí tienes desde hoy: tu centro en el mapa y tu nombre en cada inmersión que compartan.»\n\n**Cómo vuelves:** la tarjeta.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-quien-mas",
+      "module_key": "red-fundadores",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "desconfianza",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«¿Quién más lo usa?»",
+      "body": "«Estamos empezando, por eso buscamos centros fundadores. Ya han firmado operadores de Galápagos y Brasil.»\n\nNo se dan nombres sin permiso escrito ni cifras de uso.\n\n**Cómo vuelves:** la red, según el ángulo.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-cobro-ya",
+      "module_key": "en-preparacion",
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«Quiero el cobro online ya»",
+      "body": "«Está en preparación. Lo dejamos escrito en el acuerdo y eres de los primeros.» Sin fecha comprometida.\n\n**Cómo vuelves:** la firma.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-socio",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "no_decido_yo",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«Lo tengo que hablar con mi socio»",
+      "body": "No se deja la decisión en una conversación en la que no estás. Se propone una reunión conjunta con fecha concreta y con un objetivo definido, y se cierra con «¿de acuerdo?».\n\n**Cómo vuelves:** la fecha.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Manuel Trejo: el que no cierra, acuerda.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Ley de cerrar o acordar; el que no cierra, acuerda; seguimiento con valor nuevo",
+          "creator": "Manuel Trejo",
+          "url": "https://www.youtube.com/watch?v=889o05Z04v8&t=2013"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-temporada",
+      "module_key": null,
+      "kind": "objection",
+      "stage": "objeciones",
+      "objection": "tiempo",
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "«Ahora en temporada no puedo»",
+      "body": "«Justo ahora es cuando más inmersiones haces. Poner el QR son cinco minutos; lo dejo hecho yo.» SUPUESTO.\n\n**Cómo vuelves:** el cierre.\n\n_No validada en campo: apunta la objeción literal cada vez que aparezca._",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-obj-emisor-viajes",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "objeciones",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "La que no sabemos contestar todavía",
+      "body": "«Si luego vendéis viajes a mis clientes, ¿qué gano yo?» (centro emisor).\n\nPENDIENTE de decisión de empresa. Mientras tanto: se apunta, no se improvisa.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-mensajes-reglas",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Antes de enviar un mensaje: dos pruebas",
+      "body": "Si el mensaje vale para otro centro cambiando solo el nombre, no está terminado; y todo lo que diga que hiciste tiene que ser verdad.\n\nEntre corchetes va lo que solo existe en esa cuenta. Si no lo tienes, no envíes la plantilla.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-msg-con-firma",
+      "module_key": null,
+      "kind": "script",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Mensaje: el mismo día, con firma",
+      "body": "Hola [nombre], soy [comercial] de Oquea. Ya está [centro] dado de alta y la salida de mañana a [punto de inmersión] creada. El QR lo dejamos en [dónde]. Quedamos en revisar el [fecha] si habéis llegado a las [N] inmersiones registradas. Cualquier cosa con el QR, a este número.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-msg-sin-firma",
+      "module_key": null,
+      "kind": "script",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Mensaje: el mismo día, sin firma",
+      "body": "Hola [nombre], soy [comercial] de Oquea. Te mando el acuerdo que vimos. Me apunté lo que comentaste de [detalle concreto de la conversación]. Paso el [fecha] a las [hora] y lo dejamos puesto.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO. Redacción propia de Oquea, no de los creadores.",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "campo-msg-seguimiento",
+      "module_key": null,
+      "kind": "script",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Mensaje: seguimiento a un centro que ya firmó",
+      "body": "Un mensaje de «estoy atento» no da ninguna razón para responder: cada contacto lleva algo nuevo. Y no se habla de tus novedades: se lleva información útil para su negocio.\n\nHola [nombre]. Esta semana se han registrado [N] inmersiones con vuestro QR; [buceador o dato concreto, si procede y con su permiso]. Cómo lo veis desde el barco, lo están escaneando sin que se lo recordéis?\n\nSolo con datos reales de ese centro. Si el dato es cero, el mensaje es otro: preguntar qué ha pasado con el QR y proponer una fecha para pasar.",
+      "when_to_use": null,
+      "why_it_works": "Técnicas de Manuel Trejo (seguimiento con valor nuevo) y Alfonso y Cristian (seguimiento con foco en el cliente). La plantilla es de Oquea.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Ley de cerrar o acordar; el que no cierra, acuerda; seguimiento con valor nuevo",
+          "creator": "Manuel Trejo",
+          "url": "https://www.youtube.com/watch?v=889o05Z04v8&t=2013"
+        },
+        {
+          "source": "cerebro",
+          "title": "Seguimiento con foco en el cliente",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=AtXtBpR-fuI&t=4231"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-cadencia",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Un contacto cada veinte días",
+      "body": "Un contacto cada veinte días aproximadamente a cada centro firmante, hasta que lo que espera esté disponible. Sin esto, la firma caduca sola.",
+      "when_to_use": null,
+      "why_it_works": "Técnica de Alfonso y Cristian: seguimiento cada veinte días.",
+      "technique_refs": [
+        {
+          "source": "cerebro",
+          "title": "Cadencia de seguimiento cada veinte días",
+          "creator": "Alfonso y Cristian",
+          "url": "https://www.youtube.com/watch?v=DShgDzY-iy8&t=5528"
+        }
+      ],
+      "status": "official"
+    },
+    {
+      "key": "campo-que-apuntar",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "seguimiento",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Qué apuntar después de cada visita",
+      "body": "Este guion se corrige con lo que traigas:\n\n1. La objeción literal que más pesó.\n2. Qué parte de la demo le hizo reaccionar.\n3. Quién decidió y quién va a decir «escanead el QR».\n4. Si firmó: su cifra de éxito a treinta días y la fecha de revisión.\n5. Día y hora en que te atendió bien.",
+      "when_to_use": null,
+      "why_it_works": "Guion de campo v0 (6-oct-2026). NO VERIFICADO EN CAMPO.",
       "technique_refs": [],
       "status": "official"
     }
   ],
-  "retired_plays": []
+  "retired_plays": [
+    "escanean-tu-ves",
+    "fideliza"
+  ]
 }

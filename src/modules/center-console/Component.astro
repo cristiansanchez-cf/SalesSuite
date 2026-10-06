@@ -77,11 +77,11 @@ const DIVERS = [
               <div class="cc-card cc-stat"><b>5 de 6</b><small>Perfil público completo</small><span class="cc-bar"><i style="width:83%"></i></span></div>
             </div>
             <div class="cc-acts">
-              {[['Salida en barco', '09:00', s.site, '6 de 8'], ['Bautismo de buceo', '11:30', 'Playa del centro', '4 de 6'], ['Buceo nocturno', '20:00', 'Shark Point', '3 de 8']].map(([n, h, site, cap], i) => (
+              {[['Salida en barco · Fun dive', '09:00', s.site, '6'], ['Discover Scuba Diving', '11:30', 'Playa del centro', '4'], ['Buceo nocturno · Fun dive', '20:00', 'Shark Point', '3']].map(([n, h, site, cap], i) => (
                 <div class:list={['cc-card cc-act', i === 0 && 'is-hot']}>
                   <span class="cc-act__ico" set:html={mask(22)} />
                   <span class="cc-act__txt"><b>{n}</b><small>{h} · {site}</small></span>
-                  <span class="cc-chip">{cap} plazas</span>
+                  <span class="cc-chip">{cap} buceadores</span>
                 </div>
               ))}
             </div>
@@ -110,8 +110,6 @@ const DIVERS = [
                 <p class="cc-sec">Hoy</p>
                 <div class="cc-kv"><span>Escanearon el QR</span><b>5</b></div>
                 <div class="cc-kv"><span>Añadidos a mano</span><b>1</b></div>
-                <span class="cc-bar"><i style="width:75%"></i></span>
-                <small>6 de 8 plazas</small>
               </aside>
             </div>
           </section>
@@ -139,8 +137,6 @@ const DIVERS = [
                 <div class="cc-kv"><span>Inmersiones aquí</span><b>8</b></div>
                 <div class="cc-kv"><span>Primera</span><b>10 jun 2023</b></div>
                 <div class="cc-kv"><span>Última</span><b>26 feb 2026</b></div>
-                <p class="cc-sec cc-sec--sm">Notas internas</p>
-                <p class="cc-note">Prefiere salidas de mañana. Trae su ordenador.</p>
               </aside>
             </div>
           </section>
@@ -285,7 +281,6 @@ const DIVERS = [
   .cc-profile .cc-kv { width: 100%; }
   .cc-profile__name { font-size: 18px; }
   .cc-profile .cc-sec { justify-self: start; }
-  .cc-note { justify-self: stretch; margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff1f0; border: 1px solid #ffd4d2; text-align: left; font-size: 13px; color: #6b3a37; }
   .cc-qrcard { grid-column: 1 / -1; display: flex; gap: 18px; align-items: center; }
   .cc-qr { width: 96px; height: 96px; flex: none; padding: 6px; border-radius: 10px; border: 1px solid var(--line); color: #111; }
   .cc-mini { display: flex; gap: 8px; margin-top: 10px; }

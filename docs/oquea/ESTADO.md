@@ -26,6 +26,10 @@
   jugadas y un dossier de ejemplo. Detalle: `docs/ventas/oquea/agente/03-GUIA-CARGADO.md`. Lo que toca código
   compartido: `docs/oquea/PETICIONES.md`.
 
+- **Documentos 01 (empresa), 05 (catálogo del dossier) y guion de campo** (6-oct-2026): lista cerrada del producto,
+  dossier de 11 módulos con texto literal y receta por ángulo, 66 jugadas. Detalle:
+  `docs/ventas/oquea/agente/01-05-GUION-CARGADO.md`. Preguntas abiertas: **`docs/oquea/PREGUNTAS.md`**.
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)
@@ -43,10 +47,10 @@
 ### B · Negocio (doc 02-PROMPT-AGENTE-NEGOCIO)
 | Doc | Qué | Estado |
 |---|---|---|
-| 01 | Empresa y producto (qué hay EN PRODUCCIÓN) | 🟡 parcial desde la guía y la web; falta el documento |
+| 01 | Empresa y producto (qué hay EN PRODUCCIÓN) | ✅ v0 cargado |
 | 02 | Mercado: sectores, actores, situaciones | PENDIENTE |
-| 03 | Jugadas | 🟡 10 de la guía y la web |
+| 03 | Jugadas | ✅ guion de campo v0 (no verificado en campo) |
 | 04 | Precios, cupones, suelo, prueba gratis | PENDIENTE |
-| 05 | Propuesta por sector | 🟡 receta de «Centros de buceo» desde la guía |
+| 05 | Propuesta por sector | ✅ catálogo de centro de buceo v0 |
 | 06 | Casos reales | PENDIENTE |
 | 07 | Organización comercial | PENDIENTE |
