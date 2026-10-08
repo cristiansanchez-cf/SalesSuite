@@ -20,6 +20,7 @@ import type { AdminDb } from './db';
 import type { AssetStore, Identity } from './db';
 import { demoAdminDb, demoAssets, demoIdentity } from './db-demo';
 import { supabaseAdminDb, supabaseAssets, supabaseIdentity } from './db-supabase';
+import { resendMailer } from '../notify/mailer';
 import { createAdminService, type AdminService } from './service';
 import { createTenantAdminService, type TenantAdminService } from './tenant-service';
 import type { PlaybookDb } from '../playbook/db';
@@ -182,9 +183,13 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
 }
 
 /** Service role SOLO para invitar usuarios. Si falta, invitar devuelve un 503 explicativo. */
+/** Último código pedido por email (un envío cada 45 s por servidor; ver login.astro). */
+export const codeSentAt: Map<string, number> = ((globalThis as { __codeSentAt?: Map<string, number> }).__codeSentAt ??= new Map());
+
 export function serviceIdentity(): Identity | null {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
-  return key ? supabaseIdentity(env('PUBLIC_SUPABASE_URL')!, key) : null;
+  const mail = env('RESEND_API_KEY') && env('RESEND_FROM') ? resendMailer(env('RESEND_API_KEY')!, env('RESEND_FROM')!) : null;
+  return key ? supabaseIdentity(env('PUBLIC_SUPABASE_URL')!, key, mail) : null;
 }
 
 export async function authenticate(ctx: RequestLike, tenant: TenantContext): Promise<AuthResult> {
