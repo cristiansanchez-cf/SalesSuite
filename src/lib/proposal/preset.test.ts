@@ -61,4 +61,9 @@ describe('propuesta por sector', () => {
   test('una regla que apunta a un bloque inexistente no pasa la validación', () => {
     expect(proposalSchema.safeParse({ blocks: { a: { module: 'x' } }, modes: { full: ['a', 'b'] } }).success).toBe(false);
   });
+  test('«learn»: cómo funciona contado al comercial, con UI conocida o sin ella', () => {
+    const base = { blocks: { a: { module: 'x' } }, modes: { full: ['a'] } };
+    expect(proposalSchema.safeParse({ ...base, learn: [{ title: 'Paso', body: 'Texto', ui: 'app:qr-scan' }, { title: 'Sin UI', body: 'Texto' }] }).success).toBe(true);
+    expect(proposalSchema.safeParse({ ...base, learn: [{ title: 'Paso', body: 'Texto', ui: 'javascript:alert(1)' }] }).success).toBe(false);
+  });
 });

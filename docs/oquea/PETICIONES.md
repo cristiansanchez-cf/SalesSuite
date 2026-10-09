@@ -34,6 +34,7 @@
 | `src/modules/KitCover.astro`, `LearnBody.astro`, `start.astro` | Portada del recorrido con la app: foto del primer paso y el móvil con las tarjetas pasando (en móvil, solo la foto) | Ninguno: Enjoy usa pantalla + móvil como antes |
 | `src/modules/app-steps/Screen.astro` (`qr-scan`) | Pantalla nueva: la cámara apunta al QR, lo reconoce y aparece «¿Qué actividad haces hoy?» | Ninguno (plantilla de Oquea) |
 | `messages/learn.ts` | Entradilla del recorrido sin «invitado» (era de Enjoy) | Ninguno |
+| `src/lib/proposal/preset.ts` (`learn`), `learn/sector/[key].astro` (9-oct) | Receta del sector con `learn`: «Cómo funciona en este cliente» contado al comercial, paso a paso con la UI (`app:`/`console:`); manda sobre las diapositivas en «Imagínatelo» | Ninguno: sin `learn`, la ficha sigue igual (Enjoy) |
 
 ## Pendiente (no lo he tocado)
 1. **La fuente de texto del espacio no llega al cuerpo de la propuesta.** `html` resuelve `font-family: var(--font-sans)`

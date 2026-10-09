@@ -51,7 +51,10 @@
 - [ ] 39. El 10 % cuando Oquea lleva un cliente: lo he puesto en el recorrido **para el comercial**, con la nota de no decírselo al centro (el guion dice «sin porcentaje» y, fuera de España, sin fechas). ¿Se lo puede decir ya al centro?
 - [ ] 40. «Pronto, se apuntará a las actividades desde el mapa»: ¿lo puede decir al centro o solo saberlo?
 - [ ] 41. Fotos de fondo: recortes de tus 5 tarjetas exportadas, sin el texto (`assets/img/fondos/`). Si tienes fotos de buceo propias más grandes, mándalas y las cambio.
-- [ ] 42. La página del sector «Centros de buceo» (siguiente).
+- [x] 42. ✅ Fichas de «Centros de buceo» y «ONGs» rehechas (`apply-oquea-12.py`, investigación en `docs/ventas/oquea/fuentes/06-investigacion-centros-y-ongs.md`): 7 y 5 personas, «Cómo funciona en este cliente» para el comercial, ideas por ángulo.
+- [ ] 43. Las personas nuevas (socio, operaciones, recepción, redes; en la ONG, junta, coordinación, comunicación) salen de ofertas de empleo y de lo que contaste: son `SUPUESTO`. ¿Te cuadran con los centros que conoces (España, Brasil, Corea)?
+- [ ] 44. ONG: ¿qué datos de los participantes ve hoy la ONG en Oquea? (la jugada «Remarketing» lo tenía `PENDIENTE`).
+- [x] 39b. Corregido: el 10 % sí se le dice al centro (condiciones del guion). Lo que no se dice es el porcentaje de la pasarela.
 
 ## E · Puesta en marcha (tuyo)
 - [ ] 28. DNS de `oquea.ventas.cofundo.io` en GoDaddy y dominio en Vercel.

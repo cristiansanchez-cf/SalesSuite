@@ -28,6 +28,7 @@ const es = {
   },
   sector: {
     icp: 'Cliente ideal', icpEn: 'Ideal Customer Profile · ICP',
+    howItWorks: 'Cómo funciona en este cliente', howItWorksLede: 'Para que lo entiendas tú: quién hace qué dentro, paso a paso, con la app de verdad. No es lo que le dices al cliente.',
     imagine: 'Imagínatelo', imagineLede: 'Todo lo que verá el cliente, pantalla a pantalla, y lo que puede hacer con ello. Primero te lo tienes que creer tú.',
     ideas: 'Ideas para contarlo', yourClient: 'Tu cliente', ideasLede: 'Lo que puedes proponerle, con las palabras del equipo.', keysNote: 'Los guiones, las objeciones y el precio, más abajo en «Qué decir» y en la ficha de cada persona.', fullProposal: 'Ver la propuesta entera',
     blockers: 'Quién puede frenarlo', got: 'Entendido', learned: 'Repasado', flash: 'Sector repasado.',
@@ -63,6 +64,7 @@ export const learnMessages = defineMessages({
     },
     sector: {
       icp: 'Ideal customer', icpEn: 'Ideal Customer Profile · ICP',
+      howItWorks: 'How it works for this customer', howItWorksLede: 'For you to understand it: who does what inside, step by step, with the real app. It is not what you tell the customer.',
       imagine: 'Picture it', imagineLede: 'Everything the customer will see, screen by screen, and what they can do with it. You have to believe it first.',
       ideas: 'Ideas to pitch', yourClient: 'Your client', ideasLede: 'What you can offer them, in the team’s own words.', keysNote: 'Scripts, objections and pricing are further down in «What to say» and on each person’s page.', fullProposal: 'See the full proposal',
       blockers: 'Who can stop it', got: 'Got it', learned: 'Reviewed', flash: 'Sector reviewed.',
@@ -95,6 +97,7 @@ export const learnMessages = defineMessages({
     },
     sector: {
       icp: 'Cliente ideal', icpEn: 'Ideal Customer Profile · ICP',
+      howItWorks: 'Como funciona neste cliente', howItWorksLede: 'Para você entender: quem faz o quê lá dentro, passo a passo, com o app de verdade. Não é o que você diz ao cliente.',
       imagine: 'Imagine', imagineLede: 'Tudo o que o cliente verá, tela a tela, e o que pode fazer com isso. Primeiro, você tem que acreditar.',
       ideas: 'Ideias para contar', yourClient: 'Seu cliente', ideasLede: 'O que você pode propor, com as palavras da equipe.', keysNote: 'Roteiros, objeções e preço estão mais abaixo em «O que dizer» e na ficha de cada pessoa.', fullProposal: 'Ver a proposta inteira',
       blockers: 'Quem pode travar', got: 'Entendi', learned: 'Revisado', flash: 'Setor revisado.',
@@ -127,6 +130,7 @@ export const learnMessages = defineMessages({
     },
     sector: {
       icp: '이상적인 고객', icpEn: 'Ideal Customer Profile · ICP',
+      howItWorks: '이 고객에게서는 이렇게 작동합니다', howItWorksLede: '이해를 돕기 위한 내용입니다. 내부에서 누가 무엇을 하는지 실제 앱으로 단계별로 보여 줍니다. 고객에게 하는 말이 아닙니다.',
       imagine: '상상해 보세요', imagineLede: '고객이 보게 될 모든 화면과 그것으로 할 수 있는 일. 먼저 당신이 믿어야 합니다.',
       ideas: '이렇게 제안해 보세요', yourClient: '고객사', ideasLede: '팀의 말로 정리한 제안 아이디어.', keysNote: '스크립트, 반론, 가격은 아래 «무엇을 말할까»와 각 인물 페이지에 있습니다.', fullProposal: '제안서 전체 보기',
       blockers: '막을 수 있는 사람', got: '이해했어요', learned: '복습함', flash: '업종을 복습했어요.',
