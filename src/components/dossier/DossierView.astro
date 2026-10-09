@@ -163,8 +163,8 @@ const og = {
   .deck__slide { flex: 0 0 100%; height: 100%; overflow-y: auto; scroll-snap-align: start; scroll-snap-stop: always; }
   /* Las flechas van en el margen: el contenido no se mete debajo (el fondo del módulo sí llega al borde). */
   @media (min-width: 641px) { .deck__inner .max-w-container { padding-inline: 4.5rem; } }
-  .deck__inner { min-height: 100%; display: flex; flex-direction: column; justify-content: center; transition: transform .6s cubic-bezier(.2,.8,.2,1), opacity .5s ease; transform-origin: center; }
-  .deck__slide:not(.is-current) .deck__inner { opacity: .35; transform: scale(.94); }
+  .deck__inner { min-height: 100%; display: flex; flex-direction: column; justify-content: center; transition: opacity .5s ease; }
+  .deck__slide:not(.is-current) .deck__inner { opacity: .35; }
   .deck__inner > * { flex-shrink: 0; }
   /* El fondo del módulo llena la diapositiva (sin franjas) y su contenido va centrado en vertical. */
   .deck__inner > [data-module] { flex: 1 0 auto; display: flex; flex-direction: column; }
@@ -172,7 +172,7 @@ const og = {
   .deck__arrow { position: absolute; top: 50%; translate: 0 -50%; z-index: 20; width: 3.25rem; height: 3.25rem; border-radius: 999px; display: grid; place-items: center;
     font-size: 2rem; line-height: 1; padding-bottom: .2rem; background: rgb(var(--color-surface) / .85); color: rgb(var(--color-text)); border: 1px solid rgb(var(--color-text) / .18);
     backdrop-filter: blur(6px); cursor: pointer; transition: opacity .2s, transform .2s; }
-  .deck__arrow:hover { transform: scale(1.06); } .deck__arrow:disabled { opacity: 0; pointer-events: none; }
+  .deck__arrow:hover { opacity: .85; } .deck__arrow:disabled { opacity: 0; pointer-events: none; }
   .deck__arrow--prev { left: max(.75rem, 1.5vw); } .deck__arrow--next { right: max(.75rem, 1.5vw); }
   .deck__bar { flex-shrink: 0; align-self: center; margin: .5rem auto .6rem; z-index: 20; display: flex; align-items: center; gap: .9rem; max-width: calc(100% - 8rem);
     padding: .45rem .9rem; border-radius: 999px; background: rgb(var(--color-surface)); color: rgb(var(--color-text)); border: 1px solid rgb(var(--color-text) / .12); font-size: .85rem; }
@@ -194,7 +194,7 @@ const og = {
     .deck__arrow { top: auto; bottom: .35rem; translate: none; width: 2.6rem; height: 2.6rem; font-size: 1.6rem; }
     .deck__bar { gap: .6rem; padding: .45rem .8rem; } .deck__dots { display: none; }
   }
-  @media (prefers-reduced-motion: reduce) { .deck__track { scroll-behavior: auto; } .deck__inner { transition: none; } .deck__slide:not(.is-current) .deck__inner { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .deck__track { scroll-behavior: auto; } .deck__inner { transition: none; } }
 </style>
 
 {layout === 'slides' && (
