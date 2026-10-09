@@ -11,7 +11,10 @@ import Icon from '~/components/ui/Icon.astro';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
-import { FIELD_TYPES, OPTION_TYPES, type CrmField, type FieldType } from '~/lib/crm/fields';
+import { FIELD_TYPES, OPTION_TYPES, slugKey, type CrmField, type FieldType } from '~/lib/crm/fields';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { CRITERIA } from '~/lib/crm/priority';
 import type { IconName } from '~/lib/ui/icons';
 import { i18n } from '~/lib/i18n';
 import { crmMessages } from '~/lib/i18n/messages/crm';
@@ -24,6 +27,12 @@ const acc = admin.accounts;
 const { m, locale } = i18n(Astro, crmMessages);
 const E = m.editor;
 const S = shellMessages[locale];
+const PF = peopleMessages[locale].fields;
+// Campos de la empresa o de la persona (fase 2): dos listas en la misma página.
+const de = Astro.url.searchParams.get('de');
+const target = de === 'persona' ? 'contact' : 'account';
+const weightsTab = de === 'prioridad';
+const R = priorityMessages[locale];
 const ICON: Record<FieldType, IconName> = {
   text: 'pencil', long_text: 'file-text', number: 'gauge', money: 'wallet', checkbox: 'circle-check', select: 'list-checks',
   multi_select: 'layers', date: 'calendar', url: 'link', email: 'mail', phone: 'phone', rating: 'star',
@@ -38,8 +47,11 @@ if (Astro.request.method === 'POST') {
     const input = () => ({
       label: str('label'), type: str('type'), options: str('options'), group: str('group'), help: str('help'),
       required: f.has('required'), inList: f.has('inList'), filterable: f.has('filterable'), segments: f.getAll('segments').map(String),
+      target: str('target') === 'contact' ? 'contact' : 'account', isStage: f.has('isStage'),
+      tags: [...new Set(str('tags').split(',').map((x) => x.trim() && slugKey(x)).filter(Boolean))],
     });
     switch (str('action')) {
+      case 'weights': await admin.crm.saveWeights(Object.fromEntries(CRITERIA.map((k) => [k, str(k)]))); ok = 'weights'; break;
       case 'create': await acc.saveField(input()); ok = 'saved'; break;
       case 'save': await acc.saveField(input(), str('id')); ok = 'saved'; break;
       case 'up': await acc.moveField(str('id'), -1); break;
@@ -48,12 +60,15 @@ if (Astro.request.method === 'POST') {
       case 'restore': await acc.archiveField(str('id'), false); ok = 'restored'; break;
     }
   });
-  if (!result.error) return Astro.redirect(`/admin/team/fields${ok ? `?ok=${ok}` : ''}`, 303);
+  const back = new URLSearchParams({ ...(target === 'contact' ? { de: 'persona' } : {}), ...(ok === 'weights' ? { de: 'prioridad' } : {}), ...(ok ? { ok } : {}) });
+  if (!result.error) return Astro.redirect(`/admin/team/fields${back.size ? `?${back}` : ''}`, 303);
 }
-const okMsg = flash(Astro.url, { saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
+const weights = await admin.crm.weights();
+const okMsg = flash(Astro.url, { weights: R.weights.ok, saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
 const [all, segments] = await Promise.all([acc.crmFields({ archived: true }), admin.playbook.market()]);
-const active = all.filter((x) => !x.archivedAt);
-const archived = all.filter((x) => x.archivedAt);
+const active = all.filter((x) => !x.archivedAt && x.target === target);
+const archived = all.filter((x) => x.archivedAt && x.target === target);
+const count = (t: string) => all.filter((x) => !x.archivedAt && x.target === t).length;
 const segName = new Map(segments.map((sg) => [sg.key, sg.name]));
 const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
 ---
@@ -64,7 +79,33 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
-  {active.length === 0
+  <nav class="co-tabs mb-4" aria-label={PF.target} data-scroll-x>
+    <a class="co-tab" href="/admin/team/fields" aria-current={target === 'account' ? 'page' : undefined} data-testid="fields-companies">{PF.companies} · {count('account')}</a>
+    <a class="co-tab" href="/admin/team/fields?de=persona" aria-current={target === 'contact' && !weightsTab ? 'page' : undefined} data-testid="fields-people">{PF.people} · {count('contact')}</a>
+    <a class="co-tab" href="/admin/team/fields?de=prioridad" aria-current={weightsTab ? 'page' : undefined} data-testid="fields-priority">{R.weights.tab}</a>
+  </nav>
+  {weightsTab && (
+    <form method="post" class="co-card grid max-w-xl gap-4" data-testid="weights-form">
+      <input type="hidden" name="action" value="weights" />
+      <div><h2 class="co-entity">{R.weights.title}</h2><p class="co-meta mt-1">{R.weights.lede}</p></div>
+      {CRITERIA.map((k) => (
+        <label class="grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-3">
+          <span class="co-row-title">{R.criteria[k]}</span>
+          <input class="co-input text-right tabular-nums" type="number" name={k} min="0" max="100" step="1" value={weights[k]} required data-weight />
+        </label>
+      ))}
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="weights-save">{R.weights.save}</button>
+        <span class="co-meta tabular-nums" data-weights-sum>{R.weights.sum(CRITERIA.reduce((n, k) => n + weights[k], 0))}</span>
+      </div>
+      <script define:vars={{ label: R.weights.sum(0) }}>
+        const f = document.querySelector('[data-testid=weights-form]');
+        const out = f.querySelector('[data-weights-sum]');
+        f.addEventListener('input', () => { const n = [...f.querySelectorAll('[data-weight]')].reduce((s, i) => s + (Number(i.value) || 0), 0); out.textContent = label.replace('0', String(n)); out.style.color = n === 100 ? '' : '#b42318'; });
+      </script>
+    </form>
+  )}
+  {weightsTab ? null : active.length === 0
     ? <EmptyState kind="create" title={E.emptyTitle} detail={E.emptyDetail} action={{ dialog: 'field-new', label: E.add }} />
     : <ul class="co-rows" data-testid="fields">
         {active.map((x, i) => (
@@ -73,8 +114,10 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
             <span class="co-row__main">
               <span class="co-row-title">{x.label}</span>
               <span class="co-meta">{m.types[x.type]}{x.group ? ` · ${x.group}` : ''}{x.options.length ? ` · ${x.options.map((o) => o.label).join(', ')}` : ''}{x.segments.length ? ` · ${x.segments.map((k) => segName.get(k) ?? k).join(', ')}` : ''}</span>
-              {(x.inList || x.filterable || x.required) && (
+              {(x.inList || x.filterable || x.required || x.isStage || x.tags.length > 0) && (
                 <span class="mt-1 flex flex-wrap gap-1.5">
+                  {x.isStage && <span class="co-badge">{PF.flagStage}</span>}
+                  {x.tags.map((t) => <span class="co-tag"><Icon name="tag" size={10} />{t}</span>)}
                   {x.inList && <span class="co-badge">{E.flags.inList}</span>}
                   {x.filterable && <span class="co-badge">{E.flags.filterable}</span>}
                   {x.required && <span class="co-badge">{E.flags.required}</span>}
@@ -93,7 +136,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
         ))}
       </ul>}
 
-  {archived.length > 0 && (
+  {!weightsTab && archived.length > 0 && (
     <details class="mt-8" data-testid="fields-archived">
       <summary class="text-eyebrow cursor-pointer">{E.archived(archived.length)}</summary>
       <p class="co-help mt-2">{E.archivedHelp}</p>
@@ -117,6 +160,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
         <form method="post">
           <input type="hidden" name="action" value={x ? 'save' : 'create'} />
           {x && <input type="hidden" name="id" value={x.id} />}
+          {x && <input type="hidden" name="target" value={x.target} />}
           <div class="co-dialog__body">
             <h2 id={`${id}-title`} class="co-entity">{x ? x.label : E.add}</h2>
             <label class="co-field">{E.label}<input class="co-input" name="label" required maxlength="60" value={x?.label ?? ''} placeholder="¿Tiene pantalla?" /></label>
@@ -144,6 +188,17 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
               <label class="co-field">{E.group} <span class="co-help">{E.groupHelp}</span><input class="co-input" name="group" maxlength="40" value={x?.group ?? ''} /></label>
               <label class="co-field">{E.help} <span class="co-help">{E.helpHelp}</span><input class="co-input" name="help" maxlength="200" value={x?.help ?? ''} /></label>
             </div>
+            {!x && (
+              <fieldset class="grid gap-2">
+                <legend class="co-field mb-1">{PF.target} <span class="co-help">{PF.targetLocked}</span></legend>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="co-option !p-3"><input type="radio" name="target" value="account" checked={target === 'account'} /><span class="flex items-center gap-2 co-row-title"><Icon name="store" size={16} />{PF.targetAccount}</span></label>
+                  <label class="co-option !p-3" data-testid="field-target-contact"><input type="radio" name="target" value="contact" checked={target === 'contact'} /><span class="flex items-center gap-2 co-row-title"><Icon name="user" size={16} />{PF.targetContact}</span></label>
+                </div>
+              </fieldset>
+            )}
+            <label class="co-field">{PF.tags} <span class="co-help">{PF.tagsHelp}</span><input class="co-input" name="tags" maxlength="400" value={x?.tags.join(', ') ?? ''} placeholder="fbd" /></label>
+            {(!x || x.type === 'select') && <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="isStage" checked={x?.isStage ?? false} />{PF.stage}</label>}
             <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
               <label class="flex items-center gap-2"><input type="checkbox" name="inList" checked={x?.inList ?? false} />{E.inList}</label>
               <label class="flex items-center gap-2"><input type="checkbox" name="filterable" checked={x?.filterable ?? false} />{E.filterable}</label>

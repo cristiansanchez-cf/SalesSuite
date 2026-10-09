@@ -3,7 +3,7 @@ import { fieldInputSchema, fieldsFor, formatValue, matches, parseValue, parseVal
 
 const F = (p: Partial<CrmField>): CrmField => ({
   id: p.key ?? 'x', tenantId: 't', key: 'x', label: 'X', type: 'text', options: [], group: null, position: 0, help: null,
-  required: false, inList: false, filterable: false, segments: [], archivedAt: null, ...p,
+  required: false, inList: false, filterable: false, segments: [], archivedAt: null, target: 'account', tags: [], isStage: false, ...p,
 });
 const pantalla = F({ key: 'tiene-pantalla', label: '¿Tiene pantalla?', type: 'checkbox' });
 const aforo = F({ key: 'aforo', label: 'Aforo', type: 'number' });
@@ -52,5 +52,13 @@ describe('campos del CRM', () => {
     const viejo = F({ key: 'viejo', archivedAt: '2026-01-01' });
     expect(fieldsFor([solo, viejo, aforo], 'ocio-nocturno').map((f) => f.key)).toEqual(['aforo']);
     expect(fieldsFor([solo, viejo, aforo], 'conciertos').map((f) => f.key)).toEqual(['aforo', 'aforo-sala']);
+  });
+
+  test('por lista y por destino (empresa o persona)', () => {
+    const bodas = F({ key: 'bodas-net', tags: ['proveedores-bodas'] });
+    const icp = F({ key: 'icp', target: 'contact', tags: ['fbd'] });
+    expect(fieldsFor([bodas, aforo, icp], null).map((f) => f.key)).toEqual(['aforo']);
+    expect(fieldsFor([bodas, aforo, icp], null, { tags: ['proveedores-bodas'] }).map((f) => f.key)).toEqual(['aforo', 'bodas-net']);
+    expect(fieldsFor([bodas, aforo, icp], null, { target: 'contact', tags: ['fbd'] }).map((f) => f.key)).toEqual(['icp']);
   });
 });

@@ -17,6 +17,16 @@ import { accountsMessages } from '~/lib/i18n/messages/accounts';
 import { crmMessages } from '~/lib/i18n/messages/crm';
 import FieldInput from '~/components/crm/FieldInput.astro';
 import { fieldsFor, formatValue, valuesFromForm } from '~/lib/crm/fields';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+import { shellMessages } from '~/lib/i18n/messages/shell';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+import ContactLinks from '~/components/crm/ContactLinks.astro';
+import QualificationCard from '~/components/crm/QualificationCard.astro';
+import AiResearchCard from '~/components/crm/AiResearchCard.astro';
+import { researchMessages } from '~/lib/i18n/messages/research';
+import { priorityOf } from '~/lib/crm/priority';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -28,20 +38,49 @@ const { m: msg, f: fmt, locale } = i18n(Astro, accountsMessages);
 const M = msg.detail;
 const ELIGIBILITY_LABEL = ELIGIBILITY_LABELS[locale];
 const C = crmMessages[locale].card;
+const P = peopleMessages[locale];
+const F = followupMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const googleBox: { r: Awaited<ReturnType<typeof admin.crm.googleCandidates>> | null } = { r: null };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
   let to = `/admin/accounts/${id}`;
   result = await formAction(async () => {
     switch (str('action')) {
-      case 'contact': { const e = await acc.touch(id, 'contact', str('note')); to += `?ok=${e === 'eligible' ? 'contact' : `not-${e}`}`; break; }
+      case 'contact': {
+        // Apuntar una interacción (cuenta como contacto) y dejar el próximo paso: el que diga el comercial o el de la regla.
+        const custom = str('nextAt') || str('nextStep') ? { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') } : undefined;
+        await admin.crm.logActivity(id, { contactId: str('contactId'), channel: str('channel') || 'other', outcome: str('outcome') || 'note', note: str('note') }, custom);
+        to += str('outcome') === 'note' || !str('outcome') ? '?ok=noted' : '?ok=contact';
+        break;
+      }
+      case 'google-search': googleBox.r = await admin.crm.googleCandidates(id); to = ''; break;
+      case 'google-apply': await admin.crm.googleApply(id, str('placeId')); to += '?ok=google'; break;
+      case 'ai-run': {
+        const [segs, seller, cur] = await Promise.all([admin.playbook.market(), admin.playbook.sellerLine(), acc.get(id)]);
+        const sg = segs.find((x) => x.id === cur.account.segmentId);
+        await admin.crm.aiRun(id, { seller, sector: sg ? { name: sg.name, icp: sg.icp, personas: (sg.personas ?? []).map((p) => p.name) } : null });
+        to += '?ok=ai#ai';
+        break;
+      }
+      case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
+      case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
+      case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
+      case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
+      case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
+      case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
+      case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
       case 'claim': { const e = await acc.touch(id, 'claim'); to += `?ok=${e === 'eligible' ? 'claimed' : `not-${e}`}`; break; }
       case 'release': await acc.touch(id, 'release'); to += '?ok=released'; break;
       case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
       case 'assign': await acc.assign(id, str('userId') || null); to += '?ok=assigned'; break;
       case 'fields': await acc.setFields(id, valuesFromForm(await acc.crmFields(), f)); to += '?ok=fields'; break;
+      case 'group': await admin.crm.moveToGroup([id], { groupName: str('leave') ? null : str('groupName') }); to += '?ok=group'; break;
+      case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
+      case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
+      case 'unlink': await admin.crm.unlink(str('contactId'), id); to += '?ok=unlinked'; break;
       case 'block': await acc.block(id, str('reason')); to += '?ok=blocked'; break;
       case 'unblock': await acc.unblock(id); to += '?ok=unblocked'; break;
       case 'delete': await acc.remove(id); to = '/admin/accounts'; break;
@@ -53,7 +92,7 @@ if (Astro.request.method === 'POST') {
       }
     }
   });
-  if (!result.error) return Astro.redirect(to, 303);
+  if (!result.error && to) return Astro.redirect(to, 303);
 }
 
 let data;
@@ -62,17 +101,32 @@ try { data = await acc.get(id); } catch (e) {
   throw e;
 }
 const { account: a, eligibility, touches, dossiers, canEdit, rules, crmFields } = data;
-const [t, segments, members] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([])]);
+const [t, segments, members, co, tl] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id)]);
+// Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
+const primary = tl.actors[0];
+const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
+const sug = tl.suggestion;
+const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
+const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
+// Prioridad (docs/CRM_DINAMICO.md §11): la puntuación de esta empresa y si se está enfriando.
+const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
+const googleResults = googleBox.r;
+const prio = priorityOf(a.qualification, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
+const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
+const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
 const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
-const sheet = fieldsFor(crmFields, segKey);
+const sheet = fieldsFor(crmFields, segKey, { target: 'account', tags: a.tags });
 const sections = [...new Set(sheet.map((x) => x.group ?? ''))].map((g) => ({ title: g || (sheet.some((x) => x.group) ? C.other : ''), fields: sheet.filter((x) => (x.group ?? '') === g) }));
 const day = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'long' });
 const NOT = (e: string) => M.notClaimed(ELIGIBILITY_LABEL[e as keyof typeof ELIGIBILITY_LABEL]?.toLowerCase() ?? e);
 const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
-  created: M.okCreated(rules.claimDays), contact: M.okContact(day(a.claimedUntil)),
+  created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: priorityMessages[locale].google.applied,
+  noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
+  group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
 });
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
@@ -105,18 +159,95 @@ const STATE_ALERT = {
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
 
-      {a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer' && (
-        <form method="post" class="co-card grid gap-3" data-testid="contact-form">
-          <input type="hidden" name="action" value="contact" />
-          <h2 class="co-card-title">{M.registerContact}</h2>
-          <label class="co-field">{M.whatHappened} <span class="co-help">{M.oneLine}</span>
-            <input class="co-input" name="note" maxlength="500" placeholder={M.notePlaceholder} /></label>
-          <div class="flex flex-wrap gap-2">
-            <button class="co-btn co-btn--primary w-fit" type="submit">{M.registerButton}</button>
-            {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet" data-dialog-open="release">{M.release}</button>}
-          </div>
-        </form>
-      )}
+      {a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
+
+      {a.state !== 'customer' && <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />}
+
+      <section id="follow" class="co-card grid gap-4" data-testid="follow">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="co-entity">{F.follow.title}</h2>
+          {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-dialog-open="release">{M.release}</button>}
+        </div>
+        <div class:list={['co-inset grid gap-2 !p-4', tl.next?.bucket === 'overdue' && 'co-row--attention']} data-testid="next-step" data-bucket={tl.next?.bucket ?? ''}>
+          <p class="text-eyebrow">{F.follow.next}</p>
+          {tl.next ? (
+            <>
+              <p class="co-row-title">
+                {tl.next.bucket && <span class="co-tag mr-2">{F.follow[tl.next.bucket]}</span>}
+                {nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}
+                {tl.next.channel && ` · ${F.channels[tl.next.channel]}`}
+                {` · ${actorName(tl.next.contactId)}`}
+              </p>
+              {tl.next.step && <p class="co-body">{tl.next.step}</p>}
+            </>
+          ) : <p class="co-meta">{F.follow.noNext}</p>}
+          {sug.reason !== 'closed' && (!tl.next || tl.next.channel !== sug.channel || tl.next.contactId !== sug.contactId) && (
+            <p class="co-meta" data-testid="suggestion">{F.follow.suggested}: {sug.reason === 'retry' ? F.reasons.retry(sug.attempt) : F.reasons[sug.reason]}{sug.channel ? ` · ${F.channels[sug.channel]}` : ''}{sug.contactId ? ` · ${actorName(sug.contactId)}` : ''}</p>
+          )}
+        </div>
+
+        {a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer' && (
+          <form method="post" class="grid gap-3" data-testid="contact-form">
+            <input type="hidden" name="action" value="contact" />
+            <p class="co-row-title">{F.follow.log}</p>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="co-field">{F.follow.with}
+                <select class="co-select" name="contactId">
+                  {tl.actors.map((x) => <option value={x.id} selected={x.id === (tl.next?.contactId ?? sug.contactId)}>{x.name}{x.role ? ` · ${x.role}` : ''}</option>)}
+                  <option value="" selected={!tl.actors.length}>{F.follow.company}</option>
+                </select></label>
+              <label class="co-field">{F.follow.via}
+                <select class="co-select" name="channel" data-testid="log-channel">{CHANNELS.map((c) => <option value={c} selected={c === (tl.next?.channel ?? sug.channel ?? 'other')}>{F.channels[c]}</option>)}</select></label>
+            </div>
+            <fieldset class="grid gap-2">
+              <legend class="co-field mb-1">{F.follow.result}</legend>
+              <div class="co-chips">
+                {OUTCOMES.map((o, i) => <label class="co-chip outcome"><input type="radio" class="sr-only" name="outcome" value={o} checked={o === 'note'} data-testid={`outcome-${o}`} />{F.outcomes[o]}</label>)}
+              </div>
+            </fieldset>
+            <label class="co-field">{F.follow.note}<textarea class="co-textarea !min-h-[64px]" name="note" maxlength="4000" placeholder={F.follow.notePh}></textarea></label>
+            <details>
+              <summary class="co-meta cursor-pointer">{F.follow.change}</summary>
+              <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" /></label>
+                <label class="co-field">{F.follow.via}<select class="co-select" name="nextChannel"><option value=""></option>{CHANNELS.map((c) => <option value={c}>{F.channels[c]}</option>)}</select></label>
+                <label class="co-field">{F.follow.with}<select class="co-select" name="nextContactId"><option value="">{F.follow.company}</option>{tl.actors.map((x) => <option value={x.id}>{x.name}</option>)}</select></label>
+                <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="300" placeholder={F.follow.whatPh} /></label>
+              </div>
+            </details>
+            <div class="flex flex-wrap items-center gap-3">
+              <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="log-save">{F.follow.save}</button>
+              <span class="co-help">{F.follow.logHelp}</span>
+            </div>
+          </form>
+        )}
+        {tl.next && canEdit && (
+          <form method="post"><input type="hidden" name="action" value="next-clear" /><button class="co-meta underline" type="submit">{F.follow.clear} {F.follow.next.toLowerCase()}</button></form>
+        )}
+
+        <div class="grid gap-2" data-testid="interactions">
+          <p class="text-eyebrow">{F.follow.history(tl.items.length)}</p>
+          {tl.items.length === 0 ? <p class="co-meta">{F.follow.empty}</p> : (
+            <ol class="grid gap-2 p-0">
+              {tl.items.slice(0, 30).map((x) => (
+                <li class="flex list-none items-start gap-3 text-sm" data-outcome={x.outcome}>
+                  <span class="co-meta w-24 shrink-0">{fmt.relative(x.happenedAt)}</span>
+                  <span class="min-w-0 flex-1">
+                    <strong>{x.outcome === 'note' ? F.outcomes.note : `${F.channels[x.channel]} · ${F.outcomes[x.outcome]}`}</strong>
+                    <span class="co-meta">{x.contactName ? ` · ${x.contactName}` : ''}{x.userName ? ` · ${x.userName}` : ''}</span>
+                    {x.note && <span class="co-body block whitespace-pre-line">{x.note}</span>}
+                  </span>
+                  {(x.userId === admin.session.userId || perms.manageAccounts) && (
+                    <form method="post"><input type="hidden" name="action" value="activity-delete" /><input type="hidden" name="activityId" value={x.id} />
+                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={F.follow.remove} title={F.follow.remove}><Icon name="x" size={12} /></button></form>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+          <p class="co-help">{F.follow.rule}</p>
+        </div>
+      </section>
 
       <section class="co-card grid gap-4" data-testid="account-sheet">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -140,6 +271,69 @@ const STATE_ALERT = {
             {sheet.map((fd) => <div><dt class="co-meta">{fd.label}</dt><dd class="text-sm font-medium">{formatValue(fd, a.fields[fd.key], fmt.tag) || C.empty}</dd></div>)}
           </dl>
         )}
+      </section>
+
+
+      <section class="co-card grid gap-4" data-testid="account-people">
+        <h2 class="co-entity">{P.group.title}</h2>
+        <div class="grid gap-2" data-testid="account-group">
+          <p class="text-eyebrow">{P.group.group}</p>
+          {co.group ? (
+            <form method="post" class="flex flex-wrap items-center gap-2">
+              <input type="hidden" name="action" value="group" /><input type="hidden" name="leave" value="1" />
+              <a class="co-tag" href={`/admin/accounts/${co.group.id}`}><Icon name="building2" size={12} />{co.group.name}</a>
+              {canEdit && <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{P.group.leave}</button>}
+            </form>
+          ) : co.locales.length > 0 ? <p class="co-meta">{P.group.isGroup}</p> : (
+            <>
+              <p class="co-meta">{P.group.none}</p>
+              {canEdit && (
+                <form method="post" class="flex flex-wrap items-end gap-2">
+                  <input type="hidden" name="action" value="group" />
+                  <label class="co-field min-w-[14rem] flex-1">{P.group.put} <span class="co-help">{P.group.putHelp}</span>
+                    <input class="co-input" name="groupName" required maxlength="160" list="acc-groups" placeholder={P.group.putPh} data-testid="group-name" /></label>
+                  <datalist id="acc-groups">{co.groups.slice(0, 500).map((g) => <option value={g.name} />)}</datalist>
+                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="group-save">{P.group.save}</button>
+                </form>
+              )}
+            </>
+          )}
+        </div>
+        {co.locales.length > 0 && (
+          <div class="grid gap-2" data-testid="group-locales">
+            <p class="text-eyebrow">{P.group.locales(co.locales.length)}</p>
+            <ul class="flex flex-wrap gap-2 p-0">{co.locales.map((l) => <li class="list-none"><a class="co-tag" href={`/admin/accounts/${l.id}`}><Icon name="store" size={12} />{l.name}</a></li>)}</ul>
+          </div>
+        )}
+        <div class="grid gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-eyebrow">{P.group.people(co.people.length)}</p>
+            <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="add-person" data-testid="account-add-person"><Icon name="user-plus" size={14} />{P.group.addPerson}</button>
+          </div>
+          {co.people.length === 0 ? <p class="co-meta">{P.group.noPeople}</p> : (
+            <ul class="co-rows" data-testid="account-people-list">
+              {co.people.map((pp) => (
+                <li class="co-row" data-name={pp.name}>
+                  <span class="co-row__lead"><Icon name="user" /></span>
+                  <a class="co-row__main text-inherit !no-underline" href={`/admin/people/${pp.id}`}>
+                    <span class="co-row-title">{pp.name}</span>
+                    <span class="co-meta">{[pp.role, pp.email, pp.phone].filter(Boolean).join(' · ')}</span>
+                  </a>
+                  {pp.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${pp.phone}`} aria-label={pp.phone}><Icon name="phone" size={14} /></a>}
+                  {pp.email && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${pp.email}`} aria-label={pp.email}><Icon name="mail" size={14} /></a>}
+                  <form method="post"><input type="hidden" name="action" value="unlink" /><input type="hidden" name="contactId" value={pp.id} />
+                    <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={`${P.person.remove} ${pp.name}`} title={P.person.remove}><Icon name="x" size={14} /></button></form>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <form method="post" class="flex flex-wrap items-end gap-2" data-testid="account-tags">
+          <input type="hidden" name="action" value="tags" />
+          <label class="co-field min-w-[14rem] flex-1">{P.group.lists} <span class="co-help">{P.person.listsHelp}</span>
+            <input class="co-input" name="tags" value={a.tags.join(', ')} maxlength="400" disabled={!canEdit} /></label>
+          {canEdit && <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{P.group.save}</button>}
+        </form>
       </section>
 
       <section class="co-section">
@@ -169,6 +363,48 @@ const STATE_ALERT = {
     </div>
 
     <aside class="grid content-start gap-4">
+      <section id="company-contact" class="co-card grid gap-3" data-testid="company-contact">
+        <h2 class="co-entity">{F.contact.title}</h2>
+        {(a.phone || a.email || a.instagram || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
+          ? <ContactLinks reach={a} fallback={fallback} size="sm" testid="contact-links" />
+          : <p class="co-meta">{F.contact.none}</p>}
+        {a.placeStatus === 'CLOSED_PERMANENTLY' && <p class="co-tag co-tag--danger w-fit">{priorityMessages[locale].google.closed}</p>}
+        {a.hours && a.hours.length > 0 && (
+          <details data-testid="hours"><summary class="co-meta cursor-pointer">{priorityMessages[locale].google.hours}</summary>
+            <ul class="m-0 mt-2 grid gap-0.5 p-0 text-sm">{a.hours.map((h) => <li class="list-none">{h}</li>)}</ul></details>
+        )}
+        {admin.crm.hasGoogle() && canQualify && (
+          <form method="post" action="#company-contact"><input type="hidden" name="action" value="google-search" />
+            <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search"><Icon name="search" size={14} />{priorityMessages[locale].google.search}</button></form>
+        )}
+        {googleResults && (googleResults.length === 0 ? <p class="co-meta">{priorityMessages[locale].google.none}</p> : (
+          <ul class="m-0 grid gap-2 p-0" data-testid="google-results">
+            {googleResults.map((r) => (
+              <li class="co-inset grid list-none gap-1 !p-3">
+                <span class="co-row-title">{r.name}</span>
+                <span class="co-meta">{[r.address, r.phone, r.website?.replace(/^https?:\/\/(www\.)?/, '')].filter(Boolean).join(' · ')}</span>
+                <form method="post"><input type="hidden" name="action" value="google-apply" /><input type="hidden" name="placeId" value={r.placeId} />
+                  <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="google-apply">{priorityMessages[locale].google.pick}</button></form>
+              </li>
+            ))}
+          </ul>
+        ))}
+        <details open={!(a.phone || a.email || a.instagram)}>
+          <summary class="co-meta cursor-pointer">{F.contact.edit}</summary>
+          <form method="post" class="mt-3 grid gap-3" data-testid="company-contact-form">
+            <input type="hidden" name="action" value="company-contact" />
+            <fieldset class="grid gap-3" disabled={!canEdit}>
+              <label class="co-field">{F.contact.phone}<input class="co-input" type="tel" name="phone" value={a.phone ?? ''} maxlength="40" /></label>
+              <label class="co-field">{F.contact.email}<input class="co-input" type="email" name="email" value={a.email ?? ''} maxlength="200" /></label>
+              <label class="co-field">{F.contact.instagram} <span class="co-help">{F.contact.help}</span><input class="co-input" name="instagram" value={a.instagram ?? ''} maxlength="300" placeholder="@" /></label>
+              <label class="co-field">{F.contact.linkedin}<input class="co-input" name="linkedin" value={a.linkedin ?? ''} maxlength="300" /></label>
+              <label class="co-field">{F.contact.website}<input class="co-input" name="website" value={a.website ?? ''} maxlength="300" /></label>
+              <label class="co-field">{F.contact.mapsUrl}<input class="co-input" name="mapsUrl" value={a.mapsUrl ?? ''} maxlength="500" placeholder="https://maps.app.goo.gl/…" /></label>
+              {canEdit && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{F.contact.save}</button>}
+            </fieldset>
+          </form>
+        </details>
+      </section>
       <form method="post" class="co-card grid gap-3" data-testid="account-info">
         <input type="hidden" name="action" value="save" />
         <h2 class="co-entity">{M.data}</h2>
@@ -205,6 +441,26 @@ const STATE_ALERT = {
     </aside>
   </div>
 
+
+  <dialog id="add-person" class="co-dialog" aria-labelledby="add-person-title">
+    <form method="post" data-testid="add-person-form">
+      <input type="hidden" name="action" value="add-person" />
+      <div class="co-dialog__body">
+        <h2 id="add-person-title" class="co-entity">{P.group.addPerson} · {a.name}</h2>
+        <label class="co-field">{P.quick.name}<input class="co-input" name="name" required maxlength="160" /></label>
+        <label class="co-field">{P.quick.role} <span class="co-help">{P.quick.optional}</span><input class="co-input" name="role" maxlength="80" placeholder={P.quick.rolePh} /></label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="co-field">{P.quick.email} <span class="co-help">{P.quick.optional}</span><input class="co-input" type="email" name="email" maxlength="200" /></label>
+          <label class="co-field">{P.quick.phone} <span class="co-help">{P.quick.optional}</span><input class="co-input" type="tel" name="phone" maxlength="40" /></label>
+        </div>
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{shellMessages[locale].ui.cancel}</button>
+        <button class="co-btn co-btn--primary" type="submit">{P.quick.create}</button>
+      </div>
+    </form>
+  </dialog>
+
   <ConfirmDialog id="release" title={M.releaseTitle(a.name)} confirmLabel={M.releaseConfirm}
     does={M.releaseDoes}
     doesNot={M.releaseDoesNot}>
@@ -222,3 +478,7 @@ const STATE_ALERT = {
     <input type="hidden" name="action" value="delete" />
   </ConfirmDialog>
 </AdminLayout>
+
+<style>
+  .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+</style>

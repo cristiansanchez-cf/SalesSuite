@@ -36,3 +36,15 @@ Entra en cada espacio por su dominio (la Plataforma tiene un «Entrar» por espa
   la única barrera; en Supabase, además, la RLS).
 - Smoke: `scripts/smoke-org.cjs` (montar delegación, ver como gerente de zona, ver como superadmin).
 - En demo: `super@cofundo.test` es superadmin.
+
+## Cambiar de espacio
+
+Abajo a la izquierda, la tarjeta del espacio. Si tienes acceso a más de uno (o eres superadmin), es un menú: «Tus
+espacios», con el actual marcado y tu papel en cada uno. Al elegir otro se entra directo, sin tocar la URL.
+
+- **Producción**: cada espacio vive en su dominio y la sesión es de ese dominio. `/admin/switch` comprueba que estás en
+  ese espacio, pide a Supabase (service role) un enlace de un solo uso **para tu propio email** (sin enviar email) y te
+  lleva a `https://<dominio>/admin/auth/confirm`, que abre la sesión allí. Sin service role, va a su login.
+- **Demo**: el espacio se guarda en la cookie `ss_demo_tenant` (solo en la consola).
+- Código: `src/lib/admin/spaces.ts` (lista, un minuto de caché por persona), `src/pages/admin/switch.ts`,
+  `src/components/ui/ConsoleNav.astro`. Prueba: `scripts/smoke-spaces.cjs`.

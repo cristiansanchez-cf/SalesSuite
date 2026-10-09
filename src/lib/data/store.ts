@@ -98,10 +98,31 @@ export interface AccountRow {
   created_by: string | null; created_at: string;
   /** Valores de los campos del CRM (docs/CRM_DINAMICO.md). */
   fields?: Record<string, unknown>;
+  /** Grupo (otra empresa), listas e importación de origen (fase 2). */
+  parent_id?: string | null; tags?: string[]; import_id?: string | null;
+  phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; website?: string | null; maps_url?: string | null;
+  next_step?: string | null; next_step_at?: string | null; next_contact_id?: string | null; next_channel?: string | null;
+  qualification?: Record<string, unknown>;
+  place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
+  ai_research?: unknown; ai_research_at?: string | null;
+}
+export interface CrmActivityRow {
+  id: string; tenant_id: string; account_id: string; contact_id: string | null; user_id: string | null; channel: string; outcome: string; note: string | null;
+  happened_at: string; created_at: string;
 }
 export interface CrmFieldRow {
   id: string; tenant_id: string; key: string; label: string; type: string; options: Array<{ key: string; label: string }>; grp: string | null;
   position: number; help: string | null; required: boolean; in_list: boolean; filterable: boolean; segments: string[]; archived_at: string | null; created_at: string;
+  target?: 'account' | 'contact'; tags?: string[]; is_stage?: boolean;
+}
+export interface CrmContactRow {
+  id: string; tenant_id: string; name: string; email: string | null; phone: string | null; instagram: string | null; linkedin: string | null; city: string | null; notes: string | null;
+  fields: Record<string, unknown>; tags: string[]; owner_id: string | null; import_id: string | null; created_by: string | null; created_at: string; updated_at: string;
+}
+export interface CrmContactAccountRow { tenant_id: string; contact_id: string; account_id: string; role: string | null; created_at: string }
+export interface CrmImportRow {
+  id: string; tenant_id: string; created_by: string | null; file_name: string; target: 'account' | 'contact'; headers: string[]; rows: string[][];
+  mapping: Record<string, unknown>; status: 'draft' | 'done' | 'undone'; stats: Record<string, unknown>; created_at: string; done_at: string | null;
 }
 export interface AccountTouchRow { id: string; tenant_id: string; account_id: string; user_id: string | null; kind: string; note: string | null; created_at: string }
 export interface RevenueEventRow {
@@ -172,6 +193,11 @@ export interface DemoDb {
   account_rules: AccountRulesRow[];
   account: AccountRow[];
   crm_field: CrmFieldRow[];
+  crm_contact: CrmContactRow[];
+  crm_contact_account: CrmContactAccountRow[];
+  crm_import: CrmImportRow[];
+  crm_activity: CrmActivityRow[];
+  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number> }>;
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];
@@ -236,6 +262,7 @@ const DEMO_ZONES: ZoneRow[] = [
   { id: Z.bcn, tenant_id: ENJOY, parent_id: Z.cat, name: 'Barcelona', kind: 'city', position: 0 },
   { id: Z.mad, tenant_id: ENJOY, parent_id: Z.es, name: 'Madrid', kind: 'city', position: 2 },
 ];
+const DEMO_WEEK = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 function demoAccount(id: string, name: string, zone: string, p: Partial<AccountRow>): AccountRow {
   return {
     id, tenant_id: ENJOY, name, zone_id: zone, segment_id: NIGHTLIFE, address: null, external_ref: null, notes: null, status: 'open', blocked_reason: null,
@@ -334,13 +361,31 @@ export function freshDemoDb(): DemoDb {
     membership_zone: [{ tenant_id: ENJOY, user_id: REP, zone_id: Z.cv }],
     account_rules: [],
     account: [
-      demoAccount('00000000-0000-4000-8000-0000000ac001', 'Club Sol', Z.vlc, { owner_id: REP, claimed_until: ago(-20), last_touch_at: ago(10), last_touch_by: REP, notes: 'Tiene DJ residente los viernes.', fields: { 'tiene-pantalla': true, aforo: 450 } }),
-      demoAccount('00000000-0000-4000-8000-0000000ac002', 'Sala Marina', Z.vlc, {}),
-      demoAccount('00000000-0000-4000-8000-0000000ac003', 'Terraza Azahar', Z.cs, {}),
+      demoAccount('00000000-0000-4000-8000-0000000ac001', 'Club Sol', Z.vlc, { owner_id: REP, claimed_until: ago(-20), last_touch_at: ago(10), last_touch_by: REP, notes: 'Tiene DJ residente los viernes.', fields: { 'tiene-pantalla': true, aforo: 450 },
+        instagram: 'https://www.instagram.com/clubsol/', next_step: 'Proponer una cita el jueves', next_step_at: ago(0), next_channel: 'whatsapp', next_contact_id: '00000000-0000-4000-8000-0000000cc501',
+        // Ubicación y horario (como si viniesen de Google) para la ruta del día.
+        lat: 39.4699, lng: -0.3763, hours: DEMO_WEEK.map((d) => `${d}: 23:00–6:00`) }),
+      demoAccount('00000000-0000-4000-8000-0000000ac002', 'Sala Marina', Z.vlc, { lat: 39.4590, lng: -0.3330,
+        hours: DEMO_WEEK.map((d, i) => `${d}: ${i < 3 ? 'Cerrado' : '22:00–5:00'}`) }),
+      demoAccount('00000000-0000-4000-8000-0000000ac003', 'Terraza Azahar', Z.cs, { lat: 39.9864, lng: -0.0513 }),
       demoAccount('00000000-0000-4000-8000-0000000ac004', 'Discoteca Faro', Z.bcn, {}),
       demoAccount('00000000-0000-4000-8000-0000000ac005', 'Sala Gran Vía', Z.mad, { status: 'blocked', blocked_reason: 'El dueño ha pedido no recibir más comerciales.' }),
     ],
     account_touch: [],
+    // Personas de ejemplo (fase 2): Marta lleva Club Sol.
+    crm_contact: [
+      { id: '00000000-0000-4000-8000-0000000cc501', tenant_id: ENJOY, name: 'Marta Ruiz', email: null, phone: '+34 611 222 333', instagram: null, linkedin: null, city: 'Valencia',
+        notes: null, fields: {}, tags: [], owner_id: REP, import_id: null, created_by: REP, created_at: ago(10), updated_at: ago(10) },
+    ],
+    crm_contact_account: [
+      { tenant_id: ENJOY, contact_id: '00000000-0000-4000-8000-0000000cc501', account_id: '00000000-0000-4000-8000-0000000ac001', role: 'Gerente', created_at: ago(10) },
+    ],
+    crm_import: [],
+    crm_settings: [],
+    crm_activity: [
+      { id: '00000000-0000-4000-8000-0000000ca001', tenant_id: ENJOY, account_id: '00000000-0000-4000-8000-0000000ac001', contact_id: '00000000-0000-4000-8000-0000000cc501',
+        user_id: REP, channel: 'instagram', outcome: 'replied', note: 'Le interesa para los viernes; pide verlo en persona.', happened_at: ago(2), created_at: ago(2) },
+    ],
     // Campos del CRM de ejemplo (docs/CRM_DINAMICO.md): los define cada espacio.
     crm_field: [
       { id: '00000000-0000-4000-8000-0000000cf001', tenant_id: ENJOY, key: 'tiene-pantalla', label: '¿Tiene pantalla?', type: 'checkbox', options: [], grp: 'El local',

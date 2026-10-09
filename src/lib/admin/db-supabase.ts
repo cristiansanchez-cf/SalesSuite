@@ -1,4 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Mailer } from '../notify/mailer';
+import { inviteEmail, loginCodeEmail } from './access-email';
 import { parseProposal } from '../proposal/preset';
 import { env } from '../env';
 import type { AdminDb, AssetStore, Identity } from './db';
@@ -448,16 +450,66 @@ function full(sb: SupabaseClient): AdminDb {
  * Invitaciones con la service role (solo servidor). Únicas operaciones privilegiadas:
  * buscar un usuario por email e invitarlo. La membership la crea después el admin con SU sesión (RLS).
  */
-export function supabaseIdentity(url: string, serviceRoleKey: string): Identity {
+export function supabaseIdentity(url: string, serviceRoleKey: string, mailer: Mailer | null = null): Identity {
   const admin = createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  /** Enlace y código de un solo uso (no envía nada). Una cuenta invitada que no llegó a entrar usa el tipo «invite». */
+  async function oneTime(email: string): Promise<{ hash: string; code: string; type: 'magiclink' | 'invite' }> {
+    let r = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+    let type: 'magiclink' | 'invite' = 'magiclink';
+    if (r.error) { r = await admin.auth.admin.generateLink({ type: 'invite', email }); type = 'invite'; }
+    const hash = r.data?.properties?.hashed_token;
+    const code = r.data?.properties?.email_otp;
+    if (r.error || !hash || !code) throw new Error(`[supabase] enlace de acceso: ${r.error?.message ?? 'sin token'}`);
+    return { hash, code, type };
+  }
+  /** Nombre del espacio por su dominio (para el asunto del email). */
+  async function spaceName(origin: string): Promise<string> {
+    const host = new URL(origin).hostname;
+    const { data } = await admin.from('domain').select('tenant:tenant_id(name)').eq('hostname', host).maybeSingle();
+    return ((data as { tenant?: { name?: string } } | null)?.tenant?.name) || host;
+  }
+  const confirmLink = (origin: string, o: { hash: string; type: string }, next: string) =>
+    `${origin}/admin/auth/confirm?type=${o.type}&token_hash=${encodeURIComponent(o.hash)}&next=${encodeURIComponent(next)}`;
+  const findUser = async (e: string) => check(await admin.from('users').select('id').ilike('email', e).maybeSingle()) as { id: string } | null;
+
   return {
     async findOrInvite(email, { redirectTo }) {
       const e = email.trim().toLowerCase();
-      const existing = check(await admin.from('users').select('id').ilike('email', e).maybeSingle());
-      if (existing) return { userId: existing.id as string, invited: false };
-      const { data, error } = await admin.auth.admin.inviteUserByEmail(e, { redirectTo });
-      if (error || !data.user) throw new Error(`[supabase] invitación: ${error?.message ?? 'sin usuario'}`);
-      return { userId: data.user.id, invited: true };
+      const existing = await findUser(e);
+      if (!mailer) {
+        if (existing) return { userId: existing.id, invited: false };
+        const { data, error } = await admin.auth.admin.inviteUserByEmail(e, { redirectTo });
+        if (error || !data.user) throw new Error(`[supabase] invitación: ${error?.message ?? 'sin usuario'}`);
+        return { userId: data.user.id, invited: true };
+      }
+      // Con correo propio: la cuenta se crea sin email de Supabase y la invitación (o el aviso) sale por Resend.
+      let userId = existing?.id;
+      if (!userId) {
+        const { data, error } = await admin.auth.admin.createUser({ email: e, email_confirm: true });
+        if (error || !data.user) throw new Error(`[supabase] invitación: ${error?.message ?? 'sin usuario'}`);
+        userId = data.user.id;
+      }
+      const target = new URL(redirectTo);
+      const next = target.searchParams.get('next') || '/admin';
+      try {
+        const o = await oneTime(e);
+        await mailer.send(inviteEmail(e, { link: confirmLink(target.origin, o, next), loginUrl: `${target.origin}/admin/login`, space: await spaceName(target.origin), existing: !!existing }));
+      } catch (err) {
+        // La invitación queda hecha: puede entrar pidiendo su código en la pantalla de acceso.
+        console.warn('[invite] email no enviado:', err instanceof Error ? err.message : err);
+      }
+      return { userId, invited: !existing };
+    },
+    async oneTimeLogin(email) {
+      return (await oneTime(email.trim().toLowerCase())).hash;
+    },
+    async sendLoginCode(email, { origin, next }) {
+      if (!mailer) return false;
+      const e = email.trim().toLowerCase();
+      if (!(await findUser(e))) return true;
+      const o = await oneTime(e);
+      await mailer.send(loginCodeEmail(e, { code: o.code, link: confirmLink(origin, o, next), space: await spaceName(origin) }));
+      return true;
     },
   };
 }

@@ -1,0 +1,133 @@
+/** Prioridad de los leads (docs/CRM_DINAMICO.md §11): cualificación de un clic, puntuación, eliminatorios y «se enfría». */
+import { defineMessages } from '../core';
+
+export const priorityMessages = defineMessages({
+  es: {
+    title: 'Cualificación', lede: 'Un clic por criterio. Lo que no sepas, déjalo sin marcar: no resta.',
+    score: (n: number) => `${n} puntos`, upTo: (n: number) => `hasta ${n} si se cualifica`, unqualified: 'Sin cualificar', qualified: 'Cualificado',
+    out: 'Fuera del ranking', outBy: (why: string) => `Fuera: ${why}`, cooling: (d: number) => `Se enfría · ${d} días`,
+    coolingHelp: 'Contestó y llevamos 3 días laborables sin hacer nada.', unknown: 'No se sabe',
+    kind: 'Qué es', kinds: { venue: 'Local o sala', promoter: 'Promotora', concert: 'Conciertos' },
+    criteria: {
+      recurrence: 'Recurrencia', decider: 'Decide quien te atiende', screens: 'Pantallas', dynamics: 'Dinámicas o redes', scale: 'Escala',
+    },
+    hints: {
+      recurrence: { venue: 'Noches que abre a la semana', promoter: 'Eventos al año', concert: '¿Programa de forma recurrente?', none: 'Di primero qué es' },
+      decider: 'Quién te atiende', screens: '¿Tiene pantallas?', dynamics: '¿Hace dinámicas o cuida sus redes?', scale: 'Tamaño',
+    },
+    options: {
+      nights: { '1': '1', '2': '2', '3': '3', '4+': '4 o más' },
+      events: { '1-2': '1–2', '3-5': '3–5', '6-11': '6–11', '12+': '12 o más' },
+      recurring: { yes: 'Sí, recurrente', single: 'Evento único' },
+      decider: { onsite: 'Decide y pisa el local', offsite: 'Decide pero no pisa', manager: 'Encargado sin firma' },
+      screens: { yes: 'Sí', wants: 'No, pero quiere', no: 'No y no quiere' },
+      dynamics: { yes: 'Sí', partly: 'A medias', no: 'No' },
+      scale: { single: 'Un local', few: '2–3 locales', group: 'Grupo o varias salas' },
+    },
+    kills: { coverage: 'Sin cobertura móvil', screens: 'Sin pantalla y sin intención', validate: 'No pueden validar lo que sale', debt: 'Deudas o cierre' },
+    killsTitle: 'Eliminatorios', killsHelp: 'Si se cumple uno, sale del ranking aunque puntúe alto.', validateHelp: 'Solo si lo han dicho ellos.',
+    list: { sort: 'Por prioridad', unqualified: 'Sin cualificar', out: 'Fuera', cooling: 'Se enfrían' },
+    weights: {
+      tab: 'Prioridad', title: 'Pesos de la prioridad', lede: 'Cuánto pesa cada criterio en la puntuación (suman 100). Los tramos de cada criterio son fijos por ahora.',
+      sum: (n: number) => `Suman ${n}`, save: 'Guardar pesos', ok: 'Pesos guardados.',
+    },
+    google: { search: 'Buscar en Google', pick: 'Usar este', none: 'Google no ha encontrado nada con ese nombre.', hours: 'Horario', fill: (n: number) => `Completar con Google · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f} completadas, ${s} sin coincidencia${l ? ` · quedan ${l}, vuelve a pulsar` : ''}.`, closed: 'Google lo da por cerrado', applied: 'Datos de Google guardados (solo se han rellenado huecos).' },
+    ok: 'Cualificación guardada.',
+  },
+  en: {
+    title: 'Qualification', lede: 'One click per criterion. If you don’t know, leave it unmarked: it doesn’t subtract.',
+    score: (n: number) => `${n} points`, upTo: (n: number) => `up to ${n} once qualified`, unqualified: 'Not qualified', qualified: 'Qualified',
+    out: 'Out of the ranking', outBy: (why: string) => `Out: ${why}`, cooling: (d: number) => `Going cold · ${d} days`,
+    coolingHelp: 'They replied and we’ve done nothing for 3 working days.', unknown: 'Unknown',
+    kind: 'What it is', kinds: { venue: 'Venue', promoter: 'Promoter', concert: 'Concerts' },
+    criteria: {
+      recurrence: 'Recurrence', decider: 'Decision maker in front of you', screens: 'Screens', dynamics: 'Engagement or social', scale: 'Scale',
+    },
+    hints: {
+      recurrence: { venue: 'Nights open per week', promoter: 'Events per year', concert: 'Does it program regularly?', none: 'Say what it is first' },
+      decider: 'Who you deal with', screens: 'Does it have screens?', dynamics: 'Does it run activities or care for its social media?', scale: 'Size',
+    },
+    options: {
+      nights: { '1': '1', '2': '2', '3': '3', '4+': '4 or more' },
+      events: { '1-2': '1–2', '3-5': '3–5', '6-11': '6–11', '12+': '12 or more' },
+      recurring: { yes: 'Yes, regularly', single: 'One-off event' },
+      decider: { onsite: 'Decides and is on site', offsite: 'Decides but not on site', manager: 'Manager without sign-off' },
+      screens: { yes: 'Yes', wants: 'No, but wants one', no: 'No and doesn’t want one' },
+      dynamics: { yes: 'Yes', partly: 'Somewhat', no: 'No' },
+      scale: { single: 'One venue', few: '2–3 venues', group: 'Group or several venues' },
+    },
+    kills: { coverage: 'No mobile coverage', screens: 'No screen and no plans', validate: 'Can’t moderate what shows', debt: 'Debts or closing' },
+    killsTitle: 'Deal-breakers', killsHelp: 'If one applies, it leaves the ranking even with a high score.', validateHelp: 'Only if they said so.',
+    list: { sort: 'By priority', unqualified: 'Not qualified', out: 'Out', cooling: 'Going cold' },
+    weights: {
+      tab: 'Priority', title: 'Priority weights', lede: 'How much each criterion weighs in the score (they add up to 100). Each criterion’s bands are fixed for now.',
+      sum: (n: number) => `Total ${n}`, save: 'Save weights', ok: 'Weights saved.',
+    },
+    google: { search: 'Search on Google', pick: 'Use this one', none: 'Google found nothing with that name.', hours: 'Opening hours', fill: (n: number) => `Fill in from Google · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f} filled in, ${s} without a match${l ? ` · ${l} left, press again` : ''}.`, closed: 'Google lists it as closed', applied: 'Google data saved (only blanks were filled).' },
+    ok: 'Qualification saved.',
+  },
+  pt: {
+    title: 'Qualificação', lede: 'Um clique por critério. O que não souber, deixe sem marcar: não desconta.',
+    score: (n: number) => `${n} pontos`, upTo: (n: number) => `até ${n} se qualificado`, unqualified: 'Sem qualificar', qualified: 'Qualificado',
+    out: 'Fora do ranking', outBy: (why: string) => `Fora: ${why}`, cooling: (d: number) => `Esfriando · ${d} dias`,
+    coolingHelp: 'Respondeu e estamos há 3 dias úteis sem fazer nada.', unknown: 'Não se sabe',
+    kind: 'O que é', kinds: { venue: 'Local ou sala', promoter: 'Promotora', concert: 'Shows' },
+    criteria: {
+      recurrence: 'Recorrência', decider: 'Quem atende decide', screens: 'Telas', dynamics: 'Dinâmicas ou redes', scale: 'Escala',
+    },
+    hints: {
+      recurrence: { venue: 'Noites abertas por semana', promoter: 'Eventos por ano', concert: 'Programa de forma recorrente?', none: 'Diga primeiro o que é' },
+      decider: 'Quem te atende', screens: 'Tem telas?', dynamics: 'Faz dinâmicas ou cuida das redes?', scale: 'Tamanho',
+    },
+    options: {
+      nights: { '1': '1', '2': '2', '3': '3', '4+': '4 ou mais' },
+      events: { '1-2': '1–2', '3-5': '3–5', '6-11': '6–11', '12+': '12 ou mais' },
+      recurring: { yes: 'Sim, recorrente', single: 'Evento único' },
+      decider: { onsite: 'Decide e está no local', offsite: 'Decide mas não está', manager: 'Gerente sem assinatura' },
+      screens: { yes: 'Sim', wants: 'Não, mas quer', no: 'Não e não quer' },
+      dynamics: { yes: 'Sim', partly: 'Mais ou menos', no: 'Não' },
+      scale: { single: 'Um local', few: '2–3 locais', group: 'Grupo ou várias salas' },
+    },
+    kills: { coverage: 'Sem cobertura móvel', screens: 'Sem tela e sem intenção', validate: 'Não podem validar o que sai', debt: 'Dívidas ou fechando' },
+    killsTitle: 'Eliminatórios', killsHelp: 'Se um se cumpre, sai do ranking mesmo com pontuação alta.', validateHelp: 'Só se eles disseram.',
+    list: { sort: 'Por prioridade', unqualified: 'Sem qualificar', out: 'Fora', cooling: 'Esfriando' },
+    weights: {
+      tab: 'Prioridade', title: 'Pesos da prioridade', lede: 'Quanto pesa cada critério na pontuação (somam 100). As faixas de cada critério são fixas por enquanto.',
+      sum: (n: number) => `Somam ${n}`, save: 'Salvar pesos', ok: 'Pesos salvos.',
+    },
+    google: { search: 'Buscar no Google', pick: 'Usar este', none: 'O Google não encontrou nada com esse nome.', hours: 'Horário', fill: (n: number) => `Completar com o Google · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f} completadas, ${s} sem correspondência${l ? ` · faltam ${l}, clique de novo` : ''}.`, closed: 'O Google o dá como fechado', applied: 'Dados do Google salvos (só se preencheram vazios).' },
+    ok: 'Qualificação salva.',
+  },
+  ko: {
+    title: '자격 평가', lede: '기준마다 한 번 클릭. 모르는 것은 비워 두세요: 감점되지 않습니다.',
+    score: (n: number) => `${n}점`, upTo: (n: number) => `평가 완료 시 최대 ${n}점`, unqualified: '미평가', qualified: '평가 완료',
+    out: '순위 제외', outBy: (why: string) => `제외: ${why}`, cooling: (d: number) => `식어 가는 중 · ${d}일`,
+    coolingHelp: '답장했는데 영업일 3일 동안 아무것도 하지 않았습니다.', unknown: '모름',
+    kind: '유형', kinds: { venue: '매장·공연장', promoter: '프로모터', concert: '공연' },
+    criteria: {
+      recurrence: '반복성', decider: '응대자가 결정권자', screens: '스크린', dynamics: '이벤트·SNS', scale: '규모',
+    },
+    hints: {
+      recurrence: { venue: '주당 영업일 밤 수', promoter: '연간 이벤트 수', concert: '정기적으로 공연하나요?', none: '먼저 유형을 고르세요' },
+      decider: '누가 응대하나요', screens: '스크린이 있나요?', dynamics: '이벤트를 하거나 SNS를 관리하나요?', scale: '규모',
+    },
+    options: {
+      nights: { '1': '1', '2': '2', '3': '3', '4+': '4 이상' },
+      events: { '1-2': '1–2', '3-5': '3–5', '6-11': '6–11', '12+': '12 이상' },
+      recurring: { yes: '정기적', single: '단발 이벤트' },
+      decider: { onsite: '결정하고 현장에 있음', offsite: '결정하지만 현장에 없음', manager: '결재권 없는 관리자' },
+      screens: { yes: '있음', wants: '없지만 원함', no: '없고 원하지 않음' },
+      dynamics: { yes: '예', partly: '어느 정도', no: '아니요' },
+      scale: { single: '매장 1곳', few: '2–3곳', group: '그룹·여러 공연장' },
+    },
+    kills: { coverage: '모바일 신호 없음', screens: '스크린 없고 계획도 없음', validate: '내용을 검수할 수 없음', debt: '부채·폐업' },
+    killsTitle: '탈락 조건', killsHelp: '하나라도 해당하면 점수가 높아도 순위에서 제외됩니다.', validateHelp: '본인들이 말한 경우에만.',
+    list: { sort: '우선순위순', unqualified: '미평가', out: '제외', cooling: '식어 가는 중' },
+    weights: {
+      tab: '우선순위', title: '우선순위 가중치', lede: '점수에서 각 기준의 비중(합계 100). 기준별 구간은 당분간 고정입니다.',
+      sum: (n: number) => `합계 ${n}`, save: '가중치 저장', ok: '가중치를 저장했습니다.',
+    },
+    google: { search: 'Google에서 찾기', pick: '이것 사용', none: 'Google에서 그 이름으로 찾지 못했습니다.', hours: '영업시간', fill: (n: number) => `Google로 채우기 · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f}개 채움, ${s}개 일치 없음${l ? ` · ${l}개 남음, 다시 누르세요` : ''}.`, closed: 'Google에서 폐업으로 표시', applied: 'Google 데이터를 저장했습니다(빈 칸만 채움).' },
+    ok: '자격 평가를 저장했습니다.',
+  },
+});

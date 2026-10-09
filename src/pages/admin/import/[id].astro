@@ -1,0 +1,231 @@
+---
+/**
+ * Revisar una importación (docs/CRM_DINAMICO.md §Importar): a dónde va cada columna, cómo quedan los valores, qué va a
+ * pasar y, al final, importar. Nada se pierde: lo que no encaja va a notas con el nombre de su columna.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import { can } from '~/lib/admin/permissions';
+import { AdminError } from '~/lib/admin/service';
+import { flash, formAction } from '~/lib/admin/forms';
+import { FIELD_TYPES, formatValue, type FieldType } from '~/lib/crm/fields';
+import { ACCOUNT_CORE, CONTACT_CORE, type ColumnMap, type CoreKey, type ImportMapping } from '~/lib/crm/types';
+import type { ImportPlan } from '~/lib/crm/import';
+import { i18n } from '~/lib/i18n';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+import { crmMessages } from '~/lib/i18n/messages/crm';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.manageAccounts) return Astro.rewrite('/admin/forbidden');
+const id = Astro.params.id ?? '';
+const { m, locale } = i18n(Astro, peopleMessages);
+const I = m.import;
+const T = crmMessages[locale].types;
+
+let draft;
+try { draft = await admin.crm.importDraft(id); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+const { imp, profiles, fields, rowCount } = draft;
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '').trim();
+  let to = `/admin/import/${id}`;
+  result = await formAction(async () => {
+    switch (str('action')) {
+      case 'preview': {
+        const columns: Record<string, ColumnMap> = {};
+        const values: ImportMapping['values'] = {};
+        const options: NonNullable<ImportMapping['options']> = {};
+        profiles.forEach((p, i) => {
+          const to = str(`to.${i}`);
+          if (to.startsWith('core:')) columns[p.header] = { to: 'core', key: to.slice(5) as CoreKey };
+          else if (to.startsWith('field:')) columns[p.header] = { to: 'field', key: to.slice(6) };
+          else if (to === 'new') {
+            const type = (FIELD_TYPES as readonly string[]).includes(str(`type.${i}`)) ? str(`type.${i}`) as FieldType : 'text';
+            columns[p.header] = { to: 'new', label: (str(`label.${i}`) || p.header).slice(0, 60), type, isStage: f.has(`stage.${i}`) && type === 'select' };
+          } else columns[p.header] = { to: 'ignore' };
+          if (p.values.length) {
+            const vm: Record<string, string> = {};
+            p.values.forEach((v, j) => { const x = str(`val.${i}.${j}`); if (x) vm[v.value] = x.slice(0, 60); });
+            if (Object.keys(vm).length) values[p.header] = vm;
+            const order = str(`opts.${i}`).split('\n').map((x) => x.trim()).filter(Boolean);
+            if (order.length) options[p.header] = order;
+          }
+        });
+        await admin.crm.importPreview(id, { columns, values, options, tag: str('tag') || null, segmentId: str('segmentId') || null });
+        to += '?preview=1#plan';
+        break;
+      }
+      case 'run': await admin.crm.importRun(id); to += '?ok=done'; break;
+      case 'undo': await admin.crm.importUndo(id); to = '/admin/import'; break;
+    }
+  });
+  if (!result.error) return Astro.redirect(to, 303);
+}
+
+const mapping = imp.mapping;
+const core: readonly CoreKey[] = imp.target === 'account' ? ACCOUNT_CORE : CONTACT_CORE;
+const segments = imp.target === 'account' ? await admin.playbook.market() : [];
+let plan: ImportPlan | null = null;
+if (imp.status === 'draft' && Astro.url.searchParams.get('preview') === '1') plan = (await admin.crm.importPreview(id)).plan;
+const sel = (p: (typeof profiles)[number]) => {
+  const c = mapping.columns[p.header] ?? p.suggestion;
+  return c.to === 'core' ? `core:${c.key}` : c.to === 'field' ? `field:${c.key}` : c.to;
+};
+const isOptionCol = (p: (typeof profiles)[number]) => {
+  const c = mapping.columns[p.header] ?? p.suggestion;
+  if (c.to === 'new') return c.type === 'select' || c.type === 'multi_select';
+  if (c.to === 'field') return fields.some((x) => x.key === c.key && (x.type === 'select' || x.type === 'multi_select'));
+  return false;
+};
+const orderOf = (p: (typeof profiles)[number]) => mapping.options?.[p.header] ?? [...new Set(Object.values(mapping.values[p.header] ?? {}))];
+const stats = (s: Partial<ImportPlan['stats']>) => (['accountsCreated', 'accountsMerged', 'contactsCreated', 'contactsMerged', 'links', 'noCompany', 'duplicates', 'toNotes', 'fieldsCreated', 'zonesCreated'] as const)
+  .filter((k) => (s[k] ?? 0) > 0).map((k) => ({ k, label: I.stat[k], n: s[k] ?? 0 }));
+const okMsg = flash(Astro.url, { done: I.okDone });
+const needsAdmin = !!plan && (plan.newFields.length > 0 || plan.fieldOptions.length > 0) && !perms.manageTenant;
+const fieldLabel = (key: string) => fields.find((x) => x.key === key)?.label ?? plan?.newFields.find((x) => x.key === key)?.label ?? key;
+const fieldDef = (key: string) => fields.find((x) => x.key === key) ?? plan?.newFields.find((x) => x.key === key);
+---
+<AdminLayout title={imp.fileName}>
+  <PageHeader eyebrow={`${I.title} · ${imp.target === 'contact' ? I.contacts : I.accounts} · ${I.rows(rowCount)}`} title={imp.fileName} back={{ href: '/admin/import', label: I.back }}>
+    {imp.status !== 'draft' && <span class="co-tag">{I.status[imp.status]}</span>}
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {imp.status !== 'draft' ? (
+    <section class="co-card grid gap-4" data-testid="import-done">
+      <h2 class="co-entity">{imp.status === 'done' ? I.doneTitle : I.status.undone}</h2>
+      <dl class="grid gap-3 sm:grid-cols-3">{stats(imp.stats).map((x) => <div class="co-inset !p-3"><dt class="co-meta">{x.label}</dt><dd class="co-entity">{x.n}</dd></div>)}</dl>
+      {(imp.stats.unknownOwners?.length ?? 0) > 0 && <p class="co-meta">{I.unknownOwners}: {imp.stats.unknownOwners!.join(', ')}</p>}
+      <div class="flex flex-wrap gap-2">
+        <a class="co-btn co-btn--primary" href={imp.target === 'contact' ? '/admin/people' : '/admin/accounts?ver=all'}>{imp.target === 'contact' ? m.people.title : m.fields.companies} <span aria-hidden="true">→</span></a>
+        {imp.status === 'done' && <button type="button" class="co-btn co-btn--ghost" data-dialog-open="undo" data-testid="import-undo"><Icon name="rotate-ccw" size={16} />{I.undo}</button>}
+      </div>
+    </section>
+  ) : (
+    <form method="post" class="grid gap-5" data-testid="import-mapping">
+      <input type="hidden" name="action" value="preview" />
+      <section class="co-card grid gap-4 sm:grid-cols-2">
+        <label class="co-field">{I.list} <span class="co-help">{I.listHelp}</span>
+          <input class="co-input" name="tag" value={mapping.tag ?? ''} maxlength="48" placeholder="fbd" data-testid="import-tag" /></label>
+        {imp.target === 'account' && (
+          <label class="co-field">{I.sector}
+            <select class="co-select" name="segmentId"><option value="">{I.noSector}</option>{segments.map((sg) => <option value={sg.id} selected={sg.id === mapping.segmentId}>{sg.name}</option>)}</select></label>
+        )}
+      </section>
+
+      <ul class="grid gap-3 p-0">
+        {profiles.map((p, i) => {
+          const c = mapping.columns[p.header] ?? p.suggestion;
+          return (
+            <li class="co-card grid list-none gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]" data-testid="import-column" data-header={p.header}>
+              <div class="min-w-0">
+                <p class="co-row-title truncate">{p.header}</p>
+                <p class="co-meta">{p.filled ? I.filled(p.filled, rowCount) : I.empty}</p>
+                {p.samples.length > 0 && <p class="mt-1 flex flex-wrap gap-1.5">{p.samples.map((x) => <span class="co-tag max-w-[16rem] truncate">{x}</span>)}</p>}
+              </div>
+              <div class="grid gap-3">
+                <label class="co-field">{I.goes}
+                  <select class="co-select" name={`to.${i}`} data-col-to={i}>
+                    <option value="ignore" selected={sel(p) === 'ignore'}>{I.ignore}</option>
+                    <optgroup label={I.core}>{core.map((k) => <option value={`core:${k}`} selected={sel(p) === `core:${k}`}>{I.coreKeys[k]}</option>)}</optgroup>
+                    {fields.length > 0 && <optgroup label={I.existing}>{fields.map((x) => <option value={`field:${x.key}`} selected={sel(p) === `field:${x.key}`}>{x.label}</option>)}</optgroup>}
+                    <option value="new" selected={sel(p) === 'new'}>{I.newField}</option>
+                  </select>
+                </label>
+                <div class:list={['grid gap-3 sm:grid-cols-2', c.to !== 'new' && 'hidden']} data-col-new={i}>
+                  <label class="co-field">{I.fieldName}<input class="co-input" name={`label.${i}`} value={c.to === 'new' ? c.label : p.header} maxlength="60" /></label>
+                  <label class="co-field">{I.type}
+                    <select class="co-select" name={`type.${i}`}>{FIELD_TYPES.map((t) => <option value={t} selected={c.to === 'new' && c.type === t}>{T[t]}</option>)}</select></label>
+                  <label class="co-check sm:col-span-2"><input type="checkbox" name={`stage.${i}`} checked={c.to === 'new' && !!c.isStage} />{I.stage}</label>
+                </div>
+                {p.values.length > 0 && (
+                  <details class="co-inset !p-3" open={isOptionCol(p)}>
+                    <summary class="co-meta cursor-pointer">{I.values} · {p.distinct}</summary>
+                    <p class="co-help mt-2">{I.valuesHelp}</p>
+                    <div class="mt-2 grid gap-2">
+                      {p.values.map((v, j) => (
+                        <label class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-sm">
+                          <span class="truncate" title={v.value}>{v.value} <span class="co-meta">· {v.count}</span></span>
+                          <span aria-hidden="true">→</span>
+                          <input class="co-input !min-h-[32px]" name={`val.${i}.${j}`} value={mapping.values[p.header]?.[v.value] ?? v.value} maxlength="60" list={`opts-${i}`} aria-label={`${v.value} →`} />
+                        </label>
+                      ))}
+                    </div>
+                    <datalist id={`opts-${i}`}>{orderOf(p).map((o) => <option value={o} />)}</datalist>
+                    <label class="co-field mt-3">{I.order} <span class="co-help">{I.orderHelp}</span>
+                      <textarea class="co-textarea !min-h-[96px]" name={`opts.${i}`} data-testid={`import-order-${i}`}>{orderOf(p).join('\n')}</textarea></label>
+                  </details>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="co-btn co-btn--primary" type="submit" data-testid="import-preview"><Icon name="eye" size={16} />{I.preview}</button>
+      </div>
+    </form>
+  )}
+
+  {plan && (
+    <section id="plan" class="co-card mt-6 grid gap-4" data-testid="import-plan">
+      <h2 class="co-entity">{I.planTitle}</h2>
+      <dl class="grid gap-3 sm:grid-cols-3">{stats(plan.stats).map((x) => <div class="co-inset !p-3" data-stat={x.k}><dt class="co-meta">{x.label}</dt><dd class="co-entity">{x.n}</dd></div>)}</dl>
+      {plan.stats.unknownOwners.length > 0 && <p class="co-meta" data-testid="import-unknown-owners"><Icon name="info" size={14} /> {I.unknownOwners}: {plan.stats.unknownOwners.join(', ')}</p>}
+      {plan.junkCompanies.length > 0 && <p class="co-meta"><Icon name="info" size={14} /> {I.junk}: {plan.junkCompanies.slice(0, 40).join(', ')}{plan.junkCompanies.length > 40 ? '…' : ''}</p>}
+      {plan.issues.length > 0 && (
+        <details class="co-inset !p-3">
+          <summary class="co-meta cursor-pointer">{I.issues} · {plan.issues.length}</summary>
+          <ul class="mt-2 grid gap-1 p-0 text-sm">{plan.issues.slice(0, 60).map((x) => <li class="list-none"><span class="co-meta">{I.row(x.row)}</span> · {x.error}{x.value ? <> · <code>{x.value.slice(0, 80)}</code></> : null}</li>)}</ul>
+        </details>
+      )}
+      <div class="grid gap-2">
+        <p class="text-eyebrow">{I.samples}</p>
+        <ul class="co-rows">
+          {(imp.target === 'contact' ? plan.contacts : plan.accounts).slice(0, 6).map((r) => {
+            const values = Object.entries(r.fields).slice(0, 6).map(([k, v]) => { const d = fieldDef(k); return `${fieldLabel(k)}: ${d ? formatValue({ type: d.type, options: d.options }, v, locale) : String(v)}`; });
+            const companies = 'companies' in r ? r.companies.map((co) => `${co.role ? `${co.role} · ` : ''}${plan!.accounts.find((a) => a.ref === co.ref)?.name ?? ''}`).join(' — ') : '';
+            return (
+              <li class="co-row">
+                <span class="co-row__lead"><Icon name={imp.target === 'contact' ? 'user' : 'store'} /></span>
+                <span class="co-row__main"><span class="co-row-title">{r.name}{r.existingId ? <span class="co-tag ml-2">{I.stat.accountsMerged.split(' (')[0]}</span> : null}</span>
+                  <span class="co-meta">{[companies, r.city, ...values].filter(Boolean).join(' · ')}</span></span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      {needsAdmin ? <Alert kind="rejection" title={I.needsAdmin} /> : (
+        <form method="post" class="flex flex-wrap items-center gap-3">
+          <input type="hidden" name="action" value="run" />
+          <button class="co-btn co-btn--primary" type="submit" data-testid="import-run"><Icon name="upload" size={16} />{I.run}</button>
+          <span class="co-meta">{I.runHelp}</span>
+        </form>
+      )}
+    </section>
+  )}
+
+  <ConfirmDialog id="undo" title={I.undoTitle(imp.fileName)} confirmLabel={I.undo} danger does={I.undoDoes} doesNot={I.undoDoesNot} testid="undo-dialog">
+    <input type="hidden" name="action" value="undo" />
+  </ConfirmDialog>
+  <script>
+    // «Campo nuevo»: enseña su nombre, tipo y etapa solo cuando se elige.
+    document.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLSelectElement) || !t.dataset.colTo) return;
+      const box = document.querySelector<HTMLElement>(`[data-col-new="${t.dataset.colTo}"]`);
+      if (box) box.classList.toggle('hidden', t.value !== 'new');
+    });
+  </script>
+</AdminLayout>

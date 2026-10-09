@@ -42,7 +42,9 @@ export interface AccountView extends Account {
 export interface Colleague { userId: string; name: string; email: string; phone: string | null; role: MemberRecord['role']; zones: string[] }
 export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: AccountState | 'all'; q?: string; zoneId?: string; limit?: number;
   /** Filtros por campo del CRM: clave → valor (opción, «yes»/«no» o texto). */
-  fields?: Record<string, string> }
+  fields?: Record<string, string>;
+  /** Solo las de una lista (etiqueta). */
+  tag?: string }
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -105,9 +107,9 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     let scope = f.scope ?? 'zone';
     if (scope === 'zone' && !t.myZoneIds.length) scope = 'all';
     const zoneIds = f.zoneId ? [...withDescendants(t.zones, [f.zoneId])] : scope === 'zone' ? [...withDescendants(t.zones, t.myZoneIds)] : undefined;
-    const rows = await db.listAccounts(s.tenantId, { zoneIds, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, limit: Math.min(f.limit ?? 500, 2000) });
+    const rows = await db.listAccounts(s.tenantId, { zoneIds, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, tag: f.tag || undefined, limit: Math.min(f.limit ?? 5000, 20000) });
     const members = await names();
-    const crm = f.fields && Object.values(f.fields).some(Boolean) ? await db.listFields(s.tenantId) : [];
+    const crm = f.fields && Object.values(f.fields).some(Boolean) ? (await db.listFields(s.tenantId)).filter((x) => x.target === 'account' && f.fields?.[x.key]) : [];
     const byField = (a: Account) => crm.every((fd) => matches(fd, a.fields[fd.key], f.fields?.[fd.key] ?? ''));
     const all = rows.filter(byField).map((a) => view(a, t.zones, members));
     const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 3, customer: 4, blocked: 5 };
@@ -279,6 +281,8 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
       return await db.saveField(s.tenantId, {
         key, label: v.label, type, options, group: v.group ?? null, help: v.help ?? null, required: v.required, inList: v.inList, filterable: v.filterable,
         segments: v.segments, position: prev?.position ?? (all.reduce((m, f) => Math.max(m, f.position), -1) + 1),
+        // El destino (empresa o persona) tampoco cambia: los valores viven en una tabla u otra.
+        target: prev?.target ?? v.target, tags: v.tags, isStage: type === 'select' && v.isStage,
       }, fieldId);
     } catch (e) { mapError(e); }
   }
@@ -293,7 +297,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const i = all.findIndex((f) => f.id === fieldId);
     const j = i + dir;
     if (i < 0 || j < 0 || j >= all.length) return;
-    const rec = (f: CrmField, position: number) => ({ key: f.key, label: f.label, type: f.type, options: f.options, group: f.group, help: f.help, required: f.required, inList: f.inList, filterable: f.filterable, segments: f.segments, position });
+    const rec = (f: CrmField, position: number) => ({ key: f.key, label: f.label, type: f.type, options: f.options, group: f.group, help: f.help, required: f.required, inList: f.inList, filterable: f.filterable, segments: f.segments, position, target: f.target, tags: f.tags, isStage: f.isStage });
     const [a, b] = [all[i], all[j]];
     await db.saveField(s.tenantId, rec(a, j), a.id);
     await db.saveField(s.tenantId, rec(b, i), b.id);
@@ -305,7 +309,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     requireUse();
     const a = await db.getAccount(accountId);
     if (!a || a.tenantId !== s.tenantId) throw new AdminError(404, 'Cuenta no encontrada');
-    const fields = await db.listFields(s.tenantId);
+    const fields = (await db.listFields(s.tenantId)).filter((f) => f.target === 'account');
     const r = parseValues(fields, input);
     if (r.errors.length) throw new AdminError(422, 'Datos no válidos', r.errors);
     const next: FieldValues = { ...a.fields, ...r.values };
@@ -341,11 +345,13 @@ export type AccountsService = ReturnType<typeof createAccountsService>;
 
 /** Para contextos sin cuentas (tests de otros módulos). */
 export const emptyAccountsDb: AccountsDb = {
-  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; },
+  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async insertZones() { return []; },
   async listAssignments() { return []; }, async setAssignments() {}, async getRules() { return { claimDays: 30, strictZones: false, requireAccount: false }; },
   async saveRules() {}, async listAccounts() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
+  async insertAccounts() { throw new Error('sin cuentas'); }, async deleteAccountsByImport() { return 0; },
   async updateAccount() { return false; }, async deleteAccount() { return false; }, async touch() { return 'eligible'; }, async listTouches() { return []; },
   async preview() { return 'eligible'; }, async decide() { return false; },
-  async listFields() { return []; }, async saveField() { throw new Error('sin cuentas'); }, async archiveField() { return false; },
+  async listFields() { return []; }, async saveField() { throw new Error('sin cuentas'); }, async archiveField() { return false; }, async deleteField() { return false; },
+  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async saveAiResearch() { throw new Error('sin cuentas'); }, async getAiResearch() { return null; }, async getPriorityWeights() { return null; }, async savePriorityWeights() {},
 };
 export type { ZoneAssignment };

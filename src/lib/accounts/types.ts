@@ -1,5 +1,6 @@
 /** Zonas y cuentas (docs/ACCOUNTS.md) y campos del CRM (docs/CRM_DINAMICO.md). */
 import type { FieldValues } from '../crm/fields';
+import type { Qualification } from '../crm/priority';
 export type ZoneKind = 'country' | 'region' | 'province' | 'city' | 'area';
 export type AccountStatus = 'open' | 'customer' | 'blocked';
 export type Eligibility = 'eligible' | 'claimed_by_other' | 'blocked' | 'out_of_zone' | 'no_account';
@@ -33,7 +34,24 @@ export interface Account {
   createdAt: string;
   /** Valores de los campos del CRM del espacio (clave → valor). */
   fields: FieldValues;
+  /** Grupo al que pertenece (otra empresa). Un solo nivel. */
+  parentId: string | null;
+  /** Listas en las que está (p. ej. «proveedores-bodas»). */
+  tags: string[];
+  importId: string | null;
+  /** Contacto de la empresa (docs/CRM_DINAMICO.md §10). */
+  phone: string | null; email: string | null; instagram: string | null; linkedin: string | null; website: string | null; mapsUrl: string | null;
+  /** Próximo paso (lo que sale en «Hoy»). */
+  nextStep: string | null; nextStepAt: string | null; nextContactId: string | null; nextChannel: string | null;
+  /** Cualificación para la prioridad (docs/CRM_DINAMICO.md §11). */
+  qualification: Qualification;
+  /** Google Places: horario y ubicación (para la ruta del día). */
+  placeId: string | null; hours: string[] | null; lat: number | null; lng: number | null; placeStatus: string | null; placeAt: string | null;
+  /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
+  aiResearchAt: string | null;
 }
+export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'linkedin', 'website', 'mapsUrl'] as const;
+export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }
 

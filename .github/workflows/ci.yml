@@ -64,7 +64,7 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4322/admin/login)" = 503
       - name: Smoke E2E (modo DEMO)
         run: |
-          DEMO_MODE=1 DEV_TENANT_SLUG=enjoy PORT=4321 HOST=127.0.0.1 node dist/server/entry.mjs &
+          DEMO_MODE=1 DEV_TENANT_SLUG=enjoy AI_RESEARCH_FIXTURE=1 PORT=4321 HOST=127.0.0.1 node dist/server/entry.mjs &
           for _ in $(seq 1 30); do curl -sf http://127.0.0.1:4321/admin/login >/dev/null && break; sleep 1; done
           node scripts/smoke-e2e.cjs
           node scripts/smoke-admin.cjs
@@ -84,5 +84,11 @@ jobs:
           node scripts/smoke-welcome.cjs
           node scripts/smoke-learn.cjs
           node scripts/smoke-crm.cjs
+          node scripts/smoke-crm-people.cjs
+          node scripts/smoke-spaces.cjs
+          node scripts/smoke-followup.cjs
+          node scripts/smoke-priority.cjs
+          node scripts/smoke-route.cjs
+          node scripts/smoke-ai-research.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

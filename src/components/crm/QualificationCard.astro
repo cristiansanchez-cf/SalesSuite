@@ -1,0 +1,79 @@
+---
+/**
+ * Cualificación de un clic (docs/CRM_DINAMICO.md §11): cada criterio son botones visibles, sin desplegables. Pulsar
+ * marca; pulsar lo marcado lo desmarca (vuelve a «no se sabe»). Arriba, la puntuación, el máximo y de dónde sale.
+ */
+import { OPTIONS, type Priority, type Qualification } from '~/lib/crm/priority';
+import { i18n } from '~/lib/i18n';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+
+interface Props { q: Qualification; p: Priority; canEdit: boolean; cooling: number | null }
+const { q, p, canEdit, cooling } = Astro.props;
+const { m: R } = i18n(Astro, priorityMessages);
+type Row = { key: string; label: string; hint: string; field: keyof Qualification | null; options: Array<[string, string]>; part?: Priority['parts'][number] };
+const recField = p.kind === 'venue' ? 'nights' : p.kind === 'promoter' ? 'events' : p.kind === 'concert' ? 'recurring' : null;
+const rows: Row[] = ([
+  { key: 'recurrence', label: R.criteria.recurrence, hint: R.hints.recurrence[p.kind ?? 'none'], field: recField,
+    options: recField ? Object.keys(OPTIONS[recField]).map((k) => [k, (R.options[recField] as Record<string, string>)[k]]) : [] },
+  { key: 'decider', label: R.criteria.decider, hint: R.hints.decider, field: 'decider', options: Object.keys(OPTIONS.decider).map((k) => [k, R.options.decider[k as keyof typeof R.options.decider]]) },
+  { key: 'screens', label: R.criteria.screens, hint: R.hints.screens, field: 'screens', options: Object.keys(OPTIONS.screens).map((k) => [k, R.options.screens[k as keyof typeof R.options.screens]]) },
+  { key: 'dynamics', label: R.criteria.dynamics, hint: R.hints.dynamics, field: 'dynamics', options: Object.keys(OPTIONS.dynamics).map((k) => [k, R.options.dynamics[k as keyof typeof R.options.dynamics]]) },
+  { key: 'scale', label: R.criteria.scale, hint: R.hints.scale, field: 'scale', options: Object.keys(OPTIONS.scale).map((k) => [k, R.options.scale[k as keyof typeof R.options.scale]]) },
+] as Row[]).map((r) => ({ ...r, part: p.parts.find((x) => x.key === r.key) }));
+const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ','));
+---
+<section id="qual" class="co-card grid gap-4" data-testid="qualification" data-score={p.score} data-out={p.out ? 'true' : 'false'} data-qualified={p.qualified ? 'true' : 'false'}>
+  <div class="flex items-start justify-between gap-3">
+    <div class="grid min-w-0 gap-1">
+      <h2 class="co-entity">{R.title}</h2>
+      <p class="co-meta">{R.lede}</p>
+    </div>
+    <div class="grid shrink-0 justify-items-end gap-1 text-right">
+      {p.out
+        ? <span class="co-tag !bg-[var(--co-ink)] !text-[var(--co-canvas)]" data-testid="qual-out">{R.outBy(p.kills.map((k) => R.kills[k]).join(' · '))}</span>
+        : <span class="co-figure text-4xl" data-testid="qual-score">{p.score}</span>}
+      {!p.out && <span class="co-meta" data-testid="qual-max">{p.qualified ? R.qualified : `${R.unqualified} · ${R.upTo(p.max)}`}</span>}
+      {cooling !== null && <span class="co-tag co-tag--danger" title={R.coolingHelp} data-testid="qual-cooling">{R.cooling(cooling)}</span>}
+    </div>
+  </div>
+
+  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form">
+    <input type="hidden" name="action" value="qualify" />
+    <fieldset class="grid gap-3" disabled={!canEdit}>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="co-meta w-40 shrink-0">{R.kind}</span>
+        {(['venue', 'promoter', 'concert'] as const).map((k) => (
+          <button type="submit" name="set" value={`kind:${k}`} class="co-chip" aria-pressed={p.kind === k ? 'true' : 'false'} data-testid={`qual-kind-${k}`}>{R.kinds[k]}</button>
+        ))}
+      </div>
+      {rows.map((r) => (
+        <div class="grid gap-1.5 border-t border-[var(--co-rule)] pt-3" data-criterion={r.key}>
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <span class="co-row-title">{r.label} <span class="co-meta font-normal">· {r.hint}</span></span>
+            <span class="co-meta tabular-nums" data-testid={`qual-points-${r.key}`}>{r.part?.points === null || r.part?.points === undefined ? `${R.unknown} / ${r.part?.weight}` : `${fmt(r.part.points)} / ${r.part.weight}`}</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {r.field && r.options.map(([v, l]) => (
+              <button type="submit" name="set" value={`${r.field}:${v}`} class:list={['co-chip', r.key === 'screens' && v === 'no' && 'qual-kill']}
+                aria-pressed={q[r.field!] === v ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{l}</button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div class="grid gap-1.5 border-t border-[var(--co-rule)] pt-3" data-criterion="kills">
+        <span class="co-row-title">{R.killsTitle} <span class="co-meta font-normal">· {R.killsHelp}</span></span>
+        <div class="flex flex-wrap gap-2">
+          {(['coverage', 'validate', 'debt'] as const).map((k) => (
+            <button type="submit" name="set" value={`${k}:true`} class="co-chip qual-kill" aria-pressed={q[k] ? 'true' : 'false'} data-testid={`qual-kill-${k}`}
+              title={k === 'validate' ? R.validateHelp : undefined}>{R.kills[k]}{k === 'validate' && <span class="co-meta"> · {R.validateHelp}</span>}</button>
+          ))}
+        </div>
+      </div>
+    </fieldset>
+  </form>
+</section>
+
+<style>
+  [data-testid=qualification] .co-chip[aria-pressed=true] { background: var(--co-ink); color: var(--co-canvas); border-color: var(--co-ink); }
+  [data-testid=qualification] .qual-kill[aria-pressed=true] { background: #b42318; border-color: #b42318; color: #fff; }
+</style>

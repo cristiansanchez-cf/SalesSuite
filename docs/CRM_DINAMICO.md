@@ -163,7 +163,7 @@ Lo mismo sirve para cargar locales investigados («foco Valencia») y para Oquea
 | Fase | Qué incluye | Pruebas |
 |---|---|---|
 | **1 · Campos** ✅ | `crm_field` + `account.fields` (migración `20261102000000_crm_fields.sql`), editor en *Equipo → Campos del CRM*, «Ficha» en cada cuenta con secciones, columnas y filtros en la lista, `crm.fields` en `tenant.json` | `src/lib/crm/fields.test.ts`, `supabase/tests/47_crm_fields.test.sql`, contrato de cuentas (demo y Postgres), `scripts/smoke-crm.cjs` |
-| **2 · Importar** | Asistente de 4 pasos con mapeo, duplicados, vista previa y deshacer. **Aquí cargamos tu Notion** | Smoke con un CSV de Notion real (anonimizado) |
+| **2 · Empresas, personas e importar** ✅ | Grupos de un nivel, personas en varias empresas con su papel, alta rápida con «¿dónde?», bandeja sin empresa, listas (etiquetas) con sus campos y su etapa, mover en bloque a un grupo, importador (mapeo → vista previa → importar → deshacer). Migración `20261103000000_crm_people.sql` | `src/lib/crm/import.test.ts`, `supabase/tests/48_crm_people.test.sql`, contrato de cuentas (demo y Postgres), `scripts/smoke-crm-people.cjs` (CSV inventado) |
 | **3 · Etapas, actividad y «Hoy»** | `crm_stage`, `crm_activity`, próximo paso en la cuenta, «Hoy» en Inicio, resumen diario ampliado | Smoke del ciclo completo |
 | **4 · Vistas** | Vistas guardadas, tablero por etapa, «Foco Valencia» | Smoke de filtros y tablero |
 | **5 · Automatizar** | Cadencias, disparadores, contactos con campos propios, unificación total con situaciones | Por regla |
@@ -225,6 +225,27 @@ cubren cada pantalla antes y después del cambio.
   `dj-residente` y `aforo` (`scripts/apply-crm-17.py`); Oquea puede añadir los suyos en su `tenant.json`.
 - **Menú**: `src/lib/ui/nav.ts` (`groups`, `navFor`, `sectionTabs`); las pestañas las pinta `AdminLayout`.
 
+## 8 ter. Cómo quedó la fase 2
+
+- **Datos**: `account.parent_id` (grupo, un solo nivel: trigger `account_parent_check`), `account.tags` y
+  `crm_contact.tags` (listas: «fbd», «proveedores-bodas»), `crm_contact` (persona) y `crm_contact_account`
+  (persona ↔ empresa con `role`), `crm_import` (archivo, mapeo, estado y lo necesario para deshacer). Los campos tienen
+  `target` (empresa o persona), `tags` (solo salen en esas listas) e `is_stage` (la etapa: chips en la lista).
+- **RLS**: el equipo ve y añade personas y vínculos; edita quien la lleva, quien la creó o un/a gerente (o si no es de
+  nadie); borrar personas e importar es de admin o gerente; crear campos al importar, solo admin.
+- **Importar** (`src/lib/crm/import.ts`, puro): `readCsv` → `profileColumns` (dato de serie, campo existente o nuevo
+  con su tipo adivinado) → `suggestMapping` (valores sin emojis y variantes unificadas: «DJ/AV» = «DJ + AV») →
+  `buildPlan`. Duplicados exactos fuera; personas por email, LinkedIn o nombre + empresa; empresas por nombre (+ ciudad
+  al importar empresas); «CEO», «DJ»… en la columna de empresa no crean empresas (pasan a papel o notas); responsables
+  por nombre parcial (si no es del equipo, queda sin asignar); ciudades → zonas (las nuevas, dentro del país); lo que no
+  encaja en su campo va a notas como «Columna: valor». Al fusionar no se pisa nada: solo se rellenan huecos.
+- **Deshacer**: borra lo creado (`import_id`), devuelve lo fusionado a su estado anterior, quita los vínculos nuevos,
+  archiva los campos creados y borra las ciudades que quedaron vacías.
+- **Servicio**: `admin.crm.*` (`src/lib/crm/service.ts`). Pantallas: `Cuentas → Empresas | Personas | Importar`
+  (`/admin/accounts`, `/admin/people`, `/admin/import`), ficha de empresa con «Grupo y personas», ficha de persona,
+  y en *Campos del CRM* las pestañas Empresas / Personas con destino, listas y etapa.
+- **Postgres**: las lecturas grandes van por páginas de 1000 (`paged`), porque PostgREST corta ahí.
+
 ## 9. Lo que necesito de ti para empezar
 
 1. **El CSV de Notion** (exportación completa, con todas las propiedades) y, si puedes, una captura de la vista de la
@@ -233,3 +254,105 @@ cubren cada pantalla antes y después del cambio.
 3. **Tus etapas** reales del embudo (cómo las llamas tú).
 4. **Cómo haces hoy el seguimiento** (qué miras, cada cuánto, qué se te escapa).
 5. Para el foco Valencia: **qué zonas y qué tipo de local** son prioridad.
+
+## 10. Seguimiento (fase 3a, hecho)
+
+Pedido de Cristian (9-oct-2026): que la app quite carga mental. Investigar → contactar → cita → propuesta, con el
+historial claro y el próximo paso siempre puesto.
+
+- **Contacto de la empresa** (de serie): teléfono, email, Instagram, LinkedIn, web y Google Maps
+  (`20261105000000_crm_activity.sql`). En la ficha, botones de un toque (llamar, WhatsApp, email, abrir Instagram…).
+  Si la empresa no tiene un dato y su persona principal sí, se usa el de la persona y se dice «de Marta» (empresa
+  pequeña: el móvil del dueño). Al importar empresas, Email / Teléfono / Instagram / LinkedIn / Web van aquí.
+- **Interacciones** (`crm_activity`): con quién, por dónde (Instagram, LinkedIn, WhatsApp, llamada, email, visita,
+  reunión) y qué pasó (sin respuesta, contestó, interesado, no interesado, cita, o solo una nota de investigación).
+  Cada uno apunta y borra lo suyo; el equipo lo ve. Apuntar cuenta como contacto (renueva la reserva).
+- **Próximo paso** (en la empresa): lo fija el comercial o lo propone la regla (`src/lib/crm/followup.ts`):
+  - vías en orden: redes (Instagram, LinkedIn, WhatsApp) → teléfono → email → visita;
+  - máximo **3 mensajes sin respuesta por persona**; después la siguiente persona de la empresa (hasta 3);
+  - si nadie contesta, **visita en persona**; una respuesta reinicia la cuenta;
+  - si contesta o hay interés, se propone seguir en 2 días (manda el comercial); «no interesado» cierra.
+- **«Hoy en tus cuentas»** (Inicio): vencido → hoy → mañana de las empresas que llevas, con qué hacer, con quién, la
+  última interacción y el contacto a un toque.
+- **Arreglo del FBD** (Cuentas → Importar → Arreglos): el Instagram del local guardado en la persona pasa a la empresa.
+- Pruebas: `followup.test.ts`, contrato de cuentas (demo y Postgres), `supabase/tests/49_crm_activity.test.sql`,
+  `scripts/smoke-followup.cjs`.
+
+**Siguiente** (pendiente de decidir con Cristian): prioridad automática por casillas clave; modo «Investigar» por
+zona; Google Places (horario, mapa, ruta del día); primera búsqueda con IA (marcada «sin verificar»); WhatsApp de ida
+y vuelta (aviso con mensaje propuesto y, al responder con audio o captura, nueva interacción).
+
+## 11. Prioridad de los leads (hecho)
+
+Criterio cerrado con Cristian (9-oct-2026). Lógica en `src/lib/crm/priority.ts` (pura, probada).
+
+- **Eliminatorios** (no es ponderación, es filtro: salen del ranking con la etiqueta del motivo): sin cobertura móvil ·
+  sin pantalla y sin intención (se marca solo al elegir «No y no quiere») · no pueden validar lo que sale (**solo si lo
+  han dicho ellos**) · deudas, cierre o viabilidad.
+- **Puntuación** (pesos configurables por el admin en *Equipo → Campos del CRM → Prioridad*; suman 100):
+
+  | Criterio (peso) | Tramos (parte del peso) |
+  |---|---|
+  | Recurrencia (30) · local o sala | noches/semana: 1 → 10 %, 2 → 40 %, 3 → 75 %, 4+ → 100 % |
+  | · promotora | eventos/año: 1–2 → 20 %, 3–5 → 45 %, 6–11 → 70 %, 12+ → 100 % |
+  | · conciertos | programa recurrente → 100 %, evento único → 20 % |
+  | Decide quien te atiende (25) | decide y pisa el local 100 %, decide pero no pisa 35 %, encargado sin firma 20 % |
+  | Pantallas (20) | sí 100 %, no pero quiere 40 %, no y no quiere → eliminatorio |
+  | Dinámicas o redes (15) | sí 100 %, a medias 50 %, no 0 % |
+  | Escala (10) | un local 20 %, 2–3 locales 60 %, grupo o varias salas 100 % |
+
+  El tipo (local, promotora, conciertos) sale del sector (`KIND_BY_SEGMENT`) o se elige con un clic en la ficha.
+- **Lo que no se sabe no es 0**: suma solo lo conocido y enseña «hasta N si se cualifica». El ranking ordena por la
+  puntuación actual (no por el máximo). Filtro «Sin cualificar».
+- **Se enfría**: contestó o mostró interés y llevamos **3 días laborables** sin hacer nada → etiqueta roja y el primero
+  en «Hoy». No toca la puntuación (la urgencia es un orden, no una calidad).
+- **Un clic**: la cualificación son botones visibles en la ficha; pulsar lo marcado lo desmarca. Cualificar no reserva
+  la empresa (RPC `account_qualify`: libre o mía, o un/a gerente).
+- Las personas heredan la prioridad de su mejor empresa (lista de Personas, «Por prioridad»).
+- **Google Places** (`GOOGLE_MAPS_API_KEY`): «Buscar en Google» en la ficha (eliges el resultado) y «Completar con
+  Google» en la lista (hasta 20 por clic, solo si el nombre coincide). Rellena huecos (teléfono, web, dirección, Maps) y
+  guarda horario y ubicación (RPC `account_research`; nunca pisa lo escrito a mano).
+- Migración `20261106000000_crm_priority.sql`; pruebas `priority.test.ts`, `places.test.ts`, contrato de cuentas,
+  `supabase/tests/50_crm_priority.test.sql`, `scripts/smoke-priority.cjs`.
+
+## 12. Ruta del día (hecho)
+
+`/admin/route` (`src/lib/crm/route.ts`, `crm.routePlan`): las visitas que tocan, en el orden más corto.
+
+- **Qué entra**: mis empresas con próximo paso «Visita» vencido o para hoy. O las que elijas en Cuentas (casillas →
+  «Ruta con estas», hasta 20 paradas). Desde «Hoy» en Inicio sale el botón «Ruta del día» cuando hay visitas.
+- **Orden**: primero por cercanía; con `GOOGLE_MAPS_API_KEY`, la Routes API (`computeRoutes` con
+  `optimizeWaypointOrder`) optimiza las paradas intermedias y da los tiempos reales. Sin Google o si falla, orden por
+  cercanía y tiempos a 30 km/h de media (lo dice en pantalla).
+- **«Desde donde estoy»**: la ubicación del navegador va en la URL (`?desde=lat,lng`) y la ruta sale de ahí. No se
+  guarda.
+- **Cada parada**: llegada estimada (tramo + 20 min por visita), horario de hoy de Google con aviso si cierra, la
+  puntuación, «Cómo llegar» y «Apuntar» (va al seguimiento de la ficha).
+- **Abrir en Google Maps**: la ruta entera en un enlace (`/maps/dir/?api=1`); si hay más de 10 paradas, en tramos.
+- Las que no tienen ubicación salen aparte con «Buscar en Google» (ficha → Google Places, §11). Las que Google da por
+  cerradas, avisadas y fuera de la ruta.
+- Sin migración: usa `lat`, `lng` y `hours` de §11. Pruebas `route.test.ts` y `scripts/smoke-route.cjs`.
+
+## 13. Investigación con IA (hecho)
+
+Pedido de Cristian: «que cuando llegues ya haya un poco de info», pero sin fiarse a ciegas. Un primer repaso en la web
+que **propone**; el comercial decide.
+
+- **Dónde**: en la ficha de la empresa, «Investigar con IA» (tarjeta encima de Cualificación). Tarda hasta un minuto.
+- **Qué hace** (`src/lib/crm/research.ts`): Claude (`claude-opus-5-5`, esfuerzo bajo, con respaldo automático si se
+  niega) busca y lee lo público (web, Google, prensa, agendas) con las herramientas de búsqueda y lectura web, y
+  rellena `save_research` (esquema estricto) con: resumen, «para mirar tú» (lo que solo ve un humano: stories,
+  ambiente, quién manda), y propuestas de **cualificación**, **contacto de la empresa** y **personas**. Le pasamos el
+  nombre, la zona, lo que ya sabemos, el sector (con su ICP y actores) y qué vende el equipo (pitch del playbook).
+- **Nada sin fuente**: cada propuesta lleva la frase que la prueba y la URL. `sanitizeResearch` descarta lo que no
+  tiene fuente http(s) o prueba, valores fuera de lo permitido, lo que ya está en la ficha y duplicados. La IA no
+  puede proponer «decide quien te atiende», «sin cobertura» ni «no pueden validar» (solo los sabe el comercial).
+- **Un clic**: Aceptar guarda en la ficha **sin pisar** (cualificación si está sin marcar; contacto si el hueco está
+  vacío; persona nueva enlazada a la empresa, con la fuente en sus notas). Descartar no toca nada. Todo «sin
+  verificar». Investigar no reserva la empresa.
+- **Permisos y coste**: como «Completar con Google» (libre, mía o gerente; se comprueba antes de llamar a la IA). Una
+  vez cada 2 minutos por empresa. Coste aproximado: céntimos por empresa (búsquedas web + tokens).
+- **Configuración**: `ANTHROPIC_API_KEY` en Vercel (sin ella, la tarjeta lo dice y no hay botón). Para las pruebas
+  automáticas, `AI_RESEARCH_FIXTURE=1` usa una respuesta fija sin llamar a nadie.
+- Migración `20261107000000_crm_ai_research.sql` (`account.ai_research`, RPC `account_ai_research`); pruebas
+  `research.test.ts`, contrato de cuentas, `supabase/tests/51_crm_ai_research.test.sql`, `scripts/smoke-ai-research.cjs`.

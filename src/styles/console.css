@@ -560,5 +560,11 @@ html.console select:not([multiple]):not([size]) {
 }
 .co-chip--quiet { border-style: dashed; color: var(--co-ink-dim); }
 
+/* Barra de selección en bloque (Cuentas → mover a un grupo). */
+.co-bulkbar { position: fixed; z-index: 40; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 14px; background: var(--co-canvas-elevated); border: 1px solid var(--co-rule); box-shadow: 0 12px 32px rgb(0 0 0 / .18); }
+.co-bulkbar[hidden] { display: none; }
+/* Urgencia (CRM: «se enfría»): rojo, distinto de la calidad. */
+.co-tag--danger { background: #fdecea; border-color: #f5c2bd; color: #b42318; font-weight: 600; }
 /* Contenido traducido automáticamente (docs/I18N.md §Contenido): aviso discreto arriba de la página. */
 .console .co-auto-translated { margin: 0 0 1rem; padding: .5rem .85rem; border-radius: 10px; background: var(--co-signal-soft, #ece6fc); color: var(--co-signal-ink, #2a1066); font-size: .8rem; line-height: 1.4; }

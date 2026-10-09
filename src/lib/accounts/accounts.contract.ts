@@ -8,6 +8,9 @@ import type { NotifyDb } from '../notify/db';
 import type { PlaybookDb } from '../playbook/db';
 import type { TenantContext } from '../types';
 import type { AccountsDb } from './db';
+import type { CrmDb } from '../crm/db';
+import { createCrmService } from '../crm/service';
+import { fixtureResearch } from '../crm/research';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const U = {
@@ -25,6 +28,7 @@ export interface AccountsEnv {
   evidenceDbFor(userId: string): EvidenceDb;
   notifyDbFor(userId: string): NotifyDb;
   accountsDbFor(userId: string): AccountsDb;
+  crmDbFor(userId: string): CrmDb;
   /** Segundo comercial (lo crea el entorno). */
   rep2: { id: string; email: string };
   /** Simula el paso del tiempo: caduca la reserva de una cuenta. */
@@ -44,7 +48,7 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const r = await buildAdminContext(E.adminDbFor(u.id), { id: u.id, email: u.email, name: null }, tenant, 'demo', {
         identity: null, assets: { async upload() { throw new Error('x'); } }, supabase: null,
         playbookDb: E.playbookDbFor(u.id), evidenceDb: E.evidenceDbFor(u.id), partnerDb: () => E.partnerDbFor(u.id),
-        notifyDb: E.notifyDbFor(u.id), accountsDb: (id) => E.accountsDbFor(id),
+        notifyDb: E.notifyDbFor(u.id), accountsDb: (id) => E.accountsDbFor(id), crmDb: (id) => E.crmDbFor(id),
       });
       if (r.kind !== 'ok') throw new Error(`login ${u.email}: ${r.kind}`);
       return r.admin;
@@ -223,6 +227,205 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect((await rep.accounts.get(sol)).account.fields['tiene-pantalla']).toBe(true);
       await admin.accounts.moveField((await admin.accounts.crmFields()).find((f) => f.key === 'aforo')!.id, -1);
       expect((await admin.accounts.crmFields()).map((f) => f.key)).toEqual(['aforo', 'noches']);
+    });
+    test('CRM fase 2: personas en varias empresas, grupos de un nivel, alta rápida y bandeja', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      // Alta rápida: la persona y «¿dónde?» con una empresa nueva al vuelo.
+      const bruno = await rep.crm.quickAdd({ name: 'Bruno', company: 'La Brecha', role: 'Fundador', email: 'BRUNO@brecha.test', tag: 'FBD' });
+      expect(bruno.accountId).toBeTruthy();
+      const again = await rep.crm.quickAdd({ name: 'Eva', company: 'la brecha', role: 'Sala' });
+      expect(again.accountId).toBe(bruno.accountId);  // misma empresa, no un duplicado
+      await rep.crm.quickAdd({ name: 'Sin Sitio' });
+      await rep.crm.link(bruno.id, { company: 'Club Faro', role: 'DJ' });
+      const p = await rep.crm.person(bruno.id);
+      expect(p.person).toMatchObject({ email: 'bruno@brecha.test', tags: ['fbd'], ownerId: U.rep.id });
+      expect(p.person.companies.map((c) => `${c.name}:${c.role}`).sort()).toEqual(['Club Faro:DJ', 'La Brecha:Fundador']);
+      const all = await rep.crm.people();
+      expect(all.tray).toBe(1);
+      expect((await rep.crm.people({ company: 'none' })).items.map((x) => x.name)).toEqual(['Sin Sitio']);
+      expect((await rep.crm.people({ tag: 'fbd' })).items.map((x) => x.name)).toEqual(['Bruno']);
+      expect((await rep.crm.similar('bruno')).map((x) => x.name)).toEqual(['Bruno']);
+
+      // Grupo de un nivel: el comercial agrupa sus empresas; un grupo no entra en otro.
+      const faro = p.person.companies.find((c) => c.name === 'Club Faro')!.accountId;
+      const g = await rep.crm.moveToGroup([bruno.accountId!, faro], { groupName: 'Grupo Costa' });
+      expect(g.moved).toBe(2);
+      const brecha = await rep.crm.company(bruno.accountId!);
+      expect(brecha.group?.name).toBe('Grupo Costa');
+      expect(brecha.people.map((x) => x.name).sort()).toEqual(['Bruno', 'Eva']);
+      expect((await rep.crm.company(g.groupId!)).locales.map((a) => a.name).sort()).toEqual(['Club Faro', 'La Brecha']);
+      const otro = await admin.accounts.create({ name: 'Holding' });
+      await rejects(admin.crm.moveToGroup([g.groupId!], { groupId: otro }), 422);
+      await rejects(admin.crm.moveToGroup([otro], { groupId: bruno.accountId! }), 422);
+
+      // Permisos: el comercial no borra personas ni importa.
+      await rejects(rep.crm.deletePerson(bruno.id), 403);
+      await rejects(rep.crm.importStart('x.csv', 'Nombre\nA', 'account'), 403);
+      await admin.crm.deletePerson(again.id);
+      expect((await rep.crm.company(bruno.accountId!)).people.map((x) => x.name)).toEqual(['Bruno']);
+    });
+
+    test('CRM fase 2: importar empresas y personas, fusionar con lo que hay y deshacer', async () => {
+      const admin = await ctx(U.admin);
+      const es = await admin.accounts.saveZone({ name: 'España', kind: 'country' });
+      await admin.accounts.saveZone({ name: 'Valencia', parentId: es });
+      const viejo = await admin.accounts.create({ name: 'Beat DJ', notes: 'Ya hablamos' });
+
+      // Empresas: duplicados fuera, estado como etapa, tipos unificados, ciudad nueva como zona, lista propia.
+      const csv = 'Nombre,Ciudad,Estado Lead,Tipo,Precio desde €,Email\n'
+        + 'Luz y Ritmo,Valencia,🆕 Sin contactar,DJ/AV,"€1,200.00",hola@luz.test\n'
+        + 'Luz y Ritmo,Valencia,🆕 Sin contactar,DJ/AV,"€1,200.00",hola@luz.test\n'
+        + 'Sonido Sur,Sevilla,✅ Interesado,DJ / AV,€300.00,correo-raro\n'
+        + 'Beat DJ,Málaga,🆕 Sin contactar,DJ,€250.00,\n';
+      const imp = await admin.crm.importStart('proveedores.csv', csv, 'account');
+      const draft = await admin.crm.importDraft(imp);
+      expect(draft.rowCount).toBe(4);
+      const { plan, mapping } = await admin.crm.importPreview(imp);
+      expect(plan.stats).toMatchObject({ duplicates: 1, accountsCreated: 2, accountsMerged: 1, toNotes: 1 });
+      await admin.crm.importPreview(imp, { ...mapping, tag: 'proveedores-bodas', options: { 'Estado Lead': ['Sin contactar', 'Interesado', 'Acuerdo cerrado'] } });
+      const st = await admin.crm.importRun(imp);
+      expect(st).toMatchObject({ accountsCreated: 2, accountsMerged: 1, zonesCreated: 2, fieldsCreated: 3 });
+      expect((await admin.accounts.list({ scope: 'all' })).items.find((a) => a.name === 'Luz y Ritmo')?.email).toBe('hola@luz.test');
+      await rejects(admin.crm.importRun(imp), 409);
+      const fields = await admin.accounts.crmFields();
+      const estado = fields.find((f) => f.key === 'estado-lead')!;
+      expect(estado).toMatchObject({ isStage: true, tags: ['proveedores-bodas'], target: 'account' });
+      expect(estado.options.map((o) => o.label)).toEqual(['Sin contactar', 'Interesado', 'Acuerdo cerrado']);
+      const list = (await admin.accounts.list({ scope: 'all' })).items;
+      const luz = list.find((a) => a.name === 'Luz y Ritmo')!;
+      expect(luz).toMatchObject({ tags: ['proveedores-bodas'], fields: { 'precio-desde': 1200, tipo: 'dj-av', 'estado-lead': 'sin-contactar' } });
+      expect(luz.zonePath).toBe('España › Valencia');
+      expect(list.find((a) => a.name === 'Sonido Sur')!.notes).toBe('Email: correo-raro');
+      const beat = list.find((a) => a.id === viejo)!;
+      expect(beat).toMatchObject({ notes: 'Ya hablamos', tags: ['proveedores-bodas'], fields: { 'precio-desde': 250 } });
+      expect(beat.zonePath).toContain('Málaga');
+
+      // Personas: una persona en una empresa que ya existe; los cargos en «Empresa» no crean empresas.
+      const people = 'Name,Empresa/Local,Rol,Ciudad,Status\nBruno,Luz y Ritmo,Owner,Valencia,No comenzado\nCarla,CEO,,Valencia,Investigado\nDani,Nueva Sala,Artist,Valencia,Hablando\n';
+      const imp2 = await admin.crm.importStart('fbd.csv', people, 'contact');
+      const pv = await admin.crm.importPreview(imp2);
+      await admin.crm.importPreview(imp2, { ...pv.mapping, tag: 'fbd' });
+      expect(await admin.crm.importRun(imp2)).toMatchObject({ contactsCreated: 3, accountsCreated: 1, accountsMerged: 1, links: 2, noCompany: 1 });
+      const ps = (await admin.crm.people({ tag: 'fbd' })).items;
+      expect(ps.find((x) => x.name === 'Carla')!.companies).toEqual([]);
+      expect(ps.find((x) => x.name === 'Bruno')!.companies.map((c) => `${c.name}:${c.role}`)).toEqual(['Luz y Ritmo:Owner']);
+      expect(ps.find((x) => x.name === 'Bruno')!.fields).toMatchObject({ status: 'no-comenzado' });
+
+      // Deshacer: lo creado se va, lo fusionado vuelve a como estaba, los campos nuevos se archivan.
+      expect(await admin.crm.importUndo(imp2)).toMatchObject({ people: 3, companies: 1 });
+      expect((await admin.crm.people()).items).toHaveLength(0);
+      expect(await admin.crm.importUndo(imp)).toMatchObject({ companies: 2 });
+      const after = (await admin.accounts.list({ scope: 'all' })).items;
+      expect(after.map((a) => a.name)).toEqual(['Beat DJ']);
+      expect(after[0]).toMatchObject({ notes: 'Ya hablamos', tags: [], fields: {}, zoneId: null });
+      expect((await admin.accounts.crmFields()).map((f) => f.key)).toEqual([]);
+      expect((await admin.accounts.territory()).zones.map((z) => z.name).sort()).toEqual(['España', 'Valencia']);
+      await rejects(admin.crm.importUndo(imp), 409);
+    });
+    test('CRM fase 3: contacto de la empresa, interacciones, regla de los 3 intentos y «Hoy»', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      const marta = await rep.crm.quickAdd({ name: 'Marta', company: 'Club Hoy', role: 'Gerente', phone: '+34 600 000 001' });
+      const acc = marta.accountId!;
+      await rep.crm.setCompanyContact(acc, { instagram: '@clubhoy', email: 'HOLA@clubhoy.test', website: 'clubhoy.test' });
+      const a = (await rep.accounts.get(acc)).account;
+      expect(a).toMatchObject({ instagram: 'https://www.instagram.com/clubhoy/', email: 'hola@clubhoy.test', website: 'https://clubhoy.test' });
+
+      // Primer contacto: sin respuesta → la app propone otra vía con la misma persona en 2 días.
+      const s1 = await rep.crm.logActivity(acc, { contactId: marta.id, channel: 'instagram', outcome: 'no_reply', note: 'Mensaje por IG' });
+      expect(s1).toMatchObject({ contactId: marta.id, channel: 'whatsapp', reason: 'retry', attempt: 2 });
+      await rep.crm.logActivity(acc, { contactId: marta.id, channel: 'whatsapp', outcome: 'no_reply' });
+      const s3 = await rep.crm.logActivity(acc, { contactId: marta.id, channel: 'phone', outcome: 'no_reply' });
+      expect(s3).toMatchObject({ channel: 'visit', reason: 'visit' });  // una sola persona: tras 3 sin respuesta, en persona
+      const tl = await rep.crm.timeline(acc);
+      expect(tl.items.map((x) => x.channel)).toEqual(['phone', 'whatsapp', 'instagram']);
+      expect(tl.next).toMatchObject({ channel: 'visit', contactId: marta.id });
+
+      // Una nota de investigación no cuenta como intento ni cambia el próximo paso.
+      expect(await rep.crm.logActivity(acc, { channel: 'other', outcome: 'note', note: 'Padre e hija, negocio familiar' })).toBeNull();
+
+      // El próximo paso lo puede fijar el comercial; «Hoy» lo enseña con su contexto.
+      await rep.crm.setNextStep(acc, { at: new Date(Date.now() - 86_400_000).toISOString(), channel: 'whatsapp', contactId: marta.id, step: 'Proponer cita el jueves' });
+      const today = await rep.crm.today();
+      expect(today.counts.overdue).toBe(1);
+      expect(today.items[0]).toMatchObject({ name: 'Club Hoy', bucket: 'overdue', nextStep: 'Proponer cita el jueves', contactName: 'Marta', contactPhone: '+34 600 000 001' });
+      expect(today.items[0].last?.outcome).toBe('note');
+      expect((await admin.crm.today()).items).toHaveLength(0);           // «Hoy» es de quien la lleva
+      await rep.crm.setNextStep(acc, null);
+      expect((await rep.crm.today()).items).toHaveLength(0);
+
+      // Arreglo: el Instagram del local guardado en la persona pasa a la empresa.
+      const p = await rep.crm.quickAdd({ name: 'Bruno', company: 'Sala Luna Llena', instagram: 'https://www.instagram.com/salalunallena/' });
+      const prev = await admin.crm.instagramToCompanies(false);
+      expect(prev.count).toBe(1);
+      await admin.crm.instagramToCompanies(true);
+      expect((await rep.accounts.get(p.accountId!)).account.instagram).toBe('https://www.instagram.com/salalunallena/');
+      expect((await rep.crm.person(p.id)).person.instagram).toBeNull();
+      await rejects(rep.crm.instagramToCompanies(false), 403);
+    });
+    test('CRM prioridad: cualificar con un clic sin reservar, pesos del admin y «se enfría» primero en «Hoy»', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      const libre = await admin.accounts.create({ name: 'Sala Prioridad' });
+      // Cualificar una empresa libre no la reserva; pulsar lo mismo otra vez lo desmarca.
+      await rep.crm.qualify(libre, 'kind:venue');
+      await rep.crm.qualify(libre, 'nights:4+');
+      await rep.crm.qualify(libre, 'decider:onsite');
+      await rep.crm.qualify(libre, 'screens:yes');
+      await rep.crm.qualify(libre, 'screens:yes');
+      let a = (await rep.accounts.get(libre)).account;
+      expect(a.qualification).toEqual({ kind: 'venue', nights: '4+', decider: 'onsite' });
+      expect(a.ownerId).toBeNull();
+      await rep.crm.qualify(libre, 'validate:true');
+      expect((await rep.accounts.get(libre)).account.qualification.validate).toBe(true);
+      await rejects(rep.crm.qualify(libre, 'nights:9'), 422);
+
+      // Una empresa de otro: el comercial no la cualifica.
+      const ajena = await admin.accounts.create({ name: 'Sala Ajena' });
+      await admin.accounts.assign(ajena, E.rep2.id);
+      await rejects(rep.crm.qualify(ajena, 'nights:2'), 403);
+
+      // Pesos: solo admin y deben sumar 100.
+      expect(await rep.crm.weights()).toEqual({ recurrence: 30, decider: 25, screens: 20, dynamics: 15, scale: 10 });
+      await rejects(rep.crm.saveWeights({ recurrence: 40, decider: 25, screens: 15, dynamics: 10, scale: 10 }), 403);
+      await rejects(admin.crm.saveWeights({ recurrence: 50, decider: 25, screens: 15, dynamics: 10, scale: 10 }), 422);
+      await admin.crm.saveWeights({ recurrence: 40, decider: 25, screens: 15, dynamics: 10, scale: 10 });
+      expect((await rep.crm.weights()).recurrence).toBe(40);
+
+      // Contestó hace una semana y no hemos hecho nada: se enfría y sale el primero en «Hoy».
+      const mia = await rep.crm.quickAdd({ name: 'Lucía', company: 'Club Frío' });
+      await rep.crm.logActivity(mia.accountId!, { contactId: mia.id, channel: 'whatsapp', outcome: 'interested', happenedAt: new Date(Date.now() - 8 * 86_400_000).toISOString() },
+        { at: new Date(Date.now() + 20 * 86_400_000).toISOString().slice(0, 10) });
+      const hoy = await rep.crm.today();
+      expect(hoy.items[0]).toMatchObject({ name: 'Club Frío', bucket: 'cooling' });
+      expect(hoy.items[0].cooling).toBeGreaterThanOrEqual(3);
+      expect((await rep.crm.cooling([mia.accountId!])).get(mia.accountId!)).toBeGreaterThanOrEqual(3);
+      await rep.crm.logActivity(mia.accountId!, { contactId: mia.id, channel: 'whatsapp', outcome: 'no_reply' });
+      expect((await rep.crm.cooling([mia.accountId!])).size).toBe(0);
+    });
+
+    test('CRM investigación con IA: propuestas con fuente; aceptar rellena huecos sin reservar; la de otro no', async () => {
+      const admin = await ctx(U.admin);
+      const repCtx = await ctx(U.rep);
+      const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, { places: null, routes: null, research: fixtureResearch() });
+      const libre = await admin.accounts.create({ name: 'Sala IA' });
+      const r = await rep.aiRun(libre, { sector: null, seller: 'Enjoy' });
+      expect(r.suggestions.map((x) => (x.kind === 'person' ? 'person' : x.key))).toEqual(['nights', 'screens', 'email', 'person']);
+      const sid = (k: string) => r.suggestions.find((x) => (x.kind === 'person' ? 'person' : x.key) === k)!.id;
+      await rep.aiDecide(libre, sid('email'), true);
+      await rep.aiDecide(libre, sid('nights'), true);
+      await rep.aiDecide(libre, sid('screens'), false);
+      const a = (await repCtx.accounts.get(libre)).account;
+      expect(a).toMatchObject({ email: 'hola@ejemplo.test', ownerId: null });
+      expect(a.qualification).toEqual({ nights: '3' });
+      expect(a.aiResearchAt).toBeTruthy();
+      expect((await rep.aiResearch(libre))?.suggestions.map((x) => x.status)).toEqual(['accepted', 'dismissed', 'accepted', 'open']);
+      await rejects(rep.aiRun(libre, { sector: null, seller: 'Enjoy' }), 409);
+
+      const ajena = await admin.accounts.create({ name: 'Sala IA Ajena' });
+      await admin.accounts.assign(ajena, E.rep2.id);
+      await rejects(rep.aiRun(ajena, { sector: null, seller: 'Enjoy' }), 403);
     });
   });
 }

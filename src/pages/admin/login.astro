@@ -4,7 +4,7 @@
  * Contraseña opcional para quien la prefiera. Colaboradores: solo código (docs/PARTNERS.md).
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
-import { authMode, demoLogin, safeNext, supabaseServerClient } from '~/lib/admin/auth';
+import { authMode, codeSentAt, demoLogin, safeNext, serviceIdentity, supabaseServerClient } from '~/lib/admin/auth';
 import { demoSendCode, demoVerifyCode } from '~/lib/admin/otp-demo';
 import { demoDb } from '~/lib/data/store';
 import { requestOrigin } from '~/lib/http';
@@ -45,13 +45,28 @@ if (Astro.request.method === 'POST') {
       codeEmail = email;
       info = SENT;
     } else {
-      const sb = supabaseServerClient(Astro);
-      const redirectTo = `${origin}/admin/auth/confirm?next=${encodeURIComponent(next)}`;
-      const { error: e } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
-      // Mismo mensaje exista o no la cuenta (no enumerar usuarios). El motivo real, al registro del servidor (Vercel → Logs).
-      if (e) console.warn('[login] código no enviado:', e.status, e.code ?? '', e.message);
-      if (e && e.status !== 400 && e.status !== 422) error = e.status === 429 ? rateMessage(e.message) : m.login.errSend;
-      else { codeEmail = email; info = SENT; }
+      // Primero, nuestro correo (Resend): no depende de los límites del correo de Supabase y se ve en su panel.
+      // Un envío por email cada 45 s (en este servidor) para que nadie lo use para llenar el buzón de otro.
+      const last = codeSentAt.get(email) ?? 0;
+      let sent = false;
+      if (Date.now() - last < 45_000) { codeEmail = email; info = SENT; sent = true; }
+      else {
+        try {
+          sent = (await serviceIdentity()?.sendLoginCode?.(email, { origin, next })) ?? false;
+          if (sent) { codeSentAt.set(email, Date.now()); codeEmail = email; info = SENT; }
+        } catch (err) {
+          console.warn('[login] código propio no enviado, se usa el de Supabase:', err instanceof Error ? err.message : err);
+        }
+      }
+      if (!sent) {
+        const sb = supabaseServerClient(Astro);
+        const redirectTo = `${origin}/admin/auth/confirm?next=${encodeURIComponent(next)}`;
+        const { error: e } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
+        // Mismo mensaje exista o no la cuenta (no enumerar usuarios). El motivo real, al registro del servidor (Vercel → Logs).
+        if (e) console.warn('[login] código no enviado:', e.status, e.code ?? '', e.message);
+        if (e && e.status !== 400 && e.status !== 422) error = e.status === 429 ? rateMessage(e.message) : m.login.errSend;
+        else { codeEmail = email; info = SENT; }
+      }
     }
   } else if (action === 'code-resume' && /^\S+@\S+\.\S+$/.test(email)) {
     // Volver al paso del código sin pedir otro (evita el límite de envíos).
@@ -68,6 +83,8 @@ if (Astro.request.method === 'POST') {
       const sb = supabaseServerClient(Astro);
       let { error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'email' });
       if (e) ({ error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'magiclink' }));
+      // Cuenta invitada que aún no había entrado: su código es de tipo «invite».
+      if (e) ({ error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'invite' }));
       if (!e) return Astro.redirect(next, 303);
       error = m.login.errCode;
     }

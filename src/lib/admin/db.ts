@@ -133,6 +133,13 @@ export interface AdminDb {
 export interface Identity {
   /** Devuelve el usuario existente o lo invita por email (sin crear membership). */
   findOrInvite(email: string, opts: { redirectTo: string }): Promise<{ userId: string; invited: boolean }>;
+  /** Token de un solo uso para abrir sesión en otro dominio de la plataforma (cambiar de espacio). No envía email. */
+  oneTimeLogin?(email: string): Promise<string>;
+  /**
+   * Código para entrar enviado por nuestro correo (Resend). `false` si no hay correo propio configurado (se usa el de
+   * Supabase). Si la cuenta no existe no envía nada y devuelve `true` igual: la pantalla no dice si existe.
+   */
+  sendLoginCode?(email: string, opts: { origin: string; next: string }): Promise<boolean>;
 }
 
 /** Subida de assets (logos, fuentes, imágenes) al almacenamiento del tenant. */

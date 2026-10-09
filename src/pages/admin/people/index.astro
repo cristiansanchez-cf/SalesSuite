@@ -1,0 +1,206 @@
+---
+/**
+ * Personas (docs/CRM_DINAMICO.md fase 2): el directorio de con quién habláis y dónde está cada uno.
+ * Alta rápida con «¿dónde?» (la empresa se crea al vuelo) y la bandeja de quien aún no tiene empresa.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { formatValue, matches } from '~/lib/crm/fields';
+import { i18n } from '~/lib/i18n';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+import { crmMessages } from '~/lib/i18n/messages/crm';
+import { shellMessages } from '~/lib/i18n/messages/shell';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { compareLeads, priorityOf, type Priority } from '~/lib/crm/priority';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: P, locale } = i18n(Astro, peopleMessages);
+const CF = crmMessages[locale].filters;
+const CC = crmMessages[locale].card;
+const S = shellMessages[locale];
+const R = priorityMessages[locale];
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let to = '';
+  result = await formAction(async () => {
+    if (str('action') === 'quick') {
+      const r = await admin.crm.quickAdd({ name: str('name'), company: str('company'), role: str('role'), email: str('email'), phone: str('phone'),
+        instagram: str('instagram'), linkedin: str('linkedin'), city: str('city'), tag: str('tag') });
+      to = `/admin/people?ok=created&id=${r.id}${str('tag') ? `&lista=${encodeURIComponent(str('tag'))}` : ''}`;
+    }
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+
+const q = Astro.url.searchParams;
+const lista = q.get('lista') ?? '';
+const tray = q.get('ver') === 'sin-empresa';
+const search = q.get('q') ?? '';
+const shownMax = Math.max(100, Math.min(Number(q.get('n')) || 100, 20000));
+const [{ items, tray: trayCount }, lists, allFields, companies] = await Promise.all([
+  admin.crm.people({ q: search, tag: lista, company: tray ? 'none' : undefined }), admin.crm.lists(), admin.accounts.crmFields(),
+  admin.accounts.list({ scope: 'all' }).then((r) => r.items.map((a) => a.name)),
+]);
+// La prioridad de una persona es la de su mejor empresa (docs/CRM_DINAMICO.md §11).
+const [weights, segs] = await Promise.all([admin.crm.weights(), admin.playbook.market()]);
+const segKey = new Map(segs.map((sg) => [sg.id, sg.key]));
+const bestOf = (cs: (typeof items)[number]['companies']): Priority | null =>
+  cs.map((c) => priorityOf(c.qualification, segKey.get(c.segmentId ?? '') ?? null, weights)).sort(compareLeads)[0] ?? null;
+const orden = q.get('orden') === 'prioridad';
+const fields = allFields.filter((x) => x.target === 'contact' && (!x.tags.length || x.tags.includes(lista)));
+const filterable = fields.filter((x) => x.filterable);
+const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
+const columns = fields.filter((x) => x.inList);
+const stage = lista ? fields.find((x) => x.isStage) : undefined;
+const prio = new Map(items.map((p) => [p.id, bestOf(p.companies)]));
+let filtered = items.filter((p) => filterable.every((fd) => matches(fd, p.fields[fd.key], fieldFilter[fd.key] ?? '')));
+if (orden) filtered = [...filtered].sort((x, y) => { const a = prio.get(x.id), b = prio.get(y.id); return a && b ? compareLeads(a, b) : a ? -1 : b ? 1 : 0; });
+const peopleLists = lists.filter((l) => l.people > 0);
+const href = (p: Record<string, string>) => {
+  const u = new URLSearchParams({ ...(orden ? { orden: 'prioridad' } : {}), ...(lista ? { lista } : {}), ...(tray ? { ver: 'sin-empresa' } : {}), ...(search ? { q: search } : {}),
+    ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
+  for (const [k, v] of [...u]) if (!v) u.delete(k);
+  return `/admin/people${u.size ? `?${u}` : ''}`;
+};
+const okMsg = flash(Astro.url, { created: P.person.ok.created });
+const newId = q.get('id');
+---
+<AdminLayout title={P.people.title}>
+  <PageHeader eyebrow={P.people.eyebrow} title={P.people.title} lede={P.people.lede}>
+    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{P.people.import}</a>}
+    <button type="button" class="co-btn co-btn--primary" data-dialog-open="quick-add" data-testid="person-add"><Icon name="user-plus" size={16} />{P.people.add}</button>
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {peopleLists.length > 0 && (
+    <div class="co-chips mb-4" data-scroll-x data-testid="lists" aria-label={P.lists.label}>
+      <a class="co-chip" href={href({ lista: '' })} aria-current={!lista ? 'true' : undefined}>{P.people.allLists}</a>
+      {peopleLists.map((l) => <a class="co-chip" href={href({ lista: l.tag })} aria-current={lista === l.tag ? 'true' : undefined} data-list={l.tag}><Icon name="tag" size={12} />{l.tag} · {l.people}</a>)}
+    </div>
+  )}
+  <nav class="co-tabs mb-4" aria-label={P.people.title} data-scroll-x>
+    <a class="co-tab" href={href({ ver: '' })} aria-current={!tray ? 'page' : undefined}>{P.people.all}</a>
+    <a class="co-tab" href={href({ orden: orden ? '' : 'prioridad' })} aria-current={orden ? 'page' : undefined} data-testid="sort-priority">↓ {R.list.sort}</a>
+    <a class="co-tab" href={href({ ver: 'sin-empresa' })} aria-current={tray ? 'page' : undefined} data-testid="tray">{P.people.tray} · {trayCount}</a>
+  </nav>
+  {tray && <p class="co-meta mb-4">{P.people.trayHelp}</p>}
+  {stage && (
+    <div class="co-chips mb-4" data-scroll-x data-testid="stage-chips" aria-label={P.lists.stage}>
+      {stage.options.map((o) => { const n = items.filter((p) => p.fields[stage.key] === o.key).length; return (
+        <a class="co-chip" href={href({ [`c.${stage.key}`]: fieldFilter[stage.key] === o.key ? '' : o.key })} aria-current={fieldFilter[stage.key] === o.key ? 'true' : undefined}>{o.label} · {n}</a>
+      ); })}
+    </div>
+  )}
+  <div class="mb-5 flex flex-wrap items-end gap-3">
+    {filterable.filter((x) => x !== stage).length > 0 && (
+      <form method="get" class="flex flex-wrap items-end gap-3" data-testid="crm-filters" aria-label={CF.title}>
+        {lista && <input type="hidden" name="lista" value={lista} />}
+        {tray && <input type="hidden" name="ver" value="sin-empresa" />}
+        {search && <input type="hidden" name="q" value={search} />}
+        {stage && fieldFilter[stage.key] && <input type="hidden" name={`c.${stage.key}`} value={fieldFilter[stage.key]} />}
+        {filterable.filter((x) => x !== stage).map((fd) => (
+          <label class="co-field !gap-1 text-xs">{fd.label}
+            {fd.type === 'checkbox' ? (
+              <select class="co-select !min-h-[34px]" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option><option value="yes" selected={fieldFilter[fd.key] === 'yes'}>{CC.yes}</option><option value="no" selected={fieldFilter[fd.key] === 'no'}>{CC.no}</option></select>
+            ) : fd.type === 'select' || fd.type === 'multi_select' ? (
+              <select class="co-select !min-h-[34px]" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option>{fd.options.map((o) => <option value={o.key} selected={fieldFilter[fd.key] === o.key}>{o.label}</option>)}</select>
+            ) : (
+              <input class="co-input !min-h-[34px]" name={`c.${fd.key}`} value={fieldFilter[fd.key] ?? ''} placeholder={CF.search} data-field={fd.key} />
+            )}
+          </label>
+        ))}
+        <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="crm-filter-apply">{CF.apply}</button>
+        {Object.keys(fieldFilter).length > 0 && <a class="co-meta underline" href={href(Object.fromEntries(Object.keys(fieldFilter).map((k) => [`c.${k}`, ''])))}>{CF.clear}</a>}
+      </form>
+    )}
+    <form method="get" class="ml-auto flex min-w-[14rem] flex-1 sm:flex-none" role="search">
+      {lista && <input type="hidden" name="lista" value={lista} />}
+      {tray && <input type="hidden" name="ver" value="sin-empresa" />}
+      {Object.entries(fieldFilter).map(([k, v]) => <input type="hidden" name={`c.${k}`} value={v} />)}
+      <label class="sr-only" for="people-q">{P.people.search}</label>
+      <input id="people-q" class="co-input" type="search" name="q" value={search} placeholder={P.people.search} />
+    </form>
+  </div>
+
+  {filtered.length === 0
+    ? (items.length === 0 && !search && !lista && !tray
+        ? <EmptyState kind="create" title={P.people.emptyTitle} detail={P.people.emptyDetail} action={{ dialog: 'quick-add', label: P.people.add }} />
+        : <EmptyState kind="filter" title={P.people.emptyFilter} clearHref="/admin/people" />)
+    : <ul class="co-rows" data-testid="people">
+        {filtered.slice(0, shownMax).map((p) => (
+          <li class:list={['co-row', p.id === newId && 'co-row--attention']} data-testid="person" data-name={p.name}>
+            <span class="co-row__lead"><Icon name="user" /></span>
+            <a class="co-row__main text-inherit !no-underline" href={`/admin/people/${p.id}`}>
+              <span class="co-row-title">{p.name}</span>
+              <span class="co-meta">
+                {p.companies.length
+                  ? p.companies.map((c) => `${c.role ? `${c.role} · ` : ''}${c.name}${c.groupName ? ` (${c.groupName})` : ''}`).join(' — ')
+                  : P.people.noCompany}
+                {p.city ? ` · ${p.city}` : ''}
+              </span>
+              {(columns.some((c) => formatValue(c, p.fields[c.key], locale)) || p.tags.length > 0) && (
+                <span class="mt-1 flex flex-wrap gap-1.5" data-testid="person-columns">
+                  {columns.map((c) => { const v = formatValue(c, p.fields[c.key], locale); return v ? <span class="co-tag">{c.type === 'checkbox' ? c.label.replace(/^¿|\?$/g, '') : `${c.label}: ${v}`}</span> : null; })}
+                  {!lista && p.tags.map((t) => <span class="co-tag"><Icon name="tag" size={10} />{t}</span>)}
+                </span>
+              )}
+            </a>
+            {(() => { const pr = prio.get(p.id); return pr ? (pr.out ? <span class="co-tag">{R.outBy(R.kills[pr.kills[0]])}</span> : <span class="co-tag" data-testid="person-priority"><strong>{pr.score}</strong>{!pr.qualified && <span class="co-meta">&nbsp;· {R.upTo(pr.max)}</span>}</span>) : null; })()}
+            {p.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${p.phone}`} aria-label={p.phone}><Icon name="phone" size={14} /></a>}
+            {p.email && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${p.email}`} aria-label={p.email}><Icon name="mail" size={14} /></a>}
+            {p.instagram && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={p.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Icon name="camera" size={14} /></a>}
+            <span class="co-row__chevron"><Icon name="chevron-right" /></span>
+          </li>
+        ))}
+      </ul>}
+  {filtered.length > shownMax && (
+    <p class="mt-4 flex items-center gap-3"><a class="co-btn co-btn--ghost co-btn--sm" href={href({ n: String(shownMax + 200) })} data-testid="more">{P.people.more}</a><span class="co-meta">{P.people.shown(shownMax, filtered.length)}</span></p>
+  )}
+
+  <dialog id="quick-add" class="co-dialog co-dialog--wide" aria-labelledby="quick-add-title">
+    <form method="post" data-testid="quick-add-form">
+      <input type="hidden" name="action" value="quick" />
+      <div class="co-dialog__body">
+        <h2 id="quick-add-title" class="co-entity">{P.quick.title}</h2>
+        <p class="co-body">{P.quick.body}</p>
+        <label class="co-field">{P.quick.name}<input class="co-input" name="name" required maxlength="160" autocomplete="off" /></label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="co-field">{P.quick.where} <span class="co-help">{P.quick.whereHelp}</span>
+            <input class="co-input" name="company" maxlength="160" list="company-names" placeholder={P.quick.wherePh} autocomplete="off" data-testid="quick-where" /></label>
+          <label class="co-field">{P.quick.role} <span class="co-help">{P.quick.optional}</span><input class="co-input" name="role" maxlength="80" placeholder={P.quick.rolePh} /></label>
+        </div>
+        <datalist id="company-names">{[...new Set(companies)].slice(0, 2000).map((n) => <option value={n} />)}</datalist>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="co-field">{P.quick.email} <span class="co-help">{P.quick.optional}</span><input class="co-input" type="email" name="email" maxlength="200" /></label>
+          <label class="co-field">{P.quick.phone} <span class="co-help">{P.quick.optional}</span><input class="co-input" type="tel" name="phone" maxlength="40" /></label>
+        </div>
+        <details>
+          <summary class="co-meta cursor-pointer">{P.quick.more}</summary>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <label class="co-field">{P.quick.instagram}<input class="co-input" name="instagram" maxlength="300" placeholder="@" /></label>
+            <label class="co-field">{P.quick.linkedin}<input class="co-input" name="linkedin" maxlength="300" /></label>
+            <label class="co-field">{P.quick.city}<input class="co-input" name="city" maxlength="80" /></label>
+            <label class="co-field">{P.quick.list} <span class="co-help">{P.quick.listHelp}</span><input class="co-input" name="tag" maxlength="48" value={lista} list="list-names" /></label>
+          </div>
+          <datalist id="list-names">{lists.map((l) => <option value={l.tag} />)}</datalist>
+        </details>
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+        <button class="co-btn co-btn--primary" type="submit" data-testid="quick-create">{P.quick.create}</button>
+      </div>
+    </form>
+  </dialog>
+</AdminLayout>

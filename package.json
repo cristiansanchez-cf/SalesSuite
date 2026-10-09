@@ -25,6 +25,7 @@
     "tenant:translate": "tsx scripts/content-translate.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
     "@astrojs/node": "^9.5.5",
     "@astrojs/svelte": "^7.2.5",
     "@astrojs/tailwind": "^6.0.2",
@@ -42,7 +43,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.132.1",
     "@astrojs/check": "^0.9.10",
     "@types/node": "^22.20.5",
     "svelte-check": "^4.7.6",

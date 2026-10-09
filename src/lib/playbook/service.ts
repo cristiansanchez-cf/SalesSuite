@@ -10,6 +10,7 @@ import type { AdminSession, CatalogVersion } from '../admin/types';
 import type { PlaybookDb } from './db';
 import { changeInputSchema, contextInputSchema, personaInputSchema, playInputSchema, segmentInputSchema, tipInputSchema, TOUR_UI } from './schema';
 import { buildContext, type ContextBrief } from './context';
+import { stripMarkdown } from './markdown';
 import { sectorRank, type PersonaView, type SegmentView } from './market';
 import { buildTalkTrack, type TalkTrack } from './talk-track';
 import {
@@ -308,6 +309,14 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
           .sort((a, b) => a.priority - b.priority),
       }));
     return { segments: views, personas: personaViews, moduleNames: modName };
+  }
+
+  /** Qué vende el equipo, en una línea (para la investigación con IA): el nombre del espacio y su pitch oficial. */
+  async function sellerLine(): Promise<string> {
+    const [{ plays }, tenant] = await Promise.all([load(), adb.getTenant(s.tenantId)]);
+    const pitch = plays.find((p) => official(p) && p.moduleId === null && p.kind === 'pitch');
+    const name = tenant?.name ?? 'nuestra empresa';
+    return pitch ? `${name}. ${stripMarkdown(pitch.body).replace(/\s+/g, ' ').slice(0, 700)}` : name;
   }
 
   async function market() {
@@ -628,7 +637,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   return {
     isAdmin, isPartner, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen,
-    market, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
+    market, sellerLine, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
     listAll, listAllVisible, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };
 }

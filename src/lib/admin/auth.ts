@@ -20,6 +20,7 @@ import type { AdminDb } from './db';
 import type { AssetStore, Identity } from './db';
 import { demoAdminDb, demoAssets, demoIdentity } from './db-demo';
 import { supabaseAdminDb, supabaseAssets, supabaseIdentity } from './db-supabase';
+import { resendMailer } from '../notify/mailer';
 import { createAdminService, type AdminService } from './service';
 import { createTenantAdminService, type TenantAdminService } from './tenant-service';
 import type { PlaybookDb } from '../playbook/db';
@@ -36,6 +37,10 @@ import type { AccountsDb } from '../accounts/db';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { supabaseAccountsDb } from '../accounts/db-supabase';
 import { createAccountsService, emptyAccountsDb, type AccountsService } from '../accounts/service';
+import { createCrmService, emptyCrmDb, type CrmService } from '../crm/service';
+import type { CrmDb } from '../crm/db';
+import { demoCrmDb } from '../crm/db-demo';
+import { supabaseCrmDb } from '../crm/db-supabase';
 import type { CommissionsDb } from '../commissions/db';
 import { demoCommissionsDb } from '../commissions/db-demo';
 import { supabaseCommissionsDb } from '../commissions/db-supabase';
@@ -57,6 +62,8 @@ import { demoContentI18nDb, emptyContentI18nDb, supabaseContentI18nDb, type Cont
 import { translateAdminDb, translateEvidenceDb, translatePlaybookDb } from '../i18n/content-overlay';
 
 export const DEMO_COOKIE = 'ss_demo_user';
+/** Demo: espacio elegido en «Cambiar de espacio» (en producción el espacio lo decide el dominio). */
+export const DEMO_TENANT_COOKIE = 'ss_demo_tenant';
 
 export interface RequestLike {
   request: Request;
@@ -80,6 +87,7 @@ export interface AdminContext {
   notifications: NotifyService;
   /** Cuentas del CRM y territorio (docs/ACCOUNTS.md). */
   accounts: AccountsService;
+  crm: CrmService;
   /** Comisiones (docs/COMMISSIONS.md). */
   commissions: CommissionsService;
   /** Organigrama: delegaciones, gerentes y (superadmin) la plataforma (docs/ORG.md). */
@@ -97,7 +105,7 @@ export type AuthResult =
 
 export const authMode = (): 'supabase' | 'demo' => (appMode() === 'supabase' ? 'supabase' : 'demo');
 
-const cookieBase = (url: URL) => ({ path: '/', httpOnly: true, sameSite: 'lax' as const, secure: url.protocol === 'https:' });
+export const cookieBase = (url: URL) => ({ path: '/', httpOnly: true, sameSite: 'lax' as const, secure: url.protocol === 'https:' });
 
 export function supabaseServerClient(ctx: RequestLike): SupabaseClient {
   return createServerClient(env('PUBLIC_SUPABASE_URL')!, env('PUBLIC_SUPABASE_ANON_KEY')!, {
@@ -116,6 +124,7 @@ export interface Deps {
   notifyDb?: NotifyDb;
   /** Cuentas (opcional, igual que los avisos). Recibe el usuario: en demo replica auth.uid(). */
   accountsDb?: (userId: string) => AccountsDb;
+  crmDb?: (userId: string) => CrmDb;
   /** Comisiones (opcional). Recibe el usuario: en demo replica auth.uid(). */
   commissionsDb?: (userId: string) => CommissionsDb;
   /** Visitas a dossiers (opcional). */
@@ -174,6 +183,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service, minCloses: minClosesFor() }),
       notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
       accounts: createAccountsService(deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
+      crm: createCrmService(deps.crmDb?.(user.id) ?? emptyCrmDb, deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
         { admin: db, accounts: deps.accountsDb?.(user.id) ?? emptyAccountsDb }, session),
       analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),
@@ -183,9 +193,13 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
 }
 
 /** Service role SOLO para invitar usuarios. Si falta, invitar devuelve un 503 explicativo. */
-function serviceIdentity(): Identity | null {
+/** Último código pedido por email (un envío cada 45 s por servidor; ver login.astro). */
+export const codeSentAt: Map<string, number> = ((globalThis as { __codeSentAt?: Map<string, number> }).__codeSentAt ??= new Map());
+
+export function serviceIdentity(): Identity | null {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
-  return key ? supabaseIdentity(env('PUBLIC_SUPABASE_URL')!, key) : null;
+  const mail = env('RESEND_API_KEY') && env('RESEND_FROM') ? resendMailer(env('RESEND_API_KEY')!, env('RESEND_FROM')!) : null;
+  return key ? supabaseIdentity(env('PUBLIC_SUPABASE_URL')!, key, mail) : null;
 }
 
 export async function authenticate(ctx: RequestLike, tenant: TenantContext): Promise<AuthResult> {
@@ -193,14 +207,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb() });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

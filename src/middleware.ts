@@ -2,7 +2,7 @@ import { LOCALE_COOKIE } from './lib/i18n';
 import { resolveLocale } from './lib/i18n/core';
 import { withRequestLocale } from './lib/i18n/request';
 import { defineMiddleware } from 'astro:middleware';
-import { authenticate } from './lib/admin/auth';
+import { authenticate, DEMO_TENANT_COOKIE } from './lib/admin/auth';
 import { publicRepository } from './lib/data';
 import { env } from './lib/env';
 import { isSameOriginWrite, requestHost } from './lib/http';
@@ -39,6 +39,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   const timing = serverTiming();
+  // Demo: «Cambiar de espacio» guarda el espacio en una cookie (en producción manda el dominio).
+  const inConsole = /^\/(admin|_server-islands)(\/|$)/.test(context.url.pathname);
+  const demoSpace = appMode() === 'demo' && inConsole ? context.cookies.get(DEMO_TENANT_COOKIE)?.value : undefined;
+  if (demoSpace && !context.locals.tenant) context.locals.tenant = await publicRepository().resolveTenantBySlug(demoSpace);
   context.locals.tenant ??= await resolveTenant(publicRepository(), host, {
     devTenantSlug: env('DEV_TENANT_SLUG'),
     // Demo pública (p. ej. demo-ventas.cofundo.io): sin Supabase y con DEMO_MODE=1 explícito.
