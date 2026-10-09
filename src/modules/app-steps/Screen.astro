@@ -82,8 +82,15 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         </ul>
         <p class="as-foot">{L.savedBy(centerName)}</p>
       </Fragment>
-    ) : screen === 'qr-pick' ? (
+    ) : screen === 'qr-pick' || screen === 'qr-scan' ? (
       <Fragment>
+        {screen === 'qr-scan' && (
+          <div class="qs">
+            <span class="qs__hint">{L.scanHint}</span>
+            <span class="qs__frame"><span class="qs__qr" set:html={qr} /><i class="qs__line"></i></span>
+            <span class="qs__found"><Fragment set:html={ic('anchor', 14)} />{centerName}</span>
+          </div>
+        )}
         <div class="qp">
           <div class="qp-centre"><span class="qp-centre__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 16)} /><span><b>{centerName}</b><small><Fragment set:html={ic('pin', 10)} />{s.place}</small></span></div>
           <h3 class="qp-title">{L.whichActivity}</h3>
@@ -738,6 +745,23 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .lb-map__line--2 { top: 86px; right: 60px; opacity: .6; }
   .lb-map__pin { position: absolute; left: 50%; top: 48px; display: grid; place-items: center; width: 32px; height: 32px; margin-left: -16px; border-radius: 99px; background: #406ad0; color: #fff; box-shadow: 0 0 0 3px #fff; }
   .lb-map__tag { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 99px; background: rgb(255 255 255 / .94); color: var(--ap-navy); font-size: 11px; }
+
+  /* Escanear el QR: la cámara apunta al QR del centro, lo reconoce y aparece la actividad del día (solo fundidos) */
+  .qs { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 18px; background: #0b1530; color: #fff; }
+  .qs__hint { font-size: 13px; color: rgb(255 255 255 / .8); }
+  .qs__frame { position: relative; display: block; width: 200px; height: 200px; padding: 18px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 3px var(--ap-acc); overflow: hidden; }
+  .qs__qr, .qs__qr :global(svg) { display: block; width: 100%; height: 100%; color: var(--ap-navy); }
+  .qs__line { position: absolute; left: 10px; right: 10px; top: 12px; height: 3px; border-radius: 3px; background: var(--ap-acc); box-shadow: 0 0 12px var(--ap-acc); }
+  .qs__found { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--ap-acc); color: var(--ap-navy); font-size: 12px; font-weight: 700; opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .qs { animation: qs-out 6s infinite; }
+    .qs__line { animation: qs-sweep 6s infinite; }
+    .qs__found { animation: qs-found 6s infinite; }
+  }
+  @media (prefers-reduced-motion: reduce) { .qs { display: none; } }
+  @keyframes qs-sweep { 0% { top: 12px; } 15% { top: calc(100% - 15px); } 30% { top: 12px; } 31%, 100% { opacity: 0; } }
+  @keyframes qs-found { 0%, 30% { opacity: 0; } 34%, 100% { opacity: 1; } }
+  @keyframes qs-out { 0%, 44% { opacity: 1; } 50%, 94% { opacity: 0; } 100% { opacity: 1; } }
 
   /* Al escanear el QR: qué actividad haces hoy */
   .qp { display: flex; flex-direction: column; gap: 12px; height: calc(100% - 20px); }

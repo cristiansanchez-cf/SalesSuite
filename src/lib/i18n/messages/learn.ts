@@ -17,7 +17,7 @@ const es = {
   howCard: { title: 'Jugadas para abrir, seguir y cerrar', meta: (n: number) => (n === 1 ? '1 jugada' : `${n} jugadas`) },
   aboutCard: { title: 'La visión, la estrategia y cómo ganamos dinero', meta: (n: number) => (n === 1 ? '1 pieza' : `${n} piezas`) },
   tour: {
-    eyebrow: 'Lo que vendes', title: 'Así funciona, de principio a fin', lede: 'Lo que vive el invitado y lo que gana quien lo contrata.',
+    eyebrow: 'Lo que vendes', title: 'Así funciona, de principio a fin', lede: 'Lo que vive quien lo usa y lo que gana quien lo contrata.',
     got: 'Entendido', gotNext: 'Entendido: ahora, qué ofrecemos', back: 'Volver a Aprende', backWelcome: 'Volver a la bienvenida',
     empty: 'Tu empresa aún no ha preparado este recorrido. Mientras, mira qué ofrecemos.', seeOffer: 'Ver qué ofrecemos',
     flash: 'Hecho: ya sabes lo que vendes.', yourCentre: 'Tu centro',
@@ -52,7 +52,7 @@ export const learnMessages = defineMessages({
     howCard: { title: 'Plays to open, follow up and close', meta: (n) => (n === 1 ? '1 play' : `${n} plays`) },
     aboutCard: { title: 'Vision, strategy and how we make money', meta: (n) => (n === 1 ? '1 piece' : `${n} pieces`) },
     tour: {
-      eyebrow: 'What you sell', title: 'How it works, end to end', lede: 'What the guest experiences and what the buyer gets.',
+      eyebrow: 'What you sell', title: 'How it works, end to end', lede: 'What users experience and what the buyer gets.',
       got: 'Got it', gotNext: 'Got it: now, what we offer', back: 'Back to Learn', backWelcome: 'Back to the welcome',
       empty: 'Your company has not prepared this tour yet. Meanwhile, see what we offer.', seeOffer: 'See what we offer',
       flash: 'Done: you know what you sell.', yourCentre: 'Your centre',
@@ -84,7 +84,7 @@ export const learnMessages = defineMessages({
     howCard: { title: 'Jogadas para abrir, acompanhar e fechar', meta: (n) => (n === 1 ? '1 jogada' : `${n} jogadas`) },
     aboutCard: { title: 'A visão, a estratégia e como ganhamos dinheiro', meta: (n) => (n === 1 ? '1 peça' : `${n} peças`) },
     tour: {
-      eyebrow: 'O que você vende', title: 'Como funciona, do início ao fim', lede: 'O que o convidado vive e o que ganha quem contrata.',
+      eyebrow: 'O que você vende', title: 'Como funciona, do início ao fim', lede: 'O que vive quem usa e o que ganha quem contrata.',
       got: 'Entendi', gotNext: 'Entendi: agora, o que oferecemos', back: 'Voltar para Aprenda', backWelcome: 'Voltar às boas-vindas',
       empty: 'Sua empresa ainda não preparou este percurso. Enquanto isso, veja o que oferecemos.', seeOffer: 'Ver o que oferecemos',
       flash: 'Feito: você já sabe o que vende.', yourCentre: 'Seu centro',
@@ -116,7 +116,7 @@ export const learnMessages = defineMessages({
     howCard: { title: '시작하고, 이어 가고, 성사시키는 플레이', meta: (n) => `플레이 ${n}개` },
     aboutCard: { title: '비전, 전략, 수익 구조', meta: (n) => `${n}개 항목` },
     tour: {
-      eyebrow: '무엇을 파나요', title: '처음부터 끝까지, 이렇게 작동합니다', lede: '게스트가 경험하는 것과 계약한 사람이 얻는 것.',
+      eyebrow: '무엇을 파나요', title: '처음부터 끝까지, 이렇게 작동합니다', lede: '사용하는 사람이 경험하는 것과 계약한 사람이 얻는 것.',
       got: '이해했어요', gotNext: '이해했어요: 이제 제공하는 것 보기', back: '판매 배우기로 돌아가기', backWelcome: '환영 안내로 돌아가기',
       empty: '아직 회사에서 이 안내를 준비하지 않았습니다. 그동안 제공하는 것을 살펴보세요.', seeOffer: '제공하는 것 보기',
       flash: '완료: 이제 무엇을 파는지 알아요.', yourCentre: '우리 센터',

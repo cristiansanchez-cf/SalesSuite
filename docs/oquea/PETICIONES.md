@@ -28,6 +28,12 @@
 | `scripts/content-translate.ts`, `production.yml` (`traducir`), `tenant-bootstrap.ts` (`content_i18n`) | Traducción con Claude; secreto nuevo `ANTHROPIC_API_KEY` | Ninguno para Enjoy |
 | `src/modules/app-steps/app-text.ts` y pantallas | Textos fijos de las pantallas de Oquea en es/en/pt/ko | Ninguno (plantillas de Oquea) |
 | `scripts/smoke-learn.cjs` | Caso Oquea: los 5 pasos con UI (no capturas), azul del tema, 1440 y 375 px sin scroll | Ninguno |
+| Estilos de módulos, `DossierView.astro`, `console.css` (9-oct) | **Sin animaciones de zoom** en ningún sitio (Cristian): tarjetas que pasan, diapositivas del dossier, flechas, tarjetas de Aprende, mensajes y QR del móvil. Solo fundidos | Bajo: Enjoy también pierde sus zooms (lo pidió «de todos los sitios») |
+| `console.css` (`.learn-card__bg`) | Las fotos de fondo de Aprende y de la bienvenida, nítidas (antes difuminadas); la UI en iframe sigue difuminada | Bajo: Enjoy también |
+| `src/pages/admin/welcome.astro`, `messages/welcome.ts` | «Qué vendemos» → «Qué es <empresa>» con su argumento general (jugada `pitch` sin módulo ni sector; la fijada). Sin precios en el catálogo y con recorrido, ya no salen las diapositivas («Condiciones», «Portada»…) | Bajo: Enjoy enseña su argumento si lo tiene; sus módulos siguen si tienen precio |
+| `src/modules/KitCover.astro`, `LearnBody.astro`, `start.astro` | Portada del recorrido con la app: foto del primer paso y el móvil con las tarjetas pasando (en móvil, solo la foto) | Ninguno: Enjoy usa pantalla + móvil como antes |
+| `src/modules/app-steps/Screen.astro` (`qr-scan`) | Pantalla nueva: la cámara apunta al QR, lo reconoce y aparece «¿Qué actividad haces hoy?» | Ninguno (plantilla de Oquea) |
+| `messages/learn.ts` | Entradilla del recorrido sin «invitado» (era de Enjoy) | Ninguno |
 
 ## Pendiente (no lo he tocado)
 1. **La fuente de texto del espacio no llega al cuerpo de la propuesta.** `html` resuelve `font-family: var(--font-sans)`

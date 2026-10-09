@@ -68,34 +68,52 @@
   },
   "tour": [
     {
-      "title": "El centro crea la inmersión",
-      "body": "Hora, punto de inmersión y tipo. Los datos del punto ya están cargados.",
+      "title": "El mapa del buceo, en todo el mundo",
+      "body": "Puntos de inmersión, centros, ONGs y sus eventos, en un mapa. Un buceador que viaja (de Corea a España, o al revés) descubre ahí dónde bucear y con quién. Pronto, se apuntará a las actividades desde el mapa.",
+      "image": "asset:img/fondos/rayos-peces.webp",
+      "ui": "app:map"
+    },
+    {
+      "title": "Cada inmersión, una tarjeta para compartir",
+      "body": "El buceador comparte su inmersión en Instagram con una tarjeta: profundidad, tiempo, lo que vio y el nombre del centro. Para el centro es publicidad gratis, cada vez.",
+      "image": "asset:img/exportables/1-inmersion.webp",
+      "ui": "app:share-card"
+    },
+    {
+      "title": "Modo Strava: su vida de buceador",
+      "body": "Todas sus inmersiones en un logbook digital, con su perfil, sus récords y sus fotos. Lo enseña, lo comparte y vuelve a mirarlo. Por eso los buceadores se quedan.",
+      "image": "asset:img/fondos/pareja-arrecife.webp",
+      "ui": "app:logbook"
+    },
+    {
+      "title": "El centro lo gestiona desde su panel",
+      "body": "Las actividades del día, quién viene a cada una, su equipo y sus clientes. Desde el ordenador del centro.",
       "image": "asset:img/producto/web/01-panel-centro-actividades.png",
-      "ui": "app:create-activity"
+      "ui": "console:today"
     },
     {
       "title": "El buceador escanea el QR",
-      "body": "Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.",
+      "body": "Al volver de bucear, escanea el QR del centro y elige la actividad de hoy. Sin papeles ni formularios.",
       "image": "asset:img/producto/web/02-registro-qr-logbook.png",
-      "ui": "app:qr-pick"
+      "ui": "app:qr-scan"
     },
     {
-      "title": "La inmersión queda en su logbook",
-      "body": "Con los datos del punto de inmersión ya rellenos.",
+      "title": "Y la inmersión queda en su logbook",
+      "body": "Con los datos del punto de inmersión ya rellenos: profundidad, temperatura, vida marina. Sin escribir nada.",
       "image": "asset:img/producto/app/22-inmersion-guardada-es.png",
       "ui": "app:dive-saved"
     },
     {
-      "title": "Al centro le queda la lista",
-      "body": "Quién ha buceado con él y cuántas veces, con su histórico.",
+      "title": "Un CRM para que vuelvan",
+      "body": "Cada buceador que escanea entra en el CRM del centro: quién es, cuántas veces ha venido, qué ha hecho y cuándo fue la última. El centro sabe a quién llamar para que vuelva y cuida a sus clientes.",
       "image": "asset:img/producto/web/04-crm-perfil-buceador.png",
-      "ui": "app:crm-diver"
+      "ui": "console:crm"
     },
     {
-      "title": "Su nombre en cada tarjeta",
-      "body": "Cada vez que un buceador comparte su inmersión, sale el nombre del centro.",
-      "image": "asset:img/fotos/share-card-aerea.png",
-      "ui": "app:share-card"
+      "title": "Gratis para el centro; Oquea gana si le trae clientes",
+      "body": "Hoy el centro no paga nada. El modelo: cuando Oquea le lleva un cliente, Oquea se queda un 10 %. Es para que lo entiendas tú; con el centro, sigue el guion («En preparación»): sin fechas ni porcentajes.",
+      "image": "asset:img/fondos/buceadores-tortuga.webp",
+      "ui": "app:event"
     }
   ],
   "domains": [
@@ -124,13 +142,13 @@
         "title": "{company}: quién bucea contigo, y cuántas veces",
         "highlight": "{company}",
         "mark": "asset:isotipo-blanco.svg",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/rayos-peces.webp"
       }
     },
     {
       "key": "como-funciona",
       "block_type": "app-steps",
-      "name": "Cómo funciona",
+      "name": "Cómo funciona: QR y logbook",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -165,7 +183,7 @@
             "screen": "crm-list"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/buceadores-tortuga.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -183,7 +201,7 @@
     {
       "key": "tu-nombre",
       "block_type": "app-steps",
-      "name": "Tu nombre en cada inmersión",
+      "name": "Tarjetas para compartir",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -206,7 +224,7 @@
             "screen": "share-card"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pareja-arrecife.webp",
         "sample": {
           "cards": [
             "dive",
@@ -237,7 +255,7 @@
     {
       "key": "tus-buceadores",
       "block_type": "app-steps",
-      "name": "Tus buceadores",
+      "name": "CRM: los buceadores del centro",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -265,7 +283,7 @@
             "screen": "crm-diver"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/tiburon-ballena.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -283,7 +301,7 @@
     {
       "key": "perfil-y-mapa",
       "block_type": "app-steps",
-      "name": "Tu perfil y el mapa",
+      "name": "Perfil del centro y mapa",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -304,7 +322,7 @@
             "screen": "map"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pared-azul.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -383,7 +401,7 @@
             "screen": "event"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -410,7 +428,7 @@
         "title": "La red de centros fundadores",
         "highlight": "centros fundadores",
         "lede": "Lo que venga después de la lista de buceadores lo vamos a construir con los centros fundadores. Sois los que decís qué hace falta.",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/buceadores-tortuga.webp"
       }
     },
     {
@@ -424,13 +442,13 @@
       "props": {
         "title": "En preparación.",
         "lede": "Reserva y cobro online desde Oquea. No está disponible todavía. Se avisará a los centros fundadores cuando lo esté.",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pareja-arrecife.webp"
       }
     },
     {
       "key": "condiciones",
       "block_type": "app-steps",
-      "name": "Condiciones",
+      "name": "Condiciones para el centro",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -459,7 +477,7 @@
             "body": "El acuerdo firmado, el QR a la vista en el barco o en el local, y que el equipo lo mencione en el briefing."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/tiburon-ballena.webp"
       }
     },
     {
@@ -488,14 +506,14 @@
             "title": "3. Dejamos el QR puesto."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pared-azul.webp"
       }
     },
     {
       "key": "consola",
       "block_type": "center-console",
       "name": "Consola del centro",
-      "is_catalog": false,
+      "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
       "description": "La consola de escritorio: lo de hoy, quién viene, el CRM y tu centro. Interactiva.",
@@ -617,7 +635,7 @@
             "screen": "crm-diver"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -661,7 +679,7 @@
             "screen": "share-card"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/buceadores-tortuga.webp",
         "sample": {
           "cards": [
             "dive",
@@ -718,7 +736,7 @@
             "screen": "center-qr"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pareja-arrecife.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -770,7 +788,7 @@
             "screen": "create-activity"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/tiburon-ballena.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -819,7 +837,7 @@
             "screen": "dive-sites"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pared-azul.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -922,7 +940,7 @@
             "screen": "my-centres"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -968,7 +986,7 @@
             "href": "tel:+34623790890"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/buceadores-tortuga.webp"
       }
     },
     {
@@ -985,7 +1003,7 @@
         "title": "{company}: tu evento, en todos tus centros a la vez",
         "highlight": "{company}",
         "mark": "asset:isotipo-blanco.svg",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pareja-arrecife.webp"
       }
     },
     {
@@ -1005,7 +1023,7 @@
             "screen": "event"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/tiburon-ballena.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -1037,7 +1055,7 @@
             "screen": "badge"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pared-azul.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -1108,7 +1126,7 @@
             "screen": "map"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -1150,7 +1168,7 @@
             "body": "Que tus centros de buceo usen Oquea en tus eventos."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/buceadores-tortuga.webp"
       }
     },
     {
@@ -1179,7 +1197,7 @@
             "title": "3. Creamos tu primer evento."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pareja-arrecife.webp"
       }
     }
   ],
@@ -1188,7 +1206,7 @@
       "key": "centros-buceo",
       "name": "Centros de buceo",
       "icon": "anchor",
-      "image": "asset:img/fotos/share-card-bg.webp",
+      "image": "asset:img/fondos/buceadores-tortuga.webp",
       "description": "Centros de buceo que crean sus inmersiones y quieren saber quién bucea con ellos. Un mismo centro puede ser destino (recibe buceadores de fuera) y emisor (sus buceadores viajan).",
       "value_prop": "El buceador escanea el QR del centro y la inmersión se guarda en su logbook digital ya rellena. El centro obtiene la lista de los buceadores que han pasado por él, con su histórico.",
       "icp": "Centro destino: quiere recibir buceadores de otros países (Latinoamérica, validado en la feria de Brasil; Corea, SUPUESTO). Centro emisor: tiene buceadores locales que viajan (España, SUPUESTO; aún no se le ha planteado a nadie).",
@@ -1634,7 +1652,7 @@
       "key": "ong",
       "name": "ONGs",
       "icon": "heart",
-      "image": "asset:img/fotos/share-card-bg.webp",
+      "image": "asset:img/fondos/tiburon-ballena.webp",
       "description": "ONGs que organizan eventos con centros de buceo, como limpiezas de fondos.",
       "value_prop": "Su evento en todos sus centros a la vez: la gente se apunta desde el mapa en el centro más cercano, cada asistente se lleva su insignia y la ONG tiene a todos los participantes. Sin coste.",
       "icp": "ONG con varios centros de buceo colaboradores que organiza eventos (limpiezas u otras acciones).",
@@ -1977,10 +1995,10 @@
       "audience": "all",
       "about": false,
       "pinned": 1,
-      "title": "Oquea en una frase",
-      "body": "Oquea es una plataforma para buceadores y centros de buceo. El buceador escanea el QR del centro y la inmersión se guarda en su logbook digital ya rellena. El centro obtiene la lista de los buceadores que han pasado por él, con su histórico.",
+      "title": "Qué es Oquea",
+      "body": "Oquea es la comunidad del buceo: una especie de Strava para buceadores que conecta el mundo del buceo a nivel internacional. El buceador guarda cada inmersión en su logbook y la comparte. El centro de buceo tiene una herramienta para gestionar sus actividades y sus clientes, y aparece en el mapa para buceadores de todo el mundo.",
       "when_to_use": null,
-      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "why_it_works": "Cristian, 9-oct-2026 (al revisar la bienvenida). Antes: documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
       "technique_refs": [],
       "status": "official"
     },
@@ -3308,6 +3326,6 @@
       "Fun dive, Open Water, Advanced Open Water, Divemaster, Rescue Diver: keep in English.",
       "Names of places, dive sites and people: keep as written."
     ],
-    "notes": "Oquea is a platform for dive centres: divers scan the centre's QR after a dive and it is saved in their logbook; the centre keeps the list of its divers and appears on the map. Korean reps sell it to dive centres in Korea. Prices and commissions: keep numbers and the % sign exactly."
+    "notes": "Oquea is the diving community: a kind of Strava for divers that connects the diving world internationally, plus a management tool for dive centres. Divers scan the centre's QR after a dive and it is saved in their logbook; they share their dives with cards; the centre keeps its divers in a CRM and appears on the map. Korean reps sell it to dive centres in Korea. Prices and commissions: keep numbers and the % sign exactly."
   }
 }

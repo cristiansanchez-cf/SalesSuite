@@ -34,7 +34,7 @@ const sectorIcon = (i: string | null) => (i && i in ICONS ? i : 'target') as Ico
 // Lo comprobado primero; del resto, unas pocas hipótesis para empezar.
 const ranked = [...plays].sort((a, b) => b.evidence.won - a.evidence.won || a.position - b.position).slice(0, 3);
 const tourImgs = learn?.tour.steps.filter((s) => s.image) ?? [];
-const cover = tourImgs[Math.floor(tourImgs.length / 2)]?.image ?? learn?.modules.find((x) => x.cover)?.cover ?? null;
+const cover = tourImgs[0]?.image ?? learn?.modules.find((x) => x.cover)?.cover ?? null;
 const hasTour = (learn?.tour.steps.length ?? 0) > 0;
 
 const phone = admin.mode === 'supabase' && admin.supabase

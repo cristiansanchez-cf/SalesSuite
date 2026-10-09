@@ -45,6 +45,14 @@
 - [ ] 35. Mapa interactivo con **MapTiler** (el mismo estilo que la app): necesita la clave de MapTiler y el ID del estilo. Lo dejamos para después, como dijiste.
 - [ ] 36. Álbum: «Útil para tus buceadores» / «Y lo comparten: publicidad que no pagas» los he redactado yo a partir de lo que dijiste. ¿Valen?
 
+## D3 · Bienvenida y recorrido (9-oct)
+- [x] 37. ✅ «Qué es Oquea» con tus palabras (comunidad del buceo, Strava para buceadores, herramienta para el centro); recorrido de 8 pasos: mapa → tarjetas → modo Strava → panel → QR → logbook → CRM → modelo (`apply-oquea-11.py`).
+- [ ] 38. **Tus comisiones como comercial** (lo que más le importa al comercial): ¿qué cobra, sobre qué y cuándo? Van en la app (bienvenida «Lo que ganas» y «Mis comisiones»), no en el dossier. Hoy salen como «pendientes».
+- [ ] 39. El 10 % cuando Oquea lleva un cliente: lo he puesto en el recorrido **para el comercial**, con la nota de no decírselo al centro (el guion dice «sin porcentaje» y, fuera de España, sin fechas). ¿Se lo puede decir ya al centro?
+- [ ] 40. «Pronto, se apuntará a las actividades desde el mapa»: ¿lo puede decir al centro o solo saberlo?
+- [ ] 41. Fotos de fondo: recortes de tus 5 tarjetas exportadas, sin el texto (`assets/img/fondos/`). Si tienes fotos de buceo propias más grandes, mándalas y las cambio.
+- [ ] 42. La página del sector «Centros de buceo» (siguiente).
+
 ## E · Puesta en marcha (tuyo)
 - [ ] 28. DNS de `oquea.ventas.cofundo.io` en GoDaddy y dominio en Vercel.
 - [ ] 29. Quitar a cristianalbertosanchez00@gmail.com del equipo de Oquea (consola → Equipo) cuando entres con cristian.sanchez@cofundo.io.

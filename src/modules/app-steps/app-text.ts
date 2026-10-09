@@ -66,6 +66,7 @@ const es = {
   savedBy: (centre: string) => `Al guardar, ${centre} añadirá esta inmersión a tu historial.`,
 
   // qrPick (elegir la actividad del día)
+  scanHint: 'Apunta al QR del centro',
   whichActivity: '¿Qué actividad haces hoy?',
   pickDate: 'Jueves, 26 de febrero de 2026',
   tryDive: 'Bautismo de buceo',
@@ -305,6 +306,7 @@ const en: typeof es = {
   cardForSocials: 'A card for your socials',
   savedBy: (centre) => `When you save, ${centre} will add this dive to your history.`,
 
+  scanHint: 'Point at the centre’s QR',
   whichActivity: 'What are you doing today?',
   pickDate: 'Thursday, 26 February 2026',
   tryDive: 'Try scuba',
@@ -524,6 +526,7 @@ const pt: typeof es = {
   cardForSocials: 'Card para suas redes',
   savedBy: (centre) => `Ao salvar, ${centre} adicionará este mergulho ao seu histórico.`,
 
+  scanHint: 'Aponte para o QR do centro',
   whichActivity: 'Qual atividade você vai fazer hoje?',
   pickDate: 'Quinta-feira, 26 de fevereiro de 2026',
   tryDive: 'Batismo de mergulho',
@@ -743,6 +746,7 @@ const ko: typeof es = {
   cardForSocials: 'SNS 공유용 카드',
   savedBy: (centre) => `저장하면 ${centre}에서 이 다이빙을 내 기록에 추가해요.`,
 
+  scanHint: '센터의 QR을 비추세요',
   whichActivity: '오늘 어떤 액티비티를 하나요?',
   pickDate: '2026년 2월 26일 목요일',
   tryDive: '체험 다이빙',
