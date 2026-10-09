@@ -12,6 +12,9 @@ import type { Account } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
+import { env } from '../env';
+import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
+import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
 import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo } from './types';
@@ -76,11 +79,12 @@ function mapError(e: unknown): never {
 }
 
 export interface PersonView extends Contact {
-  companies: Array<{ accountId: string; name: string; role: string | null; groupName: string | null }>;
+  companies: Array<{ accountId: string; name: string; role: string | null; groupName: string | null; qualification: Qualification; segmentId: string | null }>;
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null } = {}) {
+  const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -97,7 +101,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       ownerName: label(ms.get(c.ownerId ?? '')),
       companies: links.filter((l) => l.contactId === c.id && accs.has(l.accountId)).map((l) => {
         const a = accs.get(l.accountId)!;
-        return { accountId: a.id, name: a.name, role: l.role, groupName: a.parentId ? accs.get(a.parentId)?.name ?? null : null };
+        return { accountId: a.id, name: a.name, role: l.role, groupName: a.parentId ? accs.get(a.parentId)?.name ?? null : null, qualification: a.qualification, segmentId: a.segmentId };
       }),
     }));
   }
@@ -532,26 +536,63 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   /** «Hoy»: lo que toca (vencido → hoy → mañana) en las empresas que llevo, con el contexto en una línea. */
+  type TodayItem = Account & { bucket: DueBucket | 'cooling'; cooling: number | null; last: Activity | null; contactName: string | null; contactPhone: string | null; contactInstagram: string | null; contactEmail: string | null };
   async function today(opts: { all?: boolean } = {}) {
     requireUse();
     const now = new Date();
-    const mine = (await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 }))
-      .filter((a) => a.nextStepAt && ['overdue', 'today', 'tomorrow'].includes(dueBucket(a.nextStepAt, now) ?? ''));
-    if (!mine.length) return { items: [] as Array<Account & { bucket: DueBucket; last: Activity | null; contactName: string | null; contactPhone: string | null; contactInstagram: string | null; contactEmail: string | null }>, counts: { overdue: 0, today: 0, tomorrow: 0 } };
-    const ids = mine.map((a) => a.id);
-    const [acts, links] = await Promise.all([db.listActivities(t, ids, 2000), db.listLinks(t, { accountIds: ids })]);
-    const contactIds = [...new Set(mine.map((a) => a.nextContactId).filter(Boolean) as string[])];
+    const all = await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 });
+    // Lo que se enfría (contestó y llevamos 3 días laborables sin hacer nada) va primero, aunque no tenga próximo paso.
+    const acts = all.length ? await db.listActivities(t, all.map((a) => a.id), 20000) : [];
+    const byAcc = new Map<string, Activity[]>();
+    for (const x of acts) byAcc.set(x.accountId, [...(byAcc.get(x.accountId) ?? []), x]);
+    const mine = all.map((a) => ({ a, cooling: coolingDays(byAcc.get(a.id) ?? [], now), bucket: dueBucket(a.nextStepAt, now) }))
+      .filter((x) => x.cooling !== null || (x.bucket && ['overdue', 'today', 'tomorrow'].includes(x.bucket)));
+    const counts = { cooling: 0, overdue: 0, today: 0, tomorrow: 0 };
+    if (!mine.length) return { items: [] as TodayItem[], counts };
+    const contactIds = [...new Set(mine.map((x) => x.a.nextContactId).filter(Boolean) as string[])];
     const cs = contactIds.length ? await db.listContacts(t, { ids: contactIds, limit: contactIds.length }) : [];
-    const ORDER: Record<string, number> = { overdue: 0, today: 1, tomorrow: 2 };
-    const items = mine.map((a) => {
+    const ORDER: Record<string, number> = { cooling: 0, overdue: 1, today: 2, tomorrow: 3 };
+    const items: TodayItem[] = mine.map(({ a, cooling, bucket }) => {
       const c = cs.find((x) => x.id === a.nextContactId) ?? null;
-      void links;
-      return { ...a, bucket: dueBucket(a.nextStepAt, now)!, last: acts.find((x) => x.accountId === a.id) ?? null,
+      return { ...a, bucket: (cooling !== null ? 'cooling' : bucket!) as TodayItem['bucket'], cooling, last: byAcc.get(a.id)?.[0] ?? null,
         contactName: c?.name ?? null, contactPhone: c?.phone ?? a.phone, contactInstagram: c?.instagram ?? a.instagram, contactEmail: c?.email ?? a.email };
-    }).sort((x, y) => ORDER[x.bucket] - ORDER[y.bucket] || String(x.nextStepAt).localeCompare(String(y.nextStepAt)));
-    const counts = { overdue: 0, today: 0, tomorrow: 0 };
+    }).sort((x, y) => ORDER[x.bucket] - ORDER[y.bucket] || (y.cooling ?? 0) - (x.cooling ?? 0) || String(x.nextStepAt).localeCompare(String(y.nextStepAt)));
     for (const i of items) counts[i.bucket as keyof typeof counts]++;
     return { items, counts };
+  }
+
+  // ---------------------------------------------------------------- prioridad (docs/CRM_DINAMICO.md §11)
+
+  async function weights(): Promise<Weights> { return normalizeWeights(await accounts.getPriorityWeights(t).catch(() => null)); }
+  async function saveWeights(input: Record<string, unknown>) {
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin del espacio');
+    const w = Object.fromEntries(CRITERIA.map((k) => [k, Math.round(Number(input[k]))])) as Weights;
+    if (CRITERIA.some((k) => !Number.isFinite(w[k]) || w[k] < 0 || w[k] > 100)) throw new AdminError(422, 'Los pesos deben sumar 100');
+    if (CRITERIA.reduce((n, k) => n + w[k], 0) !== 100) throw new AdminError(422, 'Los pesos deben sumar 100');
+    try { await accounts.savePriorityWeights(t, w); } catch (e) { mapError(e); }
+  }
+  /** Un clic: «clave:valor» lo marca; pulsar lo ya marcado lo desmarca (vuelve a «no se sabe»). */
+  async function qualify(accountId: string, set: string) {
+    requireUse();
+    const [key, value] = set.split(':');
+    if (!key || !QUAL_VALUES[key] || !QUAL_VALUES[key].includes(value)) throw new AdminError(422, 'Datos no válidos');
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    const q: Record<string, unknown> = { ...a.qualification };
+    const v: unknown = value === 'true' ? true : value;
+    if (q[key] === v) delete q[key]; else q[key] = v;
+    try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
+  }
+  /** Días que lleva enfriándose cada empresa (solo las que se enfrían). */
+  async function cooling(accountIds: string[]): Promise<Map<string, number>> {
+    requireUse();
+    const acts = accountIds.length ? await db.listActivities(t, accountIds, 20000) : [];
+    const by = new Map<string, Activity[]>();
+    for (const x of acts) by.set(x.accountId, [...(by.get(x.accountId) ?? []), x]);
+    const now = new Date();
+    const out = new Map<string, number>();
+    for (const [id, list] of by) { const d = coolingDays(list, now); if (d !== null) out.set(id, d); }
+    return out;
   }
 
   /**
@@ -584,7 +625,55 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return { count: moves.length, sample: moves.slice(0, 8) };
   }
 
+
+  // ---------------------------------------------------------------- Google Places (completar contacto, horario y ubicación)
+
+  const requirePlaces = () => { if (!places) throw new AdminError(503, 'Falta GOOGLE_MAPS_API_KEY en el servidor'); return places; };
+  async function zoneNameOf(a: Account) { return a.zoneId ? (await accounts.listZones(t)).find((z) => z.id === a.zoneId)?.name ?? '' : ''; }
+  const toResearch = (p: PlaceResult) => ({ placeId: p.placeId, phone: p.phone, website: p.website, address: p.address, mapsUrl: p.mapsUrl, hours: p.hours, lat: p.lat, lng: p.lng, status: p.status });
+  /** Candidatos de Google para una empresa (nombre + ciudad). */
+  async function googleCandidates(accountId: string): Promise<PlaceResult[]> {
+    requireUse();
+    const api = requirePlaces();
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    try { return await api.search(`${a.name} ${await zoneNameOf(a)}`.trim()); } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); throw new AdminError(503, 'Google no ha respondido; prueba en un momento'); }
+  }
+  /** Usar este resultado: rellena huecos (teléfono, web, dirección, Maps) y guarda horario y ubicación. */
+  async function googleApply(accountId: string, placeId: string) {
+    requireUse();
+    const api = requirePlaces();
+    let p: PlaceResult | null;
+    try { p = await api.details(placeId); } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); throw new AdminError(503, 'Google no ha respondido; prueba en un momento'); }
+    if (!p) throw new AdminError(404, 'Cuenta no encontrada');
+    try { await accounts.research(accountId, toResearch(p)); } catch (e) { mapError(e); }
+  }
+  /**
+   * Completar en bloque (p. ej. «Valencia»): las que aún no se han buscado, hasta 20 por vez. Solo se usa el primer
+   * resultado si su nombre se parece al de la empresa; si no, se queda para revisarla a mano.
+   */
+  async function googleFill(accountIds: string[]): Promise<{ filled: number; skipped: number; left: number }> {
+    requireUse();
+    const api = requirePlaces();
+    const accs = (await allAccounts()).filter((a) => accountIds.includes(a.id) && !a.placeAt);
+    const batch = accs.slice(0, 20);
+    let filled = 0;
+    let skipped = 0;
+    const key = (x: string) => slugKey(x).replace(/-/g, '');
+    for (const a of batch) {
+      try {
+        const r = (await api.search(`${a.name} ${await zoneNameOf(a)}`.trim()))[0];
+        const k = key(a.name);
+        if (r && k.length >= 3 && (key(r.name).includes(k) || k.includes(key(r.name)))) { await accounts.research(a.id, toResearch(r)); filled++; }
+        else { await accounts.research(a.id, { placeId: '', phone: null, website: null, address: null, mapsUrl: null, hours: null, lat: null, lng: null, status: 'not_found' }); skipped++; }
+      } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); skipped++; }
+    }
+    return { filled, skipped, left: accs.length - batch.length };
+  }
+
   return {
+    googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
+    weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
     company, moveToGroup, setTags, lists, names,

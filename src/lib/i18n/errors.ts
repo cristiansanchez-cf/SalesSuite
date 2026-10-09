@@ -21,6 +21,9 @@ const EXACT: Record<string, T> = {
   'Esta importación ya se hizo': ['This import has already been run', 'Esta importação já foi feita', '이미 실행된 가져오기입니다'],
   'Esta importación no se puede deshacer': ['This import cannot be undone', 'Esta importação não pode ser desfeita', '이 가져오기는 되돌릴 수 없습니다'],
   'No se pudo importar: no se ha guardado nada': ['Could not import: nothing was saved', 'Não foi possível importar: nada foi salvo', '가져오지 못했습니다: 아무것도 저장되지 않았습니다'],
+  'Falta GOOGLE_MAPS_API_KEY en el servidor': ['GOOGLE_MAPS_API_KEY is missing on the server', 'Falta GOOGLE_MAPS_API_KEY no servidor', '서버에 GOOGLE_MAPS_API_KEY가 없습니다'],
+  'Google no ha respondido; prueba en un momento': ['Google did not respond; try again in a moment', 'O Google não respondeu; tente daqui a pouco', 'Google이 응답하지 않았습니다. 잠시 후 다시 시도하세요'],
+  'Los pesos deben sumar 100': ['Weights must add up to 100', 'Os pesos devem somar 100', '가중치의 합은 100이어야 합니다'],
   'No hay filas que importar': ['There are no rows to import', 'Não há linhas para importar', '가져올 행이 없습니다'],
   'Solo un admin puede crear campos nuevos': ['Only an admin can create new fields', 'Só um admin pode criar campos novos', '관리자만 새 필드를 만들 수 있습니다'],
   // ------------------------------------------------------------ no encontrado

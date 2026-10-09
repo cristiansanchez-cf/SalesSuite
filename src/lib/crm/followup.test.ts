@@ -50,6 +50,10 @@ describe('seguimiento: la regla de los 3 intentos', () => {
     expect(s).toMatchObject({ contactId: null, channel: 'instagram', reason: 'first' });
   });
 
+  test('sin nada por donde escribir y sin intentos: primer contacto en persona (no «nadie contesta»)', () => {
+    expect(suggestNext({ activities: [], actors: [], company: {}, now })).toMatchObject({ channel: 'visit', reason: 'first' });
+  });
+
   test('«Hoy»: vencido, hoy, mañana', () => {
     expect(dueBucket('2026-10-08T18:00:00', now)).toBe('overdue');
     expect(dueBucket('2026-10-09T20:00:00', now)).toBe('today');

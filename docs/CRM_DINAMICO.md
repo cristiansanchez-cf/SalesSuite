@@ -281,3 +281,36 @@ historial claro y el próximo paso siempre puesto.
 **Siguiente** (pendiente de decidir con Cristian): prioridad automática por casillas clave; modo «Investigar» por
 zona; Google Places (horario, mapa, ruta del día); primera búsqueda con IA (marcada «sin verificar»); WhatsApp de ida
 y vuelta (aviso con mensaje propuesto y, al responder con audio o captura, nueva interacción).
+
+## 11. Prioridad de los leads (hecho)
+
+Criterio cerrado con Cristian (9-oct-2026). Lógica en `src/lib/crm/priority.ts` (pura, probada).
+
+- **Eliminatorios** (no es ponderación, es filtro: salen del ranking con la etiqueta del motivo): sin cobertura móvil ·
+  sin pantalla y sin intención (se marca solo al elegir «No y no quiere») · no pueden validar lo que sale (**solo si lo
+  han dicho ellos**) · deudas, cierre o viabilidad.
+- **Puntuación** (pesos configurables por el admin en *Equipo → Campos del CRM → Prioridad*; suman 100):
+
+  | Criterio (peso) | Tramos (parte del peso) |
+  |---|---|
+  | Recurrencia (30) · local o sala | noches/semana: 1 → 10 %, 2 → 40 %, 3 → 75 %, 4+ → 100 % |
+  | · promotora | eventos/año: 1–2 → 20 %, 3–5 → 45 %, 6–11 → 70 %, 12+ → 100 % |
+  | · conciertos | programa recurrente → 100 %, evento único → 20 % |
+  | Decide quien te atiende (25) | decide y pisa el local 100 %, decide pero no pisa 35 %, encargado sin firma 20 % |
+  | Pantallas (20) | sí 100 %, no pero quiere 40 %, no y no quiere → eliminatorio |
+  | Dinámicas o redes (15) | sí 100 %, a medias 50 %, no 0 % |
+  | Escala (10) | un local 20 %, 2–3 locales 60 %, grupo o varias salas 100 % |
+
+  El tipo (local, promotora, conciertos) sale del sector (`KIND_BY_SEGMENT`) o se elige con un clic en la ficha.
+- **Lo que no se sabe no es 0**: suma solo lo conocido y enseña «hasta N si se cualifica». El ranking ordena por la
+  puntuación actual (no por el máximo). Filtro «Sin cualificar».
+- **Se enfría**: contestó o mostró interés y llevamos **3 días laborables** sin hacer nada → etiqueta roja y el primero
+  en «Hoy». No toca la puntuación (la urgencia es un orden, no una calidad).
+- **Un clic**: la cualificación son botones visibles en la ficha; pulsar lo marcado lo desmarca. Cualificar no reserva
+  la empresa (RPC `account_qualify`: libre o mía, o un/a gerente).
+- Las personas heredan la prioridad de su mejor empresa (lista de Personas, «Por prioridad»).
+- **Google Places** (`GOOGLE_MAPS_API_KEY`): «Buscar en Google» en la ficha (eliges el resultado) y «Completar con
+  Google» en la lista (hasta 20 por clic, solo si el nombre coincide). Rellena huecos (teléfono, web, dirección, Maps) y
+  guarda horario y ubicación (RPC `account_research`; nunca pisa lo escrito a mano).
+- Migración `20261106000000_crm_priority.sql`; pruebas `priority.test.ts`, `places.test.ts`, contrato de cuentas,
+  `supabase/tests/50_crm_priority.test.sql`, `scripts/smoke-priority.cjs`.

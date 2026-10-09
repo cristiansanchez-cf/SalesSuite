@@ -362,5 +362,45 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect((await rep.crm.person(p.id)).person.instagram).toBeNull();
       await rejects(rep.crm.instagramToCompanies(false), 403);
     });
+    test('CRM prioridad: cualificar con un clic sin reservar, pesos del admin y «se enfría» primero en «Hoy»', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      const libre = await admin.accounts.create({ name: 'Sala Prioridad' });
+      // Cualificar una empresa libre no la reserva; pulsar lo mismo otra vez lo desmarca.
+      await rep.crm.qualify(libre, 'kind:venue');
+      await rep.crm.qualify(libre, 'nights:4+');
+      await rep.crm.qualify(libre, 'decider:onsite');
+      await rep.crm.qualify(libre, 'screens:yes');
+      await rep.crm.qualify(libre, 'screens:yes');
+      let a = (await rep.accounts.get(libre)).account;
+      expect(a.qualification).toEqual({ kind: 'venue', nights: '4+', decider: 'onsite' });
+      expect(a.ownerId).toBeNull();
+      await rep.crm.qualify(libre, 'validate:true');
+      expect((await rep.accounts.get(libre)).account.qualification.validate).toBe(true);
+      await rejects(rep.crm.qualify(libre, 'nights:9'), 422);
+
+      // Una empresa de otro: el comercial no la cualifica.
+      const ajena = await admin.accounts.create({ name: 'Sala Ajena' });
+      await admin.accounts.assign(ajena, E.rep2.id);
+      await rejects(rep.crm.qualify(ajena, 'nights:2'), 403);
+
+      // Pesos: solo admin y deben sumar 100.
+      expect(await rep.crm.weights()).toEqual({ recurrence: 30, decider: 25, screens: 20, dynamics: 15, scale: 10 });
+      await rejects(rep.crm.saveWeights({ recurrence: 40, decider: 25, screens: 15, dynamics: 10, scale: 10 }), 403);
+      await rejects(admin.crm.saveWeights({ recurrence: 50, decider: 25, screens: 15, dynamics: 10, scale: 10 }), 422);
+      await admin.crm.saveWeights({ recurrence: 40, decider: 25, screens: 15, dynamics: 10, scale: 10 });
+      expect((await rep.crm.weights()).recurrence).toBe(40);
+
+      // Contestó hace una semana y no hemos hecho nada: se enfría y sale el primero en «Hoy».
+      const mia = await rep.crm.quickAdd({ name: 'Lucía', company: 'Club Frío' });
+      await rep.crm.logActivity(mia.accountId!, { contactId: mia.id, channel: 'whatsapp', outcome: 'interested', happenedAt: new Date(Date.now() - 8 * 86_400_000).toISOString() },
+        { at: new Date(Date.now() + 20 * 86_400_000).toISOString().slice(0, 10) });
+      const hoy = await rep.crm.today();
+      expect(hoy.items[0]).toMatchObject({ name: 'Club Frío', bucket: 'cooling' });
+      expect(hoy.items[0].cooling).toBeGreaterThanOrEqual(3);
+      expect((await rep.crm.cooling([mia.accountId!])).get(mia.accountId!)).toBeGreaterThanOrEqual(3);
+      await rep.crm.logActivity(mia.accountId!, { contactId: mia.id, channel: 'whatsapp', outcome: 'no_reply' });
+      expect((await rep.crm.cooling([mia.accountId!])).size).toBe(0);
+    });
   });
 }

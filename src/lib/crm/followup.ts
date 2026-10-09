@@ -76,7 +76,9 @@ export function suggestNext(input: { activities: Activity[]; actors: Actor[]; co
     const reason: NextReason = !real.length ? 'first' : tries.length ? 'retry' : 'next_actor';
     return { contactId: w.id, channel: ways[idx], at: tries.length || real.length ? atDay(now, RETRY_DAYS) : atDay(now, 0), reason, attempt: tries.length + 1 };
   }
-  // Nadie contesta (o no hay por dónde): en persona.
+  // Aún no se ha intentado nada y no hay por dónde escribir: el primer contacto es en persona.
+  if (!real.length) return { contactId: actors[0]?.id ?? null, channel: 'visit', at: atDay(now, 0), reason: 'first', attempt: 0 };
+  // Nadie contesta: en persona.
   return { contactId: actors[0]?.id ?? null, channel: 'visit', at: atDay(now, RETRY_DAYS + 1), reason: 'visit', attempt: 0 };
 }
 

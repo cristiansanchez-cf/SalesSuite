@@ -15,6 +15,8 @@ import { i18n } from '~/lib/i18n';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { crmMessages } from '~/lib/i18n/messages/crm';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { compareLeads, priorityOf, type Priority } from '~/lib/crm/priority';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -24,6 +26,7 @@ const { m: P, locale } = i18n(Astro, peopleMessages);
 const CF = crmMessages[locale].filters;
 const CC = crmMessages[locale].card;
 const S = shellMessages[locale];
+const R = priorityMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -49,15 +52,23 @@ const [{ items, tray: trayCount }, lists, allFields, companies] = await Promise.
   admin.crm.people({ q: search, tag: lista, company: tray ? 'none' : undefined }), admin.crm.lists(), admin.accounts.crmFields(),
   admin.accounts.list({ scope: 'all' }).then((r) => r.items.map((a) => a.name)),
 ]);
+// La prioridad de una persona es la de su mejor empresa (docs/CRM_DINAMICO.md §11).
+const [weights, segs] = await Promise.all([admin.crm.weights(), admin.playbook.market()]);
+const segKey = new Map(segs.map((sg) => [sg.id, sg.key]));
+const bestOf = (cs: (typeof items)[number]['companies']): Priority | null =>
+  cs.map((c) => priorityOf(c.qualification, segKey.get(c.segmentId ?? '') ?? null, weights)).sort(compareLeads)[0] ?? null;
+const orden = q.get('orden') === 'prioridad';
 const fields = allFields.filter((x) => x.target === 'contact' && (!x.tags.length || x.tags.includes(lista)));
 const filterable = fields.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
 const columns = fields.filter((x) => x.inList);
 const stage = lista ? fields.find((x) => x.isStage) : undefined;
-const filtered = items.filter((p) => filterable.every((fd) => matches(fd, p.fields[fd.key], fieldFilter[fd.key] ?? '')));
+const prio = new Map(items.map((p) => [p.id, bestOf(p.companies)]));
+let filtered = items.filter((p) => filterable.every((fd) => matches(fd, p.fields[fd.key], fieldFilter[fd.key] ?? '')));
+if (orden) filtered = [...filtered].sort((x, y) => { const a = prio.get(x.id), b = prio.get(y.id); return a && b ? compareLeads(a, b) : a ? -1 : b ? 1 : 0; });
 const peopleLists = lists.filter((l) => l.people > 0);
 const href = (p: Record<string, string>) => {
-  const u = new URLSearchParams({ ...(lista ? { lista } : {}), ...(tray ? { ver: 'sin-empresa' } : {}), ...(search ? { q: search } : {}),
+  const u = new URLSearchParams({ ...(orden ? { orden: 'prioridad' } : {}), ...(lista ? { lista } : {}), ...(tray ? { ver: 'sin-empresa' } : {}), ...(search ? { q: search } : {}),
     ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
   for (const [k, v] of [...u]) if (!v) u.delete(k);
   return `/admin/people${u.size ? `?${u}` : ''}`;
@@ -81,6 +92,7 @@ const newId = q.get('id');
   )}
   <nav class="co-tabs mb-4" aria-label={P.people.title} data-scroll-x>
     <a class="co-tab" href={href({ ver: '' })} aria-current={!tray ? 'page' : undefined}>{P.people.all}</a>
+    <a class="co-tab" href={href({ orden: orden ? '' : 'prioridad' })} aria-current={orden ? 'page' : undefined} data-testid="sort-priority">↓ {R.list.sort}</a>
     <a class="co-tab" href={href({ ver: 'sin-empresa' })} aria-current={tray ? 'page' : undefined} data-testid="tray">{P.people.tray} · {trayCount}</a>
   </nav>
   {tray && <p class="co-meta mb-4">{P.people.trayHelp}</p>}
@@ -145,6 +157,7 @@ const newId = q.get('id');
                 </span>
               )}
             </a>
+            {(() => { const pr = prio.get(p.id); return pr ? (pr.out ? <span class="co-tag">{R.outBy(R.kills[pr.kills[0]])}</span> : <span class="co-tag" data-testid="person-priority"><strong>{pr.score}</strong>{!pr.qualified && <span class="co-meta">&nbsp;· {R.upTo(pr.max)}</span>}</span>) : null; })()}
             {p.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${p.phone}`} aria-label={p.phone}><Icon name="phone" size={14} /></a>}
             {p.email && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${p.email}`} aria-label={p.email}><Icon name="mail" size={14} /></a>}
             {p.instagram && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={p.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Icon name="camera" size={14} /></a>}

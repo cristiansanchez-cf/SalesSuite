@@ -101,6 +101,8 @@ export interface AccountRow {
   parent_id?: string | null; tags?: string[]; import_id?: string | null;
   phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; website?: string | null; maps_url?: string | null;
   next_step?: string | null; next_step_at?: string | null; next_contact_id?: string | null; next_channel?: string | null;
+  qualification?: Record<string, unknown>;
+  place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
 }
 export interface CrmActivityRow {
   id: string; tenant_id: string; account_id: string; contact_id: string | null; user_id: string | null; channel: string; outcome: string; note: string | null;
@@ -192,6 +194,7 @@ export interface DemoDb {
   crm_contact_account: CrmContactAccountRow[];
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
+  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number> }>;
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];
@@ -371,6 +374,7 @@ export function freshDemoDb(): DemoDb {
       { tenant_id: ENJOY, contact_id: '00000000-0000-4000-8000-0000000cc501', account_id: '00000000-0000-4000-8000-0000000ac001', role: 'Gerente', created_at: ago(10) },
     ],
     crm_import: [],
+    crm_settings: [],
     crm_activity: [
       { id: '00000000-0000-4000-8000-0000000ca001', tenant_id: ENJOY, account_id: '00000000-0000-4000-8000-0000000ac001', contact_id: '00000000-0000-4000-8000-0000000cc501',
         user_id: REP, channel: 'instagram', outcome: 'replied', note: 'Le interesa para los viernes; pide verlo en persona.', happened_at: ago(2), created_at: ago(2) },

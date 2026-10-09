@@ -87,5 +87,6 @@ jobs:
           node scripts/smoke-crm-people.cjs
           node scripts/smoke-spaces.cjs
           node scripts/smoke-followup.cjs
+          node scripts/smoke-priority.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

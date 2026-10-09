@@ -14,7 +14,7 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
-const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel';
+const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
@@ -22,6 +22,8 @@ const toAccount = (r: Row): Account => ({
   fields: r.fields ?? {}, parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
   phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
+  qualification: r.qualification ?? {},
+  placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 const contactRow = (c: AccountInsert['contact']) => Object.fromEntries(Object.entries(CONTACT_COLS).filter(([k]) => c?.[k as keyof typeof CONTACT_COLS] !== undefined).map(([k, col]) => [col, c![k as keyof typeof CONTACT_COLS]]));
@@ -145,6 +147,15 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
     },
     async deleteField(id) {
       return (check(await sb.from('crm_field').delete().eq('id', id).select('id')) ?? []).length > 0;
+    },
+    async qualify(id, q) { check(await sb.rpc('account_qualify', { p_account: id, p_qualification: q })); },
+    async research(id, d) { check(await sb.rpc('account_research', { p_account: id, p_data: d })); },
+    async getPriorityWeights(t) {
+      const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;
+      return r?.priority_weights ?? null;
+    },
+    async savePriorityWeights(t, w) {
+      check(await sb.from('crm_settings').upsert({ tenant_id: t, priority_weights: w, updated_at: new Date().toISOString() }));
     },
     async archiveField(id, archived) {
       return (check(await sb.from('crm_field').update({ archived_at: archived ? new Date().toISOString() : null }).eq('id', id).select('id')) ?? []).length > 0;

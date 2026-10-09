@@ -564,3 +564,5 @@ html.console select:not([multiple]):not([size]) {
 .co-bulkbar { position: fixed; z-index: 40; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px;
   padding: 10px 14px; border-radius: 14px; background: var(--co-canvas-elevated); border: 1px solid var(--co-rule); box-shadow: 0 12px 32px rgb(0 0 0 / .18); }
 .co-bulkbar[hidden] { display: none; }
+/* Urgencia (CRM: «se enfría»): rojo, distinto de la calidad. */
+.co-tag--danger { background: #fdecea; border-color: #f5c2bd; color: #b42318; font-weight: 600; }

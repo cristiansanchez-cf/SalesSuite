@@ -8,26 +8,28 @@ import ContactLinks from './ContactLinks.astro';
 import { can } from '~/lib/admin/permissions';
 import { i18n } from '~/lib/i18n';
 import { followupMessages } from '~/lib/i18n/messages/followup';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
 
 const { admin } = Astro.locals;
 if (!admin || !can(admin.session.role).useAccounts) return;
-const { m: F, f: fmt } = i18n(Astro, followupMessages);
+const { m: F, f: fmt, locale } = i18n(Astro, followupMessages);
+const R = priorityMessages[locale];
 const { items, counts } = await admin.crm.today();
 ---
 <section class="co-card grid gap-4 !p-6" data-testid="today">
   <div class="flex flex-wrap items-baseline justify-between gap-2">
     <h2 class="co-entity flex items-center gap-2"><Icon name="calendar" size={18} />{F.today.title}</h2>
-    {items.length > 0 && <span class="co-meta" data-testid="today-counts">{F.today.counts(counts.overdue, counts.today, counts.tomorrow)}</span>}
+    {items.length > 0 && <span class="co-meta" data-testid="today-counts">{[counts.cooling ? R.cooling(counts.cooling).split(' · ')[0] + ` · ${counts.cooling}` : '', F.today.counts(counts.overdue, counts.today, counts.tomorrow)].filter(Boolean).join(' · ')}</span>}
   </div>
   {items.length === 0 ? (
     <p class="co-meta">{F.today.empty} {F.today.emptyHint}</p>
   ) : (
     <ul class="co-rows">
       {items.slice(0, 12).map((a) => (
-        <li class:list={['co-row', a.bucket === 'overdue' && 'co-row--attention']} data-testid="today-item" data-name={a.name} data-bucket={a.bucket}>
+        <li class:list={['co-row', (a.bucket === 'overdue' || a.bucket === 'cooling') && 'co-row--attention']} data-testid="today-item" data-name={a.name} data-bucket={a.bucket}>
           <span class="co-row__lead"><Icon name={a.nextChannel === 'visit' ? 'map-pin' : a.nextChannel === 'phone' ? 'phone' : 'message-square-text'} /></span>
           <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}#follow`}>
-            <span class="co-row-title"><span class="co-tag mr-2">{F.follow[a.bucket]}</span>{a.name}</span>
+            <span class="co-row-title">{a.bucket === 'cooling' ? <span class="co-tag co-tag--danger mr-2" title={R.coolingHelp} data-testid="today-cooling">{R.cooling(a.cooling ?? 0)}</span> : <span class="co-tag mr-2">{F.follow[a.bucket]}</span>}{a.name}</span>
             <span class="co-meta">
               {[a.nextChannel && F.channels[a.nextChannel as keyof typeof F.channels], a.contactName, a.nextStep].filter(Boolean).join(' · ')}
               {a.last && <> · {F.today.last}: {a.last.outcome === 'note' ? F.outcomes.note : `${F.channels[a.last.channel]} · ${F.outcomes[a.last.outcome]}`} ({fmt.relative(a.last.happenedAt)})</>}

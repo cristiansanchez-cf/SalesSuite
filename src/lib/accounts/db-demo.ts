@@ -22,6 +22,8 @@ const toAccount = (r: AccountRow): Account => ({
   fields: (r.fields ?? {}) as Account['fields'], parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
   phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
+  qualification: (r.qualification ?? {}) as Account['qualification'],
+  placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 function applyContact(row: AccountRow, c: AccountInsert['contact']) {
@@ -282,6 +284,27 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (!f || roleOf(f.tenant_id, actorId) !== 'admin') return false;
       s.crm_field = s.crm_field.filter((x) => x.id !== id);
       return true;
+    },
+    async qualify(id, q) {
+      const a = db().account.find((x) => x.id === id);
+      const role = a ? roleOf(a.tenant_id, actorId) : null;
+      if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
+      if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
+      a.qualification = { ...q };
+    },
+    async research(id, d) {
+      const a = db().account.find((x) => x.id === id);
+      const role = a ? roleOf(a.tenant_id, actorId) : null;
+      if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
+      if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
+      a.phone ||= d.phone; a.website ||= d.website; a.address ||= d.address; a.maps_url ||= d.mapsUrl;
+      Object.assign(a, { place_id: d.placeId, hours: d.hours ?? a.hours ?? null, lat: d.lat ?? a.lat ?? null, lng: d.lng ?? a.lng ?? null, place_status: d.status, place_at: iso() });
+    },
+    async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },
+    async savePriorityWeights(t, w) {
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');
+      const s = db();
+      s.crm_settings = [...s.crm_settings.filter((x) => x.tenant_id !== t), { tenant_id: t, priority_weights: { ...w } }];
     },
     async archiveField(id, archived) {
       const f = db().crm_field.find((x) => x.id === id);

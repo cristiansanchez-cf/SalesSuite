@@ -19,6 +19,8 @@ import { shellMessages } from '~/lib/i18n/messages/shell';
 import { crmMessages } from '~/lib/i18n/messages/crm';
 import { formatValue } from '~/lib/crm/fields';
 import { peopleMessages } from '~/lib/i18n/messages/people';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { compareLeads, priorityOf } from '~/lib/crm/priority';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -29,6 +31,7 @@ const { m: { list: M }, locale } = i18n(Astro, accountsMessages);
 const S = shellMessages[locale];
 const CF = crmMessages[locale].filters;
 const P = peopleMessages[locale];
+const R = priorityMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -39,6 +42,11 @@ if (Astro.request.method === 'POST') {
     if (str('action') === 'create') {
       const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes') });
       to = `/admin/accounts/${id}?ok=created`;
+    } else if (str('action') === 'google-fill') {
+      const r = await admin.crm.googleFill(str('ids').split(',').filter(Boolean));
+      const back = new URL(str('back') || '/admin/accounts', Astro.url);
+      back.searchParams.set('ok', 'google'); back.searchParams.set('gf', String(r.filled)); back.searchParams.set('gs', String(r.skipped)); back.searchParams.set('gl', String(r.left));
+      to = `${back.pathname}${back.search}`;
     } else if (str('action') === 'move-group') {
       const ids = f.getAll('ids').map(String).filter(Boolean);
       const r = await admin.crm.moveToGroup(ids, { groupName: str('groupName') });
@@ -70,18 +78,33 @@ const accountLists = lists.filter((l) => l.accounts > 0);
 // Etapa de la lista: chips por opción (filtran por su campo).
 const stage = lista ? crm.find((x) => x.isStage) : undefined;
 const groupNames = await admin.crm.names(items.map((a) => a.parentId ?? ''));
-const shown = items.filter((a) => stateF === 'all' || a.state === stateF);
+// Prioridad (docs/CRM_DINAMICO.md §11): puntuación de cada empresa; ordenar por ella y filtrar sin cualificar / fuera / se enfrían.
+const orden = q.get('orden') === 'prioridad' ? 'prioridad' : '';
+const cual = (['sin', 'fuera', 'enfria'].includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria';
+const weights = await admin.crm.weights();
+const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
+const prio = new Map(items.map((a) => [a.id, priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights)]));
+const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
+const cooling = await admin.crm.cooling(cual === 'enfria' ? byState.map((a) => a.id) : byState.slice(0, shownMax).map((a) => a.id));
+let shown = byState.filter((a) => {
+  const p = prio.get(a.id)!;
+  return cual === 'sin' ? !p.out && !p.qualified : cual === 'fuera' ? p.out : cual === 'enfria' ? cooling.has(a.id) : true;
+});
+if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.get(x.id)!, prio.get(y.id)!) || x.name.localeCompare(y.name, 'es'));
 const count = (s: State) => items.filter((a) => a.state === s).length;
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
 const href = (p: Record<string, string>) => {
   const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...(lista ? { lista } : {}),
+    ...(orden ? { orden } : {}), ...(cual ? { cual } : {}),
     ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
   for (const [k, v] of [...u]) if (!v || (k === 'ver' && v === 'zone') || (k === 'estado' && v === 'all')) u.delete(k);
   return `/admin/accounts${u.size ? `?${u}` : ''}`;
 };
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
-const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
+const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), google: R.google.filled(Number(q.get('gf')) || 0, Number(q.get('gs')) || 0, Number(q.get('gl')) || 0) });
+// Completar con Google (docs/CRM_DINAMICO.md §11): las de esta vista que aún no se han buscado.
+const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a) => a.id) : [];
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
@@ -138,6 +161,17 @@ const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
       <input id="acc-q" class="co-input" type="search" name="q" value={search} placeholder={M.search} />
     </form>
   </div>
+  <div class="co-chips mb-4" data-scroll-x data-testid="priority-chips">
+    <a class="co-chip" href={href({ orden: orden ? '' : 'prioridad' })} aria-current={orden ? 'true' : undefined} data-testid="sort-priority">↓ {R.list.sort}</a>
+    <a class="co-chip" href={href({ cual: cual === 'sin' ? '' : 'sin' })} aria-current={cual === 'sin' ? 'true' : undefined} data-testid="filter-unqualified">{R.list.unqualified}</a>
+    <a class="co-chip" href={href({ cual: cual === 'enfria' ? '' : 'enfria' })} aria-current={cual === 'enfria' ? 'true' : undefined} data-testid="filter-cooling">{R.list.cooling}</a>
+    <a class="co-chip" href={href({ cual: cual === 'fuera' ? '' : 'fuera' })} aria-current={cual === 'fuera' ? 'true' : undefined} data-testid="filter-out">{R.list.out}</a>
+    {toGoogle.length > 0 && (
+      <form method="post" class="ml-auto"><input type="hidden" name="action" value="google-fill" /><input type="hidden" name="ids" value={toGoogle.slice(0, 200).join(',')} />
+        <input type="hidden" name="back" value={href({})} />
+        <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-fill"><Icon name="search" size={14} />{R.google.fill(toGoogle.length)}</button></form>
+    )}
+  </div>
   {stage && (
     <div class="co-chips mb-4" data-scroll-x data-testid="stage-chips" aria-label={P.lists.stage}>
       {stage.options.map((o) => { const n = items.filter((a) => a.fields[stage.key] === o.key).length; return (
@@ -186,6 +220,13 @@ const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
                 </span>
               )}
             </a>
+            {(() => { const p = prio.get(a.id)!; const c = cooling.get(a.id); return (
+              <span class="flex flex-wrap items-center justify-end gap-1.5" data-testid="account-priority" data-score={p.score} data-out={p.out ? 'true' : 'false'}>
+                {c !== undefined && <span class="co-tag co-tag--danger" title={R.coolingHelp}>{R.cooling(c)}</span>}
+                {p.out ? <span class="co-tag" title={p.kills.map((k) => R.kills[k]).join(' · ')}>{R.outBy(R.kills[p.kills[0]])}</span>
+                  : <span class="co-tag" title={p.parts.map((x) => `${R.criteria[x.key]}: ${x.points ?? R.unknown}/${x.weight}`).join('\n')}><strong>{p.score}</strong>{!p.qualified && <span class="co-meta">&nbsp;· {R.upTo(p.max)}</span>}</span>}
+              </span>
+            ); })()}
             <AccountState a={a} />
             {a.state === 'free' && (
               <form method="post"><input type="hidden" name="action" value="claim" /><input type="hidden" name="id" value={a.id} />

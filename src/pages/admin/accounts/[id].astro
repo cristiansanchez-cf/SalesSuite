@@ -21,6 +21,9 @@ import { peopleMessages } from '~/lib/i18n/messages/people';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import ContactLinks from '~/components/crm/ContactLinks.astro';
+import QualificationCard from '~/components/crm/QualificationCard.astro';
+import { priorityOf } from '~/lib/crm/priority';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
 
 const { admin } = Astro.locals;
@@ -37,6 +40,7 @@ const P = peopleMessages[locale];
 const F = followupMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const googleBox: { r: Awaited<ReturnType<typeof admin.crm.googleCandidates>> | null } = { r: null };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
@@ -50,6 +54,9 @@ if (Astro.request.method === 'POST') {
         to += str('outcome') === 'note' || !str('outcome') ? '?ok=noted' : '?ok=contact';
         break;
       }
+      case 'google-search': googleBox.r = await admin.crm.googleCandidates(id); to = ''; break;
+      case 'google-apply': await admin.crm.googleApply(id, str('placeId')); to += '?ok=google'; break;
+      case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
       case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
@@ -74,7 +81,7 @@ if (Astro.request.method === 'POST') {
       }
     }
   });
-  if (!result.error) return Astro.redirect(to, 303);
+  if (!result.error && to) return Astro.redirect(to, 303);
 }
 
 let data;
@@ -90,6 +97,11 @@ const fallback = primary ? { name: primary.name, phone: primary.phone, email: pr
 const sug = tl.suggestion;
 const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
 const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
+// Prioridad (docs/CRM_DINAMICO.md §11): la puntuación de esta empresa y si se está enfriando.
+const [weights, coolingMap] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id])]);
+const googleResults = googleBox.r;
+const prio = priorityOf(a.qualification, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
+const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
 const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
 const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
@@ -101,6 +113,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
+  qualified: priorityMessages[locale].ok, google: priorityMessages[locale].google.applied,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -134,6 +147,8 @@ const STATE_ALERT = {
         <Icon name={STATE_ALERT.kind === 'rejection' ? 'triangle-alert' : STATE_ALERT.kind === 'success' ? 'circle-check' : 'info'} size={18} />
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
+
+      {a.state !== 'customer' && <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />}
 
       <section class="co-card grid gap-4" data-testid="follow">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -335,11 +350,32 @@ const STATE_ALERT = {
     </div>
 
     <aside class="grid content-start gap-4">
-      <section class="co-card grid gap-3" data-testid="company-contact">
+      <section id="company-contact" class="co-card grid gap-3" data-testid="company-contact">
         <h2 class="co-entity">{F.contact.title}</h2>
         {(a.phone || a.email || a.instagram || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
           ? <ContactLinks reach={a} fallback={fallback} size="sm" testid="contact-links" />
           : <p class="co-meta">{F.contact.none}</p>}
+        {a.placeStatus === 'CLOSED_PERMANENTLY' && <p class="co-tag co-tag--danger w-fit">{priorityMessages[locale].google.closed}</p>}
+        {a.hours && a.hours.length > 0 && (
+          <details data-testid="hours"><summary class="co-meta cursor-pointer">{priorityMessages[locale].google.hours}</summary>
+            <ul class="m-0 mt-2 grid gap-0.5 p-0 text-sm">{a.hours.map((h) => <li class="list-none">{h}</li>)}</ul></details>
+        )}
+        {admin.crm.hasGoogle() && canQualify && (
+          <form method="post" action="#company-contact"><input type="hidden" name="action" value="google-search" />
+            <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search"><Icon name="search" size={14} />{priorityMessages[locale].google.search}</button></form>
+        )}
+        {googleResults && (googleResults.length === 0 ? <p class="co-meta">{priorityMessages[locale].google.none}</p> : (
+          <ul class="m-0 grid gap-2 p-0" data-testid="google-results">
+            {googleResults.map((r) => (
+              <li class="co-inset grid list-none gap-1 !p-3">
+                <span class="co-row-title">{r.name}</span>
+                <span class="co-meta">{[r.address, r.phone, r.website?.replace(/^https?:\/\/(www\.)?/, '')].filter(Boolean).join(' · ')}</span>
+                <form method="post"><input type="hidden" name="action" value="google-apply" /><input type="hidden" name="placeId" value={r.placeId} />
+                  <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="google-apply">{priorityMessages[locale].google.pick}</button></form>
+              </li>
+            ))}
+          </ul>
+        ))}
         <details open={!(a.phone || a.email || a.instagram)}>
           <summary class="co-meta cursor-pointer">{F.contact.edit}</summary>
           <form method="post" class="mt-3 grid gap-3" data-testid="company-contact-form">

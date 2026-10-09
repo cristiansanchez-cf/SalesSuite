@@ -1,4 +1,5 @@
 import type { CrmField, FieldValues } from '../crm/fields';
+import type { Qualification, Weights } from '../crm/priority';
 import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind } from './types';
 
 export interface AccountFilter { zoneIds?: string[]; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
@@ -60,6 +61,12 @@ export interface AccountsDb {
   listFields(tenantId: string): Promise<CrmField[]>;
   saveField(tenantId: string, f: CrmFieldRecord, id?: string): Promise<string>;
   archiveField(id: string, archived: boolean): Promise<boolean>;
+  /** Cualificar (RPC account_qualify): libre o mía, o un/a gerente; no la reserva. */
+  qualify(accountId: string, q: Qualification): Promise<void>;
+  /** Completar con Google (RPC account_research): solo rellena huecos. */
+  research(accountId: string, data: { placeId: string; phone: string | null; website: string | null; address: string | null; mapsUrl: string | null; hours: string[] | null; lat: number | null; lng: number | null; status: string | null }): Promise<void>;
+  getPriorityWeights(tenantId: string): Promise<Partial<Weights> | null>;
+  savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */
   deleteField(id: string): Promise<boolean>;
 }
