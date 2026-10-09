@@ -26,6 +26,8 @@ create table public.content_i18n (
 alter table public.content_i18n enable row level security;
 -- La leen los miembros del espacio (como el contenido original). Solo la escribe el service role (script de traducción).
 create policy content_i18n_select on public.content_i18n for select to authenticated using (public.is_member(tenant_id));
+-- El anónimo no la lee nunca directamente: la propuesta pública usa get_public_content_i18n.
+revoke all on public.content_i18n from anon;
 
 -- Propuesta pública en otro idioma: los textos traducidos de sus módulos, por la huella del original (así valen
 -- también para versiones fijadas antes de traducir, si sus textos no han cambiado). Misma puerta que get_public_dossier:

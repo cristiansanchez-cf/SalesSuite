@@ -32,5 +32,8 @@ exception when insufficient_privilege then null; end $$;
 reset role;
 
 set role anon;
-select pg_temp.assert((select count(*) = 0 from public.content_i18n), 'anónimo: nada');
+do $$ begin
+  perform 1 from public.content_i18n limit 1;
+  raise exception 'ASSERT FAILED: el anónimo lee traducciones';
+exception when insufficient_privilege then null; end $$;
 reset role;
