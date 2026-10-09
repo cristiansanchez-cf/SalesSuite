@@ -1,10 +1,13 @@
 ---
 /** Barra de abajo de la app del buceador (Perfil · Centros · Logbook). */
 import { APP_ICONS } from './icons';
-interface Props { on: 'profile' | 'centres' | 'logbook' }
+import { APP_TEXT, appLang } from './app-text';
+import { requestLocale } from '~/lib/i18n/request';
+interface Props { on: 'profile' | 'centres' | 'logbook'; locale?: string }
 const { on } = Astro.props;
+const L = APP_TEXT[appLang(Astro.props.locale ?? requestLocale())];
 const ic = (n: 'user' | 'home' | 'book') => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
-const items = [['profile', 'user', 'Perfil'], ['centres', 'home', 'Centros'], ['logbook', 'book', 'Logbook']] as const;
+const items = [['profile', 'user', L.profile], ['centres', 'home', L.centres], ['logbook', 'book', L.logbook]] as const;
 ---
 <nav class="as-nav">
   {items.map(([k, i, l]) => <span class:list={[on === k && 'on']}><Fragment set:html={ic(i)} /><i>{l}</i></span>)}

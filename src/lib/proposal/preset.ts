@@ -6,6 +6,7 @@
  * muestras y el alta.
  */
 import { z } from 'zod';
+import { TOUR_UI } from '../playbook/schema';
 
 const key = z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/);
 /** Una respuesta: la clave de una pregunta («dj») o «elección:opción» («angulo:d»). */
@@ -47,6 +48,12 @@ export const proposalSchema = z.object({
     when: z.array(answer).max(10).optional(),
   })).max(4).default([]),
   questions: z.array(option.omit({ priority: true }).extend({ rules: z.array(rule).min(1).max(20), when: z.array(answer).max(10).optional() })).max(16).default([]),
+  /**
+   * Aprende (ficha del sector, «Imagínatelo»): cómo funciona en ese tipo de cliente, contado AL COMERCIAL, paso a paso,
+   * con la UI del producto (como el recorrido: app:<pantalla>, console:<vista>…). Sin esto, la ficha enseña las
+   * diapositivas de la propuesta (que le hablan al cliente).
+   */
+  learn: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().min(1).max(600), ui: z.string().regex(TOUR_UI).nullable().optional() }).strict()).max(10).optional(),
 }).strict().superRefine((p, c) => {
   const ids = new Set(Object.keys(p.blocks));
   const check = (id: string, where: string) => { if (!ids.has(id)) c.addIssue({ code: 'custom', message: `${where}: el bloque «${id}» no existe` }); };

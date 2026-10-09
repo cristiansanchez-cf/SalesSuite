@@ -68,34 +68,52 @@
   },
   "tour": [
     {
-      "title": "El centro crea la inmersión",
-      "body": "Hora, punto de inmersión y tipo. Los datos del punto ya están cargados.",
+      "title": "El mapa del buceo, en todo el mundo",
+      "body": "Puntos de inmersión, centros, ONGs y sus eventos, en un mapa. Un buceador que viaja (de Corea a España, o al revés) descubre ahí dónde bucear y con quién. Pronto, se apuntará a las actividades desde el mapa.",
+      "image": "asset:img/fondos/rayos-peces.webp",
+      "ui": "app:map"
+    },
+    {
+      "title": "Cada inmersión, una tarjeta para compartir",
+      "body": "El buceador comparte su inmersión en Instagram con una tarjeta: profundidad, tiempo, lo que vio y el nombre del centro. Para el centro es publicidad gratis, cada vez.",
+      "image": "asset:img/exportables/1-inmersion.webp",
+      "ui": "app:share-card"
+    },
+    {
+      "title": "Modo Strava: su vida de buceador",
+      "body": "Todas sus inmersiones en un logbook digital, con su perfil, sus récords y sus fotos. Lo enseña, lo comparte y vuelve a mirarlo. Por eso los buceadores se quedan.",
+      "image": "asset:img/fondos/pareja-arrecife.webp",
+      "ui": "app:logbook"
+    },
+    {
+      "title": "El centro lo gestiona desde su panel",
+      "body": "Las actividades del día, quién viene a cada una, su equipo y sus clientes. Desde el ordenador del centro.",
       "image": "asset:img/producto/web/01-panel-centro-actividades.png",
-      "ui": "app:create-activity"
+      "ui": "console:today"
     },
     {
       "title": "El buceador escanea el QR",
-      "body": "Elige la inmersión de hoy y la guarda. Su logbook queda relleno sin escribir nada.",
+      "body": "Al volver de bucear, escanea el QR del centro y elige la actividad de hoy. Sin papeles ni formularios.",
       "image": "asset:img/producto/web/02-registro-qr-logbook.png",
-      "ui": "app:qr-pick"
+      "ui": "app:qr-scan"
     },
     {
-      "title": "La inmersión queda en su logbook",
-      "body": "Con los datos del punto de inmersión ya rellenos.",
+      "title": "Y la inmersión queda en su logbook",
+      "body": "Con los datos del punto de inmersión ya rellenos: profundidad, temperatura, vida marina. Sin escribir nada.",
       "image": "asset:img/producto/app/22-inmersion-guardada-es.png",
       "ui": "app:dive-saved"
     },
     {
-      "title": "Al centro le queda la lista",
-      "body": "Quién ha buceado con él y cuántas veces, con su histórico.",
+      "title": "Un CRM para que vuelvan",
+      "body": "Cada buceador que escanea entra en el CRM del centro: quién es, cuántas veces ha venido, qué ha hecho y cuándo fue la última. El centro sabe a quién llamar para que vuelva y cuida a sus clientes.",
       "image": "asset:img/producto/web/04-crm-perfil-buceador.png",
-      "ui": "app:crm-diver"
+      "ui": "console:crm"
     },
     {
-      "title": "Su nombre en cada tarjeta",
-      "body": "Cada vez que un buceador comparte su inmersión, sale el nombre del centro.",
-      "image": "asset:img/fotos/share-card-aerea.png",
-      "ui": "app:share-card"
+      "title": "Gratis para el centro; Oquea gana si le trae clientes",
+      "body": "Hoy el centro no paga nada. Cuando Oquea le lleva un cliente nuevo, Oquea se queda un 10 % de lo generado (en España, aún por cerrar). Se le dice en las condiciones, después de la demo.",
+      "image": "asset:img/fondos/buceadores-tortuga.webp",
+      "ui": "app:event"
     }
   ],
   "domains": [
@@ -124,13 +142,13 @@
         "title": "{company}: quién bucea contigo, y cuántas veces",
         "highlight": "{company}",
         "mark": "asset:isotipo-blanco.svg",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/rayos-peces.webp"
       }
     },
     {
       "key": "como-funciona",
       "block_type": "app-steps",
-      "name": "Cómo funciona",
+      "name": "Cómo funciona: QR y logbook",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -165,7 +183,7 @@
             "screen": "crm-list"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/buceadores-tortuga.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -183,7 +201,7 @@
     {
       "key": "tu-nombre",
       "block_type": "app-steps",
-      "name": "Tu nombre en cada inmersión",
+      "name": "Tarjetas para compartir",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -206,7 +224,7 @@
             "screen": "share-card"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pareja-arrecife.webp",
         "sample": {
           "cards": [
             "dive",
@@ -237,7 +255,7 @@
     {
       "key": "tus-buceadores",
       "block_type": "app-steps",
-      "name": "Tus buceadores",
+      "name": "CRM: los buceadores del centro",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -265,7 +283,7 @@
             "screen": "crm-diver"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/tiburon-ballena.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -283,7 +301,7 @@
     {
       "key": "perfil-y-mapa",
       "block_type": "app-steps",
-      "name": "Tu perfil y el mapa",
+      "name": "Perfil del centro y mapa",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -304,7 +322,7 @@
             "screen": "map"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pared-azul.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -383,7 +401,7 @@
             "screen": "event"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -410,7 +428,7 @@
         "title": "La red de centros fundadores",
         "highlight": "centros fundadores",
         "lede": "Lo que venga después de la lista de buceadores lo vamos a construir con los centros fundadores. Sois los que decís qué hace falta.",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/buceadores-tortuga.webp"
       }
     },
     {
@@ -424,13 +442,13 @@
       "props": {
         "title": "En preparación.",
         "lede": "Reserva y cobro online desde Oquea. No está disponible todavía. Se avisará a los centros fundadores cuando lo esté.",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pareja-arrecife.webp"
       }
     },
     {
       "key": "condiciones",
       "block_type": "app-steps",
-      "name": "Condiciones",
+      "name": "Condiciones para el centro",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
@@ -459,7 +477,7 @@
             "body": "El acuerdo firmado, el QR a la vista en el barco o en el local, y que el equipo lo mencione en el briefing."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/tiburon-ballena.webp"
       }
     },
     {
@@ -488,14 +506,14 @@
             "title": "3. Dejamos el QR puesto."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pared-azul.webp"
       }
     },
     {
       "key": "consola",
       "block_type": "center-console",
       "name": "Consola del centro",
-      "is_catalog": false,
+      "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
       "description": "La consola de escritorio: lo de hoy, quién viene, el CRM y tu centro. Interactiva.",
@@ -617,7 +635,7 @@
             "screen": "crm-diver"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -661,7 +679,7 @@
             "screen": "share-card"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/buceadores-tortuga.webp",
         "sample": {
           "cards": [
             "dive",
@@ -718,7 +736,7 @@
             "screen": "center-qr"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pareja-arrecife.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -770,7 +788,7 @@
             "screen": "create-activity"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/tiburon-ballena.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -819,7 +837,7 @@
             "screen": "dive-sites"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pared-azul.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -922,7 +940,7 @@
             "screen": "my-centres"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -968,7 +986,7 @@
             "href": "tel:+34623790890"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/buceadores-tortuga.webp"
       }
     },
     {
@@ -985,7 +1003,7 @@
         "title": "{company}: tu evento, en todos tus centros a la vez",
         "highlight": "{company}",
         "mark": "asset:isotipo-blanco.svg",
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pareja-arrecife.webp"
       }
     },
     {
@@ -1005,7 +1023,7 @@
             "screen": "event"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/tiburon-ballena.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -1037,7 +1055,7 @@
             "screen": "badge"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/pared-azul.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -1108,7 +1126,7 @@
             "screen": "map"
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp",
+        "photo": "asset:img/fondos/rayos-peces.webp",
         "sample": {
           "photos": [
             "stock:scuba diver underwater",
@@ -1150,7 +1168,7 @@
             "body": "Que tus centros de buceo usen Oquea en tus eventos."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/buceadores-tortuga.webp"
       }
     },
     {
@@ -1179,7 +1197,7 @@
             "title": "3. Creamos tu primer evento."
           }
         ],
-        "photo": "asset:img/fotos/share-card-bg.webp"
+        "photo": "asset:img/fondos/pareja-arrecife.webp"
       }
     }
   ],
@@ -1188,12 +1206,12 @@
       "key": "centros-buceo",
       "name": "Centros de buceo",
       "icon": "anchor",
-      "image": "asset:img/fotos/share-card-bg.webp",
-      "description": "Centros de buceo que crean sus inmersiones y quieren saber quién bucea con ellos. Un mismo centro puede ser destino (recibe buceadores de fuera) y emisor (sus buceadores viajan).",
-      "value_prop": "El buceador escanea el QR del centro y la inmersión se guarda en su logbook digital ya rellena. El centro obtiene la lista de los buceadores que han pasado por él, con su histórico.",
+      "image": "asset:img/fondos/buceadores-tortuga.webp",
+      "description": "Centros de buceo: bautizos, cursos y salidas con buceadores certificados; muchos tienen tienda y organizan viajes. Por dentro suele haber un dueño o director, alguien que planifica las salidas (barco, personal y material), recepción y reservas (consultas por email y WhatsApp, papeles de los alumnos y su programa de gestión), instructores, divemasters y la tripulación del barco. En los pequeños, el dueño hace casi todo. Un mismo centro puede ser destino (recibe buceadores de fuera) y emisor (sus buceadores viajan).",
+      "value_prop": "Sus buceadores guardan cada inmersión con un QR y la comparten con el nombre del centro; el centro se queda con la lista de quién ha buceado con él y aparece en el mapa para buceadores de todo el mundo. Sin coste.",
       "icp": "Centro destino: quiere recibir buceadores de otros países (Latinoamérica, validado en la feria de Brasil; Corea, SUPUESTO). Centro emisor: tiene buceadores locales que viajan (España, SUPUESTO; aún no se le ha planteado a nadie).",
       "disqualifiers": null,
-      "buying_process": "Decide el dueño o el instructor jefe (SUPUESTO del sector). Lo ejecuta la persona que está en el barco y dice «escanead el QR»: si le supone trabajo extra, el QR no se usa (SUPUESTO).",
+      "buying_process": "Firma el dueño (o el socio, si lo hay: no cierres sin él). Influyen el instructor jefe, que manda en el agua, y quien planifica las salidas, que es quien creará las actividades en Oquea cada día. Lo usan recepción (altas a mano, dudas de clientes) y quien está en el barco, que dice «escanead el QR» en el briefing. Si a esa persona le supone trabajo extra, el QR no se usa. Quién es quién: SUPUESTO del sector con ofertas de empleo de PADI como fuente.",
       "deal_size": "Sin coste: acuerdo de centro fundador. Comisión solo sobre clientes nuevos que lleve Oquea, en los términos del acuerdo: 10 % fuera de España; en España, sin cerrar.",
       "sales_cycle": "Una visita: acuerdo firmado y QR puesto con una inmersión creada. Si no, un siguiente paso con fecha.",
       "notice": "Oquea no tiene todavía clientes de pago ni datos de uso: no hay casos, cifras ni testimonios que citar. Solo se enseña la lista cerrada del producto. El objetivo de la visita: acuerdo firmado y QR puesto.",
@@ -1201,32 +1219,32 @@
         {
           "module_key": "como-funciona",
           "priority": 1,
-          "fit": "Siempre: los tres pasos."
+          "fit": "Siempre: el QR, el logbook y la lista, en tres pasos."
         },
         {
           "module_key": "tu-nombre",
           "priority": 1,
-          "fit": "Siempre que quepa: su nombre en cada tarjeta."
+          "fit": "Siempre que quepa: la tarjeta con «with [centro]», publicidad que no paga."
         },
         {
           "module_key": "condiciones",
           "priority": 1,
-          "fit": "Siempre: lo que hoy hace las veces de precio."
+          "fit": "Siempre: sin coste; el 10 % solo si Oquea le lleva un cliente nuevo."
         },
         {
           "module_key": "tus-buceadores",
           "priority": 2,
-          "fit": "Ángulo «que vuelvan» o si no guarda datos de sus buceadores."
+          "fit": "Si le preocupa que vuelvan o no guarda nada de sus buceadores."
         },
         {
           "module_key": "perfil-y-mapa",
           "priority": 2,
-          "fit": "Ángulos «abrir mercado» y «viaje de club»."
+          "fit": "Centro destino (quiere buceadores de fuera) o si organiza viajes con su club."
         },
         {
           "module_key": "album",
           "priority": 3,
-          "fit": "Si comparte fotos con sus clientes."
+          "fit": "Si comparte fotos con sus clientes o cuida sus redes."
         },
         {
           "module_key": "eventos",
@@ -1237,27 +1255,94 @@
       "personas": [
         {
           "key": "dueno-centro",
-          "name": "Dueño o instructor jefe",
+          "name": "Dueño o director del centro",
           "role": "decisor",
-          "goals": "Abrir mercado internacional (centro destino). PENDIENTE en el centro emisor.",
-          "pains": null,
-          "kpis": null,
+          "goals": "Llenar las salidas y los cursos, que entren buceadores nuevos (de fuera, si es centro destino) y que los de siempre vuelvan.",
+          "pains": "Más allá de la hoja de salida, no le queda nada de quien bucea con él. Las redes las lleva él o nadie. SUPUESTO.",
+          "kpis": "Salidas llenas, cursos vendidos, clientes que repiten. SUPUESTO.",
           "objections": [
             "desconfianza",
             "tiempo",
             "ya_tengo_proveedor"
           ],
-          "how_to_approach": "En persona, con el móvil en la mano: primero se pregunta, luego se enseña. SUPUESTO general del sector, sin validar por cuenta.",
+          "how_to_approach": "En persona, con el móvil en la mano: primero se pregunta, luego se enseña. En un centro pequeño también da cursos y lleva el barco: no le pilles cargándolo.",
           "avoid": "Abrir con lo que está por llegar (pasarela, red internacional): entiende que hoy no hay nada.",
           "can_help": "Firma el acuerdo de centro fundador.",
           "can_block": "No firma o firma y no pone el QR.",
           "angles": []
         },
         {
-          "key": "quien-esta-en-el-barco",
-          "name": "Quien está en el barco",
+          "key": "socio",
+          "name": "Socio",
+          "role": "guardian",
+          "goals": "Que nada comprometa el negocio: dinero, datos de los clientes, trabajo extra para el equipo. SUPUESTO.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "no_decido_yo",
+            "desconfianza"
+          ],
+          "how_to_approach": "Si el dueño dice «lo tengo que hablar con mi socio», propón una reunión con los dos, con fecha y objetivo, y ciérrala con «¿de acuerdo?».",
+          "avoid": "Dejar la decisión en una conversación en la que no estás.",
+          "can_help": "Si está en la reunión, la firma sale ese día.",
+          "can_block": "Si no estaba en la conversación, la firma se para.",
+          "angles": []
+        },
+        {
+          "key": "jefe-instructores",
+          "name": "Instructor jefe o director de buceo",
+          "role": "influenciador",
+          "goals": "Que la operación en el agua sea segura y ordenada, y que los alumnos sigan formándose (avanzado, especialidades). En centros pequeños, es quien decide con el dueño.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Enséñale que el QR no añade nada al briefing: una frase. Y que el logbook del alumno queda relleno con los datos del punto de inmersión.",
+          "avoid": "Que parezca que cambia cómo bucean o cómo se registra la seguridad.",
+          "can_help": "Convence al dueño y hace que su equipo lo diga en cada briefing.",
+          "can_block": "Si cree que complica el briefing, no entra en el barco.",
+          "angles": []
+        },
+        {
+          "key": "operaciones",
+          "name": "Gerente o responsable de operaciones",
+          "role": "campeon",
+          "goals": "Planifica las salidas del día: barco, personal, material y quién va a cada una (fuente: ofertas de empleo de PADI).",
+          "pains": "Las salidas ya las tiene en su programa o en una hoja: no quiere duplicar trabajo. SUPUESTO.",
+          "kpis": null,
+          "objections": [
+            "tiempo",
+            "ya_tengo_proveedor"
+          ],
+          "how_to_approach": "Es quien creará las salidas del día en el panel de Oquea. Enséñale que son tres datos (hora, punto, tipo) y que los puntos de inmersión los damos de alta nosotros si quiere.",
+          "avoid": "Decir que Oquea reserva, cobra o sustituye su programa: hoy no.",
+          "can_help": "Crea las salidas cada día: sin eso, el QR no tiene qué guardar.",
+          "can_block": "Si le duplica trabajo, no las crea y el QR se queda vacío.",
+          "angles": []
+        },
+        {
+          "key": "recepcion-reservas",
+          "name": "Recepción y reservas",
           "role": "usuario",
-          "goals": null,
+          "goals": "Atiende consultas por email y WhatsApp, reservas, check-in, papeles de los alumnos y certificaciones. Suele llevar el programa de gestión del centro (Dive Shop 360, Bloowatch, EVE…) o una hoja de cálculo.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "ya_tengo_proveedor",
+            "tiempo"
+          ],
+          "how_to_approach": "Pregunta qué programa usan. Oquea no lo sustituye ni se conecta a él: es el QR, el logbook del buceador y la lista. Si un cliente no escanea, desde aquí se le da de alta a mano.",
+          "avoid": "Prometer integración con su programa o con WhatsApp: no existe.",
+          "can_help": "Resuelve las dudas de los clientes sobre Oquea y da de alta a mano a quien no escaneó.",
+          "can_block": "Si lo ve como otra herramienta que mantener.",
+          "angles": []
+        },
+        {
+          "key": "quien-esta-en-el-barco",
+          "name": "Instructores y guías (quien está en el barco)",
+          "role": "usuario",
+          "goals": "Dar los cursos y guiar las inmersiones; en el briefing, decir «escanead el QR».",
           "pains": null,
           "kpis": null,
           "objections": [
@@ -1267,6 +1352,20 @@
           "avoid": "Que le suponga trabajo extra.",
           "can_help": "Lo menciona en el briefing y el QR se usa.",
           "can_block": "Si le supone trabajo extra, el QR no se usa.",
+          "angles": []
+        },
+        {
+          "key": "redes-sociales",
+          "name": "Quien lleva las redes del centro",
+          "role": "campeon",
+          "goals": "Fotos y vídeos del día en Instagram y Facebook; que los clientes etiqueten al centro y lo compartan (práctica habitual del sector: ver fuentes). A menudo es el dueño o un instructor.",
+          "pains": null,
+          "kpis": null,
+          "objections": [],
+          "how_to_approach": "Enséñale la tarjeta con «with [centro]» y el álbum de 30 días: contenido del día sin pedírselo a nadie.",
+          "avoid": "Prometer alcance o seguidores: no hay datos.",
+          "can_help": "Anima a los buceadores a compartir su tarjeta.",
+          "can_block": null,
           "angles": []
         }
       ],
@@ -1627,6 +1726,47 @@
               }
             ]
           }
+        ],
+        "learn": [
+          {
+            "title": "El centro prepara las salidas del día",
+            "body": "Quien planifica (el gerente u operaciones; en un centro pequeño, el dueño) crea en el panel las salidas: hora, punto de inmersión y tipo (fun dive, bautizo o curso). Los datos del punto ya están cargados. Es lo único que el centro tiene que hacer cada día; si le da pereza montarlo, se lo montamos.",
+            "ui": "console:today"
+          },
+          {
+            "title": "En el barco: «escanead el QR»",
+            "body": "El guía o el instructor lo dice en el briefing. Cada buceador escanea con la cámara del móvil, **sin instalar nada**, y elige la salida de hoy. Si a esa persona le supone trabajo extra, el QR no se usa: por eso preguntas en la visita quién lo dirá.",
+            "ui": "app:qr-scan"
+          },
+          {
+            "title": "El buceador tiene su logbook relleno",
+            "body": "La inmersión se guarda con los datos del punto: profundidad, visibilidad y vida marina. No escribe nada y tiene su historial, con su perfil y sus récords: el «modo Strava». Es lo que hace que el buceador quiera escanear.",
+            "ui": "app:dive-saved"
+          },
+          {
+            "title": "Lo comparte, y sale el nombre del centro",
+            "body": "Desde el logbook exporta una tarjeta para Instagram con «with [centro]». Los centros ya piden a sus clientes que les etiqueten: esto lo hace solo, en cada inmersión. Para el centro es publicidad que no paga.",
+            "ui": "app:share-card"
+          },
+          {
+            "title": "Las fotos del día, para todo el grupo",
+            "body": "Durante 30 días, buceadores y centro suben las fotos de esa inmersión a un álbum compartido. A quien lleva las redes del centro le da el contenido del día.",
+            "ui": "app:album"
+          },
+          {
+            "title": "El centro se queda con sus buceadores",
+            "body": "Cada buceador que escanea entra en la lista del centro con su historial: quién es, cuántas veces ha venido y qué ha hecho. Hoy el centro la consulta y contacta él mismo (Oquea **no** envía campañas). Le sirve para que vuelvan: saber a quién proponer el avanzado, la próxima salida o el viaje del club.",
+            "ui": "console:crm"
+          },
+          {
+            "title": "Le encuentran buceadores de fuera",
+            "body": "Su perfil (idiomas, certificadoras, equipo y contacto) sale en el mapa de Oquea, hoy con datos de España, Latinoamérica y Corea. A un centro destino es lo que más le importa: que le descubra quien prepara un viaje. Nunca digas cuántos clientes le llegarán.",
+            "ui": "app:map"
+          },
+          {
+            "title": "Las condiciones, al final",
+            "body": "Todo lo que has visto, sin coste. El día que Oquea le lleve un cliente nuevo, se queda un 10 % de lo generado (en España, por cerrar). A cambio pides tres cosas en voz alta: la firma, el QR en el barco y que quien da el briefing lo diga."
+          }
         ]
       }
     },
@@ -1634,49 +1774,98 @@
       "key": "ong",
       "name": "ONGs",
       "icon": "heart",
-      "image": "asset:img/fotos/share-card-bg.webp",
-      "description": "ONGs que organizan eventos con centros de buceo, como limpiezas de fondos.",
-      "value_prop": "Su evento en todos sus centros a la vez: la gente se apunta desde el mapa en el centro más cercano, cada asistente se lleva su insignia y la ONG tiene a todos los participantes. Sin coste.",
-      "icp": "ONG con varios centros de buceo colaboradores que organiza eventos (limpiezas u otras acciones).",
+      "image": "asset:img/fondos/tiburon-ballena.webp",
+      "description": "ONGs de conservación marina que organizan acciones con centros de buceo, como limpiezas de fondos. Un perfil más complejo que un centro: dirección, quien coordina los eventos y el voluntariado, comunicación, varios centros colaboradores y una comunidad de voluntarios y buceadores.",
+      "value_prop": "Su evento en el mapa de Oquea y en todos sus centros a la vez: la gente se apunta en el centro más cercano, cada asistente se lleva su insignia y la ONG tiene a todos los participantes, de todos los centros. Sin coste. Y será de las primeras en el remarketing cuando llegue (sin fecha).",
+      "icp": "ONG con varios centros de buceo colaboradores que organiza eventos (limpiezas u otras acciones) y quiere llegar a más gente.",
       "disqualifiers": null,
-      "buying_process": "Decide la ONG. Los centros colaboradores son los que usan Oquea el día del evento.",
+      "buying_process": "Decide la dirección de la ONG; quien lo empuja es quien coordina los eventos. Comunicación quiere la visibilidad. Los centros colaboradores lo usan el día del evento. SUPUESTO: un acuerdo con terceros y los datos de los participantes pueden pasar por su junta.",
       "deal_size": "Sin coste. A cambio, la ONG da acceso a sus centros de buceo, que usan Oquea en sus eventos.",
       "sales_cycle": null,
-      "notice": "Tipo de cliente nuevo, contado de palabra por Cristian (6-oct-2026): sin documento ni ventas todavía. El remarketing es lo que viene: sin fechas.",
+      "notice": "Tipo de cliente nuevo, contado de palabra por Cristian (6 y 9-oct-2026): sin documento ni ventas todavía. El remarketing es lo que viene: sin fechas. Solo para ti: lo que queremos de la ONG es su comunidad. Cada evento con Oquea mete en Oquea a todos los asistentes y a sus centros.",
       "modules": [
         {
           "module_key": "ong-eventos",
           "priority": 1,
-          "fit": "El evento con varios centros a la vez."
+          "fit": "Siempre: el evento con varios centros a la vez."
         },
         {
           "module_key": "ong-participantes",
           "priority": 1,
-          "fit": "Todos los participantes, de todos los centros."
+          "fit": "Siempre: su comunidad, de todos los centros, en una lista."
         },
         {
           "module_key": "ong-insignia",
           "priority": 2,
-          "fit": "Lo que se lleva cada asistente."
+          "fit": "Lo que se lleva cada asistente y comparte."
         },
         {
           "module_key": "ong-mapa",
           "priority": 2,
-          "fit": "Para que la gente se apunte antes."
+          "fit": "Para que la gente le encuentre y se apunte antes."
         }
       ],
       "personas": [
         {
           "key": "responsable-ong",
-          "name": "Responsable de la ONG",
+          "name": "Dirección de la ONG",
           "role": "decisor",
-          "goals": "Llegar a más gente en sus eventos.",
+          "goals": "Que sus acciones lleguen a más gente y tener a la comunidad que participa.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "desconfianza"
+          ],
+          "how_to_approach": "Empieza por su próximo evento: dónde, con cuántos centros y cuánta gente espera. Enséñale el evento en el mapa.",
+          "avoid": "Prometer fechas del remarketing.",
+          "can_help": "Firma el acuerdo y nos abre todos sus centros colaboradores.",
+          "can_block": "Si no ve qué gana la ONG, no mueve a sus centros.",
+          "angles": []
+        },
+        {
+          "key": "junta-ong",
+          "name": "Junta directiva o patronato",
+          "role": "guardian",
+          "goals": "Que los acuerdos con terceros y los datos de los participantes estén bien. SUPUESTO.",
+          "pains": null,
+          "kpis": null,
+          "objections": [
+            "desconfianza",
+            "no_decido_yo"
+          ],
+          "how_to_approach": "Que la dirección lleve las condiciones por escrito: todo gratis, qué datos ve la ONG (los participantes de sus eventos) y qué no se promete.",
+          "avoid": "Hablar de remarketing como si ya existiera.",
+          "can_help": "Aprueba el acuerdo.",
+          "can_block": "Si le preocupan los datos de los participantes.",
+          "angles": []
+        },
+        {
+          "key": "coordinacion-eventos",
+          "name": "Coordinación de eventos y voluntariado",
+          "role": "campeon",
+          "goals": "Montar el evento con varios centros, saber cuánta gente va a cada uno y que quien asiste se lleve algo.",
+          "pains": "Hoy, inscripciones por formularios, mensajes y hojas en cada centro. SUPUESTO.",
+          "kpis": null,
+          "objections": [
+            "tiempo"
+          ],
+          "how_to_approach": "Enséñale lo que le ahorra: el evento en el mapa, la gente apuntada por centro y la insignia para cada asistente.",
+          "avoid": null,
+          "can_help": "Crea el evento en Oquea y empuja a los centros a usar el QR ese día.",
+          "can_block": "Si le parece más trabajo que su formulario.",
+          "angles": []
+        },
+        {
+          "key": "comunicacion-ong",
+          "name": "Comunicación y redes",
+          "role": "influenciador",
+          "goals": "Visibilidad: que el evento se vea y que los asistentes lo compartan.",
           "pains": null,
           "kpis": null,
           "objections": [],
-          "how_to_approach": null,
-          "avoid": "Prometer fechas del remarketing.",
-          "can_help": "Trae a todos sus centros de buceo.",
+          "how_to_approach": "La ONG en el mapa con su evento, y la insignia en el perfil de cada asistente, que puede compartir.",
+          "avoid": "Prometer alcance: no hay datos.",
+          "can_help": "Lo anuncia y lleva a su comunidad a apuntarse desde Oquea.",
           "can_block": null,
           "angles": []
         },
@@ -1684,13 +1873,13 @@
           "key": "centro-colaborador",
           "name": "Centro colaborador de la ONG",
           "role": "usuario",
-          "goals": null,
+          "goals": "Que el día del evento todo vaya rodado.",
           "pains": null,
           "kpis": null,
           "objections": [
             "tiempo"
           ],
-          "how_to_approach": "Es un centro de buceo: lo de los centros vale para él.",
+          "how_to_approach": "Es un centro de buceo: lo de los centros vale para él. El evento le trae gente que puede volver.",
           "avoid": null,
           "can_help": "Usa Oquea el día del evento.",
           "can_block": "Si no lo usa, el evento no queda en Oquea.",
@@ -1791,6 +1980,36 @@
           "ong-insignia-v",
           "ong-mapa",
           "ong-mapa-v"
+        ],
+        "learn": [
+          {
+            "title": "La ONG crea su evento",
+            "body": "Por ejemplo, una limpieza de fondos con varios centros colaboradores a la vez. Hoy solo las ONGs pueden crear eventos en Oquea.",
+            "ui": "app:event"
+          },
+          {
+            "title": "Sale en el mapa y la gente se apunta",
+            "body": "El evento aparece en el mapa de Oquea y la gente se apunta en el centro que le queda más cerca. Cada centro ve quién va a venir. Más visibilidad, y la gente se apunta antes.",
+            "ui": "app:map"
+          },
+          {
+            "title": "El día del evento: QR e insignia",
+            "body": "Cada asistente escanea el QR de su centro, la inmersión se guarda en su logbook y se lleva la insignia del evento de la ONG en su perfil, que puede compartir.",
+            "ui": "app:badge"
+          },
+          {
+            "title": "La ONG tiene a toda su comunidad",
+            "body": "Todos los que han participado, de todos los centros, en una lista. Hoy la consulta; el remarketing (volver a convocarlos desde Oquea) llega después y la ONG será de las primeras. **Sin fechas.**",
+            "ui": "console:crm"
+          },
+          {
+            "title": "Por qué nos interesa tanto (solo para ti)",
+            "body": "Lo que queremos de la ONG es su comunidad. Cada evento con Oquea hace que todos los asistentes entren en Oquea con su perfil y su logbook, y que sus centros colaboradores empiecen a usar el QR a la vez. Pídele su calendario de eventos y el contacto de sus centros."
+          },
+          {
+            "title": "El acuerdo",
+            "body": "La ONG nos da acceso a sus centros, que usan Oquea en sus eventos. A cambio, todo gratis: la lista de quién ha participado en todos los centros, ser de las primeras en el remarketing y salir en el mapa para llegar a más gente."
+          }
         ]
       }
     }
@@ -1977,10 +2196,10 @@
       "audience": "all",
       "about": false,
       "pinned": 1,
-      "title": "Oquea en una frase",
-      "body": "Oquea es una plataforma para buceadores y centros de buceo. El buceador escanea el QR del centro y la inmersión se guarda en su logbook digital ya rellena. El centro obtiene la lista de los buceadores que han pasado por él, con su histórico.",
+      "title": "Qué es Oquea",
+      "body": "Oquea es la comunidad del buceo: una especie de Strava para buceadores que conecta el mundo del buceo a nivel internacional. El buceador guarda cada inmersión en su logbook y la comparte. El centro de buceo tiene una herramienta para gestionar sus actividades y sus clientes, y aparece en el mapa para buceadores de todo el mundo.",
       "when_to_use": null,
-      "why_it_works": "Documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
+      "why_it_works": "Cristian, 9-oct-2026 (al revisar la bienvenida). Antes: documento 01 · Empresa, producto y modelo de negocio (v0, 6-oct-2026).",
       "technique_refs": [],
       "status": "official"
     },
@@ -2005,9 +2224,109 @@
       "status": "official"
     },
     {
-      "key": "que-recibe-el-centro",
+      "key": "idea-publicidad",
+      "module_key": "tu-nombre",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Publicidad que no paga",
+      "body": "Sus buceadores ya suben la inmersión a Instagram. Pregunta: «¿Sale en algún sitio que fue con vosotros?». Con Oquea, cada tarjeta que comparten lleva «with [centro]». Cada post es publicidad del centro, sin pagar nada ni tener que pedir que le etiqueten.",
+      "when_to_use": "Si publica en redes o tiene fotos de clientes en su web (lo miras antes de ir).",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de la apertura del guion de campo y la investigación (docs/ventas/oquea/fuentes/06-investigacion-centros-y-ongs.md §3).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "idea-que-vuelvan",
+      "module_key": "tus-buceadores",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Que vuelvan los que ya vinieron",
+      "body": "Pregunta: «Después de la inmersión, ¿qué os queda de esa persona?». Casi siempre, un nombre en la hoja de salida. Con Oquea, cada buceador que escanea se queda en su lista con su historial, y él decide a quién llamar: el avanzado, la próxima salida, el viaje del club.\n\n**Nunca** digas que Oquea envía campañas o hace remarketing: hoy la lista se consulta.",
+      "when_to_use": "Cuando le preocupa no saber quién bucea con él o vive de cursos y clientes que repiten.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de el documento 01 (§2.1 y §3), el guion (pregunta 5) y la investigación (docs/ventas/oquea/fuentes/06-investigacion-centros-y-ongs.md §3).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "idea-cero-trabajo",
       "module_key": null,
       "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Cero trabajo extra para su equipo",
+      "body": "Lo único que tiene que hacer el centro: crear las salidas del día (hora, punto y tipo) y que quien da el briefing diga «escanead el QR». El buceador no instala nada. Y si le da pereza montarlo, le damos de alta los puntos de inmersión y las salidas.",
+      "when_to_use": "Cuando dice que no tiene tiempo o que ya tiene demasiadas herramientas.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de la guía de inicio («se lo montamos», «sin instalar») y el documento 01 (§2.1).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "idea-viajero",
+      "module_key": "perfil-y-mapa",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "El buceador que viaja le encuentra",
+      "body": "Un buceador de Corea, de Latinoamérica o de España que prepara su viaje mira el mapa de Oquea: ahí está el centro, con sus idiomas, sus certificadoras y su contacto. Para un centro destino es la puerta: «Estamos firmando con centros de varios países para que los buceadores de unos conozcan a los otros».\n\n**Nunca:** cuántos clientes le llegarán ni cuándo.",
+      "when_to_use": "Centro destino: recibe o quiere recibir buceadores de fuera.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de el documento 01 (§2.2 mapa, §7), el ángulo «Abrir mercado» del guion y la investigación (docs/ventas/oquea/fuentes/06-investigacion-centros-y-ongs.md §4).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "idea-no-sustituye",
+      "module_key": null,
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "centros-buceo"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "No cambia lo que ya usa",
+      "body": "Muchos centros llevan reservas, alumnos y tienda en un programa (Dive Shop 360, Bloowatch, EVE…) o en la app de su certificadora. Oquea no lo sustituye ni se conecta a él: es un QR en el barco y un logbook para sus buceadores. «Sigue con ello: esto no cambia nada de lo que ya usas.»",
+      "when_to_use": "Cuando pregunta si tiene que cambiar de programa o dice que ya tiene uno.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de la objeción «Ya uso la aplicación de mi certificadora» del guion y la investigación (docs/ventas/oquea/fuentes/06-investigacion-centros-y-ongs.md §2).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "que-recibe-el-centro",
+      "module_key": null,
+      "kind": "monetization",
       "stage": "negociacion",
       "objection": null,
       "segments": [
@@ -2592,7 +2911,7 @@
     {
       "key": "campo-tarjeta",
       "module_key": "tu-nombre",
-      "kind": "pitch",
+      "kind": "script",
       "stage": "pitch_demo",
       "objection": null,
       "segments": [
@@ -2612,7 +2931,7 @@
     {
       "key": "campo-lista",
       "module_key": "tus-buceadores",
-      "kind": "pitch",
+      "kind": "script",
       "stage": "pitch_demo",
       "objection": null,
       "segments": [
@@ -2632,7 +2951,7 @@
     {
       "key": "campo-album",
       "module_key": "album",
-      "kind": "pitch",
+      "kind": "script",
       "stage": "pitch_demo",
       "objection": null,
       "segments": [
@@ -3245,6 +3564,86 @@
       "status": "official"
     },
     {
+      "key": "ong-idea-mas-gente",
+      "module_key": "ong-mapa",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Más gente en cada evento",
+      "body": "Su evento sale en el mapa de Oquea y la gente se apunta en el centro más cercano. No depende solo de sus redes y sus formularios.",
+      "when_to_use": "Siempre: es lo primero que quiere una ONG.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de lo que contó Cristian (6 y 9-oct) y el documento 01 (§2.3).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "ong-idea-comunidad",
+      "module_key": "ong-participantes",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Toda su comunidad, en una lista",
+      "body": "Hoy cada centro tiene a sus asistentes en su hoja. Con Oquea, la ONG tiene a todos los que han participado, de todos los centros. Y cuando llegue el remarketing, será de las primeras (sin fechas).",
+      "when_to_use": "Cuando organiza con varios centros.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de lo que contó Cristian (6-oct) y la jugada «Remarketing: lo que viene».",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "ong-idea-insignia",
+      "module_key": "ong-insignia",
+      "kind": "pitch",
+      "stage": "pitch_demo",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Que se acuerden de que vinieron",
+      "body": "Cada asistente se lleva la insignia del evento en su perfil de Oquea y la puede compartir. Es el recuerdo del evento y su mejor anuncio para el siguiente.",
+      "when_to_use": "Con quien lleva comunicación o voluntariado.",
+      "why_it_works": "Redactado por la sesión (Claude, 9-oct-2026) a partir de lo que contó Cristian (6-oct: «le damos un badge»).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
+      "key": "ong-lo-que-queremos",
+      "module_key": null,
+      "kind": "tip",
+      "stage": "prospeccion",
+      "objection": null,
+      "segments": [
+        "ong"
+      ],
+      "personas": [],
+      "audience": "all",
+      "about": false,
+      "pinned": null,
+      "title": "Lo que queremos de la ONG: su comunidad",
+      "body": "Cristian: lo que queremos de la ONG es que nos dé sus contactos, «porque cuando ellos hacen un evento, todo el mundo se tiene que descargar Oquea». Cada evento mete en Oquea a todos los asistentes y a sus centros.\n\nPídele el calendario de eventos y el contacto de sus centros colaboradores. A la ONG no se le dice así: se le cuenta lo que gana ella.",
+      "when_to_use": "Para ti, antes de la visita.",
+      "why_it_works": "Cristian, 9-oct-2026 (de palabra, al revisar la ficha de las ONGs).",
+      "technique_refs": [],
+      "status": "official"
+    },
+    {
       "key": "ong-acuerdo",
       "module_key": "ong-condiciones",
       "kind": "monetization",
@@ -3288,5 +3687,26 @@
   "retired_plays": [
     "escanean-tu-ves",
     "fideliza"
-  ]
+  ],
+  "content_i18n": {
+    "locales": [
+      "ko"
+    ],
+    "glossary": [
+      "Oquea: brand name, never translate (written \"Oquea\").",
+      "logbook / Logbook: keep \"로그북\" in Korean.",
+      "centro de buceo → 다이빙 센터",
+      "buceador / buceadores → 다이버",
+      "punto de inmersión / dive site → 다이빙 포인트",
+      "inmersión → 다이빙 (a single dive)",
+      "centro fundador / red de centros fundadores → 창립 센터 / 창립 센터 네트워크",
+      "ONG → NGO",
+      "comercial (the sales rep) → 영업 담당자",
+      "propuesta / dossier → 제안서",
+      "QR: keep \"QR\".",
+      "Fun dive, Open Water, Advanced Open Water, Divemaster, Rescue Diver: keep in English.",
+      "Names of places, dive sites and people: keep as written."
+    ],
+    "notes": "Oquea is the diving community: a kind of Strava for divers that connects the diving world internationally, plus a management tool for dive centres. Divers scan the centre's QR after a dive and it is saved in their logbook; they share their dives with cards; the centre keeps its divers in a CRM and appears on the map. Korean reps sell it to dive centres in Korea. Prices and commissions: keep numbers and the % sign exactly."
+  }
 }

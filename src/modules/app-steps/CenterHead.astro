@@ -1,10 +1,13 @@
 ---
 /** Cabecera del modo centro: centro activo (con su logo o los dos puntos de Oquea) y pestañas Buceos · CRM · Mi centro. */
 import { APP_ICONS } from './icons';
-interface Props { center: string; logo?: string | null; tab: 'dives' | 'crm' | 'centre' }
+import { APP_TEXT, appLang } from './app-text';
+import { requestLocale } from '~/lib/i18n/request';
+interface Props { center: string; logo?: string | null; tab: 'dives' | 'crm' | 'centre'; locale?: string }
 const { center, logo, tab } = Astro.props;
+const L = APP_TEXT[appLang(Astro.props.locale ?? requestLocale())];
 const caret = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS.caret}</svg>`;
-const tabs = [['dives', 'Buceos'], ['crm', 'CRM'], ['centre', 'Mi centro']] as const;
+const tabs = [['dives', L.tabDives], ['crm', L.tabCrm], ['centre', L.myCentre]] as const;
 ---
 <div class="as-chead">
   {logo ? <img class="as-chead__logo" src={logo} alt="" /> : <span class="as-dots"><i></i><i></i></span>}

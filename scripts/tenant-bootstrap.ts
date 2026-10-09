@@ -44,6 +44,12 @@ const tenantFile = z.object({
   brand: z.unknown().default({}),
   /** «Lo que vendes, en 1 minuto» (Aprende): pasos con imagen, de arriba abajo. image admite "asset:<ruta>". */
   tour: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().max(240).nullable().default(null), image: z.string().nullable().default(null), ui: z.string().regex(TOUR_UI).nullable().optional() })).max(8).default([]),
+  /** Contenido en otros idiomas (docs/I18N.md §Contenido): a cuáles se traduce y el glosario para la traducción. */
+  content_i18n: z.object({
+    locales: z.array(z.enum(['es', 'en', 'pt', 'ko'])).max(3).default([]),
+    glossary: z.array(z.string().min(1).max(200)).max(80).default([]),
+    notes: z.string().max(1500).optional(),
+  }).optional(),
   domains: z.array(z.object({ hostname: z.string().regex(/^[a-z0-9.-]+$/), is_primary: z.boolean().default(false) })).min(1),
   admins: z.array(z.string().email()).default([]),
   catalog: z.array(z.object({
@@ -372,6 +378,11 @@ async function main() {
   const brand = replaceAssets(t.brand ?? {}, urls, missing);
   const tour = (replaceAssets(t.tour, urls, missing) as TenantFile['tour']).map((x) => ({ ...x, image: x.image?.startsWith('asset:') ? null : x.image }));
   must(await sb.from('tenant').update({ name: t.name, default_locale: t.default_locale, theme_tokens: theme, brand, tour }).eq('id', tenantId), 'actualizar tenant');
+  // Idiomas del contenido (columna nueva: solo se escribe si el espacio la usa, para no depender de la migración).
+  if (t.content_i18n) {
+    must(await sb.from('tenant').update({ content_locales: t.content_i18n.locales }).eq('id', tenantId), 'idiomas del contenido');
+    log(`idiomas del contenido: ${t.content_i18n.locales.join(', ') || 'solo el original'} (traducir: workflow Producción → traducir)`);
+  }
   log('tema y marca actualizados');
 
   // 3. dominios

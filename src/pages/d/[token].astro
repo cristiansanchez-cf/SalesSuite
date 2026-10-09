@@ -12,5 +12,9 @@ const TOKEN_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
 const dossier = tenant && TOKEN_RE.test(token) ? await publicRepository().getPublicDossier(token, tenant.id) : null;
 if (!tenant || !dossier) return Astro.rewrite('/404');
+// En otro idioma que el del espacio: los textos de sus módulos, traducidos si el espacio traduce a ese idioma.
+const translations = dossier.locale.slice(0, 2) !== tenant.defaultLocale.slice(0, 2)
+  ? await publicRepository().getPublicContentI18n(token, tenant.id).catch(() => ({}))
+  : undefined;
 ---
-<DossierView tenant={tenant} dossier={dossier} track={token} />
+<DossierView tenant={tenant} dossier={dossier} track={token} translations={translations} />

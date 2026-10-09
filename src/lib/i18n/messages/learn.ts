@@ -17,7 +17,7 @@ const es = {
   howCard: { title: 'Jugadas para abrir, seguir y cerrar', meta: (n: number) => (n === 1 ? '1 jugada' : `${n} jugadas`) },
   aboutCard: { title: 'La visión, la estrategia y cómo ganamos dinero', meta: (n: number) => (n === 1 ? '1 pieza' : `${n} piezas`) },
   tour: {
-    eyebrow: 'Lo que vendes', title: 'Así funciona, de principio a fin', lede: 'Lo que vive el invitado y lo que gana quien lo contrata.',
+    eyebrow: 'Lo que vendes', title: 'Así funciona, de principio a fin', lede: 'Lo que vive quien lo usa y lo que gana quien lo contrata.',
     got: 'Entendido', gotNext: 'Entendido: ahora, qué ofrecemos', back: 'Volver a Aprende', backWelcome: 'Volver a la bienvenida',
     empty: 'Tu empresa aún no ha preparado este recorrido. Mientras, mira qué ofrecemos.', seeOffer: 'Ver qué ofrecemos',
     flash: 'Hecho: ya sabes lo que vendes.', yourCentre: 'Tu centro',
@@ -28,6 +28,7 @@ const es = {
   },
   sector: {
     icp: 'Cliente ideal', icpEn: 'Ideal Customer Profile · ICP',
+    howItWorks: 'Cómo funciona en este cliente', howItWorksLede: 'Para que lo entiendas tú: quién hace qué dentro, paso a paso, con la app de verdad. No es lo que le dices al cliente.',
     imagine: 'Imagínatelo', imagineLede: 'Todo lo que verá el cliente, pantalla a pantalla, y lo que puede hacer con ello. Primero te lo tienes que creer tú.',
     ideas: 'Ideas para contarlo', yourClient: 'Tu cliente', ideasLede: 'Lo que puedes proponerle, con las palabras del equipo.', keysNote: 'Los guiones, las objeciones y el precio, más abajo en «Qué decir» y en la ficha de cada persona.', fullProposal: 'Ver la propuesta entera',
     blockers: 'Quién puede frenarlo', got: 'Entendido', learned: 'Repasado', flash: 'Sector repasado.',
@@ -52,7 +53,7 @@ export const learnMessages = defineMessages({
     howCard: { title: 'Plays to open, follow up and close', meta: (n) => (n === 1 ? '1 play' : `${n} plays`) },
     aboutCard: { title: 'Vision, strategy and how we make money', meta: (n) => (n === 1 ? '1 piece' : `${n} pieces`) },
     tour: {
-      eyebrow: 'What you sell', title: 'How it works, end to end', lede: 'What the guest experiences and what the buyer gets.',
+      eyebrow: 'What you sell', title: 'How it works, end to end', lede: 'What users experience and what the buyer gets.',
       got: 'Got it', gotNext: 'Got it: now, what we offer', back: 'Back to Learn', backWelcome: 'Back to the welcome',
       empty: 'Your company has not prepared this tour yet. Meanwhile, see what we offer.', seeOffer: 'See what we offer',
       flash: 'Done: you know what you sell.', yourCentre: 'Your centre',
@@ -63,6 +64,7 @@ export const learnMessages = defineMessages({
     },
     sector: {
       icp: 'Ideal customer', icpEn: 'Ideal Customer Profile · ICP',
+      howItWorks: 'How it works for this customer', howItWorksLede: 'For you to understand it: who does what inside, step by step, with the real app. It is not what you tell the customer.',
       imagine: 'Picture it', imagineLede: 'Everything the customer will see, screen by screen, and what they can do with it. You have to believe it first.',
       ideas: 'Ideas to pitch', yourClient: 'Your client', ideasLede: 'What you can offer them, in the team’s own words.', keysNote: 'Scripts, objections and pricing are further down in «What to say» and on each person’s page.', fullProposal: 'See the full proposal',
       blockers: 'Who can stop it', got: 'Got it', learned: 'Reviewed', flash: 'Sector reviewed.',
@@ -84,7 +86,7 @@ export const learnMessages = defineMessages({
     howCard: { title: 'Jogadas para abrir, acompanhar e fechar', meta: (n) => (n === 1 ? '1 jogada' : `${n} jogadas`) },
     aboutCard: { title: 'A visão, a estratégia e como ganhamos dinheiro', meta: (n) => (n === 1 ? '1 peça' : `${n} peças`) },
     tour: {
-      eyebrow: 'O que você vende', title: 'Como funciona, do início ao fim', lede: 'O que o convidado vive e o que ganha quem contrata.',
+      eyebrow: 'O que você vende', title: 'Como funciona, do início ao fim', lede: 'O que vive quem usa e o que ganha quem contrata.',
       got: 'Entendi', gotNext: 'Entendi: agora, o que oferecemos', back: 'Voltar para Aprenda', backWelcome: 'Voltar às boas-vindas',
       empty: 'Sua empresa ainda não preparou este percurso. Enquanto isso, veja o que oferecemos.', seeOffer: 'Ver o que oferecemos',
       flash: 'Feito: você já sabe o que vende.', yourCentre: 'Seu centro',
@@ -95,6 +97,7 @@ export const learnMessages = defineMessages({
     },
     sector: {
       icp: 'Cliente ideal', icpEn: 'Ideal Customer Profile · ICP',
+      howItWorks: 'Como funciona neste cliente', howItWorksLede: 'Para você entender: quem faz o quê lá dentro, passo a passo, com o app de verdade. Não é o que você diz ao cliente.',
       imagine: 'Imagine', imagineLede: 'Tudo o que o cliente verá, tela a tela, e o que pode fazer com isso. Primeiro, você tem que acreditar.',
       ideas: 'Ideias para contar', yourClient: 'Seu cliente', ideasLede: 'O que você pode propor, com as palavras da equipe.', keysNote: 'Roteiros, objeções e preço estão mais abaixo em «O que dizer» e na ficha de cada pessoa.', fullProposal: 'Ver a proposta inteira',
       blockers: 'Quem pode travar', got: 'Entendi', learned: 'Revisado', flash: 'Setor revisado.',
@@ -116,7 +119,7 @@ export const learnMessages = defineMessages({
     howCard: { title: '시작하고, 이어 가고, 성사시키는 플레이', meta: (n) => `플레이 ${n}개` },
     aboutCard: { title: '비전, 전략, 수익 구조', meta: (n) => `${n}개 항목` },
     tour: {
-      eyebrow: '무엇을 파나요', title: '처음부터 끝까지, 이렇게 작동합니다', lede: '게스트가 경험하는 것과 계약한 사람이 얻는 것.',
+      eyebrow: '무엇을 파나요', title: '처음부터 끝까지, 이렇게 작동합니다', lede: '사용하는 사람이 경험하는 것과 계약한 사람이 얻는 것.',
       got: '이해했어요', gotNext: '이해했어요: 이제 제공하는 것 보기', back: '판매 배우기로 돌아가기', backWelcome: '환영 안내로 돌아가기',
       empty: '아직 회사에서 이 안내를 준비하지 않았습니다. 그동안 제공하는 것을 살펴보세요.', seeOffer: '제공하는 것 보기',
       flash: '완료: 이제 무엇을 파는지 알아요.', yourCentre: '우리 센터',
@@ -127,6 +130,7 @@ export const learnMessages = defineMessages({
     },
     sector: {
       icp: '이상적인 고객', icpEn: 'Ideal Customer Profile · ICP',
+      howItWorks: '이 고객에게서는 이렇게 작동합니다', howItWorksLede: '이해를 돕기 위한 내용입니다. 내부에서 누가 무엇을 하는지 실제 앱으로 단계별로 보여 줍니다. 고객에게 하는 말이 아닙니다.',
       imagine: '상상해 보세요', imagineLede: '고객이 보게 될 모든 화면과 그것으로 할 수 있는 일. 먼저 당신이 믿어야 합니다.',
       ideas: '이렇게 제안해 보세요', yourClient: '고객사', ideasLede: '팀의 말로 정리한 제안 아이디어.', keysNote: '스크립트, 반론, 가격은 아래 «무엇을 말할까»와 각 인물 페이지에 있습니다.', fullProposal: '제안서 전체 보기',
       blockers: '막을 수 있는 사람', got: '이해했어요', learned: '복습함', flash: '업종을 복습했어요.',

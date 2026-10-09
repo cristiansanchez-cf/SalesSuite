@@ -11,6 +11,7 @@ import { resolveTenant } from './lib/tenant';
 import { noteTeamNetwork } from './lib/analytics/internal';
 import { serverTiming } from './lib/timing';
 import { isSetupPath, onboardedAt } from './lib/onboarding';
+import { withContentLocale } from './lib/i18n/content-db';
 import { can } from './lib/admin/permissions';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
@@ -106,9 +107,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
     });
   }
 
+  // Contenido de la empresa en el idioma de quien lee (docs/I18N.md §Contenido), si el espacio lo traduce a ese idioma.
+  // Solo al leer y fuera de Configurar: allí se edita el original y no puede guardarse la traducción encima.
+  let contentScope: Parameters<typeof withContentLocale>[0] = null;
+  const reader = context.locals.admin;
+  const viewLocale = context.locals.locale;
+  if (reader && viewLocale && context.request.method === 'GET' && !isSetupPath(path) && context.locals.tenant
+    && viewLocale !== context.locals.tenant.defaultLocale.slice(0, 2)) {
+    const langs = await reader.content.locales(reader.session.tenantId).catch((): string[] => []);
+    if (langs.includes(viewLocale)) contentScope = { tenantId: reader.session.tenantId, locale: viewLocale, db: reader.content };
+  }
+
   timing.mark('prep');
   // Los errores del servidor salen en el idioma de quien lee (src/lib/i18n/errors.ts).
-  const res = context.locals.locale ? await withRequestLocale(context.locals.locale, next) : await next();
+  const run = () => withContentLocale(contentScope, next);
+  const res = context.locals.locale ? await withRequestLocale(context.locals.locale, run) : await run();
   timing.mark('page');
   // Cuánto tarda cada parte (DevTools → Network → Timing) y aviso en los registros si una página va lenta.
   res.headers.set('Server-Timing', timing.header());

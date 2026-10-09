@@ -63,7 +63,7 @@ const [catalog, learn, segments, plays, terms] = await Promise.all([
   key === 'sell' ? admin.service.catalog().catch(() => []) : [],
   key === 'sell' ? admin.playbook.learnIndex().catch(() => null) : null,
   key === 'who' ? admin.playbook.market().catch(() => []) : [],
-  key === 'how' ? admin.playbook.listAllVisible().catch(() => []) : [],
+  key === 'how' || key === 'sell' ? admin.playbook.listAllVisible().catch(() => []) : [],
   key === 'terms' ? admin.commissions.myConditions().catch(() => null) : null,
 ]);
 const sectors = segments.filter((s) => s.status !== 'archived').slice(0, 4);
@@ -76,9 +76,14 @@ const topPlays = ranked.length
 const href = (i: number) => `/admin/welcome?step=${i}`;
 const sectorIcon = (i: string | null) => (i && i in ICONS ? i : 'target') as IconName;
 const priceOf = new Map(catalog.map((c) => [c.moduleId, c]));
-const offer = (learn?.modules ?? []).filter((x) => priceOf.has(x.moduleId)).slice(0, 4);
+// Qué es la empresa, en una frase: su argumento general (jugada «pitch» sin módulo; la fijada, si la hay).
+const pitch = key === 'sell' ? [...plays].filter((p) => p.kind === 'pitch' && !p.moduleId && !p.segments?.length).sort((a, b) => (a.pinned ?? 99) - (b.pinned ?? 99) || a.position - b.position)[0] ?? null : null;
+// Las piezas de la propuesta, con su precio («desde…»). Sin precios y con recorrido, el recorrido ya cuenta el producto:
+// enseñar diapositivas como «Condiciones» o «Portada» solo confunde (Oquea, 9-oct-2026).
+const priced = catalog.some((c) => c.defaultPrice != null);
+const offer = !priced && learn?.tour.steps.length ? [] : (learn?.modules ?? []).filter((x) => priceOf.has(x.moduleId)).slice(0, 4);
 const tourSteps = learn?.tour.steps.filter((x) => x.image) ?? [];
-const tourCover = tourSteps[Math.floor(tourSteps.length / 2)]?.image ?? null;
+const tourCover = tourSteps[0]?.image ?? null;
 ---
 <AdminLayout title={m.title} bare>
   <div class="mx-auto mt-4 grid max-w-xl grid-cols-[minmax(0,1fr)] gap-6 sm:mt-10" data-testid="welcome" data-step={key}>
@@ -107,11 +112,11 @@ const tourCover = tourSteps[Math.floor(tourSteps.length / 2)]?.image ?? null;
       </>}
 
       {key === 'sell' && <>
-        <h1 class="co-page-title">{m.sell.title}</h1>
-        <p class="co-lede">{m.sell.lede}</p>
+        <h1 class="co-page-title">{pitch ? m.sell.what(tenant.name) : m.sell.title}</h1>
+        {pitch ? <p class="co-lede whitespace-pre-line" data-testid="welcome-pitch">{summarize(pitch.body, 420)}</p> : <p class="co-lede">{m.sell.lede}</p>}
         {learn && learn.tour.steps.length > 0 && (
           <a href="/admin/learn/tour?from=welcome" class="learn-card min-h-[13rem]" data-testid="welcome-tour">
-            {learn.kit.screen || learn.kit.phone ? <KitCover kit={learn.kit} /> : tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" />}
+            {learn.kit.screen || learn.kit.phone || learn.kit.app ? <KitCover kit={learn.kit} photo={tourCover} venue={learn.kit.app ? m.sell.yourCentre : undefined} /> : tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" />}
             <span class="learn-card__shade"></span>
             <span class="learn-card__body !p-5">
               <span class="text-2xl font-bold leading-tight">{m.sell.tour}</span>
@@ -120,7 +125,7 @@ const tourCover = tourSteps[Math.floor(tourSteps.length / 2)]?.image ?? null;
             </span>
           </a>
         )}
-        {offer.length === 0 ? (catalog.length === 0 && <p class="co-help">{m.sell.empty}</p>) : (
+        {offer.length === 0 ? (catalog.length === 0 && !learn?.tour.steps.length && <p class="co-help">{m.sell.empty}</p>) : (
           <div class="grid grid-cols-2 gap-3">{offer.map((x) => {
             const c = priceOf.get(x.moduleId)!;
             return (

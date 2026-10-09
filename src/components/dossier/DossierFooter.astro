@@ -2,14 +2,16 @@
 /** Pie de la propuesta: logo, para quién es y contacto. En presentación va dentro de la última diapositiva. */
 import type { TenantContext } from '~/lib/types';
 import { contactLinks } from '~/lib/contact';
+import { proposalText } from '~/lib/i18n/messages/proposal';
 
-interface Props { tenant: TenantContext; title: string; prospect: string | null }
-const { tenant, title, prospect } = Astro.props;
-const contacts = contactLinks(tenant.brand, title);
+interface Props { tenant: TenantContext; title: string; prospect: string | null; locale?: string }
+const { tenant, title, prospect, locale } = Astro.props;
+const contacts = contactLinks(tenant.brand, title, locale);
+const t = proposalText(locale);
 ---
 <footer class="border-t border-line py-10 text-center text-sm text-muted" data-testid="brand-footer">
   {tenant.brand.logoUrl && <img src={tenant.brand.logoUrl} alt={tenant.brand.logoAlt ?? tenant.name} class="mx-auto mb-4 h-7 w-auto opacity-80" loading="lazy" />}
-  <p>{tenant.name} · {prospect ? `Propuesta para ${prospect}` : title}</p>
+  <p>{tenant.name} · {prospect ? t.forProspect(prospect) : title}</p>
   {contacts.length > 0 && (
     <p class="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1">
       {contacts.map((c) => <a class="underline-offset-4 hover:underline" href={c.href} target={c.external ? '_blank' : undefined} rel="noopener noreferrer">{c.label}</a>)}

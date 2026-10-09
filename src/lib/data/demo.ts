@@ -53,6 +53,13 @@ export function demoRepository(): PublicRepository {
       const row = getPublicDossierFromRows(demoDb(), token, tenantId);
       return row ? toPublicDossier(row) : null;
     },
+    async getPublicContentI18n(token, tenantId) {
+      const db = demoDb();
+      const row = getPublicDossierFromRows(db, token, tenantId);
+      const lang = row?.locale?.slice(0, 2);
+      if (!row || !lang || !(db.tenant.find((t) => t.id === tenantId)?.content_locales ?? []).includes(lang)) return {};
+      return Object.fromEntries((db.content_i18n ?? []).filter((c) => c.tenant_id === tenantId && c.locale === lang && c.kind === 'module_version').map((c) => [c.source_hash, c.texts]));
+    },
     async trackView(token, tenantId, input) {
       return trackDemoView(token, tenantId, input);
     },

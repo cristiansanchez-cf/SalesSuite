@@ -10,6 +10,11 @@ export interface PublicRepository {
   resolveTenantBySlug(slug: string): Promise<TenantContext | null>;
   /** null ⇔ 404 (token inexistente, revocado, expirado, dossier no publicado o de otro tenant). */
   getPublicDossier(token: string, tenantId: string): Promise<PublicDossier | null>;
+  /**
+   * Propuesta en otro idioma (docs/I18N.md §Contenido): textos traducidos de sus módulos por huella del original
+   * (source_hash → ruta → texto). Vacío si el espacio no traduce al idioma de la propuesta o el enlace no vale.
+   */
+  getPublicContentI18n(token: string, tenantId: string): Promise<Record<string, Record<string, string>>>;
   /** Registra (o amplía) una visita al enlace público. false = enlace no válido o límite superado. */
   trackView(token: string, tenantId: string, input: import('../analytics/types').TrackInput): Promise<boolean>;
 }

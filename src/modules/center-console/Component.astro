@@ -36,7 +36,7 @@ const id = `cc-${ctx.itemId}`;
   <div class="cc__frame" data-frame>
     <div class="cc__chrome" aria-hidden="true"><i></i><i></i><i></i><span>oquea.app</span></div>
     <div class="cc__viewport" data-viewport>
-      <ConsoleApp first={first} sample={s} center={center} logo={logo} />
+      <ConsoleApp first={first} sample={s} center={center} logo={logo} locale={ctx.locale} />
     </div>
     {exampleLabel && <span class="cc__example">{exampleLabel}</span>}
   </div>

@@ -14,18 +14,21 @@ import EVENT from './markers/evento.svg?raw';
 import CENTRE_EV from './markers/centro-evento.svg?raw';
 import NGO_EV from './markers/ong-evento.svg?raw';
 import SITE_EV from './markers/punto-evento.svg?raw';
+import { APP_TEXT, appLang } from './app-text';
+import { requestLocale } from '~/lib/i18n/request';
 
 type Kind = 'site' | 'centre' | 'ngo' | 'event';
 interface Marker { kind: Kind; x: number; y: number; label?: string; badge?: boolean; selected?: boolean }
-interface Props { center: string; site: string; focus?: 'centre' | 'site' | 'ngo'; class?: string }
+interface Props { center: string; site: string; focus?: 'centre' | 'site' | 'ngo'; class?: string; locale?: string }
 const { center, site, focus = 'centre', class: cls } = Astro.props;
+const L = APP_TEXT[appLang(Astro.props.locale ?? requestLocale())];
 const SVG: Record<Kind, string> = { site: SITE, centre: CENTRE, ngo: NGO, event: EVENT };
 // Con evento: los SVG de la entrega que ya llevan la insignia (centro y ONG en 56×56; punto de inmersión en 64×64).
 const SVG_EV: Partial<Record<Kind, string>> = { centre: CENTRE_EV, ngo: NGO_EV, site: SITE_EV };
 const BADGE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#3757BE" stroke="#fff" stroke-width="2.6"/><path transform="translate(4.6 4.4) scale(.42)" d="M24.0004 18.4355L26.7135 24.0703L32.87 24.9051L28.383 28.8703L29.6352 34.8182L24.0004 31.6877L18.3656 34.8182L19.6178 28.8703L15.1309 24.9051L21.2874 24.0703L24.0004 18.4355Z" fill="#D0FF00"/></svg>';
 const markers: Marker[] = [
   { kind: 'centre', x: 26, y: 25, label: center, badge: true, selected: focus === 'centre' },
-  { kind: 'ngo', x: 76, y: 22, label: 'Mar Limpio ONG', badge: true, selected: focus === 'ngo' },
+  { kind: 'ngo', x: 76, y: 22, label: L.ngoMarker('Mar Limpio'), badge: true, selected: focus === 'ngo' },
   { kind: 'site', x: 22, y: 52, label: site, selected: focus === 'site' },
   { kind: 'site', x: 64, y: 60, label: 'Shark Point', badge: true },
   { kind: 'site', x: 84, y: 44 },

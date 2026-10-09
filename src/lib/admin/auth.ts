@@ -58,6 +58,8 @@ import { demoOrgDb } from '../org/db-demo';
 import { supabaseOrgDb } from '../org/db-supabase';
 import { createOrgService, type OrgService } from '../org/service';
 import { emptyOrgDb } from '../org/empty';
+import { demoContentI18nDb, emptyContentI18nDb, supabaseContentI18nDb, type ContentI18nDb } from '../i18n/content-db';
+import { translateAdminDb, translateEvidenceDb, translatePlaybookDb } from '../i18n/content-overlay';
 
 export const DEMO_COOKIE = 'ss_demo_user';
 /** Demo: espacio elegido en «Cambiar de espacio» (en producción el espacio lo decide el dominio). */
@@ -72,6 +74,8 @@ export interface RequestLike {
 export interface AdminContext {
   mode: 'supabase' | 'demo';
   session: AdminSession;
+  /** Idiomas a los que el espacio traduce su contenido, y sus traducciones (docs/I18N.md §Contenido). */
+  content: ContentI18nDb;
   service: AdminService;
   /** Equipo, catálogo y marca (cada método exige rol admin). */
   tenantAdmin: TenantAdminService;
@@ -127,6 +131,8 @@ export interface Deps {
   analyticsDb?: AnalyticsDb;
   /** Organigrama y superadmin (opcional). */
   orgDb?: OrgDb;
+  /** Contenido traducido (opcional: sin él, todo en el idioma original). */
+  contentDb?: ContentI18nDb;
 }
 
 /** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
@@ -163,11 +169,15 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
     playbookDb = scopePlaybookDb(deps.playbookDb, scoped);
     evidenceDb = scopeEvidenceDb(deps.evidenceDb, scoped);
   }
+  // Lo que se lee del contenido lleva su traducción encima cuando la petición tiene idioma de contenido (middleware).
+  db = translateAdminDb(db);
+  playbookDb = translatePlaybookDb(playbookDb);
+  evidenceDb = translateEvidenceDb(evidenceDb);
   const service = createAdminService(db, session, { defaultLocale: tenant.defaultLocale, assets: deps.assets });
   return {
     kind: 'ok',
     admin: {
-      mode, session, supabase: deps.supabase, service,
+      mode, session, supabase: deps.supabase, service, content: deps.contentDb ?? emptyContentI18nDb,
       tenantAdmin: createTenantAdminService(db, session, { identity: deps.identity, assets: deps.assets }),
       playbook: createPlaybookService(playbookDb, db, session, { admin: service, evidence: evidenceDb, minCloses: minClosesFor() }),
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service, minCloses: minClosesFor() }),
@@ -197,14 +207,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb() });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb() });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb) });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

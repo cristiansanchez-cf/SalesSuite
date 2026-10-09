@@ -104,5 +104,39 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }, base = 
     if (OUT) await o.screenshot({ path: `${OUT}/learn-tour-oquea-${w}.png`, fullPage: true });
     await o.context().close();
   }
+
+  // ---- Contenido en coreano (docs/I18N.md §Contenido): Oquea traduce su contenido al coreano. Quien lee en coreano lo
+  // ve traducido al vender, con la marca «traducción automática»; en Configurar, el original (allí se edita).
+  {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, locale: 'ko-KR' });
+    await ctx.addCookies([{ name: 'ss_locale', value: 'ko', url: OQUEA }]);
+    const k = await ctx.newPage();
+    await k.goto(`${OQUEA}/admin/login`);
+    await k.click('[data-testid="demo-super@cofundo.test"]');
+    await k.waitForURL(/\/admin/);
+    await k.goto(`${OQUEA}/admin/learn/tour`);
+    const titles = await k.$$eval('[data-testid=tour-step] h2', (els) => els.map((e) => e.textContent.trim()));
+    assert(titles[0] === '다이빙 센터가 다이빙을 만듭니다' && titles.length === 5, `coreano: el recorrido, traducido (${titles[0]})`);
+    assert(await k.isVisible('[data-testid=auto-translated]'), 'coreano: con la marca de traducción automática');
+    await k.goto(`${OQUEA}/admin/learn`);
+    assert((await k.textContent('main')).includes('모든 다이빙에 센터 이름을'), 'coreano: los módulos de Aprende, traducidos');
+    await k.goto(`${OQUEA}/admin/catalog`);
+    const cat = await k.textContent('main');
+    assert(cat.includes('Tu nombre en cada inmersión') && !cat.includes('모든 다이빙에 센터 이름을'), 'coreano: en Configurar, el original (se edita el español)');
+    assert(!(await k.isVisible('[data-testid=auto-translated]')), 'coreano: en Configurar, sin marca');
+    if (OUT) { await k.goto(`${OQUEA}/admin/learn/tour`); await k.screenshot({ path: `${OUT}/learn-tour-oquea-ko.png`, fullPage: true }); }
+    await ctx.close();
+    // Propuesta en coreano: los textos de su módulo, traducidos, y los fijos de la propuesta en coreano.
+    const pub = await (await b.newContext()).newPage();
+    await pub.goto(`${OQUEA}/d/demo-oquea-ko-5Rt8?ver=scroll`);
+    const body = await pub.textContent('body');
+    assert(body.includes('모든 다이빙에 센터 이름을') && body.includes('서울 다이브 맞춤 제안서'), 'coreano: la propuesta pública, traducida');
+    assert(!body.includes('Tu nombre en cada inmersión'), 'coreano: sin el original del módulo');
+    // En español, el original y sin marca.
+    const e = await login(b, 'super@cofundo.test', undefined, OQUEA);
+    await e.goto(`${OQUEA}/admin/learn/tour`);
+    assert((await e.textContent('[data-testid=tour-step] h2')).trim() === 'El centro crea la inmersión', 'español: el original');
+    assert(!(await e.isVisible('[data-testid=auto-translated]')), 'español: sin marca');
+  }
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

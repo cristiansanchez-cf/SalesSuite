@@ -41,7 +41,7 @@ const ok = Astro.props.ok ?? null;
 const okMsg = ok === 'tour' ? m.tour.flash : ok === 'sector' ? m.sector.flash : null;
 // Portada del recorrido: la imagen del paso central (el momento «wow»; la primera suele ser el QR).
 const withImage = idx.tour.steps.filter((s) => s.image);
-const tourCover = withImage[Math.floor(withImage.length / 2)]?.image ?? null;
+const tourCover = withImage[0]?.image ?? null;
 // Novedades: tres a la vista; el resto, desplegable.
 const NEWS = 3;
 let n = 0;
@@ -112,7 +112,7 @@ const step = () => `0${++n}`;
       <section class="grid gap-5">
         <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.tour}</h2>
         <a href="/admin/learn/tour" class="learn-card group min-h-[18rem] sm:min-h-[24rem]" data-testid="tour-card">
-          {idx.kit.screen || idx.kit.phone ? <KitCover kit={idx.kit} /> : tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
+          {idx.kit.screen || idx.kit.phone || idx.kit.app ? <KitCover kit={idx.kit} photo={tourCover} venue={idx.kit.app ? m.tour.yourCentre : undefined} /> : tourCover && <img src={tourCover} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
           <span class="learn-card__shade"></span>
           <span class="learn-card__body">
             <span class="flex flex-wrap gap-2">

@@ -14,12 +14,16 @@ import CenterHead from './CenterHead.astro';
 import SeaMap from './SeaMap.astro';
 import MapSheet from './MapSheet.astro';
 import SITE_PIN from './markers/punto-inmersion.svg?raw';
+import { APP_TEXT, appLang, escHtml } from './app-text';
+import { requestLocale } from '~/lib/i18n/request';
 
 interface Props {
   screen: AppScreen; src?: string; alt?: string; sample: AppSample; center: string; logo?: string | null; photo?: string | null;
-  zoom?: number; class?: string;
+  zoom?: number; class?: string; locale?: string;
 }
 const { screen, src, alt, sample: s, center, logo, photo, zoom = 1, class: cls } = Astro.props;
+const locale = Astro.props.locale ?? requestLocale();
+const L = APP_TEXT[appLang(locale)];
 const ic = (n: AppIcon, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
 const mask = (size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MASK_ICON}</svg>`;
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
@@ -51,14 +55,14 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
       <div class="as-access" style={bg}>
         <span class="as-access__bars"><i class="on"></i><i></i><i></i></span>
         <span class="as-access__logo">oquea</span>
-        <div class="as-access__copy"><b>Regístrate</b><span>Todas tus inmersiones en un solo lugar</span></div>
-        <span class="as-access__btn">Continuar con email <Fragment set:html={ic('mail', 16)} /></span>
-        <span class="as-access__btn">Continuar con Google <b class="as-g">G</b></span>
-        <small class="as-access__legal">Al entrar, aceptas los Términos y condiciones y la Política de privacidad.</small>
+        <div class="as-access__copy"><b>{L.signUp}</b><span>{L.tagline}</span></div>
+        <span class="as-access__btn">{L.withEmail} <Fragment set:html={ic('mail', 16)} /></span>
+        <span class="as-access__btn">{L.withGoogle} <b class="as-g">G</b></span>
+        <small class="as-access__legal">{L.legal}</small>
       </div>
     ) : screen === 'qr-activity' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Actividades de hoy</span></div>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>{L.todayActivities}</span></div>
         <div class="as-hero" style={bg}><span class="as-hero__fade"></span></div>
         <div class="as-act">
           <h3>{s.activity}</h3>
@@ -66,38 +70,45 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
           <p class="as-meta"><span><Fragment set:html={ic('pin', 14)} />{s.site}</span><span><Fragment set:html={ic('calendar', 14)} />{s.date}</span><span><Fragment set:html={ic('clock', 14)} />{s.time}</span></p>
           <p class="as-pager"><i class="on"></i><i></i><i></i></p>
         </div>
-        <div class="as-save"><span class="as-save__ico" set:html={mask(30)} /><span><b>Guardar en mi logbook</b><small><Fragment set:html={ic('globe', 13)} />Registra esta inmersión en Oquea</small></span></div>
+        <div class="as-save"><span class="as-save__ico" set:html={mask(30)} /><span><b>{L.saveToLogbook}</b><small><Fragment set:html={ic('globe', 13)} />{L.logInOquea}</small></span></div>
         <div class="as-tiles">
-          <span class="as-tile"><i set:html={ic('image')} /><b>Ver fotos y vídeos</b><small>125 archivos</small></span>
-          <span class="as-tile"><i set:html={ic('mobile')} /><b>Compartir inmersión</b><small>Tarjeta para tus redes</small></span>
+          <span class="as-tile"><i set:html={ic('image')} /><b>{L.seeMedia}</b><small>{L.files('125')}</small></span>
+          <span class="as-tile"><i set:html={ic('mobile')} /><b>{L.shareDive}</b><small>{L.cardForSocials}</small></span>
         </div>
         <ul class="as-rows">
-          <li><Fragment set:html={ic('thermo', 16)} /><span>Temperatura</span><em>{s.temp} °C</em></li>
-          <li><Fragment set:html={ic('down', 16)} /><span>Profundidad</span><em>{s.depth} m</em></li>
-          <li><Fragment set:html={ic('fish', 16)} /><span>Vida marina</span><em>{s.life}</em></li>
+          <li><Fragment set:html={ic('thermo', 16)} /><span>{L.temperature}</span><em>{s.temp} °C</em></li>
+          <li><Fragment set:html={ic('down', 16)} /><span>{L.depth}</span><em>{s.depth} m</em></li>
+          <li><Fragment set:html={ic('fish', 16)} /><span>{L.marineLife}</span><em>{s.life}</em></li>
         </ul>
-        <p class="as-foot">Al guardar, {centerName} añadirá esta inmersión a tu historial.</p>
+        <p class="as-foot">{L.savedBy(centerName)}</p>
       </Fragment>
-    ) : screen === 'qr-pick' ? (
+    ) : screen === 'qr-pick' || screen === 'qr-scan' ? (
       <Fragment>
+        {screen === 'qr-scan' && (
+          <div class="qs">
+            <span class="qs__hint">{L.scanHint}</span>
+            <span class="qs__frame"><span class="qs__qr" set:html={qr} /><i class="qs__line"></i></span>
+            <span class="qs__found"><Fragment set:html={ic('anchor', 14)} />{centerName}</span>
+          </div>
+        )}
         <div class="qp">
           <div class="qp-centre"><span class="qp-centre__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 16)} /><span><b>{centerName}</b><small><Fragment set:html={ic('pin', 10)} />{s.place}</small></span></div>
-          <h3 class="qp-title">¿Qué actividad haces hoy?</h3>
-          <p class="qp-date">Jueves, 26 de febrero de 2026</p>
-          {[[s.activity, s.time, s.site, 'Juan'], ['Bautismo de buceo', '11:30', 'Playa del centro', 'Ana'], ['Inmersión nocturna', '20:00', 'Shark Point', 'Juan']].map(([a, h, site, by], i) => (
+          <h3 class="qp-title">{L.whichActivity}</h3>
+          <p class="qp-date">{L.pickDate}</p>
+          {[[s.activity, s.time, s.site, 'Juan'], [L.tryDive, '11:30', L.centreBeach, 'Ana'], [L.nightDive, '20:00', 'Shark Point', 'Juan']].map(([a, h, site, by], i) => (
             <div class:list={['qp-act', i === 0 && 'is-on']}>
               <span class="qp-act__ico" set:html={mask(18)} />
-              <span class="qp-act__txt"><em class="qp-by"><Fragment set:html={ic('person', 9)} />Añadida por {by}</em><b>{a}</b><small>{h} · {site}</small></span>
+              <span class="qp-act__txt"><em class="qp-by"><Fragment set:html={ic('person', 9)} />{L.addedBy(by!)}</em><b>{a}</b><small>{h} · {site}</small></span>
               <Fragment set:html={ic('next', 14)} />
             </div>
           ))}
-          <div class="qp-miss"><span class="qp-miss__ico" set:html={ic('search', 16)} /><span><b>¿No encuentras tu inmersión?</b><small>Mira en días anteriores o añádela</small></span><Fragment set:html={ic('next', 14)} /></div>
+          <div class="qp-miss"><span class="qp-miss__ico" set:html={ic('search', 16)} /><span><b>{L.notFound}</b><small>{L.lookEarlier}</small></span><Fragment set:html={ic('next', 14)} /></div>
         </div>
       </Fragment>
     ) : screen === 'dive-detail' ? (
       <Fragment>
-        <div class="dd-bar"><Fragment set:html={ic('back')} /><span>Logbook</span></div>
-        <div class="dd-tabs"><span class="on">Inmersión</span><span>Participantes</span></div>
+        <div class="dd-bar"><Fragment set:html={ic('back')} /><span>{L.logbook}</span></div>
+        <div class="dd-tabs"><span class="on">{L.dive}</span><span>{L.participants}</span></div>
         <div class="as-hero dd-hero" style={bg}><span class="as-hero__fade"></span></div>
         <div class="as-act dd-act">
           <h3>{s.activity}</h3>
@@ -105,33 +116,33 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
           <p class="as-meta"><span><Fragment set:html={ic('pin', 14)} />{s.site}</span><span><Fragment set:html={ic('calendar', 14)} />{s.date}</span><span><Fragment set:html={ic('clock', 14)} />{s.time}</span></p>
           <p class="as-pager"><i class="on"></i><i></i><i></i></p>
         </div>
-        <div class="as-save"><span class="as-save__ico" set:html={mask(30)} /><span><b>Ver mis datos</b><small><Fragment set:html={ic('history', 13)} />Ver o editar los datos de la inmersión</small></span></div>
+        <div class="as-save"><span class="as-save__ico" set:html={mask(30)} /><span><b>{L.seeMyData}</b><small><Fragment set:html={ic('history', 13)} />{L.seeOrEdit}</small></span></div>
         <div class="as-tiles">
-          <span class="as-tile"><i set:html={ic('image')} /><b>Ver fotos y vídeos</b><small>125 archivos</small></span>
-          <span class="as-tile"><i set:html={ic('mobile')} /><b>Compartir inmersión</b><small>En una tarjeta para tus redes</small></span>
+          <span class="as-tile"><i set:html={ic('image')} /><b>{L.seeMedia}</b><small>{L.files('125')}</small></span>
+          <span class="as-tile"><i set:html={ic('mobile')} /><b>{L.shareDive}</b><small>{L.inCardForSocials}</small></span>
         </div>
         <ul class="as-rows">
-          <li><Fragment set:html={ic('thermo', 16)} /><span>Temperatura</span><em>{s.temp} °C</em></li>
-          <li><Fragment set:html={ic('down', 16)} /><span>Profundidad</span><em>{s.depth} m</em></li>
-          <li><Fragment set:html={ic('fish', 16)} /><span>Vida marina</span><em>{s.life}</em></li>
+          <li><Fragment set:html={ic('thermo', 16)} /><span>{L.temperature}</span><em>{s.temp} °C</em></li>
+          <li><Fragment set:html={ic('down', 16)} /><span>{L.depth}</span><em>{s.depth} m</em></li>
+          <li><Fragment set:html={ic('fish', 16)} /><span>{L.marineLife}</span><em>{s.life}</em></li>
         </ul>
       </Fragment>
     ) : screen === 'dive-saved' ? (
       <Fragment>
         <div class="as-dim">
-          <div class="as-bar"><span class="as-iso"></span><span>Actividades de hoy</span></div>
+          <div class="as-bar"><span class="as-iso"></span><span>{L.todayActivities}</span></div>
           <div class="as-hero as-hero--short" style={bg}><span class="as-hero__fade"></span></div>
           <h3 class="as-dim__title">{s.activity}</h3>
         </div>
         <div class="as-sheet">
           <span class="as-okdot" set:html={ic('check', 22)} />
-          <h4>¡Inmersión añadida a tu logbook!</h4>
+          <h4>{L.diveAdded}</h4>
           <div class="as-divecard"><span class="as-divecard__ico" set:html={mask(26)} /><span><b>{s.activity}</b><small><span class="as-chip as-chip--sm">{s.discipline}</span> <Fragment set:html={ic('clock', 12)} />{s.time} · <Fragment set:html={ic('pin', 12)} />{s.site}</small></span></div>
-          <p class="as-ask">¿Qué quieres hacer ahora?</p>
-          <span class="as-btn"><Fragment set:html={ic('book', 16)} />Ver en mi logbook</span>
-          <span class="as-btn as-btn--line"><Fragment set:html={ic('image', 16)} />Ver fotos y vídeos</span>
-          <span class="as-btn as-btn--line"><Fragment set:html={ic('mobile', 16)} />Compartir en tus redes</span>
-          <span class="as-btn as-btn--line"><Fragment set:html={ic('back', 16)} />Volver a actividades</span>
+          <p class="as-ask">{L.whatNow}</p>
+          <span class="as-btn"><Fragment set:html={ic('book', 16)} />{L.seeInLogbook}</span>
+          <span class="as-btn as-btn--line"><Fragment set:html={ic('image', 16)} />{L.seeMedia}</span>
+          <span class="as-btn as-btn--line"><Fragment set:html={ic('mobile', 16)} />{L.shareOnSocials}</span>
+          <span class="as-btn as-btn--line"><Fragment set:html={ic('back', 16)} />{L.backToActivities}</span>
         </div>
       </Fragment>
     ) : screen === 'share-card' ? (
@@ -148,57 +159,57 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
             <div class="as-stk">
               {k === 'dive' ? (
                 <Fragment>
-                  <p class="as-stk__loc"><Fragment set:html={ic('pin', 13)} />Buceando en {s.site}</p>
-                  <p class="as-stk__hero"><b>47</b><span>Inmersión</span></p>
+                  <p class="as-stk__loc"><Fragment set:html={ic('pin', 13)} />{L.divingAt(s.site)}</p>
+                  <p class="as-stk__hero"><b>47</b><span>{L.dive}</span></p>
                   <div class="as-stk__stats">
-                    <span><b>{s.duration}<i>min</i></b><small>Tiempo</small></span>
-                    <span><b>{s.depth}<i>m</i></b><small>Profundidad</small></span>
-                    <span><b>{s.temp}<i>°C</i></b><small>Temp.</small></span>
+                    <span><b>{s.duration}<i>{L.min}</i></b><small>{L.time}</small></span>
+                    <span><b>{s.depth}<i>m</i></b><small>{L.depth}</small></span>
+                    <span><b>{s.temp}<i>°C</i></b><small>{L.tempShort}</small></span>
                   </div>
                   <p class="as-stk__life">{s.life.replace(/,\s*/g, ' · ')}</p>
-                  <p class="as-stk__foot"><span>Con {centerName}</span><span>26 feb 26</span></p>
+                  <p class="as-stk__foot"><span>{L.withName(centerName)}</span><span>{L.cardDate1}</span></p>
                 </Fragment>
               ) : k === 'record' ? (
                 <Fragment>
                   <span class="as-stk__chart" set:html={DEPTH_CHART} />
-                  <span class="as-stk__pill">Nuevo récord personal</span>
+                  <span class="as-stk__pill">{L.newRecord}</span>
                   <p class="as-stk__hero as-stk__hero--xl"><b>42</b><span class="as-stk__unit">m</span></p>
-                  <p class="as-stk__label">Profundidad máxima</p>
-                  <p class="as-stk__life">Récord anterior 38 m · Inmersión #47 · {s.site}</p>
-                  <p class="as-stk__foot"><span>Con {centerName}</span><span>16 sep 26</span></p>
+                  <p class="as-stk__label">{L.maxDepth}</p>
+                  <p class="as-stk__life">{L.prevRecord(s.site)}</p>
+                  <p class="as-stk__foot"><span>{L.withName(centerName)}</span><span>{L.cardDate2}</span></p>
                 </Fragment>
               ) : k === 'milestone' ? (
                 <Fragment>
-                  <p class="as-stk__label as-stk__label--hi">Hito conseguido</p>
-                  <p class="as-stk__hero as-stk__hero--xxl"><b>100</b><span class="as-stk__unit">inmersiones</span></p>
-                  <p class="as-stk__sub">Buceando desde 2019 · 34 puntos · 6 países</p>
+                  <p class="as-stk__label as-stk__label--hi">{L.milestone}</p>
+                  <p class="as-stk__hero as-stk__hero--xxl"><b>100</b><span class="as-stk__unit">{L.unitDives}</span></p>
+                  <p class="as-stk__sub">{L.divingSince}</p>
                   <div class="as-stk__stats">
-                    <span><b>82h</b><small>Bajo el agua</small></span>
-                    <span><b>42 m</b><small>La más profunda</small></span>
+                    <span><b>82h</b><small>{L.underwater}</small></span>
+                    <span><b>42 m</b><small>{L.deepest}</small></span>
                   </div>
-                  <p class="as-stk__life">Inmersión 100 en {s.site}</p>
-                  <p class="as-stk__foot"><span>Con {centerName}</span></p>
+                  <p class="as-stk__life">{L.diveNumberAt(s.site)}</p>
+                  <p class="as-stk__foot"><span>{L.withName(centerName)}</span></p>
                 </Fragment>
               ) : k === 'trip' ? (
                 <Fragment>
                   <span class="as-stk__chart" set:html={TRIP_CHART} />
-                  <p class="as-stk__label">El viaje</p>
-                  <p class="as-stk__title">Maldivas 2025</p>
+                  <p class="as-stk__label">{L.theTrip}</p>
+                  <p class="as-stk__title">{L.tripTitle}</p>
                   <div class="as-stk__stats as-stk__stats--hi">
-                    <span><b>12</b><small>Inmersiones</small></span>
-                    <span><b>6</b><small>Puntos</small></span>
-                    <span><b>8h 40m</b><small>Bajo el agua</small></span>
+                    <span><b>12</b><small>{L.divesCap}</small></span>
+                    <span><b>6</b><small>{L.sitesCap}</small></span>
+                    <span><b>8h 40m</b><small>{L.underwater}</small></span>
                   </div>
-                  <p class="as-stk__life">Mantas · Tiburón ballena · Tortugas</p>
-                  <p class="as-stk__foot"><span>Con {centerName}</span><span>feb 2025</span></p>
+                  <p class="as-stk__life">{L.tripLife}</p>
+                  <p class="as-stk__foot"><span>{L.withName(centerName)}</span><span>{L.cardDate3}</span></p>
                 </Fragment>
               ) : (
                 <Fragment>
                   <span class="as-stk__tile" set:html={FISH} />
-                  <span class="as-stk__pill">Visto en el 3 % de las inmersiones</span>
-                  <p class="as-stk__title">Tiburón ballena</p>
-                  <p class="as-stk__sub">Inmersión #47 · {s.site}</p>
-                  <p class="as-stk__foot"><span>Con {centerName}</span></p>
+                  <span class="as-stk__pill">{L.seenIn}</span>
+                  <p class="as-stk__title">{L.whaleShark}</p>
+                  <p class="as-stk__sub">{L.diveNo47(s.site)}</p>
+                  <p class="as-stk__foot"><span>{L.withName(centerName)}</span></p>
                 </Fragment>
               )}
               {s.brand ? <img class="as-stk__brand" src={s.brand} alt="Oquea" /> : <b class="as-stk__brand as-stk__brand--txt">oquea</b>}
@@ -209,190 +220,190 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
       </div>
     ) : screen === 'logbook' ? (
       <Fragment>
-        <div class="lb-head"><span class="as-iso"></span><b>Logbook</b><span class="lb-qr" set:html={ic('qr', 18)} /><span class="lb-add"><Fragment set:html={ic('add', 16)} />Inmersión</span></div>
-        <div class="lb-tools"><span class="lb-search"><Fragment set:html={ic('search', 14)} />Busca centros y puntos de inmersión</span><span class="lb-view"><i class="on" set:html={ic('grid', 14)} /><i set:html={ic('list', 14)} /></span></div>
-        <div class="lb-years"><span class="on">Todos</span><span>2026</span><span>2025</span><span>2024</span></div>
-        <p class="lb-year"><b>2026</b><i></i><small>12 inmersiones</small></p>
+        <div class="lb-head"><span class="as-iso"></span><b>{L.logbook}</b><span class="lb-qr" set:html={ic('qr', 18)} /><span class="lb-add"><Fragment set:html={ic('add', 16)} />{L.dive}</span></div>
+        <div class="lb-tools"><span class="lb-search"><Fragment set:html={ic('search', 14)} />{L.searchPlaces}</span><span class="lb-view"><i class="on" set:html={ic('grid', 14)} /><i set:html={ic('list', 14)} /></span></div>
+        <div class="lb-years"><span class="on">{L.allYears}</span><span>2026</span><span>2025</span><span>2024</span></div>
+        <p class="lb-year"><b>2026</b><i></i><small>{L.divesN('12')}</small></p>
         <div class="lb-card">
-          <div class="lb-card__top"><span class="lb-num"><small>Inmersión</small><b>47</b></span><span class="lb-card__txt"><b>Inmersión a la luz de la luna</b><span class="lb-chips"><em class="lb-chip lb-chip--acc">{centerName}</em><em class="lb-chip lb-chip--blue">Evento</em><em class="lb-chip">{s.level}</em></span><small>16 sep 2026 · {centerName}</small></span></div>
+          <div class="lb-card__top"><span class="lb-num"><small>{L.dive}</small><b>47</b></span><span class="lb-card__txt"><b>{L.moonDive}</b><span class="lb-chips"><em class="lb-chip lb-chip--acc">{centerName}</em><em class="lb-chip lb-chip--blue">{L.event}</em><em class="lb-chip">{s.level}</em></span><small>{L.lbDate1} · {centerName}</small></span></div>
           <span class="lb-pic" style={pool(0)}><span class="lb-pic__badge" set:html={ic('award', 22)} /></span>
-          <span class="lb-share"><Fragment set:html={ic('export', 16)} />Compartir esta inmersión</span>
+          <span class="lb-share"><Fragment set:html={ic('export', 16)} />{L.shareThisDive}</span>
         </div>
         <div class="lb-card">
-          <div class="lb-card__top"><span class="lb-num"><small>Inmersión</small><b>46</b></span><span class="lb-card__txt"><b>{s.site}</b><small>12 sep 2026 · {centerName}</small></span></div>
+          <div class="lb-card__top"><span class="lb-num"><small>{L.dive}</small><b>46</b></span><span class="lb-card__txt"><b>{s.site}</b><small>{L.lbDate2} · {centerName}</small></span></div>
           <span class="lb-map"><span class="lb-map__one" set:html={SITE_PIN} /><span class="lb-map__tag"><Fragment set:html={ic('pin', 13)} />{s.site}</span></span>
-          <span class="lb-share"><Fragment set:html={ic('export', 16)} />Compartir esta inmersión</span>
+          <span class="lb-share"><Fragment set:html={ic('export', 16)} />{L.shareThisDive}</span>
         </div>
       </Fragment>
     ) : screen === 'diver-profile' ? (
       <Fragment>
-        <div class="as-bar as-bar--title"><span class="as-iso"></span><span>Perfil</span><span class="as-bar__end as-bar__end--pill" set:html={ic('menu')} /></div>
-        <div class="as-pcard"><span class="as-avatar" set:html={ic('user', 30)} /><b>{s.diver}</b><small>@{s.handle} · Instructor</small><p><em>{s.dives}</em> inmersiones</p></div>
-        <p class="as-h">Mis estadísticas</p>
+        <div class="as-bar as-bar--title"><span class="as-iso"></span><span>{L.profile}</span><span class="as-bar__end as-bar__end--pill" set:html={ic('menu')} /></div>
+        <div class="as-pcard"><span class="as-avatar" set:html={ic('user', 30)} /><b>{s.diver}</b><small>@{s.handle} · {L.instructor}</small><p set:html={L.diveCountHtml(escHtml(s.dives))} /></div>
+        <p class="as-h">{L.myStats}</p>
         <div class="as-stats">
-          {[['9h 30m', 'Tiempo de buceo', 'clock'], ['30 m', 'Prof. máxima', 'down'], ['8', 'Certificaciones', 'ok'], ['3', 'Países', 'globe'], ['2', 'Centros', 'building'], ['feb 26', 'Última', 'calendar']].map(([v, l, i]) => (
+          {[['9h 30m', L.diveTime, 'clock'], ['30 m', L.maxDepthShort, 'down'], ['8', L.certifications, 'ok'], ['3', L.countries, 'globe'], ['2', L.centres, 'building'], [L.lastDiveDate, L.lastDive, 'calendar']].map(([v, l, i]) => (
             <span><b>{v}</b><small><Fragment set:html={ic(i as AppIcon, 12)} />{l}</small></span>
           ))}
         </div>
-        <div class="as-link"><span class="as-link__ico" set:html={ic('home', 16)} /><span>Mis centros</span><Fragment set:html={ic('next', 16)} /></div>
-        <AppNav on='profile' />
+        <div class="as-link"><span class="as-link__ico" set:html={ic('home', 16)} /><span>{L.myCentres}</span><Fragment set:html={ic('next', 16)} /></div>
+        <AppNav on='profile' locale={locale} />
       </Fragment>
     ) : screen === 'activities' ? (
       <Fragment>
-        <CenterHead center={centerName} logo={logo} tab='dives' />
-        <div class="as-toggle"><span class="on">Actividades</span><span>Dive site</span></div>
-        <div class="as-sec"><span><Fragment set:html={ic('calendar', 16)} />Actividades de hoy</span><em>Ver todas <Fragment set:html={ic('next', 13)} /></em></div>
-        {[['Salida en barco', s.time, s.site, '6'], ['Buceo nocturno', '20:00', 'Shark Point', '3']].map(([t, h, site, n], i) => (
+        <CenterHead center={centerName} logo={logo} tab='dives' locale={locale} />
+        <div class="as-toggle"><span class="on">{L.activities}</span><span>{L.diveSite}</span></div>
+        <div class="as-sec"><span><Fragment set:html={ic('calendar', 16)} />{L.todayActivities}</span><em>{L.seeAll} <Fragment set:html={ic('next', 13)} /></em></div>
+        {[[L.boatTrip, s.time, s.site, '6'], [L.nightDiving, '20:00', 'Shark Point', '3']].map(([t, h, site, n], i) => (
           <div class="as-acard">
             <div class="as-acard__head"><b>{t}</b><span class="as-acard__clip" set:html={ic('clipboard', 16)} /></div>
-            <span class="as-chip"><Fragment set:html={mask(14)} />Inmersión</span>
+            <span class="as-chip"><Fragment set:html={mask(14)} />{L.dive}</span>
             <div class="as-acard__grid">
               <span><Fragment set:html={ic('clock', 14)} />{h}</span><span><Fragment set:html={ic('calendar', 14)} />{s.date}</span>
-              <span><Fragment set:html={ic('pin', 14)} />{site}</span><span><Fragment set:html={ic('users', 14)} />{n} buceadores</span>
+              <span><Fragment set:html={ic('pin', 14)} />{site}</span><span><Fragment set:html={ic('users', 14)} />{L.diversN(n!)}</span>
             </div>
-            {i === 0 && <div class="as-acard__actions"><span class="as-chip as-chip--btn"><Fragment set:html={ic('edit', 13)} />Editar</span><span class="as-danger">Eliminar</span></div>}
+            {i === 0 && <div class="as-acard__actions"><span class="as-chip as-chip--btn"><Fragment set:html={ic('edit', 13)} />{L.edit}</span><span class="as-danger">{L.delete}</span></div>}
           </div>
         ))}
-        <div class="as-sec as-sec--line"><span><Fragment set:html={ic('calendar', 16)} />Próximas actividades</span><em>Ver todas</em></div>
-        <div class="as-next"><span><b>Open Water — curso</b><small>09:00 · {s.site} · 1 alumno</small></span><em>28 feb</em></div>
+        <div class="as-sec as-sec--line"><span><Fragment set:html={ic('calendar', 16)} />{L.upcoming}</span><em>{L.seeAll}</em></div>
+        <div class="as-next"><span><b>{L.owCourse}</b><small>09:00 · {s.site} · {L.oneStudent}</small></span><em>{L.nextDate}</em></div>
       </Fragment>
     ) : screen === 'create-activity' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Nueva inmersión</span></div>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>{L.newDive}</span></div>
         <span class="as-progress"><i style="width:22%"></i></span>
         <div class="as-form">
           <span class="as-field as-field--filled">{s.date} · {s.time}<Fragment set:html={ic('clock', 16)} /></span>
           <span class="as-field as-field--filled">{s.site}<Fragment set:html={ic('pin', 16)} /></span>
           <span class="as-field as-field--filled">Scuba<Fragment set:html={ic('caret', 16)} /></span>
           <span class="as-field as-field--filled">{s.discipline}<Fragment set:html={ic('caret', 16)} /></span>
-          <div class="as-preset"><small>Datos del punto, ya cargados</small><span><b>30 m</b><i>Prof. máx.</i></span><span><b>45 min</b><i>Tiempo</i></span><span><b>20 m</b><i>Visibilidad</i></span><span class="as-preset__life"><b>{s.life}</b><i>Vida marina</i></span></div>
+          <div class="as-preset"><small>{L.presetLoaded}</small><span><b>30 m</b><i>{L.maxDepthAbbr}</i></span><span><b>{L.minutes('45')}</b><i>{L.time}</i></span><span><b>20 m</b><i>{L.visibility}</i></span><span class="as-preset__life"><b>{s.life}</b><i>{L.marineLife}</i></span></div>
         </div>
-        <span class="as-btn as-btn--bottom">Continuar</span>
+        <span class="as-btn as-btn--bottom">{L.continue}</span>
       </Fragment>
     ) : screen === 'center-qr' ? (
       <Fragment>
-        <CenterHead center={centerName} logo={logo} tab='centre' />
+        <CenterHead center={centerName} logo={logo} tab='centre' locale={locale} />
         <div class="as-qr"><span class="as-qr__code"><Fragment set:html={qr} /><span class="as-qr__iso"></span></span></div>
-        <p class="as-qr__txt">Tus buceadores escanean este QR para registrar sus inmersiones y ver las actividades. Descárgalo e imprímelo para el centro o el barco.</p>
-        <div class="as-qr__btns"><span class="as-btn as-btn--sm">Compartir enlace</span><span class="as-btn as-btn--sm as-btn--line">Descargar</span></div>
+        <p class="as-qr__txt">{L.qrText}</p>
+        <div class="as-qr__btns"><span class="as-btn as-btn--sm">{L.shareLink}</span><span class="as-btn as-btn--sm as-btn--line">{L.download}</span></div>
         <div class="as-list">
-          <span>Gestionar equipo<Fragment set:html={ic('next', 16)} /></span>
-          <span>Editar datos del centro<Fragment set:html={ic('next', 16)} /></span>
+          <span>{L.manageTeam}<Fragment set:html={ic('next', 16)} /></span>
+          <span>{L.editCentre}<Fragment set:html={ic('next', 16)} /></span>
         </div>
-        <AppNav on='centres' />
+        <AppNav on='centres' locale={locale} />
       </Fragment>
     ) : screen === 'crm-list' ? (
       <Fragment>
-        <CenterHead center={centerName} logo={logo} tab='crm' />
-        <div class="as-search"><Fragment set:html={ic('search', 16)} />Buscar buceador</div>
-        <p class="as-count"><b>128</b> buceadores en tu centro</p>
+        <CenterHead center={centerName} logo={logo} tab='crm' locale={locale} />
+        <div class="as-search"><Fragment set:html={ic('search', 16)} />{L.searchDiver}</div>
+        <p class="as-count" set:html={L.diversInCentreHtml('128')} />
         {[[s.diver, s.level, '42', 'qr'], ['Tomás Ferreira', 'Open Water', '8', 'qr'], ['Marta Ruiz', 'Divemaster', '310', 'hand'], ['Kenji Sato', 'Rescue Diver', '57', 'qr'], ['Ana Lopes', 'Open Water', '3', 'qr']].map(([n, l, d, how]) => (
           <div class="as-person">
             <span class="as-ini">{initials(n!)}</span>
-            <span class="as-person__txt"><b>{n}</b><small>{l} · {d} inmersiones</small></span>
-            <span class:list={['as-chip as-chip--sm', how === 'hand' && 'as-chip--grey']}>{how === 'qr' ? 'Escaneó el QR' : 'Añadido a mano'}</span>
+            <span class="as-person__txt"><b>{n}</b><small>{l} · {L.divesN(d!)}</small></span>
+            <span class:list={['as-chip as-chip--sm', how === 'hand' && 'as-chip--grey']}>{how === 'qr' ? L.scannedQr : L.addedByHand}</span>
           </div>
         ))}
       </Fragment>
     ) : screen === 'crm-diver' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Perfil del buceador</span></div>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>{L.diverProfile}</span></div>
         <div class="as-diver">
           <span class="as-avatar as-avatar--lg" set:html={ic('user', 34)} />
           <b>{s.diver}</b><small>@{s.handle}</small>
           <span class="as-chip"><Fragment set:html={ic('shield', 13)} />{s.level}</span>
-          <span class="as-chip as-chip--line"><Fragment set:html={ic('eye', 14)} />Ver perfil público</span>
+          <span class="as-chip as-chip--line"><Fragment set:html={ic('eye', 14)} />{L.seePublicProfile}</span>
         </div>
         <div class="as-band"></div>
-        <p class="as-h"><Fragment set:html={ic('home', 16)} />En tu centro</p>
-        <div class="as-kpis as-kpis--grey"><span><b>8</b><small>Inmersiones aquí</small></span><span><b>10 jun 2023</b><small>Primera</small></span><span><b>{s.date.slice(0, 5)}</b><small>Última</small></span></div>
+        <p class="as-h"><Fragment set:html={ic('home', 16)} />{L.atYourCentre}</p>
+        <div class="as-kpis as-kpis--grey"><span><b>8</b><small>{L.divesHere}</small></span><span><b>{L.firstDate}</b><small>{L.first}</small></span><span><b>{s.date.slice(0, 5)}</b><small>{L.last}</small></span></div>
         <div class="as-band"></div>
-        <p class="as-h"><Fragment set:html={ic('clipboard', 16)} />Historial de actividades</p>
-        {[[`Inmersión — ${s.site}`, s.date, 'Recreativa', false], ['Inmersión — Shark Point', '24/02/2026', 'Recreativa', false], ['Curso — Advanced', '03/02/2026', 'Curso', true]].map(([t, d, k, course]) => (
+        <p class="as-h"><Fragment set:html={ic('clipboard', 16)} />{L.activityHistory}</p>
+        {[[L.diveAt(s.site), s.date, L.recreational, false], [L.diveAt('Shark Point'), L.histDate2, L.recreational, false], [L.courseAdvanced, L.histDate3, L.course, true]].map(([t, d, k, course]) => (
           <div class="as-hist"><span class:list={['as-dive__ico', course && 'as-dive__ico--warm']} set:html={course ? ic('shield', 20) : mask(20)} /><span><b>{t}</b><small>{d} <span class:list={['as-chip as-chip--sm', course && 'as-chip--warm']}>{k}</span></small></span></div>
         ))}
       </Fragment>
     ) : screen === 'my-centres' ? (
       <Fragment>
-        <div class="as-bar as-bar--center"><Fragment set:html={ic('back')} /><span>Mis centros</span></div>
-        <p class="as-label">Propietario</p>
-        <div class="as-ccard"><span class="as-ccard__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 20)} /><span><b>{centerName}</b><small>Propietario · 3 actividades</small></span><Fragment set:html={ic('next', 18)} /></div>
-        <div class="as-ccard"><span class="as-ccard__ico" set:html={ic('waves', 20)} /><span><b>{centerName} · Puerto</b><small>Propietario · 0 actividades</small></span><Fragment set:html={ic('next', 18)} /></div>
-        <span class="as-dashed"><Fragment set:html={ic('add', 16)} />Crear nuevo centro</span>
-        <p class="as-label">Equipo</p>
-        <p class="as-muted">Ahora no formas parte del equipo de ningún centro. Cuando un centro te añada, aparecerá aquí.</p>
+        <div class="as-bar as-bar--center"><Fragment set:html={ic('back')} /><span>{L.myCentres}</span></div>
+        <p class="as-label">{L.owner}</p>
+        <div class="as-ccard"><span class="as-ccard__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 20)} /><span><b>{centerName}</b><small>{L.ownerActivities(3)}</small></span><Fragment set:html={ic('next', 18)} /></div>
+        <div class="as-ccard"><span class="as-ccard__ico" set:html={ic('waves', 20)} /><span><b>{centerName} · {L.harbour}</b><small>{L.ownerActivities(0)}</small></span><Fragment set:html={ic('next', 18)} /></div>
+        <span class="as-dashed"><Fragment set:html={ic('add', 16)} />{L.createCentre}</span>
+        <p class="as-label">{L.team}</p>
+        <p class="as-muted">{L.noTeam}</p>
       </Fragment>
     ) : screen === 'team' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Gestionar equipo</span></div>
-        {[[s.diver, 'Owner'], ['Carlos Vidal', 'Admin'], ['Sandra García', 'Admin']].map(([n, r]) => (
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>{L.manageTeam}</span></div>
+        {[[s.diver, L.roleOwner], ['Carlos Vidal', L.roleAdmin], ['Sandra García', L.roleAdmin]].map(([n, r]) => (
           <div class="as-member">
             <div class="as-member__head"><span class="as-ini as-ini--sm">{initials(n!)}</span><b>{n}</b><span class="as-chip as-chip--grey as-chip--sm">{r}</span></div>
-            <div class="as-member__btns"><span class="as-btn as-btn--sm">Editar</span><span class="as-btn as-btn--sm as-btn--line">Eliminar</span></div>
+            <div class="as-member__btns"><span class="as-btn as-btn--sm">{L.edit}</span><span class="as-btn as-btn--sm as-btn--line">{L.delete}</span></div>
           </div>
         ))}
-        <span class="as-btn as-btn--line as-btn--bottom">Añadir miembro</span>
+        <span class="as-btn as-btn--line as-btn--bottom">{L.addMember}</span>
       </Fragment>
     ) : screen === 'dive-sites' ? (
       <Fragment>
-        <CenterHead center={centerName} logo={logo} tab='dives' />
-        <div class="as-toggle"><span>Actividades</span><span class="on">Dive site</span></div>
-        <div class="as-sec"><span><Fragment set:html={ic('anchor', 16)} />Dive sites</span><em>3</em></div>
-        {[[s.site, '12–30 m', 'Corriente suave · mantas'], ['Shark Point', '18–24 m', 'Pared · tiburones'], ['The Cathedral', '8–16 m', 'Cueva · luz']].map(([n, d, k]) => (
+        <CenterHead center={centerName} logo={logo} tab='dives' locale={locale} />
+        <div class="as-toggle"><span>{L.activities}</span><span class="on">{L.diveSite}</span></div>
+        <div class="as-sec"><span><Fragment set:html={ic('anchor', 16)} />{L.diveSites}</span><em>3</em></div>
+        {[[s.site, '12–30 m', L.siteMantas], ['Shark Point', '18–24 m', L.siteWall], ['The Cathedral', '8–16 m', L.siteCave]].map(([n, d, k]) => (
           <div class="as-site"><span class="as-site__ico" set:html={ic('pin', 18)} /><span class="as-site__txt"><b>{n}</b><small>{k}</small></span><span class="as-chip as-chip--sm">{d}</span></div>
         ))}
-        <span class="as-btn as-btn--sm as-site__add"><Fragment set:html={ic('plus', 15)} />Añadir dive site</span>
-        <AppNav on='centres' />
+        <span class="as-btn as-btn--sm as-site__add"><Fragment set:html={ic('plus', 15)} />{L.addDiveSite}</span>
+        <AppNav on='centres' locale={locale} />
       </Fragment>
     ) : screen === 'map' ? (
       <div class="as-map">
-        <SeaMap center={centerName} site={s.site} focus='centre' />
-        <div class="as-map__search"><Fragment set:html={ic('search', 15)} />Busca centros y puntos de inmersión</div>
+        <SeaMap center={centerName} site={s.site} focus='centre' locale={locale} />
+        <div class="as-map__search"><Fragment set:html={ic('search', 15)} />{L.searchPlaces}</div>
         
-        <MapSheet kind='centre' name={centerName} place={s.place} event={{ label: 'Evento en marcha', title: 'Limpieza de la playa', when: 'Sáb 14 sep · 09:00' }} />
+        <MapSheet kind='centre' name={centerName} place={s.place} event={{ label: L.eventOn, title: L.beachCleanup, when: L.beachWhen }} locale={locale} />
       </div>
     ) : screen === 'album' ? (
       <Fragment>
         <div class="al-bar"><Fragment set:html={ic('back')} /><b>{s.album}</b><Fragment set:html={ic('download', 20)} /></div>
-        <p class="al-meta"><span><Fragment set:html={ic('images', 14)} />8 fotos</span><span><Fragment set:html={ic('users', 14)} />3 buceadores</span><em>Quedan 23 días</em></p>
+        <p class="al-meta"><span><Fragment set:html={ic('images', 14)} />{L.photosN('8')}</span><span><Fragment set:html={ic('users', 14)} />{L.diversN('3')}</span><em>{L.daysLeft('23')}</em></p>
         <div class="al-grid">
           {ALBUM.map(([who, mine, likes], i) => (
             <span class:list={['al-ph', i === 0 && 'al-ph--big', mine && 'al-ph--mine']} style={pool(i)}>
-              {mine && <em class="al-mine"><Fragment set:html={ic('person', 10)} />Tu foto</em>}
+              {mine && <em class="al-mine"><Fragment set:html={ic('person', 10)} />{L.yourPhoto}</em>}
               <span class="al-ph__foot"><span><i class="al-av"></i>{who}</span><span>{likes && <Fragment><Fragment set:html={ic('heart', 12)} />{likes}</Fragment>}<Fragment set:html={ic('download', 13)} /></span></span>
             </span>
           ))}
         </div>
-        <span class="al-add"><Fragment set:html={ic('imageAdd', 18)} />Añadir fotos</span>
+        <span class="al-add"><Fragment set:html={ic('imageAdd', 18)} />{L.addPhotos}</span>
       </Fragment>
     ) : screen === 'album-photo' ? (
       <Fragment>
         <div class="al-bar al-bar--dim"><Fragment set:html={ic('back')} /><b>{s.album}</b><Fragment set:html={ic('download', 20)} /></div>
         <div class="ap">
           <div class="ap-card" style={pool(1)}>
-            <span class="ap-who"><i class="al-av al-av--lg"></i><b>Lucía Fernández</b><em>Seguir</em></span>
+            <span class="ap-who"><i class="al-av al-av--lg"></i><b>Lucía Fernández</b><em>{L.follow}</em></span>
             <span class="ap-foot"><span><Fragment set:html={ic('heart', 20)} />15</span><Fragment set:html={ic('download', 20)} /></span>
           </div>
-          <span class="ap-add"><Fragment set:html={ic('add', 18)} />Añadir fotos</span>
+          <span class="ap-add"><Fragment set:html={ic('add', 18)} />{L.addPhotos}</span>
         </div>
-        <AppNav on='logbook' />
+        <AppNav on='logbook' locale={locale} />
       </Fragment>
     ) : screen === 'badge' ? (
       <Fragment>
-        <div class="as-bar"><Fragment set:html={ic('back')} /><span>Insignia de asistencia</span></div>
+        <div class="as-bar"><Fragment set:html={ic('back')} /><span>{L.badgeTitle}</span></div>
         <div class="as-badge">
           <span class="as-badge__medal"><Fragment set:html={ic('heart', 40)} /></span>
           <small>{centerName}</small>
-          <b>Limpieza de fondos</b>
-          <span class="as-chip">Asististe · {s.date}</span>
-          <p>{s.diver} ha participado en este evento.</p>
+          <b>{L.seabedCleanup}</b>
+          <span class="as-chip">{L.attended(s.date)}</span>
+          <p>{L.tookPart(s.diver)}</p>
         </div>
-        <div class="as-list as-list--flat"><span><Fragment set:html={ic('anchor', 16)} />Con {s.site}</span><span><Fragment set:html={ic('share', 16)} />Compartir</span></div>
+        <div class="as-list as-list--flat"><span><Fragment set:html={ic('anchor', 16)} />{L.withName(s.site)}</span><span><Fragment set:html={ic('share', 16)} />{L.share}</span></div>
       </Fragment>
     ) : screen === 'event' ? (
       <div class="as-map">
-        <SeaMap center={centerName} site={s.site} focus='ngo' />
-        <MapSheet kind='ngo' name='Mar Limpio' place={s.place} event={{ label: 'Evento en marcha', title: 'Limpieza de fondos', when: 'Dom 21 sep · 08:30' }} />
+        <SeaMap center={centerName} site={s.site} focus='ngo' locale={locale} />
+        <MapSheet kind='ngo' name='Mar Limpio' place={s.place} event={{ label: L.eventOn, title: L.seabedCleanup, when: L.seabedWhen }} locale={locale} />
       </div>
     ) : null}
   </div>
@@ -532,11 +543,11 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
     .as-card:first-child { animation-delay: 0s; }
   }
   /* Cada tarjeta entra encima de la anterior y la anterior no se va hasta que la nueva está entera (sin el «fundido a oscuro») */
-  @keyframes as-cyc-2 { 0% { opacity: 0; transform: scale(1.06); } 5%, 54% { opacity: 1; } 55%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-3 { 0% { opacity: 0; transform: scale(1.06); } 3.5%, 36.5% { opacity: 1; } 37.5%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-4 { 0% { opacity: 0; transform: scale(1.06); } 2.5%, 27.5% { opacity: 1; } 28.5%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-5 { 0% { opacity: 0; transform: scale(1.06); } 2%, 22% { opacity: 1; } 23%, 100% { opacity: 0; transform: scale(1); } }
-  @keyframes as-cyc-6 { 0% { opacity: 0; transform: scale(1.06); } 2%, 18.6% { opacity: 1; } 19.4%, 100% { opacity: 0; transform: scale(1); } }
+  @keyframes as-cyc-2 { 0% { opacity: 0; } 5%, 54% { opacity: 1; } 55%, 100% { opacity: 0; } }
+  @keyframes as-cyc-3 { 0% { opacity: 0; } 3.5%, 36.5% { opacity: 1; } 37.5%, 100% { opacity: 0; } }
+  @keyframes as-cyc-4 { 0% { opacity: 0; } 2.5%, 27.5% { opacity: 1; } 28.5%, 100% { opacity: 0; } }
+  @keyframes as-cyc-5 { 0% { opacity: 0; } 2%, 22% { opacity: 1; } 23%, 100% { opacity: 0; } }
+  @keyframes as-cyc-6 { 0% { opacity: 0; } 2%, 18.6% { opacity: 1; } 19.4%, 100% { opacity: 0; } }
   @keyframes as-dot-6 { 0%, 16% { background: #fff; } 16.7%, 100% { background: rgb(255 255 255 / .45); } }
   @keyframes as-dot-2 { 0%, 49% { background: #fff; } 50%, 100% { background: rgb(255 255 255 / .45); } }
   @keyframes as-dot-3 { 0%, 32% { background: #fff; } 33%, 100% { background: rgb(255 255 255 / .45); } }
@@ -554,7 +565,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-dive .as-chip { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
   .as-pcard { display: grid; justify-items: center; gap: 4px; padding: 18px; border-radius: 22px; background: #f8f8f9; text-align: center; }
   .as-pcard p { margin: 6px 0 0; color: var(--mut); font-size: 12px; }
-  .as-pcard em { font-style: normal; font-size: 22px; font-weight: 700; color: var(--ap); margin-right: 4px; }
+  .as-pcard :global(em) { font-style: normal; font-size: 22px; font-weight: 700; color: var(--ap); margin-right: 4px; }
   .as-avatar { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 99px; background: var(--ap-chip); color: #6b7280; margin-bottom: 6px; }
   .as-avatar--lg { width: 84px; height: 84px; }
   .as-h { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; font-size: 16px; font-weight: 600; }
@@ -603,7 +614,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
 
   .as-search { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-radius: 99px; background: #f6f7f9; color: var(--hint); }
   .as-count { margin: 12px 0 6px; color: var(--mut); font-size: 13px; }
-  .as-count b { color: var(--ink); }
+  .as-count :global(b) { color: var(--ink); }
   .as-person { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
   .as-person__txt { flex: 1; min-width: 0; }
   .as-ini { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--ap-tint); color: var(--ap); font-weight: 700; font-size: 14px; flex: none; }
@@ -690,7 +701,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-album__meta { display: flex; align-items: center; gap: 5px; margin: 0 0 12px; color: var(--mut); font-size: 12px; }
   .as-album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .as-album__ph { aspect-ratio: 1; border-radius: 8px; background-color: #2b7e96; background-image: linear-gradient(160deg, #3fb4c9, #0d4a6b); background-size: 300% 300%; }
-  @keyframes as-pop { from { transform: scale(.4); opacity: 0; } }
+  @keyframes as-pop { from { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .as-okdot { animation: none; } }
 
   /* Logbook público (el que ve el buceador): tarjetas por inmersión con foto o mapa del punto */
@@ -734,6 +745,23 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .lb-map__line--2 { top: 86px; right: 60px; opacity: .6; }
   .lb-map__pin { position: absolute; left: 50%; top: 48px; display: grid; place-items: center; width: 32px; height: 32px; margin-left: -16px; border-radius: 99px; background: #406ad0; color: #fff; box-shadow: 0 0 0 3px #fff; }
   .lb-map__tag { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 99px; background: rgb(255 255 255 / .94); color: var(--ap-navy); font-size: 11px; }
+
+  /* Escanear el QR: la cámara apunta al QR del centro, lo reconoce y aparece la actividad del día (solo fundidos) */
+  .qs { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 18px; background: #0b1530; color: #fff; }
+  .qs__hint { font-size: 13px; color: rgb(255 255 255 / .8); }
+  .qs__frame { position: relative; display: block; width: 200px; height: 200px; padding: 18px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 3px var(--ap-acc); overflow: hidden; }
+  .qs__qr, .qs__qr :global(svg) { display: block; width: 100%; height: 100%; color: var(--ap-navy); }
+  .qs__line { position: absolute; left: 10px; right: 10px; top: 12px; height: 3px; border-radius: 3px; background: var(--ap-acc); box-shadow: 0 0 12px var(--ap-acc); }
+  .qs__found { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--ap-acc); color: var(--ap-navy); font-size: 12px; font-weight: 700; opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .qs { animation: qs-out 6s infinite; }
+    .qs__line { animation: qs-sweep 6s infinite; }
+    .qs__found { animation: qs-found 6s infinite; }
+  }
+  @media (prefers-reduced-motion: reduce) { .qs { display: none; } }
+  @keyframes qs-sweep { 0% { top: 12px; } 15% { top: calc(100% - 15px); } 30% { top: 12px; } 31%, 100% { opacity: 0; } }
+  @keyframes qs-found { 0%, 30% { opacity: 0; } 34%, 100% { opacity: 1; } }
+  @keyframes qs-out { 0%, 44% { opacity: 1; } 50%, 94% { opacity: 0; } 100% { opacity: 1; } }
 
   /* Al escanear el QR: qué actividad haces hoy */
   .qp { display: flex; flex-direction: column; gap: 12px; height: calc(100% - 20px); }

@@ -10,6 +10,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
 (async () => {
   const b = await chromium.launch();
+  // En la CI corre después de smoke-accounts, que deja «Terraza Azahar» bloqueada (y bloqueada no se investiga):
+  // el admin la desbloquea antes, para no depender del orden.
+  const a = await (await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'es-ES' })).newPage();
+  await a.goto(`${BASE}/admin/login`);
+  await a.click('[data-testid="demo-admin@enjoy.test"]');
+  await a.waitForURL(/\/admin/);
+  await a.goto(`${BASE}/admin/accounts?ver=all&q=Terraza%20Azahar`);
+  await a.click('[data-testid=account][data-name="Terraza Azahar"] a.co-row__main');
+  await a.waitForURL(/\/admin\/accounts\/[^/?#]+/);
+  const unblock = a.locator('form:has(input[name=action][value=unblock]) button[type=submit]');
+  if (await unblock.count()) { await Promise.all([a.waitForURL(/ok=unblocked/), unblock.click()]); }
+  await a.context().close();
   const p = await (await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'es-ES' })).newPage();
   await p.goto(`${BASE}/admin/login`);
   await p.click('[data-testid="demo-rep@enjoy.test"]');

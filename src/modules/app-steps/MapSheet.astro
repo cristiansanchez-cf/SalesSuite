@@ -6,18 +6,22 @@
  * Entrega de Cristian (6-oct-2026): «Marker sheet — with events».
  */
 import { Sprout, X, Star, Waves, House, ChevronRight, MapPin } from 'lucide-static';
+import { APP_TEXT, appLang } from './app-text';
+import { requestLocale } from '~/lib/i18n/request';
 
 type Kind = 'centre' | 'ngo' | 'site' | 'event';
 interface Props {
   kind: Kind; name: string; place: string; meta?: string[];
   event?: { label: string; title: string; when: string } | null;
   organiser?: string | null;
+  locale?: string;
 }
 const { kind, name, place, meta = [], event = null, organiser = null } = Astro.props;
+const L = APP_TEXT[appLang(Astro.props.locale ?? requestLocale())];
 const inner = (svg: string, size: number, sw = 1.8) => svg.replace(/width="24"/, `width="${size}"`).replace(/height="24"/, `height="${size}"`).replace(/stroke-width="2"/, `stroke-width="${sw}"`);
 const STAR = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z" fill="#D0FF00"/></svg>';
-const LABEL: Record<Kind, string> = { centre: 'Centro de buceo', ngo: 'ONG', site: 'Punto de inmersión', event: 'Evento' };
-const CTA: Record<Kind, string> = { centre: 'Ver centro', ngo: 'Ver ONG', site: 'Ver punto de inmersión', event: 'Ver evento' };
+const LABEL: Record<Kind, string> = { centre: L.kindCentre, ngo: L.kindNgo, site: L.kindSite, event: L.kindEvent };
+const CTA: Record<Kind, string> = { centre: L.ctaCentre, ngo: L.ctaNgo, site: L.ctaSite, event: L.ctaEvent };
 const ICON: Record<Kind, string> = { centre: inner(House, 28), ngo: inner(Sprout, 28), site: inner(Waves, 28), event: STAR.replace(/18/g, '28') };
 void Star;
 ---
@@ -43,7 +47,7 @@ void Star;
   {organiser && (
     <div class="ms__event ms__event--org">
       <span class="ms__evico ms__evico--ngo" set:html={inner(Sprout, 18)} />
-      <span class="ms__evtxt"><em>Organiza</em><b>{organiser}</b></span>
+      <span class="ms__evtxt"><em>{L.organiser}</em><b>{organiser}</b></span>
       <span class="ms__chev" set:html={inner(ChevronRight, 18)} />
     </div>
   )}

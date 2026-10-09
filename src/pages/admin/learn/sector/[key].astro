@@ -12,7 +12,7 @@ import ScreenMini from '~/modules/live-screen/ScreenMini.astro';
 import Phone from '~/modules/phone-tour/Phone.astro';
 import AppScreen from '~/modules/app-steps/Screen.astro';
 import ConsoleMini from '~/modules/center-console/ConsoleMini.astro';
-import { appStepsSchema } from '~/modules/app-steps/schema';
+import { APP_SCREENS, appStepsSchema, type AppScreen as AppScreenName } from '~/modules/app-steps/schema';
 import { isBlockType } from '~/modules/registry';
 import { AdminError } from '~/lib/admin/service';
 import { renderMarkdown, stripMarkdown, summarize } from '~/lib/playbook/markdown';
@@ -60,7 +60,8 @@ const room = GROUPS.map((g) => ({ ...g, people: sg.personas.filter((p) => g.role
 const plays = v.plays.slice(0, 6);
 // Imagínatelo: las pantallas de SU propuesta (la receta del sector), contadas enteras, con la UI del producto al lado.
 // Sin receta, los módulos del sector por prioridad (hasta tres), como antes.
-const cards = sg.modules.length || sg.proposal ? ((await admin.playbook.learnIndex().catch(() => null))?.modules ?? []) : [];
+const idx = sg.modules.length || sg.proposal ? await admin.playbook.learnIndex().catch(() => null) : null;
+const cards = idx?.modules ?? [];
 const cardOf = (id: string) => cards.find((c) => c.moduleId === id) ?? null;
 const PRODUCT = new Set(['live-screen', 'phone-tour', 'tabs-showcase', 'media-strip', 'app-steps', 'center-console']);
 // app-steps solo cuenta como producto si enseña pantallas (portada, condiciones o cierre no son producto).
@@ -80,6 +81,18 @@ const shots: Shot[] = blockKeys.flatMap((k) => {
   return c && isProduct(c.blockType, props) ? [{ key: k, bt: c.blockType, moduleId: c.moduleId, name: c.name, props }] : [];
 });
 const imagine = shots.length ? [] : [...sg.modules].sort((a, b) => a.priority - b.priority).slice(0, 3);
+// Con «learn» en la receta: cómo funciona contado al comercial, paso a paso, con la UI de la app o de la consola
+// (como el recorrido). Manda sobre las diapositivas.
+const learnSteps = recipe?.learn ?? [];
+const kit = idx?.kit;
+const appFor = (screen: string) => {
+  const raw = (kit?.apps ?? []).find((x) => Array.isArray(x.screens) && (x.screens as Array<{ screen?: string }>).some((y) => y.screen === screen)) ?? kit?.app ?? {};
+  const r = appStepsSchema.partial().safeParse(raw);
+  return { sample: appStepsSchema.shape.sample.parse(r.success ? r.data.sample ?? {} : {}), photo: r.success ? r.data.photo ?? null : null };
+};
+const stepUi = (ui: string | null | undefined) =>
+  ui?.startsWith('app:') && kit?.app && (APP_SCREENS as readonly string[]).includes(ui.slice(4)) ? { kind: 'app' as const, screen: ui.slice(4) as AppScreenName }
+  : ui?.startsWith('console:') && kit?.console ? { kind: 'console' as const, view: ui.slice(8) } : null;
 // Todo lo que hace cada pantalla, sin recortar: escena por escena, paso a paso, pestaña a pestaña.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const explain = (props: any): Array<{ t: string; d: string; q?: string }> =>
@@ -207,7 +220,46 @@ const step = () => ++n;
       </section>
     )}
 
-    {(shots.length > 0 || imagine.length > 0) && (
+    {learnSteps.length > 0 && (
+      <section class="grid gap-8" data-testid="sector-imagine" data-mode="learn">
+        <div class="grid gap-2">
+          <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{lm.sector.howItWorks}</h2>
+          <p class="max-w-2xl text-lg leading-relaxed">{lm.sector.howItWorksLede}</p>
+        </div>
+        <ol class="grid gap-14 p-0">{learnSteps.map((st, i) => {
+          const u = stepUi(st.ui);
+          return (
+            <li class:list={['grid list-none items-start gap-6', u && 'md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]']} data-testid="imagine-block">
+              <div class:list={['grid content-start gap-3', u && i % 2 === 1 && 'md:order-2', !u && 'max-w-3xl']}>
+                <span class="co-figure text-5xl text-[color:var(--co-signal)]">{i + 1}</span>
+                <p class="text-2xl font-semibold leading-snug">{st.title}</p>
+                <div class="prose-play text-[15px] leading-relaxed text-muted" set:html={renderMarkdown(st.body)} />
+              </div>
+              {u && <div class="imagine-ui md:sticky md:top-6" data-testid="imagine-ui">
+                {u.kind === 'app' ? <div class="tn-ui imagine-ui__app"><AppScreen screen={u.screen} sample={appFor(u.screen).sample} center={lm.sector.yourClient} photo={appFor(u.screen).photo} zoom={0.7} /></div>
+                : <div class="tn-ui w-full"><ConsoleMini props={kit?.console} view={u.view} center={lm.sector.yourClient} /></div>}
+              </div>}
+            </li>
+          );
+        })}</ol>
+        {ideas.length > 0 && (
+          <div class="grid gap-4" data-testid="imagine-ideas">
+            <div class="grid gap-1">
+              <h3 class="text-xl font-semibold">{lm.sector.ideas}</h3>
+              <p class="co-meta">{lm.sector.ideasLede}</p>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">{ideas.map((pl) => (
+              <article class="co-card grid content-start gap-2 !p-6" id={`idea-${pl.id}`}>
+                <p class="co-entity">{pl.title}</p>
+                <div class="prose-play text-[15px] leading-relaxed" set:html={renderMarkdown(pl.body)} />
+              </article>))}
+            </div>
+          </div>
+        )}
+      </section>
+    )}
+
+    {learnSteps.length === 0 && (shots.length > 0 || imagine.length > 0) && (
       <section class="grid gap-8" data-testid="sector-imagine">
         <div class="grid gap-2">
           <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">0{step()}</span>{lm.sector.imagine}</h2>
