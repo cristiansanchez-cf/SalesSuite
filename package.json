@@ -21,7 +21,8 @@
     "tenant:samples": "tsx scripts/sample-dossiers.ts",
     "start:demo": "DEMO_MODE=1 DEV_TENANT_SLUG=enjoy node ./dist/server/entry.mjs",
     "lint:copy": "node scripts/lint-copy.mjs",
-    "export:sales": "tsx scripts/export-sales.ts"
+    "export:sales": "tsx scripts/export-sales.ts",
+    "tenant:translate": "tsx scripts/content-translate.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.5",
@@ -41,6 +42,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
     "@astrojs/check": "^0.9.10",
     "@types/node": "^22.20.5",
     "svelte-check": "^4.7.6",

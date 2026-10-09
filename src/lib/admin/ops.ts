@@ -15,7 +15,7 @@ export const dossierPatchSchema = z.object({
   title: z.string().trim().min(1, 'El título es obligatorio').max(140),
   prospectName: optText(120),
   prospectCompany: optText(120),
-  locale: z.enum(['es-ES', 'en-GB', 'ca-ES', 'pt-PT', 'fr-FR']),
+  locale: z.enum(['es-ES', 'en-GB', 'ca-ES', 'pt-PT', 'fr-FR', 'ko-KR']),
   priceMode: z.enum(['none', 'total', 'per_module']),
   totalPrice: money.nullable(),
   currency: z.string().regex(/^[A-Z]{3}$/),
@@ -142,7 +142,7 @@ export const draftSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/),
 });
 
-export const LOCALES = ['es-ES', 'en-GB', 'ca-ES', 'pt-PT', 'fr-FR'] as const;
+export const LOCALES = ['es-ES', 'en-GB', 'ca-ES', 'pt-PT', 'fr-FR', 'ko-KR'] as const;
 
 export const settingsSchema = z.object({
   name: z.string().trim().min(1).max(80),

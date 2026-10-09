@@ -14,6 +14,8 @@ import Shimmer from '~/components/ui/Shimmer.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { BRAND } from '~/lib/site';
 import { brandVars, themeToCss } from '~/lib/theme';
+import { contentTranslated } from '~/lib/i18n/content-db';
+import { contentI18nMessages } from '~/lib/i18n/messages/contentI18n';
 import { i18n } from '~/lib/i18n';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { sectionTabs } from '~/lib/ui/nav';
@@ -39,6 +41,9 @@ const [pending, feed] = await Promise.all([
 const back = Astro.url.pathname + Astro.url.search;
 const tenantName = tenant?.name ?? BRAND.app;
 const shell = !!admin && !bare;
+// La página ha enseñado contenido traducido sin revisar: se dice (docs/I18N.md §Contenido).
+const translated = contentTranslated();
+const autoNote = translated?.auto ? i18n(Astro, contentI18nMessages).m.auto : null;
 // La consola es de Cofundo; lo que enseña el producto del espacio (miniaturas, portadas, tour) lleva sus colores.
 // .tn-ui: dentro, el tema entero del espacio (colores, radios, fuentes), para la UI recreada de su producto.
 const brandCss = `.console{${brandVars(tenant?.themeTokens ?? {})}}\n${themeToCss(tenant?.themeTokens ?? {}, '.console .tn-ui')}`;
@@ -75,6 +80,7 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
                 {tabs.map((t) => <a href={t.href} aria-current={t.on ? 'page' : undefined} data-testid={t.testid}>{t.label}</a>)}
               </nav>
             )}
+            {autoNote && <p class="co-auto-translated" data-testid="auto-translated" lang={translated?.locale}>{autoNote}</p>}
             <Shimmer variant="page" class="co-nav-skeleton" label={m.shell.loading} /><slot />
           </main>
         </div>

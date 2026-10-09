@@ -9,7 +9,8 @@ export type Role = 'admin' | 'lead' | 'rep' | 'partner';
 export type DossierStatus = 'draft' | 'published' | 'archived';
 export type PriceModeRow = 'none' | 'total' | 'per_module';
 
-export interface TenantRow { id: string; slug: string; name: string; status: string; default_locale: string; theme_tokens: unknown; brand: unknown; tour?: unknown }
+export interface TenantRow { id: string; slug: string; name: string; status: string; default_locale: string; theme_tokens: unknown; brand: unknown; tour?: unknown; content_locales?: string[] }
+export interface ContentI18nRow { tenant_id: string; locale: string; kind: import('../i18n/content').ContentKind; ref: string; texts: Record<string, string>; source_hash: string; status: 'auto' | 'reviewed' }
 export interface DomainRow { id: string; tenant_id: string; hostname: string; is_primary: boolean; ssl_status: string }
 export interface ModuleRow { id: string; tenant_id: string; key: string; block_type: string; name: string; description: string | null; is_catalog: boolean }
 export interface ModuleVersionRow {
@@ -162,6 +163,7 @@ export interface DemoDb {
   partner_profile: PartnerProfileRow[];
   partner_account: PartnerAccountRow[];
   situation_facet: SituationFacetRow[];
+  content_i18n?: ContentI18nRow[];
   win_story: WinStoryRow[];
   notification: NotificationRow[];
   zone: ZoneRow[];
@@ -281,7 +283,7 @@ function demoVisits(items: DossierItemRow[]): DossierViewRow[] {
 
 export function freshDemoDb(): DemoDb {
   const f = structuredClone(fixtures) as unknown as Pick<DemoDb, 'tenant' | 'domain' | 'module' | 'module_version' | 'dossier' | 'dossier_item' | 'share_link' | 'play'
-    | 'segment' | 'persona' | 'segment_module' | 'persona_module' | 'dossier_contact' | 'situation_facet' | 'win_story'>;
+    | 'segment' | 'persona' | 'segment_module' | 'persona_module' | 'dossier_contact' | 'situation_facet' | 'win_story' | 'content_i18n'>;
   const now = new Date().toISOString();
   const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
   f.dossier.forEach((d) => { d.created_at ??= now; d.updated_at ??= now; d.published_at ??= d.status === 'published' ? now : null; });

@@ -191,11 +191,14 @@
           "ui": "console:crm"
         },
         {
-          "title": "Su nombre y su logo en cada tarjeta",
+          "title": "Su nombre en cada tarjeta",
           "body": "Cada vez que un buceador comparte su inmersión.",
           "image": null,
           "ui": "app:share-card"
         }
+      ],
+      "content_locales": [
+        "ko"
       ]
     }
   ],
@@ -790,7 +793,7 @@
         "cards": [
           {
             "icon": "check",
-            "title": "En todas aparecen el nombre y el logo de tu centro."
+            "title": "En todas aparece el nombre de tu centro."
           }
         ],
         "screens": [
@@ -918,6 +921,22 @@
       "segment_id": null,
       "next_step": null,
       "next_step_at": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000b0d51",
+      "tenant_id": "00000000-0000-4000-8000-000000000b01",
+      "author_id": null,
+      "title": "Oquea × 서울 다이브",
+      "prospect_name": null,
+      "prospect_company": "서울 다이브",
+      "prospect_meta": {},
+      "status": "published",
+      "locale": "ko-KR",
+      "price_mode": "none",
+      "total_price": null,
+      "currency": "EUR",
+      "theme_override": null,
+      "segment_id": null
     }
   ],
   "dossier_item": [
@@ -1003,6 +1022,15 @@
       "visible": true,
       "price_override": null,
       "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000b0d61",
+      "dossier_id": "00000000-0000-4000-8000-0000000b0d51",
+      "module_version_id": "00000000-0000-4000-8000-0000000b1002",
+      "position": 512,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
     }
   ],
   "share_link": [
@@ -1040,6 +1068,13 @@
       "token": "demo-expired-Bn3r",
       "is_active": true,
       "expires_at": "2020-01-01T00:00:00Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000b0d71",
+      "dossier_id": "00000000-0000-4000-8000-0000000b0d51",
+      "token": "demo-oquea-ko-5Rt8",
+      "is_active": true,
+      "expires_at": null
     }
   ],
   "play": [
@@ -2540,6 +2575,75 @@
       "objection": null,
       "status": "shared",
       "dossier_id": null
+    }
+  ],
+  "content_i18n": [
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000b01",
+      "locale": "ko",
+      "kind": "tenant",
+      "ref": "00000000-0000-4000-8000-000000000b01",
+      "texts": {
+        "tour/0/title": "다이빙 센터가 다이빙을 만듭니다",
+        "tour/0/body": "시간, 다이빙 포인트, 종류를 정합니다.",
+        "tour/1/title": "다이버가 QR을 스캔합니다",
+        "tour/1/body": "오늘의 다이빙을 골라 저장합니다.",
+        "tour/2/title": "다이빙이 로그북에 남습니다",
+        "tour/2/body": "포인트 정보가 이미 채워져 있습니다.",
+        "tour/3/title": "센터에는 다이버 명단이 남습니다",
+        "tour/3/body": "누가 몇 번 함께 다이빙했는지 알 수 있습니다.",
+        "tour/4/title": "모든 카드에 센터 이름이 들어갑니다",
+        "tour/4/body": "다이버가 다이빙을 공유할 때마다."
+      },
+      "source_hash": "demo-oquea-tour",
+      "status": "auto"
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000b01",
+      "locale": "ko",
+      "kind": "module",
+      "ref": "00000000-0000-4000-8000-0000000b0101",
+      "texts": {
+        "name": "이용 방법"
+      },
+      "source_hash": "demo-oquea-module",
+      "status": "auto"
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000b01",
+      "locale": "ko",
+      "kind": "module",
+      "ref": "00000000-0000-4000-8000-0000000b0102",
+      "texts": {
+        "name": "모든 다이빙에 센터 이름을"
+      },
+      "source_hash": "demo-oquea-module",
+      "status": "auto"
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000b01",
+      "locale": "ko",
+      "kind": "module",
+      "ref": "00000000-0000-4000-8000-0000000b0103",
+      "texts": {
+        "name": "센터 콘솔"
+      },
+      "source_hash": "demo-oquea-module",
+      "status": "auto"
+    },
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000b01",
+      "locale": "ko",
+      "kind": "module_version",
+      "ref": "00000000-0000-4000-8000-0000000b1002",
+      "texts": {
+        "props/title": "모든 다이빙에 센터 이름을",
+        "props/highlight": "센터 이름",
+        "props/lede": "다이버는 다이빙 카드를 내보내 공유할 수 있습니다. 다이빙 카드, 개인 기록 카드, 마일스톤 카드 세 가지가 있습니다.",
+        "props/cards/0/title": "모든 카드에 센터 이름이 들어갑니다."
+      },
+      "source_hash": "14478b804d663e433536cc5d37400c39",
+      "status": "auto"
     }
   ]
 }

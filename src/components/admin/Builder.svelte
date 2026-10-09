@@ -63,7 +63,7 @@
   const editable = $derived(s.canEdit);
   const api = `/admin/api/dossiers/${initial.dossier.id}`;
   const STATUS_CLASS = { draft: 'co-badge', published: 'co-badge co-badge--ink', archived: 'co-badge co-badge--soft' } as const;
-  const LOCALES = { 'es-ES': 'Español', 'en-GB': 'English', 'ca-ES': 'Català', 'pt-PT': 'Português', 'fr-FR': 'Français' } as const;
+  const LOCALES = { 'es-ES': 'Español', 'en-GB': 'English', 'ca-ES': 'Català', 'pt-PT': 'Português', 'fr-FR': 'Français', 'ko-KR': '한국어' } as const;
   const CURRENCIES = ['EUR', 'USD', 'GBP', 'MXN'];
   const DEVICE_W = { mobile: '390px', tablet: '820px', desktop: '100%' } as const;
 

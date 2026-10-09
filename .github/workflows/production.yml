@@ -1,5 +1,6 @@
 # Producción sin terminal (docs/PUESTA_EN_MARCHA.md): GitHub → Actions → «Producción» → Run workflow.
-# Secretos (Settings → Secrets and variables → Actions): SUPABASE_DB_URL, PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+# Secretos (Settings → Secrets and variables → Actions): SUPABASE_DB_URL, PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY y,
+# para «traducir» (contenido en otros idiomas, docs/I18N.md §Contenido), ANTHROPIC_API_KEY.
 name: Producción
 run-name: "Producción · ${{ inputs.what }} · ${{ inputs.tenant }} · ${{ inputs.dry_run && 'PRUEBA (no escribe)' || 'REAL' }}"
 
@@ -9,7 +10,7 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, superadmin]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
@@ -42,10 +43,13 @@ jobs:
           DB: ${{ secrets.SUPABASE_DB_URL }}
           URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC: ${{ secrets.ANTHROPIC_API_KEY }}
           WHAT: ${{ inputs.what }}
+          DRY: ${{ inputs.dry_run }}
         run: |
           missing=""
-          if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
+          if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ "$WHAT" != "traducir" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
+          if [ "$WHAT" = "traducir" ] && [ "$DRY" != "true" ] && [ -z "$ANTHROPIC" ]; then missing="$missing ANTHROPIC_API_KEY"; fi
           if [ "$WHAT" != "migraciones" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
           if [ "$WHAT" != "migraciones" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
@@ -115,6 +119,18 @@ jobs:
         run: |
           case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
           if [ "$DRY" = "true" ]; then npm run tenant:samples -- "$TENANT" --dry-run; else npm run tenant:samples -- "$TENANT"; fi
+
+      - name: Traducir el contenido
+        if: ${{ inputs.what == 'traducir' }}
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TENANT: ${{ inputs.tenant }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          if [ "$DRY" = "true" ]; then npm run tenant:translate -- "$TENANT" --dry-run; else npm run tenant:translate -- "$TENANT"; fi
 
       - name: Superadmin
         if: ${{ inputs.what == 'superadmin' }}

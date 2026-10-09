@@ -12,10 +12,23 @@ import { resolveTotal } from '~/lib/pricing';
 import type { PublicDossier, TenantContext } from '~/lib/types';
 import { REGISTRY } from '~/modules/registry';
 import { resolveItem } from '~/modules/resolve';
+import { applyTexts, extractTexts, sourceHash } from '~/lib/i18n/content';
+import { proposalText } from '~/lib/i18n/messages/proposal';
 
-/** track: token del enlace público → mide la visita (docs/ANALYTICS.md). Las vistas previas internas no lo pasan. */
-interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string; track?: string }
-const { tenant, dossier, banner, track } = Astro.props;
+/**
+ * track: token del enlace público → mide la visita (docs/ANALYTICS.md). Las vistas previas internas no lo pasan.
+ * translations: propuesta en otro idioma (docs/I18N.md §Contenido): huella de los textos del módulo → su traducción.
+ */
+interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string; track?: string; translations?: Record<string, Record<string, string>> }
+const { tenant, dossier: raw, banner, track, translations } = Astro.props;
+// Cada módulo con sus textos en el idioma de la propuesta, si están traducidos (sus cambios propios no se tocan).
+const dossier: PublicDossier = translations && Object.keys(translations).length ? {
+  ...raw,
+  items: raw.items.map((it) => {
+    const tr = translations[sourceHash(extractTexts('module_version', { props: it.defaultProps }))];
+    return tr ? { ...it, defaultProps: applyTexts({ props: it.defaultProps }, tr).props } : it;
+  }),
+} : raw;
 
 const total = resolveTotal(dossier);
 const blocks = await Promise.all(
@@ -43,9 +56,11 @@ const slides = blocks.flatMap((b) => {
 });
 const verUrl = (v: 'slides' | 'scroll') => { const u = new URL(Astro.url); u.searchParams.set('ver', v); u.hash = ''; return `${u.pathname}${u.search}`; };
 const prospect = dossier.prospectCompany ?? dossier.prospectName;
+// Los textos fijos de la propuesta, en su idioma (no en el de quien la abre).
+const pt = proposalText(dossier.locale);
 const og = {
   title: dossier.title,
-  description: prospect ? `Propuesta de ${tenant.name} para ${prospect}` : `Propuesta de ${tenant.name}`,
+  description: prospect ? pt.ogWith(tenant.name, prospect) : pt.og(tenant.name),
   // og:image debe ser absoluta para WhatsApp/Slack.
   image: tenant.brand.ogImageUrl && new URL(tenant.brand.ogImageUrl, requestOrigin(Astro.request, Astro.url)).toString(),
 };
@@ -60,28 +75,28 @@ const og = {
   og={og}
 >
   {banner && <div class="sticky top-0 z-50 bg-ink py-2 text-center text-xs font-semibold text-bg">{banner}</div>}
-  <BrandBar brand={tenant.brand} tenantName={tenant.name} dossierTitle={dossier.title} />
+  <BrandBar brand={tenant.brand} tenantName={tenant.name} dossierTitle={dossier.title} locale={dossier.locale} />
   {layout === 'slides' ? (
-    <main class="deck" data-deck data-testid="deck" aria-roledescription="presentación">
+    <main class="deck" data-deck data-testid="deck" aria-roledescription={pt.deck}>
       <div class="deck__track" data-track tabindex="-1">
         {slides.map(({ b, extra, last }, i) => (
           <section class="deck__slide" data-item-id={b.item.id} data-block-type={b.blockType} data-slide={i} aria-roledescription="diapositiva" aria-label={`${i + 1} / ${slides.length}`}>
             <div class="deck__inner">
               <b.Comp {...b.props} {...extra} ctx={b.ctx} />
               {last && b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
-              {i === slides.length - 1 && <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} />}
+              {i === slides.length - 1 && <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} />}
             </div>
           </section>
         ))}
       </div>
-      <button type="button" class="deck__arrow deck__arrow--prev" data-prev aria-label="Anterior" disabled>‹</button>
-      <button type="button" class="deck__arrow deck__arrow--next" data-next aria-label="Siguiente">›</button>
-      <nav class="deck__bar" aria-label="Diapositivas">
+      <button type="button" class="deck__arrow deck__arrow--prev" data-prev aria-label={pt.prev} disabled>‹</button>
+      <button type="button" class="deck__arrow deck__arrow--next" data-next aria-label={pt.next}>›</button>
+      <nav class="deck__bar" aria-label={pt.slidesNav}>
         <div class="deck__dots">
           {slides.map((_, i) => <button type="button" class="deck__dot" data-dot={i} aria-label={`Ir a ${i + 1}`} aria-current={i === 0 ? 'step' : undefined}></button>)}
         </div>
         <span class="deck__count" data-count>1 / {slides.length}</span>
-        <a class="deck__switch" href={verUrl('scroll')} data-testid="layout-scroll">Ver hacia abajo</a>
+        <a class="deck__switch" href={verUrl('scroll')} data-testid="layout-scroll">{pt.scroll}</a>
       </nav>
     </main>
   ) : (
@@ -94,8 +109,8 @@ const og = {
           </div>
         ))}
       </main>
-      <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} />
-      <a class="deck__switch deck__switch--float" href={verUrl('slides')} data-testid="layout-slides">▸ Ver como presentación</a>
+      <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} />
+      <a class="deck__switch deck__switch--float" href={verUrl('slides')} data-testid="layout-slides">{pt.slides}</a>
     </>
   )}
   {track && (

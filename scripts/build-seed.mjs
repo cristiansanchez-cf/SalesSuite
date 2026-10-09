@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const fx = JSON.parse(readFileSync(`${root}supabase/seed/fixtures.json`, 'utf8'));
 
-const ORDER = ['tenant', 'domain', 'module', 'module_version', 'segment', 'persona', 'segment_module', 'persona_module', 'situation_facet', 'dossier', 'dossier_item', 'share_link', 'play', 'dossier_contact', 'win_story'];
-const JSON_COLS = new Set(['proposal', 'preset', 'options', 'situation', 'traits', 'technique_refs', 'brand', 'theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification', 'tour']);
+const ORDER = ['tenant', 'domain', 'module', 'module_version', 'segment', 'persona', 'segment_module', 'persona_module', 'situation_facet', 'dossier', 'dossier_item', 'share_link', 'play', 'dossier_contact', 'win_story', 'content_i18n'];
+const JSON_COLS = new Set(['proposal', 'preset', 'options', 'situation', 'traits', 'technique_refs', 'brand', 'theme_tokens', 'default_props', 'prop_overrides', 'prospect_meta', 'theme_override', 'verification', 'tour', 'texts']);
 const DERIVED = new Set(['tenant_id']);
 const derivedTables = new Set(['module_version', 'dossier_item', 'share_link']);
 

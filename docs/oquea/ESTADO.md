@@ -40,6 +40,10 @@
   Scripts `apply-oquea-07.py` y `apply-oquea-08.py`. Fotos libres: `stock:<búsqueda>` (las resuelve el alta).
   Capturas: `docs/oquea/img/app-*.png` y `tarjetas-redes-*.png`.
 
+- **Contenido en coreano** (9-oct-2026, `apply-oquea-10.py`): Oquea traduce su contenido al coreano (guiones,
+  mercado, módulos, Aprende) con Claude y glosario; se ve con la marca «traducción automática» y lo revisa después
+  alguien de Corea. Las pantallas recreadas de la app, en coreano. Pendiente: las propuestas públicas en coreano.
+
 ## Qué falta (en este orden)
 
 ### A · Marca y UI (doc 01-PROMPT-REPO-UI)

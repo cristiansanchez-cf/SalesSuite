@@ -3,6 +3,7 @@
 import DossierView from '~/components/dossier/DossierView.astro';
 import { AdminError } from '~/lib/admin/service';
 import { STATUS_LABEL } from '~/lib/admin/format';
+import { moduleTranslations } from '~/lib/i18n/content-db';
 
 const { admin, tenant } = Astro.locals;
 if (!admin || !tenant) return Astro.redirect('/admin/login');
@@ -15,5 +16,7 @@ try {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;
 }
+// En otro idioma que el del espacio: como la verá el cliente, con los textos de los módulos traducidos.
+const translations = dossier.locale.slice(0, 2) !== tenant.defaultLocale.slice(0, 2) ? await moduleTranslations(admin.content, tenant.id, dossier.locale) : undefined;
 ---
-<DossierView tenant={tenant} dossier={dossier} banner={`Vista previa · ${STATUS_LABEL[status]}`} />
+<DossierView tenant={tenant} dossier={dossier} banner={`Vista previa · ${STATUS_LABEL[status]}`} translations={translations} />

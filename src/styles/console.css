@@ -559,3 +559,6 @@ html.console select:not([multiple]):not([size]) {
   background-repeat: no-repeat; background-position: right .85rem center; background-size: 16px; text-overflow: ellipsis;
 }
 .co-chip--quiet { border-style: dashed; color: var(--co-ink-dim); }
+
+/* Contenido traducido automáticamente (docs/I18N.md §Contenido): aviso discreto arriba de la página. */
+.console .co-auto-translated { margin: 0 0 1rem; padding: .5rem .85rem; border-radius: 10px; background: var(--co-signal-soft, #ece6fc); color: var(--co-signal-ink, #2a1066); font-size: .8rem; line-height: 1.4; }
