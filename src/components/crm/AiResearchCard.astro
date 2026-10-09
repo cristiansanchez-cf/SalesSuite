@@ -1,0 +1,104 @@
+---
+/**
+ * Investigación con IA (docs/CRM_DINAMICO.md §13): resumen, «para mirar tú» y propuestas con su prueba y su fuente.
+ * Cada propuesta se acepta (va a la ficha, sin pisar nada) o se descarta con un clic. Todo marcado «sin verificar».
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { researchMessages } from '~/lib/i18n/messages/research';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+import type { AiResearch, Suggestion } from '~/lib/crm/research';
+
+interface Props { research: AiResearch | null; canEdit: boolean; hasAi: boolean }
+const { research: r, canEdit, hasAi } = Astro.props;
+const { m: M, f: fmt, locale } = i18n(Astro, researchMessages);
+const R = priorityMessages[locale];
+const F = followupMessages[locale];
+
+const QUAL_LABEL: Record<string, [string, (v: string) => string]> = {
+  kind: [R.kind, (v) => R.kinds[v as keyof typeof R.kinds] ?? v],
+  nights: [R.hints.recurrence.venue, (v) => R.options.nights[v as keyof typeof R.options.nights] ?? v],
+  events: [R.hints.recurrence.promoter, (v) => R.options.events[v as keyof typeof R.options.events] ?? v],
+  recurring: [R.hints.recurrence.concert, (v) => R.options.recurring[v as keyof typeof R.options.recurring] ?? v],
+  screens: [R.hints.screens, (v) => R.options.screens[v as keyof typeof R.options.screens] ?? v],
+  dynamics: [R.hints.dynamics, (v) => R.options.dynamics[v as keyof typeof R.options.dynamics] ?? v],
+  scale: [R.hints.scale, (v) => R.options.scale[v as keyof typeof R.options.scale] ?? v],
+  debt: [R.killsTitle, () => M.debt],
+};
+const label = (sg: Suggestion): [string, string] =>
+  sg.kind === 'qual' ? [(QUAL_LABEL[sg.key]?.[0] ?? sg.key).replace(/^¿|\?$/g, ''), QUAL_LABEL[sg.key]?.[1](sg.value) ?? sg.value]
+  : sg.kind === 'contact' ? [F.contact[sg.key], sg.value]
+  : [M.person, [sg.name, sg.role].filter(Boolean).join(' · ')];
+const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+const open = r?.suggestions.filter((x) => x.status === 'open') ?? [];
+const accepted = r?.suggestions.filter((x) => x.status === 'accepted').length ?? 0;
+const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length ?? 0;
+---
+<section id="ai" class="co-card grid gap-4" data-testid="ai-research">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h2 class="co-entity flex items-center gap-2"><Icon name="sparkles" size={18} />{M.title}{r && <span class="co-tag">{M.unverified}</span>}</h2>
+    {r && <span class="co-meta">{M.at(fmt.relative(r.at))}</span>}
+  </div>
+
+  {!r && <p class="co-body">{M.intro}</p>}
+
+  {r && (
+    <>
+      {r.summary && <p class="co-body" data-testid="ai-summary">{r.summary}</p>}
+      {r.look.length > 0 && (
+        <div class="grid gap-1">
+          <p class="text-eyebrow">{M.look}</p>
+          <ul class="m-0 grid gap-1 pl-5 text-sm">{r.look.map((x) => <li>{x}</li>)}</ul>
+        </div>
+      )}
+      {open.length > 0 ? (
+        <div class="grid gap-2">
+          <p class="text-eyebrow">{M.proposals(open.length)}</p>
+          <ul class="m-0 grid gap-2 p-0">
+            {open.map((sg) => { const [k, v] = label(sg); return (
+              <li class="co-inset grid list-none gap-1 !p-3" data-testid="ai-suggestion" data-kind={sg.kind} data-key={sg.kind === 'person' ? 'person' : sg.key}>
+                <span class="co-row-title">{k}: <strong>{v}</strong></span>
+                <span class="co-meta">«{sg.evidence}» · <a class="inline-flex items-center gap-1" href={sg.source} target="_blank" rel="noopener nofollow">{M.source}: {host(sg.source)}<Icon name="external-link" size={12} /></a></span>
+                {canEdit && (
+                  <span class="mt-1 flex flex-wrap gap-2">
+                    <form method="post" action="#ai"><input type="hidden" name="action" value="ai-accept" /><input type="hidden" name="sid" value={sg.id} />
+                      <button class="co-btn co-btn--primary co-btn--sm" type="submit" data-testid="ai-accept"><Icon name="check" size={14} />{M.accept}</button></form>
+                    <form method="post" action="#ai"><input type="hidden" name="action" value="ai-dismiss" /><input type="hidden" name="sid" value={sg.id} />
+                      <button class="co-btn co-btn--quiet co-btn--sm" type="submit" data-testid="ai-dismiss"><Icon name="x" size={14} />{M.dismiss}</button></form>
+                  </span>
+                )}
+              </li>
+            ); })}
+          </ul>
+        </div>
+      ) : r.suggestions.length === 0 && <p class="co-meta">{M.none}</p>}
+      {(accepted > 0 || dismissed > 0) && <p class="co-meta" data-testid="ai-decided">{M.decided(accepted, dismissed)}</p>}
+      {r.sources.length > 0 && (
+        <details><summary class="co-meta cursor-pointer">{M.sources(r.sources.length)}</summary>
+          <ul class="m-0 mt-2 grid gap-1 pl-5 text-sm">{r.sources.map((x) => <li><a href={x.url} target="_blank" rel="noopener nofollow">{x.title || host(x.url)}</a></li>)}</ul>
+        </details>
+      )}
+    </>
+  )}
+
+  {canEdit && (hasAi ? (
+    <form method="post" action="#ai" data-ai-run>
+      <input type="hidden" name="action" value="ai-run" />
+      <button class:list={['co-btn co-btn--sm w-fit', r ? 'co-btn--ghost' : 'co-btn--primary']} type="submit" data-testid="ai-run" data-busy-label={M.running}>
+        <Icon name="sparkles" size={14} /><span>{r ? M.rerun : M.run}</span>
+      </button>
+    </form>
+  ) : !r && <p class="co-help">{M.noKey}</p>)}
+</section>
+
+<script>
+  // Investigar tarda: el botón lo dice y no se puede pulsar dos veces.
+  document.querySelectorAll<HTMLFormElement>('form[data-ai-run]').forEach((f) => f.addEventListener('submit', () => {
+    const b = f.querySelector<HTMLButtonElement>('button');
+    if (!b) return;
+    b.disabled = true;
+    const s = b.querySelector('span');
+    if (s) s.textContent = b.dataset.busyLabel ?? '';
+  }));
+</script>

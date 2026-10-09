@@ -9,6 +9,8 @@ import type { PlaybookDb } from '../playbook/db';
 import type { TenantContext } from '../types';
 import type { AccountsDb } from './db';
 import type { CrmDb } from '../crm/db';
+import { createCrmService } from '../crm/service';
+import { fixtureResearch } from '../crm/research';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const U = {
@@ -401,6 +403,29 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect((await rep.crm.cooling([mia.accountId!])).get(mia.accountId!)).toBeGreaterThanOrEqual(3);
       await rep.crm.logActivity(mia.accountId!, { contactId: mia.id, channel: 'whatsapp', outcome: 'no_reply' });
       expect((await rep.crm.cooling([mia.accountId!])).size).toBe(0);
+    });
+
+    test('CRM investigación con IA: propuestas con fuente; aceptar rellena huecos sin reservar; la de otro no', async () => {
+      const admin = await ctx(U.admin);
+      const repCtx = await ctx(U.rep);
+      const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, { places: null, routes: null, research: fixtureResearch() });
+      const libre = await admin.accounts.create({ name: 'Sala IA' });
+      const r = await rep.aiRun(libre, { sector: null, seller: 'Enjoy' });
+      expect(r.suggestions.map((x) => (x.kind === 'person' ? 'person' : x.key))).toEqual(['nights', 'screens', 'email', 'person']);
+      const sid = (k: string) => r.suggestions.find((x) => (x.kind === 'person' ? 'person' : x.key) === k)!.id;
+      await rep.aiDecide(libre, sid('email'), true);
+      await rep.aiDecide(libre, sid('nights'), true);
+      await rep.aiDecide(libre, sid('screens'), false);
+      const a = (await repCtx.accounts.get(libre)).account;
+      expect(a).toMatchObject({ email: 'hola@ejemplo.test', ownerId: null });
+      expect(a.qualification).toEqual({ nights: '3' });
+      expect(a.aiResearchAt).toBeTruthy();
+      expect((await rep.aiResearch(libre))?.suggestions.map((x) => x.status)).toEqual(['accepted', 'dismissed', 'accepted', 'open']);
+      await rejects(rep.aiRun(libre, { sector: null, seller: 'Enjoy' }), 409);
+
+      const ajena = await admin.accounts.create({ name: 'Sala IA Ajena' });
+      await admin.accounts.assign(ajena, E.rep2.id);
+      await rejects(rep.aiRun(ajena, { sector: null, seller: 'Enjoy' }), 403);
     });
   });
 }

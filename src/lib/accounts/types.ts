@@ -47,6 +47,8 @@ export interface Account {
   qualification: Qualification;
   /** Google Places: horario y ubicación (para la ruta del día). */
   placeId: string | null; hours: string[] | null; lat: number | null; lng: number | null; placeStatus: string | null; placeAt: string | null;
+  /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
+  aiResearchAt: string | null;
 }
 export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'linkedin', 'website', 'mapsUrl'] as const;
 export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;

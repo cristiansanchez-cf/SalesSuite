@@ -14,7 +14,7 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
-const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at';
+const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, ai_research_at';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
@@ -24,6 +24,7 @@ const toAccount = (r: Row): Account => ({
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: r.qualification ?? {},
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
+  aiResearchAt: r.ai_research_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 const contactRow = (c: AccountInsert['contact']) => Object.fromEntries(Object.entries(CONTACT_COLS).filter(([k]) => c?.[k as keyof typeof CONTACT_COLS] !== undefined).map(([k, col]) => [col, c![k as keyof typeof CONTACT_COLS]]));
@@ -150,6 +151,11 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
     },
     async qualify(id, q) { check(await sb.rpc('account_qualify', { p_account: id, p_qualification: q })); },
     async research(id, d) { check(await sb.rpc('account_research', { p_account: id, p_data: d })); },
+    async saveAiResearch(id, d, fill) { check(await sb.rpc('account_ai_research', { p_account: id, p_data: d, p_fill: fill ?? null })); },
+    async getAiResearch(id) {
+      const r = check(await sb.from('account').select('ai_research').eq('id', id).maybeSingle()) as Row | null;
+      return r?.ai_research ?? null;
+    },
     async getPriorityWeights(t) {
       const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;
       return r?.priority_weights ?? null;

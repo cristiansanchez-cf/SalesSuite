@@ -352,6 +352,6 @@ export const emptyAccountsDb: AccountsDb = {
   async updateAccount() { return false; }, async deleteAccount() { return false; }, async touch() { return 'eligible'; }, async listTouches() { return []; },
   async preview() { return 'eligible'; }, async decide() { return false; },
   async listFields() { return []; }, async saveField() { throw new Error('sin cuentas'); }, async archiveField() { return false; }, async deleteField() { return false; },
-  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async getPriorityWeights() { return null; }, async savePriorityWeights() {},
+  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async saveAiResearch() { throw new Error('sin cuentas'); }, async getAiResearch() { return null; }, async getPriorityWeights() { return null; }, async savePriorityWeights() {},
 };
 export type { ZoneAssignment };

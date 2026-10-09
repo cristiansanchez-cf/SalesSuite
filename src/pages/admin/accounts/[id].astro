@@ -22,6 +22,8 @@ import { shellMessages } from '~/lib/i18n/messages/shell';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import ContactLinks from '~/components/crm/ContactLinks.astro';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
+import AiResearchCard from '~/components/crm/AiResearchCard.astro';
+import { researchMessages } from '~/lib/i18n/messages/research';
 import { priorityOf } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
@@ -56,6 +58,15 @@ if (Astro.request.method === 'POST') {
       }
       case 'google-search': googleBox.r = await admin.crm.googleCandidates(id); to = ''; break;
       case 'google-apply': await admin.crm.googleApply(id, str('placeId')); to += '?ok=google'; break;
+      case 'ai-run': {
+        const [segs, seller, cur] = await Promise.all([admin.playbook.market(), admin.playbook.sellerLine(), acc.get(id)]);
+        const sg = segs.find((x) => x.id === cur.account.segmentId);
+        await admin.crm.aiRun(id, { seller, sector: sg ? { name: sg.name, icp: sg.icp, personas: (sg.personas ?? []).map((p) => p.name) } : null });
+        to += '?ok=ai#ai';
+        break;
+      }
+      case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
+      case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
       case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
@@ -98,7 +109,7 @@ const sug = tl.suggestion;
 const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
 const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
 // Prioridad (docs/CRM_DINAMICO.md §11): la puntuación de esta empresa y si se está enfriando.
-const [weights, coolingMap] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id])]);
+const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
 const googleResults = googleBox.r;
 const prio = priorityOf(a.qualification, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
 const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
@@ -113,7 +124,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  qualified: priorityMessages[locale].ok, google: priorityMessages[locale].google.applied,
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: priorityMessages[locale].google.applied,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -147,6 +158,8 @@ const STATE_ALERT = {
         <Icon name={STATE_ALERT.kind === 'rejection' ? 'triangle-alert' : STATE_ALERT.kind === 'success' ? 'circle-check' : 'info'} size={18} />
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
+
+      {a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
 
       {a.state !== 'customer' && <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />}
 

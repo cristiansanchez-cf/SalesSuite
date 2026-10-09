@@ -332,3 +332,27 @@ Criterio cerrado con Cristian (9-oct-2026). Lógica en `src/lib/crm/priority.ts`
 - Las que no tienen ubicación salen aparte con «Buscar en Google» (ficha → Google Places, §11). Las que Google da por
   cerradas, avisadas y fuera de la ruta.
 - Sin migración: usa `lat`, `lng` y `hours` de §11. Pruebas `route.test.ts` y `scripts/smoke-route.cjs`.
+
+## 13. Investigación con IA (hecho)
+
+Pedido de Cristian: «que cuando llegues ya haya un poco de info», pero sin fiarse a ciegas. Un primer repaso en la web
+que **propone**; el comercial decide.
+
+- **Dónde**: en la ficha de la empresa, «Investigar con IA» (tarjeta encima de Cualificación). Tarda hasta un minuto.
+- **Qué hace** (`src/lib/crm/research.ts`): Claude (`claude-opus-5-5`, esfuerzo bajo, con respaldo automático si se
+  niega) busca y lee lo público (web, Google, prensa, agendas) con las herramientas de búsqueda y lectura web, y
+  rellena `save_research` (esquema estricto) con: resumen, «para mirar tú» (lo que solo ve un humano: stories,
+  ambiente, quién manda), y propuestas de **cualificación**, **contacto de la empresa** y **personas**. Le pasamos el
+  nombre, la zona, lo que ya sabemos, el sector (con su ICP y actores) y qué vende el equipo (pitch del playbook).
+- **Nada sin fuente**: cada propuesta lleva la frase que la prueba y la URL. `sanitizeResearch` descarta lo que no
+  tiene fuente http(s) o prueba, valores fuera de lo permitido, lo que ya está en la ficha y duplicados. La IA no
+  puede proponer «decide quien te atiende», «sin cobertura» ni «no pueden validar» (solo los sabe el comercial).
+- **Un clic**: Aceptar guarda en la ficha **sin pisar** (cualificación si está sin marcar; contacto si el hueco está
+  vacío; persona nueva enlazada a la empresa, con la fuente en sus notas). Descartar no toca nada. Todo «sin
+  verificar». Investigar no reserva la empresa.
+- **Permisos y coste**: como «Completar con Google» (libre, mía o gerente; se comprueba antes de llamar a la IA). Una
+  vez cada 2 minutos por empresa. Coste aproximado: céntimos por empresa (búsquedas web + tokens).
+- **Configuración**: `ANTHROPIC_API_KEY` en Vercel (sin ella, la tarjeta lo dice y no hay botón). Para las pruebas
+  automáticas, `AI_RESEARCH_FIXTURE=1` usa una respuesta fija sin llamar a nadie.
+- Migración `20261107000000_crm_ai_research.sql` (`account.ai_research`, RPC `account_ai_research`); pruebas
+  `research.test.ts`, contrato de cuentas, `supabase/tests/51_crm_ai_research.test.sql`, `scripts/smoke-ai-research.cjs`.

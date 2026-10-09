@@ -65,6 +65,9 @@ export interface AccountsDb {
   qualify(accountId: string, q: Qualification): Promise<void>;
   /** Completar con Google (RPC account_research): solo rellena huecos. */
   research(accountId: string, data: { placeId: string; phone: string | null; website: string | null; address: string | null; mapsUrl: string | null; hours: string[] | null; lat: number | null; lng: number | null; status: string | null }): Promise<void>;
+  /** Investigación con IA (RPC account_ai_research): la guarda o la borra (null). Mismo permiso que completar con Google. */
+  saveAiResearch(accountId: string, data: object | null, fill?: Partial<Record<'phone' | 'email' | 'instagram' | 'linkedin' | 'website', string>>): Promise<void>;
+  getAiResearch(accountId: string): Promise<unknown>;
   getPriorityWeights(tenantId: string): Promise<Partial<Weights> | null>;
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */

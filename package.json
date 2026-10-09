@@ -24,6 +24,7 @@
     "export:sales": "tsx scripts/export-sales.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
     "@astrojs/node": "^9.5.5",
     "@astrojs/svelte": "^7.2.5",
     "@astrojs/tailwind": "^6.0.2",

@@ -15,6 +15,7 @@ import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, typ
 import { env } from '../env';
 import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
+import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
@@ -84,9 +85,11 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null } = {}) {
   const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : null;
   const routes = opts.routes !== undefined ? opts.routes : env('GOOGLE_MAPS_API_KEY') ? googleRoutes(env('GOOGLE_MAPS_API_KEY')!) : null;
+  const ai = opts.research !== undefined ? opts.research
+    : env('ANTHROPIC_API_KEY') ? claudeResearch(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureResearch() : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -673,6 +676,62 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return { filled, skipped, left: accs.length - batch.length };
   }
 
+  // ---------------------------------------------------------------- investigación con IA (docs/CRM_DINAMICO.md §13)
+
+  /** Entre dos investigaciones de la misma empresa (evita el doble clic y gastar dos veces). */
+  const AI_COOLDOWN_MS = 2 * 60_000;
+  async function aiResearch(accountId: string): Promise<AiResearch | null> {
+    requireUse();
+    return readResearch(await accounts.getAiResearch(accountId).catch(() => null));
+  }
+  /** Investiga con IA y guarda las propuestas (pendientes). `ctx`: el sector y lo que vende el equipo (del playbook). */
+  async function aiRun(accountId: string, ctx: { sector: ResearchInput['sector']; seller: string }) {
+    requireUse();
+    if (!ai) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    // Antes de gastar: solo la libre, la mía o, si soy gerente, cualquiera (lo mismo que comprueba la RPC al guardar).
+    if (a.ownerId && a.ownerId !== s.userId && !perms.manageAccounts) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+    if (a.aiResearchAt && Date.now() - Date.parse(a.aiResearchAt) < AI_COOLDOWN_MS) throw new AdminError(409, 'Se acaba de investigar; espera un par de minutos');
+    const people = (await actorsOf(accountId)).map((c) => c.name);
+    const known = Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined));
+    let raw: unknown;
+    try {
+      raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
+        sector: ctx.sector, seller: ctx.seller, known });
+    } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+    if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
+    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date() });
+    try { await accounts.saveAiResearch(accountId, r); } catch (e) { mapError(e); }
+    return r;
+  }
+  /** Aceptar (se guarda en la ficha) o descartar una propuesta. Aceptar nunca pisa lo que ya hay. */
+  async function aiDecide(accountId: string, suggestionId: string, accept: boolean) {
+    requireUse();
+    const r = await aiResearch(accountId);
+    const sg = r?.suggestions.find((x) => x.id === suggestionId);
+    if (!r || !sg || sg.status !== 'open') throw new AdminError(404, 'Sugerencia no encontrada');
+    let fill: Record<string, string> | undefined;
+    if (accept) {
+      const a = await accounts.getAccount(accountId);
+      if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+      if (sg.kind === 'qual') {
+        const q: Record<string, unknown> = { ...a.qualification };
+        if (q[sg.key] === undefined) {
+          q[sg.key] = sg.value === 'true' ? true : sg.value;
+          try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
+        }
+      } else if (sg.kind === 'contact') {
+        fill = { [sg.key]: sg.value };
+      } else {
+        await quickAdd({ name: sg.name, role: sg.role ?? '', instagram: sg.instagram ?? '', linkedin: sg.linkedin ?? '', accountId,
+          notes: `Propuesta por la IA: ${sg.evidence} (${sg.source})` });
+      }
+    }
+    sg.status = accept ? 'accepted' : 'dismissed';
+    try { await accounts.saveAiResearch(accountId, r, fill); } catch (e) { mapError(e); }
+  }
+
   // ---------------------------------------------------------------- ruta del día (docs/CRM_DINAMICO.md §12)
 
   /** Máximo de paradas por ruta (Google optimiza hasta 25 puntos; un día de visitas no da para más). */
@@ -702,6 +761,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   return {
+    aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     routePlan, googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,

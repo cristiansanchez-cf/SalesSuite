@@ -24,6 +24,7 @@ const toAccount = (r: AccountRow): Account => ({
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: (r.qualification ?? {}) as Account['qualification'],
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
+  aiResearchAt: r.ai_research_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 function applyContact(row: AccountRow, c: AccountInsert['contact']) {
@@ -299,6 +300,18 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
       a.phone ||= d.phone; a.website ||= d.website; a.address ||= d.address; a.maps_url ||= d.mapsUrl;
       Object.assign(a, { place_id: d.placeId, hours: d.hours ?? a.hours ?? null, lat: d.lat ?? a.lat ?? null, lng: d.lng ?? a.lng ?? null, place_status: d.status, place_at: iso() });
+    },
+    async saveAiResearch(id, d, fill) {
+      const a = db().account.find((x) => x.id === id);
+      const role = a ? roleOf(a.tenant_id, actorId) : null;
+      if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
+      if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
+      a.ai_research = d ? JSON.parse(JSON.stringify(d)) : null; a.ai_research_at = d ? iso() : null;
+      if (fill) { a.phone ||= fill.phone ?? null; a.email ||= fill.email?.toLowerCase() ?? null; a.instagram ||= fill.instagram ?? null; a.linkedin ||= fill.linkedin ?? null; a.website ||= fill.website ?? null; }
+    },
+    async getAiResearch(id) {
+      const a = db().account.find((x) => x.id === id);
+      return a && roleOf(a.tenant_id, actorId) && roleOf(a.tenant_id, actorId) !== 'partner' ? JSON.parse(JSON.stringify(a.ai_research ?? null)) : null;
     },
     async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },
     async savePriorityWeights(t, w) {
