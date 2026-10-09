@@ -5,20 +5,23 @@
  * Las cifras y los nombres son de ejemplo: lo dice la etiqueta.
  */
 import ConsoleApp from './ConsoleApp.astro';
+import { APP_TEXT, appLang } from '../app-steps/app-text';
+import { requestLocale } from '~/lib/i18n/request';
 import { centerConsoleSchema, CONSOLE_VIEWS, type CenterConsoleProps } from './schema';
 
-interface Props { props?: unknown; view: string; center?: string; logo?: string | null; class?: string }
-const { props, view, center = 'Tu centro de buceo', logo = null, class: cls } = Astro.props;
+interface Props { props?: unknown; view: string; center?: string; logo?: string | null; class?: string; locale?: string }
+const { props, view, center = 'Tu centro de buceo', logo = null, class: cls, locale } = Astro.props;
+const L = APP_TEXT[appLang(locale ?? requestLocale())];
 const parsed = centerConsoleSchema.safeParse(props ?? {});
 const p: CenterConsoleProps | null = parsed.success ? parsed.data : null;
 const first = (CONSOLE_VIEWS as readonly string[]).includes(view) ? (view as CenterConsoleProps['views'][number]['view']) : 'today';
 const sample = p?.sample ?? centerConsoleSchema.shape.sample.parse({});
-const label = p?.exampleLabel ?? 'Datos de ejemplo';
+const label = p?.exampleLabel ?? L.exampleData;
 ---
 <div class:list={['cm', cls]} data-console-mini>
   <div class="cm__chrome" aria-hidden="true"><i></i><i></i><i></i><span>oquea.app</span></div>
   <div class="cm__viewport" data-viewport>
-    <ConsoleApp first={first} sample={sample} center={center} logo={logo} />
+    <ConsoleApp first={first} sample={sample} center={center} logo={logo} locale={locale} />
   </div>
   {label && <span class="cm__example">{label}</span>}
 </div>

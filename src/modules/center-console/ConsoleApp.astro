@@ -7,16 +7,19 @@
 import { APP_ICONS, MASK_ICON } from '../app-steps/icons';
 import { fakeQr } from '../app-steps/qr';
 import type { CenterConsoleProps } from './schema';
+import { APP_TEXT, appLang } from '../app-steps/app-text';
+import { requestLocale } from '~/lib/i18n/request';
 
-interface Props { first: CenterConsoleProps['views'][number]['view']; sample: CenterConsoleProps['sample']; center: string; logo?: string | null; compact?: boolean }
+interface Props { first: CenterConsoleProps['views'][number]['view']; sample: CenterConsoleProps['sample']; center: string; logo?: string | null; compact?: boolean; locale?: string }
 const { first, sample: s, center, logo = null, compact = false } = Astro.props;
+const L = APP_TEXT[appLang(Astro.props.locale ?? requestLocale())];
 const ic = (n: keyof typeof APP_ICONS, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
 const mask = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MASK_ICON}</svg>`;
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 
 const NAV = [
-  ['today', 'calendar', 'Actividades', '4'], ['cal', 'calendar', 'Calendario', ''], ['crm', 'users', 'CRM', s.divers],
-  ['sites', 'pin', 'Puntos de inmersión', ''], ['centre', 'home', 'Mi centro', ''], ['team', 'user', 'Equipo', ''],
+  ['today', 'calendar', L.activities, '4'], ['cal', 'calendar', L.calendar, ''], ['crm', 'users', L.tabCrm, s.divers],
+  ['sites', 'pin', L.diveSitesNav, ''], ['centre', 'home', L.myCentre, ''], ['team', 'user', L.team, ''],
 ] as const;
 const navFor = (v: string) => (v === 'activity' ? 'today' : v);
 const DIVERS = [
@@ -27,15 +30,15 @@ const DIVERS = [
   <div class:list={['cc-app', compact && 'is-compact']} data-app aria-hidden="true">
     <aside class="cc-side">
       <div class="cc-logo"><span class="cc-iso"></span>oquea</div>
-      <div class="cc-mode"><span class="on">Gestión</span><span>Buceador</span></div>
+      <div class="cc-mode"><span class="on">{L.modeManage}</span><span>{L.modeDiver}</span></div>
       <nav class="cc-nav">
         {NAV.map(([k, i, l, b]) => (
           <span class:list={['cc-nav__item', navFor(first) === k && 'is-on']} data-nav={k}><Fragment set:html={ic(i)} />{l}{b && <em>{b}</em>}</span>
         ))}
       </nav>
       <div class="cc-side__bottom">
-        <span class="cc-ctx">{logo ? <img src={logo} alt="" /> : <b class="cc-av">{initials(center)}</b>}<span><b>{center}</b><small>Centro activo</small></span></span>
-        <span class="cc-ctx"><b class="cc-av">{initials(s.owner)}</b><span><b>{s.owner}</b><small>Propietario</small></span></span>
+        <span class="cc-ctx">{logo ? <img src={logo} alt="" /> : <b class="cc-av">{initials(center)}</b>}<span><b>{center}</b><small>{L.activeCentre}</small></span></span>
+        <span class="cc-ctx"><b class="cc-av">{initials(s.owner)}</b><span><b>{s.owner}</b><small>{L.owner}</small></span></span>
       </div>
     </aside>
 
@@ -43,20 +46,20 @@ const DIVERS = [
       <!-- Actividades de hoy -->
       <section class:list={['cc-view', first === 'today' && 'is-on']} data-view="today">
         <header class="cc-head">
-          <div><h3>Actividades de hoy</h3><p>{center} · 3 salidas programadas</p></div>
-          <span class="cc-btn cc-btn--ghost">Ver QR del centro</span><span class="cc-btn">Crear actividad</span>
+          <div><h3>{L.todayActivities}</h3><p>{center} · {L.tripsScheduled}</p></div>
+          <span class="cc-btn cc-btn--ghost">{L.seeCentreQr}</span><span class="cc-btn">{L.createActivity}</span>
         </header>
         <div class="cc-grid">
-          <div class="cc-card cc-stat"><b>{s.divers}</b><small>Buceadores en tu CRM</small></div>
-          <div class="cc-card cc-stat"><b>{s.dives}</b><small>Inmersiones registradas</small></div>
-          <div class="cc-card cc-stat"><b>5 de 6</b><small>Perfil público completo</small><span class="cc-bar"><i style="width:83%"></i></span></div>
+          <div class="cc-card cc-stat"><b>{s.divers}</b><small>{L.statDivers}</small></div>
+          <div class="cc-card cc-stat"><b>{s.dives}</b><small>{L.statDives}</small></div>
+          <div class="cc-card cc-stat"><b>{L.outOf(5, 6)}</b><small>{L.profileComplete}</small><span class="cc-bar"><i style="width:83%"></i></span></div>
         </div>
         <div class="cc-acts">
-          {[['Salida en barco · Fun dive', '09:00', s.site, '6'], ['Discover Scuba Diving', '11:30', 'Playa del centro', '4'], ['Buceo nocturno · Fun dive', '20:00', 'Shark Point', '3']].map(([n, h, site, cap], i) => (
+          {[[L.boatFunDive, '09:00', s.site, '6'], ['Discover Scuba Diving', '11:30', L.centreBeach, '4'], [L.nightFunDive, '20:00', 'Shark Point', '3']].map(([n, h, site, cap], i) => (
             <div class:list={['cc-card cc-act', i === 0 && 'is-hot']}>
               <span class="cc-act__ico" set:html={mask(22)} />
               <span class="cc-act__txt"><b>{n}</b><small>{h} · {site}</small></span>
-              <span class="cc-chip">{cap} buceadores</span>
+              <span class="cc-chip">{L.diversN(cap!)}</span>
             </div>
           ))}
         </div>
@@ -65,26 +68,26 @@ const DIVERS = [
       <!-- Detalle de actividad: participantes -->
       <section class:list={['cc-view', first === 'activity' && 'is-on']} data-view="activity">
         <header class="cc-head">
-          <div><p class="cc-crumb">Actividades › Salida en barco</p><h3>Salida en barco · 09:00</h3><p>{s.site} · 6 participantes</p></div>
-          <span class="cc-btn cc-btn--ghost">Editar</span><span class="cc-btn">Añadir participante</span>
+          <div><p class="cc-crumb">{L.activities} › {L.boatTrip}</p><h3>{L.boatTrip} · 09:00</h3><p>{s.site} · {L.participantsN(6)}</p></div>
+          <span class="cc-btn cc-btn--ghost">{L.edit}</span><span class="cc-btn">{L.addParticipant}</span>
         </header>
         <div class="cc-split">
           <div>
-            <p class="cc-sec">Participantes</p>
+            <p class="cc-sec">{L.participants}</p>
             <div class="cc-list">
               {DIVERS.map(([n, l, d, how, h]) => (
                 <div class="cc-card cc-row">
                   <b class="cc-pic">{initials(n)}</b>
-                  <span><b>{n}</b><small>{l} · {d} inmersiones</small></span>
-                  <span class="cc-row__meta"><span class:list={['cc-chip', how === 'hand' && 'cc-chip--grey']}>{how === 'qr' ? 'Escaneó el QR' : 'Añadido a mano'}</span><small>{how === 'qr' ? `${s.site} · ${h}` : 'Sin cuenta todavía'}</small></span>
+                  <span><b>{n}</b><small>{l} · {L.divesN(d)}</small></span>
+                  <span class="cc-row__meta"><span class:list={['cc-chip', how === 'hand' && 'cc-chip--grey']}>{how === 'qr' ? L.scannedQr : L.addedByHand}</span><small>{how === 'qr' ? `${s.site} · ${h}` : L.noAccount}</small></span>
                 </div>
               ))}
             </div>
           </div>
           <aside class="cc-card cc-aside">
-            <p class="cc-sec">Hoy</p>
-            <div class="cc-kv"><span>Escanearon el QR</span><b>5</b></div>
-            <div class="cc-kv"><span>Añadidos a mano</span><b>1</b></div>
+            <p class="cc-sec">{L.today}</p>
+            <div class="cc-kv"><span>{L.scannedQrPl}</span><b>5</b></div>
+            <div class="cc-kv"><span>{L.addedByHandPl}</span><b>1</b></div>
           </aside>
         </div>
       </section>
@@ -92,16 +95,16 @@ const DIVERS = [
       <!-- CRM -->
       <section class:list={['cc-view', first === 'crm' && 'is-on']} data-view="crm">
         <header class="cc-head">
-          <div><h3>CRM</h3><p>{s.divers} buceadores han pasado por {center}</p></div>
-          <span class="cc-search"><Fragment set:html={ic('search', 16)} />Buscar buceador</span>
+          <div><h3>{L.tabCrm}</h3><p>{L.diversVisited(s.divers, center)}</p></div>
+          <span class="cc-search"><Fragment set:html={ic('search', 16)} />{L.searchDiver}</span>
         </header>
         <div class="cc-split">
           <div class="cc-list">
             {DIVERS.map(([n, l, d, how], i) => (
               <div class:list={['cc-card cc-row', i === 0 && 'is-sel']}>
                 <b class="cc-pic">{initials(n)}</b>
-                <span><b>{n}</b><small>{l} · {d} inmersiones</small></span>
-                <span class="cc-row__meta"><span class:list={['cc-chip', how === 'hand' && 'cc-chip--grey']}>{how === 'qr' ? 'Escaneó el QR' : 'Añadido a mano'}</span></span>
+                <span><b>{n}</b><small>{l} · {L.divesN(d)}</small></span>
+                <span class="cc-row__meta"><span class:list={['cc-chip', how === 'hand' && 'cc-chip--grey']}>{how === 'qr' ? L.scannedQr : L.addedByHand}</span></span>
               </div>
             ))}
           </div>
@@ -109,9 +112,9 @@ const DIVERS = [
             <b class="cc-pic cc-pic--lg">LM</b>
             <b class="cc-profile__name">Laura Méndez</b>
             <span class="cc-chip"><Fragment set:html={ic('shield', 12)} />Advanced Open Water</span>
-            <div class="cc-kv"><span>Inmersiones aquí</span><b>8</b></div>
-            <div class="cc-kv"><span>Primera</span><b>10 jun 2023</b></div>
-            <div class="cc-kv"><span>Última</span><b>26 feb 2026</b></div>
+            <div class="cc-kv"><span>{L.divesHere}</span><b>8</b></div>
+            <div class="cc-kv"><span>{L.first}</span><b>{L.firstDate}</b></div>
+            <div class="cc-kv"><span>{L.last}</span><b>{L.lastDate}</b></div>
           </aside>
         </div>
       </section>
@@ -119,21 +122,21 @@ const DIVERS = [
       <!-- Mi centro -->
       <section class:list={['cc-view', first === 'centre' && 'is-on']} data-view="centre">
         <header class="cc-head">
-          <div><h3>{center}</h3><p>Mi centro · perfil público</p></div>
-          <span class="cc-btn cc-btn--ghost">Cómo te ven los buceadores</span><span class="cc-btn">Editar datos</span>
+          <div><h3>{center}</h3><p>{L.myCentrePublic}</p></div>
+          <span class="cc-btn cc-btn--ghost">{L.howDiversSeeYou}</span><span class="cc-btn">{L.editDetails}</span>
         </header>
         <div class="cc-split">
           <div class="cc-grid cc-grid--2">
-            <div class="cc-card cc-qrcard"><span class="cc-qr" set:html={fakeQr(center)} /><span><b>Tu QR único</b><small>Para el barco, el mostrador o la entrada.</small><span class="cc-mini"><span class="cc-btn cc-btn--sm">Descargar</span><span class="cc-btn cc-btn--sm cc-btn--ghost">Compartir enlace</span></span></span></div>
-            <div class="cc-card cc-stat"><b>5 de 6</b><small>Perfil público completo</small><span class="cc-bar"><i style="width:83%"></i></span></div>
-            <div class="cc-card cc-tile"><Fragment set:html={ic('pin')} /><span><b>Dive sites</b><small>{s.site}, Shark Point y 4 más</small></span></div>
-            <div class="cc-card cc-tile"><Fragment set:html={ic('users')} /><span><b>Equipo</b><small>3 instructores · 2 divemasters</small></span></div>
-            <div class="cc-card cc-tile"><Fragment set:html={ic('globe')} /><span><b>Idiomas</b><small>Español · English · Português</small></span></div>
-            <div class="cc-card cc-tile"><Fragment set:html={ic('ruler')} /><span><b>Unidades</b><small>Metros · bar · °C</small></span></div>
+            <div class="cc-card cc-qrcard"><span class="cc-qr" set:html={fakeQr(center)} /><span><b>{L.uniqueQr}</b><small>{L.qrWhere}</small><span class="cc-mini"><span class="cc-btn cc-btn--sm">{L.download}</span><span class="cc-btn cc-btn--sm cc-btn--ghost">{L.shareLink}</span></span></span></div>
+            <div class="cc-card cc-stat"><b>{L.outOf(5, 6)}</b><small>{L.profileComplete}</small><span class="cc-bar"><i style="width:83%"></i></span></div>
+            <div class="cc-card cc-tile"><Fragment set:html={ic('pin')} /><span><b>{L.diveSites}</b><small>{L.sitesMore(s.site)}</small></span></div>
+            <div class="cc-card cc-tile"><Fragment set:html={ic('users')} /><span><b>{L.team}</b><small>{L.staff}</small></span></div>
+            <div class="cc-card cc-tile"><Fragment set:html={ic('globe')} /><span><b>{L.languages}</b><small>Español · English · Português</small></span></div>
+            <div class="cc-card cc-tile"><Fragment set:html={ic('ruler')} /><span><b>{L.units}</b><small>{L.unitList}</small></span></div>
           </div>
           <aside class="cc-card cc-aside">
-            <p class="cc-sec">Cómo te ven los buceadores</p>
-            {['Sobre el centro', 'Idiomas', 'Ubicación', 'Dive sites', 'Vida marina', 'Equipo', 'Contacto'].map((x) => <div class="cc-kv"><span>{x}</span><Fragment set:html={ic('check', 16)} /></div>)}
+            <p class="cc-sec">{L.howDiversSeeYou}</p>
+            {L.profileChecklist.map((x) => <div class="cc-kv"><span>{x}</span><Fragment set:html={ic('check', 16)} /></div>)}
           </aside>
         </div>
       </section>

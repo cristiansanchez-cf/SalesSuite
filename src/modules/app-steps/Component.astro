@@ -72,7 +72,7 @@ const hasScreens = screens.length > 0;
           <Fragment>
             {i >= 1 && <span class="st__arrow" set:html={ic('arrow', 16)} />}
             <div class="st__phone" style={`--k:${i}`}>
-              <Screen screen={sc.screen} src={sc.src} alt={sc.alt} sample={sample} center={center} logo={logo} photo={pic} />
+              <Screen screen={sc.screen} src={sc.src} alt={sc.alt} sample={sample} center={center} logo={logo} photo={pic} locale={ctx.locale} />
             </div>
           </Fragment>
         ))}
