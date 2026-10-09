@@ -105,6 +105,23 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }, base = 
     await o.context().close();
   }
 
+  // ---- Oquea: Aprende por temas de producto (tenant.tour.topics), no por diapositivas; las jugadas, en un solo sitio
+  {
+    const o = await login(b, 'super@cofundo.test', { width: 1280, height: 900 }, OQUEA);
+    await o.goto(`${OQUEA}/admin/learn`);
+    const topics = await o.$$eval('[data-testid=topic]', (els) => els.map((e) => e.getAttribute('data-topic')));
+    assert(JSON.stringify(topics) === JSON.stringify(['tarjetas', 'panel']), `Oquea: «Qué ofrecemos» son los temas, no las diapositivas (${topics})`);
+    await o.goto(`${OQUEA}/admin/learn/t/panel`);
+    assert((await o.locator('[data-testid=topic-ui] [data-console-mini]').count()) === 1, 'tema: primero su UI (la consola)');
+    assert((await o.locator('[data-testid=topic-section]').count()) === 2, 'tema: qué es, por partes');
+    assert((await o.locator('[data-testid=topic-section] [data-console-mini]').count()) === 1, 'tema: cada parte con su pantalla (sin repetir la de arriba)');
+    await o.goto(`${OQUEA}/admin/learn/general?t=panel`);
+    assert((await o.getAttribute('[data-testid=topic-filter] [data-topic=panel]', 'aria-pressed')) === 'true', '«Cómo se vende»: filtrado por el tema');
+    await o.goto(`${OQUEA}/admin/learn/t/no-existe`);
+    assert((await o.title()).includes('404') || (await o.locator('[data-testid=learn-topic]').count()) === 0, 'tema que no existe: 404');
+    await o.context().close();
+  }
+
   // ---- Contenido en coreano (docs/I18N.md §Contenido): Oquea traduce su contenido al coreano. Quien lee en coreano lo
   // ve traducido al vender, con la marca «traducción automática»; en Configurar, el original (allí se edita).
   {
@@ -119,7 +136,9 @@ async function login(b, email, viewport = { width: 1440, height: 1000 }, base = 
     assert(titles[0] === '다이빙 센터가 다이빙을 만듭니다' && titles.length === 5, `coreano: el recorrido, traducido (${titles[0]})`);
     assert(await k.isVisible('[data-testid=auto-translated]'), 'coreano: con la marca de traducción automática');
     await k.goto(`${OQUEA}/admin/learn`);
-    assert((await k.textContent('main')).includes('모든 다이빙에 센터 이름을'), 'coreano: los módulos de Aprende, traducidos');
+    assert((await k.textContent('main')).includes('공유 카드'), 'coreano: los temas de Aprende, traducidos');
+    await k.goto(`${OQUEA}/admin/learn/t/tarjetas`);
+    assert((await k.textContent('main')).includes('모든 다이빙에 센터 이름을'), 'coreano: sus módulos, traducidos');
     await k.goto(`${OQUEA}/admin/catalog`);
     const cat = await k.textContent('main');
     assert(cat.includes('Tu nombre en cada inmersión') && !cat.includes('모든 다이빙에 센터 이름을'), 'coreano: en Configurar, el original (se edita el español)');

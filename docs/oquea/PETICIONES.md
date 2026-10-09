@@ -35,6 +35,11 @@
 | `src/modules/app-steps/Screen.astro` (`qr-scan`) | Pantalla nueva: la cámara apunta al QR, lo reconoce y aparece «¿Qué actividad haces hoy?» | Ninguno (plantilla de Oquea) |
 | `messages/learn.ts` | Entradilla del recorrido sin «invitado» (era de Enjoy) | Ninguno |
 | `src/lib/proposal/preset.ts` (`learn`), `learn/sector/[key].astro` (9-oct) | Receta del sector con `learn`: «Cómo funciona en este cliente» contado al comercial, paso a paso con la UI (`app:`/`console:`); manda sobre las diapositivas en «Imagínatelo» | Ninguno: sin `learn`, la ficha sigue igual (Enjoy) |
+| `PlayCard.astro` (9-oct) | Tarjeta de jugada: el texto manda (lo literal, como cita); «Cuándo» y «Por qué funciona» a la vista; la procedencia («Fuente: …») como nota al pie | Bajo: Enjoy también (lo pidió «en todos los tenants») |
+| `playbook/service.ts` (`learnTopicsOf`), `learn/t/[key].astro`, `LearnBody.astro`, `learn/[topic].astro`, `ProductUi.astro` | Aprende por temas de producto (`tenant.tour = { steps, topics }`): primero qué es, con su UI, por partes; después cómo contarlo. «Cómo se vende» reúne todas las jugadas con filtro por tema | Ninguno: sin temas, como siempre (Enjoy) |
+| `supabase/migrations/20261109000000_team_conditions_learn_topics.sql` | **Migración:** `tenant.tour` admite `{ steps, topics }`; progreso `topic:<clave>`; `commission_plan.show_to_team` y `team_note`; `my_conditions` enseña las del equipo a quien no tiene las suyas | Ninguno: Enjoy no marca `show_to_team` |
+| `commissions/*` (`monthsAnchor`), `commissions/team.astro`, `commissions/index.astro`, `start.astro`, `welcome.astro` | Reglas «6 meses desde la primera transacción»; condiciones en «Mis comisiones»; «las del equipo» cuando no hay acordadas | Ninguno |
+| `Builder.svelte`, `admin/service.ts` (`setSegment`) | Sin el panel de logo/fotos/vídeo/música si el espacio no tiene pantalla en vivo ni móvil del invitado; al elegir sector con la propuesta vacía, se monta sola | Bajo: Enjoy igual (tiene esos módulos); el montaje automático solo con la propuesta vacía |
 
 ## Pendiente (no lo he tocado)
 1. **La fuente de texto del espacio no llega al cuerpo de la propuesta.** `html` resuelve `font-family: var(--font-sans)`

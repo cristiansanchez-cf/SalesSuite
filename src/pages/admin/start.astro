@@ -24,7 +24,7 @@ const [catalog, learn, segments, plays, terms, dossiers] = await Promise.all([
   admin.playbook.learnIndex().catch(() => null),
   admin.playbook.market().catch(() => []),
   admin.playbook.listAllVisible().catch(() => []),
-  admin.commissions.myConditions().catch(() => ({ visible: false, note: null, agreedAt: null, plan: null })),
+  admin.commissions.myConditions().catch(() => ({ visible: false, team: false, note: null, agreedAt: null, plan: null })),
   admin.service.listDossiers().catch(() => []),
 ]);
 const history = terms.visible ? await admin.commissions.myConditionsHistory().catch(() => []) : [];
@@ -156,6 +156,7 @@ const next = steps.find((s) => !s.done)?.key;
             )}
             {terms.plan?.referral && <p class="co-meta">{m.terms.referral(String(terms.plan.referral.bps / 100), terms.plan.referral.months)}</p>}
             {terms.agreedAt && <p class="co-meta">{m.terms.agreed(day(terms.agreedAt))}</p>}
+            {terms.team && <p class="co-meta" data-testid="terms-team">{m.terms.team}</p>}
             {history.length > 1 && (
               <details data-testid="terms-history">
                 <summary class="co-meta cursor-pointer underline">{m.terms.history}</summary>

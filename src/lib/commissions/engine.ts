@@ -62,7 +62,8 @@ export function matches(r: Rule, e: RevenueEvent, seller: string, ctx: EngineCon
   const acc = accountOf(e, ctx);
   if (w.zoneIds?.length && !(acc?.zoneId && w.zoneIds.some((z) => covers(ctx.zones, z, acc.zoneId!)))) return false;
   if (w.monthsFrom != null || w.monthsTo != null) {
-    const months = acc?.wonAt ? monthsBetween(acc.wonAt, e.occurredAt) : 0;
+    const from = w.monthsAnchor === 'first' ? acc?.firstAt : acc?.wonAt;
+    const months = from ? monthsBetween(from, e.occurredAt) : 0;
     if (w.monthsFrom != null && months < w.monthsFrom) return false;
     if (w.monthsTo != null && months >= w.monthsTo) return false;
   }

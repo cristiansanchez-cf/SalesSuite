@@ -37,7 +37,7 @@ if (Astro.request.method === 'POST') {
 let view;
 let fit: Awaited<ReturnType<typeof pb.moduleFit>> = [];
 try {
-  view = await pb.topic(topicId);
+  view = await pb.topic(topicId, { filter: Astro.url.searchParams.get('t') });
   if (!isGeneralTopic) fit = await pb.moduleFit(topicId);
 } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
@@ -107,6 +107,13 @@ const firstTab = view.sections[0]?.kind ?? 'team';
           ))}
         </div>
       </section>
+    )}
+
+    {view.filter && (
+      <nav class="flex flex-wrap gap-2" aria-label={lm.steps.offer} data-testid="topic-filter">
+        <a href="/admin/learn/general" class="co-chip" aria-pressed={view.filter.active ? 'false' : 'true'}>{lm.piece.all}</a>
+        {view.filter.topics.map((t) => <a href={`/admin/learn/general?t=${t.key}`} class="co-chip" aria-pressed={view.filter!.active === t.key ? 'true' : 'false'} data-topic={t.key}>{t.name}</a>)}
+      </nav>
     )}
 
     <section class="grid gap-6" data-tabs>

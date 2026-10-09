@@ -36,16 +36,54 @@ export function firstImage(v: unknown): string | null {
   return null;
 }
 
-/** tenant.tour validado (lo escribe el alta del espacio; se lee con cuidado igualmente). */
+/**
+ * tenant.tour validado (lo escribe el alta del espacio; se lee con cuidado igualmente). Admite la forma de siempre (la
+ * lista de pasos) y { steps, topics } (con los temas de Aprende: learnTopicsOf).
+ */
 export function tourOf(raw: unknown): TourStep[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.slice(0, 8).flatMap((x) => {
+  const list = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as { steps?: unknown }).steps : raw;
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 8).flatMap((x) => {
     if (!x || typeof x !== 'object') return [];
     const o = x as Record<string, unknown>;
     if (typeof o.title !== 'string' || !o.title.trim()) return [];
     const image = typeof o.image === 'string' && /^(https:\/\/|\/)[^\s"'()]+$/.test(o.image) ? o.image : null;
     const ui = typeof o.ui === 'string' && TOUR_UI.test(o.ui) ? o.ui : null;
     return [{ title: o.title.slice(0, 80), body: typeof o.body === 'string' ? o.body.slice(0, 240) : null, image, ui }];
+  });
+}
+
+/**
+ * Un tema de Aprende (tenant.tour.topics): una pieza del producto contada al comercial, no una diapositiva. Primero qué
+ * es (secciones con su UI), después cómo contarlo (las jugadas de presentar y los guiones de sus módulos). Sin temas,
+ * Aprende enseña los módulos del catálogo, como siempre.
+ */
+export interface LearnTopic {
+  key: string; name: string; summary: string | null; image: string | null; ui: string | null;
+  /** Claves de los módulos del catálogo de los que salen sus jugadas y sus sectores. */
+  modules: string[];
+  sections: Array<{ title: string; body: string; ui: string | null }>;
+}
+export function learnTopicsOf(raw: unknown): LearnTopic[] {
+  const list = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as { topics?: unknown }).topics : null;
+  if (!Array.isArray(list)) return [];
+  const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.slice(0, max) : null);
+  return list.slice(0, 16).flatMap((x) => {
+    if (!x || typeof x !== 'object') return [];
+    const o = x as Record<string, unknown>;
+    const key = typeof o.key === 'string' && /^[a-z0-9][a-z0-9-]{0,62}$/.test(o.key) ? o.key : null;
+    const name = str(o.name, 80);
+    if (!key || !name) return [];
+    const ui = typeof o.ui === 'string' && TOUR_UI.test(o.ui) ? o.ui : null;
+    const image = typeof o.image === 'string' && /^(https:\/\/|\/)[^\s"'()]+$/.test(o.image) ? o.image : null;
+    const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 10).flatMap((y) => {
+      if (!y || typeof y !== 'object') return [];
+      const q = y as Record<string, unknown>;
+      const title = str(q.title, 80); const body = str(q.body, 2000);
+      return title && body ? [{ title, body, ui: typeof q.ui === 'string' && TOUR_UI.test(q.ui) ? q.ui : null }] : [];
+    });
+    const modules = (Array.isArray(o.modules) ? o.modules : []).filter((m): m is string => typeof m === 'string').slice(0, 10);
+    return [{ key, name, summary: str(o.summary, 300), image, ui, modules, sections }];
   });
 }
 
@@ -65,6 +103,8 @@ export interface UiKit {
 export interface LearnIndex {
   /** «Lo que vendes, en 1 minuto» (tenant.tour). Vacío = la empresa aún no lo ha preparado. */
   tour: { steps: TourStep[]; learned: boolean };
+  /** Temas de producto (tenant.tour.topics). Si los hay, sustituyen a los módulos en «Qué ofrecemos». */
+  topics: Array<LearnTopic & { learned: boolean; playCount: number }>;
   /** Paso 0: por qué existimos (visión, estrategia, modelo). */
   about: { playCount: number; learned: boolean };
   general: { playCount: number; learned: boolean };
@@ -81,6 +121,8 @@ export interface LearnIndex {
 
 export interface TopicView {
   topic: string;
+  /** «Cómo se vende» con temas: el tema por el que se filtra (las jugadas de todos los módulos). */
+  filter?: { topics: LearnTopic[]; active: string | null };
   name: string;
   module: TopicModule | null;
   sections: Array<{ kind: PlayKind; label: string; plays: PlayView[] }>;
@@ -176,6 +218,11 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       };
     });
     const tour = { steps: tourOf(tenant?.tour), learned: mine.has('tour') };
+    const keyOf = new Map([...latest.values()].map((v) => [v.moduleKey, v.moduleId]));
+    const topics = learnTopicsOf(tenant?.tour).map((t) => {
+      const ids = new Set(t.modules.map((k) => keyOf.get(k)).filter(Boolean));
+      return { ...t, learned: mine.has(`topic:${t.key}`), playCount: off.filter((p) => p.moduleId && ids.has(p.moduleId)).length };
+    });
     const aboutCount = off.filter((p) => p.about).length;
     const sectorKeys = segs.segments.filter((x) => x.status !== 'archived').map((x) => x.key);
     const sectorsLearned = sectorKeys.filter((k) => mine.has(`sector:${k}`));
@@ -186,6 +233,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const kit: UiKit = { phone, screen: propsOf('live-screen'), photo: (phone?.photos as string[] | undefined)?.[0] ?? null, app, apps, console: propsOf('center-console') };
     return {
       tour,
+      topics,
       kit,
       about: { playCount: aboutCount, learned: mine.has('empresa') },
       general: { playCount: off.filter((p) => p.moduleId === null && !p.about).length, learned: mine.has('general') },
@@ -193,22 +241,31 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
       sectorsLearned,
       // Lo que cuenta: el recorrido (si existe), cada sector, cómo se vende (general) y cada módulo.
       progress: {
-        done: (aboutCount && mine.has('empresa') ? 1 : 0) + (tour.steps.length && tour.learned ? 1 : 0) + sectorsLearned.length + (mine.has('general') ? 1 : 0) + modules.filter((m) => m.learned).length,
-        total: (aboutCount ? 1 : 0) + (tour.steps.length ? 1 : 0) + sectorKeys.length + 1 + modules.length,
+        // Con temas, se aprenden los temas (los módulos son las diapositivas de la propuesta).
+        done: (aboutCount && mine.has('empresa') ? 1 : 0) + (tour.steps.length && tour.learned ? 1 : 0) + sectorsLearned.length + (mine.has('general') ? 1 : 0) + (topics.length ? topics.filter((t) => t.learned).length : modules.filter((m) => m.learned).length),
+        total: (aboutCount ? 1 : 0) + (tour.steps.length ? 1 : 0) + sectorKeys.length + 1 + (topics.length ? topics.length : modules.length),
       },
       news,
       newTips: contributions.filter((c) => visibleTip(c) && (!seenAt || c.createdAt > seenAt) && c.authorId !== s.userId).length,
     };
   }
 
-  async function topic(topicId: string): Promise<TopicView> {
-    const { plays, contributions, latest } = await load();
+  async function topic(topicId: string, opts: { filter?: string | null } = {}): Promise<TopicView> {
+    const [{ plays, contributions, latest }, tenant] = await Promise.all([load(), adb.getTenant(s.tenantId)]);
     const isAbout = topicId === 'empresa';
     const isGeneral = topicId === 'general' || isAbout;
     const module = isGeneral ? null : topicModule(latest, topicId);
     if (!isGeneral && !module) throw new AdminError(404, 'Módulo no encontrado en el catálogo');
     const moduleId = isGeneral ? null : topicId;
-    const mine = plays.filter((p) => official(p) && p.moduleId === moduleId && !!p.about === isAbout);
+    // Con temas, «Cómo se vende» es el único sitio de las jugadas: las generales y las de cada pieza, con filtro por tema.
+    const learnTopics = topicId === 'general' ? learnTopicsOf(tenant?.tour) : [];
+    const active = learnTopics.find((t) => t.key === opts.filter) ?? null;
+    const keyOf = new Map([...latest.values()].map((v) => [v.moduleKey, v.moduleId]));
+    const activeIds = active ? new Set(active.modules.map((k) => keyOf.get(k)).filter(Boolean)) : null;
+    const inScope = (p: PlayView) => (learnTopics.length
+      ? !p.about && (activeIds ? !!p.moduleId && activeIds.has(p.moduleId) : true)
+      : p.moduleId === moduleId && !!p.about === isAbout);
+    const mine = plays.filter((p) => official(p) && inScope(p));
     const playIds = new Set(mine.map((p) => p.id));
     const sections = KIND_ORDER
       .map((k) => ({ kind: k, label: KIND_LABEL[k], plays: mine.filter((p) => p.kind === k).sort((a, b) => a.position - b.position) }))
@@ -217,6 +274,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     const progress = await pdb.listProgress(s.tenantId);
     return {
       topic: topicId,
+      ...(learnTopics.length ? { filter: { topics: learnTopics, active: active?.key ?? null } } : {}),
       name: module?.name ?? (isAbout ? 'Por qué existimos' : 'Cómo se vende'),
       module,
       sections,
@@ -226,8 +284,25 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     };
   }
 
+  /** Un tema de Aprende: qué es (sus secciones) y cómo contarlo (presentar y guiones de sus módulos). */
+  async function learnTopic(key: string) {
+    const [{ plays, latest }, tenant, progress] = await Promise.all([load(), adb.getTenant(s.tenantId), pdb.listProgress(s.tenantId)]);
+    const t = learnTopicsOf(tenant?.tour).find((x) => x.key === key);
+    if (!t) throw new AdminError(404, 'Tema no encontrado');
+    const mods = t.modules.map((k) => [...latest.values()].find((v) => v.moduleKey === k)).filter((v): v is CatalogVersion => !!v);
+    const ids = new Set(mods.map((v) => v.moduleId));
+    const tell = plays.filter((p) => official(p) && p.moduleId && ids.has(p.moduleId) && (p.kind === 'pitch' || p.kind === 'script')).sort((a, b) => a.position - b.position);
+    const more = plays.filter((p) => official(p) && p.moduleId && ids.has(p.moduleId) && p.kind !== 'pitch' && p.kind !== 'script').length;
+    return {
+      topic: t, tell, more, modules: mods.map((v) => ({ moduleId: v.moduleId, name: v.moduleName })),
+      learned: progress.some((p) => p.userId === s.userId && p.topic === `topic:${key}`),
+    };
+  }
+
   async function markLearned(topicId: string, done: boolean) {
-    if (topicId.startsWith('sector:')) {
+    if (topicId.startsWith('topic:')) {
+      if (!learnTopicsOf((await adb.getTenant(s.tenantId))?.tour).some((t) => `topic:${t.key}` === topicId)) throw new AdminError(404, 'Tema no encontrado');
+    } else if (topicId.startsWith('sector:')) {
       const { segments } = await loadMarket();
       if (!segments.some((x) => `sector:${x.key}` === topicId)) throw new AdminError(404, 'Sector no encontrado');
     } else if (topicId !== 'general' && topicId !== 'tour' && topicId !== 'empresa') {
@@ -636,7 +711,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
   }
 
   return {
-    isAdmin, isPartner, learnIndex, topic, modulePreview, pendingCount, markLearned, markSeen,
+    isAdmin, isPartner, learnIndex, topic, learnTopic, modulePreview, pendingCount, markLearned, markSeen,
     market, sellerLine, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
     listAll, listAllVisible, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };

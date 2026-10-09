@@ -91,6 +91,9 @@
     }
   }
   const feat = $derived({ songs: true, photos: true, messages: true, album: true, ...(media.features ?? {}) });
+  // Logo, fotos, vídeo y música del cliente: solo los usan la pantalla en vivo y el móvil del invitado (Enjoy). Un
+  // espacio sin esos módulos (Oquea) no ve este panel.
+  const usesClientMedia = $derived(s.catalog.some((c) => c.blockType === 'live-screen' || c.blockType === 'phone-tour'));
   async function setFeature(k: 'songs' | 'photos' | 'messages' | 'album') {
     const st = await postMedia({ step: 'options', features: { ...feat, [k]: !feat[k] } });
     if (st) { s = st; previewKey++; }
@@ -540,7 +543,7 @@
       </section>
 
       <!-- personalizar: lo que hace que el cliente diga «wow, es mi local» -->
-      {#if editable}
+      {#if editable && usesClientMedia}
         <section class="{card} media-card" data-testid="personalize">
           <div class="flex items-start gap-3">
             <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true">✦</span>

@@ -38,7 +38,7 @@ const es = {
     objection: (label: string) => `Objeción: ${label}`,
   },
   playCard: {
-    audienceTeam: 'Solo equipo interno', audiencePartners: 'Para colaboradores', whenToUse: 'Cuándo usarla', whyItWorks: 'Por qué funciona',
+    audienceTeam: 'Solo equipo interno', audiencePartners: 'Para colaboradores', whenToUse: 'Cuándo usarla', whyItWorks: 'Por qué funciona', source: 'Fuente',
     refs: 'Técnicas relacionadas del Cerebro de Ventas',
     evidence: (used: number, won: number) => (used ? `Usada en ${used} ${used === 1 ? 'cierre documentado' : 'cierres documentados'} · ganó ${won}` : 'Sin cierres documentados todavía'),
     propose: 'Proponer una mejora', what: '¿Qué mejora? (una línea)', whatPlaceholder: 'Añadir el coste por invitado', proposed: 'Texto propuesto', send: 'Enviar al líder',
@@ -255,7 +255,7 @@ export const playbookMessages = defineMessages({
       objection: (label) => `Objection: ${label}`,
     },
     playCard: {
-      audienceTeam: 'Internal team only', audiencePartners: 'For partners', whenToUse: 'When to use it', whyItWorks: 'Why it works',
+      audienceTeam: 'Internal team only', audiencePartners: 'For partners', whenToUse: 'When to use it', whyItWorks: 'Why it works', source: 'Source',
       refs: 'Related techniques from «Cerebro de Ventas»',
       evidence: (used, won) => (used ? `Used in ${used} documented ${used === 1 ? 'deal' : 'deals'} · won ${won}` : 'No documented deals yet'),
       propose: 'Suggest an improvement', what: 'What would you improve? (one line)', whatPlaceholder: 'Add the cost per guest', proposed: 'Proposed text', send: 'Send to your lead',
@@ -469,7 +469,7 @@ export const playbookMessages = defineMessages({
       objection: (label) => `Objeção: ${label}`,
     },
     playCard: {
-      audienceTeam: 'Só equipe interna', audiencePartners: 'Para parceiros', whenToUse: 'Quando usar', whyItWorks: 'Por que funciona',
+      audienceTeam: 'Só equipe interna', audiencePartners: 'Para parceiros', whenToUse: 'Quando usar', whyItWorks: 'Por que funciona', source: 'Fonte',
       refs: 'Técnicas relacionadas do «Cerebro de Ventas»',
       evidence: (used, won) => (used ? `Usada em ${used} ${used === 1 ? 'fechamento documentado' : 'fechamentos documentados'} · ganhou ${won}` : 'Ainda sem fechamentos documentados'),
       propose: 'Sugerir uma melhoria', what: 'Qual melhoria? (uma linha)', whatPlaceholder: 'Adicionar o custo por convidado', proposed: 'Texto proposto', send: 'Enviar ao líder',
@@ -683,7 +683,7 @@ export const playbookMessages = defineMessages({
       objection: (label) => `반론: ${label}`,
     },
     playCard: {
-      audienceTeam: '내부 팀만', audiencePartners: '파트너용', whenToUse: '사용 시점', whyItWorks: '효과가 있는 이유',
+      audienceTeam: '내부 팀만', audiencePartners: '파트너용', whenToUse: '사용 시점', whyItWorks: '효과가 있는 이유', source: '출처',
       refs: '«Cerebro de Ventas» 관련 기법',
       evidence: (used, won) => (used ? `기록된 거래 ${used}건에 사용 · ${won}건 성사` : '아직 기록된 거래가 없습니다'),
       propose: '개선 제안하기', what: '무엇을 개선할까요? (한 줄)', whatPlaceholder: '하객 1인당 비용 추가', proposed: '제안 내용', send: '리더에게 보내기',

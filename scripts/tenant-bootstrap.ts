@@ -18,6 +18,7 @@
  */
 import { FIELD_TYPES } from '../src/lib/crm/fields';
 import { proposalSchema } from '../src/lib/proposal/preset';
+import { ruleSchema } from '../src/lib/commissions/schema';
 import { deepMerge } from '../src/modules/resolve';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, relative, resolve } from 'node:path';
@@ -36,6 +37,7 @@ const SKIP_ASSETS = args.includes('--skip-assets');
 const SKIP_INVITES = args.includes('--skip-invites');
 const ALLOW_MISSING_ASSETS = args.includes('--allow-missing-assets');
 
+const TOUR_STEP = z.object({ title: z.string().min(1).max(80), body: z.string().max(240).nullable().default(null), image: z.string().nullable().default(null), ui: z.string().regex(TOUR_UI).nullable().optional() });
 const tenantFile = z.object({
   slug: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
   name: z.string().min(1).max(80),
@@ -43,7 +45,26 @@ const tenantFile = z.object({
   theme_tokens: z.unknown(),
   brand: z.unknown().default({}),
   /** «Lo que vendes, en 1 minuto» (Aprende): pasos con imagen, de arriba abajo. image admite "asset:<ruta>". */
-  tour: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().max(240).nullable().default(null), image: z.string().nullable().default(null), ui: z.string().regex(TOUR_UI).nullable().optional() })).max(8).default([]),
+  tour: z.array(TOUR_STEP).max(8).default([]),
+  /**
+   * Aprende · temas de producto (opcional): cada pieza contada al comercial, con su UI, una explicación por secciones y
+   * los módulos de los que salen «cómo contarlo» y los sectores. Se guarda junto al recorrido (tenant.tour = { steps, topics }).
+   */
+  /**
+   * Condiciones del equipo (opcional): el plan de comisiones por defecto. Con show_to_team, quien aún no tiene
+   * condiciones propias ve estas (con su nota) en la bienvenida, «Empieza aquí» y «Mis comisiones».
+   */
+  commissions: z.object({
+    default_plan: z.object({
+      name: z.string().min(1).max(80), show_to_team: z.boolean().default(false), team_note: z.string().max(1500).nullable().default(null),
+      rules: z.array(ruleSchema).max(100),
+    }),
+  }).optional(),
+  learn_topics: z.array(z.object({
+    key: z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/), name: z.string().min(1).max(80), summary: z.string().max(300).nullable().default(null),
+    image: z.string().nullable().default(null), ui: z.string().regex(TOUR_UI).nullable().default(null), modules: z.array(z.string()).max(10).default([]),
+    sections: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().min(1).max(2000), ui: z.string().regex(TOUR_UI).nullable().default(null) }).strict()).max(10).default([]),
+  }).strict()).max(16).default([]),
   /** Contenido en otros idiomas (docs/I18N.md §Contenido): a cuáles se traduce y el glosario para la traducción. */
   content_i18n: z.object({
     locales: z.array(z.enum(['es', 'en', 'pt', 'ko'])).max(3).default([]),
@@ -236,7 +257,7 @@ function toPlayInput(p: TenantFile['playbook'][number], moduleId: string | null)
 function validate(t: TenantFile, assetKeys: string[]) {
   const missing = new Set<string>();
   // 1ª pasada: detectar assets ausentes; 2ª: validar con URLs simuladas para TODOS (sin errores en cascada).
-  replaceAssets([t.theme_tokens, t.brand, t.catalog.map((m) => m.props), t.tour, t.market.map((m) => m.image)], new Map(assetKeys.map((k) => [k, 'x'])), missing);
+  replaceAssets([t.theme_tokens, t.brand, t.catalog.map((m) => m.props), t.tour, t.learn_topics, t.market.map((m) => m.image)], new Map(assetKeys.map((k) => [k, 'x'])), missing);
   const fake = new Map([...assetKeys, ...missing].map((k) => [k, `https://assets.invalid/${k}`]));
   const errors: string[] = [];
   const stock = stockRefs(t.catalog.map((m) => m.props));
@@ -247,6 +268,9 @@ function validate(t: TenantFile, assetKeys: string[]) {
   const brand = brandSchema.safeParse(replaceAssets(t.brand ?? {}, fake, missing));
   if (!brand.success) errors.push(...brand.error.issues.map((i) => `brand.${i.path.join('.')}: ${i.message}`));
   if (t.domains.filter((d) => d.is_primary).length !== 1) errors.push('domains: exactamente uno debe ser is_primary');
+  const catalogKeys = new Set(t.catalog.map((m) => m.key));
+  for (const tp of t.learn_topics) for (const k of tp.modules) if (!catalogKeys.has(k)) errors.push(`learn_topics.${tp.key}: el módulo «${k}» no está en el catálogo`);
+  if (new Set(t.learn_topics.map((x) => x.key)).size !== t.learn_topics.length) errors.push('learn_topics: claves repetidas');
   const keys = new Set<string>();
   for (const m of t.catalog) {
     if (keys.has(m.key)) errors.push(`catalog: clave duplicada ${m.key}`);
@@ -376,7 +400,10 @@ async function main() {
   const missing = new Set<string>();
   const theme = replaceAssets(t.theme_tokens ?? {}, urls, missing);
   const brand = replaceAssets(t.brand ?? {}, urls, missing);
-  const tour = (replaceAssets(t.tour, urls, missing) as TenantFile['tour']).map((x) => ({ ...x, image: x.image?.startsWith('asset:') ? null : x.image }));
+  const steps = (replaceAssets(t.tour, urls, missing) as TenantFile['tour']).map((x) => ({ ...x, image: x.image?.startsWith('asset:') ? null : x.image }));
+  const topics = (replaceAssets(t.learn_topics, urls, missing) as TenantFile['learn_topics']).map((x) => ({ ...x, image: x.image?.startsWith('asset:') ? null : x.image }));
+  // Con temas: { steps, topics } (src/lib/playbook/service.ts lee las dos formas); sin ellos, la lista de siempre.
+  const tour = topics.length ? { steps, topics } : steps;
   must(await sb.from('tenant').update({ name: t.name, default_locale: t.default_locale, theme_tokens: theme, brand, tour }).eq('id', tenantId), 'actualizar tenant');
   // Idiomas del contenido (columna nueva: solo se escribe si el espacio la usa, para no depender de la migración).
   if (t.content_i18n) {
@@ -384,6 +411,16 @@ async function main() {
     log(`idiomas del contenido: ${t.content_i18n.locales.join(', ') || 'solo el original'} (traducir: workflow Producción → traducir)`);
   }
   log('tema y marca actualizados');
+
+  // Condiciones del equipo: el plan por defecto (si el espacio las trae en tenant.json).
+  if (t.commissions) {
+    const p = t.commissions.default_plan;
+    const row = { name: p.name, rules: p.rules, show_to_team: p.show_to_team, team_note: p.team_note };
+    const cur = must(await sb.from('commission_plan').select('id').eq('tenant_id', tenantId).eq('is_default', true).maybeSingle(), 'leer plan por defecto');
+    if (cur) must(await sb.from('commission_plan').update(row).eq('id', cur.id), 'actualizar plan por defecto');
+    else must(await sb.from('commission_plan').insert({ ...row, tenant_id: tenantId, is_default: true }), 'crear plan por defecto');
+    log(`condiciones del equipo: «${p.name}», ${p.rules.length} reglas${p.show_to_team ? ', visibles para quien no tenga las suyas' : ''}`);
+  }
 
   // 3. dominios
   for (const d of t.domains) {

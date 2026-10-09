@@ -1,5 +1,6 @@
 ---
 import Badges from './Badges.astro';
+import Icon from '~/components/ui/Icon.astro';
 import { renderMarkdown } from '~/lib/playbook/markdown';
 import type { PlayView } from '~/lib/playbook/types';
 import { i18n } from '~/lib/i18n';
@@ -12,37 +13,40 @@ const anchor = `play-${play.id}`;
 const field = 'co-input';
 const { m, locale } = i18n(Astro, playbookMessages);
 const lm = learnMessages[locale];
+// «Por qué funciona» es el porqué; de dónde sale («Fuente: …») va aparte, como nota al pie.
+const SOURCE = /^\s*(fuente|source|fonte|출처)\s*:\s*/i;
+const whyLines = (play.whyItWorks ?? '').split('\n');
+const why = whyLines.filter((l) => !SOURCE.test(l)).join('\n').trim();
+const sources = whyLines.filter((l) => SOURCE.test(l)).map((l) => l.replace(SOURCE, '').trim()).filter(Boolean);
+// Lo que se dice tal cual (empieza por «…»): se lee como una cita.
+const quote = /^\s*[«"“]/.test(play.body ?? '');
 ---
-<article id={anchor} class="scroll-mt-24 co-card !p-6" data-testid="play" data-play-key={play.key}>
+<article id={anchor} class="play scroll-mt-24 co-card !p-6" data-testid="play" data-play-key={play.key}>
   <div class="flex flex-wrap items-start gap-2">
     <h3 class="min-w-0 flex-1 text-xl font-bold leading-snug">{play.title}</h3>
     {adminEdit && <a href={`/admin/playbook/${play.id}`} class="text-xs text-muted underline">{m.common.edit}</a>}
   </div>
-  <div class="mt-1"><Badges stage={play.stage} objection={play.objection} segments={play.segments} />{play.audience !== 'all' && <span class="co-badge co-badge--soft ml-1" data-testid="audience">{play.audience === 'team' ? m.playCard.audienceTeam : m.playCard.audiencePartners}</span>}</div>
-  {play.body && <div class="prose-play mt-3 text-[15px] leading-relaxed" set:html={renderMarkdown(play.body)} />}
-  {(play.whenToUse || play.whyItWorks || play.techniqueRefs.length > 0) && (
-    <details class="mt-4 text-sm">
-      <summary class="cursor-pointer font-semibold text-muted hover:text-ink">{lm.topic.why}</summary>
-      {(play.whenToUse || play.whyItWorks) && (
-        <dl class:list={['mt-3 grid gap-2 rounded-xl bg-surface p-3', play.whenToUse && play.whyItWorks && 'sm:grid-cols-2']}>
-          {play.whenToUse && <div><dt class="text-xs font-semibold text-muted">{m.playCard.whenToUse}</dt><dd class="m-0">{play.whenToUse}</dd></div>}
-          {play.whyItWorks && <div><dt class="text-xs font-semibold text-muted">{m.playCard.whyItWorks}</dt><dd class="m-0">{play.whyItWorks}</dd></div>}
-        </dl>
-      )}
+  {(play.stage || play.objection || play.audience !== 'all') && <div class="mt-1"><Badges stage={play.stage} objection={play.objection} />{play.audience !== 'all' && <span class="co-badge co-badge--soft ml-1" data-testid="audience">{play.audience === 'team' ? m.playCard.audienceTeam : m.playCard.audiencePartners}</span>}</div>}
+  {play.whenToUse && <p class="play__when" data-testid="play-when"><Icon name="clock" size={15} /><span><b>{m.playCard.whenToUse}:</b> {play.whenToUse}</span></p>}
+  {play.body && <div class:list={['prose-play play__body', quote && 'play__body--quote']} set:html={renderMarkdown(play.body)} />}
+  {why && <div class="play__why" data-testid="play-why"><Icon name="lightbulb" size={16} /><div><p class="play__label">{m.playCard.whyItWorks}</p><div class="prose-play" set:html={renderMarkdown(why)} /></div></div>}
+  {(sources.length > 0 || play.techniqueRefs.length > 0) && (
+    <div class="play__foot">
+      {sources.map((x) => <p data-testid="play-source">{m.playCard.source}: {x}</p>)}
       {play.techniqueRefs.length > 0 && (
-        <div class="mt-3" data-testid="cerebro-refs">
-          <p class="text-xs font-semibold text-muted">{m.playCard.refs}</p>
-          <ul class="mt-1 space-y-1 p-0">
+        <div data-testid="cerebro-refs">
+          <p>{m.playCard.refs}:</p>
+          <ul class="p-0">
             {play.techniqueRefs.map((r) => (
               <li class="list-none">
                 {r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">{r.id ? `[${r.id}] ` : ''}{r.title}</a> : <span>{r.id ? `[${r.id}] ` : ''}{r.title}</span>}
-                {r.creator && <span class="text-muted"> · {r.creator}</span>}
+                {r.creator && <span> · {r.creator}</span>}
               </li>
             ))}
           </ul>
         </div>
       )}
-    </details>
+    </div>
   )}
   <div class="mt-4 flex flex-wrap items-center gap-3">
     <span class="co-meta" data-testid="play-evidence">{m.playCard.evidence(play.evidence.used, play.evidence.won)} · v{play.version}</span>
@@ -62,3 +66,15 @@ const lm = learnMessages[locale];
     )}
   </div>
 </article>
+
+<style>
+  .play__when { display: flex; gap: .45rem; align-items: flex-start; margin-top: .75rem; color: var(--co-ink-soft, #555); font-size: .9rem; line-height: 1.45; }
+  .play__when :global(svg) { flex-shrink: 0; margin-top: .15rem; }
+  .play__body { margin-top: .9rem; font-size: 1.0625rem; line-height: 1.6; color: var(--co-ink, inherit); }
+  .play__body--quote { padding: .25rem 0 .25rem 1rem; border-left: 3px solid var(--co-signal, currentColor); font-size: 1.15rem; }
+  .play__why { display: flex; gap: .6rem; margin-top: 1rem; padding: .85rem 1rem; border-radius: 12px; background: var(--console-chip-bg, rgba(127,127,127,.08)); font-size: .925rem; line-height: 1.5; }
+  .play__why :global(svg) { flex-shrink: 0; margin-top: .15rem; color: var(--co-signal, currentColor); }
+  .play__label { margin: 0 0 .15rem; font-size: .75rem; font-weight: 600; color: var(--co-ink-soft, #666); }
+  .play__foot { display: grid; gap: .35rem; margin-top: .9rem; font-size: .75rem; line-height: 1.45; color: var(--co-ink-soft, #777); }
+  .play__foot p { margin: 0; }
+</style>

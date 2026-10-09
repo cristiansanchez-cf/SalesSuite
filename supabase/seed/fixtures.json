@@ -165,38 +165,86 @@
         },
         "legal": "Oquea de demostración · datos de ejemplo"
       },
-      "tour": [
-        {
-          "title": "El centro crea la inmersión",
-          "body": "Hora, punto de inmersión y tipo.",
-          "image": null,
-          "ui": "app:create-activity"
-        },
-        {
-          "title": "El buceador escanea el QR",
-          "body": "Elige la inmersión de hoy y la guarda.",
-          "image": null,
-          "ui": "app:qr-activity"
-        },
-        {
-          "title": "La inmersión queda en su logbook",
-          "body": "Con los datos del punto ya rellenos.",
-          "image": null,
-          "ui": "app:dive-saved"
-        },
-        {
-          "title": "Al centro le queda la lista",
-          "body": "Quién ha buceado con él y cuántas veces.",
-          "image": null,
-          "ui": "console:crm"
-        },
-        {
-          "title": "Su nombre en cada tarjeta",
-          "body": "Cada vez que un buceador comparte su inmersión.",
-          "image": null,
-          "ui": "app:share-card"
-        }
-      ],
+      "tour": {
+        "steps": [
+          {
+            "title": "El centro crea la inmersión",
+            "body": "Hora, punto de inmersión y tipo.",
+            "image": null,
+            "ui": "app:create-activity"
+          },
+          {
+            "title": "El buceador escanea el QR",
+            "body": "Elige la inmersión de hoy y la guarda.",
+            "image": null,
+            "ui": "app:qr-activity"
+          },
+          {
+            "title": "La inmersión queda en su logbook",
+            "body": "Con los datos del punto ya rellenos.",
+            "image": null,
+            "ui": "app:dive-saved"
+          },
+          {
+            "title": "Al centro le queda la lista",
+            "body": "Quién ha buceado con él y cuántas veces.",
+            "image": null,
+            "ui": "console:crm"
+          },
+          {
+            "title": "Su nombre en cada tarjeta",
+            "body": "Cada vez que un buceador comparte su inmersión.",
+            "image": null,
+            "ui": "app:share-card"
+          }
+        ],
+        "topics": [
+          {
+            "key": "tarjetas",
+            "name": "Tarjetas para compartir",
+            "summary": "Cada inmersión, una tarjeta para Instagram con el nombre del centro.",
+            "image": null,
+            "ui": "app:share-card",
+            "modules": [
+              "tu-nombre"
+            ],
+            "sections": [
+              {
+                "title": "Qué es",
+                "body": "El buceador exporta una tarjeta de su inmersión para compartirla.",
+                "ui": null
+              },
+              {
+                "title": "Con el nombre del centro",
+                "body": "Todas llevan **«with [centro]»**.",
+                "ui": null
+              }
+            ]
+          },
+          {
+            "key": "panel",
+            "name": "El panel del centro",
+            "summary": "Las salidas del día, quién viene y los clientes.",
+            "image": null,
+            "ui": "console:today",
+            "modules": [
+              "consola"
+            ],
+            "sections": [
+              {
+                "title": "Hoy",
+                "body": "Las salidas del día.",
+                "ui": null
+              },
+              {
+                "title": "El CRM",
+                "body": "Cada buceador que escanea entra en la lista.",
+                "ui": "console:crm"
+              }
+            ]
+          }
+        ]
+      },
       "content_locales": [
         "ko"
       ]
@@ -2584,16 +2632,18 @@
       "kind": "tenant",
       "ref": "00000000-0000-4000-8000-000000000b01",
       "texts": {
-        "tour/0/title": "다이빙 센터가 다이빙을 만듭니다",
-        "tour/0/body": "시간, 다이빙 포인트, 종류를 정합니다.",
-        "tour/1/title": "다이버가 QR을 스캔합니다",
-        "tour/1/body": "오늘의 다이빙을 골라 저장합니다.",
-        "tour/2/title": "다이빙이 로그북에 남습니다",
-        "tour/2/body": "포인트 정보가 이미 채워져 있습니다.",
-        "tour/3/title": "센터에는 다이버 명단이 남습니다",
-        "tour/3/body": "누가 몇 번 함께 다이빙했는지 알 수 있습니다.",
-        "tour/4/title": "모든 카드에 센터 이름이 들어갑니다",
-        "tour/4/body": "다이버가 다이빙을 공유할 때마다."
+        "tour/steps/0/title": "다이빙 센터가 다이빙을 만듭니다",
+        "tour/steps/0/body": "시간, 다이빙 포인트, 종류를 정합니다.",
+        "tour/steps/1/title": "다이버가 QR을 스캔합니다",
+        "tour/steps/1/body": "오늘의 다이빙을 골라 저장합니다.",
+        "tour/steps/2/title": "다이빙이 로그북에 남습니다",
+        "tour/steps/2/body": "포인트 정보가 이미 채워져 있습니다.",
+        "tour/steps/3/title": "센터에는 다이버 명단이 남습니다",
+        "tour/steps/3/body": "누가 몇 번 함께 다이빙했는지 알 수 있습니다.",
+        "tour/steps/4/title": "모든 카드에 센터 이름이 들어갑니다",
+        "tour/steps/4/body": "다이버가 다이빙을 공유할 때마다.",
+        "tour/topics/0/name": "공유 카드",
+        "tour/topics/0/summary": "모든 다이빙을 센터 이름이 들어간 인스타그램 카드로."
       },
       "source_hash": "demo-oquea-tour",
       "status": "auto"

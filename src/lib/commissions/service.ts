@@ -156,11 +156,18 @@ export function createCommissionsService(db: CommissionsDb, deps: { admin: Admin
     const ds = dossiers.filter((d) => dossierIds.has(d.id));
     const accountIds = [...new Set([...evs.map((e) => e.accountId), ...ds.map((d) => d.accountId)].filter(Boolean) as string[])];
     const accounts = accountIds.length ? await deps.accounts.listAccounts(s.tenantId, { ids: accountIds, limit: accountIds.length }) : [];
+    // Primer ingreso de cada cuenta (para las reglas «desde la primera transacción»).
+    const firstAt = new Map<string, string>();
+    for (const e of evs) {
+      if (!e.accountId || e.status === 'void' || e.kind === 'refund') continue;
+      const cur = firstAt.get(e.accountId);
+      if (!cur || e.occurredAt < cur) firstAt.set(e.accountId, e.occurredAt);
+    }
     return {
       plans: ps,
       planOf: new Map(pm.map((x) => [x.userId, x.planId])),
       members: new Map(ms.map((m) => [m.userId, { role: m.role, invitedBy: m.invitedBy, joinedAt: m.joinedAt }])),
-      accounts: new Map(accounts.map((a) => [a.id, { zoneId: a.zoneId, wonAt: a.wonAt, wonBy: a.wonBy, ownerId: a.ownerId, status: a.status }])),
+      accounts: new Map(accounts.map((a) => [a.id, { zoneId: a.zoneId, wonAt: a.wonAt, wonBy: a.wonBy, ownerId: a.ownerId, status: a.status, firstAt: firstAt.get(a.id) ?? null }])),
       dossiers: new Map(ds.map((d) => [d.id, { authorId: d.authorId, accountId: d.accountId, eligibility: d.accountEligibility, decision: d.accountDecision }])),
       zones: zones.map((z) => ({ id: z.id, parentId: z.parentId })),
       existing,
