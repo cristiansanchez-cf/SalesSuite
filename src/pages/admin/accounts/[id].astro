@@ -150,7 +150,7 @@ const STATE_ALERT = {
 
       {a.state !== 'customer' && <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />}
 
-      <section class="co-card grid gap-4" data-testid="follow">
+      <section id="follow" class="co-card grid gap-4" data-testid="follow">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <h2 class="co-entity">{F.follow.title}</h2>
           {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-dialog-open="release">{M.release}</button>}

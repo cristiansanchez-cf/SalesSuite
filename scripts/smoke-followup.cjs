@@ -43,7 +43,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await p.screenshot({ path: `${OUT}/followup-account.png`, fullPage: true });
 
   // ---- editar el contacto de la empresa
-  await p.click('[data-testid=company-contact] summary');
+  await p.click('[data-testid=company-contact] details:has([data-testid=company-contact-form]) > summary');
   await p.fill('[data-testid=company-contact-form] [name=email]', 'hola@clubsol.test');
   await Promise.all([p.waitForURL(/ok=companyContact/), p.click('[data-testid=company-contact-form] button[type=submit]')]);
   assert(await p.isVisible('[data-testid=contact-links] a[href="mailto:hola@clubsol.test"]'), 'email de la empresa guardado');

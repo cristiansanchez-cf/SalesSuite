@@ -88,5 +88,6 @@ jobs:
           node scripts/smoke-spaces.cjs
           node scripts/smoke-followup.cjs
           node scripts/smoke-priority.cjs
+          node scripts/smoke-route.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

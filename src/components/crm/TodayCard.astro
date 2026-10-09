@@ -9,16 +9,20 @@ import { can } from '~/lib/admin/permissions';
 import { i18n } from '~/lib/i18n';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { routeMessages } from '~/lib/i18n/messages/route';
 
 const { admin } = Astro.locals;
 if (!admin || !can(admin.session.role).useAccounts) return;
 const { m: F, f: fmt, locale } = i18n(Astro, followupMessages);
 const R = priorityMessages[locale];
 const { items, counts } = await admin.crm.today();
+// Ruta del día: solo si hoy hay visitas (vencidas o para hoy).
+const visits = items.filter((a) => a.nextChannel === 'visit' && (a.bucket === 'overdue' || a.bucket === 'today')).length;
 ---
 <section class="co-card grid gap-4 !p-6" data-testid="today">
   <div class="flex flex-wrap items-baseline justify-between gap-2">
     <h2 class="co-entity flex items-center gap-2"><Icon name="calendar" size={18} />{F.today.title}</h2>
+    {visits > 0 && <a class="co-btn co-btn--ghost co-btn--sm" href="/admin/route" data-testid="today-route"><Icon name="map" size={14} />{routeMessages[locale].todayCta} · {visits}</a>}
     {items.length > 0 && <span class="co-meta" data-testid="today-counts">{[counts.cooling ? R.cooling(counts.cooling).split(' · ')[0] + ` · ${counts.cooling}` : '', F.today.counts(counts.overdue, counts.today, counts.tomorrow)].filter(Boolean).join(' · ')}</span>}
   </div>
   {items.length === 0 ? (

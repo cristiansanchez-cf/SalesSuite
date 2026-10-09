@@ -20,6 +20,7 @@ import { crmMessages } from '~/lib/i18n/messages/crm';
 import { formatValue } from '~/lib/crm/fields';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { routeMessages } from '~/lib/i18n/messages/route';
 import { compareLeads, priorityOf } from '~/lib/crm/priority';
 
 const { admin } = Astro.locals;
@@ -243,6 +244,7 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
     <input type="hidden" name="action" value="move-group" />
     <span class="font-semibold" data-bulk-count></span>
     <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open="move-group" data-testid="bulk-move"><Icon name="building2" size={14} /><span data-bulk-label></span></button>
+    <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/route" formmethod="get" formnovalidate data-testid="bulk-route"><Icon name="map" size={14} />{routeMessages[locale].bulk}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
     <dialog id="move-group" class="co-dialog" aria-labelledby="move-group-title">
       <div class="co-dialog__body">

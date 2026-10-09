@@ -14,6 +14,7 @@ import { parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
 import { env } from '../env';
 import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
+import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
@@ -83,8 +84,9 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null } = {}) {
   const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : null;
+  const routes = opts.routes !== undefined ? opts.routes : env('GOOGLE_MAPS_API_KEY') ? googleRoutes(env('GOOGLE_MAPS_API_KEY')!) : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -671,8 +673,36 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return { filled, skipped, left: accs.length - batch.length };
   }
 
+  // ---------------------------------------------------------------- ruta del día (docs/CRM_DINAMICO.md §12)
+
+  /** Máximo de paradas por ruta (Google optimiza hasta 25 puntos; un día de visitas no da para más). */
+  const ROUTE_MAX = 20;
+  /**
+   * Las visitas que tocan (mis empresas con «visita» vencida o para hoy) o las que se elijan en la lista, en el orden
+   * más corto desde donde estoy. Las que no tienen ubicación salen aparte para buscarlas en Google.
+   */
+  async function routePlan(input: { ids?: string[]; from?: Point | null; at?: Date } = {}) {
+    requireUse();
+    const now = input.at ?? new Date();
+    const pool = input.ids?.length
+      ? (await allAccounts()).filter((a) => input.ids!.includes(a.id))
+      : (await accounts.listAccounts(t, { ownerId: s.userId, limit: 5000 }))
+        .filter((a) => a.nextChannel === 'visit' && ['overdue', 'today'].includes(dueBucket(a.nextStepAt, now) ?? ''));
+    const located = pool.filter((a) => a.lat !== null && a.lng !== null && a.placeStatus !== 'CLOSED_PERMANENTLY');
+    const take = located.slice(0, ROUTE_MAX);
+    const plan = await planRoute(take.map((a) => ({ id: a.id, name: a.name, lat: a.lat!, lng: a.lng!, account: a })),
+      { start: input.from ?? null, at: now, routes });
+    return {
+      ...plan,
+      stops: plan.stops.map((p) => ({ ...p, account: p.stop.account, hours: todayHours(p.stop.account.hours, p.arrival) })),
+      missing: pool.filter((a) => a.lat === null || a.lng === null),
+      closedForGood: pool.filter((a) => a.lat !== null && a.placeStatus === 'CLOSED_PERMANENTLY'),
+      left: located.length - take.length,
+    };
+  }
+
   return {
-    googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
+    routePlan, googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

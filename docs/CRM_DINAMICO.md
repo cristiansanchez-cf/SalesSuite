@@ -314,3 +314,21 @@ Criterio cerrado con Cristian (9-oct-2026). Lógica en `src/lib/crm/priority.ts`
   guarda horario y ubicación (RPC `account_research`; nunca pisa lo escrito a mano).
 - Migración `20261106000000_crm_priority.sql`; pruebas `priority.test.ts`, `places.test.ts`, contrato de cuentas,
   `supabase/tests/50_crm_priority.test.sql`, `scripts/smoke-priority.cjs`.
+
+## 12. Ruta del día (hecho)
+
+`/admin/route` (`src/lib/crm/route.ts`, `crm.routePlan`): las visitas que tocan, en el orden más corto.
+
+- **Qué entra**: mis empresas con próximo paso «Visita» vencido o para hoy. O las que elijas en Cuentas (casillas →
+  «Ruta con estas», hasta 20 paradas). Desde «Hoy» en Inicio sale el botón «Ruta del día» cuando hay visitas.
+- **Orden**: primero por cercanía; con `GOOGLE_MAPS_API_KEY`, la Routes API (`computeRoutes` con
+  `optimizeWaypointOrder`) optimiza las paradas intermedias y da los tiempos reales. Sin Google o si falla, orden por
+  cercanía y tiempos a 30 km/h de media (lo dice en pantalla).
+- **«Desde donde estoy»**: la ubicación del navegador va en la URL (`?desde=lat,lng`) y la ruta sale de ahí. No se
+  guarda.
+- **Cada parada**: llegada estimada (tramo + 20 min por visita), horario de hoy de Google con aviso si cierra, la
+  puntuación, «Cómo llegar» y «Apuntar» (va al seguimiento de la ficha).
+- **Abrir en Google Maps**: la ruta entera en un enlace (`/maps/dir/?api=1`); si hay más de 10 paradas, en tramos.
+- Las que no tienen ubicación salen aparte con «Buscar en Google» (ficha → Google Places, §11). Las que Google da por
+  cerradas, avisadas y fuera de la ruta.
+- Sin migración: usa `lat`, `lng` y `hours` de §11. Pruebas `route.test.ts` y `scripts/smoke-route.cjs`.

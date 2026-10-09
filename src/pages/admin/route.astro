@@ -1,0 +1,135 @@
+---
+/**
+ * Ruta del día (docs/CRM_DINAMICO.md §12): las visitas que tocan (o las empresas elegidas en Cuentas), en el orden más
+ * corto desde donde estás, con la llegada estimada, el horario de hoy y la ruta entera para abrir en Google Maps.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { i18n } from '~/lib/i18n';
+import { routeMessages } from '~/lib/i18n/messages/route';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+import { priorityOf } from '~/lib/crm/priority';
+import { VISIT_MINUTES } from '~/lib/crm/route';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: M, f: fmt, locale } = i18n(Astro, routeMessages);
+const R = priorityMessages[locale];
+const F = followupMessages[locale];
+
+const q = Astro.url.searchParams;
+const ids = [...new Set(q.getAll('ids').flatMap((x) => x.split(',')).map((x) => x.trim()).filter(Boolean))].slice(0, 200);
+const m = /^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/.exec(q.get('desde') ?? '');
+const from = m && Math.abs(Number(m[1])) <= 90 && Math.abs(Number(m[2])) <= 180 ? { lat: Number(m[1]), lng: Number(m[2]) } : null;
+
+const [plan, segments, weights] = await Promise.all([admin.crm.routePlan({ ids, from }), admin.playbook.market(), admin.crm.weights()]);
+const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
+const time = (d: Date) => new Intl.DateTimeFormat(fmt.tag, { hour: '2-digit', minute: '2-digit' }).format(d);
+const keep = new URLSearchParams(ids.length ? { ids: ids.join(',') } : {});
+const empty = !plan.stops.length && !plan.missing.length && !plan.closedForGood.length;
+---
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={F.today.title} title={M.title} lede={ids.length ? M.picked(ids.length) : M.lede}>
+    {plan.stops.length > 0 && (
+      <button type="button" class="co-btn co-btn--ghost" data-locate data-testid="route-from-here" aria-pressed={from ? 'true' : 'false'}>
+        <Icon name="compass" size={16} />{from ? M.fromHereOn : M.fromHere}
+      </button>
+    )}
+    {plan.links.map((href, i) => (
+      <a class="co-btn co-btn--primary" href={href} target="_blank" rel="noopener" data-testid="route-maps">
+        <Icon name="map" size={16} />{plan.links.length > 1 ? M.openMapsPart(i + 1, plan.links.length) : M.openMaps}
+      </a>
+    ))}
+  </PageHeader>
+  <p class="co-meta mb-4 hidden" data-locate-status role="status"></p>
+
+  {empty ? (
+    <EmptyState kind="create" title={M.empty} detail={M.emptyHint} action={{ href: '/admin/accounts?ver=mine', label: F.today.title }} />
+  ) : (
+    <div class="grid gap-6">
+      {plan.stops.length > 0 && (
+        <section class="co-card grid gap-4 !p-6" data-testid="route" data-by={plan.by}>
+          <div class="grid gap-1">
+            <p class="co-entity" data-testid="route-total">{M.total(plan.stops.length, plan.totalMinutes ?? 0, plan.totalKm)}</p>
+            <p class="co-meta">{plan.by === 'google' ? M.byGoogle : M.byDistance} {M.visit(VISIT_MINUTES)}</p>
+          </div>
+          <ol class="co-rows">
+            {plan.stops.map((p, i) => {
+              const a = p.account;
+              const pr = priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights);
+              return (
+                <li class:list={['co-row', p.hours?.closed && 'co-row--attention']} data-testid="route-stop" data-name={a.name} data-order={i + 1}>
+                  <span class="co-row__lead font-semibold">{i + 1}</span>
+                  <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}`}>
+                    <span class="co-row-title">{a.name}</span>
+                    <span class="co-meta inline-flex flex-wrap items-center gap-1">
+                      <Icon name="clock" size={12} /> {M.arrival} {time(p.arrival)}
+                      {p.legMinutes !== null && p.legKm !== null ? ` · ${M.leg(p.legMinutes, p.legKm)}` : ` · ${M.start}`}
+                      {a.address ? ` · ${a.address}` : ''}
+                    </span>
+                    <span class="mt-1 flex flex-wrap gap-1.5">
+                      {p.hours ? (
+                        <span class:list={['co-tag', p.hours.closed && 'co-tag--danger']} data-testid="route-hours" data-closed={p.hours.closed ? 'true' : 'false'}>
+                          {p.hours.closed ? <><Icon name="triangle-alert" size={12} /> {M.closedToday}</> : `${M.hoursToday}: ${p.hours.text}`}
+                        </span>
+                      ) : <span class="co-tag">{M.noHours}</span>}
+                      {!pr.out && (pr.score > 0
+                        ? <span class="co-tag" title={R.score(pr.score)}><strong>{pr.score}</strong>{!pr.qualified && <span class="co-meta">&nbsp;· {R.upTo(pr.max)}</span>}</span>
+                        : <span class="co-tag">{R.unqualified}</span>)}
+                      {a.nextStep && <span class="co-tag">{a.nextStep}</span>}
+                    </span>
+                  </a>
+                  <span class="flex flex-wrap items-center justify-end gap-1.5">
+                    <a class="co-btn co-btn--ghost co-btn--sm" href={a.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}`} target="_blank" rel="noopener"><Icon name="map-pin" size={14} />{M.directions}</a>
+                    <a class="co-btn co-btn--quiet co-btn--sm" href={`/admin/accounts/${a.id}#follow`} data-testid="route-log"><Icon name="pencil" size={14} />{M.log}</a>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+          {plan.left > 0 && <p class="co-meta">{M.left(plan.left)}</p>}
+        </section>
+      )}
+
+      {plan.closedForGood.length > 0 && (
+        <Alert kind="rejection" title={M.closedForGood} details={plan.closedForGood.map((a) => a.name)} />
+      )}
+
+      {plan.missing.length > 0 && (
+        <section class="co-card grid gap-3 !p-6" data-testid="route-missing">
+          <div><h2 class="co-entity">{M.missingTitle} · {plan.missing.length}</h2><p class="co-meta">{M.missingHelp}</p></div>
+          <ul class="co-rows">
+            {plan.missing.map((a) => (
+              <li class="co-row" data-name={a.name}>
+                <span class="co-row__lead"><Icon name="map-pin" /></span>
+                <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}`}><span class="co-row-title">{a.name}</span>{a.address && <span class="co-meta">{a.address}</span>}</a>
+                <a class="co-btn co-btn--ghost co-btn--sm" href={`/admin/accounts/${a.id}#company-contact`}><Icon name="search" size={14} />{M.find}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )}
+</AdminLayout>
+
+<script define:vars={{ keep: keep.toString(), locating: M.locating, failed: M.noLocation }}>
+  // «Desde donde estoy»: la ubicación del navegador entra en la URL (?desde=lat,lng) y el servidor ordena desde ahí.
+  document.querySelector('[data-locate]')?.addEventListener('click', () => {
+    const status = document.querySelector('[data-locate-status]');
+    const say = (t) => { if (status) { status.textContent = t; status.classList.remove('hidden'); } };
+    if (!navigator.geolocation) return say(failed);
+    say(locating);
+    navigator.geolocation.getCurrentPosition(
+      (p) => { const u = new URLSearchParams(keep); u.set('desde', `${p.coords.latitude.toFixed(5)},${p.coords.longitude.toFixed(5)}`); location.search = u.toString(); },
+      () => say(failed),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  });
+</script>
