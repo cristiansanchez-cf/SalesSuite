@@ -12,7 +12,8 @@ const zones: Zone[] = [
 const now = new Date('2026-10-03T10:00:00Z');
 const acc = (p: Partial<Account> = {}): Account => ({
   id: 'a', tenantId: T, name: 'Club', zoneId: 'vlc', segmentId: null, address: null, externalRef: null, notes: null, status: 'open', blockedReason: null,
-  ownerId: null, claimedUntil: null, lastTouchAt: null, lastTouchBy: null, wonAt: null, wonBy: null, wonDossierId: null, createdBy: null, createdAt: now.toISOString(), fields: {}, parentId: null, tags: [], importId: null, ...p,
+  ownerId: null, claimedUntil: null, lastTouchAt: null, lastTouchBy: null, wonAt: null, wonBy: null, wonDossierId: null, createdBy: null, createdAt: now.toISOString(), fields: {}, parentId: null, tags: [], importId: null,
+  phone: null, email: null, instagram: null, linkedin: null, website: null, mapsUrl: null, nextStep: null, nextStepAt: null, nextContactId: null, nextChannel: null, ...p,
 });
 const ctx = { zones, assignments: [{ userId: 'ana', zoneId: 'cv' }, { userId: 'bea', zoneId: 'mad' }], now };
 const later = new Date(now.getTime() + 86_400_000).toISOString();

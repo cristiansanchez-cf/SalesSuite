@@ -12,6 +12,8 @@ import type { Account } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
+import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
+import { slugKey } from './fields';
 import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo } from './types';
 
 const uuid = z.string().uuid();
@@ -28,6 +30,32 @@ export const quickAddSchema = personSchema.extend({
   company: opt(160),
   role: opt(80),
   tag: z.string().max(48).optional().transform((v) => (v ? tagSchema.parse(v) || null : null)),
+});
+
+/** «@club_sol» o «instagram.com/club_sol» → enlace completo. */
+export function socialUrl(v: string | null | undefined, kind: 'instagram' | 'linkedin' | 'web'): string | null {
+  const x = (v ?? '').trim();
+  if (!x) return null;
+  if (kind === 'instagram' && /^@?[\w.]{2,30}$/.test(x)) return `https://www.instagram.com/${x.replace(/^@/, '')}/`;
+  return /^https?:\/\//i.test(x) ? x : `https://${x.replace(/^\/+/, '')}`;
+}
+const urlOpt = (n: number, kind: 'instagram' | 'linkedin' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
+export const companyContactSchema = z.object({
+  phone: opt(40), email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
+  instagram: urlOpt(300, 'instagram'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
+});
+export const activitySchema = z.object({
+  contactId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
+  channel: z.enum(CHANNELS),
+  outcome: z.enum(OUTCOMES),
+  note: opt(4000),
+  happenedAt: z.string().max(40).optional().transform((v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : undefined)),
+});
+export const nextStepSchema = z.object({
+  at: z.string().max(40).optional().transform((v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v.length <= 10 ? `${v}T10:00:00` : v).toISOString() : null)),
+  channel: z.enum(CHANNELS).nullable().optional().or(z.literal('').transform(() => null)),
+  contactId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
+  step: opt(300),
 });
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
@@ -336,6 +364,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         const ids = await accounts.insertAccounts(t, batch.map((a) => ({
           name: a.name, zoneId: zoneOf(a.city), segmentId: m.segmentId ?? null, address: a.address, externalRef: a.externalRef, notes: a.notes?.slice(0, 2000) ?? null,
           ownerId: a.ownerId, fields: a.fields, parentId: a.group ? accId.get(a.group) ?? null : null, tags: tag ? [tag] : [], importId: id,
+          contact: a.contact,
         })));
         batch.forEach((a, i) => accId.set(a.ref, ids[i]));
       };
@@ -351,9 +380,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         const notesNext = a.notes && !(cur.notes ?? '').includes(a.notes) ? `${cur.notes ? `${cur.notes}\n` : ''}${a.notes}`.slice(0, 2000) : cur.notes;
         const zoneNext = cur.zoneId ?? zoneOf(a.city);
         const parentNext = cur.parentId ?? (a.group ? accId.get(a.group) ?? null : null);
-        if (JSON.stringify([fieldsNext, tagsNext, notesNext, zoneNext, parentNext]) === JSON.stringify([cur.fields, cur.tags, cur.notes, cur.zoneId, cur.parentId])) continue;
-        undo.accounts.push({ id: cur.id, before: { fields: cur.fields, tags: cur.tags, notes: cur.notes, zoneId: cur.zoneId, parentId: cur.parentId } });
-        await accounts.updateAccount(cur.id, { fields: fieldsNext, tags: tagsNext, notes: notesNext, zoneId: zoneNext, parentId: parentNext });
+        // Contacto: solo se rellenan huecos.
+        const contactNext = Object.fromEntries(Object.entries(a.contact ?? {}).filter(([k, v]) => v && !cur[k as keyof Account]));
+        if (!Object.keys(contactNext).length && JSON.stringify([fieldsNext, tagsNext, notesNext, zoneNext, parentNext]) === JSON.stringify([cur.fields, cur.tags, cur.notes, cur.zoneId, cur.parentId])) continue;
+        undo.accounts.push({ id: cur.id, before: { fields: cur.fields, tags: cur.tags, notes: cur.notes, zoneId: cur.zoneId, parentId: cur.parentId,
+          contact: Object.fromEntries(Object.keys(contactNext).map((k) => [k, null])) } });
+        await accounts.updateAccount(cur.id, { fields: fieldsNext, tags: tagsNext, notes: notesNext, zoneId: zoneNext, parentId: parentNext, contact: contactNext });
       }
 
       // 4. Personas nuevas y fusionadas.
@@ -426,7 +458,134 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     } catch (e) { mapError(e); }
   }
 
+
+  // ---------------------------------------------------------------- contacto de la empresa, interacciones, próximo paso (fase 3)
+
+  async function setCompanyContact(accountId: string, input: unknown) {
+    requireUse();
+    const v = parse(companyContactSchema, input);
+    let ok: boolean;
+    try { ok = await accounts.updateAccount(accountId, { contact: v }); } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+  }
+
+  /** Personas de la empresa en orden (la primera es la principal) con sus vías. */
+  async function actorsOf(accountId: string) {
+    const links = await db.listLinks(t, { accountIds: [accountId] });
+    const cs = links.length ? await db.listContacts(t, { ids: links.map((l) => l.contactId), limit: 200 }) : [];
+    return links.map((l) => cs.find((c) => c.id === l.contactId)).filter((c): c is Contact => !!c)
+      .map((c) => ({ id: c.id, name: c.name, instagram: c.instagram, linkedin: c.linkedin, phone: c.phone, email: c.email, role: links.find((l) => l.contactId === c.id)?.role ?? null }));
+  }
+  const reachOf = (a: Account) => ({ instagram: a.instagram, linkedin: a.linkedin, phone: a.phone, email: a.email });
+
+  /** Historial de una empresa y lo que propone la app como siguiente paso. */
+  async function timeline(accountId: string) {
+    requireUse();
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    const [acts, actors, ms] = await Promise.all([db.listActivities(t, [accountId], 200), actorsOf(accountId), members()]);
+    const suggestion = suggestNext({ activities: acts, actors, company: reachOf(a), now: new Date() });
+    return {
+      items: acts.map((x) => ({ ...x, userName: label(ms.get(x.userId ?? '')), contactName: actors.find((c) => c.id === x.contactId)?.name ?? null })),
+      actors, suggestion,
+      next: a.nextStepAt || a.nextStep ? { step: a.nextStep, at: a.nextStepAt, contactId: a.nextContactId, channel: a.nextChannel as Channel | null,
+        contactName: actors.find((c) => c.id === a.nextContactId)?.name ?? null, bucket: dueBucket(a.nextStepAt, new Date()) } : null,
+    };
+  }
+
+  /**
+   * Apunta lo que ha pasado y deja el próximo paso: el que diga el comercial o, si no dice nada, el de la regla
+   * (docs/CRM_DINAMICO.md §10). Cuenta como contacto (renueva la reserva, como «Registrar contacto»).
+   */
+  async function logActivity(accountId: string, input: unknown, next?: unknown): Promise<NextStep | null> {
+    requireUse();
+    const v = parse(activitySchema, input);
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    try {
+      await db.insertActivity(t, { accountId, contactId: v.contactId ?? null, channel: v.channel, outcome: v.outcome, note: v.note ?? null, happenedAt: v.happenedAt });
+    } catch (e) { mapError(e); }
+    if (v.outcome !== 'note' && s.role !== 'partner') await accounts.touch(accountId, 'contact', v.note?.slice(0, 500) ?? null).catch(() => null);
+    const chosen = next ? parse(nextStepSchema, next) : null;
+    if (chosen && (chosen.at || chosen.step)) {
+      await accounts.updateAccount(accountId, { next: { step: chosen.step ?? null, at: chosen.at, contactId: chosen.contactId ?? null, channel: chosen.channel ?? null } }).catch(() => false);
+      return null;
+    }
+    if (v.outcome === 'note') return null;
+    const [acts, actors, fresh] = await Promise.all([db.listActivities(t, [accountId], 200), actorsOf(accountId), accounts.getAccount(accountId)]);
+    const sug = suggestNext({ activities: acts, actors, company: reachOf(fresh ?? a), now: new Date() });
+    await accounts.updateAccount(accountId, { next: { step: null, at: sug.at?.toISOString() ?? null, contactId: sug.contactId, channel: sug.channel } }).catch(() => false);
+    return sug;
+  }
+  async function setNextStep(accountId: string, input: unknown | null) {
+    requireUse();
+    const v = input ? parse(nextStepSchema, input) : null;
+    let ok: boolean;
+    try {
+      ok = await accounts.updateAccount(accountId, { next: v ? { step: v.step ?? null, at: v.at, contactId: v.contactId ?? null, channel: v.channel ?? null } : { step: null, at: null, contactId: null, channel: null } });
+    } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+  }
+  async function deleteActivity(id: string) {
+    requireUse();
+    if (!(await db.deleteActivity(id))) throw new AdminError(403, 'Sin permiso para esta operación');
+  }
+
+  /** «Hoy»: lo que toca (vencido → hoy → mañana) en las empresas que llevo, con el contexto en una línea. */
+  async function today(opts: { all?: boolean } = {}) {
+    requireUse();
+    const now = new Date();
+    const mine = (await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 }))
+      .filter((a) => a.nextStepAt && ['overdue', 'today', 'tomorrow'].includes(dueBucket(a.nextStepAt, now) ?? ''));
+    if (!mine.length) return { items: [] as Array<Account & { bucket: DueBucket; last: Activity | null; contactName: string | null; contactPhone: string | null; contactInstagram: string | null; contactEmail: string | null }>, counts: { overdue: 0, today: 0, tomorrow: 0 } };
+    const ids = mine.map((a) => a.id);
+    const [acts, links] = await Promise.all([db.listActivities(t, ids, 2000), db.listLinks(t, { accountIds: ids })]);
+    const contactIds = [...new Set(mine.map((a) => a.nextContactId).filter(Boolean) as string[])];
+    const cs = contactIds.length ? await db.listContacts(t, { ids: contactIds, limit: contactIds.length }) : [];
+    const ORDER: Record<string, number> = { overdue: 0, today: 1, tomorrow: 2 };
+    const items = mine.map((a) => {
+      const c = cs.find((x) => x.id === a.nextContactId) ?? null;
+      void links;
+      return { ...a, bucket: dueBucket(a.nextStepAt, now)!, last: acts.find((x) => x.accountId === a.id) ?? null,
+        contactName: c?.name ?? null, contactPhone: c?.phone ?? a.phone, contactInstagram: c?.instagram ?? a.instagram, contactEmail: c?.email ?? a.email };
+    }).sort((x, y) => ORDER[x.bucket] - ORDER[y.bucket] || String(x.nextStepAt).localeCompare(String(y.nextStepAt)));
+    const counts = { overdue: 0, today: 0, tomorrow: 0 };
+    for (const i of items) counts[i.bucket as keyof typeof counts]++;
+    return { items, counts };
+  }
+
+  /**
+   * Arreglo del FBD: el Instagram que se guardó en la persona y en realidad es del local («hohle_club» en «Hohle Club»)
+   * pasa a la empresa. Solo si la empresa no tiene ya uno y el usuario se parece al nombre del local.
+   */
+  async function instagramToCompanies(apply: boolean) {
+    requireManager();
+    const [cs, links, accs] = await Promise.all([db.listContacts(t, { limit: 20000 }), db.listLinks(t, {}), allAccounts()]);
+    const byId = new Map(accs.map((a) => [a.id, a]));
+    const handle = (u: string) => (/instagram\.com\/([^/?#]+)/i.exec(u)?.[1] ?? u.replace(/^@/, '')).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const moves: Array<{ contactId: string; contactName: string; accountId: string; accountName: string; instagram: string }> = [];
+    const seen = new Set<string>();
+    for (const c of cs) {
+      if (!c.instagram) continue;
+      const mine = links.filter((l) => l.contactId === c.id).map((l) => byId.get(l.accountId)).filter((a): a is Account => !!a);
+      const h = handle(c.instagram);
+      const target = mine.find((a) => { const k = slugKey(a.name).replace(/-/g, ''); return !a.instagram && k.length >= 3 && (h.includes(k) || k.includes(h)); });
+      if (!target || seen.has(target.id)) continue;
+      seen.add(target.id);
+      moves.push({ contactId: c.id, contactName: c.name, accountId: target.id, accountName: target.name, instagram: c.instagram });
+    }
+    if (apply) {
+      for (const m of moves) {
+        await accounts.updateAccount(m.accountId, { contact: { instagram: m.instagram } }).catch(() => false);
+        // Todas las personas del local con ese mismo Instagram lo sueltan (era del local, no suyo).
+        for (const c of cs) if (c.instagram === m.instagram) await db.updateContact(c.id, { instagram: null }).catch(() => false);
+      }
+    }
+    return { count: moves.length, sample: moves.slice(0, 8) };
+  }
+
   return {
+    setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
     company, moveToGroup, setTags, lists, names,
     imports, importStart, importDraft, importPreview, importRun, importUndo,
@@ -439,4 +598,5 @@ export const emptyCrmDb: CrmDb = {
   async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {},
   async removeLink() { return false; }, async createImport() { throw new Error('sin CRM'); }, async getImport() { return null; },
   async listImports() { return []; }, async updateImport() { return false; }, async deleteContactsByImport() { return 0; },
+  async listActivities() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },
 };

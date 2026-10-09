@@ -4,9 +4,13 @@ import { checkFields } from '../accounts/db-demo';
 import { demoDb, type CrmContactRow, type CrmImportRow } from '../data/store';
 import type { CrmDb } from './db';
 import type { Contact, CrmImport, ImportMapping } from './types';
+import type { Activity } from './followup';
 
 const db = () => demoDb();
 const iso = () => new Date().toISOString();
+/** Dos interacciones en el mismo milisegundo no deben empatar (en Postgres, now() lleva microsegundos). */
+let lastAt = 0;
+const monotonic = () => { lastAt = Math.max(Date.now(), lastAt + 1); return new Date(lastAt).toISOString(); };
 const roleOf = (t: string, u: string) => db().users.find((x) => x.id === u)?.memberships.find((m) => m.tenant_id === t)?.role ?? null;
 const isMember = (t: string, u: string) => !!roleOf(t, u);
 const isManager = (t: string, u: string) => ['admin', 'lead'].includes(roleOf(t, u) ?? '');
@@ -70,6 +74,8 @@ export function demoCrmDb(actorId: string): CrmDb {
       if (!c || !isManager(c.tenant_id, actorId)) return false;
       s.crm_contact = s.crm_contact.filter((x) => x.id !== id);
       s.crm_contact_account = s.crm_contact_account.filter((l) => l.contact_id !== id);
+      for (const a of s.crm_activity) if (a.contact_id === id) a.contact_id = null;
+      for (const a of s.account) if (a.next_contact_id === id) a.next_contact_id = null;
       return true;
     },
     async listLinks(t, f) {
@@ -122,11 +128,34 @@ export function demoCrmDb(actorId: string): CrmDb {
       if (p.doneAt !== undefined) r.done_at = p.doneAt;
       return true;
     },
+    async listActivities(t, accountIds, limit) {
+      if (!isMember(t, actorId)) return [];
+      return db().crm_activity.filter((a) => a.tenant_id === t && accountIds.includes(a.account_id))
+        .sort((a, b) => b.happened_at.localeCompare(a.happened_at)).slice(0, limit)
+        .map((r) => ({ id: r.id, accountId: r.account_id, contactId: r.contact_id, userId: r.user_id, channel: r.channel as Activity['channel'], outcome: r.outcome as Activity['outcome'], note: r.note, happenedAt: r.happened_at }));
+    },
+    async insertActivity(t, a) {
+      const s = db();
+      if (!isMember(t, actorId)) throw new Error('permission denied: crm_activity');
+      if (!s.account.some((x) => x.id === a.accountId && x.tenant_id === t)) throw new Error('violates foreign key: crm_activity account');
+      const row = { id: randomUUID(), tenant_id: t, account_id: a.accountId, contact_id: a.contactId, user_id: actorId, channel: a.channel, outcome: a.outcome,
+        note: a.note, happened_at: a.happenedAt ?? monotonic(), created_at: iso() };
+      s.crm_activity.push(row);
+      return row.id;
+    },
+    async deleteActivity(id) {
+      const s = db();
+      const a = s.crm_activity.find((x) => x.id === id);
+      if (!a || (a.user_id !== actorId && !isManager(a.tenant_id, actorId))) return false;
+      s.crm_activity = s.crm_activity.filter((x) => x.id !== id);
+      return true;
+    },
     async deleteContactsByImport(importId) {
       const s = db();
       const gone = s.crm_contact.filter((c) => c.import_id === importId && isManager(c.tenant_id, actorId)).map((c) => c.id);
       s.crm_contact = s.crm_contact.filter((c) => !gone.includes(c.id));
       s.crm_contact_account = s.crm_contact_account.filter((l) => !gone.includes(l.contact_id));
+      for (const a of s.crm_activity) if (a.contact_id && gone.includes(a.contact_id)) a.contact_id = null;
       return gone.length;
     },
   };

@@ -10,6 +10,7 @@ import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
 import { i18n } from '~/lib/i18n';
 import { peopleMessages } from '~/lib/i18n/messages/people';
+import { followupMessages } from '~/lib/i18n/messages/followup';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -17,6 +18,7 @@ const perms = can(admin.session.role);
 if (!perms.manageAccounts) return Astro.rewrite('/admin/forbidden');
 const { m, f: fmt } = i18n(Astro, peopleMessages);
 const I = m.import;
+const FX = followupMessages[i18n(Astro, followupMessages).locale].fix;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 const undone: { people: number; companies: number }[] = [];
@@ -30,6 +32,8 @@ if (Astro.request.method === 'POST') {
       if (!(file instanceof File) || file.size === 0) throw new AdminError(422, 'El archivo está vacío');
       const id = await admin.crm.importStart(file.name, await file.text(), str('target') === 'contact' ? 'contact' : 'account');
       to = `/admin/import/${id}`;
+    } else if (str('action') === 'ig-fix') {
+      to = `/admin/import?ig=${(await admin.crm.instagramToCompanies(true)).count}`;
     } else if (str('action') === 'undo') {
       const r = await admin.crm.importUndo(str('id'));
       if (r) undone.push(r);
@@ -37,12 +41,14 @@ if (Astro.request.method === 'POST') {
   });
   if (!result.error && to) return Astro.redirect(to, 303);
 }
-const history = await admin.crm.imports();
+const [history, igFix] = await Promise.all([admin.crm.imports(), admin.crm.instagramToCompanies(false)]);
+const igDone = Astro.url.searchParams.get('ig');
 ---
 <AdminLayout title={I.title}>
   <PageHeader eyebrow={I.eyebrow} title={I.title} lede={I.lede} />
   {undone[0] && <div class="mb-4"><Alert kind="success" title={I.okUndone(undone[0].people, undone[0].companies)} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {igDone && <div class="mb-4"><Alert kind="success" title={FX.igDone(Number(igDone) || 0)} /></div>}
 
   <form method="post" enctype="multipart/form-data" class="co-card mb-6 grid max-w-2xl gap-4" data-testid="import-upload">
     <input type="hidden" name="action" value="upload" />
@@ -57,6 +63,16 @@ const history = await admin.crm.imports();
       <input class="co-input" type="file" name="file" accept=".csv,text/csv" required data-testid="import-file" /></label>
     <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="import-submit"><Icon name="upload" size={16} />{I.upload}</button>
   </form>
+
+  {igFix.count > 0 && (
+    <section class="co-card mb-6 grid max-w-2xl gap-3" data-testid="ig-fix">
+      <p class="text-eyebrow">{FX.title}</p>
+      <h2 class="co-row-title">{FX.igTitle}</h2>
+      <p class="co-body">{FX.igBody(igFix.count)}</p>
+      <ul class="m-0 grid gap-1 p-0 text-sm">{igFix.sample.map((x) => <li class="list-none"><span class="co-meta">{x.contactName} →</span> <strong>{x.accountName}</strong> <span class="co-meta">· {x.instagram.replace(/^https?:\/\/(www\.)?/, '')}</span></li>)}</ul>
+      <form method="post"><input type="hidden" name="action" value="ig-fix" /><button class="co-btn co-btn--primary w-fit" type="submit" data-testid="ig-fix-apply">{FX.igApply(igFix.count)}</button></form>
+    </section>
+  )}
 
   <section class="co-section">
     <div class="co-section__head"><h2 class="text-eyebrow">{I.history}</h2></div>

@@ -64,6 +64,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.locator('[data-testid=account][data-name="Sala Marina"] [data-testid=claim]').click();
   await rep.waitForURL(/ok=claimed/);
   assert((await rep.getAttribute('[data-testid=account-status]', 'data-state')) === 'mine', 'me la quedo: reservada para mí');
+  await rep.check('[data-testid=contact-form] [data-testid=outcome-replied]', { force: true });
   await rep.fill('[data-testid=contact-form] [name=note]', 'Visita: el dueño quiere verlo un viernes');
   await rep.click('[data-testid=contact-form] button[type=submit]');
   await rep.waitForURL(/ok=contact/);

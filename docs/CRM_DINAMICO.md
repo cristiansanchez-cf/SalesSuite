@@ -254,3 +254,30 @@ cubren cada pantalla antes y después del cambio.
 3. **Tus etapas** reales del embudo (cómo las llamas tú).
 4. **Cómo haces hoy el seguimiento** (qué miras, cada cuánto, qué se te escapa).
 5. Para el foco Valencia: **qué zonas y qué tipo de local** son prioridad.
+
+## 10. Seguimiento (fase 3a, hecho)
+
+Pedido de Cristian (9-oct-2026): que la app quite carga mental. Investigar → contactar → cita → propuesta, con el
+historial claro y el próximo paso siempre puesto.
+
+- **Contacto de la empresa** (de serie): teléfono, email, Instagram, LinkedIn, web y Google Maps
+  (`20261105000000_crm_activity.sql`). En la ficha, botones de un toque (llamar, WhatsApp, email, abrir Instagram…).
+  Si la empresa no tiene un dato y su persona principal sí, se usa el de la persona y se dice «de Marta» (empresa
+  pequeña: el móvil del dueño). Al importar empresas, Email / Teléfono / Instagram / LinkedIn / Web van aquí.
+- **Interacciones** (`crm_activity`): con quién, por dónde (Instagram, LinkedIn, WhatsApp, llamada, email, visita,
+  reunión) y qué pasó (sin respuesta, contestó, interesado, no interesado, cita, o solo una nota de investigación).
+  Cada uno apunta y borra lo suyo; el equipo lo ve. Apuntar cuenta como contacto (renueva la reserva).
+- **Próximo paso** (en la empresa): lo fija el comercial o lo propone la regla (`src/lib/crm/followup.ts`):
+  - vías en orden: redes (Instagram, LinkedIn, WhatsApp) → teléfono → email → visita;
+  - máximo **3 mensajes sin respuesta por persona**; después la siguiente persona de la empresa (hasta 3);
+  - si nadie contesta, **visita en persona**; una respuesta reinicia la cuenta;
+  - si contesta o hay interés, se propone seguir en 2 días (manda el comercial); «no interesado» cierra.
+- **«Hoy en tus cuentas»** (Inicio): vencido → hoy → mañana de las empresas que llevas, con qué hacer, con quién, la
+  última interacción y el contacto a un toque.
+- **Arreglo del FBD** (Cuentas → Importar → Arreglos): el Instagram del local guardado en la persona pasa a la empresa.
+- Pruebas: `followup.test.ts`, contrato de cuentas (demo y Postgres), `supabase/tests/49_crm_activity.test.sql`,
+  `scripts/smoke-followup.cjs`.
+
+**Siguiente** (pendiente de decidir con Cristian): prioridad automática por casillas clave; modo «Investigar» por
+zona; Google Places (horario, mapa, ruta del día); primera búsqueda con IA (marcada «sin verificar»); WhatsApp de ida
+y vuelta (aviso con mensaje propuesto y, al responder con audio o captura, nueva interacción).

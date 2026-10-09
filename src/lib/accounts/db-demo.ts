@@ -20,7 +20,13 @@ const toAccount = (r: AccountRow): Account => ({
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
   fields: (r.fields ?? {}) as Account['fields'], parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
+  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
+  nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
 });
+const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
+function applyContact(row: AccountRow, c: AccountInsert['contact']) {
+  for (const [k, col] of Object.entries(CONTACT_COLS)) { const v = c?.[k as keyof typeof CONTACT_COLS]; if (v !== undefined) (row as unknown as Record<string, unknown>)[col] = v; }
+}
 const toField = (r: CrmFieldRow): CrmField => ({
   id: r.id, tenantId: r.tenant_id, key: r.key, label: r.label, type: r.type as FieldType, options: r.options, group: r.grp, position: r.position,
   help: r.help, required: r.required, inList: r.in_list, filterable: r.filterable, segments: r.segments, archivedAt: r.archived_at,
@@ -126,6 +132,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
     else Object.assign(row, { owner_id: actorId, claimed_until: plusDays(rulesOf(t).claimDays), last_touch_at: iso(), last_touch_by: actorId });
     checkParent(t, row.id, a.parentId);
     row.parent_id = a.parentId ?? null;
+    applyContact(row, a.contact);
     s.account.push(row);
     logTouch(row, actorId, 'created');
     return row.id;
@@ -206,6 +213,8 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (p.fields !== undefined) a.fields = checkFields(a.tenant_id, p.fields);
       if (p.parentId !== undefined) { checkParent(a.tenant_id, a.id, p.parentId); a.parent_id = p.parentId; }
       if (p.tags !== undefined) a.tags = p.tags;
+      applyContact(a, p.contact);
+      if (p.next !== undefined) Object.assign(a, { next_step: p.next.step, next_step_at: p.next.at, next_contact_id: p.next.contactId, next_channel: p.next.channel });
       // = account_audit
       if (a.status === 'blocked' && prev.status !== 'blocked') logTouch(a, actorId, 'block', a.blocked_reason);
       else if (prev.status === 'blocked' && a.status !== 'blocked') logTouch(a, actorId, 'unblock');
@@ -219,6 +228,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       s.account = s.account.filter((x) => x.id !== id);
       for (const x of s.account) if (x.parent_id === id) x.parent_id = null;
       s.crm_contact_account = s.crm_contact_account.filter((l) => l.account_id !== id);
+      s.crm_activity = s.crm_activity.filter((x) => x.account_id !== id);
       s.account_touch = s.account_touch.filter((x) => x.account_id !== id);
       for (const d of s.dossier) if (d.account_id === id) d.account_id = null;
       return true;

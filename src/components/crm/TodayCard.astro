@@ -1,0 +1,41 @@
+---
+/**
+ * «Hoy» (docs/CRM_DINAMICO.md §10): lo que toca en las empresas que llevas, en orden (vencido → hoy → mañana), con el
+ * contexto en una línea y el contacto a un toque. Bloque aparte (server island) para no frenar Inicio.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import ContactLinks from './ContactLinks.astro';
+import { can } from '~/lib/admin/permissions';
+import { i18n } from '~/lib/i18n';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+
+const { admin } = Astro.locals;
+if (!admin || !can(admin.session.role).useAccounts) return;
+const { m: F, f: fmt } = i18n(Astro, followupMessages);
+const { items, counts } = await admin.crm.today();
+---
+<section class="co-card grid gap-4 !p-6" data-testid="today">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h2 class="co-entity flex items-center gap-2"><Icon name="calendar" size={18} />{F.today.title}</h2>
+    {items.length > 0 && <span class="co-meta" data-testid="today-counts">{F.today.counts(counts.overdue, counts.today, counts.tomorrow)}</span>}
+  </div>
+  {items.length === 0 ? (
+    <p class="co-meta">{F.today.empty} {F.today.emptyHint}</p>
+  ) : (
+    <ul class="co-rows">
+      {items.slice(0, 12).map((a) => (
+        <li class:list={['co-row', a.bucket === 'overdue' && 'co-row--attention']} data-testid="today-item" data-name={a.name} data-bucket={a.bucket}>
+          <span class="co-row__lead"><Icon name={a.nextChannel === 'visit' ? 'map-pin' : a.nextChannel === 'phone' ? 'phone' : 'message-square-text'} /></span>
+          <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}#follow`}>
+            <span class="co-row-title"><span class="co-tag mr-2">{F.follow[a.bucket]}</span>{a.name}</span>
+            <span class="co-meta">
+              {[a.nextChannel && F.channels[a.nextChannel as keyof typeof F.channels], a.contactName, a.nextStep].filter(Boolean).join(' · ')}
+              {a.last && <> · {F.today.last}: {a.last.outcome === 'note' ? F.outcomes.note : `${F.channels[a.last.channel]} · ${F.outcomes[a.last.outcome]}`} ({fmt.relative(a.last.happenedAt)})</>}
+            </span>
+          </a>
+          <ContactLinks reach={{ phone: a.contactPhone, email: a.contactEmail, instagram: a.contactInstagram }} size="sm" labels={false} />
+        </li>
+      ))}
+    </ul>
+  )}
+</section>

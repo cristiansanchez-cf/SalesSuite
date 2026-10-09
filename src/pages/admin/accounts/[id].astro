@@ -19,6 +19,9 @@ import FieldInput from '~/components/crm/FieldInput.astro';
 import { fieldsFor, formatValue, valuesFromForm } from '~/lib/crm/fields';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+import ContactLinks from '~/components/crm/ContactLinks.astro';
+import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -31,6 +34,7 @@ const M = msg.detail;
 const ELIGIBILITY_LABEL = ELIGIBILITY_LABELS[locale];
 const C = crmMessages[locale].card;
 const P = peopleMessages[locale];
+const F = followupMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -39,7 +43,17 @@ if (Astro.request.method === 'POST') {
   let to = `/admin/accounts/${id}`;
   result = await formAction(async () => {
     switch (str('action')) {
-      case 'contact': { const e = await acc.touch(id, 'contact', str('note')); to += `?ok=${e === 'eligible' ? 'contact' : `not-${e}`}`; break; }
+      case 'contact': {
+        // Apuntar una interacción (cuenta como contacto) y dejar el próximo paso: el que diga el comercial o el de la regla.
+        const custom = str('nextAt') || str('nextStep') ? { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') } : undefined;
+        await admin.crm.logActivity(id, { contactId: str('contactId'), channel: str('channel') || 'other', outcome: str('outcome') || 'note', note: str('note') }, custom);
+        to += str('outcome') === 'note' || !str('outcome') ? '?ok=noted' : '?ok=contact';
+        break;
+      }
+      case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
+      case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
+      case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
+      case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
       case 'claim': { const e = await acc.touch(id, 'claim'); to += `?ok=${e === 'eligible' ? 'claimed' : `not-${e}`}`; break; }
       case 'release': await acc.touch(id, 'release'); to += '?ok=released'; break;
       case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
@@ -69,7 +83,14 @@ try { data = await acc.get(id); } catch (e) {
   throw e;
 }
 const { account: a, eligibility, touches, dossiers, canEdit, rules, crmFields } = data;
-const [t, segments, members, co] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id)]);
+const [t, segments, members, co, tl] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id)]);
+// Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
+const primary = tl.actors[0];
+const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
+const sug = tl.suggestion;
+const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
+const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
+const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
 const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
 const sheet = fieldsFor(crmFields, segKey, { target: 'account', tags: a.tags });
@@ -78,8 +99,9 @@ const day = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'long
 const NOT = (e: string) => M.notClaimed(ELIGIBILITY_LABEL[e as keyof typeof ELIGIBILITY_LABEL]?.toLowerCase() ?? e);
 const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
-  created: M.okCreated(rules.claimDays), contact: M.okContact(day(a.claimedUntil)),
+  created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
+  noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
 });
@@ -113,18 +135,91 @@ const STATE_ALERT = {
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
 
-      {a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer' && (
-        <form method="post" class="co-card grid gap-3" data-testid="contact-form">
-          <input type="hidden" name="action" value="contact" />
-          <h2 class="co-card-title">{M.registerContact}</h2>
-          <label class="co-field">{M.whatHappened} <span class="co-help">{M.oneLine}</span>
-            <input class="co-input" name="note" maxlength="500" placeholder={M.notePlaceholder} /></label>
-          <div class="flex flex-wrap gap-2">
-            <button class="co-btn co-btn--primary w-fit" type="submit">{M.registerButton}</button>
-            {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet" data-dialog-open="release">{M.release}</button>}
-          </div>
-        </form>
-      )}
+      <section class="co-card grid gap-4" data-testid="follow">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="co-entity">{F.follow.title}</h2>
+          {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-dialog-open="release">{M.release}</button>}
+        </div>
+        <div class:list={['co-inset grid gap-2 !p-4', tl.next?.bucket === 'overdue' && 'co-row--attention']} data-testid="next-step" data-bucket={tl.next?.bucket ?? ''}>
+          <p class="text-eyebrow">{F.follow.next}</p>
+          {tl.next ? (
+            <>
+              <p class="co-row-title">
+                {tl.next.bucket && <span class="co-tag mr-2">{F.follow[tl.next.bucket]}</span>}
+                {nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}
+                {tl.next.channel && ` · ${F.channels[tl.next.channel]}`}
+                {` · ${actorName(tl.next.contactId)}`}
+              </p>
+              {tl.next.step && <p class="co-body">{tl.next.step}</p>}
+            </>
+          ) : <p class="co-meta">{F.follow.noNext}</p>}
+          {sug.reason !== 'closed' && (!tl.next || tl.next.channel !== sug.channel || tl.next.contactId !== sug.contactId) && (
+            <p class="co-meta" data-testid="suggestion">{F.follow.suggested}: {sug.reason === 'retry' ? F.reasons.retry(sug.attempt) : F.reasons[sug.reason]}{sug.channel ? ` · ${F.channels[sug.channel]}` : ''}{sug.contactId ? ` · ${actorName(sug.contactId)}` : ''}</p>
+          )}
+        </div>
+
+        {a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer' && (
+          <form method="post" class="grid gap-3" data-testid="contact-form">
+            <input type="hidden" name="action" value="contact" />
+            <p class="co-row-title">{F.follow.log}</p>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="co-field">{F.follow.with}
+                <select class="co-select" name="contactId">
+                  {tl.actors.map((x) => <option value={x.id} selected={x.id === (tl.next?.contactId ?? sug.contactId)}>{x.name}{x.role ? ` · ${x.role}` : ''}</option>)}
+                  <option value="" selected={!tl.actors.length}>{F.follow.company}</option>
+                </select></label>
+              <label class="co-field">{F.follow.via}
+                <select class="co-select" name="channel" data-testid="log-channel">{CHANNELS.map((c) => <option value={c} selected={c === (tl.next?.channel ?? sug.channel ?? 'other')}>{F.channels[c]}</option>)}</select></label>
+            </div>
+            <fieldset class="grid gap-2">
+              <legend class="co-field mb-1">{F.follow.result}</legend>
+              <div class="co-chips">
+                {OUTCOMES.map((o, i) => <label class="co-chip outcome"><input type="radio" class="sr-only" name="outcome" value={o} checked={o === 'note'} data-testid={`outcome-${o}`} />{F.outcomes[o]}</label>)}
+              </div>
+            </fieldset>
+            <label class="co-field">{F.follow.note}<textarea class="co-textarea !min-h-[64px]" name="note" maxlength="4000" placeholder={F.follow.notePh}></textarea></label>
+            <details>
+              <summary class="co-meta cursor-pointer">{F.follow.change}</summary>
+              <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" /></label>
+                <label class="co-field">{F.follow.via}<select class="co-select" name="nextChannel"><option value=""></option>{CHANNELS.map((c) => <option value={c}>{F.channels[c]}</option>)}</select></label>
+                <label class="co-field">{F.follow.with}<select class="co-select" name="nextContactId"><option value="">{F.follow.company}</option>{tl.actors.map((x) => <option value={x.id}>{x.name}</option>)}</select></label>
+                <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="300" placeholder={F.follow.whatPh} /></label>
+              </div>
+            </details>
+            <div class="flex flex-wrap items-center gap-3">
+              <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="log-save">{F.follow.save}</button>
+              <span class="co-help">{F.follow.logHelp}</span>
+            </div>
+          </form>
+        )}
+        {tl.next && canEdit && (
+          <form method="post"><input type="hidden" name="action" value="next-clear" /><button class="co-meta underline" type="submit">{F.follow.clear} {F.follow.next.toLowerCase()}</button></form>
+        )}
+
+        <div class="grid gap-2" data-testid="interactions">
+          <p class="text-eyebrow">{F.follow.history(tl.items.length)}</p>
+          {tl.items.length === 0 ? <p class="co-meta">{F.follow.empty}</p> : (
+            <ol class="grid gap-2 p-0">
+              {tl.items.slice(0, 30).map((x) => (
+                <li class="flex list-none items-start gap-3 text-sm" data-outcome={x.outcome}>
+                  <span class="co-meta w-24 shrink-0">{fmt.relative(x.happenedAt)}</span>
+                  <span class="min-w-0 flex-1">
+                    <strong>{x.outcome === 'note' ? F.outcomes.note : `${F.channels[x.channel]} · ${F.outcomes[x.outcome]}`}</strong>
+                    <span class="co-meta">{x.contactName ? ` · ${x.contactName}` : ''}{x.userName ? ` · ${x.userName}` : ''}</span>
+                    {x.note && <span class="co-body block whitespace-pre-line">{x.note}</span>}
+                  </span>
+                  {(x.userId === admin.session.userId || perms.manageAccounts) && (
+                    <form method="post"><input type="hidden" name="action" value="activity-delete" /><input type="hidden" name="activityId" value={x.id} />
+                      <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={F.follow.remove} title={F.follow.remove}><Icon name="x" size={12} /></button></form>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+          <p class="co-help">{F.follow.rule}</p>
+        </div>
+      </section>
 
       <section class="co-card grid gap-4" data-testid="account-sheet">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -240,6 +335,27 @@ const STATE_ALERT = {
     </div>
 
     <aside class="grid content-start gap-4">
+      <section class="co-card grid gap-3" data-testid="company-contact">
+        <h2 class="co-entity">{F.contact.title}</h2>
+        {(a.phone || a.email || a.instagram || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
+          ? <ContactLinks reach={a} fallback={fallback} size="sm" testid="contact-links" />
+          : <p class="co-meta">{F.contact.none}</p>}
+        <details open={!(a.phone || a.email || a.instagram)}>
+          <summary class="co-meta cursor-pointer">{F.contact.edit}</summary>
+          <form method="post" class="mt-3 grid gap-3" data-testid="company-contact-form">
+            <input type="hidden" name="action" value="company-contact" />
+            <fieldset class="grid gap-3" disabled={!canEdit}>
+              <label class="co-field">{F.contact.phone}<input class="co-input" type="tel" name="phone" value={a.phone ?? ''} maxlength="40" /></label>
+              <label class="co-field">{F.contact.email}<input class="co-input" type="email" name="email" value={a.email ?? ''} maxlength="200" /></label>
+              <label class="co-field">{F.contact.instagram} <span class="co-help">{F.contact.help}</span><input class="co-input" name="instagram" value={a.instagram ?? ''} maxlength="300" placeholder="@" /></label>
+              <label class="co-field">{F.contact.linkedin}<input class="co-input" name="linkedin" value={a.linkedin ?? ''} maxlength="300" /></label>
+              <label class="co-field">{F.contact.website}<input class="co-input" name="website" value={a.website ?? ''} maxlength="300" /></label>
+              <label class="co-field">{F.contact.mapsUrl}<input class="co-input" name="mapsUrl" value={a.mapsUrl ?? ''} maxlength="500" placeholder="https://maps.app.goo.gl/…" /></label>
+              {canEdit && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{F.contact.save}</button>}
+            </fieldset>
+          </form>
+        </details>
+      </section>
       <form method="post" class="co-card grid gap-3" data-testid="account-info">
         <input type="hidden" name="action" value="save" />
         <h2 class="co-entity">{M.data}</h2>
@@ -313,3 +429,7 @@ const STATE_ALERT = {
     <input type="hidden" name="action" value="delete" />
   </ConfirmDialog>
 </AdminLayout>
+
+<style>
+  .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+</style>

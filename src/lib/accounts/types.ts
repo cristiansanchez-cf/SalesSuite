@@ -38,7 +38,13 @@ export interface Account {
   /** Listas en las que está (p. ej. «proveedores-bodas»). */
   tags: string[];
   importId: string | null;
+  /** Contacto de la empresa (docs/CRM_DINAMICO.md §10). */
+  phone: string | null; email: string | null; instagram: string | null; linkedin: string | null; website: string | null; mapsUrl: string | null;
+  /** Próximo paso (lo que sale en «Hoy»). */
+  nextStep: string | null; nextStepAt: string | null; nextContactId: string | null; nextChannel: string | null;
 }
+export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'linkedin', 'website', 'mapsUrl'] as const;
+export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }
 

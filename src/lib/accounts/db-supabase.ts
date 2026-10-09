@@ -14,13 +14,17 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
-const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id';
+const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
   fields: r.fields ?? {}, parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
+  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
+  nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
 });
+const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
+const contactRow = (c: AccountInsert['contact']) => Object.fromEntries(Object.entries(CONTACT_COLS).filter(([k]) => c?.[k as keyof typeof CONTACT_COLS] !== undefined).map(([k, col]) => [col, c![k as keyof typeof CONTACT_COLS]]));
 const toField = (r: Row): CrmField => ({
   id: r.id, tenantId: r.tenant_id, key: r.key, label: r.label, type: r.type as FieldType, options: r.options ?? [], group: r.grp, position: r.position,
   help: r.help, required: r.required, inList: r.in_list, filterable: r.filterable, segments: r.segments ?? [], archivedAt: r.archived_at,
@@ -29,6 +33,7 @@ const toField = (r: Row): CrmField => ({
 const accountRow = (t: string, a: AccountInsert) => ({
   tenant_id: t, name: a.name, zone_id: a.zoneId, segment_id: a.segmentId, address: a.address, external_ref: a.externalRef, notes: a.notes,
   owner_id: a.ownerId ?? null, fields: a.fields ?? {}, parent_id: a.parentId ?? null, tags: a.tags ?? [], import_id: a.importId ?? null,
+  ...contactRow(a.contact),
 });
 const toZone = (r: Row): Zone => ({ id: r.id, tenantId: r.tenant_id, parentId: r.parent_id, name: r.name, kind: r.kind as ZoneKind, position: r.position });
 /** Búsqueda por nombre sin comodines del usuario. */
@@ -111,6 +116,8 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       if (p.fields !== undefined) patch.fields = p.fields;
       if (p.parentId !== undefined) patch.parent_id = p.parentId;
       if (p.tags !== undefined) patch.tags = p.tags;
+      Object.assign(patch, contactRow(p.contact));
+      if (p.next !== undefined) Object.assign(patch, { next_step: p.next.step, next_step_at: p.next.at, next_contact_id: p.next.contactId, next_channel: p.next.channel });
       return (check(await sb.from('account').update(patch).eq('id', id).select('id')) ?? []).length > 0;
     },
     async deleteAccount(id) { return (check(await sb.from('account').delete().eq('id', id).select('id')) ?? []).length > 0; },

@@ -283,7 +283,8 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(plan.stats).toMatchObject({ duplicates: 1, accountsCreated: 2, accountsMerged: 1, toNotes: 1 });
       await admin.crm.importPreview(imp, { ...mapping, tag: 'proveedores-bodas', options: { 'Estado Lead': ['Sin contactar', 'Interesado', 'Acuerdo cerrado'] } });
       const st = await admin.crm.importRun(imp);
-      expect(st).toMatchObject({ accountsCreated: 2, accountsMerged: 1, zonesCreated: 2, fieldsCreated: 4 });
+      expect(st).toMatchObject({ accountsCreated: 2, accountsMerged: 1, zonesCreated: 2, fieldsCreated: 3 });
+      expect((await admin.accounts.list({ scope: 'all' })).items.find((a) => a.name === 'Luz y Ritmo')?.email).toBe('hola@luz.test');
       await rejects(admin.crm.importRun(imp), 409);
       const fields = await admin.accounts.crmFields();
       const estado = fields.find((f) => f.key === 'estado-lead')!;
@@ -319,6 +320,47 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect((await admin.accounts.crmFields()).map((f) => f.key)).toEqual([]);
       expect((await admin.accounts.territory()).zones.map((z) => z.name).sort()).toEqual(['España', 'Valencia']);
       await rejects(admin.crm.importUndo(imp), 409);
+    });
+    test('CRM fase 3: contacto de la empresa, interacciones, regla de los 3 intentos y «Hoy»', async () => {
+      const admin = await ctx(U.admin);
+      const rep = await ctx(U.rep);
+      const marta = await rep.crm.quickAdd({ name: 'Marta', company: 'Club Hoy', role: 'Gerente', phone: '+34 600 000 001' });
+      const acc = marta.accountId!;
+      await rep.crm.setCompanyContact(acc, { instagram: '@clubhoy', email: 'HOLA@clubhoy.test', website: 'clubhoy.test' });
+      const a = (await rep.accounts.get(acc)).account;
+      expect(a).toMatchObject({ instagram: 'https://www.instagram.com/clubhoy/', email: 'hola@clubhoy.test', website: 'https://clubhoy.test' });
+
+      // Primer contacto: sin respuesta → la app propone otra vía con la misma persona en 2 días.
+      const s1 = await rep.crm.logActivity(acc, { contactId: marta.id, channel: 'instagram', outcome: 'no_reply', note: 'Mensaje por IG' });
+      expect(s1).toMatchObject({ contactId: marta.id, channel: 'whatsapp', reason: 'retry', attempt: 2 });
+      await rep.crm.logActivity(acc, { contactId: marta.id, channel: 'whatsapp', outcome: 'no_reply' });
+      const s3 = await rep.crm.logActivity(acc, { contactId: marta.id, channel: 'phone', outcome: 'no_reply' });
+      expect(s3).toMatchObject({ channel: 'visit', reason: 'visit' });  // una sola persona: tras 3 sin respuesta, en persona
+      const tl = await rep.crm.timeline(acc);
+      expect(tl.items.map((x) => x.channel)).toEqual(['phone', 'whatsapp', 'instagram']);
+      expect(tl.next).toMatchObject({ channel: 'visit', contactId: marta.id });
+
+      // Una nota de investigación no cuenta como intento ni cambia el próximo paso.
+      expect(await rep.crm.logActivity(acc, { channel: 'other', outcome: 'note', note: 'Padre e hija, negocio familiar' })).toBeNull();
+
+      // El próximo paso lo puede fijar el comercial; «Hoy» lo enseña con su contexto.
+      await rep.crm.setNextStep(acc, { at: new Date(Date.now() - 86_400_000).toISOString(), channel: 'whatsapp', contactId: marta.id, step: 'Proponer cita el jueves' });
+      const today = await rep.crm.today();
+      expect(today.counts.overdue).toBe(1);
+      expect(today.items[0]).toMatchObject({ name: 'Club Hoy', bucket: 'overdue', nextStep: 'Proponer cita el jueves', contactName: 'Marta', contactPhone: '+34 600 000 001' });
+      expect(today.items[0].last?.outcome).toBe('note');
+      expect((await admin.crm.today()).items).toHaveLength(0);           // «Hoy» es de quien la lleva
+      await rep.crm.setNextStep(acc, null);
+      expect((await rep.crm.today()).items).toHaveLength(0);
+
+      // Arreglo: el Instagram del local guardado en la persona pasa a la empresa.
+      const p = await rep.crm.quickAdd({ name: 'Bruno', company: 'Sala Luna Llena', instagram: 'https://www.instagram.com/salalunallena/' });
+      const prev = await admin.crm.instagramToCompanies(false);
+      expect(prev.count).toBe(1);
+      await admin.crm.instagramToCompanies(true);
+      expect((await rep.accounts.get(p.accountId!)).account.instagram).toBe('https://www.instagram.com/salalunallena/');
+      expect((await rep.crm.person(p.id)).person.instagram).toBeNull();
+      await rejects(rep.crm.instagramToCompanies(false), 403);
     });
   });
 }

@@ -92,6 +92,7 @@ const CORE_NAMES: Record<CoreKey, string[]> = {
   address: ['direccion', 'address', 'domicilio'],
   externalRef: ['id', 'referencia', 'ref', 'external id', 'codigo'],
   group: ['grupo', 'group', 'grupo empresarial', 'cadena'],
+  website: ['web', 'website', 'web oficial', 'sitio web', 'pagina web', 'url web', 'url'],
 };
 const STAGE = /^(status|estado|etapa|stage|fase|pipeline)\b/;
 /** Cabeceras que suelen ser una lista de opciones aunque haya pocas filas. */
@@ -191,6 +192,8 @@ export interface NewField { header: string; key: string; label: string; type: Fi
 export interface PlannedAccount {
   ref: string; name: string; city: string | null; address: string | null; externalRef: string | null; notes: string | null; ownerId: string | null;
   fields: FieldValues; group: string | null; existingId: string | null; isGroup: boolean; rows: number[];
+  /** Contacto de la empresa (solo al importar empresas). */
+  contact?: { phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; website?: string | null };
 }
 export interface PlannedContact {
   ref: string; name: string; email: string | null; phone: string | null; instagram: string | null; linkedin: string | null; city: string | null;
@@ -257,7 +260,7 @@ export function niceCase(s: string): string {
 /** Primera letra en mayúscula (papeles: «owner» → «Owner»). */
 const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 /** Límites de las columnas de serie (lo que no cabe va a notas, nunca rompe la importación). */
-export const CORE_MAX = { name: 160, city: 80, role: 80, email: 200, phone: 40, instagram: 300, linkedin: 300, address: 300, externalRef: 120, company: 160, group: 160 } as const;
+export const CORE_MAX = { website: 300, name: 160, city: 80, role: 80, email: 200, phone: 40, instagram: 300, linkedin: 300, address: 300, externalRef: 120, company: 160, group: 160 } as const;
 const cleanUrl = (s: string) => s.trim().split(/\s+/)[0]?.replace(/[)\],;]+$/, '') ?? '';
 const appendNote = (prev: string | null, line: string) => (prev ? (prev.includes(line) ? prev : `${prev}\n${line}`) : line).slice(0, 4000);
 
@@ -377,6 +380,22 @@ export function buildPlan(headers: string[], rows: string[][], mapping: ImportMa
       a.address ||= fit('address', at(r, 'address')) || null;
       a.externalRef ||= fit('externalRef', at(r, 'externalRef')) || null;
       a.ownerId ||= ownerId;
+      // Contacto de la empresa: lo que no es un email o un enlace válido va a notas con su columna.
+      const c = (a.contact ??= {});
+      const email = fit('email', at(r, 'email')).toLowerCase();
+      if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) c.email ||= email;
+      else if (email) { notes = appendNote(notes, `${headers[col('email')]}: ${email}`); issues.push({ row, column: headers[col('email')], value: email, error: 'Email no válido' }); stats.toNotes++; }
+      c.phone ||= fit('phone', at(r, 'phone')) || null;
+      const link = (k: 'instagram' | 'linkedin' | 'website') => {
+        const raw = cleanUrl(at(r, k));
+        if (!raw) return null;
+        const v = k === 'instagram' && /^@?[\w.]{2,30}$/.test(raw) ? `https://www.instagram.com/${raw.replace(/^@/, '')}/` : /^(https?:\/\/|www\.)|\.[a-z]{2,}(\/|$)/i.test(raw) ? (/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) : '';
+        if (!v) { notes = appendNote(notes, `${headers[col(k)]}: ${raw}`); return null; }
+        return fit(k, v) || null;
+      };
+      c.instagram ||= link('instagram');
+      c.linkedin ||= link('linkedin');
+      c.website ||= link('website');
       if (notes) a.notes = appendNote(a.notes, notes);
       for (const [k, v] of Object.entries(values)) if (a.fields[k] === undefined) a.fields[k] = v;
       const group = niceCase(fit('group', at(r, 'group')));

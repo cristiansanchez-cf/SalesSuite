@@ -65,7 +65,7 @@ export const peopleMessages = defineMessages({
       needsAdmin: 'Crear campos nuevos es cosa de un admin.', mappingSaved: 'Mapeo guardado.',
       coreKeys: {
         name: 'Nombre', company: 'Empresa', role: 'Papel en la empresa', city: 'Ciudad', email: 'Email', phone: 'Teléfono', instagram: 'Instagram',
-        linkedin: 'LinkedIn', notes: 'Notas', owner: 'Quién lo lleva', address: 'Dirección', externalRef: 'Referencia externa', group: 'Grupo',
+        linkedin: 'LinkedIn', notes: 'Notas', owner: 'Quién lo lleva', address: 'Dirección', externalRef: 'Referencia externa', group: 'Grupo', website: 'Web',
       },
     },
     fields: {
@@ -137,7 +137,7 @@ export const peopleMessages = defineMessages({
       needsAdmin: 'Creating new fields is up to an admin.', mappingSaved: 'Mapping saved.',
       coreKeys: {
         name: 'Name', company: 'Company', role: 'Role at the company', city: 'City', email: 'Email', phone: 'Phone', instagram: 'Instagram',
-        linkedin: 'LinkedIn', notes: 'Notes', owner: 'Who handles it', address: 'Address', externalRef: 'External reference', group: 'Group',
+        linkedin: 'LinkedIn', notes: 'Notes', owner: 'Who handles it', address: 'Address', externalRef: 'External reference', group: 'Group', website: 'Website',
       },
     },
     fields: {
@@ -209,7 +209,7 @@ export const peopleMessages = defineMessages({
       needsAdmin: 'Criar campos novos é com um admin.', mappingSaved: 'Mapeamento salvo.',
       coreKeys: {
         name: 'Nome', company: 'Empresa', role: 'Papel na empresa', city: 'Cidade', email: 'Email', phone: 'Telefone', instagram: 'Instagram',
-        linkedin: 'LinkedIn', notes: 'Notas', owner: 'Quem cuida', address: 'Endereço', externalRef: 'Referência externa', group: 'Grupo',
+        linkedin: 'LinkedIn', notes: 'Notas', owner: 'Quem cuida', address: 'Endereço', externalRef: 'Referência externa', group: 'Grupo', website: 'Site',
       },
     },
     fields: {
@@ -281,7 +281,7 @@ export const peopleMessages = defineMessages({
       needsAdmin: '새 필드는 관리자만 만들 수 있습니다.', mappingSaved: '매핑을 저장했습니다.',
       coreKeys: {
         name: '이름', company: '회사', role: '회사 내 역할', city: '도시', email: '이메일', phone: '전화', instagram: '인스타그램',
-        linkedin: '링크드인', notes: '메모', owner: '담당자', address: '주소', externalRef: '외부 참조', group: '그룹',
+        linkedin: '링크드인', notes: '메모', owner: '담당자', address: '주소', externalRef: '외부 참조', group: '그룹', website: '웹사이트',
       },
     },
     fields: {

@@ -6,6 +6,7 @@ import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import FieldInput from '~/components/crm/FieldInput.astro';
+import ContactLinks from '~/components/crm/ContactLinks.astro';
 import { can } from '~/lib/admin/permissions';
 import { AdminError } from '~/lib/admin/service';
 import { flash, formAction } from '~/lib/admin/forms';
@@ -64,6 +65,7 @@ const okMsg = flash(Astro.url, P.person.ok);
     </Alert></div>
   )}
 
+  <div class="mb-5"><ContactLinks reach={p} testid="person-contact-links" /></div>
   <div class="co-split">
     <div class="grid content-start gap-5">
       <section class="co-card grid gap-3" data-testid="person-companies">

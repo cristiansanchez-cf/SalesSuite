@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CrmDb } from './db';
 import type { Contact, CrmImport } from './types';
+import type { Activity } from './followup';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -19,6 +20,9 @@ const toContact = (r: Row): Contact => ({
 const toImport = (r: Row): CrmImport => ({
   id: r.id, tenantId: r.tenant_id, createdBy: r.created_by, fileName: r.file_name, target: r.target, headers: r.headers ?? [], rows: r.rows ?? [],
   mapping: r.mapping ?? {}, status: r.status, stats: r.stats ?? {}, createdAt: r.created_at, doneAt: r.done_at,
+});
+const toActivity = (r: Row): Activity => ({
+  id: r.id, accountId: r.account_id, contactId: r.contact_id, userId: r.user_id, channel: r.channel, outcome: r.outcome, note: r.note, happenedAt: r.happened_at,
 });
 const contactRow = (t: string, c: Partial<Contact>) => ({
   tenant_id: t, name: c.name, email: c.email ?? null, phone: c.phone ?? null, instagram: c.instagram ?? null, linkedin: c.linkedin ?? null, city: c.city ?? null,
@@ -106,6 +110,20 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       if (p.doneAt !== undefined) patch.done_at = p.doneAt;
       return (check(await sb.from('crm_import').update(patch).eq('id', id).select('id')) ?? []).length > 0;
     },
+    async listActivities(t, accountIds, limit) {
+      if (!accountIds.length) return [];
+      const out: Row[] = [];
+      for (const g of chunks(accountIds, 150)) {
+        out.push(...await paged(() => sb.from('crm_activity').select('*').eq('tenant_id', t).in('account_id', g).order('happened_at', { ascending: false }).order('created_at', { ascending: false }).order('id'), limit));
+      }
+      return out.sort((a, b) => String(b.happened_at).localeCompare(String(a.happened_at))).slice(0, limit).map(toActivity);
+    },
+    async insertActivity(t, a) {
+      const row: Row = { tenant_id: t, account_id: a.accountId, contact_id: a.contactId, channel: a.channel, outcome: a.outcome, note: a.note };
+      if (a.happenedAt) row.happened_at = a.happenedAt;
+      return (check(await sb.from('crm_activity').insert(row).select('id').single()) as Row).id;
+    },
+    async deleteActivity(id) { return (check(await sb.from('crm_activity').delete().eq('id', id).select('id')) ?? []).length > 0; },
     async deleteContactsByImport(importId) {
       return (check(await sb.from('crm_contact').delete().eq('import_id', importId).select('id')) ?? []).length;
     },

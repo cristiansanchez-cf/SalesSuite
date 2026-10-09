@@ -1,5 +1,5 @@
 import type { CrmField, FieldValues } from '../crm/fields';
-import type { Account, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind } from './types';
+import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind } from './types';
 
 export interface AccountFilter { zoneIds?: string[]; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
 export interface AccountInsert {
@@ -10,6 +10,7 @@ export interface AccountInsert {
   parentId?: string | null;
   tags?: string[];
   importId?: string | null;
+  contact?: AccountContact;
 }
 export interface AccountPatch {
   name?: string; zoneId?: string | null; segmentId?: string | null; address?: string | null; externalRef?: string | null; notes?: string | null;
@@ -19,6 +20,8 @@ export interface AccountPatch {
   fields?: FieldValues;
   parentId?: string | null;
   tags?: string[];
+  contact?: AccountContact;
+  next?: { step: string | null; at: string | null; contactId: string | null; channel: string | null };
 }
 export type CrmFieldRecord = Omit<CrmField, 'id' | 'tenantId' | 'archivedAt'>;
 export type { AccountInsert as AccountInsertRow };
