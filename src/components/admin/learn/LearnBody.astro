@@ -31,7 +31,10 @@ const pct = Math.round((done / Math.max(1, total)) * 100);
 const queue = [
   ...(idx.about.playCount ? [{ id: 'empresa', name: m.steps.about, href: '/admin/learn/empresa', done: idx.about.learned }] : []),
   ...(idx.tour.steps.length ? [{ id: 'tour', name: m.tourCard.title, href: '/admin/learn/tour', done: idx.tour.learned }] : []),
-  ...idx.modules.map((x) => ({ id: x.moduleId, name: x.name, href: `/admin/learn/${x.moduleId}`, done: x.learned })),
+  // Con temas de producto, se aprenden los temas; sin ellos, los módulos del catálogo (como siempre).
+  ...(idx.topics.length
+    ? idx.topics.map((x) => ({ id: `topic:${x.key}`, name: x.name, href: `/admin/learn/t/${x.key}`, done: x.learned }))
+    : idx.modules.map((x) => ({ id: x.moduleId, name: x.name, href: `/admin/learn/${x.moduleId}`, done: x.learned }))),
   ...sectors.map((x) => ({ id: `sector:${x.key}`, name: x.name, href: `/admin/learn/sector/${x.key}`, done: learnedSectors.has(x.key) })),
   { id: 'general', name: m.howCard.title, href: '/admin/learn/general', done: idx.general.learned },
 ];
@@ -127,7 +130,32 @@ const step = () => `0${++n}`;
       </section>
     )}
 
-    {idx.modules.length > 0 && (
+    {idx.topics.length > 0 && (
+      <section class="grid gap-5" id="offer">
+        <div class="grid gap-1">
+          <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.offer}</h2>
+          <p class="co-meta">{m.piece.offerLede}</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2" data-testid="topics">
+          {idx.topics.map((x) => (
+            <a href={`/admin/learn/t/${x.key}`} class="learn-card group min-h-[14rem] sm:min-h-[16rem]" data-testid="topic" data-topic={x.key}>
+              {x.image && <img src={x.image} alt="" class="learn-card__bg co-img" decoding="async" loading="lazy" />}
+              <span class="learn-card__shade"></span>
+              <span class="learn-card__body">
+                <span class="flex flex-wrap gap-2">
+                  {x.learned && <span class="learn-pill"><Icon name="circle-check" size={14} />{m.learned}</span>}
+                  {next?.id === `topic:${x.key}` && <span class="learn-pill learn-pill--signal">{nextLabel}</span>}
+                </span>
+                <span class="text-3xl font-bold leading-tight">{x.name}</span>
+                {x.summary && <span class="line-clamp-2 text-white/80">{x.summary}</span>}
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {idx.topics.length === 0 && idx.modules.length > 0 && (
       <section class="grid gap-5" id="offer">
         <div class="grid gap-1">
           <h2 class="flex items-center gap-3 text-eyebrow"><span class="co-figure text-base text-[color:var(--co-signal)]">{step()}</span>{m.steps.offer}</h2>

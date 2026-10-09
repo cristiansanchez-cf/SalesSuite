@@ -24,7 +24,7 @@ const SKIP_KEYS = new Set([
   'id', 'key', 'keys', 'icon', 'screen', 'src', 'href', 'url', 'image', 'images', 'photo', 'photos', 'mark', 'brand', 'exports',
   'logo', 'kind', 'stage', 'objection', 'objections', 'status', 'tone', 'audience', 'role', 'segments', 'personas', 'module',
   'moduleKey', 'blockType', 'color', 'view', 'ui', 'when', 'modes', 'priority', 'max', 'currency', 'type', 'variant',
-  'musicStyles', 'cover', 'song', 'artist', 'handle', 'date', 'time', 'avatar', 'video', 'poster',
+  'musicStyles', 'cover', 'song', 'artist', 'handle', 'date', 'time', 'avatar', 'video', 'poster', 'modules',
 ]);
 // Ni enlaces, ni rutas, ni claves tipo «como-funciona-v», ni colores o números sueltos.
 const NOT_TEXT = /^(https?:|asset:|stock:|mailto:|tel:|\/|#[0-9a-f]{3,8}$)|^[\d\s.,:/%+-]*$/i;

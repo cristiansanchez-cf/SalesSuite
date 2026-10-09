@@ -56,6 +56,12 @@
 - [ ] 44. ONG: ¿qué datos de los participantes ve hoy la ONG en Oquea? (la jugada «Remarketing» lo tenía `PENDIENTE`).
 - [x] 39b. Corregido: el 10 % sí se le dice al centro (condiciones del guion). Lo que no se dice es el porcentaje de la pasarela.
 
+## D4 · Aprende por piezas y condiciones (9-oct, tarde)
+- [x] 45. ✅ Condiciones del comercial (las del equipo, a la vista de quien no tenga otras): 70 % de lo que gana Oquea en sus centros durante 6 meses desde la primera transacción; 50 % de las suscripciones, 6 meses (`apply-oquea-13.py`).
+- [ ] 46. La regla de transacciones cuenta ventas y volumen procesado (pasarela). ¿La intermediación de la alianza entra como venta, o la marcamos aparte cuando exista?
+- [x] 47. ✅ Alianza internacional: intermediación estimada 3–5 % (antes «en torno al 2 %»), solo para el equipo, sin cifra al centro.
+- [ ] 48. Tarjetas: he puesto cinco (inmersión, récord, hito, viaje, especie) porque son las que exportaste. El documento 01 decía tres «por confirmar». ¿Las cinco están en producción?
+
 ## E · Puesta en marcha (tuyo)
 - [ ] 28. DNS de `oquea.ventas.cofundo.io` en GoDaddy y dominio en Vercel.
 - [ ] 29. Quitar a cristianalbertosanchez00@gmail.com del equipo de Oquea (consola → Equipo) cuando entres con cristian.sanchez@cofundo.io.

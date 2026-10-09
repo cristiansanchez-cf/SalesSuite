@@ -131,7 +131,7 @@ export interface RevenueEventRow {
   metric: string | null; quantity: number | null; refunds_event_id: string | null; note: string | null; created_by: string | null; created_at: string;
   confirmed_by: string | null; confirmed_at: string | null;
 }
-export interface CommissionPlanRow { id: string; tenant_id: string; name: string; is_default: boolean; rules: unknown[]; referral: unknown; updated_at: string }
+export interface CommissionPlanRow { id: string; tenant_id: string; name: string; is_default: boolean; rules: unknown[]; referral: unknown; updated_at: string; show_to_team?: boolean; team_note?: string | null }
 export interface CommissionEntryRow {
   id: string; tenant_id: string; user_id: string; event_id: string | null; dedupe_key: string; kind: string; rule_id: string | null; rule_label: string | null;
   base_cents: number; amount_cents: number; currency: string; period: string; status: string; reason: string | null; account_id: string | null;

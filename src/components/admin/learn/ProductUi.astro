@@ -1,0 +1,30 @@
+---
+/**
+ * La UI de una pieza del producto en Aprende, a partir de su clave de recorrido: «app:<pantalla>» (un móvil con la
+ * pantalla de app-steps, con los datos de ejemplo del módulo que la enseña) o «console:<vista>» (la consola del centro
+ * en pequeño). Sin UI que pintar, no pinta nada (quien lo usa decide qué poner en su lugar).
+ */
+import AppScreen from '~/modules/app-steps/Screen.astro';
+import ConsoleMini from '~/modules/center-console/ConsoleMini.astro';
+import { APP_SCREENS, appStepsSchema, type AppScreen as AppScreenName } from '~/modules/app-steps/schema';
+import type { UiKit } from '~/lib/playbook/service';
+
+interface Props { ui: string | null | undefined; kit: UiKit | null | undefined; center: string; zoom?: number }
+const { ui, kit, center, zoom = 0.72 } = Astro.props;
+const appFor = (screen: string) => {
+  const raw = (kit?.apps ?? []).find((x) => Array.isArray(x.screens) && (x.screens as Array<{ screen?: string }>).some((y) => y.screen === screen)) ?? kit?.app ?? {};
+  const r = appStepsSchema.partial().safeParse(raw);
+  return { sample: appStepsSchema.shape.sample.parse(r.success ? r.data.sample ?? {} : {}), photo: r.success ? r.data.photo ?? null : null };
+};
+const screen = ui?.startsWith('app:') && kit?.app && (APP_SCREENS as readonly string[]).includes(ui.slice(4)) ? (ui.slice(4) as AppScreenName) : null;
+const view = !screen && ui?.startsWith('console:') && kit?.console ? ui.slice(8) : null;
+const app = screen ? appFor(screen) : null;
+---
+{screen && app && <div class="tn-ui pui pui--app"><AppScreen screen={screen} sample={app.sample} center={center} photo={app.photo} zoom={zoom} /></div>}
+{view && <div class="tn-ui pui pui--console"><ConsoleMini props={kit?.console} view={view} center={center} /></div>}
+
+<style>
+  .pui--app { display: grid; place-items: center; filter: drop-shadow(0 24px 40px rgb(0 0 0 / .3)); }
+  .pui--console { width: 100%; }
+  @media (max-width: 480px) { .pui--app :global(.as-phone) { zoom: .6 !important; } }
+</style>

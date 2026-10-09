@@ -280,7 +280,12 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
       if (!roleOf(t, actor)) deny('Sin acceso');
       const s = db();
       const c = s.member_conditions.find((x) => x.tenant_id === t && x.user_id === actor);
-      if (!c?.visible) return { visible: false, note: null, agreedAt: null, plan: null };
+      if (!c) {
+        // Sin condiciones propias: las del equipo, si el espacio las enseña (show_to_team).
+        const d = s.commission_plan.find((x) => x.tenant_id === t && x.is_default && x.show_to_team);
+        return d ? { visible: true, team: true, note: d.team_note ?? null, agreedAt: null, plan: { name: d.name, rules: structuredClone(d.rules) as Plan['rules'], referral: (d.referral as Plan['referral']) ?? null } } : { visible: false, note: null, agreedAt: null, plan: null };
+      }
+      if (!c.visible) return { visible: false, note: null, agreedAt: null, plan: null };
       const planId = s.commission_plan_member.find((x) => x.tenant_id === t && x.user_id === actor)?.plan_id;
       const p = s.commission_plan.find((x) => x.tenant_id === t && (planId ? x.id === planId : x.is_default));
       return { visible: true, note: c.note, agreedAt: c.agreed_at, plan: p ? { name: p.name, rules: structuredClone(p.rules) as Plan['rules'], referral: (p.referral as Plan['referral']) ?? null } : null };

@@ -78,6 +78,20 @@ describe('motor de comisiones', () => {
     expect(r.skipped).toEqual([{ eventId: jul15.id, reason: 'Ninguna regla del plan encaja' }]);
   });
 
+  test('Oquea: 70 % del 10 % durante 6 meses desde la PRIMERA transacción del centro (no desde que se ganó)', () => {
+    const c = ctx({
+      // Firmó en enero; su primera transacción llega en mayo: el reloj empieza en mayo.
+      accounts: new Map([['centro', { zoneId: null, wonAt: '2026-01-15T00:00:00Z', wonBy: 'ana', ownerId: 'ana', status: 'customer', firstAt: '2026-05-10T00:00:00Z' }]]),
+      plans: [plan('base', [rule('tx', '70 % · 6 meses desde la primera', { kinds: ['sale'], monthsTo: 6, monthsAnchor: 'first' }, { type: 'percent', bps: 7000 })], { isDefault: true })],
+    });
+    const may = ev({ kind: 'sale', accountId: 'centro', sellerId: null, amountCents: 100_000, revenueCents: 10_000, occurredAt: '2026-05-10T00:00:00Z' });
+    const oct = ev({ kind: 'sale', accountId: 'centro', sellerId: null, amountCents: 100_000, revenueCents: 10_000, occurredAt: '2026-10-09T00:00:00Z' });
+    const nov = ev({ kind: 'sale', accountId: 'centro', sellerId: null, amountCents: 100_000, revenueCents: 10_000, occurredAt: '2026-11-10T00:00:00Z' });
+    const r = computeCommissions([may, oct, nov], c);
+    expect(r.entries.map((e) => [e.eventId, e.amountCents])).toEqual([[may.id, 7_000], [oct.id, 7_000]]);
+    expect(r.skipped.map((x) => x.eventId)).toEqual([nov.id]);
+  });
+
   test('bounty: QR de canciones con más de 100 peticiones en un mes → una vez por cuenta y mes', () => {
     const c = ctx({
       accounts: new Map([['sala', { zoneId: null, wonAt: null, wonBy: 'dj1', ownerId: 'dj1', status: 'customer' }], ['bar', { zoneId: null, wonAt: null, wonBy: 'dj1', ownerId: 'dj1', status: 'customer' }]]),

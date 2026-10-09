@@ -39,6 +39,8 @@ export interface RuleWhen {
   /** Meses desde que se ganó la cuenta: desde (incluido) … hasta (excluido). «6 primeros meses» = 0…6. */
   monthsFrom?: number;
   monthsTo?: number;
+  /** Desde cuándo cuentan los meses: que se ganó la cuenta (por defecto) o su primer ingreso («6 meses desde la primera transacción»). */
+  monthsAnchor?: 'won' | 'first';
   roles?: Role[];
 }
 export type RulePay =
@@ -80,7 +82,7 @@ export interface EngineContext {
   /** Plan asignado a cada persona (si no, el de por defecto). */
   planOf: Map<string, string>;
   members: Map<string, { role: Role; invitedBy: string | null; joinedAt: string | null }>;
-  accounts: Map<string, { zoneId: string | null; wonAt: string | null; wonBy: string | null; ownerId: string | null; status: string }>;
+  accounts: Map<string, { zoneId: string | null; wonAt: string | null; wonBy: string | null; ownerId: string | null; status: string; firstAt?: string | null }>;
   dossiers: Map<string, { authorId: string | null; accountId: string | null; eligibility: Eligibility | null; decision: AccountDecision | null }>;
   zones: Array<{ id: string; parentId: string | null }>;
   /** Líneas ya guardadas (para devoluciones y deduplicación). */
@@ -98,4 +100,5 @@ export interface Coupon {
 export interface MemberConditions { userId: string; visible: boolean; note: string | null; agreedAt: string | null }
 /** Una foto del historial de condiciones (docs/FOUNDATIONS.md §9): qué se acordó y qué plan aplicaba. */
 export interface ConditionsChange { userId: string; visible: boolean; note: string | null; plan: { name: string; rules: Rule[]; referral: Referral | null } | null; changedBy: string | null; changedAt: string }
-export interface MyConditions { visible: boolean; note: string | null; agreedAt: string | null; plan: { name: string; rules: Rule[]; referral: Referral | null } | null }
+/** team: no son condiciones acordadas con esta persona, sino las del equipo (plan por defecto con show_to_team). */
+export interface MyConditions { visible: boolean; team?: boolean; note: string | null; agreedAt: string | null; plan: { name: string; rules: Rule[]; referral: Referral | null } | null }

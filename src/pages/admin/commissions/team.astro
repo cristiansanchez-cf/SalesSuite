@@ -53,7 +53,7 @@ if (Astro.request.method === 'POST') {
           label: str('label'),
           when: {
             kinds: arr('kinds'), offers: str('offers') ? str('offers').split(',').map((x) => x.trim()).filter(Boolean) : undefined, zoneIds: arr('zoneIds'), roles: arr('roles'),
-            minCents: str('min') || undefined, maxCents: str('max') || undefined, monthsFrom: str('monthsFrom') || undefined, monthsTo: str('monthsTo') || undefined,
+            minCents: str('min') || undefined, maxCents: str('max') || undefined, monthsFrom: str('monthsFrom') || undefined, monthsTo: str('monthsTo') || undefined, monthsAnchor: str('monthsAnchor') === 'first' ? 'first' : undefined,
           },
           pay: type === 'fixed' ? { type, amount: str('amount') } : type === 'bounty' ? { type, metric: str('metric'), threshold: str('threshold'), amount: str('amount') } : { type: 'percent', pct: str('pct') },
         });
@@ -102,7 +102,7 @@ function describe(r: Rule): string {
     w.zoneIds?.length && m.rule.zones(w.zoneIds.map((z) => zonePath(territory.zones, z).split(' › ').at(-1)).join(', ')),
     w.roles?.length && m.rule.or(w.roles.map((x) => ROLES[x])),
     w.minCents != null && m.rule.min(money(w.minCents)), w.maxCents != null && m.rule.max(money(w.maxCents)),
-    (w.monthsFrom != null || w.monthsTo != null) && m.rule.months(w.monthsFrom ?? 0, w.monthsTo ?? '∞'),
+    (w.monthsFrom != null || w.monthsTo != null) && (w.monthsAnchor === 'first' ? m.rule.monthsFirst : m.rule.months)(w.monthsFrom ?? 0, w.monthsTo ?? '∞'),
   ].filter(Boolean).join(' · ') || m.rule.all;
   const pay = r.pay.type === 'percent' ? m.rule.percent(r.pay.bps / 100) : r.pay.type === 'fixed' ? m.rule.fixed(money(r.pay.cents)) : m.rule.bounty(money(r.pay.cents), r.pay.metric, r.pay.threshold);
   return `${cond} → ${pay}`;
@@ -308,6 +308,7 @@ const origin = Astro.url.origin;
                   <label class="co-field">{m.ruleForm.monthFrom}<input class="co-input" name="monthsFrom" type="number" min="0" placeholder="0" /></label>
                   <label class="co-field">{m.ruleForm.monthTo}<input class="co-input" name="monthsTo" type="number" min="1" placeholder="6" /></label>
                 </div>
+                <label class="co-field">{m.ruleForm.anchor}<select class="co-input" name="monthsAnchor"><option value="won">{m.ruleForm.anchorWon}</option><option value="first">{m.ruleForm.anchorFirst}</option></select></label>
                 <p class="co-help">{m.ruleForm.monthsHelp}</p>
               </fieldset>
             </div>

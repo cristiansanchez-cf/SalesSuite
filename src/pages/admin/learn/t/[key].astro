@@ -1,0 +1,94 @@
+---
+/**
+ * Un tema de Aprende (tenant.tour.topics): una pieza del producto contada al comercial. Primero qué es, con su UI y
+ * explicada por partes; después cómo contarlo (las jugadas de presentar y los guiones de sus módulos, enteras). El
+ * resto de jugadas (preguntas, objeciones…) viven en un solo sitio: «Cómo se vende», filtrado por este tema.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import PlayCard from '~/components/playbook/PlayCard.astro';
+import ProductUi from '~/components/admin/learn/ProductUi.astro';
+import { AdminError } from '~/lib/admin/service';
+import { renderMarkdown } from '~/lib/playbook/markdown';
+import { i18n } from '~/lib/i18n';
+import { playbookMessages } from '~/lib/i18n/messages/playbook';
+import { learnMessages } from '~/lib/i18n/messages/learn';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const pb = admin.playbook;
+const key = Astro.params.key ?? '';
+const { m: msg, locale } = i18n(Astro, playbookMessages);
+const lm = learnMessages[locale];
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  try { await pb.markLearned(`topic:${key}`, f.get('done') === '1'); } catch (e) {
+    if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+    throw e;
+  }
+  return Astro.redirect(f.get('done') === '1' ? '/admin/learn' : `/admin/learn/t/${key}`, 303);
+}
+let v;
+try { v = await pb.learnTopic(key); } catch (e) {
+  if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+  throw e;
+}
+const t = v.topic;
+const kit = (await pb.learnIndex().catch(() => null))?.kit ?? null;
+const center = lm.tour.yourCentre;
+---
+<AdminLayout title={t.name} wide>
+  <div class="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-14 pb-10" data-testid="learn-topic" data-topic={t.key}>
+    <a href="/admin/learn" class="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-ink"><Icon name="chevron-left" size={14} />{msg.common.backLearn.replace(/^←\s*/, '')}</a>
+
+    <header class="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div class="grid content-center gap-4">
+        <p class="text-eyebrow">{lm.piece.eyebrow}</p>
+        <h1 class="co-page-title !text-5xl">{t.name}</h1>
+        {t.summary && <p class="co-lede !text-lg">{t.summary}</p>}
+        {v.learned && <span class="co-badge co-badge--ink w-fit">{lm.piece.learned}</span>}
+      </div>
+      <figure class="piece-frame" data-testid="topic-ui">
+        <span class="piece-frame__glow" aria-hidden="true"></span>
+        {t.ui && kit ? <ProductUi ui={t.ui} kit={kit} center={center} zoom={0.78} /> : t.image && <img src={t.image} alt="" class="piece-frame__img co-img" decoding="async" />}
+      </figure>
+    </header>
+
+    {t.sections.length > 0 && (
+      <section class="grid gap-10" data-testid="topic-what">
+        <h2 class="text-eyebrow">{lm.piece.what}</h2>
+        <ol class="grid gap-14 p-0">{t.sections.map((x) => ({ ...x, ui: x.ui === t.ui ? null : x.ui })).map((sec, i) => (
+          <li class:list={['grid list-none items-start gap-6', sec.ui && 'md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]']} data-testid="topic-section">
+            <div class:list={['grid content-start gap-3', sec.ui && i % 2 === 1 && 'md:order-2', !sec.ui && 'max-w-3xl']}>
+              <p class="text-2xl font-semibold leading-snug">{sec.title}</p>
+              <div class="prose-play text-[16px] leading-relaxed" set:html={renderMarkdown(sec.body)} />
+            </div>
+            {sec.ui && kit && <div class="md:sticky md:top-6"><ProductUi ui={sec.ui} kit={kit} center={center} /></div>}
+          </li>))}
+        </ol>
+      </section>
+    )}
+
+    {v.tell.length > 0 && (
+      <section class="grid gap-5" data-testid="topic-tell">
+        <div class="grid gap-1">
+          <h2 class="text-eyebrow">{lm.piece.tell}</h2>
+          <p class="co-meta">{lm.piece.tellLede}</p>
+        </div>
+        <div class="grid gap-4">{v.tell.map((p) => <PlayCard play={p} adminEdit={pb.isAdmin} canPropose />)}</div>
+      </section>
+    )}
+
+    <div class="flex flex-wrap items-center gap-3">
+      {!v.learned && <form method="post"><input type="hidden" name="done" value="1" /><button class="co-btn co-btn--primary" type="submit" data-testid="topic-got">{lm.piece.markLearned} <span aria-hidden="true">→</span></button></form>}
+      {v.more > 0 && <a class="co-btn co-btn--ghost" href={`/admin/learn/general?t=${t.key}`} data-testid="topic-more">{lm.piece.more(v.more)}</a>}
+      {v.modules.map((mo) => <a class="text-sm font-semibold underline" href={`/admin/learn/preview/${mo.moduleId}`} target="_blank" rel="noopener">{lm.piece.client}: {mo.name} ↗</a>)}
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .piece-frame { position: relative; isolation: isolate; margin: 0; display: grid; place-items: center; min-height: 22rem; padding: 1.5rem; overflow: hidden; border-radius: var(--console-radius-card, 1.25rem); background: var(--tn-dark, #0d0a12); }
+  .piece-frame__glow { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--tn-primary, #7c3aed) 32%, transparent), transparent 60%); }
+  .piece-frame__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+</style>

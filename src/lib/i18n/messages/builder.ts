@@ -128,7 +128,7 @@ const es = {
     visual: 'Apoyo visual', visualHint: 'La cuentas tú: solo lo que hay que enseñar.', questions: 'Lo que sabes del cliente',
     apply: 'Montar la propuesta', reapply: 'Volver a montarla', warn: 'Rehace la lista de módulos: lo que hayas cambiado a mano en ellos se pierde.',
     applied: (n: number) => `Montada con ${n} ${n === 1 ? 'respuesta' : 'respuestas'}.`,
-    saved: 'Combinaciones guardadas', useSaved: 'Un clic: tipo, ángulo, preguntas y tarifa de golpe.', saveAs: 'Guardar esta combinación', namePh: 'Ej.: pub con DJ, ángulo líder', save: 'Guardar', remove: (n: string) => `Borrar «${n}»`,
+    saved: 'Combinaciones guardadas', useSaved: 'Un clic: tipo, ángulo, preguntas y tarifa de golpe.', saveAs: 'Guardar esta combinación', namePh: 'Ej.: cliente grande, ángulo precio', save: 'Guardar', remove: (n: string) => `Borrar «${n}»`,
   },
   media: {
     title: (c: string) => `Personaliza para ${c}`, client: 'tu cliente',
@@ -283,7 +283,7 @@ export const builderMessages = defineMessages({
       visual: 'Visual support', visualHint: 'You tell the story: only what to show.', questions: 'What you know about the client',
       apply: 'Build the proposal', reapply: 'Build it again', warn: 'Rebuilds the module list: manual changes to them are lost.',
       applied: (n) => `Built with ${n} ${n === 1 ? 'answer' : 'answers'}.`,
-      saved: 'Saved combinations', useSaved: 'One click: type, angle, questions and price at once.', saveAs: 'Save this combination', namePh: 'E.g. pub with DJ, leader angle', save: 'Save', remove: (n) => `Delete «${n}»`,
+      saved: 'Saved combinations', useSaved: 'One click: type, angle, questions and price at once.', saveAs: 'Save this combination', namePh: 'E.g. large client, price angle', save: 'Save', remove: (n) => `Delete «${n}»`,
     },
     media: {
       title: (c) => `Personalise for ${c}`, client: 'your customer',
@@ -435,7 +435,7 @@ export const builderMessages = defineMessages({
       visual: 'Apoio visual', visualHint: 'Você conta: só o que é preciso mostrar.', questions: 'O que sabe do cliente',
       apply: 'Montar a proposta', reapply: 'Montar de novo', warn: 'Refaz a lista de módulos: o que mudou à mão neles perde-se.',
       applied: (n) => `Montada com ${n} ${n === 1 ? 'resposta' : 'respostas'}.`,
-      saved: 'Combinações guardadas', useSaved: 'Um clique: tipo, ângulo, perguntas e preço de uma vez.', saveAs: 'Guardar esta combinação', namePh: 'Ex.: pub com DJ, ângulo líder', save: 'Guardar', remove: (n) => `Apagar «${n}»`,
+      saved: 'Combinações guardadas', useSaved: 'Um clique: tipo, ângulo, perguntas e preço de uma vez.', saveAs: 'Guardar esta combinação', namePh: 'Ex.: cliente grande, ângulo preço', save: 'Guardar', remove: (n) => `Apagar «${n}»`,
     },
     media: {
       title: (c) => `Personalize para ${c}`, client: 'seu cliente',
@@ -587,7 +587,7 @@ export const builderMessages = defineMessages({
       visual: '시각 자료', visualHint: '설명은 직접 하고, 보여줄 것만.', questions: '고객에 대해 아는 것',
       apply: '제안서 만들기', reapply: '다시 만들기', warn: '모듈 목록을 다시 만듭니다. 직접 바꾼 내용은 사라집니다.',
       applied: (n) => `답변 ${n}개로 만들었습니다.`,
-      saved: '저장된 조합', useSaved: '한 번에: 유형, 관점, 질문, 요금.', saveAs: '이 조합 저장', namePh: '예: DJ 있는 펍, 리더 관점', save: '저장', remove: (n) => `«${n}» 삭제`,
+      saved: '저장된 조합', useSaved: '한 번에: 유형, 관점, 질문, 요금.', saveAs: '이 조합 저장', namePh: '예: 대형 고객, 가격 관점', save: '저장', remove: (n) => `«${n}» 삭제`,
     },
     media: {
       title: (c) => `${c} 맞춤 설정`, client: '고객',

@@ -190,7 +190,7 @@ const tourCover = tourSteps[0]?.image ?? null;
           <h1 class="co-page-title">{m.terms.title}</h1>
           {terms.note && <p class="co-lede whitespace-pre-line" data-testid="welcome-terms">{terms.note}</p>}
           {terms.plan && terms.plan.rules.length > 0 && <ul class="grid gap-1">{terms.plan.rules.map((r) => <li class="co-row-title">{r.label}</li>)}</ul>}
-          <span class="co-badge co-badge--signal w-fit">{m.terms.agreed}</span>
+          <span class="co-badge co-badge--signal w-fit">{terms.team ? m.terms.team : m.terms.agreed}</span>
         </> : <>
           <h1 class="co-page-title">{m.terms.pendingTitle}</h1>
           <p class="co-lede" data-testid="welcome-terms-pending">{m.terms.pending}</p>

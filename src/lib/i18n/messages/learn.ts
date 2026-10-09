@@ -22,6 +22,11 @@ const es = {
     empty: 'Tu empresa aún no ha preparado este recorrido. Mientras, mira qué ofrecemos.', seeOffer: 'Ver qué ofrecemos',
     flash: 'Hecho: ya sabes lo que vendes.', yourCentre: 'Tu centro',
   },
+  piece: {
+    eyebrow: 'Lo que vendes', what: 'Qué es', tell: 'Cómo contarlo', tellLede: 'Lo que dices, tal cual, y cuándo.',
+    more: (n: number) => `${n} más sobre esto (preguntas, objeciones, guiones) en «Cómo se vende»`, client: 'Verlo como el cliente',
+    learned: 'Entendido', markLearned: 'Marcar como entendido', offerLede: 'Cada pieza del producto: qué es y cómo contarla.', all: 'Todo',
+  },
   topic: {
     eyebrow: 'Aprende', fit: 'Dónde encaja', star: 'Estrella', see: 'Verlo como el cliente', close: 'Cerrar', why: 'Cuándo usarla y por qué funciona',
     team: 'Del equipo', kinds: { pitch: 'Presentarlo', fit: 'Para quién', discovery: 'Preguntas', proof: 'Pruebas', objection: 'Objeciones', monetization: 'Precio', script: 'Guiones', tip: 'Consejos' },
@@ -58,6 +63,11 @@ export const learnMessages = defineMessages({
       empty: 'Your company has not prepared this tour yet. Meanwhile, see what we offer.', seeOffer: 'See what we offer',
       flash: 'Done: you know what you sell.', yourCentre: 'Your centre',
     },
+    piece: {
+      eyebrow: 'What you sell', what: 'What it is', tell: 'How to tell it', tellLede: 'What you say, word for word, and when.',
+      more: (n) => `${n} more on this (questions, objections, scripts) in «How it sells»`, client: 'See it as the customer',
+      learned: 'Got it', markLearned: 'Mark as understood', offerLede: 'Each piece of the product: what it is and how to tell it.', all: 'All',
+    },
     topic: {
       eyebrow: 'Learn', fit: 'Where it fits', star: 'Star', see: 'See it as the customer', close: 'Close', why: 'When to use it and why it works',
       team: 'From the team', kinds: { pitch: 'Pitch it', fit: 'Who for', discovery: 'Questions', proof: 'Proof', objection: 'Objections', monetization: 'Price', script: 'Scripts', tip: 'Tips' },
@@ -91,6 +101,11 @@ export const learnMessages = defineMessages({
       empty: 'Sua empresa ainda não preparou este percurso. Enquanto isso, veja o que oferecemos.', seeOffer: 'Ver o que oferecemos',
       flash: 'Feito: você já sabe o que vende.', yourCentre: 'Seu centro',
     },
+    piece: {
+      eyebrow: 'O que você vende', what: 'O que é', tell: 'Como contar', tellLede: 'O que você diz, tal qual, e quando.',
+      more: (n) => `Mais ${n} sobre isto (perguntas, objeções, roteiros) em «Como se vende»`, client: 'Ver como o cliente',
+      learned: 'Entendido', markLearned: 'Marcar como entendido', offerLede: 'Cada peça do produto: o que é e como contar.', all: 'Tudo',
+    },
     topic: {
       eyebrow: 'Aprenda', fit: 'Onde encaixa', star: 'Estrela', see: 'Ver como o cliente', close: 'Fechar', why: 'Quando usar e por que funciona',
       team: 'Da equipe', kinds: { pitch: 'Apresentar', fit: 'Para quem', discovery: 'Perguntas', proof: 'Provas', objection: 'Objeções', monetization: 'Preço', script: 'Roteiros', tip: 'Dicas' },
@@ -123,6 +138,11 @@ export const learnMessages = defineMessages({
       got: '이해했어요', gotNext: '이해했어요: 이제 제공하는 것 보기', back: '판매 배우기로 돌아가기', backWelcome: '환영 안내로 돌아가기',
       empty: '아직 회사에서 이 안내를 준비하지 않았습니다. 그동안 제공하는 것을 살펴보세요.', seeOffer: '제공하는 것 보기',
       flash: '완료: 이제 무엇을 파는지 알아요.', yourCentre: '우리 센터',
+    },
+    piece: {
+      eyebrow: '판매하는 것', what: '무엇인가요', tell: '이렇게 설명하세요', tellLede: '그대로 말할 문장과 사용할 때.',
+      more: (n) => `이 주제에 대한 ${n}개 더 보기(질문, 반론, 스크립트) — «판매 방법»`, client: '고객 화면으로 보기',
+      learned: '이해했어요', markLearned: '이해함으로 표시', offerLede: '제품의 각 요소: 무엇인지, 어떻게 설명할지.', all: '전체',
     },
     topic: {
       eyebrow: '배우기', fit: '잘 맞는 곳', star: '핵심', see: '고객 화면으로 보기', close: '닫기', why: '언제 쓰고 왜 효과가 있는지',

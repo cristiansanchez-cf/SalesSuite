@@ -382,6 +382,10 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       case 'setSegment': {
         if (op.segmentId && !(await db.segmentExists(s.tenantId, op.segmentId))) throw new AdminError(404, 'Sector no encontrado');
         await assertWrote(await db.updateDossier(id, { segmentId: op.segmentId }));
+        // Propuesta vacía y sector con receta: se monta sola (lo rápido). Si ya tiene módulos, no se toca nada.
+        if (op.segmentId && (await items(id)).length === 0 && (await db.segmentProposal(s.tenantId, op.segmentId))) {
+          await mountPreset(id, { ...d, segmentId: op.segmentId }, 'full', []).catch((e) => { if (!(e instanceof AdminError)) throw e; });
+        }
         break;
       }
       case 'applyPreset': {

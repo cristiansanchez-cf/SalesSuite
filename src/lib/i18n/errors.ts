@@ -32,6 +32,7 @@ const EXACT: Record<string, T> = {
   'Solo un admin puede crear campos nuevos': ['Only an admin can create new fields', 'Só um admin pode criar campos novos', '관리자만 새 필드를 만들 수 있습니다'],
   // ------------------------------------------------------------ no encontrado
   'Sector no encontrado': ['Sector not found', 'Setor não encontrado', '업종을 찾을 수 없습니다'],
+  'Tema no encontrado': ['Topic not found', 'Tema não encontrado', '주제를 찾을 수 없습니다'],
   'Módulo no encontrado': ['Module not found', 'Módulo não encontrado', '모듈을 찾을 수 없습니다'],
   'Cuenta no encontrada': ['Account not found', 'Conta não encontrada', '계정을 찾을 수 없습니다'],
   'Jugada no encontrada': ['Play not found', 'Jogada não encontrada', '플레이를 찾을 수 없습니다'],

@@ -6,11 +6,17 @@ import EmptyState from '~/components/ui/EmptyState.astro';
 import EntryRow from '~/components/commissions/EntryRow.astro';
 import { i18n } from '~/lib/i18n';
 import { commissionsMessages } from '~/lib/i18n/messages/commissions';
+import { startMessages } from '~/lib/i18n/messages/start';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const { m, f } = i18n(Astro, commissionsMessages);
-const { entries, payouts, totals } = await admin.commissions.mine();
+const [{ entries, payouts, totals }, terms] = await Promise.all([
+  admin.commissions.mine(),
+  admin.commissions.myConditions().catch(() => ({ visible: false, note: null, agreedAt: null, plan: null, team: false })),
+]);
+// Tus condiciones arriba: es lo primero que mira un comercial (las acordadas contigo o, si no hay, las del equipo).
+const { m: sm } = i18n(Astro, startMessages);
 // El data-testid va con un id fijo (en español), no con la etiqueta traducida: los smoke tests lo usan.
 const F = [
   { id: 'Pendiente de aprobar', label: m.mine.pending, value: totals.pending, hint: m.mine.pendingHint },
@@ -20,6 +26,14 @@ const F = [
 ---
 <AdminLayout title={m.mine.title}>
   <PageHeader eyebrow={m.mine.eyebrow} title={m.mine.title} lede={m.mine.lede} />
+  {terms.visible && (terms.note || terms.plan?.rules.length) && (
+    <section class="co-card mb-6 grid gap-3 !p-6" data-testid="my-terms">
+      <h2 class="text-eyebrow">{sm.terms.title}</h2>
+      {terms.note && <p class="whitespace-pre-line text-lg font-semibold leading-snug">{terms.note}</p>}
+      {terms.plan && terms.plan.rules.length > 0 && <ul class="flex flex-wrap gap-2 p-0">{terms.plan.rules.map((r) => <li class="co-chip list-none">{r.label}</li>)}</ul>}
+      {terms.team && <p class="co-meta">{sm.terms.team}</p>}
+    </section>
+  )}
   <section class="co-grid co-grid--3 mb-6" data-testid="my-totals">
     {F.map((x) => (
       <div class="co-card grid gap-1">

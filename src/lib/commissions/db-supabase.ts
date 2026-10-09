@@ -160,7 +160,7 @@ export function supabaseCommissionsDb(sb: SupabaseClient): CommissionsDb {
     },
     async myConditions(t) {
       const r = check(await sb.rpc('my_conditions', { p_tenant: t })) as Row;
-      return { visible: !!r?.visible, note: r?.note ?? null, agreedAt: r?.agreedAt ?? null, plan: r?.plan ?? null };
+      return { visible: !!r?.visible, team: !!r?.team, note: r?.note ?? null, agreedAt: r?.agreedAt ?? null, plan: r?.plan ?? null };
     },
     async saveCoupon(t, c, id) {
       const row = { tenant_id: t, code: c.code, label: c.label, kind: c.kind, value: c.value, max_uses: c.maxUses, valid_until: c.validUntil, active: c.active, note: c.note };

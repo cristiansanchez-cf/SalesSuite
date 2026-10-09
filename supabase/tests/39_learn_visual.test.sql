@@ -6,6 +6,8 @@ begin if not coalesce(cond, false) then raise exception 'ASSERT FAILED: %', msg;
 select pg_temp.assert((select jsonb_array_length(tour) >= 4 from public.tenant where slug = 'enjoy'), 'el seed trae el recorrido de Enjoy');
 select pg_temp.assert((select count(*) = 4 from public.segment where tenant_id = '00000000-0000-4000-8000-000000000e01' and image is not null), 'cada sector de Enjoy con foto');
 
+-- Con temas de Aprende: { steps, topics } (20261109000000).
+select pg_temp.assert((select tour ? 'topics' from public.tenant where slug = 'oquea-demo'), 'el recorrido con temas (objeto) entra');
 do $$ begin
   update public.tenant set tour = '{}' where slug = 'enjoy';
   raise exception 'ASSERT FAILED: tour que no es lista';

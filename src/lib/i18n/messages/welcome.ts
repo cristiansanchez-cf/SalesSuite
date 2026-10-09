@@ -17,7 +17,7 @@ const es = {
   terms: {
     title: 'Lo que ganas', pendingTitle: 'Tus condiciones, cuando hayas probado',
     pending: 'Primero comprueba que se vende. Después las acordamos contigo, sin prisa.',
-    agreed: 'Acordadas', more: 'Las tienes siempre en «Empieza aquí» y en «Mis comisiones».',
+    agreed: 'Acordadas', team: 'Las condiciones del equipo', more: 'Las tienes siempre en «Empieza aquí» y en «Mis comisiones».',
   },
   team: {
     title: 'Prepara a tu equipo', lede: 'Antes de invitar a nadie, deja esto listo. Puedes hacerlo luego desde Configurar.',
@@ -51,7 +51,7 @@ export const welcomeMessages = defineMessages({
     terms: {
       title: 'What you earn', pendingTitle: 'Your terms, once you have tried it',
       pending: 'First check that it sells. Then we agree them with you, no rush.',
-      agreed: 'Agreed', more: 'They are always in “Start here” and “My commissions”.',
+      agreed: 'Agreed', team: 'The team’s terms', more: 'They are always in “Start here” and “My commissions”.',
     },
     team: {
       title: 'Get your team ready', lede: 'Before inviting anyone, get this ready. You can also do it later from Configure.',
@@ -82,7 +82,7 @@ export const welcomeMessages = defineMessages({
     terms: {
       title: 'O que você ganha', pendingTitle: 'Suas condições, depois de testar',
       pending: 'Primeiro confirme que vende. Depois combinamos com você, sem pressa.',
-      agreed: 'Combinadas', more: 'Estão sempre em “Comece aqui” e em “Minhas comissões”.',
+      agreed: 'Combinadas', team: 'As condições da equipe', more: 'Estão sempre em “Comece aqui” e em “Minhas comissões”.',
     },
     team: {
       title: 'Prepare sua equipe', lede: 'Antes de convidar alguém, deixe isto pronto. Também pode fazer depois em Configurar.',
@@ -113,7 +113,7 @@ export const welcomeMessages = defineMessages({
     terms: {
       title: '얻는 것', pendingTitle: '직접 해 본 뒤에 정하는 조건',
       pending: '먼저 팔리는지 확인하세요. 그다음 함께 정하겠습니다. 서두를 필요 없어요.',
-      agreed: '합의됨', more: '“여기서 시작하세요”와 “내 커미션”에서 언제든 볼 수 있습니다.',
+      agreed: '합의됨', team: '팀 공통 조건', more: '“여기서 시작하세요”와 “내 커미션”에서 언제든 볼 수 있습니다.',
     },
     team: {
       title: '팀 준비하기', lede: '누군가를 초대하기 전에 이것을 준비하세요. 나중에 설정에서 해도 됩니다.',

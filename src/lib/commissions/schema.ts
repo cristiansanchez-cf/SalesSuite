@@ -20,6 +20,7 @@ export const ruleSchema = z.object({
     minCents: money.optional(), maxCents: money.optional(),
     monthsFrom: z.coerce.number().int().min(0).max(600).optional(),
     monthsTo: z.coerce.number().int().min(1).max(600).optional(),
+    monthsAnchor: z.enum(['won', 'first']).optional(),
     roles: z.array(z.enum(['admin', 'lead', 'rep', 'partner'])).max(4).optional(),
   }).default({}),
   pay: z.discriminatedUnion('type', [

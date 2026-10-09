@@ -19,7 +19,7 @@ const es = {
   terms: {
     title: 'Tus condiciones',
     pending: 'Las acordaremos contigo cuando hayas probado. Sin prisa.',
-    agreed: (date: string) => `Acordadas el ${date}`,
+    agreed: (date: string) => `Acordadas el ${date}`, team: 'Las condiciones del equipo: si acordáis otras, verás las tuyas.',
     referral: (pct: string, months: number) => `Si traes a otra persona: ${pct} % de sus comisiones durante ${months} meses`,
     see: 'Ver mis comisiones',
     history: 'Historial de mis condiciones', since: (date: string) => `Desde el ${date}`,
@@ -55,7 +55,7 @@ export const startMessages = defineMessages({
     terms: {
       title: 'Your terms',
       pending: 'We will agree them with you once you have tried it. No rush.',
-      agreed: (date) => `Agreed on ${date}`,
+      agreed: (date) => `Agreed on ${date}`, team: 'The team’s terms: if you agree others, you will see yours.',
       referral: (pct, months) => `If you bring someone in: ${pct} % of their commissions for ${months} months`,
       see: 'See my commissions',
       history: 'History of my terms', since: (date) => `Since ${date}`,
@@ -88,7 +88,7 @@ export const startMessages = defineMessages({
     terms: {
       title: 'Suas condições',
       pending: 'Vamos combinar com você depois que tiver testado. Sem pressa.',
-      agreed: (date) => `Combinadas em ${date}`,
+      agreed: (date) => `Combinadas em ${date}`, team: 'As condições da equipe: se combinarem outras, você verá as suas.',
       referral: (pct, months) => `Se você trouxer alguém: ${pct} % das comissões dessa pessoa durante ${months} meses`,
       see: 'Ver minhas comissões',
       history: 'Histórico das minhas condições', since: (date) => `Desde ${date}`,
@@ -121,7 +121,7 @@ export const startMessages = defineMessages({
     terms: {
       title: '나의 조건',
       pending: '직접 해 보신 뒤에 함께 정하겠습니다. 서두를 필요 없어요.',
-      agreed: (date) => `${date}에 합의`,
+      agreed: (date) => `${date}에 합의`, team: '팀 공통 조건입니다. 따로 합의하면 내 조건이 표시됩니다.',
       referral: (pct, months) => `다른 사람을 데려오면: ${months}개월 동안 그 사람 커미션의 ${pct} %`,
       see: '내 커미션 보기',
       history: '내 조건 변경 기록', since: (date) => `${date}부터`,
