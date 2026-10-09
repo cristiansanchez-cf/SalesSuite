@@ -27,8 +27,8 @@ plays = {p['key']: p for p in t['playbook']}
 # ------------------------------------------------------------------ condiciones del comercial
 TEAM_NOTE = (
     'Cuando uno de tus centros hace su primera transacción con Oquea, empieza el reloj: 6 meses.\n'
-    'Oquea se queda el 10 % de cada transacción de ese centro; de ese 10 %, el 70 % es tuyo. Lo mismo con lo que '
-    'Oquea gane como intermediario en la alianza internacional.\n'
+    'Oquea se queda el 10 % de cada transacción de ese centro; de ese 10 %, el 70 % es tuyo. Lo que Oquea gane como '
+    'intermediario en la alianza internacional cuenta como una transacción más.\n'
     'Si vendes suscripciones (fidelización y lo que vaya llegando), el 50 % es tuyo durante 6 meses.\n'
     'Pasados los 6 meses, lo que se genere es de Oquea. Cuando estén conectados los cobros, verás aquí cuándo se '
     'genera cada ingreso y cuánto te toca.'
@@ -114,9 +114,10 @@ t['learn_topics'] = [
      'summary': 'Cada inmersión, una tarjeta para Instagram con el nombre del centro. Publicidad que el centro no paga.',
      'sections': [
         S('Qué es',
-          'Desde su logbook, el buceador exporta una imagen de su inmersión para compartirla en redes: la de la inmersión, '
-          'la de récord personal, la de hito, la de viaje y la de especie. Es su foto con los datos encima (tiempo, '
-          'profundidad, temperatura, lo que vio) y un diseño cuidado.', 'app:share-card'),
+          'Desde su logbook, el buceador exporta una imagen de su inmersión para compartirla en redes. Hoy hay tres: la de '
+          'la inmersión, la de récord personal y la de hito. Este mes llegan dos más, la de viaje y la de vida marina '
+          '(especie): ya las puedes contar como lo que viene. Es su foto con los datos encima (tiempo, profundidad, '
+          'temperatura, lo que vio) y un diseño cuidado.', 'app:share-card'),
         S('Con el nombre del centro',
           'Todas llevan la línea **«with [centro]»**: el nombre del centro con el que buceó. Cada vez que un buceador la '
           'publica, sale el centro. **Nunca** digas que la gráfica de la tarjeta es el perfil real de la inmersión: está por confirmar.'),
@@ -225,7 +226,8 @@ t['learn_topics'] = [
           'de fechas hasta que esté cerrada la revisión legal de pagos.'),
         S('Lo que ganas tú',
           'El 70 % de lo que gane Oquea con tus centros (y con la intermediación) durante 6 meses desde su primera '
-          'transacción; y el 50 % de las suscripciones que vendas, 6 meses. Lo tienes en «Mis comisiones».'),
+          'transacción (la intermediación cuenta como una transacción más); y el 50 % de las suscripciones que vendas, 6 '
+          'meses. Lo tienes en «Mis comisiones».'),
      ]},
 ]
 for tp in t['learn_topics']:

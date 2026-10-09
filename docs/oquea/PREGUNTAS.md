@@ -58,9 +58,9 @@
 
 ## D4 · Aprende por piezas y condiciones (9-oct, tarde)
 - [x] 45. ✅ Condiciones del comercial (las del equipo, a la vista de quien no tenga otras): 70 % de lo que gana Oquea en sus centros durante 6 meses desde la primera transacción; 50 % de las suscripciones, 6 meses (`apply-oquea-13.py`).
-- [ ] 46. La regla de transacciones cuenta ventas y volumen procesado (pasarela). ¿La intermediación de la alianza entra como venta, o la marcamos aparte cuando exista?
+- [x] 46. ✅ La intermediación de la alianza cuenta como una transacción más (Cristian, 9-oct).
 - [x] 47. ✅ Alianza internacional: intermediación estimada 3–5 % (antes «en torno al 2 %»), solo para el equipo, sin cifra al centro.
-- [ ] 48. Tarjetas: he puesto cinco (inmersión, récord, hito, viaje, especie) porque son las que exportaste. El documento 01 decía tres «por confirmar». ¿Las cinco están en producción?
+- [x] 48. ✅ En producción: inmersión, récord e hito. Viaje y vida marina (especie) llegan este mes: se pueden contar como lo que viene (Cristian, 9-oct).
 
 ## E · Puesta en marcha (tuyo)
 - [ ] 28. DNS de `oquea.ventas.cofundo.io` en GoDaddy y dominio en Vercel.

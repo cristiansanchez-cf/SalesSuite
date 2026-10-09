@@ -3713,7 +3713,7 @@
     "default_plan": {
       "name": "Comercial · centros fundadores",
       "show_to_team": true,
-      "team_note": "Cuando uno de tus centros hace su primera transacción con Oquea, empieza el reloj: 6 meses.\nOquea se queda el 10 % de cada transacción de ese centro; de ese 10 %, el 70 % es tuyo. Lo mismo con lo que Oquea gane como intermediario en la alianza internacional.\nSi vendes suscripciones (fidelización y lo que vaya llegando), el 50 % es tuyo durante 6 meses.\nPasados los 6 meses, lo que se genere es de Oquea. Cuando estén conectados los cobros, verás aquí cuándo se genera cada ingreso y cuánto te toca.",
+      "team_note": "Cuando uno de tus centros hace su primera transacción con Oquea, empieza el reloj: 6 meses.\nOquea se queda el 10 % de cada transacción de ese centro; de ese 10 %, el 70 % es tuyo. Lo que Oquea gane como intermediario en la alianza internacional cuenta como una transacción más.\nSi vendes suscripciones (fidelización y lo que vaya llegando), el 50 % es tuyo durante 6 meses.\nPasados los 6 meses, lo que se genere es de Oquea. Cuando estén conectados los cobros, verás aquí cuándo se genera cada ingreso y cuánto te toca.",
       "rules": [
         {
           "id": "transacciones-6m",
@@ -3794,7 +3794,7 @@
       "sections": [
         {
           "title": "Qué es",
-          "body": "Desde su logbook, el buceador exporta una imagen de su inmersión para compartirla en redes: la de la inmersión, la de récord personal, la de hito, la de viaje y la de especie. Es su foto con los datos encima (tiempo, profundidad, temperatura, lo que vio) y un diseño cuidado.",
+          "body": "Desde su logbook, el buceador exporta una imagen de su inmersión para compartirla en redes. Hoy hay tres: la de la inmersión, la de récord personal y la de hito. Este mes llegan dos más, la de viaje y la de vida marina (especie): ya las puedes contar como lo que viene. Es su foto con los datos encima (tiempo, profundidad, temperatura, lo que vio) y un diseño cuidado.",
           "ui": "app:share-card"
         },
         {
@@ -4029,7 +4029,7 @@
         },
         {
           "title": "Lo que ganas tú",
-          "body": "El 70 % de lo que gane Oquea con tus centros (y con la intermediación) durante 6 meses desde su primera transacción; y el 50 % de las suscripciones que vendas, 6 meses. Lo tienes en «Mis comisiones».",
+          "body": "El 70 % de lo que gane Oquea con tus centros (y con la intermediación) durante 6 meses desde su primera transacción (la intermediación cuenta como una transacción más); y el 50 % de las suscripciones que vendas, 6 meses. Lo tienes en «Mis comisiones».",
           "ui": null
         }
       ]
