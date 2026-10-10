@@ -47,5 +47,6 @@ Cada propuesta lleva como botón principal el contacto de **quien la hizo**, par
 - Se guarda en `users.contact_channel` / `contact_value` (migración `20261111000000_rep_contact.sql`), con la política `users_update_self`. La propuesta pública lo lee con `get_public_contact(token, tenant)` (misma puerta que `get_public_dossier`; solo nombre, canal y valor).
 - **Sin canal, o con canal y sin valor**: la propuesta enseña el contacto de la marca (`brand.contact`), como antes. La tarjeta lo avisa («Falta tu número o usuario»).
 - Después del suyo, el pie enseña los de la marca. En propuestas en coreano no se ofrece el WhatsApp de la marca (allí no se usa).
-- Un admin que abre la propuesta de otro ve su contacto, sin poder cambiarlo.
+- También está en **Tu cuenta** («Tu contacto en las propuestas»).
+- Un admin que abre la propuesta de alguien de su equipo ve su contacto y puede ponerlo por él (RPC `set_member_contact`, migración `20261112000000_member_contact.sql`); un gerente o comercial, solo el suyo.
 - `scripts/sample-dossiers.ts` deja puesto el canal de los comerciales (`contactChannel` de las propuestas `perRep`; en Oquea Corea, KakaoTalk) si no tenían ninguno, con el valor vacío para que cada uno lo complete.

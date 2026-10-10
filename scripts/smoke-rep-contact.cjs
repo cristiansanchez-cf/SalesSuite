@@ -58,9 +58,30 @@ const TOKEN = 'demo-club-sol-4Hq8';
   await p.goto(`${BASE}/admin/dossiers/${DOSSIER}/preview?ver=scroll`);
   assert((await p.locator('[data-testid=rep-contact]').getAttribute('href')) === 'https://ig.me/m/ana.ventas', 'vista previa: igual que la verá el cliente');
 
+  if (OUT) { await p.goto(`${BASE}/admin/dossiers/${DOSSIER}`); await p.locator('[data-testid=rep-contact-card]').screenshot({ path: `${OUT}/rep-contact-editor.png` }); }
+
+  // En «Tu cuenta», el mismo contacto.
+  await p.goto(`${BASE}/admin/account`);
+  assert((await p.inputValue('[data-testid=account-contact] [name=value]')) === '@ana.ventas', '«Tu cuenta»: el mismo contacto, para cambiarlo sin abrir una propuesta');
+
+  // Un admin abre la propuesta del comercial: ve su contacto y puede ponerlo por él.
+  const a = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  await a.goto(`${BASE}/admin`);
+  await a.click('[data-testid="demo-admin@enjoy.test"]');
+  await a.waitForURL(`${BASE}/admin`);
+  await a.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
+  assert(!(await a.textContent('[data-testid=rep-contact-card]')).includes('Tu contacto'), 'admin: la tarjeta dice de quién es el contacto');
+  assert((await a.inputValue('[data-testid=rep-contact-value]')) === '@ana.ventas', 'admin: ve el contacto del comercial');
+  await a.selectOption('[data-testid=rep-contact-channel]', 'kakao');
+  await a.fill('[data-testid=rep-contact-value]', 'https://open.kakao.com/o/demo');
+  await a.click('[data-testid=rep-contact-save]');
+  await a.waitForURL(/ok=contact/);
+  await a.goto(`${BASE}/d/${TOKEN}?ver=scroll`);
+  assert((await a.locator('[data-testid=rep-contact]').getAttribute('href')) === 'https://open.kakao.com/o/demo', 'admin: lo pone por el comercial y sale en su propuesta');
+  if (OUT) { await a.goto(`${BASE}/admin/dossiers/${DOSSIER}`); await a.locator('[data-testid=rep-contact-card]').screenshot({ path: `${OUT}/rep-contact-admin.png` }); }
+
   // Se deja como estaba.
   await p.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
-  if (OUT) await p.locator('[data-testid=rep-contact-card]').screenshot({ path: `${OUT}/rep-contact-editor.png` });
   await p.selectOption('[data-testid=rep-contact-channel]', '');
   await p.fill('[data-testid=rep-contact-value]', '');
   await p.click('[data-testid=rep-contact-save]');
