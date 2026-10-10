@@ -31,7 +31,14 @@ export const priorityMessages = defineMessages({
       tab: 'Prioridad', title: 'Pesos de la prioridad', lede: 'Cuánto pesa cada criterio en la puntuación (suman 100). Los tramos de cada criterio son fijos por ahora.',
       sum: (n: number) => `Suman ${n}`, save: 'Guardar pesos', ok: 'Pesos guardados.',
     },
-    google: { search: 'Buscar en Google', pick: 'Usar este', none: 'Google no ha encontrado nada con ese nombre.', hours: 'Horario', fill: (n: number) => `Completar con Google · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f} completadas, ${s} sin coincidencia${l ? ` · quedan ${l}, vuelve a pulsar` : ''}.`, closed: 'Google lo da por cerrado', applied: 'Datos de Google guardados (solo se han rellenado huecos).' },
+    google: {
+      title: 'Ficha de Google', search: 'Buscar en Google', again: 'Buscar', query: 'Qué buscar en Google',
+      help: 'Los datos de su ficha de Google Maps: teléfono, web, horario, fotos y reseñas. Rápido y exacto, pero solo lo que el local publica ahí. Al pulsar «Es este» se guarda, se pone su ciudad si no tiene y se mira su web para sacar Instagram, Facebook, LinkedIn y email.',
+      pick: 'Es este', searching: 'Buscando…', saving: 'Guardando y mirando su web…', none: 'Google no ha encontrado nada con eso. Prueba con otro nombre o añade la ciudad.', hours: 'Horario', closed: 'Google lo da por cerrado',
+      reviews: (n: number) => (n === 1 ? '1 reseña' : `${n} reseñas`), open: 'Ver en Google', web: 'Web',
+      fields: { phone: 'teléfono', website: 'web', address: 'dirección', mapsUrl: 'Google Maps', email: 'email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn' },
+      applied: (list: string, zone: string) => `Guardado de Google${list ? `: ${list}` : ' (no había huecos que rellenar)'}${zone ? ` · ciudad: ${zone}` : ''}.`,
+    },
     ok: 'Cualificación guardada.',
   },
   en: {
@@ -63,7 +70,14 @@ export const priorityMessages = defineMessages({
       tab: 'Priority', title: 'Priority weights', lede: 'How much each criterion weighs in the score (they add up to 100). Each criterion’s bands are fixed for now.',
       sum: (n: number) => `Total ${n}`, save: 'Save weights', ok: 'Weights saved.',
     },
-    google: { search: 'Search on Google', pick: 'Use this one', none: 'Google found nothing with that name.', hours: 'Opening hours', fill: (n: number) => `Fill in from Google · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f} filled in, ${s} without a match${l ? ` · ${l} left, press again` : ''}.`, closed: 'Google lists it as closed', applied: 'Google data saved (only blanks were filled).' },
+    google: {
+      title: 'Google listing', search: 'Search on Google', again: 'Search', query: 'What to search on Google',
+      help: 'The data on its Google Maps listing: phone, website, hours, photos and reviews. Fast and exact, but only what the venue publishes there. Pressing «This is it» saves it, sets its city if it has none and checks its website for Instagram, Facebook, LinkedIn and email.',
+      pick: 'This is it', searching: 'Searching…', saving: 'Saving and checking its website…', none: 'Google found nothing for that. Try another name or add the city.', hours: 'Opening hours', closed: 'Google lists it as closed',
+      reviews: (n: number) => (n === 1 ? '1 review' : `${n} reviews`), open: 'See on Google', web: 'Website',
+      fields: { phone: 'phone', website: 'website', address: 'address', mapsUrl: 'Google Maps', email: 'email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn' },
+      applied: (list: string, zone: string) => `Saved from Google${list ? `: ${list}` : ' (there were no blanks to fill)'}${zone ? ` · city: ${zone}` : ''}.`,
+    },
     ok: 'Qualification saved.',
   },
   pt: {
@@ -95,7 +109,14 @@ export const priorityMessages = defineMessages({
       tab: 'Prioridade', title: 'Pesos da prioridade', lede: 'Quanto pesa cada critério na pontuação (somam 100). As faixas de cada critério são fixas por enquanto.',
       sum: (n: number) => `Somam ${n}`, save: 'Salvar pesos', ok: 'Pesos salvos.',
     },
-    google: { search: 'Buscar no Google', pick: 'Usar este', none: 'O Google não encontrou nada com esse nome.', hours: 'Horário', fill: (n: number) => `Completar com o Google · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f} completadas, ${s} sem correspondência${l ? ` · faltam ${l}, clique de novo` : ''}.`, closed: 'O Google o dá como fechado', applied: 'Dados do Google salvos (só se preencheram vazios).' },
+    google: {
+      title: 'Ficha do Google', search: 'Buscar no Google', again: 'Buscar', query: 'O que buscar no Google',
+      help: 'Os dados da ficha do Google Maps: telefone, site, horário, fotos e avaliações. Rápido e exato, mas só o que o local publica ali. Ao tocar em «É este», salva, coloca a cidade se não tiver e olha o site para tirar Instagram, Facebook, LinkedIn e email.',
+      pick: 'É este', searching: 'Buscando…', saving: 'Salvando e olhando o site…', none: 'O Google não encontrou nada com isso. Tente outro nome ou adicione a cidade.', hours: 'Horário', closed: 'O Google o dá como fechado',
+      reviews: (n: number) => (n === 1 ? '1 avaliação' : `${n} avaliações`), open: 'Ver no Google', web: 'Site',
+      fields: { phone: 'telefone', website: 'site', address: 'endereço', mapsUrl: 'Google Maps', email: 'email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn' },
+      applied: (list: string, zone: string) => `Salvo do Google${list ? `: ${list}` : ' (não havia vazios para preencher)'}${zone ? ` · cidade: ${zone}` : ''}.`,
+    },
     ok: 'Qualificação salva.',
   },
   ko: {
@@ -127,7 +148,14 @@ export const priorityMessages = defineMessages({
       tab: '우선순위', title: '우선순위 가중치', lede: '점수에서 각 기준의 비중(합계 100). 기준별 구간은 당분간 고정입니다.',
       sum: (n: number) => `합계 ${n}`, save: '가중치 저장', ok: '가중치를 저장했습니다.',
     },
-    google: { search: 'Google에서 찾기', pick: '이것 사용', none: 'Google에서 그 이름으로 찾지 못했습니다.', hours: '영업시간', fill: (n: number) => `Google로 채우기 · ${n}`, filled: (f: number, s: number, l: number) => `Google: ${f}개 채움, ${s}개 일치 없음${l ? ` · ${l}개 남음, 다시 누르세요` : ''}.`, closed: 'Google에서 폐업으로 표시', applied: 'Google 데이터를 저장했습니다(빈 칸만 채움).' },
+    google: {
+      title: 'Google 정보', search: 'Google에서 찾기', again: '찾기', query: 'Google에서 찾을 내용',
+      help: 'Google 지도 정보: 전화, 웹사이트, 영업시간, 사진, 리뷰. 빠르고 정확하지만 매장이 올린 것만 있습니다. «이곳이 맞음»을 누르면 저장하고, 도시가 없으면 넣고, 웹사이트에서 인스타그램·페이스북·링크드인·이메일을 찾습니다.',
+      pick: '이곳이 맞음', searching: '찾는 중…', saving: '저장하고 웹사이트 확인 중…', none: 'Google에서 찾지 못했습니다. 다른 이름이나 도시를 넣어 보세요.', hours: '영업시간', closed: 'Google에서 폐업으로 표시',
+      reviews: (n: number) => `리뷰 ${n}개`, open: 'Google에서 보기', web: '웹사이트',
+      fields: { phone: '전화', website: '웹사이트', address: '주소', mapsUrl: 'Google 지도', email: '이메일', instagram: '인스타그램', facebook: '페이스북', linkedin: '링크드인' },
+      applied: (list: string, zone: string) => `Google에서 저장${list ? `: ${list}` : '(채울 빈 칸 없음)'}${zone ? ` · 도시: ${zone}` : ''}.`,
+    },
     ok: '자격 평가를 저장했습니다.',
   },
 });

@@ -402,3 +402,26 @@ ahí mismo). Para revisar producción sin tocar nada: workflow «Producción» �
 
 Migración `20261110000000_crm_fix_zones.sql`; pruebas `zones-normalize.test.ts`, contrato de cuentas,
 `supabase/tests/54_crm_fix_zones.test.sql`, `scripts/smoke-zones.cjs`.
+
+## 15. Google bien hecho en la ficha (hecho)
+
+Criterio de Cristian (10-oct-2026): «Completar con Google» en bloque era contraproducente (cogía el primer resultado a
+ciegas). Ahora es **en la ficha de cada empresa**, eligiendo a mano:
+
+- **Buscar en Google** (tarjeta «Ficha de Google», en Contacto): busca por nombre + ciudad; el texto se puede cambiar.
+  Hasta 5 resultados, cada uno con foto, nombre (abre su ficha de Google), tipo, ★ valoración y reseñas, dirección,
+  **web clicable** y teléfono.
+- **Es este**: guarda teléfono, web, dirección, Maps, horario, ubicación, valoración, reseñas y foto; **pone la ciudad**
+  si no tiene (solo zonas que ya existen: pueblo → provincia → comunidad → país, `zoneForPlace`) y **mira su web** una
+  vez (`src/lib/crm/website.ts`) para apuntar Instagram, Facebook, LinkedIn y email que la propia web enlaza. Todo
+  rellena huecos: nada escrito a mano se pisa. El aviso dice qué se ha rellenado.
+- **Google vs. IA**, explicado en pantalla: Google = los datos públicos de su ficha de Maps (rápido y exacto); la
+  investigación con IA lee su web, redes y prensa y propone qué es, a quién contactar y por qué encaja (hasta un minuto,
+  cada dato se acepta a mano).
+- La foto se sirve por `/admin/api/crm/place-photo` (el servidor pide a Google la dirección pública; la clave no sale).
+- Mirar la web: solo http(s) con nombre público (sin IPs, puertos raros ni nombres internos; el DNS no puede apuntar a
+  la red interna, también tras redirecciones), 6 s y 800 KB como mucho; si falla, no pasa nada.
+- Pruebas: sin clave y con `AI_RESEARCH_FIXTURE=1`, Google y la web son de mentira (`fixturePlaces`, `fixtureWebsite`).
+
+Migración `20261113000000_crm_google.sql` (Facebook, valoración, reseñas y foto; `account_research` con ciudad, email
+y redes); pruebas `places.test.ts`, `website.test.ts`, `supabase/tests/56_crm_google.test.sql`, `scripts/smoke-google.cjs`.

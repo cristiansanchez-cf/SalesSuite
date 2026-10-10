@@ -2,6 +2,13 @@ import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
 import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix } from './types';
 
+/** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
+export interface GoogleData {
+  placeId: string; phone: string | null; website: string | null; address: string | null; mapsUrl: string | null; hours: string[] | null;
+  lat: number | null; lng: number | null; status: string | null;
+  rating?: number | null; reviews?: number | null; photo?: string | null; zoneId?: string | null;
+  email?: string | null; instagram?: string | null; facebook?: string | null; linkedin?: string | null;
+}
 export interface AccountFilter { zoneIds?: string[]; /** Solo las que no tienen ciudad. */ noZone?: boolean; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
 export interface AccountInsert {
   name: string; zoneId: string | null; segmentId: string | null; address: string | null; externalRef: string | null; notes: string | null;
@@ -63,8 +70,8 @@ export interface AccountsDb {
   archiveField(id: string, archived: boolean): Promise<boolean>;
   /** Cualificar (RPC account_qualify): libre o mía, o un/a gerente; no la reserva. */
   qualify(accountId: string, q: Qualification): Promise<void>;
-  /** Completar con Google (RPC account_research): solo rellena huecos. */
-  research(accountId: string, data: { placeId: string; phone: string | null; website: string | null; address: string | null; mapsUrl: string | null; hours: string[] | null; lat: number | null; lng: number | null; status: string | null }): Promise<void>;
+  /** Completar con Google (RPC account_research): solo rellena huecos (también ciudad, email y redes de su web). */
+  research(accountId: string, data: GoogleData): Promise<void>;
   /** Investigación con IA (RPC account_ai_research): la guarda o la borra (null). Mismo permiso que completar con Google. */
   saveAiResearch(accountId: string, data: object | null, fill?: Partial<Record<'phone' | 'email' | 'instagram' | 'linkedin' | 'website', string>>): Promise<void>;
   getAiResearch(accountId: string): Promise<unknown>;

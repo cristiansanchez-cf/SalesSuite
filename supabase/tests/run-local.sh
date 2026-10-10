@@ -43,4 +43,5 @@ run supabase/tests/52_content_i18n.test.sql
 run supabase/tests/53_team_conditions.test.sql
 run supabase/tests/54_crm_fix_zones.test.sql
 run supabase/tests/55_rep_contact.test.sql
+run supabase/tests/56_crm_google.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

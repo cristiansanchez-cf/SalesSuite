@@ -4,7 +4,7 @@ import { defineMessages } from '../core';
 export const researchMessages = defineMessages({
   es: {
     title: 'Investigación con IA', unverified: 'Sin verificar',
-    intro: 'Busca en la web lo público de esta empresa y te propone datos, cada uno con su fuente. Nada se guarda en la ficha hasta que lo aceptes.',
+    intro: 'La IA lee lo público de esta empresa (su web, redes, prensa) y te propone qué es, a quién contactar y por qué os encaja, cada dato con su fuente. Tarda hasta un minuto. «Buscar en Google», en cambio, solo trae su ficha de Maps. Nada se guarda hasta que lo aceptes.',
     run: 'Investigar con IA', rerun: 'Volver a investigar', running: 'Investigando… (hasta un minuto)',
     at: (when: string) => `Investigada ${when}`, look: 'Para mirar tú', proposals: (n: number) => `Propuestas · ${n}`,
     none: 'No ha encontrado nada que se pueda comprobar.', accept: 'Aceptar', dismiss: 'Descartar', source: 'Fuente',
@@ -19,7 +19,7 @@ export const researchMessages = defineMessages({
   },
   en: {
     title: 'AI research', unverified: 'Unverified',
-    intro: 'Searches the web for public information about this company and suggests data, each with its source. Nothing is saved until you accept it.',
+    intro: 'The AI reads what is public about this company (its website, social media, press) and suggests what it is, who to contact and why it fits, each with its source. It takes up to a minute. «Search on Google», instead, only brings its Maps listing. Nothing is saved until you accept it.',
     run: 'Research with AI', rerun: 'Research again', running: 'Researching… (up to a minute)',
     at: (when: string) => `Researched ${when}`, look: 'For you to check', proposals: (n: number) => `Suggestions · ${n}`,
     none: 'Found nothing that can be checked.', accept: 'Accept', dismiss: 'Dismiss', source: 'Source',
@@ -34,7 +34,7 @@ export const researchMessages = defineMessages({
   },
   pt: {
     title: 'Pesquisa com IA', unverified: 'Não verificado',
-    intro: 'Busca na web o que é público desta empresa e sugere dados, cada um com sua fonte. Nada é salvo na ficha até você aceitar.',
+    intro: 'A IA lê o que é público desta empresa (site, redes, imprensa) e propõe o que ela é, com quem falar e por que combina, cada dado com a fonte. Leva até um minuto. «Buscar no Google», ao contrário, só traz a ficha do Maps. Nada é salvo até você aceitar.',
     run: 'Pesquisar com IA', rerun: 'Pesquisar de novo', running: 'Pesquisando… (até um minuto)',
     at: (when: string) => `Pesquisada ${when}`, look: 'Para você conferir', proposals: (n: number) => `Sugestões · ${n}`,
     none: 'Não encontrou nada que possa ser comprovado.', accept: 'Aceitar', dismiss: 'Descartar', source: 'Fonte',
@@ -49,7 +49,7 @@ export const researchMessages = defineMessages({
   },
   ko: {
     title: 'AI 조사', unverified: '미확인',
-    intro: '이 회사의 공개 정보를 웹에서 찾아 출처와 함께 제안합니다. 수락하기 전에는 아무것도 저장되지 않습니다.',
+    intro: 'AI가 이 회사의 공개 정보(웹사이트, SNS, 기사)를 읽고 어떤 곳인지, 누구에게 연락할지, 왜 맞는지를 출처와 함께 제안합니다. 최대 1분 걸립니다. «Google에서 찾기»는 지도 정보만 가져옵니다. 수락하기 전에는 저장되지 않습니다.',
     run: 'AI로 조사', rerun: '다시 조사', running: '조사 중… (최대 1분)',
     at: (when: string) => `조사 ${when}`, look: '직접 확인할 것', proposals: (n: number) => `제안 · ${n}`,
     none: '확인할 수 있는 정보를 찾지 못했습니다.', accept: '수락', dismiss: '버리기', source: '출처',

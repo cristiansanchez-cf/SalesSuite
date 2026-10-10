@@ -31,7 +31,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForURL(/\/admin\/accounts\/[^/?#]+/);
 
   const card = '[data-testid=ai-research]';
-  assert((await p.textContent(card)).includes('Nada se guarda en la ficha hasta que lo aceptes'), 'antes de investigar: qué hace y que nada se guarda solo');
+  assert((await p.textContent(card)).includes('Nada se guarda hasta que lo aceptes'), 'antes de investigar: qué hace y que nada se guarda solo');
   await Promise.all([p.waitForURL(/ok=ai/), p.click('[data-testid=ai-run]')]);
   assert((await p.textContent(card)).includes('Sin verificar'), 'marcado «sin verificar»');
   assert((await p.textContent('[data-testid=ai-summary]')).includes('Ejemplo de prueba'), 'resumen');

@@ -13,9 +13,10 @@ import type { CrmDb } from './db';
 import { parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
 import { env } from '../env';
-import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
+import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
+import { fixtureWebsite, realWebsite, type WebsiteApi } from './website';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
-import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
+import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
 import type { AccountMove } from '../accounts/types';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
@@ -40,16 +41,17 @@ export const quickAddSchema = personSchema.extend({
 });
 
 /** «@club_sol» o «instagram.com/club_sol» → enlace completo. */
-export function socialUrl(v: string | null | undefined, kind: 'instagram' | 'linkedin' | 'web'): string | null {
+export function socialUrl(v: string | null | undefined, kind: 'instagram' | 'facebook' | 'linkedin' | 'web'): string | null {
   const x = (v ?? '').trim();
   if (!x) return null;
   if (kind === 'instagram' && /^@?[\w.]{2,30}$/.test(x)) return `https://www.instagram.com/${x.replace(/^@/, '')}/`;
+  if (kind === 'facebook' && /^@?[\w.-]{2,80}$/.test(x) && !/\.[a-z]{2,6}$/i.test(x)) return `https://www.facebook.com/${x.replace(/^@/, '')}`;
   return /^https?:\/\//i.test(x) ? x : `https://${x.replace(/^\/+/, '')}`;
 }
-const urlOpt = (n: number, kind: 'instagram' | 'linkedin' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
+const urlOpt = (n: number, kind: 'instagram' | 'facebook' | 'linkedin' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
 export const companyContactSchema = z.object({
   phone: opt(40), email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
-  instagram: urlOpt(300, 'instagram'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
+  instagram: urlOpt(300, 'instagram'), facebook: urlOpt(300, 'facebook'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
 });
 export const activitySchema = z.object({
   contactId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
@@ -90,8 +92,11 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null } = {}) {
-  const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : null;
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi } = {}) {
+  // Sin clave de Google y con AI_RESEARCH_FIXTURE=1 (pruebas): Google y la web, de mentira.
+  const fixtureGoogle = !env('GOOGLE_MAPS_API_KEY') && env('AI_RESEARCH_FIXTURE') === '1';
+  const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : fixtureGoogle ? fixturePlaces() : null;
+  const site = opts.website ?? (opts.places === undefined && fixtureGoogle ? fixtureWebsite() : realWebsite());
   const routes = opts.routes !== undefined ? opts.routes : env('GOOGLE_MAPS_API_KEY') ? googleRoutes(env('GOOGLE_MAPS_API_KEY')!) : null;
   const ai = opts.research !== undefined ? opts.research
     : env('ANTHROPIC_API_KEY') ? claudeResearch(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureResearch() : null;
@@ -646,45 +651,52 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   const requirePlaces = () => { if (!places) throw new AdminError(503, 'Falta GOOGLE_MAPS_API_KEY en el servidor'); return places; };
   async function zoneNameOf(a: Account) { return a.zoneId ? (await accounts.listZones(t)).find((z) => z.id === a.zoneId)?.name ?? '' : ''; }
-  const toResearch = (p: PlaceResult) => ({ placeId: p.placeId, phone: p.phone, website: p.website, address: p.address, mapsUrl: p.mapsUrl, hours: p.hours, lat: p.lat, lng: p.lng, status: p.status });
-  /** Candidatos de Google para una empresa (nombre + ciudad). */
-  async function googleCandidates(accountId: string): Promise<PlaceResult[]> {
-    requireUse();
-    const api = requirePlaces();
+  const googleDown = (e: unknown): never => { console.warn('[places]', e instanceof Error ? e.message : e); throw new AdminError(503, 'Google no ha respondido; prueba en un momento'); };
+  /** Lo que se busca por defecto: el nombre y su ciudad. */
+  async function googleQuery(accountId: string) {
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
-    try { return await api.search(`${a.name} ${await zoneNameOf(a)}`.trim()); } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); throw new AdminError(503, 'Google no ha respondido; prueba en un momento'); }
+    return `${a.name} ${await zoneNameOf(a)}`.trim();
   }
-  /** Usar este resultado: rellena huecos (teléfono, web, dirección, Maps) y guarda horario y ubicación. */
-  async function googleApply(accountId: string, placeId: string) {
+  /** Candidatos de Google para una empresa (nombre + ciudad, o lo que escriba quien busca). */
+  async function googleCandidates(accountId: string, query?: string): Promise<PlaceResult[]> {
     requireUse();
     const api = requirePlaces();
-    let p: PlaceResult | null;
-    try { p = await api.details(placeId); } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); throw new AdminError(503, 'Google no ha respondido; prueba en un momento'); }
-    if (!p) throw new AdminError(404, 'Cuenta no encontrada');
-    try { await accounts.research(accountId, toResearch(p)); } catch (e) { mapError(e); }
+    const q = (query ?? '').trim().slice(0, 200) || await googleQuery(accountId);
+    try { return await api.search(q); } catch (e) { return googleDown(e); }
   }
   /**
-   * Completar en bloque (p. ej. «Valencia»): las que aún no se han buscado, hasta 20 por vez. Solo se usa el primer
-   * resultado si su nombre se parece al de la empresa; si no, se queda para revisarla a mano.
+   * «Es este» (docs/CRM_DINAMICO.md §15): guarda lo de Google (teléfono, web, dirección, Maps, horario, ubicación,
+   * valoración y foto), pone la ciudad si no tiene (una zona que ya exista, por la dirección) y mira su web para apuntar
+   * Instagram, Facebook, LinkedIn y email. Todo rellena huecos: nada escrito a mano se pisa. Devuelve qué se ha rellenado.
    */
-  async function googleFill(accountIds: string[]): Promise<{ filled: number; skipped: number; left: number }> {
+  async function googleApply(accountId: string, placeId: string): Promise<{ filled: string[]; zone: string | null }> {
     requireUse();
     const api = requirePlaces();
-    const accs = (await allAccounts()).filter((a) => accountIds.includes(a.id) && !a.placeAt);
-    const batch = accs.slice(0, 20);
-    let filled = 0;
-    let skipped = 0;
-    const key = (x: string) => slugKey(x).replace(/-/g, '');
-    for (const a of batch) {
-      try {
-        const r = (await api.search(`${a.name} ${await zoneNameOf(a)}`.trim()))[0];
-        const k = key(a.name);
-        if (r && k.length >= 3 && (key(r.name).includes(k) || k.includes(key(r.name)))) { await accounts.research(a.id, toResearch(r)); filled++; }
-        else { await accounts.research(a.id, { placeId: '', phone: null, website: null, address: null, mapsUrl: null, hours: null, lat: null, lng: null, status: 'not_found' }); skipped++; }
-      } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); skipped++; }
-    }
-    return { filled, skipped, left: accs.length - batch.length };
+    const before = await accounts.getAccount(accountId);
+    if (!before || before.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    let p: PlaceResult | null = null;
+    try { p = await api.details(placeId); } catch (e) { googleDown(e); }
+    if (!p) throw new AdminError(404, 'Cuenta no encontrada');
+    const zones = await accounts.listZones(t);
+    const zone = !before.zoneId && p.place ? zoneForPlace(zones, p.place) : null;
+    const web = p.website || before.website;
+    const socials = web ? await site.scan(web).catch(() => null) : null;
+    try {
+      await accounts.research(accountId, { placeId: p.placeId, phone: p.phone, website: p.website, address: p.address, mapsUrl: p.mapsUrl, hours: p.hours, lat: p.lat, lng: p.lng,
+        status: p.status, rating: p.rating ?? null, reviews: p.reviews ?? null, photo: p.photo ?? null, zoneId: zone?.id ?? null,
+        email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null });
+    } catch (e) { mapError(e); }
+    const after = await accounts.getAccount(accountId);
+    const KEYS = ['phone', 'website', 'address', 'mapsUrl', 'email', 'instagram', 'facebook', 'linkedin'] as const;
+    const filled = after ? KEYS.filter((k) => !before[k] && after[k]) : [];
+    return { filled, zone: after && !before.zoneId && after.zoneId ? zones.find((z) => z.id === after.zoneId)?.name ?? null : null };
+  }
+  /** La foto de Google de una empresa (la dirección pública de la imagen; la clave no sale del servidor). */
+  async function googlePhoto(name: string): Promise<string | null> {
+    requireUse();
+    if (!places?.photo || !PHOTO_NAME.test(name)) return null;
+    return places.photo(name).catch(() => null);
   }
 
   // ---------------------------------------------------------------- investigación con IA (docs/CRM_DINAMICO.md §13)
@@ -949,7 +961,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, hasZoneFixAi: () => !!zoneFixAi,
-    routePlan, googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
+    routePlan, googleCandidates, googleQuery, googleApply, googlePhoto, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

@@ -10,7 +10,7 @@ export const followupMessages = defineMessages({
       follow_up: 'Seguir la conversación', meeting: 'Preparar la cita', closed: 'No interesado: sin próximo paso',
     },
     contact: {
-      title: 'Contacto', phone: 'Teléfono', email: 'Email', instagram: 'Instagram', linkedin: 'LinkedIn', website: 'Web', mapsUrl: 'Google Maps',
+      title: 'Contacto', phone: 'Teléfono', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Web', mapsUrl: 'Google Maps',
       from: (name: string) => `de ${name}`, none: 'Aún no hay datos de contacto.', edit: 'Editar contacto', save: 'Guardar contacto',
       call: 'Llamar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Pega el enlace o el usuario (@club).',
     },
@@ -39,7 +39,7 @@ export const followupMessages = defineMessages({
       follow_up: 'Keep the conversation going', meeting: 'Prepare the meeting', closed: 'Not interested: no next step',
     },
     contact: {
-      title: 'Contact', phone: 'Phone', email: 'Email', instagram: 'Instagram', linkedin: 'LinkedIn', website: 'Website', mapsUrl: 'Google Maps',
+      title: 'Contact', phone: 'Phone', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Website', mapsUrl: 'Google Maps',
       from: (name: string) => `from ${name}`, none: 'No contact details yet.', edit: 'Edit contact', save: 'Save contact',
       call: 'Call', whatsapp: 'WhatsApp', mail: 'Email', open: 'Open', help: 'Paste the link or the handle (@club).',
     },
@@ -68,7 +68,7 @@ export const followupMessages = defineMessages({
       follow_up: 'Seguir a conversa', meeting: 'Preparar a reunião', closed: 'Não interessado: sem próximo passo',
     },
     contact: {
-      title: 'Contato', phone: 'Telefone', email: 'Email', instagram: 'Instagram', linkedin: 'LinkedIn', website: 'Site', mapsUrl: 'Google Maps',
+      title: 'Contato', phone: 'Telefone', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Site', mapsUrl: 'Google Maps',
       from: (name: string) => `de ${name}`, none: 'Ainda não há dados de contato.', edit: 'Editar contato', save: 'Salvar contato',
       call: 'Ligar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Cole o link ou o usuário (@club).',
     },
@@ -97,7 +97,7 @@ export const followupMessages = defineMessages({
       follow_up: '대화 이어가기', meeting: '미팅 준비', closed: '관심 없음: 다음 단계 없음',
     },
     contact: {
-      title: '연락처', phone: '전화', email: '이메일', instagram: '인스타그램', linkedin: '링크드인', website: '웹사이트', mapsUrl: '구글 지도',
+      title: '연락처', phone: '전화', email: '이메일', instagram: '인스타그램', facebook: '페이스북', linkedin: '링크드인', website: '웹사이트', mapsUrl: '구글 지도',
       from: (name: string) => `${name}의 연락처`, none: '아직 연락처가 없습니다.', edit: '연락처 수정', save: '연락처 저장',
       call: '전화', whatsapp: '왓츠앱', mail: '이메일', open: '열기', help: '링크나 아이디(@club)를 붙여넣으세요.',
     },

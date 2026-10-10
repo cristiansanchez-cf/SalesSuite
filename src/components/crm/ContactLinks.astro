@@ -1,13 +1,13 @@
 ---
 /**
- * Botones de contacto de un toque (docs/CRM_DINAMICO.md §10): llamar, WhatsApp, email, Instagram, LinkedIn, web y mapa.
+ * Botones de contacto de un toque (docs/CRM_DINAMICO.md §10): llamar, WhatsApp, email, Instagram, Facebook, LinkedIn, web y mapa.
  * Si la empresa no tiene un dato y su persona principal sí, se usa el de la persona y se dice de quién es.
  */
 import Icon from '~/components/ui/Icon.astro';
 import { i18n } from '~/lib/i18n';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 
-interface Reach { phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; website?: string | null; mapsUrl?: string | null }
+interface Reach { phone?: string | null; email?: string | null; instagram?: string | null; facebook?: string | null; linkedin?: string | null; website?: string | null; mapsUrl?: string | null }
 interface Props { reach: Reach; fallback?: Reach & { name?: string }; size?: 'sm' | 'md'; testid?: string; labels?: boolean }
 const { reach, fallback, size = 'md', testid, labels = true } = Astro.props;
 const { m } = i18n(Astro, followupMessages);
@@ -15,12 +15,13 @@ const C = m.contact;
 const pick = (k: keyof Reach) => (reach[k] ? { v: reach[k]!, from: null } : fallback?.[k] ? { v: fallback[k]!, from: fallback.name ?? null } : null);
 const digits = (p: string) => p.replace(/[^\d+]/g, '').replace(/^00/, '+').replace(/^\+/, '');
 const handle = (u: string) => (/instagram\.com\/([^/?#]+)/i.exec(u)?.[1] ? `@${/instagram\.com\/([^/?#]+)/i.exec(u)![1]}` : u.replace(/^https?:\/\/(www\.)?/, ''));
-const phone = pick('phone'); const email = pick('email'); const ig = pick('instagram'); const li = pick('linkedin'); const web = pick('website'); const map = pick('mapsUrl');
+const phone = pick('phone'); const email = pick('email'); const ig = pick('instagram'); const fb = pick('facebook'); const li = pick('linkedin'); const web = pick('website'); const map = pick('mapsUrl');
 const items = [
   phone && { href: `tel:${phone.v.replace(/\s/g, '')}`, icon: 'phone', label: C.call, title: phone.v, from: phone.from },
   phone && { href: `https://wa.me/${digits(phone.v)}`, icon: 'message-square-text', label: C.whatsapp, title: phone.v, from: phone.from, external: true },
   email && { href: `mailto:${email.v}`, icon: 'mail', label: C.mail, title: email.v, from: email.from },
   ig && { href: ig.v, icon: 'camera', label: handle(ig.v), title: ig.v, from: ig.from, external: true },
+  fb && { href: fb.v, icon: 'users', label: C.facebook, title: fb.v, from: fb.from, external: true },
   li && { href: li.v, icon: 'briefcase', label: C.linkedin, title: li.v, from: li.from, external: true },
   web && { href: web.v, icon: 'globe', label: C.website, title: web.v, from: web.from, external: true },
   map && { href: map.v, icon: 'map-pin', label: C.mapsUrl, title: map.v, from: map.from, external: true },

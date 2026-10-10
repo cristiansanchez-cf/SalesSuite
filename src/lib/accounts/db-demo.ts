@@ -20,13 +20,14 @@ const toAccount = (r: AccountRow): Account => ({
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
   fields: (r.fields ?? {}) as Account['fields'], parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
-  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
+  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, facebook: r.facebook ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: (r.qualification ?? {}) as Account['qualification'],
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
+  placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null,
   aiResearchAt: r.ai_research_at ?? null,
 });
-const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
+const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 function applyContact(row: AccountRow, c: AccountInsert['contact']) {
   for (const [k, col] of Object.entries(CONTACT_COLS)) { const v = c?.[k as keyof typeof CONTACT_COLS]; if (v !== undefined) (row as unknown as Record<string, unknown>)[col] = v; }
 }
@@ -299,7 +300,13 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
       if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
       a.phone ||= d.phone; a.website ||= d.website; a.address ||= d.address; a.maps_url ||= d.mapsUrl;
-      Object.assign(a, { place_id: d.placeId, hours: d.hours ?? a.hours ?? null, lat: d.lat ?? a.lat ?? null, lng: d.lng ?? a.lng ?? null, place_status: d.status, place_at: iso() });
+      a.email ||= d.email?.toLowerCase() ?? null; a.instagram ||= d.instagram ?? null; a.facebook ||= d.facebook ?? null; a.linkedin ||= d.linkedin ?? null;
+      // La ciudad, solo si es una zona de este espacio.
+      if (!a.zone_id && d.zoneId && db().zone.some((z) => z.id === d.zoneId && z.tenant_id === a.tenant_id)) a.zone_id = d.zoneId;
+      const rating = typeof d.rating === 'number' && d.rating >= 0 && d.rating <= 5 ? Math.round(d.rating * 10) / 10 : a.place_rating ?? null;
+      const reviews = typeof d.reviews === 'number' && d.reviews >= 0 ? Math.round(d.reviews) : a.place_reviews ?? null;
+      Object.assign(a, { place_id: d.placeId, hours: d.hours ?? a.hours ?? null, lat: d.lat ?? a.lat ?? null, lng: d.lng ?? a.lng ?? null, place_status: d.status, place_at: iso(),
+        place_rating: rating, place_reviews: reviews, place_photo: d.photo ?? a.place_photo ?? null });
     },
     async saveAiResearch(id, d, fill) {
       const a = db().account.find((x) => x.id === id);

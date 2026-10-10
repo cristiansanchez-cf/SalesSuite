@@ -48,11 +48,6 @@ if (Astro.request.method === 'POST') {
     if (str('action') === 'create') {
       const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes') });
       to = `/admin/accounts/${id}?ok=created`;
-    } else if (str('action') === 'google-fill') {
-      const r = await admin.crm.googleFill(str('ids').split(',').filter(Boolean));
-      const back = new URL(str('back') || '/admin/accounts', Astro.url);
-      back.searchParams.set('ok', 'google'); back.searchParams.set('gf', String(r.filled)); back.searchParams.set('gs', String(r.skipped)); back.searchParams.set('gl', String(r.left));
-      to = `${back.pathname}${back.search}`;
     } else if (str('action') === 'move-group') {
       const ids = f.getAll('ids').map(String).filter(Boolean);
       const r = await admin.crm.moveToGroup(ids, { groupName: str('groupName') });
@@ -112,9 +107,8 @@ const href = (p: Record<string, string>) => {
 };
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
-const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), google: R.google.filled(Number(q.get('gf')) || 0, Number(q.get('gs')) || 0, Number(q.get('gl')) || 0) });
+const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
 // Completar con Google (docs/CRM_DINAMICO.md §11): las de esta vista que aún no se han buscado.
-const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a) => a.id) : [];
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];
@@ -224,11 +218,6 @@ const panelOpen = nFilters > 0;
     <span class="co-meta font-semibold" data-testid="acc-count">{M.count(shown.length)}</span>
     {active.map((f) => <a class="co-chip" href={f.clear} data-testid="active-filter" title={M.clearAll}>{f.label} <Icon name="x" size={12} /></a>)}
     {active.length > 1 && <a class="co-meta underline" href={href({ zona: '', lista: '', estado: 'all', cual: '', orden: '', q: '', ...Object.fromEntries(Object.keys(fieldFilter).map((k) => [`c.${k}`, ''])) })} data-testid="clear-filters">{M.clearAll}</a>}
-    {toGoogle.length > 0 && (
-      <form method="post" class="ml-auto"><input type="hidden" name="action" value="google-fill" /><input type="hidden" name="ids" value={toGoogle.slice(0, 200).join(',')} />
-        <input type="hidden" name="back" value={href({})} />
-        <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-fill"><Icon name="search" size={14} />{R.google.fill(toGoogle.length)}</button></form>
-    )}
   </div>
   {stage && (
     <div class="co-chips mb-4" data-scroll-x data-testid="stage-chips" aria-label={P.lists.stage}>

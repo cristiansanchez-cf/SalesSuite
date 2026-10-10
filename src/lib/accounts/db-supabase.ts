@@ -14,19 +14,20 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
-const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, ai_research_at';
+const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, facebook, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, place_rating, place_reviews, place_photo, ai_research_at';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
   fields: r.fields ?? {}, parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
-  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
+  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, facebook: r.facebook ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: r.qualification ?? {},
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
+  placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null,
   aiResearchAt: r.ai_research_at ?? null,
 });
-const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
+const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 const contactRow = (c: AccountInsert['contact']) => Object.fromEntries(Object.entries(CONTACT_COLS).filter(([k]) => c?.[k as keyof typeof CONTACT_COLS] !== undefined).map(([k, col]) => [col, c![k as keyof typeof CONTACT_COLS]]));
 const toField = (r: Row): CrmField => ({
   id: r.id, tenantId: r.tenant_id, key: r.key, label: r.label, type: r.type as FieldType, options: r.options ?? [], group: r.grp, position: r.position,

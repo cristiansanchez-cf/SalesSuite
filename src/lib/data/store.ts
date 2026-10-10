@@ -100,10 +100,11 @@ export interface AccountRow {
   fields?: Record<string, unknown>;
   /** Grupo (otra empresa), listas e importación de origen (fase 2). */
   parent_id?: string | null; tags?: string[]; import_id?: string | null;
-  phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; website?: string | null; maps_url?: string | null;
+  phone?: string | null; email?: string | null; instagram?: string | null; facebook?: string | null; linkedin?: string | null; website?: string | null; maps_url?: string | null;
   next_step?: string | null; next_step_at?: string | null; next_contact_id?: string | null; next_channel?: string | null;
   qualification?: Record<string, unknown>;
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
+  place_rating?: number | null; place_reviews?: number | null; place_photo?: string | null;
   ai_research?: unknown; ai_research_at?: string | null;
 }
 export interface CrmActivityRow {

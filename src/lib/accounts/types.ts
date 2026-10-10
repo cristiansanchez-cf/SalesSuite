@@ -44,17 +44,19 @@ export interface Account {
   tags: string[];
   importId: string | null;
   /** Contacto de la empresa (docs/CRM_DINAMICO.md §10). */
-  phone: string | null; email: string | null; instagram: string | null; linkedin: string | null; website: string | null; mapsUrl: string | null;
+  phone: string | null; email: string | null; instagram: string | null; facebook: string | null; linkedin: string | null; website: string | null; mapsUrl: string | null;
   /** Próximo paso (lo que sale en «Hoy»). */
   nextStep: string | null; nextStepAt: string | null; nextContactId: string | null; nextChannel: string | null;
   /** Cualificación para la prioridad (docs/CRM_DINAMICO.md §11). */
   qualification: Qualification;
   /** Google Places: horario y ubicación (para la ruta del día). */
   placeId: string | null; hours: string[] | null; lat: number | null; lng: number | null; placeStatus: string | null; placeAt: string | null;
+  /** Google: valoración, reseñas y foto (nombre en Places; la imagen se pide al verla, §15). */
+  placeRating: number | null; placeReviews: number | null; placePhoto: string | null;
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }
-export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'linkedin', 'website', 'mapsUrl'] as const;
+export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl'] as const;
 export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }

@@ -338,3 +338,22 @@ export function isUnordered(z: Zone, byId: Map<string, Zone>): boolean {
   if (parent && parent.kind === 'country' && norm(parent.name) === norm(HOME_COUNTRY) && z.kind === 'city') return true;
   return /[0-9(),/?•]|\s-\s|\s{2,}/.test(z.name) || z.name.length > 40 || (z.name === z.name.toUpperCase() && /\p{Lu}{3}/u.test(z.name));
 }
+
+/**
+ * La ciudad de una empresa a partir de su dirección en Google (docs/CRM_DINAMICO.md §15): solo zonas que ya existen
+ * (no crea ninguna). Prueba el pueblo, luego la provincia, la comunidad y el país; si hay dos con el mismo nombre,
+ * gana la que cuelga de la provincia, comunidad o país de la dirección.
+ */
+export function zoneForPlace(zones: Zone[], p: { city: string | null; province: string | null; region: string | null; country: string | null }): Zone | null {
+  const byId = new Map(zones.map((z) => [z.id, z]));
+  const clean = (x: string | null) => norm(x).replace(/^(provincia|province|prov\.) de /, '');
+  const ups = (z: Zone) => { const out: string[] = []; for (let u = z.parentId ? byId.get(z.parentId) : undefined, i = 0; u && i < 8; u = u.parentId ? byId.get(u.parentId) : undefined, i++) out.push(norm(u.name)); return out; };
+  const ctx = [p.province, p.region, p.country].map(clean).filter(Boolean);
+  for (const name of [p.city, p.province, p.region, p.country].map(clean)) {
+    if (!name) continue;
+    const hits = zones.filter((z) => norm(z.name) === name);
+    if (!hits.length) continue;
+    return hits.map((z) => ({ z, score: ups(z).filter((u) => ctx.includes(u)).length })).sort((a, b) => b.score - a.score)[0].z;
+  }
+  return null;
+}

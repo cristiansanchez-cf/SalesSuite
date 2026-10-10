@@ -43,7 +43,7 @@ const P = peopleMessages[locale];
 const F = followupMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
-const googleBox: { r: Awaited<ReturnType<typeof admin.crm.googleCandidates>> | null } = { r: null };
+const googleBox: { r: Awaited<ReturnType<typeof admin.crm.googleCandidates>> | null; q: string } = { r: null, q: '' };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
@@ -57,8 +57,13 @@ if (Astro.request.method === 'POST') {
         to += str('outcome') === 'note' || !str('outcome') ? '?ok=noted' : '?ok=contact';
         break;
       }
-      case 'google-search': googleBox.r = await admin.crm.googleCandidates(id); to = ''; break;
-      case 'google-apply': await admin.crm.googleApply(id, str('placeId')); to += '?ok=google'; break;
+      case 'google-search': googleBox.q = str('q'); googleBox.r = await admin.crm.googleCandidates(id, googleBox.q); to = ''; break;
+      case 'google-apply': {
+        // Qué se ha rellenado (y la ciudad), para decirlo en el aviso.
+        const g = await admin.crm.googleApply(id, str('placeId'));
+        to += `?ok=google&g=${g.filled.join('.')}${g.zone ? `&z=${encodeURIComponent(g.zone)}` : ''}#company-contact`;
+        break;
+      }
       case 'ai-run': await admin.crm.aiRun(id, await researchContext(admin, (await acc.get(id)).account.segmentId)); to += '?ok=ai#ai'; break;
       case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
       case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
@@ -66,7 +71,7 @@ if (Astro.request.method === 'POST') {
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
       case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
-      case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
+      case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), facebook: str('facebook'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
       case 'claim': { const e = await acc.touch(id, 'claim'); to += `?ok=${e === 'eligible' ? 'claimed' : `not-${e}`}`; break; }
       case 'release': await acc.touch(id, 'release'); to += '?ok=released'; break;
       case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
@@ -106,6 +111,14 @@ const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMont
 // Prioridad (docs/CRM_DINAMICO.md §11): la puntuación de esta empresa y si se está enfriando.
 const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
 const googleResults = googleBox.r;
+const G = priorityMessages[locale].google;
+const googleQ = googleBox.q || (admin.crm.hasGoogle() ? await admin.crm.googleQuery(id) : '');
+const photoSrc = (n: string | null | undefined) => (n ? `/admin/api/crm/place-photo?n=${encodeURIComponent(n)}` : null);
+const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+const googleApplied = () => {
+  const keys = (Astro.url.searchParams.get('g') ?? '').split('.').filter((k): k is keyof typeof G.fields => k in G.fields);
+  return G.applied(keys.map((k) => G.fields[k]).join(', '), Astro.url.searchParams.get('z') ?? '');
+};
 const prio = priorityOf(a.qualification, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
 const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
 const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
@@ -119,7 +132,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: priorityMessages[locale].google.applied,
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(),
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -360,26 +373,55 @@ const STATE_ALERT = {
     <aside class="grid content-start gap-4">
       <section id="company-contact" class="co-card grid gap-3" data-testid="company-contact">
         <h2 class="co-entity">{F.contact.title}</h2>
-        {(a.phone || a.email || a.instagram || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
+        {(a.phone || a.email || a.instagram || a.facebook || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
           ? <ContactLinks reach={a} fallback={fallback} size="sm" testid="contact-links" />
           : <p class="co-meta">{F.contact.none}</p>}
-        {a.placeStatus === 'CLOSED_PERMANENTLY' && <p class="co-tag co-tag--danger w-fit">{priorityMessages[locale].google.closed}</p>}
+        {a.placeAt && a.placeId && (
+          <div class="flex items-center gap-3" data-testid="google-profile">
+            {a.placePhoto && <img src={photoSrc(a.placePhoto)} alt="" loading="lazy" class="h-16 w-16 shrink-0 rounded-lg object-cover" />}
+            <div class="grid gap-0.5">
+              {a.placeRating != null && <span class="co-row-title">★ {fmt.number(a.placeRating)}{a.placeReviews != null && <span class="co-meta"> · {G.reviews(a.placeReviews)}</span>}</span>}
+              {a.mapsUrl && <a class="co-meta inline-flex items-center gap-1 underline" href={a.mapsUrl} target="_blank" rel="noopener noreferrer" data-no-progress>{G.open}<Icon name="external-link" size={12} /></a>}
+            </div>
+          </div>
+        )}
+        {a.placeStatus === 'CLOSED_PERMANENTLY' && <p class="co-tag co-tag--danger w-fit">{G.closed}</p>}
         {a.hours && a.hours.length > 0 && (
-          <details data-testid="hours"><summary class="co-meta cursor-pointer">{priorityMessages[locale].google.hours}</summary>
+          <details data-testid="hours"><summary class="co-meta cursor-pointer">{G.hours}</summary>
             <ul class="m-0 mt-2 grid gap-0.5 p-0 text-sm">{a.hours.map((h) => <li class="list-none">{h}</li>)}</ul></details>
         )}
         {admin.crm.hasGoogle() && canQualify && (
-          <form method="post" action="#company-contact"><input type="hidden" name="action" value="google-search" />
-            <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search"><Icon name="search" size={14} />{priorityMessages[locale].google.search}</button></form>
+          <div class="co-inset grid gap-2 !p-3" data-testid="google-box">
+            <p class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={14} />{G.title}</p>
+            <p class="co-help">{G.help}</p>
+            <form method="post" action="#company-contact" class="flex flex-wrap gap-2" data-google-search>
+              <input type="hidden" name="action" value="google-search" />
+              <label class="sr-only" for="google-q">{G.query}</label>
+              <input id="google-q" class="co-input min-w-0 flex-1" name="q" value={googleQ} maxlength="200" />
+              <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search" data-busy-label={G.searching}><Icon name="search" size={14} /><span>{googleResults ? G.again : G.search}</span></button>
+            </form>
+          </div>
         )}
-        {googleResults && (googleResults.length === 0 ? <p class="co-meta">{priorityMessages[locale].google.none}</p> : (
+        {googleResults && (googleResults.length === 0 ? <p class="co-meta" data-testid="google-none">{G.none}</p> : (
           <ul class="m-0 grid gap-2 p-0" data-testid="google-results">
             {googleResults.map((r) => (
-              <li class="co-inset grid list-none gap-1 !p-3">
-                <span class="co-row-title">{r.name}</span>
-                <span class="co-meta">{[r.address, r.phone, r.website?.replace(/^https?:\/\/(www\.)?/, '')].filter(Boolean).join(' · ')}</span>
-                <form method="post"><input type="hidden" name="action" value="google-apply" /><input type="hidden" name="placeId" value={r.placeId} />
-                  <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="google-apply">{priorityMessages[locale].google.pick}</button></form>
+              <li class="co-inset flex list-none gap-3 !p-3" data-testid="google-result">
+                {r.photo ? <img src={photoSrc(r.photo)} alt="" loading="lazy" class="h-20 w-20 shrink-0 rounded-lg object-cover" />
+                  : <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-[var(--co-canvas)] text-[var(--co-ink-dim)]"><Icon name="store" size={22} /></span>}
+                <div class="grid min-w-0 content-start gap-1">
+                  {r.mapsUrl
+                    ? <a class="co-row-title inline-flex items-center gap-1 underline" href={r.mapsUrl} target="_blank" rel="noopener noreferrer" data-no-progress title={G.open}>{r.name}<Icon name="external-link" size={12} /></a>
+                    : <span class="co-row-title">{r.name}</span>}
+                  <span class="co-meta">{[r.type, r.rating != null ? `★ ${fmt.number(r.rating)}${r.reviews != null ? ` (${G.reviews(r.reviews)})` : ''}` : null].filter(Boolean).join(' · ')}</span>
+                  {r.address && <span class="co-meta">{r.address}</span>}
+                  <span class="co-meta flex flex-wrap gap-x-3">
+                    {r.website && <a class="inline-flex items-center gap-1 underline" href={r.website} target="_blank" rel="noopener noreferrer" data-no-progress>{hostOf(r.website)}<Icon name="external-link" size={12} /></a>}
+                    {r.phone && <span>{r.phone}</span>}
+                  </span>
+                  {r.status === 'CLOSED_PERMANENTLY' && <span class="co-tag co-tag--danger w-fit">{G.closed}</span>}
+                  <form method="post" action="#company-contact" class="mt-1" data-google-pick><input type="hidden" name="action" value="google-apply" /><input type="hidden" name="placeId" value={r.placeId} />
+                    <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="google-apply" data-busy-label={G.saving}><Icon name="check" size={14} /><span>{G.pick}</span></button></form>
+                </div>
               </li>
             ))}
           </ul>
@@ -392,6 +434,7 @@ const STATE_ALERT = {
               <label class="co-field">{F.contact.phone}<input class="co-input" type="tel" name="phone" value={a.phone ?? ''} maxlength="40" /></label>
               <label class="co-field">{F.contact.email}<input class="co-input" type="email" name="email" value={a.email ?? ''} maxlength="200" /></label>
               <label class="co-field">{F.contact.instagram} <span class="co-help">{F.contact.help}</span><input class="co-input" name="instagram" value={a.instagram ?? ''} maxlength="300" placeholder="@" /></label>
+              <label class="co-field">{F.contact.facebook}<input class="co-input" name="facebook" value={a.facebook ?? ''} maxlength="300" /></label>
               <label class="co-field">{F.contact.linkedin}<input class="co-input" name="linkedin" value={a.linkedin ?? ''} maxlength="300" /></label>
               <label class="co-field">{F.contact.website}<input class="co-input" name="website" value={a.website ?? ''} maxlength="300" /></label>
               <label class="co-field">{F.contact.mapsUrl}<input class="co-input" name="mapsUrl" value={a.mapsUrl ?? ''} maxlength="500" placeholder="https://maps.app.goo.gl/…" /></label>
@@ -473,6 +516,17 @@ const STATE_ALERT = {
     <input type="hidden" name="action" value="delete" />
   </ConfirmDialog>
 </AdminLayout>
+
+<script>
+  // Google tarda un poco (y «Es este» abre su web): el botón lo dice y no se pulsa dos veces.
+  document.querySelectorAll<HTMLFormElement>('form[data-google-search], form[data-google-pick]').forEach((f) => f.addEventListener('submit', () => {
+    const b = f.querySelector<HTMLButtonElement>('button[data-busy-label]');
+    if (!b) return;
+    setTimeout(() => { b.disabled = true; }, 0);
+    const s = b.querySelector('span');
+    if (s) s.textContent = b.dataset.busyLabel ?? '';
+  }));
+</script>
 
 <style>
   .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
