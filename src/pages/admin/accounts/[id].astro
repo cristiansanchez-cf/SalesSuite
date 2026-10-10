@@ -24,6 +24,7 @@ import ContactLinks from '~/components/crm/ContactLinks.astro';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
 import AiResearchCard from '~/components/crm/AiResearchCard.astro';
 import { researchContext } from '~/lib/crm/research-context';
+import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { researchMessages } from '~/lib/i18n/messages/research';
 import { priorityOf } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
@@ -78,6 +79,10 @@ if (Astro.request.method === 'POST') {
       case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
       case 'assign': await acc.assign(id, str('userId') || null); to += '?ok=assigned'; break;
       case 'fields': await acc.setFields(id, valuesFromForm(await acc.crmFields(), f)); to += '?ok=fields'; break;
+      // Tipo y descartar (§17): cambiar el tipo no recupera una descartada.
+      case 'kind': await admin.crm.classifyAccount(id, { kind: str('kind') }); to += '?ok=kind'; break;
+      case 'discard': await admin.crm.classifyAccount(id, { reason: str('reason'), note: str('note') }); to += '?ok=discarded'; break;
+      case 'restore': await admin.crm.classifyAccount(id, { reason: null }); to += '?ok=restored'; break;
       case 'group': await admin.crm.moveToGroup([id], { groupName: str('leave') ? null : str('groupName') }); to += '?ok=group'; break;
       case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
       case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
@@ -113,6 +118,7 @@ const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMont
 const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
 const googleResults = googleBox.r;
 const G = priorityMessages[locale].google;
+const CL = cleanupMessages[locale];
 const googleQ = googleBox.q || (admin.crm.hasGoogle() ? await admin.crm.googleQuery(id) : '');
 const photoSrc = (n: string | null | undefined) => (n ? `/admin/api/crm/place-photo?n=${encodeURIComponent(n)}` : null);
 const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
@@ -133,7 +139,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared,
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -155,6 +161,9 @@ const STATE_ALERT = {
     {(a.state === 'free' || a.state === 'mine' || a.state === 'my_customer') && (
       <form method="post"><input type="hidden" name="action" value="dossier" />
         <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
+    )}
+    {a.discardedAt && a.discardReason && (
+      <p slot="below" class="co-tag co-tag--danger mt-3 w-fit" data-testid="discarded-banner">{CL.discarded(CL.reasons[a.discardReason])}{a.discardNote && <span class="font-normal"> — {a.discardNote}</span>}</p>
     )}
   </PageHeader></div>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
@@ -450,6 +459,21 @@ const STATE_ALERT = {
           </form>
         </details>
       </section>
+      {canEdit && (
+        <section class="co-card grid gap-3" id="acc-kind" data-testid="acc-kind">
+          <form method="post" class="grid gap-2" data-async="acc-kind acc-head">
+            <input type="hidden" name="action" value="kind" />
+            <label class="co-field">{CL.kind}
+              <select class="co-select" name="kind" data-testid="kind-select">{(['company', 'dj'] as const).map((k) => <option value={k} selected={a.kind === k}>{CL.kinds[k]}</option>)}</select>
+              <span class="co-help">{CL.kindHelp}</span></label>
+            <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="kind-save"><span>{F.contact.save}</span></button>
+          </form>
+          {a.discardedAt
+            ? <form method="post" data-async="acc-kind acc-head"><input type="hidden" name="action" value="restore" />
+                <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="restore"><Icon name="rotate-ccw" size={14} /><span>{CL.restore}</span></button></form>
+            : <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit" data-dialog-open="discard" data-testid="discard-open"><Icon name="archive" size={14} />{CL.discard}</button>}
+        </section>
+      )}
       <form method="post" class="co-card grid gap-3" id="acc-data" data-testid="account-info">
         <input type="hidden" name="action" value="save" />
         <h2 class="co-entity">{M.data}</h2>
@@ -510,6 +534,15 @@ const STATE_ALERT = {
     does={M.releaseDoes}
     doesNot={M.releaseDoesNot}>
     <input type="hidden" name="action" value="release" />
+  </ConfirmDialog>
+  <ConfirmDialog id="discard" title={CL.discardTitle(a.name)} confirmLabel={CL.discard} testid="discard-dialog" does={CL.discardBody} doesNot={CL.discardNot}>
+    <input type="hidden" name="action" value="discard" />
+    <fieldset class="grid gap-1.5"><legend class="co-field mb-1">{CL.reason}</legend>
+      {(['not_sector', 'partner', 'duplicate', 'closed', 'other'] as const).map((r, i) => (
+        <label class="flex items-center gap-2 text-sm"><input type="radio" name="reason" value={r} checked={i === 0} class="accent-[var(--co-ink)]" data-testid={`discard-reason-${r}`} />{CL.reasons[r]}</label>
+      ))}
+    </fieldset>
+    <label class="co-field">{CL.note}<input class="co-input" name="note" maxlength="500" placeholder={CL.notePh} data-testid="discard-note" /></label>
   </ConfirmDialog>
   <ConfirmDialog id="block" title={M.blockTitle(a.name)} confirmLabel={M.blockConfirm} danger testid="block-dialog"
     does={M.blockDoes}

@@ -8,13 +8,14 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import type { Account, Zone } from '../accounts/types';
+import { ACCOUNT_KINDS, DISCARD_REASONS, type Account, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
 import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
 import { fixtureWebsite, realWebsite, type WebsiteApi } from './website';
+import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
 import type { AccountMove } from '../accounts/types';
@@ -52,6 +53,11 @@ const urlOpt = (n: number, kind: 'instagram' | 'facebook' | 'linkedin' | 'web') 
 export const companyContactSchema = z.object({
   phone: opt(40), email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
   instagram: urlOpt(300, 'instagram'), facebook: urlOpt(300, 'facebook'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
+});
+export const classifySchema = z.object({
+  kind: z.enum(ACCOUNT_KINDS).nullable().optional().or(z.literal('').transform(() => null)),
+  reason: z.enum(DISCARD_REASONS).nullable().optional().or(z.literal('').transform(() => null)),
+  note: z.string().trim().max(500).nullable().optional(),
 });
 export const activitySchema = z.object({
   contactId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
@@ -92,7 +98,7 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null } = {}) {
   // Sin clave de Google y con AI_RESEARCH_FIXTURE=1 (pruebas): Google y la web, de mentira.
   const fixtureGoogle = !env('GOOGLE_MAPS_API_KEY') && env('AI_RESEARCH_FIXTURE') === '1';
   const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : fixtureGoogle ? fixturePlaces() : null;
@@ -104,6 +110,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     : env('ANTHROPIC_API_KEY') ? claudeZoneNames(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneNames() : null;
   const zoneFixAi = opts.zoneFixes !== undefined ? opts.zoneFixes
     : env('ANTHROPIC_API_KEY') ? claudeZoneFixes(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneFixes() : null;
+  const cleanupAi = opts.cleanup !== undefined ? opts.cleanup
+    : env('ANTHROPIC_API_KEY') ? claudeCleanup(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureCleanup() : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -871,6 +879,75 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     await accounts.markFixUndone(f.id);
     return { back };
   }
+  // ---------------------------------------------------------------- limpiar: empresas, DJs y descartadas (§17)
+
+  /** Tipo de una empresa (empresa / DJ) y descartarla con motivo o recuperarla (reason null). */
+  async function classifyAccount(accountId: string, input: unknown) {
+    requireUse();
+    const v = parse(classifySchema, input);
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    // Cambiar solo el tipo no recupera una descartada: lo que no viene, se queda como está.
+    const has = (k: string) => !!input && typeof input === 'object' && k in input;
+    const reason = has('reason') ? v.reason ?? null : a.discardReason;
+    const note = has('reason') ? v.note ?? null : a.discardNote;
+    try { await accounts.classify(accountId, v.kind ?? null, reason, note); } catch (e) { mapError(e); }
+  }
+  /** Empresas por tanda que la IA revisa cada vez (cada tanda es una petición corta desde el navegador). */
+  const CLEANUP_CHUNK = 40;
+  async function cleanupOverview() {
+    requireImporter();
+    const [accs, fixes] = await Promise.all([allAccounts(), accounts.listFixes(t, 'classify').catch(() => [])]);
+    const active = accs.filter((a) => !a.discardedAt);
+    return {
+      ids: active.map((a) => a.id), companies: active.filter((a) => a.kind !== 'dj').length, djs: active.filter((a) => a.kind === 'dj').length,
+      discarded: accs.length - active.length, last: fixes.find((f) => !f.undoneAt) ?? null, hasAi: !!cleanupAi, chunk: CLEANUP_CHUNK,
+    };
+  }
+  /** La IA revisa una tanda (ids) y propone tipo y si descartar, con su porqué. No cambia nada. */
+  async function cleanupClassify(ids: unknown, ctx: CleanupContext & { sectors?: Record<string, string> }): Promise<CleanupSuggestion[]> {
+    requireImporter();
+    if (!cleanupAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const want = new Set(z.array(uuid).max(CLEANUP_CHUNK).parse(Array.isArray(ids) ? ids : []));
+    if (!want.size) return [];
+    const [accs, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
+    const zoneName = new Map(zones.map((x) => [x.id, x.name]));
+    const items: CleanupInput[] = accs.filter((a) => want.has(a.id)).map((a) => ({
+      id: a.id, name: a.name, city: a.zoneId ? zoneName.get(a.zoneId) ?? null : null, notes: a.notes ? a.notes.slice(0, 300) : null,
+      website: a.website, instagram: a.instagram, email: a.email ? a.email.replace(/^[^@]*/, '…') : null, tags: a.tags.slice(0, 8),
+      sector: a.segmentId ? ctx.sectors?.[a.segmentId] ?? null : null,
+    }));
+    try { return await cleanupAi.classify(items, { seller: ctx.seller, clients: ctx.clients }); } catch (e) {
+      console.warn('[cleanup-ai]', e instanceof Error ? e.message : e);
+      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
+    }
+  }
+  /** Aplicar lo que la IA propuso y sigue marcado: solo lo que cambia. Se guarda lo de antes para deshacer. */
+  async function cleanupApply(input: unknown) {
+    requireImporter();
+    const accs = await allAccounts();
+    const byId = new Map(accs.map((a) => [a.id, a]));
+    const asked = sanitizeCleanup({ items: Array.isArray(input) ? input : [] }, accs.map((a) => ({ id: a.id }) as CleanupInput));
+    const rows = asked.filter((x) => { const a = byId.get(x.id)!; return a.kind !== x.kind || (x.discard && !a.discardedAt); })
+      .map((x) => ({ id: x.id, kind: x.kind, reason: x.discard ?? byId.get(x.id)!.discardReason, note: x.discard ? x.why : byId.get(x.id)!.discardNote }));
+    if (!rows.length) return { changed: 0, djs: 0, discarded: 0 };
+    const undo = rows.map((x) => { const a = byId.get(x.id)!; return { id: a.id, kind: a.kind, reason: a.discardReason, note: a.discardNote }; });
+    let changed = 0;
+    try { for (let i = 0; i < rows.length; i += 1000) changed += await accounts.classifyMany(t, rows.slice(i, i + 1000)); } catch (e) { mapError(e); }
+    const summary = { changed, djs: rows.filter((x) => x.kind === 'dj' && byId.get(x.id)!.kind !== 'dj').length, discarded: rows.filter((x) => x.reason && !byId.get(x.id)!.discardedAt).length };
+    try { await accounts.saveFix(t, { kind: 'classify', summary, undo: { kinds: undo } }); } catch (e) { mapError(e); }
+    return summary;
+  }
+  async function cleanupUndo(fixId: string) {
+    requireImporter();
+    const f = (await accounts.listFixes(t, 'classify')).find((x) => x.id === fixId && !x.undoneAt);
+    if (!f) throw new AdminError(404, 'Ese arreglo ya no se puede deshacer');
+    const rows = f.undo.kinds ?? [];
+    try { for (let i = 0; i < rows.length; i += 1000) await accounts.classifyMany(t, rows.slice(i, i + 1000)); } catch (e) { mapError(e); }
+    await accounts.markFixUndone(f.id);
+    return { back: rows.length };
+  }
+
   /** El árbol de zonas con sus empresas (para terminar a mano lo que quede). */
   async function zonesTree() {
     requireImporter();
@@ -1002,7 +1079,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, hasZoneFixAi: () => !!zoneFixAi,
+    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,

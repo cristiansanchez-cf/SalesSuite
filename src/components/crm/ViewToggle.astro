@@ -7,7 +7,7 @@ import { mapMessages } from '~/lib/i18n/messages/map';
 interface Props { current: 'list' | 'map' }
 const { current } = Astro.props;
 const { m } = i18n(Astro, mapMessages);
-const keep = new URLSearchParams([...Astro.url.searchParams].filter(([k]) => ['zona', 'estado', 'ver'].includes(k)));
+const keep = new URLSearchParams([...Astro.url.searchParams].filter(([k]) => ['zona', 'estado', 'ver', 'tipo'].includes(k)));
 const qs = keep.toString() ? `?${keep}` : '';
 ---
 <nav class="co-segmented w-fit min-w-[12rem] !px-1" aria-label={m.view.label} data-testid="view-toggle">

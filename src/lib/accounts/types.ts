@@ -7,11 +7,15 @@ export type Eligibility = 'eligible' | 'claimed_by_other' | 'blocked' | 'out_of_
 export type AccountDecision = 'approved' | 'rejected';
 export type TouchKind = 'created' | 'contact' | 'dossier' | 'won' | 'lost' | 'claim' | 'release' | 'block' | 'unblock' | 'assign';
 
+export const ACCOUNT_KINDS = ['company', 'dj'] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+export const DISCARD_REASONS = ['not_sector', 'partner', 'duplicate', 'closed', 'other'] as const;
+export type DiscardReason = (typeof DISCARD_REASONS)[number];
 export interface Zone { id: string; tenantId: string; parentId: string | null; name: string; kind: ZoneKind; position: number; /** Su punto en el mapa (§16). */ lat?: number | null; lng?: number | null }
 /** Un movimiento de empresa (arreglos en bloque: ordenar ciudades). zoneId null = sin zona. */
 export interface AccountMove { id: string; zoneId: string | null; notes: string | null; tags: string[] }
 /** Arreglo de datos con su deshacer (crm_fix). */
-export interface CrmFix { id: string; kind: 'zones'; summary: Record<string, unknown>; undo: { moves?: AccountMove[]; zoneIds?: string[] }; createdAt: string; undoneAt: string | null }
+export interface CrmFix { id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: { moves?: AccountMove[]; zoneIds?: string[]; kinds?: Array<{ id: string; kind: AccountKind; reason: DiscardReason | null; note: string | null }> }; createdAt: string; undoneAt: string | null }
 export interface ZoneAssignment { userId: string; zoneId: string }
 export interface AccountRules { claimDays: number; strictZones: boolean; requireAccount: boolean }
 export const DEFAULT_RULES: AccountRules = { claimDays: 30, strictZones: false, requireAccount: false };
@@ -55,6 +59,8 @@ export interface Account {
   placeRating: number | null; placeReviews: number | null; placePhoto: string | null;
   /** Lo que rellenó la ficha de Google elegida (campo → valor), para poder cambiarla o quitarla. */
   placeFilled: Record<string, string> | null;
+  /** Tipo (§17): empresa de verdad o DJ/artista; y si está descartada (con motivo y nota; se puede recuperar). */
+  kind: AccountKind; discardedAt: string | null; discardReason: DiscardReason | null; discardNote: string | null;
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }

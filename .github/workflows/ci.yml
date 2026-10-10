@@ -93,6 +93,7 @@ jobs:
           node scripts/smoke-zones.cjs
           node scripts/smoke-google.cjs
           node scripts/smoke-map.cjs
+          node scripts/smoke-cleanup.cjs
           node scripts/smoke-proposal-owners.cjs
           node scripts/smoke-rep-contact.cjs
       - name: Build para Vercel

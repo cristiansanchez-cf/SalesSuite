@@ -20,6 +20,7 @@ import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { crmMessages } from '~/lib/i18n/messages/crm';
+import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { formatValue } from '~/lib/crm/fields';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
@@ -37,6 +38,7 @@ const S = shellMessages[locale];
 const CF = crmMessages[locale].filters;
 const P = peopleMessages[locale];
 const R = priorityMessages[locale];
+const CL = cleanupMessages[locale];
 const AI = researchMessages[locale];
 /** «Investigar zona»: máximo por clic (cada una tarda y cuesta). */
 const AI_MAX = 20;
@@ -70,14 +72,17 @@ const search = q.get('q') ?? '';
 const lista = q.get('lista') ?? '';
 // Ciudad o zona (con sus ciudades dentro).
 const zona = q.get('zona') ?? '';
+// Empresas · DJs · Descartadas (§17).
+const tipo = (['dj', 'descartadas'].includes(q.get('tipo') ?? '') ? q.get('tipo') : '') as '' | 'dj' | 'descartadas';
+const listView = tipo === 'dj' ? 'dj' : tipo === 'descartadas' ? 'discarded' : 'company';
 const shownMax = Math.max(100, Math.min(Number(q.get('n')) || 100, 20000));
 // Campos del CRM (docs/CRM_DINAMICO.md): los marcados salen como columna y los filtrables como filtro (?c.<clave>=valor).
 const crm = (await acc.crmFields()).filter((x) => x.target === 'account' && (!x.tags.length || x.tags.includes(lista)));
 const filterable = crm.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
 const columns = crm.filter((x) => x.inList);
-const [{ items, total, scope: effective }, t, colleagues, segments, lists] = await Promise.all([
-  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined }), acc.territory(), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
+const [{ items, total, scope: effective, kinds }, t, colleagues, segments, lists] = await Promise.all([
+  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined, view: listView }), acc.territory(), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
 ]);
 const accountLists = lists.filter((l) => l.accounts > 0);
 // Etapa de la lista: chips por opción (filtran por su campo).
@@ -101,7 +106,7 @@ if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.g
 const count = (s: State) => items.filter((a) => a.state === s).length;
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
 const href = (p: Record<string, string>) => {
-  const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...(lista ? { lista } : {}), ...(zona ? { zona } : {}),
+  const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...(lista ? { lista } : {}), ...(zona ? { zona } : {}), ...(tipo ? { tipo } : {}),
     ...(orden ? { orden } : {}), ...(cual ? { cual } : {}),
     ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
   for (const [k, v] of [...u]) if (!v || (k === 'ver' && v === 'zone') || (k === 'estado' && v === 'all')) u.delete(k);
@@ -163,7 +168,13 @@ const panelOpen = nFilters > 0;
   )}
 
   {/* Una sola barra: buscar, ciudad y filtros. Cambiar cualquier cosa aplica al momento (sin botón «Filtrar»). */}
+  <nav class="co-segmented mb-3 w-fit !px-1" aria-label={CL.tabs.label} data-testid="kind-tabs">
+    {([['', CL.tabs.company, kinds.company], ['dj', CL.tabs.dj, kinds.dj], ['descartadas', CL.tabs.discarded, kinds.discarded]] as const).map(([k, l, n]) => (
+      <a href={href({ tipo: k })} class="!px-4" aria-current={tipo === k ? 'page' : undefined} data-testid={`kind-tab-${k || 'company'}`}>{l} <span class="co-meta">{n}</span></a>
+    ))}
+  </nav>
   <form method="get" class="co-card mb-3 grid gap-3 !p-4" data-testid="acc-toolbar" data-autosubmit role="search">
+    {tipo && <input type="hidden" name="tipo" value={tipo} />}
     <div class="flex flex-wrap items-center gap-2">
       <label class="sr-only" for="acc-q">{M.search}</label>
       <input id="acc-q" class="co-input min-w-[12rem] flex-[2]" type="search" name="q" value={search} placeholder={M.search} />
@@ -247,7 +258,7 @@ const panelOpen = nFilters > 0;
               <input type="checkbox" class="h-4 w-4 accent-[var(--co-ink)]" name="ids" value={a.id} form="bulk-group" data-bulk aria-label={P.bulk.select(a.name)} />
             </label>
             <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}`}>
-              <span class="co-row-title">{a.name}</span>
+              <span class="co-row-title">{a.name}{a.discardReason && <span class="co-tag !py-0 text-[11px] ml-2" data-testid="discard-tag">{CL.reasons[a.discardReason]}</span>}</span>
               <span class="co-meta">{a.parentId && groupNames.get(a.parentId) ? <><Icon name="building2" size={12} /> {groupNames.get(a.parentId)} · </> : ''}{a.zonePath ? `${a.zonePath.split(' › ').slice(-2).join(' › ')} · ` : ''}<AccountState a={a} detail /></span>
               {columns.some((c) => formatValue(c, a.fields[c.key], locale)) && (
                 <span class="mt-1 flex flex-wrap gap-1.5" data-testid="account-columns">

@@ -25,6 +25,7 @@ const toAccount = (r: AccountRow): Account => ({
   qualification: (r.qualification ?? {}) as Account['qualification'],
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
   placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null, placeFilled: (r.place_filled ?? null) as Record<string, string> | null,
+  kind: (r.kind ?? 'company') as Account['kind'], discardedAt: r.discarded_at ?? null, discardReason: (r.discard_reason ?? null) as Account['discardReason'], discardNote: r.discard_note ?? null,
   aiResearchAt: r.ai_research_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
@@ -46,6 +47,16 @@ export function checkFields(t: string, fields: Record<string, unknown>, target: 
 const toZone = (z: { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number; lat?: number | null; lng?: number | null }): Zone =>
   ({ id: z.id, tenantId: z.tenant_id, parentId: z.parent_id, name: z.name, kind: z.kind as ZoneKind, position: z.position, lat: z.lat ?? null, lng: z.lng ?? null });
 
+/** Tipo y descartar/recuperar (como account_classify): reason null = recuperar. */
+function setKind(a: AccountRow, kind: string | null, reason: string | null, note: string | null, by: string) {
+  if (kind && !['company', 'dj'].includes(kind)) throw new Error('check constraint: kind');
+  if (reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(reason)) throw new Error('check constraint: discard_reason');
+  a.kind = (kind ?? a.kind ?? 'company') as 'company' | 'dj';
+  a.discarded_at = reason ? a.discarded_at ?? new Date().toISOString() : null;
+  a.discard_reason = reason;
+  a.discard_note = reason ? (note ?? '').trim().slice(0, 500) || null : null;
+  a.discarded_by = reason ? by : null;
+}
 function roleOf(tenantId: string, userId: string | null) {
   return db().users.find((u) => u.id === userId)?.memberships.find((m) => m.tenant_id === tenantId)?.role ?? null;
 }
@@ -299,6 +310,19 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
       if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
       a.qualification = { ...q };
+    },
+    async classify(id, kind, reason, note) {
+      const a = db().account.find((x) => x.id === id);
+      const role = a ? roleOf(a.tenant_id, actorId) : null;
+      if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
+      if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
+      setKind(a, kind, reason, note, actorId);
+    },
+    async classifyMany(t, rows) {
+      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un/a admin o gerente');
+      let n = 0;
+      for (const r of rows) { const a = db().account.find((x) => x.id === r.id && x.tenant_id === t); if (a) { setKind(a, r.kind, r.reason, r.note, actorId); n++; } }
+      return n;
     },
     async research(id, d) {
       const a = db().account.find((x) => x.id === id);

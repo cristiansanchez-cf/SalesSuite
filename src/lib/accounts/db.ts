@@ -1,6 +1,6 @@
 import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
-import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix } from './types';
+import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason } from './types';
 
 /** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
 export interface GoogleData {
@@ -74,6 +74,10 @@ export interface AccountsDb {
   archiveField(id: string, archived: boolean): Promise<boolean>;
   /** Cualificar (RPC account_qualify): libre o mía, o un/a gerente; no la reserva. */
   qualify(accountId: string, q: Qualification): Promise<void>;
+  /** Tipo y descartar/recuperar una empresa (RPC account_classify; reason null = recuperar). */
+  classify(accountId: string, kind: AccountKind | null, reason: DiscardReason | null, note: string | null): Promise<void>;
+  /** En bloque (Limpiar con IA, RPC crm_classify_accounts): solo admin o gerente. */
+  classifyMany(tenantId: string, rows: Array<{ id: string; kind: AccountKind; reason: DiscardReason | null; note: string | null }>): Promise<number>;
   /** Completar con Google (RPC account_research): solo rellena huecos (también ciudad, email y redes de su web). */
   research(accountId: string, data: GoogleData): Promise<void>;
   /** Investigación con IA (RPC account_ai_research): la guarda o la borra (null). Mismo permiso que completar con Google. */

@@ -45,4 +45,5 @@ run supabase/tests/54_crm_fix_zones.test.sql
 run supabase/tests/55_rep_contact.test.sql
 run supabase/tests/56_crm_google.test.sql
 run supabase/tests/57_crm_map.test.sql
+run supabase/tests/58_crm_kind_discard.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

@@ -46,7 +46,9 @@ export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: Ac
   /** Filtros por campo del CRM: clave → valor (opción, «yes»/«no» o texto). */
   fields?: Record<string, string>;
   /** Solo las de una lista (etiqueta). */
-  tag?: string }
+  tag?: string;
+  /** Qué tipo (§17): por defecto, todas las no descartadas; «company» o «dj»; «discarded» solo las descartadas. */
+  view?: 'active' | 'company' | 'dj' | 'discarded' }
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -104,7 +106,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     return { ...a, state: stateFor(a, s.userId, now()), zonePath: zonePath(zones, a.zoneId), ownerName: label(members.get(a.ownerId ?? '')), wonByName: label(members.get(a.wonBy ?? '')) };
   }
 
-  async function list(f: AccountListFilter = {}): Promise<{ items: AccountView[]; total: number; scope: 'zone' | 'mine' | 'all' }> {
+  async function list(f: AccountListFilter = {}): Promise<{ items: AccountView[]; total: number; scope: 'zone' | 'mine' | 'all'; kinds: { company: number; dj: number; discarded: number } }> {
     const t = await territory();
     let scope = f.scope ?? 'zone';
     if (scope === 'zone' && !t.myZoneIds.length) scope = 'all';
@@ -115,11 +117,17 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const members = await names();
     const crm = f.fields && Object.values(f.fields).some(Boolean) ? (await db.listFields(s.tenantId)).filter((x) => x.target === 'account' && f.fields?.[x.key]) : [];
     const byField = (a: Account) => crm.every((fd) => matches(fd, a.fields[fd.key], f.fields?.[fd.key] ?? ''));
-    const all = rows.filter(byField).map((a) => view(a, t.zones, members));
+    const matching = rows.filter(byField);
+    // Cuántas de cada tipo (para las pestañas Empresas · DJs · Descartadas), con los demás filtros aplicados.
+    const kinds = { company: 0, dj: 0, discarded: 0 };
+    for (const a of matching) kinds[a.discardedAt ? 'discarded' : a.kind === 'dj' ? 'dj' : 'company']++;
+    const v = f.view ?? 'active';
+    const all = matching.filter((a) => (v === 'discarded' ? !!a.discardedAt : !a.discardedAt && (v === 'active' || (v === 'dj' ? a.kind === 'dj' : a.kind !== 'dj'))))
+      .map((a) => view(a, t.zones, members));
     const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 3, customer: 4, blocked: 5 };
     const items = all.filter((a) => !f.state || f.state === 'all' || a.state === f.state)
       .sort((a, b) => ORDER[a.state] - ORDER[b.state] || a.name.localeCompare(b.name, 'es'));
-    return { items, total: all.length, scope };
+    return { items, total: all.length, scope, kinds };
   }
 
   async function get(accountId: string) {
@@ -349,7 +357,7 @@ export type AccountsService = ReturnType<typeof createAccountsService>;
 
 /** Para contextos sin cuentas (tests de otros módulos). */
 export const emptyAccountsDb: AccountsDb = {
-  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async insertZones() { return []; },
+  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
   async listAssignments() { return []; }, async setAssignments() {}, async getRules() { return { claimDays: 30, strictZones: false, requireAccount: false }; },
   async saveRules() {}, async listAccounts() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
   async insertAccounts() { throw new Error('sin cuentas'); }, async deleteAccountsByImport() { return 0; },

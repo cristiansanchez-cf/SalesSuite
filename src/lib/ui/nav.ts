@@ -54,7 +54,7 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
     ] },
     // Datos del CRM (solo admin): importar, ordenar las ciudades y los campos de cada empresa o persona.
     ...(perms.importCrm ? [{ href: '/admin/import', label: L.crmData, icon: 'upload' as IconName, testid: 'nav-crm-data', tabs: [
-      { href: '/admin/import', label: L.import, testid: 'tab-import' }, { href: '/admin/ciudades', label: L.cities, testid: 'tab-cities' },
+      { href: '/admin/import', label: L.import, testid: 'tab-import' }, { href: '/admin/ciudades', label: L.cities, testid: 'tab-cities' }, { href: '/admin/limpiar', label: L.cleanup, testid: 'tab-cleanup' },
       { href: '/admin/team/fields', label: L.crmFields, testid: 'tab-fields' },
     ] }] : []),
     { href: '/admin/commissions/team', label: L.commissions, icon: 'wallet', tabs: [] },

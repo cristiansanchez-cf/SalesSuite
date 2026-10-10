@@ -105,6 +105,7 @@ export interface AccountRow {
   qualification?: Record<string, unknown>;
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
   place_rating?: number | null; place_reviews?: number | null; place_photo?: string | null; place_filled?: Record<string, string> | null;
+  kind?: 'company' | 'dj'; discarded_at?: string | null; discard_reason?: string | null; discard_note?: string | null; discarded_by?: string | null;
   ai_research?: unknown; ai_research_at?: string | null;
 }
 export interface CrmActivityRow {
@@ -199,7 +200,7 @@ export interface DemoDb {
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
   crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number> }>;
-  crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
+  crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];

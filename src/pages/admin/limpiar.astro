@@ -1,0 +1,137 @@
+---
+/**
+ * Limpiar empresas (docs/CRM_DINAMICO.md §17): la IA revisa las empresas por tandas (desde el navegador) y propone cuáles
+ * son DJs y cuáles descartar, con su porqué. El admin desmarca lo que no le convence y aplica; se puede deshacer.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
+import type { CleanupSuggestion } from '~/lib/crm/cleanup';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).importCrm) return Astro.rewrite('/admin/forbidden');
+const { m, f: fmt } = i18n(Astro, cleanupMessages);
+const M = m.page;
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const box: { preview: CleanupSuggestion[] | null } = { preview: null };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  const json = () => { try { return JSON.parse(str('items') || '[]') as CleanupSuggestion[]; } catch { return []; } };
+  let to = '';
+  result = await formAction(async () => {
+    switch (str('action')) {
+      // Lo que la IA propuso y cambia algo (DJ o descartar), para revisarlo.
+      case 'preview': box.preview = json().filter((x) => x && (x.kind === 'dj' || x.discard)); break;
+      case 'apply': {
+        const keep = new Set(f.getAll('keep').map(String));
+        const r = await admin.crm.cleanupApply(json().filter((x) => keep.has(x.id)));
+        to = `/admin/limpiar?ok=applied&n=${r.changed}&d=${r.djs}&x=${r.discarded}`;
+        break;
+      }
+      case 'undo': await admin.crm.cleanupUndo(str('id')); to = '/admin/limpiar?ok=undone'; break;
+    }
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+const o = await admin.crm.cleanupOverview();
+const q = Astro.url.searchParams;
+const okMsg = flash(Astro.url, { applied: M.applied(Number(q.get('n')) || 0, Number(q.get('d')) || 0, Number(q.get('x')) || 0), undone: M.undone });
+const preview = box.preview;
+// Las propuestas, agrupadas: DJs (sin descartar) y cada motivo de descarte.
+const names = preview ? new Map((await admin.accounts.list({ scope: 'all', view: 'active' })).items.map((a) => [a.id, { name: a.name, zone: a.zonePath }])) : new Map();
+const GROUPS = ['dj', 'not_sector', 'partner', 'duplicate', 'closed', 'other'] as const;
+const groups = preview ? GROUPS.map((g) => ({ g, items: preview.filter((x) => (g === 'dj' ? x.kind === 'dj' && !x.discard : x.discard === g) && names.has(x.id)) })).filter((x) => x.items.length) : [];
+---
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} />
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {okMsg && Number(q.get('x')) > 0 && <p class="mb-4"><a class="co-btn co-btn--ghost co-btn--sm" href="/admin/accounts?ver=all&tipo=descartadas" data-testid="cleanup-see">{M.see}</a></p>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {!preview ? (
+    <section class="co-card grid max-w-2xl gap-4" data-testid="cleanup-start">
+      <p class="co-row-title">{M.counts(o.companies, o.djs, o.discarded)}</p>
+      {o.last && (
+        <form method="post" class="flex flex-wrap items-center gap-3" data-testid="cleanup-last">
+          <input type="hidden" name="action" value="undo" /><input type="hidden" name="id" value={o.last.id} />
+          <span class="co-meta">{M.last(Number(o.last.summary.changed) || 0, fmt.relative(o.last.createdAt))}</span>
+          <button class="co-btn co-btn--quiet co-btn--sm" type="submit" data-testid="cleanup-undo"><Icon name="rotate-ccw" size={14} />{m.page.undo}</button>
+        </form>
+      )}
+      {o.hasAi
+        ? <button type="button" class="co-btn co-btn--primary w-fit" data-cleanup-run data-testid="cleanup-run"><Icon name="sparkles" size={16} /><span>{M.analyze(o.ids.length)}</span></button>
+        : <p class="co-help">{M.noAi}</p>}
+      <p class="co-meta" role="status" hidden data-cleanup-status data-testid="cleanup-status"></p>
+      <form method="post" hidden data-cleanup-preview><input type="hidden" name="action" value="preview" /><input type="hidden" name="items" /></form>
+    </section>
+  ) : (
+    <form method="post" class="grid gap-4" data-testid="cleanup-preview">
+      <input type="hidden" name="action" value="apply" />
+      <input type="hidden" name="items" value={JSON.stringify(preview)} />
+      <h2 class="co-entity">{M.previewTitle}</h2>
+      <p class="co-body max-w-3xl">{M.previewHelp}</p>
+      {groups.length === 0 && <p class="co-meta" data-testid="cleanup-none">{M.none}</p>}
+      {groups.map(({ g, items }) => (
+        <section class="co-card grid gap-2 !p-4" data-testid="cleanup-group" data-group={g}>
+          <h3 class="co-row-title">{M.groups[g]} · {items.length}</h3>
+          <ul class="m-0 grid gap-1.5 p-0">
+            {items.map((x) => (
+              <li class="list-none text-sm">
+                <label class="flex items-baseline gap-2">
+                  <input type="checkbox" name="keep" value={x.id} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="cleanup-keep" />
+                  <span><a class="font-semibold underline" href={`/admin/accounts/${x.id}`} target="_blank" rel="noopener">{names.get(x.id)?.name}</a>
+                    {names.get(x.id)?.zone && <span class="co-meta"> · {names.get(x.id)?.zone}</span>}
+                    {x.why && <span class="co-meta"> — {x.why}</span>}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+      <div class="sticky bottom-0 flex flex-wrap gap-3 bg-[var(--co-bg)] py-3">
+        {groups.length > 0 && <button class="co-btn co-btn--primary" type="submit" data-testid="cleanup-apply"><Icon name="check" size={16} />{M.apply}</button>}
+        <a class="co-btn co-btn--ghost" href="/admin/limpiar">{M.cancel}</a>
+      </div>
+    </form>
+  )}
+
+  <script type="application/json" id="cleanup-data" set:html={JSON.stringify({ ids: o.ids, chunk: o.chunk, T: { analyzing: M.analyzing('{i}', '{n}'), stay: M.stay, failed: M.failed } }).replace(/</g, '\\u003c')} />
+</AdminLayout>
+
+<script>
+  // Revisar: las empresas van a la IA por tandas (tres a la vez) y, al acabar, a la vista previa.
+  document.querySelector<HTMLButtonElement>('[data-cleanup-run]')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget as HTMLButtonElement;
+    const d = JSON.parse(document.getElementById('cleanup-data')?.textContent ?? '{}') as { ids: string[]; chunk: number; T: Record<string, string> };
+    const status = document.querySelector<HTMLElement>('[data-cleanup-status]')!;
+    const form = document.querySelector<HTMLFormElement>('[data-cleanup-preview]')!;
+    btn.disabled = true; status.hidden = false;
+    const parts: string[][] = [];
+    for (let i = 0; i < d.ids.length; i += d.chunk) parts.push(d.ids.slice(i, i + d.chunk));
+    const out: unknown[] = [];
+    let done = 0; let failed = '';
+    const show = () => { status.textContent = `${d.T.analyzing.replace('{i}', String(done)).replace('{n}', String(parts.length))} ${d.T.stay}`; };
+    show();
+    const next = async (): Promise<void> => {
+      const part = parts.shift();
+      if (!part || failed) return;
+      const res = await fetch('/admin/api/crm/cleanup-classify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: part }) }).catch(() => null);
+      const j = res ? ((await res.json().catch(() => ({}))) as { items?: unknown[]; error?: string }) : {};
+      if (!res || !res.ok || !Array.isArray(j.items)) { failed = j.error || d.T.failed; return; }
+      out.push(...j.items); done++; show();
+      return next();
+    };
+    await Promise.all([next(), next(), next()]);
+    if (failed) { status.textContent = failed; btn.disabled = false; return; }
+    form.querySelector<HTMLInputElement>('[name=items]')!.value = JSON.stringify(out);
+    form.submit();
+  });
+</script>

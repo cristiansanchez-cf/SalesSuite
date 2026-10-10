@@ -456,3 +456,22 @@ Leaflet + `leaflet.markercluster` (`src/lib/crm/map.ts`).
   OpenStreetMap responde «Access blocked» y MapTiler rechaza la clave restringida.
 
 Pruebas: `map.test.ts`, `supabase/tests/57_crm_map.test.sql`, `scripts/smoke-map.cjs`.
+
+## 17. Limpiar: empresas, DJs y descartadas (hecho)
+
+Criterio de Cristian (10-oct-2026): muchas «empresas» del Notion y de las ferias son DJs que trabajan por su cuenta,
+y otras no son del sector (o son del sector pero no clientes: tiendas, productoras de visuales…). No se borran: se
+separan y se descartan con motivo, para poder recuperarlas (p. ej. para una alianza).
+
+- **Tipo** de cada empresa: «Empresa» o «DJ o artista» (`account.kind`). En Empresas, pestañas **Empresas · DJs ·
+  Descartadas** (`?tipo=`), con su número; el mapa usa la misma pestaña.
+- **Descartar** (ficha → «Descartar»): motivo (no es del sector, posible alianza, duplicada, cerrada, otro) y nota.
+  No sale en la lista ni en el mapa; está en «Descartadas» con su motivo y se **recupera** con un clic. Cambiar el
+  tipo no recupera una descartada. RPC `account_classify` (quien puede editarla).
+- **Limpiar con IA** (Configurar → Datos del CRM → Limpiar, solo admin; `src/lib/crm/cleanup.ts`): la IA revisa las
+  empresas por tandas de 40 (tres a la vez, desde el navegador) con lo que vende el equipo y sus sectores, y propone
+  DJs y descartes con su porqué. Vista previa por grupos, se desmarca lo que no convence, se aplica (RPC
+  `crm_classify_accounts`, solo admin o gerente) y se **deshace** (`crm_fix` kind `classify`).
+
+Migración `20261116000000_crm_kind_discard.sql`; pruebas `cleanup.test.ts`, `supabase/tests/58_crm_kind_discard.test.sql`,
+`scripts/smoke-cleanup.cjs`.
