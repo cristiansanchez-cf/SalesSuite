@@ -10,6 +10,12 @@ describe('traducir los textos propios de una propuesta', () => {
     const out = applyTranslations(props, new Map([['Reserva tu demo', '데모 예약'], ['Más buceadores', '더 많은 다이버']]));
     expect(out).toEqual({ ...props, cta: { label: '데모 예약', href: 'https://oquea.com' }, items: ['더 많은 다이버', '2026'] });
   });
+  test('las claves que no son texto no se traducen (tip.kind «info» rompía el bloque)', () => {
+    const p = { tip: { kind: 'info', text: 'Va por fases' }, screens: [{ screen: 'map', icon: 'pin' }] };
+    expect(overrideTexts(p)).toEqual(['Va por fases']);
+    const out = applyTranslations(p, new Map([['info', '안내'], ['Va por fases', '단계별로 진행'], ['map', '지도']]));
+    expect(out).toEqual({ tip: { kind: 'info', text: '단계별로 진행' }, screens: [{ screen: 'map', icon: 'pin' }] });
+  });
   test('lo que devuelve la IA: solo índices pedidos y textos no vacíos', () => {
     const m = readTranslations({ items: [{ i: 0, t: '하나' }, { i: 5, t: 'x' }, { i: 1, t: ' ' }, { i: 'a', t: 'y' }] }, ['uno', 'dos']);
     expect([...m]).toEqual([['uno', '하나']]);

@@ -17,7 +17,7 @@ const es = {
   // Personas y lugares de ejemplo (datos de ejemplo de las pantallas). override: lo que sustituye a los datos de
   // ejemplo del módulo para quien lee en este idioma (vacío = los del módulo, que son de España).
   people: {
-    override: {} as Partial<Record<'diver' | 'handle' | 'place' | 'owner' | 'life', string>>,
+    override: {} as Partial<Record<'diver' | 'handle' | 'place' | 'owner' | 'life' | 'activity' | 'album', string>>,
     album: ['Lucía F.', 'Carlos M.', 'María L.'] as readonly string[],
     crm: ['Tomás Ferreira', 'Marta Ruiz', 'Kenji Sato', 'Ana Lopes'] as readonly string[],
     guides: ['Juan', 'Ana'] as readonly string[],
@@ -712,7 +712,7 @@ const pt: typeof es = {
 
 const ko: typeof es = {
   people: {
-    override: { diver: '김지은', handle: 'jieun.dive', place: '제주 서귀포', owner: '박준호', life: '거북이, 상어, 만타' },
+    override: { diver: '김지은', handle: 'jieun.dive', place: '제주 서귀포', owner: '박준호', life: '거북이, 상어, 만타', activity: '오전 9시 다이빙', album: '몰디브 2025 – 만타' },
     album: ['이수아', '최민준', '한지민'],
     crm: ['정우진', '윤서연', '강하늘', '오세영'],
     guides: ['민수', '지현'],

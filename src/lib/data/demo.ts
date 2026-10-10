@@ -5,7 +5,7 @@
  */
 import { trackDemoView } from '../analytics/db-demo';
 import type { PublicRepository } from './index';
-import { toPublicDossier, toTenant, type PublicDossierRow } from './mappers';
+import { toPublicDossier, toRepContact, toTenant, type PublicDossierRow } from './mappers';
 import { demoDb, type DemoDb } from './store';
 
 export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossier' | 'dossier_item' | 'module_version' | 'module'> & Partial<Pick<DemoDb, 'price_option'>>, token: string, tenantId: string, now = new Date()): PublicDossierRow | null {
@@ -59,6 +59,13 @@ export function demoRepository(): PublicRepository {
       const lang = row?.locale?.slice(0, 2);
       if (!row || !lang || !(db.tenant.find((t) => t.id === tenantId)?.content_locales ?? []).includes(lang)) return {};
       return Object.fromEntries((db.content_i18n ?? []).filter((c) => c.tenant_id === tenantId && c.locale === lang && c.kind === 'module_version').map((c) => [c.source_hash, c.texts]));
+    },
+    async getPublicContact(token, tenantId) {
+      const db = demoDb();
+      if (!getPublicDossierFromRows(db, token, tenantId)) return null;
+      const d = db.dossier.find((x) => x.id === db.share_link.find((l) => l.token === token)?.dossier_id);
+      const u = db.users.find((x) => x.id === d?.author_id);
+      return u ? toRepContact({ name: u.display_name, channel: u.contact_channel, value: u.contact_value }) : null;
     },
     async trackView(token, tenantId, input) {
       return trackDemoView(token, tenantId, input);

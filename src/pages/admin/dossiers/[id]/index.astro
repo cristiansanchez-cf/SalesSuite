@@ -18,6 +18,8 @@ import { claudeTranslator, fixtureTranslator } from '~/lib/i18n/translate';
 import { glossaryFor } from '~/lib/i18n/translate-glossary';
 import { env } from '~/lib/env';
 import { flash } from '~/lib/admin/forms';
+import { CONTACT_CHANNELS, CHANNEL_NAME, type ContactChannel } from '~/lib/contact';
+import { contactError, readContact, saveContact } from '~/lib/admin/rep-contact';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -43,11 +45,20 @@ if (Astro.request.method === 'POST') {
       copied.n = ids.length;
       return;
     }
+    if (str('action') === 'contact') {
+      // El contacto propio (vale para todas sus propuestas): canal y número/usuario/enlace.
+      const ch = str('channel') as ContactChannel;
+      const bad = (CONTACT_CHANNELS as readonly string[]).includes(ch) ? contactError(ch, str('value')) : null;
+      if (bad) throw new AdminError(400, bad === 'phone' ? t.page.contact.errPhone : t.page.contact.errEmail);
+      await saveContact(admin, str('channel'), str('value'));
+      copied.n = -1;
+      return;
+    }
     if (str('action') === 'link') await admin.service.apply(id, { op: 'setAccount', accountId: str('accountId') || null });
     if (str('action') === 'decide') await admin.accounts.decide(id, str('decision') === 'approved' ? 'approved' : 'rejected');
     if (str('action') === 'declare') await admin.commissions.declareSale(id, { amount: str('amount'), offer: str('offer'), occurredAt: str('occurredAt'), kind: str('kind') || 'sale' });
   });
-  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}${copied.n ? `?ok=copied&n=${copied.n}` : ''}`, 303);
+  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}${copied.n === -1 ? '?ok=contact#rep-contact' : copied.n ? `?ok=copied&n=${copied.n}` : ''}`, 303);
 }
 
 let state: BuilderState;
@@ -72,7 +83,12 @@ const d = state.dossier;
 if (!perms.editAllDossiers && admin.session.role !== 'partner' && d.authorId && d.authorId !== admin.session.userId) return Astro.rewrite('/404');
 const CP = copyMessages[locale];
 const copyTo = perms.editAllDossiers ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner' && x.userId !== d.authorId) : [];
-const okCopied = flash(Astro.url, { copied: CP.ok(Number(Astro.url.searchParams.get('n')) || 0) });
+const okCopied = flash(Astro.url, { copied: CP.ok(Number(Astro.url.searchParams.get('n')) || 0), contact: t.page.contact.saved });
+// Contacto de quien hace la propuesta: sale como botón principal en la propuesta (docs/PERSONALIZE.md §Contacto del comercial).
+const ownContact = !d.authorId || d.authorId === admin.session.userId;
+const contact = await readContact(admin, d.authorId ?? admin.session.userId).catch(() => ({ channel: null, value: '', name: '' }));
+const C = t.page.contact;
+const channelName = (c: ContactChannel) => (c === 'phone' ? C.phone : c === 'email' ? C.email : CHANNEL_NAME[c]);
 const am = analyticsMessages[locale];
 const opened = d.status === 'published' ? (await admin.analytics.statsFor([d.id]).catch(() => new Map())).get(d.id) : undefined;
 const crm = perms.useAccounts;
@@ -183,5 +199,30 @@ const origin = requestOrigin(Astro.request, Astro.url);
       <span class="co-meta ml-auto">{am.nav} →</span>
     </a>
   )}
+  <section id="rep-contact" class:list={['co-inset mb-4 grid gap-2 !py-3', !(contact.channel && contact.value.trim()) && 'co-inset--warn']} data-testid="rep-contact-card">
+    <p class="flex items-center gap-2 text-sm font-semibold"><Icon name="message-square-text" size={16} />{ownContact ? C.title : C.ofAuthor(contact.name || '—')}</p>
+    {ownContact ? (
+      <form method="post" class="flex flex-wrap items-end gap-2" data-testid="rep-contact-form">
+        <input type="hidden" name="action" value="contact" />
+        <label class="co-field">{C.channel}
+          <select class="co-select !w-auto" name="channel" data-testid="rep-contact-channel" data-ph={JSON.stringify(C.ph)}>
+            <option value="">{C.noChannel}</option>
+            {CONTACT_CHANNELS.map((c) => <option value={c} selected={contact.channel === c}>{channelName(c)}</option>)}
+          </select></label>
+        <label class="co-field min-w-[14rem] flex-1">{C.value}
+          <input class="co-input" name="value" maxlength="200" value={contact.value} placeholder={contact.channel ? C.ph[contact.channel] : ''} data-testid="rep-contact-value" /></label>
+        <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="rep-contact-save">{C.save}</button>
+      </form>
+    ) : (
+      <p class="text-sm">{contact.channel && contact.value.trim() ? `${channelName(contact.channel)} · ${contact.value}` : C.none}</p>
+    )}
+    <p class="co-help">{!contact.channel ? C.none : !contact.value.trim() ? C.pending : C.help}</p>
+  </section>
+  <script>
+    // El ejemplo del campo cambia con el canal (número para WhatsApp, @usuario para Instagram…).
+    const sel = document.querySelector<HTMLSelectElement>('[data-testid="rep-contact-channel"]');
+    const input = document.querySelector<HTMLInputElement>('[data-testid="rep-contact-value"]');
+    sel?.addEventListener('change', () => { if (input) input.placeholder = (JSON.parse(sel.dataset.ph ?? '{}') as Record<string, string>)[sel.value] ?? ''; });
+  </script>
   <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} />
 </AdminLayout>

@@ -86,7 +86,7 @@ export interface PartnerAccountRow {
   id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
-export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string; delegation_id?: string | null }>; platform_admin?: boolean; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string; onboarding?: Record<string, string> }
+export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string; delegation_id?: string | null }>; platform_admin?: boolean; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string; onboarding?: Record<string, string>; contact_channel?: string | null; contact_value?: string | null }
 export interface ZoneRow { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number; delegation_id?: string | null }
 export interface DelegationRow { id: string; tenant_id: string; name: string; manager_id: string | null; position: number }
 export interface MembershipZoneRow { tenant_id: string; user_id: string; zone_id: string }

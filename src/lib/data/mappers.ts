@@ -1,6 +1,7 @@
 import { parseBrand } from '../brand';
 import { parseTheme } from '../theme';
 import { paymentUrl } from '../admin/payment';
+import { CONTACT_CHANNELS, type ContactChannel, type RepContact } from '../contact';
 import type { PublicDossier, RenderItem, TenantContext } from '../types';
 
 /** Filas snake_case (Postgres / fixtures) → modelos de la app. Compartido por demo y supabase. */
@@ -14,6 +15,14 @@ export const toTenant = (r: TenantRow): TenantContext => ({
   themeTokens: parseTheme(r.theme_tokens),
   brand: parseBrand(r.brand),
 });
+
+/** Contacto del autor (get_public_contact): solo si tiene canal conocido y valor. */
+export const toRepContact = (r: unknown): RepContact | null => {
+  const o = (r ?? {}) as { name?: unknown; channel?: unknown; value?: unknown };
+  const value = typeof o.value === 'string' ? o.value.trim() : '';
+  if (!value || !(CONTACT_CHANNELS as readonly unknown[]).includes(o.channel)) return null;
+  return { name: typeof o.name === 'string' ? o.name : '', channel: o.channel as ContactChannel, value };
+};
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 

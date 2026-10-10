@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { PublicRepository } from './index';
-import { toPublicDossier, toTenant, type PublicDossierRow, type TenantRow } from './mappers';
+import { toPublicDossier, toRepContact, toTenant, type PublicDossierRow, type TenantRow } from './mappers';
 
 import { env } from '../env';
 
@@ -41,6 +41,12 @@ export function supabaseRepository(): PublicRepository {
       // Sin la migración, o sin traducciones: la propuesta en su idioma original.
       if (error) return {};
       return (data ?? {}) as Record<string, Record<string, string>>;
+    },
+    async getPublicContact(token, tenantId) {
+      const { data, error } = await client.rpc('get_public_contact', { p_token: token, p_tenant_id: tenantId });
+      // Sin la migración: la propuesta con el contacto de la marca.
+      if (error) return null;
+      return toRepContact(data);
     },
     async trackView(token, tenantId, i) {
       const base = {

@@ -29,6 +29,13 @@ export function translateAdminDb(db: AdminDb): AdminDb {
       (c) => ({ name: c.moduleName, description: c.description }), (c, v) => ({ ...c, moduleName: v.name as string, description: v.description as string | null })),
     listModuleVersions: async (t) => overlayList('module_version', await db.listModuleVersions(t), (v) => v.id,
       (v) => ({ props: v.defaultProps }), (v, x) => ({ ...v, defaultProps: x.props as Record<string, unknown> })),
+    // Los módulos de cada propuesta (editor): su nombre y sus textos, como en el catálogo.
+    listItems: async (ids) => {
+      const named = await overlayList('module', await db.listItems(ids), (i) => i.moduleId,
+        (i) => ({ name: i.moduleName }), (i, v) => ({ ...i, moduleName: v.name as string }));
+      return overlayList('module_version', named, (i) => i.moduleVersionId,
+        (i) => ({ props: i.defaultProps }), (i, x) => ({ ...i, defaultProps: x.props as Record<string, unknown> }));
+    },
     getTenant: async (id) => {
       const t = await db.getTenant(id);
       if (!t) return t;

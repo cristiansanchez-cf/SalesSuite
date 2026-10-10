@@ -92,5 +92,6 @@ jobs:
           node scripts/smoke-ai-research.cjs
           node scripts/smoke-zones.cjs
           node scripts/smoke-proposal-owners.cjs
+          node scripts/smoke-rep-contact.cjs
       - name: Build para Vercel
         run: DEPLOY_TARGET=vercel npm run build

@@ -20,7 +20,7 @@ export const CONTENT_FIELDS: Record<ContentKind, string[]> = {
 };
 
 /** Claves cuyo valor nunca es texto para leer (identificadores, enlaces, medios, enums). */
-const SKIP_KEYS = new Set([
+export const SKIP_KEYS = new Set([
   'id', 'key', 'keys', 'icon', 'screen', 'src', 'href', 'url', 'image', 'images', 'photo', 'photos', 'mark', 'brand', 'exports',
   'logo', 'kind', 'stage', 'objection', 'objections', 'status', 'tone', 'audience', 'role', 'segments', 'personas', 'module',
   'moduleKey', 'blockType', 'color', 'view', 'ui', 'when', 'modes', 'priority', 'max', 'currency', 'type', 'variant',
@@ -29,6 +29,9 @@ const SKIP_KEYS = new Set([
 // Ni enlaces, ni rutas, ni claves tipo «como-funciona-v», ni colores o números sueltos.
 const NOT_TEXT = /^(https?:|asset:|stock:|mailto:|tel:|\/|#[0-9a-f]{3,8}$)|^[\d\s.,:/%+-]*$/i;
 const SLUG = /^[a-z0-9]+([._:-][a-z0-9]+)+$/; // claves con separador (minúsculas): «como-funciona-v», «club.photo»
+
+/** ¿Esta clave guarda algo que no se lee (id, enlace, enum como tip.kind…)? Lo usan también las copias traducidas. */
+export const skipKey = (k: string) => SKIP_KEYS.has(k) || /Id$|_id$/.test(k);
 
 export const isText = (s: string) => /\p{L}/u.test(s) && !NOT_TEXT.test(s.trim()) && !SLUG.test(s.trim());
 
