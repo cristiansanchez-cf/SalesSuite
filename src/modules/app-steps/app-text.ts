@@ -14,6 +14,16 @@ export function appLang(locale: string | null | undefined): AppLang {
 }
 
 const es = {
+  // Personas y lugares de ejemplo (datos de ejemplo de las pantallas). override: lo que sustituye a los datos de
+  // ejemplo del módulo para quien lee en este idioma (vacío = los del módulo, que son de España).
+  people: {
+    override: {} as Partial<Record<'diver' | 'handle' | 'place' | 'owner' | 'life', string>>,
+    album: ['Lucía F.', 'Carlos M.', 'María L.'] as readonly string[],
+    crm: ['Tomás Ferreira', 'Marta Ruiz', 'Kenji Sato', 'Ana Lopes'] as readonly string[],
+    guides: ['Juan', 'Ana'] as readonly string[],
+    team: ['Carlos Vidal', 'Sandra García'] as readonly string[],
+    ngo: 'Mar Limpio', site2: 'Los Cañones', site3: 'Shark Point',
+  },
   // Comunes a varias pantallas
   todayActivities: 'Actividades de hoy',
   dive: 'Inmersión',
@@ -259,6 +269,7 @@ const es = {
 };
 
 const en: typeof es = {
+  people: es.people,
   todayActivities: "Today's activities",
   dive: 'Dive',
   seeMedia: 'See photos and videos',
@@ -479,6 +490,7 @@ const en: typeof es = {
 };
 
 const pt: typeof es = {
+  people: es.people,
   todayActivities: 'Atividades de hoje',
   dive: 'Mergulho',
   seeMedia: 'Ver fotos e vídeos',
@@ -699,6 +711,14 @@ const pt: typeof es = {
 };
 
 const ko: typeof es = {
+  people: {
+    override: { diver: '김지은', handle: 'jieun.dive', place: '제주 서귀포', owner: '박준호', life: '거북이, 상어, 만타' },
+    album: ['이수아', '최민준', '한지민'],
+    crm: ['정우진', '윤서연', '강하늘', '오세영'],
+    guides: ['민수', '지현'],
+    team: ['박준호', '이하은'],
+    ngo: '바다지킴이', site2: '문섬', site3: '섶섬',
+  },
   todayActivities: '오늘의 액티비티',
   dive: '다이빙',
   seeMedia: '사진·동영상 보기',
@@ -922,4 +942,7 @@ export const APP_TEXT: Record<AppLang, typeof es> = { es, en, pt, ko };
 export type AppText = typeof es;
 
 /** Para meter una cifra que llega por props dentro de un texto HTML (diveCountHtml, diversInCentreHtml). */
+/** Los datos de ejemplo del módulo, con las personas y los lugares del idioma de quien lee (en coreano, coreanos). */
+export const localSample = <T extends object>(sample: T, L: typeof es): T => ({ ...sample, ...L.people.override });
+
 export const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

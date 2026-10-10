@@ -16,7 +16,8 @@ const parsed = centerConsoleSchema.safeParse(props ?? {});
 const p: CenterConsoleProps | null = parsed.success ? parsed.data : null;
 const first = (CONSOLE_VIEWS as readonly string[]).includes(view) ? (view as CenterConsoleProps['views'][number]['view']) : 'today';
 const sample = p?.sample ?? centerConsoleSchema.shape.sample.parse({});
-const label = p?.exampleLabel ?? L.exampleData;
+// La etiqueta por defecto del esquema está en español: en otro idioma, la de la app (si el espacio no puso la suya).
+const label = !p?.exampleLabel || p.exampleLabel === 'Datos de ejemplo' ? L.exampleData : p.exampleLabel;
 ---
 <div class:list={['cm', cls]} data-console-mini>
   <div class="cm__chrome" aria-hidden="true"><i></i><i></i><i></i><span>oquea.app</span></div>

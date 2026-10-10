@@ -14,16 +14,19 @@ import CenterHead from './CenterHead.astro';
 import SeaMap from './SeaMap.astro';
 import MapSheet from './MapSheet.astro';
 import SITE_PIN from './markers/punto-inmersion.svg?raw';
-import { APP_TEXT, appLang, escHtml } from './app-text';
+import { APP_TEXT, appLang, escHtml, localSample } from './app-text';
 import { requestLocale } from '~/lib/i18n/request';
 
 interface Props {
   screen: AppScreen; src?: string; alt?: string; sample: AppSample; center: string; logo?: string | null; photo?: string | null;
   zoom?: number; class?: string; locale?: string;
 }
-const { screen, src, alt, sample: s, center, logo, photo, zoom = 1, class: cls } = Astro.props;
+const { screen, src, alt, sample: sample0, center, logo, photo, zoom = 1, class: cls } = Astro.props;
 const locale = Astro.props.locale ?? requestLocale();
 const L = APP_TEXT[appLang(locale)];
+// Personas y lugares de ejemplo en el idioma de quien lee (en coreano, coreanos).
+const s = localSample(sample0, L);
+const P = L.people;
 const ic = (n: AppIcon, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
 const mask = (size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MASK_ICON}</svg>`;
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
@@ -40,7 +43,7 @@ const SEA = ['linear-gradient(146deg,#0ea5e9,#0369a1)', 'linear-gradient(180deg,
 const photoPool = [...cardPhotos, ...(photo ? [photo] : [])];
 const pool = (i: number) => (photoPool.length ? `background-image:url('${photoPool[i % photoPool.length]!.replace(/'/g, '%27')}')` : `background-image:${SEA[i % SEA.length]}`);
 const me = s.diver.split(/\s+/).map((w, i) => (i === 0 ? w : `${w[0]}.`)).slice(0, 2).join(' ');
-const ALBUM: Array<[string, boolean, string]> = [['Lucía F.', false, ''], [me, true, '5'], ['Lucía F.', false, ''], ['Carlos M.', false, ''], ['María L.', false, '12'], [me, true, '']];
+const ALBUM: Array<[string, boolean, string]> = [[P.album[0]!, false, ''], [me, true, '5'], [P.album[0]!, false, ''], [P.album[1]!, false, ''], [P.album[2]!, false, '12'], [me, true, '']];
 const DEPTH_CHART = '<svg viewBox="0 0 256 62" preserveAspectRatio="none" aria-hidden="true"><g stroke="currentColor" stroke-opacity=".35" stroke-width="1"><line x1="0" y1="18" x2="256" y2="18"/><line x1="0" y1="34" x2="256" y2="34"/><line x1="0" y1="50" x2="256" y2="50"/></g><path d="M6 8 L50 20 L95 28 L136 48 L178 40 L220 26 L250 10 L250 62 L6 62 Z" fill="currentColor" fill-opacity=".1"/><polyline points="6,8 50,20 95,28 136,48 178,40 220,26 250,10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="136" cy="48" r="6" fill="currentColor"/></svg>';
 const TRIP_CHART = '<svg viewBox="0 0 256 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#4d7ad6" stroke-width="1.5"><path d="M0 22 Q64 14 128 22 T256 22"/><path d="M0 44 Q64 36 128 44 T256 44"/></g><polyline points="30,44 68,24 104,48 140,20 176,40 210,30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4"/><g fill="currentColor"><circle cx="30" cy="44" r="6"/><circle cx="68" cy="24" r="6"/><circle cx="104" cy="48" r="6"/><circle cx="140" cy="20" r="6"/><circle cx="176" cy="40" r="6"/><circle cx="210" cy="30" r="6" fill-opacity=".7"/></g></svg>';
 const FISH = '<svg viewBox="0 0 120 60" aria-hidden="true"><path d="M8 30 C30 8 78 6 100 26 L116 12 L112 30 L116 48 L100 34 C78 54 30 52 8 30 Z" fill="#9fb3c8"/><path d="M52 14 L60 2 L66 16 Z" fill="#9fb3c8"/><g fill="#fff" fill-opacity=".85"><circle cx="34" cy="24" r="1.6"/><circle cx="44" cy="20" r="1.6"/><circle cx="54" cy="26" r="1.6"/><circle cx="64" cy="20" r="1.6"/><circle cx="74" cy="27" r="1.6"/><circle cx="40" cy="34" r="1.6"/><circle cx="60" cy="36" r="1.6"/><circle cx="82" cy="32" r="1.6"/></g><circle cx="20" cy="28" r="2" fill="#1f294c"/></svg>';
@@ -95,7 +98,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
           <div class="qp-centre"><span class="qp-centre__ico" set:html={logo ? `<img src="${logo}" alt="" />` : ic('anchor', 16)} /><span><b>{centerName}</b><small><Fragment set:html={ic('pin', 10)} />{s.place}</small></span></div>
           <h3 class="qp-title">{L.whichActivity}</h3>
           <p class="qp-date">{L.pickDate}</p>
-          {[[s.activity, s.time, s.site, 'Juan'], [L.tryDive, '11:30', L.centreBeach, 'Ana'], [L.nightDive, '20:00', 'Shark Point', 'Juan']].map(([a, h, site, by], i) => (
+          {[[s.activity, s.time, s.site, P.guides[0]!], [L.tryDive, '11:30', L.centreBeach, P.guides[1]!], [L.nightDive, '20:00', P.site3, P.guides[0]!]].map(([a, h, site, by], i) => (
             <div class:list={['qp-act', i === 0 && 'is-on']}>
               <span class="qp-act__ico" set:html={mask(18)} />
               <span class="qp-act__txt"><em class="qp-by"><Fragment set:html={ic('person', 9)} />{L.addedBy(by!)}</em><b>{a}</b><small>{h} · {site}</small></span>
@@ -253,7 +256,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         <CenterHead center={centerName} logo={logo} tab='dives' locale={locale} />
         <div class="as-toggle"><span class="on">{L.activities}</span><span>{L.diveSite}</span></div>
         <div class="as-sec"><span><Fragment set:html={ic('calendar', 16)} />{L.todayActivities}</span><em>{L.seeAll} <Fragment set:html={ic('next', 13)} /></em></div>
-        {[[L.boatTrip, s.time, s.site, '6'], [L.nightDiving, '20:00', 'Shark Point', '3']].map(([t, h, site, n], i) => (
+        {[[L.boatTrip, s.time, s.site, '6'], [L.nightDiving, '20:00', P.site3, '3']].map(([t, h, site, n], i) => (
           <div class="as-acard">
             <div class="as-acard__head"><b>{t}</b><span class="as-acard__clip" set:html={ic('clipboard', 16)} /></div>
             <span class="as-chip"><Fragment set:html={mask(14)} />{L.dive}</span>
@@ -297,7 +300,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         <CenterHead center={centerName} logo={logo} tab='crm' locale={locale} />
         <div class="as-search"><Fragment set:html={ic('search', 16)} />{L.searchDiver}</div>
         <p class="as-count" set:html={L.diversInCentreHtml('128')} />
-        {[[s.diver, s.level, '42', 'qr'], ['Tomás Ferreira', 'Open Water', '8', 'qr'], ['Marta Ruiz', 'Divemaster', '310', 'hand'], ['Kenji Sato', 'Rescue Diver', '57', 'qr'], ['Ana Lopes', 'Open Water', '3', 'qr']].map(([n, l, d, how]) => (
+        {[[s.diver, s.level, '42', 'qr'], [P.crm[0]!, 'Open Water', '8', 'qr'], [P.crm[1]!, 'Divemaster', '310', 'hand'], [P.crm[2]!, 'Rescue Diver', '57', 'qr'], [P.crm[3]!, 'Open Water', '3', 'qr']].map(([n, l, d, how]) => (
           <div class="as-person">
             <span class="as-ini">{initials(n!)}</span>
             <span class="as-person__txt"><b>{n}</b><small>{l} · {L.divesN(d!)}</small></span>
@@ -319,7 +322,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         <div class="as-kpis as-kpis--grey"><span><b>8</b><small>{L.divesHere}</small></span><span><b>{L.firstDate}</b><small>{L.first}</small></span><span><b>{s.date.slice(0, 5)}</b><small>{L.last}</small></span></div>
         <div class="as-band"></div>
         <p class="as-h"><Fragment set:html={ic('clipboard', 16)} />{L.activityHistory}</p>
-        {[[L.diveAt(s.site), s.date, L.recreational, false], [L.diveAt('Shark Point'), L.histDate2, L.recreational, false], [L.courseAdvanced, L.histDate3, L.course, true]].map(([t, d, k, course]) => (
+        {[[L.diveAt(s.site), s.date, L.recreational, false], [L.diveAt(P.site3), L.histDate2, L.recreational, false], [L.courseAdvanced, L.histDate3, L.course, true]].map(([t, d, k, course]) => (
           <div class="as-hist"><span class:list={['as-dive__ico', course && 'as-dive__ico--warm']} set:html={course ? ic('shield', 20) : mask(20)} /><span><b>{t}</b><small>{d} <span class:list={['as-chip as-chip--sm', course && 'as-chip--warm']}>{k}</span></small></span></div>
         ))}
       </Fragment>
@@ -336,7 +339,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
     ) : screen === 'team' ? (
       <Fragment>
         <div class="as-bar"><Fragment set:html={ic('back')} /><span>{L.manageTeam}</span></div>
-        {[[s.diver, L.roleOwner], ['Carlos Vidal', L.roleAdmin], ['Sandra García', L.roleAdmin]].map(([n, r]) => (
+        {[[s.diver, L.roleOwner], [P.team[0]!, L.roleAdmin], [P.team[1]!, L.roleAdmin]].map(([n, r]) => (
           <div class="as-member">
             <div class="as-member__head"><span class="as-ini as-ini--sm">{initials(n!)}</span><b>{n}</b><span class="as-chip as-chip--grey as-chip--sm">{r}</span></div>
             <div class="as-member__btns"><span class="as-btn as-btn--sm">{L.edit}</span><span class="as-btn as-btn--sm as-btn--line">{L.delete}</span></div>
@@ -349,7 +352,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
         <CenterHead center={centerName} logo={logo} tab='dives' locale={locale} />
         <div class="as-toggle"><span>{L.activities}</span><span class="on">{L.diveSite}</span></div>
         <div class="as-sec"><span><Fragment set:html={ic('anchor', 16)} />{L.diveSites}</span><em>3</em></div>
-        {[[s.site, '12–30 m', L.siteMantas], ['Shark Point', '18–24 m', L.siteWall], ['The Cathedral', '8–16 m', L.siteCave]].map(([n, d, k]) => (
+        {[[s.site, '12–30 m', L.siteMantas], [P.site3, '18–24 m', L.siteWall], ['The Cathedral', '8–16 m', L.siteCave]].map(([n, d, k]) => (
           <div class="as-site"><span class="as-site__ico" set:html={ic('pin', 18)} /><span class="as-site__txt"><b>{n}</b><small>{k}</small></span><span class="as-chip as-chip--sm">{d}</span></div>
         ))}
         <span class="as-btn as-btn--sm as-site__add"><Fragment set:html={ic('plus', 15)} />{L.addDiveSite}</span>
@@ -403,7 +406,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
     ) : screen === 'event' ? (
       <div class="as-map">
         <SeaMap center={centerName} site={s.site} focus='ngo' locale={locale} />
-        <MapSheet kind='ngo' name='Mar Limpio' place={s.place} event={{ label: L.eventOn, title: L.seabedCleanup, when: L.seabedWhen }} locale={locale} />
+        <MapSheet kind='ngo' name={P.ngo} place={s.place} event={{ label: L.eventOn, title: L.seabedCleanup, when: L.seabedWhen }} locale={locale} />
       </div>
     ) : null}
   </div>
@@ -527,7 +530,19 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-stk__tile :global(svg) { width: 92px; }
   .as-stk__brand { height: 18px; width: auto; margin-top: 2px; }
   .as-stk__brand--txt { height: auto; font-size: 17px; font-weight: 800; letter-spacing: -.03em; }
-  .as-card--species .as-stk, .as-card--milestone .as-stk { top: auto; bottom: 56px; }
+  /* Cada tarjeta, con sus datos donde van en las que exporta la app (entrega de Cristian, 10-oct-2026): la inmersión a
+     media altura; récord y viaje, arriba; hito y vida marina, abajo. La sombra, solo donde están los datos. */
+  /* Un pelín más pequeñas que las de la app (Cristian, 10-oct-2026): el bloque entero al 92 %, desde su esquina. */
+  .as-stk { transform: scale(.92); transform-origin: left top; }
+  .as-card--dive .as-stk { transform-origin: left center; }
+  .as-card--milestone .as-stk, .as-card--species .as-stk { transform-origin: left bottom; }
+  .as-stk__brand { filter: drop-shadow(0 2px 6px rgb(0 0 0 / .35)); }
+  .as-card--dive .as-stk { top: 40%; }
+  .as-card--record .as-stk, .as-card--trip .as-stk { top: 7%; }
+  .as-card--milestone .as-stk { top: auto; bottom: 12%; }
+  .as-card--species .as-stk { top: auto; bottom: 8%; }
+  .as-card--dive .as-card__shade { background: linear-gradient(180deg, transparent 25%, rgb(0 0 0 / .32) 45%, rgb(0 0 0 / .32) 72%, transparent 92%); }
+  .as-card--milestone .as-card__shade, .as-card--species .as-card__shade { background: linear-gradient(180deg, transparent 40%, rgb(0 0 0 / .45) 100%); }
   .as-cards__dots { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; gap: 6px; }
   .as-cards__dots i { width: 6px; height: 6px; border-radius: 99px; background: rgb(255 255 255 / .45); }
   .as-cards__dots i:first-child { background: #fff; }

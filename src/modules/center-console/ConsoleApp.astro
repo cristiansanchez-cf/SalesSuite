@@ -7,12 +7,16 @@
 import { APP_ICONS, MASK_ICON } from '../app-steps/icons';
 import { fakeQr } from '../app-steps/qr';
 import type { CenterConsoleProps } from './schema';
-import { APP_TEXT, appLang } from '../app-steps/app-text';
+import { APP_TEXT, appLang, localSample } from '../app-steps/app-text';
 import { requestLocale } from '~/lib/i18n/request';
 
 interface Props { first: CenterConsoleProps['views'][number]['view']; sample: CenterConsoleProps['sample']; center: string; logo?: string | null; compact?: boolean; locale?: string }
-const { first, sample: s, center, logo = null, compact = false } = Astro.props;
+const { first, sample: sample0, center, logo = null, compact = false } = Astro.props;
 const L = APP_TEXT[appLang(Astro.props.locale ?? requestLocale())];
+// Personas y lugares de ejemplo en el idioma de quien lee (en coreano, coreanos).
+const s = localSample(sample0, L);
+const P = L.people;
+const diverName = P.override.diver ?? 'Laura Méndez';
 const ic = (n: keyof typeof APP_ICONS, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[n]}</svg>`;
 const mask = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MASK_ICON}</svg>`;
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
@@ -23,8 +27,8 @@ const NAV = [
 ] as const;
 const navFor = (v: string) => (v === 'activity' ? 'today' : v);
 const DIVERS = [
-  ['Laura Méndez', 'Advanced Open Water', '42', 'qr', '09:30'], ['Tomás Ferreira', 'Open Water', '8', 'qr', '09:31'],
-  ['Marta Ruiz', 'Divemaster', '310', 'hand', ''], ['Kenji Sato', 'Rescue Diver', '57', 'qr', '09:34'],
+  [diverName, 'Advanced Open Water', '42', 'qr', '09:30'], [P.crm[0]!, 'Open Water', '8', 'qr', '09:31'],
+  [P.crm[1]!, 'Divemaster', '310', 'hand', ''], [P.crm[2]!, 'Rescue Diver', '57', 'qr', '09:34'],
 ] as const;
 ---
   <div class:list={['cc-app', compact && 'is-compact']} data-app aria-hidden="true">
@@ -55,7 +59,7 @@ const DIVERS = [
           <div class="cc-card cc-stat"><b>{L.outOf(5, 6)}</b><small>{L.profileComplete}</small><span class="cc-bar"><i style="width:83%"></i></span></div>
         </div>
         <div class="cc-acts">
-          {[[L.boatFunDive, '09:00', s.site, '6'], ['Discover Scuba Diving', '11:30', L.centreBeach, '4'], [L.nightFunDive, '20:00', 'Shark Point', '3']].map(([n, h, site, cap], i) => (
+          {[[L.boatFunDive, '09:00', s.site, '6'], ['Discover Scuba Diving', '11:30', L.centreBeach, '4'], [L.nightFunDive, '20:00', P.site3, '3']].map(([n, h, site, cap], i) => (
             <div class:list={['cc-card cc-act', i === 0 && 'is-hot']}>
               <span class="cc-act__ico" set:html={mask(22)} />
               <span class="cc-act__txt"><b>{n}</b><small>{h} · {site}</small></span>
@@ -109,8 +113,8 @@ const DIVERS = [
             ))}
           </div>
           <aside class="cc-card cc-aside cc-profile">
-            <b class="cc-pic cc-pic--lg">LM</b>
-            <b class="cc-profile__name">Laura Méndez</b>
+            <b class="cc-pic cc-pic--lg">{initials(diverName)}</b>
+            <b class="cc-profile__name">{diverName}</b>
             <span class="cc-chip"><Fragment set:html={ic('shield', 12)} />Advanced Open Water</span>
             <div class="cc-kv"><span>{L.divesHere}</span><b>8</b></div>
             <div class="cc-kv"><span>{L.first}</span><b>{L.firstDate}</b></div>
