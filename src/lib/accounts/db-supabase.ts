@@ -78,6 +78,7 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
         let q = sb.from('account').select(ACCOUNT_COLS).eq('tenant_id', t);
         if (f.ids) q = q.in('id', f.ids.length ? f.ids : ['00000000-0000-0000-0000-000000000000']);
         if (f.zoneIds) q = q.in('zone_id', f.zoneIds.length ? f.zoneIds : ['00000000-0000-0000-0000-000000000000']);
+        if (f.noZone) q = q.is('zone_id', null);
         if (f.ownerId) q = q.eq('owner_id', f.ownerId);
         if (f.status) q = q.eq('status', f.status);
         if (f.parentId) q = q.eq('parent_id', f.parentId);

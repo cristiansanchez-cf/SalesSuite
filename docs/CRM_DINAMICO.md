@@ -374,7 +374,15 @@ por cada texto (166 distintos). Criterio de Cristian (10-oct-2026):
 - Lo que sobra del texto pasa a las notas de la empresa («Ciudad en el Notion: …»). Lo que no es un sitio: sin
   ciudad, con el texto en la nota y en «revisar-ciudad».
 
-Cómo (CRM → Importar → «Ordenar ciudades», solo admin o gerente; `src/lib/crm/zones-normalize.ts`):
+Pantalla **CRM → Empresas → «Ciudades»** (`/admin/import/ciudades`; también desde Importar), solo admin o gerente.
+Arriba, **Pendiente**: cuatro filas, cada una con ✓ si está hecho o con su botón — textos de «Ciudad» sin ordenar
+(«Analizar con IA»), empresas en «revisar-ciudad» («Verlas»), empresas sin ciudad («Verlas» → filtro «Sin ciudad»,
+`zona=ninguna`) y ciudades vacías («Borrar»); debajo, el último arreglo con «Deshacer». Abajo, **Tus ciudades ahora**:
+el árbol con «Revisar con IA» y «Ajustar». «Sin ordenar» (`isUnordered`) = arriba del todo sin ser un país, una
+ciudad colgando directamente de España, o un nombre con números, paréntesis, barras, comas o en MAYÚSCULAS: lo ya
+ordenado no vuelve a contarse como pendiente.
+
+Cómo (`src/lib/crm/zones-normalize.ts`):
 
 1. **Analizar con IA**: los textos con empresas van a Claude por trozos de 60 (desde el navegador, con progreso).
    Devuelve país, comunidad, provincia, pueblo, nota y si es dudosa (esquema estricto; nada que no se haya pedido).
@@ -383,8 +391,8 @@ Cómo (CRM → Importar → «Ordenar ciudades», solo admin o gerente; `src/lib
    `crm_fix` para **Deshacer** (zona, notas y listas de cada empresa; borra las zonas creadas si quedan vacías).
 4. **Borrar ciudades vacías**: las que no tienen empresas ni nadie asignado (sin deshacer).
 
-**Terminar** (misma pantalla, sección «Terminar: lo que ya hay»): el árbol con sus empresas y, por zona, «Ajustar»
-(nombre, tipo, dentro de… o **juntar con…**). «Revisar con IA lo que ya hay» propone juntar duplicados con otro nombre
+**Terminar** (misma pantalla, sección «Tus ciudades ahora»): el árbol con sus empresas y, por zona, «Ajustar»
+(nombre, tipo, dentro de… o **juntar con…**). «Revisar con IA» propone juntar duplicados con otro nombre
 («Gerona» y «Girona»), tipos mal puestos (un país como ciudad), renombrar o mover; se marcan y se aplican. Juntar A con
 B lleva a B sus empresas, sus pueblos (si B ya tiene uno igual, también se juntan) y a quien tenía A asignada; A se
 borra. Renombrar o mover encima de otra igual = juntarlas. Estos ajustes no tienen botón de deshacer (se corrigen a mano

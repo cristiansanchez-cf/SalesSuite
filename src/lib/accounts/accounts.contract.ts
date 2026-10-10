@@ -12,6 +12,7 @@ import type { CrmDb } from '../crm/db';
 import { createCrmService } from '../crm/service';
 import { fixtureResearch } from '../crm/research';
 import { fixtureZoneNames, REVIEW_TAG } from '../crm/zones-normalize';
+import { NO_ZONE } from './service';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const U = {
@@ -449,6 +450,16 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const s2 = (await admCtx.accounts.get(a2)).account;
       expect(s2.zoneId).toBe(t.vlc);
       expect(s2.tags).toContain(REVIEW_TAG);
+      // Lo ya ordenado no vuelve a salir como pendiente; sí lo que queda por revisar y lo que no tiene ciudad.
+      const sin = await admCtx.accounts.create({ name: 'Sala Sin Ciudad' });
+      const o2 = await adm.zonesOverview();
+      expect(o2.raws).not.toContain('Requena');
+      expect(o2.raws).not.toContain('Valencia');
+      expect(o2.review).toBeGreaterThanOrEqual(1);
+      expect(o2.noCity).toBeGreaterThanOrEqual(1);
+      const noZone = (await admCtx.accounts.list({ scope: 'all', zoneId: NO_ZONE })).items.map((x) => x.id);
+      expect(noZone).toContain(sin);
+      expect(noZone).not.toContain(a1);
 
       // Un comercial no ordena en bloque.
       const repCtx = await ctx(U.rep);

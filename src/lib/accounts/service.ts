@@ -40,6 +40,8 @@ export interface AccountView extends Account {
   wonByName: string | null;
 }
 export interface Colleague { userId: string; name: string; email: string; phone: string | null; role: MemberRecord['role']; zones: string[] }
+/** Filtro de ciudad para «sin ciudad». */
+export const NO_ZONE = 'ninguna';
 export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: AccountState | 'all'; q?: string; zoneId?: string; limit?: number;
   /** Filtros por campo del CRM: clave → valor (opción, «yes»/«no» o texto). */
   fields?: Record<string, string>;
@@ -106,8 +108,10 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const t = await territory();
     let scope = f.scope ?? 'zone';
     if (scope === 'zone' && !t.myZoneIds.length) scope = 'all';
-    const zoneIds = f.zoneId ? [...withDescendants(t.zones, [f.zoneId])] : scope === 'zone' ? [...withDescendants(t.zones, t.myZoneIds)] : undefined;
-    const rows = await db.listAccounts(s.tenantId, { zoneIds, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, tag: f.tag || undefined, limit: Math.min(f.limit ?? 5000, 20000) });
+    // zoneId NO_ZONE: las que no tienen ciudad.
+    const noZone = f.zoneId === NO_ZONE;
+    const zoneIds = noZone ? undefined : f.zoneId ? [...withDescendants(t.zones, [f.zoneId])] : scope === 'zone' ? [...withDescendants(t.zones, t.myZoneIds)] : undefined;
+    const rows = await db.listAccounts(s.tenantId, { zoneIds, noZone, ownerId: scope === 'mine' ? s.userId : undefined, q: f.q, tag: f.tag || undefined, limit: Math.min(f.limit ?? 5000, 20000) });
     const members = await names();
     const crm = f.fields && Object.values(f.fields).some(Boolean) ? (await db.listFields(s.tenantId)).filter((x) => x.target === 'account' && f.fields?.[x.key]) : [];
     const byField = (a: Account) => crm.every((fd) => matches(fd, a.fields[fd.key], f.fields?.[fd.key] ?? ''));

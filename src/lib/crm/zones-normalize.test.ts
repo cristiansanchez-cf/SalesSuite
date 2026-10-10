@@ -4,7 +4,7 @@ import { demoAdminDb } from '../admin/db-demo';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
-import { FIXES_TOOL, PLACES_TOOL, buildZonePlan, fixtureZoneFixes, fixtureZoneNames, pathFor, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type PlaceClass } from './zones-normalize';
+import { FIXES_TOOL, isUnordered, PLACES_TOOL, buildZonePlan, fixtureZoneFixes, fixtureZoneNames, pathFor, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type PlaceClass } from './zones-normalize';
 import type { Zone } from '../accounts/types';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -21,6 +21,17 @@ describe('ruta de cada sitio', () => {
       .toEqual(['España', 'Comunidad Valenciana', 'Valencia']);
     expect(pathFor(place('Leiria, Portugal', { country: 'Portugal', town: 'Leiria' })).map((x) => x.name)).toEqual(['Portugal', 'Leiria']);
     expect(pathFor(place('Account Executive', { country: null }))).toEqual([]);
+  });
+});
+
+describe('qué queda por ordenar', () => {
+  test('lo ordenado no; lo de la importación sí', () => {
+    const zs = [zone('es', 'España', null, 'country'), zone('cv', 'Comunidad Valenciana', 'es', 'region'), zone('v', 'Valencia', 'cv', 'province'),
+      zone('r', 'Requena', 'v'), zone('pt', 'Portugal', null, 'country'), zone('li', 'Lisboa', 'pt'), zone('suelta', 'Madrid', null),
+      zone('raw1', 'Requena (Valencia)', 'es'), zone('raw2', 'SEVILLA', 'v'), zone('raw3', '28039', 'v'), zone('raw4', 'Alicante', 'es')];
+    const byId = new Map(zs.map((z) => [z.id, z]));
+    const out = zs.filter((z) => isUnordered(z, byId)).map((z) => z.id);
+    expect(out).toEqual(['suelta', 'raw1', 'raw2', 'raw3', 'raw4']);  // Lisboa dentro de Portugal está bien
   });
 });
 

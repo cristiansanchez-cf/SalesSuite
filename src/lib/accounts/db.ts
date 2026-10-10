@@ -2,7 +2,7 @@ import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
 import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix } from './types';
 
-export interface AccountFilter { zoneIds?: string[]; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
+export interface AccountFilter { zoneIds?: string[]; /** Solo las que no tienen ciudad. */ noZone?: boolean; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
 export interface AccountInsert {
   name: string; zoneId: string | null; segmentId: string | null; address: string | null; externalRef: string | null; notes: string | null;
   /** Solo managers: asignar al dar de alta (un comercial siempre se la queda él). */

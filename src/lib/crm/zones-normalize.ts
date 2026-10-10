@@ -326,3 +326,15 @@ export const fixtureZoneFixes = (): ZoneFixesApi => ({
     return { fixes };
   },
 });
+
+/**
+ * ¿Está esta zona sin ordenar? (lo que deja una importación y aún no ha pasado por «Ordenar»): suelta arriba sin ser
+ * un país, una «ciudad» colgando directamente de España (debería ir en su comunidad y provincia) o un nombre que
+ * parece una nota (números, paréntesis, barras, comas, interrogaciones, todo en mayúsculas o muy largo).
+ */
+export function isUnordered(z: Zone, byId: Map<string, Zone>): boolean {
+  const parent = z.parentId ? byId.get(z.parentId) : undefined;
+  if (!parent && z.kind !== 'country') return true;
+  if (parent && parent.kind === 'country' && norm(parent.name) === norm(HOME_COUNTRY) && z.kind === 'city') return true;
+  return /[0-9(),/?•]|\s-\s|\s{2,}/.test(z.name) || z.name.length > 40 || (z.name === z.name.toUpperCase() && /\p{Lu}{3}/u.test(z.name));
+}

@@ -12,6 +12,7 @@ import AccountState from '~/components/accounts/AccountState.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { zonePath } from '~/lib/accounts/rules';
+import { NO_ZONE } from '~/lib/accounts/service';
 import type { AccountState as State } from '~/lib/accounts/types';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
@@ -121,7 +122,7 @@ const fieldLabel = (k: string, v: string) => { const fd = filterable.find((x) =>
   return `${fd?.label.replace(/^¿|\?$/g, '') ?? k}: ${fd?.type === 'checkbox' ? (v === 'yes' ? crmMessages[locale].card.yes : crmMessages[locale].card.no) : o?.label ?? v}`; };
 const active = [
   ...(search ? [{ label: `«${search}»`, clear: href({ q: '' }) }] : []),
-  ...(zona ? [{ label: zoneOptions.find((z) => z.id === zona)?.label ?? M.zoneFilter, clear: href({ zona: '' }) }] : []),
+  ...(zona ? [{ label: zona === NO_ZONE ? M.noCity : zoneOptions.find((z) => z.id === zona)?.label ?? M.zoneFilter, clear: href({ zona: '' }) }] : []),
   ...(lista ? [{ label: lista, clear: href({ lista: '' }) }] : []),
   ...(stateF !== 'all' ? [{ label: M.states[stateF], clear: href({ estado: 'all' }) }] : []),
   ...(cual ? [{ label: QUALITY.find(([k]) => k === cual)?.[1] ?? cual, clear: href({ cual: '' }) }] : []),
@@ -135,6 +136,7 @@ const panelOpen = nFilters > 0;
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
     {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{M.import}</a>}
+    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/import/ciudades" data-testid="cities-link"><Icon name="map-pin" size={16} />{M.cities}</a>}
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="new-account" data-testid="new-account"><Icon name="plus" size={16} />{M.newAccount}</button>
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
@@ -172,6 +174,7 @@ const panelOpen = nFilters > 0;
       <label class="sr-only" for="acc-zone">{M.zoneFilter}</label>
       <select id="acc-zone" class="co-select min-w-[11rem] flex-1" name="zona" data-testid="filter-zone">
         <option value="">{M.anyZone}</option>
+        <option value={NO_ZONE} selected={zona === NO_ZONE}>{M.noCity}</option>
         {zoneOptions.map((z) => <option value={z.id} selected={zona === z.id}>{z.label}</option>)}
       </select>
       <label class="sr-only" for="acc-scope">{M.scope}</label>

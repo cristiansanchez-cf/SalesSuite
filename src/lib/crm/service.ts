@@ -15,7 +15,7 @@ import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, typ
 import { env } from '../env';
 import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
-import { buildZonePlan, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
+import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
 import type { AccountMove } from '../accounts/types';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
@@ -762,8 +762,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireManager();
     const [{ zones, counts, empty }, fixes] = await Promise.all([zoneState(), accounts.listFixes(t, 'zones').catch(() => [])]);
     const parents = new Set(zones.map((z) => z.parentId).filter(Boolean));
-    const raws = [...new Map(zones.filter((z) => (counts.get(z.id) ?? 0) > 0 && !parents.has(z.id)).map((z) => [norm(z.name), z.name])).values()];
-    return { raws, zones: zones.length, empty: empty.length, last: fixes.find((f) => !f.undoneAt) ?? null, hasAi: !!zoneAi, chunk: ZONES_CHUNK };
+    const byId = new Map(zones.map((z) => [z.id, z]));
+    // Solo lo que está sin ordenar (lo ya ordenado no se vuelve a mandar a la IA).
+    const raws = [...new Map(zones.filter((z) => (counts.get(z.id) ?? 0) > 0 && !parents.has(z.id) && isUnordered(z, byId)).map((z) => [norm(z.name), z.name])).values()];
+    const accs = await allAccounts();
+    return { raws, zones: zones.length, empty: empty.length, last: fixes.find((f) => !f.undoneAt) ?? null, hasAi: !!zoneAi, chunk: ZONES_CHUNK,
+      review: accs.filter((a) => a.tags.includes(REVIEW_TAG)).length, noCity: accs.filter((a) => !a.zoneId).length };
   }
   /** Clasificar con IA un trozo de textos (lo pide el navegador, trozo a trozo). */
   async function zonesClassify(raws: unknown) {

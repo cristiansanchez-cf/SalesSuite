@@ -180,7 +180,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
     async listAccounts(t, f) {
       const q = f.q?.trim().toLowerCase();
       return db().account
-        .filter((a) => a.tenant_id === t && (!f.ids || f.ids.includes(a.id)) && (!f.zoneIds || (a.zone_id && f.zoneIds.includes(a.zone_id)))
+        .filter((a) => a.tenant_id === t && (!f.ids || f.ids.includes(a.id)) && (!f.zoneIds || (a.zone_id && f.zoneIds.includes(a.zone_id))) && (!f.noZone || !a.zone_id)
           && (!f.ownerId || a.owner_id === f.ownerId) && (!f.status || a.status === f.status) && (!q || a.name.toLowerCase().includes(q))
           && (!f.parentId || a.parent_id === f.parentId) && (!f.tag || (a.tags ?? []).includes(f.tag)))
         .sort((a, b) => a.name.localeCompare(b.name, 'es'))
