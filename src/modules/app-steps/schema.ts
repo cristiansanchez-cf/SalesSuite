@@ -70,6 +70,8 @@ export const appStepsSchema = z.object({
     cards: z.array(z.enum(SHARE_CARDS)).min(1).max(5).default(['dive', 'record', 'milestone']),
     photos: z.array(url).max(8).default([]),
     brand: url.optional(),
+    /** Tarjeta de vida marina: la ilustración de la especie (PNG con fondo transparente). Sin ella, un pez dibujado. */
+    species: url.optional(),
     /** Tarjetas ya hechas (PNG exportados de la app, sticker incluido): si las hay, el móvil pasa estas y no las de HTML. */
     exports: z.array(url).max(6).default([]),
   }).default({}),

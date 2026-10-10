@@ -240,7 +240,8 @@
             "asset:img/tarjetas/hito.webp",
             "asset:img/tarjetas/especie.webp"
           ],
-          "brand": "asset:logo-dark.svg"
+          "brand": "asset:logo-dark.svg",
+          "species": "asset:img/tarjetas/tiburon-ballena.png"
         }
       }
     },
@@ -687,7 +688,8 @@
             "asset:img/tarjetas/hito.webp",
             "asset:img/tarjetas/especie.webp"
           ],
-          "brand": "asset:logo-dark.svg"
+          "brand": "asset:logo-dark.svg",
+          "species": "asset:img/tarjetas/tiburon-ballena.png"
         }
       }
     },

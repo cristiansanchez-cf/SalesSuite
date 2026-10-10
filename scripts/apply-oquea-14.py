@@ -18,11 +18,12 @@ PHOTOS = [T + 'inmersion.webp', T + 'record.webp', T + 'viaje.webp', T + 'hito.w
 n = 0
 for m in t['catalog']:
     sample = (m.get('props') or {}).get('sample')
-    if not sample or not sample.get('exports'):
+    if not sample or not (sample.get('exports') or sample.get('cards') == CARDS):
         continue
-    sample.pop('exports')
+    sample.pop('exports', None)
     sample['cards'] = CARDS
     sample['photos'] = PHOTOS
+    sample['species'] = T + 'tiburon-ballena.png'
     n += 1
 P.write_text(json.dumps(t, ensure_ascii=False, indent=2) + '\n')
 print(f'oquea 14: {n} módulos con las tarjetas de HTML sobre las fotos limpias')
