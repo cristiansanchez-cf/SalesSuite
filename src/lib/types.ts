@@ -58,6 +58,8 @@ export interface PublicDossier {
   payUrl?: string | null;
   /** Periodo de la tarifa elegida (para «/ mes», «/ evento» en la tarjeta de precio). */
   pricePeriod?: string | null;
+  /** Contacto de quien hizo la propuesta (si lo ha puesto): va primero, antes que el de la marca. */
+  repContact?: import('./contact').RepContact | null;
   /** Solo items visibles, ordenados por position. */
   items: RenderItem[];
 }

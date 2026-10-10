@@ -75,7 +75,7 @@ const og = {
   og={og}
 >
   {banner && <div class="sticky top-0 z-50 bg-ink py-2 text-center text-xs font-semibold text-bg">{banner}</div>}
-  <BrandBar brand={tenant.brand} tenantName={tenant.name} dossierTitle={dossier.title} locale={dossier.locale} />
+  <BrandBar brand={tenant.brand} tenantName={tenant.name} dossierTitle={dossier.title} locale={dossier.locale} repContact={dossier.repContact} />
   {layout === 'slides' ? (
     <main class="deck" data-deck data-testid="deck" aria-roledescription={pt.deck}>
       <div class="deck__track" data-track tabindex="-1">
@@ -84,7 +84,7 @@ const og = {
             <div class="deck__inner">
               <b.Comp {...b.props} {...extra} ctx={b.ctx} />
               {last && b.blockType !== 'pricing-card' && b.ctx.price && <ItemPrice price={b.ctx.price} />}
-              {i === slides.length - 1 && <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} />}
+              {i === slides.length - 1 && <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} repContact={dossier.repContact} />}
             </div>
           </section>
         ))}
@@ -109,7 +109,7 @@ const og = {
           </div>
         ))}
       </main>
-      <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} />
+      <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} repContact={dossier.repContact} />
       <a class="deck__switch deck__switch--float" href={verUrl('slides')} data-testid="layout-slides">{pt.slides}</a>
     </>
   )}

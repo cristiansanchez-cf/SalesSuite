@@ -4,6 +4,7 @@ import DossierView from '~/components/dossier/DossierView.astro';
 import { AdminError } from '~/lib/admin/service';
 import { STATUS_LABEL } from '~/lib/admin/format';
 import { moduleTranslations } from '~/lib/i18n/content-db';
+import { readContact, toRep } from '~/lib/admin/rep-contact';
 
 const { admin, tenant } = Astro.locals;
 if (!admin || !tenant) return Astro.redirect('/admin/login');
@@ -11,7 +12,10 @@ let dossier;
 let status;
 try {
   dossier = await admin.service.previewDossier(Astro.params.id ?? '');
-  status = (await admin.service.getState(Astro.params.id!)).dossier.status;
+  const st = (await admin.service.getState(Astro.params.id!)).dossier;
+  status = st.status;
+  // Con el contacto de quien la hizo, como la verá el cliente.
+  if (st.authorId) dossier = { ...dossier, repContact: toRep(await readContact(admin, st.authorId).catch(() => ({ channel: null, value: '', name: '' }))) };
 } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;

@@ -395,6 +395,7 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 .co-badge--signal { border-color: transparent; background: var(--co-signal-badge); color: var(--co-signal-ink); font-weight: 600; }
 /* Superficie anidada: un bloque gris claro dentro de una tarjeta blanca (ejemplos, citas, vista previa). */
 .co-inset { padding: 16px; border: 1px solid var(--console-card-border); border-radius: var(--console-radius-control); background: var(--co-inset); }
+.co-inset--warn { box-shadow: inset 3px 0 0 var(--console-attention); background: var(--console-attention-bg); border-color: transparent; }
 
 /* Etiqueta descriptiva (situación, coincidencias): minúscula y legible; una frase no es un badge. */
 .co-tag {

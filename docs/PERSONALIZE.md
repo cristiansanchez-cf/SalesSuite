@@ -29,3 +29,23 @@ En la misma tarjeta, **Cómo se ve**: «Presentación» (por defecto) o «Hacia 
 ## Vídeo del local de ejemplo
 
 Las pantallas «Encima de tus visuales» y «Foto en tarjeta» necesitan unos visuales de fondo. Si el comercial no ha subido el vídeo del cliente, sale uno de ejemplo (`venueVideo` en la pantalla en vivo: `img/live/venue.webm` y `.mp4`, luces de club generadas, sin derechos de terceros). El navegador elige el formato que reproduce.
+
+## Contacto del comercial
+
+Cada propuesta lleva como botón principal el contacto de **quien la hizo**, para que el cliente le escriba directamente. Se pone en el editor, en la tarjeta **«Tu contacto en esta propuesta»** (encima del constructor), y vale para todas las propuestas de esa persona.
+
+| Canal | Qué poner | El botón abre |
+|---|---|---|
+| WhatsApp | Número con prefijo (+34 600 000 000) | `wa.me/<número>` con el saludo de la propuesta |
+| KakaoTalk | ID o enlace `open.kakao.com` / `pf.kakao.com` | Con enlace, el chat; con ID, se enseña el ID (KakaoTalk no tiene enlace a un ID personal) |
+| LINE | ID o enlace `line.me` | `line.me/ti/p/~<id>` |
+| Telegram | @usuario | `t.me/<usuario>` |
+| Instagram | @usuario | `ig.me/m/<usuario>` (mensaje directo) |
+| Teléfono | Número con prefijo | `tel:` |
+| Email | Dirección | `mailto:` con el título de la propuesta |
+
+- Se guarda en `users.contact_channel` / `contact_value` (migración `20261111000000_rep_contact.sql`), con la política `users_update_self`. La propuesta pública lo lee con `get_public_contact(token, tenant)` (misma puerta que `get_public_dossier`; solo nombre, canal y valor).
+- **Sin canal, o con canal y sin valor**: la propuesta enseña el contacto de la marca (`brand.contact`), como antes. La tarjeta lo avisa («Falta tu número o usuario»).
+- Después del suyo, el pie enseña los de la marca. En propuestas en coreano no se ofrece el WhatsApp de la marca (allí no se usa).
+- Un admin que abre la propuesta de otro ve su contacto, sin poder cambiarlo.
+- `scripts/sample-dossiers.ts` deja puesto el canal de los comerciales (`contactChannel` de las propuestas `perRep`; en Oquea Corea, KakaoTalk) si no tenían ninguno, con el valor vacío para que cada uno lo complete.

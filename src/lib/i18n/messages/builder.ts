@@ -142,6 +142,10 @@ const es = {
   clientData: 'Datos del cliente', advanced: 'Avanzado', moreActions: 'Más acciones',
   preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa de la propuesta' },
   page: {
+    contact: { title: 'Tu contacto en esta propuesta', ofAuthor: (n: string) => `Contacto de ${n} en esta propuesta`, channel: 'Canal', value: 'Número, usuario o enlace', save: 'Guardar', saved: 'Contacto guardado',
+      help: 'Sale como botón principal de la propuesta, para que el cliente te escriba a ti. Vale para todas tus propuestas.', none: 'Sin contacto propio: el cliente verá el de la marca.', pending: 'Falta tu número o usuario: hasta que lo pongas, el cliente verá el de la marca.',
+      noChannel: 'Ninguno (el de la marca)', phone: 'Teléfono', email: 'Email', errPhone: 'Pon un número de teléfono válido (con prefijo, p. ej. +34 600 000 000).', errEmail: 'Pon un email válido.',
+      ph: { whatsapp: '+34 600 000 000', kakao: 'ID de KakaoTalk o enlace open.kakao.com', line: 'ID de LINE', telegram: '@usuario', instagram: '@usuario', phone: '+34 600 000 000', email: 'tu@empresa.com' } },
     approved: 'Comisión aprobada a pesar del conflicto', noCommission: (reason: string) => `Esta venta no genera comisión: ${reason}`,
     decided: 'Ya está decidido.', decide: 'Decide si se paga. Hasta entonces, no cuenta para comisiones.', leadDecides: 'Un/a gerente decidirá si se paga.',
     pay: 'Pagar comisión', dontPay: 'Sin comisión',
@@ -297,6 +301,10 @@ export const builderMessages = defineMessages({
     clientData: 'Customer details', advanced: 'Advanced', moreActions: 'More actions',
     preview: { title: 'Preview', mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop', open: 'Open ↗', frame: 'Proposal preview' },
     page: {
+      contact: { title: 'Your contact on this proposal', ofAuthor: (n) => `${n}'s contact on this proposal`, channel: 'Channel', value: 'Number, username or link', save: 'Save', saved: 'Contact saved',
+        help: 'It shows as the main button of the proposal, so the client writes to you. It applies to all your proposals.', none: 'No personal contact: the client will see the brand\'s.', pending: 'Your number or username is missing: until you add it, the client will see the brand\'s.',
+        noChannel: 'None (the brand\'s)', phone: 'Phone', email: 'Email', errPhone: 'Enter a valid phone number (with country code, e.g. +1 555 000 0000).', errEmail: 'Enter a valid email.',
+        ph: { whatsapp: '+1 555 000 0000', kakao: 'KakaoTalk ID or open.kakao.com link', line: 'LINE ID', telegram: '@username', instagram: '@username', phone: '+1 555 000 0000', email: 'you@company.com' } },
       approved: 'Commission approved despite the conflict', noCommission: (reason) => `This sale earns no commission: ${reason}`,
       decided: 'This has been decided.', decide: 'Decide whether to pay it. Until then, it does not count towards commissions.', leadDecides: 'A manager will decide whether to pay it.',
       pay: 'Pay commission', dontPay: 'No commission',
@@ -449,6 +457,10 @@ export const builderMessages = defineMessages({
     clientData: 'Dados do cliente', advanced: 'Avançado', moreActions: 'Mais ações',
     preview: { title: 'Pré-visualização', mobile: 'Celular', tablet: 'Tablet', desktop: 'Desktop', open: 'Abrir ↗', frame: 'Pré-visualização da proposta' },
     page: {
+      contact: { title: 'Seu contato nesta proposta', ofAuthor: (n) => `Contato de ${n} nesta proposta`, channel: 'Canal', value: 'Número, usuário ou link', save: 'Salvar', saved: 'Contato salvo',
+        help: 'Aparece como botão principal da proposta, para o cliente escrever para você. Vale para todas as suas propostas.', none: 'Sem contato próprio: o cliente verá o da marca.', pending: 'Falta seu número ou usuário: até preenchê-lo, o cliente verá o da marca.',
+        noChannel: 'Nenhum (o da marca)', phone: 'Telefone', email: 'Email', errPhone: 'Informe um telefone válido (com DDI, p. ex. +55 11 90000 0000).', errEmail: 'Informe um email válido.',
+        ph: { whatsapp: '+55 11 90000 0000', kakao: 'ID do KakaoTalk ou link open.kakao.com', line: 'ID do LINE', telegram: '@usuario', instagram: '@usuario', phone: '+55 11 90000 0000', email: 'voce@empresa.com' } },
       approved: 'Comissão aprovada apesar do conflito', noCommission: (reason) => `Esta venda não gera comissão: ${reason}`,
       decided: 'Já está decidido.', decide: 'Decida se será paga. Até lá, não conta para comissões.', leadDecides: 'Um(a) gerente de vendas decidirá se será paga.',
       pay: 'Pagar comissão', dontPay: 'Sem comissão',
@@ -601,6 +613,10 @@ export const builderMessages = defineMessages({
     clientData: '고객 정보', advanced: '고급', moreActions: '더 보기',
     preview: { title: '미리보기', mobile: '모바일', tablet: '태블릿', desktop: '데스크톱', open: '열기 ↗', frame: '제안서 미리보기' },
     page: {
+      contact: { title: '이 제안서의 내 연락처', ofAuthor: (n) => `이 제안서의 ${n} 연락처`, channel: '채널', value: '번호, 아이디 또는 링크', save: '저장', saved: '연락처를 저장했습니다',
+        help: '제안서의 메인 버튼으로 표시되어 고객이 나에게 바로 연락합니다. 내 모든 제안서에 적용됩니다.', none: '개인 연락처가 없습니다: 고객에게는 회사 연락처가 보입니다.', pending: '번호 또는 아이디를 아직 입력하지 않았습니다: 입력하기 전까지 고객에게는 회사 연락처가 보입니다.',
+        noChannel: '없음 (회사 연락처)', phone: '전화', email: '이메일', errPhone: '올바른 전화번호를 입력하세요 (국가번호 포함, 예: +82 10 0000 0000).', errEmail: '올바른 이메일을 입력하세요.',
+        ph: { whatsapp: '+82 10 0000 0000', kakao: '카카오톡 아이디 또는 open.kakao.com 링크', line: 'LINE 아이디', telegram: '@아이디', instagram: '@아이디', phone: '+82 10 0000 0000', email: 'me@company.com' } },
       approved: '충돌에도 불구하고 커미션이 승인되었습니다', noCommission: (reason) => `이 판매는 커미션 대상이 아닙니다: ${reason}`,
       decided: '이미 결정되었습니다.', decide: '지급 여부를 결정하세요. 결정 전까지는 커미션에 포함되지 않습니다.', leadDecides: '영업 리더가 지급 여부를 결정합니다.',
       pay: '커미션 지급', dontPay: '커미션 없음',

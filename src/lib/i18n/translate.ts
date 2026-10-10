@@ -4,7 +4,7 @@
  * salida JSON con esquema y el glosario del espacio (tenants/<espacio>/tenant.json → content_i18n).
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { isText } from './content';
+import { isText, skipKey } from './content';
 
 export interface TextTranslator { translate(texts: string[], targetLocale: string): Promise<Map<string, string>> }
 
@@ -72,17 +72,20 @@ export const fixtureTranslator = (): TextTranslator => ({
   async translate(texts, target) { return new Map(texts.map((t) => [t, `[${target.slice(0, 2)}] ${t}`])); },
 });
 
-/** Los textos traducibles de unas personalizaciones (hojas de texto, sin URLs, colores ni claves). */
+/**
+ * Los textos traducibles de unas personalizaciones (hojas de texto, sin URLs, colores ni claves). Las claves que no son
+ * texto (tip.kind, screen, icon…: SKIP_KEYS de content.ts) no se miran: traducir «info» rompía el bloque.
+ */
 export function overrideTexts(v: unknown, out: string[] = []): string[] {
   if (typeof v === 'string') { if (isText(v)) out.push(v); }
   else if (Array.isArray(v)) v.forEach((x) => overrideTexts(x, out));
-  else if (v && typeof v === 'object') Object.values(v).forEach((x) => overrideTexts(x, out));
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) { if (!skipKey(k)) overrideTexts(x, out); }
   return out;
 }
-/** Las mismas personalizaciones con los textos cambiados (lo que no está en el mapa se queda igual). */
+/** Las mismas personalizaciones con los textos cambiados (lo que no está en el mapa, y las claves que no son texto, igual). */
 export function applyTranslations<T>(v: T, map: Map<string, string>): T {
   if (typeof v === 'string') return (map.get(v) ?? v) as T;
   if (Array.isArray(v)) return v.map((x) => applyTranslations(x, map)) as T;
-  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, applyTranslations(x, map)])) as T;
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, skipKey(k) ? x : applyTranslations(x, map)])) as T;
   return v;
 }

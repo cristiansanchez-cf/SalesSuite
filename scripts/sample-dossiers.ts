@@ -27,6 +27,11 @@ interface Sample {
   key: string; segment: string; title: string; company: string | null; contact: string | null; tariff: string | null; coupon?: string; answers?: string[]; live?: boolean;
   /** Una por comercial (rol «rep»), con él como autor, en este idioma. */
   perRep?: boolean; locale?: string;
+  /**
+   * Canal de contacto de cada comercial (docs/PERSONALIZE.md §Contacto del comercial) si aún no tiene uno: queda puesto y con el
+   * número/usuario vacío, para que cada uno lo complete en su propuesta (hasta entonces sale el de la marca).
+   */
+  contactChannel?: 'whatsapp' | 'kakao' | 'line' | 'telegram' | 'instagram' | 'phone' | 'email';
   /** Textos propios encima de la receta, por bloque (se mezclan con los de la receta). */
   props?: Record<string, Record<string, unknown>>;
 }
@@ -47,7 +52,7 @@ const SAMPLES: Sample[] = [
   // centros (turismo: buceadores de Europa y de otros países que vienen a su ciudad; la alianza internacional) y otra
   // para ONG. Sin cifras de clientes ni de descuentos (documento 05: «Nunca»).
   {
-    key: 'corea-centro', segment: 'centros-buceo', perRep: true, locale: 'ko-KR', title: 'Oquea para tu centro de buceo · turismo internacional', company: 'Tu centro', contact: null, tariff: null,
+    key: 'corea-centro', segment: 'centros-buceo', perRep: true, locale: 'ko-KR', contactChannel: 'kakao', title: 'Oquea para tu centro de buceo · turismo internacional', company: 'Tu centro', contact: null, tariff: null,
     answers: ['mercado:corea', 'angulo:abrir-mercado', 'fotos'], live: false,
     props: {
       portada: { title: '{company}, centro fundador de Oquea en Corea' },
@@ -58,7 +63,7 @@ const SAMPLES: Sample[] = [
       },
     },
   },
-  { key: 'corea-ong', segment: 'ong', perRep: true, locale: 'ko-KR', title: 'Oquea para tu ONG', company: 'Tu ONG', contact: null, tariff: null, live: false },
+  { key: 'corea-ong', segment: 'ong', perRep: true, locale: 'ko-KR', contactChannel: 'kakao', title: 'Oquea para tu ONG', company: 'Tu ONG', contact: null, tariff: null, live: false },
 ];
 
 /** Glosario y notas del espacio para traducir (tenants/<espacio>/tenant.json → content_i18n). */
@@ -138,6 +143,16 @@ async function main() {
   for (const d of old.filter((x) => !keep.has(x.prospect_meta?.sample ?? ''))) {
     if (!dry) must(await sb.from('dossier').delete().eq('id', d.id), `borrar ${d.title}`);
     console.log(`• ${d.prospect_meta.sample}: ${dry ? 'se borraría' : 'borrado'} («${d.title}»)`);
+  }
+
+  // En Corea no se usa WhatsApp: el canal de cada comercial queda puesto (KakaoTalk), a falta de su número/ID.
+  const channel = SAMPLES.find((x) => x.perRep && x.contactChannel)?.contactChannel;
+  if (channel) for (const r of reps) {
+    const { data: u, error } = await sb.from('users').select('contact_channel, contact_value').eq('id', r.user_id).maybeSingle();
+    if (error) { console.log(`• contacto de ${mask(r.users?.email)}: sin la migración del contacto (${error.message}), se salta`); continue; }
+    if (u?.contact_channel) { console.log(`• contacto de ${mask(r.users?.email)}: ya tiene ${u.contact_channel}${u.contact_value ? '' : ' (falta el número/ID)'}`); continue; }
+    if (!dry) must(await sb.from('users').update({ contact_channel: channel, contact_value: null }).eq('id', r.user_id).select('id'), 'poner canal');
+    console.log(`• contacto de ${mask(r.users?.email)}: ${dry ? 'se pondría' : 'puesto'} ${channel}, falta que complete su número/ID`);
   }
 
   const jobs = SAMPLES.flatMap((s) => (s.perRep ? reps.map((r) => ({ s, owner: r, who: mask(r.users?.email) })) : [{ s, owner: author, who: '' }]));
