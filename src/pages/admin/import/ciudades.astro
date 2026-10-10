@@ -13,7 +13,8 @@ import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { zonesMessages } from '~/lib/i18n/messages/zones';
-import { REVIEW_TAG, type ZonePlan } from '~/lib/crm/zones-normalize';
+import { REVIEW_TAG, ZONE_KINDS, type ZoneFix, type ZonePlan } from '~/lib/crm/zones-normalize';
+import { accountsMessages } from '~/lib/i18n/messages/accounts';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -21,7 +22,7 @@ if (!can(admin.session.role).manageAccounts) return Astro.rewrite('/admin/forbid
 const { m: M, f: fmt } = i18n(Astro, zonesMessages);
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
-const box: { plan: ZonePlan | null; classes: string } = { plan: null, classes: '' };
+const box: { plan: ZonePlan | null; classes: string; fixes: ZoneFix[] | null } = { plan: null, classes: '', fixes: null };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
@@ -39,6 +40,24 @@ if (Astro.request.method === 'POST') {
         break;
       }
       case 'undo': await admin.crm.zonesUndo(str('id')); to = '/admin/import/ciudades?ok=undone'; break;
+      case 'review': box.fixes = await admin.crm.zonesReview(); break;
+      case 'fix': {
+        // Lo que la IA propuso y sigue marcado.
+        const all = (() => { try { return JSON.parse(str('fixes') || '[]') as ZoneFix[]; } catch { return []; } })();
+        const keep = new Set(f.getAll('keep').map(String));
+        const r = await admin.crm.zonesFix(all.filter((x, i) => keep.has(String(i))));
+        to = `/admin/import/ciudades?ok=fixed&n=${r.applied}#terminar`;
+        break;
+      }
+      case 'fix-one': {
+        // A mano: juntar, o cambiar nombre, tipo y sitio (solo lo que cambia).
+        const id = str('id');
+        const ops: unknown[] = str('merge') ? [{ op: 'merge', id, target: str('merge') }]
+          : [{ op: 'rename', id, name: str('name') }, { op: 'kind', id, kind: str('kind') }, { op: 'move', id, target: str('parent') || null }];
+        const r = await admin.crm.zonesFix(ops);
+        to = `/admin/import/ciudades?ok=fixed&n=${r.applied}#terminar`;
+        break;
+      }
       case 'cleanup': to = `/admin/import/ciudades?ok=cleaned&n=${await admin.crm.zonesCleanup()}`; break;
     }
   });
@@ -46,8 +65,17 @@ if (Astro.request.method === 'POST') {
 }
 const o = await admin.crm.zonesOverview();
 const q = Astro.url.searchParams;
-const okMsg = flash(Astro.url, { applied: M.applied(Number(q.get('m')) || 0, Number(q.get('r')) || 0), undone: M.undone, cleaned: M.cleaned(Number(q.get('n')) || 0) });
+const okMsg = flash(Astro.url, { fixed: M.finish.applied(Number(q.get('n')) || 0), applied: M.applied(Number(q.get('m')) || 0, Number(q.get('r')) || 0), undone: M.undone, cleaned: M.cleaned(Number(q.get('n')) || 0) });
 const plan = box.plan;
+const fixes = box.fixes;
+const KIND = accountsMessages[i18n(Astro, accountsMessages).locale].territory.kind;
+const tree = plan ? [] : await admin.crm.zonesTree();
+const nameOf = (id: string | null) => (id ? tree.find((z) => z.id === id)?.path ?? '' : M.finish.top);
+const fixLabel = (x: ZoneFix) => {
+  const z = nameOf(x.id);
+  return x.op === 'merge' ? M.finish.ops.merge(z, nameOf(x.target)) : x.op === 'rename' ? M.finish.ops.rename(z, x.name)
+    : x.op === 'kind' ? M.finish.ops.kind(z, KIND[x.kind].toLowerCase()) : M.finish.ops.move(z, nameOf(x.target));
+};
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} back={{ href: '/admin/import', label: M.eyebrow }} />
@@ -78,7 +106,68 @@ const plan = box.plan;
       <p class="co-meta" role="status" hidden data-zones-status data-testid="zones-status"></p>
       <form method="post" hidden data-zones-preview><input type="hidden" name="action" value="preview" /><input type="hidden" name="classes" /></form>
     </section>
-  ) : (
+  ) : null}
+
+  {!plan && tree.length > 0 && (
+    <section id="terminar" class="co-section" data-testid="zones-finish">
+      <div class="co-section__head"><h2 class="co-entity">{M.finish.title}</h2></div>
+      <p class="co-body mb-3 max-w-3xl">{M.finish.help}</p>
+      {o.hasAi && admin.crm.hasZoneFixAi() && !fixes && (
+        <form method="post" action="#terminar" class="mb-4" data-zones-busy>
+          <input type="hidden" name="action" value="review" />
+          <button class="co-btn co-btn--primary" type="submit" data-testid="zones-review" data-busy-label={M.finish.reviewing}><Icon name="sparkles" size={16} /><span>{M.finish.review}</span></button>
+        </form>
+      )}
+      {fixes && (fixes.length === 0 ? <p class="co-meta mb-4" data-testid="zones-fixes-none">{M.finish.none}</p> : (
+        <form method="post" action="#terminar" class="co-card mb-4 grid gap-3 !p-4" data-testid="zones-fixes">
+          <input type="hidden" name="action" value="fix" />
+          <input type="hidden" name="fixes" value={JSON.stringify(fixes)} />
+          <p class="co-row-title">{M.finish.proposals(fixes.length)}</p>
+          <ul class="m-0 grid gap-1.5 p-0">
+            {fixes.map((x, i) => (
+              <li class="list-none text-sm">
+                <label class="flex items-baseline gap-2"><input type="checkbox" name="keep" value={String(i)} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="zones-fix" data-op={x.op} />
+                  <span><strong>{fixLabel(x)}</strong>{x.reason && <span class="co-meta"> · {x.reason}</span>}</span></label>
+              </li>
+            ))}
+          </ul>
+          <p class="co-help">{M.finish.noUndo}</p>
+          <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="zones-fixes-apply"><Icon name="check" size={16} />{M.finish.apply}</button>
+        </form>
+      ))}
+      <ul class="co-card co-card--flush m-0 p-0" data-testid="zones-tree">
+        {tree.map((z) => (
+          <li class="flex list-none flex-wrap items-center gap-2 border-b border-line px-4 py-2 last:border-b-0" style={`padding-left:${16 + z.depth * 22}px`} data-testid="zones-node" data-name={z.name} data-kind={z.kind}>
+            <span class="co-row-title">{z.name}</span><span class="co-meta">{KIND[z.kind]}</span>
+            <span class="co-meta ml-auto">{M.finish.counts(z.direct, z.total)}</span>
+            <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-adjust={z.id} data-name={z.name} data-kind={z.kind} data-parent={z.parentId ?? ''} data-testid="zones-adjust">{M.finish.adjust}</button>
+          </li>
+        ))}
+      </ul>
+      <dialog id="zone-adjust" class="co-dialog" aria-labelledby="zone-adjust-title">
+        <form method="post" action="#terminar" data-testid="zone-adjust-form">
+          <input type="hidden" name="action" value="fix-one" /><input type="hidden" name="id" />
+          <div class="co-dialog__body grid gap-3">
+            <h2 id="zone-adjust-title" class="co-entity" data-adjust-title></h2>
+            <label class="co-field">{M.finish.name}<input class="co-input" name="name" required maxlength="80" /></label>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="co-field">{M.finish.kind}<select class="co-select" name="kind">{ZONE_KINDS.map((k) => <option value={k}>{KIND[k]}</option>)}</select></label>
+              <label class="co-field">{M.finish.inside}<select class="co-select" name="parent"><option value="">{M.finish.top}</option>{tree.map((z) => <option value={z.id}>{z.path}</option>)}</select></label>
+            </div>
+            <label class="co-field">{M.finish.mergeInto}
+              <select class="co-select" name="merge" data-testid="zone-adjust-merge"><option value="">{M.finish.mergeNone}</option>{tree.map((z) => <option value={z.id}>{z.path}</option>)}</select>
+              <span class="co-help">{M.finish.mergeHelp}</span></label>
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{M.finish.cancel}</button>
+            <button type="submit" class="co-btn co-btn--primary" data-testid="zone-adjust-save">{M.finish.save}</button>
+          </div>
+        </form>
+      </dialog>
+    </section>
+  )}
+
+  {plan && (
     <form method="post" class="grid gap-4" data-testid="zones-preview">
       <input type="hidden" name="action" value="apply" />
       <input type="hidden" name="classes" value={box.classes} />
@@ -158,4 +247,24 @@ const plan = box.plan;
     form.querySelector('[name=classes]').value = JSON.stringify(places);
     form.submit();
   });
+</script>
+
+<script define:vars={{ title: M.finish.dialog('{name}') }}>
+  // «Ajustar»: un solo diálogo para todas las zonas; se rellena con la que se pulsa.
+  const dlg = document.getElementById('zone-adjust');
+  document.querySelectorAll('[data-adjust]').forEach((b) => b.addEventListener('click', () => {
+    if (!dlg) return;
+    const field = (n) => dlg.querySelector(`[name="${n}"]`);
+    field('id').value = b.dataset.adjust; field('name').value = b.dataset.name; field('kind').value = b.dataset.kind;
+    field('parent').value = b.dataset.parent; field('merge').value = '';
+    // No se puede meter dentro de sí misma ni juntarse consigo misma.
+    for (const sel of [field('parent'), field('merge')]) for (const o of sel.options) o.disabled = o.value === b.dataset.adjust;
+    dlg.querySelector('[data-adjust-title]').textContent = title.replace('{name}', b.dataset.name);
+    dlg.showModal();
+  }));
+  // Revisar con IA tarda: el botón lo dice y no se pulsa dos veces.
+  document.querySelectorAll('form[data-zones-busy]').forEach((f) => f.addEventListener('submit', () => {
+    const b = f.querySelector('button'); if (!b) return;
+    b.disabled = true; const sp = b.querySelector('span'); if (sp) sp.textContent = b.dataset.busyLabel ?? '';
+  }));
 </script>

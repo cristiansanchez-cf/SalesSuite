@@ -466,5 +466,39 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(names).not.toContain('28039');
       expect(names).toEqual(expect.arrayContaining(['Comunidad Valenciana', 'Madrid', 'Requena']));  // asignadas o con empresas: se quedan
     });
+
+    test('CRM terminar ciudades: juntar con pueblos y asignaciones; renombrar encima de otra = juntar; tipo y mover', async () => {
+      const t = await territory();
+      const admCtx = t.admin;
+      const adm = createCrmService(E.crmDbFor(U.admin.id), E.accountsDbFor(U.admin.id), E.adminDbFor(U.admin.id), admCtx.session, { places: null, routes: null, research: null });
+      const cat = await admCtx.accounts.saveZone({ name: 'Cataluña', kind: 'region', parentId: t.es });
+      const ger = await admCtx.accounts.saveZone({ name: 'Gerona', kind: 'province', parentId: cat });
+      const gir = await admCtx.accounts.saveZone({ name: 'Girona', kind: 'province', parentId: cat });
+      const aro = await admCtx.accounts.saveZone({ name: 'Castillo de Aro', parentId: ger });
+      await admCtx.accounts.saveZone({ name: 'Lloret', parentId: ger });
+      await admCtx.accounts.saveZone({ name: 'Lloret', parentId: gir });
+      const a1 = await admCtx.accounts.create({ name: 'Sala Gerona', zoneId: ger });
+      await admCtx.accounts.setAssignments(U.rep.id, [t.cv, ger]);
+
+      expect(await adm.zonesFix([{ op: 'merge', id: ger, target: gir }])).toEqual({ applied: 1 });
+      const z = (await admCtx.accounts.territory()).zones;
+      expect(z.some((x) => x.id === ger)).toBe(false);
+      expect(z.find((x) => x.id === aro)?.parentId).toBe(gir);
+      expect(z.filter((x) => x.name === 'Lloret')).toHaveLength(1);
+      expect((await admCtx.accounts.get(a1)).account.zoneId).toBe(gir);
+      expect((await admCtx.accounts.territory()).assignments.filter((x) => x.userId === U.rep.id).map((x) => x.zoneId).sort()).toEqual([t.cv, gir].sort());
+
+      await adm.zonesFix([{ op: 'rename', id: aro, name: 'LLORET' }]);
+      expect((await admCtx.accounts.territory()).zones.some((x) => x.id === aro)).toBe(false);
+      await adm.zonesFix([{ op: 'kind', id: t.es, kind: 'region' }, { op: 'move', id: gir, target: null }]);
+      const z2 = (await admCtx.accounts.territory()).zones;
+      expect(z2.find((x) => x.id === t.es)?.kind).toBe('region');
+      expect(z2.find((x) => x.id === gir)?.parentId).toBeNull();
+
+      // Un comercial no arregla zonas.
+      const repCtx = await ctx(U.rep);
+      const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, {});
+      await rejects(rep.zonesFix([{ op: 'kind', id: gir, kind: 'city' }]), 403);
+    });
   });
 }

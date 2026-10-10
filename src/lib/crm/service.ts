@@ -15,7 +15,7 @@ import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, typ
 import { env } from '../env';
 import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
-import { buildZonePlan, claudeZoneNames, fixtureZoneNames, sanitizePlaces, withNote, REVIEW_TAG, type ZoneNamesApi } from './zones-normalize';
+import { buildZonePlan, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
 import type { AccountMove } from '../accounts/types';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
@@ -87,13 +87,15 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null } = {}) {
   const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : null;
   const routes = opts.routes !== undefined ? opts.routes : env('GOOGLE_MAPS_API_KEY') ? googleRoutes(env('GOOGLE_MAPS_API_KEY')!) : null;
   const ai = opts.research !== undefined ? opts.research
     : env('ANTHROPIC_API_KEY') ? claudeResearch(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureResearch() : null;
   const zoneAi = opts.zoneNames !== undefined ? opts.zoneNames
     : env('ANTHROPIC_API_KEY') ? claudeZoneNames(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneNames() : null;
+  const zoneFixAi = opts.zoneFixes !== undefined ? opts.zoneFixes
+    : env('ANTHROPIC_API_KEY') ? claudeZoneFixes(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneFixes() : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -833,6 +835,69 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     await accounts.markFixUndone(f.id);
     return { back };
   }
+  /** El árbol de zonas con sus empresas (para terminar a mano lo que quede). */
+  async function zonesTree() {
+    requireManager();
+    const { zones, counts } = await zoneState();
+    return zoneRows(zones, counts);
+  }
+  /** La IA revisa el árbol que ya hay y propone arreglos (juntar, renombrar, tipo, mover). No toca nada. */
+  async function zonesReview(): Promise<ZoneFix[]> {
+    requireManager();
+    if (!zoneFixAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const { zones, counts } = await zoneState();
+    const lines = zoneRows(zones, counts).map((r) => `${r.id} | ${r.path} | ${r.kind} | ${r.direct}`);
+    let raw: unknown;
+    try { raw = await zoneFixAi.review(lines); } catch (e) { console.warn('[zones-fix-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+    return sanitizeFixes(raw, zones);
+  }
+  /**
+   * Aplicar arreglos (de la IA o a mano). Juntar A con B: las empresas, los pueblos (si B ya tiene uno igual, también se
+   * juntan) y quien tenía A asignada pasan a B, y A se borra. Mover o renombrar encima de otra igual = juntarlas.
+   */
+  async function zonesFix(input: unknown): Promise<{ applied: number }> {
+    requireManager();
+    let applied = 0;
+    const fixes = Array.isArray(input) ? input : [input];
+    for (const one of fixes) {
+      const zones = await accounts.listZones(t);
+      const [f] = sanitizeFixes({ fixes: [one] }, zones);
+      if (!f) continue;
+      const z = zones.find((x) => x.id === f.id)!;
+      const twin = (parentId: string | null, name: string) => zones.find((x) => x.id !== z.id && x.parentId === parentId && norm(x.name) === norm(name)) ?? null;
+      try {
+        if (f.op === 'merge') await mergeZone(z.id, f.target);
+        else if (f.op === 'kind') await accounts.saveZone(t, { parentId: z.parentId, name: z.name, kind: f.kind, position: z.position }, z.id);
+        else if (f.op === 'rename') {
+          const other = twin(z.parentId, f.name);
+          if (other) await mergeZone(z.id, other.id);
+          else await accounts.saveZone(t, { parentId: z.parentId, name: f.name, kind: z.kind, position: z.position }, z.id);
+        } else {
+          const other = twin(f.target, z.name);
+          if (other) await mergeZone(z.id, other.id);
+          else await accounts.saveZone(t, { parentId: f.target, name: z.name, kind: z.kind, position: z.position }, z.id);
+        }
+      } catch (e) { mapError(e); }
+      applied++;
+    }
+    return { applied };
+  }
+  async function mergeZone(fromId: string, intoId: string): Promise<void> {
+    const [zones, accs, assigns] = await Promise.all([accounts.listZones(t), allAccounts(), accounts.listAssignments(t)]);
+    const moves = accs.filter((a) => a.zoneId === fromId).map((a) => ({ id: a.id, zoneId: intoId, notes: a.notes, tags: a.tags }));
+    for (let i = 0; i < moves.length; i += 1000) await accounts.moveAccounts(t, moves.slice(i, i + 1000));
+    for (const child of zones.filter((z) => z.parentId === fromId)) {
+      const same = zones.find((z) => z.parentId === intoId && norm(z.name) === norm(child.name));
+      if (same) await mergeZone(child.id, same.id);
+      else await accounts.saveZone(t, { parentId: intoId, name: child.name, kind: child.kind, position: child.position }, child.id);
+    }
+    for (const userId of new Set(assigns.filter((x) => x.zoneId === fromId).map((x) => x.userId))) {
+      const mine = assigns.filter((x) => x.userId === userId).map((x) => x.zoneId).filter((id) => id !== fromId);
+      await accounts.setAssignments(t, userId, [...new Set([...mine, intoId])]);
+    }
+    await accounts.deleteZone(fromId);
+  }
+
   /** Borrar las ciudades que se han quedado vacías (sin empresas ni nadie asignado). */
   async function zonesCleanup() {
     requireManager();
@@ -874,7 +939,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup,
+    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,

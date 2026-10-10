@@ -383,5 +383,12 @@ Cómo (CRM → Importar → «Ordenar ciudades», solo admin o gerente; `src/lib
    `crm_fix` para **Deshacer** (zona, notas y listas de cada empresa; borra las zonas creadas si quedan vacías).
 4. **Borrar ciudades vacías**: las que no tienen empresas ni nadie asignado (sin deshacer).
 
+**Terminar** (misma pantalla, sección «Terminar: lo que ya hay»): el árbol con sus empresas y, por zona, «Ajustar»
+(nombre, tipo, dentro de… o **juntar con…**). «Revisar con IA lo que ya hay» propone juntar duplicados con otro nombre
+(«Gerona» y «Girona»), tipos mal puestos (un país como ciudad), renombrar o mover; se marcan y se aplican. Juntar A con
+B lleva a B sus empresas, sus pueblos (si B ya tiene uno igual, también se juntan) y a quien tenía A asignada; A se
+borra. Renombrar o mover encima de otra igual = juntarlas. Estos ajustes no tienen botón de deshacer (se corrigen a mano
+ahí mismo). Para revisar producción sin tocar nada: workflow «Producción» → `informe-crm` (`scripts/crm-report.sql`).
+
 Migración `20261110000000_crm_fix_zones.sql`; pruebas `zones-normalize.test.ts`, contrato de cuentas,
 `supabase/tests/54_crm_fix_zones.test.sql`, `scripts/smoke-zones.cjs`.

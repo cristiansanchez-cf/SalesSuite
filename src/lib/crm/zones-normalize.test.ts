@@ -4,7 +4,7 @@ import { demoAdminDb } from '../admin/db-demo';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
-import { buildZonePlan, fixtureZoneNames, pathFor, sanitizePlaces, withNote, REVIEW_TAG, type PlaceClass } from './zones-normalize';
+import { buildZonePlan, fixtureZoneFixes, fixtureZoneNames, pathFor, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type PlaceClass } from './zones-normalize';
 import type { Zone } from '../accounts/types';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -126,5 +126,70 @@ describe('ordenar ciudades en el espacio', () => {
     expect(removed).toBeGreaterThanOrEqual(4);  // las tres de la importación y «28039»
     expect(d.zone.some((z) => z.name === '28039' || z.name === 'Account Executive')).toBe(false);
     expect(d.zone.some((z) => z.name === 'Comunidad Valenciana')).toBe(true);  // asignada a un comercial: se queda
+  });
+});
+
+describe('terminar: arreglos sobre lo que ya hay', () => {
+  const zones = [zone('es', 'España', null, 'city'), zone('cat', 'Cataluña', 'es', 'region'), zone('ger', 'Gerona', 'cat', 'province'),
+    zone('gir', 'Girona', 'cat', 'province'), zone('aro', 'Castillo de Aro', 'ger', 'city')];
+  test('árbol con empresas directas y con lo de dentro', () => {
+    const rows = zoneRows(zones, new Map([['aro', 2], ['gir', 3]]));
+    expect(rows.map((r) => `${r.depth}:${r.name}:${r.direct}/${r.total}`)).toEqual(['0:España:0/5', '1:Cataluña:0/5', '2:Gerona:0/2', '3:Castillo de Aro:2/2', '2:Girona:3/3']);
+  });
+  test('solo arreglos válidos: ids que existen, sin meterla en sí misma, sin cambios vacíos', () => {
+    const f = sanitizeFixes({ fixes: [
+      { op: 'merge', id: 'ger', target: 'gir', reason: 'Mismo sitio' },
+      { op: 'merge', id: 'cat', target: 'aro', reason: 'dentro de sí misma' },
+      { op: 'kind', id: 'es', kind: 'country', reason: 'País' },
+      { op: 'kind', id: 'gir', kind: 'province', reason: 'ya lo es' },
+      { op: 'rename', id: 'nope', name: 'x', reason: '' },
+      { op: 'move', id: 'aro', target: 'aro', reason: '' },
+    ] }, zones);
+    expect(f.map((x) => `${x.op}:${x.id}`)).toEqual(['merge:ger', 'kind:es']);
+  });
+});
+
+describe('terminar en el espacio', () => {
+  beforeEach(() => { resetDemoDb(); });
+  const svc = (u: string, role: string) => createCrmService(demoCrmDb(u), demoAccountsDb(u), demoAdminDb(), { userId: u, email: 'x@enjoy.test', displayName: null, tenantId: ENJOY, role } as never,
+    { places: null, routes: null, research: null, zoneNames: fixtureZoneNames(), zoneFixes: fixtureZoneFixes() });
+
+  test('juntar: empresas, pueblos y asignaciones pasan a la otra; renombrar encima de otra igual = juntar', async () => {
+    const d = demoDb();
+    const cat = d.zone.find((z) => z.name === 'Cataluña')!.id;
+    const add = (id: string, name: string, parent: string, kind = 'province') => { d.zone.push({ id, tenant_id: ENJOY, parent_id: parent, name, kind: kind as never, position: 0 }); return id; };
+    const ger = add('00000000-0000-4000-8000-0000000fa001', 'Gerona', cat);
+    const gir = add('00000000-0000-4000-8000-0000000fa002', 'Girona', cat);
+    const aro = add('00000000-0000-4000-8000-0000000fa003', 'Castillo de Aro', ger, 'city');
+    add('00000000-0000-4000-8000-0000000fa004', 'Lloret', ger, 'city');
+    add('00000000-0000-4000-8000-0000000fa005', 'Lloret', gir, 'city');
+    const faro = d.account.find((a) => a.name === 'Discoteca Faro')!;
+    faro.zone_id = ger;
+    d.membership_zone.push({ tenant_id: ENJOY, user_id: REP, zone_id: ger });
+    const s = svc(ADMIN, 'admin');
+    await expect(svc(REP, 'rep').zonesFix([{ op: 'merge', id: ger, target: gir }])).rejects.toMatchObject({ status: 403 });
+
+    expect(await s.zonesFix([{ op: 'merge', id: ger, target: gir }])).toEqual({ applied: 1 });
+    expect(d.zone.some((z) => z.id === ger)).toBe(false);
+    expect(faro.zone_id).toBe(gir);
+    expect(d.zone.find((z) => z.id === aro)?.parent_id).toBe(gir);  // el pueblo pasa a Girona
+    expect(d.zone.filter((z) => z.name === 'Lloret')).toHaveLength(1);  // el que estaba en las dos, uno solo
+    expect(d.membership_zone.some((m) => m.user_id === REP && m.zone_id === gir)).toBe(true);  // quien llevaba Gerona lleva Girona
+
+    // Renombrar «Castillo de Aro» a «Lloret» (ya existe al lado): se juntan.
+    await s.zonesFix([{ op: 'rename', id: aro, name: 'Lloret' }]);
+    expect(d.zone.some((z) => z.id === aro)).toBe(false);
+    // Tipo y mover.
+    const es = d.zone.find((z) => z.name === 'España')!;
+    await s.zonesFix([{ op: 'kind', id: es.id, kind: 'country' }, { op: 'move', id: gir, target: null }]);
+    expect(d.zone.find((z) => z.id === gir)?.parent_id).toBeNull();
+  });
+
+  test('revisar con IA propone; no toca nada hasta aplicar', async () => {
+    const d = demoDb();
+    const before = JSON.stringify(d.zone);
+    const fixes = await svc(ADMIN, 'admin').zonesReview();
+    expect(Array.isArray(fixes)).toBe(true);
+    expect(JSON.stringify(d.zone)).toBe(before);
   });
 });

@@ -203,3 +203,125 @@ export const fixtureZoneNames = (): ZoneNamesApi => ({
     });
   },
 });
+
+// ---------------------------------------------------------------- terminar: revisar lo que ya hay (IA + a mano)
+
+/** Un arreglo sobre una zona que ya existe. merge: llevarla (empresas, pueblos y asignaciones) a `target` y borrarla. */
+export type ZoneFix =
+  | { op: 'merge'; id: string; target: string; reason: string }
+  | { op: 'rename'; id: string; name: string; reason: string }
+  | { op: 'kind'; id: string; kind: ZoneKind; reason: string }
+  | { op: 'move'; id: string; target: string | null; reason: string };
+export const ZONE_KINDS: ZoneKind[] = ['country', 'region', 'province', 'city', 'area'];
+
+export interface ZoneRow { id: string; parentId: string | null; name: string; kind: ZoneKind; path: string; depth: number; direct: number; total: number }
+/** Árbol en orden (ruta, empresas directas y con lo de dentro). */
+export function zoneRows(zones: Zone[], counts: Map<string, number>): ZoneRow[] {
+  const kids = new Map<string | null, Zone[]>();
+  for (const z of zones) kids.set(z.parentId, [...(kids.get(z.parentId) ?? []), z]);
+  const out: ZoneRow[] = [];
+  const total = (id: string): number => (counts.get(id) ?? 0) + (kids.get(id) ?? []).reduce((n, k) => n + total(k.id), 0);
+  const walk = (parent: string | null, path: string, depth: number) => {
+    for (const z of [...(kids.get(parent) ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es'))) {
+      const p = path ? `${path} › ${z.name}` : z.name;
+      out.push({ id: z.id, parentId: z.parentId, name: z.name, kind: z.kind, path: p, depth, direct: counts.get(z.id) ?? 0, total: total(z.id) });
+      walk(z.id, p, depth + 1);
+    }
+  };
+  walk(null, '', 0);
+  return out;
+}
+/** Ids de una zona y todo lo que cuelga de ella (para no meter una zona dentro de sí misma). */
+export function subtree(zones: Zone[], id: string): Set<string> {
+  const out = new Set([id]);
+  for (let grew = true; grew;) { grew = false; for (const z of zones) if (z.parentId && out.has(z.parentId) && !out.has(z.id)) { out.add(z.id); grew = true; } }
+  return out;
+}
+
+/** Lo que propone la IA (o el admin) → arreglos válidos: ids que existen, sin meter una zona en sí misma, sin repetir. */
+export function sanitizeFixes(raw: unknown, zones: Zone[]): ZoneFix[] {
+  const list = Array.isArray((raw as { fixes?: unknown })?.fixes) ? (raw as { fixes: Array<Record<string, unknown>> }).fixes : [];
+  const byId = new Map(zones.map((z) => [z.id, z]));
+  const touched = new Set<string>();
+  const out: ZoneFix[] = [];
+  for (const f of list) {
+    const id = typeof f?.id === 'string' ? f.id : '';
+    const z = byId.get(id);
+    if (!z || touched.has(id)) continue;
+    const reason = (typeof f.reason === 'string' ? f.reason : '').slice(0, 300);
+    const target = typeof f.target === 'string' && byId.has(f.target) ? f.target : null;
+    if (f.op === 'merge' && target && !subtree(zones, id).has(target)) out.push({ op: 'merge', id, target, reason });
+    else if (f.op === 'rename' && typeof f.name === 'string' && f.name.trim() && f.name.trim().length <= 80 && f.name.trim() !== z.name) out.push({ op: 'rename', id, name: f.name.trim(), reason });
+    else if (f.op === 'kind' && ZONE_KINDS.includes(f.kind as ZoneKind) && f.kind !== z.kind) out.push({ op: 'kind', id, kind: f.kind as ZoneKind, reason });
+    else if (f.op === 'move' && (f.target === null || (target && !subtree(zones, id).has(target))) && (target ?? null) !== z.parentId) out.push({ op: 'move', id, target, reason });
+    else continue;
+    touched.add(id);
+  }
+  return out;
+}
+
+export const FIXES_TOOL = {
+  name: 'save_fixes',
+  description: 'Guarda los arreglos que propones para el árbol de zonas. Lista vacía si está todo bien.',
+  strict: true,
+  input_schema: {
+    type: 'object', additionalProperties: false, required: ['fixes'],
+    properties: {
+      fixes: {
+        type: 'array',
+        items: {
+          type: 'object', additionalProperties: false, required: ['op', 'id', 'target', 'name', 'kind', 'reason'],
+          properties: {
+            op: { type: 'string', enum: ['merge', 'rename', 'kind', 'move'] },
+            id: S, target: SN, name: SN, kind: { type: ['string', 'null'], enum: [...ZONE_KINDS, null] }, reason: S,
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+export const FIXES_SYSTEM = `Revisas el árbol de zonas de un CRM de ventas (país › comunidad autónoma › provincia › municipio). Cada línea: id | ruta | tipo | empresas directas.
+Propón solo arreglos claros:
+- merge (id → target): dos zonas que son el mismo sitio (p. ej. «Gerona» y «Girona», «La Coruña» y «A Coruña», «Mexico» y «México»). Lleva la que tenga menos sentido o menos empresas a la otra.
+- rename (id, name): nombre mal escrito o sin tildes («Mexico» → «México»). Nombres en español.
+- kind (id, kind): tipo equivocado (country, region, province, city, area). Un país es country; una comunidad autónoma, region; una provincia, province; un municipio, city.
+- move (id → target, o target null para arriba del todo): zona en un sitio equivocado (un municipio que cuelga de otra provincia; un país dentro de otro).
+Reglas: usa solo ids que aparecen. No propongas nada dudoso. Cada propuesta con un motivo corto en español. Si está todo bien, lista vacía.`;
+
+export interface ZoneFixesApi { review(lines: string[]): Promise<unknown> }
+export function claudeZoneFixes(apiKey: string, fetchImpl?: typeof fetch): ZoneFixesApi {
+  const client = new Anthropic({ apiKey, timeout: 240_000, maxRetries: 1, ...(fetchImpl ? { fetch: fetchImpl } : {}) });
+  return {
+    async review(lines) {
+      const stream = client.beta.messages.stream({
+        model: PLACES_MODEL, max_tokens: 32000,
+        betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+        output_config: { effort: 'medium' },
+        system: FIXES_SYSTEM,
+        tools: [FIXES_TOOL as unknown as Anthropic.Beta.BetaTool],
+        messages: [{ role: 'user', content: `${lines.join('\n')}\n\nLlama a save_fixes.` }],
+      });
+      const res = await stream.finalMessage();
+      if (res.stop_reason === 'refusal') return { fixes: [] };
+      const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === FIXES_TOOL.name);
+      return call?.input ?? { fixes: [] };
+    },
+  };
+}
+/** Para las pruebas: junta las zonas con el mismo nombre sin tildes y pone «country» a las de arriba del todo. */
+export const fixtureZoneFixes = (): ZoneFixesApi => ({
+  async review(lines) {
+    const rows = lines.map((l) => { const [id, path, kind] = l.split(' | '); return { id, name: path.split(' › ').pop()!, path, kind }; });
+    const fixes: Array<Record<string, unknown>> = [];
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      const k = norm(r.name).replace(/^(gerona|girona)$/, 'girona');
+      const other = seen.get(k);
+      if (other) fixes.push({ op: 'merge', id: r.id, target: other, name: null, kind: null, reason: 'Es el mismo sitio' });
+      else seen.set(k, r.id);
+      if (!r.path.includes(' › ') && r.kind !== 'country') fixes.push({ op: 'kind', id: r.id, target: null, name: null, kind: 'country', reason: 'Es un país' });
+    }
+    return { fixes };
+  },
+});

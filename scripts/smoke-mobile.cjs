@@ -21,7 +21,8 @@ const PAGES = {
     await p.click(`[data-testid="${user}"], [data-testid="demo-${user}"]`);
     await p.waitForURL(/\/admin/);
     const urls = [...pages];
-    // El builder también: el primer dossier de la lista.
+    // El builder también: el primer dossier de la lista (admin y gerentes: de todo el equipo, que por defecto ven las suyas).
+    if (/admin|lead/.test(user)) await p.goto(`${BASE}/admin?autor=todos`);
     const first = await p.getAttribute('a[href^="/admin/dossiers/"]', 'href').catch(() => null);
     if (first) urls.push(first.split('?')[0]);
     for (const u of urls) {
