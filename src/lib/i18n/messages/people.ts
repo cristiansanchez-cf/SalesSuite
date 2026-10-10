@@ -4,7 +4,7 @@ import { defineMessages } from '../core';
 export const peopleMessages = defineMessages({
   es: {
     people: {
-      eyebrow: 'Cuentas', title: 'Personas',
+      eyebrow: 'CRM', title: 'Personas',
       lede: 'Con quién habláis y dónde está cada uno. Una persona puede estar en varias empresas, con un papel en cada una.',
       add: 'Añadir persona', all: 'Todas', tray: 'Sin empresa', trayHelp: 'Personas que aún no tienen empresa: asígnales una cuando la sepas.',
       allLists: 'Todas las listas', search: 'Buscar por nombre', emptyTitle: 'Todavía no hay personas',
@@ -39,7 +39,7 @@ export const peopleMessages = defineMessages({
     },
     lists: { label: 'Lista', all: 'Todas', stage: 'Etapa' },
     import: {
-      eyebrow: 'Cuentas', title: 'Importar',
+      eyebrow: 'CRM', title: 'Importar',
       lede: 'Sube un CSV (de Notion, Excel o Google Sheets). Revisas a dónde va cada columna, ves qué va a pasar y, si algo no te gusta, lo deshaces.',
       file: 'Archivo CSV', fileHelp: 'En Notion: ··· → Exportar → CSV. En Excel o Sheets: Guardar como CSV.', what: '¿Qué es cada fila?',
       accounts: 'Una empresa o local', contacts: 'Una persona', upload: 'Subir y revisar', history: 'Importaciones',
@@ -76,7 +76,7 @@ export const peopleMessages = defineMessages({
   },
   en: {
     people: {
-      eyebrow: 'Accounts', title: 'People',
+      eyebrow: 'CRM', title: 'People',
       lede: 'Who you talk to and where each one is. A person can be at several companies, with a role at each.',
       add: 'Add person', all: 'All', tray: 'No company', trayHelp: 'People who don’t have a company yet: assign one when you know it.',
       allLists: 'All lists', search: 'Search by name', emptyTitle: 'No people yet',
@@ -111,7 +111,7 @@ export const peopleMessages = defineMessages({
     },
     lists: { label: 'List', all: 'All', stage: 'Stage' },
     import: {
-      eyebrow: 'Accounts', title: 'Import',
+      eyebrow: 'CRM', title: 'Import',
       lede: 'Upload a CSV (from Notion, Excel or Google Sheets). Check where each column goes, see what will happen and undo it if you don’t like it.',
       file: 'CSV file', fileHelp: 'In Notion: ··· → Export → CSV. In Excel or Sheets: Save as CSV.', what: 'What is each row?',
       accounts: 'A company or venue', contacts: 'A person', upload: 'Upload and review', history: 'Imports',
@@ -148,7 +148,7 @@ export const peopleMessages = defineMessages({
   },
   pt: {
     people: {
-      eyebrow: 'Contas', title: 'Pessoas',
+      eyebrow: 'CRM', title: 'Pessoas',
       lede: 'Com quem vocês falam e onde está cada um. Uma pessoa pode estar em várias empresas, com um papel em cada uma.',
       add: 'Adicionar pessoa', all: 'Todas', tray: 'Sem empresa', trayHelp: 'Pessoas que ainda não têm empresa: atribua uma quando souber.',
       allLists: 'Todas as listas', search: 'Buscar por nome', emptyTitle: 'Ainda não há pessoas',
@@ -183,7 +183,7 @@ export const peopleMessages = defineMessages({
     },
     lists: { label: 'Lista', all: 'Todas', stage: 'Etapa' },
     import: {
-      eyebrow: 'Contas', title: 'Importar',
+      eyebrow: 'CRM', title: 'Importar',
       lede: 'Envie um CSV (do Notion, Excel ou Google Sheets). Revise para onde vai cada coluna, veja o que vai acontecer e, se não gostar, desfaça.',
       file: 'Arquivo CSV', fileHelp: 'No Notion: ··· → Exportar → CSV. No Excel ou Sheets: Salvar como CSV.', what: 'O que é cada linha?',
       accounts: 'Uma empresa ou local', contacts: 'Uma pessoa', upload: 'Enviar e revisar', history: 'Importações',
@@ -220,7 +220,7 @@ export const peopleMessages = defineMessages({
   },
   ko: {
     people: {
-      eyebrow: '계정', title: '사람',
+      eyebrow: 'CRM', title: '사람',
       lede: '누구와 이야기하고 각자 어디에 있는지. 한 사람이 여러 회사에 각기 다른 역할로 있을 수 있습니다.',
       add: '사람 추가', all: '전체', tray: '회사 없음', trayHelp: '아직 회사가 없는 사람들: 알게 되면 연결하세요.',
       allLists: '모든 목록', search: '이름으로 검색', emptyTitle: '아직 사람이 없습니다',
@@ -255,7 +255,7 @@ export const peopleMessages = defineMessages({
     },
     lists: { label: '목록', all: '전체', stage: '단계' },
     import: {
-      eyebrow: '계정', title: '가져오기',
+      eyebrow: 'CRM', title: '가져오기',
       lede: 'CSV(노션, 엑셀, 구글 시트)를 올리세요. 각 열이 어디로 가는지 확인하고 결과를 미리 본 뒤, 마음에 들지 않으면 되돌릴 수 있습니다.',
       file: 'CSV 파일', fileHelp: '노션: ··· → 내보내기 → CSV. 엑셀/시트: CSV로 저장.', what: '각 행은 무엇인가요?',
       accounts: '회사 또는 매장', contacts: '사람', upload: '올리고 확인', history: '가져오기 기록',

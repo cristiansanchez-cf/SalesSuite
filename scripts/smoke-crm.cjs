@@ -57,12 +57,25 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // ---- la lista enseña la columna y filtra por el campo
   await rep.goto(`${BASE}/admin/accounts?ver=all`);
   assert((await rep.textContent('[data-testid=account][data-name="Club Sol"]')).includes('Aforo: 520'), 'columna «Aforo» en la lista');
-  await rep.selectOption('[data-testid=crm-filters] [data-field=noches-que-abre]', 'viernes');
-  await rep.click('[data-testid=crm-filter-apply]');
-  await rep.waitForURL(/c\.noches-que-abre=viernes/);
+  // Sin botón «Filtrar»: «Filtros» abre el panel y elegir una opción aplica al momento.
+  await rep.click('[data-testid=filters-toggle]');
+  await Promise.all([rep.waitForURL(/c\.noches-que-abre=viernes/), rep.selectOption('[data-testid=crm-filters] [data-field=noches-que-abre]', 'viernes')]);
   const names = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => e.getAttribute('data-name')));
   assert(names.length === 1 && names[0] === 'Club Sol', 'filtro por campo: solo las que abren el viernes');
+  assert((await rep.textContent('[data-testid=acc-active]')).includes('Noches que abre: Viernes'), 'el filtro aplicado, a la vista como chip');
+  assert(!(await rep.url()).includes('estado=') && !(await rep.url()).includes('zona='), 'la URL solo lleva lo aplicado');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-list.png`, fullPage: true });
+
+  // ---- ciudad: un desplegable en la barra (con sus ciudades dentro si es una región)
+  await rep.goto(`${BASE}/admin/accounts?ver=all`);
+  const vlc = await rep.$eval('[data-testid=filter-zone]', (sel) => [...sel.options].find((o) => /› Valencia$/.test(o.textContent.trim()))?.value);
+  await Promise.all([rep.waitForURL(/zona=/), rep.selectOption('[data-testid=filter-zone]', vlc)]);
+  const inVlc = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => e.getAttribute('data-name')));
+  assert(inVlc.length > 0 && inVlc.every((n) => ['Club Sol', 'Sala Marina'].includes(n)), `ciudad Valencia: solo las de Valencia (${inVlc})`);
+  assert((await rep.textContent('[data-testid=acc-active]')).includes('Valencia'), 'Valencia, a la vista como chip');
+  await Promise.all([rep.waitForURL((u) => !u.searchParams.has('zona')), rep.click('[data-testid=active-filter]:has-text("Valencia")')]);
+  assert((await rep.$$('[data-testid=account]')).length > inVlc.length, 'quitar la ciudad con un clic');
+  if (OUT) await rep.screenshot({ path: `${OUT}/crm-list-city.png` });
 
   // ---- un comercial no define campos
   const r = await rep.goto(`${BASE}/admin/team/fields`);

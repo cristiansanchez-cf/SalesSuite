@@ -70,6 +70,8 @@ const stateF = (q.get('estado') ?? 'all') as State | 'all';
 const search = q.get('q') ?? '';
 // Listas (fase 2): una vista por vertical, p. ej. «proveedores-bodas».
 const lista = q.get('lista') ?? '';
+// Ciudad o zona (con sus ciudades dentro).
+const zona = q.get('zona') ?? '';
 const shownMax = Math.max(100, Math.min(Number(q.get('n')) || 100, 20000));
 // Campos del CRM (docs/CRM_DINAMICO.md): los marcados salen como columna y los filtrables como filtro (?c.<clave>=valor).
 const crm = (await acc.crmFields()).filter((x) => x.target === 'account' && (!x.tags.length || x.tags.includes(lista)));
@@ -77,7 +79,7 @@ const filterable = crm.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
 const columns = crm.filter((x) => x.inList);
 const [{ items, total, scope: effective }, t, colleagues, segments, lists] = await Promise.all([
-  acc.list({ scope, q: search, fields: fieldFilter, tag: lista }), acc.territory(), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
+  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined }), acc.territory(), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
 ]);
 const accountLists = lists.filter((l) => l.accounts > 0);
 // Etapa de la lista: chips por opción (filtran por su campo).
@@ -101,7 +103,7 @@ if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.g
 const count = (s: State) => items.filter((a) => a.state === s).length;
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
 const href = (p: Record<string, string>) => {
-  const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...(lista ? { lista } : {}),
+  const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...(lista ? { lista } : {}), ...(zona ? { zona } : {}),
     ...(orden ? { orden } : {}), ...(cual ? { cual } : {}),
     ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
   for (const [k, v] of [...u]) if (!v || (k === 'ver' && v === 'zone') || (k === 'estado' && v === 'all')) u.delete(k);
@@ -112,6 +114,23 @@ const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), google: R.google.filled(Number(q.get('gf')) || 0, Number(q.get('gs')) || 0, Number(q.get('gl')) || 0) });
 // Completar con Google (docs/CRM_DINAMICO.md §11): las de esta vista que aún no se han buscado.
 const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a) => a.id) : [];
+// Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
+const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
+const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];
+const fieldLabel = (k: string, v: string) => { const fd = filterable.find((x) => x.key === k); const o = fd?.options.find((x) => x.key === v);
+  return `${fd?.label.replace(/^¿|\?$/g, '') ?? k}: ${fd?.type === 'checkbox' ? (v === 'yes' ? crmMessages[locale].card.yes : crmMessages[locale].card.no) : o?.label ?? v}`; };
+const active = [
+  ...(search ? [{ label: `«${search}»`, clear: href({ q: '' }) }] : []),
+  ...(zona ? [{ label: zoneOptions.find((z) => z.id === zona)?.label ?? M.zoneFilter, clear: href({ zona: '' }) }] : []),
+  ...(lista ? [{ label: lista, clear: href({ lista: '' }) }] : []),
+  ...(stateF !== 'all' ? [{ label: M.states[stateF], clear: href({ estado: 'all' }) }] : []),
+  ...(cual ? [{ label: QUALITY.find(([k]) => k === cual)?.[1] ?? cual, clear: href({ cual: '' }) }] : []),
+  ...(orden ? [{ label: `↓ ${R.list.sort}`, clear: href({ orden: '' }) }] : []),
+  ...Object.entries(fieldFilter).map(([k, v]) => ({ label: fieldLabel(k, v), clear: href({ [`c.${k}`]: '' }) })),
+];
+// El panel de filtros (lista, estado, cualificación, orden, campos) sale abierto si hay alguno aplicado.
+const nFilters = [lista, stateF !== 'all' ? stateF : '', cual, orden, ...Object.values(fieldFilter)].filter(Boolean).length;
+const panelOpen = nFilters > 0;
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
@@ -121,10 +140,11 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
+  {(myZones || colleagues.length > 0 || !perms.manageAccounts) && (
   <section class="co-card mb-6 grid gap-3" data-testid="my-zone">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
       <h2 class="co-card-title flex items-center gap-2"><Icon name="map-pin" size={18} />{myZones ? M.yourZone(myZones) : M.noZone}</h2>
-      {!myZones && <span class="co-meta">{M.seeAll} {perms.manageAccounts ? M.assignInTerritory : M.askLead}</span>}
+      {!myZones && <span class="co-meta">{M.seeAll} {M.askLead}</span>}
     </div>
     {colleagues.length > 0 && (
       <div class="grid gap-2" data-testid="colleagues">
@@ -142,38 +162,66 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
       </div>
     )}
   </section>
-
-  {accountLists.length > 0 && (
-    <div class="co-chips mb-4" data-scroll-x data-testid="lists" aria-label={P.lists.label}>
-      <a class="co-chip" href={href({ lista: '' })} aria-current={!lista ? 'true' : undefined}>{P.people.allLists}</a>
-      {accountLists.map((l) => <a class="co-chip" href={href({ lista: l.tag })} aria-current={lista === l.tag ? 'true' : undefined} data-list={l.tag}><Icon name="tag" size={12} />{l.tag} · {l.accounts}</a>)}
-    </div>
   )}
-  <nav class="co-tabs mb-4" aria-label={M.scope} data-scroll-x>
-    <a class="co-tab" href={href({ ver: 'zone' })} aria-current={effective === 'zone' ? 'page' : undefined}>{M.myZone}</a>
-    <a class="co-tab" href={href({ ver: 'mine' })} aria-current={effective === 'mine' ? 'page' : undefined}>{M.mine}</a>
-    <a class="co-tab" href={href({ ver: 'all' })} aria-current={effective === 'all' ? 'page' : undefined}>{M.all}</a>
-  </nav>
-  <div class="mb-5 flex flex-wrap items-center gap-3">
-    <div class="co-chips" data-scroll-x>
-      {STATES.filter(([k]) => k === 'all' || count(k as State) > 0).map(([k, l]) => (
-        <a class="co-chip" href={href({ estado: k })} aria-current={stateF === k ? 'true' : undefined}>{l}{k !== 'all' && ` · ${count(k as State)}`}</a>
-      ))}
-    </div>
-    <form method="get" class="ml-auto flex min-w-[14rem] flex-1 sm:flex-none" role="search">
-      {scope !== 'zone' && <input type="hidden" name="ver" value={scope} />}
-      {Object.entries(fieldFilter).map(([k, v]) => <input type="hidden" name={`c.${k}`} value={v} />)}
-      {lista && <input type="hidden" name="lista" value={lista} />}
+
+  {/* Una sola barra: buscar, ciudad y filtros. Cambiar cualquier cosa aplica al momento (sin botón «Filtrar»). */}
+  <form method="get" class="co-card mb-3 grid gap-3 !p-4" data-testid="acc-toolbar" data-autosubmit role="search">
+    <div class="flex flex-wrap items-center gap-2">
       <label class="sr-only" for="acc-q">{M.search}</label>
-      <input id="acc-q" class="co-input" type="search" name="q" value={search} placeholder={M.search} />
-    </form>
-  </div>
-  <div class="co-chips mb-4" data-scroll-x data-testid="priority-chips">
-    <a class="co-chip" href={href({ orden: orden ? '' : 'prioridad' })} aria-current={orden ? 'true' : undefined} data-testid="sort-priority">↓ {R.list.sort}</a>
-    <a class="co-chip" href={href({ cual: cual === 'sin' ? '' : 'sin' })} aria-current={cual === 'sin' ? 'true' : undefined} data-testid="filter-unqualified">{R.list.unqualified}</a>
-    <a class="co-chip" href={href({ cual: cual === 'enfria' ? '' : 'enfria' })} aria-current={cual === 'enfria' ? 'true' : undefined} data-testid="filter-cooling">{R.list.cooling}</a>
-    <a class="co-chip" href={href({ cual: cual === 'fuera' ? '' : 'fuera' })} aria-current={cual === 'fuera' ? 'true' : undefined} data-testid="filter-out">{R.list.out}</a>
-    <a class="co-chip" href={href({ cual: cual === 'ia' ? '' : 'ia' })} aria-current={cual === 'ia' ? 'true' : undefined} data-testid="filter-ai"><Icon name="sparkles" size={12} />{AI.zone.filter}</a>
+      <input id="acc-q" class="co-input min-w-[12rem] flex-[2]" type="search" name="q" value={search} placeholder={M.search} />
+      <label class="sr-only" for="acc-zone">{M.zoneFilter}</label>
+      <select id="acc-zone" class="co-select min-w-[11rem] flex-1" name="zona" data-testid="filter-zone">
+        <option value="">{M.anyZone}</option>
+        {zoneOptions.map((z) => <option value={z.id} selected={zona === z.id}>{z.label}</option>)}
+      </select>
+      <label class="sr-only" for="acc-scope">{M.scope}</label>
+      <select id="acc-scope" class="co-select w-auto" name="ver" data-testid="filter-scope">
+        {t.myZoneIds.length > 0 && <option value="zone" selected={effective === 'zone'}>{M.myZone}</option>}
+        <option value="all" selected={effective === 'all'}>{M.scopeAll}</option>
+        <option value="mine" selected={effective === 'mine'}>{M.scopeMine}</option>
+      </select>
+      <button type="button" class="co-btn co-btn--ghost" data-filters-toggle aria-expanded={panelOpen ? 'true' : 'false'} aria-controls="acc-filters" data-testid="filters-toggle">
+        <Icon name="settings" size={16} />{M.filters}{nFilters > 0 && ` · ${nFilters}`}
+      </button>
+    </div>
+    <div id="acc-filters" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" hidden={!panelOpen} data-filters-panel>
+      {accountLists.length > 0 && (
+        <label class="co-field !gap-1 text-xs">{M.list}
+          <select class="co-select" name="lista" data-testid="filter-list"><option value="">{M.anyList}</option>{accountLists.map((l) => <option value={l.tag} selected={lista === l.tag}>{l.tag} · {l.accounts}</option>)}</select></label>
+      )}
+      <label class="co-field !gap-1 text-xs">{M.state}
+        <select class="co-select" name="estado" data-testid="filter-state">{STATES.filter(([k]) => k === 'all' || k === stateF || count(k as State) > 0).map(([k, l]) => <option value={k} selected={stateF === k}>{l}{k !== 'all' ? ` · ${count(k as State)}` : ''}</option>)}</select></label>
+      <label class="co-field !gap-1 text-xs">{M.quality}
+        <select class="co-select" name="cual" data-testid="filter-quality">
+          <option value="">{M.anyQuality}</option>
+          {QUALITY.map(([k, l]) => <option value={k} selected={cual === k}>{l}</option>)}
+        </select></label>
+      <label class="co-field !gap-1 text-xs">{M.order}
+        <select class="co-select" name="orden" data-testid="filter-order"><option value="">{M.orderDefault}</option><option value="prioridad" selected={orden === 'prioridad'}>{R.list.sort}</option></select></label>
+      {filterable.length > 0 && (
+        <div class="contents" data-testid="crm-filters">
+          {filterable.map((fd) => (
+            <label class="co-field !gap-1 text-xs">{fd.label}
+              {fd.type === 'checkbox' ? (
+                <select class="co-select" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option><option value="yes" selected={fieldFilter[fd.key] === 'yes'}>{crmMessages[locale].card.yes}</option><option value="no" selected={fieldFilter[fd.key] === 'no'}>{crmMessages[locale].card.no}</option></select>
+              ) : fd.type === 'select' || fd.type === 'multi_select' ? (
+                <select class="co-select" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option>{fd.options.map((o) => <option value={o.key} selected={fieldFilter[fd.key] === o.key}>{o.label}</option>)}</select>
+              ) : (
+                <input class="co-input" name={`c.${fd.key}`} value={fieldFilter[fd.key] ?? ''} placeholder={CF.search} data-field={fd.key} />
+              )}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+    <noscript><button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{M.show}</button></noscript>
+  </form>
+
+  {/* Lo que está aplicado, a la vista y quitable de un clic; el número de empresas y las acciones sobre ellas. */}
+  <div class="mb-5 flex flex-wrap items-center gap-2" data-testid="acc-active">
+    <span class="co-meta font-semibold" data-testid="acc-count">{M.count(shown.length)}</span>
+    {active.map((f) => <a class="co-chip" href={f.clear} data-testid="active-filter" title={M.clearAll}>{f.label} <Icon name="x" size={12} /></a>)}
+    {active.length > 1 && <a class="co-meta underline" href={href({ zona: '', lista: '', estado: 'all', cual: '', orden: '', q: '', ...Object.fromEntries(Object.keys(fieldFilter).map((k) => [`c.${k}`, ''])) })} data-testid="clear-filters">{M.clearAll}</a>}
     {toGoogle.length > 0 && (
       <form method="post" class="ml-auto"><input type="hidden" name="action" value="google-fill" /><input type="hidden" name="ids" value={toGoogle.slice(0, 200).join(',')} />
         <input type="hidden" name="back" value={href({})} />
@@ -187,27 +235,17 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
       ); })}
     </div>
   )}
-  {filterable.length > 0 && (
-    <form method="get" class="mb-5 flex flex-wrap items-end gap-3" data-testid="crm-filters" aria-label={CF.title}>
-      {scope !== 'zone' && <input type="hidden" name="ver" value={scope} />}
-      {stateF !== 'all' && <input type="hidden" name="estado" value={stateF} />}
-      {search && <input type="hidden" name="q" value={search} />}
-      {lista && <input type="hidden" name="lista" value={lista} />}
-      {filterable.map((fd) => (
-        <label class="co-field !gap-1 text-xs">{fd.label}
-          {fd.type === 'checkbox' ? (
-            <select class="co-select !min-h-[34px]" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option><option value="yes" selected={fieldFilter[fd.key] === 'yes'}>{crmMessages[locale].card.yes}</option><option value="no" selected={fieldFilter[fd.key] === 'no'}>{crmMessages[locale].card.no}</option></select>
-          ) : fd.type === 'select' || fd.type === 'multi_select' ? (
-            <select class="co-select !min-h-[34px]" name={`c.${fd.key}`} data-field={fd.key}><option value="">{CF.any}</option>{fd.options.map((o) => <option value={o.key} selected={fieldFilter[fd.key] === o.key}>{o.label}</option>)}</select>
-          ) : (
-            <input class="co-input !min-h-[34px]" name={`c.${fd.key}`} value={fieldFilter[fd.key] ?? ''} placeholder={CF.search} data-field={fd.key} />
-          )}
-        </label>
-      ))}
-      <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="crm-filter-apply">{CF.apply}</button>
-      {Object.keys(fieldFilter).length > 0 && <a class="co-meta underline" href={href(Object.fromEntries(Object.keys(fieldFilter).map((k) => [`c.${k}`, ''])))}>{CF.clear}</a>}
-    </form>
-  )}
+  <script>
+    // Filtros al momento: cambiar un desplegable aplica; el texto, al pulsar Enter. «Filtros» abre y cierra el panel.
+    document.querySelectorAll<HTMLFormElement>('form[data-autosubmit]').forEach((f) => {
+      f.addEventListener('change', (e) => { if (e.target instanceof HTMLSelectElement) f.requestSubmit(); });
+      // Lo vacío no va a la URL (queda limpia y compartible).
+      f.addEventListener('formdata', (e) => { for (const [k, v] of [...e.formData]) if (!v || (k === 'estado' && v === 'all')) e.formData.delete(k); });
+      const btn = f.querySelector<HTMLButtonElement>('[data-filters-toggle]');
+      const panel = f.querySelector<HTMLElement>('[data-filters-panel]');
+      btn?.addEventListener('click', () => { if (!panel) return; panel.hidden = !panel.hidden; btn.setAttribute('aria-expanded', String(!panel.hidden)); });
+    });
+  </script>
 
   {shown.length === 0
     ? (total === 0
