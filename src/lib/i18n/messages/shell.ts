@@ -9,6 +9,7 @@ const es = {
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
   },
   role: { admin: 'Admin', lead: 'Gerente', rep: 'Comercial', partner: 'Colaborador' },
+  async: { done: 'Hecho.', failed: 'No se ha podido. Vuelve a intentarlo.', close: 'Cerrar aviso' },
   shell: {
     navigation: 'Navegación', openMenu: 'Abrir menú', loading: 'Cargando…', closeMenu: 'Cerrar menú', menu: 'Menú', workspace: 'Espacio de trabajo', switchSpace: 'Cambiar de espacio', yourSpaces: 'Tus espacios', hereNow: 'Aquí estás',
     delegation: 'de delegación', global: 'global', workspaceHint: 'Espacio en el que trabajas', myAccount: 'Mi cuenta', logout: 'Salir', language: 'Idioma',
@@ -53,6 +54,7 @@ export const shellMessages = defineMessages({
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
     },
     role: { admin: 'Admin', lead: 'Manager', rep: 'Sales rep', partner: 'Partner' },
+    async: { done: 'Done.', failed: 'It didn’t work. Try again.', close: 'Close notice' },
     shell: {
       navigation: 'Navigation', openMenu: 'Open menu', loading: 'Loading…', closeMenu: 'Close menu', menu: 'Menu', workspace: 'Workspace', switchSpace: 'Switch workspace', yourSpaces: 'Your workspaces', hereNow: 'You are here',
       delegation: 'of a branch', global: 'global', workspaceHint: 'The workspace you are in', myAccount: 'My account', logout: 'Log out', language: 'Language',
@@ -94,6 +96,7 @@ export const shellMessages = defineMessages({
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
     },
     role: { admin: 'Admin', lead: 'Gerente de vendas', rep: 'Vendedor(a)', partner: 'Parceiro(a)' },
+    async: { done: 'Pronto.', failed: 'Não deu certo. Tente de novo.', close: 'Fechar aviso' },
     shell: {
       navigation: 'Navegação', openMenu: 'Abrir menu', loading: 'Carregando…', closeMenu: 'Fechar menu', menu: 'Menu', workspace: 'Espaço de trabalho', switchSpace: 'Mudar de espaço', yourSpaces: 'Seus espaços', hereNow: 'Você está aqui',
       delegation: 'de delegação', global: 'global', workspaceHint: 'O espaço em que você trabalha', myAccount: 'Minha conta', logout: 'Sair', language: 'Idioma',
@@ -135,6 +138,7 @@ export const shellMessages = defineMessages({
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,
     },
     role: { admin: '관리자', lead: '영업 리더', rep: '영업 담당자', partner: '파트너' },
+    async: { done: '완료.', failed: '실패했습니다. 다시 시도하세요.', close: '알림 닫기' },
     shell: {
       navigation: '내비게이션', openMenu: '메뉴 열기', loading: '불러오는 중…', closeMenu: '메뉴 닫기', menu: '메뉴', workspace: '워크스페이스', switchSpace: '워크스페이스 전환', yourSpaces: '내 워크스페이스', hereNow: '현재 위치',
       delegation: '지사', global: '전체', workspaceHint: '현재 작업 중인 워크스페이스', myAccount: '내 계정', logout: '로그아웃', language: '언어',

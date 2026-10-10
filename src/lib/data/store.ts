@@ -104,7 +104,7 @@ export interface AccountRow {
   next_step?: string | null; next_step_at?: string | null; next_contact_id?: string | null; next_channel?: string | null;
   qualification?: Record<string, unknown>;
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
-  place_rating?: number | null; place_reviews?: number | null; place_photo?: string | null;
+  place_rating?: number | null; place_reviews?: number | null; place_photo?: string | null; place_filled?: Record<string, string> | null;
   ai_research?: unknown; ai_research_at?: string | null;
 }
 export interface CrmActivityRow {

@@ -37,7 +37,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
     </div>
   </div>
 
-  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form">
+  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form" data-async="qual">
     <input type="hidden" name="action" value="qualify" />
     <fieldset class="grid gap-3" disabled={!canEdit}>
       <div class="flex flex-wrap items-center gap-2">

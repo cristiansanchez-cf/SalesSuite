@@ -53,6 +53,8 @@ export interface Account {
   placeId: string | null; hours: string[] | null; lat: number | null; lng: number | null; placeStatus: string | null; placeAt: string | null;
   /** Google: valoración, reseñas y foto (nombre en Places; la imagen se pide al verla, §15). */
   placeRating: number | null; placeReviews: number | null; placePhoto: string | null;
+  /** Lo que rellenó la ficha de Google elegida (campo → valor), para poder cambiarla o quitarla. */
+  placeFilled: Record<string, string> | null;
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }

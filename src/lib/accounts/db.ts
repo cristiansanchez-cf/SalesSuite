@@ -8,6 +8,8 @@ export interface GoogleData {
   lat: number | null; lng: number | null; status: string | null;
   rating?: number | null; reviews?: number | null; photo?: string | null; zoneId?: string | null;
   email?: string | null; instagram?: string | null; facebook?: string | null; linkedin?: string | null;
+  /** «Este no era»: antes de rellenar, quitar lo que puso la ficha anterior (si sigue igual). Sin placeId: solo quitar. */
+  replace?: boolean;
 }
 export interface AccountFilter { zoneIds?: string[]; /** Solo las que no tienen ciudad. */ noZone?: boolean; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
 export interface AccountInsert {

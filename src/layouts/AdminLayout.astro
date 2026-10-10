@@ -129,5 +129,74 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
         document.querySelectorAll('details.co-popover[open]').forEach((p) => { if (!p.contains(t)) p.removeAttribute('open'); });
       });
     </script>
+    <div class="co-toasts" id="co-toasts" aria-live="polite" data-testid="toasts"></div>
+    <script is:inline define:vars={{ T: m.async }}>
+      // Acciones en segundo plano (docs/UX_REVIEW.md §Carga): un formulario con data-async="id1 id2" no cambia de página.
+      // Se manda por detrás, se puede seguir usando la página y, al acabar, se cambian solo esas partes (con lo nuevo del
+      // servidor) y un aviso abajo dice el resultado. data-async-busy: aviso mientras trabaja (para lo que tarda);
+      // data-async-quiet: sin aviso si no hay nada que contar (p. ej. una búsqueda: ya se ven los resultados).
+      (() => {
+        const box = document.getElementById('co-toasts');
+        const toast = (text, kind) => {
+          const el = document.createElement('div');
+          el.className = `co-toast co-toast--${kind}`;
+          el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+          el.dataset.testid = `toast-${kind}`;
+          const msg = document.createElement('span'); msg.textContent = text; el.append(msg);
+          if (kind !== 'busy') {
+            const x = document.createElement('button'); x.type = 'button'; x.className = 'co-toast__x'; x.setAttribute('aria-label', T.close); x.textContent = '×';
+            x.addEventListener('click', () => el.remove()); el.append(x);
+            setTimeout(() => el.remove(), kind === 'error' ? 12000 : 6000);
+          }
+          box.append(el);
+          return el;
+        };
+        const queue = new Map();
+        document.addEventListener('submit', async (e) => {
+          const form = e.target;
+          if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-async') || !window.fetch || !window.DOMParser) return;
+          e.preventDefault();
+          const btn = e.submitter instanceof HTMLButtonElement ? e.submitter : form.querySelector('button[type=submit]');
+          const body = new FormData(form);
+          if (e.submitter && e.submitter.name) body.set(e.submitter.name, e.submitter.value);
+          const label = btn && btn.querySelector('span');
+          const before = label ? label.textContent : '';
+          if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); if (label && btn.dataset.busyLabel) label.textContent = btn.dataset.busyLabel; }
+          const busy = form.dataset.asyncBusy ? toast(form.dataset.asyncBusy, 'busy') : null;
+          // Varios clics seguidos sobre lo mismo (p. ej. cualificar): van en orden, uno tras otro.
+          const key = form.dataset.async || '';
+          const prev = queue.get(key) || Promise.resolve();
+          let release;
+          queue.set(key, new Promise((r) => { release = r; }));
+          await prev;
+          const restore = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.removeAttribute('aria-busy'); if (label) label.textContent = before; } };
+          try {
+            const url = new URL(form.getAttribute('action') || location.href, location.href); url.hash = '';
+            const res = await fetch(url, { method: 'POST', body, credentials: 'same-origin' });
+            if (!res.ok) throw new Error(String(res.status));
+            const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            // Hecho = el servidor redirige con ?ok= (y su aviso); si no redirige y trae un rechazo, es un error.
+            const flashed = res.redirected && new URL(res.url).searchParams.has('ok');
+            const err = flashed ? null : doc.querySelector('main [data-testid=alert-rejection], main [data-testid=alert-failure]');
+            if (err) { restore(); toast(err.textContent.replace(/\s+/g, ' ').trim(), 'error'); return; }
+            for (const id of (form.dataset.async || '').split(/\s+/).filter(Boolean)) {
+              const next = doc.getElementById(id); const cur = document.getElementById(id);
+              if (next && cur) cur.replaceWith(document.importNode(next, true));
+            }
+            restore();
+            const ok = flashed ? doc.querySelector('main [data-testid=alert-success]') : null;
+            if (ok || !form.hasAttribute('data-async-quiet')) toast(ok ? ok.textContent.replace(/\s+/g, ' ').trim() : form.dataset.asyncDone || T.done, 'ok');
+            document.dispatchEvent(new CustomEvent('co:swapped'));
+          } catch {
+            restore(); toast(T.failed, 'error');
+          } finally {
+            if (busy) busy.remove();
+            release();
+            // Para las pruebas y quien quiera esperar: cuántas acciones en segundo plano han terminado.
+            document.documentElement.dataset.asyncDone = String(Number(document.documentElement.dataset.asyncDone || 0) + 1);
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

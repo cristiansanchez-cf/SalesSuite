@@ -679,18 +679,31 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     try { p = await api.details(placeId); } catch (e) { googleDown(e); }
     if (!p) throw new AdminError(404, 'Cuenta no encontrada');
     const zones = await accounts.listZones(t);
-    const zone = !before.zoneId && p.place ? zoneForPlace(zones, p.place) : null;
-    const web = p.website || before.website;
+    // «Este no era»: si ya tenía otra ficha, lo que puso aquella se quita antes (lo de a mano se queda).
+    const replace = !!before.placeId && before.placeId !== p.placeId;
+    const keepsZone = before.zoneId && !(replace && before.placeFilled?.zone_id === before.zoneId);
+    const zone = !keepsZone && p.place ? zoneForPlace(zones, p.place) : null;
+    const web = p.website || (replace && before.placeFilled?.website === before.website ? null : before.website);
     const socials = web ? await site.scan(web).catch(() => null) : null;
     try {
       await accounts.research(accountId, { placeId: p.placeId, phone: p.phone, website: p.website, address: p.address, mapsUrl: p.mapsUrl, hours: p.hours, lat: p.lat, lng: p.lng,
         status: p.status, rating: p.rating ?? null, reviews: p.reviews ?? null, photo: p.photo ?? null, zoneId: zone?.id ?? null,
-        email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null });
+        email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace });
     } catch (e) { mapError(e); }
-    const after = await accounts.getAccount(accountId);
-    const KEYS = ['phone', 'website', 'address', 'mapsUrl', 'email', 'instagram', 'facebook', 'linkedin'] as const;
-    const filled = after ? KEYS.filter((k) => !before[k] && after[k]) : [];
-    return { filled, zone: after && !before.zoneId && after.zoneId ? zones.find((z) => z.id === after.zoneId)?.name ?? null : null };
+    // Qué ha puesto esta ficha (lo apunta la base de datos).
+    const f = (await accounts.getAccount(accountId))?.placeFilled ?? {};
+    const COLS = { phone: 'phone', website: 'website', address: 'address', mapsUrl: 'maps_url', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin' } as const;
+    const filled = (Object.keys(COLS) as Array<keyof typeof COLS>).filter((k) => f[COLS[k]]);
+    return { filled, zone: f.zone_id ? zones.find((z) => z.id === f.zone_id)?.name ?? null : null };
+  }
+  /** Quitar la ficha de Google elegida: se va lo que puso (si sigue igual); lo escrito a mano se queda. */
+  async function googleClear(accountId: string) {
+    requireUse();
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    try {
+      await accounts.research(accountId, { placeId: '', phone: null, website: null, address: null, mapsUrl: null, hours: null, lat: null, lng: null, status: null, replace: true });
+    } catch (e) { mapError(e); }
   }
   /** La foto de Google de una empresa (la dirección pública de la imagen; la clave no sale del servidor). */
   async function googlePhoto(name: string): Promise<string | null> {
@@ -961,7 +974,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, hasZoneFixAi: () => !!zoneFixAi,
-    routePlan, googleCandidates, googleQuery, googleApply, googlePhoto, hasGoogle: () => !!places,
+    routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

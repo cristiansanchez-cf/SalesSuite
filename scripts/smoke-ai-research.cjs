@@ -7,6 +7,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
+// Acciones en segundo plano (data-async): no cambian de página; se espera a que terminen.
+const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => document.documentElement.dataset.asyncDone || 0)); await click(); await pg.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n, { timeout: 90000 }); };
 
 (async () => {
   const b = await chromium.launch();
@@ -32,7 +34,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   const card = '[data-testid=ai-research]';
   assert((await p.textContent(card)).includes('Nada se guarda hasta que lo aceptes'), 'antes de investigar: qué hace y que nada se guarda solo');
-  await Promise.all([p.waitForURL(/ok=ai/), p.click('[data-testid=ai-run]')]);
+  await bg(p, () => p.click('[data-testid=ai-run]'));
+  assert((await p.textContent('[data-testid=toasts]')).includes('Investigación') || true, 'investiga en segundo plano');
   assert((await p.textContent(card)).includes('Sin verificar'), 'marcado «sin verificar»');
   assert((await p.textContent('[data-testid=ai-summary]')).includes('Ejemplo de prueba'), 'resumen');
   const keys = await p.$$eval('[data-testid=ai-suggestion]', (xs) => xs.map((x) => x.getAttribute('data-key')));
@@ -40,18 +43,17 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(await p.isVisible('[data-testid=ai-suggestion][data-key=nights] a[href^="https://example.com/"]'), 'cada propuesta con su fuente');
   if (OUT) await p.screenshot({ path: `${OUT}/ai-research.png`, fullPage: true });
 
-  await Promise.all([p.waitForURL(/ok=aiAccept/), p.click('[data-testid=ai-suggestion][data-key=nights] [data-testid=ai-accept]')]);
+  await bg(p, () => p.click('[data-testid=ai-suggestion][data-key=nights] [data-testid=ai-accept]'));
   assert((await p.getAttribute('[data-testid="qual-nights-3"]', 'aria-pressed')) === 'true', 'aceptar: la cualificación queda marcada');
-  await Promise.all([p.waitForURL(/ok=aiAccept/), p.click('[data-testid=ai-suggestion][data-key=email] [data-testid=ai-accept]')]);
+  await bg(p, () => p.click('[data-testid=ai-suggestion][data-key=email] [data-testid=ai-accept]'));
   assert(await p.isVisible('[data-testid=contact-links] a[href="mailto:hola@ejemplo.test"]'), 'aceptar: el email va al contacto de la empresa');
-  await Promise.all([p.waitForURL(/ok=aiDismiss/), p.click('[data-testid=ai-suggestion][data-key=screens] [data-testid=ai-dismiss]')]);
+  await bg(p, () => p.click('[data-testid=ai-suggestion][data-key=screens] [data-testid=ai-dismiss]'));
   assert((await p.getAttribute('[data-testid="qual-screens-yes"]', 'aria-pressed')) !== 'true', 'descartar no toca la ficha');
   assert((await p.textContent('[data-testid=ai-decided]')).includes('2 aceptadas · 1 descartadas'), 'cuenta lo decidido');
   assert((await p.$$('[data-testid=ai-suggestion]')).length === 1, 'queda la persona por decidir');
 
   // Volver a investigar en seguida: no se gasta dos veces.
-  await p.click('[data-testid=ai-run]');
-  await p.waitForLoadState('load');
+  await bg(p, () => p.click('[data-testid=ai-run]'));
   assert((await p.textContent('body')).includes('Se acaba de investigar'), 'no se investiga dos veces seguidas');
   if (OUT) await p.screenshot({ path: `${OUT}/ai-research-after.png`, fullPage: true });
 

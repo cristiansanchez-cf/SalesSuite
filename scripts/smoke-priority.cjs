@@ -7,6 +7,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
+// Acciones en segundo plano (data-async): no cambian de página; se espera a que terminen.
+const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => document.documentElement.dataset.asyncDone || 0)); await click(); await pg.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n, { timeout: 90000 }); };
 
 (async () => {
   const b = await chromium.launch();
@@ -21,7 +23,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.goto(`${BASE}/admin/accounts?ver=all`);
   await rep.click('[data-testid=account][data-name="Sala Marina"] a.co-row__main');
   await rep.waitForURL(/\/admin\/accounts\/[^/?#]+/);
-  const click = async (tid) => { await Promise.all([rep.waitForURL(/ok=qualified/), rep.click(`[data-testid="${tid}"]`)]); };
+  const click = async (tid) => { await bg(rep, () => rep.click(`[data-testid="${tid}"]`)); };
   assert(await rep.isVisible('[data-testid=qualification]'), 'bloque «Cualificación» a la vista, sin formularios que abrir');
   assert((await rep.getAttribute('[data-testid=qual-kind-venue]', 'aria-pressed')) === 'true', 'el sector dice que es un local');
   await click('qual-nights-4+');

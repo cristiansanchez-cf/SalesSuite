@@ -19,6 +19,18 @@ select pg_temp.assert((select zone_id = '56000000-0000-4000-8000-0000000000b1' a
   from public.account where id = '56000000-0000-4000-8000-0000000000a1'), 'ciudad, valoración, foto, email y redes');
 select pg_temp.assert((select instagram = 'https://www.instagram.com/a_mano/' and owner_id is null from public.account where id = '56000000-0000-4000-8000-0000000000a1'), 'no pisa lo escrito a mano ni la reserva');
 
+-- «Este no era»: otra ficha quita lo que puso la anterior (si sigue igual) y pone lo suyo; lo corregido a mano se queda.
+reset role;
+update public.account set linkedin = 'https://www.linkedin.com/company/corregido' where id = '56000000-0000-4000-8000-0000000000a1';
+set role authenticated;
+select public.account_research('56000000-0000-4000-8000-0000000000a1', '{"replace":true,"placeId":"p56b","phone":"+34 611","rating":3.9}');
+select pg_temp.assert((select place_id = 'p56b' and phone = '+34 611' and zone_id is null and email is null and facebook is null and place_photo is null and place_rating = 3.9
+  and linkedin = 'https://www.linkedin.com/company/corregido' and instagram = 'https://www.instagram.com/a_mano/' and place_filled = '{"phone":"+34 611"}'
+  from public.account where id = '56000000-0000-4000-8000-0000000000a1'), 'cambia de ficha sin tocar lo de a mano');
+-- Quitar la ficha.
+select public.account_research('56000000-0000-4000-8000-0000000000a1', '{"replace":true}');
+select pg_temp.assert((select place_id is null and phone is null and place_at is null and linkedin is not null from public.account where id = '56000000-0000-4000-8000-0000000000a1'), 'quitar la ficha');
+
 -- Una ciudad de otro espacio no se pone (se ignora, el resto sí).
 reset role;
 insert into public.zone (id, tenant_id, name, kind) select '56000000-0000-4000-8000-0000000000b9', id, 'Ciudad ajena', 'city' from public.tenant where id <> '00000000-0000-4000-8000-000000000e01' limit 1;

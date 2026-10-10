@@ -423,5 +423,13 @@ ciegas). Ahora es **en la ficha de cada empresa**, eligiendo a mano:
   la red interna, también tras redirecciones), 6 s y 800 KB como mucho; si falla, no pasa nada.
 - Pruebas: sin clave y con `AI_RESEARCH_FIXTURE=1`, Google y la web son de mentira (`fixturePlaces`, `fixtureWebsite`).
 
-Migración `20261113000000_crm_google.sql` (Facebook, valoración, reseñas y foto; `account_research` con ciudad, email
+- **«Este no era»**: con una ficha elegida, la tarjeta lo dice («Elegida») y en los otros resultados el botón es
+  «Cambiar a este». Al cambiar, se quita lo que rellenó la ficha anterior (apuntado en `place_filled`) **solo si sigue
+  igual** — lo corregido a mano se queda — y se rellena con la nueva. «Quitar ficha» hace lo mismo sin poner otra.
+- **En segundo plano**: buscar, «Es este», quitar, investigar con IA, aceptar/descartar sus propuestas y cualificar no
+  cambian de página. Se mandan por detrás (formularios `data-async`, mecanismo general en `AdminLayout`), se puede seguir
+  usando la ficha, y al acabar se actualizan solo las partes afectadas y un aviso abajo dice el resultado. Investigar
+  con IA avisa mientras trabaja («te aviso al acabar»).
+
+Migraciones `20261113000000_crm_google.sql` y `20261114000000_crm_google_redo.sql` (Facebook, valoración, reseñas y foto; `account_research` con ciudad, email
 y redes); pruebas `places.test.ts`, `website.test.ts`, `supabase/tests/56_crm_google.test.sql`, `scripts/smoke-google.cjs`.

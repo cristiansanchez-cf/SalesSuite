@@ -14,7 +14,7 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
-const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, facebook, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, place_rating, place_reviews, place_photo, ai_research_at';
+const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, facebook, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, place_rating, place_reviews, place_photo, place_filled, ai_research_at';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
@@ -24,7 +24,7 @@ const toAccount = (r: Row): Account => ({
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: r.qualification ?? {},
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
-  placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null,
+  placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null, placeFilled: (r.place_filled ?? null) as Record<string, string> | null,
   aiResearchAt: r.ai_research_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;

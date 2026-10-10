@@ -62,9 +62,9 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
                 <span class="co-meta">«{sg.evidence}» · <a class="inline-flex items-center gap-1" href={sg.source} target="_blank" rel="noopener nofollow">{M.source}: {host(sg.source)}<Icon name="external-link" size={12} /></a></span>
                 {canEdit && (
                   <span class="mt-1 flex flex-wrap gap-2">
-                    <form method="post" action="#ai"><input type="hidden" name="action" value="ai-accept" /><input type="hidden" name="sid" value={sg.id} />
+                    <form method="post" action="#ai" data-async="ai qual company-contact acc-people acc-data"><input type="hidden" name="action" value="ai-accept" /><input type="hidden" name="sid" value={sg.id} />
                       <button class="co-btn co-btn--primary co-btn--sm" type="submit" data-testid="ai-accept"><Icon name="check" size={14} />{M.accept}</button></form>
-                    <form method="post" action="#ai"><input type="hidden" name="action" value="ai-dismiss" /><input type="hidden" name="sid" value={sg.id} />
+                    <form method="post" action="#ai" data-async="ai"><input type="hidden" name="action" value="ai-dismiss" /><input type="hidden" name="sid" value={sg.id} />
                       <button class="co-btn co-btn--quiet co-btn--sm" type="submit" data-testid="ai-dismiss"><Icon name="x" size={14} />{M.dismiss}</button></form>
                   </span>
                 )}
@@ -83,7 +83,7 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
   )}
 
   {canEdit && (hasAi ? (
-    <form method="post" action="#ai" data-ai-run>
+    <form method="post" action="#ai" data-async="ai" data-async-busy={M.background}>
       <input type="hidden" name="action" value="ai-run" />
       <button class:list={['co-btn co-btn--sm w-fit', r ? 'co-btn--ghost' : 'co-btn--primary']} type="submit" data-testid="ai-run" data-busy-label={M.running}>
         <Icon name="sparkles" size={14} /><span>{r ? M.rerun : M.run}</span>
@@ -91,14 +91,3 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
     </form>
   ) : !r && <p class="co-help">{M.noKey}</p>)}
 </section>
-
-<script>
-  // Investigar tarda: el botón lo dice y no se puede pulsar dos veces.
-  document.querySelectorAll<HTMLFormElement>('form[data-ai-run]').forEach((f) => f.addEventListener('submit', () => {
-    const b = f.querySelector<HTMLButtonElement>('button');
-    if (!b) return;
-    b.disabled = true;
-    const s = b.querySelector('span');
-    if (s) s.textContent = b.dataset.busyLabel ?? '';
-  }));
-</script>

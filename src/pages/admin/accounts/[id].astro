@@ -64,6 +64,7 @@ if (Astro.request.method === 'POST') {
         to += `?ok=google&g=${g.filled.join('.')}${g.zone ? `&z=${encodeURIComponent(g.zone)}` : ''}#company-contact`;
         break;
       }
+      case 'google-clear': await admin.crm.googleClear(id); to += '?ok=googleCleared#company-contact'; break;
       case 'ai-run': await admin.crm.aiRun(id, await researchContext(admin, (await acc.get(id)).account.segmentId)); to += '?ok=ai#ai'; break;
       case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
       case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
@@ -132,7 +133,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(),
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -149,13 +150,13 @@ const STATE_ALERT = {
 }[a.state];
 ---
 <AdminLayout title={a.name}>
-  <PageHeader eyebrow={a.zonePath || M.noZone} title={a.name} back={{ href: '/admin/accounts', label: M.back }}>
+  <div id="acc-head"><PageHeader eyebrow={a.zonePath || M.noZone} title={a.name} back={{ href: '/admin/accounts', label: M.back }}>
     <AccountState a={a} />
     {(a.state === 'free' || a.state === 'mine' || a.state === 'my_customer') && (
       <form method="post"><input type="hidden" name="action" value="dossier" />
         <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
     )}
-  </PageHeader>
+  </PageHeader></div>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {notMsg && <div class="mb-4"><Alert kind="rejection" title={notMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
@@ -282,7 +283,7 @@ const STATE_ALERT = {
       </section>
 
 
-      <section class="co-card grid gap-4" data-testid="account-people">
+      <section class="co-card grid gap-4" id="acc-people" data-testid="account-people">
         <h2 class="co-entity">{P.group.title}</h2>
         <div class="grid gap-2" data-testid="account-group">
           <p class="text-eyebrow">{P.group.group}</p>
@@ -392,14 +393,20 @@ const STATE_ALERT = {
         )}
         {admin.crm.hasGoogle() && canQualify && (
           <div class="co-inset grid gap-2 !p-3" data-testid="google-box">
-            <p class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={14} />{G.title}</p>
-            <p class="co-help">{G.help}</p>
-            <form method="post" action="#company-contact" class="flex flex-wrap gap-2" data-google-search>
+            <p class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={14} />{G.title}{a.placeId && <span class="co-tag !py-0 text-[11px]" data-testid="google-chosen"><Icon name="check" size={12} />{G.chosen}</span>}</p>
+            <p class="co-help">{a.placeId ? G.redo : G.help}</p>
+            <form method="post" action="#company-contact" class="flex flex-wrap gap-2" data-async="company-contact" data-async-quiet>
               <input type="hidden" name="action" value="google-search" />
               <label class="sr-only" for="google-q">{G.query}</label>
               <input id="google-q" class="co-input min-w-0 flex-1" name="q" value={googleQ} maxlength="200" />
               <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search" data-busy-label={G.searching}><Icon name="search" size={14} /><span>{googleResults ? G.again : G.search}</span></button>
             </form>
+            {a.placeId && (
+              <form method="post" action="#company-contact" data-async="company-contact acc-data acc-head">
+                <input type="hidden" name="action" value="google-clear" />
+                <button class="co-btn co-btn--quiet co-btn--sm w-fit" type="submit" data-testid="google-clear"><Icon name="x" size={14} /><span>{G.clear}</span></button>
+              </form>
+            )}
           </div>
         )}
         {googleResults && (googleResults.length === 0 ? <p class="co-meta" data-testid="google-none">{G.none}</p> : (
@@ -419,8 +426,8 @@ const STATE_ALERT = {
                     {r.phone && <span>{r.phone}</span>}
                   </span>
                   {r.status === 'CLOSED_PERMANENTLY' && <span class="co-tag co-tag--danger w-fit">{G.closed}</span>}
-                  <form method="post" action="#company-contact" class="mt-1" data-google-pick><input type="hidden" name="action" value="google-apply" /><input type="hidden" name="placeId" value={r.placeId} />
-                    <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="google-apply" data-busy-label={G.saving}><Icon name="check" size={14} /><span>{G.pick}</span></button></form>
+                  <form method="post" action="#company-contact" class="mt-1" data-async="company-contact acc-data acc-head"><input type="hidden" name="action" value="google-apply" /><input type="hidden" name="placeId" value={r.placeId} />
+                    <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="google-apply" data-busy-label={G.saving}><Icon name="check" size={14} /><span>{a.placeId && a.placeId !== r.placeId ? G.change : G.pick}</span></button></form>
                 </div>
               </li>
             ))}
@@ -443,7 +450,7 @@ const STATE_ALERT = {
           </form>
         </details>
       </section>
-      <form method="post" class="co-card grid gap-3" data-testid="account-info">
+      <form method="post" class="co-card grid gap-3" id="acc-data" data-testid="account-info">
         <input type="hidden" name="action" value="save" />
         <h2 class="co-entity">{M.data}</h2>
         <fieldset class="grid gap-3" disabled={!canEdit}>
@@ -517,16 +524,6 @@ const STATE_ALERT = {
   </ConfirmDialog>
 </AdminLayout>
 
-<script>
-  // Google tarda un poco (y «Es este» abre su web): el botón lo dice y no se pulsa dos veces.
-  document.querySelectorAll<HTMLFormElement>('form[data-google-search], form[data-google-pick]').forEach((f) => f.addEventListener('submit', () => {
-    const b = f.querySelector<HTMLButtonElement>('button[data-busy-label]');
-    if (!b) return;
-    setTimeout(() => { b.disabled = true; }, 0);
-    const s = b.querySelector('span');
-    if (s) s.textContent = b.dataset.busyLabel ?? '';
-  }));
-</script>
 
 <style>
   .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }

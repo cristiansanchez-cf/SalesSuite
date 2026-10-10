@@ -50,6 +50,29 @@ describe('Google Places', () => {
     expect(club).toMatchObject({ zone_id: vlc.id, email: 'hola@clubsol.es', facebook: 'https://www.facebook.com/clubsol', instagram: 'https://www.instagram.com/a_mano/', place_rating: 4.5, place_reviews: 312, place_photo: 'places/p1/photos/foto1' });
   });
 
+  test('«este no era»: otra ficha cambia lo que puso la anterior; lo corregido a mano se queda; y se puede quitar', async () => {
+    const d = demoDb();
+    const club = d.account.find((a) => a.name === 'Club Sol')!;
+    Object.assign(club, { zone_id: null, phone: null, website: null, email: null, instagram: null });
+    const vlc = d.zone.find((z) => z.tenant_id === ENJOY && z.name === 'Valencia')!;
+    const mad = d.zone.find((z) => z.tenant_id === ENJOY && z.name === 'Madrid')!;
+    const web: WebsiteApi = { async scan(u) { return { instagram: u.includes('bien') ? null : 'https://www.instagram.com/mal/', facebook: null, linkedin: null, email: null }; } };
+    const s = createCrmService(demoCrmDb(REP), demoAccountsDb(REP), demoAdminDb(), { userId: REP, email: 'rep@enjoy.test', displayName: null, tenantId: ENJOY, role: 'rep' } as never,
+      { places: fake([
+        place({ placeId: 'mal', phone: '+34 900 000 001', website: 'https://mal.es', place: { city: 'Valencia', province: 'Valencia', region: null, country: 'España' } }),
+        place({ placeId: 'bien', phone: '+34 900 000 002', website: 'https://bien.es', address: 'Gran Vía 1, Madrid', place: { city: 'Madrid', province: 'Madrid', region: null, country: 'España' } }),
+      ]), website: web });
+    await s.googleApply(club.id, 'mal');
+    expect(club).toMatchObject({ zone_id: vlc.id, phone: '+34 900 000 001', instagram: 'https://www.instagram.com/mal/' });
+    club.address = 'Calle corregida a mano 3';
+    const r = await s.googleApply(club.id, 'bien');
+    expect(club).toMatchObject({ place_id: 'bien', zone_id: mad.id, phone: '+34 900 000 002', website: 'https://bien.es', instagram: null, address: 'Calle corregida a mano 3' });
+    expect(r).toMatchObject({ zone: 'Madrid' });
+    expect(r.filled).toEqual(expect.arrayContaining(['phone', 'website']));
+    await s.googleClear(club.id);
+    expect(club).toMatchObject({ place_id: null, zone_id: null, phone: null, website: null, address: 'Calle corregida a mano 3' });
+  });
+
   test('la ciudad: pueblo, si no provincia…; con dos iguales, la de su provincia; nunca crea zonas', () => {
     const z = (id: string, name: string, parentId: string | null, kind: Zone['kind'] = 'city'): Zone => ({ id, tenantId: ENJOY, parentId, name, kind, position: 0 });
     const zones = [z('es', 'España', null, 'country'), z('cv', 'Comunidad Valenciana', 'es', 'region'), z('v', 'Valencia', 'cv', 'province'), z('a', 'Alicante', 'cv', 'province'),

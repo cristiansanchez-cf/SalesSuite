@@ -8,6 +8,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
+// Acciones en segundo plano (data-async): no cambian de página; se espera a que terminen.
+const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => document.documentElement.dataset.asyncDone || 0)); await click(); await pg.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n, { timeout: 90000 }); };
 
 (async () => {
   const b = await chromium.launch();
@@ -30,8 +32,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.textContent('[data-testid=ai-research]')).includes('«Buscar en Google», en cambio'), 'y en qué se diferencia de la IA');
   assert((await p.inputValue('#google-q')) === 'Sala Brisa', 'busca por su nombre (y se puede cambiar)');
 
-  await Promise.all([p.waitForLoadState('load'), p.click('[data-testid=google-search]')]);
-  await p.waitForSelector('[data-testid=google-result]');
+  const at = p.url();
+  await bg(p, () => p.click('[data-testid=google-search]'));
+  assert(p.url() === at, 'busca sin cambiar de página');
   const first = p.locator('[data-testid=google-result]').first();
   assert((await p.locator('[data-testid=google-result]').count()) === 2, 'resultados de Google');
   assert((await first.locator('a[target=_blank]').first().getAttribute('href')).startsWith('https://maps.google.com/'), 'el nombre abre su ficha de Google');
@@ -39,13 +42,28 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await first.textContent()).includes('★ 4,4') && (await first.textContent()).includes('312 reseñas'), 'valoración y reseñas');
   if (OUT) await p.screenshot({ path: `${OUT}/google-results.png`, fullPage: true });
 
-  await Promise.all([p.waitForURL(/ok=google/), first.locator('[data-testid=google-apply]').click()]);
-  const flash = await p.textContent('main');
+  await bg(p, () => first.locator('[data-testid=google-apply]').click());
+  const flash = await p.textContent('[data-testid=toasts]');
   assert(/Guardado de Google: .*teléfono.*Instagram.*Facebook/.test(flash) && flash.includes('ciudad: Valencia'), 'dice qué ha rellenado y la ciudad');
   const links = await p.$$eval('[data-testid=contact-links] a', (xs) => xs.map((x) => x.getAttribute('href')));
   assert(links.includes('https://www.instagram.com/salabrisa/') && links.includes('https://www.facebook.com/salabrisa') && links.includes('mailto:hola@salabrisa.test'), 'redes y email de su web');
   assert((await p.textContent('[data-testid=google-profile]')).includes('★ 4,4'), 'su valoración en la ficha');
   if (OUT) await p.screenshot({ path: `${OUT}/google-applied.png`, fullPage: true });
+
+  assert((await p.textContent('#acc-head')).includes('Valencia'), 'la cabecera ya dice su ciudad, sin recargar');
+
+  // «Este no era»: elegir otro cambia lo que puso el primero; y se puede quitar.
+  assert(await p.isVisible('[data-testid=google-chosen]'), 'ficha elegida, a la vista');
+  await bg(p, () => p.click('[data-testid=google-search]'));
+  const other = p.locator('[data-testid=google-result]').nth(1);
+  assert((await other.locator('[data-testid=google-apply]').textContent()).includes('Cambiar a este'), 'en las otras: «Cambiar a este»');
+  await bg(p, () => other.locator('[data-testid=google-apply]').click());
+  const links2 = await p.$$eval('[data-testid=contact-links] a', (xs) => xs.map((x) => x.getAttribute('href')));
+  assert(links2.includes('https://www.instagram.com/salabar/') && !links2.includes('https://www.instagram.com/salabrisa/'), 'cambia lo que puso la anterior');
+  await bg(p, () => p.click('[data-testid=google-clear]'));
+  assert(!(await p.isVisible('[data-testid=google-chosen]')) && (await p.textContent('[data-testid=toasts]')).includes('Ficha de Google quitada'), 'quitar la ficha');
+  await bg(p, () => p.click('[data-testid=google-search]'));
+  await bg(p, () => p.locator('[data-testid=google-result]').first().locator('[data-testid=google-apply]').click());
 
   await p.goto(`${BASE}/admin/accounts?ver=all&q=Sala%20Brisa`);
   assert((await p.textContent('[data-testid=account][data-name="Sala Brisa"]')).includes('Valencia'), 'en la lista, ya con su ciudad');

@@ -24,7 +24,7 @@ const toAccount = (r: AccountRow): Account => ({
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: (r.qualification ?? {}) as Account['qualification'],
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
-  placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null,
+  placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null, placeFilled: (r.place_filled ?? null) as Record<string, string> | null,
   aiResearchAt: r.ai_research_at ?? null,
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
@@ -299,6 +299,14 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       const role = a ? roleOf(a.tenant_id, actorId) : null;
       if (!a || !role || role === 'partner') throw new Error('permission denied: Cuenta no encontrada');
       if (!(isManager(a.tenant_id, actorId) || !a.owner_id || a.owner_id === actorId)) throw new Error('permission denied: Solo quien la trabaja o un/a gerente puede editarla');
+      // «Este no era»: fuera lo que puso la ficha anterior, si sigue igual (lo corregido a mano se queda).
+      if (d.replace) {
+        const f = a.place_filled ?? {};
+        for (const k of ['phone', 'website', 'address', 'maps_url', 'email', 'instagram', 'facebook', 'linkedin', 'zone_id'] as const) if (f[k] !== undefined && a[k] === f[k]) a[k] = null;
+        Object.assign(a, { place_id: null, hours: null, lat: null, lng: null, place_status: null, place_rating: null, place_reviews: null, place_photo: null, place_at: null, place_filled: null });
+        if (!d.placeId) return;
+      }
+      const before = { ...a };
       a.phone ||= d.phone; a.website ||= d.website; a.address ||= d.address; a.maps_url ||= d.mapsUrl;
       a.email ||= d.email?.toLowerCase() ?? null; a.instagram ||= d.instagram ?? null; a.facebook ||= d.facebook ?? null; a.linkedin ||= d.linkedin ?? null;
       // La ciudad, solo si es una zona de este espacio.
@@ -307,6 +315,9 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       const reviews = typeof d.reviews === 'number' && d.reviews >= 0 ? Math.round(d.reviews) : a.place_reviews ?? null;
       Object.assign(a, { place_id: d.placeId, hours: d.hours ?? a.hours ?? null, lat: d.lat ?? a.lat ?? null, lng: d.lng ?? a.lng ?? null, place_status: d.status, place_at: iso(),
         place_rating: rating, place_reviews: reviews, place_photo: d.photo ?? a.place_photo ?? null });
+      const filled: Record<string, string> = {};
+      for (const k of ['phone', 'website', 'address', 'maps_url', 'email', 'instagram', 'facebook', 'linkedin', 'zone_id'] as const) if (!before[k] && a[k]) filled[k] = a[k] as string;
+      a.place_filled = { ...(before.place_filled ?? {}), ...filled };
     },
     async saveAiResearch(id, d, fill) {
       const a = db().account.find((x) => x.id === id);
