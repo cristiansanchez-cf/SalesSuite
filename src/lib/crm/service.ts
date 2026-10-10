@@ -102,6 +102,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
+  // Importar y ordenar los datos del CRM: solo admin (docs/CRM_DINAMICO.md §14).
+  const requireImporter = () => { if (!perms.importCrm) throw new AdminError(403, 'Solo un admin importa y ordena los datos del CRM'); };
   const t = s.tenantId;
 
   async function members(): Promise<Map<string, MemberRecord>> { return new Map((await admin.listMembers(t)).map((m) => [m.userId, m])); }
@@ -285,9 +287,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   // ---------------------------------------------------------------- importar
 
-  async function imports() { requireManager(); return db.listImports(t, 20); }
+  async function imports() { requireImporter(); return db.listImports(t, 20); }
   async function importStart(fileName: string, text: string, target: 'account' | 'contact'): Promise<string> {
-    requireManager();
+    requireImporter();
     const { headers, rows } = readCsv(text);
     if (!headers.length || !rows.length) throw new AdminError(422, 'El archivo está vacío');
     if (rows.length >= MAX_ROWS) throw new AdminError(422, 'Máximo 5000 filas por importación');
@@ -298,7 +300,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     } catch (e) { mapError(e); }
   }
   async function loadImport(id: string): Promise<CrmImport> {
-    requireManager();
+    requireImporter();
     const imp = await db.getImport(id);
     if (!imp || imp.tenantId !== t) throw new AdminError(404, 'Importación no encontrada');
     return imp;
@@ -614,7 +616,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * pasa a la empresa. Solo si la empresa no tiene ya uno y el usuario se parece al nombre del local.
    */
   async function instagramToCompanies(apply: boolean) {
-    requireManager();
+    requireImporter();
     const [cs, links, accs] = await Promise.all([db.listContacts(t, { limit: 20000 }), db.listLinks(t, {}), allAccounts()]);
     const byId = new Map(accs.map((a) => [a.id, a]));
     const handle = (u: string) => (/instagram\.com\/([^/?#]+)/i.exec(u)?.[1] ?? u.replace(/^@/, '')).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -759,7 +761,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   /** Lo que hay: textos a clasificar (zonas con empresas), zonas vacías y el último arreglo (para deshacer). */
   async function zonesOverview() {
-    requireManager();
+    requireImporter();
     const [{ zones, counts, empty }, fixes] = await Promise.all([zoneState(), accounts.listFixes(t, 'zones').catch(() => [])]);
     const parents = new Set(zones.map((z) => z.parentId).filter(Boolean));
     const byId = new Map(zones.map((z) => [z.id, z]));
@@ -771,7 +773,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   /** Clasificar con IA un trozo de textos (lo pide el navegador, trozo a trozo). */
   async function zonesClassify(raws: unknown) {
-    requireManager();
+    requireImporter();
     if (!zoneAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const list = Array.isArray(raws) ? raws.filter((x): x is string => typeof x === 'string' && !!x.trim()).map((x) => x.slice(0, 200)).slice(0, ZONES_CHUNK) : [];
     if (!list.length) throw new AdminError(422, 'Datos no válidos');
@@ -779,7 +781,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   /** El plan con lo que dijo la IA (para la vista previa; no toca nada). */
   async function zonesPlan(classes: unknown) {
-    requireManager();
+    requireImporter();
     const { zones, counts } = await zoneState();
     return buildZonePlan(zones, counts, sanitizePlaces({ places: classes }, zones.map((z) => z.name)));
   }
@@ -788,7 +790,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * sus notas y marca «revisar-ciudad» las dudosas y las que no son un sitio. `skip`: zonas que el admin ha desmarcado.
    */
   async function zonesApply(classes: unknown, skip: string[] = []) {
-    requireManager();
+    requireImporter();
     const { zones, accs, counts } = await zoneState();
     const plan = buildZonePlan(zones, counts, sanitizePlaces({ places: classes }, zones.map((z) => z.name)));
     const skipped = new Set(skip);
@@ -829,7 +831,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   /** Deshacer el último arreglo: cada empresa vuelve a su zona, notas y listas; las zonas creadas se borran si quedan vacías. */
   async function zonesUndo(fixId: string) {
-    requireManager();
+    requireImporter();
     const f = (await accounts.listFixes(t, 'zones')).find((x) => x.id === fixId && !x.undoneAt);
     if (!f) throw new AdminError(404, 'Ese arreglo ya no se puede deshacer');
     const moves = f.undo.moves ?? [];
@@ -844,13 +846,13 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   /** El árbol de zonas con sus empresas (para terminar a mano lo que quede). */
   async function zonesTree() {
-    requireManager();
+    requireImporter();
     const { zones, counts } = await zoneState();
     return zoneRows(zones, counts);
   }
   /** La IA revisa el árbol que ya hay y propone arreglos (juntar, renombrar, tipo, mover). No toca nada. */
   async function zonesReview(): Promise<ZoneFix[]> {
-    requireManager();
+    requireImporter();
     if (!zoneFixAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const { zones, counts } = await zoneState();
     const lines = zoneRows(zones, counts).map((r) => `${r.id} | ${r.path} | ${r.kind} | ${r.direct}`);
@@ -863,7 +865,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * juntan) y quien tenía A asignada pasan a B, y A se borra. Mover o renombrar encima de otra igual = juntarlas.
    */
   async function zonesFix(input: unknown): Promise<{ applied: number }> {
-    requireManager();
+    requireImporter();
     let applied = 0;
     const fixes = Array.isArray(input) ? input : [input];
     for (const one of fixes) {
@@ -907,7 +909,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   /** Borrar las ciudades que se han quedado vacías (sin empresas ni nadie asignado). */
   async function zonesCleanup() {
-    requireManager();
+    requireImporter();
     const { empty } = await zoneState();
     const ids = new Set(empty.map((z) => z.id));
     // Basta con borrar las de arriba: lo que cuelga se va con ellas.

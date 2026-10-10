@@ -232,7 +232,7 @@ cubren cada pantalla antes y después del cambio.
   (persona ↔ empresa con `role`), `crm_import` (archivo, mapeo, estado y lo necesario para deshacer). Los campos tienen
   `target` (empresa o persona), `tags` (solo salen en esas listas) e `is_stage` (la etapa: chips en la lista).
 - **RLS**: el equipo ve y añade personas y vínculos; edita quien la lleva, quien la creó o un/a gerente (o si no es de
-  nadie); borrar personas e importar es de admin o gerente; crear campos al importar, solo admin.
+  nadie); borrar personas es de admin o gerente; importar (y crear campos al importar), solo admin.
 - **Importar** (`src/lib/crm/import.ts`, puro): `readCsv` → `profileColumns` (dato de serie, campo existente o nuevo
   con su tipo adivinado) → `suggestMapping` (valores sin emojis y variantes unificadas: «DJ/AV» = «DJ + AV») →
   `buildPlan`. Duplicados exactos fuera; personas por email, LinkedIn o nombre + empresa; empresas por nombre (+ ciudad
@@ -374,7 +374,9 @@ por cada texto (166 distintos). Criterio de Cristian (10-oct-2026):
 - Lo que sobra del texto pasa a las notas de la empresa («Ciudad en el Notion: …»). Lo que no es un sitio: sin
   ciudad, con el texto en la nota y en «revisar-ciudad».
 
-Pantalla **CRM → Empresas → «Ciudades»** (`/admin/import/ciudades`; también desde Importar), solo admin o gerente.
+Pantalla **Configurar → Datos del CRM → «Ciudades»** (`/admin/ciudades`; la dirección antigua redirige). Importar,
+Ciudades y Campos están juntos ahí y **solo los ve y usa el admin** (permiso `importCrm`; ni gerente ni comercial),
+para que nadie más descoloque los datos de todos.
 Arriba, **Pendiente**: cuatro filas, cada una con ✓ si está hecho o con su botón — textos de «Ciudad» sin ordenar
 («Analizar con IA»), empresas en «revisar-ciudad» («Verlas»), empresas sin ciudad («Verlas» → filtro «Sin ciudad»,
 `zona=ninguna`) y ciudades vacías («Borrar»); debajo, el último arreglo con «Deshacer». Abajo, **Tus ciudades ahora**:

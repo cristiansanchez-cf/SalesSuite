@@ -84,6 +84,11 @@ describe('ordenar ciudades en el espacio', () => {
   beforeEach(() => { resetDemoDb(); });
   const svc = (u: string, role: string) => createCrmService(demoCrmDb(u), demoAccountsDb(u), demoAdminDb(), { userId: u, email: 'x@enjoy.test', displayName: null, tenantId: ENJOY, role } as never,
     { places: null, routes: null, research: null, zoneNames: fixtureZoneNames() });
+  test('importar y ordenar ciudades: solo admin (un/a gerente tampoco)', async () => {
+    const lead = svc(REP, 'lead');
+    for (const p of [lead.zonesOverview(), lead.zonesTree(), lead.zonesCleanup(), lead.imports()]) await expect(p).rejects.toMatchObject({ status: 403 });
+    await expect(svc(ADMIN, 'admin').zonesOverview()).resolves.toBeTruthy();
+  });
   const setup = () => {
     const d = demoDb();
     const es = d.zone.find((z) => z.name === 'España')!.id;

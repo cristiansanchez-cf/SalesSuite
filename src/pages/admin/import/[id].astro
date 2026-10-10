@@ -21,7 +21,7 @@ import { crmMessages } from '~/lib/i18n/messages/crm';
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
-if (!perms.manageAccounts) return Astro.rewrite('/admin/forbidden');
+if (!perms.importCrm) return Astro.rewrite('/admin/forbidden');
 const id = Astro.params.id ?? '';
 const { m, locale } = i18n(Astro, peopleMessages);
 const I = m.import;

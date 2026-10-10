@@ -31,6 +31,8 @@ export function can(role: Role) {
     useAccounts: manager || role === 'rep',
     /** Bloquear, asignar y liberar cuentas; asignar zonas al equipo; decidir conflictos de comisión. */
     manageAccounts: manager,
+    /** Importar al CRM y ordenar sus datos (ciudades): solo admin, para que nadie más lo descoloque. */
+    importCrm: admin,
     /** Definir el territorio y las reglas de cuentas. */
     manageZones: admin,
   };

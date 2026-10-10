@@ -33,9 +33,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await moveTo('Discoteca Faro', 'Barcelona creo que no es correcto, que están en Valencia');
   await moveTo('Terraza Azahar', 'Account Executive');
 
-  // ---- Importar → «Ordenar ciudades»
+  // ---- Importar → tarjeta de ciudades (Configurar → Datos del CRM)
   await p.goto(`${BASE}/admin/import`);
-  await Promise.all([p.waitForURL(/\/admin\/import\/ciudades/), p.click('[data-testid=zones-card]')]);
+  await Promise.all([p.waitForURL(/\/admin\/ciudades/), p.click('[data-testid=zones-card]')]);
   const analyze = async () => {
     await p.click('[data-testid=zones-analyze]');
     await p.waitForSelector('[data-testid=zones-preview]', { timeout: 60000 });
@@ -62,13 +62,13 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(review.includes('Discoteca Faro') && review.includes('Terraza Azahar'), `lista «revisar-ciudad» (${review})`);
 
   // ---- deshacer
-  await p.goto(`${BASE}/admin/import/ciudades`);
+  await p.goto(`${BASE}/admin/ciudades`);
   await Promise.all([p.waitForURL(/ok=undone/), p.click('[data-testid=zones-undo]')]);
   await p.goto(`${BASE}/admin/accounts?ver=all&q=Sala%20Marina`);
   assert((await p.textContent('[data-testid=account][data-name="Sala Marina"]')).includes('Requena (Valencia)'), 'deshacer: vuelve a como estaba');
 
   // ---- otra vez, y borrar las vacías
-  await p.goto(`${BASE}/admin/import/ciudades`);
+  await p.goto(`${BASE}/admin/ciudades`);
   await analyze();
   const mad2 = p.locator('[data-testid=zones-group]:has-text("«Madrid»") [data-testid=zones-keep]');
   if (await mad2.count()) await mad2.first().uncheck();
@@ -83,12 +83,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await p.screenshot({ path: `${OUT}/zones-after.png` });
 
   // ---- terminar: revisar con IA lo que ya hay y ajustar a mano (juntar Requena con Valencia)
-  await p.goto(`${BASE}/admin/import/ciudades`);
+  await p.goto(`${BASE}/admin/ciudades`);
   assert(await p.isVisible('[data-testid=zones-tree] [data-testid=zones-node][data-name="Requena"]'), 'el árbol de lo que ya hay');
   await Promise.all([p.waitForLoadState('load'), p.click('[data-testid=zones-review]')]);
   await p.waitForSelector('[data-testid=zones-fixes], [data-testid=zones-fixes-none]');
   assert(true, 'revisar con IA: propuestas o «nada que arreglar»');
-  await p.goto(`${BASE}/admin/import/ciudades`);
+  await p.goto(`${BASE}/admin/ciudades`);
   await p.click('[data-testid=zones-node][data-name="Requena"] [data-testid=zones-adjust]');
   const into = await p.$eval('[data-testid=zone-adjust-merge]', (s) => [...s.options].find((o) => o.textContent.trim() === 'España › Comunidad Valenciana › Valencia')?.value);
   await p.selectOption('[data-testid=zone-adjust-merge]', into);
@@ -99,7 +99,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const meta = await p.textContent('[data-testid=account][data-name="Sala Marina"]');
   assert(meta.includes('Valencia') && !meta.includes('Requena'), 'su empresa, ahora en Valencia');
   // Renombrar a mano.
-  await p.goto(`${BASE}/admin/import/ciudades`);
+  await p.goto(`${BASE}/admin/ciudades`);
   await p.click('[data-testid=zones-node][data-name="Madrid"] [data-testid=zones-adjust]');
   await p.fill('[data-testid=zone-adjust-form] [name=name]', 'Madrid capital');
   await Promise.all([p.waitForURL(/ok=fixed/), p.click('[data-testid=zone-adjust-save]')]);

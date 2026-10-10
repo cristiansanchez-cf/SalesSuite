@@ -135,8 +135,7 @@ const panelOpen = nFilters > 0;
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
-    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{M.import}</a>}
-    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/import/ciudades" data-testid="cities-link"><Icon name="map-pin" size={16} />{M.cities}</a>}
+    {perms.importCrm && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{M.import}</a>}
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="new-account" data-testid="new-account"><Icon name="plus" size={16} />{M.newAccount}</button>
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}

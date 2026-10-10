@@ -16,7 +16,7 @@ import { zonesMessages } from '~/lib/i18n/messages/zones';
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
-if (!perms.manageAccounts) return Astro.rewrite('/admin/forbidden');
+if (!perms.importCrm) return Astro.rewrite('/admin/forbidden');
 const { m, f: fmt } = i18n(Astro, peopleMessages);
 const I = m.import;
 const FX = followupMessages[i18n(Astro, followupMessages).locale].fix;
@@ -66,8 +66,8 @@ const igDone = Astro.url.searchParams.get('ig');
     <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="import-submit"><Icon name="upload" size={16} />{I.upload}</button>
   </form>
 
-  {(zones.raws.length > 0 || zones.empty > 0 || zones.last) && (
-    <a class="co-card mb-6 grid max-w-2xl gap-1 text-inherit !no-underline" href="/admin/import/ciudades" data-testid="zones-card">
+  {zones.raws.length > 0 && (
+    <a class="co-card mb-6 grid max-w-2xl gap-1 text-inherit !no-underline" href="/admin/ciudades" data-testid="zones-card">
       <p class="text-eyebrow">{FX.title}</p>
       <span class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={16} />{ZM.card(zones.raws.length)} <span aria-hidden="true">→</span></span>
       <span class="co-body">{ZM.cardBody}</span>

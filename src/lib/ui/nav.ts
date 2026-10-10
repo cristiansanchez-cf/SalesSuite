@@ -32,10 +32,9 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
     { href: '/admin', label: partner ? L.myAccounts : L.dossiers, icon: (partner ? 'store' : 'file-text') as IconName, testid: 'nav-dossiers', tabs: [
       { href: '/admin', label: partner ? L.myAccounts : L.dossiers, exact: true }, { href: '/admin/dossiers', label: '', show: false }, { href: '/admin/analytics', label: L.analytics, testid: 'tab-analytics' },
     ] },
-    // Cuentas = empresas + personas + importar (docs/CRM_DINAMICO.md fase 2).
+    // CRM = empresas + personas. Importar y ordenar los datos va en Configurar (solo admin).
     ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, testid: 'nav-accounts', tabs: [
       { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/people', label: L.people, testid: 'tab-people' },
-      { href: '/admin/import', label: L.import, show: perms.manageAccounts, testid: 'tab-import' },
     ] }] : []),
     { href: '/admin/learn', label: L.learn, icon: 'graduation-cap', testid: 'nav-learn', tabs: [{ href: '/admin/learn', label: L.learn }, { href: '/admin/wins', label: L.wins, testid: 'tab-wins' }] },
     { href: '/admin/commissions', label: L.myCommissions, icon: 'wallet', testid: 'nav-my-commissions', tabs: [{ href: '/admin/commissions', label: L.myCommissions, exact: true }] },
@@ -52,8 +51,12 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
       { href: '/admin/team', label: L.team, exact: true }, { href: '/admin/team/partners', label: '', show: false },
       { href: '/admin/team/org', label: L.org, testid: 'tab-org' },
       { href: '/admin/territory', label: L.territory, show: perms.manageAccounts, testid: 'tab-territory' },
-      { href: '/admin/team/fields', label: L.crmFields, show: perms.manageTenant, testid: 'tab-fields' },
     ] },
+    // Datos del CRM (solo admin): importar, ordenar las ciudades y los campos de cada empresa o persona.
+    ...(perms.importCrm ? [{ href: '/admin/import', label: L.crmData, icon: 'upload' as IconName, testid: 'nav-crm-data', tabs: [
+      { href: '/admin/import', label: L.import, testid: 'tab-import' }, { href: '/admin/ciudades', label: L.cities, testid: 'tab-cities' },
+      { href: '/admin/team/fields', label: L.crmFields, testid: 'tab-fields' },
+    ] }] : []),
     { href: '/admin/commissions/team', label: L.commissions, icon: 'wallet', tabs: [] },
   ];
   return { sell, setup };
@@ -101,5 +104,8 @@ export function sectionTabs(role: Role, path: string, counts: { superadmin?: boo
   if (!g || /^\/admin\/dossiers\//.test(path) || /^\/admin\/team\/partners\//.test(path)) return [];
   const tabs = g.tabs.filter((t) => t.show !== false && t.label);
   if (tabs.length < 2) return [];
-  return tabs.map((t) => ({ href: t.href, label: t.label, testid: t.testid, on: t.href === '/admin' ? path === '/admin' : under(path, t.href, t.exact) || (t.href === '/admin/learn' && path.startsWith('/admin/learn')) }));
+  const hit = (t: (typeof tabs)[number]) => (t.href === '/admin' ? path === '/admin' : under(path, t.href, t.exact) || (t.href === '/admin/learn' && path.startsWith('/admin/learn')));
+  // Si dos pestañas contienen la ruta, se marca la más concreta.
+  const best = tabs.filter(hit).sort((a, b) => b.href.length - a.href.length)[0];
+  return tabs.map((t) => ({ href: t.href, label: t.label, testid: t.testid, on: t === best }));
 }

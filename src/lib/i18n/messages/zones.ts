@@ -3,7 +3,7 @@ import { defineMessages } from '../core';
 
 export const zonesMessages = defineMessages({
   es: {
-    eyebrow: 'CRM', title: 'Ciudades',
+    eyebrow: 'Datos del CRM', title: 'Ciudades',
     lede: 'Arriba, lo que queda pendiente. Abajo, cómo están tus ciudades ahora mismo.',
     card: (n: number) => (n ? `Ciudades · ${n} textos por ordenar` : 'Ciudades: ver y ajustar'), cardBody: 'Une «SEVILLA» y «Sevilla», saca las notas del campo ciudad y agrupa por comunidad y provincia.',
     todo: {
@@ -37,7 +37,7 @@ export const zonesMessages = defineMessages({
     seeReview: 'Ver las de revisar',
   },
   en: {
-    eyebrow: 'CRM', title: 'Cities',
+    eyebrow: 'CRM data', title: 'Cities',
     lede: 'At the top, what is still pending. Below, how your cities look right now.',
     card: (n: number) => (n ? `Cities · ${n} texts to tidy up` : 'Cities: view and adjust'), cardBody: 'Merges «SEVILLA» and «Sevilla», moves notes out of the city field and groups by region and province.',
     todo: {
@@ -71,7 +71,7 @@ export const zonesMessages = defineMessages({
     seeReview: 'See the ones to review',
   },
   pt: {
-    eyebrow: 'CRM', title: 'Cidades',
+    eyebrow: 'Dados do CRM', title: 'Cidades',
     lede: 'Em cima, o que falta. Embaixo, como estão suas cidades agora.',
     card: (n: number) => (n ? `Cidades · ${n} textos para organizar` : 'Cidades: ver e ajustar'), cardBody: 'Junta «SEVILLA» e «Sevilla», tira as notas do campo cidade e agrupa por região e província.',
     todo: {
@@ -105,7 +105,7 @@ export const zonesMessages = defineMessages({
     seeReview: 'Ver as para revisar',
   },
   ko: {
-    eyebrow: 'CRM', title: '도시',
+    eyebrow: 'CRM 데이터', title: '도시',
     lede: '위에는 남은 일, 아래에는 지금의 도시 상태가 있습니다.',
     card: (n: number) => (n ? `도시 · 정리할 텍스트 ${n}개` : '도시: 보기와 조정'), cardBody: '«SEVILLA»와 «Sevilla»를 합치고, 도시 필드의 메모를 빼내고, 지역과 주로 묶습니다.',
     todo: {

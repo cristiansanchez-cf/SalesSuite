@@ -20,7 +20,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // ---- el admin define un campo de selección múltiple
   const adm = await login('admin@enjoy.test');
-  await adm.goto(`${BASE}/admin/team`);
+  await adm.goto(`${BASE}/admin/import`);  // Configurar → Datos del CRM
   await adm.click('[data-testid=tab-fields]');
   await adm.waitForURL(/\/admin\/team\/fields/);
   assert((await adm.locator('[data-testid=field]').count()) >= 2, 'campos de ejemplo del espacio');

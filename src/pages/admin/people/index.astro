@@ -78,7 +78,7 @@ const newId = q.get('id');
 ---
 <AdminLayout title={P.people.title}>
   <PageHeader eyebrow={P.people.eyebrow} title={P.people.title} lede={P.people.lede}>
-    {perms.manageAccounts && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{P.people.import}</a>}
+    {perms.importCrm && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{P.people.import}</a>}
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="quick-add" data-testid="person-add"><Icon name="user-plus" size={16} />{P.people.add}</button>
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}

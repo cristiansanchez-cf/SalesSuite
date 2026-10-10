@@ -32,6 +32,7 @@ const EXACT: Record<string, T> = {
   'Los pesos deben sumar 100': ['Weights must add up to 100', 'Os pesos devem somar 100', '가중치의 합은 100이어야 합니다'],
   'No hay filas que importar': ['There are no rows to import', 'Não há linhas para importar', '가져올 행이 없습니다'],
   'Solo un admin puede crear campos nuevos': ['Only an admin can create new fields', 'Só um admin pode criar campos novos', '관리자만 새 필드를 만들 수 있습니다'],
+  'Solo un admin importa y ordena los datos del CRM': ['Only an admin imports and tidies up the CRM data', 'Só um admin importa e organiza os dados do CRM', '관리자만 CRM 데이터를 가져오고 정리할 수 있습니다'],
   // ------------------------------------------------------------ no encontrado
   'Sector no encontrado': ['Sector not found', 'Setor não encontrado', '업종을 찾을 수 없습니다'],
   'Tema no encontrado': ['Topic not found', 'Tema não encontrado', '주제를 찾을 수 없습니다'],
