@@ -6,6 +6,9 @@ import Alert from '~/components/ui/Alert.astro';
 import { i18n, LOCALES, LOCALE_NAME, isLocale, LOCALE_COOKIE } from '~/lib/i18n';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { TIMEZONES } from '~/lib/notify/service';
+import { builderMessages } from '~/lib/i18n/messages/builder';
+import { CONTACT_CHANNELS, CHANNEL_NAME, type ContactChannel } from '~/lib/contact';
+import { contactError, readContact, saveContact } from '~/lib/admin/rep-contact';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -26,6 +29,7 @@ let phone = await readPhone();
 
 const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null;
 let notifyOk = false;
+let contactMsg: { ok?: string; error?: string } = {};
 let localeOk = false;
 if (form?.get('action') === 'locale') {
   const l = String(form.get('locale') ?? '');
@@ -36,6 +40,14 @@ if (form?.get('action') === 'locale') {
     ({ m, locale } = i18n(Astro, shellMessages));
     localeOk = true;
   }
+} else if (form?.get('action') === 'contact') {
+  // Contacto en sus propuestas (docs/PERSONALIZE.md §Contacto del comercial): el mismo que en el editor.
+  const ch = String(form.get('channel') ?? '') as ContactChannel;
+  const v = String(form.get('value') ?? '');
+  const bad = (CONTACT_CHANNELS as readonly string[]).includes(ch) ? contactError(ch, v) : null;
+  const CM = builderMessages[locale].page.contact;
+  if (bad) contactMsg = { error: bad === 'phone' ? CM.errPhone : CM.errEmail };
+  else { await saveContact(admin, ch, v); contactMsg = { ok: CM.saved }; }
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
   await admin.notifications.setDailyPref({ daily: form.get('daily') === 'on', timezone: String(form.get('timezone') ?? '') });
@@ -63,6 +75,9 @@ if (form?.get('action') === 'locale') {
     ok = password ? m.account.savedDemo : m.account.saved;
   }
 }
+const C = builderMessages[locale].page.contact;
+const contact = await readContact(admin, admin.session.userId).catch(() => ({ channel: null, value: '', name: '' }));
+const channelName = (c: ContactChannel) => (c === 'phone' ? C.phone : c === 'email' ? C.email : CHANNEL_NAME[c]);
 const emailOn = await admin.notifications.emailPref();
 const dailyPref = await admin.notifications.dailyPref();
 const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
@@ -85,6 +100,22 @@ const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
     </>}
     <button class="co-btn co-btn--primary w-fit" type="submit">{m.account.save}</button>
   </form>
+  {!setup && (
+    <form method="post" id="contacto" class="co-card mt-6 grid max-w-lg gap-4" data-testid="account-contact">
+      <input type="hidden" name="action" value="contact" />
+      <h2 class="co-entity">{C.account}</h2>
+      {contactMsg.ok && <Alert kind="success" title={contactMsg.ok} />}
+      {contactMsg.error && <Alert kind="rejection" title={contactMsg.error} />}
+      <label class="co-field">{C.channel}
+        <select class="co-select" name="channel">
+          <option value="">{C.noChannel}</option>
+          {CONTACT_CHANNELS.map((c) => <option value={c} selected={contact.channel === c}>{channelName(c)}</option>)}
+        </select></label>
+      <label class="co-field">{C.value}<input class="co-input" name="value" maxlength="200" value={contact.value} placeholder={contact.channel ? C.ph[contact.channel] : ''} /></label>
+      <p class="co-help">{!contact.channel ? C.none : !contact.value.trim() ? C.pending : C.help}</p>
+      <button class="co-btn co-btn--ghost w-fit" type="submit">{C.save}</button>
+    </form>
+  )}
   {!setup && (
     <form method="post" id="avisos" class="co-card mt-6 grid max-w-lg gap-4" data-testid="notify-pref">
       <input type="hidden" name="action" value="notify" />

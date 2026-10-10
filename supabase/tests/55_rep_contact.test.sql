@@ -46,3 +46,23 @@ reset role;
 select pg_temp.assert((select contact_value from public.users where id = current_setting('test.author')::uuid) = 'diver_kim', 'solo uno mismo cambia su contacto');
 
 update public.users set contact_channel = null, contact_value = null where id = current_setting('test.author')::uuid;
+
+-- Un admin del espacio pone el contacto de alguien de su equipo; un comercial no puede, ni un admin de otro espacio.
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', false);
+select public.set_member_contact('00000000-0000-4000-8000-000000000e01', current_setting('test.author')::uuid, 'kakao', ' open_kim ');
+reset role;
+select pg_temp.assert((select contact_channel = 'kakao' and contact_value = 'open_kim' from public.users where id = current_setting('test.author')::uuid), 'admin: pone el contacto de su comercial');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '66666666-6666-4666-8666-666666666666', false);
+do $$ begin
+  perform public.set_member_contact('00000000-0000-4000-8000-000000000e01', current_setting('test.author')::uuid, 'phone', '600000000');
+  raise exception 'ASSERT FAILED: un comercial pone el contacto de otro';
+exception when insufficient_privilege then null; end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', false);
+do $$ begin
+  perform public.set_member_contact('00000000-0000-4000-8000-000000000e01', '33333333-3333-4333-8333-333333333333', 'phone', '600000000');
+  raise exception 'ASSERT FAILED: admin pone el contacto de alguien de otro espacio';
+exception when insufficient_privilege then null; end $$;
+reset role;
+update public.users set contact_channel = null, contact_value = null where id = current_setting('test.author')::uuid;
