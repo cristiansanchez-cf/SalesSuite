@@ -10,7 +10,7 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
@@ -50,8 +50,8 @@ jobs:
           missing=""
           if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ "$WHAT" != "traducir" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
           if [ "$WHAT" = "traducir" ] && [ "$DRY" != "true" ] && [ -z "$ANTHROPIC" ]; then missing="$missing ANTHROPIC_API_KEY"; fi
-          if [ "$WHAT" != "migraciones" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
-          if [ "$WHAT" != "migraciones" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
           # Región de la base de datos (para elegir la misma en Vercel: docs/PUESTA_EN_MARCHA.md §Velocidad). Solo el host, nunca la URL.
           host=$(printf '%s' "$DB" | sed -E 's#^[a-z]+://([^@]*@)?([^:/?]+).*#\2#')
@@ -79,14 +79,25 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
 
+      # Informe del CRM (solo lectura: transacción de solo lectura; solo nombres de ciudad y números).
+      - name: Informe del CRM
+        if: ${{ inputs.what == 'informe-crm' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TENANT: ${{ inputs.tenant }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          PGOPTIONS='-c default_transaction_read_only=on' psql "$SUPABASE_DB_URL" -v slug="$TENANT" -f scripts/crm-report.sql
+
       - uses: actions/setup-node@v5
-        if: ${{ inputs.what != 'migraciones' }}
+        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' }}
         with:
           node-version: 22
           cache: npm
 
       - name: Instalar dependencias
-        if: ${{ inputs.what != 'migraciones' }}
+        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' }}
         run: npm ci
 
       - name: Alta del espacio
