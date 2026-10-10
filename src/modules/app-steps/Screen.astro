@@ -208,7 +208,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
                 </Fragment>
               ) : (
                 <Fragment>
-                  <span class="as-stk__tile" set:html={FISH} />
+                  {s.species ? <span class="as-stk__tile"><img src={s.species} alt="" /></span> : <span class="as-stk__tile" set:html={FISH} />}
                   <span class="as-stk__pill">{L.seenIn}</span>
                   <p class="as-stk__title">{L.whaleShark}</p>
                   <p class="as-stk__sub">{L.diveNo47(s.site)}</p>
@@ -528,6 +528,7 @@ const bg = photo ? `background-image:url('${photo.replace(/'/g, '%27')}')` : '';
   .as-stk__pill { padding: 6px 14px; border-radius: 99px; background: var(--ap-acc); color: #1f294c; font-size: 12px; font-weight: 700; text-shadow: none; }
   .as-stk__tile { display: grid; place-items: center; width: 116px; height: 96px; border-radius: 20px; background: linear-gradient(180deg, #3a5a7c, #1c3350); box-shadow: 0 10px 28px rgb(0 0 0 / .35); }
   .as-stk__tile :global(svg) { width: 92px; }
+  .as-stk__tile img { width: 104px; height: auto; filter: drop-shadow(0 4px 8px rgb(0 0 0 / .3)); }
   .as-stk__brand { height: 18px; width: auto; margin-top: 2px; }
   .as-stk__brand--txt { height: auto; font-size: 17px; font-weight: 800; letter-spacing: -.03em; }
   /* Cada tarjeta, con sus datos donde van en las que exporta la app (entrega de Cristian, 10-oct-2026): la inmersión a
