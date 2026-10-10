@@ -258,10 +258,10 @@ const Z = {
 const DEMO_ZONES: ZoneRow[] = [
   { id: Z.es, tenant_id: ENJOY, parent_id: null, name: 'España', kind: 'country', position: 0 },
   { id: Z.cv, tenant_id: ENJOY, parent_id: Z.es, name: 'Comunidad Valenciana', kind: 'region', position: 0 },
-  { id: Z.vlc, tenant_id: ENJOY, parent_id: Z.cv, name: 'Valencia', kind: 'city', position: 0 },
-  { id: Z.cs, tenant_id: ENJOY, parent_id: Z.cv, name: 'Castellón', kind: 'city', position: 1 },
+  { id: Z.vlc, tenant_id: ENJOY, parent_id: Z.cv, name: 'Valencia', kind: 'province', position: 0 },
+  { id: Z.cs, tenant_id: ENJOY, parent_id: Z.cv, name: 'Castellón', kind: 'province', position: 1 },
   { id: Z.cat, tenant_id: ENJOY, parent_id: Z.es, name: 'Cataluña', kind: 'region', position: 1 },
-  { id: Z.bcn, tenant_id: ENJOY, parent_id: Z.cat, name: 'Barcelona', kind: 'city', position: 0 },
+  { id: Z.bcn, tenant_id: ENJOY, parent_id: Z.cat, name: 'Barcelona', kind: 'province', position: 0 },
   { id: Z.mad, tenant_id: ENJOY, parent_id: Z.es, name: 'Madrid', kind: 'city', position: 2 },
 ];
 const DEMO_WEEK = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];

@@ -7,6 +7,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
+// Elegir en el filtro de lugar (cada cambio aplica y recarga la página).
+const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all([pg.waitForURL((u) => u.toString() !== at), pg.selectOption(sel, { label })]); await pg.waitForLoadState('load'); };
 
 (async () => {
   const b = await chromium.launch();
@@ -77,9 +79,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForURL(/ok=cleaned/), p.click('[data-testid=zones-cleanup-dialog-confirm]')]);
   assert(/\d+ ciudades vacías borradas/.test(await p.textContent('main')), 'vacías borradas');
   await p.goto(`${BASE}/admin/accounts?ver=all`);
-  const opts = await p.$$eval('[data-testid=filter-zone] option', (xs) => xs.map((x) => x.textContent.trim()));
-  assert(!opts.some((o) => /28039|Account Executive|creo que/.test(o)), 'el desplegable de ciudad, limpio');
-  assert(opts.some((o) => o.endsWith('Valencia › Requena')), 'con la nueva');
+  const tops = await p.$$eval('[data-testid=filter-place-country] option', (xs) => xs.map((x) => x.textContent.trim()));
+  assert(!tops.some((o) => /28039|Account Executive|creo que|Requena/.test(o)), 'el filtro de lugar, limpio');
+  await place(p, '[data-testid=filter-place-country]', 'España');
+  await place(p, '[data-testid=filter-place-region]', 'Comunidad Valenciana');
+  const provs = await p.$$eval('[data-testid=filter-place-province] option', (xs) => xs.map((x) => x.textContent.trim()));
+  assert(provs.includes('Valencia') && !provs.includes('Requena'), 'provincias, sin pueblos');
   if (OUT) await p.screenshot({ path: `${OUT}/zones-after.png` });
 
   // ---- terminar: revisar con IA lo que ya hay y ajustar a mano (juntar Requena con Valencia)

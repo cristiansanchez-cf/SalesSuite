@@ -10,6 +10,7 @@ import EmptyState from '~/components/ui/EmptyState.astro';
 import Icon from '~/components/ui/Icon.astro';
 import AccountState from '~/components/accounts/AccountState.astro';
 import ViewToggle from '~/components/crm/ViewToggle.astro';
+import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { zonePath } from '~/lib/accounts/rules';
@@ -166,12 +167,7 @@ const panelOpen = nFilters > 0;
     <div class="flex flex-wrap items-center gap-2">
       <label class="sr-only" for="acc-q">{M.search}</label>
       <input id="acc-q" class="co-input min-w-[12rem] flex-[2]" type="search" name="q" value={search} placeholder={M.search} />
-      <label class="sr-only" for="acc-zone">{M.zoneFilter}</label>
-      <select id="acc-zone" class="co-select min-w-[11rem] flex-1" name="zona" data-testid="filter-zone">
-        <option value="">{M.anyZone}</option>
-        <option value={NO_ZONE} selected={zona === NO_ZONE}>{M.noCity}</option>
-        {zoneOptions.map((z) => <option value={z.id} selected={zona === z.id}>{z.label}</option>)}
-      </select>
+      <PlaceFilter zones={t.zones} value={zona} />
       <label class="sr-only" for="acc-scope">{M.scope}</label>
       <select id="acc-scope" class="co-select w-auto" name="ver" data-testid="filter-scope">
         {t.myZoneIds.length > 0 && <option value="zone" selected={effective === 'zone'}>{M.myZone}</option>}

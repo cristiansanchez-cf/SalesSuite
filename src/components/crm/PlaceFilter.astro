@@ -1,0 +1,70 @@
+---
+/**
+ * Filtro de lugar en cascada (docs/CRM_DINAMICO.md §16): País → Comunidad → Provincia (sin pueblos). Cada desplegable
+ * enseña solo lo que hay dentro del anterior; el más concreto elegido va al campo `zona` (con todo lo de dentro).
+ * Fuera de España, si un país solo tiene ciudades, se filtra por el país. Va dentro de un formulario GET.
+ */
+import type { Zone } from '~/lib/accounts/types';
+import { NO_ZONE } from '~/lib/accounts/service';
+import { i18n } from '~/lib/i18n';
+import { mapMessages } from '~/lib/i18n/messages/map';
+
+interface Props { zones: Zone[]; value: string; testid?: string }
+const { zones, value, testid = 'filter-place' } = Astro.props;
+const { m, locale } = i18n(Astro, mapMessages);
+const P = m.place;
+const byId = new Map(zones.map((z) => [z.id, z]));
+const sort = (xs: Zone[]) => [...xs].sort((a, b) => a.name.localeCompare(b.name, locale));
+// Lo que sale en cada nivel: arriba del todo; luego lo que no es una ciudad suelta (comunidades, provincias…).
+const tops = sort(zones.filter((z) => !z.parentId));
+const kids = (id: string) => sort(zones.filter((z) => z.parentId === id && z.kind !== 'city'));
+// Lo elegido ahora: la cadena desde arriba hasta la zona del filtro.
+const chain: Zone[] = [];
+for (let z = value && value !== NO_ZONE ? byId.get(value) : undefined, i = 0; z && i < 10; z = z.parentId ? byId.get(z.parentId) : undefined, i++) chain.unshift(z);
+const [c1, c2, c3] = [chain[0]?.id ?? '', chain[1] && chain[1].kind !== 'city' ? chain[1].id : '', chain[2] && chain[2].kind !== 'city' ? chain[2].id : ''];
+const l2 = c1 ? kids(c1) : [];
+const l3 = c2 ? kids(c2) : [];
+const tree = zones.filter((z) => z.kind !== 'city' || !z.parentId).map((z) => ({ id: z.id, p: z.parentId, n: z.name, k: z.kind }));
+---
+<div class="flex min-w-[11rem] flex-[2] flex-wrap gap-2" data-place-filter data-testid={testid}>
+  <input type="hidden" name="zona" value={value} data-place-value />
+  <label class="sr-only" for={`${testid}-1`}>{P.country}</label>
+  <select id={`${testid}-1`} class="co-select min-w-[9rem] flex-1" data-level="1" data-testid={`${testid}-country`}>
+    <option value="">{P.anyCountry}</option>
+    <option value={NO_ZONE} selected={value === NO_ZONE}>{P.noCity}</option>
+    {tops.map((z) => <option value={z.id} selected={c1 === z.id}>{z.name}</option>)}
+  </select>
+  <label class="sr-only" for={`${testid}-2`}>{P.region}</label>
+  <select id={`${testid}-2`} class="co-select min-w-[9rem] flex-1" data-level="2" data-testid={`${testid}-region`} hidden={!l2.length}>
+    <option value="">{P.anyRegion}</option>
+    {l2.map((z) => <option value={z.id} selected={c2 === z.id}>{z.name}</option>)}
+  </select>
+  <label class="sr-only" for={`${testid}-3`}>{P.province}</label>
+  <select id={`${testid}-3`} class="co-select min-w-[9rem] flex-1" data-level="3" data-testid={`${testid}-province`} hidden={!l3.length}>
+    <option value="">{P.anyProvince}</option>
+    {l3.map((z) => <option value={z.id} selected={c3 === z.id}>{z.name}</option>)}
+  </select>
+  <script type="application/json" data-place-tree set:html={JSON.stringify({ tree, any: [P.anyRegion, P.anyProvince], locale }).replace(/</g, '\\u003c')} />
+</div>
+
+<script>
+  // Al elegir un nivel: el siguiente enseña lo que hay dentro (o se esconde si no hay nada) y el filtro pasa a ser el más
+  // concreto elegido. Va antes que el «aplicar al cambiar» del formulario (este escucha en el propio desplegable).
+  document.querySelectorAll<HTMLElement>('[data-place-filter]').forEach((box) => {
+    const data = JSON.parse(box.querySelector('[data-place-tree]')?.textContent ?? '{}') as { tree: Array<{ id: string; p: string | null; n: string; k: string }>; any: string[]; locale: string };
+    const sel = (n: number) => box.querySelector<HTMLSelectElement>(`select[data-level="${n}"]`)!;
+    const out = box.querySelector<HTMLInputElement>('[data-place-value]')!;
+    const fill = (n: number, parent: string) => {
+      const s = sel(n);
+      const xs = parent ? data.tree.filter((z) => z.p === parent && z.k !== 'city').sort((a, b) => a.n.localeCompare(b.n, data.locale)) : [];
+      s.replaceChildren(new Option(data.any[n - 2], ''), ...xs.map((z) => new Option(z.n, z.id)));
+      s.hidden = !xs.length;
+    };
+    const update = (n: number) => {
+      if (n === 1) { fill(2, sel(1).value === 'ninguna' ? '' : sel(1).value); fill(3, ''); }
+      if (n === 2) fill(3, sel(2).value);
+      out.value = sel(3).value || sel(2).value || sel(1).value;
+    };
+    [1, 2, 3].forEach((n) => sel(n).addEventListener('change', () => update(n)));
+  });
+</script>

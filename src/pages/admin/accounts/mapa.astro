@@ -9,8 +9,8 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Icon from '~/components/ui/Icon.astro';
 import ViewToggle from '~/components/crm/ViewToggle.astro';
+import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
-import { zonePath } from '~/lib/accounts/rules';
 import { NO_ZONE } from '~/lib/accounts/service';
 import type { AccountState as State } from '~/lib/accounts/types';
 import { env } from '~/lib/env';
@@ -55,7 +55,6 @@ const reps = [...new Set(data.points.map((p) => p.rep).filter((x): x is string =
 const repColor = Object.fromEntries(reps.map((r, i) => [r, REP_COLORS[i % REP_COLORS.length]]));
 
 const toLocate = perms.importCrm ? t.zones.filter((z) => z.lat == null || z.lng == null).length : 0;
-const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, A.list.states[k]]);
 // En el resumen de un punto, el estado en singular («Libre», «Tuya»…).
 const stateLabel: Record<State, string> = { free: A.state.free, mine: A.state.mine, taken: A.state.taken, my_customer: A.state.myCustomer, customer: A.state.customer, blocked: A.state.blocked };
@@ -76,8 +75,7 @@ const payload = {
   <PageHeader eyebrow={M.eyebrow} title={A.list.title} lede={M.lede}><ViewToggle current="map" /></PageHeader>
 
   <form method="get" class="co-card mb-3 flex flex-wrap items-end gap-3 !p-4" data-testid="map-toolbar" data-map-filters role="search">
-    <label class="co-field min-w-[11rem] flex-1">{A.list.zoneFilter}
-      <select class="co-select" name="zona" data-testid="map-zone"><option value="">{A.list.anyZone}</option>{zoneOptions.map((z) => <option value={z.id} selected={zona === z.id}>{z.label}</option>)}</select></label>
+    <div class="co-field min-w-[11rem] flex-[2]"><span>{A.list.zoneFilter}</span><PlaceFilter zones={t.zones} value={zona} testid="map-place" /></div>
     <label class="co-field">{A.list.state}
       <select class="co-select" name="estado" data-testid="map-state">{STATES.map(([k, l]) => <option value={k} selected={stateF === k}>{l}</option>)}</select></label>
     <label class="co-field">{M.temp}

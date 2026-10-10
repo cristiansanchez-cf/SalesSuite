@@ -7,6 +7,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
+// Elegir en el filtro de lugar (cada cambio aplica y recarga la página).
+const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all([pg.waitForURL((u) => u.toString() !== at), pg.selectOption(sel, { label })]); await pg.waitForLoadState('load'); };
 
 (async () => {
   const b = await chromium.launch();
@@ -66,10 +68,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(!(await rep.url()).includes('estado=') && !(await rep.url()).includes('zona='), 'la URL solo lleva lo aplicado');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-list.png`, fullPage: true });
 
-  // ---- ciudad: un desplegable en la barra (con sus ciudades dentro si es una región)
+  // ---- lugar: País → Comunidad → Provincia (cada uno con lo de dentro)
   await rep.goto(`${BASE}/admin/accounts?ver=all`);
-  const vlc = await rep.$eval('[data-testid=filter-zone]', (sel) => [...sel.options].find((o) => /› Valencia$/.test(o.textContent.trim()))?.value);
-  await Promise.all([rep.waitForURL(/zona=/), rep.selectOption('[data-testid=filter-zone]', vlc)]);
+  assert(await rep.isHidden('[data-testid=filter-place-region]'), 'sin país, no hay comunidad que elegir');
+  await place(rep, '[data-testid=filter-place-country]', 'España');
+  await place(rep, '[data-testid=filter-place-region]', 'Comunidad Valenciana');
+  const provs = await rep.$$eval('[data-testid=filter-place-province] option', (xs) => xs.map((x) => x.textContent.trim()));
+  assert(provs.includes('Valencia') && provs.includes('Castellón') && !provs.includes('Barcelona'), `provincias de su comunidad (${provs})`);
+  await place(rep, '[data-testid=filter-place-province]', 'Valencia');
   const inVlc = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => e.getAttribute('data-name')));
   assert(inVlc.length > 0 && inVlc.every((n) => ['Club Sol', 'Sala Marina'].includes(n)), `ciudad Valencia: solo las de Valencia (${inVlc})`);
   assert((await rep.textContent('[data-testid=acc-active]')).includes('Valencia'), 'Valencia, a la vista como chip');
