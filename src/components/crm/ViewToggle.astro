@@ -1,0 +1,16 @@
+---
+/** Empresas: ver en lista o en el mapa (docs/CRM_DINAMICO.md §16). Pasa de una a otra con los mismos filtros. */
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { mapMessages } from '~/lib/i18n/messages/map';
+
+interface Props { current: 'list' | 'map' }
+const { current } = Astro.props;
+const { m } = i18n(Astro, mapMessages);
+const keep = new URLSearchParams([...Astro.url.searchParams].filter(([k]) => ['zona', 'estado', 'ver'].includes(k)));
+const qs = keep.toString() ? `?${keep}` : '';
+---
+<nav class="co-segmented w-fit min-w-[12rem] !px-1" aria-label={m.view.label} data-testid="view-toggle">
+  <a href={`/admin/accounts${qs}`} class="!px-4" aria-current={current === 'list' ? 'page' : undefined} data-testid="view-list"><Icon name="list-checks" size={14} />{m.view.list}</a>
+  <a href={`/admin/accounts/mapa${qs}`} class="!px-4" aria-current={current === 'map' ? 'page' : undefined} data-testid="view-map"><Icon name="map" size={14} />{m.view.map}</a>
+</nav>

@@ -1,0 +1,235 @@
+---
+/**
+ * Empresas en el mapa (docs/CRM_DINAMICO.md §16): la otra forma de ver la lista («Lista | Mapa»), con sus filtros.
+ * Cada empresa es un punto con el icono de su tipo (local, promotora, conciertos): en su sitio exacto (ficha de Google)
+ * o, si no tiene, en el centro de su ciudad (aproximada). Los grupos con número se abren acercándose hasta separarse.
+ * Color por estado o, para admin y gerentes, por el comercial que lleva la zona. Toca un punto: resumen y «Abrir ficha».
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ViewToggle from '~/components/crm/ViewToggle.astro';
+import { can } from '~/lib/admin/permissions';
+import { zonePath } from '~/lib/accounts/rules';
+import { NO_ZONE } from '~/lib/accounts/service';
+import type { AccountState as State } from '~/lib/accounts/types';
+import { env } from '~/lib/env';
+import { i18n } from '~/lib/i18n';
+import { mapMessages } from '~/lib/i18n/messages/map';
+import { accountsMessages } from '~/lib/i18n/messages/accounts';
+import { priorityOf } from '~/lib/crm/priority';
+import { iconSvg } from '~/lib/ui/icons';
+import { buildMap, matchesTemp, temperature, zoneOwners, KIND_ICON, REP_COLORS, STATE_COLOR, type TempFilter } from '~/lib/crm/map';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+const acc = admin.accounts;
+const { m: M, locale } = i18n(Astro, mapMessages);
+const A = accountsMessages[locale];
+
+const q = Astro.url.searchParams;
+const scope = (['zone', 'mine', 'all'].includes(q.get('ver') ?? '') ? q.get('ver') : 'zone') as 'zone' | 'mine' | 'all';
+const stateF = (q.get('estado') ?? 'all') as State | 'all';
+const zona = q.get('zona') ?? '';
+const tempF = (['caliente', 'frio', 'sin'].includes(q.get('temp') ?? '') ? q.get('temp') : '') as TempFilter;
+const byRep = perms.manageAccounts && q.get('color') === 'comercial';
+
+const [{ items, scope: effective }, t, segments, weights, members] = await Promise.all([
+  acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined }), acc.territory(), admin.playbook.market(), admin.crm.weights(),
+  perms.manageAccounts ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
+]);
+const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
+const prioOf = (a: (typeof items)[number]) => priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights);
+const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
+const cooling = await admin.crm.cooling(byState.map((a) => a.id));
+const shown = byState.filter((a) => matchesTemp(temperature(prioOf(a), cooling.get(a.id)), tempF));
+
+// Quién lleva cada zona (para colorear por comercial): la asignación más cercana subiendo por sus zonas.
+const names = new Map(members.map((x) => [x.userId, x.displayName || x.email]));
+const owners = zoneOwners(t.zones, t.assignments);
+const repOf = (zoneId: string | null) => { const u = owners(zoneId)[0]; return u ? names.get(u) ?? null : null; };
+const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf });
+const reps = [...new Set(data.points.map((p) => p.rep).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, locale));
+const repColor = Object.fromEntries(reps.map((r, i) => [r, REP_COLORS[i % REP_COLORS.length]]));
+
+const toLocate = perms.importCrm ? t.zones.filter((z) => z.lat == null || z.lng == null).length : 0;
+const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
+const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, A.list.states[k]]);
+// En el resumen de un punto, el estado en singular («Libre», «Tuya»…).
+const stateLabel: Record<State, string> = { free: A.state.free, mine: A.state.mine, taken: A.state.taken, my_customer: A.state.myCustomer, customer: A.state.customer, blocked: A.state.blocked };
+// Iconos de cada tipo (los del set de la consola), en blanco dentro del punto.
+const kindSvg = { venue: iconSvg(KIND_ICON.venue, 14), promoter: iconSvg(KIND_ICON.promoter, 14), concert: iconSvg(KIND_ICON.concert, 14), none: iconSvg('store', 14) };
+// Fondo del mapa: MapTiler si hay clave (más bonito); si no, OpenStreetMap (sin clave).
+const maptiler = env('MAPTILER_KEY');
+const tiles = maptiler
+  ? { url: `https://api.maptiler.com/maps/dataviz/256/{z}/{x}/{y}.png?key=${encodeURIComponent(maptiler)}`, attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }
+  : { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' };
+const payload = {
+  points: data.points, byRep, repColor, stateColor: STATE_COLOR, kindSvg, tiles,
+  T: { stateLabel, kinds: M.kinds, open: M.open, score: M.score(Number.NaN).replace('NaN', '{n}'), cooling: M.cooling(Number.NaN).replace('NaN', '{n}'), next: M.next,
+    rep: M.rep, noRep: M.noRep, owner: M.owner, reviews: M.reviews, approx: M.approx },
+};
+---
+<AdminLayout title={`${A.list.title} · ${M.title}`}>
+  <PageHeader eyebrow={M.eyebrow} title={A.list.title} lede={M.lede}><ViewToggle current="map" /></PageHeader>
+
+  <form method="get" class="co-card mb-3 flex flex-wrap items-end gap-3 !p-4" data-testid="map-toolbar" data-map-filters role="search">
+    <label class="co-field min-w-[11rem] flex-1">{A.list.zoneFilter}
+      <select class="co-select" name="zona" data-testid="map-zone"><option value="">{A.list.anyZone}</option>{zoneOptions.map((z) => <option value={z.id} selected={zona === z.id}>{z.label}</option>)}</select></label>
+    <label class="co-field">{A.list.state}
+      <select class="co-select" name="estado" data-testid="map-state">{STATES.map(([k, l]) => <option value={k} selected={stateF === k}>{l}</option>)}</select></label>
+    <label class="co-field">{M.temp}
+      <select class="co-select" name="temp" data-testid="map-temp"><option value="">{M.anyTemp}</option><option value="caliente" selected={tempF === 'caliente'}>{M.hot}</option>
+        <option value="frio" selected={tempF === 'frio'}>{M.cold}</option><option value="sin" selected={tempF === 'sin'}>{M.unqualified}</option></select></label>
+    <label class="co-field">{A.list.scope}
+      <select class="co-select" name="ver" data-testid="map-scope">
+        {t.myZoneIds.length > 0 && <option value="zone" selected={effective === 'zone'}>{A.list.myZone}</option>}
+        <option value="all" selected={effective === 'all'}>{A.list.scopeAll}</option>
+        <option value="mine" selected={effective === 'mine'}>{A.list.scopeMine}</option>
+      </select></label>
+    {perms.manageAccounts && (
+      <label class="co-field">{M.color}
+        <select class="co-select" name="color" data-testid="map-color"><option value="">{M.byState}</option><option value="comercial" selected={byRep}>{M.byRep}</option></select></label>
+    )}
+  </form>
+
+  <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+    <p class="co-meta" data-testid="map-summary">{M.summary(data.exact, data.approx)}
+      {data.unlocated > 0 && <> · {M.unlocated(data.unlocated)}</>}
+      {data.noCity > 0 && <> · <a class="underline" href={`/admin/accounts?ver=all&zona=${NO_ZONE}`}>{M.noCity(data.noCity)}</a></>}</p>
+    {toLocate > 0 && (admin.crm.hasGoogle()
+      ? <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-locate data-testid="map-locate"><Icon name="map-pin" size={14} /><span>{M.locate(toLocate)}</span></button>
+      : <span class="co-help">{M.noKeyLocate}</span>)}
+  </div>
+
+  <div class="co-card co-card--flush overflow-hidden">
+    <div id="crm-map" class="crm-map" data-testid="map" data-points={data.points.length} role="region" aria-label={M.title}></div>
+  </div>
+  {data.points.length === 0 && <p class="co-meta mt-3" data-testid="map-empty">{M.none}</p>}
+
+  <details class="mt-3" data-testid="map-legend" open>
+    <summary class="co-meta cursor-pointer">{M.legend}</summary>
+    <div class="mt-2 grid gap-2">
+      <ul class="m-0 flex flex-wrap gap-x-4 gap-y-1 p-0 text-sm">
+        {byRep
+          ? <>{reps.map((r) => <li class="flex list-none items-center gap-1.5"><span class="map-dot" style={`background:${repColor[r]}`}></span>{r}</li>)}<li class="flex list-none items-center gap-1.5"><span class="map-dot" style="background:#9ca3af"></span>{M.noRep}</li></>
+          : STATES.filter(([k]) => k !== 'all').map(([k, l]) => <li class="flex list-none items-center gap-1.5"><span class="map-dot" style={`background:${STATE_COLOR[k as State]}`}></span>{l}</li>)}
+      </ul>
+      <ul class="m-0 flex flex-wrap gap-x-4 gap-y-1 p-0 text-sm" data-testid="map-kinds">
+        {(['venue', 'promoter', 'concert', 'none'] as const).map((k) => <li class="flex list-none items-center gap-1.5"><span class="map-pin map-pin--legend" set:html={kindSvg[k]} />{M.kinds[k]}</li>)}
+      </ul>
+      <p class="co-help">{M.hotRing} · {M.coldDash}</p>
+      <p class="co-help">{M.exactHelp}</p>
+    </div>
+  </details>
+
+  <script type="application/json" id="map-data" set:html={JSON.stringify(payload).replace(/</g, '\\u003c')} />
+  <script type="application/json" id="map-locate-text" set:html={JSON.stringify({ locating: M.locating('{n}'), located: M.located, failed: M.locateFailed }).replace(/</g, '\\u003c')} />
+</AdminLayout>
+
+<style>
+  .crm-map { height: max(420px, calc(100vh - 330px)); width: 100%; background: #eef0ec; }
+  .map-dot { display: inline-block; width: 12px; height: 12px; border-radius: 999px; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); }
+  /* El punto: círculo de color con el icono de su tipo; borde naranja si es caliente; discontinuo si es aproximado. */
+  :global(.map-pin) { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; color: #fff;
+    border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35); }
+  :global(.map-pin--legend) { width: 22px; height: 22px; background: #3f3f46; }
+  :global(.map-pin--legend svg) { width: 12px; height: 12px; }
+  :global(.map-pin--hot) { border: 3px solid #f97316; }
+  :global(.map-pin--cold) { opacity: 0.5; }
+  :global(.map-pin--approx) { border-style: dashed; }
+  :global(.map-cluster) { display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #18181b; color: #fff;
+    font: 700 13px/1 var(--co-font-sans, system-ui); border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+  :global(.map-cluster--hot) { box-shadow: 0 0 0 3px #f97316, 0 2px 10px rgba(0, 0, 0, 0.3); }
+  :global(.map-pop) { display: grid; gap: 4px; min-width: 200px; font: 13px/1.4 var(--co-font-sans, system-ui); }
+  :global(.map-pop strong) { font-size: 14px; }
+  :global(.map-pop .muted) { color: #6b6b6b; }
+  :global(.map-pop a.btn) { margin-top: 6px; display: inline-block; padding: 6px 12px; border-radius: 999px; background: #0a0a0a; color: #fff !important; text-decoration: none; width: fit-content; }
+</style>
+
+<script>
+  import L from 'leaflet';
+  import 'leaflet.markercluster';
+  import 'leaflet/dist/leaflet.css';
+
+  type Point = { id: string; name: string; lat: number; lng: number; exact: boolean; kind: string | null; state: string; zone: string; temp: string; score: number;
+    cooling: number | null; next: string | null; rating: number | null; owner: string | null; rep: string | null };
+  const el = document.getElementById('crm-map');
+  const raw = document.getElementById('map-data')?.textContent;
+  if (el && raw) {
+    const d = JSON.parse(raw) as { points: Point[]; byRep: boolean; repColor: Record<string, string>; stateColor: Record<string, string>; kindSvg: Record<string, string>;
+      tiles: { url: string; attribution: string }; T: Record<string, string> & { stateLabel: Record<string, string>; kinds: Record<string, string> } };
+    const T = d.T;
+    const map = L.map(el, { scrollWheelZoom: true }).setView([40.2, -3.7], 6);
+    L.tileLayer(d.tiles.url, { maxZoom: 19, attribution: d.tiles.attribution }).addTo(map);
+    const colorOf = (p: Point) => (d.byRep ? (p.rep ? d.repColor[p.rep] : '#9ca3af') : d.stateColor[p.state] ?? '#6b7280');
+    // Los textos van como texto (nunca como HTML): nombres y notas vienen de los datos.
+    const node = (tag: string, text: string, cls?: string) => { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; };
+
+    // Grupos: al tocar uno, se acerca hasta que se separa (y si están en el mismo sitio, se abren en abanico).
+    const group = L.markerClusterGroup({
+      zoomToBoundsOnClick: true, spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 50,
+      iconCreateFunction: (c) => {
+        const n = c.getChildCount();
+        const hot = c.getAllChildMarkers().some((m) => (m.options as { hot?: boolean }).hot);
+        const size = n < 10 ? 34 : n < 100 ? 42 : 52;
+        return L.divIcon({ className: '', html: `<span class="map-cluster${hot ? ' map-cluster--hot' : ''}" data-testid="map-cluster" style="width:${size}px;height:${size}px">${n}</span>`, iconSize: [size, size] });
+      },
+    });
+    // En el mismo sitio exacto (p. ej. todas las de una ciudad sin ficha): se abren en abanico en vez de acercarse sin fin.
+    group.on('clusterclick', (e: L.LeafletEvent & { layer: L.MarkerCluster }) => {
+      const b = e.layer.getBounds();
+      if (b.getNorthEast().equals(b.getSouthWest())) e.layer.spiderfy();
+    });
+
+    for (const p of d.points) {
+      const cls = ['map-pin', p.temp === 'hot' && 'map-pin--hot', p.temp === 'cold' && 'map-pin--cold', !p.exact && 'map-pin--approx'].filter(Boolean).join(' ');
+      const icon = L.divIcon({ className: '', html: `<span class="${cls}" data-testid="map-point" style="background:${colorOf(p)}">${d.kindSvg[p.kind ?? 'none'] ?? d.kindSvg.none}</span>`, iconSize: [28, 28] });
+      const m = L.marker([p.lat, p.lng], { icon, title: p.name, hot: p.temp === 'hot' } as L.MarkerOptions);
+      const pop = document.createElement('div'); pop.className = 'map-pop'; pop.dataset.testid = 'map-popup';
+      pop.append(node('strong', p.name));
+      pop.append(node('span', [T.kinds[p.kind ?? 'none'], p.zone].filter(Boolean).join(' · '), 'muted'));
+      pop.append(node('span', [T.stateLabel[p.state] ?? p.state, T.score.replace('{n}', String(p.score))].join(' · ')));
+      if (p.cooling !== null) pop.append(node('span', T.cooling.replace('{n}', String(p.cooling))));
+      if (p.rating !== null) pop.append(node('span', `★ ${p.rating.toLocaleString(document.documentElement.lang || 'es')} ${T.reviews}`, 'muted'));
+      if (p.next) pop.append(node('span', `${T.next}: ${p.next}`));
+      if (p.owner) pop.append(node('span', `${T.owner}: ${p.owner}`, 'muted'));
+      if (d.byRep) pop.append(node('span', `${T.rep}: ${p.rep ?? T.noRep}`, 'muted'));
+      if (!p.exact) pop.append(node('span', T.approx, 'muted'));
+      const a = node('a', T.open, 'btn') as HTMLAnchorElement; a.href = `/admin/accounts/${encodeURIComponent(p.id)}`; pop.append(a);
+      m.bindPopup(pop);
+      group.addLayer(m);
+    }
+    map.addLayer(group);
+    if (d.points.length) map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 14 });
+    el.dataset.ready = '1';
+    // Para quien lo mire (y las pruebas): el zoom actual.
+    el.dataset.zoom = String(map.getZoom());
+    map.on('zoomend', () => { el.dataset.zoom = String(map.getZoom()); });
+  }
+
+  // Filtros al momento (como en la lista de empresas).
+  document.querySelectorAll<HTMLFormElement>('form[data-map-filters]').forEach((f) => {
+    f.addEventListener('change', () => f.requestSubmit());
+    f.addEventListener('formdata', (e) => { for (const [k, v] of [...e.formData]) if (!v || (k === 'estado' && v === 'all')) e.formData.delete(k); });
+  });
+
+  // Situar las ciudades (admin): tandas hasta acabar, con el progreso a la vista; al final, recargar.
+  document.querySelector<HTMLButtonElement>('[data-locate]')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget as HTMLButtonElement;
+    const label = btn.querySelector('span');
+    const T = JSON.parse(document.getElementById('map-locate-text')?.textContent ?? '{}') as { locating: string; located: string; failed: string };
+    btn.disabled = true;
+    for (let i = 0; i < 40; i++) {
+      const res = await fetch('/admin/api/crm/zones-locate', { method: 'POST' }).catch(() => null);
+      const j = res ? ((await res.json().catch(() => ({}))) as { located?: number; left?: number; error?: string }) : {};
+      if (!res || !res.ok) { if (label) label.textContent = j.error || T.failed; btn.disabled = false; return; }
+      if (label) label.textContent = T.locating.replace('{n}', String(j.left ?? 0));
+      if (!j.left || !j.located) break;
+    }
+    if (label) label.textContent = T.located;
+    location.reload();
+  });
+</script>

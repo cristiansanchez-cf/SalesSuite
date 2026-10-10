@@ -1,6 +1,6 @@
 /**
- * Mapa del CRM (docs/CRM_DINAMICO.md §16). Lógica pura: qué va de punto exacto (la empresa tiene ubicación de Google),
- * qué se agrupa en la burbuja de su ciudad (no tiene ubicación, pero su ciudad sí) y qué no se puede situar.
+ * Mapa del CRM (docs/CRM_DINAMICO.md §16). Lógica pura: qué va en su sitio exacto (ubicación de Google), qué va en el
+ * punto de su ciudad (no tiene ubicación, pero su ciudad sí; «aproximada») y qué no se puede situar.
  * Además: caliente / se enfría, y quién lleva la zona de cada empresa (para colorear por comercial).
  */
 import type { Zone } from '../accounts/types';
@@ -35,41 +35,37 @@ export function zoneOwners(zones: Zone[], assignments: Array<{ userId: string; z
 }
 
 export interface MapPoint {
-  id: string; name: string; lat: number; lng: number; state: AccountView['state']; zone: string; temp: Temperature; score: number;
+  id: string; name: string; lat: number; lng: number; exact: boolean; kind: Priority['kind']; state: AccountView['state']; zone: string; temp: Temperature; score: number;
   cooling: number | null; next: string | null; rating: number | null; owner: string | null; rep: string | null;
 }
-export interface MapCity { zoneId: string; name: string; path: string; lat: number; lng: number; count: number; hot: number; rep: string | null }
-export interface MapData { points: MapPoint[]; cities: MapCity[]; unlocated: number; noCity: number }
+export interface MapData { points: MapPoint[]; exact: number; approx: number; unlocated: number; noCity: number }
 
 export function buildMap(items: AccountView[], zones: Zone[], o: {
   prio: (a: AccountView) => Priority; cooling: Map<string, number>; rep: (zoneId: string | null) => string | null;
 }): MapData {
   const byId = new Map(zones.map((z) => [z.id, z]));
   const points: MapPoint[] = [];
-  const cities = new Map<string, MapCity>();
+  let exact = 0;
   let unlocated = 0;
   let noCity = 0;
   for (const a of items) {
-    const p = o.prio(a);
-    const temp = temperature(p, o.cooling.get(a.id));
-    if (a.lat != null && a.lng != null) {
-      points.push({ id: a.id, name: a.name, lat: a.lat, lng: a.lng, state: a.state, zone: a.zonePath, temp, score: p.score, cooling: o.cooling.get(a.id) ?? null,
-        next: a.nextStep, rating: a.placeRating, owner: a.ownerName, rep: o.rep(a.zoneId) });
-      continue;
-    }
     const z = a.zoneId ? byId.get(a.zoneId) : undefined;
-    if (!z) { noCity++; continue; }
-    if (z.lat == null || z.lng == null) { unlocated++; continue; }
-    const c = cities.get(z.id) ?? { zoneId: z.id, name: z.name, path: a.zonePath, lat: z.lat, lng: z.lng, count: 0, hot: 0, rep: o.rep(z.id) };
-    c.count++;
-    if (temp === 'hot') c.hot++;
-    cities.set(z.id, c);
+    const own = a.lat != null && a.lng != null;
+    if (!own && !z) { noCity++; continue; }
+    if (!own && (z!.lat == null || z!.lng == null)) { unlocated++; continue; }
+    const p = o.prio(a);
+    if (own) exact++;
+    points.push({ id: a.id, name: a.name, lat: own ? a.lat! : z!.lat!, lng: own ? a.lng! : z!.lng!, exact: own, kind: p.kind, state: a.state, zone: a.zonePath,
+      temp: temperature(p, o.cooling.get(a.id)), score: p.score, cooling: o.cooling.get(a.id) ?? null, next: a.nextStep, rating: a.placeRating,
+      owner: a.ownerName, rep: o.rep(a.zoneId) });
   }
-  return { points, cities: [...cities.values()], unlocated, noCity };
+  return { points, exact, approx: points.length - exact, unlocated, noCity };
 }
 
 /** Colores fijos por estado y una paleta para los comerciales (en orden). */
 export const STATE_COLOR: Record<AccountView['state'], string> = {
   mine: '#6a2bd9', free: '#15803d', taken: '#9ca3af', my_customer: '#0e7490', customer: '#2563eb', blocked: '#b42318',
 };
+/** Icono de cada tipo (del set de la consola). */
+export const KIND_ICON = { venue: 'music', promoter: 'megaphone', concert: 'ticket' } as const;
 export const REP_COLORS = ['#6a2bd9', '#0e7490', '#c2410c', '#15803d', '#be185d', '#2563eb', '#a16207', '#4d7c0f', '#7c3aed', '#0f766e'];

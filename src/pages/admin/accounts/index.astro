@@ -9,6 +9,7 @@ import Alert from '~/components/ui/Alert.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Icon from '~/components/ui/Icon.astro';
 import AccountState from '~/components/accounts/AccountState.astro';
+import ViewToggle from '~/components/crm/ViewToggle.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { zonePath } from '~/lib/accounts/rules';
@@ -129,6 +130,7 @@ const panelOpen = nFilters > 0;
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
+    <ViewToggle current="list" />
     {perms.importCrm && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{M.import}</a>}
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="new-account" data-testid="new-account"><Icon name="plus" size={16} />{M.newAccount}</button>
   </PageHeader>

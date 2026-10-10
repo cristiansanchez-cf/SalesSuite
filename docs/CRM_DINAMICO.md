@@ -436,17 +436,21 @@ y redes); pruebas `places.test.ts`, `website.test.ts`, `supabase/tests/56_crm_go
 
 ## 16. Mapa (hecho)
 
-Pestaña **CRM → Mapa** (`/admin/map`, Leaflet con el mapa de OpenStreetMap/CARTO; `src/lib/crm/map.ts`). Cada uno ve
-las mismas empresas que en su lista (su zona, todas o las suyas) y con los mismos filtros: ciudad, estado y temperatura.
+**Empresas → «Lista | Mapa»** (`/admin/accounts/mapa`; `/admin/map` redirige): el mapa es otra forma de ver la lista,
+no otra sección. Pasa de una a otra con los mismos filtros (ciudad, estado, alcance) y añade temperatura y color.
+Leaflet + `leaflet.markercluster` (`src/lib/crm/map.ts`).
 
-- **Punto** = ubicación exacta (la de su ficha de Google). Color por estado; **borde naranja** = caliente (cualificada,
-  prioridad ≥ 60, sin enfriarse); **punteado y claro** = se enfría o está fuera. Al tocarlo: nombre, ciudad, estado,
-  prioridad, valoración, próximo paso, quién la trabaja y **Abrir ficha**.
-- **Burbuja** = las empresas que solo tienen ciudad, juntas en el punto de su ciudad, con el número; al tocarla, «Ver en
-  la lista». Las ciudades se sitúan una vez: el admin pulsa **Situar ciudades en el mapa** (Google, por tandas;
-  `zone.lat/lng`, migración `20261115000000_crm_map.sql`).
+- Cada empresa es un **punto con el icono de su tipo** (local o sala, promotora, conciertos; sin tipo: tienda), en su
+  **sitio exacto** (ficha de Google) o, si no tiene, en el **centro de su ciudad** (borde discontinuo: aproximada).
+  Color por estado; **borde naranja** = caliente (cualificada, prioridad ≥ 60, sin enfriarse); **claro** = se enfría o
+  está fuera. Al tocarlo: tipo, ciudad, estado, prioridad, valoración, próximo paso, quién la trabaja y **Abrir ficha**.
+- **Grupos con número**: al tocar uno, el mapa se acerca hasta que se separa; si están todos en el mismo punto (las de
+  una ciudad sin ficha de Google), se abren en abanico. Nada de tocar diez veces.
+- Las ciudades se sitúan una vez: el admin pulsa **Situar ciudades en el mapa** (Google, por tandas; `zone.lat/lng`,
+  migración `20261115000000_crm_map.sql`).
 - **Por comercial de la zona** (admin y gerentes): color según quién lleva la zona (la asignación más cercana subiendo:
   ciudad → provincia → comunidad), con leyenda y «Zona sin asignar».
-- Abajo, cuántas no se pueden situar (ciudad sin situar o sin ciudad, con enlace a la lista).
+- **Fondo del mapa**: OpenStreetMap sin clave. Con `MAPTILER_KEY` en Vercel (clave pública de MapTiler, restringida a tu
+  dominio), se usa el estilo «Dataviz» de MapTiler, más limpio.
 
 Pruebas: `map.test.ts`, `supabase/tests/57_crm_map.test.sql`, `scripts/smoke-map.cjs`.
