@@ -361,3 +361,27 @@ que **propone**; el comercial decide.
   automáticas, `AI_RESEARCH_FIXTURE=1` usa una respuesta fija sin llamar a nadie.
 - Migración `20261107000000_crm_ai_research.sql` (`account.ai_research`, RPC `account_ai_research`); pruebas
   `research.test.ts`, contrato de cuentas, `supabase/tests/51_crm_ai_research.test.sql`, `scripts/smoke-ai-research.cjs`.
+
+## 14. Ordenar ciudades (hecho)
+
+El campo «Ciudad» del Notion mezclaba ciudades, notas («Barcelona, creo que están en Valencia»), varias ciudades
+(«Madrid / Marbella»), códigos postales y columnas descolocadas («Account Executive»). La importación creó una zona
+por cada texto (166 distintos). Criterio de Cristian (10-oct-2026):
+
+- **Comunidad › Provincia › Pueblo**: filtrar «Valencia» saca también Requena, Gandía… El pueblo que es la capital va
+  en su provincia. Fuera de España, País › Ciudad. Se reutilizan las zonas que ya hay (mismo nombre bajo el mismo padre).
+- **Dudosas**: si la nota dice que es otra ciudad, va donde dice la nota y queda en la lista **«revisar-ciudad»**.
+- Lo que sobra del texto pasa a las notas de la empresa («Ciudad en el Notion: …»). Lo que no es un sitio: sin
+  ciudad, con el texto en la nota y en «revisar-ciudad».
+
+Cómo (CRM → Importar → «Ordenar ciudades», solo admin o gerente; `src/lib/crm/zones-normalize.ts`):
+
+1. **Analizar con IA**: los textos con empresas van a Claude por trozos de 60 (desde el navegador, con progreso).
+   Devuelve país, comunidad, provincia, pueblo, nota y si es dudosa (esquema estricto; nada que no se haya pedido).
+2. **Vista previa**: cada destino con sus textos, empresas, nota y ⚠. Lo desmarcado se queda como está.
+3. **Aplicar**: crea las zonas que faltan y mueve las empresas en bloque (RPC `crm_move_accounts`). Guarda el antes en
+   `crm_fix` para **Deshacer** (zona, notas y listas de cada empresa; borra las zonas creadas si quedan vacías).
+4. **Borrar ciudades vacías**: las que no tienen empresas ni nadie asignado (sin deshacer).
+
+Migración `20261110000000_crm_fix_zones.sql`; pruebas `zones-normalize.test.ts`, contrato de cuentas,
+`supabase/tests/54_crm_fix_zones.test.sql`, `scripts/smoke-zones.cjs`.

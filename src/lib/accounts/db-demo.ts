@@ -313,6 +313,36 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       const a = db().account.find((x) => x.id === id);
       return a && roleOf(a.tenant_id, actorId) && roleOf(a.tenant_id, actorId) !== 'partner' ? JSON.parse(JSON.stringify(a.ai_research ?? null)) : null;
     },
+    async moveAccounts(t, moves) {
+      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un/a admin o gerente');
+      const s = db();
+      if (moves.some((m) => m.zoneId && !s.zone.some((z) => z.id === m.zoneId && z.tenant_id === t))) throw new Error('Zona no encontrada');
+      let n = 0;
+      for (const m of moves) {
+        const a = s.account.find((x) => x.id === m.id && x.tenant_id === t);
+        if (!a) continue;
+        Object.assign(a, { zone_id: m.zoneId, notes: m.notes ? m.notes.slice(0, 2000) : null, tags: [...m.tags] });
+        n++;
+      }
+      return n;
+    },
+    async saveFix(t, f) {
+      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un/a admin o gerente');
+      const id = randomUUID();
+      db().crm_fix.push({ id, tenant_id: t, kind: f.kind, summary: JSON.parse(JSON.stringify(f.summary)), undo: JSON.parse(JSON.stringify(f.undo)), created_by: actorId, created_at: iso(), undone_at: null });
+      return id;
+    },
+    async listFixes(t, kind) {
+      if (!isManager(t, actorId)) return [];
+      return db().crm_fix.filter((x) => x.tenant_id === t && x.kind === kind).sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map((x) => ({ id: x.id, kind: x.kind, summary: x.summary, undo: x.undo, createdAt: x.created_at, undoneAt: x.undone_at }));
+    },
+    async markFixUndone(id) {
+      const f = db().crm_fix.find((x) => x.id === id);
+      if (!f || !isManager(f.tenant_id, actorId) || f.undone_at) return false;
+      f.undone_at = iso();
+      return true;
+    },
     async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },
     async savePriorityWeights(t, w) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');

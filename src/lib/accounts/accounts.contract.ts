@@ -11,6 +11,7 @@ import type { AccountsDb } from './db';
 import type { CrmDb } from '../crm/db';
 import { createCrmService } from '../crm/service';
 import { fixtureResearch } from '../crm/research';
+import { fixtureZoneNames, REVIEW_TAG } from '../crm/zones-normalize';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const U = {
@@ -426,6 +427,44 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const ajena = await admin.accounts.create({ name: 'Sala IA Ajena' });
       await admin.accounts.assign(ajena, E.rep2.id);
       await rejects(rep.aiRun(ajena, { sector: null, seller: 'Enjoy' }), 403);
+    });
+
+    test('CRM ordenar ciudades: en bloque solo admin; nota y «revisar»; deshacer; borrar vacías sin tocar lo asignado', async () => {
+      const t = await territory();
+      const admCtx = t.admin;
+      const adm = createCrmService(E.crmDbFor(U.admin.id), E.accountsDbFor(U.admin.id), E.adminDbFor(U.admin.id), admCtx.session, { places: null, routes: null, research: null, zoneNames: fixtureZoneNames() });
+      const req = await admCtx.accounts.saveZone({ name: 'Requena (Valencia)', parentId: t.es });
+      const bad = await admCtx.accounts.saveZone({ name: 'Barcelona creo que no es correcto, que están en Valencia', parentId: t.es });
+      await admCtx.accounts.saveZone({ name: '28039', parentId: t.es });
+      const a1 = await admCtx.accounts.create({ name: 'Sala Requena', zoneId: req, notes: 'Tiene DJ.' });
+      const a2 = await admCtx.accounts.create({ name: 'Sala Dudosa', zoneId: bad });
+      const o = await adm.zonesOverview();
+      expect(o.raws).toEqual(expect.arrayContaining(['Requena (Valencia)', 'Barcelona creo que no es correcto, que están en Valencia']));
+      const classes = await adm.zonesClassify(o.raws);
+      const r = await adm.zonesApply(classes);
+      expect(r.moved).toBe(2);
+      const s1 = (await admCtx.accounts.get(a1)).account;
+      expect(s1.zonePath).toBe('España › Comunidad Valenciana › Valencia › Requena');
+      expect(s1.notes).toBe('Tiene DJ.\nCiudad en el Notion: Requena (Valencia)');
+      const s2 = (await admCtx.accounts.get(a2)).account;
+      expect(s2.zoneId).toBe(t.vlc);
+      expect(s2.tags).toContain(REVIEW_TAG);
+
+      // Un comercial no ordena en bloque.
+      const repCtx = await ctx(U.rep);
+      const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, { zoneNames: fixtureZoneNames() });
+      await rejects(rep.zonesOverview(), 403);
+
+      const last = (await adm.zonesOverview()).last!;
+      await adm.zonesUndo(last.id);
+      expect((await admCtx.accounts.get(a1)).account).toMatchObject({ zoneId: req, notes: 'Tiene DJ.' });
+      expect((await admCtx.accounts.get(a2)).account.tags).not.toContain(REVIEW_TAG);
+
+      await adm.zonesApply(classes);
+      expect(await adm.zonesCleanup()).toBeGreaterThanOrEqual(3);  // «Requena (Valencia)», la dudosa y «28039»
+      const names = (await admCtx.accounts.territory()).zones.map((z) => z.name);
+      expect(names).not.toContain('28039');
+      expect(names).toEqual(expect.arrayContaining(['Comunidad Valenciana', 'Madrid', 'Requena']));  // asignadas o con empresas: se quedan
     });
   });
 }

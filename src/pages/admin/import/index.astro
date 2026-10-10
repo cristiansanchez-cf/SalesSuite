@@ -11,6 +11,7 @@ import { AdminError } from '~/lib/admin/service';
 import { i18n } from '~/lib/i18n';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { followupMessages } from '~/lib/i18n/messages/followup';
+import { zonesMessages } from '~/lib/i18n/messages/zones';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -41,7 +42,8 @@ if (Astro.request.method === 'POST') {
   });
   if (!result.error && to) return Astro.redirect(to, 303);
 }
-const [history, igFix] = await Promise.all([admin.crm.imports(), admin.crm.instagramToCompanies(false)]);
+const [history, igFix, zones] = await Promise.all([admin.crm.imports(), admin.crm.instagramToCompanies(false), admin.crm.zonesOverview()]);
+const ZM = zonesMessages[i18n(Astro, zonesMessages).locale];
 const igDone = Astro.url.searchParams.get('ig');
 ---
 <AdminLayout title={I.title}>
@@ -63,6 +65,14 @@ const igDone = Astro.url.searchParams.get('ig');
       <input class="co-input" type="file" name="file" accept=".csv,text/csv" required data-testid="import-file" /></label>
     <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="import-submit"><Icon name="upload" size={16} />{I.upload}</button>
   </form>
+
+  {(zones.raws.length > 0 || zones.empty > 0 || zones.last) && (
+    <a class="co-card mb-6 grid max-w-2xl gap-1 text-inherit !no-underline" href="/admin/import/ciudades" data-testid="zones-card">
+      <p class="text-eyebrow">{FX.title}</p>
+      <span class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={16} />{ZM.card(zones.raws.length)} <span aria-hidden="true">→</span></span>
+      <span class="co-body">{ZM.cardBody}</span>
+    </a>
+  )}
 
   {igFix.count > 0 && (
     <section class="co-card mb-6 grid max-w-2xl gap-3" data-testid="ig-fix">

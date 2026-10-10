@@ -1,0 +1,161 @@
+---
+/**
+ * Ordenar ciudades (docs/CRM_DINAMICO.md §14): la IA clasifica cada texto del campo «Ciudad» (por trozos, desde el
+ * navegador), el admin revisa la vista previa (desmarca lo que no le convence) y aplica. Se puede deshacer; al final,
+ * borrar las ciudades vacías.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { zonesMessages } from '~/lib/i18n/messages/zones';
+import { REVIEW_TAG, type ZonePlan } from '~/lib/crm/zones-normalize';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: M, f: fmt } = i18n(Astro, zonesMessages);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const box: { plan: ZonePlan | null; classes: string } = { plan: null, classes: '' };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  const json = () => { try { return JSON.parse(str('classes') || '[]') as unknown; } catch { return []; } };
+  let to = '';
+  result = await formAction(async () => {
+    switch (str('action')) {
+      case 'preview': box.plan = await admin.crm.zonesPlan(json()); box.classes = str('classes'); break;
+      case 'apply': {
+        // Lo desmarcado en la vista previa se queda como está.
+        const all = f.getAll('all').map(String);
+        const keep = new Set(f.getAll('keep').map(String));
+        const r = await admin.crm.zonesApply(json(), all.filter((id) => !keep.has(id)));
+        to = `/admin/import/ciudades?ok=applied&m=${r.moved}&r=${r.review}`;
+        break;
+      }
+      case 'undo': await admin.crm.zonesUndo(str('id')); to = '/admin/import/ciudades?ok=undone'; break;
+      case 'cleanup': to = `/admin/import/ciudades?ok=cleaned&n=${await admin.crm.zonesCleanup()}`; break;
+    }
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+const o = await admin.crm.zonesOverview();
+const q = Astro.url.searchParams;
+const okMsg = flash(Astro.url, { applied: M.applied(Number(q.get('m')) || 0, Number(q.get('r')) || 0), undone: M.undone, cleaned: M.cleaned(Number(q.get('n')) || 0) });
+const plan = box.plan;
+---
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} back={{ href: '/admin/import', label: M.eyebrow }} />
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {okMsg && Number(q.get('r')) > 0 && <p class="mb-4"><a class="co-btn co-btn--ghost co-btn--sm" href={`/admin/accounts?ver=all&lista=${REVIEW_TAG}`} data-testid="zones-see-review">{M.seeReview}</a></p>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {!plan ? (
+    <section class="co-card grid max-w-2xl gap-4" data-testid="zones-start">
+      <div class="flex flex-wrap gap-x-6 gap-y-1">
+        <p class="co-row-title">{M.texts(o.raws.length)}</p>
+        <p class="co-meta">{M.empty(o.empty)}</p>
+      </div>
+      {o.last && (
+        <form method="post" class="co-inset flex flex-wrap items-center gap-3 !p-3" data-testid="zones-last">
+          <input type="hidden" name="action" value="undo" /><input type="hidden" name="id" value={o.last.id} />
+          <span class="co-meta flex-1">{M.last(Number(o.last.summary.moved) || 0, fmt.relative(o.last.createdAt))}</span>
+          <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="zones-undo"><Icon name="rotate-ccw" size={14} />{M.undo}</button>
+        </form>
+      )}
+      <div class="flex flex-wrap items-center gap-3">
+        {o.raws.length > 0 && o.hasAi && (
+          <button type="button" class="co-btn co-btn--primary" data-zones-analyze data-testid="zones-analyze"><Icon name="sparkles" size={16} />{M.analyze}</button>
+        )}
+        {o.raws.length === 0 && <p class="co-meta">{M.nothing}</p>}
+        {o.empty > 0 && <button type="button" class="co-btn co-btn--ghost" data-dialog-open="zones-cleanup" data-testid="zones-cleanup"><Icon name="archive" size={16} />{M.cleanup(o.empty)}</button>}
+      </div>
+      <p class="co-meta" role="status" hidden data-zones-status data-testid="zones-status"></p>
+      <form method="post" hidden data-zones-preview><input type="hidden" name="action" value="preview" /><input type="hidden" name="classes" /></form>
+    </section>
+  ) : (
+    <form method="post" class="grid gap-4" data-testid="zones-preview">
+      <input type="hidden" name="action" value="apply" />
+      <input type="hidden" name="classes" value={box.classes} />
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="co-entity">{M.previewTitle}</h2>
+        <p class="co-meta">{M.same(plan.same)}</p>
+      </div>
+      <p class="co-body max-w-3xl">{M.previewHelp}</p>
+      <ul class="m-0 grid gap-3 p-0">
+        {plan.groups.map((g) => (
+          <li class="co-card grid list-none gap-2 !p-4" data-testid="zones-group" data-label={g.label}>
+            <p class="co-row-title flex flex-wrap items-center gap-1">
+              <Icon name="map-pin" size={14} />
+              {g.path.map((p, i) => <>{i > 0 && <span class="co-meta">›</span>}<span>{p.name}</span>{!p.existingId && <span class="co-tag !py-0 text-[11px]">{M.newZone}</span>}</>)}
+            </p>
+            <ul class="m-0 grid gap-1 p-0">
+              {g.sources.map((x) => (
+                <li class="flex list-none flex-wrap items-baseline gap-2 text-sm">
+                  <input type="hidden" name="all" value={x.zoneId} />
+                  <label class="flex items-baseline gap-2">
+                    <input type="checkbox" name="keep" value={x.zoneId} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="zones-keep" />
+                    <span>«{x.raw}»</span>
+                  </label>
+                  <span class="co-meta">{M.accounts(x.accounts)}</span>
+                  {x.review && <span class="co-tag co-tag--danger !py-0 text-[11px]" data-testid="zones-review">⚠ {M.review}</span>}
+                  {x.note && <span class="co-meta">· {M.note}: {x.note}</span>}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      {plan.junk.length > 0 && (
+        <section class="co-card grid gap-2 !p-4" data-testid="zones-junk">
+          <h3 class="co-row-title">{M.junkTitle}</h3>
+          <p class="co-meta">{M.junkHelp}</p>
+          <ul class="m-0 grid gap-1 p-0">
+            {plan.junk.map((x) => (
+              <li class="flex list-none flex-wrap items-baseline gap-2 text-sm">
+                <input type="hidden" name="all" value={x.zoneId} />
+                <label class="flex items-baseline gap-2"><input type="checkbox" name="keep" value={x.zoneId} checked class="h-4 w-4 accent-[var(--co-ink)]" /><span>«{x.raw}»</span></label>
+                <span class="co-meta">{M.accounts(x.accounts)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <div class="sticky bottom-0 flex flex-wrap gap-3 bg-[var(--co-bg)] py-3">
+        <button class="co-btn co-btn--primary" type="submit" data-testid="zones-apply"><Icon name="check" size={16} />{M.apply}</button>
+        <a class="co-btn co-btn--ghost" href="/admin/import/ciudades">{M.cancel}</a>
+      </div>
+    </form>
+  )}
+
+  <ConfirmDialog id="zones-cleanup" title={M.cleanupTitle} does={M.cleanupBody} doesNot={M.cleanupNot} confirmLabel={M.cleanup(o.empty)} danger testid="zones-cleanup-dialog">
+    <input type="hidden" name="action" value="cleanup" />
+  </ConfirmDialog>
+</AdminLayout>
+
+<script define:vars={{ raws: o.raws, chunk: o.chunk, T: { analyzing: M.analyzing('{i}', '{n}'), stay: M.stay, failed: M.failed } }}>
+  // Analizar: los textos van a la IA por trozos (cada trozo es una petición corta) y, al acabar, a la vista previa.
+  document.querySelector('[data-zones-analyze]')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    const status = document.querySelector('[data-zones-status]');
+    const form = document.querySelector('[data-zones-preview]');
+    btn.disabled = true; status.hidden = false;
+    const parts = [];
+    for (let i = 0; i < raws.length; i += chunk) parts.push(raws.slice(i, i + chunk));
+    const places = [];
+    for (const [i, part] of parts.entries()) {
+      status.textContent = `${T.analyzing.replace('{i}', String(i + 1)).replace('{n}', String(parts.length))} ${T.stay}`;
+      const res = await fetch('/admin/api/crm/zones-classify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ raws: part }) }).catch(() => null);
+      const j = res ? await res.json().catch(() => ({})) : {};
+      if (!res || !res.ok || !Array.isArray(j.places)) { status.textContent = j.error || T.failed; btn.disabled = false; return; }
+      places.push(...j.places);
+    }
+    form.querySelector('[name=classes]').value = JSON.stringify(places);
+    form.submit();
+  });
+</script>

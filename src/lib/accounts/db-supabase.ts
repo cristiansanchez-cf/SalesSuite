@@ -156,6 +156,18 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       const r = check(await sb.from('account').select('ai_research').eq('id', id).maybeSingle()) as Row | null;
       return r?.ai_research ?? null;
     },
+    async moveAccounts(t, moves) {
+      const rows = moves.map((m) => ({ id: m.id, zone: m.zoneId, notes: m.notes, tags: m.tags }));
+      return (check(await sb.rpc('crm_move_accounts', { p_tenant: t, p_moves: rows })) as number) ?? 0;
+    },
+    async saveFix(t, f) { return (check(await sb.from('crm_fix').insert({ tenant_id: t, kind: f.kind, summary: f.summary, undo: f.undo }).select('id').single()) as Row).id; },
+    async listFixes(t, kind) {
+      return ((check(await sb.from('crm_fix').select('id, kind, summary, undo, created_at, undone_at').eq('tenant_id', t).eq('kind', kind).order('created_at', { ascending: false }).limit(20)) ?? []) as Row[])
+        .map((r) => ({ id: r.id, kind: r.kind, summary: r.summary ?? {}, undo: r.undo ?? {}, createdAt: r.created_at, undoneAt: r.undone_at ?? null }));
+    },
+    async markFixUndone(id) {
+      return (check(await sb.from('crm_fix').update({ undone_at: new Date().toISOString() }).eq('id', id).is('undone_at', null).select('id')) ?? []).length > 0;
+    },
     async getPriorityWeights(t) {
       const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;
       return r?.priority_weights ?? null;

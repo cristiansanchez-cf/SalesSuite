@@ -8,6 +8,10 @@ export type AccountDecision = 'approved' | 'rejected';
 export type TouchKind = 'created' | 'contact' | 'dossier' | 'won' | 'lost' | 'claim' | 'release' | 'block' | 'unblock' | 'assign';
 
 export interface Zone { id: string; tenantId: string; parentId: string | null; name: string; kind: ZoneKind; position: number }
+/** Un movimiento de empresa (arreglos en bloque: ordenar ciudades). zoneId null = sin zona. */
+export interface AccountMove { id: string; zoneId: string | null; notes: string | null; tags: string[] }
+/** Arreglo de datos con su deshacer (crm_fix). */
+export interface CrmFix { id: string; kind: 'zones'; summary: Record<string, unknown>; undo: { moves?: AccountMove[]; zoneIds?: string[] }; createdAt: string; undoneAt: string | null }
 export interface ZoneAssignment { userId: string; zoneId: string }
 export interface AccountRules { claimDays: number; strictZones: boolean; requireAccount: boolean }
 export const DEFAULT_RULES: AccountRules = { claimDays: 30, strictZones: false, requireAccount: false };

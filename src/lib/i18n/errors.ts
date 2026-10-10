@@ -24,6 +24,7 @@ const EXACT: Record<string, T> = {
   'Falta ANTHROPIC_API_KEY en el servidor': ['ANTHROPIC_API_KEY is missing on the server', 'Falta ANTHROPIC_API_KEY no servidor', '서버에 ANTHROPIC_API_KEY가 없습니다'],
   'La IA no ha respondido; prueba en un momento': ['The AI didn’t respond; try again in a moment', 'A IA não respondeu; tente daqui a pouco', 'AI가 응답하지 않았습니다. 잠시 후 다시 시도하세요'],
   'Se acaba de investigar; espera un par de minutos': ['It was just researched; wait a couple of minutes', 'Acabou de ser pesquisada; espere alguns minutos', '방금 조사했습니다. 몇 분 기다리세요'],
+  'Ese arreglo ya no se puede deshacer': ['That fix can no longer be undone', 'Essa correção não pode mais ser desfeita', '이 정리는 더 이상 되돌릴 수 없습니다'],
   'Sugerencia no encontrada': ['Suggestion not found', 'Sugestão não encontrada', '제안을 찾을 수 없습니다'],
   'Falta GOOGLE_MAPS_API_KEY en el servidor': ['GOOGLE_MAPS_API_KEY is missing on the server', 'Falta GOOGLE_MAPS_API_KEY no servidor', '서버에 GOOGLE_MAPS_API_KEY가 없습니다'],
   'Google no ha respondido; prueba en un momento': ['Google did not respond; try again in a moment', 'O Google não respondeu; tente daqui a pouco', 'Google이 응답하지 않았습니다. 잠시 후 다시 시도하세요'],

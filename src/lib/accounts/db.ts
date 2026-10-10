@@ -1,6 +1,6 @@
 import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
-import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind } from './types';
+import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix } from './types';
 
 export interface AccountFilter { zoneIds?: string[]; ownerId?: string; q?: string; ids?: string[]; status?: AccountStatus; parentId?: string; tag?: string; limit: number }
 export interface AccountInsert {
@@ -68,6 +68,11 @@ export interface AccountsDb {
   /** Investigación con IA (RPC account_ai_research): la guarda o la borra (null). Mismo permiso que completar con Google. */
   saveAiResearch(accountId: string, data: object | null, fill?: Partial<Record<'phone' | 'email' | 'instagram' | 'linkedin' | 'website', string>>): Promise<void>;
   getAiResearch(accountId: string): Promise<unknown>;
+  /** Mover empresas en bloque (RPC crm_move_accounts; solo admin o gerente). Devuelve cuántas. */
+  moveAccounts(tenantId: string, moves: AccountMove[]): Promise<number>;
+  saveFix(tenantId: string, fix: { kind: CrmFix['kind']; summary: CrmFix['summary']; undo: CrmFix['undo'] }): Promise<string>;
+  listFixes(tenantId: string, kind: CrmFix['kind']): Promise<CrmFix[]>;
+  markFixUndone(id: string): Promise<boolean>;
   getPriorityWeights(tenantId: string): Promise<Partial<Weights> | null>;
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */

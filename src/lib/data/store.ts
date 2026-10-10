@@ -198,6 +198,7 @@ export interface DemoDb {
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
   crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number> }>;
+  crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];
@@ -382,6 +383,7 @@ export function freshDemoDb(): DemoDb {
     ],
     crm_import: [],
     crm_settings: [],
+    crm_fix: [],
     crm_activity: [
       { id: '00000000-0000-4000-8000-0000000ca001', tenant_id: ENJOY, account_id: '00000000-0000-4000-8000-0000000ac001', contact_id: '00000000-0000-4000-8000-0000000cc501',
         user_id: REP, channel: 'instagram', outcome: 'replied', note: 'Le interesa para los viernes; pide verlo en persona.', happened_at: ago(2), created_at: ago(2) },

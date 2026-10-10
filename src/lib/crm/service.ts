@@ -15,6 +15,8 @@ import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, typ
 import { env } from '../env';
 import { googlePlaces, type PlaceResult, type PlacesApi } from './places';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
+import { buildZonePlan, claudeZoneNames, fixtureZoneNames, sanitizePlaces, withNote, REVIEW_TAG, type ZoneNamesApi } from './zones-normalize';
+import type { AccountMove } from '../accounts/types';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
@@ -85,11 +87,13 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null } = {}) {
   const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : null;
   const routes = opts.routes !== undefined ? opts.routes : env('GOOGLE_MAPS_API_KEY') ? googleRoutes(env('GOOGLE_MAPS_API_KEY')!) : null;
   const ai = opts.research !== undefined ? opts.research
     : env('ANTHROPIC_API_KEY') ? claudeResearch(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureResearch() : null;
+  const zoneAi = opts.zoneNames !== undefined ? opts.zoneNames
+    : env('ANTHROPIC_API_KEY') ? claudeZoneNames(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneNames() : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -732,6 +736,114 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     try { await accounts.saveAiResearch(accountId, r, fill); } catch (e) { mapError(e); }
   }
 
+  // ---------------------------------------------------------------- ordenar ciudades (docs/CRM_DINAMICO.md §14)
+
+  /** Textos por llamada a la IA (unos 60 caben de sobra en una respuesta y tardan menos del límite del servidor). */
+  const ZONES_CHUNK = 60;
+  async function zoneState() {
+    const [zones, accs, assigns] = await Promise.all([accounts.listZones(t), allAccounts(), accounts.listAssignments(t)]);
+    const counts = new Map<string, number>();
+    for (const a of accs) if (a.zoneId) counts.set(a.zoneId, (counts.get(a.zoneId) ?? 0) + 1);
+    // Vacías: ni empresas ni nadie asignado en ella ni en lo que cuelga de ella.
+    const kids = new Map<string, string[]>();
+    for (const z of zones) if (z.parentId) kids.set(z.parentId, [...(kids.get(z.parentId) ?? []), z.id]);
+    const assigned = new Set(assigns.map((x) => x.zoneId));
+    const used = (id: string): boolean => (counts.get(id) ?? 0) > 0 || assigned.has(id) || (kids.get(id) ?? []).some(used);
+    const empty = zones.filter((z) => !used(z.id));
+    return { zones, accs, counts, empty };
+  }
+  /** Lo que hay: textos a clasificar (zonas con empresas), zonas vacías y el último arreglo (para deshacer). */
+  async function zonesOverview() {
+    requireManager();
+    const [{ zones, counts, empty }, fixes] = await Promise.all([zoneState(), accounts.listFixes(t, 'zones').catch(() => [])]);
+    const parents = new Set(zones.map((z) => z.parentId).filter(Boolean));
+    const raws = [...new Map(zones.filter((z) => (counts.get(z.id) ?? 0) > 0 && !parents.has(z.id)).map((z) => [norm(z.name), z.name])).values()];
+    return { raws, zones: zones.length, empty: empty.length, last: fixes.find((f) => !f.undoneAt) ?? null, hasAi: !!zoneAi, chunk: ZONES_CHUNK };
+  }
+  /** Clasificar con IA un trozo de textos (lo pide el navegador, trozo a trozo). */
+  async function zonesClassify(raws: unknown) {
+    requireManager();
+    if (!zoneAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const list = Array.isArray(raws) ? raws.filter((x): x is string => typeof x === 'string' && !!x.trim()).map((x) => x.slice(0, 200)).slice(0, ZONES_CHUNK) : [];
+    if (!list.length) throw new AdminError(422, 'Datos no válidos');
+    try { return await zoneAi.classify(list); } catch (e) { console.warn('[zones-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+  }
+  /** El plan con lo que dijo la IA (para la vista previa; no toca nada). */
+  async function zonesPlan(classes: unknown) {
+    requireManager();
+    const { zones, counts } = await zoneState();
+    return buildZonePlan(zones, counts, sanitizePlaces({ places: classes }, zones.map((z) => z.name)));
+  }
+  /**
+   * Aplicar: crea las zonas que faltan (Comunidad › Provincia › Pueblo), mueve las empresas, pasa la nota del Notion a
+   * sus notas y marca «revisar-ciudad» las dudosas y las que no son un sitio. `skip`: zonas que el admin ha desmarcado.
+   */
+  async function zonesApply(classes: unknown, skip: string[] = []) {
+    requireManager();
+    const { zones, accs, counts } = await zoneState();
+    const plan = buildZonePlan(zones, counts, sanitizePlaces({ places: classes }, zones.map((z) => z.name)));
+    const skipped = new Set(skip);
+    const created: string[] = [];
+    const made = new Map<string, string>();
+    const target = new Map<string, { zoneId: string | null; note: boolean; review: boolean; raw: string }>();
+    for (const g of plan.groups) {
+      const src = g.sources.filter((x) => !skipped.has(x.zoneId));
+      if (!src.length) continue;
+      let parent: string | null = null;
+      let prefix = '';
+      for (const step of g.path) {
+        prefix += `/${norm(step.name)}`;
+        let id = step.existingId ?? made.get(prefix) ?? null;
+        if (!id) {
+          try { id = await accounts.saveZone(t, { parentId: parent, name: step.name.slice(0, 80), kind: step.kind, position: 0 }); } catch (e) { mapError(e); }
+          made.set(prefix, id!); created.push(id!);
+        }
+        parent = id;
+      }
+      for (const x of src) target.set(x.zoneId, { zoneId: parent, note: !!x.note || x.review, review: x.review, raw: x.raw });
+    }
+    for (const j of plan.junk) if (!skipped.has(j.zoneId)) target.set(j.zoneId, { zoneId: null, note: true, review: true, raw: j.raw });
+    const moves: AccountMove[] = [];
+    const before: AccountMove[] = [];
+    for (const a of accs) {
+      const to = a.zoneId ? target.get(a.zoneId) : undefined;
+      if (!to) continue;
+      before.push({ id: a.id, zoneId: a.zoneId, notes: a.notes, tags: a.tags });
+      moves.push({ id: a.id, zoneId: to.zoneId, notes: to.note ? withNote(a.notes, to.raw) : a.notes,
+        tags: to.review && !a.tags.includes(REVIEW_TAG) ? [...a.tags, REVIEW_TAG] : a.tags });
+    }
+    let moved = 0;
+    try { for (let i = 0; i < moves.length; i += 1000) moved += await accounts.moveAccounts(t, moves.slice(i, i + 1000)); } catch (e) { mapError(e); }
+    const summary = { moved, created: created.length, review: moves.filter((m) => m.tags.includes(REVIEW_TAG)).length, groups: plan.groups.length };
+    try { await accounts.saveFix(t, { kind: 'zones', summary, undo: { moves: before, zoneIds: created } }); } catch (e) { mapError(e); }
+    return summary;
+  }
+  /** Deshacer el último arreglo: cada empresa vuelve a su zona, notas y listas; las zonas creadas se borran si quedan vacías. */
+  async function zonesUndo(fixId: string) {
+    requireManager();
+    const f = (await accounts.listFixes(t, 'zones')).find((x) => x.id === fixId && !x.undoneAt);
+    if (!f) throw new AdminError(404, 'Ese arreglo ya no se puede deshacer');
+    const moves = f.undo.moves ?? [];
+    const alive = new Set((await accounts.listZones(t)).map((z) => z.id));
+    let back = 0;
+    try { for (let i = 0; i < moves.length; i += 1000) back += await accounts.moveAccounts(t, moves.slice(i, i + 1000).map((m) => ({ ...m, zoneId: m.zoneId && alive.has(m.zoneId) ? m.zoneId : null }))); } catch (e) { mapError(e); }
+    const { empty } = await zoneState();
+    const gone = new Set(empty.map((z) => z.id));
+    for (const id of [...(f.undo.zoneIds ?? [])].reverse()) if (gone.has(id)) await accounts.deleteZone(id).catch(() => false);
+    await accounts.markFixUndone(f.id);
+    return { back };
+  }
+  /** Borrar las ciudades que se han quedado vacías (sin empresas ni nadie asignado). */
+  async function zonesCleanup() {
+    requireManager();
+    const { empty } = await zoneState();
+    const ids = new Set(empty.map((z) => z.id));
+    // Basta con borrar las de arriba: lo que cuelga se va con ellas.
+    const tops = empty.filter((z) => !z.parentId || !ids.has(z.parentId));
+    for (const z of tops) await accounts.deleteZone(z.id).catch(() => false);
+    return empty.length;
+  }
+
   // ---------------------------------------------------------------- ruta del día (docs/CRM_DINAMICO.md §12)
 
   /** Máximo de paradas por ruta (Google optimiza hasta 25 puntos; un día de visitas no da para más). */
@@ -762,6 +874,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
+    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup,
     routePlan, googleCandidates, googleApply, googleFill, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
