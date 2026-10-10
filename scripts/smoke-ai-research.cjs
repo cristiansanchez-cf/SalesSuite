@@ -54,5 +54,19 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForLoadState('load');
   assert((await p.textContent('body')).includes('Se acaba de investigar'), 'no se investiga dos veces seguidas');
   if (OUT) await p.screenshot({ path: `${OUT}/ai-research-after.png`, fullPage: true });
+
+  // ---- «Investigar zona»: varias desde la lista, de una en una, con el progreso; las ya investigadas se saltan.
+  await p.goto(`${BASE}/admin/accounts?ver=all`);
+  for (const n of ['Club Sol', 'Sala Marina', 'Terraza Azahar']) await p.check(`[data-testid=account][data-name="${n}"] [data-bulk]`);
+  await p.click('[data-testid=bulk-ai]');
+  await p.waitForSelector('[data-testid=bulk-ai-see]', { timeout: 60000 });
+  const done = await p.textContent('[data-testid=bulk-ai-status]');
+  assert(done.includes('2 investigadas') && done.includes('1 saltadas'), `zona: 2 investigadas y la ya investigada, saltada (${done.trim()})`);
+  if (OUT) await p.screenshot({ path: `${OUT}/ai-zone.png` });
+  await Promise.all([p.waitForURL(/cual=ia/), p.click('[data-testid=bulk-ai-see]')]);
+  const names = await p.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.getAttribute('data-name')));
+  assert(['Club Sol', 'Sala Marina', 'Terraza Azahar'].every((n) => names.includes(n)) && names.length === 3, `filtro «Investigadas por IA» (${names})`);
+  assert((await p.$$('[data-testid=account-ai]')).length === 3, 'con la marca IA en la lista');
+  if (OUT) await p.screenshot({ path: `${OUT}/ai-zone-list.png`, fullPage: true });
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

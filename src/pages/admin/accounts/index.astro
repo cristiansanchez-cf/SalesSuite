@@ -21,6 +21,7 @@ import { formatValue } from '~/lib/crm/fields';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { routeMessages } from '~/lib/i18n/messages/route';
+import { researchMessages } from '~/lib/i18n/messages/research';
 import { compareLeads, priorityOf } from '~/lib/crm/priority';
 
 const { admin } = Astro.locals;
@@ -28,11 +29,14 @@ if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
-const { m: { list: M }, locale } = i18n(Astro, accountsMessages);
+const { m: { list: M }, f: fmt, locale } = i18n(Astro, accountsMessages);
 const S = shellMessages[locale];
 const CF = crmMessages[locale].filters;
 const P = peopleMessages[locale];
 const R = priorityMessages[locale];
+const AI = researchMessages[locale];
+/** «Investigar zona»: máximo por clic (cada una tarda y cuesta). */
+const AI_MAX = 20;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -81,7 +85,7 @@ const stage = lista ? crm.find((x) => x.isStage) : undefined;
 const groupNames = await admin.crm.names(items.map((a) => a.parentId ?? ''));
 // Prioridad (docs/CRM_DINAMICO.md §11): puntuación de cada empresa; ordenar por ella y filtrar sin cualificar / fuera / se enfrían.
 const orden = q.get('orden') === 'prioridad' ? 'prioridad' : '';
-const cual = (['sin', 'fuera', 'enfria'].includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria';
+const cual = (['sin', 'fuera', 'enfria', 'ia'].includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia';
 const weights = await admin.crm.weights();
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 const prio = new Map(items.map((a) => [a.id, priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights)]));
@@ -89,8 +93,10 @@ const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
 const cooling = await admin.crm.cooling(cual === 'enfria' ? byState.map((a) => a.id) : byState.slice(0, shownMax).map((a) => a.id));
 let shown = byState.filter((a) => {
   const p = prio.get(a.id)!;
-  return cual === 'sin' ? !p.out && !p.qualified : cual === 'fuera' ? p.out : cual === 'enfria' ? cooling.has(a.id) : true;
+  return cual === 'sin' ? !p.out && !p.qualified : cual === 'fuera' ? p.out : cual === 'enfria' ? cooling.has(a.id) : cual === 'ia' ? !!a.aiResearchAt : true;
 });
+// Investigadas por IA: las últimas primero (para repasar sus propuestas).
+if (cual === 'ia' && orden !== 'prioridad') shown = [...shown].sort((x, y) => String(y.aiResearchAt).localeCompare(String(x.aiResearchAt)));
 if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.get(x.id)!, prio.get(y.id)!) || x.name.localeCompare(y.name, 'es'));
 const count = (s: State) => items.filter((a) => a.state === s).length;
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
@@ -167,6 +173,7 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
     <a class="co-chip" href={href({ cual: cual === 'sin' ? '' : 'sin' })} aria-current={cual === 'sin' ? 'true' : undefined} data-testid="filter-unqualified">{R.list.unqualified}</a>
     <a class="co-chip" href={href({ cual: cual === 'enfria' ? '' : 'enfria' })} aria-current={cual === 'enfria' ? 'true' : undefined} data-testid="filter-cooling">{R.list.cooling}</a>
     <a class="co-chip" href={href({ cual: cual === 'fuera' ? '' : 'fuera' })} aria-current={cual === 'fuera' ? 'true' : undefined} data-testid="filter-out">{R.list.out}</a>
+    <a class="co-chip" href={href({ cual: cual === 'ia' ? '' : 'ia' })} aria-current={cual === 'ia' ? 'true' : undefined} data-testid="filter-ai"><Icon name="sparkles" size={12} />{AI.zone.filter}</a>
     {toGoogle.length > 0 && (
       <form method="post" class="ml-auto"><input type="hidden" name="action" value="google-fill" /><input type="hidden" name="ids" value={toGoogle.slice(0, 200).join(',')} />
         <input type="hidden" name="back" value={href({})} />
@@ -224,6 +231,7 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
             {(() => { const p = prio.get(a.id)!; const c = cooling.get(a.id); return (
               <span class="flex flex-wrap items-center justify-end gap-1.5" data-testid="account-priority" data-score={p.score} data-out={p.out ? 'true' : 'false'}>
                 {c !== undefined && <span class="co-tag co-tag--danger" title={R.coolingHelp}>{R.cooling(c)}</span>}
+                {a.aiResearchAt && <span class="co-tag" title={AI.at(fmt.relative(a.aiResearchAt))} data-testid="account-ai"><Icon name="sparkles" size={12} />{AI.zone.badge}</span>}
                 {p.out ? <span class="co-tag" title={p.kills.map((k) => R.kills[k]).join(' · ')}>{R.outBy(R.kills[p.kills[0]])}</span>
                   : <span class="co-tag" title={p.parts.map((x) => `${R.criteria[x.key]}: ${x.points ?? R.unknown}/${x.weight}`).join('\n')}><strong>{p.score}</strong>{!p.qualified && <span class="co-meta">&nbsp;· {R.upTo(p.max)}</span>}</span>}
               </span>
@@ -245,6 +253,7 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
     <span class="font-semibold" data-bulk-count></span>
     <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open="move-group" data-testid="bulk-move"><Icon name="building2" size={14} /><span data-bulk-label></span></button>
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/route" formmethod="get" formnovalidate data-testid="bulk-route"><Icon name="map" size={14} />{routeMessages[locale].bulk}</button>
+    {admin.crm.hasAi() && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-ai data-testid="bulk-ai" title={AI.zone.max(AI_MAX)}><Icon name="sparkles" size={14} />{AI.zone.run}</button>}
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
     <dialog id="move-group" class="co-dialog" aria-labelledby="move-group-title">
       <div class="co-dialog__body">
@@ -258,6 +267,7 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
         <button class="co-btn co-btn--primary" type="submit" data-testid="bulk-move-confirm">{P.bulk.moveConfirm}</button>
       </div>
     </dialog>
+    <p class="co-meta m-0 basis-full" role="status" hidden data-bulk-ai-status data-testid="bulk-ai-status"></p>
   </form>
   <script define:vars={{ label: P.bulk.move(0) }}>
     // Barra de selección: aparece al marcar alguna fila (mover a un grupo en bloque).
@@ -270,6 +280,32 @@ const toGoogle = admin.crm.hasGoogle() ? shown.filter((a) => !a.placeAt).map((a)
     };
     document.addEventListener('change', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('[data-bulk]')) sync(); });
     bar.querySelector('[data-bulk-clear]').addEventListener('click', () => { boxes().forEach((b) => { b.checked = false; }); sync(); });
+  </script>
+  <script define:vars={{ max: AI_MAX, T: { progress: AI.zone.progress('{i}', '{n}', '{name}'), done: AI.zone.done('{n}'), skipped: AI.zone.skipped('{n}'), failed: AI.zone.failed('{n}'), stay: AI.zone.stay, see: AI.zone.see } }}>
+    // «Investigar zona»: las marcadas, de una en una (cada una tarda hasta un minuto), con el progreso a la vista.
+    // Las ya investigadas en los últimos 30 días y las de otro se saltan.
+    const btn = document.querySelector('[data-bulk-ai]');
+    const status = document.querySelector('[data-bulk-ai-status]');
+    btn?.addEventListener('click', async () => {
+      const rows = [...document.querySelectorAll('[data-bulk]')].filter((b) => b.checked).slice(0, max)
+        .map((b) => ({ id: b.value, name: b.closest('[data-name]')?.getAttribute('data-name') ?? '' }));
+      if (!rows.length) return;
+      btn.disabled = true; status.hidden = false;
+      let ok = 0, skipped = 0, failed = 0;
+      for (const [i, r] of rows.entries()) {
+        status.textContent = `${T.progress.replace('{i}', String(i + 1)).replace('{n}', String(rows.length)).replace('{name}', r.name)} ${T.stay}`;
+        try {
+          const res = await fetch(`/admin/api/accounts/${r.id}/research`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ skipRecentDays: 30 }) });
+          const j = await res.json().catch(() => ({}));
+          if (j.ok) ok++; else if (j.skipped) skipped++; else failed++;
+        } catch { failed++; }
+      }
+      const n = (t, v) => t.replace('{n}', String(v));
+      status.textContent = `${n(T.done, ok)}${skipped ? n(T.skipped, skipped) : ''}${failed ? n(T.failed, failed) : ''}. `;
+      const a = document.createElement('a'); a.href = '/admin/accounts?ver=all&cual=ia'; a.textContent = T.see; a.dataset.testid = 'bulk-ai-see';
+      status.append(a);
+      btn.disabled = false;
+    });
   </script>
 
   <dialog id="new-account" class="co-dialog co-dialog--wide" aria-labelledby="new-account-title">

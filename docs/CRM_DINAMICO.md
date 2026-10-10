@@ -352,6 +352,11 @@ que **propone**; el comercial decide.
   verificar». Investigar no reserva la empresa.
 - **Permisos y coste**: como «Completar con Google» (libre, mía o gerente; se comprueba antes de llamar a la IA). Una
   vez cada 2 minutos por empresa. Coste aproximado: céntimos por empresa (búsquedas web + tokens).
+- **Investigar zona** (Cuentas): marcas empresas (p. ej. filtrando por zona) y «Investigar con IA» en la barra de
+  selección. Hasta 20 por clic; el navegador las pide de una en una a `/admin/api/accounts/{id}/research` (cada una
+  tarda hasta un minuto, así ninguna petición pasa del límite del servidor) y enseña el progreso. Se saltan las
+  investigadas en los últimos 30 días y las de otro. Filtro «Investigadas por IA» (las últimas primero) y marca «IA»
+  en la lista para repasar las propuestas.
 - **Configuración**: `ANTHROPIC_API_KEY` en Vercel (sin ella, la tarjeta lo dice y no hay botón). Para las pruebas
   automáticas, `AI_RESEARCH_FIXTURE=1` usa una respuesta fija sin llamar a nadie.
 - Migración `20261107000000_crm_ai_research.sql` (`account.ai_research`, RPC `account_ai_research`); pruebas
