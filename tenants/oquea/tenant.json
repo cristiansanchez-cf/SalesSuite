@@ -229,26 +229,18 @@
           "cards": [
             "dive",
             "record",
-            "milestone"
+            "trip",
+            "milestone",
+            "species"
           ],
           "photos": [
-            "stock:scuba diver underwater",
-            "stock:sea turtle underwater",
-            "stock:coral reef fish",
-            "stock:manta ray",
-            "stock:dive boat sea",
-            "stock:scuba divers reef",
-            "asset:img/fotos/share-card-bg.webp",
-            "asset:img/fotos/share-card-aerea.png"
+            "asset:img/tarjetas/inmersion.webp",
+            "asset:img/tarjetas/record.webp",
+            "asset:img/tarjetas/viaje.webp",
+            "asset:img/tarjetas/hito.webp",
+            "asset:img/tarjetas/especie.webp"
           ],
-          "brand": "asset:logo-dark.svg",
-          "exports": [
-            "asset:img/exportables/1-inmersion.webp",
-            "asset:img/exportables/2-record.webp",
-            "asset:img/exportables/3-viaje.webp",
-            "asset:img/exportables/4-hito.webp",
-            "asset:img/exportables/5-especie.webp"
-          ]
+          "brand": "asset:logo-dark.svg"
         }
       }
     },
@@ -684,26 +676,18 @@
           "cards": [
             "dive",
             "record",
-            "milestone"
+            "trip",
+            "milestone",
+            "species"
           ],
           "photos": [
-            "stock:scuba diver underwater",
-            "stock:sea turtle underwater",
-            "stock:coral reef fish",
-            "stock:manta ray",
-            "stock:dive boat sea",
-            "stock:scuba divers reef",
-            "asset:img/fotos/share-card-bg.webp",
-            "asset:img/fotos/share-card-aerea.png"
+            "asset:img/tarjetas/inmersion.webp",
+            "asset:img/tarjetas/record.webp",
+            "asset:img/tarjetas/viaje.webp",
+            "asset:img/tarjetas/hito.webp",
+            "asset:img/tarjetas/especie.webp"
           ],
-          "brand": "asset:logo-dark.svg",
-          "exports": [
-            "asset:img/exportables/1-inmersion.webp",
-            "asset:img/exportables/2-record.webp",
-            "asset:img/exportables/3-viaje.webp",
-            "asset:img/exportables/4-hito.webp",
-            "asset:img/exportables/5-especie.webp"
-          ]
+          "brand": "asset:logo-dark.svg"
         }
       }
     },

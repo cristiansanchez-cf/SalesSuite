@@ -28,11 +28,11 @@ const SVG_EV: Partial<Record<Kind, string>> = { centre: CENTRE_EV, ngo: NGO_EV, 
 const BADGE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#3757BE" stroke="#fff" stroke-width="2.6"/><path transform="translate(4.6 4.4) scale(.42)" d="M24.0004 18.4355L26.7135 24.0703L32.87 24.9051L28.383 28.8703L29.6352 34.8182L24.0004 31.6877L18.3656 34.8182L19.6178 28.8703L15.1309 24.9051L21.2874 24.0703L24.0004 18.4355Z" fill="#D0FF00"/></svg>';
 const markers: Marker[] = [
   { kind: 'centre', x: 26, y: 25, label: center, badge: true, selected: focus === 'centre' },
-  { kind: 'ngo', x: 76, y: 22, label: L.ngoMarker('Mar Limpio'), badge: true, selected: focus === 'ngo' },
+  { kind: 'ngo', x: 76, y: 22, label: L.ngoMarker(L.people.ngo), badge: true, selected: focus === 'ngo' },
   { kind: 'site', x: 22, y: 52, label: site, selected: focus === 'site' },
-  { kind: 'site', x: 64, y: 60, label: 'Shark Point', badge: true },
+  { kind: 'site', x: 64, y: 60, label: L.people.site3, badge: true },
   { kind: 'site', x: 84, y: 44 },
-  { kind: 'site', x: 40, y: 78, label: 'Los Cañones' },
+  { kind: 'site', x: 40, y: 78, label: L.people.site2 },
 ];
 ---
 <div class:list={['sm', cls]} aria-hidden="true">
