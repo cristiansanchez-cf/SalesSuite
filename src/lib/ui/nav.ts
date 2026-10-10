@@ -34,7 +34,8 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
     ] },
     // CRM = empresas + personas. Importar y ordenar los datos va en Configurar (solo admin).
     ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, testid: 'nav-accounts', tabs: [
-      { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/people', label: L.people, testid: 'tab-people' },
+      { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/map', label: L.map, testid: 'tab-map' },
+      { href: '/admin/people', label: L.people, testid: 'tab-people' },
     ] }] : []),
     { href: '/admin/learn', label: L.learn, icon: 'graduation-cap', testid: 'nav-learn', tabs: [{ href: '/admin/learn', label: L.learn }, { href: '/admin/wins', label: L.wins, testid: 'tab-wins' }] },
     { href: '/admin/commissions', label: L.myCommissions, icon: 'wallet', testid: 'nav-my-commissions', tabs: [{ href: '/admin/commissions', label: L.myCommissions, exact: true }] },

@@ -76,13 +76,15 @@ export const googlePlaces = (apiKey: string): PlacesApi => ({ search: (q) => sea
  * Google de pruebas (AI_RESEARCH_FIXTURE=1, sin clave): dos resultados fijos con el nombre buscado, sin llamar a nadie.
  * La web es de mentira (.test) y su «escaneo» también (fixtureWebsite).
  */
+const hash = (s: string) => [...s].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7);
 export function fixturePlaces(): PlacesApi {
   const make = (q: string, i: number): PlaceResult => {
     const name = i === 0 ? q.split(' ').slice(0, 3).join(' ') : `${q.split(' ')[0]} Bar`;
     const slug = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '') || 'local';
     return { placeId: `fx${i}_${Buffer.from(q.slice(0, 120)).toString('base64url')}`, name, address: 'Calle de la Paz 1, 46003 Valencia, España', phone: '+34 960 000 00' + i,
       website: `https://${slug}.test/`, mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(name)}`, hours: ['viernes: 23:00–6:00', 'sábado: 23:00–6:00'],
-      lat: 39.47 + i / 100, lng: -0.376, status: 'OPERATIONAL', rating: i === 0 ? 4.4 : 3.9, reviews: i === 0 ? 312 : 41, photo: null, type: 'Discoteca',
+      // Un punto distinto por búsqueda (dentro de España), siempre el mismo para lo mismo.
+      lat: 37 + (hash(q) % 500) / 100 + i / 100, lng: -6 + ((hash(q) >>> 9) % 700) / 100, status: 'OPERATIONAL', rating: i === 0 ? 4.4 : 3.9, reviews: i === 0 ? 312 : 41, photo: null, type: 'Discoteca',
       place: { city: 'Valencia', province: 'Valencia', region: 'Comunidad Valenciana', country: 'España' } };
   };
   return {

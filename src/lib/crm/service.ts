@@ -8,7 +8,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import type { Account } from '../accounts/types';
+import type { Account, Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -772,6 +772,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   /** Textos por llamada a la IA (unos 60 caben de sobra en una respuesta y tardan menos del límite del servidor). */
   const ZONES_CHUNK = 60;
+  /** Ciudades que se sitúan en el mapa por cada clic del navegador (cada una es una búsqueda en Google). */
+  const ZONES_LOCATE_CHUNK = 15;
   async function zoneState() {
     const [zones, accs, assigns] = await Promise.all([accounts.listZones(t), allAccounts(), accounts.listAssignments(t)]);
     const counts = new Map<string, number>();
@@ -933,6 +935,33 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   /** Borrar las ciudades que se han quedado vacías (sin empresas ni nadie asignado). */
+  /**
+   * Situar las ciudades en el mapa (§16): busca en Google cada zona sin punto («Requena, Valencia, Comunidad Valenciana,
+   * España») y guarda dónde está. Por tandas (el navegador repite hasta acabar); primero las de arriba, y si Google no
+   * encuentra una, se queda en el punto de la que la contiene.
+   */
+  async function zonesLocate(): Promise<{ located: number; left: number }> {
+    requireImporter();
+    const api = requirePlaces();
+    const zones = await accounts.listZones(t);
+    const byId = new Map(zones.map((z) => [z.id, z]));
+    const ups = (z: Zone) => { const out: Zone[] = []; for (let u = z.parentId ? byId.get(z.parentId) : undefined, i = 0; u && i < 8; u = u.parentId ? byId.get(u.parentId) : undefined, i++) out.push(u); return out; };
+    const todo = zones.filter((z) => z.lat == null || z.lng == null).sort((a, b) => ups(a).length - ups(b).length || a.name.localeCompare(b.name, 'es'));
+    const batch = todo.slice(0, ZONES_LOCATE_CHUNK);
+    let located = 0;
+    for (const z of batch) {
+      let at: { lat: number; lng: number } | null = null;
+      try {
+        const r = (await api.search([z.name, ...ups(z).map((u) => u.name)].join(', ')))[0];
+        if (r?.lat != null && r.lng != null) at = { lat: r.lat, lng: r.lng };
+      } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); }
+      const parent = ups(z).find((u) => u.lat != null && u.lng != null);
+      at ??= parent ? { lat: parent.lat!, lng: parent.lng! } : null;
+      if (at && await accounts.setZoneLocation(z.id, at.lat, at.lng).catch(() => false)) { located++; Object.assign(z, at); }
+    }
+    return { located, left: todo.length - located };
+  }
+
   async function zonesCleanup() {
     requireImporter();
     const { empty } = await zoneState();
@@ -973,7 +1002,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, hasZoneFixAi: () => !!zoneFixAi,
+    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,

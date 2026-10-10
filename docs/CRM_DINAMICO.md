@@ -433,3 +433,20 @@ ciegas). Ahora es **en la ficha de cada empresa**, eligiendo a mano:
 
 Migraciones `20261113000000_crm_google.sql` y `20261114000000_crm_google_redo.sql` (Facebook, valoración, reseñas y foto; `account_research` con ciudad, email
 y redes); pruebas `places.test.ts`, `website.test.ts`, `supabase/tests/56_crm_google.test.sql`, `scripts/smoke-google.cjs`.
+
+## 16. Mapa (hecho)
+
+Pestaña **CRM → Mapa** (`/admin/map`, Leaflet con el mapa de OpenStreetMap/CARTO; `src/lib/crm/map.ts`). Cada uno ve
+las mismas empresas que en su lista (su zona, todas o las suyas) y con los mismos filtros: ciudad, estado y temperatura.
+
+- **Punto** = ubicación exacta (la de su ficha de Google). Color por estado; **borde naranja** = caliente (cualificada,
+  prioridad ≥ 60, sin enfriarse); **punteado y claro** = se enfría o está fuera. Al tocarlo: nombre, ciudad, estado,
+  prioridad, valoración, próximo paso, quién la trabaja y **Abrir ficha**.
+- **Burbuja** = las empresas que solo tienen ciudad, juntas en el punto de su ciudad, con el número; al tocarla, «Ver en
+  la lista». Las ciudades se sitúan una vez: el admin pulsa **Situar ciudades en el mapa** (Google, por tandas;
+  `zone.lat/lng`, migración `20261115000000_crm_map.sql`).
+- **Por comercial de la zona** (admin y gerentes): color según quién lleva la zona (la asignación más cercana subiendo:
+  ciudad → provincia → comunidad), con leyenda y «Zona sin asignar».
+- Abajo, cuántas no se pueden situar (ciudad sin situar o sin ciudad, con enlace a la lista).
+
+Pruebas: `map.test.ts`, `supabase/tests/57_crm_map.test.sql`, `scripts/smoke-map.cjs`.

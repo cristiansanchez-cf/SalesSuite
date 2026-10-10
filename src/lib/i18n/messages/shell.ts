@@ -3,7 +3,7 @@ import { defineMessages } from '../core';
 
 const es = {
   nav: {
-    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'CRM', companies: 'Empresas', people: 'Personas', import: 'Importar', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
+    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'CRM', companies: 'Empresas', map: 'Mapa', people: 'Personas', import: 'Importar', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
     learn: 'Aprende', myCommissions: 'Mis comisiones', setup: 'Configuración guiada', playbook: 'Playbook y mercado', catalog: 'Catálogo',
     org: 'Organigrama', platform: 'Plataforma', team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar', company: 'Empresa', catalogPrices: 'Catálogo y precios', crmFields: 'Campos', crmData: 'Datos del CRM', cities: 'Ciudades', sectionTabs: 'Apartados de la sección',
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
@@ -48,7 +48,7 @@ export const shellMessages = defineMessages({
   es,
   en: {
     nav: {
-      start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'CRM', companies: 'Companies', people: 'People', import: 'Import', compose: 'Write a message', wins: 'What worked',
+      start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'CRM', companies: 'Companies', map: 'Map', people: 'People', import: 'Import', compose: 'Write a message', wins: 'What worked',
       learn: 'Learn', myCommissions: 'My commissions', setup: 'Guided setup', playbook: 'Playbook & market', catalog: 'Catalog',
       org: 'Org chart', platform: 'Platform', team: 'Team', territory: 'Territory', commissions: 'Commissions', prices: 'Pricing', brand: 'Brand', sell: 'Sell', configure: 'Configure', company: 'Company', catalogPrices: 'Catalog & pricing', crmFields: 'Fields', crmData: 'CRM data', cities: 'Cities', sectionTabs: 'Section pages',
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
@@ -90,7 +90,7 @@ export const shellMessages = defineMessages({
   },
   pt: {
     nav: {
-      start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'CRM', companies: 'Empresas', people: 'Pessoas', import: 'Importar', compose: 'Preparar mensagem', wins: 'O que funcionou',
+      start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'CRM', companies: 'Empresas', map: 'Mapa', people: 'Pessoas', import: 'Importar', compose: 'Preparar mensagem', wins: 'O que funcionou',
       learn: 'Aprenda', myCommissions: 'Minhas comissões', setup: 'Configuração guiada', playbook: 'Playbook e mercado', catalog: 'Catálogo',
       org: 'Organograma', platform: 'Plataforma', team: 'Equipe', territory: 'Território', commissions: 'Comissões', prices: 'Tarifas', brand: 'Marca', sell: 'Vender', configure: 'Configurar', company: 'Empresa', catalogPrices: 'Catálogo e preços', crmFields: 'Campos', crmData: 'Dados do CRM', cities: 'Cidades', sectionTabs: 'Partes da seção',
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
@@ -132,7 +132,7 @@ export const shellMessages = defineMessages({
   },
   ko: {
     nav: {
-      start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: 'CRM', companies: '회사', people: '사람', import: '가져오기', compose: '메시지 작성', wins: '효과 있었던 것',
+      start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: 'CRM', companies: '회사', map: '지도', people: '사람', import: '가져오기', compose: '메시지 작성', wins: '효과 있었던 것',
       learn: '학습', myCommissions: '내 커미션', setup: '가이드 설정', playbook: '플레이북과 시장', catalog: '카탈로그',
       org: '조직도', platform: '플랫폼', team: '팀', territory: '담당 지역', commissions: '커미션', prices: '요금과 결제', brand: '브랜드', sell: '판매', configure: '설정', company: '회사', catalogPrices: '카탈로그와 가격', crmFields: '필드', crmData: 'CRM 데이터', cities: '도시', sectionTabs: '섹션 페이지',
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,

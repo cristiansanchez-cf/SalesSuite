@@ -39,13 +39,14 @@ const accountRow = (t: string, a: AccountInsert) => ({
   owner_id: a.ownerId ?? null, fields: a.fields ?? {}, parent_id: a.parentId ?? null, tags: a.tags ?? [], import_id: a.importId ?? null,
   ...contactRow(a.contact),
 });
-const toZone = (r: Row): Zone => ({ id: r.id, tenantId: r.tenant_id, parentId: r.parent_id, name: r.name, kind: r.kind as ZoneKind, position: r.position });
+const toZone = (r: Row): Zone => ({ id: r.id, tenantId: r.tenant_id, parentId: r.parent_id, name: r.name, kind: r.kind as ZoneKind, position: r.position, lat: r.lat ?? null, lng: r.lng ?? null });
 /** Búsqueda por nombre sin comodines del usuario. */
 const like = (q: string) => `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
 
 export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
   return {
     async listZones(t) { return (check(await sb.from('zone').select('*').eq('tenant_id', t)) ?? []).map(toZone); },
+    async setZoneLocation(id, lat, lng) { return (check(await sb.from('zone').update({ lat, lng }).eq('id', id).select('id')) ?? []).length > 0; },
     async saveZone(t, z, id) {
       const row = { tenant_id: t, parent_id: z.parentId, name: z.name, kind: z.kind, position: z.position };
       if (id) {

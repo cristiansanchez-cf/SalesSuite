@@ -43,8 +43,8 @@ export function checkFields(t: string, fields: Record<string, unknown>, target: 
   if (unknown) throw new Error(`check constraint: Campo desconocido: ${unknown}`);
   return { ...fields };
 }
-const toZone = (z: { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number }): Zone =>
-  ({ id: z.id, tenantId: z.tenant_id, parentId: z.parent_id, name: z.name, kind: z.kind as ZoneKind, position: z.position });
+const toZone = (z: { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number; lat?: number | null; lng?: number | null }): Zone =>
+  ({ id: z.id, tenantId: z.tenant_id, parentId: z.parent_id, name: z.name, kind: z.kind as ZoneKind, position: z.position, lat: z.lat ?? null, lng: z.lng ?? null });
 
 function roleOf(tenantId: string, userId: string | null) {
   return db().users.find((u) => u.id === userId)?.memberships.find((m) => m.tenant_id === tenantId)?.role ?? null;
@@ -143,6 +143,12 @@ export function demoAccountsDb(actorId: string): AccountsDb {
   }
   return {
     async listZones(t) { return db().zone.filter((z) => z.tenant_id === t).map(toZone); },
+    async setZoneLocation(id, lat, lng) {
+      const z = db().zone.find((x) => x.id === id);
+      if (!z || roleOf(z.tenant_id, actorId) !== 'admin') return false;
+      Object.assign(z, { lat, lng });
+      return true;
+    },
     async saveZone(t, z, id) {
       const s = db();
       if (s.zone.some((x) => x.tenant_id === t && x.id !== id && (x.parent_id ?? null) === (z.parentId ?? null) && x.name.toLowerCase() === z.name.toLowerCase())) {

@@ -44,6 +44,8 @@ export interface AccountsDb {
   listZones(tenantId: string): Promise<Zone[]>;
   saveZone(tenantId: string, z: { parentId: string | null; name: string; kind: ZoneKind; position: number }, id?: string): Promise<string>;
   deleteZone(id: string): Promise<boolean>;
+  /** El punto de una ciudad en el mapa (§16; solo admin, por RLS). */
+  setZoneLocation(id: string, lat: number, lng: number): Promise<boolean>;
   /** Alta de zonas en bloque (ciudades de una importación). */
   insertZones(tenantId: string, rows: Array<{ parentId: string | null; name: string; kind: ZoneKind; position: number }>): Promise<string[]>;
   listAssignments(tenantId: string): Promise<ZoneAssignment[]>;

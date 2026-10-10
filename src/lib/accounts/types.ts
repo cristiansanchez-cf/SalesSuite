@@ -7,7 +7,7 @@ export type Eligibility = 'eligible' | 'claimed_by_other' | 'blocked' | 'out_of_
 export type AccountDecision = 'approved' | 'rejected';
 export type TouchKind = 'created' | 'contact' | 'dossier' | 'won' | 'lost' | 'claim' | 'release' | 'block' | 'unblock' | 'assign';
 
-export interface Zone { id: string; tenantId: string; parentId: string | null; name: string; kind: ZoneKind; position: number }
+export interface Zone { id: string; tenantId: string; parentId: string | null; name: string; kind: ZoneKind; position: number; /** Su punto en el mapa (§16). */ lat?: number | null; lng?: number | null }
 /** Un movimiento de empresa (arreglos en bloque: ordenar ciudades). zoneId null = sin zona. */
 export interface AccountMove { id: string; zoneId: string | null; notes: string | null; tags: string[] }
 /** Arreglo de datos con su deshacer (crm_fix). */
