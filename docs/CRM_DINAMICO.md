@@ -450,7 +450,9 @@ Leaflet + `leaflet.markercluster` (`src/lib/crm/map.ts`).
   migración `20261115000000_crm_map.sql`).
 - **Por comercial de la zona** (admin y gerentes): color según quién lleva la zona (la asignación más cercana subiendo:
   ciudad → provincia → comunidad), con leyenda y «Zona sin asignar».
-- **Fondo del mapa**: OpenStreetMap sin clave. Con `MAPTILER_KEY` en Vercel (clave pública de MapTiler, restringida a tu
-  dominio), se usa el estilo «Dataviz» de MapTiler, más limpio.
+- **Fondo del mapa**: con `MAPTILER_KEY` en Vercel, MapTiler (estilo «Dataviz»); sin ella, OpenStreetMap. La clave de
+  MapTiler es pública (va en el navegador): se protege con «Allowed HTTP Origins» = tu dominio. Como la consola manda
+  `no-referrer`, el fondo del mapa pide sus imágenes con `referrerPolicy: strict-origin` (solo el dominio): sin eso
+  OpenStreetMap responde «Access blocked» y MapTiler rechaza la clave restringida.
 
 Pruebas: `map.test.ts`, `supabase/tests/57_crm_map.test.sql`, `scripts/smoke-map.cjs`.

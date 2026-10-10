@@ -163,7 +163,9 @@ const payload = {
       tiles: { url: string; attribution: string }; T: Record<string, string> & { stateLabel: Record<string, string>; kinds: Record<string, string> } };
     const T = d.T;
     const map = L.map(el, { scrollWheelZoom: true }).setView([40.2, -3.7], 6);
-    L.tileLayer(d.tiles.url, { maxZoom: 19, attribution: d.tiles.attribution }).addTo(map);
+    // La consola no manda «de dónde vienes» (no-referrer), pero OpenStreetMap lo exige y MapTiler lo usa para comprobar que
+    // la clave se usa desde tu dominio: para el fondo del mapa se manda solo el dominio, nunca la ruta.
+    L.tileLayer(d.tiles.url, { maxZoom: 19, attribution: d.tiles.attribution, referrerPolicy: 'strict-origin' } as L.TileLayerOptions).addTo(map);
     const colorOf = (p: Point) => (d.byRep ? (p.rep ? d.repColor[p.rep] : '#9ca3af') : d.stateColor[p.state] ?? '#6b7280');
     // Los textos van como texto (nunca como HTML): nombres y notas vienen de los datos.
     const node = (tag: string, text: string, cls?: string) => { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; };
