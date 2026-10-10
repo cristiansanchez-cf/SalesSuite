@@ -70,6 +70,9 @@ function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   if (!r.success) throw new AdminError(422, 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.') || 'valor'}: ${i.message}`));
   return r.data;
 }
+/** Motivo corto de un fallo de la IA para el aviso (estado HTTP y mensaje, sin claves). */
+const aiReason = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/sk-ant-[\w-]+/g, '…').slice(0, 300);
+
 function mapError(e: unknown): never {
   if (e instanceof AdminError) throw e;
   const msg = e instanceof Error ? e.message : String(e);
@@ -705,7 +708,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
         sector: ctx.sector, seller: ctx.seller, known });
-    } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+    } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
     const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date() });
     try { await accounts.saveAiResearch(accountId, r); } catch (e) { mapError(e); }
@@ -768,7 +771,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (!zoneAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const list = Array.isArray(raws) ? raws.filter((x): x is string => typeof x === 'string' && !!x.trim()).map((x) => x.slice(0, 200)).slice(0, ZONES_CHUNK) : [];
     if (!list.length) throw new AdminError(422, 'Datos no válidos');
-    try { return await zoneAi.classify(list); } catch (e) { console.warn('[zones-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+    try { return await zoneAi.classify(list); } catch (e) { console.warn('[zones-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
   }
   /** El plan con lo que dijo la IA (para la vista previa; no toca nada). */
   async function zonesPlan(classes: unknown) {
@@ -848,7 +851,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const { zones, counts } = await zoneState();
     const lines = zoneRows(zones, counts).map((r) => `${r.id} | ${r.path} | ${r.kind} | ${r.direct}`);
     let raw: unknown;
-    try { raw = await zoneFixAi.review(lines); } catch (e) { console.warn('[zones-fix-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+    try { raw = await zoneFixAi.review(lines); } catch (e) { console.warn('[zones-fix-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     return sanitizeFixes(raw, zones);
   }
   /**

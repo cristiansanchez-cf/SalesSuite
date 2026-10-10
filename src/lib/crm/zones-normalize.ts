@@ -273,7 +273,8 @@ export const FIXES_TOOL = {
           type: 'object', additionalProperties: false, required: ['op', 'id', 'target', 'name', 'kind', 'reason'],
           properties: {
             op: { type: 'string', enum: ['merge', 'rename', 'kind', 'move'] },
-            id: S, target: SN, name: SN, kind: { type: ['string', 'null'], enum: [...ZONE_KINDS, null] }, reason: S,
+            // El tipo se valida después (sanitizeFixes): mismo patrón de esquema que save_places, que funciona en producción.
+            id: S, target: SN, name: SN, kind: { ...SN, description: 'country | region | province | city | area (solo en op kind)' }, reason: S,
           },
         },
       },
@@ -297,7 +298,7 @@ export function claudeZoneFixes(apiKey: string, fetchImpl?: typeof fetch): ZoneF
       const stream = client.beta.messages.stream({
         model: PLACES_MODEL, max_tokens: 32000,
         betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
-        output_config: { effort: 'medium' },
+        output_config: { effort: 'low' },
         system: FIXES_SYSTEM,
         tools: [FIXES_TOOL as unknown as Anthropic.Beta.BetaTool],
         messages: [{ role: 'user', content: `${lines.join('\n')}\n\nLlama a save_fixes.` }],

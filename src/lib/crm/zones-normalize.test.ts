@@ -4,7 +4,7 @@ import { demoAdminDb } from '../admin/db-demo';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
-import { buildZonePlan, fixtureZoneFixes, fixtureZoneNames, pathFor, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type PlaceClass } from './zones-normalize';
+import { FIXES_TOOL, PLACES_TOOL, buildZonePlan, fixtureZoneFixes, fixtureZoneNames, pathFor, sanitizeFixes, sanitizePlaces, withNote, zoneRows, REVIEW_TAG, type PlaceClass } from './zones-normalize';
 import type { Zone } from '../accounts/types';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
@@ -191,5 +191,19 @@ describe('terminar en el espacio', () => {
     const fixes = await svc(ADMIN, 'admin').zonesReview();
     expect(Array.isArray(fixes)).toBe(true);
     expect(JSON.stringify(d.zone)).toBe(before);
+  });
+});
+
+describe('esquemas de las herramientas de la IA', () => {
+  // Un campo que admite «vacío» (type con null) no lleva además lista cerrada (enum): el esquema estricto lo rechaza.
+  const bad = (v: unknown): boolean => {
+    if (!v || typeof v !== 'object') return false;
+    const o = v as Record<string, unknown>;
+    if (Array.isArray(o.type) && o.type.includes('null') && Array.isArray(o.enum)) return true;
+    return Object.values(o).some(bad);
+  };
+  test('sin enum en campos que admiten null', () => {
+    expect(bad(FIXES_TOOL.input_schema)).toBe(false);
+    expect(bad(PLACES_TOOL.input_schema)).toBe(false);
   });
 });
