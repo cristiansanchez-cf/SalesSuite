@@ -125,6 +125,8 @@ jobs:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ADMIN_EMAILS: ${{ inputs.admin_email }}
+          # Para las propuestas de cada comercial en su idioma (textos propios traducidos con Claude).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TENANT: ${{ inputs.tenant }}
           DRY: ${{ inputs.dry_run }}
         run: |

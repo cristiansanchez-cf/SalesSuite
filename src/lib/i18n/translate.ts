@@ -11,13 +11,8 @@ export interface TextTranslator { translate(texts: string[], targetLocale: strin
 const LANG: Record<string, string> = { ko: 'Korean (ko-KR)', en: 'English', pt: 'Portuguese', es: 'Spanish (Spain)', ca: 'Catalan', fr: 'French' };
 export const langOf = (locale: string) => LANG[locale.slice(0, 2)] ?? locale;
 
-/** Glosario y notas del espacio (lo carga el alta del espacio; aquí solo se lee). */
-const FILES = import.meta.glob<{ glossary?: string[]; notes?: string } | undefined>('../../../tenants/*/tenant.json', { import: 'content_i18n' });
-export async function glossaryFor(slug: string): Promise<{ glossary: string[]; notes?: string }> {
-  const load = Object.entries(FILES).find(([p]) => p.endsWith(`/tenants/${slug}/tenant.json`))?.[1];
-  const c = load ? await load().catch(() => undefined) : undefined;
-  return { glossary: Array.isArray(c?.glossary) ? c!.glossary.filter((x) => typeof x === 'string') : [], notes: typeof c?.notes === 'string' ? c.notes : undefined };
-}
+// El glosario del espacio se carga en ./translate-glossary (import.meta.glob, solo dentro de la app): así los scripts
+// (scripts/sample-dossiers.ts) pueden usar el traductor sin Vite.
 
 export function systemPrompt(company: string, target: string, glossary: string[], notes?: string): string {
   return [
