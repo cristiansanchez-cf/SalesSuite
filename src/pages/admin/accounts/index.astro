@@ -115,7 +115,6 @@ const href = (p: Record<string, string>) => {
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
-// Completar con Google (docs/CRM_DINAMICO.md §11): las de esta vista que aún no se han buscado.
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];

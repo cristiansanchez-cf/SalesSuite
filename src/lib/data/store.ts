@@ -86,7 +86,7 @@ export interface PartnerAccountRow {
   id: string; tenant_id: string; user_id: string; name: string; segment_id: string | null;
   price_policy: 'hidden' | 'list' | 'adjusted'; price_adjust_pct: number; notes: string | null; position: number;
 }
-export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string; delegation_id?: string | null }>; platform_admin?: boolean; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string; onboarding?: Record<string, string>; contact_channel?: string | null; contact_value?: string | null }
+export interface DemoUser { id: string; email: string; display_name: string; memberships: Array<{ tenant_id: string; role: Role; invited_by?: string | null; created_at?: string; delegation_id?: string | null; contact_channel?: string | null; contact_value?: string | null }>; platform_admin?: boolean; locale?: string; phone?: string | null; notify_email?: boolean; digest_sent_at?: string | null; daily_digest?: boolean; timezone?: string; onboarding?: Record<string, string>; contact_channel?: string | null; contact_value?: string | null }
 export interface ZoneRow { id: string; tenant_id: string; parent_id: string | null; name: string; kind: string; position: number; delegation_id?: string | null; lat?: number | null; lng?: number | null }
 export interface DelegationRow { id: string; tenant_id: string; name: string; manager_id: string | null; position: number }
 export interface MembershipZoneRow { tenant_id: string; user_id: string; zone_id: string }
@@ -200,6 +200,8 @@ export interface DemoDb {
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
   crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number> }>;
+  /** Topes de uso por persona y día (Google, IA). */
+  usage_counter: Array<{ tenant_id: string; user_id: string; kind: string; day: string; n: number }>;
   crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
@@ -386,6 +388,7 @@ export function freshDemoDb(): DemoDb {
     crm_import: [],
     crm_settings: [],
     crm_fix: [],
+    usage_counter: [],
     crm_activity: [
       { id: '00000000-0000-4000-8000-0000000ca001', tenant_id: ENJOY, account_id: '00000000-0000-4000-8000-0000000ac001', contact_id: '00000000-0000-4000-8000-0000000cc501',
         user_id: REP, channel: 'instagram', outcome: 'replied', note: 'Le interesa para los viernes; pide verlo en persona.', happened_at: ago(2), created_at: ago(2) },

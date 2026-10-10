@@ -4,6 +4,7 @@
  * Si la empresa no tiene un dato y su persona principal sí, se usa el de la persona y se dice de quién es.
  */
 import Icon from '~/components/ui/Icon.astro';
+import { safeHref } from '~/lib/safe-href';
 import { i18n } from '~/lib/i18n';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 
@@ -30,7 +31,7 @@ const items = [
 {items.length > 0 && (
   <div class="flex flex-wrap gap-2" data-testid={testid}>
     {items.map((x) => (
-      <a class:list={['co-btn co-btn--ghost', size === 'sm' ? 'co-btn--sm' : '', !labels && 'co-btn--icon']} href={x.href} title={x.from ? `${x.title} · ${C.from(x.from)}` : x.title}
+      <a class:list={['co-btn co-btn--ghost', size === 'sm' ? 'co-btn--sm' : '', !labels && 'co-btn--icon']} href={safeHref(x.href)} title={x.from ? `${x.title} · ${C.from(x.from)}` : x.title}
         target={x.external ? '_blank' : undefined} rel={x.external ? 'noopener noreferrer' : undefined} data-no-progress aria-label={labels ? undefined : x.label}>
         <Icon name={x.icon} size={size === 'sm' ? 14 : 16} />{labels && <span>{x.label}{x.from && <span class="co-meta"> · {C.from(x.from)}</span>}</span>}
       </a>

@@ -29,6 +29,21 @@ do $$ begin
   raise exception 'ASSERT FAILED: un comercial limpia en bloque';
 exception when insufficient_privilege then null; end $$;
 
+-- Ni un/a gerente (en bloque es de admin: Configurar → Datos del CRM).
+reset role;
+insert into public.membership (user_id, tenant_id, role) values ('66666666-6666-4666-8666-666666666666', '00000000-0000-4000-8000-000000000e01', 'lead')
+  on conflict (tenant_id, user_id) do update set role = 'lead';
+set role authenticated;
+set request.jwt.claim.sub = '66666666-6666-4666-8666-666666666666';
+do $$ begin
+  perform public.crm_classify_accounts('00000000-0000-4000-8000-000000000e01', '[]');
+  raise exception 'ASSERT FAILED: un/a gerente limpia en bloque';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  perform public.crm_move_accounts('00000000-0000-4000-8000-000000000e01', '[]');
+  raise exception 'ASSERT FAILED: un/a gerente mueve en bloque';
+exception when insufficient_privilege then null; end $$;
+
 set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
 select pg_temp.assert(public.crm_classify_accounts('00000000-0000-4000-8000-000000000e01',
   '[{"id":"58000000-0000-4000-8000-0000000000a1","kind":"company","reason":null},{"id":"58000000-0000-4000-8000-0000000000a2","kind":"company","reason":"not_sector","note":"Tienda online"}]') = 2, 'el admin limpia en bloque');

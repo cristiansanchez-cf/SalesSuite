@@ -148,10 +148,11 @@ async function main() {
   // En Corea no se usa WhatsApp: el canal de cada comercial queda puesto (KakaoTalk), a falta de su número/ID.
   const channel = SAMPLES.find((x) => x.perRep && x.contactChannel)?.contactChannel;
   if (channel) for (const r of reps) {
-    const { data: u, error } = await sb.from('users').select('contact_channel, contact_value').eq('id', r.user_id).maybeSingle();
+    // El contacto es por espacio (en la membresía de este espacio).
+    const { data: u, error } = await sb.from('membership').select('contact_channel, contact_value').eq('tenant_id', tid).eq('user_id', r.user_id).maybeSingle();
     if (error) { console.log(`• contacto de ${mask(r.users?.email)}: sin la migración del contacto (${error.message}), se salta`); continue; }
     if (u?.contact_channel) { console.log(`• contacto de ${mask(r.users?.email)}: ya tiene ${u.contact_channel}${u.contact_value ? '' : ' (falta el número/ID)'}`); continue; }
-    if (!dry) must(await sb.from('users').update({ contact_channel: channel, contact_value: null }).eq('id', r.user_id).select('id'), 'poner canal');
+    if (!dry) must(await sb.from('membership').update({ contact_channel: channel, contact_value: null }).eq('tenant_id', tid).eq('user_id', r.user_id).select('user_id'), 'poner canal');
     console.log(`• contacto de ${mask(r.users?.email)}: ${dry ? 'se pondría' : 'puesto'} ${channel}, falta que complete su número/ID`);
   }
 

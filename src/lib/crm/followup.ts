@@ -12,8 +12,6 @@ export type Channel = (typeof CHANNELS)[number];
 export const OUTCOMES = ['no_reply', 'replied', 'interested', 'not_interested', 'meeting', 'note'] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
-/** Orden de las vías para buscar a alguien. */
-export const CHANNEL_ORDER: Channel[] = ['instagram', 'linkedin', 'whatsapp', 'phone', 'email', 'visit'];
 export const MAX_ATTEMPTS = 3;
 export const MAX_ACTORS = 3;
 /** Días entre intentos sin respuesta. */

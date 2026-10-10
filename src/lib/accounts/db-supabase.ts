@@ -47,6 +47,7 @@ const like = (q: string) => `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
 export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
   return {
     async listZones(t) { return (check(await sb.from('zone').select('*').eq('tenant_id', t)) ?? []).map(toZone); },
+    async bumpUsage(t, kind, limit) { return !!check(await sb.rpc('bump_usage', { p_tenant: t, p_kind: kind, p_limit: limit })); },
     async setZoneLocation(id, lat, lng) { return (check(await sb.from('zone').update({ lat, lng }).eq('id', id).select('id')) ?? []).length > 0; },
     async saveZone(t, z, id) {
       const row = { tenant_id: t, parent_id: z.parentId, name: z.name, kind: z.kind, position: z.position };

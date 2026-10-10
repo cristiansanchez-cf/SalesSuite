@@ -1,6 +1,7 @@
 /**
- * Contacto de cada persona en sus propuestas (users.contact_channel / contact_value, docs/PERSONALIZE.md §Contacto del comercial).
- * Se lee para la vista previa y el editor, y lo guarda cada uno en su perfil (política users_update_self).
+ * Contacto de cada persona en sus propuestas (docs/PERSONALIZE.md §Contacto del comercial). Va POR ESPACIO, en su membresía
+ * (membership.contact_channel / contact_value): el admin de otro espacio no puede cambiar el que ven los clientes de este.
+ * Cada uno pone el suyo (RPC set_my_contact) y un admin el de su equipo (set_member_contact), siempre en este espacio.
  */
 import { demoDb } from '../data/store';
 import { AdminError } from './service';
@@ -14,13 +15,16 @@ const isChannel = (c: unknown): c is ContactChannel => (CONTACT_CHANNELS as read
 
 export async function readContact(admin: Admin, userId: string): Promise<ContactSetting> {
   if (admin.mode === 'supabase' && admin.supabase) {
-    // Antes de la migración las columnas no existen: sin contacto propio.
-    const { data } = await admin.supabase.from('users').select('display_name, contact_channel, contact_value').eq('id', userId).maybeSingle();
-    const r = (data ?? {}) as { display_name?: string | null; contact_channel?: string | null; contact_value?: string | null };
-    return { channel: isChannel(r.contact_channel) ? r.contact_channel : null, value: r.contact_value ?? '', name: r.display_name ?? '' };
+    const [{ data: m }, { data: u }] = await Promise.all([
+      admin.supabase.from('membership').select('contact_channel, contact_value').eq('tenant_id', admin.session.tenantId).eq('user_id', userId).maybeSingle(),
+      admin.supabase.from('users').select('display_name').eq('id', userId).maybeSingle(),
+    ]);
+    const r = (m ?? {}) as { contact_channel?: string | null; contact_value?: string | null };
+    return { channel: isChannel(r.contact_channel) ? r.contact_channel : null, value: r.contact_value ?? '', name: (u as { display_name?: string | null } | null)?.display_name ?? '' };
   }
   const u = demoDb().users.find((x) => x.id === userId);
-  return { channel: isChannel(u?.contact_channel) ? u.contact_channel : null, value: u?.contact_value ?? '', name: u?.display_name ?? '' };
+  const m = u?.memberships.find((x) => x.tenant_id === admin.session.tenantId);
+  return { channel: isChannel(m?.contact_channel) ? m.contact_channel : null, value: m?.contact_value ?? '', name: u?.display_name ?? '' };
 }
 
 /** El contacto que sale en la propuesta: solo con canal y valor. */
@@ -43,11 +47,12 @@ export async function saveContact(admin: Admin, channel: string, value: string, 
   if (!self && admin.session.role !== 'admin') throw new AdminError(403, 'Solo un admin pone el contacto de otra persona');
   if (admin.mode === 'supabase' && admin.supabase) {
     const { error } = self
-      ? await admin.supabase.from('users').update({ contact_channel: ch, contact_value: v || null }).eq('id', userId)
+      ? await admin.supabase.rpc('set_my_contact', { p_tenant: admin.session.tenantId, p_channel: ch ?? '', p_value: v })
       : await admin.supabase.rpc('set_member_contact', { p_tenant: admin.session.tenantId, p_user: userId, p_channel: ch ?? '', p_value: v });
     if (error) throw error;
     return;
   }
-  const u = demoDb().users.find((x) => x.id === userId);
-  if (u) { u.contact_channel = ch; u.contact_value = v || null; }
+  const m = demoDb().users.find((x) => x.id === userId)?.memberships.find((x) => x.tenant_id === admin.session.tenantId);
+  if (!m) throw new AdminError(403, 'No es del equipo');
+  m.contact_channel = ch; m.contact_value = v || null;
 }

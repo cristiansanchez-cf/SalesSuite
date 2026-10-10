@@ -154,9 +154,19 @@ export function demoAccountsDb(actorId: string): AccountsDb {
   }
   return {
     async listZones(t) { return db().zone.filter((z) => z.tenant_id === t).map(toZone); },
+    async bumpUsage(t, kind, limit) {
+      if (!roleOf(t, actorId)) throw new Error('permission denied: No es del equipo');
+      const day = new Date().toISOString().slice(0, 10);
+      const s = db();
+      let row = s.usage_counter.find((x) => x.tenant_id === t && x.user_id === actorId && x.kind === kind && x.day === day);
+      if (!row) { row = { tenant_id: t, user_id: actorId, kind, day, n: 0 }; s.usage_counter.push(row); }
+      row.n++;
+      return row.n <= Math.max(limit, 1);
+    },
     async setZoneLocation(id, lat, lng) {
       const z = db().zone.find((x) => x.id === id);
       if (!z || roleOf(z.tenant_id, actorId) !== 'admin') return false;
+      if (!(lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)) throw new Error('check constraint: zone lat/lng');
       Object.assign(z, { lat, lng });
       return true;
     },
@@ -165,13 +175,18 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (s.zone.some((x) => x.tenant_id === t && x.id !== id && (x.parent_id ?? null) === (z.parentId ?? null) && x.name.toLowerCase() === z.name.toLowerCase())) {
         throw new Error('duplicate key: zone_name_uidx');
       }
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un/a admin define el territorio');
       if (z.parentId && !s.zone.some((x) => x.id === z.parentId && x.tenant_id === t)) throw new Error('violates foreign key: zone parent');
-      const row = { id: id ?? randomUUID(), tenant_id: t, parent_id: z.parentId, name: z.name, kind: z.kind, position: z.position };
+      // Como el UPDATE de SQL: lo que no se cambia (p. ej. su punto en el mapa) se queda.
+      const prev = id ? s.zone.find((x) => x.id === id && x.tenant_id === t) : undefined;
+      const row = { ...prev, id: id ?? randomUUID(), tenant_id: t, parent_id: z.parentId, name: z.name, kind: z.kind, position: z.position };
       s.zone = [...s.zone.filter((x) => x.id !== row.id), row];
       return row.id;
     },
     async deleteZone(id) {
       const s = db();
+      const z0 = s.zone.find((x) => x.id === id);
+      if (!z0 || roleOf(z0.tenant_id, actorId) !== 'admin') return false;
       const gone = new Set([id]);
       for (let grew = true; grew;) { grew = false; for (const z of s.zone) if (z.parent_id && gone.has(z.parent_id) && !gone.has(z.id)) { gone.add(z.id); grew = true; } }
       const before = s.zone.length;
@@ -319,7 +334,9 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       setKind(a, kind, reason, note, actorId);
     },
     async classifyMany(t, rows) {
-      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un/a admin o gerente');
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin importa y ordena los datos del CRM');
+      // Como en SQL: o todo o nada (se valida antes de tocar).
+      for (const r of rows) if ((r.kind && !['company', 'dj'].includes(r.kind)) || (r.reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(r.reason))) throw new Error('check constraint: classify');
       let n = 0;
       for (const r of rows) { const a = db().account.find((x) => x.id === r.id && x.tenant_id === t); if (a) { setKind(a, r.kind, r.reason, r.note, actorId); n++; } }
       return n;
@@ -362,7 +379,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       return a && roleOf(a.tenant_id, actorId) && roleOf(a.tenant_id, actorId) !== 'partner' ? JSON.parse(JSON.stringify(a.ai_research ?? null)) : null;
     },
     async moveAccounts(t, moves) {
-      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un/a admin o gerente');
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin importa y ordena los datos del CRM');
       const s = db();
       if (moves.some((m) => m.zoneId && !s.zone.some((z) => z.id === m.zoneId && z.tenant_id === t))) throw new Error('Zona no encontrada');
       let n = 0;
@@ -375,19 +392,19 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       return n;
     },
     async saveFix(t, f) {
-      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un/a admin o gerente');
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin importa y ordena los datos del CRM');
       const id = randomUUID();
       db().crm_fix.push({ id, tenant_id: t, kind: f.kind, summary: JSON.parse(JSON.stringify(f.summary)), undo: JSON.parse(JSON.stringify(f.undo)), created_by: actorId, created_at: iso(), undone_at: null });
       return id;
     },
     async listFixes(t, kind) {
-      if (!isManager(t, actorId)) return [];
+      if (roleOf(t, actorId) !== 'admin') return [];
       return db().crm_fix.filter((x) => x.tenant_id === t && x.kind === kind).sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map((x) => ({ id: x.id, kind: x.kind, summary: x.summary, undo: x.undo, createdAt: x.created_at, undoneAt: x.undone_at }));
     },
     async markFixUndone(id) {
       const f = db().crm_fix.find((x) => x.id === id);
-      if (!f || !isManager(f.tenant_id, actorId) || f.undone_at) return false;
+      if (!f || roleOf(f.tenant_id, actorId) !== 'admin' || f.undone_at) return false;
       f.undone_at = iso();
       return true;
     },

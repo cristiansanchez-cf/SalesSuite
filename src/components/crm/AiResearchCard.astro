@@ -4,6 +4,7 @@
  * Cada propuesta se acepta (va a la ficha, sin pisar nada) o se descarta con un clic. Todo marcado «sin verificar».
  */
 import Icon from '~/components/ui/Icon.astro';
+import { safeHref } from '~/lib/safe-href';
 import { i18n } from '~/lib/i18n';
 import { researchMessages } from '~/lib/i18n/messages/research';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
@@ -59,7 +60,7 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
             {open.map((sg) => { const [k, v] = label(sg); return (
               <li class="co-inset grid list-none gap-1 !p-3" data-testid="ai-suggestion" data-kind={sg.kind} data-key={sg.kind === 'person' ? 'person' : sg.key}>
                 <span class="co-row-title">{k}: <strong>{v}</strong></span>
-                <span class="co-meta">«{sg.evidence}» · <a class="inline-flex items-center gap-1" href={sg.source} target="_blank" rel="noopener nofollow">{M.source}: {host(sg.source)}<Icon name="external-link" size={12} /></a></span>
+                <span class="co-meta">«{sg.evidence}» · <a class="inline-flex items-center gap-1" href={safeHref(sg.source)} target="_blank" rel="noopener nofollow">{M.source}: {host(sg.source)}<Icon name="external-link" size={12} /></a></span>
                 {canEdit && (
                   <span class="mt-1 flex flex-wrap gap-2">
                     <form method="post" action="#ai" data-async="ai qual company-contact acc-people acc-data"><input type="hidden" name="action" value="ai-accept" /><input type="hidden" name="sid" value={sg.id} />
@@ -76,7 +77,7 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
       {(accepted > 0 || dismissed > 0) && <p class="co-meta" data-testid="ai-decided">{M.decided(accepted, dismissed)}</p>}
       {r.sources.length > 0 && (
         <details><summary class="co-meta cursor-pointer">{M.sources(r.sources.length)}</summary>
-          <ul class="m-0 mt-2 grid gap-1 pl-5 text-sm">{r.sources.map((x) => <li><a href={x.url} target="_blank" rel="noopener nofollow">{x.title || host(x.url)}</a></li>)}</ul>
+          <ul class="m-0 mt-2 grid gap-1 pl-5 text-sm">{r.sources.map((x) => <li><a href={safeHref(x.url)} target="_blank" rel="noopener nofollow">{x.title || host(x.url)}</a></li>)}</ul>
         </details>
       )}
     </>

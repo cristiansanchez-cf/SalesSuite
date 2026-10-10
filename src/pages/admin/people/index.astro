@@ -8,6 +8,7 @@ import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Icon from '~/components/ui/Icon.astro';
+import { safeHref } from '~/lib/safe-href';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { formatValue, matches } from '~/lib/crm/fields';
@@ -160,7 +161,7 @@ const newId = q.get('id');
             {(() => { const pr = prio.get(p.id); return pr ? (pr.out ? <span class="co-tag">{R.outBy(R.kills[pr.kills[0]])}</span> : <span class="co-tag" data-testid="person-priority"><strong>{pr.score}</strong>{!pr.qualified && <span class="co-meta">&nbsp;· {R.upTo(pr.max)}</span>}</span>) : null; })()}
             {p.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${p.phone}`} aria-label={p.phone}><Icon name="phone" size={14} /></a>}
             {p.email && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${p.email}`} aria-label={p.email}><Icon name="mail" size={14} /></a>}
-            {p.instagram && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={p.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Icon name="camera" size={14} /></a>}
+            {p.instagram && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={safeHref(p.instagram)} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Icon name="camera" size={14} /></a>}
             <span class="co-row__chevron"><Icon name="chevron-right" /></span>
           </li>
         ))}

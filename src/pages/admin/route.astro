@@ -8,6 +8,7 @@ import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Icon from '~/components/ui/Icon.astro';
+import { safeHref } from '~/lib/safe-href';
 import { can } from '~/lib/admin/permissions';
 import { i18n } from '~/lib/i18n';
 import { routeMessages } from '~/lib/i18n/messages/route';
@@ -86,7 +87,7 @@ const empty = !plan.stops.length && !plan.missing.length && !plan.closedForGood.
                     </span>
                   </a>
                   <span class="flex flex-wrap items-center justify-end gap-1.5">
-                    <a class="co-btn co-btn--ghost co-btn--sm" href={a.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}`} target="_blank" rel="noopener"><Icon name="map-pin" size={14} />{M.directions}</a>
+                    <a class="co-btn co-btn--ghost co-btn--sm" href={safeHref(a.mapsUrl) ?? `https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}`} target="_blank" rel="noopener"><Icon name="map-pin" size={14} />{M.directions}</a>
                     <a class="co-btn co-btn--quiet co-btn--sm" href={`/admin/accounts/${a.id}#follow`} data-testid="route-log"><Icon name="pencil" size={14} />{M.log}</a>
                   </span>
                 </li>

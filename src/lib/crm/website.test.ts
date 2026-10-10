@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { parseSocials, privateIp, realWebsite, safeUrl } from './website';
+import { nodeGet, parseSocials, privateIp, realWebsite, safeUrl } from './website';
 
 describe('mirar la web de la empresa', () => {
   test('saca Instagram, Facebook, LinkedIn y email de los enlaces; ignora los de compartir', () => {
@@ -19,9 +19,15 @@ describe('mirar la web de la empresa', () => {
 
   test('si el nombre apunta a la red interna, o redirige a ella, no se abre', async () => {
     const calls: string[] = [];
-    const fetchImpl = (async (u: URL) => { calls.push(String(u)); return new Response(null, { status: 302, headers: { location: 'http://interno.club.es/' } }); }) as unknown as typeof fetch;
+    const get = async (u: URL) => { calls.push(String(u)); return { status: 302, location: 'http://interno.club.es/', type: 'text/html', body: '' }; };
     const lookup = async (h: string) => (h === 'club.es' ? ['93.184.216.34'] : ['10.0.0.5']);
-    expect(await realWebsite(fetchImpl, lookup).scan('https://club.es/')).toEqual({ instagram: null, facebook: null, linkedin: null, email: null });
+    expect(await realWebsite(get, lookup).scan('https://club.es/')).toEqual({ instagram: null, facebook: null, linkedin: null, email: null });
     expect(calls).toEqual(['https://club.es/']);
+  });
+
+  test('al conectar también se comprueba la dirección (contra el cambio de DNS entre medias)', async () => {
+    const get = nodeGet(() => false);   // el DNS «cambia» a una interna justo al conectar
+    await expect(get(new URL('http://example.com/'), new AbortController().signal)).rejects.toBeTruthy();
+    for (const ip of ['::ffff:127.0.0.1', '64:ff9b::10.0.0.1', '2002:a00:1::', '198.18.0.1', '::10.0.0.1']) expect(privateIp(ip)).toBe(true);
   });
 });

@@ -172,8 +172,6 @@ export function fieldsFor(fields: CrmField[], segmentKey: string | null, opts: {
     .sort((a, b) => a.position - b.position || a.label.localeCompare(b.label, 'es'));
 }
 
-/** «Fan Business Days» → «fan-business-days»: clave de lista. */
-export const tagKey = (s: string) => slugKey(s);
 
 /** Lo que llega de un formulario con FieldInput (`present:<clave>` + `f:<clave>`) → entrada para parseValues. */
 export function valuesFromForm(fields: CrmField[], form: FormData): Record<string, unknown> {

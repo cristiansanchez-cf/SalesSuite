@@ -84,7 +84,7 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-list-city.png` });
 
   // ---- un comercial no define campos
-  const r = await rep.goto(`${BASE}/admin/team/fields`);
+  await rep.goto(`${BASE}/admin/team/fields`);
   assert((await rep.textContent('main')).length > 0 && !(await rep.isVisible('[data-testid=field-add]')), 'el comercial no entra en Campos del CRM');
   await b.close();
 })();

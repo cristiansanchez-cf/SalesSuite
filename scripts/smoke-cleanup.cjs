@@ -63,5 +63,14 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await Promise.all([p.waitForURL(/ok=undone/), p.click('[data-testid=cleanup-undo]')]);
   await p.goto(`${BASE}/admin/accounts?ver=all`);
   assert((await list()).includes('DJ Nova'), 'deshacer: el DJ vuelve a Empresas');
+  // ---- Un comercial no entra en lo de admin (Datos del CRM).
+  const r = await (await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'es-ES' })).newPage();
+  await r.goto(`${BASE}/admin/login`);
+  await r.click('[data-testid="demo-rep@enjoy.test"]');
+  await r.waitForURL(/\/admin/);
+  for (const path of ['/admin/limpiar', '/admin/ciudades', '/admin/import']) {
+    await r.goto(`${BASE}${path}`);
+    assert(!(await r.isVisible('[data-testid=cleanup-start], [data-testid=zones-start], [data-testid=import-upload]')), `el comercial no entra en ${path}`);
+  }
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

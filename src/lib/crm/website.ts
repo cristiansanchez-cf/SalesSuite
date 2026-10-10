@@ -21,17 +21,56 @@ const IG_SKIP = new Set(['p', 'reel', 'reels', 'explore', 'accounts', 'stories',
 const FB_SKIP = new Set(['sharer', 'sharer.php', 'share', 'share.php', 'dialog', 'plugins', 'tr', 'login', 'login.php', 'help', 'policies', 'privacy', 'groups', 'events', 'watch', 'hashtag', 'photo.php', 'l.php']);
 const MAIL_SKIP = /(\.(png|jpe?g|gif|webp|svg)$)|(@(example|domain|email|sentry|wixpress|sentry-next)\.)|^(name|tu|your|user)@/i;
 
-/** Direcciones internas (la web no puede apuntar a la red del servidor). */
+/** Direcciones internas (la web no puede apuntar a la red del servidor), también las IPv4 escondidas en IPv6. */
 export function privateIp(ip: string): boolean {
-  const v = ip.toLowerCase().replace(/^::ffff:/, '');
+  let v = ip.toLowerCase().trim();
+  const mapped = /^(?:::ffff:|::|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/.exec(v);
+  if (mapped) v = mapped[1];
   if (/^\d+\.\d+\.\d+\.\d+$/.test(v)) {
     const [a, b] = v.split('.').map(Number);
-    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b < 128) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b < 32) || (a === 192 && b === 168) || a >= 224;
+    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b < 128) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b < 32)
+      || (a === 192 && b === 168) || (a === 192 && b === 0) || (a === 198 && (b === 18 || b === 19)) || a >= 224;
   }
-  return v === '::' || v === '::1' || /^f[cd]/.test(v) || /^fe[89ab]/.test(v);
+  // IPv6: sin especificar, local, privadas (fc/fd), enlace (fe80), 6to4 y NAT64 (pueden llevar dentro una IPv4 interna).
+  return v === '::' || v === '::1' || /^f[cd]/.test(v) || /^fe[89ab]/.test(v) || v.startsWith('2002:') || v.startsWith('64:ff9b:') || v.startsWith('::');
 }
 type Lookup = (host: string) => Promise<string[]>;
 const dnsLookup: Lookup = async (host) => (await (await import('node:dns')).promises.lookup(host, { all: true })).map((x) => x.address);
+
+/** Una petición GET: estado, a dónde redirige, tipo y (como mucho 800 KB de) contenido. */
+export interface WebResponse { status: number; location: string | null; type: string; body: string }
+export type WebGet = (url: URL, signal: AbortSignal) => Promise<WebResponse>;
+
+/**
+ * GET con Node que comprueba la dirección AL CONECTAR (el `lookup` de la conexión rechaza las internas): así no vale
+ * engañar al servidor cambiando el DNS entre la comprobación y la conexión (DNS rebinding).
+ */
+export function nodeGet(check: (ips: string[]) => boolean = (ips) => ips.length > 0 && !ips.some(privateIp)): WebGet {
+  return async (url, signal) => {
+    const [mod, dns] = await Promise.all([url.protocol === 'https:' ? import('node:https') : import('node:http'), import('node:dns')]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lookup = (host: string, opts: any, cb: any) => dns.lookup(host, { ...opts, all: true }, (err, list) => {
+      const addrs = (list ?? []) as unknown as Array<{ address: string; family: number }>;
+      if (err || !check(addrs.map((x) => x.address))) return cb(err ?? new Error('Dirección no permitida'), opts?.all ? [] : '', 4);
+      return opts?.all ? cb(null, addrs) : cb(null, addrs[0].address, addrs[0].family);
+    });
+    return new Promise<WebResponse>((resolve, reject) => {
+      const req = mod.request(url, { method: 'GET', lookup, signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; CofundoVentas/1.0)', accept: 'text/html' } }, (res) => {
+        const status = res.statusCode ?? 0;
+        const type = String(res.headers['content-type'] ?? '');
+        const location = typeof res.headers.location === 'string' ? res.headers.location : null;
+        if (status >= 300 && status < 400 || !/html/i.test(type || 'text/html')) { res.destroy(); return resolve({ status, location, type, body: '' }); }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c: string) => { body += c; if (body.length > 800_000) res.destroy(); });
+        res.on('close', () => resolve({ status, location, type, body: body.slice(0, 800_000) }));
+        res.on('error', () => resolve({ status, location, type, body }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+  };
+}
 
 /** Lo que la web enlaza. La primera aparición de cada red manda (suele ser la del pie o la cabecera). */
 export function parseSocials(html: string): Socials {
@@ -52,7 +91,7 @@ export function parseSocials(html: string): Socials {
 }
 
 /** Abre la web (como mucho 3 redirecciones, 6 s y 800 KB) y lee sus enlaces. Si algo falla: nada, sin error. */
-export function realWebsite(fetchImpl: typeof fetch = fetch, lookup: Lookup = dnsLookup): WebsiteApi {
+export function realWebsite(get: WebGet = nodeGet(), lookup: Lookup = dnsLookup): WebsiteApi {
   return {
     async scan(raw) {
       let url = safeUrl(raw);
@@ -60,17 +99,13 @@ export function realWebsite(fetchImpl: typeof fetch = fetch, lookup: Lookup = dn
       const timer = setTimeout(() => ctl.abort(), 6000);
       try {
         for (let hop = 0; url && hop < 4; hop++) {
+          // Primer filtro (barato); el de verdad va al conectar (nodeGet).
           const ips = await lookup(url.hostname).catch(() => []);
           if (!ips.length || ips.some(privateIp)) return NONE;
-          const res = await fetchImpl(url, { redirect: 'manual', signal: ctl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; CofundoVentas/1.0)', accept: 'text/html' } });
-          if (res.status >= 300 && res.status < 400) { const to = res.headers.get('location'); url = to ? safeUrl(new URL(to, url).toString()) : null; continue; }
-          if (!res.ok || !/html/i.test(res.headers.get('content-type') ?? 'text/html') || !res.body) return NONE;
-          const reader = res.body.getReader();
-          let html = '';
-          const dec = new TextDecoder();
-          while (html.length < 800_000) { const { done, value } = await reader.read(); if (done) break; html += dec.decode(value, { stream: true }); }
-          reader.cancel().catch(() => undefined);
-          return parseSocials(html);
+          const res = await get(url, ctl.signal);
+          if (res.status >= 300 && res.status < 400) { url = res.location ? safeUrl(new URL(res.location, url).toString()) : null; continue; }
+          if (res.status < 200 || res.status >= 300 || !res.body) return NONE;
+          return parseSocials(res.body);
         }
         return NONE;
       } catch { return NONE; } finally { clearTimeout(timer); }

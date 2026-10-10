@@ -190,7 +190,13 @@ export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unkn
 /** Lo guardado (jsonb) → AiResearch, o null si no hay o está roto. */
 export function readResearch(v: unknown): AiResearch | null {
   const r = v as AiResearch | null;
-  return r && typeof r === 'object' && typeof r.at === 'string' && Array.isArray(r.suggestions) ? r : null;
+  if (!r || typeof r !== 'object' || typeof r.at !== 'string' || !Array.isArray(r.suggestions)) return null;
+  // Se guarda como jsonb y alguien podría escribirlo directamente: al leerla, solo propuestas con fuente web y,
+  // si son enlaces (web, redes), enlaces web (docs/SECURITY_REVIEW.md).
+  const LINK = new Set(['website', 'instagram', 'linkedin', 'facebook']);
+  const suggestions = r.suggestions.filter((sg) => sg && sourceUrl(sg.source) && (sg.kind !== 'contact' || !LINK.has(sg.key) || sourceUrl(sg.value)));
+  const sources = Array.isArray(r.sources) ? r.sources.filter((x) => x && sourceUrl(x.url)) : [];
+  return { ...r, suggestions, sources };
 }
 
 // ---------------------------------------------------------------- Claude (web search + web fetch)

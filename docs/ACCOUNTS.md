@@ -42,7 +42,7 @@ Si no es elegible, el admin y los jefes/as reciben un aviso (`account_conflict`)
 - **Zonas:** solo admins.
 - **Quién cubre qué:** admins y jefes/as.
 - **Reglas** (solo admins): días de reserva, solo comisión en su zona, exigir cuenta del CRM.
-- **Importar CSV** (admins y jefes/as): columnas `nombre`, `ciudad` o `zona`, `dirección`, `referencia`, `notas`. Las zonas se buscan por nombre, sin tildes ni mayúsculas. Una referencia repetida no se duplica. Las cuentas importadas entran libres. Este es el camino para cargar locales scrapeados de toda España.
+- **Importar CSV** (solo admins; también en Configurar → Datos del CRM): columnas `nombre`, `ciudad` o `zona`, `dirección`, `referencia`, `notas`. Las zonas se buscan por nombre, sin tildes ni mayúsculas. Una referencia repetida no se duplica. Las cuentas importadas entran libres. Este es el camino para cargar locales scrapeados de toda España.
 
 ## Precios por región (propuesta)
 

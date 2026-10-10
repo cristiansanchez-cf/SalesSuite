@@ -241,8 +241,8 @@ cubren cada pantalla antes y después del cambio.
   encaja en su campo va a notas como «Columna: valor». Al fusionar no se pisa nada: solo se rellenan huecos.
 - **Deshacer**: borra lo creado (`import_id`), devuelve lo fusionado a su estado anterior, quita los vínculos nuevos,
   archiva los campos creados y borra las ciudades que quedaron vacías.
-- **Servicio**: `admin.crm.*` (`src/lib/crm/service.ts`). Pantallas: `Cuentas → Empresas | Personas | Importar`
-  (`/admin/accounts`, `/admin/people`, `/admin/import`), ficha de empresa con «Grupo y personas», ficha de persona,
+- **Servicio**: `admin.crm.*` (`src/lib/crm/service.ts`). Pantallas: `CRM → Empresas | Personas` y, solo admin,
+  `Configurar → Datos del CRM → Importar` (`/admin/accounts`, `/admin/people`, `/admin/import`), ficha de empresa con «Grupo y personas», ficha de persona,
   y en *Campos del CRM* las pestañas Empresas / Personas con destino, listas y etapa.
 - **Postgres**: las lecturas grandes van por páginas de 1000 (`paged`), porque PostgREST corta ahí.
 
@@ -274,7 +274,7 @@ historial claro y el próximo paso siempre puesto.
   - si contesta o hay interés, se propone seguir en 2 días (manda el comercial); «no interesado» cierra.
 - **«Hoy en tus cuentas»** (Inicio): vencido → hoy → mañana de las empresas que llevas, con qué hacer, con quién, la
   última interacción y el contacto a un toque.
-- **Arreglo del FBD** (Cuentas → Importar → Arreglos): el Instagram del local guardado en la persona pasa a la empresa.
+- **Arreglo del FBD** (Configurar → Datos del CRM → Importar → Arreglos; solo admin): el Instagram del local guardado en la persona pasa a la empresa.
 - Pruebas: `followup.test.ts`, contrato de cuentas (demo y Postgres), `supabase/tests/49_crm_activity.test.sql`,
   `scripts/smoke-followup.cjs`.
 
@@ -350,8 +350,8 @@ que **propone**; el comercial decide.
 - **Un clic**: Aceptar guarda en la ficha **sin pisar** (cualificación si está sin marcar; contacto si el hueco está
   vacío; persona nueva enlazada a la empresa, con la fuente en sus notas). Descartar no toca nada. Todo «sin
   verificar». Investigar no reserva la empresa.
-- **Permisos y coste**: como «Completar con Google» (libre, mía o gerente; se comprueba antes de llamar a la IA). Una
-  vez cada 2 minutos por empresa. Coste aproximado: céntimos por empresa (búsquedas web + tokens).
+- **Permisos y coste**: como Google en la ficha (libre, mía o gerente; se comprueba antes de llamar a la IA). Una
+  vez cada 2 minutos por empresa y un tope de 40 investigaciones por persona y día (`bump_usage`, §18). Coste aproximado: céntimos por empresa (búsquedas web + tokens).
 - **Investigar zona** (Cuentas): marcas empresas (p. ej. filtrando por zona) y «Investigar con IA» en la barra de
   selección. Hasta 20 por clic; el navegador las pide de una en una a `/admin/api/accounts/{id}/research` (cada una
   tarda hasta un minuto, así ninguna petición pasa del límite del servidor) y enseña el progreso. Se saltan las
@@ -455,6 +455,10 @@ Leaflet + `leaflet.markercluster` (`src/lib/crm/map.ts`).
   `no-referrer`, el fondo del mapa pide sus imágenes con `referrerPolicy: strict-origin` (solo el dominio): sin eso
   OpenStreetMap responde «Access blocked» y MapTiler rechaza la clave restringida.
 
+- **Filtro de lugar en cascada** (Empresas y mapa; `src/components/crm/PlaceFilter.astro`): País → Comunidad →
+  Provincia (sin pueblos). Cada desplegable enseña solo lo que hay dentro del anterior y el filtro es el más concreto
+  elegido, con todo lo de dentro. «Sin ciudad» va en el primero.
+
 Pruebas: `map.test.ts`, `supabase/tests/57_crm_map.test.sql`, `scripts/smoke-map.cjs`.
 
 ## 17. Limpiar: empresas, DJs y descartadas (hecho)
@@ -471,7 +475,22 @@ separan y se descartan con motivo, para poder recuperarlas (p. ej. para una alia
 - **Limpiar con IA** (Configurar → Datos del CRM → Limpiar, solo admin; `src/lib/crm/cleanup.ts`): la IA revisa las
   empresas por tandas de 40 (tres a la vez, desde el navegador) con lo que vende el equipo y sus sectores, y propone
   DJs y descartes con su porqué. Vista previa por grupos, se desmarca lo que no convence, se aplica (RPC
-  `crm_classify_accounts`, solo admin o gerente) y se **deshace** (`crm_fix` kind `classify`).
+  `crm_classify_accounts`, solo admin) y se **deshace** (`crm_fix` kind `classify`).
 
 Migración `20261116000000_crm_kind_discard.sql`; pruebas `cleanup.test.ts`, `supabase/tests/58_crm_kind_discard.test.sql`,
 `scripts/smoke-cleanup.cjs`.
+
+## 18. Seguridad y permisos de los datos del CRM (checkpoint 10-oct-2026)
+
+Revisión completa en `docs/SECURITY_REVIEW.md`. Lo que afecta al CRM:
+
+- **Importar, Ciudades, Limpiar y Campos** (Configurar → Datos del CRM): solo admin, en la app (`importCrm`) **y** en la
+  base de datos (`crm_move_accounts`, `crm_classify_accounts`, política `crm_fix_admin`; migración
+  `20261117000000_security_hardening.sql`). El CSV de Territorio también es solo admin.
+- **Enlaces**: web, Maps, Instagram, Facebook y LinkedIn solo `http(s)://` (restricción en la tabla) y la pantalla los
+  pinta con `safeHref` (`src/lib/safe-href.ts`); lo que trae la IA sin fuente http(s) se descarta al leerlo.
+- **Topes por persona y día**: 300 búsquedas de Google y 40 llamadas a la IA (`usage_counter` + `bump_usage`). Al
+  pasarse: «Has llegado al tope de hoy; mañana puedes seguir».
+- **Webs de las empresas**: se leen sin seguir a direcciones internas, comprobando la IP al conectar (no solo al
+  resolver), para que una web no pueda apuntar al servidor.
+

@@ -7,13 +7,11 @@
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
-import Thumb from '~/modules/Thumb.astro';
 import ScreenMini from '~/modules/live-screen/ScreenMini.astro';
 import Phone from '~/modules/phone-tour/Phone.astro';
 import AppScreen from '~/modules/app-steps/Screen.astro';
 import ConsoleMini from '~/modules/center-console/ConsoleMini.astro';
 import { APP_SCREENS, appStepsSchema, type AppScreen as AppScreenName } from '~/modules/app-steps/schema';
-import { isBlockType } from '~/modules/registry';
 import { AdminError } from '~/lib/admin/service';
 import { renderMarkdown, stripMarkdown, summarize } from '~/lib/playbook/markdown';
 import { type PersonaRole } from '~/lib/playbook/market';

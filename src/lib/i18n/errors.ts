@@ -37,6 +37,8 @@ const EXACT: Record<string, T> = {
   'Sector no encontrado': ['Sector not found', 'Setor não encontrado', '업종을 찾을 수 없습니다'],
   'Tema no encontrado': ['Topic not found', 'Tema não encontrado', '주제를 찾을 수 없습니다'],
   'Solo un admin pone el contacto de otra persona': ['Only an admin can set another person\'s contact', 'Só um admin define o contato de outra pessoa', '다른 사람의 연락처는 관리자만 설정할 수 있습니다'],
+  'No es del equipo': ['Not on the team', 'Não é da equipe', '팀원이 아닙니다'],
+  'Has llegado al tope de hoy; mañana puedes seguir': ['You have reached today’s limit; you can continue tomorrow', 'Você chegou ao limite de hoje; amanhã pode continuar', '오늘 한도에 도달했습니다. 내일 다시 이용하세요'],
   'Módulo no encontrado': ['Module not found', 'Módulo não encontrado', '모듈을 찾을 수 없습니다'],
   'Cuenta no encontrada': ['Account not found', 'Conta não encontrada', '계정을 찾을 수 없습니다'],
   'Jugada no encontrada': ['Play not found', 'Jogada não encontrada', '플레이를 찾을 수 없습니다'],

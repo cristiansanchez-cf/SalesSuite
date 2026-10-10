@@ -478,6 +478,43 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(names).toEqual(expect.arrayContaining(['Comunidad Valenciana', 'Madrid', 'Requena']));  // asignadas o con empresas: se quedan
     });
 
+    test('CRM fase 4: Google cambia o quita lo suyo (lo de a mano se queda); tipo y descartar; el punto de la ciudad', async () => {
+      const t = await territory();
+      const rep = await ctx(U.rep);
+      const a = await t.admin.accounts.create({ name: 'Sala Fase 4', zoneId: t.vlc });   // libre: el comercial puede
+      const db = E.accountsDbFor(U.rep.id);
+      await db.research(a, { placeId: 'p1', phone: '+34 600 000 001', website: 'https://mal.es', address: null, mapsUrl: null, hours: null, lat: 39.4, lng: -0.3, status: 'OPERATIONAL', rating: 4.2, instagram: 'https://www.instagram.com/mal/' });
+      let x = (await t.admin.accounts.get(a)).account;
+      expect(x).toMatchObject({ phone: '+34 600 000 001', placeRating: 4.2, instagram: 'https://www.instagram.com/mal/' });
+      expect(x.placeFilled).toMatchObject({ phone: '+34 600 000 001', instagram: 'https://www.instagram.com/mal/' });
+      await t.admin.accounts.update(a, { name: 'Sala Fase 4', zoneId: t.vlc, address: 'Calle a mano 1' });
+      await db.research(a, { placeId: 'p2', phone: '+34 600 000 002', website: 'https://bien.es', address: 'Calle de Google', mapsUrl: null, hours: null, lat: null, lng: null, status: null, replace: true });
+      x = (await t.admin.accounts.get(a)).account;
+      expect(x).toMatchObject({ placeId: 'p2', phone: '+34 600 000 002', website: 'https://bien.es', instagram: null, address: 'Calle a mano 1' });
+      await db.research(a, { placeId: '', phone: null, website: null, address: null, mapsUrl: null, hours: null, lat: null, lng: null, status: null, replace: true });
+      x = (await t.admin.accounts.get(a)).account;
+      expect(x).toMatchObject({ placeId: null, phone: null, website: null, address: 'Calle a mano 1' });
+
+      // Tipo y descartar: el comercial en una libre sí; en la de otro, no.
+      await db.classify(a, 'dj', 'partner', 'Posible alianza');
+      x = (await t.admin.accounts.get(a)).account;
+      expect(x).toMatchObject({ kind: 'dj', discardReason: 'partner', discardNote: 'Posible alianza' });
+      expect((await rep.accounts.list({ scope: 'all' })).items.map((i) => i.id)).not.toContain(a);
+      expect((await rep.accounts.list({ scope: 'all', view: 'discarded' })).items.map((i) => i.id)).toContain(a);
+      await db.classify(a, null, null, null);
+      expect((await t.admin.accounts.get(a)).account.discardedAt).toBeNull();
+      const ajena = await t.admin.accounts.create({ name: 'Sala Ajena 4', zoneId: t.vlc });
+      await t.admin.accounts.assign(ajena, E.rep2.id);
+      await expect(db.classify(ajena, 'dj', null, null)).rejects.toBeTruthy();
+      await expect(db.classifyMany(ENJOY, [{ id: a, kind: 'dj', reason: null, note: null }])).rejects.toBeTruthy();   // en bloque, solo admin
+
+      // El punto de una ciudad: solo admin, y no se pierde al renombrarla.
+      expect(await db.setZoneLocation(t.vlc, 39.47, -0.37)).toBe(false);
+      expect(await E.accountsDbFor(U.admin.id).setZoneLocation(t.vlc, 39.47, -0.37)).toBe(true);
+      await t.admin.accounts.saveZone({ name: 'València', parentId: t.cv }, t.vlc);
+      expect((await t.admin.accounts.territory()).zones.find((z) => z.id === t.vlc)).toMatchObject({ name: 'València', lat: 39.47, lng: -0.37 });
+    });
+
     test('CRM terminar ciudades: juntar con pueblos y asignaciones; renombrar encima de otra = juntar; tipo y mover', async () => {
       const t = await territory();
       const admCtx = t.admin;

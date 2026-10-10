@@ -32,7 +32,7 @@ Las pantallas «Encima de tus visuales» y «Foto en tarjeta» necesitan unos vi
 
 ## Contacto del comercial
 
-Cada propuesta lleva como botón principal el contacto de **quien la hizo**, para que el cliente le escriba directamente. Se pone en el editor, en la tarjeta **«Tu contacto en esta propuesta»** (encima del constructor), y vale para todas las propuestas de esa persona.
+Cada propuesta lleva como botón principal el contacto de **quien la hizo**, para que el cliente le escriba directamente. Se pone en el editor, en la tarjeta **«Tu contacto en esta propuesta»** (encima del constructor), y vale para todas las propuestas de esa persona **en ese espacio** (quien trabaja en dos espacios tiene un contacto en cada uno).
 
 | Canal | Qué poner | El botón abre |
 |---|---|---|
@@ -44,9 +44,9 @@ Cada propuesta lleva como botón principal el contacto de **quien la hizo**, par
 | Teléfono | Número con prefijo | `tel:` |
 | Email | Dirección | `mailto:` con el título de la propuesta |
 
-- Se guarda en `users.contact_channel` / `contact_value` (migración `20261111000000_rep_contact.sql`), con la política `users_update_self`. La propuesta pública lo lee con `get_public_contact(token, tenant)` (misma puerta que `get_public_dossier`; solo nombre, canal y valor).
+- Se guarda en la membresía (`membership.contact_channel` / `contact_value`, migración `20261117000000_security_hardening.sql`; antes en `users`, y se copió a cada espacio). Cada uno pone el suyo con `set_my_contact(tenant, …)`. La propuesta pública lo lee con `get_public_contact(token, tenant)` (misma puerta que `get_public_dossier`; solo nombre, canal y valor).
 - **Sin canal, o con canal y sin valor**: la propuesta enseña el contacto de la marca (`brand.contact`), como antes. La tarjeta lo avisa («Falta tu número o usuario»).
 - Después del suyo, el pie enseña los de la marca. En propuestas en coreano no se ofrece el WhatsApp de la marca (allí no se usa).
 - También está en **Tu cuenta** («Tu contacto en las propuestas»).
-- Un admin que abre la propuesta de alguien de su equipo ve su contacto y puede ponerlo por él (RPC `set_member_contact`, migración `20261112000000_member_contact.sql`); un gerente o comercial, solo el suyo.
+- Un admin que abre la propuesta de alguien de su equipo ve su contacto y puede ponerlo por él (RPC `set_member_contact`, solo en su espacio: el admin de otro espacio no puede cambiar lo que ven los clientes de este); un gerente o comercial, solo el suyo.
 - `scripts/sample-dossiers.ts` deja puesto el canal de los comerciales (`contactChannel` de las propuestas `perRep`; en Oquea Corea, KakaoTalk) si no tenían ninguno, con el valor vacío para que cada uno lo complete.

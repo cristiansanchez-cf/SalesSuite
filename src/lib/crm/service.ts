@@ -27,11 +27,12 @@ import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, Impo
 
 const uuid = z.string().uuid();
 const opt = (n: number) => z.string().trim().max(n).transform((v) => v || null).nullable().optional();
+const urlOpt = (n: number, kind: 'instagram' | 'facebook' | 'linkedin' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
 export const tagSchema = z.string().trim().toLowerCase().transform((v) => v.normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48));
 export const personSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio').max(160),
   email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
-  phone: opt(40), instagram: opt(300), linkedin: opt(300), city: opt(80), notes: opt(4000),
+  phone: opt(40), instagram: urlOpt(300, 'instagram'), linkedin: urlOpt(300, 'linkedin'), city: opt(80), notes: opt(4000),
 });
 /** Alta rápida: la persona y «¿dónde?» (una empresa que ya existe o una nueva, por su nombre). */
 export const quickAddSchema = personSchema.extend({
@@ -49,7 +50,6 @@ export function socialUrl(v: string | null | undefined, kind: 'instagram' | 'fac
   if (kind === 'facebook' && /^@?[\w.-]{2,80}$/.test(x) && !/\.[a-z]{2,6}$/i.test(x)) return `https://www.facebook.com/${x.replace(/^@/, '')}`;
   return /^https?:\/\//i.test(x) ? x : `https://${x.replace(/^\/+/, '')}`;
 }
-const urlOpt = (n: number, kind: 'instagram' | 'facebook' | 'linkedin' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
 export const companyContactSchema = z.object({
   phone: opt(40), email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
   instagram: urlOpt(300, 'instagram'), facebook: urlOpt(300, 'facebook'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
@@ -657,6 +657,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   // ---------------------------------------------------------------- Google Places (completar contacto, horario y ubicación)
 
+  // Topes por persona y día (docs/SECURITY_REVIEW.md): Google y la IA cuestan dinero. Las herramientas en bloque del
+  // admin (ordenar, limpiar, situar ciudades) no cuentan: son pocas veces y las lanza quien paga.
+  const LIMITS = { google: 300, ai: 40 } as const;
+  async function quota(kind: keyof typeof LIMITS) {
+    let ok = true;
+    try { ok = await accounts.bumpUsage(t, kind, LIMITS[kind]); } catch (e) { console.warn('[quota]', e instanceof Error ? e.message : e); }
+    if (!ok) throw new AdminError(409, 'Has llegado al tope de hoy; mañana puedes seguir');
+  }
   const requirePlaces = () => { if (!places) throw new AdminError(503, 'Falta GOOGLE_MAPS_API_KEY en el servidor'); return places; };
   async function zoneNameOf(a: Account) { return a.zoneId ? (await accounts.listZones(t)).find((z) => z.id === a.zoneId)?.name ?? '' : ''; }
   const googleDown = (e: unknown): never => { console.warn('[places]', e instanceof Error ? e.message : e); throw new AdminError(503, 'Google no ha respondido; prueba en un momento'); };
@@ -671,6 +679,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     const api = requirePlaces();
     const q = (query ?? '').trim().slice(0, 200) || await googleQuery(accountId);
+    await quota('google');
     try { return await api.search(q); } catch (e) { return googleDown(e); }
   }
   /**
@@ -684,6 +693,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const before = await accounts.getAccount(accountId);
     if (!before || before.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     let p: PlaceResult | null = null;
+    await quota('google');
     try { p = await api.details(placeId); } catch (e) { googleDown(e); }
     if (!p) throw new AdminError(404, 'Cuenta no encontrada');
     const zones = await accounts.listZones(t);
@@ -736,6 +746,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     // Antes de gastar: solo la libre, la mía o, si soy gerente, cualquiera (lo mismo que comprueba la RPC al guardar).
     if (a.ownerId && a.ownerId !== s.userId && !perms.manageAccounts) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+    await quota('ai');
     if (a.aiResearchAt && Date.now() - Date.parse(a.aiResearchAt) < AI_COOLDOWN_MS) throw new AdminError(409, 'Se acaba de investigar; espera un par de minutos');
     const people = (await actorsOf(accountId)).map((c) => c.name);
     const known = Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined));
@@ -1017,15 +1028,18 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * España») y guarda dónde está. Por tandas (el navegador repite hasta acabar); primero las de arriba, y si Google no
    * encuentra una, se queda en el punto de la que la contiene.
    */
-  async function zonesLocate(): Promise<{ located: number; left: number }> {
+  async function zonesLocate(skipIn: unknown = []): Promise<{ located: number; left: number; failed: string[] }> {
     requireImporter();
     const api = requirePlaces();
     const zones = await accounts.listZones(t);
     const byId = new Map(zones.map((z) => [z.id, z]));
     const ups = (z: Zone) => { const out: Zone[] = []; for (let u = z.parentId ? byId.get(z.parentId) : undefined, i = 0; u && i < 8; u = u.parentId ? byId.get(u.parentId) : undefined, i++) out.push(u); return out; };
-    const todo = zones.filter((z) => z.lat == null || z.lng == null).sort((a, b) => ups(a).length - ups(b).length || a.name.localeCompare(b.name, 'es'));
+    // Las que Google ya no encontró en esta tanda se apartan (si no, taparían a las demás en cada vuelta).
+    const skip = new Set(Array.isArray(skipIn) ? skipIn.map(String).slice(0, 2000) : []);
+    const todo = zones.filter((z) => (z.lat == null || z.lng == null) && !skip.has(z.id)).sort((a, b) => ups(a).length - ups(b).length || a.name.localeCompare(b.name, 'es'));
     const batch = todo.slice(0, ZONES_LOCATE_CHUNK);
     let located = 0;
+    const failed: string[] = [];
     for (const z of batch) {
       let at: { lat: number; lng: number } | null = null;
       try {
@@ -1034,9 +1048,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); }
       const parent = ups(z).find((u) => u.lat != null && u.lng != null);
       at ??= parent ? { lat: parent.lat!, lng: parent.lng! } : null;
-      if (at && await accounts.setZoneLocation(z.id, at.lat, at.lng).catch(() => false)) { located++; Object.assign(z, at); }
+      if (at && await accounts.setZoneLocation(z.id, at.lat, at.lng).catch(() => false)) { located++; Object.assign(z, at); } else failed.push(z.id);
     }
-    return { located, left: todo.length - located };
+    return { located, left: todo.length - located - failed.length, failed };
   }
 
   async function zonesCleanup() {

@@ -5,14 +5,12 @@ import { renderMarkdown } from '~/lib/playbook/markdown';
 import type { PlayView } from '~/lib/playbook/types';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
-import { learnMessages } from '~/lib/i18n/messages/learn';
 
 interface Props { play: PlayView; canPropose?: boolean; adminEdit?: boolean }
 const { play, canPropose = true, adminEdit = false } = Astro.props;
 const anchor = `play-${play.id}`;
 const field = 'co-input';
-const { m, locale } = i18n(Astro, playbookMessages);
-const lm = learnMessages[locale];
+const { m } = i18n(Astro, playbookMessages);
 // «Por qué funciona» es el porqué; de dónde sale («Fuente: …») va aparte, como nota al pie.
 const SOURCE = /^\s*(fuente|source|fonte|출처)\s*:\s*/i;
 const whyLines = (play.whyItWorks ?? '').split('\n');

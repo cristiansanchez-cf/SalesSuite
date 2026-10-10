@@ -65,7 +65,9 @@ export function demoRepository(): PublicRepository {
       if (!getPublicDossierFromRows(db, token, tenantId)) return null;
       const d = db.dossier.find((x) => x.id === db.share_link.find((l) => l.token === token)?.dossier_id);
       const u = db.users.find((x) => x.id === d?.author_id);
-      return u ? toRepContact({ name: u.display_name, channel: u.contact_channel, value: u.contact_value }) : null;
+      // El contacto es por espacio (en su membresía), como get_public_contact.
+      const m = u?.memberships.find((x) => x.tenant_id === tenantId);
+      return u && m ? toRepContact({ name: u.display_name, channel: m.contact_channel, value: m.contact_value }) : null;
     },
     async trackView(token, tenantId, input) {
       return trackDemoView(token, tenantId, input);

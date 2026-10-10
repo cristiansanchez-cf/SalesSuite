@@ -4,6 +4,7 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
+import { safeHref } from '~/lib/safe-href';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import AccountState from '~/components/accounts/AccountState.astro';
 import { can } from '~/lib/admin/permissions';
@@ -106,14 +107,13 @@ try { data = await acc.get(id); } catch (e) {
   if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
   throw e;
 }
-const { account: a, eligibility, touches, dossiers, canEdit, rules, crmFields } = data;
+const { account: a, touches, dossiers, canEdit, rules, crmFields } = data;
 const [t, segments, members, co, tl] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id)]);
 // Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
 const primary = tl.actors[0];
 const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
 const sug = tl.suggestion;
 const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
-const dayInput = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
 // Prioridad (docs/CRM_DINAMICO.md §11): la puntuación de esta empresa y si se está enfriando.
 const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
 const googleResults = googleBox.r;
@@ -220,7 +220,7 @@ const STATE_ALERT = {
             <fieldset class="grid gap-2">
               <legend class="co-field mb-1">{F.follow.result}</legend>
               <div class="co-chips">
-                {OUTCOMES.map((o, i) => <label class="co-chip outcome"><input type="radio" class="sr-only" name="outcome" value={o} checked={o === 'note'} data-testid={`outcome-${o}`} />{F.outcomes[o]}</label>)}
+                {OUTCOMES.map((o) => <label class="co-chip outcome"><input type="radio" class="sr-only" name="outcome" value={o} checked={o === 'note'} data-testid={`outcome-${o}`} />{F.outcomes[o]}</label>)}
               </div>
             </fieldset>
             <label class="co-field">{F.follow.note}<textarea class="co-textarea !min-h-[64px]" name="note" maxlength="4000" placeholder={F.follow.notePh}></textarea></label>
@@ -391,7 +391,7 @@ const STATE_ALERT = {
             {a.placePhoto && <img src={photoSrc(a.placePhoto)} alt="" loading="lazy" class="h-16 w-16 shrink-0 rounded-lg object-cover" />}
             <div class="grid gap-0.5">
               {a.placeRating != null && <span class="co-row-title">★ {fmt.number(a.placeRating)}{a.placeReviews != null && <span class="co-meta"> · {G.reviews(a.placeReviews)}</span>}</span>}
-              {a.mapsUrl && <a class="co-meta inline-flex items-center gap-1 underline" href={a.mapsUrl} target="_blank" rel="noopener noreferrer" data-no-progress>{G.open}<Icon name="external-link" size={12} /></a>}
+              {a.mapsUrl && <a class="co-meta inline-flex items-center gap-1 underline" href={safeHref(a.mapsUrl)} target="_blank" rel="noopener noreferrer" data-no-progress>{G.open}<Icon name="external-link" size={12} /></a>}
             </div>
           </div>
         )}
@@ -426,12 +426,12 @@ const STATE_ALERT = {
                   : <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-[var(--co-canvas)] text-[var(--co-ink-dim)]"><Icon name="store" size={22} /></span>}
                 <div class="grid min-w-0 content-start gap-1">
                   {r.mapsUrl
-                    ? <a class="co-row-title inline-flex items-center gap-1 underline" href={r.mapsUrl} target="_blank" rel="noopener noreferrer" data-no-progress title={G.open}>{r.name}<Icon name="external-link" size={12} /></a>
+                    ? <a class="co-row-title inline-flex items-center gap-1 underline" href={safeHref(r.mapsUrl)} target="_blank" rel="noopener noreferrer" data-no-progress title={G.open}>{r.name}<Icon name="external-link" size={12} /></a>
                     : <span class="co-row-title">{r.name}</span>}
                   <span class="co-meta">{[r.type, r.rating != null ? `★ ${fmt.number(r.rating)}${r.reviews != null ? ` (${G.reviews(r.reviews)})` : ''}` : null].filter(Boolean).join(' · ')}</span>
                   {r.address && <span class="co-meta">{r.address}</span>}
                   <span class="co-meta flex flex-wrap gap-x-3">
-                    {r.website && <a class="inline-flex items-center gap-1 underline" href={r.website} target="_blank" rel="noopener noreferrer" data-no-progress>{hostOf(r.website)}<Icon name="external-link" size={12} /></a>}
+                    {r.website && <a class="inline-flex items-center gap-1 underline" href={safeHref(r.website)} target="_blank" rel="noopener noreferrer" data-no-progress>{hostOf(r.website)}<Icon name="external-link" size={12} /></a>}
                     {r.phone && <span>{r.phone}</span>}
                   </span>
                   {r.status === 'CLOSED_PERMANENTLY' && <span class="co-tag co-tag--danger w-fit">{G.closed}</span>}

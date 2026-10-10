@@ -71,7 +71,8 @@ export function rawFor(type: FieldType, s: string): string | string[] {
     case 'checkbox': return YES.has(norm(v)) ? 'true' : '';
     case 'date': return v ? toIsoDate(v) ?? v : '';
     case 'number': case 'money': case 'rating': return v ? toNumber(v) ?? v : '';
-    case 'url': return /^@?[\w.]+$/.test(v) && !v.includes('.') ? `https://instagram.com/${v.replace(/^@/, '')}` : v;
+    // Siempre un enlace completo (la base de datos solo acepta http/https en enlaces).
+    case 'url': return !v ? '' : /^@?[\w.]+$/.test(v) && !v.includes('.') ? `https://instagram.com/${v.replace(/^@/, '')}` : /^https?:\/\//i.test(v) ? v : `https://${v.replace(/^\/+/, '')}`;
     default: return v;
   }
 }
@@ -419,7 +420,7 @@ export function buildPlan(headers: string[], rows: string[][], mapping: ImportMa
     }
     company = niceCase(company);
     const email = fit('email', at(r, 'email')).toLowerCase() || null;
-    const linkedin = /linkedin\.com\//i.test(at(r, 'linkedin')) ? fit('linkedin', cleanUrl(at(r, 'linkedin'))) || null : null;
+    const linkedin = /linkedin\.com\//i.test(at(r, 'linkedin')) ? fit('linkedin', rawFor('url', cleanUrl(at(r, 'linkedin'))) as string) || null : null;
     if (at(r, 'linkedin') && !linkedin) notes = appendNote(notes, `${headers[col('linkedin')]}: ${at(r, 'linkedin')}`);
     const insta = at(r, 'instagram') ? fit('instagram', rawFor('url', cleanUrl(at(r, 'instagram'))) as string) || null : null;
     const ks = [email && `e:${norm(email)}`, linkedin && `l:${norm(linkedin)}`, `n:${norm(name)}|${norm(company)}`].filter(Boolean) as string[];

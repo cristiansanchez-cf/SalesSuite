@@ -225,12 +225,15 @@ const payload = {
     const label = btn.querySelector('span');
     const T = JSON.parse(document.getElementById('map-locate-text')?.textContent ?? '{}') as { locating: string; located: string; failed: string };
     btn.disabled = true;
-    for (let i = 0; i < 40; i++) {
-      const res = await fetch('/admin/api/crm/zones-locate', { method: 'POST' }).catch(() => null);
-      const j = res ? ((await res.json().catch(() => ({}))) as { located?: number; left?: number; error?: string }) : {};
+    // Las que Google no encuentra se apartan (skip) para seguir con las demás.
+    const skip: string[] = [];
+    for (let i = 0; i < 200; i++) {
+      const res = await fetch('/admin/api/crm/zones-locate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ skip }) }).catch(() => null);
+      const j = res ? ((await res.json().catch(() => ({}))) as { located?: number; left?: number; failed?: string[]; error?: string }) : {};
       if (!res || !res.ok) { if (label) label.textContent = j.error || T.failed; btn.disabled = false; return; }
+      skip.push(...(j.failed ?? []));
       if (label) label.textContent = T.locating.replace('{n}', String(j.left ?? 0));
-      if (!j.left || !j.located) break;
+      if (!j.left) break;
     }
     if (label) label.textContent = T.located;
     location.reload();

@@ -6,7 +6,7 @@
  * Lo informativo nunca se envía suelto. Quien desactiva los emails solo ve la campana.
  */
 import type { NotifyJobDb, Recipient, TenantInfo } from './db';
-import type { Email, Mailer } from './mailer';
+import type { Mailer } from './mailer';
 import { isOpen, renderNotification } from './render';
 import { runDailyDigest } from './daily-job';
 import { isLocale, type Locale } from '../i18n/core';

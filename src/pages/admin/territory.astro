@@ -157,14 +157,15 @@ const zonesOf = (u: string) => t.assignments.filter((a) => a.userId === u).map((
         </fieldset>
       </form>
 
-      <form method="post" id="importar" class="co-card grid gap-3" data-testid="import">
+      {/* Importar empresas es solo del admin (como Configurar → Datos del CRM → Importar). */}
+      {perms.importCrm && <form method="post" id="importar" class="co-card grid gap-3" data-testid="import">
         <input type="hidden" name="action" value="import" />
         <div><p class="text-eyebrow mb-1">{M.importEyebrow}</p><h2 class="co-entity">{M.importTitle}</h2></div>
         <p class="co-body" set:html={M.csvHelp}></p>
         <label class="co-field">{M.file}<input class="co-input" type="file" accept=".csv,text/csv" data-csv-file /></label>
         <label class="co-field">{M.paste}<textarea class="co-textarea font-mono text-xs" name="csv" required data-csv-text placeholder={M.csvPlaceholder}></textarea></label>
         <button class="co-btn co-btn--primary w-fit" type="submit">{M.importButton}</button>
-      </form>
+      </form>}
     </aside>
   </div>
   <script>

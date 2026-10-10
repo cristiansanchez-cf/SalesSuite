@@ -64,7 +64,6 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.fill('[data-testid=create-form] [name=prospectCompany]', 'Club Noche');
   await rep.click('[data-testid=create-form] button[type=submit]');
   await rep.waitForURL(/\/admin\/dossiers\//);
-  const dossierUrl = rep.url();
   await rep.click('[data-testid=add-tabs-experiencias]'); await settle(rep);
   await rep.selectOption('[data-testid=segment]', { label: 'Locales de ocio nocturno' }); await settle(rep);
   await rep.fill('[data-testid=contact-name]', 'Álex');

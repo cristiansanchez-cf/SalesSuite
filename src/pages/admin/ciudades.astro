@@ -47,7 +47,7 @@ if (Astro.request.method === 'POST') {
         // Lo que la IA propuso y sigue marcado.
         const all = (() => { try { return JSON.parse(str('fixes') || '[]') as ZoneFix[]; } catch { return []; } })();
         const keep = new Set(f.getAll('keep').map(String));
-        const r = await admin.crm.zonesFix(all.filter((x, i) => keep.has(String(i))));
+        const r = await admin.crm.zonesFix(all.filter((_, i) => keep.has(String(i))));
         to = `/admin/ciudades?ok=fixed&n=${r.applied}#terminar`;
         break;
       }

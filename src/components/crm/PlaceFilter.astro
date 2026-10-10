@@ -44,14 +44,14 @@ const tree = zones.filter((z) => z.kind !== 'city' || !z.parentId).map((z) => ({
     <option value="">{P.anyProvince}</option>
     {l3.map((z) => <option value={z.id} selected={c3 === z.id}>{z.name}</option>)}
   </select>
-  <script type="application/json" data-place-tree set:html={JSON.stringify({ tree, any: [P.anyRegion, P.anyProvince], locale }).replace(/</g, '\\u003c')} />
+  <script type="application/json" data-place-tree set:html={JSON.stringify({ tree, any: [P.anyRegion, P.anyProvince], locale, none: NO_ZONE }).replace(/</g, '\\u003c')} />
 </div>
 
 <script>
   // Al elegir un nivel: el siguiente enseña lo que hay dentro (o se esconde si no hay nada) y el filtro pasa a ser el más
   // concreto elegido. Va antes que el «aplicar al cambiar» del formulario (este escucha en el propio desplegable).
   document.querySelectorAll<HTMLElement>('[data-place-filter]').forEach((box) => {
-    const data = JSON.parse(box.querySelector('[data-place-tree]')?.textContent ?? '{}') as { tree: Array<{ id: string; p: string | null; n: string; k: string }>; any: string[]; locale: string };
+    const data = JSON.parse(box.querySelector('[data-place-tree]')?.textContent ?? '{}') as { tree: Array<{ id: string; p: string | null; n: string; k: string }>; any: string[]; locale: string; none: string };
     const sel = (n: number) => box.querySelector<HTMLSelectElement>(`select[data-level="${n}"]`)!;
     const out = box.querySelector<HTMLInputElement>('[data-place-value]')!;
     const fill = (n: number, parent: string) => {
@@ -61,7 +61,7 @@ const tree = zones.filter((z) => z.kind !== 'city' || !z.parentId).map((z) => ({
       s.hidden = !xs.length;
     };
     const update = (n: number) => {
-      if (n === 1) { fill(2, sel(1).value === 'ninguna' ? '' : sel(1).value); fill(3, ''); }
+      if (n === 1) { fill(2, sel(1).value === data.none ? '' : sel(1).value); fill(3, ''); }
       if (n === 2) fill(3, sel(2).value);
       out.value = sel(3).value || sel(2).value || sel(1).value;
     };

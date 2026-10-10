@@ -46,6 +46,8 @@ export interface AccountsDb {
   deleteZone(id: string): Promise<boolean>;
   /** El punto de una ciudad en el mapa (§16; solo admin, por RLS). */
   setZoneLocation(id: string, lat: number, lng: number): Promise<boolean>;
+  /** Suma 1 al uso de hoy (RPC bump_usage) y dice si aún cabe en el tope (Google y la IA cuestan dinero). */
+  bumpUsage(tenantId: string, kind: 'google' | 'ai', limit: number): Promise<boolean>;
   /** Alta de zonas en bloque (ciudades de una importación). */
   insertZones(tenantId: string, rows: Array<{ parentId: string | null; name: string; kind: ZoneKind; position: number }>): Promise<string[]>;
   listAssignments(tenantId: string): Promise<ZoneAssignment[]>;
@@ -76,14 +78,14 @@ export interface AccountsDb {
   qualify(accountId: string, q: Qualification): Promise<void>;
   /** Tipo y descartar/recuperar una empresa (RPC account_classify; reason null = recuperar). */
   classify(accountId: string, kind: AccountKind | null, reason: DiscardReason | null, note: string | null): Promise<void>;
-  /** En bloque (Limpiar con IA, RPC crm_classify_accounts): solo admin o gerente. */
+  /** En bloque (Limpiar con IA, RPC crm_classify_accounts): solo admin. */
   classifyMany(tenantId: string, rows: Array<{ id: string; kind: AccountKind; reason: DiscardReason | null; note: string | null }>): Promise<number>;
-  /** Completar con Google (RPC account_research): solo rellena huecos (también ciudad, email y redes de su web). */
+  /** Google en la ficha (RPC account_research): guarda la ficha elegida y rellena huecos (ciudad, email y redes de su web). */
   research(accountId: string, data: GoogleData): Promise<void>;
-  /** Investigación con IA (RPC account_ai_research): la guarda o la borra (null). Mismo permiso que completar con Google. */
+  /** Investigación con IA (RPC account_ai_research): la guarda o la borra (null). Mismo permiso que Google en la ficha. */
   saveAiResearch(accountId: string, data: object | null, fill?: Partial<Record<'phone' | 'email' | 'instagram' | 'linkedin' | 'website', string>>): Promise<void>;
   getAiResearch(accountId: string): Promise<unknown>;
-  /** Mover empresas en bloque (RPC crm_move_accounts; solo admin o gerente). Devuelve cuántas. */
+  /** Mover empresas en bloque (RPC crm_move_accounts; solo admin). Devuelve cuántas. */
   moveAccounts(tenantId: string, moves: AccountMove[]): Promise<number>;
   saveFix(tenantId: string, fix: { kind: CrmFix['kind']; summary: CrmFix['summary']; undo: CrmFix['undo'] }): Promise<string>;
   listFixes(tenantId: string, kind: CrmFix['kind']): Promise<CrmFix[]>;

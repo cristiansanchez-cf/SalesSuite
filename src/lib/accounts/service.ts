@@ -237,7 +237,8 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
 
   /** Importar cuentas (CSV): nombre, zona/ciudad, dirección, referencia, notas. Las zonas se buscan por nombre. */
   async function importCsv(text: string) {
-    requireManager();
+    // Importar es solo del admin (docs/CRM_DINAMICO.md §14).
+    if (!perms.importCrm) throw new AdminError(403, 'Solo un admin importa y ordena los datos del CRM');
     const rows = parseCsv(text);
     if (rows.length < 2) throw new AdminError(422, 'El CSV necesita una cabecera y al menos una fila');
     const head = rows[0].map(norm);
@@ -357,7 +358,7 @@ export type AccountsService = ReturnType<typeof createAccountsService>;
 
 /** Para contextos sin cuentas (tests de otros módulos). */
 export const emptyAccountsDb: AccountsDb = {
-  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
+  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async bumpUsage() { return true; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
   async listAssignments() { return []; }, async setAssignments() {}, async getRules() { return { claimDays: 30, strictZones: false, requireAccount: false }; },
   async saveRules() {}, async listAccounts() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
   async insertAccounts() { throw new Error('sin cuentas'); }, async deleteAccountsByImport() { return 0; },
