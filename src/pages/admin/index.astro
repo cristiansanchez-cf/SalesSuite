@@ -17,6 +17,7 @@ import { analyticsMessages } from '~/lib/i18n/messages/analytics';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
+import { can } from '~/lib/admin/permissions';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -59,9 +60,20 @@ if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).
 }
 
 const isPartner = session.role === 'partner';
-const all = isPartner ? [] : await service.listDossiers();
+const team = isPartner ? [] : await service.listDossiers();
+// Cada uno ve sus propuestas. Admin y gerentes eligen de quién (por defecto, las suyas): todo el equipo, un comercial
+// o las que no tienen autor. Así a nadie le salen arriba las de otros (docs/ORG.md).
+const manager = can(session.role).editAllDossiers;
+const autorQ = Astro.url.searchParams.get('autor') ?? '';
+const autor = !manager || Astro.url.searchParams.get('mine') === '1' ? '' : autorQ;
+const byAuthor = (d: (typeof team)[number]) => autor === 'todos' ? true : autor === 'ninguno' ? !d.authorId : autor ? d.authorId === autor : d.authorId === session.userId;
+const all = team.filter(byAuthor);
+const members = manager ? await admin.tenantAdmin.listMembers().catch(() => []) : [];
+const authorOptions = manager ? members.filter((x) => x.userId !== session.userId && x.role !== 'partner')
+  .map((x) => ({ id: x.userId, label: x.displayName || x.email, n: team.filter((d) => d.authorId === x.userId).length }))
+  .sort((a, b) => b.n - a.n || a.label.localeCompare(b.label, locale)) : [];
+const noAuthor = team.filter((d) => !d.authorId).length;
 const status = Astro.url.searchParams.get('status') as DossierStatus | null;
-const mine = Astro.url.searchParams.get('mine') === '1';
 const follow = Astro.url.searchParams.get('follow') === '1';
 const nowMs = Date.now();
 const isOverdue = (iso: string | null) => !!iso && new Date(iso).getTime() < nowMs;
@@ -71,7 +83,6 @@ const q = (Astro.url.searchParams.get('q') ?? '').trim().toLowerCase();
 const list = all.filter((d) =>
   (!follow || !!d.nextStepAt)
   && (!status || d.status === status)
-  && (!mine || d.authorId === session.userId)
   && (!q || [d.title, d.prospectName, d.prospectCompany].some((x) => x?.toLowerCase().includes(q))));
 // Aperturas del enlace público (docs/ANALYTICS.md).
 const opens = list.some((d) => d.status === 'published')
@@ -86,7 +97,7 @@ const filterHref = (p: Record<string, string | null>) => {
   for (const [k, v] of Object.entries(p)) v == null ? u.searchParams.delete(k) : u.searchParams.set(k, v);
   return u.pathname + u.search;
 };
-const filtered = !!(status || mine || follow || q);
+const filtered = !!(status || follow || q);
 const published = all.filter((d) => d.status === 'published').length;
 const groups = filtered
   ? [{ key: 'all', title: '', items: list }]
@@ -110,7 +121,7 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
     </header>
 
     {myOverdue > 0 && !follow && (
-      <a href="?follow=1&mine=1" class="co-row co-row--attention" data-testid="overdue-banner">
+      <a href="?follow=1" class="co-row co-row--attention" data-testid="overdue-banner">
         <span class="co-row__lead"><Icon name="clock" /></span>
         <span class="co-row__main"><span class="co-row-title">{m.common.youHaveOverdue(myOverdue)}</span><span class="co-meta">{m.dossiers.overdueHint}</span></span>
         <span class="co-row__chevron"><Icon name="chevron-right" /></span>
@@ -121,12 +132,25 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
       <nav class="co-chips" aria-label={m.dossiers.filters}>
         <a href={filterHref({ status: null })} class="co-chip" aria-current={!status ? 'true' : undefined}>{m.common.all}</a>
         {(['draft', 'published', 'archived'] as const).map((s) => <a href={filterHref({ status: s })} class="co-chip" aria-current={status === s ? 'true' : undefined}>{STATUS_LABEL[s]}</a>)}
-        <a href={filterHref({ mine: mine ? null : '1' })} class="co-chip" aria-current={mine ? 'true' : undefined}>{m.dossiers.onlyMine}</a>
         <a href={filterHref({ follow: follow ? null : '1' })} class="co-chip" aria-current={follow ? 'true' : undefined} data-testid="filter-follow"><Icon name="clock" size={14} />{m.dossiers.followups}{myOverdue ? m.common.overdueN(myOverdue) : ''}</a>
       </nav>
+      {manager && (
+        <form method="get" class="flex items-center gap-2" data-testid="author-filter">
+          {status && <input type="hidden" name="status" value={status} />}
+          {follow && <input type="hidden" name="follow" value="1" />}
+          <label class="sr-only" for="autor">{m.dossiers.author}</label>
+          <select id="autor" class="co-select w-auto" name="autor" onchange="this.form.requestSubmit()" data-testid="author-select">
+            <option value="" selected={!autor}>{m.dossiers.authorMine(team.filter((d) => d.authorId === session.userId).length)}</option>
+            <option value="todos" selected={autor === 'todos'}>{m.dossiers.authorAll(team.length)}</option>
+            {authorOptions.map((o) => <option value={o.id} selected={autor === o.id}>{o.label} · {o.n}</option>)}
+            {noAuthor > 0 && <option value="ninguno" selected={autor === 'ninguno'}>{m.dossiers.authorNone(noAuthor)}</option>}
+          </select>
+          <noscript><button class="co-btn co-btn--ghost co-btn--sm" type="submit">OK</button></noscript>
+        </form>
+      )}
       <form method="get" class="relative" role="search">
         {status && <input type="hidden" name="status" value={status} />}
-        {mine && <input type="hidden" name="mine" value="1" />}
+        {autor && <input type="hidden" name="autor" value={autor} />}
         {follow && <input type="hidden" name="follow" value="1" />}
         <label class="sr-only" for="q">{m.dossiers.search}</label>
         <input id="q" class="co-input w-64 pl-9" type="search" name="q" value={q} placeholder={m.dossiers.search} />
@@ -188,11 +212,11 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
         <label class="co-field">{m.dossiers.company}<input class="co-input" name="prospectCompany" maxlength="120" autofocus data-company /></label>
         <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" /></label>
         <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title data-template={welcomeMessages[locale].first.proposalTitle('{c}')} /></label>
-        {all.some((d) => d.itemCount > 0) && (
+        {(manager ? team : all).some((d) => d.itemCount > 0) && (
           <label class="co-field">{m.common.startFrom}
             <select class="co-select" name="fromDossierId">
               <option value="">{m.dossiers.emptyDossier}</option>
-              {all.filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}</option>)}
+              {(manager ? team : all).filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}{manager && d.authorId !== session.userId ? ` · ${d.authorName ?? m.dossiers.noAuthor}` : ''}</option>)}
             </select>
           </label>
         )}

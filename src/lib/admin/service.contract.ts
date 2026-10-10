@@ -2,6 +2,7 @@
  * Contrato del servicio de la consola. Se ejecuta contra la BD demo (service.test.ts) y contra
  * Postgres + PostgREST + RLS reales (service.supabase.test.ts) para garantizar el mismo comportamiento.
  */
+import { fixtureTranslator } from '../i18n/translate';
 import { beforeEach, describe, expect, test } from 'vitest';
 import type { AdminDb, AssetStore, Identity } from './db';
 import { AdminError, createAdminService } from './service';
@@ -157,6 +158,23 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       await rejects(svc(USERS.rep).apply(SALA_X, { op: 'update', patch: { title: 'hack' } }), 403);
       const ok = await svc(USERS.admin).apply(SALA_X, { op: 'update', patch: { title: 'Editado por admin' } });
       expect(ok.dossier.title).toBe('Editado por admin');
+    });
+
+    test('dar copia a un comercial: suya, en borrador, en su idioma y con los textos propios traducidos', async () => {
+      const admin = svc(USERS.admin);
+      const src = await admin.getState(SALA_X);
+      const withProps = src.items.find((i) => Object.keys(i.propOverrides ?? {}).length > 0);
+      const [id] = await admin.copyTo(SALA_X, [USERS.rep.id], { locale: 'ko-KR', translator: fixtureTranslator() });
+      const st = await svc(USERS.rep).getState(id);
+      expect(st.dossier).toMatchObject({ authorId: USERS.rep.id, status: 'draft', locale: 'ko-KR' });
+      expect(st.dossier.title).toBe(`[ko] ${src.dossier.title}`);
+      expect(st.items.map((i) => i.moduleVersionId)).toEqual(src.items.map((i) => i.moduleVersionId));
+      if (withProps) expect(JSON.stringify(st.items.find((i) => i.moduleVersionId === withProps.moduleVersionId)!.propOverrides)).toContain('[ko] ');
+      expect(st.canEdit).toBe(true);  // es suya: la edita y la publica
+      expect((await admin.getState(SALA_X)).dossier.title).toBe(src.dossier.title);  // la original no cambia
+      // Solo admin o gerente; y solo a gente del espacio.
+      await rejects(svc(USERS.rep).copyTo(SALA_X, [USERS.rep.id]), 403);
+      await rejects(admin.copyTo(SALA_X, ['00000000-0000-4000-8000-0000000000ff']), 422);
     });
 
     test('otro tenant: 404 aunque conozca el id', async () => {

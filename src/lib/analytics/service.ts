@@ -13,8 +13,9 @@ const real = (vs: DossierVisit[]) => vs.filter((v) => !v.internal);
 
 export function createAnalyticsService(db: AnalyticsDb, admin: AdminService, s: AdminSession) {
   return {
-    async overview(opts: { mine?: boolean } = {}) {
-      const ds = (await admin.listDossiers()).filter((d) => !opts.mine || d.authorId === s.userId);
+    /** `mine`: las mías; `authorId`: las de un comercial (para el admin). */
+    async overview(opts: { mine?: boolean; authorId?: string } = {}) {
+      const ds = (await admin.listDossiers()).filter((d) => (!opts.mine || d.authorId === s.userId) && (!opts.authorId || d.authorId === opts.authorId));
       const visits = await db.listVisits(s.tenantId, ds.filter((d) => d.status === 'published').map((d) => d.id));
       return overviewOf(ds, real(visits));
     },

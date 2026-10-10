@@ -4,6 +4,7 @@
  * la app (empresa, sector, actor, cuenta, propuesta, playbook y cierres parecidos del equipo) y lo entrega listo
  * para el Cerebro de Ventas en Claude/ChatGPT. La técnica y la redacción las pone el Cerebro.
  */
+import { can } from '~/lib/admin/permissions';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
@@ -33,7 +34,9 @@ const sel = {
 // Elegir una objeción es responder a ella, aunque el tipo se quedara en el valor por defecto (docs/UX_REVIEW.md #5).
 if (sel.objection) sel.type = 'objecion';
 
-const [market, dossiers, facets] = await Promise.all([pb.market(), admin.service.listDossiers(), admin.evidence.facets()]);
+const [market, team, facets] = await Promise.all([pb.market(), admin.service.listDossiers(), admin.evidence.facets()]);
+// Cada comercial elige entre sus propuestas; admin y gerentes, entre todas.
+const dossiers = can(admin.session.role).editAllDossiers ? team : team.filter((d) => d.authorId === admin.session.userId);
 const state = sel.dossier ? await admin.service.getState(sel.dossier).catch(() => null) : null;
 const contact = state?.contacts.find((c) => c.id === sel.contact) ?? null;
 // Situación: lo marcado en el formulario; si no se ha tocado, lo que ya sabemos de la cuenta y de la persona.

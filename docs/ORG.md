@@ -48,3 +48,18 @@ espacios», con el actual marcado y tu papel en cada uno. Al elegir otro se entr
 - **Demo**: el espacio se guarda en la cookie `ss_demo_tenant` (solo en la consola).
 - Código: `src/lib/admin/spaces.ts` (lista, un minuto de caché por persona), `src/pages/admin/switch.ts`,
   `src/components/ui/ConsoleNav.astro`. Prueba: `scripts/smoke-spaces.cjs`.
+
+## Propuestas: cada uno ve las suyas (octubre de 2026)
+
+Pedido de Cristian (10-oct-2026): a un comercial no le deben salir arriba las propuestas de otros.
+
+- **Comercial**: en Propuestas solo ve las suyas (también en «¿Copiar una propuesta anterior?» y en Preparar
+  mensaje). Una propuesta de otro no se abre ni por enlace (404). Las que no tienen autor (de ejemplo o del alta del
+  espacio) tampoco le salen en la lista.
+- **Admin y gerentes**: por defecto, las suyas; el desplegable «Comercial» enseña todo el equipo, las de una persona
+  o las que no tienen autor. En Analítica, lo mismo: equipo, mías o un comercial concreto (para ver si sus clientes
+  abren las propuestas).
+- **Dar copia a un comercial** (editor de la propuesta, solo admin o gerente): cada uno recibe su copia en borrador
+  (mismos módulos, textos, sector, receta y fotos), con él como autor, en el idioma que se elija. Ver docs/I18N.md.
+- La base de datos no cambia: la RLS sigue dejando leer al equipo (lo usan «Qué ha funcionado» y las cuentas). El
+  recorte es de pantalla y del editor. Pruebas: contrato del servicio y `scripts/smoke-proposal-owners.cjs`.

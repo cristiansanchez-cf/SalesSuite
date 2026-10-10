@@ -4,6 +4,8 @@
  * vuelve a aplicar (defensa en profundidad); aquí además se exige que el dossier sea
  * del tenant del Host aunque el usuario pertenezca a varios.
  */
+import { applyTranslations, overrideTexts, type TextTranslator } from '../i18n/translate';
+import { isText } from '../i18n/content';
 import { resolveItemPrice, resolveTotal } from '../pricing';
 import { needsRebalance, rankBetween, rankForMove, rebalance } from '../rank';
 import type { PublicDossier, RenderItem } from '../types';
@@ -16,7 +18,7 @@ import { inTeam } from '../org/scope';
 import { effectiveAnswers, planProposal } from '../proposal/preset';
 import { localizeError } from '../i18n/errors';
 import { requestLocale } from '../i18n/request';
-import { builderOpSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
+import { builderOpSchema, dossierPatchSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
 import type { AdminSession, BuilderItem, BuilderState, CatalogVersion, DossierRecord, DossierSummary, ItemRecord } from './types';
 
 /** `message` va en español; sale en el idioma de quien hace la petición (src/lib/i18n/errors.ts). */
@@ -229,6 +231,39 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       }
     }
     return d.id;
+  }
+
+  /**
+   * Dar una copia a uno o varios comerciales (docs/I18N.md §Contenido): misma propuesta (módulos, textos, sector,
+   * receta, fotos), con ellos como autores, en borrador y en el idioma que se elija. Con `translator`, los textos propios
+   * de la propuesta (títulos, nombre del cliente, personalizaciones) se traducen; los de los módulos ya los traduce el
+   * espacio. Solo admin o gerente.
+   */
+  async function copyTo(fromId: string, userIds: string[], o: { locale?: string; translator?: TextTranslator | null } = {}): Promise<string[]> {
+    if (!can(s.role).editAllDossiers) throw new AdminError(403, 'Solo un/a admin o gerente');
+    const src = await load(fromId);
+    const members = await db.listMembers(s.tenantId);
+    const to = [...new Set(userIds)].filter(Boolean);
+    if (!to.length || to.some((u) => !members.some((m) => m.userId === u && m.role !== 'partner'))) throw new AdminError(422, 'Elige a quién se la das');
+    const locale = o.locale ? dossierPatchSchema.shape.locale.unwrap().safeParse(o.locale).data ?? src.locale : src.locale;
+    const srcItems = await items(fromId);
+    let tr = new Map<string, string>();
+    if (o.translator && locale.slice(0, 2) !== src.locale.slice(0, 2)) {
+      const texts = [...new Set([src.title, src.prospectName, src.prospectCompany, ...srcItems.flatMap((i) => overrideTexts(i.propOverrides))].filter((x): x is string => !!x && isText(x)))];
+      try { tr = await o.translator.translate(texts, locale); } catch (e) { console.warn('[copy-translate]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento'); }
+    }
+    const T = (x: string | null) => (x ? tr.get(x) ?? x : x);
+    const ids: string[] = [];
+    for (const u of to) {
+      const id = await createDossier({ title: T(src.title)!.slice(0, 140), prospectName: T(src.prospectName)?.slice(0, 120) ?? undefined, prospectCompany: T(src.prospectCompany)?.slice(0, 120) ?? undefined, fromDossierId: fromId });
+      await db.updateDossier(id, { authorId: u, locale: locale as never, preset: src.preset, clientMedia: src.clientMedia, situation: src.situation, viewMode: src.viewMode });
+      if (tr.size) for (const it of await items(id)) {
+        const next = applyTranslations(it.propOverrides, tr);
+        if (JSON.stringify(next) !== JSON.stringify(it.propOverrides)) await db.updateItem(it.id, { propOverrides: next });
+      }
+      ids.push(id);
+    }
+    return ids;
   }
 
   async function deleteDossier(id: string): Promise<void> {
@@ -492,7 +527,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
   }
 
   const media = createMediaService(db, s, opts.assets, canEdit);
-  return { getState, listDossiers, createDossier, deleteDossier, apply, previewDossier, canEdit, catalog, media };
+  return { getState, listDossiers, createDossier, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
 }
 
 export type AdminService = ReturnType<typeof createAdminService>;

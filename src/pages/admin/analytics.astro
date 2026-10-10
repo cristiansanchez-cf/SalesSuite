@@ -12,13 +12,17 @@ import { relativeTime } from '~/lib/admin/format';
 import { duration } from '~/lib/analytics/format';
 import { i18n } from '~/lib/i18n';
 import { analyticsMessages } from '~/lib/i18n/messages/analytics';
+import { sellMessages } from '~/lib/i18n/messages/sell';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const { m, f, locale } = i18n(Astro, analyticsMessages);
 const manager = can(admin.session.role).manageTeam;
 const mine = !manager || Astro.url.searchParams.get('mine') === '1';
-const o = await admin.analytics.overview({ mine });
+// El admin ve el equipo, lo suyo o lo de un comercial concreto (cómo lleva sus propuestas).
+const autor = manager && !mine ? Astro.url.searchParams.get('autor') ?? '' : '';
+const o = await admin.analytics.overview({ mine, authorId: autor || undefined });
+const reps = manager ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner' && x.userId !== admin.session.userId) : [];
 const rel = (iso: string | null) => relativeTime(iso, undefined, locale);
 const dur = (ms: number) => duration(ms, f.tag);
 type Row = (typeof o.rows)[number];
@@ -33,9 +37,18 @@ const LISTS = [
   <PageHeader eyebrow={m.eyebrow} title={m.title} lede={m.lede}>
     {manager && (
       <div class="co-tabs !mb-0" role="tablist">
-        <a class="co-tab" href="?" aria-current={!mine ? 'page' : undefined} data-testid="scope-team">{m.scope.team}</a>
+        <a class="co-tab" href="?" aria-current={!mine && !autor ? 'page' : undefined} data-testid="scope-team">{m.scope.team}</a>
         <a class="co-tab" href="?mine=1" aria-current={mine ? 'page' : undefined} data-testid="scope-mine">{m.scope.mine}</a>
       </div>
+    )}
+    {manager && reps.length > 0 && (
+      <form method="get" data-testid="analytics-author">
+        <label class="sr-only" for="an-autor">{sellMessages[locale].dossiers.author}</label>
+        <select id="an-autor" class="co-select w-auto" name="autor" onchange="this.form.requestSubmit()" data-testid="analytics-author-select">
+          <option value="">{m.scope.team}</option>
+          {reps.map((x) => <option value={x.userId} selected={autor === x.userId}>{x.displayName || x.email}</option>)}
+        </select>
+      </form>
     )}
   </PageHeader>
 

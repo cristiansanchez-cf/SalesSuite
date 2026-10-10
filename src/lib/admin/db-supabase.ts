@@ -209,6 +209,7 @@ function full(sb: SupabaseClient): AdminDb {
       if (p.priceOptionId !== undefined) patch.price_option_id = p.priceOptionId;
       if (p.clientMedia !== undefined) patch.client_media = p.clientMedia;
       if (p.preset !== undefined) patch.preset = p.preset;
+      if (p.authorId !== undefined) patch.author_id = p.authorId;
       const rows = check(await tolerant((c) => sb.from('dossier').update(patch).eq('id', id).select(c))) ?? [];
       return rows[0] ? toDossier(rows[0]) : null;
     },

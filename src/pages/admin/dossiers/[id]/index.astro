@@ -13,6 +13,10 @@ import { analyticsMessages } from '~/lib/i18n/messages/analytics';
 import { relativeTime } from '~/lib/admin/format';
 import type { BuilderState } from '~/lib/admin/types';
 import { requestOrigin } from '~/lib/http';
+import { copyMessages } from '~/lib/i18n/messages/copy';
+import { claudeTranslator, fixtureTranslator, glossaryFor } from '~/lib/i18n/translate';
+import { env } from '~/lib/env';
+import { flash } from '~/lib/admin/forms';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -22,15 +26,27 @@ const id = Astro.params.id ?? '';
 
 // Cuenta del CRM y decisión sobre la comisión (docs/ACCOUNTS.md).
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const copied = { n: 0 };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
   result = await formAction(async () => {
+    if (str('action') === 'copy-to') {
+      // Dar copia (solo admin o gerente; lo comprueba el servicio). Con «traducir», los textos propios van con IA.
+      const tenant = Astro.locals.tenant;
+      const key = env('ANTHROPIC_API_KEY');
+      const translator = f.get('translate') !== 'on' ? null
+        : key ? claudeTranslator(key, { company: tenant?.name ?? '', ...(await glossaryFor(tenant?.slug ?? '')) })
+        : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureTranslator() : null;
+      const ids = await admin.service.copyTo(id, f.getAll('to').map(String), { locale: str('locale') || undefined, translator });
+      copied.n = ids.length;
+      return;
+    }
     if (str('action') === 'link') await admin.service.apply(id, { op: 'setAccount', accountId: str('accountId') || null });
     if (str('action') === 'decide') await admin.accounts.decide(id, str('decision') === 'approved' ? 'approved' : 'rejected');
     if (str('action') === 'declare') await admin.commissions.declareSale(id, { amount: str('amount'), offer: str('offer'), occurredAt: str('occurredAt'), kind: str('kind') || 'sale' });
   });
-  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}`, 303);
+  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}${copied.n ? `?ok=copied&n=${copied.n}` : ''}`, 303);
 }
 
 let state: BuilderState;
@@ -51,6 +67,11 @@ try {
   throw e;
 }
 const d = state.dossier;
+// Las propuestas de otro comercial no se abren (cada uno ve las suyas; admin y gerentes, todas).
+if (!perms.editAllDossiers && admin.session.role !== 'partner' && d.authorId && d.authorId !== admin.session.userId) return Astro.rewrite('/404');
+const CP = copyMessages[locale];
+const copyTo = perms.editAllDossiers ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner' && x.userId !== d.authorId) : [];
+const okCopied = flash(Astro.url, { copied: CP.ok(Number(Astro.url.searchParams.get('n')) || 0) });
 const am = analyticsMessages[locale];
 const opened = d.status === 'published' ? (await admin.analytics.statsFor([d.id]).catch(() => new Map())).get(d.id) : undefined;
 const crm = perms.useAccounts;
@@ -66,6 +87,35 @@ const origin = requestOrigin(Astro.request, Astro.url);
 ---
 <AdminLayout title={d.title} wide>
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {okCopied && <div class="mb-4"><Alert kind="success" title={okCopied} /></div>}
+  {copyTo.length > 0 && (
+    <div class="mb-4 flex justify-end">
+      <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="copy-to" data-testid="copy-to-open"><Icon name="copy" size={14} />{CP.open}</button>
+      <dialog id="copy-to" class="co-dialog" aria-labelledby="copy-to-title">
+        <form method="post" data-testid="copy-to-form">
+          <input type="hidden" name="action" value="copy-to" />
+          <div class="co-dialog__body grid gap-3">
+            <h2 id="copy-to-title" class="co-entity">{CP.title}</h2>
+            <p class="co-body">{CP.body}</p>
+            <fieldset class="grid gap-1.5">
+              <legend class="co-field mb-1">{CP.to}</legend>
+              {copyTo.map((x) => <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="to" value={x.userId} class="h-4 w-4 accent-[var(--co-ink)]" data-testid="copy-to-member" /><span>{x.displayName || x.email}</span><span class="co-meta">{x.email}</span></label>)}
+            </fieldset>
+            <label class="co-field">{CP.language}
+              <select class="co-select" name="locale" data-testid="copy-to-locale">
+                <option value="">{CP.same} ({CP.langs[d.locale as keyof typeof CP.langs] ?? d.locale})</option>
+                {Object.entries(CP.langs).filter(([k]) => k !== d.locale).map(([k, v]) => <option value={k}>{v}</option>)}
+              </select></label>
+            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="translate" checked class="mt-0.5 h-4 w-4 accent-[var(--co-ink)]" data-testid="copy-to-translate" /><span>{CP.translate}<span class="co-help block">{CP.translateHelp}</span></span></label>
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{CP.cancel}</button>
+            <button type="submit" class="co-btn co-btn--primary" data-testid="copy-to-send">{CP.send}</button>
+          </div>
+        </form>
+      </dialog>
+    </div>
+  )}
   {conflict && (
     <div class:list={['co-alert mb-4', d.accountDecision === 'approved' ? 'co-alert--success' : 'co-alert--rejection']} data-testid="commission-conflict">
       <Icon name="shield-alert" size={18} />

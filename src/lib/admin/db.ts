@@ -28,6 +28,8 @@ export interface NewItem {
 
 export type ItemPatch = Partial<Pick<ItemRecord, 'position' | 'visible' | 'priceOverride' | 'propOverrides' | 'moduleVersionId'>>;
 export type DossierDbPatch = DossierPatch & {
+  /** Dar la propuesta a otro comercial (copia para él; solo admin o gerente). */
+  authorId?: string | null;
   status?: DossierRecord['status'];
   publishedAt?: string | null;
   outcome?: DossierRecord['outcome'];

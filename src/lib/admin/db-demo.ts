@@ -87,6 +87,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.prospectName !== undefined) d.prospect_name = p.prospectName;
       if (p.prospectCompany !== undefined) d.prospect_company = p.prospectCompany;
       if (p.locale !== undefined) d.locale = p.locale;
+      if (p.authorId !== undefined) d.author_id = p.authorId;
       if (p.priceMode !== undefined) d.price_mode = p.priceMode;
       if (p.totalPrice !== undefined) d.total_price = p.totalPrice;
       if (p.currency !== undefined) d.currency = p.currency;
