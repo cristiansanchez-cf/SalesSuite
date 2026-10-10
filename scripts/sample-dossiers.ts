@@ -7,7 +7,15 @@
  * Las combinaciones más típicas de cada receta (ver SAMPLES), con su tarifa y publicadas con enlace (el del cliente, en
  * «Compartir» del editor). Idempotente: si ya existe el ejemplo (prospect_meta.sample), lo rehace sin duplicarlo ni
  * cambiar su enlace; los que ya no están en la lista se borran.
+ *
+ * Propuestas de cada comercial (`perRep`): una copia para cada comercial del espacio (rol «rep»), con él como autor y
+ * en su idioma (`locale`): los textos propios (título, cliente y personalizaciones) se traducen con Claude
+ * (ANTHROPIC_API_KEY) y el glosario del espacio, como «Dar copia a un comercial» del editor. Los textos de los módulos
+ * ya salen traducidos por content_i18n (acción «traducir»). Y la propuesta «Sin autor» pasa a ser del autor.
  */
+import { readFileSync } from 'node:fs';
+import { claudeTranslator, applyTranslations, overrideTexts, type TextTranslator } from '../src/lib/i18n/translate';
+import { isText } from '../src/lib/i18n/content';
 import { parseProposal, planProposal } from '../src/lib/proposal/preset';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -15,7 +23,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  * `company`: el nombre que sale en la propuesta («Propuesta para tu sala»); null = ninguno (se enseña a varios).
  * `answers`: la combinación de la receta del sector (tipo, ángulo, preguntas). `live`: las aperturas cuentan.
  */
-interface Sample { key: string; segment: string; title: string; company: string | null; contact: string | null; tariff: string | null; coupon?: string; answers?: string[]; live?: boolean }
+interface Sample {
+  key: string; segment: string; title: string; company: string | null; contact: string | null; tariff: string | null; coupon?: string; answers?: string[]; live?: boolean;
+  /** Una por comercial (rol «rep»), con él como autor, en este idioma. */
+  perRep?: boolean; locale?: string;
+  /** Textos propios encima de la receta, por bloque (se mezclan con los de la receta). */
+  props?: Record<string, Record<string, unknown>>;
+}
 
 /** Las combinaciones más típicas, para enseñar. Las que ya no están aquí se borran (con su enlace). */
 const SAMPLES: Sample[] = [
@@ -29,7 +43,38 @@ const SAMPLES: Sample[] = [
   { key: 'centro-buceo', segment: 'centros-buceo', title: 'Oquea para tu centro de buceo · España', company: 'Tu centro', contact: null, tariff: null, answers: ['mercado:espana', 'angulo:que-vuelvan', 'fotos'], live: false },
   { key: 'ong', segment: 'ong', title: 'Oquea para tu ONG', company: 'Tu ONG', contact: null, tariff: null, live: false },
   { key: 'centro-buceo-destino', segment: 'centros-buceo', title: 'Oquea para tu centro de buceo · abrir mercado', company: 'Tu centro', contact: null, tariff: null, answers: ['mercado:latam', 'angulo:abrir-mercado'], live: false },
+  // Oquea · las dos propuestas por defecto de los comerciales de Corea (Cristian, 10-oct-2026): en coreano, una para
+  // centros (turismo: buceadores de Europa y de otros países que vienen a su ciudad; la alianza internacional) y otra
+  // para ONG. Sin cifras de clientes ni de descuentos (documento 05: «Nunca»).
+  {
+    key: 'corea-centro', segment: 'centros-buceo', perRep: true, locale: 'ko-KR', title: 'Oquea para tu centro de buceo · turismo internacional', company: 'Tu centro', contact: null, tariff: null,
+    answers: ['mercado:corea', 'angulo:abrir-mercado', 'fotos'], live: false,
+    props: {
+      portada: { title: '{company}, centro fundador de Oquea en Corea' },
+      'red-fundadores': {
+        title: 'Buceadores de todo el mundo, en tu ciudad', highlight: 'de todo el mundo',
+        lede: 'Oquea se está lanzando a nivel internacional y firma con centros de buceo de distintos países para que los buceadores de unos conozcan a los otros. Los centros fundadores de Corea sois los primeros: cuando un buceador de Europa prepare su viaje, encontrará tu centro en el mapa de Oquea.',
+        tip: { kind: 'info', text: 'La alianza internacional: acuerdos entre centros de distintos países para que quien bucea con uno tenga ventajas al bucear con los demás. Va por fases y empieza hoy con tu centro en el mapa y tu QR en el barco.' },
+      },
+    },
+  },
+  { key: 'corea-ong', segment: 'ong', perRep: true, locale: 'ko-KR', title: 'Oquea para tu ONG', company: 'Tu ONG', contact: null, tariff: null, live: false },
 ];
+
+/** Glosario y notas del espacio para traducir (tenants/<espacio>/tenant.json → content_i18n). */
+function glossaryOf(slug: string): { glossary: string[]; notes?: string } {
+  try {
+    const c = JSON.parse(readFileSync(new URL(`../tenants/${slug}/tenant.json`, import.meta.url), 'utf8')).content_i18n ?? {};
+    return { glossary: Array.isArray(c.glossary) ? c.glossary : [], notes: typeof c.notes === 'string' ? c.notes : undefined };
+  } catch { return { glossary: [] }; }
+}
+/** Mezcla los textos propios de una muestra con los de la receta (objetos, por clave). */
+function merge(a: Record<string, unknown>, b: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!b) return a;
+  const out: Record<string, unknown> = { ...a };
+  for (const [k, v] of Object.entries(b)) out[k] = v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' ? merge(out[k] as Record<string, unknown>, v as Record<string, unknown>) : v;
+  return out;
+}
 
 type Res<T> = { data: T; error: { message: string } | null };
 function must<T>(res: Res<T>, what: string): T {
@@ -60,6 +105,17 @@ async function main() {
     : members.find((m) => m.role === 'admin');
   if (!author) throw new Error(email ? 'Ese email no es miembro del espacio: entra una vez en la consola (o invítalo) y repite.' : 'El espacio no tiene admins todavía.');
   console.log(`• autor: ${email ? 'el email indicado' : 'el admin más antiguo'} (${author.role})`);
+  // Comerciales (para las propuestas de cada uno). En el registro, el email a medias.
+  const reps = members.filter((m) => m.role === 'rep');
+  const mask = (e?: string) => (e ? `${e.slice(0, 3)}…@${e.split('@')[1] ?? ''}` : '¿?');
+  if (SAMPLES.some((x) => x.perRep)) console.log(`• comerciales: ${reps.length}${reps.length ? ` (${reps.map((r) => mask(r.users?.email)).join(', ')})` : ''}`);
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const translator: TextTranslator | null = apiKey ? claudeTranslator(apiKey, { company: tenant.name, ...glossaryOf(slug) }) : null;
+
+  // La propuesta «Sin autor» (la creó el alta del espacio): pasa a ser del autor.
+  const orphans = (must(await sb.from('dossier').select('id').eq('tenant_id', tid).is('author_id', null), 'propuestas sin autor') ?? []) as Array<{ id: string }>;
+  if (orphans.length && !dry) must(await sb.from('dossier').update({ author_id: author.user_id }).eq('tenant_id', tid).is('author_id', null), 'dar autor');
+  if (orphans.length) console.log(`• propuestas sin autor: ${orphans.length} ${dry ? 'pasarían' : 'pasan'} a ser del autor`);
 
   const [segments, options, coupons, modules, versions, segMods, domains] = await Promise.all([
     sb.from('segment').select('id, key, proposal').eq('tenant_id', tid),
@@ -84,26 +140,41 @@ async function main() {
     console.log(`• ${d.prospect_meta.sample}: ${dry ? 'se borraría' : 'borrado'} («${d.title}»)`);
   }
 
-  for (const s of SAMPLES) {
+  const jobs = SAMPLES.flatMap((s) => (s.perRep ? reps.map((r) => ({ s, owner: r, who: mask(r.users?.email) })) : [{ s, owner: author, who: '' }]));
+  for (const { s: s0, owner, who } of jobs) {
+    let s = s0;
     const seg = segments.find((x) => x.key === s.segment);
     if (!seg) { console.log(`• ${s.key}: sin sector «${s.segment}», se salta`); continue; }
-    const existing = (must(await sb.from('dossier').select('id').eq('tenant_id', tid).eq('author_id', author.user_id).contains('prospect_meta', { sample: s.key }).limit(1), 'buscar ejemplo') ?? []) as Array<{ id: string }>;
+    const existing = (must(await sb.from('dossier').select('id').eq('tenant_id', tid).eq('author_id', owner.user_id).contains('prospect_meta', { sample: s.key }).limit(1), 'buscar ejemplo') ?? []) as Array<{ id: string }>;
     // Con receta del sector (docs/PROPOSAL_PRESETS.md): la propuesta «va sola», sin preguntas marcadas. Se rehace entera.
     const option = options.find((o) => o.label === s.tariff && o.active);
     const coupon = s.coupon ? coupons.find((c) => c.code === s.coupon && c.active) : undefined;
     const recipe = parseProposal(seg.proposal);
     if (recipe) {
       const keyToId = new Map(modules.map((m) => [m.key, m.id]));
-      const plan = planProposal(recipe, 'full', s.answers ?? []).map((b) => ({ ...b, v: latest.get(keyToId.get(b.module) ?? '') }));
+      let plan = planProposal(recipe, 'full', s.answers ?? []).map((b) => ({ ...b, props: merge(b.props, s.props?.[b.block]), v: latest.get(keyToId.get(b.module) ?? '') }));
       const lost = plan.filter((b) => !b.v).map((b) => b.module);
       if (lost.length) { console.log(`• ${s.key}: faltan módulos del catálogo (${lost.join(', ')}), se salta`); continue; }
+      // En otro idioma: los textos propios (título, cliente y personalizaciones), traducidos con Claude.
+      if (s.locale && !s.locale.startsWith('es') && !dry) {
+        if (!translator) { console.log(`• ${s.key}: sin ANTHROPIC_API_KEY, los textos propios se quedan en español`); }
+        else {
+          const texts = [...new Set([s.title, s.company, s.contact, ...plan.flatMap((b) => overrideTexts(b.props))].filter((x): x is string => !!x && isText(x)))];
+          const tr = await translator.translate(texts, s.locale);
+          const T = (x: string | null) => (x ? tr.get(x) ?? x : x);
+          s = { ...s, title: T(s.title)!, company: T(s.company), contact: T(s.contact) };
+          plan = plan.map((b) => ({ ...b, props: applyTranslations(b.props, tr) }));
+        }
+      }
       const rows = (dossierId: string) => plan.map((b, i) => ({ dossier_id: dossierId, module_version_id: b.v!.id, position: (i + 1) * 1024, prop_overrides: b.props }));
-      if (dry) { console.log(`• ${s.key}: ${existing.length ? 'se rehará' : 'se crearía'} con la propuesta del sector (${plan.map((b) => b.block).join(' → ')})`); continue; }
+      if (dry) { console.log(`• ${s.key}${who ? ` (${who})` : ''}: ${existing.length ? 'se rehará' : 'se crearía'} con la propuesta del sector (${plan.map((b) => b.block).join(' → ')})${s.locale ? `, en ${s.locale}` : ''}`); continue; }
       let id = existing[0]?.id;
-      if (id) must(await sb.from('dossier_item').delete().eq('dossier_id', id), `vaciar ${s.key}`);
-      else {
+      if (id) {
+        must(await sb.from('dossier_item').delete().eq('dossier_id', id), `vaciar ${s.key}`);
+        must(await sb.from('dossier').update({ title: s.title, prospect_name: s.contact, prospect_company: s.company, ...(s.locale ? { locale: s.locale } : {}) }).eq('id', id), `textos ${s.key}`);
+      } else {
         id = (must(await sb.from('dossier').insert({
-          tenant_id: tid, author_id: author.user_id, title: s.title, prospect_name: s.contact, prospect_company: s.company,
+          tenant_id: tid, author_id: owner.user_id, title: s.title, ...(s.locale ? { locale: s.locale } : {}), prospect_name: s.contact, prospect_company: s.company,
           prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: s.live ? 'live' : 'test', price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null,
         }).select('id').single(), `crear ${s.key}`) as { id: string }).id;
       }
@@ -111,7 +182,7 @@ async function main() {
       // La tarifa y el cupón, también a lo de ahora (una tarifa retirada no se queda en el ejemplo).
       must(await sb.from('dossier').update({ preset: { mode: 'full', answers: s.answers ?? [] }, view_mode: s.live ? 'live' : 'test', status: 'published', published_at: new Date().toISOString(), price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null }).eq('id', id), `publicar ${s.key}`);
       if (!existing.length) must(await sb.from('share_link').insert({ dossier_id: id }).select('id').single(), `enlace ${s.key}`);
-      console.log(`• ${s.key}: ${existing.length ? 'rehecha' : 'creada'} con la propuesta del sector (${plan.length} bloques) → ${origin}/admin/dossiers/${id}`);
+      console.log(`• ${s.key}${who ? ` (${who})` : ''}: ${existing.length ? 'rehecha' : 'creada'} con la propuesta del sector (${plan.length} bloques${s.locale ? `, ${s.locale}` : ''}) → ${origin}/admin/dossiers/${id}`);
       continue;
     }
     const mods = segMods.filter((m) => m.segment_id === seg.id).sort((a, b) => a.priority - b.priority).map((m) => latest.get(m.module_id)).filter((v): v is { id: string; version: number } => !!v);
@@ -133,7 +204,7 @@ async function main() {
     if (dry) { console.log(`• ${s.key}: se crearía con ${mods.length} módulos, tarifa ${option ? '✓' : '✗'}${s.coupon ? `, cupón ${coupon ? '✓' : '✗'}` : ''}`); continue; }
 
     const d = must(await sb.from('dossier').insert({
-      tenant_id: tid, author_id: author.user_id, title: s.title, prospect_name: s.contact, prospect_company: s.company,
+      tenant_id: tid, author_id: owner.user_id, title: s.title, prospect_name: s.contact, prospect_company: s.company,
       prospect_meta: { sample: s.key }, segment_id: seg.id, view_mode: s.live ? 'live' : 'test',
       price_option_id: option?.id ?? null, coupon_id: coupon?.id ?? null,
     }).select('id').single(), `crear ${s.key}`) as { id: string };
