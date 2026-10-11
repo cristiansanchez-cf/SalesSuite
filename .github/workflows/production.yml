@@ -10,7 +10,7 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm, buscar-nombres]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
@@ -18,6 +18,10 @@ on:
         default: enjoy
       admin_email:
         description: Email del admin al que invitar (opcional). En dossiers-ejemplo, su autor (si no, el admin más antiguo). En superadmin, quién lo será
+        type: string
+        default: ''
+      nombres:
+        description: En buscar-nombres, los nombres separados por comas (variantes con «|», p. ej. ghecko|gecko)
         type: string
         default: ''
       dry_run:
@@ -50,8 +54,8 @@ jobs:
           missing=""
           if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ "$WHAT" != "traducir" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
           if [ "$WHAT" = "traducir" ] && [ "$DRY" != "true" ] && [ -z "$ANTHROPIC" ]; then missing="$missing ANTHROPIC_API_KEY"; fi
-          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
-          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
           # Región de la base de datos (para elegir la misma en Vercel: docs/PUESTA_EN_MARCHA.md §Velocidad). Solo el host, nunca la URL.
           host=$(printf '%s' "$DB" | sed -E 's#^[a-z]+://([^@]*@)?([^:/?]+).*#\2#')
@@ -90,14 +94,27 @@ jobs:
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
           PGOPTIONS='-c default_transaction_read_only=on' psql "$SUPABASE_DB_URL" -v slug="$TENANT" -f scripts/crm-report.sql
 
+      # ¿Están en el CRM? (solo lectura; solo enseña los nombres pedidos y números).
+      - name: Buscar nombres en el CRM
+        if: ${{ inputs.what == 'buscar-nombres' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TENANT: ${{ inputs.tenant }}
+          NAMES: ${{ inputs.nombres }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          if [ -z "$NAMES" ]; then echo "::error::Pon los nombres en «nombres»"; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          PGOPTIONS='-c default_transaction_read_only=on' psql "$SUPABASE_DB_URL" -v slug="$TENANT" -v names="$NAMES" -f scripts/crm-check-names.sql
+
       - uses: actions/setup-node@v5
-        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' }}
+        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' && inputs.what != 'buscar-nombres' }}
         with:
           node-version: 22
           cache: npm
 
       - name: Instalar dependencias
-        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' }}
+        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' && inputs.what != 'buscar-nombres' }}
         run: npm ci
 
       - name: Alta del espacio
