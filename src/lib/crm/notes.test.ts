@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { fixtureNotes, matchAccounts, nameScore, sanitizeNotes } from './notes';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizeNotes } from './notes';
 
 describe('apuntar con IA (§20)', () => {
   test('solo lo que vale: sitio con nombre y nota, canal y resultado conocidos, cualificación permitida', () => {
@@ -30,5 +30,13 @@ describe('apuntar con IA (§20)', () => {
   test('IA de pruebas: una línea por sitio', async () => {
     const r = await fixtureNotes().split('GHECKO - dos pantallas pequeñas\nNEGRITO: sin pantalla, mirar redes\nidea general sin sitio', { today: '2026-10-11', seller: 'x' });
     expect(r.map((x) => [x.venue, x.qualification.screens, x.nextStep, x.nextDays])).toEqual([['GHECKO', 'yes', null, null], ['NEGRITO', undefined, 'Mirar sus redes', 2]]);
+  });
+  test('la petición a Claude: sin forzar la herramienta (Opus 5.5 lo rechaza con un 400), herramienta estricta, con respaldo', async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl = (async (_u: string, init: RequestInit) => { body = JSON.parse(String(init.body)); return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"x"}}', { status: 400 }); }) as unknown as typeof fetch;
+    await expect(claudeNotes('k', fetchImpl).split('Gecko: lleno', { today: '2026-10-11', seller: 'Enjoy' })).rejects.toBeTruthy();
+    expect(body).not.toHaveProperty('tool_choice');
+    expect(body).toMatchObject({ model: 'claude-opus-5-5', fallbacks: 'default' });
+    expect((body.tools as Array<{ name: string; strict: boolean }>)[0]).toMatchObject({ name: 'save_notes', strict: true });
   });
 });

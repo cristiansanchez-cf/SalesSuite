@@ -868,7 +868,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     let items: NoteItem[] = [];
     try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller }); } catch (e) {
       console.warn('[notes]', aiReason(e));
-      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
+      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
     const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
     const zoneName = new Map(zones.map((z) => [z.id, z.name]));

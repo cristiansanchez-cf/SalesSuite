@@ -154,8 +154,7 @@ export function claudeNotes(apiKey: string, fetchImpl?: typeof fetch): NotesApi 
         output_config: { effort: 'low' },
         system: NOTES_SYSTEM(ctx),
         tools: [NOTES_TOOL as unknown as Anthropic.Beta.BetaTool],
-        tool_choice: { type: 'tool', name: NOTES_TOOL.name },
-        messages: [{ role: 'user', content: `<texto>\n${text}\n</texto>` }],
+        messages: [{ role: 'user', content: `<texto>\n${text}\n</texto>\n\nLlama a save_notes con lo de cada sitio.` }],
       });
       const res = await stream.finalMessage();
       if (res.stop_reason === 'refusal') return [];
