@@ -13,6 +13,7 @@ import { flash, formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { DISCARD_REASONS } from '~/lib/accounts/types';
+import { profilesMessages } from '~/lib/i18n/messages/profiles';
 import { notesMessages } from '~/lib/i18n/messages/notes';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { followupMessages } from '~/lib/i18n/messages/followup';
@@ -24,6 +25,7 @@ if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).useAccounts) return Astro.rewrite('/admin/forbidden');
 const { m: M, locale } = i18n(Astro, notesMessages);
 const PR = priorityMessages[locale];
+const PRF = profilesMessages[locale];
 const CLN = cleanupMessages[locale];
 const FU = followupMessages[locale];
 
@@ -55,7 +57,9 @@ if (Astro.request.method === 'POST') {
         fit: str(`fit-${i}`) || null, fields: fieldsChosen,
         channel: it.channel, outcome: it.outcome, day: it.day,
         qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days),
-        discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null };
+        discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null,
+        kind: str(`kind-${i}`) || undefined,
+        worksAt: f.getAll(`wk-${i}`).map((x) => (it.worksAt ?? [])[Number(x)]).filter(Boolean) };
     }).filter(Boolean);
     const r = await admin.crm.notesApply(rows);
     const ok = r.filter((x) => x.ok && x.accountId);
@@ -84,6 +88,8 @@ const qualLabel = (k: string, v: string): string => {
   if (k === 'dj') return `${PR.dj}: ${(PR.djs as Record<string, string>)[v] ?? v}`;
   if (k === 'promoters') return `${PR.promoters.replace(/^¿|\?$/g, '')}: ${v === 'yes' ? PR.promotersYes : PR.promotersNo}`;
   if (k === 'screens') return `${PR.screensQ}: ${(PR.options.screens as Record<string, string>)[v] ?? v}`;
+  if (k in PRF.q) { const [l, o] = (PRF.q as unknown as Record<string, [string, Record<string, string>]>)[k]; return `${l.replace(/^¿|\?$/g, '')}: ${o[v] ?? v}`; }
+  if (k === 'pstyle' || k === 'dstyle') return `${PRF.style}: ${v.split(',').map((x) => (PRF.styles as Record<string, string>)[x] ?? x).join(', ')}`;
   if (k === 'size') return `${PR.size}: ${(PR.sizes as Record<string, string>)[v] ?? v}`;
   if (k === 'nights') return `${PR.hints.recurrence.venue}: ${o.nights[v] ?? v}`;
   if (k === 'events') return `${PR.hints.recurrence.promoter}: ${o.events[v] ?? v}`;
@@ -91,6 +97,9 @@ const qualLabel = (k: string, v: string): string => {
   if (k in PR.kills && v === 'true') return (PR.kills as Record<string, string>)[k];
   return `${(PR.criteria as Record<string, string>)[k] ?? k}: ${o[k]?.[v] ?? v}`;
 };
+// Tipos del espacio (§24): el de cada sitio nuevo sale de lo que dice la IA (promotora, DJ o local).
+const kindDefs = items ? await admin.accounts.kinds() : [];
+const kindFor = (e: string | null) => (e && e !== 'venue' ? kindDefs.find((k) => k.profile === e)?.key : undefined) ?? kindDefs[0]?.key;
 const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? it.candidates[0].id : it.candidates.length ? '' : 'new');
 ---
 <AdminLayout title={M.title}>
@@ -139,7 +148,20 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
                 <option value="skip" selected={best(it) === ''}>{M.skip}</option>
               </select>
             </label>
+            {kindDefs.length > 1 && (
+              <label class="co-field">{M.isA} <span class="co-help">{M.isAHelp}</span>
+                <select class="co-select" name={`kind-${i}`} data-testid="notes-kind">{kindDefs.map((k) => <option value={k.key} selected={k.key === kindFor(it.entity)}>{k.label}</option>)}</select></label>
+            )}
           </div>
+          {it.worksAt.length > 0 && (
+            <fieldset class="grid gap-1.5 rounded-xl border border-[var(--co-line)] p-3" data-testid="notes-works">
+              <legend class="co-field px-1">{PRF.where[it.entity ?? 'venue']}</legend>
+              {it.worksAt.map((w, j) => (
+                <label class="inline-flex items-center gap-2 text-sm"><input type="checkbox" name={`wk-${i}`} value={String(j)} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-work" />
+                  <span><strong>{w.place}</strong>{[w.days.map((d) => PRF.daysLong[d]).join(', '), w.role ? PRF.roles[w.role] : '', w.freq ? PRF.freqs[w.freq] : ''].filter(Boolean).map((x) => ` · ${x}`).join('')}</span></label>
+              ))}
+            </fieldset>
+          )}
           <fieldset class="grid gap-1 rounded-xl border border-[var(--co-line)] p-3">
             <legend class="co-field px-1"><label class="inline-flex items-center gap-2"><input type="checkbox" name={`int-on-${i}`} value="1" checked={!!it.interaction} class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-int-on" />{M.interaction}</label></legend>
             <span class="co-help">{M.interactionHelp}</span>

@@ -680,6 +680,16 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(malo[0]).toMatchObject({ discard: 'avoid' });
       const r3 = await rep.notesApply([{ create: 'Bar Malo', interaction: malo[0].interaction, channel: 'visit', outcome: 'note', qualification: {}, discard: 'avoid', discardNote: 'El dueño nos echó' }]);
       expect((await t.admin.accounts.get(r3[0].accountId!)).account).toMatchObject({ discardReason: 'avoid', discardNote: 'El dueño nos echó' });
+      // Promotoras (§24): Apuntar sabe que es una promotora y dónde hace fiestas, con el día; se crea con su ficha.
+      await t.admin.accounts.saveKinds([{ key: 'company', label: 'Empresa' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', profile: 'promoter' }]);
+      const ron = await rep.notesSplit('RONEO - promotora internacional, hacen los viernes en Gecko Valencia', { seller: 'Enjoy' });
+      expect(ron[0]).toMatchObject({ entity: 'promoter', worksAt: [{ place: 'Gecko Valencia', days: ['fri'] }] });
+      const r4 = await rep.notesApply([{ create: 'Roneo', kind: 'promotora', interaction: null, facts: ['Fiestas internacionales'], channel: 'visit', outcome: 'note',
+        qualification: { pstyle: 'international', pdyn: 'yes' }, worksAt: ron[0].worksAt }]);
+      const roneo = (await t.admin.accounts.get(r4[0].accountId!)).account;
+      expect(roneo).toMatchObject({ kind: 'promotora', qualification: { pstyle: ['international'], pdyn: 'yes' } });
+      expect((await rep.workLinks(roneo.id)).map((w) => [w.account.id, w.days, w.freq])).toEqual([[gecko, ['fri'], 'regular']]);
+
       // Varios formatos: se suman a lo que ya tenía (un clic quita uno).
       await rep.qualify(gecko, 'format:club');
       await rep.notesApply([{ accountId: gecko, channel: 'visit', outcome: 'note', qualification: { format: 'hall,pub' } }]);

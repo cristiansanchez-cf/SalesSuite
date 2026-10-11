@@ -75,6 +75,17 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.fill('[data-testid=notes-text]', '');
   await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
 
+  // Promotoras (§24): Apuntar sabe que es una promotora, la crea con su ficha y la enlaza con la sala y el día.
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  await p.fill('[data-testid=notes-text]', 'RONEO - promotora internacional, hacen los viernes en Club Sol');
+  await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
+  assert((await p.$eval('[data-testid=notes-kind]', (x) => x.value)) === 'promotora', 'la IA dice que es una promotora');
+  assert((await p.textContent('[data-testid=notes-works]')).includes('Club Sol') && (await p.textContent('[data-testid=notes-works]')).includes('Viernes'), 'dónde hace fiestas: Club Sol, los viernes');
+  await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
+  await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("RONEO")')]);
+  assert((await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'promoter' && (await p.textContent('[data-testid=work-line]')).includes('Viernes en Club Sol'), 'ficha de promotora, «Viernes en Club Sol»');
+  await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
+
   // Proponer descartar (§23): por lo que cuentas, la IA pregunta; solo se descarta si dices que sí.
   await p.goto(`${BASE}/admin/accounts/apuntar`);
   await p.fill('[data-testid=notes-text]', 'BAR MALO - el dueño nos echó, mejor no ir');

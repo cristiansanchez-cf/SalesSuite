@@ -8,13 +8,20 @@ describe('apuntar con IA (§20)', () => {
         channel: 'visit', outcome: 'note', day: '2026-10-10', next_step: 'Mirar redes', next_days: 2, qualification: { screens: 'yes', decider: 'jefe', coverage: 'true', kind: null } },
       { venue: 'Vacío', interaction: null, facts: [], fit: null, fields: [] },
       { venue: 'Malo', interaction: 'Nos echó el dueño', facts: [], discard: 'avoid', discard_why: ' el dueño nos echó ', qualification: { format: 'hall, pub,inventado,pub' } },
-      { venue: 'Raro', interaction: 'Visita', facts: [], discard: 'borrar_todo', discard_why: 'x' },
+      { venue: 'Raro', interaction: 'Visita', facts: [], discard: 'borrar_todo', discard_why: 'x', entity: 'promoter',
+        works_at: [{ place: ' Sala X ', days: 'fri, sat,viernes', freq: 'regular', role: '' }, { place: '', days: 'mon' }, { place: 'Sala Y', days: '', freq: 'siempre', role: 'guest' }],
+        qualification: { pstyle: 'international, techno, rock', pdyn: 'yes', dfollow: 'muchos' } },
       { venue: 'X', interaction: null, facts: ['y'], channel: 'paloma', outcome: 'quizá', day: 'el sábado', next_days: 9999, qualification: {} },
     ] });
     expect(r).toHaveLength(4);
     // Proponer descartar (§23): solo con un motivo conocido; se pregunta antes de hacerlo.
     expect(r.find((x) => x.venue === 'Malo')).toMatchObject({ discard: 'avoid', discardWhy: 'el dueño nos echó', qualification: { format: 'hall,pub' } });   // varios formatos, sin repetir ni inventar
     expect(r.find((x) => x.venue === 'Raro')).toMatchObject({ discard: null, discardWhy: null });
+    // Promotoras y DJs (§24): qué es, dónde trabaja (días y frecuencia válidos) y sus preguntas.
+    expect(r.find((x) => x.venue === 'Raro')).toMatchObject({ entity: 'promoter', worksAt: [{ place: 'Sala X', days: ['fri', 'sat'], freq: 'regular', role: null }, { place: 'Sala Y', days: [], freq: null, role: 'guest' }],
+      qualification: { pstyle: 'international,techno', pdyn: 'yes' } });
+    expect(r.find((x) => x.venue === 'Raro')!.qualification).not.toHaveProperty('dfollow');
+    expect(r[0]).toMatchObject({ entity: null, worksAt: [] });
     expect(r[0]).toMatchObject({ discard: null });
     expect(r[0]).toMatchObject({ venue: 'Gecko', interaction: 'Visita: solo observar', keyFacts: ['Se llena los sábados', 'a', 'b'], facts: ['Dos pantallas pequeñas', 'DJ accesible'], fit: 'Todos los servicios', fields: { aforo: '500' },
       channel: 'visit', day: '2026-10-10', nextStep: 'Mirar redes', nextDays: 2, qualification: { screens: 'yes', coverage: 'true' } });

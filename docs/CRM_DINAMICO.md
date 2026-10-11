@@ -701,6 +701,10 @@ reserva, historial, próximo paso, personas, «Trabaja con», propuestas); por e
   seguidores (25; da su **caché**: a uno grande no le vale «lo que genere tu local», a uno residente sí), ¿quiere
   darse a conocer? (20), estilo (15). Contacto: Instagram, TikTok, WhatsApp y Spotify/SoundCloud.
 - **Local:** como estaba (§22–23).
+- **Apuntar** sabe qué es cada cosa (local, promotora o DJ): «Roneo hace los viernes en Sala X» → Roneo, promotora,
+  con «Sala X · viernes · habitual». En la revisión: «Es: Promotora» (si se crea nueva) y los enlaces a crear,
+  marcados; al guardar, se crea con su ficha y se enlaza (la sala que no exista, se crea). Rellena también las
+  preguntas de promotora y de DJ.
 - Datos: `account_link.days/freq/role`; `account.tiktok/music_url`. La nota de cada ficha: `src/lib/crm/profiles.ts`
   y `score.ts`.
 

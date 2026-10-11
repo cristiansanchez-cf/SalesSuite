@@ -8,7 +8,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import { BASE_KIND, DISCARD_REASONS, normalizeKinds, type Account, type AccountFact, type KindDef, type Zone } from '../accounts/types';
+import { BASE_KIND, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -1002,6 +1002,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         channel: items[0]?.channel ?? 'visit', outcome: items[0]?.outcome ?? 'note', day: items[0]?.day ?? null,
         qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
         discard: items.find((it) => it.discard)?.discard ?? null, discardWhy: items.find((it) => it.discard)?.discardWhy ?? null,
+        entity: items.find((it) => it.entity)?.entity ?? null, worksAt: items.flatMap((it) => it.worksAt).slice(0, 12),
       };
       return [{ ...one, candidates: [{ id: chosen.id, name: chosen.name, zone: placeOf(zones, chosen.zoneId), score: 1, discarded: !!chosen.discardedAt }] }];
     }
@@ -1026,6 +1027,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     nextDays: z.number().int().min(0).max(365).nullable().optional(),
     /** Descartar (si quien apunta dijo que sí a la propuesta de la IA, §23). */
     discard: z.enum(DISCARD_REASONS).nullable().optional(),
+    /** Tipo de la empresa nueva (§24: promotora, DJ…) y dónde trabaja (enlaces con días y frecuencia). */
+    kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional().or(z.literal('').transform(() => undefined)),
+    worksAt: z.array(z.object({ place: z.string().trim().min(1).max(160), days: z.array(z.enum(LINK_DAYS)).max(7).default([]),
+      freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional(), role: z.enum(['resident', 'guest']).nullable().optional() })).max(12).default([]),
     discardNote: z.string().trim().max(500).nullable().optional().transform((v) => v || null),
   })).max(40);
   /**
@@ -1041,7 +1046,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       let id = r.accountId ?? null;
       let name = r.create ?? '';
       try {
-        if (!id && r.create) id = await accounts.insertAccount(t, { name: r.create, zoneId: null, segmentId: null, address: null, externalRef: null, notes: null });
+        const kindNew = r.kind && (await kinds()).some((k) => k.key === r.kind) ? r.kind : undefined;
+        if (!id && r.create) id = await accounts.insertAccount(t, { name: r.create, zoneId: null, segmentId: null, address: null, externalRef: null, notes: null, kind: kindNew });
         if (!id) continue;
         const a = await accounts.getAccount(id);
         if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
@@ -1079,6 +1085,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         }
         if (changed) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
         if (r.discard) await classifyAccount(id, { reason: r.discard, note: r.discardNote });
+        // Dónde trabaja (§24): cada sitio por su nombre (el que ya existe o uno nuevo), con sus días y frecuencia.
+        if (r.worksAt.length) {
+          // Si lo nuevo cuelga de un local, lo que falta es una promotora; si cuelga de una promotora o un DJ, una sala.
+          const ks = await kinds();
+          const mine = (await accounts.getAccount(id))?.kind ?? BASE_KIND;
+          const otherKind = profileOf(ks, mine) === 'venue' ? ks.find((k) => k.profile === 'promoter')?.key ?? BASE_KIND : BASE_KIND;
+          for (const w of r.worksAt) await workLinkAdd(id, { name: w.place, kind: otherKind, days: w.days, ...(w.freq ? { freq: w.freq } : {}), ...(w.role ? { role: w.role } : {}) });
+        }
         out.push({ accountId: id, name, ok: true });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });
