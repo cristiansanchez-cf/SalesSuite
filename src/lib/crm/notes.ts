@@ -8,7 +8,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { CHANNELS, OUTCOMES, type Channel, type Outcome } from './followup';
-import { QUAL_VALUES } from './priority';
+import { MULTI_QUAL, QUAL_VALUES } from './priority';
 import { nameKey } from './prospect';
 import type { DiscardReason } from '../accounts/types';
 
@@ -82,7 +82,7 @@ export const NOTES_TOOL = {
               type: 'object', additionalProperties: false, required: [...QUAL_KEYS],
               description: 'Solo lo que dice claramente; cadena vacía "" en lo demás.',
               properties: {
-                format: { ...S, description: 'club (discoteca) | pub (pub o bar de copas) | cocktail (cóctel bar) | rooftop (rooftop o terraza) | restaurant (restaurante que acaba en fiesta, cenas con DJ) | hall (sala de conciertos) | hotel (hotel o beach club) | promoter (promotora de fiestas o eventos) | concerts (ciclo de conciertos o artista)' },
+                format: { ...S, description: 'Uno o VARIOS separados por coma si el sitio es varias cosas (p. ej. «hall,pub»: sala de conciertos que después del concierto sigue con DJ). club (discoteca) | pub (pub o bar de copas) | cocktail (cóctel bar) | rooftop (rooftop o terraza) | restaurant (restaurante que acaba en fiesta, cenas con DJ) | hall (sala de conciertos) | hotel (hotel o beach club) | promoter (promotora de fiestas o eventos) | concerts (ciclo de conciertos o artista)' },
                 party: { ...S, description: '¿Hay fiesta? core (es su negocio) | some (algunas noches, p. ej. un restaurante que se pone de fiesta) | none' },
                 dj: { ...S, description: 'resident (DJ residente) | guests (DJs invitados) | both (residente e invitados) | none (sin DJ, ponen una lista)' },
                 promoters: { ...S, description: 'yes si trabajan promotoras en el sitio (p. ej. «hacen fiestas ucranianas con una promotora»); no si dicen que no' },
@@ -138,7 +138,8 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
     const rq = (r.qualification ?? {}) as Record<string, unknown>;
     for (const k of QUAL_KEYS) {
       const v = rq[k] == null ? '' : String(rq[k]);
-      if (v && QUAL_VALUES[k]?.includes(v)) q[k] = v;
+      if (MULTI_QUAL.includes(k)) { const ok = [...new Set(v.split(',').map((x) => x.trim()).filter((x) => QUAL_VALUES[k]?.includes(x)))]; if (ok.length) q[k] = ok.join(','); }
+      else if (v && QUAL_VALUES[k]?.includes(v)) q[k] = v;
     }
     const discard = (['no_fit', 'not_interested', 'avoid', 'closed'] as const).find((k) => k === r.discard) ?? null;
     const day = typeof r.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.day) && !Number.isNaN(Date.parse(r.day)) ? r.day : null;

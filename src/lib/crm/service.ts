@@ -22,7 +22,7 @@ import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from 
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
 import type { AccountMove } from '../accounts/types';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
-import { CRITERIA, QUAL_VALUES, coolingDays, normalizeWeights, type Qualification, type Weights } from './priority';
+import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, setQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
 import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo } from './types';
@@ -675,7 +675,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     const q: Record<string, unknown> = { ...a.qualification };
     const v: unknown = value === 'true' ? true : value;
-    if (q[key] === v) delete q[key]; else q[key] = v;
+    setQual(q, key, v, true);
     if (key === 'format') delete q.kind;   // el formato sustituye al antiguo «Qué es»
     try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
   }
@@ -1061,9 +1061,13 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         }
         const q: Record<string, unknown> = { ...a.qualification };
         let changed = false;
-        for (const [k, v] of Object.entries(r.qualification)) {
-          if (!QUAL_VALUES[k]?.includes(v)) continue;
-          q[k] = v === 'true' ? true : v; changed = true;
+        for (const [k, raw] of Object.entries(r.qualification)) {
+          // Las de varios llegan juntas («club,hall»): se suman a lo que ya tenía.
+          for (const v of MULTI_QUAL.includes(k) ? raw.split(',').map((x) => x.trim()) : [raw]) {
+            if (!QUAL_VALUES[k]?.includes(v)) continue;
+            setQual(q, k, v === 'true' ? true : v); changed = true;
+          }
+          if (k === 'format' && changed) delete q.kind;
         }
         if (changed) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
         if (r.discard) await classifyAccount(id, { reason: r.discard, note: r.discardNote });
@@ -1147,8 +1151,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
       if (sg.kind === 'qual') {
         const q: Record<string, unknown> = { ...a.qualification };
-        if (q[sg.key] === undefined) {
-          q[sg.key] = sg.value === 'true' ? true : sg.value;
+        if (q[sg.key] === undefined || (MULTI_QUAL.includes(sg.key) && !formatsOf(q as Qualification).includes(sg.value as Format))) {
+          setQual(q, sg.key, sg.value === 'true' ? true : sg.value);
           try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
         }
       } else if (sg.kind === 'contact') {

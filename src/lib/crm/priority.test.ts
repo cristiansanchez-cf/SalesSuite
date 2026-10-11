@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { businessDaysBetween, compareLeads, coolingDays, normalizeWeights, priorityOf } from './priority';
+import { businessDaysBetween, compareLeads, coolingDays, normalizeWeights, priorityOf, setQual } from './priority';
 
 describe('prioridad de leads', () => {
   test('lead completo: suma ponderada y de dónde sale cada punto', () => {
@@ -41,6 +41,14 @@ describe('prioridad de leads', () => {
     expect(priorityOf({ format: 'restaurant', nights: '2' }, null)).toMatchObject({ kind: 'venue' });
     expect(priorityOf({ format: 'promoter', events: '12+' }, 'ocio-nocturno').parts[0]).toMatchObject({ key: 'recurrence', points: 30 });
     expect(priorityOf({ kind: 'concert' }, null).kind).toBe('concert');   // lo antiguo se sigue leyendo
+    // Varios formatos (sala de conciertos que luego sigue con DJ): si alguno es un local, se mide como local.
+    expect(priorityOf({ format: ['concerts', 'pub'] }, null).kind).toBe('venue');
+    expect(priorityOf({ format: ['promoter', 'concerts'] }, null).kind).toBe('promoter');
+    const q: Record<string, unknown> = { format: 'hall' };
+    setQual(q, 'format', 'pub', true); expect(q.format).toEqual(['hall', 'pub']);
+    setQual(q, 'format', 'hall', true); expect(q.format).toEqual(['pub']);
+    setQual(q, 'format', 'pub', true); expect(q).not.toHaveProperty('format');
+    setQual(q, 'dj', 'resident', true); setQual(q, 'dj', 'guests', true); expect(q.dj).toBe('guests');
   });
 
   test('encaje por paquete: sin pantalla le pueden encajar peticiones, fotos o fidelización; puntúa el mejor', () => {

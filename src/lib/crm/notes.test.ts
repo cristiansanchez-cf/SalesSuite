@@ -7,13 +7,13 @@ describe('apuntar con IA (§20)', () => {
       { venue: '  Gecko ', interaction: 'Visita: solo observar', key_facts: ['Se llena los sábados', 'a', 'b', 'c'], facts: ['Dos pantallas pequeñas', '  ', 'DJ accesible'], fit: 'Todos los servicios', fields: [{ key: 'aforo', value: '500' }, { key: 'MAL KEY', value: 'x' }],
         channel: 'visit', outcome: 'note', day: '2026-10-10', next_step: 'Mirar redes', next_days: 2, qualification: { screens: 'yes', decider: 'jefe', coverage: 'true', kind: null } },
       { venue: 'Vacío', interaction: null, facts: [], fit: null, fields: [] },
-      { venue: 'Malo', interaction: 'Nos echó el dueño', facts: [], discard: 'avoid', discard_why: ' el dueño nos echó ' },
+      { venue: 'Malo', interaction: 'Nos echó el dueño', facts: [], discard: 'avoid', discard_why: ' el dueño nos echó ', qualification: { format: 'hall, pub,inventado,pub' } },
       { venue: 'Raro', interaction: 'Visita', facts: [], discard: 'borrar_todo', discard_why: 'x' },
       { venue: 'X', interaction: null, facts: ['y'], channel: 'paloma', outcome: 'quizá', day: 'el sábado', next_days: 9999, qualification: {} },
     ] });
     expect(r).toHaveLength(4);
     // Proponer descartar (§23): solo con un motivo conocido; se pregunta antes de hacerlo.
-    expect(r.find((x) => x.venue === 'Malo')).toMatchObject({ discard: 'avoid', discardWhy: 'el dueño nos echó' });
+    expect(r.find((x) => x.venue === 'Malo')).toMatchObject({ discard: 'avoid', discardWhy: 'el dueño nos echó', qualification: { format: 'hall,pub' } });   // varios formatos, sin repetir ni inventar
     expect(r.find((x) => x.venue === 'Raro')).toMatchObject({ discard: null, discardWhy: null });
     expect(r[0]).toMatchObject({ discard: null });
     expect(r[0]).toMatchObject({ venue: 'Gecko', interaction: 'Visita: solo observar', keyFacts: ['Se llena los sábados', 'a', 'b'], facts: ['Dos pantallas pequeñas', 'DJ accesible'], fit: 'Todos los servicios', fields: { aforo: '500' },

@@ -628,7 +628,10 @@ Criterio de Cristian tras hacer ruta por Valencia (11-oct-2026). Fases: **A** cu
   **¿Hay fiesta?** (es su negocio · algunas noches · no), **Tamaño del local**, **DJ** (residente · invitados ·
   residente e invitados · sin DJ) y **¿Trabajan promotoras aquí?**. El formato sustituye al antiguo «Qué es» y decide
   cómo se mide la recurrencia (promotora por eventos al año; un local por **noches con fiesta o música alta**). Lo
-  antiguo (`kind`) se sigue leyendo.
+  antiguo (`kind`) se sigue leyendo. **El formato es de varios** (`format` puede ser una lista): una sala de conciertos
+  que cuando acaba el concierto sigue con DJ residente es «Sala de conciertos + Pub». Si alguno de sus formatos es un
+  local, se mide como local (lo que vendemos entra por el DJ de la noche). Apuntar lo puede devolver junto («hall,pub»)
+  y se suma a lo que ya tenía.
 - **Sin pantalla ya no elimina**: solo no suma los puntos de pantalla (le pueden encajar peticiones, fotos o
   fidelización). Eliminatorios: sin cobertura, no pueden validar, deudas o cierre.
 - **Promotoras, pestaña aparte** en Enjoy (como los DJs); las del sector «Promotoras» pasan a ella.

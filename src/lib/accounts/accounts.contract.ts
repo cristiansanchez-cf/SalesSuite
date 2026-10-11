@@ -670,6 +670,12 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(malo[0]).toMatchObject({ discard: 'avoid' });
       const r3 = await rep.notesApply([{ create: 'Bar Malo', interaction: malo[0].interaction, channel: 'visit', outcome: 'note', qualification: {}, discard: 'avoid', discardNote: 'El dueño nos echó' }]);
       expect((await t.admin.accounts.get(r3[0].accountId!)).account).toMatchObject({ discardReason: 'avoid', discardNote: 'El dueño nos echó' });
+      // Varios formatos: se suman a lo que ya tenía (un clic quita uno).
+      await rep.qualify(gecko, 'format:club');
+      await rep.notesApply([{ accountId: gecko, channel: 'visit', outcome: 'note', qualification: { format: 'hall,pub' } }]);
+      expect((await t.admin.accounts.get(gecko)).account.qualification.format).toEqual(['club', 'hall', 'pub']);
+      await rep.qualify(gecko, 'format:club');
+      expect((await t.admin.accounts.get(gecko)).account.qualification.format).toEqual(['hall', 'pub']);
     });
 
     test('CRM terminar ciudades: juntar con pueblos y asignaciones; renombrar encima de otra = juntar; tipo y mover', async () => {

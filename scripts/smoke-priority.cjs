@@ -28,6 +28,10 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   assert((await rep.textContent('[data-criterion=recurrence]')).includes('Noches con fiesta'), 'el sector dice que es un local: se mide por noches con fiesta');
   await click('qual-format-restaurant');
   assert((await rep.getAttribute('[data-testid=qual-format-restaurant]', 'aria-pressed')) === 'true', 'formato: restaurante que acaba en fiesta');
+  await click('qual-format-hall');
+  assert((await rep.getAttribute('[data-testid=qual-format-restaurant]', 'aria-pressed')) === 'true' && (await rep.getAttribute('[data-testid=qual-format-hall]', 'aria-pressed')) === 'true', 'varios formatos a la vez (y sala de conciertos)');
+  assert((await rep.textContent('[data-criterion=recurrence]')).includes('Noches con fiesta'), 'con un local entre sus formatos, se mide como local');
+  await click('qual-format-hall');
   await click('qual-dj-guests');
   assert((await rep.getAttribute('[data-testid=qual-dj-guests]', 'aria-pressed')) === 'true', 'DJ: invitados');
   await click('qual-nights-4+');

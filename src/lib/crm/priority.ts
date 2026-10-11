@@ -40,6 +40,26 @@ export const FORMATS = ['club', 'pub', 'cocktail', 'rooftop', 'restaurant', 'hal
 export const FORMAT_KIND: Record<(typeof FORMATS)[number], LeadKind> = {
   club: 'venue', pub: 'venue', cocktail: 'venue', rooftop: 'venue', restaurant: 'venue', hall: 'venue', hotel: 'venue', promoter: 'promoter', concerts: 'concert',
 };
+export type Format = (typeof FORMATS)[number];
+/** Claves con varios valores a la vez (se marcan y desmarcan de una en una). */
+export const MULTI_QUAL: readonly string[] = ['format'];
+export const formatsOf = (q: Qualification): Format[] =>
+  (Array.isArray(q.format) ? q.format : q.format ? [q.format] : []).filter((x): x is Format => (FORMATS as readonly string[]).includes(x));
+/**
+ * Lo que se mide de un sitio con varios formatos: si alguno es un local (abre noches), se mide como local, que es donde
+ * entramos (el DJ de después del concierto); si no, promotora; si no, conciertos.
+ */
+export function kindOfFormats(fs: Format[]): LeadKind | undefined {
+  const ks = fs.map((f) => FORMAT_KIND[f]);
+  return ks.includes('venue') ? 'venue' : ks.includes('promoter') ? 'promoter' : ks.includes('concert') ? 'concert' : undefined;
+}
+/** Marca un valor: en las de varios, lo añade (o lo quita si `toggle` y ya estaba); en las demás, lo pone. */
+export function setQual(q: Record<string, unknown>, key: string, value: unknown, toggle = false): void {
+  if (!MULTI_QUAL.includes(key)) { if (toggle && q[key] === value) delete q[key]; else q[key] = value; return; }
+  const cur = formatsOf(q as Qualification) as string[];
+  const next = cur.includes(String(value)) ? (toggle ? cur.filter((x) => x !== value) : cur) : [...cur, String(value)];
+  if (next.length) q[key] = next; else delete q[key];
+}
 export const PARTY = ['core', 'some', 'none'] as const;
 export const DJ = ['resident', 'guests', 'both', 'none'] as const;
 /**
@@ -53,7 +73,8 @@ export type Kill = (typeof KILLS)[number];
 export interface Qualification {
   /** Antiguo «Qué es»: se sigue leyendo; lo nuevo es el formato. */
   kind?: LeadKind;
-  format?: (typeof FORMATS)[number];
+  /** Uno o varios (un pub con DJ que también es sala de conciertos). Antes era uno solo: se leen los dos. */
+  format?: Format | Format[];
   party?: (typeof PARTY)[number];
   dj?: (typeof DJ)[number];
   promoters?: 'yes' | 'no';
@@ -99,7 +120,7 @@ export function normalizeWeights(w: Partial<Weights> | null | undefined): Weight
   return out;
 }
 export const kindOf = (q: Qualification, segmentKey: string | null | undefined): LeadKind | null =>
-  (q.format ? FORMAT_KIND[q.format] : undefined) ?? q.kind ?? (segmentKey ? KIND_BY_SEGMENT[segmentKey] ?? null : null);
+  kindOfFormats(formatsOf(q)) ?? q.kind ?? (segmentKey ? KIND_BY_SEGMENT[segmentKey] ?? null : null);
 
 /** Parte del peso que vale la recurrencia, según el tipo de lead (null = no se sabe). */
 function recurrenceFraction(q: Qualification, kind: LeadKind | null): number | null {
