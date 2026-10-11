@@ -24,6 +24,8 @@ export type ContactInsert = Omit<Contact, 'id' | 'tenantId' | 'createdBy' | 'cre
 export type ContactPatch = Partial<Omit<ContactInsert, 'importId'>>;
 /** Persona ↔ empresa, con su papel en esa empresa. */
 export interface ContactLink { contactId: string; accountId: string; role: string | null }
+/** «Trabaja con»: dos empresas enlazadas (en los dos sentidos), con una nota («fiesta ucraniana los jueves»). */
+export interface AccountLink { id: string; aId: string; bId: string; note: string | null; createdAt: string }
 
 /** A dónde va cada columna del CSV. */
 export type ColumnMap =

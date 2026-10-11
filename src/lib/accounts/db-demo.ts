@@ -275,6 +275,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       s.account = s.account.filter((x) => x.id !== id);
       for (const x of s.account) if (x.parent_id === id) x.parent_id = null;
       s.crm_contact_account = s.crm_contact_account.filter((l) => l.account_id !== id);
+      s.account_link = (s.account_link ?? []).filter((l) => l.a_id !== id && l.b_id !== id);
       s.crm_activity = s.crm_activity.filter((x) => x.account_id !== id);
       s.account_touch = s.account_touch.filter((x) => x.account_id !== id);
       for (const d of s.dossier) if (d.account_id === id) d.account_id = null;

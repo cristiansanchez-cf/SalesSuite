@@ -95,5 +95,18 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
     await Promise.all([rep.waitForURL(/ok=/), rep.click('[data-testid=sheet-save]')]);
     assert(await tri(v), `campo de sí o no: se guarda «${v}»`);
   }
+  // «Trabaja con»: enlazar una promotora nueva desde la ficha; se ve desde los dos lados y se quita.
+  await rep.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
+  await rep.fill('[data-testid=work-name]', 'Fiestas Ucranianas VLC');
+  await rep.selectOption('[data-testid=work-kind]', 'promotora');
+  await rep.fill('[data-testid=work-note]', 'los jueves en la terraza');
+  await Promise.all([rep.waitForURL(/ok=workNew/), rep.click('[data-testid=work-add]')]);
+  assert((await rep.textContent('[data-testid=work-link][data-name="Fiestas Ucranianas VLC"]')).includes('Promotora · los jueves en la terraza'), 'promotora nueva, creada y enlazada');
+  await Promise.all([rep.waitForURL(/\/admin\/accounts\/[^/?#]+$/), rep.click('[data-testid=work-link][data-name="Fiestas Ucranianas VLC"] a')]);
+  assert(await rep.isVisible('[data-testid=work-link][data-name="Club Sol"]'), 'desde la promotora se ve el local');
+  await Promise.all([rep.waitForURL(/ok=workRemoved/), rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-remove]')]);
+  assert(!(await rep.isVisible('[data-testid=work-link]')), 'enlace quitado');
+  await rep.goto(`${BASE}/admin/accounts?ver=all&tipo=promotora`);
+  assert((await rep.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.dataset.name))).includes('Fiestas Ucranianas VLC'), 'en la pestaña Promotoras');
   await b.close();
 })();

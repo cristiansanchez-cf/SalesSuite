@@ -122,6 +122,7 @@ export interface CrmContactRow {
   id: string; tenant_id: string; name: string; email: string | null; phone: string | null; instagram: string | null; linkedin: string | null; city: string | null; notes: string | null;
   fields: Record<string, unknown>; tags: string[]; owner_id: string | null; import_id: string | null; created_by: string | null; created_at: string; updated_at: string;
 }
+export interface AccountLinkRow { id: string; tenant_id: string; a_id: string; b_id: string; note: string | null; created_by: string | null; created_at: string }
 export interface CrmContactAccountRow { tenant_id: string; contact_id: string; account_id: string; role: string | null; created_at: string }
 export interface CrmImportRow {
   id: string; tenant_id: string; created_by: string | null; file_name: string; target: 'account' | 'contact'; headers: string[]; rows: string[][];
@@ -198,6 +199,7 @@ export interface DemoDb {
   crm_field: CrmFieldRow[];
   crm_contact: CrmContactRow[];
   crm_contact_account: CrmContactAccountRow[];
+  account_link: AccountLinkRow[];
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
   crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[] }>;
@@ -388,6 +390,7 @@ export function freshDemoDb(): DemoDb {
     crm_contact_account: [
       { tenant_id: ENJOY, contact_id: '00000000-0000-4000-8000-0000000cc501', account_id: '00000000-0000-4000-8000-0000000ac001', role: 'Gerente', created_at: ago(10) },
     ],
+    account_link: [],
     crm_import: [],
     crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket' }] }],
     crm_fix: [],

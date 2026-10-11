@@ -487,6 +487,27 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(names).toEqual(expect.arrayContaining(['Comunidad Valenciana', 'Madrid', 'Requena']));  // asignadas o con empresas: se quedan
     });
 
+    test('«Trabaja con» (§22): enlazar con una promotora (existente o nueva), en los dos sentidos, una por pareja', async () => {
+      const t = await territory();
+      const rep = await ctx(U.rep);
+      await t.admin.accounts.saveKinds([{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket' }]);
+      const rooftop = await t.admin.accounts.create({ name: 'Rooftop Enlace', zoneId: t.vlc });
+      const r1 = await rep.crm.workLinkAdd(rooftop, { name: 'Fiestas Ucranianas VLC', kind: 'promotora', note: 'los jueves' });
+      expect(r1.created).toBe(true);
+      const promo = (await t.admin.accounts.get(r1.otherId)).account;
+      expect(promo).toMatchObject({ name: 'Fiestas Ucranianas VLC', kind: 'promotora', zoneId: t.vlc });   // nueva, en la ciudad del local
+      expect((await rep.crm.workLinks(rooftop)).map((w) => [w.account.name, w.account.kind, w.note])).toEqual([['Fiestas Ucranianas VLC', 'promotora', 'los jueves']]);
+      expect((await rep.crm.workLinks(promo.id)).map((w) => w.account.id)).toEqual([rooftop]);   // y desde la promotora
+      // Por el nombre, la que ya existe (sin duplicar); la misma pareja al revés es el mismo enlace (cambia la nota).
+      const r2 = await rep.crm.workLinkAdd(promo.id, { name: 'ROOFTOP ENLACE', note: 'y algún sábado' });
+      expect(r2).toMatchObject({ created: false, otherId: rooftop, linkId: r1.linkId });
+      expect((await rep.crm.workLinks(rooftop))[0].note).toBe('y algún sábado');
+      await rejects(rep.crm.workLinkAdd(rooftop, { otherId: rooftop }), 422);
+      await rep.crm.workLinkRemove(r1.linkId);
+      expect(await rep.crm.workLinks(rooftop)).toEqual([]);
+      await rejects(rep.crm.workLinkRemove(r1.linkId), 404);
+    });
+
     test('tipos de cliente por espacio (§21): renombrar, añadir y quitar (sus empresas pasan al principal)', async () => {
       const t = await territory();
       const rep = await ctx(U.rep);

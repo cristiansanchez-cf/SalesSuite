@@ -634,3 +634,10 @@ Criterio de Cristian tras hacer ruta por Valencia (11-oct-2026). Fases: **A** cu
 - **Promotoras, pestaña aparte** en Enjoy (como los DJs); las del sector «Promotoras» pasan a ella.
 - «¿Tiene DJ residente?» de la ficha pasa a la cualificación (migración `20261122`, archivado y recuperable).
 - Apuntar e Investigar con IA rellenan formato, fiesta, DJ y promotoras.
+
+**B · «Trabaja con».** En la ficha (bajo «Grupo y personas»): enlazar con promotoras, DJs (residentes o invitados) u
+otros locales, con una nota («los jueves en la terraza»). Se escribe el nombre: si ya está en el CRM se enlaza esa
+(sin duplicar); si no, se crea del tipo elegido (Promotora por defecto) en la ciudad del local. Se ve desde los dos
+lados y es distinto del **grupo** (el dueño de varios locales). Datos: `account_link` (una fila por pareja, sin
+orden; RLS del espacio; se borra con la empresa). Migración `20261123`; pruebas: contrato, `63_account_link.test.sql`
+y `smoke-crm.cjs`.

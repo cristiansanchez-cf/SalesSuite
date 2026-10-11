@@ -94,6 +94,21 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
     async removeLink(contactId, accountId) {
       return (check(await sb.from('crm_contact_account').delete().eq('contact_id', contactId).eq('account_id', accountId).select('contact_id')) ?? []).length > 0;
     },
+    async listAccountLinks(t, accountId) {
+      const rows = check(await sb.from('account_link').select('id, a_id, b_id, note, created_at').eq('tenant_id', t)
+        .or(`a_id.eq.${accountId},b_id.eq.${accountId}`).order('created_at').limit(500)) ?? [];
+      return rows.map((r: Row) => ({ id: r.id, aId: r.a_id, bId: r.b_id, note: r.note, createdAt: r.created_at }));
+    },
+    async saveAccountLink(t, aId, bId, note) {
+      // El índice único es por pareja sin orden (least/greatest): se busca la que haya y se actualiza, si no se crea.
+      const prev = check(await sb.from('account_link').select('id').eq('tenant_id', t)
+        .or(`and(a_id.eq.${aId},b_id.eq.${bId}),and(a_id.eq.${bId},b_id.eq.${aId})`).maybeSingle()) as Row | null;
+      if (prev) { check(await sb.from('account_link').update({ note }).eq('id', prev.id)); return prev.id; }
+      return (check(await sb.from('account_link').insert({ tenant_id: t, a_id: aId, b_id: bId, note }).select('id').single()) as Row).id;
+    },
+    async removeAccountLink(id) {
+      return (check(await sb.from('account_link').delete().eq('id', id).select('id')) ?? []).length > 0;
+    },
     async createImport(t, i) {
       return (check(await sb.from('crm_import').insert({ tenant_id: t, file_name: i.fileName, target: i.target, headers: i.headers, rows: i.rows, mapping: i.mapping }).select('id').single()) as Row).id;
     },

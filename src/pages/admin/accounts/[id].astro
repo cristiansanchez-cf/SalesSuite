@@ -30,6 +30,8 @@ import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { researchMessages } from '~/lib/i18n/messages/research';
 import { priorityOf } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { kindsMessages } from '~/lib/i18n/messages/kinds';
+import type { IconName } from '~/lib/ui/icons';
 import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
 
 const { admin } = Astro.locals;
@@ -92,6 +94,8 @@ if (Astro.request.method === 'POST') {
       case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
       case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
       case 'unlink': await admin.crm.unlink(str('contactId'), id); to += '?ok=unlinked'; break;
+      case 'work-add': { const r = await admin.crm.workLinkAdd(id, { name: str('workName'), kind: str('workKind'), note: str('workNote') }); to += `?ok=${r.created ? 'workNew' : 'work'}#work`; break; }
+      case 'work-remove': await admin.crm.workLinkRemove(str('linkId')); to += '?ok=workRemoved#work'; break;
       case 'block': await acc.block(id, str('reason')); to += '?ok=blocked'; break;
       case 'unblock': await acc.unblock(id); to += '?ok=unblocked'; break;
       case 'delete': await acc.remove(id); to = '/admin/accounts'; break;
@@ -125,6 +129,9 @@ const G = priorityMessages[locale].google;
 const CL = cleanupMessages[locale];
 const NT = notesMessages[locale];
 const kindDefs = await acc.kinds();
+const KN = kindsMessages[locale];
+const work = await admin.crm.workLinks(id);
+const kindOf = (k: string) => kindDefs.find((d) => d.key === k) ?? kindDefs[0];
 const googleQ = googleBox.q || (admin.crm.hasGoogle() ? await admin.crm.googleQuery(id) : '');
 const photoSrc = (n: string | null | undefined) => (n ? `/admin/api/crm/place-photo?n=${encodeURIComponent(n)}` : null);
 const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
@@ -148,7 +155,7 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, fact: NT.factSaved, factRemoved: NT.factRemoved, factStarred: NT.factStarred, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
-  saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
+  saved: M.okSaved, fields: C.okSaved, work: KN.work.ok, workNew: KN.work.okNew, workRemoved: KN.work.removed, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
 });
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
@@ -428,6 +435,33 @@ const STATE_ALERT = {
               ))}
             </ul>
           )}
+        </div>
+        {/* «Trabaja con» (§22): promotoras, DJs o locales; en los dos sentidos. Si no está en el CRM, se crea. */}
+        <div id="work" class="grid gap-2" data-testid="work-links">
+          <p class="m-0"><span class="text-eyebrow">{KN.work.title}</span> <span class="co-meta">· {KN.work.help}</span></p>
+          {work.length === 0 ? <p class="co-meta">{KN.work.none}</p> : (
+            <ul class="co-rows">
+              {work.map((w) => (
+                <li class="co-row" data-testid="work-link" data-name={w.account.name}>
+                  <span class="co-row__lead"><Icon name={(kindOf(w.account.kind)?.icon ?? 'building2') as IconName} /></span>
+                  <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${w.account.id}`}>
+                    <span class="co-row-title">{w.account.name}</span>
+                    <span class="co-meta">{[kindOf(w.account.kind)?.label, w.note].filter(Boolean).join(' · ')}</span>
+                  </a>
+                  <form method="post" action="#work"><input type="hidden" name="action" value="work-remove" /><input type="hidden" name="linkId" value={w.id} />
+                    <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={`${KN.work.remove}: ${w.account.name}`} title={KN.work.remove} data-testid="work-remove"><Icon name="x" size={14} /></button></form>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form method="post" action="#work" class="grid gap-2 sm:grid-cols-[1fr_9rem_1fr_auto] sm:items-end" data-testid="work-form">
+            <input type="hidden" name="action" value="work-add" />
+            <label class="co-field">{KN.work.name}<input class="co-input" name="workName" required maxlength="160" list="work-others" placeholder={KN.work.namePh} autocomplete="off" data-testid="work-name" /></label>
+            <datalist id="work-others">{co.others.map((o) => <option value={o.name} label={kindOf(o.kind)?.label} />)}</datalist>
+            <label class="co-field">{KN.work.kind}<select class="co-select" name="workKind" data-testid="work-kind">{kindDefs.map((k) => <option value={k.key} selected={k.key === (kindDefs.some((d) => d.key === 'promotora') ? 'promotora' : kindDefs[0].key)}>{k.label}</option>)}</select></label>
+            <label class="co-field">{KN.work.note}<input class="co-input" name="workNote" maxlength="200" placeholder={KN.work.notePh} data-testid="work-note" /></label>
+            <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="work-add"><Icon name="link" size={14} />{KN.work.add}</button>
+          </form>
         </div>
         <form method="post" class="flex flex-wrap items-end gap-2" data-testid="account-tags">
           <input type="hidden" name="action" value="tags" />

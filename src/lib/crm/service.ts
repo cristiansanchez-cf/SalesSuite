@@ -264,8 +264,68 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       locales: accs.filter((x) => x.parentId === a.id),
       /** Candidatas a grupo: las que no están dentro de otro (un solo nivel). */
       groups: a.parentId || !accs.some((x) => x.parentId === a.id) ? accs.filter((x) => !x.parentId && x.id !== a.id).map((x) => ({ id: x.id, name: x.name })) : [],
+      /** Para «Trabaja con»: las demás, con su tipo (promotoras y DJs primero). */
+      others: accs.filter((x) => x.id !== a.id && !x.discardedAt).map((x) => ({ id: x.id, name: x.name, kind: x.kind }))
+        .sort((x, y) => Number(x.kind === 'company') - Number(y.kind === 'company') || x.name.localeCompare(y.name, 'es')).slice(0, 3000),
     };
   }
+  // ---------------------------------------------------------------- «Trabaja con» (§22)
+
+  /** Las empresas con las que trabaja una (promotoras, DJs, locales), con la nota del enlace. */
+  async function workLinks(accountId: string): Promise<Array<{ id: string; note: string | null; account: { id: string; name: string; kind: string } }>> {
+    requireUse();
+    const links = await db.listAccountLinks(t, accountId);
+    if (!links.length) return [];
+    const others = links.map((l) => (l.aId === accountId ? l.bId : l.aId));
+    const accs = await accounts.listAccounts(t, { ids: others, limit: others.length });
+    return links.flatMap((l) => {
+      const o = accs.find((a) => a.id === (l.aId === accountId ? l.bId : l.aId));
+      return o ? [{ id: l.id, note: l.note, account: { id: o.id, name: o.name, kind: o.kind } }] : [];
+    }).sort((x, y) => x.account.kind.localeCompare(y.account.kind) || x.account.name.localeCompare(y.account.name, 'es'));
+  }
+  const workLinkSchema = z.object({
+    otherId: uuid.optional().or(z.literal('').transform(() => undefined)),
+    name: z.string().trim().max(160).optional(),
+    kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional().or(z.literal('').transform(() => undefined)),
+    note: z.string().trim().max(200).optional().transform((v) => v || null),
+  });
+  /**
+   * Enlazar con otra empresa: la elegida, o por su nombre (si existe una que se llame igual, esa; si no, se crea del
+   * tipo que se diga, p. ej. una promotora nueva). Enlazar no cambia nada de ninguna de las dos.
+   */
+  async function workLinkAdd(accountId: string, input: unknown): Promise<{ linkId: string; otherId: string; created: boolean }> {
+    requireUse();
+    const v = parse(workLinkSchema, input);
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    let otherId = v.otherId ?? null;
+    let created = false;
+    if (otherId) {
+      const o = await accounts.getAccount(otherId);
+      if (!o || o.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    } else {
+      const name = v.name?.replace(/\s+/g, ' ').trim();
+      if (!name) throw new AdminError(422, 'Datos no válidos');
+      const same = (await accounts.listAccounts(t, { q: name, limit: 50 })).find((x) => norm(x.name) === norm(name));
+      if (same) otherId = same.id;
+      else {
+        const kind = v.kind && (await kinds()).some((k) => k.key === v.kind) ? v.kind : undefined;
+        try { otherId = await accounts.insertAccount(t, { name, zoneId: a.zoneId, segmentId: null, address: null, externalRef: null, notes: null, kind }); } catch (e) { mapError(e); }
+        created = true;
+      }
+    }
+    if (otherId === accountId) throw new AdminError(422, 'Datos no válidos');
+    let linkId: string;
+    try { linkId = await db.saveAccountLink(t, accountId, otherId!, v.note); } catch (e) { mapError(e); }
+    return { linkId: linkId!, otherId: otherId!, created };
+  }
+  async function workLinkRemove(linkId: string) {
+    requireUse();
+    let ok = false;
+    try { ok = await db.removeAccountLink(String(linkId)); } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(404, 'Enlace no encontrado');
+  }
+
   /** Mete una o varias empresas en un grupo (que ya existe o nuevo por su nombre), o las saca (null). */
   async function moveToGroup(accountIds: string[], target: { groupId?: string | null; groupName?: string | null }) {
     requireUse();
@@ -1408,7 +1468,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
-    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
+    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
@@ -1420,7 +1480,7 @@ export type CrmService = ReturnType<typeof createCrmService>;
 
 export const emptyCrmDb: CrmDb = {
   async listContacts() { return []; }, async getContact() { return null; }, async insertContacts() { throw new Error('sin CRM'); },
-  async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {},
+  async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {}, async listAccountLinks() { return []; }, async saveAccountLink() { throw new Error('sin CRM'); }, async removeAccountLink() { return false; },
   async removeLink() { return false; }, async createImport() { throw new Error('sin CRM'); }, async getImport() { return null; },
   async listImports() { return []; }, async updateImport() { return false; }, async deleteContactsByImport() { return 0; },
   async listActivities() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },

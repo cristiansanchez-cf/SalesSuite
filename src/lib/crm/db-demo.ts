@@ -103,6 +103,29 @@ export function demoCrmDb(actorId: string): CrmDb {
       s.crm_contact_account = s.crm_contact_account.filter((x) => x !== l);
       return true;
     },
+    async listAccountLinks(t, accountId) {
+      if (!isMember(t, actorId)) return [];
+      return db().account_link.filter((l) => l.tenant_id === t && (l.a_id === accountId || l.b_id === accountId))
+        .map((l) => ({ id: l.id, aId: l.a_id, bId: l.b_id, note: l.note, createdAt: l.created_at }));
+    },
+    async saveAccountLink(t, aId, bId, note) {
+      if (!isMember(t, actorId)) throw new Error('permission denied: account_link');
+      const s = db();
+      if (aId === bId) throw new Error('check constraint: account_link');
+      if (![aId, bId].every((id) => s.account.some((a) => a.id === id && a.tenant_id === t))) throw new Error('violates foreign key: account_link');
+      const prev = s.account_link.find((l) => l.tenant_id === t && ((l.a_id === aId && l.b_id === bId) || (l.a_id === bId && l.b_id === aId)));
+      if (prev) { prev.note = note; return prev.id; }
+      const id = randomUUID();
+      s.account_link.push({ id, tenant_id: t, a_id: aId, b_id: bId, note, created_by: actorId, created_at: iso() });
+      return id;
+    },
+    async removeAccountLink(id) {
+      const s = db();
+      const l = s.account_link.find((x) => x.id === id);
+      if (!l || !isMember(l.tenant_id, actorId)) return false;
+      s.account_link = s.account_link.filter((x) => x !== l);
+      return true;
+    },
     async createImport(t, i) {
       if (!isManager(t, actorId)) throw new Error('permission denied: crm_import');
       const row: CrmImportRow = { id: randomUUID(), tenant_id: t, created_by: actorId, file_name: i.fileName, target: i.target, headers: i.headers, rows: i.rows,

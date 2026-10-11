@@ -1,6 +1,6 @@
 /** Personas, sus empresas e importaciones (docs/CRM_DINAMICO.md). Una implementación por usuario: en Supabase decide la RLS. */
 import type { Activity, Channel, Outcome } from './followup';
-import type { Contact, ContactInsert, ContactLink, ContactPatch, CrmImport } from './types';
+import type { AccountLink, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport } from './types';
 
 export interface ContactFilter { ids?: string[]; tag?: string; q?: string; limit: number }
 
@@ -14,6 +14,11 @@ export interface CrmDb {
   /** Alta o cambio de papel (upsert por persona + empresa). */
   saveLinks(tenantId: string, links: ContactLink[]): Promise<void>;
   removeLink(contactId: string, accountId: string): Promise<boolean>;
+  /** «Trabaja con» de una empresa (en cualquiera de los dos lados). */
+  listAccountLinks(tenantId: string, accountId: string): Promise<AccountLink[]>;
+  /** Alta o cambio de nota (una por pareja, sea cual sea el orden). */
+  saveAccountLink(tenantId: string, aId: string, bId: string, note: string | null): Promise<string>;
+  removeAccountLink(id: string): Promise<boolean>;
   createImport(tenantId: string, i: Pick<CrmImport, 'fileName' | 'target' | 'headers' | 'rows' | 'mapping'>): Promise<string>;
   getImport(id: string): Promise<CrmImport | null>;
   listImports(tenantId: string, limit: number): Promise<Array<Omit<CrmImport, 'rows'>>>;
