@@ -28,7 +28,7 @@ import { notesMessages } from '~/lib/i18n/messages/notes';
 import { researchContext } from '~/lib/crm/research-context';
 import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { researchMessages } from '~/lib/i18n/messages/research';
-import { priorityOf } from '~/lib/crm/priority';
+import { PACKAGES, PRESALE, priorityOf } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { kindsMessages } from '~/lib/i18n/messages/kinds';
 import type { IconName } from '~/lib/ui/icons';
@@ -126,6 +126,7 @@ const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
 const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
 const googleResults = googleBox.r;
 const G = priorityMessages[locale].google;
+const PS = priorityMessages[locale];
 const CL = cleanupMessages[locale];
 const NT = notesMessages[locale];
 const kindDefs = await acc.kinds();
@@ -189,6 +190,29 @@ const STATE_ALERT = {
         <Icon name={STATE_ALERT.kind === 'rejection' ? 'triangle-alert' : STATE_ALERT.kind === 'success' ? 'circle-check' : 'info'} size={18} />
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
+
+      {/* Resumen (§22): lo que hace falta de un vistazo en la puerta del local; y saltos a cada parte (en el móvil la ficha es larga). */}
+      <section id="account-summary" class="co-card grid gap-3 !p-4" data-testid="account-summary">
+        <div class="grid gap-2">
+          {a.state !== 'customer' && (prio.out
+            ? <span class="co-tag co-tag--danger">{PS.outBy(prio.kills.map((k) => PS.kills[k]).join(' · '))}</span>
+            : <span class="inline-flex items-baseline gap-1"><span class="co-figure text-3xl" data-testid="summary-score">{prio.score}</span><span class="co-meta">/ 100{!prio.qualified && ` · ${PS.unqualified}`}</span></span>)}
+          <div class="flex min-w-0 flex-wrap items-center gap-1.5" data-testid="summary-fit">
+            {(() => { const fits = PACKAGES.filter((k) => prio.fit[k] === 'yes' || prio.fit[k] === 'maybe'); return fits.length
+              ? <><span class="co-meta">{PS.summary.fits}:</span>{fits.map((k) => <span class:list={['co-tag', prio.fit[k] === 'yes' ? 'sum-fit-yes' : 'sum-fit-maybe']}>{PS.packages[k]}{PRESALE.includes(k) ? ` (${PS.presale})` : ''}</span>)}</>
+              : <span class="co-meta">{PS.summary.noFit}</span>; })()}
+          </div>
+        </div>
+        <a class="co-inset flex items-center gap-2 !p-3 text-inherit !no-underline" href="#follow" data-testid="summary-next">
+          <Icon name="calendar" size={16} />
+          <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}{tl.next.step && ` · ${tl.next.step}`}</> : PS.summary.noNext}</span>
+          <Icon name="chevron-right" size={14} />
+        </a>
+        <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
+          {([['facts', '#facts'], ['qual', '#qual'], ['follow', '#follow'], ['people', '#acc-people'], ['data', '#company-contact']] as const).map(([k, h]) => (
+            <a class="co-chip whitespace-nowrap !no-underline" href={h}>{PS.summary.jump[k]}</a>))}
+        </nav>
+      </section>
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
       <section id="facts" class="co-card grid gap-3" data-testid="facts-card">
@@ -357,30 +381,6 @@ const STATE_ALERT = {
         </div>
       </section>
 
-      <section class="co-card grid gap-4" data-testid="account-sheet">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="co-entity">{C.title}</h2>
-          {perms.manageTenant && <a class="co-meta underline" href="/admin/team/fields">{C.manage}</a>}
-        </div>
-        {sheet.length === 0 ? <p class="co-meta">{C.noFields} {perms.manageTenant && C.noFieldsAdmin}</p>
-        : canEdit ? (
-          <form method="post" class="grid gap-5" data-testid="sheet-form">
-            <input type="hidden" name="action" value="fields" />
-            {sections.map((sec) => (
-              <fieldset class="grid gap-4 sm:grid-cols-2">
-                {sec.title && <legend class="text-eyebrow mb-1 sm:col-span-2">{sec.title}</legend>}
-                {sec.fields.map((fd) => <div class:list={[(fd.type === 'long_text' || fd.type === 'multi_select') && 'sm:col-span-2']}><FieldInput field={fd} value={a.fields[fd.key]} labels={C} /></div>)}
-              </fieldset>
-            ))}
-            <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="sheet-save">{C.save}</button>
-          </form>
-        ) : (
-          <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            {sheet.map((fd) => <div><dt class="co-meta">{fd.label}</dt><dd class="text-sm font-medium">{formatValue(fd, a.fields[fd.key], fmt.tag) || C.empty}</dd></div>)}
-          </dl>
-        )}
-      </section>
-
 
       <section class="co-card grid gap-4" id="acc-people" data-testid="account-people">
         <h2 class="co-entity">{P.group.title}</h2>
@@ -469,6 +469,30 @@ const STATE_ALERT = {
             <input class="co-input" name="tags" value={a.tags.join(', ')} maxlength="400" disabled={!canEdit} /></label>
           {canEdit && <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{P.group.save}</button>}
         </form>
+      </section>
+
+      <section class="co-card grid gap-4" data-testid="account-sheet">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="co-entity">{C.title}</h2>
+          {perms.manageTenant && <a class="co-meta underline" href="/admin/team/fields">{C.manage}</a>}
+        </div>
+        {sheet.length === 0 ? <p class="co-meta">{C.noFields} {perms.manageTenant && C.noFieldsAdmin}</p>
+        : canEdit ? (
+          <form method="post" class="grid gap-5" data-testid="sheet-form">
+            <input type="hidden" name="action" value="fields" />
+            {sections.map((sec) => (
+              <fieldset class="grid gap-4 sm:grid-cols-2">
+                {sec.title && <legend class="text-eyebrow mb-1 sm:col-span-2">{sec.title}</legend>}
+                {sec.fields.map((fd) => <div class:list={[(fd.type === 'long_text' || fd.type === 'multi_select') && 'sm:col-span-2']}><FieldInput field={fd} value={a.fields[fd.key]} labels={C} /></div>)}
+              </fieldset>
+            ))}
+            <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="sheet-save">{C.save}</button>
+          </form>
+        ) : (
+          <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            {sheet.map((fd) => <div><dt class="co-meta">{fd.label}</dt><dd class="text-sm font-medium">{formatValue(fd, a.fields[fd.key], fmt.tag) || C.empty}</dd></div>)}
+          </dl>
+        )}
       </section>
 
       <section class="co-section">
@@ -697,6 +721,8 @@ const STATE_ALERT = {
 
 <style>
   /* «Lo más importante» de Lo que sabemos: tarjetas que se leen de un vistazo. */
+  .sum-fit-yes { background: #e7f6ec; color: #14532d; border-color: #b7e2c4; }
+  .sum-fit-maybe { background: #fff6e0; color: #6b4a00; border-color: #f0dca6; }
   .facts-key { background: var(--co-signal-soft, #ece6fc); color: var(--co-signal-ink, #2a1066); }
   .facts-key [data-testid=fact-star][aria-pressed=true] { color: var(--co-signal, #6a2bd9); }
   .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }

@@ -617,7 +617,7 @@ Feedback de Cristian tras probarlo con sus notas de Valencia:
   2–3, grupo): mide cuántos locales tiene el dueño, no el tamaño.
 - «Qué es» va con la misma forma que el resto de filas (título arriba y opciones debajo, a la izquierda).
 
-## 22. Ficha de la empresa, ronda de ruta (en curso)
+## 22. Ficha de la empresa, ronda de ruta (hecho)
 
 Criterio de Cristian tras hacer ruta por Valencia (11-oct-2026). Fases: **A** cualificación nueva (hecho), **B**
 «Trabaja con», **C** encaje por paquete y Fidelización en preventa, **D** reordenar la ficha.
@@ -649,3 +649,7 @@ fiesta). El criterio de 20 puntos que antes era solo «Pantallas» es ahora **«
 mejor paquete (encaja = entero, puede = la mitad). La Fidelización está en **preventa** (llega este mes): su etiqueta
 dice si encaja, pero en la nota cuenta la mitad. Pendiente: las condiciones de la preventa (precio, qué incluye) para
 el argumentario; el contenido de Enjoy aún dice que la fidelización no se vende.
+
+**D · Orden de la ficha.** Arriba, un **resumen**: la nota, qué le encaja y el próximo paso (lleva al seguimiento), con
+saltos a cada parte (Lo que sabemos · Cualificación · Seguimiento · Con quién · Datos): en el móvil la ficha es larga.
+La «Ficha» (campos del espacio) baja después de «Grupo y personas»; lo demás, igual.

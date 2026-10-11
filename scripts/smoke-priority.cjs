@@ -46,6 +46,8 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   assert((await rep.getAttribute('[data-testid=qualification]', 'data-out')) === 'false' && (await rep.textContent('[data-testid=qual-score]')).trim() === '75', 'sin pantalla: sigue en el ranking; puntúan las peticiones');
   assert((await rep.getAttribute('[data-testid=fit-screen]', 'data-fit')) === 'no', 'pantalla: no encaja');
   if (OUT) await rep.screenshot({ path: `${OUT}/priority-fit.png`, fullPage: true });
+  assert((await rep.textContent('[data-testid=summary-fit]')).includes('Peticiones de canciones') && (await rep.textContent('[data-testid=summary-score]')).trim() === '75', 'resumen arriba: nota y qué le encaja');
+  assert((await rep.$$eval('[data-testid=summary-jump] a', (as) => as.map((x) => x.getAttribute('href')))).join() === '#facts,#qual,#follow,#acc-people,#company-contact', 'saltos a cada parte de la ficha');
   await click('qual-screens-yes');
 
   // ---- la lista: ranking y filtros
