@@ -31,7 +31,8 @@ describe('prioridad de leads', () => {
 
   test('eliminatorios: fuera del ranking aunque puntúe alto, con el motivo', () => {
     // Sin pantalla ni intención ya no saca del ranking: solo no suma los puntos de pantalla (le puede encajar otro paquete).
-    expect(priorityOf({ nights: '4+', decider: 'onsite', screens: 'no' }, 'ocio-nocturno')).toMatchObject({ out: false, kills: [], score: 55 });
+    // (abre 4 noches: le encaja la Fidelización, que en preventa cuenta la mitad: 30 + 25 + 10).
+    expect(priorityOf({ nights: '4+', decider: 'onsite', screens: 'no' }, 'ocio-nocturno')).toMatchObject({ out: false, kills: [], score: 65 });
     expect(priorityOf({ nights: '4+', debt: true }, 'ocio-nocturno')).toMatchObject({ out: true, kills: ['debt'], score: 0 });
     expect(priorityOf({ coverage: true, validate: true, debt: true }, null).kills).toEqual(['coverage', 'validate', 'debt']);
   });
@@ -40,6 +41,16 @@ describe('prioridad de leads', () => {
     expect(priorityOf({ format: 'restaurant', nights: '2' }, null)).toMatchObject({ kind: 'venue' });
     expect(priorityOf({ format: 'promoter', events: '12+' }, 'ocio-nocturno').parts[0]).toMatchObject({ key: 'recurrence', points: 30 });
     expect(priorityOf({ kind: 'concert' }, null).kind).toBe('concert');   // lo antiguo se sigue leyendo
+  });
+
+  test('encaje por paquete: sin pantalla le pueden encajar peticiones, fotos o fidelización; puntúa el mejor', () => {
+    const rest = priorityOf({ format: 'restaurant', party: 'some', dj: 'guests', screens: 'no' }, null);
+    expect(rest.fit).toEqual({ screen: 'no', requests: 'yes', photos: null, loyalty: null });
+    expect(rest.parts.find((x) => x.key === 'screens')!.points).toBe(20);                       // peticiones: encaja entero
+    expect(priorityOf({ screens: 'no', dj: 'none', party: 'none', dynamics: 'no' }, 'ocio-nocturno').parts.find((x) => x.key === 'screens')!.points).toBe(0);
+    expect(priorityOf({ screens: 'wants' }, 'ocio-nocturno')).toMatchObject({ score: 10, max: 100 });   // 10 sabidos; puede subir si otro paquete encaja
+    expect(priorityOf({ nights: '3' }, 'ocio-nocturno').fit.loyalty).toBe('yes');
+    expect(priorityOf({}, 'ocio-nocturno').unknown).toContain('screens');                         // sin saber nada: no se sabe
   });
 
   test('ranking por puntuación actual, no por máximo; los de fuera al final', () => {
@@ -51,7 +62,7 @@ describe('prioridad de leads', () => {
 
   test('pesos configurables', () => {
     const w = normalizeWeights({ recurrence: 40, decider: 25, screens: 15, dynamics: 10, scale: 10 });
-    expect(priorityOf({ nights: '4+' }, 'ocio-nocturno', w).score).toBe(40);
+    expect(priorityOf({ nights: '4+', screens: 'no', dj: 'none', party: 'none', dynamics: 'no' }, 'ocio-nocturno', w).score).toBe(48);   // 40 + la mitad de 15 (fidelización)
     expect(normalizeWeights({ recurrence: -3 } as never).recurrence).toBe(30);
   });
 

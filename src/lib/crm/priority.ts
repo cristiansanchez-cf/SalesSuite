@@ -89,6 +89,8 @@ export interface Priority {
   unknown: Criterion[];
   qualified: boolean;
   kind: LeadKind | null;
+  /** Qué le encaja de lo que vendemos (el criterio «screens» puntúa el mejor). */
+  fit: Record<Package, Fit>;
 }
 
 export function normalizeWeights(w: Partial<Weights> | null | undefined): Weights {
@@ -107,6 +109,36 @@ function recurrenceFraction(q: Qualification, kind: LeadKind | null): number | n
   return null;
 }
 
+// ------------------------------------------------------------------ encaje por paquete (§22)
+
+/**
+ * Qué le encaja de lo que vende Enjoy, sacado de «Cómo es» (criterio de Cristian, 11-oct-2026): un sitio sin pantalla
+ * puede querer peticiones de canciones (tiene DJ o hay fiesta) o fotos (cuida sus redes). La Fidelización (sellos en
+ * un pase: copas, chupitos o visitas) va en preventa y encaja donde la clientela repite.
+ * yes = encaja · maybe = puede · no = no · null = no se sabe.
+ */
+export const PACKAGES = ['screen', 'requests', 'photos', 'loyalty'] as const;
+export type Package = (typeof PACKAGES)[number];
+export type Fit = 'yes' | 'maybe' | 'no' | null;
+export function fitOf(q: Qualification, kind: LeadKind | null): Record<Package, Fit> {
+  const screen: Fit = q.screens === 'yes' ? 'yes' : q.screens === 'wants' ? 'maybe' : q.screens === 'no' ? 'no' : null;
+  const requests: Fit = q.dj && q.dj !== 'none' ? 'yes' : q.party === 'core' || q.party === 'some' ? 'maybe' : q.dj === 'none' && q.party === 'none' ? 'no' : null;
+  const photos: Fit = q.dynamics === 'yes' ? 'yes' : q.dynamics === 'partly' ? 'maybe' : q.dynamics === 'no' ? 'no' : null;
+  const loyalty: Fit = kind !== 'venue' ? null
+    : q.nights === '2' || q.nights === '3' || q.nights === '4+' || q.party === 'core' ? 'yes' : q.nights === '1' ? 'maybe' : null;
+  return { screen, requests, photos, loyalty };
+}
+const FIT_VALUE: Record<'yes' | 'maybe' | 'no', number> = { yes: 1, maybe: 0.5, no: 0 };
+/** En preventa (aún no se puede instalar): cuenta la mitad en la nota, aunque la etiqueta diga que encaja. */
+export const PRESALE: readonly Package[] = ['loyalty'];
+/** El mejor encaje (0–1) y cuánto podría subir si se supiera lo que falta; null si no se sabe nada. */
+function bestFit(f: Record<Package, Fit>): { value: number | null; room: number } {
+  const known = PACKAGES.filter((k) => f[k] !== null).map((k) => FIT_VALUE[f[k]!] * (PRESALE.includes(k) ? 0.5 : 1));
+  if (!known.length) return { value: null, room: 1 };
+  const value = Math.max(...known);
+  return { value, room: known.length < PACKAGES.length ? 1 - value : 0 };
+}
+
 export function priorityOf(q: Qualification | null | undefined, segmentKey: string | null | undefined, weights: Weights = DEFAULT_WEIGHTS): Priority {
   const v = q ?? {};
   const kind = kindOf(v, segmentKey);
@@ -114,19 +146,21 @@ export function priorityOf(q: Qualification | null | undefined, segmentKey: stri
   if (v.coverage) kills.push('coverage');
   if (v.validate) kills.push('validate');
   if (v.debt) kills.push('debt');
+  const fit = bestFit(fitOf(v, kind));
   const fraction: Record<Criterion, number | null> = {
     recurrence: recurrenceFraction(v, kind),
     decider: v.decider ? OPTIONS.decider[v.decider] : null,
-    screens: v.screens ? OPTIONS.screens[v.screens] : null,
+    screens: fit.value,
     dynamics: v.dynamics ? OPTIONS.dynamics[v.dynamics] : null,
     scale: v.scale ? OPTIONS.scale[v.scale] : null,
   };
   const parts: Part[] = CRITERIA.map((key) => ({ key, weight: weights[key], points: fraction[key] === null ? null : Math.round(fraction[key]! * weights[key] * 10) / 10 }));
   const unknown = parts.filter((p) => p.points === null).map((p) => p.key);
   const known = parts.reduce((s, p) => s + (p.points ?? 0), 0);
-  const max = known + parts.filter((p) => p.points === null).reduce((s, p) => s + p.weight, 0);
+  // Lo que falta suma su peso entero; el encaje, además, lo que podría subir si se supieran los paquetes que faltan.
+  const max = known + parts.filter((p) => p.points === null).reduce((s, p) => s + p.weight, 0) + (fit.value !== null ? fit.room * weights.screens : 0);
   const out = kills.length > 0;
-  return { out, kills, score: out ? 0 : Math.round(known), max: out ? 0 : Math.round(max), parts, unknown, qualified: unknown.length === 0, kind };
+  return { out, kills, score: out ? 0 : Math.round(known), max: out ? 0 : Math.round(max), parts, unknown, qualified: unknown.length === 0, kind, fit: fitOf(v, kind) };
 }
 
 /** Orden del ranking: los que pasan el filtro por puntuación actual (no por máximo); los de fuera, al final. */

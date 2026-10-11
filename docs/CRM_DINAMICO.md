@@ -641,3 +641,11 @@ otros locales, con una nota («los jueves en la terraza»). Se escribe el nombre
 lados y es distinto del **grupo** (el dueño de varios locales). Datos: `account_link` (una fila por pareja, sin
 orden; RLS del espacio; se borra con la empresa). Migración `20261123`; pruebas: contrato, `63_account_link.test.sql`
 y `smoke-crm.cjs`.
+
+**C · Encaje por paquete.** De «Cómo es» sale qué le encaja: **Pantalla en vivo** (pantallas), **Peticiones de
+canciones** (tiene DJ residente o invitados; o hay fiesta: «puede»), **Fotos y álbum de la noche** (cuida sus redes) y
+**Fidelización** (sellos en un pase: copas, chupitos o visitas; encaja si la clientela repite: 2 o más noches con
+fiesta). El criterio de 20 puntos que antes era solo «Pantallas» es ahora **«Encaje con lo que vendemos»**: puntúa el
+mejor paquete (encaja = entero, puede = la mitad). La Fidelización está en **preventa** (llega este mes): su etiqueta
+dice si encaja, pero en la nota cuenta la mitad. Pendiente: las condiciones de la preventa (precio, qué incluye) para
+el argumentario; el contenido de Enjoy aún dice que la fidelización no se vende.

@@ -38,11 +38,14 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   assert((await rep.textContent('[data-testid=qual-points-recurrence]')).includes('30 / 30'), 'de dónde sale cada punto');
   assert((await rep.textContent('[data-testid=qual-points-scale]')).includes('No se sabe'), 'lo que falta: «No se sabe», no 0');
   if (OUT) await rep.screenshot({ path: `${OUT}/priority-account.png`, fullPage: true });
+  assert((await rep.getAttribute('[data-testid=fit-screen]', 'data-fit')) === 'yes' && (await rep.getAttribute('[data-testid=fit-requests]', 'data-fit')) === 'yes', 'le encajan pantalla y peticiones (DJs invitados)');
   await click('qual-screens-yes');  // desmarcar
-  assert((await rep.textContent('[data-testid=qual-score]')).trim() === '55', 'pulsar lo marcado lo desmarca');
-  // Sin pantalla ni intención ya no saca del ranking: solo no suma esos puntos.
+  assert((await rep.getAttribute('[data-testid=qual-screens-yes]', 'aria-pressed')) === 'false', 'pulsar lo marcado lo desmarca');
+  // Sin pantalla ni intención ya no saca del ranking: con DJs invitados le encajan las peticiones y no pierde puntos.
   await click('qual-screens-no');
-  assert((await rep.getAttribute('[data-testid=qualification]', 'data-out')) === 'false' && (await rep.textContent('[data-testid=qual-score]')).trim() === '55', 'sin pantalla: sigue en el ranking, sin sus puntos');
+  assert((await rep.getAttribute('[data-testid=qualification]', 'data-out')) === 'false' && (await rep.textContent('[data-testid=qual-score]')).trim() === '75', 'sin pantalla: sigue en el ranking; puntúan las peticiones');
+  assert((await rep.getAttribute('[data-testid=fit-screen]', 'data-fit')) === 'no', 'pantalla: no encaja');
+  if (OUT) await rep.screenshot({ path: `${OUT}/priority-fit.png`, fullPage: true });
   await click('qual-screens-yes');
 
   // ---- la lista: ranking y filtros

@@ -76,6 +76,7 @@ const qualLabel = (k: string, v: string): string => {
   if (k === 'party') return `${PR.party.replace(/^¿|\?$/g, '')}: ${(PR.parties as Record<string, string>)[v] ?? v}`;
   if (k === 'dj') return `${PR.dj}: ${(PR.djs as Record<string, string>)[v] ?? v}`;
   if (k === 'promoters') return `${PR.promoters.replace(/^¿|\?$/g, '')}: ${v === 'yes' ? PR.promotersYes : PR.promotersNo}`;
+  if (k === 'screens') return `${PR.screensQ}: ${(PR.options.screens as Record<string, string>)[v] ?? v}`;
   if (k === 'size') return `${PR.size}: ${(PR.sizes as Record<string, string>)[v] ?? v}`;
   if (k === 'nights') return `${PR.hints.recurrence.venue}: ${o.nights[v] ?? v}`;
   if (k === 'events') return `${PR.hints.recurrence.promoter}: ${o.events[v] ?? v}`;

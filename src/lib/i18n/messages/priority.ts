@@ -12,10 +12,13 @@ export const priorityMessages = defineMessages({
     format: 'Formato', formats: { club: 'Discoteca', pub: 'Pub o bar de copas', cocktail: 'Cóctel bar', rooftop: 'Rooftop o terraza', restaurant: 'Restaurante que acaba en fiesta', hall: 'Sala de conciertos', hotel: 'Hotel o beach club', promoter: 'Promotora', concerts: 'Conciertos o artista' },
     party: '¿Hay fiesta?', parties: { core: 'Es su negocio', some: 'Algunas noches', none: 'No' },
     dj: 'DJ', djHint: 'Quién pincha', djs: { resident: 'Residente', guests: 'Invitados', both: 'Residente e invitados', none: 'Sin DJ (lista)' },
-    promoters: '¿Trabajan promotoras aquí?', promotersYes: 'Sí', promotersNo: 'No',
+    promoters: '¿Trabajan promotoras aquí?', promotersYes: 'Sí', promotersNo: 'No', screensQ: 'Pantallas',
+    packages: { screen: 'Pantalla en vivo', requests: 'Peticiones de canciones', photos: 'Fotos y álbum de la noche', loyalty: 'Fidelización' },
+    fits: { yes: 'Encaja', maybe: 'Puede', no: 'No', unknown: 'No se sabe' }, presale: 'preventa',
+    fitHelp: 'Puntúa el paquete que mejor le encaja. La fidelización (sellos en un pase: copas, chupitos o visitas) está en preventa: cuenta la mitad.',
     size: 'Tamaño del local', sizeHint: 'Aforo o cómo de grande se ve', sizes: { small: 'Pequeño', medium: 'Mediano', large: 'Grande' }, noScore: 'No puntúa',
     criteria: {
-      recurrence: 'Recurrencia', decider: 'Decide quien te atiende', screens: 'Pantallas', dynamics: 'Dinámicas o redes', scale: 'Locales que tiene',
+      recurrence: 'Recurrencia', decider: 'Decide quien te atiende', screens: 'Encaje con lo que vendemos', dynamics: 'Dinámicas o redes', scale: 'Locales que tiene',
     },
     hints: {
       recurrence: { venue: 'Noches con fiesta o música alta a la semana', promoter: 'Eventos al año', concert: '¿Programa de forma recurrente?', none: 'Di primero el formato' },
@@ -57,10 +60,13 @@ export const priorityMessages = defineMessages({
     format: 'Format', formats: { club: 'Club', pub: 'Pub or bar', cocktail: 'Cocktail bar', rooftop: 'Rooftop or terrace', restaurant: 'Restaurant that turns into a party', hall: 'Concert hall', hotel: 'Hotel or beach club', promoter: 'Promoter', concerts: 'Concerts or artist' },
     party: 'Is there a party?', parties: { core: 'It’s their business', some: 'Some nights', none: 'No' },
     dj: 'DJ', djHint: 'Who plays', djs: { resident: 'Resident', guests: 'Guest DJs', both: 'Resident and guests', none: 'No DJ (playlist)' },
-    promoters: 'Do promoters work here?', promotersYes: 'Yes', promotersNo: 'No',
+    promoters: 'Do promoters work here?', promotersYes: 'Yes', promotersNo: 'No', screensQ: 'Screens',
+    packages: { screen: 'Live screen', requests: 'Song requests', photos: 'Photos and night album', loyalty: 'Loyalty' },
+    fits: { yes: 'Fits', maybe: 'Maybe', no: 'No', unknown: 'Unknown' }, presale: 'presale',
+    fitHelp: 'Scores the package that fits best. Loyalty (stamps on a pass: drinks, shots or visits) is in presale: it counts half.',
     size: 'Venue size', sizeHint: 'Capacity or how big it looks', sizes: { small: 'Small', medium: 'Medium', large: 'Large' }, noScore: 'Not scored',
     criteria: {
-      recurrence: 'Recurrence', decider: 'Decision maker in front of you', screens: 'Screens', dynamics: 'Engagement or social', scale: 'Venues they run',
+      recurrence: 'Recurrence', decider: 'Decision maker in front of you', screens: 'Fit with what we sell', dynamics: 'Engagement or social', scale: 'Venues they run',
     },
     hints: {
       recurrence: { venue: 'Party or loud-music nights per week', promoter: 'Events per year', concert: 'Does it program regularly?', none: 'Pick the format first' },
@@ -102,10 +108,13 @@ export const priorityMessages = defineMessages({
     format: 'Formato', formats: { club: 'Discoteca', pub: 'Pub ou bar', cocktail: 'Coquetelaria', rooftop: 'Rooftop ou terraço', restaurant: 'Restaurante que vira festa', hall: 'Sala de shows', hotel: 'Hotel ou beach club', promoter: 'Promotora', concerts: 'Shows ou artista' },
     party: 'Tem festa?', parties: { core: 'É o negócio deles', some: 'Algumas noites', none: 'Não' },
     dj: 'DJ', djHint: 'Quem toca', djs: { resident: 'Residente', guests: 'Convidados', both: 'Residente e convidados', none: 'Sem DJ (playlist)' },
-    promoters: 'Trabalham promotoras aqui?', promotersYes: 'Sim', promotersNo: 'Não',
+    promoters: 'Trabalham promotoras aqui?', promotersYes: 'Sim', promotersNo: 'Não', screensQ: 'Telas',
+    packages: { screen: 'Tela ao vivo', requests: 'Pedidos de música', photos: 'Fotos e álbum da noite', loyalty: 'Fidelização' },
+    fits: { yes: 'Encaixa', maybe: 'Talvez', no: 'Não', unknown: 'Não se sabe' }, presale: 'pré-venda',
+    fitHelp: 'Pontua o pacote que melhor encaixa. A fidelização (selos num passe: bebidas, shots ou visitas) está em pré-venda: conta metade.',
     size: 'Tamanho do local', sizeHint: 'Lotação ou quão grande parece', sizes: { small: 'Pequeno', medium: 'Médio', large: 'Grande' }, noScore: 'Não pontua',
     criteria: {
-      recurrence: 'Recorrência', decider: 'Quem atende decide', screens: 'Telas', dynamics: 'Dinâmicas ou redes', scale: 'Locais que tem',
+      recurrence: 'Recorrência', decider: 'Quem atende decide', screens: 'Encaixe com o que vendemos', dynamics: 'Dinâmicas ou redes', scale: 'Locais que tem',
     },
     hints: {
       recurrence: { venue: 'Noites com festa ou música alta por semana', promoter: 'Eventos por ano', concert: 'Programa de forma recorrente?', none: 'Escolha primeiro o formato' },
@@ -147,10 +156,13 @@ export const priorityMessages = defineMessages({
     format: '형태', formats: { club: '클럽', pub: '펍·바', cocktail: '칵테일 바', rooftop: '루프탑·테라스', restaurant: '파티로 바뀌는 레스토랑', hall: '공연장', hotel: '호텔·비치 클럽', promoter: '프로모터', concerts: '공연·아티스트' },
     party: '파티가 있나요?', parties: { core: '주력 사업', some: '일부 밤', none: '없음' },
     dj: 'DJ', djHint: '누가 트는지', djs: { resident: '레지던트', guests: '게스트', both: '레지던트+게스트', none: 'DJ 없음(플레이리스트)' },
-    promoters: '프로모터가 일하나요?', promotersYes: '예', promotersNo: '아니요',
+    promoters: '프로모터가 일하나요?', promotersYes: '예', promotersNo: '아니요', screensQ: '스크린',
+    packages: { screen: '라이브 스크린', requests: '신청곡', photos: '사진·밤 앨범', loyalty: '로열티' },
+    fits: { yes: '맞음', maybe: '가능', no: '아님', unknown: '모름' }, presale: '사전 판매',
+    fitHelp: '가장 잘 맞는 패키지로 점수를 매깁니다. 로열티(패스 스탬프: 음료·샷·방문)는 사전 판매 중이라 절반만 반영됩니다.',
     size: '매장 크기', sizeHint: '수용 인원 또는 보이는 규모', sizes: { small: '작음', medium: '중간', large: '큼' }, noScore: '점수 없음',
     criteria: {
-      recurrence: '반복성', decider: '응대자가 결정권자', screens: '스크린', dynamics: '이벤트·SNS', scale: '운영 매장 수',
+      recurrence: '반복성', decider: '응대자가 결정권자', screens: '판매 상품 적합도', dynamics: '이벤트·SNS', scale: '운영 매장 수',
     },
     hints: {
       recurrence: { venue: '주당 파티·큰 음악 밤 수', promoter: '연간 이벤트 수', concert: '정기적으로 공연하나요?', none: '먼저 형태를 고르세요' },

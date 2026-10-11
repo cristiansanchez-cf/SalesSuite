@@ -3,7 +3,7 @@
  * Cualificación de un clic (docs/CRM_DINAMICO.md §11): cada criterio son botones visibles, sin desplegables. Pulsar
  * marca; pulsar lo marcado lo desmarca (vuelve a «no se sabe»). Arriba, la puntuación, el máximo y de dónde sale.
  */
-import { DJ, FORMATS, OPTIONS, PARTY, SIZES, type Priority, type Qualification } from '~/lib/crm/priority';
+import { DJ, FORMATS, OPTIONS, PACKAGES, PARTY, PRESALE, SIZES, type Priority, type Qualification } from '~/lib/crm/priority';
 import { i18n } from '~/lib/i18n';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 
@@ -16,15 +16,16 @@ const rows: Row[] = ([
   { key: 'recurrence', label: R.criteria.recurrence, hint: R.hints.recurrence[p.kind ?? 'none'], field: recField,
     options: recField ? Object.keys(OPTIONS[recField]).map((k) => [k, (R.options[recField] as Record<string, string>)[k]]) : [] },
   { key: 'decider', label: R.criteria.decider, hint: R.hints.decider, field: 'decider', options: Object.keys(OPTIONS.decider).map((k) => [k, R.options.decider[k as keyof typeof R.options.decider]]) },
-  { key: 'screens', label: R.criteria.screens, hint: R.hints.screens, field: 'screens', options: Object.keys(OPTIONS.screens).map((k) => [k, R.options.screens[k as keyof typeof R.options.screens]]) },
+  { key: 'screens', label: R.criteria.screens, hint: R.fitHelp, field: null, options: [] },
   { key: 'dynamics', label: R.criteria.dynamics, hint: R.hints.dynamics, field: 'dynamics', options: Object.keys(OPTIONS.dynamics).map((k) => [k, R.options.dynamics[k as keyof typeof R.options.dynamics]]) },
   { key: 'scale', label: R.criteria.scale, hint: R.hints.scale, field: 'scale', options: Object.keys(OPTIONS.scale).map((k) => [k, R.options.scale[k as keyof typeof R.options.scale]]) },
 ] as Row[]).map((r) => ({ ...r, part: p.parts.find((x) => x.key === r.key) }));
-const about: Array<{ field: 'format' | 'party' | 'size' | 'dj' | 'promoters'; label: string; hint?: string; options: Array<[string, string]> }> = [
+const about: Array<{ field: 'format' | 'party' | 'size' | 'dj' | 'screens' | 'promoters'; label: string; hint?: string; options: Array<[string, string]> }> = [
   { field: 'format', label: R.format, options: FORMATS.map((k) => [k, R.formats[k]]) },
   { field: 'party', label: R.party, options: PARTY.map((k) => [k, R.parties[k]]) },
   { field: 'size', label: R.size, hint: R.sizeHint, options: SIZES.map((k) => [k, R.sizes[k]]) },
   { field: 'dj', label: R.dj, hint: R.djHint, options: DJ.map((k) => [k, R.djs[k]]) },
+  { field: 'screens', label: R.screensQ, options: Object.keys(OPTIONS.screens).map((k) => [k, R.options.screens[k as keyof typeof R.options.screens]]) },
   { field: 'promoters', label: R.promoters, options: [['yes', R.promotersYes], ['no', R.promotersNo]] },
 ];
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ','));
@@ -63,11 +64,19 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
       </div>
       <p class="text-eyebrow m-0 border-t border-[var(--co-rule)] pt-4">{R.scoring}</p>
       {rows.map((r) => (
-        <div class:list={['grid gap-1.5', r.key !== 'recurrence' && 'border-t border-[var(--co-rule)] pt-3']} data-criterion={r.key}>
+        <div class:list={['grid gap-1.5', r.key !== 'recurrence' && 'border-t border-[var(--co-rule)] pt-3']} data-criterion={r.key === 'screens' ? 'fit' : r.key}>
           <div class="flex flex-wrap items-baseline justify-between gap-2">
             <span class="co-row-title">{r.label} <span class="co-meta font-normal">· {r.hint}</span></span>
             <span class="co-meta tabular-nums" data-testid={`qual-points-${r.key}`}>{r.part?.points === null || r.part?.points === undefined ? `${R.unknown} / ${r.part?.weight}` : `${fmt(r.part.points)} / ${r.part.weight}`}</span>
           </div>
+          {r.key === 'screens' && (
+            <ul class="m-0 flex flex-wrap gap-2 p-0" data-testid="qual-fit">
+              {PACKAGES.map((k) => { const f = p.fit[k]; return (
+                <li class:list={['co-tag list-none', `fit-${f ?? 'unknown'}`]} data-testid={`fit-${k}`} data-fit={f ?? 'unknown'}>
+                  {`${R.packages[k]}${PRESALE.includes(k) ? ` (${R.presale})` : ''}: ${R.fits[f ?? 'unknown']}`}
+                </li>); })}
+            </ul>
+          )}
           <div class="flex flex-wrap gap-2">
             {r.field && r.options.map(([v, l]) => (
               <button type="submit" name="set" value={`${r.field}:${v}`} class="co-chip"
@@ -92,5 +101,9 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
 
 <style>
   [data-testid=qualification] .co-chip[aria-pressed=true] { background: var(--co-ink); color: var(--co-canvas); border-color: var(--co-ink); }
+  [data-testid=qualification] .fit-yes { background: #e7f6ec; color: #14532d; border-color: #b7e2c4; }
+  [data-testid=qualification] .fit-maybe { background: #fff6e0; color: #6b4a00; border-color: #f0dca6; }
+  [data-testid=qualification] .fit-no { opacity: .55; text-decoration: line-through; }
+  [data-testid=qualification] .fit-unknown { opacity: .7; }
   [data-testid=qualification] .qual-kill[aria-pressed=true] { background: #b42318; border-color: #b42318; color: #fff; }
 </style>
