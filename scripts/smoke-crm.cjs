@@ -86,5 +86,14 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   // ---- un comercial no define campos
   await rep.goto(`${BASE}/admin/team/fields`);
   assert((await rep.textContent('main')).length > 0 && !(await rep.isVisible('[data-testid=field-add]')), 'el comercial no entra en Campos del CRM');
+  // Sí / No / No se sabe en los campos de sí o no (una casilla sola no distingue «no» de «no lo sé»).
+  await rep.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
+  const tri = (v) => rep.isChecked(`[data-testid=field-tiene-pantalla-${v}]`);
+  assert(await tri('yes'), 'campo de sí o no: «Sí» marcado');
+  for (const v of ['no', 'unknown']) {
+    await rep.locator(`label:has([data-testid=field-tiene-pantalla-${v}])`).click();
+    await Promise.all([rep.waitForURL(/ok=/), rep.click('[data-testid=sheet-save]')]);
+    assert(await tri(v), `campo de sí o no: se guarda «${v}»`);
+  }
   await b.close();
 })();

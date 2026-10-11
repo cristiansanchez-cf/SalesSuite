@@ -5,7 +5,7 @@
  */
 import type { CrmField, FieldValue } from '~/lib/crm/fields';
 
-interface Props { field: CrmField; value: FieldValue | undefined; labels: { yes: string; no: string; choose: string } }
+interface Props { field: CrmField; value: FieldValue | undefined; labels: { yes: string; no: string; unknown: string; choose: string } }
 const { field: f, value: v, labels } = Astro.props;
 const name = `f:${f.key}`;
 const list = Array.isArray(v) ? v : v === undefined || v === null ? [] : [String(v)];
@@ -16,7 +16,12 @@ const str = v === undefined || v === null || Array.isArray(v) ? '' : String(v);
   {f.help && <span class="co-help">{f.help}</span>}
   <input type="hidden" name={`present:${f.key}`} value="1" />
   {f.type === 'checkbox' ? (
-    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name={name} checked={v === true} /> {labels.yes}</label>
+    // Sí / No / No se sabe: una casilla sola no distingue «no» de «no lo sé».
+    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label={f.label}>
+      {([['yes', labels.yes, v === true], ['no', labels.no, v === false], ['', labels.unknown, v !== true && v !== false]] as const).map(([val, l, on]) => (
+        <label class="co-chip field-tri"><input type="radio" class="sr-only" name={name} value={val} checked={on} data-testid={`field-${f.key}-${val || 'unknown'}`} />{l}</label>
+      ))}
+    </div>
   ) : f.type === 'select' ? (
     <select class="co-select" name={name} required={f.required} aria-label={f.label}>
       <option value="">{labels.choose}</option>

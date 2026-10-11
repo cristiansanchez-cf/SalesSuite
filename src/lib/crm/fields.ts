@@ -75,7 +75,14 @@ const empty = (v: unknown) => v === undefined || v === null || v === '' || (Arra
 
 /** Valida y normaliza un valor según su campo (acepta lo que llega de un formulario: textos, «on», listas). */
 export function parseValue(f: Pick<CrmField, 'type' | 'options' | 'label'>, raw: unknown): { ok: true; value: FieldValue | null } | { ok: false; error: string } {
-  if (f.type === 'checkbox') return { ok: true, value: raw === true || raw === 'on' || raw === 'true' || raw === '1' || raw === 'sí' || raw === 'si' };
+  // Sí / No / no se sabe (vacío): «no» se guarda (es un dato); sin contestar, no.
+  if (f.type === 'checkbox') {
+    if (raw === true || raw === false) return { ok: true, value: raw };
+    const c = String(Array.isArray(raw) ? raw[0] ?? '' : raw ?? '').trim().toLowerCase();
+    if (['on', 'true', '1', 'sí', 'si', 'yes', 'x', '✓'].includes(c)) return { ok: true, value: true };
+    if (['no', 'false', '0', 'off'].includes(c)) return { ok: true, value: false };
+    return { ok: true, value: null };
+  }
   if (empty(raw)) return { ok: true, value: null };
   const s = String(Array.isArray(raw) ? raw[0] : raw).trim();
   const bad = (what: string) => ({ ok: false as const, error: `${f.label}: ${what}` });
@@ -128,7 +135,7 @@ export function parseValues(fields: CrmField[], input: Record<string, unknown>, 
     }
     const r = parseValue(f, input[f.key]);
     if (!r.ok) { errors.push(r.error); continue; }
-    if (r.value === null || (f.type === 'checkbox' && r.value === false)) {
+    if (r.value === null) {
       if (f.required && f.type !== 'checkbox') errors.push(`${f.label}: es obligatorio`);
       else cleared.push(f.key);
     } else values[f.key] = r.value;
@@ -141,7 +148,7 @@ export function formatValue(f: Pick<CrmField, 'type' | 'options'>, v: FieldValue
   if (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)) return '';
   const opt = (k: string) => f.options.find((o) => o.key === k)?.label ?? k;
   switch (f.type) {
-    case 'checkbox': return v ? '✓' : '';
+    case 'checkbox': return v === true ? '✓' : '';
     case 'select': return opt(String(v));
     case 'multi_select': return (Array.isArray(v) ? v : [String(v)]).map(opt).join(', ');
     case 'number': return new Intl.NumberFormat(locale).format(Number(v));
@@ -156,7 +163,7 @@ export function formatValue(f: Pick<CrmField, 'type' | 'options'>, v: FieldValue
 /** ¿Cumple la cuenta el filtro de este campo? (select: una opción; multi: la contiene; checkbox: «sí»/«no»). */
 export function matches(f: Pick<CrmField, 'type'>, v: FieldValue | undefined, want: string): boolean {
   if (!want) return true;
-  if (f.type === 'checkbox') return want === 'yes' ? v === true : v !== true;
+  if (f.type === 'checkbox') return want === 'yes' ? v === true : v === false;
   if (f.type === 'multi_select') return Array.isArray(v) && v.includes(want);
   if (f.type === 'select') return v === want;
   return String(v ?? '').toLowerCase().includes(want.toLowerCase());
@@ -179,7 +186,7 @@ export function valuesFromForm(fields: CrmField[], form: FormData): Record<strin
   for (const f of fields) {
     if (!form.has(`present:${f.key}`)) continue;
     const all = form.getAll(`f:${f.key}`).map(String);
-    out[f.key] = f.type === 'multi_select' ? all : f.type === 'checkbox' ? all.length > 0 : all[0] ?? '';
+    out[f.key] = f.type === 'multi_select' ? all : all[0] ?? '';
   }
   return out;
 }

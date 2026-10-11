@@ -221,8 +221,14 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
 
       const conPantalla = await rep.accounts.list({ scope: 'all', fields: { 'tiene-pantalla': 'yes' } });
       expect(conPantalla.items.map((a) => a.name)).toEqual(['Club Sol']);
+      // «No» es un dato (se guarda); sin contestar no cuenta como «no».
+      expect((await rep.accounts.list({ scope: 'all', fields: { 'tiene-pantalla': 'no' } })).items).toEqual([]);
+      await rep.accounts.setFields(luna, { 'tiene-pantalla': 'no' });
+      expect((await rep.accounts.get(luna)).account.fields).toEqual({ 'tiene-pantalla': false });
       const sin = await rep.accounts.list({ scope: 'all', fields: { 'tiene-pantalla': 'no' } });
       expect(sin.items.map((a) => a.name)).toEqual(['Sala Luna']);
+      await rep.accounts.setFields(luna, { 'tiene-pantalla': '' });   // «No se sabe»: se borra
+      expect((await rep.accounts.get(luna)).account.fields).toEqual({});
 
       // Renombrar no toca los datos; archivar no los borra.
       await admin.accounts.saveField({ label: 'Pantalla propia', type: 'checkbox', inList: true }, pantalla);

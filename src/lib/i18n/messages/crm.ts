@@ -27,7 +27,7 @@ export const crmMessages = defineMessages({
       archiveDoesNot: 'No borra ningún dato: al recuperarlo, vuelve todo.', allSectors: 'Todos los sectores',
     },
     card: {
-      title: 'Ficha', save: 'Guardar ficha', okSaved: 'Ficha guardada.', yes: 'Sí', no: 'No', choose: 'Elige…', empty: '—',
+      title: 'Ficha', save: 'Guardar ficha', okSaved: 'Ficha guardada.', yes: 'Sí', no: 'No', unknown: 'No se sabe', choose: 'Elige…', empty: '—',
       noFields: 'Este espacio aún no tiene campos.', noFieldsAdmin: 'Créalos en Equipo → Campos del CRM.', manage: 'Editar los campos',
       other: 'Otros datos',
     },
@@ -58,7 +58,7 @@ export const crmMessages = defineMessages({
       archiveDoesNot: 'No data is deleted: restoring it brings everything back.', allSectors: 'All sectors',
     },
     card: {
-      title: 'Record', save: 'Save record', okSaved: 'Record saved.', yes: 'Yes', no: 'No', choose: 'Choose…', empty: '—',
+      title: 'Record', save: 'Save record', okSaved: 'Record saved.', yes: 'Yes', no: 'No', unknown: 'Unknown', choose: 'Choose…', empty: '—',
       noFields: 'This workspace has no fields yet.', noFieldsAdmin: 'Create them in Team → CRM fields.', manage: 'Edit the fields',
       other: 'Other details',
     },
@@ -89,7 +89,7 @@ export const crmMessages = defineMessages({
       archiveDoesNot: 'Não apaga nenhum dado: ao recuperar, volta tudo.', allSectors: 'Todos os setores',
     },
     card: {
-      title: 'Ficha', save: 'Salvar ficha', okSaved: 'Ficha salva.', yes: 'Sim', no: 'Não', choose: 'Escolha…', empty: '—',
+      title: 'Ficha', save: 'Salvar ficha', okSaved: 'Ficha salva.', yes: 'Sim', no: 'Não', unknown: 'Não se sabe', choose: 'Escolha…', empty: '—',
       noFields: 'Este espaço ainda não tem campos.', noFieldsAdmin: 'Crie-os em Equipe → Campos do CRM.', manage: 'Editar os campos',
       other: 'Outros dados',
     },
@@ -120,7 +120,7 @@ export const crmMessages = defineMessages({
       archiveDoesNot: '데이터는 삭제되지 않습니다. 복원하면 모두 돌아옵니다.', allSectors: '모든 업종',
     },
     card: {
-      title: '기록', save: '기록 저장', okSaved: '기록을 저장했습니다.', yes: '예', no: '아니요', choose: '선택…', empty: '—',
+      title: '기록', save: '기록 저장', okSaved: '기록을 저장했습니다.', yes: '예', no: '아니요', unknown: '모름', choose: '선택…', empty: '—',
       noFields: '이 워크스페이스에는 아직 필드가 없습니다.', noFieldsAdmin: '팀 → CRM 필드에서 만드세요.', manage: '필드 편집',
       other: '기타 정보',
     },

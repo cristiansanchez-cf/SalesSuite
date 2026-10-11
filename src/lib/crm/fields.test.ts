@@ -43,7 +43,10 @@ describe('campos del CRM', () => {
     expect(formatValue(cert, 'padi')).toBe('PADI');
     expect(formatValue(pantalla, true)).toBe('✓');
     expect(matches(noches, ['viernes'], 'viernes')).toBe(true);
-    expect(matches(pantalla, undefined, 'no')).toBe(true);
+    expect(matches(pantalla, undefined, 'no')).toBe(false);   // sin contestar no es «no»
+    expect(matches(pantalla, false, 'no')).toBe(true);
+    expect(parseValue(pantalla, 'no')).toEqual({ ok: true, value: false });
+    expect(parseValue(pantalla, '')).toEqual({ ok: true, value: null });
     expect(matches(pantalla, true, 'no')).toBe(false);
   });
 
