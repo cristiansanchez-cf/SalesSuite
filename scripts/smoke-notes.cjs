@@ -64,6 +64,17 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const one = await p.$$eval('[data-testid=notes-item]', (xs) => xs.map((x) => x.querySelector('select').selectedOptions[0].textContent));
   assert(one.length === 1 && one[0].startsWith('Club Sol'), `todo va a la elegida (${one})`);
 
+  // Desde la ficha: «Apuntar aquí» abre Apuntar con esa empresa ya elegida (§23); y lo escrito no se pierde al salir.
+  await p.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
+  await Promise.all([p.waitForURL(/apuntar\?empresa=/), p.click('[data-testid=summary-note]')]);
+  assert((await p.textContent('[data-testid=notes-who-chosen]')).includes('Club Sol') && await p.isVisible('[data-testid=notes-who-chosen]'), 'Apuntar aquí: la empresa ya elegida');
+  await p.fill('[data-testid=notes-text]', 'Borrador a medias');
+  await p.goto(`${BASE}/admin/accounts`);
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  assert((await p.inputValue('[data-testid=notes-text]')) === 'Borrador a medias', 'el borrador sigue al volver');
+  await p.fill('[data-testid=notes-text]', '');
+  await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
+
   // Proponer descartar (§23): por lo que cuentas, la IA pregunta; solo se descarta si dices que sí.
   await p.goto(`${BASE}/admin/accounts/apuntar`);
   await p.fill('[data-testid=notes-text]', 'BAR MALO - el dueño nos echó, mejor no ir');

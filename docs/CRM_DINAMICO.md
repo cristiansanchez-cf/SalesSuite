@@ -674,3 +674,8 @@ Criterio de Cristian haciendo ruta (11-oct-2026).
 - **Apuntar lo propone**: si por lo que cuentas habría que descartarla, la revisión dice «Por lo que cuentas,
   deberíamos descartarla: mejor no ir» y pregunta; solo se descarta si marcas «Sí, descartarla».
 - **En el mapa, las descartadas salen en gris con su motivo** (para que nadie vaya sin saberlo); se pueden ocultar.
+
+**E3 · La ficha en la puerta del local.** En el resumen de arriba, lo que hace falta allí: **Apuntar aquí** (abre
+Apuntar con esa empresa ya elegida, sin buscarla), **Cómo llegar** (su ficha de Google o la búsqueda en Maps),
+**Llamar**, **WhatsApp** e **Instagram** si los tiene, y **«Pregunta por»** la primera persona con su papel. Apuntar
+guarda lo que llevas escrito en este móvil (si sales a mirar algo y vuelves, sigue ahí) y lo borra al guardar.

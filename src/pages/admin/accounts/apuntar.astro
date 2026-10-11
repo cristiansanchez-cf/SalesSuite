@@ -69,6 +69,9 @@ const okMsg = flash(Astro.url, { saved: M.saved(Number(q.get('n')) || 0) + (Numb
 const savedIds = okMsg ? (q.get('ids') ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 40) : [];
 const saved = savedIds.length ? (await Promise.all(savedIds.map((id) => admin.accounts.get(id).then((d) => d.account).catch(() => null)))).filter((a) => !!a) : [];
 const items = box.items;
+// «Apuntar sobre este sitio» desde la ficha (§23): la empresa ya elegida, sin buscarla.
+const pre = !items && /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('empresa') ?? '')
+  ? await admin.accounts.get(Astro.url.searchParams.get('empresa')!).then((d) => d.account).catch(() => null) : null;
 const fieldLabel = new Map(items ? (await admin.accounts.crmFields().catch(() => [])).map((x) => [x.key, x.label]) : []);
 const hasAi = admin.crm.hasNotes();
 
@@ -107,14 +110,14 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
       {!hasAi && <Alert kind="info" title={M.noAi} />}
       <div class="co-field relative" data-who>
         <label for="who-q">{M.who}</label>
-        <input type="hidden" name="accountId" data-who-id />
-        <input id="who-q" class="co-input" type="search" autocomplete="off" placeholder={M.whoPh} data-who-q data-testid="notes-who" />
-        <p class="co-chip m-0 w-fit" hidden data-who-chosen data-testid="notes-who-chosen"><Icon name="building2" size={14} /><span data-who-label></span><button type="button" class="ml-1 underline" data-who-clear>{M.whoClear}</button></p>
+        <input type="hidden" name="accountId" value={pre?.id ?? ''} data-who-id />
+        <input id="who-q" class="co-input" type="search" autocomplete="off" placeholder={M.whoPh} hidden={!!pre} data-who-q data-testid="notes-who" />
+        <p class="co-chip m-0 w-fit" hidden={!pre} data-who-chosen data-testid="notes-who-chosen"><Icon name="building2" size={14} /><span data-who-label>{pre ? [pre.name, pre.zonePath].filter(Boolean).join(' · ') : ''}</span><button type="button" class="ml-1 underline" data-who-clear>{M.whoClear}</button></p>
         <ul class="co-card absolute left-0 right-0 top-full z-20 m-0 mt-1 grid gap-0 !p-1" hidden data-who-list role="listbox" data-testid="notes-who-list"></ul>
         <span class="co-help">{M.whoHelp}</span>
       </div>
       <label class="co-field">{M.text}
-        <textarea class="co-textarea !min-h-[220px]" name="text" required minlength="3" maxlength="12000" placeholder={M.placeholder} data-testid="notes-text">{box.text}</textarea>
+        <textarea class="co-textarea !min-h-[220px]" name="text" required minlength="3" maxlength="12000" placeholder={M.placeholder} data-testid="notes-text" data-draft={okMsg ? 'clear' : 'keep'}>{box.text}</textarea>
       </label>
       <p class="co-help m-0"><Icon name="mic" size={14} /> {M.dictate}</p>
       <button class="co-btn co-btn--primary w-fit" type="submit" disabled={!hasAi} data-busy={M.running} data-testid="notes-run"><Icon name="sparkles" size={16} /><span>{M.run}</span></button>
@@ -235,4 +238,18 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
     const b = (e.currentTarget as HTMLFormElement).querySelector<HTMLButtonElement>('[data-busy]');
     if (b) { b.disabled = true; b.querySelector('span')!.textContent = b.dataset.busy ?? ''; }
   });
+</script>
+
+<script>
+  // Borrador (§23): lo que llevas escrito no se pierde si sales a mirar una ficha y vuelves; se borra al guardar.
+  (() => {
+    const ta = document.querySelector<HTMLTextAreaElement>('[data-testid=notes-text]');
+    const KEY = 'co-apuntar-borrador';
+    try {
+      if (!ta) return;
+      if (ta.dataset.draft === 'clear') { localStorage.removeItem(KEY); return; }
+      if (!ta.value) ta.value = localStorage.getItem(KEY) ?? '';
+      ta.addEventListener('input', () => { try { localStorage.setItem(KEY, ta.value); } catch { /* sin almacenamiento */ } });
+    } catch { /* sin almacenamiento: no pasa nada */ }
+  })();
 </script>

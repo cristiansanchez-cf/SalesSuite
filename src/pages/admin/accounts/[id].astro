@@ -203,18 +203,27 @@ const STATE_ALERT = {
               : <span class="co-meta">{PS.summary.noFit}</span>; })()}
           </div>
         </div>
+        {/* En la puerta del local: apuntar sobre este sitio, llegar, llamar o escribir (lo que hay, sin buscarlo). */}
+        <div class="flex flex-wrap gap-2" data-testid="summary-actions">
+          {canQualify && <a class="co-btn co-btn--primary co-btn--sm" href={`/admin/accounts/apuntar?empresa=${a.id}`} data-testid="summary-note"><Icon name="sparkles" size={14} />{PS.summary.act.note}</a>}
+          <a class="co-btn co-btn--ghost co-btn--sm" href={a.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([a.name, a.address, a.zonePath].filter(Boolean).join(', '))}`} target="_blank" rel="noopener" data-testid="summary-directions"><Icon name="route" size={14} />{PS.summary.act.directions}</a>
+          {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`tel:${a.phone.replace(/\s/g, '')}`}><Icon name="phone" size={14} />{PS.summary.act.call}</a>}
+          {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`https://wa.me/${a.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener"><Icon name="message-square-text" size={14} />{PS.summary.act.whatsapp}</a>}
+          {a.instagram && <a class="co-btn co-btn--ghost co-btn--sm" href={a.instagram} target="_blank" rel="noopener"><Icon name="camera" size={14} />{PS.summary.act.instagram}</a>}
+        </div>
+        {co.people[0] && <p class="co-meta m-0 flex flex-wrap items-center gap-1" data-testid="summary-ask"><Icon name="user" size={14} />{PS.summary.askFor} <a class="font-semibold underline" href={`/admin/people/${co.people[0].id}`}>{co.people[0].name}</a>{co.people[0].role ? ` · ${co.people[0].role}` : ''}</p>}
         <a class="co-inset flex items-center gap-2 !p-3 text-inherit !no-underline" href="#follow" data-testid="summary-next">
           <Icon name="calendar" size={16} />
           <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}{tl.next.step && ` · ${tl.next.step}`}</> : PS.summary.noNext}</span>
           <Icon name="chevron-right" size={14} />
         </a>
-        {canQualify && !a.discardedAt && a.state !== 'customer' && a.state !== 'my_customer' && (
-          <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
-        )}
         <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
           {([['facts', '#facts'], ['qual', '#qual'], ['follow', '#follow'], ['people', '#acc-people'], ['data', '#company-contact']] as const).map(([k, h]) => (
             <a class="co-chip whitespace-nowrap !no-underline" href={h}>{PS.summary.jump[k]}</a>))}
         </nav>
+        {canQualify && !a.discardedAt && a.state !== 'customer' && a.state !== 'my_customer' && (
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
+        )}
       </section>
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
