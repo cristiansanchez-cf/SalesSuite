@@ -82,7 +82,6 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   const tops = await p.$$eval('[data-testid=filter-place-country] option', (xs) => xs.map((x) => x.textContent.trim()));
   assert(!tops.some((o) => /28039|Account Executive|creo que|Requena/.test(o)), 'el filtro de lugar, limpio');
   await place(p, '[data-testid=filter-place-country]', 'España');
-  await place(p, '[data-testid=filter-place-region]', 'Comunidad Valenciana');
   const provs = await p.$$eval('[data-testid=filter-place-province] option', (xs) => xs.map((x) => x.textContent.trim()));
   assert(provs.includes('Valencia') && !provs.includes('Requena'), 'provincias, sin pueblos');
   if (OUT) await p.screenshot({ path: `${OUT}/zones-after.png` });

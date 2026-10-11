@@ -65,20 +65,24 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   const names = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => e.getAttribute('data-name')));
   assert(names.length === 1 && names[0] === 'Club Sol', 'filtro por campo: solo las que abren el viernes');
   assert((await rep.textContent('[data-testid=acc-active]')).includes('Noches que abre: Viernes'), 'el filtro aplicado, a la vista como chip');
-  assert(!(await rep.url()).includes('estado=') && !(await rep.url()).includes('zona='), 'la URL solo lleva lo aplicado');
+  assert(!(await rep.url()).includes('estado='), 'la URL solo lleva lo aplicado');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-list.png`, fullPage: true });
 
-  // ---- lugar: País → Comunidad → Provincia (cada uno con lo de dentro)
+  // ---- lugar: País → Provincia, sin pasar por la comunidad (§23)
   await rep.goto(`${BASE}/admin/accounts?ver=all`);
-  assert(await rep.isHidden('[data-testid=filter-place-region]'), 'sin país, no hay comunidad que elegir');
+  assert(await rep.isHidden('[data-testid=filter-place-province]'), 'sin país, no hay provincia que elegir');
   await place(rep, '[data-testid=filter-place-country]', 'España');
-  await place(rep, '[data-testid=filter-place-region]', 'Comunidad Valenciana');
   const provs = await rep.$$eval('[data-testid=filter-place-province] option', (xs) => xs.map((x) => x.textContent.trim()));
-  assert(provs.includes('Valencia') && provs.includes('Castellón') && !provs.includes('Barcelona'), `provincias de su comunidad (${provs})`);
+  assert(['Valencia', 'Castellón', 'Barcelona', 'Madrid'].every((x) => provs.includes(x)) && !provs.includes('Comunidad Valenciana'), `provincias de España, directamente (${provs})`);
   await place(rep, '[data-testid=filter-place-province]', 'Valencia');
   const inVlc = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => e.getAttribute('data-name')));
   assert(inVlc.length > 0 && inVlc.every((n) => ['Club Sol', 'Sala Marina'].includes(n)), `ciudad Valencia: solo las de Valencia (${inVlc})`);
   assert((await rep.textContent('[data-testid=acc-active]')).includes('Valencia'), 'Valencia, a la vista como chip');
+  // Entrar en una y volver con «← Empresas» (o desde el menú): la búsqueda sigue ahí (§23).
+  await Promise.all([rep.waitForURL(/\/admin\/accounts\/[^/?#]+$/), rep.click('[data-testid=account] a.co-row__main >> nth=0')]);
+  await Promise.all([rep.waitForURL(/\/admin\/accounts$/), rep.click('[data-testid=page-header] a:has-text("Empresas")')]);
+  assert((await rep.$eval('[data-testid=filter-place-province]', (x) => x.selectedOptions[0]?.textContent.trim())) === 'Valencia', 'al volver, sigue filtrado por Valencia');
+  await rep.goto(`${BASE}/admin/accounts?ver=all&q=Valencia`);
   await Promise.all([rep.waitForURL((u) => !u.searchParams.has('zona')), rep.click('[data-testid=active-filter]:has-text("Valencia")')]);
   assert((await rep.$$('[data-testid=account]')).length > inVlc.length, 'quitar la ciudad con un clic');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-list-city.png` });

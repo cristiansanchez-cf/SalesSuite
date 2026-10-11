@@ -1,11 +1,11 @@
 ---
 /**
- * Filtro de lugar en cascada (docs/CRM_DINAMICO.md §16): País → Comunidad → Provincia (sin pueblos). Cada desplegable
- * enseña solo lo que hay dentro del anterior; el más concreto elegido va al campo `zona` (con todo lo de dentro).
- * Fuera de España, si un país solo tiene ciudades, se filtra por el país. Va dentro de un formulario GET.
+ * Filtro de lugar (docs/CRM_DINAMICO.md §16 y §23): País → Provincia, sin pasar por la comunidad (criterio de Cristian).
+ * El más concreto elegido va al campo `zona` (con todo lo de dentro). Va dentro de un formulario GET.
  */
 import type { Zone } from '~/lib/accounts/types';
 import { NO_ZONE } from '~/lib/accounts/service';
+import { countryOf, provincesOf } from '~/lib/accounts/places';
 import { i18n } from '~/lib/i18n';
 import { mapMessages } from '~/lib/i18n/messages/map';
 
@@ -13,18 +13,17 @@ interface Props { zones: Zone[]; value: string; testid?: string }
 const { zones, value, testid = 'filter-place' } = Astro.props;
 const { m, locale } = i18n(Astro, mapMessages);
 const P = m.place;
+const tops = [...zones.filter((z) => !z.parentId)].sort((a, b) => a.name.localeCompare(b.name, locale));
+const country = value && value !== NO_ZONE ? countryOf(zones, value) : null;
+// Provincias de cada país (para cambiar de país sin recargar).
+const provs = Object.fromEntries(tops.map((c) => [c.id, provincesOf(zones, c.id).map((z) => ({ id: z.id, n: z.name }))]));
+const l2 = country ? provs[country.id] ?? [] : [];
+// La provincia elegida: la zona misma o la de la lista que la contiene (si se filtró por una ciudad).
 const byId = new Map(zones.map((z) => [z.id, z]));
-const sort = (xs: Zone[]) => [...xs].sort((a, b) => a.name.localeCompare(b.name, locale));
-// Lo que sale en cada nivel: arriba del todo; luego lo que no es una ciudad suelta (comunidades, provincias…).
-const tops = sort(zones.filter((z) => !z.parentId));
-const kids = (id: string) => sort(zones.filter((z) => z.parentId === id && z.kind !== 'city'));
-// Lo elegido ahora: la cadena desde arriba hasta la zona del filtro.
-const chain: Zone[] = [];
-for (let z = value && value !== NO_ZONE ? byId.get(value) : undefined, i = 0; z && i < 10; z = z.parentId ? byId.get(z.parentId) : undefined, i++) chain.unshift(z);
-const [c1, c2, c3] = [chain[0]?.id ?? '', chain[1] && chain[1].kind !== 'city' ? chain[1].id : '', chain[2] && chain[2].kind !== 'city' ? chain[2].id : ''];
-const l2 = c1 ? kids(c1) : [];
-const l3 = c2 ? kids(c2) : [];
-const tree = zones.filter((z) => z.kind !== 'city' || !z.parentId).map((z) => ({ id: z.id, p: z.parentId, n: z.name, k: z.kind }));
+const inside = (id: string, anc: string) => { for (let z = byId.get(id), i = 0; z && i < 12; z = z.parentId ? byId.get(z.parentId) : undefined, i++) if (z.id === anc) return true; return false; };
+const c2 = country && value !== country.id ? l2.find((x) => inside(value, x.id))?.id ?? '' : '';
+// Una comunidad elegida antes (enlaces viejos): se enseña tal cual para no perder el filtro.
+const legacy = country && value !== country.id && !c2 ? byId.get(value) : undefined;
 ---
 <div class="flex min-w-[11rem] flex-[2] flex-wrap gap-2" data-place-filter data-testid={testid}>
   <input type="hidden" name="zona" value={value} data-place-value />
@@ -32,39 +31,30 @@ const tree = zones.filter((z) => z.kind !== 'city' || !z.parentId).map((z) => ({
   <select id={`${testid}-1`} class="co-select min-w-[9rem] flex-1" data-level="1" data-testid={`${testid}-country`}>
     <option value="">{P.anyCountry}</option>
     <option value={NO_ZONE} selected={value === NO_ZONE}>{P.noCity}</option>
-    {tops.map((z) => <option value={z.id} selected={c1 === z.id}>{z.name}</option>)}
+    {tops.map((z) => <option value={z.id} selected={country?.id === z.id}>{z.name}</option>)}
   </select>
-  <label class="sr-only" for={`${testid}-2`}>{P.region}</label>
-  <select id={`${testid}-2`} class="co-select min-w-[9rem] flex-1" data-level="2" data-testid={`${testid}-region`} hidden={!l2.length}>
-    <option value="">{P.anyRegion}</option>
-    {l2.map((z) => <option value={z.id} selected={c2 === z.id}>{z.name}</option>)}
-  </select>
-  <label class="sr-only" for={`${testid}-3`}>{P.province}</label>
-  <select id={`${testid}-3`} class="co-select min-w-[9rem] flex-1" data-level="3" data-testid={`${testid}-province`} hidden={!l3.length}>
+  <label class="sr-only" for={`${testid}-2`}>{P.province}</label>
+  <select id={`${testid}-2`} class="co-select min-w-[9rem] flex-1" data-level="2" data-testid={`${testid}-province`} hidden={!l2.length}>
     <option value="">{P.anyProvince}</option>
-    {l3.map((z) => <option value={z.id} selected={c3 === z.id}>{z.name}</option>)}
+    {legacy && <option value={legacy.id} selected>{legacy.name}</option>}
+    {l2.map((z) => <option value={z.id} selected={c2 === z.id}>{z.n}</option>)}
   </select>
-  <script type="application/json" data-place-tree set:html={JSON.stringify({ tree, any: [P.anyRegion, P.anyProvince], locale, none: NO_ZONE }).replace(/</g, '\\u003c')} />
+  <script type="application/json" data-place-tree set:html={JSON.stringify({ provs, any: P.anyProvince, none: NO_ZONE }).replace(/</g, '\\u003c')} />
 </div>
 
 <script>
-  // Al elegir un nivel: el siguiente enseña lo que hay dentro (o se esconde si no hay nada) y el filtro pasa a ser el más
-  // concreto elegido. Va antes que el «aplicar al cambiar» del formulario (este escucha en el propio desplegable).
+  // Al elegir país: la segunda lista enseña sus provincias (o se esconde si no tiene). El filtro es lo más concreto.
   document.querySelectorAll<HTMLElement>('[data-place-filter]').forEach((box) => {
-    const data = JSON.parse(box.querySelector('[data-place-tree]')?.textContent ?? '{}') as { tree: Array<{ id: string; p: string | null; n: string; k: string }>; any: string[]; locale: string; none: string };
-    const sel = (n: number) => box.querySelector<HTMLSelectElement>(`select[data-level="${n}"]`)!;
+    const data = JSON.parse(box.querySelector('[data-place-tree]')?.textContent ?? '{}') as { provs: Record<string, Array<{ id: string; n: string }>>; any: string; none: string };
+    const c = box.querySelector<HTMLSelectElement>('select[data-level="1"]')!;
+    const p = box.querySelector<HTMLSelectElement>('select[data-level="2"]')!;
     const out = box.querySelector<HTMLInputElement>('[data-place-value]')!;
-    const fill = (n: number, parent: string) => {
-      const s = sel(n);
-      const xs = parent ? data.tree.filter((z) => z.p === parent && z.k !== 'city').sort((a, b) => a.n.localeCompare(b.n, data.locale)) : [];
-      s.replaceChildren(new Option(data.any[n - 2], ''), ...xs.map((z) => new Option(z.n, z.id)));
-      s.hidden = !xs.length;
-    };
-    const update = (n: number) => {
-      if (n === 1) { fill(2, sel(1).value === data.none ? '' : sel(1).value); fill(3, ''); }
-      if (n === 2) fill(3, sel(2).value);
-      out.value = sel(3).value || sel(2).value || sel(1).value;
-    };
-    [1, 2, 3].forEach((n) => sel(n).addEventListener('change', () => update(n)));
+    c.addEventListener('change', () => {
+      const xs = c.value && c.value !== data.none ? data.provs[c.value] ?? [] : [];
+      p.replaceChildren(new Option(data.any, ''), ...xs.map((z) => new Option(z.n, z.id)));
+      p.hidden = !xs.length;
+      out.value = c.value;
+    });
+    p.addEventListener('change', () => { out.value = p.value || c.value; });
   });
 </script>

@@ -48,6 +48,8 @@ const previous = open ? history.find((w) => w.id !== open!.sweep.id && w.query.t
 const tag = open ? tagSchema.parse(open.sweep.query) : '';
 const STATE_TONE = { new: 'co-tag--match', have: '', maybe: 'co-tag--danger', closed: 'co-tag--danger' } as const;
 const lastQuery = history[0]?.query ?? '';
+// Dónde buscar por defecto (§23): donde buscaste la última vez; si no, tu zona.
+const defaultZone = history[0]?.zoneId ?? (t.myZoneIds.length === 1 ? t.myZoneIds[0] : '');
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={open ? `${open.sweep.query} · ${open.sweep.zoneLabel.split(',')[0] || '—'}` : M.title} lede={open ? M.results(counts!.found) : M.lede}>
@@ -64,7 +66,7 @@ const lastQuery = history[0]?.query ?? '';
           <label class="co-field">{M.where}
             <select class="co-select" name="zoneId" required data-testid="prospect-zone">
               <option value="">{M.anyZone}</option>
-              {zoneOptions.map((z) => <option value={z.id} selected={t.myZoneIds.length === 1 && z.id === t.myZoneIds[0]}>{z.label}</option>)}
+              {zoneOptions.map((z) => <option value={z.id} selected={z.id === defaultZone}>{z.label}</option>)}
             </select>
           </label>
         </div>

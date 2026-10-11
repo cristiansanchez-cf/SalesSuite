@@ -653,3 +653,15 @@ el argumentario; el contenido de Enjoy aún dice que la fidelización no se vend
 **D · Orden de la ficha.** Arriba, un **resumen**: la nota, qué le encaja y el próximo paso (lleva al seguimiento), con
 saltos a cada parte (Lo que sabemos · Cualificación · Seguimiento · Con quién · Datos): en el móvil la ficha es larga.
 La «Ficha» (campos del espacio) baja después de «Grupo y personas»; lo demás, igual.
+
+## 23. El comercial en la calle (móvil)
+
+Criterio de Cristian haciendo ruta (11-oct-2026).
+
+**E1 · País y filtros que se recuerdan.**
+- Filtro de lugar **País → Provincia** (sin comunidad; lo que cuelga del país sin provincia, como Madrid, cuenta
+  como una). `src/lib/accounts/places.ts`.
+- **Filtros recordados** en lista y mapa: si se llega sin filtros en la URL (menú, «← Empresas», volver), se usan los
+  de la última vez (cookie de este navegador, 90 días). `?todo=1` = sin filtros a propósito.
+- **Tu país por defecto** la primera vez, si no tienes zona asignada (con zona, «Mi zona» ya acota): el último
+  elegido, el de tu zona o el único que hay. En «Buscar clientes», el sitio por defecto es el de la última búsqueda.

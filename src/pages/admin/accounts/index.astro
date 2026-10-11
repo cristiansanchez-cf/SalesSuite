@@ -10,6 +10,7 @@ import EmptyState from '~/components/ui/EmptyState.astro';
 import Icon from '~/components/ui/Icon.astro';
 import AccountState from '~/components/accounts/AccountState.astro';
 import ViewToggle from '~/components/crm/ViewToggle.astro';
+import { rememberedFilters, saveFilters, myCountry } from '~/lib/ui/remember';
 import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
@@ -66,7 +67,11 @@ if (Astro.request.method === 'POST') {
   if (!result.error && to) return Astro.redirect(to, 303);
 }
 
-const q = Astro.url.searchParams;
+// Filtros recordados (§23): sin filtros en la URL, los de la última vez; la primera vez, tu país.
+const t = await acc.territory();
+const { q, fresh } = rememberedFilters(Astro.url, Astro.cookies, 'co_f_list');
+// Con zona asignada, «Mi zona» ya acota (el país la pisaría); sin zona, tu país.
+if (fresh && !t.myZoneIds.length) { const c = myCountry(Astro.cookies, t.zones, t.myZoneIds); if (c) q.set('zona', c); }
 const scope = (['zone', 'mine', 'all'].includes(q.get('ver') ?? '') ? q.get('ver') : 'zone') as 'zone' | 'mine' | 'all';
 const stateF = (q.get('estado') ?? 'all') as State | 'all';
 const search = q.get('q') ?? '';
@@ -85,8 +90,8 @@ const crm = (await acc.crmFields()).filter((x) => x.target === 'account' && (!x.
 const filterable = crm.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
 const columns = crm.filter((x) => x.inList);
-const [{ items, total, scope: effective, kinds }, t, colleagues, segments, lists] = await Promise.all([
-  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined, view: listView }), acc.territory(), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
+const [{ items, total, scope: effective, kinds }, colleagues, segments, lists] = await Promise.all([
+  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined, view: listView }), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
 ]);
 const accountLists = lists.filter((l) => l.accounts > 0);
 // Etapa de la lista: chips por opción (filtran por su campo).
@@ -114,8 +119,10 @@ const href = (p: Record<string, string>) => {
     ...(orden ? { orden } : {}), ...(cual ? { cual } : {}),
     ...Object.fromEntries(Object.entries(fieldFilter).map(([k, v]) => [`c.${k}`, v])), ...p });
   for (const [k, v] of [...u]) if (!v || (k === 'ver' && v === 'zone') || (k === 'estado' && v === 'all')) u.delete(k);
-  return `/admin/accounts${u.size ? `?${u}` : ''}`;
+  // Sin nada: «todo, a propósito» (si no, se volverían a poner los filtros recordados).
+  return `/admin/accounts?${u.size ? u : 'todo=1'}`;
 };
+saveFilters(Astro.cookies, 'co_f_list', new URL(href({}), Astro.url).searchParams, t.zones);
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
