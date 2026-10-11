@@ -198,5 +198,99 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
         });
       })();
     </script>
+    {shell && (
+      <script is:inline define:vars={{ T: m.bg, TENANT: admin!.session.tenantId }}>
+        // Investigar con IA en segundo plano (docs/CRM_DINAMICO.md §19): window.coResearch(ids) deja la lista en este
+        // navegador y se va investigando (tres a la vez) mientras haya una pestaña de la consola abierta, en cualquier
+        // página. Si se cierra todo, sigue al volver. Una sola pestaña trabaja (las demás enseñan el progreso).
+        (() => {
+          const K = `co.bg.research.${TENANT}`;
+          const read = () => { try { return JSON.parse(localStorage.getItem(K) || 'null'); } catch { return null; } };
+          const write = (s) => { try { if (s) localStorage.setItem(K, JSON.stringify(s)); else localStorage.removeItem(K); } catch {} };
+          // La misma pestaña conserva su id al cambiar de página (para retomar su propio trabajo sin esperar).
+          let me = '';
+          try { me = sessionStorage.getItem('co.tab') || ''; if (!me) { me = Math.random().toString(36).slice(2); sessionStorage.setItem('co.tab', me); } } catch { me = Math.random().toString(36).slice(2); }
+          const free = (s) => !s.lock || s.lock.tab === me || Date.now() - s.lock.at >= 15000;
+          // Lo que se quedó a medias (otra página u otra pestaña que se cerró) vuelve a la cola, pero espera un poco:
+          // puede seguir en el servidor, y si ya terminó se salta (investigada hace menos de 30 días).
+          const adopt = () => {
+            const s = read();
+            if (!s || !free(s)) return;
+            for (const [id, at] of Object.entries(s.busy)) { s.todo.push(id); s.wait[id] = at + 90000; }
+            s.busy = {}; s.lock = null; write(s);
+          };
+          const box = document.getElementById('co-toasts');
+          let el = null; let running = false;
+          const render = () => {
+            const s = read();
+            if (!s) { if (el) el.remove(); el = null; return; }
+            const done = s.ok + s.skipped + s.failed;
+            const over = !s.todo.length && !Object.keys(s.busy).length;
+            if (!el) { el = document.createElement('div'); el.dataset.testid = 'bg-research'; el.setAttribute('role', 'status'); box.prepend(el); }
+            el.className = `co-toast co-toast--${over ? 'ok' : 'busy'}`;
+            el.dataset.state = over ? 'done' : 'running';
+            el.replaceChildren();
+            const msg = document.createElement('span');
+            msg.textContent = over
+              ? T.done.replace('{ok}', String(s.ok)) + (s.skipped ? T.skipped.replace('{s}', String(s.skipped)) : '') + (s.failed ? T.failed.replace('{f}', String(s.failed)) : '') + (s.error ? ` · ${s.error}` : '') + '. '
+              : T.running.replace('{i}', String(Math.min(done + 1, s.total))).replace('{n}', String(s.total));
+            if (over) {
+              const a = document.createElement('a'); a.href = '/admin/accounts?ver=all&cual=ia'; a.textContent = T.see; a.style.textDecoration = 'underline'; a.dataset.testid = 'bg-research-see'; msg.append(a);
+              const x = document.createElement('button'); x.type = 'button'; x.className = 'co-toast__x'; x.textContent = '×'; x.dataset.testid = 'bg-research-close';
+              x.addEventListener('click', () => { write(null); render(); });
+              el.append(msg, x);
+            } else el.append(msg);
+          };
+          const one = async () => {
+            for (;;) {
+              let s = read();
+              if (!s || (s.lock && s.lock.tab !== me && Date.now() - s.lock.at < 15000)) return;
+              const now = Date.now();
+              const i = s.todo.findIndex((id) => !(s.wait[id] > now));
+              if (i < 0) { if (!s.todo.length) return; await new Promise((r) => setTimeout(r, 5000)); continue; }
+              const id = s.todo.splice(i, 1)[0];
+              s.busy[id] = now; s.lock = { tab: me, at: now }; write(s); render();
+              let r = 'failed'; let stop = '';
+              try {
+                const res = await fetch(`/admin/api/accounts/${id}/research`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ skipRecentDays: 30 }) });
+                const j = await res.json().catch(() => ({}));
+                r = j.ok ? 'ok' : j.skipped ? 'skipped' : 'failed';
+                // Tope del día o sin IA: no seguir gastando intentos.
+                if (!j.ok && !j.skipped && (res.status === 409 || res.status === 503) && j.error) stop = j.error;
+              } catch {}
+              s = read();
+              if (!s) return;
+              delete s.busy[id]; delete s.wait[id]; s[r]++;
+              if (stop) { s.failed += s.todo.length; s.todo = []; s.error = stop; }
+              write(s); render();
+            }
+          };
+          const work = async () => {
+            if (running) return;
+            running = true;
+            adopt();
+            const beat = setInterval(() => { const s = read(); if (s && s.lock && s.lock.tab === me) { s.lock.at = Date.now(); write(s); } }, 4000);
+            await Promise.all([one(), one(), one()]);
+            clearInterval(beat);
+            running = false;
+            const s = read();
+            if (s && s.lock && s.lock.tab === me) { s.lock = null; write(s); }
+            render();
+          };
+          window.coResearch = (ids) => {
+            let s = read();
+            if (!s || (!s.todo.length && !Object.keys(s.busy).length)) s = { todo: [], busy: {}, wait: {}, ok: 0, skipped: 0, failed: 0, total: 0, lock: null };
+            for (const id of ids) if (!s.todo.includes(id) && !(id in s.busy)) { s.todo.push(id); s.total++; }
+            write(s); render(); work();
+          };
+          render();
+          const s = read();
+          if (s && free(s) && (s.todo.length || Object.keys(s.busy).length)) work();
+          // Otra pestaña trabaja: enseñar su progreso y tomar el relevo si deja de dar señales.
+          addEventListener('storage', (e) => { if (e.key === K) render(); });
+          setInterval(() => { const x = read(); if (x && !running && free(x) && (x.todo.length || Object.keys(x.busy).length)) work(); }, 10000);
+        })();
+      </script>
+    )}
   </body>
 </html>

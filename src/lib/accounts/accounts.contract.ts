@@ -536,11 +536,15 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const sol = (await t.admin.accounts.get(r.ids[pick[0]])).account;
       expect(sol).toMatchObject({ name: 'Discoteca Sol', placeId: pick[0], zoneId: t.vlc, ownerId: U.admin.id, website: 'https://discotecasol.test/', instagram: 'https://www.instagram.com/discotecasol/', email: 'hola@discotecasol.test', tags: ['discotecas'] });
       expect(sol.placeFilled).toMatchObject({ website: 'https://discotecasol.test/' });
+      // «Es la misma»: la ficha de Google se une a la que ya tenías (sin crear otra).
+      const luna = got.candidates.find((c) => c.name === 'Discoteca Luna')!;
+      expect(await adm.prospectLink(id, luna.placeId, ya)).toEqual({ accountId: ya });
+      expect((await t.admin.accounts.get(ya)).account).toMatchObject({ placeId: luna.placeId, website: 'https://discotecaluna.test/', instagram: 'https://www.instagram.com/discotecaluna/', zoneId: t.vlc });
       // Otra vez lo mismo: no se duplica.
       expect(await adm.prospectImport(id, pick, 'me')).toMatchObject({ created: 0, have: 2 });
       got = await adm.prospectGet(id);
-      expect(got.candidates.filter((c) => c.state === 'have').map((c) => c.placeId).sort()).toEqual([...pick].sort());
-      expect((await adm.prospectList()).find((w) => w.id === id)).toMatchObject({ found: 12, importedCount: 2 });
+      expect(got.candidates.filter((c) => c.state === 'have').map((c) => c.placeId).sort()).toEqual([...pick, luna.placeId].sort());
+      expect((await adm.prospectList()).find((w) => w.id === id)).toMatchObject({ found: 12, importedCount: 3 });
 
       // El comercial ve las búsquedas del espacio; lo que importa es suyo aunque pida otra cosa.
       const repCtx = await ctx(U.rep);

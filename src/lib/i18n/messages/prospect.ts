@@ -3,6 +3,9 @@ import { defineMessages } from '../core';
 
 export const prospectMessages = defineMessages({
   es: {
+    link: 'Es la misma: unir', linked: 'Unida a la tuya',
+    maybeHelp: 'Si es la misma, «Es la misma: unir» le pone esta ficha de Google a la tuya. Si es otra, márcala e impórtala.',
+    bg: 'Investigando con IA en segundo plano: puedes seguir usando la app (el progreso sale abajo).',
     eyebrow: 'Empresas', title: 'Buscar clientes', open: 'Buscar clientes',
     lede: 'Busca en Google Maps un tipo de cliente en una zona («discotecas» en «Valencia»). Revisas lo que sale, quitas lo que no sirve y lo importas: entra con su ficha de Google, su web y sus redes. Lo que ya tienes no se duplica.',
     what: 'Qué buscas', whatPh: 'discotecas, salas de conciertos, centros de buceo…', where: 'Dónde', anyZone: 'Elige una zona',
@@ -27,6 +30,9 @@ export const prospectMessages = defineMessages({
     by: (who: string, when: string) => `${who} · ${when}`,
   },
   en: {
+    link: 'Same one: merge', linked: 'Merged into yours',
+    maybeHelp: 'If it’s the same, «Same one: merge» adds this Google listing to yours. If it’s another, tick it and import it.',
+    bg: 'Researching with AI in the background: you can keep using the app (progress shows at the bottom).',
     eyebrow: 'Companies', title: 'Find clients', open: 'Find clients',
     lede: 'Search Google Maps for a kind of client in an area («nightclubs» in «Valencia»). Review the results, drop what doesn’t fit and import: each comes in with its Google listing, website and social links. Nothing you already have is duplicated.',
     what: 'What you’re looking for', whatPh: 'nightclubs, concert halls, dive centres…', where: 'Where', anyZone: 'Choose an area',
@@ -51,6 +57,9 @@ export const prospectMessages = defineMessages({
     by: (who: string, when: string) => `${who} · ${when}`,
   },
   pt: {
+    link: 'É a mesma: unir', linked: 'Unida à sua',
+    maybeHelp: 'Se for a mesma, «É a mesma: unir» põe esta ficha do Google na sua. Se for outra, marque e importe.',
+    bg: 'Pesquisando com IA em segundo plano: pode continuar usando o app (o progresso aparece embaixo).',
     eyebrow: 'Empresas', title: 'Buscar clientes', open: 'Buscar clientes',
     lede: 'Busque no Google Maps um tipo de cliente numa zona («discotecas» em «Valência»). Revise o que aparece, tire o que não serve e importe: entra com a ficha do Google, o site e as redes. O que você já tem não se duplica.',
     what: 'O que procura', whatPh: 'discotecas, salas de shows, centros de mergulho…', where: 'Onde', anyZone: 'Escolha uma zona',
@@ -75,6 +84,9 @@ export const prospectMessages = defineMessages({
     by: (who: string, when: string) => `${who} · ${when}`,
   },
   ko: {
+    link: '같은 곳: 합치기', linked: '기존 회사에 합침',
+    maybeHelp: '같은 곳이면 «같은 곳: 합치기»로 이 Google 정보를 기존 회사에 붙입니다. 다른 곳이면 선택해서 가져오세요.',
+    bg: 'AI 조사를 백그라운드에서 진행합니다. 앱을 계속 사용할 수 있습니다(진행 상황은 아래에 표시).',
     eyebrow: '회사', title: '고객 찾기', open: '고객 찾기',
     lede: 'Google 지도에서 지역별로 고객 유형을 검색합니다(예: «발렌시아»의 «나이트클럽»). 결과를 검토하고 맞지 않는 것은 빼고 가져오면 Google 정보, 웹사이트, SNS와 함께 들어옵니다. 이미 있는 곳은 중복되지 않습니다.',
     what: '찾는 것', whatPh: '나이트클럽, 공연장, 다이빙 센터…', where: '지역', anyZone: '지역 선택',

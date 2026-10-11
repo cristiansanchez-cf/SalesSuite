@@ -512,8 +512,17 @@ de buceo» en Murcia), sin IA y sin duplicar. Lo que no está en Google se sigue
    de Google ya elegida** (teléfono, web, dirección, Maps, horario, ubicación, valoración), su ciudad (por la
    dirección; si no, la zona buscada), el sector, la lista de lo buscado (`discotecas`) y las **redes y el email de su
    web**. Se asignan **a quien importa**; un admin o gerente puede dejarlas libres o dárselas a alguien del equipo.
+   **«¿Ya la tienes? Se llama igual»**: si es la misma, **«Es la misma: unir»** le pone esa ficha de Google a la empresa
+   que ya tenías (como elegirla en su ficha: rellena huecos, cambia la ficha anterior si la había, lo de a mano se
+   queda, y lee su web); si es otra, se marca y se importa.
 5. Después, **«Investigar con IA»** lo recién importado (hasta 20) y **«Ver en Empresas»** (filtrado por la lista).
    En la ficha ya no hace falta «Buscar en Google»: el siguiente paso es la investigación con IA.
+
+**Investigar con IA en segundo plano** (aquí y en «Investigar zona» de la lista): la lista se guarda en el navegador
+(`localStorage`, por espacio) y la consola la va investigando, tres a la vez, **en cualquier página**; el progreso sale
+abajo («Investigando con IA: 12 de 20») y al acabar, el resumen con «Ver». Si se cierran todas las pestañas, sigue al
+volver; lo que quedó a medias espera 90 s (puede seguir en el servidor) y si ya terminó se salta. Una sola pestaña
+trabaja; las demás enseñan el progreso. Al llegar al tope diario de IA se para.
 
 Permisos: cualquiera del equipo interno busca e importa (un comercial, siempre para sí); un partner no ve nada; borrar
 búsquedas, solo admin. Migración `20261118000000_crm_prospect.sql`; pruebas `prospect.test.ts`, contrato de cuentas

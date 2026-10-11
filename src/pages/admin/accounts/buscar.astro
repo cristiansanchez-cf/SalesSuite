@@ -113,7 +113,9 @@ const lastQuery = history[0]?.query ?? '';
                       <span class="co-row-title">{c.name}</span>
                       <span class={`co-tag ${STATE_TONE[c.state]}`} data-testid="prospect-state">{M.states[c.state]}{c.discarded ? ` · ${M.discarded}` : ''}</span>
                       {c.accountId && <a class="co-meta underline" href={`/admin/accounts/${c.accountId}`} target="_blank" rel="noopener">{M.see}{c.accountName && c.accountName !== c.name ? ` «${c.accountName}»` : ''}</a>}
+                      {c.state === 'maybe' && c.accountId && <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-link={c.accountId} data-place={c.placeId} data-testid="prospect-link"><Icon name="link" size={14} />{M.link}</button>}
                     </span>
+                    {c.state === 'maybe' && <span class="co-help" data-maybe-help>{M.maybeHelp}</span>}
                     <span class="co-meta">
                       {c.type && <>{c.type} · </>}
                       {c.rating != null && <>★ {c.rating.toFixed(1)}{c.reviews ? ` (${M.reviews(c.reviews)})` : ''} · </>}
@@ -153,7 +155,7 @@ const lastQuery = history[0]?.query ?? '';
 
   <script type="application/json" id="prospect-data" set:html={JSON.stringify({
     sweep: open?.sweep.id ?? '', chunk: 6, aiMax: 20,
-    T: { have: M.states.have, import: M.import(0), importing: M.importing('{i}', '{n}'), stay: M.stay, failed: M.failed, done: M.done(-1, -2, -3), selected: M.selected(0), research: M.research(0) },
+    T: { linked: M.linked, bg: M.bg, have: M.states.have, import: M.import(0), importing: M.importing('{i}', '{n}'), stay: M.stay, failed: M.failed, done: M.done(-1, -2, -3), selected: M.selected(0), research: M.research(0) },
   }).replace(/</g, '\\u003c')} />
 </AdminLayout>
 
@@ -218,21 +220,33 @@ const lastQuery = history[0]?.query ?? '';
     sync();
   });
 
-  // Investigar con IA lo recién importado (hasta 20, de una en una: cada una tarda hasta un minuto).
-  document.querySelector<HTMLButtonElement>('[data-research]')?.addEventListener('click', async (ev) => {
+  // Investigar con IA lo recién importado: en segundo plano (AdminLayout), se puede seguir usando la app.
+  document.querySelector<HTMLButtonElement>('[data-research]')?.addEventListener('click', (ev) => {
     const btn = ev.currentTarget as HTMLButtonElement;
-    if (!status) return;
-    btn.disabled = true;
-    const list = created.slice(0, d.aiMax);
-    let ok = 0;
-    for (const [i, id] of list.entries()) {
-      status.textContent = `${btn.textContent?.trim()} · ${i + 1}/${list.length}… ${d.T.stay}`;
-      const res = await fetch(`/admin/api/accounts/${id}/research`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ skipRecentDays: 30 }) }).catch(() => null);
-      const j = res ? ((await res.json().catch(() => ({}))) as { ok?: boolean; error?: string }) : {};
-      if (j.ok) ok++;
-      else if (j.error) { status.textContent = j.error; return; }
-    }
-    status.textContent = `✓ ${ok}/${list.length}`;
-    created.splice(0, list.length);
+    const run = (window as unknown as { coResearch?: (ids: string[]) => void }).coResearch;
+    if (!run || !status) return;
+    run(created.splice(0, d.aiMax));
+    btn.hidden = true;
+    status.hidden = false; status.textContent = d.T.bg;
   });
+
+  // «Es la misma»: une el sitio de Google a la empresa que ya tienes (como elegir su ficha de Google en ella).
+  document.querySelectorAll<HTMLButtonElement>('[data-link]').forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true;
+    const res = await fetch('/admin/api/crm/prospect-import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sweep: d.sweep, place: b.dataset.place, link: b.dataset.link }) }).catch(() => null);
+    const j = res ? ((await res.json().catch(() => ({}))) as { accountId?: string; error?: string }) : {};
+    const row = b.closest<HTMLElement>('[data-state]');
+    if (!res || !res.ok || !row) { b.disabled = false; if (status) { status.hidden = false; status.textContent = j.error || d.T.failed; } return; }
+    row.setAttribute('data-state', 'have');
+    const box = row.querySelector<HTMLInputElement>('[data-pick-row]');
+    if (box) { box.checked = false; box.disabled = true; }
+    const tag = row.querySelector('[data-testid=prospect-state]');
+    if (tag) { tag.textContent = d.T.linked; tag.className = 'co-tag co-tag--match'; }
+    row.querySelector('[data-maybe-help]')?.remove();
+    b.remove();
+    if (j.accountId && !created.includes(j.accountId)) created.push(j.accountId);
+    const r = document.querySelector<HTMLButtonElement>('[data-research]');
+    if (r) { r.hidden = false; r.querySelector('[data-research-label]')!.textContent = d.T.research.replace('0', String(Math.min(created.length, d.aiMax))); }
+    sync();
+  }));
 </script>

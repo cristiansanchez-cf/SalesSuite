@@ -822,6 +822,32 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return { created, have, failed, ids };
   }
 
+  /**
+   * «Es la misma» (§19): un sitio de Google que ya tienes con otro nombre o sin ficha. Se une a tu empresa como si le
+   * hubieras elegido esa ficha de Google en la suya (teléfono, web, Maps, horario, ubicación, valoración, la ciudad si
+   * no tiene, y las redes de su web). Lo escrito a mano no se pisa; si tenía otra ficha de Google, se cambia.
+   */
+  async function prospectLink(id: string, placeId: string, accountId: string): Promise<{ accountId: string }> {
+    requireUse();
+    const w = await loadSweep(id);
+    const c = w.results.find((x) => x.placeId === placeId);
+    const a = await accounts.getAccount(accountId);
+    if (!c || !a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    const zones = await accounts.listZones(t);
+    const replace = !!a.placeId && a.placeId !== c.placeId;
+    const keepsZone = a.zoneId && !(replace && a.placeFilled?.zone_id === a.zoneId);
+    const zone = !keepsZone && c.place ? zoneForPlace(zones, c.place) : null;
+    const web = c.website || a.website;
+    const socials = web ? await site.scan(web).catch(() => null) : null;
+    try {
+      await accounts.research(accountId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
+        status: c.status, rating: c.rating ?? null, reviews: c.reviews ?? null, photo: c.photo ?? null, zoneId: zone?.id ?? null,
+        email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace });
+    } catch (e) { mapError(e); }
+    await accounts.markSwept(w.id, { [c.placeId]: accountId }).catch((e) => console.warn('[prospect]', e instanceof Error ? e.message : e));
+    return { accountId };
+  }
+
   // ---------------------------------------------------------------- investigación con IA (docs/CRM_DINAMICO.md §13)
 
   /** Entre dos investigaciones de la misma empresa (evita el doble clic y gastar dos veces). */
@@ -1187,7 +1213,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
-    prospectSearch, prospectList, prospectGet, prospectImport, hasProspect: () => !!places?.area,
+    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

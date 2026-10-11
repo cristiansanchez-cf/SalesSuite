@@ -321,30 +321,16 @@ const panelOpen = nFilters > 0;
     document.addEventListener('change', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('[data-bulk]')) sync(); });
     bar.querySelector('[data-bulk-clear]').addEventListener('click', () => { boxes().forEach((b) => { b.checked = false; }); sync(); });
   </script>
-  <script define:vars={{ max: AI_MAX, T: { progress: AI.zone.progress('{i}', '{n}', '{name}'), done: AI.zone.done('{n}'), skipped: AI.zone.skipped('{n}'), failed: AI.zone.failed('{n}'), stay: AI.zone.stay, see: AI.zone.see } }}>
-    // «Investigar zona»: las marcadas, de una en una (cada una tarda hasta un minuto), con el progreso a la vista.
-    // Las ya investigadas en los últimos 30 días y las de otro se saltan.
+  <script define:vars={{ max: AI_MAX, T: { bg: PR.bg } }}>
+    // «Investigar zona»: las marcadas (hasta 20) se investigan en segundo plano (AdminLayout): se puede seguir usando la
+    // app y el progreso sale abajo. Las ya investigadas en los últimos 30 días y las de otro se saltan.
     const btn = document.querySelector('[data-bulk-ai]');
     const status = document.querySelector('[data-bulk-ai-status]');
-    btn?.addEventListener('click', async () => {
-      const rows = [...document.querySelectorAll('[data-bulk]')].filter((b) => b.checked).slice(0, max)
-        .map((b) => ({ id: b.value, name: b.closest('[data-name]')?.getAttribute('data-name') ?? '' }));
-      if (!rows.length) return;
-      btn.disabled = true; status.hidden = false;
-      let ok = 0, skipped = 0, failed = 0;
-      for (const [i, r] of rows.entries()) {
-        status.textContent = `${T.progress.replace('{i}', String(i + 1)).replace('{n}', String(rows.length)).replace('{name}', r.name)} ${T.stay}`;
-        try {
-          const res = await fetch(`/admin/api/accounts/${r.id}/research`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ skipRecentDays: 30 }) });
-          const j = await res.json().catch(() => ({}));
-          if (j.ok) ok++; else if (j.skipped) skipped++; else failed++;
-        } catch { failed++; }
-      }
-      const n = (t, v) => t.replace('{n}', String(v));
-      status.textContent = `${n(T.done, ok)}${skipped ? n(T.skipped, skipped) : ''}${failed ? n(T.failed, failed) : ''}. `;
-      const a = document.createElement('a'); a.href = '/admin/accounts?ver=all&cual=ia'; a.textContent = T.see; a.dataset.testid = 'bulk-ai-see';
-      status.append(a);
-      btn.disabled = false;
+    btn?.addEventListener('click', () => {
+      const ids = [...document.querySelectorAll('[data-bulk]')].filter((b) => b.checked).slice(0, max).map((b) => b.value);
+      if (!ids.length || !window.coResearch) return;
+      window.coResearch(ids);
+      status.hidden = false; status.textContent = T.bg;
     });
   </script>
 

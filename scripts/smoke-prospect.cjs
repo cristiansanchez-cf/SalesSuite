@@ -41,6 +41,13 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   r = await rows();
   assert(r.filter((x) => x.state === 'have').length === fresh - 1 && r.find((x) => x.name === 'Discoteca Rayo').state === 'new', 'lo importado pasa a «Ya la tienes»; lo quitado, no');
   assert(await p.isVisible('[data-testid=prospect-research]'), 'ofrece investigar con IA lo importado');
+  // «¿Ya la tienes?»: es la misma → se une a la que ya tenías (con la ficha de Google), sin crear otra.
+  await p.click('[data-testid=prospect-row][data-name="Discoteca Faro"] [data-testid=prospect-link]');
+  await p.waitForSelector('[data-testid=prospect-row][data-name="Discoteca Faro"][data-state=have]');
+  assert((await p.textContent('[data-testid=prospect-row][data-name="Discoteca Faro"] [data-testid=prospect-state]')).includes('Unida'), '«Es la misma»: unida a la que ya tenías');
+  // Investigar con IA en segundo plano: se puede ir a otra página.
+  await p.click('[data-testid=prospect-research]');
+  assert((await p.textContent('[data-testid=prospect-status]')).includes('segundo plano'), 'investigar: en segundo plano');
   if (OUT) await p.screenshot({ path: `${OUT}/prospect-done.png`, fullPage: true });
 
   // En Empresas, en su lista; la ficha con Google y las redes de su web.
@@ -51,6 +58,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForURL(/\/admin\/accounts\/[^/?#]+$/);
   assert(!!(await p.$('main a[href="https://discotecasol.test/"]')) && !!(await p.$('main a[href*="instagram.com/discotecasol"]')), 'ficha con su web y su Instagram');
 
+  await p.waitForSelector('[data-testid=bg-research][data-state=done]', { timeout: 150000 });
+  assert(/\d+ listas/.test(await p.textContent('[data-testid=bg-research]')), 'la investigación con IA terminó mientras se usaba la app');
+  const faro = await p.goto(`${BASE}/admin/accounts?ver=all&q=Faro`).then(() => p.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.getAttribute('data-name'))));
+  assert(faro.filter((n) => n === 'Discoteca Faro').length === 1, 'Discoteca Faro sigue siendo una sola');
+
   // La misma búsqueda otra vez: aviso y lo ya importado no se duplica.
   await p.goto(`${BASE}/admin/accounts/buscar`);
   assert((await p.$$('[data-testid=prospect-sweep]')).length >= 1, 'la búsqueda queda en el historial');
@@ -58,7 +70,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.selectOption('[data-testid=prospect-zone]', vlc);
   await Promise.all([p.waitForURL(/buscar\?id=/), p.click('[data-testid=prospect-search]')]);
   r = await rows();
-  assert(r.filter((x) => x.state === 'have').length === fresh - 1 && r.filter((x) => x.checked).length === 1, 'otra vez: lo importado sale como «Ya la tienes» y solo la que quité, marcada');
+  assert(r.filter((x) => x.state === 'have').length === fresh && r.filter((x) => x.checked).length === 1, 'otra vez: lo importado sale como «Ya la tienes» y solo la que quité, marcada');
 
   // Un comercial también busca (y lo que importa es suyo).
   const rep = await (await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'es-ES' })).newPage();

@@ -61,11 +61,14 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await p.goto(`${BASE}/admin/accounts?ver=all`);
   for (const n of ['Club Sol', 'Sala Marina', 'Terraza Azahar']) await p.check(`[data-testid=account][data-name="${n}"] [data-bulk]`);
   await p.click('[data-testid=bulk-ai]');
-  await p.waitForSelector('[data-testid=bulk-ai-see]', { timeout: 60000 });
-  const done = await p.textContent('[data-testid=bulk-ai-status]');
-  assert(done.includes('2 investigadas') && done.includes('1 saltadas'), `zona: 2 investigadas y la ya investigada, saltada (${done.trim()})`);
+  assert((await p.textContent('[data-testid=bulk-ai-status]')).includes('segundo plano'), 'avisa: en segundo plano');
+  // Se puede ir a otra página: sigue y el progreso sale abajo.
+  await p.goto(`${BASE}/admin`);
+  await p.waitForSelector('[data-testid=bg-research][data-state=done]', { timeout: 150000 });
+  const done = await p.textContent('[data-testid=bg-research]');
+  assert(done.includes('2 listas') && done.includes('1 ya estaban'), `zona, en segundo plano y cambiando de página: 2 investigadas y la ya investigada, saltada (${done.trim()})`);
   if (OUT) await p.screenshot({ path: `${OUT}/ai-zone.png` });
-  await Promise.all([p.waitForURL(/cual=ia/), p.click('[data-testid=bulk-ai-see]')]);
+  await Promise.all([p.waitForURL(/cual=ia/), p.click('[data-testid=bg-research-see]')]);
   const names = await p.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.getAttribute('data-name')));
   assert(['Club Sol', 'Sala Marina', 'Terraza Azahar'].every((n) => names.includes(n)) && names.length === 3, `filtro «Investigadas por IA» (${names})`);
   assert((await p.$$('[data-testid=account-ai]')).length === 3, 'con la marca IA en la lista');
