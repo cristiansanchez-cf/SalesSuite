@@ -16,7 +16,9 @@ export interface NoteItem {
   venue: string;
   /** Lo que ha pasado con ellos (para el historial de interacciones), con sus palabras. Null si solo cuenta cómo es. */
   interaction: string | null;
-  /** Lo que sabemos del sitio: un dato por frase, sin perder detalle. */
+  /** Lo más importante para vender (1–3 puntos completos): sale arriba, en grande. */
+  keyFacts: string[];
+  /** El resto de lo que sabemos: agrupado por tema, de más a menos importante, sin perder detalle. */
   facts: string[];
   /** Qué le encaja de lo que vendemos, según quien lo cuenta. */
   fit: string | null;
@@ -38,7 +40,7 @@ export interface NotesApi { split(text: string, ctx: NotesCtx): Promise<NoteItem
 
 const S = { type: 'string' } as const;
 const SN = { type: ['string', 'null'] } as const;
-const QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'decider', 'screens', 'dynamics', 'scale', 'coverage', 'validate', 'debt'] as const;
+const QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'decider', 'screens', 'dynamics', 'scale', 'size', 'coverage', 'validate', 'debt'] as const;
 export const NOTES_TOOL = {
   name: 'save_notes',
   description: 'Guarda lo dicho, separado por sitio (un elemento por sitio).',
@@ -50,11 +52,12 @@ export const NOTES_TOOL = {
         type: 'array',
         items: {
           type: 'object', additionalProperties: false,
-          required: ['venue', 'interaction', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'qualification'],
+          required: ['venue', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'qualification'],
           properties: {
             venue: { ...S, description: 'Nombre del sitio tal como lo dice la persona (corrige solo mayúsculas).' },
             interaction: { ...SN, description: 'Lo que ha PASADO con ellos: que fue y cuándo, con quién habló, el mensaje que les mandó, qué contestaron. Corto, con sus palabras. Si estuvo allí solo mirando: «Visita: solo observar, sin hablar con nadie» (y la hora si la dice). null si no hubo contacto ni visita.' },
-            facts: { type: 'array', items: S, description: 'Lo que sabemos del sitio: un dato concreto por frase (tamaño, salas, DJ, pantallas y dónde están, qué ponen, cómo de lleno, aforo, cola, público, música…). NO resumas ni dejes nada fuera: todo detalle que cuente del sitio va aquí. Sin opiniones tuyas.' },
+            key_facts: { type: 'array', items: S, description: 'Lo que más pesa para vender aquí (1 a 3 puntos, ninguno si no hay nada claro): cada uno un párrafo corto y completo (p. ej. «Se llena hasta arriba los sábados: cola en la puerta a la 1:30 y unas 300 personas»). No repitas estos puntos en facts.' },
+            facts: { type: 'array', items: S, description: 'El resto de lo que sabemos del sitio, AGRUPADO POR TEMA: un punto por tema con todos sus detalles (p. ej. pantallas: cuántas, dónde y qué ponen; música y DJ; público y ambiente; local y salas). Pocos puntos y completos, de más a menos importante. NO pierdas ningún detalle ni lo resumas: júntalo. Sin opiniones tuyas.' },
             fit: { ...SN, description: 'Qué le encaja de lo que vendemos y cómo, según quien lo cuenta (p. ej. «Todos los servicios; QR bien grande; carrusel en la pantalla de la entrada»). null si no lo dice.' },
             fields: {
               type: 'array', description: 'Campos de la ficha (de la lista que te paso) que se deducen claramente. Valor como texto: número sin unidades, «sí»/«no», o una de las opciones. Vacío si ninguno.',
@@ -76,7 +79,8 @@ export const NOTES_TOOL = {
                 decider: { ...SN, description: 'Quien le atendió: onsite (decide y está en el local) | offsite (decide pero no está) | manager (encargado sin firma)' },
                 screens: { ...SN, description: 'Pantallas: yes (tiene) | wants (no tiene pero quiere) | no (no tiene NI quiere: solo si lo dicen ellos; saca al sitio del ranking). Si solo dice que no tiene, null.' },
                 dynamics: { ...SN, description: 'Hace dinámicas o cuida sus redes: yes | partly | no' },
-                scale: { ...SN, description: 'single (un local) | few (2-3) | group (grupo o varias salas)' },
+                scale: { ...SN, description: 'Cuántos locales tiene el dueño: single (un local) | few (2-3) | group (grupo o varias salas). NO es el tamaño' },
+                size: { ...SN, description: 'Tamaño del local: small (pequeño) | medium (mediano) | large (grande, mucho aforo). Solo si lo dicen o se deduce claro (p. ej. «se llena de 300»)' },
                 coverage: { ...SN, description: 'true solo si dice que NO hay cobertura móvil dentro.' },
                 validate: { ...SN, description: 'true solo si ELLOS han dicho que no pueden validar lo que sale en pantalla.' },
                 debt: { ...SN, description: 'true solo si dice que tiene deudas, va a cerrar o no es viable.' },
@@ -92,7 +96,8 @@ export const NOTES_TOOL = {
 export const NOTES_SYSTEM = (ctx: NotesCtx) => `Ayudas a un comercial de ${ctx.seller} a apuntar en su CRM lo que ha visto o hablado en sus visitas. Hoy es ${ctx.today}.
 Te pega o dicta un texto (puede venir de un dictado por voz, con errores) que habla de uno o varios sitios. Sepáralo por sitio y llama a save_notes:
 - Un elemento por sitio. Si un sitio sale varias veces, júntalo en uno.
-- Separa la interacción (lo que ha pasado con ellos) de lo que sabemos del sitio (facts). Lo que sabemos es lo más valioso: no lo resumas ni pierdas detalles; un dato por frase, con sus palabras, sin muletillas.
+- Separa la interacción (lo que ha pasado con ellos) de lo que sabemos del sitio. Lo que sabemos es lo más valioso: no pierdas ningún detalle, con sus palabras y sin muletillas; pero júntalo por temas en pocos puntos completos, para que se lea de un vistazo.
+- Lo más importante para vender ${ctx.seller} (lo que decide si encaja y cómo entrarle) va en key_facts; el resto en facts, ordenado de más a menos importante.
 - No inventes ni añadas opiniones tuyas. Si una palabra parece mal dictada y está claro qué quería decir, corrígela.
 - Lo que no es de ningún sitio concreto (ideas generales) no va en ningún elemento.
 - La cualificación y el próximo paso, solo si lo dice claramente; si no, null.
@@ -107,9 +112,10 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
     const r = (x ?? {}) as Record<string, unknown>;
     const venue = String(r.venue ?? '').replace(/\s+/g, ' ').trim().slice(0, 160);
     const interaction = typeof r.interaction === 'string' && r.interaction.trim() ? r.interaction.trim().slice(0, 4000) : null;
-    const facts = (Array.isArray(r.facts) ? r.facts : []).map((f) => line(f, 400)).filter(Boolean).slice(0, 40);
+    const keyFacts = (Array.isArray(r.key_facts) ? r.key_facts : []).map((f) => line(f, 600)).filter(Boolean).slice(0, 3);
+    const facts = (Array.isArray(r.facts) ? r.facts : []).map((f) => line(f, 600)).filter(Boolean).slice(0, 40);
     const fit = typeof r.fit === 'string' && r.fit.trim() ? line(r.fit, 600) : null;
-    if (!venue || (!interaction && !facts.length && !fit)) continue;
+    if (!venue || (!interaction && !keyFacts.length && !facts.length && !fit)) continue;
     const fields: Record<string, string> = {};
     for (const f of Array.isArray(r.fields) ? r.fields.slice(0, 40) : []) {
       const k = line((f as { key?: unknown })?.key, 64), v = line((f as { value?: unknown })?.value, 500);
@@ -124,7 +130,7 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
     const day = typeof r.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.day) && !Number.isNaN(Date.parse(r.day)) ? r.day : null;
     const nd = r.next_days == null || r.next_days === '' ? NaN : Number(r.next_days);
     out.push({
-      venue, interaction, facts, fit, fields,
+      venue, interaction, keyFacts, facts, fit, fields,
       channel: (CHANNELS as readonly string[]).includes(String(r.channel)) ? (r.channel as Channel) : 'visit',
       outcome: (OUTCOMES as readonly string[]).includes(String(r.outcome)) ? (r.outcome as Outcome) : 'note',
       day, qualification: q,
@@ -198,7 +204,9 @@ export function claudeNotes(apiKey: string, fetchImpl?: typeof fetch): NotesApi 
 export const fixtureNotes = (): NotesApi => ({
   async split(text) {
     const items = text.split(/\r?\n+/).map((l) => /^\s*([^:–-]{2,60}?)\s*[:–-]\s*(.+)$/.exec(l)).filter((m): m is RegExpExecArray => !!m).map((m) => ({
-      venue: m[1].trim(), interaction: /habl|dijo|mand|contest/i.test(m[2]) ? m[2].trim() : 'Visita: solo observar, sin hablar con nadie', facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter(Boolean),
+      venue: m[1].trim(), interaction: /habl|dijo|mand|contest/i.test(m[2]) ? m[2].trim() : 'Visita: solo observar, sin hablar con nadie',
+      key_facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => /pantalla/i.test(x) && !/sin pantalla/i.test(x)),
+      facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => x && !(/pantalla/i.test(x) && !/sin pantalla/i.test(x))),
       fit: /todos los servicios|encaj/i.test(m[2]) ? 'Todos los servicios' : null, fields: (/aforo (\d+)/i.exec(m[2]) ? [{ key: 'aforo', value: /aforo (\d+)/i.exec(m[2])![1] }] : []), channel: 'visit', outcome: 'note', day: null, next_step: /redes/i.test(m[2]) ? 'Mirar sus redes' : null, next_days: /redes/i.test(m[2]) ? 2 : null,
       qualification: { screens: /no quiere/i.test(m[2]) ? 'no' : /sin pantalla/i.test(m[2]) ? null : /pantalla/i.test(m[2]) ? 'yes' : null, kind: 'venue' },
     }));

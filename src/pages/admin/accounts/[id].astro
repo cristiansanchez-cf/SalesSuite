@@ -74,7 +74,8 @@ if (Astro.request.method === 'POST') {
       case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
-      case 'fact-add': await admin.crm.factAdd(id, str('text'), str('kind') === 'fit' ? 'fit' : 'fact'); to += '?ok=fact#facts'; break;
+      case 'fact-add': await admin.crm.factAdd(id, str('text'), str('kind') === 'fit' ? 'fit' : str('kind') === 'key' ? 'key' : 'fact'); to += '?ok=fact#facts'; break;
+      case 'fact-star': await admin.crm.factStar(id, str('factId')); to += '?ok=factStarred#facts'; break;
       case 'fact-remove': await admin.crm.factRemove(id, str('factId')); to += '?ok=factRemoved#facts'; break;
       case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
       case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), facebook: str('facebook'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
@@ -144,7 +145,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, fact: NT.factSaved, factRemoved: NT.factRemoved, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, fact: NT.factSaved, factRemoved: NT.factRemoved, factStarred: NT.factStarred, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -189,34 +190,71 @@ const STATE_ALERT = {
           <a class="co-meta underline" href={`/admin/accounts/apuntar`} data-testid="facts-note">{NT.factsNote}</a>
         </div>
         {a.facts.length === 0 && <p class="co-meta" data-testid="facts-empty">{NT.factsEmpty}</p>}
-        {(['fit', 'fact'] as const).map((k) => {
-          const list = a.facts.filter((x) => x.kind === k);
-          return list.length > 0 && (
-            <div class="grid gap-1">
-              {k === 'fit' && <p class="text-eyebrow m-0">{NT.fit}</p>}
-              <ul class="m-0 grid gap-1 p-0">
-                {list.map((x) => (
-                  <li class="group flex list-none items-start gap-2 text-sm" data-testid="fact" data-kind={x.kind}>
-                    <span class={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${x.kind === 'fit' ? 'bg-[var(--co-accent,#5b3df5)]' : 'bg-[var(--co-ink-dim)]'}`}></span>
-                    <span class="min-w-0 flex-1">{x.text} <span class="co-meta whitespace-nowrap">· {fmt.date(x.at, { day: 'numeric', month: 'short' })}</span></span>
-                    {canQualify && (
-                      <form method="post" action="#facts" data-async="facts" data-async-quiet>
-                        <input type="hidden" name="action" value="fact-remove" /><input type="hidden" name="factId" value={x.id} />
-                        <button type="submit" class="co-meta opacity-0 transition group-hover:opacity-100 focus:opacity-100" aria-label={NT.factRemove} title={NT.factRemove} data-testid="fact-remove">×</button>
-                      </form>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+        {(() => {
+          // Lo importante, en tarjetas grandes; lo que le encaja; el resto en lista corta (lo demás, plegado).
+          const keyF = a.facts.filter((x) => x.key);
+          const fitF = a.facts.filter((x) => !x.key && x.kind === 'fit');
+          const rest = a.facts.filter((x) => !x.key && x.kind !== 'fit');
+          const tools = (x: (typeof a.facts)[number]) => canQualify && (
+            <span class="flex shrink-0 items-center gap-1 opacity-60 transition group-hover:opacity-100 focus-within:opacity-100">
+              <form method="post" action="#facts" data-async="facts" data-async-quiet>
+                <input type="hidden" name="action" value="fact-star" /><input type="hidden" name="factId" value={x.id} />
+                <button type="submit" class={`co-btn co-btn--quiet co-btn--icon co-btn--sm ${x.key ? '' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`} aria-pressed={x.key ? 'true' : 'false'} aria-label={x.key ? NT.factUnstar : NT.factStar} title={x.key ? NT.factUnstar : NT.factStar} data-testid="fact-star"><Icon name="star" size={14} /></button>
+              </form>
+              <form method="post" action="#facts" data-async="facts" data-async-quiet>
+                <input type="hidden" name="action" value="fact-remove" /><input type="hidden" name="factId" value={x.id} />
+                <button type="submit" class="co-btn co-btn--quiet co-btn--icon co-btn--sm opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={NT.factRemove} title={NT.factRemove} data-testid="fact-remove"><Icon name="x" size={14} /></button>
+              </form>
+            </span>
           );
-        })}
+          const when = (x: (typeof a.facts)[number]) => <span class="co-meta whitespace-nowrap">· {fmt.date(x.at, { day: 'numeric', month: 'short' })}</span>;
+          const item = (x: (typeof a.facts)[number]) => (
+            <li class="group flex list-none items-start gap-2 text-sm" data-testid="fact" data-kind={x.kind}>
+              <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--co-ink-dim)]"></span>
+              <span class="min-w-0 flex-1">{x.text} {when(x)}</span>
+              {tools(x)}
+            </li>
+          );
+          return (
+            <>
+              {keyF.length > 0 && (
+                <ul class="m-0 grid gap-2 p-0 sm:grid-cols-2" data-testid="facts-key">
+                  {keyF.map((x) => (
+                    <li class="group facts-key flex list-none items-start gap-2 rounded-2xl p-4" data-testid="fact" data-kind={x.kind} data-key="true">
+                      <span class="min-w-0 flex-1 text-base font-medium leading-snug">{x.text} <span class="block pt-1 text-xs font-normal">{when(x)}</span></span>
+                      {tools(x)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {fitF.length > 0 && (
+                <div class="grid gap-1" data-testid="facts-fit">
+                  <p class="text-eyebrow m-0">{NT.fit}</p>
+                  <ul class="m-0 grid gap-1 p-0">{fitF.map((x) => (
+                    <li class="group flex list-none items-start gap-2 text-sm font-medium" data-testid="fact" data-kind={x.kind}>
+                      <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--co-signal,#6a2bd9)]"></span>
+                      <span class="min-w-0 flex-1">{x.text} {when(x)}</span>
+                      {tools(x)}
+                    </li>
+                  ))}</ul>
+                </div>
+              )}
+              {rest.length > 0 && <ul class="m-0 grid gap-1 p-0">{rest.slice(0, 5).map(item)}</ul>}
+              {rest.length > 5 && (
+                <details class="grid gap-1" data-testid="facts-more">
+                  <summary class="co-meta cursor-pointer underline">{NT.moreFacts(rest.length - 5)}</summary>
+                  <ul class="m-0 mt-1 grid gap-1 p-0">{rest.slice(5).map(item)}</ul>
+                </details>
+              )}
+            </>
+          );
+        })()}
         {canQualify && (
           <form method="post" action="#facts" class="flex flex-wrap gap-2" data-async="facts" data-async-quiet data-testid="fact-form">
             <input type="hidden" name="action" value="fact-add" />
             <label class="sr-only" for="fact-text">{NT.factAdd}</label>
-            <input id="fact-text" class="co-input min-w-0 flex-1" name="text" maxlength="400" required placeholder={NT.factPh} data-testid="fact-text" />
-            <select class="co-select w-auto" name="kind" aria-label={NT.factKind}><option value="fact">{NT.factKindFact}</option><option value="fit">{NT.fit}</option></select>
+            <input id="fact-text" class="co-input min-w-0 flex-1" name="text" maxlength="600" required placeholder={NT.factPh} data-testid="fact-text" />
+            <select class="co-select w-auto" name="kind" aria-label={NT.factKind}><option value="fact">{NT.factKindFact}</option><option value="key">{NT.factKindKey}</option><option value="fit">{NT.fit}</option></select>
             <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="fact-add"><Icon name="plus" size={14} /><span>{NT.factAdd}</span></button>
           </form>
         )}
@@ -624,5 +662,8 @@ const STATE_ALERT = {
 
 
 <style>
+  /* «Lo más importante» de Lo que sabemos: tarjetas que se leen de un vistazo. */
+  .facts-key { background: var(--co-signal-soft, #ece6fc); color: var(--co-signal-ink, #2a1066); }
+  .facts-key [data-testid=fact-star][aria-pressed=true] { color: var(--co-signal, #6a2bd9); }
   .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
 </style>

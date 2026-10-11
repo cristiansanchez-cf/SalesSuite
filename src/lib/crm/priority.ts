@@ -30,6 +30,8 @@ export const OPTIONS = {
   dynamics: { yes: 1, partly: 0.5, no: 0 },
   scale: { single: 0.2, few: 0.6, group: 1 },
 } as const;
+/** Tamaño del local: no es lo mismo que «Locales que tiene» (scale), y por ahora no entra en la puntuación. */
+export const SIZES = ['small', 'medium', 'large'] as const;
 export const KILLS = ['coverage', 'screens', 'validate', 'debt'] as const;
 export type Kill = (typeof KILLS)[number];
 
@@ -43,12 +45,14 @@ export interface Qualification {
   screens?: keyof typeof OPTIONS.screens;
   dynamics?: keyof typeof OPTIONS.dynamics;
   scale?: keyof typeof OPTIONS.scale;
+  /** Tamaño del local (pequeño, mediano, grande): dato para el comercial, no puntúa. */
+  size?: (typeof SIZES)[number];
   /** Eliminatorios marcados a mano. «validate» solo si lo han dicho ellos (lo dice la ficha). */
   coverage?: boolean; validate?: boolean; debt?: boolean;
 }
 /** Claves que se pueden marcar y sus valores válidos (para validar lo que llega de la ficha). */
 export const QUAL_VALUES: Record<string, readonly string[]> = {
-  kind: ['venue', 'promoter', 'concert'],
+  kind: ['venue', 'promoter', 'concert'], size: SIZES,
   nights: Object.keys(OPTIONS.nights), events: Object.keys(OPTIONS.events), recurring: Object.keys(OPTIONS.recurring),
   decider: Object.keys(OPTIONS.decider), screens: Object.keys(OPTIONS.screens), dynamics: Object.keys(OPTIONS.dynamics), scale: Object.keys(OPTIONS.scale),
   coverage: ['true'], validate: ['true'], debt: ['true'],

@@ -39,6 +39,7 @@ if (Astro.request.method === 'POST') {
     }
     // Guardar lo revisado: lo que dijo la IA (items) con lo que ha cambiado la persona en cada sitio.
     const items = (() => { try { return JSON.parse(str('items') || '[]') as NoteItem[]; } catch { return []; } })();
+    const lines = (k: string) => str(k).split(/\r?\n/).map((x) => x.replace(/^\s*[•·★-]\s*/, '').trim()).filter(Boolean);
     const rows = items.map((it, i) => {
       const goes = str(`acc-${i}`);
       if (!goes || goes === 'skip') return null;
@@ -47,7 +48,7 @@ if (Astro.request.method === 'POST') {
       const fieldsChosen = Object.fromEntries(f.getAll(`f-${i}`).map(String).filter((k) => k in it.fields).map((k) => [k, it.fields[k]]));
       return { accountId: goes === 'new' ? null : goes, create: goes === 'new' ? it.venue : null,
         interaction: f.get(`int-on-${i}`) ? str(`int-${i}`) || null : null,
-        facts: str(`facts-${i}`).split(/\r?\n/).map((x) => x.replace(/^\s*[•·-]\s*/, '').trim()).filter(Boolean).slice(0, 40),
+        keyFacts: lines(`key-${i}`).slice(0, 5), facts: lines(`facts-${i}`).slice(0, 40),
         fit: str(`fit-${i}`) || null, fields: fieldsChosen,
         channel: it.channel, outcome: it.outcome, day: it.day,
         qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days) };
@@ -131,6 +132,9 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
             <span class="co-help">{M.interactionHelp}</span>
             <textarea class="co-textarea !min-h-[64px]" name={`int-${i}`} maxlength="4000" data-testid="notes-interaction">{it.interaction ?? ''}</textarea>
           </fieldset>
+          <label class="co-field">{M.keyFacts} <span class="co-help">{M.keyFactsHelp}</span>
+            <textarea class="co-textarea !min-h-[64px] font-medium" name={`key-${i}`} maxlength="2000" data-testid="notes-key-facts">{(it.keyFacts ?? []).map((x) => `★ ${x}`).join('\n')}</textarea>
+          </label>
           <label class="co-field">{M.facts} <span class="co-help">{M.factsHelp}</span>
             <textarea class="co-textarea !min-h-[140px]" name={`facts-${i}`} maxlength="16000" data-testid="notes-facts">{it.facts.map((x) => `• ${x}`).join('\n')}</textarea>
           </label>

@@ -11,7 +11,7 @@ import { QUAL_VALUES } from './priority';
 
 /** Criterios que la IA puede proponer (lo que se ve desde fuera). «Decide quien te atiende», la cobertura y «no pueden
  *  validar» solo los sabe el comercial en persona; «validate» además solo si lo dicen ellos. */
-export const AI_QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'screens', 'dynamics', 'scale', 'debt'] as const;
+export const AI_QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'screens', 'dynamics', 'scale', 'size', 'debt'] as const;
 export const AI_CONTACT_KEYS = ['phone', 'email', 'instagram', 'linkedin', 'website'] as const;
 export type AiContactKey = (typeof AI_CONTACT_KEYS)[number];
 
@@ -86,8 +86,9 @@ export const SAVE_TOOL = {
   },
 } as const;
 
+const KEY_HELP: Record<string, string> = { scale: 'cuántos locales tiene el dueño, no el tamaño', size: 'tamaño del local: aforo o metros' };
 const VALUE_HELP = Object.entries(QUAL_VALUES).filter(([k]) => (AI_QUAL_KEYS as readonly string[]).includes(k))
-  .map(([k, v]) => `- ${k}: ${v.join(' | ')}`).join('\n');
+  .map(([k, v]) => `- ${k}: ${v.join(' | ')}${KEY_HELP[k] ? ` (${KEY_HELP[k]})` : ''}`).join('\n');
 
 export const SYSTEM = `Eres el investigador de un equipo comercial. Preparas la ficha de una empresa antes de que el comercial la contacte.
 Busca en la web lo público de la empresa (su web, Google, prensa local, agendas de eventos, redes que se puedan leer) y guarda lo que encuentres con la herramienta save_research.

@@ -593,10 +593,11 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(items.map((x) => x.venue)).toEqual(['GHECKO', 'NEGRITO BAR']);
       expect(items[0].candidates[0]).toMatchObject({ id: gecko, name: 'Gecko Valencia' });
       expect(items[0].candidates[0].score).toBeGreaterThanOrEqual(0.8);
-      expect(items[0].facts).toContain('dos pantallas pequeñas');
+      expect(items[0].keyFacts).toEqual(['dos pantallas pequeñas']);   // lo importante, aparte
+      expect(items[0].facts).not.toContain('dos pantallas pequeñas');
       expect(items[0].fields).toEqual({ aforo: '500' });
       const r = await rep.notesApply([
-        { accountId: gecko, interaction: items[0].interaction, facts: items[0].facts, fit: 'Todos los servicios', fields: items[0].fields, channel: 'visit', outcome: 'note', day: '2026-10-10', qualification: { screens: 'yes', kind: 'venue' }, nextStep: 'Mirar sus redes', nextDays: 2 },
+        { accountId: gecko, interaction: items[0].interaction, keyFacts: items[0].keyFacts, facts: items[0].facts, fit: 'Todos los servicios', fields: items[0].fields, channel: 'visit', outcome: 'note', day: '2026-10-10', qualification: { screens: 'yes', kind: 'venue' }, nextStep: 'Mirar sus redes', nextDays: 2 },
         { create: 'Negrito Bar', interaction: null, facts: items[1].facts, channel: 'visit', outcome: 'note', qualification: { screens: 'no', decider: 'nadie' } },
       ]);
       expect(r.map((x) => x.ok)).toEqual([true, true]);
@@ -605,7 +606,7 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(g.nextStep).toBe('Mirar sus redes');
       expect(g.fields).toMatchObject({ aforo: 500 });
       // Cada cosa en su sitio: la visita en el historial; cómo es el sitio y lo que le encaja, en «Lo que sabemos».
-      expect(g.facts.map((f) => [f.kind, f.text])).toEqual([['fit', 'Todos los servicios'], ...items[0].facts.map((x) => ['fact', x])]);
+      expect(g.facts.map((f) => [f.kind, f.text, !!f.key])).toEqual([['fact', 'dos pantallas pequeñas', true], ['fit', 'Todos los servicios', false], ...items[0].facts.map((x) => ['fact', x, false])]);
       expect(g.facts[0]).toMatchObject({ by: U.rep.id, at: '2026-10-10T12:00:00.000Z' });
       const tl = await rep.timeline(gecko);
       expect(tl.items.filter((x) => x.channel === 'visit')).toHaveLength(1);
@@ -619,6 +620,8 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       await rep.factAdd(gecko, 'El DJ residente es de los fundadores');
       let f = (await t.admin.accounts.get(gecko)).account.facts;
       expect(f[0]).toMatchObject({ kind: 'fact', text: 'El DJ residente es de los fundadores' });
+      await rep.factStar(gecko, f[0].id);
+      expect((await t.admin.accounts.get(gecko)).account.facts[0]).toMatchObject({ key: true, text: 'El DJ residente es de los fundadores' });
       await rep.factRemove(gecko, f[0].id);
       f = (await t.admin.accounts.get(gecko)).account.facts;
       expect(f.some((x) => x.text === 'El DJ residente es de los fundadores')).toBe(false);

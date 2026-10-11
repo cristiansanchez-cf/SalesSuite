@@ -926,8 +926,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       const first = items.find((it) => it.nextStep || it.nextDays != null);
       const inter = items.map((it) => it.interaction).filter(Boolean).join('\n\n');
       const facts = items.flatMap((it) => it.facts);
+      const keyFacts = items.flatMap((it) => it.keyFacts).slice(0, 3);
       const one: NoteItem = {
-        venue: chosen.name, interaction: inter ? inter.slice(0, 4000) : facts.length ? null : clean.slice(0, 4000), facts,
+        venue: chosen.name, interaction: inter ? inter.slice(0, 4000) : facts.length || keyFacts.length ? null : clean.slice(0, 4000), keyFacts, facts,
         fit: items.map((it) => it.fit).filter(Boolean).join(' · ') || null, fields: fv,
         channel: items[0]?.channel ?? 'visit', outcome: items[0]?.outcome ?? 'note', day: items[0]?.day ?? null,
         qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
@@ -943,7 +944,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     accountId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
     create: z.string().trim().max(160).nullable().optional().transform((v) => v || null),
     interaction: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
-    facts: z.array(z.string().trim().min(1).max(400)).max(40).default([]),
+    keyFacts: z.array(z.string().trim().min(1).max(600)).max(5).default([]),
+    facts: z.array(z.string().trim().min(1).max(600)).max(40).default([]),
     fit: z.string().trim().max(600).nullable().optional().transform((v) => v || null),
     fields: z.record(z.string(), z.string().max(500)).default({}),
     channel: z.enum(CHANNELS).default('visit'),
@@ -978,7 +980,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         // Lo que sabemos (lo nuevo primero) y los campos de la ficha, en una sola escritura.
         const patch: { facts?: AccountFact[]; fields?: FieldValues } = {};
         const when = r.day ? `${r.day}T12:00:00.000Z` : new Date().toISOString();
-        const added: AccountFact[] = [...(r.fit ? [{ id: crypto.randomUUID(), text: r.fit, kind: 'fit' as const, at: when, by: s.userId }] : []),
+        const added: AccountFact[] = [...r.keyFacts.map((text) => ({ id: crypto.randomUUID(), text, kind: 'fact' as const, at: when, by: s.userId, key: true })),
+          ...(r.fit ? [{ id: crypto.randomUUID(), text: r.fit, kind: 'fit' as const, at: when, by: s.userId }] : []),
           ...r.facts.map((text) => ({ id: crypto.randomUUID(), text, kind: 'fact' as const, at: when, by: s.userId }))];
         if (added.length) patch.facts = [...added, ...a.facts].slice(0, 200);
         if (Object.keys(r.fields).length) {
@@ -1007,14 +1010,24 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   /** «Lo que sabemos» a mano, desde la ficha: añadir un dato (o lo que le encaja) y quitarlo. */
-  async function factAdd(accountId: string, text: string, kind: 'fact' | 'fit' = 'fact') {
+  async function factAdd(accountId: string, text: string, kind: 'fact' | 'fit' | 'key' = 'fact') {
     requireUse();
-    const v = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    const v = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, 600);
     if (!v) throw new AdminError(422, 'Datos no válidos');
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     let ok = false;
-    try { ok = await accounts.updateAccount(accountId, { facts: [{ id: crypto.randomUUID(), text: v, kind: (kind === 'fit' ? 'fit' : 'fact') as AccountFact['kind'], at: new Date().toISOString(), by: s.userId }, ...a.facts].slice(0, 200) }); } catch (e) { mapError(e); }
+    try { ok = await accounts.updateAccount(accountId, { facts: [{ id: crypto.randomUUID(), text: v, kind: (kind === 'fit' ? 'fit' : 'fact') as AccountFact['kind'], at: new Date().toISOString(), by: s.userId, ...(kind === 'key' ? { key: true } : {}) }, ...a.facts].slice(0, 200) }); } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+  }
+  /** Marcar o desmarcar un punto como de lo más importante (sale arriba, en grande). */
+  async function factStar(accountId: string, factId: string) {
+    requireUse();
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    if (!a.facts.some((f) => f.id === factId)) throw new AdminError(422, 'Datos no válidos');
+    let ok = false;
+    try { ok = await accounts.updateAccount(accountId, { facts: a.facts.map((f) => (f.id === factId ? { ...f, key: !f.key } : f)) }); } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
   }
   async function factRemove(accountId: string, factId: string) {
@@ -1394,7 +1407,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
-    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
+    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

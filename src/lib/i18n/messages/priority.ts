@@ -8,12 +8,13 @@ export const priorityMessages = defineMessages({
     out: 'Fuera del ranking', outBy: (why: string) => `Fuera: ${why}`, cooling: (d: number) => `Se enfría · ${d} días`,
     coolingHelp: 'Contestó y llevamos 3 días laborables sin hacer nada.', unknown: 'No se sabe',
     kind: 'Qué es', kinds: { venue: 'Local o sala', promoter: 'Promotora', concert: 'Conciertos' },
+    size: 'Tamaño del local', sizeHint: 'Aforo o cómo de grande se ve', sizes: { small: 'Pequeño', medium: 'Mediano', large: 'Grande' }, noScore: 'No puntúa',
     criteria: {
-      recurrence: 'Recurrencia', decider: 'Decide quien te atiende', screens: 'Pantallas', dynamics: 'Dinámicas o redes', scale: 'Escala',
+      recurrence: 'Recurrencia', decider: 'Decide quien te atiende', screens: 'Pantallas', dynamics: 'Dinámicas o redes', scale: 'Locales que tiene',
     },
     hints: {
       recurrence: { venue: 'Noches que abre a la semana', promoter: 'Eventos al año', concert: '¿Programa de forma recurrente?', none: 'Di primero qué es' },
-      decider: 'Quién te atiende', screens: '¿Tiene pantallas?', dynamics: '¿Hace dinámicas o cuida sus redes?', scale: 'Tamaño',
+      decider: 'Quién te atiende', screens: '¿Tiene pantallas?', dynamics: '¿Hace dinámicas o cuida sus redes?', scale: '¿Uno solo o un grupo?',
     },
     options: {
       nights: { '1': '1', '2': '2', '3': '3', '4+': '4 o más' },
@@ -47,12 +48,13 @@ export const priorityMessages = defineMessages({
     out: 'Out of the ranking', outBy: (why: string) => `Out: ${why}`, cooling: (d: number) => `Going cold · ${d} days`,
     coolingHelp: 'They replied and we’ve done nothing for 3 working days.', unknown: 'Unknown',
     kind: 'What it is', kinds: { venue: 'Venue', promoter: 'Promoter', concert: 'Concerts' },
+    size: 'Venue size', sizeHint: 'Capacity or how big it looks', sizes: { small: 'Small', medium: 'Medium', large: 'Large' }, noScore: 'Not scored',
     criteria: {
-      recurrence: 'Recurrence', decider: 'Decision maker in front of you', screens: 'Screens', dynamics: 'Engagement or social', scale: 'Scale',
+      recurrence: 'Recurrence', decider: 'Decision maker in front of you', screens: 'Screens', dynamics: 'Engagement or social', scale: 'Venues they run',
     },
     hints: {
       recurrence: { venue: 'Nights open per week', promoter: 'Events per year', concert: 'Does it program regularly?', none: 'Say what it is first' },
-      decider: 'Who you deal with', screens: 'Does it have screens?', dynamics: 'Does it run activities or care for its social media?', scale: 'Size',
+      decider: 'Who you deal with', screens: 'Does it have screens?', dynamics: 'Does it run activities or care for its social media?', scale: 'Just one or a group?',
     },
     options: {
       nights: { '1': '1', '2': '2', '3': '3', '4+': '4 or more' },
@@ -86,12 +88,13 @@ export const priorityMessages = defineMessages({
     out: 'Fora do ranking', outBy: (why: string) => `Fora: ${why}`, cooling: (d: number) => `Esfriando · ${d} dias`,
     coolingHelp: 'Respondeu e estamos há 3 dias úteis sem fazer nada.', unknown: 'Não se sabe',
     kind: 'O que é', kinds: { venue: 'Local ou sala', promoter: 'Promotora', concert: 'Shows' },
+    size: 'Tamanho do local', sizeHint: 'Lotação ou quão grande parece', sizes: { small: 'Pequeno', medium: 'Médio', large: 'Grande' }, noScore: 'Não pontua',
     criteria: {
-      recurrence: 'Recorrência', decider: 'Quem atende decide', screens: 'Telas', dynamics: 'Dinâmicas ou redes', scale: 'Escala',
+      recurrence: 'Recorrência', decider: 'Quem atende decide', screens: 'Telas', dynamics: 'Dinâmicas ou redes', scale: 'Locais que tem',
     },
     hints: {
       recurrence: { venue: 'Noites abertas por semana', promoter: 'Eventos por ano', concert: 'Programa de forma recorrente?', none: 'Diga primeiro o que é' },
-      decider: 'Quem te atende', screens: 'Tem telas?', dynamics: 'Faz dinâmicas ou cuida das redes?', scale: 'Tamanho',
+      decider: 'Quem te atende', screens: 'Tem telas?', dynamics: 'Faz dinâmicas ou cuida das redes?', scale: 'Um só ou um grupo?',
     },
     options: {
       nights: { '1': '1', '2': '2', '3': '3', '4+': '4 ou mais' },
@@ -125,12 +128,13 @@ export const priorityMessages = defineMessages({
     out: '순위 제외', outBy: (why: string) => `제외: ${why}`, cooling: (d: number) => `식어 가는 중 · ${d}일`,
     coolingHelp: '답장했는데 영업일 3일 동안 아무것도 하지 않았습니다.', unknown: '모름',
     kind: '유형', kinds: { venue: '매장·공연장', promoter: '프로모터', concert: '공연' },
+    size: '매장 크기', sizeHint: '수용 인원 또는 보이는 규모', sizes: { small: '작음', medium: '중간', large: '큼' }, noScore: '점수 없음',
     criteria: {
-      recurrence: '반복성', decider: '응대자가 결정권자', screens: '스크린', dynamics: '이벤트·SNS', scale: '규모',
+      recurrence: '반복성', decider: '응대자가 결정권자', screens: '스크린', dynamics: '이벤트·SNS', scale: '운영 매장 수',
     },
     hints: {
       recurrence: { venue: '주당 영업일 밤 수', promoter: '연간 이벤트 수', concert: '정기적으로 공연하나요?', none: '먼저 유형을 고르세요' },
-      decider: '누가 응대하나요', screens: '스크린이 있나요?', dynamics: '이벤트를 하거나 SNS를 관리하나요?', scale: '규모',
+      decider: '누가 응대하나요', screens: '스크린이 있나요?', dynamics: '이벤트를 하거나 SNS를 관리하나요?', scale: '한 곳인가요, 그룹인가요?',
     },
     options: {
       nights: { '1': '1', '2': '2', '3': '3', '4+': '4 이상' },

@@ -601,3 +601,18 @@ también «DJ o artista».
 
 Pruebas: contrato de cuentas (demo y Postgres), `supabase/tests/58_crm_kind_discard.test.sql`,
 `scripts/smoke-kinds.cjs`.
+
+### 20.1 «Lo que sabemos» por importancia y tamaño del local (hecho)
+
+Feedback de Cristian tras probarlo con sus notas de Valencia:
+
+- **Menos texto, por importancia.** La IA junta en un mismo punto lo del mismo tema (pantallas: cuántas, dónde y qué
+  ponen; música y DJ; público…) sin perder detalle, y lo ordena de más a menos importante. Aparte, **«Lo más
+  importante»** (1–3 puntos, `key_facts`): en la ficha salen arriba como **tarjetas grandes**; luego «Qué le encaja»;
+  luego 5 puntos y el resto plegado («Ver N datos más»). Con la ★ se destaca o se quita cualquier punto; al añadir a
+  mano se puede elegir «Importante». En la revisión de Apuntar, «Lo más importante» es su propia caja, editable.
+  Datos: `AccountFact.key` (en el mismo jsonb `account.facts`, sin migración).
+- **Tamaño del local** (pequeño · mediano · grande): fila propia en Cualificación, **no puntúa**. Lo rellenan Apuntar
+  y la investigación con IA. El criterio que antes se llamaba «Escala» ahora se llama **«Locales que tiene»** (uno,
+  2–3, grupo): mide cuántos locales tiene el dueño, no el tamaño.
+- «Qué es» va con la misma forma que el resto de filas (título arriba y opciones debajo, a la izquierda).

@@ -4,13 +4,13 @@ import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizeNotes } fr
 describe('apuntar con IA (§20)', () => {
   test('solo lo que vale: sitio, interacción y lo que sabemos por separado, campos y cualificación permitidos', () => {
     const r = sanitizeNotes({ items: [
-      { venue: '  Gecko ', interaction: 'Visita: solo observar', facts: ['Dos pantallas pequeñas', '  ', 'DJ accesible'], fit: 'Todos los servicios', fields: [{ key: 'aforo', value: '500' }, { key: 'MAL KEY', value: 'x' }],
+      { venue: '  Gecko ', interaction: 'Visita: solo observar', key_facts: ['Se llena los sábados', 'a', 'b', 'c'], facts: ['Dos pantallas pequeñas', '  ', 'DJ accesible'], fit: 'Todos los servicios', fields: [{ key: 'aforo', value: '500' }, { key: 'MAL KEY', value: 'x' }],
         channel: 'visit', outcome: 'note', day: '2026-10-10', next_step: 'Mirar redes', next_days: 2, qualification: { screens: 'yes', decider: 'jefe', coverage: 'true', kind: null } },
       { venue: 'Vacío', interaction: null, facts: [], fit: null, fields: [] },
       { venue: 'X', interaction: null, facts: ['y'], channel: 'paloma', outcome: 'quizá', day: 'el sábado', next_days: 9999, qualification: {} },
     ] });
     expect(r).toHaveLength(2);
-    expect(r[0]).toMatchObject({ venue: 'Gecko', interaction: 'Visita: solo observar', facts: ['Dos pantallas pequeñas', 'DJ accesible'], fit: 'Todos los servicios', fields: { aforo: '500' },
+    expect(r[0]).toMatchObject({ venue: 'Gecko', interaction: 'Visita: solo observar', keyFacts: ['Se llena los sábados', 'a', 'b'], facts: ['Dos pantallas pequeñas', 'DJ accesible'], fit: 'Todos los servicios', fields: { aforo: '500' },
       channel: 'visit', day: '2026-10-10', nextStep: 'Mirar redes', nextDays: 2, qualification: { screens: 'yes', coverage: 'true' } });
     expect(r[0].qualification).not.toHaveProperty('decider');
     expect(r[1]).toMatchObject({ venue: 'X', channel: 'visit', outcome: 'note', day: null, nextDays: null });
@@ -31,7 +31,7 @@ describe('apuntar con IA (§20)', () => {
   test('IA de pruebas: una línea por sitio', async () => {
     const r = await fixtureNotes().split('GHECKO - dos pantallas pequeñas\nNEGRITO: sin pantalla, mirar redes\nidea general sin sitio', { today: '2026-10-11', seller: 'x' });
     expect(r.map((x) => [x.venue, x.qualification.screens, x.nextStep, x.nextDays])).toEqual([['GHECKO', 'yes', null, null], ['NEGRITO', undefined, 'Mirar sus redes', 2]]);
-    expect(r[0]).toMatchObject({ interaction: 'Visita: solo observar, sin hablar con nadie', facts: ['dos pantallas pequeñas'] });
+    expect(r[0]).toMatchObject({ interaction: 'Visita: solo observar, sin hablar con nadie', keyFacts: ['dos pantallas pequeñas'], facts: [] });
   });
   test('la petición a Claude: modelo pequeño (Haiku), sin forzar la herramienta, herramienta estricta', async () => {
     let body: Record<string, unknown> = {};

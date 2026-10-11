@@ -25,6 +25,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(items[1].goes.includes('Crear empresa nueva'), 'el que no está: empresa nueva');
   const quals = await p.$$eval('[data-testid=notes-qual]', (xs) => xs.map((x) => x.value));
   assert(quals.filter((q) => q.startsWith('screens:')).join() === 'screens:yes', `pantallas: sí en el que las tiene; «sin pantalla» no se marca como «no quiere» (${quals})`);
+  assert((await p.inputValue('[data-testid=notes-key-facts] >> nth=0')).includes('★ dos pantallas grandes en la barra'), 'lo importante, aparte y editable');
   if (OUT) await p.screenshot({ path: `${OUT}/notes-review.png`, fullPage: true });
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
   assert((await p.textContent('main')).includes('Apuntado en 2 sitios'), 'guardado en los dos');
@@ -35,6 +36,19 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const main = await p.textContent('main');
   assert(main.includes('dos pantallas grandes en la barra'), 'la nota está en sus interacciones');
   assert(main.includes('Mirar sus redes'), 'el próximo paso');
+  assert((await p.textContent('[data-testid=facts-key]')).includes('dos pantallas grandes en la barra'), 'lo importante, en tarjeta arriba');
+  // Tamaño del local: su propia fila, sin puntos; «Qué es» con la misma forma que el resto.
+  await p.click('[data-testid=qual-size-large]');
+  await p.waitForSelector('[data-testid=qual-size-large][aria-pressed=true]');
+  assert(true, 'tamaño del local: grande');
+  const kindBox = await p.locator('[data-criterion=kind] [data-testid=qual-kind-venue]').boundingBox();
+  const qualBox = await p.locator('[data-testid=qualification]').boundingBox();
+  assert(kindBox.x - qualBox.x < 60, `«Qué es» alineado a la izquierda (${Math.round(kindBox.x - qualBox.x)}px)`);
+  // Destacar un dato normal: pasa a las tarjetas.
+  const before = await p.locator('[data-testid=facts-key] [data-testid=fact]').count();
+  await p.locator('#facts [data-testid=fact]:not([data-key]) [data-testid=fact-star]').first().click({ force: true });
+  await p.waitForFunction((n) => document.querySelectorAll('[data-testid=facts-key] [data-testid=fact]').length > n, before);
+  assert(true, 'destacar un dato lo sube a las tarjetas');
   if (OUT) await p.screenshot({ path: `${OUT}/notes-ficha.png`, fullPage: true });
 
   // «¿De qué empresa vas a hablar?»: buscar con el nombre mal escrito, elegir, contar sin decir el nombre.
