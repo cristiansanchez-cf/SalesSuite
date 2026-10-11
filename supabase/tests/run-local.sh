@@ -49,4 +49,5 @@ run supabase/tests/58_crm_kind_discard.test.sql
 run supabase/tests/59_security_hardening.test.sql
 run supabase/tests/60_crm_prospect.test.sql
 run supabase/tests/61_enjoy_screen_field.test.sql
+run supabase/tests/62_enjoy_promoters_dj.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

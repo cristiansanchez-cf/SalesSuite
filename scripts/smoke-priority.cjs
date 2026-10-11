@@ -25,7 +25,11 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await rep.waitForURL(/\/admin\/accounts\/[^/?#]+/);
   const click = async (tid) => { await bg(rep, () => rep.click(`[data-testid="${tid}"]`)); };
   assert(await rep.isVisible('[data-testid=qualification]'), 'bloque «Cualificación» a la vista, sin formularios que abrir');
-  assert((await rep.getAttribute('[data-testid=qual-kind-venue]', 'aria-pressed')) === 'true', 'el sector dice que es un local');
+  assert((await rep.textContent('[data-criterion=recurrence]')).includes('Noches con fiesta'), 'el sector dice que es un local: se mide por noches con fiesta');
+  await click('qual-format-restaurant');
+  assert((await rep.getAttribute('[data-testid=qual-format-restaurant]', 'aria-pressed')) === 'true', 'formato: restaurante que acaba en fiesta');
+  await click('qual-dj-guests');
+  assert((await rep.getAttribute('[data-testid=qual-dj-guests]', 'aria-pressed')) === 'true', 'DJ: invitados');
   await click('qual-nights-4+');
   await click('qual-decider-onsite');
   await click('qual-screens-yes');
@@ -36,6 +40,9 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   if (OUT) await rep.screenshot({ path: `${OUT}/priority-account.png`, fullPage: true });
   await click('qual-screens-yes');  // desmarcar
   assert((await rep.textContent('[data-testid=qual-score]')).trim() === '55', 'pulsar lo marcado lo desmarca');
+  // Sin pantalla ni intención ya no saca del ranking: solo no suma esos puntos.
+  await click('qual-screens-no');
+  assert((await rep.getAttribute('[data-testid=qualification]', 'data-out')) === 'false' && (await rep.textContent('[data-testid=qual-score]')).trim() === '55', 'sin pantalla: sigue en el ranking, sin sus puntos');
   await click('qual-screens-yes');
 
   // ---- la lista: ranking y filtros

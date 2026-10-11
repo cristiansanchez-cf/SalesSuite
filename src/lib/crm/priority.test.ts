@@ -30,8 +30,16 @@ describe('prioridad de leads', () => {
   });
 
   test('eliminatorios: fuera del ranking aunque puntúe alto, con el motivo', () => {
-    expect(priorityOf({ nights: '4+', decider: 'onsite', screens: 'no' }, 'ocio-nocturno')).toMatchObject({ out: true, kills: ['screens'], score: 0 });
+    // Sin pantalla ni intención ya no saca del ranking: solo no suma los puntos de pantalla (le puede encajar otro paquete).
+    expect(priorityOf({ nights: '4+', decider: 'onsite', screens: 'no' }, 'ocio-nocturno')).toMatchObject({ out: false, kills: [], score: 55 });
+    expect(priorityOf({ nights: '4+', debt: true }, 'ocio-nocturno')).toMatchObject({ out: true, kills: ['debt'], score: 0 });
     expect(priorityOf({ coverage: true, validate: true, debt: true }, null).kills).toEqual(['coverage', 'validate', 'debt']);
+  });
+
+  test('el formato decide cómo se mide la recurrencia (y sustituye al antiguo «Qué es»)', () => {
+    expect(priorityOf({ format: 'restaurant', nights: '2' }, null)).toMatchObject({ kind: 'venue' });
+    expect(priorityOf({ format: 'promoter', events: '12+' }, 'ocio-nocturno').parts[0]).toMatchObject({ key: 'recurrence', points: 30 });
+    expect(priorityOf({ kind: 'concert' }, null).kind).toBe('concert');   // lo antiguo se sigue leyendo
   });
 
   test('ranking por puntuación actual, no por máximo; los de fuera al final', () => {

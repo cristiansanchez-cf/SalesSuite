@@ -616,6 +616,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const q: Record<string, unknown> = { ...a.qualification };
     const v: unknown = value === 'true' ? true : value;
     if (q[key] === v) delete q[key]; else q[key] = v;
+    if (key === 'format') delete q.kind;   // el formato sustituye al antiguo «Qué es»
     try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
   }
   /** Días que lleva enfriándose cada empresa (solo las que se enfrían). */

@@ -8,12 +8,17 @@ export const priorityMessages = defineMessages({
     out: 'Fuera del ranking', outBy: (why: string) => `Fuera: ${why}`, cooling: (d: number) => `Se enfría · ${d} días`,
     coolingHelp: 'Contestó y llevamos 3 días laborables sin hacer nada.', unknown: 'No se sabe',
     kind: 'Qué es', kinds: { venue: 'Local o sala', promoter: 'Promotora', concert: 'Conciertos' },
+    about: 'Cómo es', aboutHelp: 'No puntúa: sirve para preparar la visita y saber qué le encaja.', scoring: 'Lo que puntúa',
+    format: 'Formato', formats: { club: 'Discoteca', pub: 'Pub o bar de copas', cocktail: 'Cóctel bar', rooftop: 'Rooftop o terraza', restaurant: 'Restaurante que acaba en fiesta', hall: 'Sala de conciertos', hotel: 'Hotel o beach club', promoter: 'Promotora', concerts: 'Conciertos o artista' },
+    party: '¿Hay fiesta?', parties: { core: 'Es su negocio', some: 'Algunas noches', none: 'No' },
+    dj: 'DJ', djHint: 'Quién pincha', djs: { resident: 'Residente', guests: 'Invitados', both: 'Residente e invitados', none: 'Sin DJ (lista)' },
+    promoters: '¿Trabajan promotoras aquí?', promotersYes: 'Sí', promotersNo: 'No',
     size: 'Tamaño del local', sizeHint: 'Aforo o cómo de grande se ve', sizes: { small: 'Pequeño', medium: 'Mediano', large: 'Grande' }, noScore: 'No puntúa',
     criteria: {
       recurrence: 'Recurrencia', decider: 'Decide quien te atiende', screens: 'Pantallas', dynamics: 'Dinámicas o redes', scale: 'Locales que tiene',
     },
     hints: {
-      recurrence: { venue: 'Noches que abre a la semana', promoter: 'Eventos al año', concert: '¿Programa de forma recurrente?', none: 'Di primero qué es' },
+      recurrence: { venue: 'Noches con fiesta o música alta a la semana', promoter: 'Eventos al año', concert: '¿Programa de forma recurrente?', none: 'Di primero el formato' },
       decider: 'Quién te atiende', screens: '¿Tiene pantallas?', dynamics: '¿Hace dinámicas o cuida sus redes?', scale: '¿Uno solo o un grupo?',
     },
     options: {
@@ -48,12 +53,17 @@ export const priorityMessages = defineMessages({
     out: 'Out of the ranking', outBy: (why: string) => `Out: ${why}`, cooling: (d: number) => `Going cold · ${d} days`,
     coolingHelp: 'They replied and we’ve done nothing for 3 working days.', unknown: 'Unknown',
     kind: 'What it is', kinds: { venue: 'Venue', promoter: 'Promoter', concert: 'Concerts' },
+    about: 'What it is like', aboutHelp: 'Not scored: helps you prepare the visit and see what fits.', scoring: 'What scores',
+    format: 'Format', formats: { club: 'Club', pub: 'Pub or bar', cocktail: 'Cocktail bar', rooftop: 'Rooftop or terrace', restaurant: 'Restaurant that turns into a party', hall: 'Concert hall', hotel: 'Hotel or beach club', promoter: 'Promoter', concerts: 'Concerts or artist' },
+    party: 'Is there a party?', parties: { core: 'It’s their business', some: 'Some nights', none: 'No' },
+    dj: 'DJ', djHint: 'Who plays', djs: { resident: 'Resident', guests: 'Guest DJs', both: 'Resident and guests', none: 'No DJ (playlist)' },
+    promoters: 'Do promoters work here?', promotersYes: 'Yes', promotersNo: 'No',
     size: 'Venue size', sizeHint: 'Capacity or how big it looks', sizes: { small: 'Small', medium: 'Medium', large: 'Large' }, noScore: 'Not scored',
     criteria: {
       recurrence: 'Recurrence', decider: 'Decision maker in front of you', screens: 'Screens', dynamics: 'Engagement or social', scale: 'Venues they run',
     },
     hints: {
-      recurrence: { venue: 'Nights open per week', promoter: 'Events per year', concert: 'Does it program regularly?', none: 'Say what it is first' },
+      recurrence: { venue: 'Party or loud-music nights per week', promoter: 'Events per year', concert: 'Does it program regularly?', none: 'Pick the format first' },
       decider: 'Who you deal with', screens: 'Does it have screens?', dynamics: 'Does it run activities or care for its social media?', scale: 'Just one or a group?',
     },
     options: {
@@ -88,12 +98,17 @@ export const priorityMessages = defineMessages({
     out: 'Fora do ranking', outBy: (why: string) => `Fora: ${why}`, cooling: (d: number) => `Esfriando · ${d} dias`,
     coolingHelp: 'Respondeu e estamos há 3 dias úteis sem fazer nada.', unknown: 'Não se sabe',
     kind: 'O que é', kinds: { venue: 'Local ou sala', promoter: 'Promotora', concert: 'Shows' },
+    about: 'Como é', aboutHelp: 'Não pontua: serve para preparar a visita e saber o que encaixa.', scoring: 'O que pontua',
+    format: 'Formato', formats: { club: 'Discoteca', pub: 'Pub ou bar', cocktail: 'Coquetelaria', rooftop: 'Rooftop ou terraço', restaurant: 'Restaurante que vira festa', hall: 'Sala de shows', hotel: 'Hotel ou beach club', promoter: 'Promotora', concerts: 'Shows ou artista' },
+    party: 'Tem festa?', parties: { core: 'É o negócio deles', some: 'Algumas noites', none: 'Não' },
+    dj: 'DJ', djHint: 'Quem toca', djs: { resident: 'Residente', guests: 'Convidados', both: 'Residente e convidados', none: 'Sem DJ (playlist)' },
+    promoters: 'Trabalham promotoras aqui?', promotersYes: 'Sim', promotersNo: 'Não',
     size: 'Tamanho do local', sizeHint: 'Lotação ou quão grande parece', sizes: { small: 'Pequeno', medium: 'Médio', large: 'Grande' }, noScore: 'Não pontua',
     criteria: {
       recurrence: 'Recorrência', decider: 'Quem atende decide', screens: 'Telas', dynamics: 'Dinâmicas ou redes', scale: 'Locais que tem',
     },
     hints: {
-      recurrence: { venue: 'Noites abertas por semana', promoter: 'Eventos por ano', concert: 'Programa de forma recorrente?', none: 'Diga primeiro o que é' },
+      recurrence: { venue: 'Noites com festa ou música alta por semana', promoter: 'Eventos por ano', concert: 'Programa de forma recorrente?', none: 'Escolha primeiro o formato' },
       decider: 'Quem te atende', screens: 'Tem telas?', dynamics: 'Faz dinâmicas ou cuida das redes?', scale: 'Um só ou um grupo?',
     },
     options: {
@@ -128,12 +143,17 @@ export const priorityMessages = defineMessages({
     out: '순위 제외', outBy: (why: string) => `제외: ${why}`, cooling: (d: number) => `식어 가는 중 · ${d}일`,
     coolingHelp: '답장했는데 영업일 3일 동안 아무것도 하지 않았습니다.', unknown: '모름',
     kind: '유형', kinds: { venue: '매장·공연장', promoter: '프로모터', concert: '공연' },
+    about: '어떤 곳인가', aboutHelp: '점수에 들어가지 않음: 방문 준비와 맞는 상품 파악용.', scoring: '점수 항목',
+    format: '형태', formats: { club: '클럽', pub: '펍·바', cocktail: '칵테일 바', rooftop: '루프탑·테라스', restaurant: '파티로 바뀌는 레스토랑', hall: '공연장', hotel: '호텔·비치 클럽', promoter: '프로모터', concerts: '공연·아티스트' },
+    party: '파티가 있나요?', parties: { core: '주력 사업', some: '일부 밤', none: '없음' },
+    dj: 'DJ', djHint: '누가 트는지', djs: { resident: '레지던트', guests: '게스트', both: '레지던트+게스트', none: 'DJ 없음(플레이리스트)' },
+    promoters: '프로모터가 일하나요?', promotersYes: '예', promotersNo: '아니요',
     size: '매장 크기', sizeHint: '수용 인원 또는 보이는 규모', sizes: { small: '작음', medium: '중간', large: '큼' }, noScore: '점수 없음',
     criteria: {
       recurrence: '반복성', decider: '응대자가 결정권자', screens: '스크린', dynamics: '이벤트·SNS', scale: '운영 매장 수',
     },
     hints: {
-      recurrence: { venue: '주당 영업일 밤 수', promoter: '연간 이벤트 수', concert: '정기적으로 공연하나요?', none: '먼저 유형을 고르세요' },
+      recurrence: { venue: '주당 파티·큰 음악 밤 수', promoter: '연간 이벤트 수', concert: '정기적으로 공연하나요?', none: '먼저 형태를 고르세요' },
       decider: '누가 응대하나요', screens: '스크린이 있나요?', dynamics: '이벤트를 하거나 SNS를 관리하나요?', scale: '한 곳인가요, 그룹인가요?',
     },
     options: {

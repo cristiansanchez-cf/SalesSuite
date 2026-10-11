@@ -389,7 +389,7 @@ export function freshDemoDb(): DemoDb {
       { tenant_id: ENJOY, contact_id: '00000000-0000-4000-8000-0000000cc501', account_id: '00000000-0000-4000-8000-0000000ac001', role: 'Gerente', created_at: ago(10) },
     ],
     crm_import: [],
-    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }] }],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket' }] }],
     crm_fix: [],
     crm_sweep: [],
     usage_counter: [],

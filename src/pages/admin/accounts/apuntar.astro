@@ -72,6 +72,11 @@ const hasAi = admin.crm.hasNotes();
 const qualLabel = (k: string, v: string): string => {
   const o = PR.options as Record<string, Record<string, string>>;
   if (k === 'kind') return `${PR.kind}: ${(PR.kinds as Record<string, string>)[v] ?? v}`;
+  if (k === 'format') return `${PR.format}: ${(PR.formats as Record<string, string>)[v] ?? v}`;
+  if (k === 'party') return `${PR.party.replace(/^¿|\?$/g, '')}: ${(PR.parties as Record<string, string>)[v] ?? v}`;
+  if (k === 'dj') return `${PR.dj}: ${(PR.djs as Record<string, string>)[v] ?? v}`;
+  if (k === 'promoters') return `${PR.promoters.replace(/^¿|\?$/g, '')}: ${v === 'yes' ? PR.promotersYes : PR.promotersNo}`;
+  if (k === 'size') return `${PR.size}: ${(PR.sizes as Record<string, string>)[v] ?? v}`;
   if (k === 'nights') return `${PR.hints.recurrence.venue}: ${o.nights[v] ?? v}`;
   if (k === 'events') return `${PR.hints.recurrence.promoter}: ${o.events[v] ?? v}`;
   if (k === 'recurring') return `${PR.hints.recurrence.concert} ${o.recurring[v] ?? v}`;

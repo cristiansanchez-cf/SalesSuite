@@ -11,7 +11,7 @@ import { QUAL_VALUES } from './priority';
 
 /** Criterios que la IA puede proponer (lo que se ve desde fuera). «Decide quien te atiende», la cobertura y «no pueden
  *  validar» solo los sabe el comercial en persona; «validate» además solo si lo dicen ellos. */
-export const AI_QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'screens', 'dynamics', 'scale', 'size', 'debt'] as const;
+export const AI_QUAL_KEYS = ['format', 'party', 'dj', 'promoters', 'nights', 'events', 'recurring', 'screens', 'dynamics', 'scale', 'size', 'debt'] as const;
 export const AI_CONTACT_KEYS = ['phone', 'email', 'instagram', 'linkedin', 'website'] as const;
 export type AiContactKey = (typeof AI_CONTACT_KEYS)[number];
 
@@ -86,7 +86,7 @@ export const SAVE_TOOL = {
   },
 } as const;
 
-const KEY_HELP: Record<string, string> = { scale: 'cuántos locales tiene el dueño, no el tamaño', size: 'tamaño del local: aforo o metros' };
+const KEY_HELP: Record<string, string> = { format: 'club discoteca, pub bar de copas, cocktail cóctel bar, rooftop rooftop o terraza, restaurant restaurante que acaba en fiesta, hall sala de conciertos, hotel hotel o beach club, promoter promotora, concerts conciertos o artista', party: '¿hay fiesta? core es su negocio, some algunas noches', dj: 'resident residente, guests invitados, both los dos, none sin DJ', promoters: 'si trabajan promotoras en el sitio', scale: 'cuántos locales tiene el dueño, no el tamaño', size: 'tamaño del local: aforo o metros' };
 const VALUE_HELP = Object.entries(QUAL_VALUES).filter(([k]) => (AI_QUAL_KEYS as readonly string[]).includes(k))
   .map(([k, v]) => `- ${k}: ${v.join(' | ')}${KEY_HELP[k] ? ` (${KEY_HELP[k]})` : ''}`).join('\n');
 

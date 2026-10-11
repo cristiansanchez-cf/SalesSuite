@@ -180,9 +180,9 @@ const panelOpen = nFilters > 0;
   )}
 
   {/* Una sola barra: buscar, ciudad y filtros. Cambiar cualquier cosa aplica al momento (sin botón «Filtrar»). */}
-  <nav id="kind-tabs" class="co-segmented mb-3 w-fit !px-1" aria-label={CL.tabs.label} data-testid="kind-tabs">
+  <nav id="kind-tabs" class="co-segmented mb-3 w-fit max-w-full overflow-x-auto !px-1 [grid-auto-columns:max-content]" aria-label={CL.tabs.label} data-testid="kind-tabs" data-scroll-x>
     {[...kindDefs.map((k) => [k.key === 'company' ? '' : k.key, k.plural, kinds[k.key] ?? 0] as const), ['descartadas', CL.tabs.discarded, kinds.discarded ?? 0] as const].map(([k, l, n]) => (
-      <a href={href({ tipo: k })} class="!px-4" aria-current={tipo === k ? 'page' : undefined} data-testid={`kind-tab-${k || 'company'}`}>{l} <span class="co-meta">{n}</span></a>
+      <a href={href({ tipo: k })} class="!px-4 whitespace-nowrap" aria-current={tipo === k ? 'page' : undefined} data-testid={`kind-tab-${k || 'company'}`}>{l} <span class="co-meta">{n}</span></a>
     ))}
   </nav>
   <form method="get" class="co-card mb-3 grid gap-3 !p-4" data-testid="acc-toolbar" data-autosubmit data-async-get="kind-tabs acc-results" role="search">

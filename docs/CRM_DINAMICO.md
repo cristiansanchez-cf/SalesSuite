@@ -616,3 +616,21 @@ Feedback de Cristian tras probarlo con sus notas de Valencia:
   y la investigación con IA. El criterio que antes se llamaba «Escala» ahora se llama **«Locales que tiene»** (uno,
   2–3, grupo): mide cuántos locales tiene el dueño, no el tamaño.
 - «Qué es» va con la misma forma que el resto de filas (título arriba y opciones debajo, a la izquierda).
+
+## 22. Ficha de la empresa, ronda de ruta (en curso)
+
+Criterio de Cristian tras hacer ruta por Valencia (11-oct-2026). Fases: **A** cualificación nueva (hecho), **B**
+«Trabaja con», **C** encaje por paquete y Fidelización en preventa, **D** reordenar la ficha.
+
+**A · Cualificación nueva.**
+- **«Cómo es»** (no puntúa) arriba de la tarjeta: **Formato** (discoteca, pub o bar de copas, cóctel bar, rooftop o
+  terraza, restaurante que acaba en fiesta, sala de conciertos, hotel o beach club, promotora, conciertos o artista),
+  **¿Hay fiesta?** (es su negocio · algunas noches · no), **Tamaño del local**, **DJ** (residente · invitados ·
+  residente e invitados · sin DJ) y **¿Trabajan promotoras aquí?**. El formato sustituye al antiguo «Qué es» y decide
+  cómo se mide la recurrencia (promotora por eventos al año; un local por **noches con fiesta o música alta**). Lo
+  antiguo (`kind`) se sigue leyendo.
+- **Sin pantalla ya no elimina**: solo no suma los puntos de pantalla (le pueden encajar peticiones, fotos o
+  fidelización). Eliminatorios: sin cobertura, no pueden validar, deudas o cierre.
+- **Promotoras, pestaña aparte** en Enjoy (como los DJs); las del sector «Promotoras» pasan a ella.
+- «¿Tiene DJ residente?» de la ficha pasa a la cualificación (migración `20261122`, archivado y recuperable).
+- Apuntar e Investigar con IA rellenan formato, fiesta, DJ y promotoras.

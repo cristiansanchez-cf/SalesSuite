@@ -21,18 +21,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const admin = await login('admin@enjoy.test');
   await admin.goto(`${BASE}/admin/team/fields?de=tipos`);
   const keys = () => admin.$$eval('[data-testid=kind-row]', (xs) => xs.map((x) => x.dataset.key));
-  assert((await keys()).join() === 'company,dj,', `Enjoy empieza con Empresa y DJ (${await keys()})`);
+  assert((await keys()).join() === 'company,dj,promotora,', `Enjoy empieza con Empresas, DJs y Promotoras (${await keys()})`);
 
   // Renombrar el principal y añadir «Hotel».
   const rows = admin.locator('[data-testid=kind-row]');
   await rows.nth(0).locator('[data-testid=kind-label]').fill('Local');
   await rows.nth(0).locator('[data-testid=kind-plural]').fill('Locales');
-  await rows.nth(2).locator('[data-testid=kind-label]').fill('Hotel');
-  await rows.nth(2).locator('[data-testid=kind-plural]').fill('Hoteles');
-  await rows.nth(2).locator('[name=kIcon]').selectOption('hotel');
+  await rows.nth(3).locator('[data-testid=kind-label]').fill('Hotel');
+  await rows.nth(3).locator('[data-testid=kind-plural]').fill('Hoteles');
+  await rows.nth(3).locator('[name=kIcon]').selectOption('hotel');
   await admin.click('[data-testid=kinds-save]');
   await admin.waitForURL(/ok=kinds/);
-  assert((await keys()).join() === 'company,dj,hotel,', `tipo nuevo con clave desde el nombre (${await keys()})`);
+  assert((await keys()).join() === 'company,dj,promotora,hotel,', `tipo nuevo con clave desde el nombre (${await keys()})`);
   if (OUT) await admin.screenshot({ path: `${OUT}/kinds.png`, fullPage: true });
 
   // Las pestañas de Empresas usan los tipos del espacio; alta de un hotel.

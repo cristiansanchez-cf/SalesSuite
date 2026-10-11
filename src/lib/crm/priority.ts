@@ -32,12 +32,31 @@ export const OPTIONS = {
 } as const;
 /** Tamaño del local: no es lo mismo que «Locales que tiene» (scale), y por ahora no entra en la puntuación. */
 export const SIZES = ['small', 'medium', 'large'] as const;
-export const KILLS = ['coverage', 'screens', 'validate', 'debt'] as const;
+/**
+ * Cómo es el sitio (no puntúa por ahora; sirve para preparar la visita y para el encaje por paquete). El formato decide
+ * cómo se mide la recurrencia (FORMAT_KIND): una promotora por eventos al año; un local por noches con fiesta.
+ */
+export const FORMATS = ['club', 'pub', 'cocktail', 'rooftop', 'restaurant', 'hall', 'hotel', 'promoter', 'concerts'] as const;
+export const FORMAT_KIND: Record<(typeof FORMATS)[number], LeadKind> = {
+  club: 'venue', pub: 'venue', cocktail: 'venue', rooftop: 'venue', restaurant: 'venue', hall: 'venue', hotel: 'venue', promoter: 'promoter', concerts: 'concert',
+};
+export const PARTY = ['core', 'some', 'none'] as const;
+export const DJ = ['resident', 'guests', 'both', 'none'] as const;
+/**
+ * Eliminatorios: sacan del ranking. «Sin pantalla y sin intención» ya no (criterio de Cristian, 11-oct-2026): sin
+ * pantalla puede encajarle otro paquete (peticiones, fotos, fidelización); solo pierde los puntos de pantalla.
+ */
+export const KILLS = ['coverage', 'validate', 'debt'] as const;
 export type Kill = (typeof KILLS)[number];
 
 /** Lo que el comercial marca (cada clave, un clic). Sin clave = no se sabe. */
 export interface Qualification {
+  /** Antiguo «Qué es»: se sigue leyendo; lo nuevo es el formato. */
   kind?: LeadKind;
+  format?: (typeof FORMATS)[number];
+  party?: (typeof PARTY)[number];
+  dj?: (typeof DJ)[number];
+  promoters?: 'yes' | 'no';
   nights?: keyof typeof OPTIONS.nights;
   events?: keyof typeof OPTIONS.events;
   recurring?: keyof typeof OPTIONS.recurring;
@@ -52,7 +71,7 @@ export interface Qualification {
 }
 /** Claves que se pueden marcar y sus valores válidos (para validar lo que llega de la ficha). */
 export const QUAL_VALUES: Record<string, readonly string[]> = {
-  kind: ['venue', 'promoter', 'concert'], size: SIZES,
+  kind: ['venue', 'promoter', 'concert'], size: SIZES, format: FORMATS, party: PARTY, dj: DJ, promoters: ['yes', 'no'],
   nights: Object.keys(OPTIONS.nights), events: Object.keys(OPTIONS.events), recurring: Object.keys(OPTIONS.recurring),
   decider: Object.keys(OPTIONS.decider), screens: Object.keys(OPTIONS.screens), dynamics: Object.keys(OPTIONS.dynamics), scale: Object.keys(OPTIONS.scale),
   coverage: ['true'], validate: ['true'], debt: ['true'],
@@ -77,7 +96,8 @@ export function normalizeWeights(w: Partial<Weights> | null | undefined): Weight
   for (const k of CRITERIA) { const v = Number(w?.[k]); if (Number.isFinite(v) && v >= 0 && v <= 100) out[k] = Math.round(v); }
   return out;
 }
-export const kindOf = (q: Qualification, segmentKey: string | null | undefined): LeadKind | null => q.kind ?? (segmentKey ? KIND_BY_SEGMENT[segmentKey] ?? null : null);
+export const kindOf = (q: Qualification, segmentKey: string | null | undefined): LeadKind | null =>
+  (q.format ? FORMAT_KIND[q.format] : undefined) ?? q.kind ?? (segmentKey ? KIND_BY_SEGMENT[segmentKey] ?? null : null);
 
 /** Parte del peso que vale la recurrencia, según el tipo de lead (null = no se sabe). */
 function recurrenceFraction(q: Qualification, kind: LeadKind | null): number | null {
@@ -92,7 +112,6 @@ export function priorityOf(q: Qualification | null | undefined, segmentKey: stri
   const kind = kindOf(v, segmentKey);
   const kills: Kill[] = [];
   if (v.coverage) kills.push('coverage');
-  if (v.screens === 'no') kills.push('screens');
   if (v.validate) kills.push('validate');
   if (v.debt) kills.push('debt');
   const fraction: Record<Criterion, number | null> = {

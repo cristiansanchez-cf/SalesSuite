@@ -44,7 +44,7 @@ const SN = { type: ['string', 'null'] } as const;
  * La API limita a 16 los parámetros con tipos unión (['string','null'], anyOf) por herramienta estricta: la
  * cualificación va como texto, con "" para «no se sabe» (sanitizeNotes ya lo trata igual que null).
  */
-const QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'decider', 'screens', 'dynamics', 'scale', 'size', 'coverage', 'validate', 'debt'] as const;
+const QUAL_KEYS = ['format', 'party', 'dj', 'promoters', 'nights', 'events', 'recurring', 'decider', 'screens', 'dynamics', 'scale', 'size', 'coverage', 'validate', 'debt'] as const;
 export const NOTES_TOOL = {
   name: 'save_notes',
   description: 'Guarda lo dicho, separado por sitio (un elemento por sitio).',
@@ -76,8 +76,11 @@ export const NOTES_TOOL = {
               type: 'object', additionalProperties: false, required: [...QUAL_KEYS],
               description: 'Solo lo que dice claramente; cadena vacía "" en lo demás.',
               properties: {
-                kind: { ...S, description: 'venue (local, sala, discoteca, pub, bar) | promoter | concert' },
-                nights: { ...S, description: 'Noches que abre por semana: 1 | 2 | 3 | 4+' },
+                format: { ...S, description: 'club (discoteca) | pub (pub o bar de copas) | cocktail (cóctel bar) | rooftop (rooftop o terraza) | restaurant (restaurante que acaba en fiesta, cenas con DJ) | hall (sala de conciertos) | hotel (hotel o beach club) | promoter (promotora de fiestas o eventos) | concerts (ciclo de conciertos o artista)' },
+                party: { ...S, description: '¿Hay fiesta? core (es su negocio) | some (algunas noches, p. ej. un restaurante que se pone de fiesta) | none' },
+                dj: { ...S, description: 'resident (DJ residente) | guests (DJs invitados) | both (residente e invitados) | none (sin DJ, ponen una lista)' },
+                promoters: { ...S, description: 'yes si trabajan promotoras en el sitio (p. ej. «hacen fiestas ucranianas con una promotora»); no si dicen que no' },
+                nights: { ...S, description: 'Noches con fiesta o música alta por semana: 1 | 2 | 3 | 4+' },
                 events: { ...S, description: 'Eventos al año (promotora): 1-2 | 3-5 | 6-11 | 12+' },
                 recurring: { ...S, description: 'Conciertos: yes (programa recurrente) | single' },
                 decider: { ...S, description: 'Quien le atendió: onsite (decide y está en el local) | offsite (decide pero no está) | manager (encargado sin firma)' },
@@ -212,7 +215,7 @@ export const fixtureNotes = (): NotesApi => ({
       key_facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => /pantalla/i.test(x) && !/sin pantalla/i.test(x)),
       facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => x && !(/pantalla/i.test(x) && !/sin pantalla/i.test(x))),
       fit: /todos los servicios|encaj/i.test(m[2]) ? 'Todos los servicios' : null, fields: (/aforo (\d+)/i.exec(m[2]) ? [{ key: 'aforo', value: /aforo (\d+)/i.exec(m[2])![1] }] : []), channel: 'visit', outcome: 'note', day: null, next_step: /redes/i.test(m[2]) ? 'Mirar sus redes' : null, next_days: /redes/i.test(m[2]) ? 2 : null,
-      qualification: { screens: /no quiere/i.test(m[2]) ? 'no' : /sin pantalla/i.test(m[2]) ? null : /pantalla/i.test(m[2]) ? 'yes' : null, kind: 'venue' },
+      qualification: { screens: /no quiere/i.test(m[2]) ? 'no' : /sin pantalla/i.test(m[2]) ? null : /pantalla/i.test(m[2]) ? 'yes' : null, format: /rooftop/i.test(m[2]) ? 'rooftop' : 'club', dj: /dj invitad/i.test(m[2]) ? 'guests' : /dj/i.test(m[2]) ? 'resident' : null },
     }));
     return sanitizeNotes({ items });
   },

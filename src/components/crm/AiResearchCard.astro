@@ -20,6 +20,10 @@ const F = followupMessages[locale];
 const QUAL_LABEL: Record<string, [string, (v: string) => string]> = {
   kind: [R.kind, (v) => R.kinds[v as keyof typeof R.kinds] ?? v],
   size: [R.size, (v) => R.sizes[v as keyof typeof R.sizes] ?? v],
+  format: [R.format, (v) => R.formats[v as keyof typeof R.formats] ?? v],
+  party: [R.party, (v) => R.parties[v as keyof typeof R.parties] ?? v],
+  dj: [R.dj, (v) => R.djs[v as keyof typeof R.djs] ?? v],
+  promoters: [R.promoters, (v) => (v === 'yes' ? R.promotersYes : R.promotersNo)],
   nights: [R.hints.recurrence.venue, (v) => R.options.nights[v as keyof typeof R.options.nights] ?? v],
   events: [R.hints.recurrence.promoter, (v) => R.options.events[v as keyof typeof R.options.events] ?? v],
   recurring: [R.hints.recurrence.concert, (v) => R.options.recurring[v as keyof typeof R.options.recurring] ?? v],

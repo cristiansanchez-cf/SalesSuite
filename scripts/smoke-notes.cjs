@@ -41,9 +41,9 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=qual-size-large]');
   await p.waitForSelector('[data-testid=qual-size-large][aria-pressed=true]');
   assert(true, 'tamaño del local: grande');
-  const kindBox = await p.locator('[data-criterion=kind] [data-testid=qual-kind-venue]').boundingBox();
+  const kindBox = await p.locator('[data-criterion=format] [data-testid=qual-format-club]').boundingBox();
   const qualBox = await p.locator('[data-testid=qualification]').boundingBox();
-  assert(kindBox.x - qualBox.x < 60, `«Qué es» alineado a la izquierda (${Math.round(kindBox.x - qualBox.x)}px)`);
+  assert(kindBox.x - qualBox.x < 60, `«Formato» alineado a la izquierda (${Math.round(kindBox.x - qualBox.x)}px)`);
   // Destacar un dato normal: pasa a las tarjetas.
   const before = await p.locator('[data-testid=facts-key] [data-testid=fact]').count();
   await p.locator('#facts [data-testid=fact]:not([data-key]) [data-testid=fact-star]').first().click({ force: true });
