@@ -9,6 +9,7 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Icon from '~/components/ui/Icon.astro';
 import ViewToggle from '~/components/crm/ViewToggle.astro';
+import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { rememberedFilters, saveFilters, myCountry } from '~/lib/ui/remember';
 import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
@@ -54,13 +55,19 @@ const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 const prioOf = (a: (typeof items)[number]) => priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights);
 const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
 const cooling = await admin.crm.cooling(byState.map((a) => a.id));
-const shown = byState.filter((a) => matchesTemp(temperature(prioOf(a), cooling.get(a.id)), tempF));
+// Las descartadas, en gris con su motivo (§23: «que otros comerciales vean que está, pero marcada como no ir por X»).
+const offF = q.get('descartadas') === '0' ? 'hide' : 'show';
+const off = tipo !== 'descartadas' && offF === 'show'
+  ? (await acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: 'discarded' })).items : [];
+const shown = [...byState.filter((a) => matchesTemp(temperature(prioOf(a), cooling.get(a.id)), tempF)), ...off];
 
 // Quién lleva cada zona (para colorear por comercial): la asignación más cercana subiendo por sus zonas.
 const names = new Map(members.map((x) => [x.userId, x.displayName || x.email]));
 const owners = zoneOwners(t.zones, t.assignments);
 const repOf = (zoneId: string | null) => { const u = owners(zoneId)[0]; return u ? names.get(u) ?? null : null; };
-const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf });
+const CLR = cleanupMessages[locale];
+const offLabel = (a: (typeof items)[number]) => [a.discardReason ? CLR.reasons[a.discardReason] : '', a.discardNote].filter(Boolean).join(' — ');
+const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf, off: offLabel });
 const reps = [...new Set(data.points.map((p) => p.rep).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, locale));
 const repColor = Object.fromEntries(reps.map((r, i) => [r, REP_COLORS[i % REP_COLORS.length]]));
 
@@ -78,7 +85,7 @@ const tiles = maptiler
 const payload = {
   points: data.points, byRep, repColor, stateColor: STATE_COLOR, kindSvg, tiles,
   T: { stateLabel, kinds: M.kinds, open: M.open, score: M.score(Number.NaN).replace('NaN', '{n}'), cooling: M.cooling(Number.NaN).replace('NaN', '{n}'), next: M.next,
-    rep: M.rep, noRep: M.noRep, owner: M.owner, reviews: M.reviews, approx: M.approx },
+    rep: M.rep, noRep: M.noRep, owner: M.owner, reviews: M.reviews, approx: M.approx, off: CLR.offOnMap },
 };
 ---
 <AdminLayout title={`${A.list.title} · ${M.title}`}>
@@ -98,6 +105,10 @@ const payload = {
         <option value="all" selected={effective === 'all'}>{A.list.scopeAll}</option>
         <option value="mine" selected={effective === 'mine'}>{A.list.scopeMine}</option>
       </select></label>
+    {tipo !== 'descartadas' && (
+      <label class="co-field">{CLR.tabs.discarded}
+        <select class="co-select" name="descartadas" data-testid="map-off"><option value="">{CLR.offShow}</option><option value="0" selected={offF === 'hide'}>{CLR.offHide}</option></select></label>
+    )}
     {perms.manageAccounts && (
       <label class="co-field">{M.color}
         <select class="co-select" name="color" data-testid="map-color"><option value="">{M.byState}</option><option value="comercial" selected={byRep}>{M.byRep}</option></select></label>
@@ -149,6 +160,8 @@ const payload = {
   :global(.map-pin--hot) { border: 3px solid #f97316; }
   :global(.map-pin--cold) { opacity: 0.5; }
   :global(.map-pin--approx) { border-style: dashed; }
+  :global(.map-pin--off) { opacity: .75; filter: grayscale(1); }
+  :global(.map-pop .off) { color: #b42318; font-weight: 600; }
   :global(.map-cluster) { display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #18181b; color: #fff;
     font: 700 13px/1 var(--co-font-sans, system-ui); border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
   :global(.map-cluster--hot) { box-shadow: 0 0 0 3px #f97316, 0 2px 10px rgba(0, 0, 0, 0.3); }
@@ -164,7 +177,7 @@ const payload = {
   import 'leaflet/dist/leaflet.css';
 
   type Point = { id: string; name: string; lat: number; lng: number; exact: boolean; kind: string | null; state: string; zone: string; temp: string; score: number;
-    cooling: number | null; next: string | null; rating: number | null; owner: string | null; rep: string | null };
+    cooling: number | null; next: string | null; rating: number | null; owner: string | null; rep: string | null; off: string | null };
   const el = document.getElementById('crm-map');
   const raw = document.getElementById('map-data')?.textContent;
   if (el && raw) {
@@ -175,7 +188,7 @@ const payload = {
     // La consola no manda «de dónde vienes» (no-referrer), pero OpenStreetMap lo exige y MapTiler lo usa para comprobar que
     // la clave se usa desde tu dominio: para el fondo del mapa se manda solo el dominio, nunca la ruta.
     L.tileLayer(d.tiles.url, { maxZoom: 19, attribution: d.tiles.attribution, referrerPolicy: 'strict-origin' } as L.TileLayerOptions).addTo(map);
-    const colorOf = (p: Point) => (d.byRep ? (p.rep ? d.repColor[p.rep] : '#9ca3af') : d.stateColor[p.state] ?? '#6b7280');
+    const colorOf = (p: Point) => (p.off !== null ? '#c4c4c4' : d.byRep ? (p.rep ? d.repColor[p.rep] : '#9ca3af') : d.stateColor[p.state] ?? '#6b7280');
     // Los textos van como texto (nunca como HTML): nombres y notas vienen de los datos.
     const node = (tag: string, text: string, cls?: string) => { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; };
 
@@ -196,12 +209,13 @@ const payload = {
     });
 
     for (const p of d.points) {
-      const cls = ['map-pin', p.temp === 'hot' && 'map-pin--hot', p.temp === 'cold' && 'map-pin--cold', !p.exact && 'map-pin--approx'].filter(Boolean).join(' ');
-      const icon = L.divIcon({ className: '', html: `<span class="${cls}" data-testid="map-point" style="background:${colorOf(p)}">${d.kindSvg[p.kind ?? 'none'] ?? d.kindSvg.none}</span>`, iconSize: [28, 28] });
-      const m = L.marker([p.lat, p.lng], { icon, title: p.name, hot: p.temp === 'hot' } as L.MarkerOptions);
+      const cls = ['map-pin', p.off === null && p.temp === 'hot' && 'map-pin--hot', p.off === null && p.temp === 'cold' && 'map-pin--cold', !p.exact && 'map-pin--approx', p.off !== null && 'map-pin--off'].filter(Boolean).join(' ');
+      const icon = L.divIcon({ className: '', html: `<span class="${cls}" data-testid="map-point" data-off="${p.off !== null ? 'true' : 'false'}" style="background:${colorOf(p)}">${d.kindSvg[p.kind ?? 'none'] ?? d.kindSvg.none}</span>`, iconSize: [28, 28] });
+      const m = L.marker([p.lat, p.lng], { icon, title: p.name, hot: p.off === null && p.temp === 'hot' } as L.MarkerOptions);
       const pop = document.createElement('div'); pop.className = 'map-pop'; pop.dataset.testid = 'map-popup';
       pop.append(node('strong', p.name));
       pop.append(node('span', [T.kinds[p.kind ?? 'none'], p.zone].filter(Boolean).join(' · '), 'muted'));
+      if (p.off !== null) pop.append(node('span', `${T.off}${p.off ? `: ${p.off}` : ''}`, 'off'));
       pop.append(node('span', [T.stateLabel[p.state] ?? p.state, T.score.replace('{n}', String(p.score))].join(' · ')));
       if (p.cooling !== null) pop.append(node('span', T.cooling.replace('{n}', String(p.cooling))));
       if (p.rating !== null) pop.append(node('span', `★ ${p.rating.toLocaleString(document.documentElement.lang || 'es')} ${T.reviews}`, 'muted'));

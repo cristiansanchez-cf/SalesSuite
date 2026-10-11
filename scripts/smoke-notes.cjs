@@ -63,5 +63,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
   const one = await p.$$eval('[data-testid=notes-item]', (xs) => xs.map((x) => x.querySelector('select').selectedOptions[0].textContent));
   assert(one.length === 1 && one[0].startsWith('Club Sol'), `todo va a la elegida (${one})`);
+
+  // Proponer descartar (§23): por lo que cuentas, la IA pregunta; solo se descarta si dices que sí.
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  await p.fill('[data-testid=notes-text]', 'BAR MALO - el dueño nos echó, mejor no ir');
+  await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
+  assert(await p.isVisible('[data-testid=notes-discard]'), 'la IA pregunta si descartamos');
+  await p.check('[data-testid=notes-discard-yes]');
+  await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
+  await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("BAR MALO")')]);
+  assert((await p.textContent('[data-testid=discarded-banner]')).includes('Mejor no ir'), 'descartada con su motivo');
+  // En el mapa sale en gris, con su motivo (para que nadie vaya sin saberlo).
+  await p.goto(`${BASE}/admin/accounts/mapa?ver=all`);
+  assert(await p.locator('[data-testid=map-off]').count() === 1, 'el mapa deja ocultar las descartadas');
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

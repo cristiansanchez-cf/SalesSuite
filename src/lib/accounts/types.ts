@@ -34,7 +34,8 @@ export function normalizeKinds(raw: unknown): KindDef[] {
   const base = out.find((k) => k.key === BASE_KIND) ?? DEFAULT_KINDS[0];
   return [base, ...out.filter((k) => k.key !== BASE_KIND)].slice(0, 12);
 }
-export const DISCARD_REASONS = ['not_sector', 'partner', 'duplicate', 'closed', 'other'] as const;
+/** Motivos de descarte: los de visitar (§23) primero; los de limpiar el CRM (§17) después. */
+export const DISCARD_REASONS = ['no_fit', 'not_interested', 'avoid', 'closed', 'not_sector', 'partner', 'duplicate', 'other'] as const;
 export type DiscardReason = (typeof DISCARD_REASONS)[number];
 export interface Zone { id: string; tenantId: string; parentId: string | null; name: string; kind: ZoneKind; position: number; /** Su punto en el mapa (§16). */ lat?: number | null; lng?: number | null }
 /** Un movimiento de empresa (arreglos en bloque: ordenar ciudades). zoneId null = sin zona. */

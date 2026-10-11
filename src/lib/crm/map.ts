@@ -37,11 +37,14 @@ export function zoneOwners(zones: Zone[], assignments: Array<{ userId: string; z
 export interface MapPoint {
   id: string; name: string; lat: number; lng: number; exact: boolean; kind: Priority['kind']; state: AccountView['state']; zone: string; temp: Temperature; score: number;
   cooling: number | null; next: string | null; rating: number | null; owner: string | null; rep: string | null;
+  /** Descartada (§23): sale en gris con su motivo, para que los demás sepan que no hay que ir y por qué. */
+  off: string | null;
 }
 export interface MapData { points: MapPoint[]; exact: number; approx: number; unlocated: number; noCity: number }
 
 export function buildMap(items: AccountView[], zones: Zone[], o: {
   prio: (a: AccountView) => Priority; cooling: Map<string, number>; rep: (zoneId: string | null) => string | null;
+  off?: (a: AccountView) => string | null;
 }): MapData {
   const byId = new Map(zones.map((z) => [z.id, z]));
   const points: MapPoint[] = [];
@@ -57,7 +60,7 @@ export function buildMap(items: AccountView[], zones: Zone[], o: {
     if (own) exact++;
     points.push({ id: a.id, name: a.name, lat: own ? a.lat! : z!.lat!, lng: own ? a.lng! : z!.lng!, exact: own, kind: p.kind, state: a.state, zone: a.zonePath,
       temp: temperature(p, o.cooling.get(a.id)), score: p.score, cooling: o.cooling.get(a.id) ?? null, next: a.nextStep, rating: a.placeRating,
-      owner: a.ownerName, rep: o.rep(a.zoneId) });
+      owner: a.ownerName, rep: o.rep(a.zoneId), off: a.discardedAt ? o.off?.(a) ?? '' : null });
   }
   return { points, exact, approx: points.length - exact, unlocated, noCity };
 }

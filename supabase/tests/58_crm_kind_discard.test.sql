@@ -60,3 +60,15 @@ do $$ begin
 exception when insufficient_privilege then null; end $$;
 reset role;
 delete from public.account where id in ('58000000-0000-4000-8000-0000000000a1', '58000000-0000-4000-8000-0000000000a2');
+
+-- Motivos de la calle (§23): no encaja, no les interesa, mejor no ir.
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
+insert into public.account (id, tenant_id, name) values ('58000000-0000-4000-8000-0000000000a9', '00000000-0000-4000-8000-000000000e01', 'Bar 58 calle');
+select public.account_classify('58000000-0000-4000-8000-0000000000a9', null, 'avoid', 'El dueño nos echó');
+select pg_temp.assert((select discard_reason = 'avoid' and discarded_at is not null from public.account where id = '58000000-0000-4000-8000-0000000000a9'), 'mejor no ir');
+do $$ begin
+  perform public.account_classify('58000000-0000-4000-8000-0000000000a9', null, 'inventado', null);
+  raise exception 'ASSERT FAILED: motivo desconocido';
+exception when check_violation then null; end $$;

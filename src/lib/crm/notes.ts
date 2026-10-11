@@ -10,6 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CHANNELS, OUTCOMES, type Channel, type Outcome } from './followup';
 import { QUAL_VALUES } from './priority';
 import { nameKey } from './prospect';
+import type { DiscardReason } from '../accounts/types';
 
 export interface NoteItem {
   /** El sitio, tal como lo nombra quien habla («Ghecko»). */
@@ -32,6 +33,9 @@ export interface NoteItem {
   qualification: Record<string, string>;
   nextStep: string | null;
   nextDays: number | null;
+  /** Si por lo que cuenta habría que descartarla (§23): el motivo y por qué; se pregunta antes de hacerlo. */
+  discard: DiscardReason | null;
+  discardWhy: string | null;
 }
 /** Un campo de la ficha del espacio, para que la IA sepa qué puede rellenar. */
 export interface NoteField { key: string; label: string; type: string; options: string[] }
@@ -56,7 +60,7 @@ export const NOTES_TOOL = {
         type: 'array',
         items: {
           type: 'object', additionalProperties: false,
-          required: ['venue', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'qualification'],
+          required: ['venue', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'qualification', 'discard', 'discard_why'],
           properties: {
             venue: { ...S, description: 'Nombre del sitio tal como lo dice la persona (corrige solo mayúsculas).' },
             interaction: { ...SN, description: 'Lo que ha PASADO con ellos: que fue y cuándo, con quién habló, el mensaje que les mandó, qué contestaron. Corto, con sus palabras. Si estuvo allí solo mirando: «Visita: solo observar, sin hablar con nadie» (y la hora si la dice). null si no hubo contacto ni visita.' },
@@ -72,6 +76,8 @@ export const NOTES_TOOL = {
             day: { ...SN, description: 'AAAA-MM-DD si dice cuándo fue (p. ej. «el sábado»); null si no lo dice.' },
             next_step: { ...SN, description: 'Lo siguiente que dice que hay que hacer con ese sitio (p. ej. «mirar sus redes»); null si no lo dice.' },
             next_days: { type: ['integer', 'null'], description: 'En cuántos días, si lo dice o se deduce; null si no.' },
+            discard: { ...S, description: 'Si por lo que cuenta habría que descartar el sitio: no_fit (no encaja con lo que vendemos: p. ej. «esto no es para nosotros», «aquí no pinta nada»), not_interested (ellos han dicho que no les interesa), avoid (mejor no ir: trato malo, el dueño es un problema), closed (ha cerrado). Si no, cadena vacía "". Solo si lo dice claro: se le preguntará antes de descartar.' },
+            discard_why: { ...S, description: 'Por qué, en pocas palabras y con las suyas (p. ej. «el dueño nos echó»). "" si discard es "".' },
             qualification: {
               type: 'object', additionalProperties: false, required: [...QUAL_KEYS],
               description: 'Solo lo que dice claramente; cadena vacía "" en lo demás.',
@@ -134,6 +140,7 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
       const v = rq[k] == null ? '' : String(rq[k]);
       if (v && QUAL_VALUES[k]?.includes(v)) q[k] = v;
     }
+    const discard = (['no_fit', 'not_interested', 'avoid', 'closed'] as const).find((k) => k === r.discard) ?? null;
     const day = typeof r.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.day) && !Number.isNaN(Date.parse(r.day)) ? r.day : null;
     const nd = r.next_days == null || r.next_days === '' ? NaN : Number(r.next_days);
     out.push({
@@ -143,6 +150,7 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
       day, qualification: q,
       nextStep: typeof r.next_step === 'string' && r.next_step.trim() ? r.next_step.trim().slice(0, 300) : null,
       nextDays: Number.isInteger(nd) && nd >= 0 && nd <= 365 ? nd : null,
+      discard, discardWhy: discard && typeof r.discard_why === 'string' && r.discard_why.trim() ? line(r.discard_why, 300) : null,
     });
   }
   return out;
@@ -215,6 +223,7 @@ export const fixtureNotes = (): NotesApi => ({
       key_facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => /pantalla/i.test(x) && !/sin pantalla/i.test(x)),
       facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => x && !(/pantalla/i.test(x) && !/sin pantalla/i.test(x))),
       fit: /todos los servicios|encaj/i.test(m[2]) ? 'Todos los servicios' : null, fields: (/aforo (\d+)/i.exec(m[2]) ? [{ key: 'aforo', value: /aforo (\d+)/i.exec(m[2])![1] }] : []), channel: 'visit', outcome: 'note', day: null, next_step: /redes/i.test(m[2]) ? 'Mirar sus redes' : null, next_days: /redes/i.test(m[2]) ? 2 : null,
+      discard: /mejor no ir|nos ech|gilipollas/i.test(m[2]) ? 'avoid' : /no les interesa/i.test(m[2]) ? 'not_interested' : /no encaja/i.test(m[2]) ? 'no_fit' : '', discard_why: /mejor no ir|nos ech|gilipollas|no les interesa|no encaja/i.test(m[2]) ? m[2].trim().slice(0, 120) : '',
       qualification: { screens: /no quiere/i.test(m[2]) ? 'no' : /sin pantalla/i.test(m[2]) ? null : /pantalla/i.test(m[2]) ? 'yes' : null, format: /rooftop/i.test(m[2]) ? 'rooftop' : 'club', dj: /dj invitad/i.test(m[2]) ? 'guests' : /dj/i.test(m[2]) ? 'resident' : null },
     }));
     return sanitizeNotes({ items });

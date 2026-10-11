@@ -665,3 +665,12 @@ Criterio de Cristian haciendo ruta (11-oct-2026).
   de la última vez (cookie de este navegador, 90 días). `?todo=1` = sin filtros a propósito.
 - **Tu país por defecto** la primera vez, si no tienes zona asignada (con zona, «Mi zona» ya acota): el último
   elegido, el de tu zona o el único que hay. En «Buscar clientes», el sitio por defecto es el de la última búsqueda.
+
+**E2 · Descartar en la calle.**
+- Motivos nuevos (los de quien visita, primero): **No encaja con lo que vendemos**, **No les interesa**, **Mejor no
+  ir** (p. ej. el dueño trata mal), además de cerrada, no es del sector, alianza, duplicada y otro. Migración
+  `20261124`.
+- En la ficha, **«No encaja · descartar»** discreto al pie del resumen: pide el motivo (botones grandes) y una nota.
+- **Apuntar lo propone**: si por lo que cuentas habría que descartarla, la revisión dice «Por lo que cuentas,
+  deberíamos descartarla: mejor no ir» y pregunta; solo se descarta si marcas «Sí, descartarla».
+- **En el mapa, las descartadas salen en gris con su motivo** (para que nadie vaya sin saberlo); se pueden ocultar.

@@ -12,7 +12,7 @@ import { AdminError } from '~/lib/admin/service';
 import { flash, formAction } from '~/lib/admin/forms';
 import { STATUS_CLASS } from '~/lib/admin/format';
 import { ELIGIBILITY_LABELS, zonePath } from '~/lib/accounts/rules';
-import type { TouchKind } from '~/lib/accounts/types';
+import { DISCARD_REASONS, type TouchKind } from '~/lib/accounts/types';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
 import { crmMessages } from '~/lib/i18n/messages/crm';
@@ -208,6 +208,9 @@ const STATE_ALERT = {
           <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}{tl.next.step && ` · ${tl.next.step}`}</> : PS.summary.noNext}</span>
           <Icon name="chevron-right" size={14} />
         </a>
+        {canQualify && !a.discardedAt && a.state !== 'customer' && a.state !== 'my_customer' && (
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
+        )}
         <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
           {([['facts', '#facts'], ['qual', '#qual'], ['follow', '#follow'], ['people', '#acc-people'], ['data', '#company-contact']] as const).map(([k, h]) => (
             <a class="co-chip whitespace-nowrap !no-underline" href={h}>{PS.summary.jump[k]}</a>))}
@@ -699,9 +702,11 @@ const STATE_ALERT = {
   <ConfirmDialog id="discard" title={CL.discardTitle(a.name)} confirmLabel={CL.discard} testid="discard-dialog" does={CL.discardBody} doesNot={CL.discardNot}>
     <input type="hidden" name="action" value="discard" />
     <fieldset class="grid gap-1.5"><legend class="co-field mb-1">{CL.reason}</legend>
-      {(['not_sector', 'partner', 'duplicate', 'closed', 'other'] as const).map((r, i) => (
-        <label class="flex items-center gap-2 text-sm"><input type="radio" name="reason" value={r} checked={i === 0} class="accent-[var(--co-ink)]" data-testid={`discard-reason-${r}`} />{CL.reasons[r]}</label>
-      ))}
+      <div class="flex flex-wrap gap-2">
+        {DISCARD_REASONS.map((r, i) => (
+          <label class="co-chip discard-reason"><input type="radio" class="sr-only" name="reason" value={r} checked={i === 0} data-testid={`discard-reason-${r}`} />{CL.reasons[r]}</label>
+        ))}
+      </div>
     </fieldset>
     <label class="co-field">{CL.note}<input class="co-input" name="note" maxlength="500" placeholder={CL.notePh} data-testid="discard-note" /></label>
   </ConfirmDialog>
@@ -721,6 +726,7 @@ const STATE_ALERT = {
 
 <style>
   /* «Lo más importante» de Lo que sabemos: tarjetas que se leen de un vistazo. */
+  .discard-reason:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
   .sum-fit-yes { background: #e7f6ec; color: #14532d; border-color: #b7e2c4; }
   .sum-fit-maybe { background: #fff6e0; color: #6b4a00; border-color: #f0dca6; }
   .facts-key { background: var(--co-signal-soft, #ece6fc); color: var(--co-signal-ink, #2a1066); }

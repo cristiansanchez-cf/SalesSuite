@@ -11,6 +11,8 @@ import Icon from '~/components/ui/Icon.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
+import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
+import { DISCARD_REASONS } from '~/lib/accounts/types';
 import { notesMessages } from '~/lib/i18n/messages/notes';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { followupMessages } from '~/lib/i18n/messages/followup';
@@ -22,6 +24,7 @@ if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).useAccounts) return Astro.rewrite('/admin/forbidden');
 const { m: M, locale } = i18n(Astro, notesMessages);
 const PR = priorityMessages[locale];
+const CLN = cleanupMessages[locale];
 const FU = followupMessages[locale];
 
 type Item = Awaited<ReturnType<typeof admin.crm.notesSplit>>[number];
@@ -51,7 +54,8 @@ if (Astro.request.method === 'POST') {
         keyFacts: lines(`key-${i}`).slice(0, 5), facts: lines(`facts-${i}`).slice(0, 40),
         fit: str(`fit-${i}`) || null, fields: fieldsChosen,
         channel: it.channel, outcome: it.outcome, day: it.day,
-        qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days) };
+        qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days),
+        discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null };
     }).filter(Boolean);
     const r = await admin.crm.notesApply(rows);
     const ok = r.filter((x) => x.ok && x.accountId);
@@ -145,6 +149,17 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
             <textarea class="co-textarea !min-h-[140px]" name={`facts-${i}`} maxlength="16000" data-testid="notes-facts">{it.facts.map((x) => `• ${x}`).join('\n')}</textarea>
           </label>
           <label class="co-field">{M.fit}<input class="co-input" name={`fit-${i}`} maxlength="600" value={it.fit ?? ''} data-testid="notes-fit" /></label>
+          {it.discard && (
+            <fieldset class="co-alert co-alert--rejection grid gap-2" data-testid="notes-discard">
+              <legend class="sr-only">{M.discardAsk}</legend>
+              <p class="m-0 font-semibold">{M.discardSays(CLN.reasons[it.discard])}</p>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name={`disc-${i}`} value="1" class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-discard-yes" />{M.discardAsk}</label>
+              <div class="grid gap-2 sm:grid-cols-[14rem_1fr]">
+                <select class="co-select" name={`discr-${i}`} aria-label={CLN.reason}>{DISCARD_REASONS.map((r) => <option value={r} selected={r === it.discard}>{CLN.reasons[r]}</option>)}</select>
+                <input class="co-input" name={`discn-${i}`} maxlength="500" value={it.discardWhy ?? ''} aria-label={CLN.note} placeholder={CLN.notePh} />
+              </div>
+            </fieldset>
+          )}
           {Object.keys(it.fields).length > 0 && (
             <fieldset class="grid gap-1">
               <legend class="co-field mb-1">{M.fieldsTitle}</legend>

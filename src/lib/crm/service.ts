@@ -993,6 +993,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         fit: items.map((it) => it.fit).filter(Boolean).join(' · ') || null, fields: fv,
         channel: items[0]?.channel ?? 'visit', outcome: items[0]?.outcome ?? 'note', day: items[0]?.day ?? null,
         qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
+        discard: items.find((it) => it.discard)?.discard ?? null, discardWhy: items.find((it) => it.discard)?.discardWhy ?? null,
       };
       return [{ ...one, candidates: [{ id: chosen.id, name: chosen.name, zone: placeOf(zones, chosen.zoneId), score: 1, discarded: !!chosen.discardedAt }] }];
     }
@@ -1015,6 +1016,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     qualification: z.record(z.string(), z.string()).default({}),
     nextStep: z.string().trim().max(300).nullable().optional().transform((v) => v || null),
     nextDays: z.number().int().min(0).max(365).nullable().optional(),
+    /** Descartar (si quien apunta dijo que sí a la propuesta de la IA, §23). */
+    discard: z.enum(DISCARD_REASONS).nullable().optional(),
+    discardNote: z.string().trim().max(500).nullable().optional().transform((v) => v || null),
   })).max(40);
   /**
    * Guardar lo confirmado, en cada empresa (o en una nueva), cada cosa en su sitio: la interacción en el historial (con
@@ -1062,6 +1066,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
           q[k] = v === 'true' ? true : v; changed = true;
         }
         if (changed) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
+        if (r.discard) await classifyAccount(id, { reason: r.discard, note: r.discardNote });
         out.push({ accountId: id, name, ok: true });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });

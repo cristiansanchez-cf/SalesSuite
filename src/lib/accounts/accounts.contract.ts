@@ -665,6 +665,11 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       await t.admin.accounts.assign(ajena, E.rep2.id);
       const r2 = await rep.notesApply([{ accountId: ajena, facts: ['Casi vacío'], channel: 'visit', outcome: 'note', qualification: { screens: 'yes' } }, { accountId: gecko, interaction: 'Otra visita', channel: 'visit', outcome: 'note', qualification: {} }]);
       expect(r2.map((x) => x.ok)).toEqual([false, true]);
+      // Descartar desde Apuntar (§23): solo si quien apunta dice que sí; con su motivo.
+      const malo = await rep.notesSplit('BAR MALO - el dueño nos echó, mejor no ir', { seller: 'Enjoy' });
+      expect(malo[0]).toMatchObject({ discard: 'avoid' });
+      const r3 = await rep.notesApply([{ create: 'Bar Malo', interaction: malo[0].interaction, channel: 'visit', outcome: 'note', qualification: {}, discard: 'avoid', discardNote: 'El dueño nos echó' }]);
+      expect((await t.admin.accounts.get(r3[0].accountId!)).account).toMatchObject({ discardReason: 'avoid', discardNote: 'El dueño nos echó' });
     });
 
     test('CRM terminar ciudades: juntar con pueblos y asignaciones; renombrar encima de otra = juntar; tipo y mover', async () => {

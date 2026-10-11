@@ -8,7 +8,7 @@ import type { CrmField, FieldType } from '../crm/fields';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
 import type { AccountInsert, AccountsDb } from './db';
 import { eligibility } from './rules';
-import { DEFAULT_RULES, type Account, type AccountRules, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
+import { DEFAULT_RULES, DISCARD_REASONS, type Account, type AccountRules, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
 
 const db = () => demoDb();
 const now = () => new Date();
@@ -59,7 +59,7 @@ function kindOk(t: string, kind: string): boolean {
 }
 function setKind(a: AccountRow, kind: string | null, reason: string | null, note: string | null, by: string) {
   if (kind && !kindOk(a.tenant_id, kind)) throw new Error('check constraint: Tipo no válido');
-  if (reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(reason)) throw new Error('check constraint: discard_reason');
+  if (reason && !(DISCARD_REASONS as readonly string[]).includes(reason)) throw new Error('check constraint: discard_reason');
   a.kind = kind ?? a.kind ?? 'company';
   a.discarded_at = reason ? a.discarded_at ?? new Date().toISOString() : null;
   a.discard_reason = reason;
@@ -348,7 +348,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
     async classifyMany(t, rows) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin importa y ordena los datos del CRM');
       // Como en SQL: o todo o nada (se valida antes de tocar).
-      for (const r of rows) if ((r.kind && !kindOk(t, r.kind)) || (r.reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(r.reason))) throw new Error('check constraint: classify');
+      for (const r of rows) if ((r.kind && !kindOk(t, r.kind)) || (r.reason && !(DISCARD_REASONS as readonly string[]).includes(r.reason))) throw new Error('check constraint: classify');
       let n = 0;
       for (const r of rows) { const a = db().account.find((x) => x.id === r.id && x.tenant_id === t); if (a) { setKind(a, r.kind, r.reason, r.note, actorId); n++; } }
       return n;
