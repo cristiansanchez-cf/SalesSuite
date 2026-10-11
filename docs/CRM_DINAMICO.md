@@ -549,5 +549,14 @@ en vez de apuntarlo en un chat consigo mismo. Primer paso de «hablar con el CRM
    interacción con la nota, lo marcado en la cualificación (sin quitar lo que ya tenía) y el próximo paso. Cada sitio
    va por su cuenta: si uno no se puede (p. ej. es de otro comercial), se dice y los demás se guardan.
 
+**Doble seguro para no equivocarse de empresa** (criterio de Cristian): la IA solo separa y ordena el texto; **a qué
+empresa va lo decide el código** (búsqueda por nombre que tolera el dictado) y lo confirma la persona. Además,
+**opcional, arriba: «¿De qué empresa vas a hablar?»** con autocompletar (nombre y «Comunidad Valenciana › Valencia»,
+sin IA, `/admin/api/crm/account-search`): si se elige, todo lo contado va a esa empresa. Por eso basta un modelo
+pequeño: **Claude Haiku 5.5** (`NOTES_MODEL`), ~40 veces más barato que Opus.
+
+Acceso: botón flotante **✨ Apuntar** en toda la consola (quien trabaja el CRM). En Empresas, la cabecera queda en
+«Lista | Mapa» y **«Añadir ▾»** (nueva empresa · buscar en Google Maps · importar, solo admin).
+
 Permisos: los de siempre (sesión y RLS); cuenta para el tope diario de IA. Pruebas: `notes.test.ts`, contrato de
 cuentas (demo y Postgres), `scripts/smoke-notes.cjs` (en el móvil).

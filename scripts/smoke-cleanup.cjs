@@ -19,7 +19,7 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await p.waitForURL(/\/admin/);
   for (const name of ['DJ Nova', 'Acid Records tienda']) {
     await p.goto(`${BASE}/admin/accounts?ver=all`);
-    await p.click('[data-testid=new-account]');
+    await p.click('[data-testid=add-open]'); await p.click('[data-testid=new-account]');
     await p.fill('[data-testid=new-account-form] [name=name]', name);
     await Promise.all([p.waitForURL(/ok=created/), p.click('[data-testid=new-account-form] button[type=submit]')]);
   }

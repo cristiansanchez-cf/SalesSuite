@@ -279,6 +279,16 @@ html.console:lang(ko) .co-page-title { letter-spacing: 0; line-height: 1.1; }
 /* En la barra lateral (que tiene su propio scroll y recortaría el menú), el menú flota sobre la página:
    se coloca encima de su botón al abrirse (ConsoleNav). */
 .co-sidebar .co-popover__menu { position: fixed; bottom: auto; z-index: 60; }
+/* Menú que se abre hacia abajo, alineado a la derecha (p. ej. «Añadir» en la cabecera). */
+.co-popover--down .co-popover__menu { top: calc(100% + 8px); bottom: auto; left: auto; right: 0; }
+.co-popover--down > summary { cursor: pointer; }
+
+/* Botón flotante «Apuntar» (docs/CRM_DINAMICO.md §20): siempre a mano, sobre todo en el móvil. */
+.co-fab { position: fixed; right: 16px; bottom: 16px; z-index: 55; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px;
+  border-radius: 999px; background: var(--co-ink); color: var(--co-canvas); font-weight: 600; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22); text-decoration: none; }
+.co-fab:hover { transform: translateY(-1px); }
+.has-fab .co-toasts { bottom: 80px; }
+@media (max-width: 640px) { .co-fab span { display: none; } .co-fab { width: 52px; padding: 0; justify-content: center; } .has-fab .co-toasts { bottom: 84px; } }
 
 /* ------------------------------------------------------------------ superficies */
 .co-card {

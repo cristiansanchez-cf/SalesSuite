@@ -143,14 +143,14 @@ export function matchAccounts<T extends { id: string; name: string }>(venue: str
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'es')).slice(0, max);
 }
 
-export const NOTES_MODEL = 'claude-opus-5-5';
+// Separar y ordenar texto: no hace falta el modelo grande (criterio de Cristian, 11-oct-2026). Haiku es ~40× más barato.
+export const NOTES_MODEL = 'claude-haiku-5-5';
 export function claudeNotes(apiKey: string, fetchImpl?: typeof fetch): NotesApi {
   const client = new Anthropic({ apiKey, timeout: 180_000, maxRetries: 1, ...(fetchImpl ? { fetch: fetchImpl } : {}) });
   return {
     async split(text, ctx) {
       const stream = client.beta.messages.stream({
         model: NOTES_MODEL, max_tokens: 16000,
-        betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
         output_config: { effort: 'low' },
         system: NOTES_SYSTEM(ctx),
         tools: [NOTES_TOOL as unknown as Anthropic.Beta.BetaTool],

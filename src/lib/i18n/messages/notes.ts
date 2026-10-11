@@ -3,6 +3,7 @@ import { defineMessages } from '../core';
 
 export const notesMessages = defineMessages({
   es: {
+    who: '¿De qué empresa vas a hablar? (opcional)', whoPh: 'Busca por el nombre', whoHelp: 'Si la eliges, todo va a esa empresa. Si no, la IA lo separa por sitio y te propone cuál es cada uno.', whoClear: 'Quitar', whoNone: 'No hay ninguna con ese nombre: cuéntalo igual y te propondré crearla.',
     eyebrow: 'CRM', title: 'Apuntar con IA', open: 'Apuntar',
     lede: 'Cuenta lo que has visto o hablado, de uno o de varios sitios. La IA lo separa por sitio, lo busca en tu CRM y te propone dónde va cada cosa. No se guarda nada hasta que lo confirmes.',
     text: 'Lo que quieres apuntar', placeholder: 'Salgo del Gecko: dos pantallas pequeñas abajo, el DJ en una zona elevada y accesible, lleno a la 1:30. Mirar sus redes…',
@@ -18,6 +19,7 @@ export const notesMessages = defineMessages({
     another: 'Apuntar otra cosa',
   },
   en: {
+    who: 'Which company are you talking about? (optional)', whoPh: 'Search by name', whoHelp: 'If you pick it, everything goes to that company. If not, the AI splits it by place and suggests which one each is.', whoClear: 'Remove', whoNone: 'None with that name: tell it anyway and I’ll suggest creating it.',
     eyebrow: 'CRM', title: 'Note with AI', open: 'Note',
     lede: 'Tell what you saw or talked about, at one or several places. The AI splits it by place, finds each one in your CRM and suggests where each thing goes. Nothing is saved until you confirm.',
     text: 'What you want to note', placeholder: 'Just left Gecko: two small screens downstairs, the DJ on a raised, reachable spot, full at 1:30. Check their socials…',
@@ -33,6 +35,7 @@ export const notesMessages = defineMessages({
     another: 'Note something else',
   },
   pt: {
+    who: 'De qual empresa vai falar? (opcional)', whoPh: 'Busque pelo nome', whoHelp: 'Se escolher, tudo vai para essa empresa. Se não, a IA separa por lugar e propõe qual é cada um.', whoClear: 'Tirar', whoNone: 'Nenhuma com esse nome: conte mesmo assim e eu proponho criá-la.',
     eyebrow: 'CRM', title: 'Anotar com IA', open: 'Anotar',
     lede: 'Conte o que viu ou falou, de um ou vários lugares. A IA separa por lugar, procura cada um no seu CRM e propõe onde vai cada coisa. Nada é salvo até você confirmar.',
     text: 'O que quer anotar', placeholder: 'Saí do Gecko: duas telas pequenas embaixo, o DJ numa área elevada e acessível, lotado à 1:30. Ver as redes…',
@@ -48,6 +51,7 @@ export const notesMessages = defineMessages({
     another: 'Anotar outra coisa',
   },
   ko: {
+    who: '어느 회사에 대해 말하나요? (선택)', whoPh: '이름으로 검색', whoHelp: '선택하면 모두 그 회사로 갑니다. 선택하지 않으면 AI가 장소별로 나누고 각각 어디인지 제안합니다.', whoClear: '지우기', whoNone: '그 이름의 회사가 없습니다. 그래도 말해 주시면 새로 만들도록 제안합니다.',
     eyebrow: 'CRM', title: 'AI로 메모', open: '메모',
     lede: '한 곳 또는 여러 곳에서 본 것이나 나눈 이야기를 말해 주세요. AI가 장소별로 나누고 CRM에서 찾아 어디에 넣을지 제안합니다. 확인하기 전에는 저장되지 않습니다.',
     text: '메모할 내용', placeholder: 'Gecko에서 나왔어요: 아래층에 작은 화면 두 개, DJ는 높고 접근하기 쉬운 곳, 1시 30분에 꽉 참. SNS 확인하기…',

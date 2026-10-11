@@ -3,6 +3,7 @@ import { defineMessages } from '../core';
 
 export const prospectMessages = defineMessages({
   es: {
+    add: 'Añadir', fromGoogle: 'Buscar en Google Maps', fromGoogleHelp: 'Un tipo de cliente en una zona', importHelp: 'Desde un CSV o Notion',
     link: 'Es la misma: unir', linked: 'Unida a la tuya',
     maybeHelp: 'Si es la misma, «Es la misma: unir» le pone esta ficha de Google a la tuya. Si es otra, márcala e impórtala.',
     bg: 'Investigando con IA en segundo plano: puedes seguir usando la app (el progreso sale abajo).',
@@ -30,6 +31,7 @@ export const prospectMessages = defineMessages({
     by: (who: string, when: string) => `${who} · ${when}`,
   },
   en: {
+    add: 'Add', fromGoogle: 'Search Google Maps', fromGoogleHelp: 'A kind of client in an area', importHelp: 'From a CSV or Notion',
     link: 'Same one: merge', linked: 'Merged into yours',
     maybeHelp: 'If it’s the same, «Same one: merge» adds this Google listing to yours. If it’s another, tick it and import it.',
     bg: 'Researching with AI in the background: you can keep using the app (progress shows at the bottom).',
@@ -57,6 +59,7 @@ export const prospectMessages = defineMessages({
     by: (who: string, when: string) => `${who} · ${when}`,
   },
   pt: {
+    add: 'Adicionar', fromGoogle: 'Buscar no Google Maps', fromGoogleHelp: 'Um tipo de cliente numa zona', importHelp: 'De um CSV ou Notion',
     link: 'É a mesma: unir', linked: 'Unida à sua',
     maybeHelp: 'Se for a mesma, «É a mesma: unir» põe esta ficha do Google na sua. Se for outra, marque e importe.',
     bg: 'Pesquisando com IA em segundo plano: pode continuar usando o app (o progresso aparece embaixo).',
@@ -84,6 +87,7 @@ export const prospectMessages = defineMessages({
     by: (who: string, when: string) => `${who} · ${when}`,
   },
   ko: {
+    add: '추가', fromGoogle: 'Google 지도에서 찾기', fromGoogleHelp: '지역별 고객 유형', importHelp: 'CSV 또는 Notion에서',
     link: '같은 곳: 합치기', linked: '기존 회사에 합침',
     maybeHelp: '같은 곳이면 «같은 곳: 합치기»로 이 Google 정보를 기존 회사에 붙입니다. 다른 곳이면 선택해서 가져오세요.',
     bg: 'AI 조사를 백그라운드에서 진행합니다. 앱을 계속 사용할 수 있습니다(진행 상황은 아래에 표시).',

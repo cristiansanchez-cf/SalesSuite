@@ -16,7 +16,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid="demo-admin@enjoy.test"]');
   await p.waitForURL(/\/admin/);
   await p.goto(`${BASE}/admin/accounts?ver=all`);
-  await Promise.all([p.waitForURL(/\/admin\/accounts\/apuntar/), p.click('[data-testid=notes-open]')]);
+  await Promise.all([p.waitForURL(/\/admin\/accounts\/apuntar/), p.click('[data-testid=notes-fab]')]);
   await p.fill('[data-testid=notes-text]', 'CLUB SOOL - dos pantallas grandes en la barra, mirar sus redes\nBar Nuevo Setenta: sin pantalla, buena música y gente joven');
   await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
   const items = await p.$$eval('[data-testid=notes-item]', (xs) => xs.map((x) => ({ venue: x.getAttribute('data-venue'), goes: x.querySelector('select').selectedOptions[0].textContent })));
@@ -36,5 +36,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(main.includes('dos pantallas grandes en la barra'), 'la nota está en sus interacciones');
   assert(main.includes('Mirar sus redes'), 'el próximo paso');
   if (OUT) await p.screenshot({ path: `${OUT}/notes-ficha.png`, fullPage: true });
+
+  // «¿De qué empresa vas a hablar?»: buscar con el nombre mal escrito, elegir, contar sin decir el nombre.
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  await p.fill('[data-testid=notes-who]', 'club sool');
+  await p.waitForSelector('[data-testid=notes-who-option]');
+  const opt = await p.textContent('[data-testid=notes-who-option]');
+  assert(opt.includes('Club Sol') && opt.includes('Valencia'), `autocompletar con su sitio (${opt.trim()})`);
+  await p.click('[data-testid=notes-who-option]');
+  assert(await p.isVisible('[data-testid=notes-who-chosen]'), 'empresa elegida');
+  await p.fill('[data-testid=notes-text]', 'Hoy he hablado con el encargado, quiere verlo el jueves');
+  await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
+  const one = await p.$$eval('[data-testid=notes-item]', (xs) => xs.map((x) => x.querySelector('select').selectedOptions[0].textContent));
+  assert(one.length === 1 && one[0].startsWith('Club Sol'), `todo va a la elegida (${one})`);
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

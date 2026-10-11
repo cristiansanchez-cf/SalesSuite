@@ -17,7 +17,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForURL(/\/admin/);
 
   await p.goto(`${BASE}/admin/accounts?ver=all`);
-  await Promise.all([p.waitForURL(/\/admin\/accounts\/buscar/), p.click('[data-testid=prospect-open]')]);
+  await Promise.all([p.waitForURL(/\/admin\/accounts\/buscar/), p.click('[data-testid=add-open]').then(() => p.click('[data-testid=prospect-open]'))]);
   await p.fill('[data-testid=prospect-what]', 'discotecas');
   const vlc = await p.$$eval('[data-testid=prospect-zone] option', (os) => os.find((o) => /› Valencia$/.test(o.textContent.trim()))?.value);
   assert(!!vlc, 'Valencia en el selector de zona');

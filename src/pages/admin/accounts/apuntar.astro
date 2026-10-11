@@ -34,7 +34,7 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     if (str('action') === 'split') {
       box.text = str('text');
-      box.items = await admin.crm.notesSplit(box.text, await cleanupContext(admin));
+      box.items = await admin.crm.notesSplit(box.text, await cleanupContext(admin), str('accountId') || null);
       return;
     }
     // Guardar lo revisado: lo que dijo la IA (items) con lo que ha cambiado la persona en cada sitio.
@@ -88,6 +88,14 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
     <form method="post" class="co-card grid max-w-3xl gap-3" data-testid="notes-form" data-notes-form>
       <input type="hidden" name="action" value="split" />
       {!hasAi && <Alert kind="info" title={M.noAi} />}
+      <div class="co-field relative" data-who>
+        <label for="who-q">{M.who}</label>
+        <input type="hidden" name="accountId" data-who-id />
+        <input id="who-q" class="co-input" type="search" autocomplete="off" placeholder={M.whoPh} data-who-q data-testid="notes-who" />
+        <p class="co-chip m-0 w-fit" hidden data-who-chosen data-testid="notes-who-chosen"><Icon name="building2" size={14} /><span data-who-label></span><button type="button" class="ml-1 underline" data-who-clear>{M.whoClear}</button></p>
+        <ul class="co-card absolute left-0 right-0 top-full z-20 m-0 mt-1 grid gap-0 !p-1" hidden data-who-list role="listbox" data-testid="notes-who-list"></ul>
+        <span class="co-help">{M.whoHelp}</span>
+      </div>
       <label class="co-field">{M.text}
         <textarea class="co-textarea !min-h-[220px]" name="text" required minlength="3" maxlength="12000" placeholder={M.placeholder} data-testid="notes-text">{box.text}</textarea>
       </label>
@@ -142,6 +150,37 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
     </form>
   )}
 </AdminLayout>
+
+<script define:vars={{ none: M.whoNone }}>
+  // «¿De qué empresa vas a hablar?»: autocompletar sin IA (tolera el dictado). Al elegir, todo va a esa empresa.
+  (() => {
+    const box = document.querySelector('[data-who]');
+    if (!box) return;
+    const q = box.querySelector('[data-who-q]'), id = box.querySelector('[data-who-id]'), list = box.querySelector('[data-who-list]');
+    const chosen = box.querySelector('[data-who-chosen]'), label = box.querySelector('[data-who-label]');
+    let timer = 0, seq = 0;
+    const pick = (it) => { id.value = it.id; label.textContent = it.zone ? `${it.name} · ${it.zone}` : it.name; chosen.hidden = false; q.hidden = true; list.hidden = true; };
+    box.querySelector('[data-who-clear]').addEventListener('click', () => { id.value = ''; chosen.hidden = true; q.hidden = false; q.value = ''; q.focus(); });
+    q.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const mine = ++seq;
+        if (q.value.trim().length < 2) { list.hidden = true; return; }
+        const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(q.value.trim())}`).then((x) => x.json()).catch(() => ({ items: [] }));
+        if (mine !== seq) return;
+        list.replaceChildren(...(r.items?.length ? r.items.map((it) => {
+          const li = document.createElement('li'); li.className = 'list-none';
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = 'notes-who-option';
+          const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = it.name;
+          if (it.zone) { const s = document.createElement('small'); s.textContent = it.zone; t.append(s); }
+          b.append(t); b.addEventListener('click', () => pick(it)); li.append(b); return li;
+        }) : [Object.assign(document.createElement('li'), { className: 'list-none co-meta p-2', textContent: none })]));
+        list.hidden = false;
+      }, 200);
+    });
+    document.addEventListener('click', (e) => { if (!box.contains(e.target)) list.hidden = true; });
+  })();
+</script>
 
 <script>
   // Entender: la IA tarda unos segundos; el botón lo dice.

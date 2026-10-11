@@ -581,6 +581,14 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const neg = (await t.admin.accounts.get(r[1].accountId!)).account;
       expect(neg).toMatchObject({ name: 'Negrito Bar', ownerId: U.rep.id });
       expect(neg.qualification).toEqual({ screens: 'no' });
+      // «¿De qué empresa vas a hablar?»: el buscador la encuentra aunque el dictado falle; elegida, todo va a esa.
+      const found = await rep.accountSearch('ghecko');
+      expect(found[0]).toMatchObject({ id: gecko, name: 'Gecko Valencia' });
+      expect(found[0].zone).toContain('Valencia');
+      const one = await rep.notesSplit('lleno a la una y media, dos pantallas pequeñas', { seller: 'Enjoy' }, gecko);
+      expect(one).toHaveLength(1);
+      expect(one[0]).toMatchObject({ venue: 'Gecko Valencia', note: 'lleno a la una y media, dos pantallas pequeñas' });
+      expect(one[0].candidates).toEqual([expect.objectContaining({ id: gecko, score: 1 })]);
       // En la de otro, no: se dice cuál ha fallado y las demás se guardan.
       const ajena = await t.admin.accounts.create({ name: 'Slavia', zoneId: t.vlc });
       await t.admin.accounts.assign(ajena, E.rep2.id);

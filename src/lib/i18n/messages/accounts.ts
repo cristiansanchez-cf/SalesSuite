@@ -14,7 +14,7 @@ const es = {
   },
   list: {
     eyebrow: 'CRM', title: 'Empresas',
-    lede: (days: number) => `Las empresas con las que trabajas y quién lleva cada una. Si ya la lleva otra persona, no la toques (esa venta no te daría comisión). Cada contacto te la reserva ${days} días.`,
+    lede: (days: number) => `Si ya la lleva otra persona, no la toques. Cada contacto te la reserva ${days} días.`,
     import: 'Importar', newAccount: 'Nueva empresa',
     yourZone: (zones: string) => `Tu zona: ${zones}`, noZone: 'Aún no tienes zona asignada', seeAll: 'Ves todas las cuentas.',
     assignInTerritory: 'Asigna zonas en Territorio.', askLead: 'Pídeselo a tu gerente.',
@@ -112,7 +112,7 @@ export const accountsMessages = defineMessages({
     },
     list: {
       eyebrow: 'CRM', title: 'Companies',
-      lede: (days) => `The companies you work with and who handles each one. If someone else already has it, leave it (that sale wouldn’t earn you commission). Each contact reserves it for you for ${days} days.`,
+      lede: (days) => `If someone else already has it, leave it. Each contact reserves it for you for ${days} days.`,
       import: 'Import', newAccount: 'New company',
       yourZone: (zones) => `Your zone: ${zones}`, noZone: 'You have no zone assigned yet', seeAll: 'You see every account.',
       assignInTerritory: 'Assign zones in Territory.', askLead: 'Ask your manager.',
@@ -206,7 +206,7 @@ export const accountsMessages = defineMessages({
     },
     list: {
       eyebrow: 'CRM', title: 'Empresas',
-      lede: (days) => `As empresas com que você trabalha e quem cuida de cada uma. Se outra pessoa já cuida dela, não mexa (essa venda não te daria comissão). Cada contato a reserva para você por ${days} dias.`,
+      lede: (days) => `Se outra pessoa já cuida dela, não mexa. Cada contato a reserva para você por ${days} dias.`,
       import: 'Importar', newAccount: 'Nova empresa',
       yourZone: (zones) => `Sua região: ${zones}`, noZone: 'Você ainda não tem região atribuída', seeAll: 'Você vê todas as contas.',
       assignInTerritory: 'Atribua regiões em Território.', askLead: 'Peça ao seu gerente de vendas.',
@@ -300,7 +300,7 @@ export const accountsMessages = defineMessages({
     },
     list: {
       eyebrow: 'CRM', title: '회사',
-      lede: (days) => `함께 일하는 회사와 각 회사의 담당자입니다. 다른 사람이 이미 담당 중이면 건드리지 마세요(그 판매에는 커미션이 없습니다). 연락할 때마다 ${days}일 동안 내게 예약됩니다.`,
+      lede: (days) => `다른 사람이 이미 담당 중이면 건드리지 마세요. 연락할 때마다 ${days}일 동안 내게 예약됩니다.`,
       import: '가져오기', newAccount: '새 회사',
       yourZone: (zones) => `내 담당 지역: ${zones}`, noZone: '아직 담당 지역이 없습니다', seeAll: '모든 계정이 표시됩니다.',
       assignInTerritory: '담당 지역 메뉴에서 지역을 지정하세요.', askLead: '영업 리더에게 요청하세요.',

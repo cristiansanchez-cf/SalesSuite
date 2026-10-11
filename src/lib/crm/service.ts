@@ -15,8 +15,8 @@ import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, typ
 import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
 import { fixtureWebsite, realWebsite, type WebsiteApi } from './website';
-import { areaQuery, markCandidates, slimPlace, RADIUS, type Candidate } from './prospect';
-import { claudeNotes, fixtureNotes, matchAccounts, type NoteItem, type NotesApi } from './notes';
+import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
@@ -859,11 +859,40 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * La IA separa lo contado por sitio (nota, cualificación, próximo paso) y cada sitio se busca en el CRM por el nombre
    * (los más parecidos primero). No guarda nada: lo confirma la persona con notesApply.
    */
-  async function notesSplit(text: string, ctx: { seller: string }): Promise<Array<NoteItem & { candidates: Array<{ id: string; name: string; zone: string; score: number; discarded: boolean }> }>> {
+  type NoteCandidate = { id: string; name: string; zone: string; score: number; discarded: boolean };
+  /** «Comunidad Valenciana › Valencia»: lo justo para reconocer el sitio. */
+  const placeOf = (zones: Zone[], zoneId: string | null) => {
+    const byId = new Map(zones.map((z) => [z.id, z]));
+    const parts: string[] = [];
+    for (let z = zoneId ? byId.get(zoneId) : undefined, i = 0; z && i < 8; z = z.parentId ? byId.get(z.parentId) : undefined, i++) parts.unshift(z.name);
+    return parts.slice(-2).join(' › ');
+  };
+  /**
+   * Buscar una empresa por el nombre para «¿De qué empresa vas a hablar?» (autocompletar): sin IA, tolera errores del
+   * dictado. Las 8 que más se parecen, con su sitio.
+   */
+  async function accountSearch(q: string): Promise<NoteCandidate[]> {
+    requireUse();
+    const query = String(q ?? '').trim().slice(0, 80);
+    if (query.length < 2) return [];
+    const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
+    const key = nameKey(query);
+    const hits = all.map((a) => ({ a, score: nameKey(a.name).includes(key) ? Math.max(0.9, nameScore(query, a.name)) : nameScore(query, a.name) }))
+      .filter((x) => x.score >= 0.6).sort((x, y) => y.score - x.score || x.a.name.localeCompare(y.a.name, 'es')).slice(0, 8);
+    return hits.map(({ a, score }) => ({ id: a.id, name: a.name, zone: placeOf(zones, a.zoneId), score: Math.round(score * 100) / 100, discarded: !!a.discardedAt }));
+  }
+  /**
+   * La IA separa lo contado por sitio (nota, cualificación, próximo paso) y cada sitio se busca en el CRM por el nombre
+   * (los más parecidos primero; sin IA). Si quien cuenta ya ha elegido la empresa, todo va a esa (un solo sitio) y la IA
+   * solo ordena. No guarda nada: lo confirma la persona con notesApply.
+   */
+  async function notesSplit(text: string, ctx: { seller: string }, accountId?: string | null): Promise<Array<NoteItem & { candidates: NoteCandidate[] }>> {
     requireUse();
     if (!notesAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const clean = String(text ?? '').trim().slice(0, NOTES_MAX);
     if (clean.length < 3) throw new AdminError(422, 'Datos no válidos');
+    const chosen = accountId ? await accounts.getAccount(accountId) : null;
+    if (accountId && (!chosen || chosen.tenantId !== t)) throw new AdminError(404, 'Cuenta no encontrada');
     await quota('ai');
     let items: NoteItem[] = [];
     try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller }); } catch (e) {
@@ -871,10 +900,21 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
     const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
-    const zoneName = new Map(zones.map((z) => [z.id, z.name]));
+    if (chosen) {
+      // Todo a la empresa elegida: las notas juntas, lo marcado sumado, el primer próximo paso.
+      const q: Record<string, string> = {};
+      for (const it of items) Object.assign(q, it.qualification);
+      const first = items.find((it) => it.nextStep || it.nextDays != null);
+      const one: NoteItem = {
+        venue: chosen.name, note: (items.map((it) => it.note).join('\n\n') || clean).slice(0, 4000),
+        channel: items[0]?.channel ?? 'visit', outcome: items[0]?.outcome ?? 'note', day: items[0]?.day ?? null,
+        qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
+      };
+      return [{ ...one, candidates: [{ id: chosen.id, name: chosen.name, zone: placeOf(zones, chosen.zoneId), score: 1, discarded: !!chosen.discardedAt }] }];
+    }
     return items.map((it) => ({
       ...it,
-      candidates: matchAccounts(it.venue, all).map((a) => ({ id: a.id, name: a.name, zone: a.zoneId ? zoneName.get(a.zoneId) ?? '' : '', score: Math.round(a.score * 100) / 100, discarded: !!a.discardedAt })),
+      candidates: matchAccounts(it.venue, all).map((a) => ({ id: a.id, name: a.name, zone: placeOf(zones, a.zoneId), score: Math.round(a.score * 100) / 100, discarded: !!a.discardedAt })),
     }));
   }
   const noteApplySchema = z.array(z.object({
@@ -1287,7 +1327,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
-    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
+    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
