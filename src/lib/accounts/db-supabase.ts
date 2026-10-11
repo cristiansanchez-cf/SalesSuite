@@ -39,7 +39,7 @@ const toField = (r: Row): CrmField => ({
 });
 const accountRow = (t: string, a: AccountInsert) => ({
   tenant_id: t, name: a.name, zone_id: a.zoneId, segment_id: a.segmentId, address: a.address, external_ref: a.externalRef, notes: a.notes,
-  owner_id: a.ownerId ?? null, fields: a.fields ?? {}, parent_id: a.parentId ?? null, tags: a.tags ?? [], import_id: a.importId ?? null,
+  owner_id: a.ownerId ?? null, fields: a.fields ?? {}, ...(a.kind ? { kind: a.kind } : {}), parent_id: a.parentId ?? null, tags: a.tags ?? [], import_id: a.importId ?? null,
   ...contactRow(a.contact),
 });
 const toSweep = (r: Row): Sweep => ({ id: r.id, tenantId: r.tenant_id, query: r.query, zoneId: r.zone_id ?? null, zoneLabel: r.zone_label ?? '', segmentId: r.segment_id ?? null,
@@ -195,6 +195,15 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       const r = check(await sb.from('crm_sweep').select('imported').eq('id', id).maybeSingle()) as Row | null;
       if (!r) return false;
       return (check(await sb.from('crm_sweep').update({ imported: { ...(r.imported ?? {}), ...imported } }).eq('id', id).select('id')) ?? []).length > 0;
+    },
+    async getKinds(t) {
+      const r = check(await sb.from('crm_settings').select('kinds').eq('tenant_id', t).maybeSingle()) as Row | null;
+      return r?.kinds ?? null;
+    },
+    async saveKinds(t, kinds) {
+      const r = check(await sb.from('crm_settings').select('tenant_id').eq('tenant_id', t).maybeSingle()) as Row | null;
+      if (r) check(await sb.from('crm_settings').update({ kinds, updated_at: new Date().toISOString() }).eq('tenant_id', t));
+      else check(await sb.from('crm_settings').insert({ tenant_id: t, kinds }));
     },
     async getPriorityWeights(t) {
       const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;

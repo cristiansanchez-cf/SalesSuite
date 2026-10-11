@@ -1,7 +1,7 @@
 import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
 import type { PlaceResult } from '../crm/places';
-import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep, AccountFact } from './types';
+import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep, AccountFact, KindDef } from './types';
 
 /** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
 export interface GoogleData {
@@ -21,6 +21,8 @@ export interface AccountInsert {
   parentId?: string | null;
   tags?: string[];
   importId?: string | null;
+  /** Tipo de cliente (§21); si no, el principal. */
+  kind?: string;
   contact?: AccountContact;
 }
 export interface AccountPatch {
@@ -98,6 +100,9 @@ export interface AccountsDb {
   listSweeps(tenantId: string, limit: number): Promise<Sweep[]>;
   getSweep(id: string): Promise<Sweep | null>;
   markSwept(id: string, imported: Record<string, string>): Promise<boolean>;
+  /** Tipos de cliente del espacio (§21), tal cual se guardaron (se normalizan en el servicio). */
+  getKinds(tenantId: string): Promise<unknown>;
+  saveKinds(tenantId: string, kinds: KindDef[]): Promise<void>;
   getPriorityWeights(tenantId: string): Promise<Partial<Weights> | null>;
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */

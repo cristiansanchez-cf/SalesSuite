@@ -123,6 +123,7 @@ const googleResults = googleBox.r;
 const G = priorityMessages[locale].google;
 const CL = cleanupMessages[locale];
 const NT = notesMessages[locale];
+const kindDefs = await acc.kinds();
 const googleQ = googleBox.q || (admin.crm.hasGoogle() ? await admin.crm.googleQuery(id) : '');
 const photoSrc = (n: string | null | undefined) => (n ? `/admin/api/crm/place-photo?n=${encodeURIComponent(n)}` : null);
 const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
@@ -518,13 +519,16 @@ const STATE_ALERT = {
       </section>
       {canEdit && (
         <section class="co-card grid gap-3" id="acc-kind" data-testid="acc-kind">
-          <form method="post" class="grid gap-2" data-async="acc-kind acc-head">
-            <input type="hidden" name="action" value="kind" />
-            <label class="co-field">{CL.kind}
-              <select class="co-select" name="kind" data-testid="kind-select">{(['company', 'dj'] as const).map((k) => <option value={k} selected={a.kind === k}>{CL.kinds[k]}</option>)}</select>
-              <span class="co-help">{CL.kindHelp}</span></label>
-            <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="kind-save"><span>{F.contact.save}</span></button>
-          </form>
+          {/* El tipo de cliente, si el espacio tiene más de uno (§21). */}
+          {kindDefs.length > 1 && (
+            <form method="post" class="grid gap-2" data-async="acc-kind acc-head">
+              <input type="hidden" name="action" value="kind" />
+              <label class="co-field">{CL.kind}
+                <select class="co-select" name="kind" data-testid="kind-select">{kindDefs.map((k) => <option value={k.key} selected={(kindDefs.some((d) => d.key === a.kind) ? a.kind : 'company') === k.key}>{k.label}</option>)}</select>
+                {kindDefs.some((k) => k.key === 'dj') && <span class="co-help">{CL.kindHelp}</span>}</label>
+              <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="kind-save"><span>{F.contact.save}</span></button>
+            </form>
+          )}
           {a.discardedAt
             ? <form method="post" data-async="acc-kind acc-head"><input type="hidden" name="action" value="restore" />
                 <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="restore"><Icon name="rotate-ccw" size={14} /><span>{CL.restore}</span></button></form>

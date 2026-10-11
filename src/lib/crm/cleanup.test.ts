@@ -38,7 +38,7 @@ describe('limpiar el CRM', () => {
     expect(sug.find((x) => x.id === dj)).toMatchObject({ kind: 'dj', discard: null });
     expect(sug.find((x) => x.id === shop)).toMatchObject({ discard: 'partner' });
     const r = await adm.cleanupApply(sug);
-    expect(r).toEqual({ changed: 2, djs: 1, discarded: 1 });
+    expect(r).toEqual({ changed: 2, retyped: 1, discarded: 1 });
     expect(d.account.find((a) => a.id === shop)).toMatchObject({ discard_reason: 'partner', discard_note: 'Tienda de música: no es cliente, puede ser alianza.' });
 
     const acc = createAccountsService(demoAccountsDb(ADMIN), demoAdminDb(), sess(ADMIN, 'admin'));

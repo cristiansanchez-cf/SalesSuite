@@ -34,12 +34,14 @@ const scope = (['zone', 'mine', 'all'].includes(q.get('ver') ?? '') ? q.get('ver
 const stateF = (q.get('estado') ?? 'all') as State | 'all';
 const zona = q.get('zona') ?? '';
 // Empresas, DJs o descartadas: como en la lista (por defecto, las empresas).
-const tipo = (['dj', 'descartadas'].includes(q.get('tipo') ?? '') ? q.get('tipo') : '') as '' | 'dj' | 'descartadas';
+// La misma pestaña que en la lista (§21): un tipo de cliente del espacio o «descartadas».
+const tipoQ = q.get('tipo') ?? '';
+const tipo = tipoQ === 'descartadas' || (tipoQ !== 'company' && (await acc.kinds()).some((k) => k.key === tipoQ)) ? tipoQ : '';
 const tempF = (['caliente', 'frio', 'sin'].includes(q.get('temp') ?? '') ? q.get('temp') : '') as TempFilter;
 const byRep = perms.manageAccounts && q.get('color') === 'comercial';
 
 const [{ items, scope: effective }, t, segments, weights, members] = await Promise.all([
-  acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: tipo === 'dj' ? 'dj' : tipo === 'descartadas' ? 'discarded' : 'company' }), acc.territory(), admin.playbook.market(), admin.crm.weights(),
+  acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: tipo === 'descartadas' ? 'discarded' : tipo || 'company' }), acc.territory(), admin.playbook.market(), admin.crm.weights(),
   perms.manageAccounts ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
 ]);
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));

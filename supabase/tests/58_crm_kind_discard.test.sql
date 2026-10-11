@@ -3,6 +3,11 @@
 create or replace function pg_temp.assert(cond boolean, msg text) returns void language plpgsql as $$
 begin if not coalesce(cond, false) then raise exception 'ASSERT FAILED: %', msg; end if; end $$;
 
+-- Los tipos son del espacio (§21): Enjoy tiene empresa y DJ.
+insert into public.crm_settings (tenant_id, kinds) values ('00000000-0000-4000-8000-000000000e01',
+  '[{"key":"company","label":"Empresa","plural":"Empresas","icon":"building2"},{"key":"dj","label":"DJ o artista","plural":"DJs","icon":"music"}]')
+on conflict (tenant_id) do update set kinds = excluded.kinds;
+
 set role authenticated;
 set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';  -- admin de Enjoy
 insert into public.account (id, tenant_id, name) values

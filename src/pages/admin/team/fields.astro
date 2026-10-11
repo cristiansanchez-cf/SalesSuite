@@ -19,6 +19,8 @@ import type { IconName } from '~/lib/ui/icons';
 import { i18n } from '~/lib/i18n';
 import { crmMessages } from '~/lib/i18n/messages/crm';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { kindsMessages } from '~/lib/i18n/messages/kinds';
+import { KIND_ICONS } from '~/lib/accounts/types';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -32,6 +34,8 @@ const PF = peopleMessages[locale].fields;
 const de = Astro.url.searchParams.get('de');
 const target = de === 'persona' ? 'contact' : 'account';
 const weightsTab = de === 'prioridad';
+const kindsTab = de === 'tipos';
+const K = kindsMessages[locale];
 const R = priorityMessages[locale];
 const ICON: Record<FieldType, IconName> = {
   text: 'pencil', long_text: 'file-text', number: 'gauge', money: 'wallet', checkbox: 'circle-check', select: 'list-checks',
@@ -52,6 +56,14 @@ if (Astro.request.method === 'POST') {
     });
     switch (str('action')) {
       case 'weights': await admin.crm.saveWeights(Object.fromEntries(CRITERIA.map((k) => [k, str(k)]))); ok = 'weights'; break;
+      case 'kinds': {
+        // Una fila por tipo (las vacías no cuentan; las marcadas para quitar, tampoco).
+        const keys = f.getAll('kKey').map(String), labels = f.getAll('kLabel').map(String), plurals = f.getAll('kPlural').map(String), icons = f.getAll('kIcon').map(String);
+        const remove = new Set(f.getAll('kRemove').map(String));
+        await acc.saveKinds(labels.map((label, i) => ({ key: keys[i], label, plural: plurals[i], icon: icons[i] })).filter((k) => k.label.trim() && !(k.key && remove.has(k.key))));
+        ok = 'kinds';
+        break;
+      }
       case 'create': await acc.saveField(input()); ok = 'saved'; break;
       case 'save': await acc.saveField(input(), str('id')); ok = 'saved'; break;
       case 'up': await acc.moveField(str('id'), -1); break;
@@ -60,11 +72,12 @@ if (Astro.request.method === 'POST') {
       case 'restore': await acc.archiveField(str('id'), false); ok = 'restored'; break;
     }
   });
-  const back = new URLSearchParams({ ...(target === 'contact' ? { de: 'persona' } : {}), ...(ok === 'weights' ? { de: 'prioridad' } : {}), ...(ok ? { ok } : {}) });
+  const back = new URLSearchParams({ ...(target === 'contact' ? { de: 'persona' } : {}), ...(ok === 'weights' ? { de: 'prioridad' } : {}), ...(ok === 'kinds' ? { de: 'tipos' } : {}), ...(ok ? { ok } : {}) });
   if (!result.error) return Astro.redirect(`/admin/team/fields${back.size ? `?${back}` : ''}`, 303);
 }
 const weights = await admin.crm.weights();
-const okMsg = flash(Astro.url, { weights: R.weights.ok, saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
+const kindDefs = await acc.kinds();
+const okMsg = flash(Astro.url, { kinds: K.ok, weights: R.weights.ok, saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
 const [all, segments] = await Promise.all([acc.crmFields({ archived: true }), admin.playbook.market()]);
 const active = all.filter((x) => !x.archivedAt && x.target === target);
 const archived = all.filter((x) => x.archivedAt && x.target === target);
@@ -74,16 +87,36 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
 ---
 <AdminLayout title={E.title}>
   <PageHeader eyebrow={E.eyebrow} title={E.title} lede={E.lede}>
-    <button type="button" class="co-btn co-btn--primary" data-dialog-open="field-new" data-testid="field-add"><Icon name="plus" size={16} />{E.add}</button>
+    {!weightsTab && !kindsTab && <button type="button" class="co-btn co-btn--primary" data-dialog-open="field-new" data-testid="field-add"><Icon name="plus" size={16} />{E.add}</button>}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
   <nav class="co-tabs mb-4" aria-label={PF.target} data-scroll-x>
-    <a class="co-tab" href="/admin/team/fields" aria-current={target === 'account' ? 'page' : undefined} data-testid="fields-companies">{PF.companies} · {count('account')}</a>
+    <a class="co-tab" href="/admin/team/fields" aria-current={target === 'account' && !weightsTab && !kindsTab ? 'page' : undefined} data-testid="fields-companies">{PF.companies} · {count('account')}</a>
     <a class="co-tab" href="/admin/team/fields?de=persona" aria-current={target === 'contact' && !weightsTab ? 'page' : undefined} data-testid="fields-people">{PF.people} · {count('contact')}</a>
     <a class="co-tab" href="/admin/team/fields?de=prioridad" aria-current={weightsTab ? 'page' : undefined} data-testid="fields-priority">{R.weights.tab}</a>
+    <a class="co-tab" href="/admin/team/fields?de=tipos" aria-current={kindsTab ? 'page' : undefined} data-testid="fields-kinds">{K.tab} · {kindDefs.length}</a>
   </nav>
+  {kindsTab && (
+    <form method="post" class="co-card grid max-w-3xl gap-4" data-testid="kinds-form">
+      <input type="hidden" name="action" value="kinds" />
+      <div><h2 class="co-entity">{K.title}</h2><p class="co-meta mt-1">{K.lede}</p></div>
+      <ul class="m-0 grid gap-2 p-0">
+        {[...kindDefs, { key: '', label: '', plural: '', icon: 'building2' }].map((k, i) => (
+          <li class="grid list-none items-end gap-2 sm:grid-cols-[1fr_1fr_9rem_6rem]" data-testid="kind-row" data-key={k.key}>
+            <input type="hidden" name="kKey" value={k.key} />
+            <label class="co-field !gap-1 text-xs">{K.label}<input class="co-input" name="kLabel" value={k.label} maxlength="40" placeholder={k.key ? '' : K.newLabel} required={i === 0} data-testid="kind-label" /></label>
+            <label class="co-field !gap-1 text-xs">{K.plural}<input class="co-input" name="kPlural" value={k.plural} maxlength="40" placeholder={k.key ? '' : K.newPlural} data-testid="kind-plural" /></label>
+            <label class="co-field !gap-1 text-xs">{K.icon}<select class="co-select" name="kIcon">{KIND_ICONS.map((ic) => <option value={ic} selected={ic === k.icon}>{ic}</option>)}</select></label>
+            <span class="pb-2">{i === 0 ? <span class="co-badge">{K.main}</span> : k.key ? <label class="co-meta inline-flex items-center gap-1"><input type="checkbox" name="kRemove" value={k.key} data-testid="kind-remove" />{K.remove}</label> : <span class="co-meta">{K.add}</span>}</span>
+          </li>
+        ))}
+      </ul>
+      <p class="co-help m-0">{K.removeHelp}</p>
+      <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="kinds-save">{K.save}</button>
+    </form>
+  )}
   {weightsTab && (
     <form method="post" class="co-card grid max-w-xl gap-4" data-testid="weights-form">
       <input type="hidden" name="action" value="weights" />
@@ -105,7 +138,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
       </script>
     </form>
   )}
-  {weightsTab ? null : active.length === 0
+  {weightsTab || kindsTab ? null : active.length === 0
     ? <EmptyState kind="create" title={E.emptyTitle} detail={E.emptyDetail} action={{ dialog: 'field-new', label: E.add }} />
     : <ul class="co-rows" data-testid="fields">
         {active.map((x, i) => (
@@ -136,7 +169,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
         ))}
       </ul>}
 
-  {!weightsTab && archived.length > 0 && (
+  {!weightsTab && !kindsTab && archived.length > 0 && (
     <details class="mt-8" data-testid="fields-archived">
       <summary class="text-eyebrow cursor-pointer">{E.archived(archived.length)}</summary>
       <p class="co-help mt-2">{E.archivedHelp}</p>

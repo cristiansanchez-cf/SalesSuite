@@ -481,6 +481,27 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(names).toEqual(expect.arrayContaining(['Comunidad Valenciana', 'Madrid', 'Requena']));  // asignadas o con empresas: se quedan
     });
 
+    test('tipos de cliente por espacio (§21): renombrar, añadir y quitar (sus empresas pasan al principal)', async () => {
+      const t = await territory();
+      const rep = await ctx(U.rep);
+      await expect(rep.accounts.saveKinds([{ key: 'company', label: 'Centro' }])).rejects.toMatchObject({ status: 403 });
+      let k = await t.admin.accounts.saveKinds([{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }]);
+      expect(k.map((x) => x.key)).toEqual(['company', 'dj']);
+      const a = await t.admin.accounts.create({ name: 'DJ Tipos', zoneId: t.vlc, kind: 'dj' });
+      const b = await t.admin.accounts.create({ name: 'Sala Tipos', zoneId: t.vlc });
+      const raro = await t.admin.accounts.create({ name: 'Raro', zoneId: t.vlc, kind: 'ong' });   // tipo que no existe: al principal
+      expect((await t.admin.accounts.get(raro)).account.kind).toBe('company');
+      k = await t.admin.accounts.saveKinds([{ key: 'company', label: 'Centro', plural: 'Centros', icon: 'building2' }, { label: 'ONG', plural: 'ONGs', icon: 'heart' }]);
+      expect(k.map((x) => [x.key, x.label])).toEqual([['company', 'Centro'], ['ong', 'ONG']]);
+      expect(await t.admin.accounts.kinds()).toEqual(k);
+      expect((await t.admin.accounts.get(a)).account.kind).toBe('company');   // quitado DJ: pasa al principal
+      expect((await t.admin.accounts.get(b)).account.kind).toBe('company');
+      const c = await t.admin.accounts.create({ name: 'ONG Tipos', zoneId: t.vlc, kind: 'ong' });
+      const l = await t.admin.accounts.list({ scope: 'all', view: 'ong' });
+      expect(l.items.map((i) => i.id)).toEqual([c]);
+      expect(l.kinds.ong).toBe(1);
+    });
+
     test('CRM fase 4: Google cambia o quita lo suyo (lo de a mano se queda); tipo y descartar; el punto de la ciudad', async () => {
       const t = await territory();
       const rep = await ctx(U.rep);
@@ -499,6 +520,8 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(x).toMatchObject({ placeId: null, phone: null, website: null, address: 'Calle a mano 1' });
 
       // Tipo y descartar: el comercial en una libre sí; en la de otro, no.
+      await t.admin.accounts.saveKinds([{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }]);
+      await expect(db.classify(a, 'ong', null, null)).rejects.toBeTruthy();   // tipo que el espacio no tiene
       await db.classify(a, 'dj', 'partner', 'Posible alianza');
       x = (await t.admin.accounts.get(a)).account;
       expect(x).toMatchObject({ kind: 'dj', discardReason: 'partner', discardNote: 'Posible alianza' });

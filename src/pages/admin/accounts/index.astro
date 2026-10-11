@@ -52,7 +52,7 @@ if (Astro.request.method === 'POST') {
   let to = '';
   result = await formAction(async () => {
     if (str('action') === 'create') {
-      const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes') });
+      const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes'), kind: str('kind') });
       to = `/admin/accounts/${id}?ok=created`;
     } else if (str('action') === 'move-group') {
       const ids = f.getAll('ids').map(String).filter(Boolean);
@@ -74,9 +74,11 @@ const search = q.get('q') ?? '';
 const lista = q.get('lista') ?? '';
 // Ciudad o zona (con sus ciudades dentro).
 const zona = q.get('zona') ?? '';
-// Empresas · DJs · Descartadas (§17).
-const tipo = (['dj', 'descartadas'].includes(q.get('tipo') ?? '') ? q.get('tipo') : '') as '' | 'dj' | 'descartadas';
-const listView = tipo === 'dj' ? 'dj' : tipo === 'descartadas' ? 'discarded' : 'company';
+// Pestañas por tipo de cliente del espacio (§21: Empresas · DJs en Enjoy; Centros · ONGs en Oquea) y Descartadas.
+const kindDefs = await acc.kinds();
+const tipoQ = q.get('tipo') ?? '';
+const tipo = tipoQ === 'descartadas' || kindDefs.some((k) => k.key === tipoQ && k.key !== 'company') ? tipoQ : '';
+const listView = tipo === 'descartadas' ? 'discarded' : tipo || 'company';
 const shownMax = Math.max(100, Math.min(Number(q.get('n')) || 100, 20000));
 // Campos del CRM (docs/CRM_DINAMICO.md): los marcados salen como columna y los filtrables como filtro (?c.<clave>=valor).
 const crm = (await acc.crmFields()).filter((x) => x.target === 'account' && (!x.tags.length || x.tags.includes(lista)));
@@ -179,7 +181,7 @@ const panelOpen = nFilters > 0;
 
   {/* Una sola barra: buscar, ciudad y filtros. Cambiar cualquier cosa aplica al momento (sin botón «Filtrar»). */}
   <nav id="kind-tabs" class="co-segmented mb-3 w-fit !px-1" aria-label={CL.tabs.label} data-testid="kind-tabs">
-    {([['', CL.tabs.company, kinds.company], ['dj', CL.tabs.dj, kinds.dj], ['descartadas', CL.tabs.discarded, kinds.discarded]] as const).map(([k, l, n]) => (
+    {[...kindDefs.map((k) => [k.key === 'company' ? '' : k.key, k.plural, kinds[k.key] ?? 0] as const), ['descartadas', CL.tabs.discarded, kinds.discarded ?? 0] as const].map(([k, l, n]) => (
       <a href={href({ tipo: k })} class="!px-4" aria-current={tipo === k ? 'page' : undefined} data-testid={`kind-tab-${k || 'company'}`}>{l} <span class="co-meta">{n}</span></a>
     ))}
   </nav>
@@ -366,6 +368,11 @@ const panelOpen = nFilters > 0;
             <select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
           </label>
         </div>
+        {kindDefs.length > 1 && (
+          <label class="co-field">{CL.kind}
+            <select class="co-select" name="kind" data-testid="new-account-kind">{kindDefs.map((k) => <option value={k.key} selected={k.key === (tipo && tipo !== 'descartadas' ? tipo : 'company')}>{k.label}</option>)}</select>
+          </label>
+        )}
         <label class="co-field">{M.address} <span class="co-help">{M.optional}</span><input class="co-input" name="address" maxlength="300" /></label>
         <label class="co-field">{M.notes} <span class="co-help">{M.optional}</span><textarea class="co-textarea !min-h-[64px]" name="notes" maxlength="2000" placeholder={M.notesPlaceholder}></textarea></label>
       </div>

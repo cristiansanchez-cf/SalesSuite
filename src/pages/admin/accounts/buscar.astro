@@ -35,7 +35,7 @@ if (Astro.request.method === 'POST') {
 }
 
 const sweepId = Astro.url.searchParams.get('id') ?? '';
-const [t, segments, history] = await Promise.all([admin.accounts.territory(), admin.playbook.market(), admin.crm.prospectList()]);
+const [t, segments, history, kindDefs] = await Promise.all([admin.accounts.territory(), admin.playbook.market(), admin.crm.prospectList(), admin.accounts.kinds()]);
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 let open: Awaited<ReturnType<typeof admin.crm.prospectGet>> | null = null;
 if (sweepId) {
@@ -133,6 +133,11 @@ const lastQuery = history[0]?.query ?? '';
           </ul>
           <div class="sticky bottom-0 grid gap-2 border-t border-[var(--co-line)] bg-[var(--co-bg)] py-3">
             <div class="flex flex-wrap items-end gap-3">
+              {kindDefs.length > 1 && (
+                <label class="co-field">{M.kind}
+                  <select class="co-select" data-kind data-testid="prospect-kind">{kindDefs.map((k) => <option value={k.key}>{k.label}</option>)}</select>
+                </label>
+              )}
               {perms.manageAccounts && (
                 <label class="co-field">{M.owner}
                   <select class="co-select" data-owner data-testid="prospect-owner">
@@ -192,12 +197,13 @@ const lastQuery = history[0]?.query ?? '';
     const ids = picked();
     if (!ids.length || !status) return;
     const owner = document.querySelector<HTMLSelectElement>('[data-owner]')?.value ?? 'me';
+    const kind = document.querySelector<HTMLSelectElement>('[data-kind]')?.value ?? null;
     btn.disabled = true; status.hidden = false;
     let c = 0, h = 0, f = 0, done = 0, error = '';
     for (let i = 0; i < ids.length && !error; i += d.chunk) {
       status.textContent = `${d.T.importing.replace('{i}', String(done)).replace('{n}', String(ids.length))} ${d.T.stay}`;
       const part = ids.slice(i, i + d.chunk);
-      const res = await fetch('/admin/api/crm/prospect-import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sweep: d.sweep, ids: part, owner }) }).catch(() => null);
+      const res = await fetch('/admin/api/crm/prospect-import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sweep: d.sweep, ids: part, owner, kind }) }).catch(() => null);
       const j = res ? ((await res.json().catch(() => ({}))) as { created?: number; have?: number; failed?: number; ids?: Record<string, string>; error?: string }) : {};
       if (!res || !res.ok) { error = j.error || d.T.failed; break; }
       c += j.created ?? 0; h += j.have ?? 0; f += j.failed ?? 0; done += part.length;

@@ -581,3 +581,23 @@ los formularios con `data-no-progress` no la enseñan (p. ej. «Entender» en Ap
 Empresas, buscar y filtrar no recarga la página: el formulario lleva `data-async-get="kind-tabs acc-results"` y solo
 se cambian los resultados (la URL se actualiza); mientras se escribe, lo que ya se ve se filtra al momento.
 
+
+## 21. Tipos de cliente por espacio (hecho)
+
+Antes «Empresa / DJ» estaba fijo para todos los espacios; ahora **cada espacio define sus tipos** (Enjoy: Empresas y
+DJs; un centro de buceo: Centros y ONGs). Se editan en **Datos del CRM › Campos › Tipos de cliente** (solo admin):
+nombre, plural (el de la pestaña) e icono, hasta 12.
+
+- **El principal** (clave `company`) es el primero: no se quita, solo se renombra, y es el de las empresas nuevas.
+- **Tipo nuevo**: la clave sale del nombre («ONG» → `ong`) y no cambia aunque se renombre después.
+- **Quitar un tipo**: sus empresas pasan al principal (no se pierde nada).
+- Se usan en las pestañas de Empresas y el mapa, el alta («Tipo»), Buscar clientes («Importar como»), el cambio de
+  tipo en la ficha (solo si hay más de uno) y Limpiar (la IA propone entre los tipos del espacio).
+
+Datos: `crm_settings.kinds` (jsonb). `account.kind` acepta cualquier clave con formato; `account_classify` y
+`crm_classify_accounts` comprueban con `crm_kind_ok` que el tipo existe en el espacio (si no, «Tipo no válido»). La
+migración `20261120000000_crm_kinds.sql` deja a cada espacio con «Empresa» y, a Enjoy (o a quien ya tuviera DJs),
+también «DJ o artista».
+
+Pruebas: contrato de cuentas (demo y Postgres), `supabase/tests/58_crm_kind_discard.test.sql`,
+`scripts/smoke-kinds.cjs`.

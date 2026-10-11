@@ -106,7 +106,7 @@ export interface AccountRow {
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
   place_rating?: number | null; place_reviews?: number | null; place_photo?: string | null; place_filled?: Record<string, string> | null;
   facts?: unknown[];
-  kind?: 'company' | 'dj'; discarded_at?: string | null; discard_reason?: string | null; discard_note?: string | null; discarded_by?: string | null;
+  kind?: string; discarded_at?: string | null; discard_reason?: string | null; discard_note?: string | null; discarded_by?: string | null;
   ai_research?: unknown; ai_research_at?: string | null;
 }
 export interface CrmActivityRow {
@@ -200,7 +200,7 @@ export interface DemoDb {
   crm_contact_account: CrmContactAccountRow[];
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
-  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number> }>;
+  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[] }>;
   /** Topes de uso por persona y día (Google, IA). */
   usage_counter: Array<{ tenant_id: string; user_id: string; kind: string; day: string; n: number }>;
   crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
@@ -389,7 +389,7 @@ export function freshDemoDb(): DemoDb {
       { tenant_id: ENJOY, contact_id: '00000000-0000-4000-8000-0000000cc501', account_id: '00000000-0000-4000-8000-0000000ac001', role: 'Gerente', created_at: ago(10) },
     ],
     crm_import: [],
-    crm_settings: [],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }] }],
     crm_fix: [],
     crm_sweep: [],
     usage_counter: [],

@@ -11,7 +11,7 @@ import type { AdminSession, DossierRecord, MemberRecord } from '../admin/types';
 import type { AccountsDb } from './db';
 import { fieldInputSchema, matches, parseValues, slugKey, type CrmField, type FieldValues } from '../crm/fields';
 import { stateFor, withDescendants, zoneCovers, zonePath } from './rules';
-import type { Account, AccountDecision, AccountRules, AccountState, AccountTouch, Eligibility, Zone, ZoneAssignment } from './types';
+import { BASE_KIND, normalizeKinds, type Account, type AccountDecision, type AccountRules, type AccountState, type AccountTouch, type Eligibility, type KindDef, type Zone, type ZoneAssignment } from './types';
 
 const id = z.string().uuid();
 const opt = (n: number) => z.string().trim().max(n).transform((v) => v || null).nullable().optional();
@@ -20,6 +20,8 @@ export const accountSchema = z.object({
   zoneId: id.nullable().optional().or(z.literal('').transform(() => null)),
   segmentId: id.nullable().optional().or(z.literal('').transform(() => null)),
   address: opt(300), externalRef: opt(120), notes: opt(2000),
+  /** Tipo de cliente (§21); solo al crear. */
+  kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional().or(z.literal('').transform(() => undefined)),
 });
 export const zoneSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio').max(80),
@@ -47,8 +49,8 @@ export interface AccountListFilter { scope?: 'zone' | 'mine' | 'all'; state?: Ac
   fields?: Record<string, string>;
   /** Solo las de una lista (etiqueta). */
   tag?: string;
-  /** Qué tipo (§17): por defecto, todas las no descartadas; «company» o «dj»; «discarded» solo las descartadas. */
-  view?: 'active' | 'company' | 'dj' | 'discarded' }
+  /** Qué tipo (§21): por defecto, todas las no descartadas; la clave de un tipo del espacio; «discarded» solo las descartadas. */
+  view?: string }
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
   const r = schema.safeParse(input);
@@ -106,7 +108,34 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     return { ...a, state: stateFor(a, s.userId, now()), zonePath: zonePath(zones, a.zoneId), ownerName: label(members.get(a.ownerId ?? '')), wonByName: label(members.get(a.wonBy ?? '')) };
   }
 
-  async function list(f: AccountListFilter = {}): Promise<{ items: AccountView[]; total: number; scope: 'zone' | 'mine' | 'all'; kinds: { company: number; dj: number; discarded: number } }> {
+  /** Tipos de cliente del espacio (§21): el principal primero. */
+  async function kinds(): Promise<KindDef[]> { return normalizeKinds(await db.getKinds(s.tenantId).catch(() => null)); }
+  /**
+   * Guardar los tipos (admin): renombrar, añadir y quitar (el principal no se quita). Las empresas de un tipo que se
+   * quita pasan al principal (no se pierde nada).
+   */
+  async function saveKinds(input: Array<{ key?: string; label?: string; plural?: string; icon?: string }>) {
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin del espacio');
+    const before = await kinds();
+    const used = new Set<string>();
+    const next = normalizeKinds((Array.isArray(input) ? input : []).slice(0, 12).map((k) => {
+      let key = String(k.key ?? '').trim();
+      if (!key) { const base = slugKey(String(k.label ?? '')).slice(0, 36) || 'tipo'; key = base; for (let i = 2; used.has(key) || before.some((b) => b.key === key && !input.some((x) => x.key === key)); i++) key = `${base}-${i}`; }
+      used.add(key);
+      return { ...k, key };
+    }));
+    const gone = before.filter((b) => !next.some((n) => n.key === b.key)).map((b) => b.key);
+    try { await db.saveKinds(s.tenantId, next); } catch (e) { mapError(e); }
+    if (gone.length) {
+      const moved = (await db.listAccounts(s.tenantId, { limit: 20000 })).filter((a) => gone.includes(a.kind));
+      if (moved.length) {
+        try { await db.classifyMany(s.tenantId, moved.map((a) => ({ id: a.id, kind: BASE_KIND, reason: a.discardReason, note: a.discardNote }))); } catch (e) { mapError(e); }
+      }
+    }
+    return next;
+  }
+
+  async function list(f: AccountListFilter = {}): Promise<{ items: AccountView[]; total: number; scope: 'zone' | 'mine' | 'all'; kinds: Record<string, number> }> {
     const t = await territory();
     let scope = f.scope ?? 'zone';
     if (scope === 'zone' && !t.myZoneIds.length) scope = 'all';
@@ -119,15 +148,18 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const byField = (a: Account) => crm.every((fd) => matches(fd, a.fields[fd.key], f.fields?.[fd.key] ?? ''));
     const matching = rows.filter(byField);
     // Cuántas de cada tipo (para las pestañas Empresas · DJs · Descartadas), con los demás filtros aplicados.
-    const kinds = { company: 0, dj: 0, discarded: 0 };
-    for (const a of matching) kinds[a.discardedAt ? 'discarded' : a.kind === 'dj' ? 'dj' : 'company']++;
+    // Las de un tipo que ya no existe cuentan como del principal.
+    const defs = await kinds();
+    const kindOf = (a: Account) => (defs.some((k) => k.key === a.kind) ? a.kind : BASE_KIND);
+    const counts: Record<string, number> = Object.fromEntries([...defs.map((k) => [k.key, 0]), ['discarded', 0]]);
+    for (const a of matching) counts[a.discardedAt ? 'discarded' : kindOf(a)]++;
     const v = f.view ?? 'active';
-    const all = matching.filter((a) => (v === 'discarded' ? !!a.discardedAt : !a.discardedAt && (v === 'active' || (v === 'dj' ? a.kind === 'dj' : a.kind !== 'dj'))))
+    const all = matching.filter((a) => (v === 'discarded' ? !!a.discardedAt : !a.discardedAt && (v === 'active' || kindOf(a) === v)))
       .map((a) => view(a, t.zones, members));
     const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 3, customer: 4, blocked: 5 };
     const items = all.filter((a) => !f.state || f.state === 'all' || a.state === f.state)
       .sort((a, b) => ORDER[a.state] - ORDER[b.state] || a.name.localeCompare(b.name, 'es'));
-    return { items, total: all.length, scope, kinds };
+    return { items, total: all.length, scope, kinds: counts };
   }
 
   async function get(accountId: string) {
@@ -152,8 +184,9 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   async function create(input: unknown): Promise<string> {
     requireUse();
     const v = parse(accountSchema, input);
+    const kind = v.kind && (await kinds()).some((k) => k.key === v.kind) ? v.kind : undefined;
     try {
-      return await db.insertAccount(s.tenantId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null });
+      return await db.insertAccount(s.tenantId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null, kind });
     } catch (e) { mapError(e); }
   }
   async function update(accountId: string, input: unknown) {
@@ -348,7 +381,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   return {
     territory, list, get, create, update, touch, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
-    crmFields, saveField, archiveField, moveField, setFields,
+    crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds,
     preview: (accountId: string) => db.preview(accountId).catch(mapError),
     mine: async () => (perms.useAccounts ? (await list({ scope: 'mine' })).items : []),
     get rulesFor() { return db.getRules(s.tenantId); },
@@ -365,6 +398,6 @@ export const emptyAccountsDb: AccountsDb = {
   async updateAccount() { return false; }, async deleteAccount() { return false; }, async touch() { return 'eligible'; }, async listTouches() { return []; },
   async preview() { return 'eligible'; }, async decide() { return false; },
   async listFields() { return []; }, async saveField() { throw new Error('sin cuentas'); }, async archiveField() { return false; }, async deleteField() { return false; },
-  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async saveAiResearch() { throw new Error('sin cuentas'); }, async moveAccounts() { return 0; }, async saveFix() { throw new Error('sin cuentas'); }, async listFixes() { return []; }, async markFixUndone() { return false; }, async saveSweep() { throw new Error('sin cuentas'); }, async listSweeps() { return []; }, async getSweep() { return null; }, async markSwept() { return false; }, async getAiResearch() { return null; }, async getPriorityWeights() { return null; }, async savePriorityWeights() {},
+  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async saveAiResearch() { throw new Error('sin cuentas'); }, async moveAccounts() { return 0; }, async saveFix() { throw new Error('sin cuentas'); }, async listFixes() { return []; }, async markFixUndone() { return false; }, async getKinds() { return null; }, async saveKinds() {}, async saveSweep() { throw new Error('sin cuentas'); }, async listSweeps() { return []; }, async getSweep() { return null; }, async markSwept() { return false; }, async getAiResearch() { return null; }, async getPriorityWeights() { return null; }, async savePriorityWeights() {},
 };
 export type { ZoneAssignment };

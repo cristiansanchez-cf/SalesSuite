@@ -8,8 +8,32 @@ export type Eligibility = 'eligible' | 'claimed_by_other' | 'blocked' | 'out_of_
 export type AccountDecision = 'approved' | 'rejected';
 export type TouchKind = 'created' | 'contact' | 'dossier' | 'won' | 'lost' | 'claim' | 'release' | 'block' | 'unblock' | 'assign';
 
-export const ACCOUNT_KINDS = ['company', 'dj'] as const;
-export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+/**
+ * Tipo de cliente (docs/CRM_DINAMICO.md §21): cada espacio define los suyos. «company» es el principal (no se borra,
+ * se renombra: «Centro de buceo» en Oquea); los demás, los que el admin quiera («dj» en Enjoy).
+ */
+export type AccountKind = string;
+export const BASE_KIND = 'company';
+export interface KindDef { key: string; label: string; plural: string; icon: string }
+export const KIND_ICONS = ['building2', 'store', 'music', 'mic', 'users', 'heart-handshake', 'party-popper', 'ticket', 'hotel', 'utensils', 'wine', 'waves', 'anchor', 'fish', 'ship', 'briefcase', 'graduation-cap', 'heart', 'star', 'globe'] as const;
+export const DEFAULT_KINDS: KindDef[] = [{ key: BASE_KIND, label: 'Empresa', plural: 'Empresas', icon: 'building2' }];
+const KEY_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
+/** Lo guardado → lista válida: el principal siempre el primero, claves únicas, como mucho 12, iconos conocidos. */
+export function normalizeKinds(raw: unknown): KindDef[] {
+  const list = Array.isArray(raw) ? raw : [];
+  const out: KindDef[] = [];
+  for (const x of list) {
+    const r = (x ?? {}) as Record<string, unknown>;
+    const key = String(r.key ?? '').trim();
+    const label = String(r.label ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (!KEY_RE.test(key) || !label || out.some((k) => k.key === key)) continue;
+    const plural = String(r.plural ?? '').replace(/\s+/g, ' ').trim().slice(0, 40) || label;
+    const icon = (KIND_ICONS as readonly string[]).includes(String(r.icon)) ? String(r.icon) : 'building2';
+    out.push({ key, label, plural, icon });
+  }
+  const base = out.find((k) => k.key === BASE_KIND) ?? DEFAULT_KINDS[0];
+  return [base, ...out.filter((k) => k.key !== BASE_KIND)].slice(0, 12);
+}
 export const DISCARD_REASONS = ['not_sector', 'partner', 'duplicate', 'closed', 'other'] as const;
 export type DiscardReason = (typeof DISCARD_REASONS)[number];
 export interface Zone { id: string; tenantId: string; parentId: string | null; name: string; kind: ZoneKind; position: number; /** Su punto en el mapa (§16). */ lat?: number | null; lng?: number | null }

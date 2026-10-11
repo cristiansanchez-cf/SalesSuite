@@ -29,11 +29,12 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     switch (str('action')) {
       // Lo que la IA propuso y cambia algo (DJ o descartar), para revisarlo.
-      case 'preview': box.preview = json().filter((x) => x && (x.kind === 'dj' || x.discard)); break;
+      // Lo que cambia algo: otro tipo del que tiene, o descartar.
+      case 'preview': { const now = new Map((await admin.accounts.list({ scope: 'all', view: 'active' })).items.map((a) => [a.id, a.kind])); box.preview = json().filter((x) => x && (x.discard || (now.has(x.id) && now.get(x.id) !== x.kind))); break; }
       case 'apply': {
         const keep = new Set(f.getAll('keep').map(String));
         const r = await admin.crm.cleanupApply(json().filter((x) => keep.has(x.id)));
-        to = `/admin/limpiar?ok=applied&n=${r.changed}&d=${r.djs}&x=${r.discarded}`;
+        to = `/admin/limpiar?ok=applied&n=${r.changed}&d=${r.retyped}&x=${r.discarded}`;
         break;
       }
       case 'undo': await admin.crm.cleanupUndo(str('id')); to = '/admin/limpiar?ok=undone'; break;
@@ -47,8 +48,13 @@ const okMsg = flash(Astro.url, { applied: M.applied(Number(q.get('n')) || 0, Num
 const preview = box.preview;
 // Las propuestas, agrupadas: DJs (sin descartar) y cada motivo de descarte.
 const names = preview ? new Map((await admin.accounts.list({ scope: 'all', view: 'active' })).items.map((a) => [a.id, { name: a.name, zone: a.zonePath }])) : new Map();
-const GROUPS = ['dj', 'not_sector', 'partner', 'duplicate', 'closed', 'other'] as const;
-const groups = preview ? GROUPS.map((g) => ({ g, items: preview.filter((x) => (g === 'dj' ? x.kind === 'dj' && !x.discard : x.discard === g) && names.has(x.id)) })).filter((x) => x.items.length) : [];
+// Primero, los que cambian de tipo (uno por tipo del espacio); luego, cada motivo de descarte.
+const kindDefs = o.kinds;
+const REASONS = ['not_sector', 'partner', 'duplicate', 'closed', 'other'] as const;
+const groups = preview ? [
+  ...kindDefs.map((k) => ({ g: `kind:${k.key}`, title: M.toKind(k.plural), items: preview.filter((x) => x.kind === k.key && !x.discard && names.has(x.id)) })),
+  ...REASONS.map((r) => ({ g: r, title: M.groups[r], items: preview.filter((x) => x.discard === r && names.has(x.id)) })),
+].filter((x) => x.items.length) : [];
 ---
 <AdminLayout title={M.title}>
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} />
@@ -58,7 +64,7 @@ const groups = preview ? GROUPS.map((g) => ({ g, items: preview.filter((x) => (g
 
   {!preview ? (
     <section class="co-card grid max-w-2xl gap-4" data-testid="cleanup-start">
-      <p class="co-row-title">{M.counts(o.companies, o.djs, o.discarded)}</p>
+      <p class="co-row-title">{[...o.kinds.map((k) => `${k.count} ${k.plural.toLowerCase()}`), M.discardedN(o.discarded)].join(' · ')}</p>
       {o.last && (
         <form method="post" class="flex flex-wrap items-center gap-3" data-testid="cleanup-last">
           <input type="hidden" name="action" value="undo" /><input type="hidden" name="id" value={o.last.id} />
@@ -79,9 +85,9 @@ const groups = preview ? GROUPS.map((g) => ({ g, items: preview.filter((x) => (g
       <h2 class="co-entity">{M.previewTitle}</h2>
       <p class="co-body max-w-3xl">{M.previewHelp}</p>
       {groups.length === 0 && <p class="co-meta" data-testid="cleanup-none">{M.none}</p>}
-      {groups.map(({ g, items }) => (
+      {groups.map(({ g, title, items }) => (
         <section class="co-card grid gap-2 !p-4" data-testid="cleanup-group" data-group={g}>
-          <h3 class="co-row-title">{M.groups[g]} · {items.length}</h3>
+          <h3 class="co-row-title">{title} · {items.length}</h3>
           <ul class="m-0 grid gap-1.5 p-0">
             {items.map((x) => (
               <li class="list-none text-sm">

@@ -6,11 +6,11 @@ import { localizeError } from '~/lib/i18n/errors';
 export const POST: APIRoute = async ({ locals, request }) => {
   const admin = locals.admin;
   if (!admin) return Response.json({ error: 'No autenticado' }, { status: 401 });
-  const body = (await request.json().catch(() => ({}))) as { sweep?: unknown; ids?: unknown; owner?: unknown; link?: unknown; place?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { sweep?: unknown; ids?: unknown; owner?: unknown; link?: unknown; place?: unknown; kind?: unknown };
   try {
     // «Es la misma»: une el sitio de Google a una empresa que ya tienes.
     if (body.link) return Response.json(await admin.crm.prospectLink(String(body.sweep ?? ''), String(body.place ?? ''), String(body.link)), { headers: { 'cache-control': 'no-store' } });
-    return Response.json(await admin.crm.prospectImport(String(body.sweep ?? ''), body.ids, body.owner ?? 'me'), { headers: { 'cache-control': 'no-store' } });
+    return Response.json(await admin.crm.prospectImport(String(body.sweep ?? ''), body.ids, body.owner ?? 'me', body.kind ?? null), { headers: { 'cache-control': 'no-store' } });
   } catch (e) {
     if (e instanceof AdminError) return Response.json({ error: localizeError(e.message, locals.locale ?? 'es') }, { status: e.status });
     throw e;

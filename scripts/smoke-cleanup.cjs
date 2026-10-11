@@ -31,7 +31,7 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await p.waitForSelector('[data-testid=cleanup-preview]', { timeout: 120000 });
   const groups = await p.$$eval('[data-testid=cleanup-group]', (xs) => xs.map((x) => [x.getAttribute('data-group'), x.textContent]));
   const g = Object.fromEntries(groups);
-  assert(g.dj?.includes('DJ Nova') && g.partner?.includes('Acid Records'), `DJs y posible alianza, con su porqué (${Object.keys(g)})`);
+  assert(g['kind:dj']?.includes('DJ Nova') && g.partner?.includes('Acid Records'), `DJs y posible alianza, con su porqué (${Object.keys(g)})`);
   if (OUT) await p.screenshot({ path: `${OUT}/cleanup-preview.png`, fullPage: true });
   await Promise.all([p.waitForURL(/ok=applied/), p.click('[data-testid=cleanup-apply]')]);
   assert((await p.textContent('main')).includes('descartadas'), 'aplicado, con el resumen');

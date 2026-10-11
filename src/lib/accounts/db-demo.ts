@@ -53,10 +53,14 @@ const toZone = (z: { id: string; tenant_id: string; parent_id: string | null; na
   ({ id: z.id, tenantId: z.tenant_id, parentId: z.parent_id, name: z.name, kind: z.kind as ZoneKind, position: z.position, lat: z.lat ?? null, lng: z.lng ?? null });
 
 /** Tipo y descartar/recuperar (como account_classify): reason null = recuperar. */
+/** = crm_kind_ok: el principal o uno de los tipos del espacio (§21). */
+function kindOk(t: string, kind: string): boolean {
+  return kind === 'company' || ((demoDb().crm_settings.find((x) => x.tenant_id === t)?.kinds ?? []) as Array<{ key?: string }>).some((k) => k?.key === kind);
+}
 function setKind(a: AccountRow, kind: string | null, reason: string | null, note: string | null, by: string) {
-  if (kind && !['company', 'dj'].includes(kind)) throw new Error('check constraint: kind');
+  if (kind && !kindOk(a.tenant_id, kind)) throw new Error('check constraint: Tipo no válido');
   if (reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(reason)) throw new Error('check constraint: discard_reason');
-  a.kind = (kind ?? a.kind ?? 'company') as 'company' | 'dj';
+  a.kind = kind ?? a.kind ?? 'company';
   a.discarded_at = reason ? a.discarded_at ?? new Date().toISOString() : null;
   a.discard_reason = reason;
   a.discard_note = reason ? (note ?? '').trim().slice(0, 500) || null : null;
@@ -145,8 +149,9 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       id: randomUUID(), tenant_id: t, name: a.name, zone_id: a.zoneId, segment_id: a.segmentId, address: a.address, external_ref: a.externalRef, notes: a.notes,
       status: 'open', blocked_reason: null, owner_id: null, claimed_until: null, last_touch_at: null, last_touch_by: null,
       won_at: null, won_by: null, won_dossier_id: null, created_by: actorId, created_at: iso(), fields: checkFields(t, a.fields ?? {}),
-      parent_id: null, tags: a.tags ?? [], import_id: a.importId ?? null,
+      parent_id: null, tags: a.tags ?? [], import_id: a.importId ?? null, kind: a.kind ?? 'company',
     };
+    if (row.kind && !kindOk(t, row.kind)) throw new Error('check constraint: Tipo no válido');
     // = account_guard: el manager puede asignarla; el comercial se la queda.
     if (manager) { if (a.ownerId) { row.owner_id = a.ownerId; row.claimed_until = plusDays(rulesOf(t).claimDays); } }
     else Object.assign(row, { owner_id: actorId, claimed_until: plusDays(rulesOf(t).claimDays), last_touch_at: iso(), last_touch_by: actorId });
@@ -342,7 +347,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
     async classifyMany(t, rows) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin importa y ordena los datos del CRM');
       // Como en SQL: o todo o nada (se valida antes de tocar).
-      for (const r of rows) if ((r.kind && !['company', 'dj'].includes(r.kind)) || (r.reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(r.reason))) throw new Error('check constraint: classify');
+      for (const r of rows) if ((r.kind && !kindOk(t, r.kind)) || (r.reason && !['not_sector', 'partner', 'duplicate', 'closed', 'other'].includes(r.reason))) throw new Error('check constraint: classify');
       let n = 0;
       for (const r of rows) { const a = db().account.find((x) => x.id === r.id && x.tenant_id === t); if (a) { setKind(a, r.kind, r.reason, r.note, actorId); n++; } }
       return n;
@@ -438,11 +443,20 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       x.imported = { ...x.imported, ...imported };
       return true;
     },
+    async getKinds(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.kinds ?? null; },
+    async saveKinds(t, kinds) {
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');
+      const s = db();
+      let row = s.crm_settings.find((x) => x.tenant_id === t);
+      if (!row) { row = { tenant_id: t, priority_weights: {} }; s.crm_settings.push(row); }
+      row.kinds = JSON.parse(JSON.stringify(kinds));
+    },
     async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },
     async savePriorityWeights(t, w) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');
       const s = db();
-      s.crm_settings = [...s.crm_settings.filter((x) => x.tenant_id !== t), { tenant_id: t, priority_weights: { ...w } }];
+      const prev = s.crm_settings.find((x) => x.tenant_id === t);
+      s.crm_settings = [...s.crm_settings.filter((x) => x.tenant_id !== t), { ...prev, tenant_id: t, priority_weights: { ...w } }];
     },
     async archiveField(id, archived) {
       const f = db().crm_field.find((x) => x.id === id);

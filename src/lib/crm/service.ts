@@ -8,7 +8,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import { ACCOUNT_KINDS, DISCARD_REASONS, type Account, type AccountFact, type Zone } from '../accounts/types';
+import { BASE_KIND, DISCARD_REASONS, normalizeKinds, type Account, type AccountFact, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -57,7 +57,7 @@ export const companyContactSchema = z.object({
   instagram: urlOpt(300, 'instagram'), facebook: urlOpt(300, 'facebook'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
 });
 export const classifySchema = z.object({
-  kind: z.enum(ACCOUNT_KINDS).nullable().optional().or(z.literal('').transform(() => null)),
+  kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).nullable().optional().or(z.literal('').transform(() => null)),
   reason: z.enum(DISCARD_REASONS).nullable().optional().or(z.literal('').transform(() => null)),
   note: z.string().trim().max(500).nullable().optional(),
 });
@@ -122,6 +122,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   // Importar y ordenar los datos del CRM: solo admin (docs/CRM_DINAMICO.md §14).
   const requireImporter = () => { if (!perms.importCrm) throw new AdminError(403, 'Solo un admin importa y ordena los datos del CRM'); };
   const t = s.tenantId;
+  /** Tipos de cliente del espacio (§21). */
+  const kinds = async (): Promise<KindDef[]> => normalizeKinds(await accounts.getKinds(t).catch(() => null));
 
   async function members(): Promise<Map<string, MemberRecord>> { return new Map((await admin.listMembers(t)).map((m) => [m.userId, m])); }
   const label = (m: MemberRecord | undefined) => (m ? m.displayName || m.email : null);
@@ -790,10 +792,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * su ciudad, el sector elegido, la lista de lo buscado («discotecas») y las redes y el email de su web. Lo que ya está
    * en el CRM no se duplica. `owner`: «me» (quien importa), «» (libre) o el id de alguien del equipo (solo admin o gerente).
    */
-  async function prospectImport(id: string, placeIdsIn: unknown, owner: unknown = 'me'): Promise<{ created: number; have: number; failed: number; ids: Record<string, string> }> {
+  async function prospectImport(id: string, placeIdsIn: unknown, owner: unknown = 'me', kindIn: unknown = null): Promise<{ created: number; have: number; failed: number; ids: Record<string, string> }> {
     requireUse();
     const w = await loadSweep(id);
     const want = new Set((Array.isArray(placeIdsIn) ? placeIdsIn : []).map(String).slice(0, PROSPECT_CHUNK));
+    // De qué tipo de cliente son (§21): uno del espacio; si no, el principal.
+    const kind = typeof kindIn === 'string' && (await kinds()).some((k) => k.key === kindIn) ? kindIn : BASE_KIND;
     let ownerId: string | null = s.userId;
     if (perms.manageAccounts && owner !== 'me') {
       if (owner === '' || owner == null) ownerId = null;
@@ -812,7 +816,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       if (c.state === 'have' && c.accountId) { ids[c.placeId] = c.accountId; have++; return; }
       try {
         const zoneId = (c.place ? zoneForPlace(zones, c.place)?.id : null) ?? w.zoneId;
-        const accId = await accounts.insertAccount(t, { name: c.name, zoneId, segmentId: w.segmentId, address: null, externalRef: null, notes: null, ownerId, tags: tag ? [tag] : [] });
+        const accId = await accounts.insertAccount(t, { name: c.name, zoneId, segmentId: w.segmentId, address: null, externalRef: null, notes: null, ownerId, tags: tag ? [tag] : [], kind });
         ids[c.placeId] = accId;
         const socials = c.website ? await site.scan(c.website).catch(() => null) : null;
         await accounts.research(accId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
@@ -1188,6 +1192,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function classifyAccount(accountId: string, input: unknown) {
     requireUse();
     const v = parse(classifySchema, input);
+    if (v.kind && !(await kinds()).some((k) => k.key === v.kind)) throw new AdminError(422, 'Datos no válidos');
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     // Cambiar solo el tipo no recupera una descartada: lo que no viene, se queda como está.
@@ -1202,8 +1207,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireImporter();
     const [accs, fixes] = await Promise.all([allAccounts(), accounts.listFixes(t, 'classify').catch(() => [])]);
     const active = accs.filter((a) => !a.discardedAt);
+    const defs = await kinds();
+    const kindOf = (k: string) => (defs.some((d) => d.key === k) ? k : BASE_KIND);
     return {
-      ids: active.map((a) => a.id), companies: active.filter((a) => a.kind !== 'dj').length, djs: active.filter((a) => a.kind === 'dj').length,
+      ids: active.map((a) => a.id), kinds: defs.map((d) => ({ ...d, count: active.filter((a) => kindOf(a.kind) === d.key).length })),
       discarded: accs.length - active.length, last: fixes.find((f) => !f.undoneAt) ?? null, hasAi: !!cleanupAi, chunk: CLEANUP_CHUNK,
     };
   }
@@ -1220,7 +1227,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       website: a.website, instagram: a.instagram, email: a.email ? a.email.replace(/^[^@]*/, '…') : null, tags: a.tags.slice(0, 8),
       sector: a.segmentId ? ctx.sectors?.[a.segmentId] ?? null : null,
     }));
-    try { return await cleanupAi.classify(items, { seller: ctx.seller, clients: ctx.clients }); } catch (e) {
+    try { return await cleanupAi.classify(items, { seller: ctx.seller, clients: ctx.clients, kinds: await kinds() }); } catch (e) {
       console.warn('[cleanup-ai]', e instanceof Error ? e.message : e);
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
@@ -1230,14 +1237,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireImporter();
     const accs = await allAccounts();
     const byId = new Map(accs.map((a) => [a.id, a]));
-    const asked = sanitizeCleanup({ items: Array.isArray(input) ? input : [] }, accs.map((a) => ({ id: a.id }) as CleanupInput));
+    const asked = sanitizeCleanup({ items: Array.isArray(input) ? input : [] }, accs.map((a) => ({ id: a.id }) as CleanupInput), (await kinds()).map((k) => k.key));
     const rows = asked.filter((x) => { const a = byId.get(x.id)!; return a.kind !== x.kind || (x.discard && !a.discardedAt); })
       .map((x) => ({ id: x.id, kind: x.kind, reason: x.discard ?? byId.get(x.id)!.discardReason, note: x.discard ? x.why : byId.get(x.id)!.discardNote }));
-    if (!rows.length) return { changed: 0, djs: 0, discarded: 0 };
+    if (!rows.length) return { changed: 0, retyped: 0, discarded: 0 };
     const undo = rows.map((x) => { const a = byId.get(x.id)!; return { id: a.id, kind: a.kind, reason: a.discardReason, note: a.discardNote }; });
     let changed = 0;
     try { for (let i = 0; i < rows.length; i += 1000) changed += await accounts.classifyMany(t, rows.slice(i, i + 1000)); } catch (e) { mapError(e); }
-    const summary = { changed, djs: rows.filter((x) => x.kind === 'dj' && byId.get(x.id)!.kind !== 'dj').length, discarded: rows.filter((x) => x.reason && !byId.get(x.id)!.discardedAt).length };
+    const summary = { changed, retyped: rows.filter((x) => x.kind !== byId.get(x.id)!.kind).length, discarded: rows.filter((x) => x.reason && !byId.get(x.id)!.discardedAt).length };
     try { await accounts.saveFix(t, { kind: 'classify', summary, undo: { kinds: undo } }); } catch (e) { mapError(e); }
     return summary;
   }
