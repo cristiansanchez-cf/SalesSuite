@@ -3,6 +3,8 @@ import { defineMessages } from '../core';
 
 export const notesMessages = defineMessages({
   es: {
+    factsTitle: 'Lo que sabemos', factsNote: 'Apuntar con IA', factsEmpty: 'Aún nada. Cuéntalo con «Apuntar» o añádelo aquí: cómo es el sitio, pantallas, DJ, aforo, qué le encaja…', factPh: 'Un dato: «2 pantallas pequeñas junto a la barra»', factAdd: 'Añadir', factKind: 'Tipo de dato', factKindFact: 'Dato', factRemove: 'Quitar este dato', factSaved: 'Dato guardado.', factRemoved: 'Dato quitado.',
+    interaction: 'Interacción (al historial)', interactionHelp: 'Lo que ha pasado con ellos: la visita, el mensaje que les mandaste, qué contestaron. Desmárcalo si no hubo nada.', facts: 'Lo que sabemos del sitio', factsHelp: 'Un dato por línea. Va a «Lo que sabemos» de la ficha.', fit: 'Qué le encaja', fieldsTitle: 'Datos de la ficha',
     who: '¿De qué empresa vas a hablar? (opcional)', whoPh: 'Busca por el nombre', whoHelp: 'Si la eliges, todo va a esa empresa. Si no, la IA lo separa por sitio y te propone cuál es cada uno.', whoClear: 'Quitar', whoNone: 'No hay ninguna con ese nombre: cuéntalo igual y te propondré crearla.',
     eyebrow: 'CRM', title: 'Apuntar con IA', open: 'Apuntar',
     lede: 'Cuenta lo que has visto o hablado, de uno o de varios sitios. La IA lo separa por sitio, lo busca en tu CRM y te propone dónde va cada cosa. No se guarda nada hasta que lo confirmes.',
@@ -19,6 +21,8 @@ export const notesMessages = defineMessages({
     another: 'Apuntar otra cosa',
   },
   en: {
+    factsTitle: 'What we know', factsNote: 'Note with AI', factsEmpty: 'Nothing yet. Tell it with «Note» or add it here: what the place is like, screens, DJ, capacity, what fits them…', factPh: 'One fact: «2 small screens by the bar»', factAdd: 'Add', factKind: 'Kind of fact', factKindFact: 'Fact', factRemove: 'Remove this fact', factSaved: 'Fact saved.', factRemoved: 'Fact removed.',
+    interaction: 'Interaction (to the history)', interactionHelp: 'What happened with them: the visit, the message you sent, what they replied. Untick it if there was nothing.', facts: 'What we know about the place', factsHelp: 'One fact per line. Goes to «What we know» on the company.', fit: 'What fits them', fieldsTitle: 'Company fields',
     who: 'Which company are you talking about? (optional)', whoPh: 'Search by name', whoHelp: 'If you pick it, everything goes to that company. If not, the AI splits it by place and suggests which one each is.', whoClear: 'Remove', whoNone: 'None with that name: tell it anyway and I’ll suggest creating it.',
     eyebrow: 'CRM', title: 'Note with AI', open: 'Note',
     lede: 'Tell what you saw or talked about, at one or several places. The AI splits it by place, finds each one in your CRM and suggests where each thing goes. Nothing is saved until you confirm.',
@@ -35,6 +39,8 @@ export const notesMessages = defineMessages({
     another: 'Note something else',
   },
   pt: {
+    factsTitle: 'O que sabemos', factsNote: 'Anotar com IA', factsEmpty: 'Ainda nada. Conte com «Anotar» ou adicione aqui: como é o lugar, telas, DJ, lotação, o que encaixa…', factPh: 'Um dado: «2 telas pequenas junto ao bar»', factAdd: 'Adicionar', factKind: 'Tipo de dado', factKindFact: 'Dado', factRemove: 'Tirar este dado', factSaved: 'Dado salvo.', factRemoved: 'Dado tirado.',
+    interaction: 'Interação (para o histórico)', interactionHelp: 'O que aconteceu com eles: a visita, a mensagem que mandou, o que responderam. Desmarque se não houve nada.', facts: 'O que sabemos do lugar', factsHelp: 'Um dado por linha. Vai para «O que sabemos» da ficha.', fit: 'O que encaixa', fieldsTitle: 'Dados da ficha',
     who: 'De qual empresa vai falar? (opcional)', whoPh: 'Busque pelo nome', whoHelp: 'Se escolher, tudo vai para essa empresa. Se não, a IA separa por lugar e propõe qual é cada um.', whoClear: 'Tirar', whoNone: 'Nenhuma com esse nome: conte mesmo assim e eu proponho criá-la.',
     eyebrow: 'CRM', title: 'Anotar com IA', open: 'Anotar',
     lede: 'Conte o que viu ou falou, de um ou vários lugares. A IA separa por lugar, procura cada um no seu CRM e propõe onde vai cada coisa. Nada é salvo até você confirmar.',
@@ -51,6 +57,8 @@ export const notesMessages = defineMessages({
     another: 'Anotar outra coisa',
   },
   ko: {
+    factsTitle: '아는 것', factsNote: 'AI로 메모', factsEmpty: '아직 없습니다. «메모»로 말하거나 여기에 추가하세요: 장소 모습, 화면, DJ, 수용 인원, 맞는 서비스…', factPh: '정보 하나: «바 옆 작은 화면 2개»', factAdd: '추가', factKind: '정보 종류', factKindFact: '정보', factRemove: '이 정보 삭제', factSaved: '저장했습니다.', factRemoved: '삭제했습니다.',
+    interaction: '상호작용 (기록에 추가)', interactionHelp: '그들과 있었던 일: 방문, 보낸 메시지, 답변. 없었다면 체크를 해제하세요.', facts: '이 장소에 대해 아는 것', factsHelp: '한 줄에 하나씩. 회사의 «아는 것»에 들어갑니다.', fit: '맞는 서비스', fieldsTitle: '회사 정보',
     who: '어느 회사에 대해 말하나요? (선택)', whoPh: '이름으로 검색', whoHelp: '선택하면 모두 그 회사로 갑니다. 선택하지 않으면 AI가 장소별로 나누고 각각 어디인지 제안합니다.', whoClear: '지우기', whoNone: '그 이름의 회사가 없습니다. 그래도 말해 주시면 새로 만들도록 제안합니다.',
     eyebrow: 'CRM', title: 'AI로 메모', open: '메모',
     lede: '한 곳 또는 여러 곳에서 본 것이나 나눈 이야기를 말해 주세요. AI가 장소별로 나누고 CRM에서 찾아 어디에 넣을지 제안합니다. 확인하기 전에는 저장되지 않습니다.',

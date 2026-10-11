@@ -1,7 +1,7 @@
 import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
 import type { PlaceResult } from '../crm/places';
-import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep } from './types';
+import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep, AccountFact } from './types';
 
 /** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
 export interface GoogleData {
@@ -33,6 +33,8 @@ export interface AccountPatch {
   tags?: string[];
   contact?: AccountContact;
   next?: { step: string | null; at: string | null; contactId: string | null; channel: string | null };
+  /** «Lo que sabemos» entero (reemplaza la lista). */
+  facts?: AccountFact[];
 }
 export type CrmFieldRecord = Omit<CrmField, 'id' | 'tenantId' | 'archivedAt'>;
 export type { AccountInsert as AccountInsertRow };

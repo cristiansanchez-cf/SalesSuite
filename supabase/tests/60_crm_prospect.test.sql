@@ -42,5 +42,18 @@ set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';  -- admin de
 select pg_temp.assert((select imported ->> 'p1' from public.crm_sweep where id = '60000000-0000-4000-8000-0000000000a1') = 'x', 'otro espacio no tocó nada');
 delete from public.crm_sweep where id = '60000000-0000-4000-8000-0000000000a1';
 select pg_temp.assert(not exists (select 1 from public.crm_sweep where id = '60000000-0000-4000-8000-0000000000a1'), 'el admin borra');
+-- «Lo que sabemos» (§20): una lista con tope.
+insert into public.account (id, tenant_id, name) values ('60000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-000000000e01', 'Gecko 60');
+update public.account set facts = '[{"id":"f1","text":"Dos pantallas","kind":"fact","at":"2026-10-11","by":null}]' where id = '60000000-0000-4000-8000-0000000000b1';
+select pg_temp.assert((select facts -> 0 ->> 'text' from public.account where id = '60000000-0000-4000-8000-0000000000b1') = 'Dos pantallas', 'guarda lo que sabemos');
+do $$ begin
+  update public.account set facts = (select jsonb_agg(jsonb_build_object('id', g, 'text', 'x')) from generate_series(1, 201) g) where id = '60000000-0000-4000-8000-0000000000b1';
+  raise exception 'ASSERT FAILED: más de 200 datos';
+exception when check_violation then null; end $$;
+do $$ begin
+  update public.account set facts = '{}' where id = '60000000-0000-4000-8000-0000000000b1';
+  raise exception 'ASSERT FAILED: no es una lista';
+exception when check_violation then null; end $$;
+delete from public.account where id = '60000000-0000-4000-8000-0000000000b1';
 reset role;
 delete from auth.users where id = '60000000-0000-4000-8000-0000000000f1';

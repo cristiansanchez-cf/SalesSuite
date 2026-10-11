@@ -564,35 +564,53 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, { notes: fixtureNotes(), places: null, research: null });
       const gecko = await t.admin.accounts.create({ name: 'Gecko Valencia', zoneId: t.vlc });
       await t.admin.accounts.assign(gecko, U.rep.id);   // como al importarla desde «Buscar clientes»
-      const items = await rep.notesSplit('GHECKO - dos pantallas pequeñas, mirar redes\nNEGRITO BAR: sin pantalla, buena música', { seller: 'Enjoy' });
+      // Un campo de la ficha del espacio que la IA puede rellenar (en la demo ya existe).
+      if (!(await t.admin.accounts.crmFields()).some((f) => f.key === 'aforo')) await t.admin.accounts.saveField({ label: 'Aforo', type: 'number' });
+      const items = await rep.notesSplit('GHECKO - dos pantallas pequeñas, aforo 500, mirar redes\nNEGRITO BAR: sin pantalla, buena música', { seller: 'Enjoy' });
       expect(items.map((x) => x.venue)).toEqual(['GHECKO', 'NEGRITO BAR']);
       expect(items[0].candidates[0]).toMatchObject({ id: gecko, name: 'Gecko Valencia' });
       expect(items[0].candidates[0].score).toBeGreaterThanOrEqual(0.8);
+      expect(items[0].facts).toContain('dos pantallas pequeñas');
+      expect(items[0].fields).toEqual({ aforo: '500' });
       const r = await rep.notesApply([
-        { accountId: gecko, note: items[0].note, channel: 'visit', outcome: 'note', day: '2026-10-10', qualification: { screens: 'yes', kind: 'venue' }, nextStep: 'Mirar sus redes', nextDays: 2 },
-        { create: 'Negrito Bar', note: items[1].note, channel: 'visit', outcome: 'note', qualification: { screens: 'no', decider: 'nadie' } },
+        { accountId: gecko, interaction: items[0].interaction, facts: items[0].facts, fit: 'Todos los servicios', fields: items[0].fields, channel: 'visit', outcome: 'note', day: '2026-10-10', qualification: { screens: 'yes', kind: 'venue' }, nextStep: 'Mirar sus redes', nextDays: 2 },
+        { create: 'Negrito Bar', interaction: null, facts: items[1].facts, channel: 'visit', outcome: 'note', qualification: { screens: 'no', decider: 'nadie' } },
       ]);
       expect(r.map((x) => x.ok)).toEqual([true, true]);
       const g = (await t.admin.accounts.get(gecko)).account;
       expect(g.qualification).toMatchObject({ screens: 'yes', kind: 'venue' });
       expect(g.nextStep).toBe('Mirar sus redes');
+      expect(g.fields).toMatchObject({ aforo: 500 });
+      // Cada cosa en su sitio: la visita en el historial; cómo es el sitio y lo que le encaja, en «Lo que sabemos».
+      expect(g.facts.map((f) => [f.kind, f.text])).toEqual([['fit', 'Todos los servicios'], ...items[0].facts.map((x) => ['fact', x])]);
+      expect(g.facts[0]).toMatchObject({ by: U.rep.id, at: '2026-10-10T12:00:00.000Z' });
       const tl = await rep.timeline(gecko);
-      expect(tl.items.some((x) => x.channel === 'visit' && (x.note ?? '').includes('dos pantallas'))).toBe(true);
+      expect(tl.items.filter((x) => x.channel === 'visit')).toHaveLength(1);
+      expect(tl.items[0].note).toBe('Visita: solo observar, sin hablar con nadie');
       const neg = (await t.admin.accounts.get(r[1].accountId!)).account;
       expect(neg).toMatchObject({ name: 'Negrito Bar', ownerId: U.rep.id });
       expect(neg.qualification).toEqual({ screens: 'no' });
+      expect((await rep.timeline(neg.id)).items).toHaveLength(0);   // sin interacción: solo «Lo que sabemos»
+      expect(neg.facts.length).toBeGreaterThan(0);
+      // A mano desde la ficha: añadir y quitar.
+      await rep.factAdd(gecko, 'El DJ residente es de los fundadores');
+      let f = (await t.admin.accounts.get(gecko)).account.facts;
+      expect(f[0]).toMatchObject({ kind: 'fact', text: 'El DJ residente es de los fundadores' });
+      await rep.factRemove(gecko, f[0].id);
+      f = (await t.admin.accounts.get(gecko)).account.facts;
+      expect(f.some((x) => x.text === 'El DJ residente es de los fundadores')).toBe(false);
       // «¿De qué empresa vas a hablar?»: el buscador la encuentra aunque el dictado falle; elegida, todo va a esa.
       const found = await rep.accountSearch('ghecko');
       expect(found[0]).toMatchObject({ id: gecko, name: 'Gecko Valencia' });
       expect(found[0].zone).toContain('Valencia');
       const one = await rep.notesSplit('lleno a la una y media, dos pantallas pequeñas', { seller: 'Enjoy' }, gecko);
       expect(one).toHaveLength(1);
-      expect(one[0]).toMatchObject({ venue: 'Gecko Valencia', note: 'lleno a la una y media, dos pantallas pequeñas' });
+      expect(one[0]).toMatchObject({ venue: 'Gecko Valencia', interaction: 'lleno a la una y media, dos pantallas pequeñas' });
       expect(one[0].candidates).toEqual([expect.objectContaining({ id: gecko, score: 1 })]);
       // En la de otro, no: se dice cuál ha fallado y las demás se guardan.
       const ajena = await t.admin.accounts.create({ name: 'Slavia', zoneId: t.vlc });
       await t.admin.accounts.assign(ajena, E.rep2.id);
-      const r2 = await rep.notesApply([{ accountId: ajena, note: 'Casi vacío', channel: 'visit', outcome: 'note', qualification: { screens: 'yes' } }, { accountId: gecko, note: 'Otra visita', channel: 'visit', outcome: 'note', qualification: {} }]);
+      const r2 = await rep.notesApply([{ accountId: ajena, facts: ['Casi vacío'], channel: 'visit', outcome: 'note', qualification: { screens: 'yes' } }, { accountId: gecko, interaction: 'Otra visita', channel: 'visit', outcome: 'note', qualification: {} }]);
       expect(r2.map((x) => x.ok)).toEqual([false, true]);
     });
 

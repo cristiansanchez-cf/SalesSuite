@@ -178,12 +178,12 @@ const panelOpen = nFilters > 0;
   )}
 
   {/* Una sola barra: buscar, ciudad y filtros. Cambiar cualquier cosa aplica al momento (sin botón «Filtrar»). */}
-  <nav class="co-segmented mb-3 w-fit !px-1" aria-label={CL.tabs.label} data-testid="kind-tabs">
+  <nav id="kind-tabs" class="co-segmented mb-3 w-fit !px-1" aria-label={CL.tabs.label} data-testid="kind-tabs">
     {([['', CL.tabs.company, kinds.company], ['dj', CL.tabs.dj, kinds.dj], ['descartadas', CL.tabs.discarded, kinds.discarded]] as const).map(([k, l, n]) => (
       <a href={href({ tipo: k })} class="!px-4" aria-current={tipo === k ? 'page' : undefined} data-testid={`kind-tab-${k || 'company'}`}>{l} <span class="co-meta">{n}</span></a>
     ))}
   </nav>
-  <form method="get" class="co-card mb-3 grid gap-3 !p-4" data-testid="acc-toolbar" data-autosubmit role="search">
+  <form method="get" class="co-card mb-3 grid gap-3 !p-4" data-testid="acc-toolbar" data-autosubmit data-async-get="kind-tabs acc-results" role="search">
     {tipo && <input type="hidden" name="tipo" value={tipo} />}
     <div class="flex flex-wrap items-center gap-2">
       <label class="sr-only" for="acc-q">{M.search}</label>
@@ -232,6 +232,8 @@ const panelOpen = nFilters > 0;
     <noscript><button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{M.show}</button></noscript>
   </form>
 
+  {/* Los resultados: se cambian sin recargar al filtrar (data-async-get). */}
+  <div id="acc-results" class="co-swap">
   {/* Lo que está aplicado, a la vista y quitable de un clic; el número de empresas y las acciones sobre ellas. */}
   <div class="mb-5 flex flex-wrap items-center gap-2" data-testid="acc-active">
     <span class="co-meta font-semibold" data-testid="acc-count">{M.count(shown.length)}</span>
@@ -249,6 +251,12 @@ const panelOpen = nFilters > 0;
     // Filtros al momento: cambiar un desplegable aplica; el texto, al pulsar Enter. «Filtros» abre y cierra el panel.
     document.querySelectorAll<HTMLFormElement>('form[data-autosubmit]').forEach((f) => {
       f.addEventListener('change', (e) => { if (e.target instanceof HTMLSelectElement) f.requestSubmit(); });
+      // Mientras escribes, lo que ya se ve se filtra al momento; el resultado completo llega por detrás.
+      const norm = (x: string) => x.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+      f.querySelector<HTMLInputElement>('input[name=q]')?.addEventListener('input', (e) => {
+        const q = norm((e.target as HTMLInputElement).value.trim());
+        document.querySelectorAll<HTMLElement>('#acc-results [data-testid=account]').forEach((li) => { li.hidden = !!q && !norm(li.dataset.name ?? '').includes(q); });
+      });
       // Lo vacío no va a la URL (queda limpia y compartible).
       f.addEventListener('formdata', (e) => { for (const [k, v] of [...e.formData]) if (!v || (k === 'estado' && v === 'all')) e.formData.delete(k); });
       const btn = f.querySelector<HTMLButtonElement>('[data-filters-toggle]');
@@ -295,6 +303,7 @@ const panelOpen = nFilters > 0;
   {shown.length > shownMax && (
     <p class="mt-4 flex items-center gap-3"><a class="co-btn co-btn--ghost co-btn--sm" href={href({ n: String(shownMax + 200) })} data-testid="more">{P.people.more}</a><span class="co-meta">{P.people.shown(shownMax, shown.length)}</span></p>
   )}
+  </div>
 
   <form id="bulk-group" method="post" class="co-bulkbar" hidden data-testid="bulk-bar">
     <input type="hidden" name="action" value="move-group" />

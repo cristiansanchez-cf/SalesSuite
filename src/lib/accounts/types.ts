@@ -23,6 +23,8 @@ export interface Sweep {
   /** Vacío en los listados (solo `found`); entero al abrir una. */
   results: PlaceResult[]; found: number; imported: Record<string, string>; createdBy: string | null; createdAt: string;
 }
+/** Un dato clave de una empresa: «fact» (cómo es) o «fit» (qué le encaja de lo que vendemos). */
+export interface AccountFact { id: string; text: string; kind: 'fact' | 'fit'; at: string; by: string | null }
 export interface ZoneAssignment { userId: string; zoneId: string }
 export interface AccountRules { claimDays: number; strictZones: boolean; requireAccount: boolean }
 export const DEFAULT_RULES: AccountRules = { claimDays: 30, strictZones: false, requireAccount: false };
@@ -68,6 +70,8 @@ export interface Account {
   placeFilled: Record<string, string> | null;
   /** Tipo (§17): empresa de verdad o DJ/artista; y si está descartada (con motivo y nota; se puede recuperar). */
   kind: AccountKind; discardedAt: string | null; discardReason: DiscardReason | null; discardNote: string | null;
+  /** «Lo que sabemos» (§20): datos clave, lo más nuevo primero. */
+  facts: AccountFact[];
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }

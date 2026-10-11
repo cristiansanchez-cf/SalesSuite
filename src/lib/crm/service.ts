@@ -8,9 +8,9 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import { ACCOUNT_KINDS, DISCARD_REASONS, type Account, type Zone } from '../accounts/types';
+import { ACCOUNT_KINDS, DISCARD_REASONS, type Account, type AccountFact, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
-import { parseValues, type CrmField, type FieldValues } from './fields';
+import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
 import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
@@ -895,18 +895,36 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (accountId && (!chosen || chosen.tenantId !== t)) throw new AdminError(404, 'Cuenta no encontrada');
     await quota('ai');
     let items: NoteItem[] = [];
-    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller }); } catch (e) {
+    // Los campos de la ficha del espacio (los de la empresa): la IA propone valores y aquí se validan con su tipo.
+    const accFields = (await fields()).filter((f) => f.target === 'account' && !f.archivedAt);
+    const forAi = accFields.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options.map((o) => o.label) }));
+    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, fields: forAi }); } catch (e) {
       console.warn('[notes]', aiReason(e));
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
+    }
+    // Solo campos que existen y con un valor que su tipo acepta (se enseña como se verá en la ficha).
+    for (const it of items) {
+      const ok: Record<string, string> = {};
+      for (const [k, raw] of Object.entries(it.fields)) {
+        const f = accFields.find((x) => x.key === k);
+        const r = f ? parseValue(f, raw) : null;
+        if (!f || !r || !r.ok || r.value === null || r.value === '') continue;
+        ok[k] = f.type === 'checkbox' ? (r.value ? 'sí' : 'no') : f.type === 'select' ? f.options.find((o) => o.key === r.value)?.label ?? String(r.value) : String(raw);
+      }
+      it.fields = ok;
     }
     const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
     if (chosen) {
       // Todo a la empresa elegida: las notas juntas, lo marcado sumado, el primer próximo paso.
       const q: Record<string, string> = {};
-      for (const it of items) Object.assign(q, it.qualification);
+      const fv: Record<string, string> = {};
+      for (const it of items) { Object.assign(q, it.qualification); Object.assign(fv, it.fields); }
       const first = items.find((it) => it.nextStep || it.nextDays != null);
+      const inter = items.map((it) => it.interaction).filter(Boolean).join('\n\n');
+      const facts = items.flatMap((it) => it.facts);
       const one: NoteItem = {
-        venue: chosen.name, note: (items.map((it) => it.note).join('\n\n') || clean).slice(0, 4000),
+        venue: chosen.name, interaction: inter ? inter.slice(0, 4000) : facts.length ? null : clean.slice(0, 4000), facts,
+        fit: items.map((it) => it.fit).filter(Boolean).join(' · ') || null, fields: fv,
         channel: items[0]?.channel ?? 'visit', outcome: items[0]?.outcome ?? 'note', day: items[0]?.day ?? null,
         qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
       };
@@ -920,7 +938,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   const noteApplySchema = z.array(z.object({
     accountId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
     create: z.string().trim().max(160).nullable().optional().transform((v) => v || null),
-    note: z.string().trim().min(1).max(4000),
+    interaction: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
+    facts: z.array(z.string().trim().min(1).max(400)).max(40).default([]),
+    fit: z.string().trim().max(600).nullable().optional().transform((v) => v || null),
+    fields: z.record(z.string(), z.string().max(500)).default({}),
     channel: z.enum(CHANNELS).default('visit'),
     outcome: z.enum(OUTCOMES).default('note'),
     day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
@@ -929,8 +950,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     nextDays: z.number().int().min(0).max(365).nullable().optional(),
   })).max(40);
   /**
-   * Guardar lo confirmado: en cada empresa (o en una nueva), la interacción con la nota, lo marcado en la cualificación
-   * (sin quitar lo que ya tenía) y el próximo paso si lo hay. Cada sitio va por su cuenta: si uno falla, los demás se guardan.
+   * Guardar lo confirmado, en cada empresa (o en una nueva), cada cosa en su sitio: la interacción en el historial (con
+   * el próximo paso), lo que sabemos y lo que le encaja en «Lo que sabemos», los campos de la ficha y lo marcado en la
+   * cualificación (sin quitar lo que ya tenía). Cada sitio va por su cuenta: si uno falla, los demás se guardan.
    */
   async function notesApply(input: unknown): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>> {
     requireUse();
@@ -946,7 +968,25 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
         name = a.name;
         const at = r.nextDays != null ? new Date(Date.now() + r.nextDays * 86_400_000).toISOString().slice(0, 10) : undefined;
-        await logActivity(id, { channel: r.channel, outcome: r.outcome, note: r.note, happenedAt: r.day ? `${r.day}T12:00:00` : undefined }, r.nextStep || at ? { step: r.nextStep ?? undefined, at } : undefined);
+        const next = r.nextStep || at ? { step: r.nextStep ?? undefined, at } : undefined;
+        if (r.interaction) await logActivity(id, { channel: r.channel, outcome: r.outcome, note: r.interaction, happenedAt: r.day ? `${r.day}T12:00:00` : undefined }, next);
+        else if (next) await setNextStep(id, next);
+        // Lo que sabemos (lo nuevo primero) y los campos de la ficha, en una sola escritura.
+        const patch: { facts?: AccountFact[]; fields?: FieldValues } = {};
+        const when = r.day ? `${r.day}T12:00:00.000Z` : new Date().toISOString();
+        const added: AccountFact[] = [...(r.fit ? [{ id: crypto.randomUUID(), text: r.fit, kind: 'fit' as const, at: when, by: s.userId }] : []),
+          ...r.facts.map((text) => ({ id: crypto.randomUUID(), text, kind: 'fact' as const, at: when, by: s.userId }))];
+        if (added.length) patch.facts = [...added, ...a.facts].slice(0, 200);
+        if (Object.keys(r.fields).length) {
+          const accFields = (await fields()).filter((f) => f.target === 'account' && !f.archivedAt);
+          const pv = parseValues(accFields, Object.fromEntries(Object.entries(r.fields).filter(([k]) => accFields.some((f) => f.key === k))));
+          if (Object.keys(pv.values).length) patch.fields = { ...a.fields, ...pv.values };
+        }
+        if (patch.facts || patch.fields) {
+          let ok = false;
+          try { ok = await accounts.updateAccount(id, patch); } catch (e) { mapError(e); }
+          if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+        }
         const q: Record<string, unknown> = { ...a.qualification };
         let changed = false;
         for (const [k, v] of Object.entries(r.qualification)) {
@@ -960,6 +1000,26 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       }
     }
     return out;
+  }
+
+  /** «Lo que sabemos» a mano, desde la ficha: añadir un dato (o lo que le encaja) y quitarlo. */
+  async function factAdd(accountId: string, text: string, kind: 'fact' | 'fit' = 'fact') {
+    requireUse();
+    const v = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    if (!v) throw new AdminError(422, 'Datos no válidos');
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    let ok = false;
+    try { ok = await accounts.updateAccount(accountId, { facts: [{ id: crypto.randomUUID(), text: v, kind: (kind === 'fit' ? 'fit' : 'fact') as AccountFact['kind'], at: new Date().toISOString(), by: s.userId }, ...a.facts].slice(0, 200) }); } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+  }
+  async function factRemove(accountId: string, factId: string) {
+    requireUse();
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    let ok = false;
+    try { ok = await accounts.updateAccount(accountId, { facts: a.facts.filter((f) => f.id !== factId) }); } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
   }
 
   // ---------------------------------------------------------------- investigación con IA (docs/CRM_DINAMICO.md §13)
@@ -1327,7 +1387,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
-    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
+    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

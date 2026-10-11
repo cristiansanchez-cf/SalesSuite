@@ -27,6 +27,7 @@ const toAccount = (r: AccountRow): Account => ({
   placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null, placeFilled: (r.place_filled ?? null) as Record<string, string> | null,
   kind: (r.kind ?? 'company') as Account['kind'], discardedAt: r.discarded_at ?? null, discardReason: (r.discard_reason ?? null) as Account['discardReason'], discardNote: r.discard_note ?? null,
   aiResearchAt: r.ai_research_at ?? null,
+  facts: Array.isArray(r.facts) ? (r.facts as Account['facts']) : [],
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 function applyContact(row: AccountRow, c: AccountInsert['contact']) {
@@ -253,6 +254,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (p.fields !== undefined) a.fields = checkFields(a.tenant_id, p.fields);
       if (p.parentId !== undefined) { checkParent(a.tenant_id, a.id, p.parentId); a.parent_id = p.parentId; }
       if (p.tags !== undefined) a.tags = p.tags;
+      if (p.facts !== undefined) { if (p.facts.length > 200) throw new Error('check constraint: account_facts_check'); a.facts = JSON.parse(JSON.stringify(p.facts)); }
       applyContact(a, p.contact);
       if (p.next !== undefined) Object.assign(a, { next_step: p.next.step, next_step_at: p.next.at, next_contact_id: p.next.contactId, next_channel: p.next.channel });
       // = account_audit

@@ -549,6 +549,18 @@ en vez de apuntarlo en un chat consigo mismo. Primer paso de «hablar con el CRM
    interacción con la nota, lo marcado en la cualificación (sin quitar lo que ya tenía) y el próximo paso. Cada sitio
    va por su cuenta: si uno no se puede (p. ej. es de otro comercial), se dice y los demás se guardan.
 
+**Cada cosa en su sitio** (criterio de Cristian: lo que cuenta el comercial es lo más valioso, no «un apartadito de
+notas»). De cada sitio, la IA separa:
+- **Interacción** → historial de la empresa: lo que ha pasado con ellos (la visita, el mensaje que les mandó, qué
+  contestaron). Si solo fue a mirar: «Visita: solo observar». Con canal y resultado, para que la regla de seguimiento
+  proponga el siguiente paso (p. ej. «no contestó» → volver a escribir en 3 días).
+- **Lo que sabemos** → tarjeta arriba de la ficha (`account.facts`, migración `20261119000000_crm_facts.sql`): un dato
+  por línea, sin resumir (cómo es el sitio, pantallas, DJ, aforo, cola, público…), con su fecha y quién lo dijo; y
+  aparte **qué le encaja**. Se añade y se quita a mano desde la ficha; crece con cada visita (lo nuevo arriba).
+- **Campos de la ficha del espacio** (p. ej. Aforo: 500): la IA ve los campos de ese espacio y propone valores; se
+  validan con su tipo antes de enseñarlos.
+- Cualificación y próximo paso, como antes.
+
 **Doble seguro para no equivocarse de empresa** (criterio de Cristian): la IA solo separa y ordena el texto; **a qué
 empresa va lo decide el código** (búsqueda por nombre que tolera el dictado) y lo confirma la persona. Además,
 **opcional, arriba: «¿De qué empresa vas a hablar?»** con autocompletar (nombre y «Comunidad Valenciana › Valencia»,
@@ -560,3 +572,12 @@ Acceso: botón flotante **✨ Apuntar** en toda la consola (quien trabaja el CRM
 
 Permisos: los de siempre (sesión y RLS); cuenta para el tope diario de IA. Pruebas: `notes.test.ts`, contrato de
 cuentas (demo y Postgres), `scripts/smoke-notes.cjs` (en el móvil).
+
+**Ficha de Google ya elegida**: la búsqueda queda escondida tras «¿No es esta?»; «Quitar ficha» va en rojo y pide
+confirmación (dice qué quita y qué no).
+
+**Sin esperas de más** (criterio de Cristian): la forma de página (shimmer) solo sale si una página tarda más de 1,2 s;
+los formularios con `data-no-progress` no la enseñan (p. ej. «Entender» en Apuntar: el botón dice que trabaja). En
+Empresas, buscar y filtrar no recarga la página: el formulario lleva `data-async-get="kind-tabs acc-results"` y solo
+se cambian los resultados (la URL se actualiza); mientras se escribe, lo que ya se ve se filtra al momento.
+

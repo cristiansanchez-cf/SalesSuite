@@ -67,7 +67,8 @@ export function sanitizeCleanup(raw: unknown, items: CleanupInput[]): CleanupSug
   return [...out.values()];
 }
 
-export const CLEANUP_MODEL = 'claude-opus-5-5';
+// Clasificar por tandas: Sonnet basta (criterio de Cristian, 11-oct-2026); el admin revisa antes de aplicar.
+export const CLEANUP_MODEL = 'claude-sonnet-5-5';
 export function claudeCleanup(apiKey: string, fetchImpl?: typeof fetch): CleanupApi {
   const client = new Anthropic({ apiKey, timeout: 240_000, maxRetries: 1, ...(fetchImpl ? { fetch: fetchImpl } : {}) });
   return {

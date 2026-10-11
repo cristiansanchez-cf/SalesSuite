@@ -54,14 +54,19 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
 
   // «Este no era»: elegir otro cambia lo que puso el primero; y se puede quitar.
   assert(await p.isVisible('[data-testid=google-chosen]'), 'ficha elegida, a la vista');
+  assert(!(await p.isVisible('[data-testid=google-search]')), 'con la ficha elegida, buscar otra queda escondido');
+  await p.click('[data-testid=google-not-this]');
   await bg(p, () => p.click('[data-testid=google-search]'));
   const other = p.locator('[data-testid=google-result]').nth(1);
   assert((await other.locator('[data-testid=google-apply]').textContent()).includes('Cambiar a este'), 'en las otras: «Cambiar a este»');
   await bg(p, () => other.locator('[data-testid=google-apply]').click());
   const links2 = await p.$$eval('[data-testid=contact-links] a', (xs) => xs.map((x) => x.getAttribute('href')));
   assert(links2.includes('https://www.instagram.com/salabar/') && !links2.includes('https://www.instagram.com/salabrisa/'), 'cambia lo que puso la anterior');
-  await bg(p, () => p.click('[data-testid=google-clear]'));
-  assert(!(await p.isVisible('[data-testid=google-chosen]')) && (await p.textContent('[data-testid=toasts]')).includes('Ficha de Google quitada'), 'quitar la ficha');
+  await p.click('[data-testid=google-not-this]');
+  await p.click('[data-testid=google-clear]');
+  assert(await p.isVisible('[data-testid=google-clear-dialog]'), 'quitar pide confirmación');
+  await Promise.all([p.waitForURL(/ok=googleCleared/), p.click('[data-testid=google-clear-dialog-confirm]')]);
+  assert(!(await p.isVisible('[data-testid=google-chosen]')) && (await p.textContent('main')).includes('Ficha de Google quitada'), 'quitar la ficha');
   await bg(p, () => p.click('[data-testid=google-search]'));
   await bg(p, () => p.locator('[data-testid=google-result]').first().locator('[data-testid=google-apply]').click());
 

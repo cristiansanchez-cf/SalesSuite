@@ -162,14 +162,14 @@ export function sanitizePlaces(raw: unknown, asked: string[]): PlaceClass[] {
   return [...out.values()];
 }
 
-export const PLACES_MODEL = 'claude-opus-5-5';
+// Ordenar nombres de sitios: Haiku basta (criterio de Cristian, 11-oct-2026); el admin revisa antes de aplicar.
+export const PLACES_MODEL = 'claude-haiku-5-5';
 export function claudeZoneNames(apiKey: string, fetchImpl?: typeof fetch): ZoneNamesApi {
   const client = new Anthropic({ apiKey, timeout: 240_000, maxRetries: 1, ...(fetchImpl ? { fetch: fetchImpl } : {}) });
   return {
     async classify(raws) {
       const stream = client.beta.messages.stream({
         model: PLACES_MODEL, max_tokens: 32000,
-        betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
         output_config: { effort: 'low' },
         system: PLACES_SYSTEM,
         tools: [PLACES_TOOL as unknown as Anthropic.Beta.BetaTool],
@@ -297,7 +297,6 @@ export function claudeZoneFixes(apiKey: string, fetchImpl?: typeof fetch): ZoneF
     async review(lines) {
       const stream = client.beta.messages.stream({
         model: PLACES_MODEL, max_tokens: 32000,
-        betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
         output_config: { effort: 'low' },
         system: FIXES_SYSTEM,
         tools: [FIXES_TOOL as unknown as Anthropic.Beta.BetaTool],

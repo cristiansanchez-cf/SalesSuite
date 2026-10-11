@@ -44,7 +44,12 @@ if (Astro.request.method === 'POST') {
       if (!goes || goes === 'skip') return null;
       const q = Object.fromEntries(f.getAll(`q-${i}`).map(String).map((x) => x.split(':')).filter((x) => x.length === 2));
       const days = str(`days-${i}`);
-      return { accountId: goes === 'new' ? null : goes, create: goes === 'new' ? it.venue : null, note: str(`note-${i}`) || it.note, channel: it.channel, outcome: it.outcome, day: it.day,
+      const fieldsChosen = Object.fromEntries(f.getAll(`f-${i}`).map(String).filter((k) => k in it.fields).map((k) => [k, it.fields[k]]));
+      return { accountId: goes === 'new' ? null : goes, create: goes === 'new' ? it.venue : null,
+        interaction: f.get(`int-on-${i}`) ? str(`int-${i}`) || null : null,
+        facts: str(`facts-${i}`).split(/\r?\n/).map((x) => x.replace(/^\s*[•·-]\s*/, '').trim()).filter(Boolean).slice(0, 40),
+        fit: str(`fit-${i}`) || null, fields: fieldsChosen,
+        channel: it.channel, outcome: it.outcome, day: it.day,
         qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days) };
     }).filter(Boolean);
     const r = await admin.crm.notesApply(rows);
@@ -59,6 +64,7 @@ const okMsg = flash(Astro.url, { saved: M.saved(Number(q.get('n')) || 0) + (Numb
 const savedIds = okMsg ? (q.get('ids') ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 40) : [];
 const saved = savedIds.length ? (await Promise.all(savedIds.map((id) => admin.accounts.get(id).then((d) => d.account).catch(() => null)))).filter((a) => !!a) : [];
 const items = box.items;
+const fieldLabel = new Map(items ? (await admin.accounts.crmFields().catch(() => [])).map((x) => [x.key, x.label]) : []);
 const hasAi = admin.crm.hasNotes();
 
 /** «Pantallas: Sí», «Noches a la semana: 4 o más», «Sin cobertura móvil». */
@@ -85,7 +91,7 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
   )}
 
   {!items ? (
-    <form method="post" class="co-card grid max-w-3xl gap-3" data-testid="notes-form" data-notes-form>
+    <form method="post" class="co-card grid max-w-3xl gap-3" data-testid="notes-form" data-notes-form data-no-progress>
       <input type="hidden" name="action" value="split" />
       {!hasAi && <Alert kind="info" title={M.noAi} />}
       <div class="co-field relative" data-who>
@@ -103,7 +109,7 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
       <button class="co-btn co-btn--primary w-fit" type="submit" disabled={!hasAi} data-busy={M.running} data-testid="notes-run"><Icon name="sparkles" size={16} /><span>{M.run}</span></button>
     </form>
   ) : (
-    <form method="post" class="grid gap-4" data-testid="notes-review">
+    <form method="post" class="grid gap-4" data-testid="notes-review" data-no-progress>
       <input type="hidden" name="action" value="apply" />
       <input type="hidden" name="items" value={JSON.stringify(items.map(({ candidates: _c, ...it }) => it))} />
       <h2 class="co-entity">{M.reviewTitle(items.length)}</h2>
@@ -120,7 +126,23 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
               </select>
             </label>
           </div>
-          <label class="co-field">{M.note}<textarea class="co-textarea !min-h-[96px]" name={`note-${i}`} maxlength="4000" data-testid="notes-note">{it.note}</textarea></label>
+          <fieldset class="grid gap-1 rounded-xl border border-[var(--co-line)] p-3">
+            <legend class="co-field px-1"><label class="inline-flex items-center gap-2"><input type="checkbox" name={`int-on-${i}`} value="1" checked={!!it.interaction} class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-int-on" />{M.interaction}</label></legend>
+            <span class="co-help">{M.interactionHelp}</span>
+            <textarea class="co-textarea !min-h-[64px]" name={`int-${i}`} maxlength="4000" data-testid="notes-interaction">{it.interaction ?? ''}</textarea>
+          </fieldset>
+          <label class="co-field">{M.facts} <span class="co-help">{M.factsHelp}</span>
+            <textarea class="co-textarea !min-h-[140px]" name={`facts-${i}`} maxlength="16000" data-testid="notes-facts">{it.facts.map((x) => `• ${x}`).join('\n')}</textarea>
+          </label>
+          <label class="co-field">{M.fit}<input class="co-input" name={`fit-${i}`} maxlength="600" value={it.fit ?? ''} data-testid="notes-fit" /></label>
+          {Object.keys(it.fields).length > 0 && (
+            <fieldset class="grid gap-1">
+              <legend class="co-field mb-1">{M.fieldsTitle}</legend>
+              <div class="co-chips">
+                {Object.entries(it.fields).map(([k, v]) => <label class="co-chip"><input type="checkbox" class="mr-1" name={`f-${i}`} value={k} checked data-testid="notes-field" />{fieldLabel.get(k) ?? k}: {v}</label>)}
+              </div>
+            </fieldset>
+          )}
           {Object.keys(it.qualification).length > 0 && (
             <fieldset class="grid gap-1">
               <legend class="co-field mb-1">{M.qual}</legend>

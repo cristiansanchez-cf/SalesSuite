@@ -24,6 +24,7 @@ import { followupMessages } from '~/lib/i18n/messages/followup';
 import ContactLinks from '~/components/crm/ContactLinks.astro';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
 import AiResearchCard from '~/components/crm/AiResearchCard.astro';
+import { notesMessages } from '~/lib/i18n/messages/notes';
 import { researchContext } from '~/lib/crm/research-context';
 import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { researchMessages } from '~/lib/i18n/messages/research';
@@ -73,6 +74,8 @@ if (Astro.request.method === 'POST') {
       case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
+      case 'fact-add': await admin.crm.factAdd(id, str('text'), str('kind') === 'fit' ? 'fit' : 'fact'); to += '?ok=fact#facts'; break;
+      case 'fact-remove': await admin.crm.factRemove(id, str('factId')); to += '?ok=factRemoved#facts'; break;
       case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
       case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), facebook: str('facebook'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
       case 'claim': { const e = await acc.touch(id, 'claim'); to += `?ok=${e === 'eligible' ? 'claimed' : `not-${e}`}`; break; }
@@ -119,6 +122,7 @@ const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin
 const googleResults = googleBox.r;
 const G = priorityMessages[locale].google;
 const CL = cleanupMessages[locale];
+const NT = notesMessages[locale];
 const googleQ = googleBox.q || (admin.crm.hasGoogle() ? await admin.crm.googleQuery(id) : '');
 const photoSrc = (n: string | null | undefined) => (n ? `/admin/api/crm/place-photo?n=${encodeURIComponent(n)}` : null);
 const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
@@ -139,7 +143,7 @@ const okKey = Astro.url.searchParams.get('ok') ?? '';
 const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   created: M.okCreated(rules.claimDays), contact: `${F.follow.ok.logged} ${M.okContact(day(a.claimedUntil))}`,
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
-  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
+  qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, fact: NT.factSaved, factRemoved: NT.factRemoved, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
@@ -176,6 +180,46 @@ const STATE_ALERT = {
         <Icon name={STATE_ALERT.kind === 'rejection' ? 'triangle-alert' : STATE_ALERT.kind === 'success' ? 'circle-check' : 'info'} size={18} />
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
+
+      {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
+      <section id="facts" class="co-card grid gap-3" data-testid="facts-card">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="co-entity">{NT.factsTitle}</h2>
+          <a class="co-meta underline" href={`/admin/accounts/apuntar`} data-testid="facts-note">{NT.factsNote}</a>
+        </div>
+        {a.facts.length === 0 && <p class="co-meta" data-testid="facts-empty">{NT.factsEmpty}</p>}
+        {(['fit', 'fact'] as const).map((k) => {
+          const list = a.facts.filter((x) => x.kind === k);
+          return list.length > 0 && (
+            <div class="grid gap-1">
+              {k === 'fit' && <p class="text-eyebrow m-0">{NT.fit}</p>}
+              <ul class="m-0 grid gap-1 p-0">
+                {list.map((x) => (
+                  <li class="group flex list-none items-start gap-2 text-sm" data-testid="fact" data-kind={x.kind}>
+                    <span class={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${x.kind === 'fit' ? 'bg-[var(--co-accent,#5b3df5)]' : 'bg-[var(--co-ink-dim)]'}`}></span>
+                    <span class="min-w-0 flex-1">{x.text} <span class="co-meta whitespace-nowrap">· {fmt.date(x.at, { day: 'numeric', month: 'short' })}</span></span>
+                    {canQualify && (
+                      <form method="post" action="#facts" data-async="facts" data-async-quiet>
+                        <input type="hidden" name="action" value="fact-remove" /><input type="hidden" name="factId" value={x.id} />
+                        <button type="submit" class="co-meta opacity-0 transition group-hover:opacity-100 focus:opacity-100" aria-label={NT.factRemove} title={NT.factRemove} data-testid="fact-remove">×</button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+        {canQualify && (
+          <form method="post" action="#facts" class="flex flex-wrap gap-2" data-async="facts" data-async-quiet data-testid="fact-form">
+            <input type="hidden" name="action" value="fact-add" />
+            <label class="sr-only" for="fact-text">{NT.factAdd}</label>
+            <input id="fact-text" class="co-input min-w-0 flex-1" name="text" maxlength="400" required placeholder={NT.factPh} data-testid="fact-text" />
+            <select class="co-select w-auto" name="kind" aria-label={NT.factKind}><option value="fact">{NT.factKindFact}</option><option value="fit">{NT.fit}</option></select>
+            <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="fact-add"><Icon name="plus" size={14} /><span>{NT.factAdd}</span></button>
+          </form>
+        )}
+      </section>
 
       {a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
 
@@ -403,18 +447,31 @@ const STATE_ALERT = {
         {admin.crm.hasGoogle() && canQualify && (
           <div class="co-inset grid gap-2 !p-3" data-testid="google-box">
             <p class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={14} />{G.title}{a.placeId && <span class="co-tag !py-0 text-[11px]" data-testid="google-chosen"><Icon name="check" size={12} />{G.chosen}</span>}</p>
-            <p class="co-help">{a.placeId ? G.redo : G.help}</p>
-            <form method="post" action="#company-contact" class="flex flex-wrap gap-2" data-async="company-contact" data-async-quiet>
-              <input type="hidden" name="action" value="google-search" />
-              <label class="sr-only" for="google-q">{G.query}</label>
-              <input id="google-q" class="co-input min-w-0 flex-1" name="q" value={googleQ} maxlength="200" />
-              <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search" data-busy-label={G.searching}><Icon name="search" size={14} /><span>{googleResults ? G.again : G.search}</span></button>
-            </form>
-            {a.placeId && (
-              <form method="post" action="#company-contact" data-async="company-contact acc-data acc-head">
-                <input type="hidden" name="action" value="google-clear" />
-                <button class="co-btn co-btn--quiet co-btn--sm w-fit" type="submit" data-testid="google-clear"><Icon name="x" size={14} /><span>{G.clear}</span></button>
-              </form>
+            {/* Con la ficha ya elegida, buscar otra queda escondido tras «¿No es esta?» (no invita a tocar lo que está bien). */}
+            {a.placeId ? (
+              <details open={!!googleResults} data-testid="google-redo">
+                <summary class="co-meta cursor-pointer underline" data-testid="google-not-this">{G.notThis}</summary>
+                <div class="mt-2 grid gap-2">
+                  <p class="co-help">{G.redo}</p>
+                  <form method="post" action="#company-contact" class="flex flex-wrap gap-2" data-async="company-contact" data-async-quiet>
+                    <input type="hidden" name="action" value="google-search" />
+                    <label class="sr-only" for="google-q">{G.query}</label>
+                    <input id="google-q" class="co-input min-w-0 flex-1" name="q" value={googleQ} maxlength="200" />
+                    <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search" data-busy-label={G.searching}><Icon name="search" size={14} /><span>{googleResults ? G.again : G.search}</span></button>
+                  </form>
+                  <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit !text-[#b42318]" data-dialog-open="google-clear-dialog" data-testid="google-clear"><Icon name="trash2" size={14} /><span>{G.clear}</span></button>
+                </div>
+              </details>
+            ) : (
+              <>
+                <p class="co-help">{G.help}</p>
+                <form method="post" action="#company-contact" class="flex flex-wrap gap-2" data-async="company-contact" data-async-quiet>
+                  <input type="hidden" name="action" value="google-search" />
+                  <label class="sr-only" for="google-q">{G.query}</label>
+                  <input id="google-q" class="co-input min-w-0 flex-1" name="q" value={googleQ} maxlength="200" />
+                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="google-search" data-busy-label={G.searching}><Icon name="search" size={14} /><span>{googleResults ? G.again : G.search}</span></button>
+                </form>
+              </>
             )}
           </div>
         )}
@@ -534,6 +591,10 @@ const STATE_ALERT = {
     does={M.releaseDoes}
     doesNot={M.releaseDoesNot}>
     <input type="hidden" name="action" value="release" />
+  </ConfirmDialog>
+  {/* Siempre en la página: la ficha de Google se puede elegir sin recargar y entonces ya se puede quitar. */}
+  <ConfirmDialog id="google-clear-dialog" title={G.clearTitle} confirmLabel={G.clear} danger testid="google-clear-dialog" does={G.clearDoes} doesNot={G.clearNot} action="#company-contact">
+    <input type="hidden" name="action" value="google-clear" />
   </ConfirmDialog>
   <ConfirmDialog id="discard" title={CL.discardTitle(a.name)} confirmLabel={CL.discard} testid="discard-dialog" does={CL.discardBody} doesNot={CL.discardNot}>
     <input type="hidden" name="action" value="discard" />

@@ -591,6 +591,9 @@ html.console select:not([multiple]):not([size]) {
 .co-toast__x { flex: none; background: none; border: 0; color: inherit; font-size: 18px; line-height: 1; cursor: pointer; opacity: 0.7; padding: 0 2px; }
 .co-toast__x:hover { opacity: 1; }
 button[aria-busy='true'] { cursor: progress; opacity: 0.75; }
+/* Resultados que se están actualizando por detrás (data-async-get): se atenúan, sin forma de página. */
+.co-swap { transition: opacity 0.15s ease; }
+.co-swap[aria-busy='true'] { opacity: 0.55; }
 @keyframes co-toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes co-spin { to { transform: rotate(360deg); } }
 @media (max-width: 640px) { .co-toasts { left: 16px; right: 16px; max-width: none; bottom: 84px; } }

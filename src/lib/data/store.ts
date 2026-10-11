@@ -105,6 +105,7 @@ export interface AccountRow {
   qualification?: Record<string, unknown>;
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
   place_rating?: number | null; place_reviews?: number | null; place_photo?: string | null; place_filled?: Record<string, string> | null;
+  facts?: unknown[];
   kind?: 'company' | 'dj'; discarded_at?: string | null; discard_reason?: string | null; discard_note?: string | null; discarded_by?: string | null;
   ai_research?: unknown; ai_research_at?: string | null;
 }

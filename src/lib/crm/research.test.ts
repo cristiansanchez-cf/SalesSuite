@@ -117,7 +117,7 @@ describe('investigar desde la ficha', () => {
 });
 
 describe('la llamada a Claude', () => {
-  const msg = (content: unknown[], stop: string) => ({ id: 'm', type: 'message', role: 'assistant', model: 'claude-opus-5-5', content, stop_reason: stop, stop_sequence: null,
+  const msg = (content: unknown[], stop: string) => ({ id: 'm', type: 'message', role: 'assistant', model: 'claude-sonnet-5-5', content, stop_reason: stop, stop_sequence: null,
     usage: { input_tokens: 1, output_tokens: 1 } });
   test('modelo, herramientas web, respaldo y pausa; devuelve lo de save_research', async () => {
     const bodies: Array<Record<string, unknown>> = [];
@@ -134,7 +134,7 @@ describe('la llamada a Claude', () => {
     const out = await claudeResearch('k', fake).research({ name: 'Sala X', city: 'Valencia', address: null, website: null, instagram: null, sector: null, seller: 'Enjoy', known: {} });
     expect(out).toMatchObject({ summary: 'ok' });
     expect(bodies).toHaveLength(2);
-    expect(bodies[0]).toMatchObject({ model: 'claude-opus-5-5', fallbacks: 'default', output_config: { effort: 'low' } });
+    expect(bodies[0]).toMatchObject({ model: 'claude-sonnet-5-5', fallbacks: 'default', output_config: { effort: 'medium' } });
     expect((bodies[0].tools as Array<{ name: string }>).map((t) => t.name)).toEqual(['web_search', 'web_fetch', 'save_research']);
     expect(headers[0]).toContain('server-side-fallback-2026-07-01');
     // Tras la pausa, el turno del asistente vuelve tal cual.

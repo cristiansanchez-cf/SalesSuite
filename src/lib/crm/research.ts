@@ -201,7 +201,8 @@ export function readResearch(v: unknown): AiResearch | null {
 
 // ---------------------------------------------------------------- Claude (web search + web fetch)
 
-export const RESEARCH_MODEL = 'claude-opus-5-5';
+// Buscar en la web y razonar: Sonnet basta (la mitad que Opus; criterio de Cristian, 11-oct-2026). Todo lo revisa la persona.
+export const RESEARCH_MODEL = 'claude-sonnet-5-5';
 
 /**
  * Claude con búsqueda y lectura web (herramientas de servidor) y la herramienta save_research. Devuelve lo que puso en
@@ -218,7 +219,7 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
           max_tokens: 16000,
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
-          output_config: { effort: 'low' },
+          output_config: { effort: 'medium' },
           system: SYSTEM,
           tools: [
             { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', country: 'ES', ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },

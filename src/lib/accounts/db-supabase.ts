@@ -14,6 +14,7 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
   }
   return res.data;
 }
+// En la lista no va «Lo que sabemos» (puede ser largo): solo al abrir una empresa.
 const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, facebook, linkedin, website, maps_url, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, place_rating, place_reviews, place_photo, place_filled, kind, discarded_at, discard_reason, discard_note, ai_research_at';
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
@@ -27,6 +28,7 @@ const toAccount = (r: Row): Account => ({
   placeRating: r.place_rating == null ? null : Number(r.place_rating), placeReviews: r.place_reviews ?? null, placePhoto: r.place_photo ?? null, placeFilled: (r.place_filled ?? null) as Record<string, string> | null,
   kind: (r.kind ?? 'company') as Account['kind'], discardedAt: r.discarded_at ?? null, discardReason: (r.discard_reason ?? null) as Account['discardReason'], discardNote: r.discard_note ?? null,
   aiResearchAt: r.ai_research_at ?? null,
+  facts: Array.isArray(r.facts) ? (r.facts as Account['facts']) : [],
 });
 const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
 const contactRow = (c: AccountInsert['contact']) => Object.fromEntries(Object.entries(CONTACT_COLS).filter(([k]) => c?.[k as keyof typeof CONTACT_COLS] !== undefined).map(([k, col]) => [col, c![k as keyof typeof CONTACT_COLS]]));
@@ -95,7 +97,7 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       }, f.limit)).map(toAccount);
     },
     async getAccount(id) {
-      const r = check(await sb.from('account').select(ACCOUNT_COLS).eq('id', id).maybeSingle());
+      const r = check(await sb.from('account').select(`${ACCOUNT_COLS}, facts`).eq('id', id).maybeSingle());
       return r ? toAccount(r) : null;
     },
     async insertAccount(t, a) {
@@ -127,6 +129,7 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       if (p.fields !== undefined) patch.fields = p.fields;
       if (p.parentId !== undefined) patch.parent_id = p.parentId;
       if (p.tags !== undefined) patch.tags = p.tags;
+      if (p.facts !== undefined) patch.facts = p.facts;
       Object.assign(patch, contactRow(p.contact));
       if (p.next !== undefined) Object.assign(patch, { next_step: p.next.step, next_step_at: p.next.at, next_contact_id: p.next.contactId, next_channel: p.next.channel });
       return (check(await sb.from('account').update(patch).eq('id', id).select('id')) ?? []).length > 0;

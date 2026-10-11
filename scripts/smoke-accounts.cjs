@@ -85,5 +85,13 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const dj = await login('dj@enjoy.test');
   const res = await dj.goto(`${BASE}/admin/accounts`);
   assert((await dj.textContent('main')).includes('equipo interno') || res.status() === 403 || (await dj.textContent('main')).toLowerCase().includes('acceso'), 'colaborador sin acceso a cuentas');
+  // Buscar sin recargar (data-async-get): la página no navega, solo cambia la lista, y la URL se puede compartir.
+  await admin.goto(`${BASE}/admin/accounts?ver=all`);
+  await admin.evaluate(() => { window.__same = true; });
+  const before = Number(await admin.evaluate(() => document.documentElement.dataset.asyncDone || 0));
+  await admin.fill('#acc-q', 'marina');
+  await admin.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, before, { timeout: 30000 });
+  const found = await admin.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.getAttribute('data-name')));
+  assert(found.length === 1 && found[0] === 'Sala Marina' && /q=marina/.test(admin.url()) && (await admin.evaluate(() => window.__same === true)), `buscar sin recargar la página (${found})`);
   await b.close();
 })();
