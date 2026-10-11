@@ -503,6 +503,16 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(r2).toMatchObject({ created: false, otherId: rooftop, linkId: r1.linkId });
       expect((await rep.crm.workLinks(rooftop))[0].note).toBe('y algún sábado');
       await rejects(rep.crm.workLinkAdd(rooftop, { otherId: rooftop }), 422);
+      // Dónde trabaja (§24): días que suele, frecuencia y, si es DJ, residente o invitado; volver a enlazar los cambia.
+      await rep.crm.workLinkAdd(promo.id, { otherId: rooftop, days: ['fri', 'sat', 'fri'], freq: 'regular' });
+      expect((await rep.crm.workLinks(promo.id))[0]).toMatchObject({ days: ['fri', 'sat'], freq: 'regular', role: null, note: 'y algún sábado' });
+      await rep.crm.workLinkAdd(promo.id, { otherId: rooftop, days: [], freq: 'sporadic', role: 'guest' });
+      expect((await rep.crm.workLinks(rooftop))[0]).toMatchObject({ days: [], freq: 'sporadic', role: 'guest' });
+      await rejects(rep.crm.workLinkAdd(promo.id, { otherId: rooftop, days: ['viernes'] }), 422);
+      // Redes de promotora: TikTok desde @usuario; Facebook no se toca si no viene.
+      await t.admin.accounts.assign(promo.id, U.rep.id);
+      await rep.crm.setCompanyContact(promo.id, { tiktok: '@fiestasua', instagram: '@fiestasua' });
+      expect((await t.admin.accounts.get(promo.id)).account).toMatchObject({ tiktok: 'https://www.tiktok.com/@fiestasua', instagram: 'https://www.instagram.com/fiestasua/' });
       await rep.crm.workLinkRemove(r1.linkId);
       expect(await rep.crm.workLinks(rooftop)).toEqual([]);
       await rejects(rep.crm.workLinkRemove(r1.linkId), 404);

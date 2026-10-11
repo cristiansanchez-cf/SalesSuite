@@ -101,6 +101,7 @@ export interface AccountRow {
   /** Grupo (otra empresa), listas e importación de origen (fase 2). */
   parent_id?: string | null; tags?: string[]; import_id?: string | null;
   phone?: string | null; email?: string | null; instagram?: string | null; facebook?: string | null; linkedin?: string | null; website?: string | null; maps_url?: string | null;
+  tiktok?: string | null; music_url?: string | null;
   next_step?: string | null; next_step_at?: string | null; next_contact_id?: string | null; next_channel?: string | null;
   qualification?: Record<string, unknown>;
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;
@@ -122,7 +123,7 @@ export interface CrmContactRow {
   id: string; tenant_id: string; name: string; email: string | null; phone: string | null; instagram: string | null; linkedin: string | null; city: string | null; notes: string | null;
   fields: Record<string, unknown>; tags: string[]; owner_id: string | null; import_id: string | null; created_by: string | null; created_at: string; updated_at: string;
 }
-export interface AccountLinkRow { id: string; tenant_id: string; a_id: string; b_id: string; note: string | null; created_by: string | null; created_at: string }
+export interface AccountLinkRow { id: string; tenant_id: string; a_id: string; b_id: string; note: string | null; created_by: string | null; created_at: string; days?: string[]; freq?: string | null; role?: string | null }
 export interface CrmContactAccountRow { tenant_id: string; contact_id: string; account_id: string; role: string | null; created_at: string }
 export interface CrmImportRow {
   id: string; tenant_id: string; created_by: string | null; file_name: string; target: 'account' | 'contact'; headers: string[]; rows: string[][];
@@ -392,7 +393,7 @@ export function freshDemoDb(): DemoDb {
     ],
     account_link: [],
     crm_import: [],
-    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket' }] }],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }] }],
     crm_fix: [],
     crm_sweep: [],
     usage_counter: [],

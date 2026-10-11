@@ -20,7 +20,7 @@ const toAccount = (r: AccountRow): Account => ({
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
   lastTouchBy: r.last_touch_by, wonAt: r.won_at, wonBy: r.won_by, wonDossierId: r.won_dossier_id, createdBy: r.created_by, createdAt: r.created_at,
   fields: (r.fields ?? {}) as Account['fields'], parentId: r.parent_id ?? null, tags: r.tags ?? [], importId: r.import_id ?? null,
-  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, facebook: r.facebook ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null,
+  phone: r.phone ?? null, email: r.email ?? null, instagram: r.instagram ?? null, facebook: r.facebook ?? null, linkedin: r.linkedin ?? null, website: r.website ?? null, mapsUrl: r.maps_url ?? null, tiktok: r.tiktok ?? null, musicUrl: r.music_url ?? null,
   nextStep: r.next_step ?? null, nextStepAt: r.next_step_at ?? null, nextContactId: r.next_contact_id ?? null, nextChannel: r.next_channel ?? null,
   qualification: (r.qualification ?? {}) as Account['qualification'],
   placeId: r.place_id ?? null, hours: r.hours ?? null, lat: r.lat ?? null, lng: r.lng ?? null, placeStatus: r.place_status ?? null, placeAt: r.place_at ?? null,
@@ -29,7 +29,7 @@ const toAccount = (r: AccountRow): Account => ({
   aiResearchAt: r.ai_research_at ?? null,
   facts: Array.isArray(r.facts) ? (r.facts as Account['facts']) : [],
 });
-const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url' } as const;
+const CONTACT_COLS = { phone: 'phone', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin', website: 'website', mapsUrl: 'maps_url', tiktok: 'tiktok', musicUrl: 'music_url' } as const;
 function applyContact(row: AccountRow, c: AccountInsert['contact']) {
   for (const [k, col] of Object.entries(CONTACT_COLS)) { const v = c?.[k as keyof typeof CONTACT_COLS]; if (v !== undefined) (row as unknown as Record<string, unknown>)[col] = v; }
 }

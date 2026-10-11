@@ -114,7 +114,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
    * Guardar los tipos (admin): renombrar, añadir y quitar (el principal no se quita). Las empresas de un tipo que se
    * quita pasan al principal (no se pierde nada).
    */
-  async function saveKinds(input: Array<{ key?: string; label?: string; plural?: string; icon?: string }>) {
+  async function saveKinds(input: Array<{ key?: string; label?: string; plural?: string; icon?: string; profile?: string }>) {
     if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin del espacio');
     const before = await kinds();
     const used = new Set<string>();

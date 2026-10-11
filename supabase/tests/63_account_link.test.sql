@@ -35,3 +35,26 @@ select pg_temp.assert((select count(*) = 1 from public.account_link where a_id =
 delete from public.account where id = '63000000-0000-4000-8000-0000000000a2';
 select pg_temp.assert((select count(*) = 0 from public.account_link where a_id = '63000000-0000-4000-8000-0000000000a1'), 'se borra con la empresa');
 delete from public.account where id = '63000000-0000-4000-8000-0000000000a1';
+
+-- Dónde trabaja (§24): días y frecuencia válidos; nada inventado.
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
+insert into public.account (id, tenant_id, name) values
+  ('63000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-000000000e01', 'Sala 63b'),
+  ('63000000-0000-4000-8000-0000000000b2', '00000000-0000-4000-8000-000000000e01', 'Promo 63b');
+insert into public.account_link (tenant_id, a_id, b_id, days, freq, role) values
+  ('00000000-0000-4000-8000-000000000e01', '63000000-0000-4000-8000-0000000000b1', '63000000-0000-4000-8000-0000000000b2', '{fri,sat}', 'regular', 'resident');
+do $$ begin
+  update public.account_link set days = '{viernes}' where a_id = '63000000-0000-4000-8000-0000000000b1';
+  raise exception 'ASSERT FAILED: día inventado';
+exception when check_violation then null; end $$;
+do $$ begin
+  update public.account_link set freq = 'siempre' where a_id = '63000000-0000-4000-8000-0000000000b1';
+  raise exception 'ASSERT FAILED: frecuencia inventada';
+exception when check_violation then null; end $$;
+do $$ begin
+  update public.account set tiktok = 'javascript:alert(1)' where id = '63000000-0000-4000-8000-0000000000b2';
+  raise exception 'ASSERT FAILED: tiktok javascript:';
+exception when check_violation then null; end $$;
+reset role;
+delete from public.account where id::text like '63000000-0000-4000-8000-0000000000b%';

@@ -6,6 +6,8 @@
  *  4. «Se enfría» (contestó y llevamos 3 días laborables sin hacer nada) es urgencia, no calidad: no toca la nota.
  * Una sola lógica, pura y probada, para la ficha, la lista y «Hoy».
  */
+import { PROFILE_MULTI, PROFILE_VALUES } from './profiles';
+
 export const CRITERIA = ['recurrence', 'decider', 'screens', 'dynamics', 'scale'] as const;
 export type Criterion = (typeof CRITERIA)[number];
 export type Weights = Record<Criterion, number>;
@@ -42,7 +44,10 @@ export const FORMAT_KIND: Record<(typeof FORMATS)[number], LeadKind> = {
 };
 export type Format = (typeof FORMATS)[number];
 /** Claves con varios valores a la vez (se marcan y desmarcan de una en una). */
-export const MULTI_QUAL: readonly string[] = ['format'];
+export const MULTI_QUAL: readonly string[] = ['format', ...PROFILE_MULTI];
+/** Los valores de una clave de varios (lo viejo de uno solo también vale). */
+export const multiOf = (q: Record<string, unknown>, key: string): string[] =>
+  (Array.isArray(q[key]) ? (q[key] as unknown[]).map(String) : q[key] ? [String(q[key])] : []).filter((x) => QUAL_VALUES[key]?.includes(x));
 export const formatsOf = (q: Qualification): Format[] =>
   (Array.isArray(q.format) ? q.format : q.format ? [q.format] : []).filter((x): x is Format => (FORMATS as readonly string[]).includes(x));
 /**
@@ -56,7 +61,7 @@ export function kindOfFormats(fs: Format[]): LeadKind | undefined {
 /** Marca un valor: en las de varios, lo añade (o lo quita si `toggle` y ya estaba); en las demás, lo pone. */
 export function setQual(q: Record<string, unknown>, key: string, value: unknown, toggle = false): void {
   if (!MULTI_QUAL.includes(key)) { if (toggle && q[key] === value) delete q[key]; else q[key] = value; return; }
-  const cur = formatsOf(q as Qualification) as string[];
+  const cur = multiOf(q, key);
   const next = cur.includes(String(value)) ? (toggle ? cur.filter((x) => x !== value) : cur) : [...cur, String(value)];
   if (next.length) q[key] = next; else delete q[key];
 }
@@ -96,9 +101,11 @@ export const QUAL_VALUES: Record<string, readonly string[]> = {
   nights: Object.keys(OPTIONS.nights), events: Object.keys(OPTIONS.events), recurring: Object.keys(OPTIONS.recurring),
   decider: Object.keys(OPTIONS.decider), screens: Object.keys(OPTIONS.screens), dynamics: Object.keys(OPTIONS.dynamics), scale: Object.keys(OPTIONS.scale),
   coverage: ['true'], validate: ['true'], debt: ['true'],
+  ...PROFILE_VALUES,
 };
 
-export interface Part { key: Criterion; weight: number; points: number | null }
+/** Un criterio y sus puntos (los del local son `Criterion`; las fichas de promotora y DJ tienen los suyos, §24). */
+export interface Part { key: Criterion | (string & {}); weight: number; points: number | null }
 export interface Priority {
   out: boolean;
   kills: Kill[];
@@ -107,7 +114,7 @@ export interface Priority {
   /** Lo que podría llegar a tener si lo desconocido saliera al máximo. */
   max: number;
   parts: Part[];
-  unknown: Criterion[];
+  unknown: Array<Criterion | (string & {})>;
   qualified: boolean;
   kind: LeadKind | null;
   /** Qué le encaja de lo que vendemos (el criterio «screens» puntúa el mejor). */

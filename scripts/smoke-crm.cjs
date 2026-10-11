@@ -108,6 +108,21 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   assert((await rep.textContent('[data-testid=work-link][data-name="Fiestas Ucranianas VLC"]')).includes('Promotora · los jueves en la terraza'), 'promotora nueva, creada y enlazada');
   await Promise.all([rep.waitForURL(/\/admin\/accounts\/[^/?#]+$/), rep.click('[data-testid=work-link][data-name="Fiestas Ucranianas VLC"] a')]);
   assert(await rep.isVisible('[data-testid=work-link][data-name="Club Sol"]'), 'desde la promotora se ve el local');
+  // Ficha de promotora (§24): sus preguntas, sin Google ni campos de local; días y frecuencia en «Dónde hace fiestas».
+  assert((await rep.getAttribute('[data-testid=qualification]', 'data-profile')) === 'promoter', 'cualificación de promotora');
+  assert(!(await rep.isVisible('[data-testid=google-box]')) && !(await rep.isVisible('[data-testid=account-sheet]')) && !(await rep.isVisible('[data-testid=qual-format-club]')), 'sin Google, sin formato ni campos de local');
+  await rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-when] summary');
+  await rep.check('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-day-fri]', { force: true });
+  await rep.selectOption('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-freq]', 'regular');
+  await Promise.all([rep.waitForURL(/ok=work/), rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-when-save]')]);
+  assert((await rep.textContent('[data-testid=work-line]')).includes('Viernes en Club Sol'), 'arriba: «Viernes en Club Sol»');
+  await Promise.all([rep.waitForResponse((r) => r.request().method() === 'POST'), rep.click('[data-testid=qual-pstyle-international]')]);
+  await rep.waitForSelector('[data-testid=qual-pstyle-international][aria-pressed=true]');
+  await Promise.all([rep.waitForResponse((r) => r.request().method() === 'POST'), rep.click('[data-testid=qual-pdyn-yes]')]);
+  await rep.waitForSelector('[data-testid=qual-pdyn-yes][aria-pressed=true]');
+  assert((await rep.textContent('[data-testid=qual-score]')).trim() === '55', 'nota de promotora: dinámicas 35 + estilo 20');
+  const fit = await rep.textContent('[data-testid=summary-fit]');
+  assert(fit.includes('Peticiones de canciones') && fit.includes('Pantalla y dinámicas') && !fit.includes('Fidelización'), `le encaja (sin fidelización): ${fit.trim()}`);
   await Promise.all([rep.waitForURL(/ok=workRemoved/), rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-remove]')]);
   assert(!(await rep.isVisible('[data-testid=work-link]')), 'enlace quitado');
   await rep.goto(`${BASE}/admin/accounts?ver=all&tipo=promotora`);

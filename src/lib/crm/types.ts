@@ -25,7 +25,12 @@ export type ContactPatch = Partial<Omit<ContactInsert, 'importId'>>;
 /** Persona ↔ empresa, con su papel en esa empresa. */
 export interface ContactLink { contactId: string; accountId: string; role: string | null }
 /** «Trabaja con»: dos empresas enlazadas (en los dos sentidos), con una nota («fiesta ucraniana los jueves»). */
-export interface AccountLink { id: string; aId: string; bId: string; note: string | null; createdAt: string }
+export const LINK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+export type LinkDay = (typeof LINK_DAYS)[number];
+export type LinkFreq = 'regular' | 'sporadic' | 'once';
+/** Dónde trabaja (§24): qué días suele, con qué frecuencia y, si es un DJ, si es residente o invitado. */
+export interface LinkWhen { days: LinkDay[]; freq: LinkFreq | null; role: 'resident' | 'guest' | null }
+export interface AccountLink extends LinkWhen { id: string; aId: string; bId: string; note: string | null; createdAt: string }
 
 /** A dónde va cada columna del CSV. */
 export type ColumnMap =

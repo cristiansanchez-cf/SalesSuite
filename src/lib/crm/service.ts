@@ -25,11 +25,12 @@ import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type A
 import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, setQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
+import { LINK_DAYS, type LinkWhen } from './types';
 import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo } from './types';
 
 const uuid = z.string().uuid();
 const opt = (n: number) => z.string().trim().max(n).transform((v) => v || null).nullable().optional();
-const urlOpt = (n: number, kind: 'instagram' | 'facebook' | 'linkedin' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
+const urlOpt = (n: number, kind: 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'web') => z.string().trim().max(n).transform((v) => socialUrl(v, kind)).nullable().optional();
 export const tagSchema = z.string().trim().toLowerCase().transform((v) => v.normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48));
 export const personSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio').max(160),
@@ -45,16 +46,18 @@ export const quickAddSchema = personSchema.extend({
 });
 
 /** «@club_sol» o «instagram.com/club_sol» → enlace completo. */
-export function socialUrl(v: string | null | undefined, kind: 'instagram' | 'facebook' | 'linkedin' | 'web'): string | null {
+export function socialUrl(v: string | null | undefined, kind: 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'web'): string | null {
   const x = (v ?? '').trim();
   if (!x) return null;
   if (kind === 'instagram' && /^@?[\w.]{2,30}$/.test(x)) return `https://www.instagram.com/${x.replace(/^@/, '')}/`;
+  if (kind === 'tiktok' && /^@?[\w.]{2,30}$/.test(x)) return `https://www.tiktok.com/@${x.replace(/^@/, '')}`;
   if (kind === 'facebook' && /^@?[\w.-]{2,80}$/.test(x) && !/\.[a-z]{2,6}$/i.test(x)) return `https://www.facebook.com/${x.replace(/^@/, '')}`;
   return /^https?:\/\//i.test(x) ? x : `https://${x.replace(/^\/+/, '')}`;
 }
 export const companyContactSchema = z.object({
   phone: opt(40), email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
   instagram: urlOpt(300, 'instagram'), facebook: urlOpt(300, 'facebook'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
+  tiktok: urlOpt(300, 'tiktok'), musicUrl: urlOpt(300, 'web'),
 });
 export const classifySchema = z.object({
   kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).nullable().optional().or(z.literal('').transform(() => null)),
@@ -272,7 +275,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   // ---------------------------------------------------------------- «Trabaja con» (§22)
 
   /** Las empresas con las que trabaja una (promotoras, DJs, locales), con la nota del enlace. */
-  async function workLinks(accountId: string): Promise<Array<{ id: string; note: string | null; account: { id: string; name: string; kind: string } }>> {
+  async function workLinks(accountId: string): Promise<Array<LinkWhen & { id: string; note: string | null; account: { id: string; name: string; kind: string } }>> {
     requireUse();
     const links = await db.listAccountLinks(t, accountId);
     if (!links.length) return [];
@@ -280,14 +283,18 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const accs = await accounts.listAccounts(t, { ids: others, limit: others.length });
     return links.flatMap((l) => {
       const o = accs.find((a) => a.id === (l.aId === accountId ? l.bId : l.aId));
-      return o ? [{ id: l.id, note: l.note, account: { id: o.id, name: o.name, kind: o.kind } }] : [];
+      return o ? [{ id: l.id, note: l.note, days: l.days, freq: l.freq, role: l.role, account: { id: o.id, name: o.name, kind: o.kind } }] : [];
     }).sort((x, y) => x.account.kind.localeCompare(y.account.kind) || x.account.name.localeCompare(y.account.name, 'es'));
   }
   const workLinkSchema = z.object({
     otherId: uuid.optional().or(z.literal('').transform(() => undefined)),
     name: z.string().trim().max(160).optional(),
     kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional().or(z.literal('').transform(() => undefined)),
-    note: z.string().trim().max(200).optional().transform((v) => v || null),
+    // Sin nota: se queda la que hubiera (enlazar otra vez desde el otro lado no la borra); vacía a propósito: se quita.
+    note: z.string().trim().max(200).optional().transform((v) => (v === undefined ? undefined : v || null)),
+    days: z.array(z.enum(LINK_DAYS)).max(7).optional(),
+    freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional().or(z.literal('').transform(() => null)),
+    role: z.enum(['resident', 'guest']).nullable().optional().or(z.literal('').transform(() => null)),
   });
   /**
    * Enlazar con otra empresa: la elegida, o por su nombre (si existe una que se llame igual, esa; si no, se crea del
@@ -316,7 +323,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     }
     if (otherId === accountId) throw new AdminError(422, 'Datos no válidos');
     let linkId: string;
-    try { linkId = await db.saveAccountLink(t, accountId, otherId!, v.note); } catch (e) { mapError(e); }
+    const when: Partial<LinkWhen> = { ...(v.days ? { days: [...new Set(v.days)] } : {}), ...('freq' in v ? { freq: v.freq ?? null } : {}), ...('role' in v ? { role: v.role ?? null } : {}) };
+    try { linkId = await db.saveAccountLink(t, accountId, otherId!, v.note, when); } catch (e) { mapError(e); }
     return { linkId: linkId!, otherId: otherId!, created };
   }
   async function workLinkRemove(linkId: string) {

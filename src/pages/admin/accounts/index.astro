@@ -11,6 +11,9 @@ import Icon from '~/components/ui/Icon.astro';
 import AccountState from '~/components/accounts/AccountState.astro';
 import ViewToggle from '~/components/crm/ViewToggle.astro';
 import { rememberedFilters, saveFilters, myCountry } from '~/lib/ui/remember';
+import { priorityFor } from '~/lib/crm/score';
+import { profileOf } from '~/lib/accounts/types';
+import { profilesMessages } from '~/lib/i18n/messages/profiles';
 import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
@@ -102,7 +105,10 @@ const orden = q.get('orden') === 'prioridad' ? 'prioridad' : '';
 const cual = (['sin', 'fuera', 'enfria', 'ia'].includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia';
 const weights = await admin.crm.weights();
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
-const prio = new Map(items.map((a) => [a.id, priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights)]));
+// La nota según la ficha de su tipo (§24): local, promotora o DJ.
+const prio = new Map(items.map((a) => [a.id, priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights)]));
+const PRF = profilesMessages[locale];
+const critLabel = (k: string) => (R.criteria as Record<string, string>)[k] ?? (PRF.q as unknown as Record<string, [string, unknown]>)[k]?.[0] ?? PRF.style;
 const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
 const cooling = await admin.crm.cooling(cual === 'enfria' ? byState.map((a) => a.id) : byState.slice(0, shownMax).map((a) => a.id));
 let shown = byState.filter((a) => {
@@ -298,7 +304,7 @@ const panelOpen = nFilters > 0;
                 {c !== undefined && <span class="co-tag co-tag--danger" title={R.coolingHelp}>{R.cooling(c)}</span>}
                 {a.aiResearchAt && <span class="co-tag" title={AI.at(fmt.relative(a.aiResearchAt))} data-testid="account-ai"><Icon name="sparkles" size={12} />{AI.zone.badge}</span>}
                 {p.out ? <span class="co-tag" title={p.kills.map((k) => R.kills[k]).join(' · ')}>{R.outBy(R.kills[p.kills[0]])}</span>
-                  : <span class="co-tag" title={p.parts.map((x) => `${R.criteria[x.key]}: ${x.points ?? R.unknown}/${x.weight}`).join('\n')}><strong>{p.score}</strong>{!p.qualified && <span class="co-meta">&nbsp;· {R.upTo(p.max)}</span>}</span>}
+                  : <span class="co-tag" title={p.parts.map((x) => `${critLabel(x.key)}: ${x.points ?? R.unknown}/${x.weight}`).join('\n')}><strong>{p.score}</strong>{!p.qualified && <span class="co-meta">&nbsp;· {R.upTo(p.max)}</span>}</span>}
               </span>
             ); })()}
             <AccountState a={a} />

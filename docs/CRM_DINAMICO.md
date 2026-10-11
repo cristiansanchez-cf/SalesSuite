@@ -682,3 +682,28 @@ Criterio de Cristian haciendo ruta (11-oct-2026).
 Apuntar con esa empresa ya elegida, sin buscarla), **Cómo llegar** (su ficha de Google o la búsqueda en Maps),
 **Llamar**, **WhatsApp** e **Instagram** si los tiene, y **«Pregunta por»** la primera persona con su papel. Apuntar
 guarda lo que llevas escrito en este móvil (si sales a mirar algo y vuelves, sigue ahí) y lo borra al guardar.
+
+## 24. Fichas por tipo: local, promotora y DJ
+
+Criterio de Cristian (12-oct-2026): «una promotora no es una empresa normal». Por debajo comparten la empresa (dueño y
+reserva, historial, próximo paso, personas, «Trabaja con», propuestas); por encima, **cada tipo tiene su ficha**:
+`crm_settings.kinds[].profile` = `venue` · `promoter` · `dj` (se elige en Campos › Tipos de cliente). Migración
+`20261125`: Enjoy, DJs con ficha de DJ y Promotoras con ficha de promotora.
+
+- **Promotora:** primero **«Dónde hace fiestas»**: cada sala con **días** (L–D, lo habitual; nunca es exacto),
+  **frecuencia** (habitual · esporádico · alguna vez) y nota; arriba la frase «Viernes en Sala X · Sábados en Y». Su
+  cualificación: estilo (varios: internacional, Erasmus/universitaria, comercial, latina/reggaetón, pop/indie/revival,
+  LGTBIQ+, tardeo, techno/underground, cartel de DJs), ¿dinámicas, juegos o concursos? (35), estilo (20; techno o
+  «cartel de DJs» solos no puntúan y avisan: se suelen descartar), fiestas al mes (20), ¿cuida el contenido? (15),
+  ¿la ves llevando Enjoy a sus salas? (10). Le encaja: peticiones, pantalla y dinámicas, fotos y álbum (**no**
+  fidelización). Contacto: Instagram, TikTok y WhatsApp (sin Facebook ni Google Maps); varias personas.
+- **DJ:** «Dónde pincha» (residente o invitado, con días). Cualificación: ¿residente donde nos interesa? (40),
+  seguidores (25; da su **caché**: a uno grande no le vale «lo que genere tu local», a uno residente sí), ¿quiere
+  darse a conocer? (20), estilo (15). Contacto: Instagram, TikTok, WhatsApp y Spotify/SoundCloud.
+- **Local:** como estaba (§22–23).
+- Datos: `account_link.days/freq/role`; `account.tiktok/music_url`. La nota de cada ficha: `src/lib/crm/profiles.ts`
+  y `score.ts`.
+
+**Pendiente (decidido no hacerlo aún):** la promotora como «comercial» de Enjoy: gratis si consigue que sus salas se
+suscriban y un porcentaje de lo que genere cada sala los primeros 6 meses. Haría falta llevar qué salas trae cada
+promotora y engancharlo con Comisiones.

@@ -14,9 +14,14 @@ export type TouchKind = 'created' | 'contact' | 'dossier' | 'won' | 'lost' | 'cl
  */
 export type AccountKind = string;
 export const BASE_KIND = 'company';
-export interface KindDef { key: string; label: string; plural: string; icon: string }
+/** Qué ficha tiene cada tipo (§24): un local, una promotora o un DJ; cada uno con sus preguntas y su nota. */
+export const PROFILES = ['venue', 'promoter', 'dj'] as const;
+export type Profile = (typeof PROFILES)[number];
+export interface KindDef { key: string; label: string; plural: string; icon: string; profile?: Profile }
 export const KIND_ICONS = ['building2', 'store', 'music', 'mic', 'users', 'heart-handshake', 'party-popper', 'ticket', 'hotel', 'utensils', 'wine', 'waves', 'anchor', 'fish', 'ship', 'briefcase', 'graduation-cap', 'heart', 'star', 'globe'] as const;
-export const DEFAULT_KINDS: KindDef[] = [{ key: BASE_KIND, label: 'Empresa', plural: 'Empresas', icon: 'building2' }];
+export const DEFAULT_KINDS: KindDef[] = [{ key: BASE_KIND, label: 'Empresa', plural: 'Empresas', icon: 'building2', profile: 'venue' }];
+/** La ficha de un tipo (si no se sabe, la de un local). */
+export const profileOf = (kinds: KindDef[], key: string | null | undefined): Profile => kinds.find((k) => k.key === key)?.profile ?? 'venue';
 const KEY_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
 /** Lo guardado → lista válida: el principal siempre el primero, claves únicas, como mucho 12, iconos conocidos. */
 export function normalizeKinds(raw: unknown): KindDef[] {
@@ -29,7 +34,8 @@ export function normalizeKinds(raw: unknown): KindDef[] {
     if (!KEY_RE.test(key) || !label || out.some((k) => k.key === key)) continue;
     const plural = String(r.plural ?? '').replace(/\s+/g, ' ').trim().slice(0, 40) || label;
     const icon = (KIND_ICONS as readonly string[]).includes(String(r.icon)) ? String(r.icon) : 'building2';
-    out.push({ key, label, plural, icon });
+    const profile = (PROFILES as readonly string[]).includes(String(r.profile)) ? (r.profile as Profile) : 'venue';
+    out.push({ key, label, plural, icon, profile });
   }
   const base = out.find((k) => k.key === BASE_KIND) ?? DEFAULT_KINDS[0];
   return [base, ...out.filter((k) => k.key !== BASE_KIND)].slice(0, 12);
@@ -84,6 +90,8 @@ export interface Account {
   importId: string | null;
   /** Contacto de la empresa (docs/CRM_DINAMICO.md §10). */
   phone: string | null; email: string | null; instagram: string | null; facebook: string | null; linkedin: string | null; website: string | null; mapsUrl: string | null;
+  /** Promotoras y DJs (§24): TikTok y su música (Spotify, SoundCloud). */
+  tiktok: string | null; musicUrl: string | null;
   /** Próximo paso (lo que sale en «Hoy»). */
   nextStep: string | null; nextStepAt: string | null; nextContactId: string | null; nextChannel: string | null;
   /** Cualificación para la prioridad (docs/CRM_DINAMICO.md §11). */
@@ -101,7 +109,7 @@ export interface Account {
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }
-export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl'] as const;
+export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl', 'tiktok', 'musicUrl'] as const;
 export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }

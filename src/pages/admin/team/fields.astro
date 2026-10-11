@@ -20,7 +20,8 @@ import { i18n } from '~/lib/i18n';
 import { crmMessages } from '~/lib/i18n/messages/crm';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { kindsMessages } from '~/lib/i18n/messages/kinds';
-import { KIND_ICONS } from '~/lib/accounts/types';
+import { KIND_ICONS, PROFILES } from '~/lib/accounts/types';
+import { profilesMessages } from '~/lib/i18n/messages/profiles';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -36,6 +37,7 @@ const target = de === 'persona' ? 'contact' : 'account';
 const weightsTab = de === 'prioridad';
 const kindsTab = de === 'tipos';
 const K = kindsMessages[locale];
+const PRF = profilesMessages[locale];
 const R = priorityMessages[locale];
 const ICON: Record<FieldType, IconName> = {
   text: 'pencil', long_text: 'file-text', number: 'gauge', money: 'wallet', checkbox: 'circle-check', select: 'list-checks',
@@ -58,9 +60,9 @@ if (Astro.request.method === 'POST') {
       case 'weights': await admin.crm.saveWeights(Object.fromEntries(CRITERIA.map((k) => [k, str(k)]))); ok = 'weights'; break;
       case 'kinds': {
         // Una fila por tipo (las vacías no cuentan; las marcadas para quitar, tampoco).
-        const keys = f.getAll('kKey').map(String), labels = f.getAll('kLabel').map(String), plurals = f.getAll('kPlural').map(String), icons = f.getAll('kIcon').map(String);
+        const keys = f.getAll('kKey').map(String), labels = f.getAll('kLabel').map(String), plurals = f.getAll('kPlural').map(String), icons = f.getAll('kIcon').map(String), profiles = f.getAll('kProfile').map(String);
         const remove = new Set(f.getAll('kRemove').map(String));
-        await acc.saveKinds(labels.map((label, i) => ({ key: keys[i], label, plural: plurals[i], icon: icons[i] })).filter((k) => k.label.trim() && !(k.key && remove.has(k.key))));
+        await acc.saveKinds(labels.map((label, i) => ({ key: keys[i], label, plural: plurals[i], icon: icons[i], profile: profiles[i] })).filter((k) => k.label.trim() && !(k.key && remove.has(k.key))));
         ok = 'kinds';
         break;
       }
@@ -104,11 +106,12 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
       <div><h2 class="co-entity">{K.title}</h2><p class="co-meta mt-1">{K.lede}</p></div>
       <ul class="m-0 grid gap-2 p-0">
         {[...kindDefs, { key: '', label: '', plural: '', icon: 'building2' }].map((k, i) => (
-          <li class="grid list-none items-end gap-2 sm:grid-cols-[1fr_1fr_9rem_6rem]" data-testid="kind-row" data-key={k.key}>
+          <li class="grid list-none items-end gap-2 sm:grid-cols-[1fr_1fr_8rem_9rem_6rem]" data-testid="kind-row" data-key={k.key}>
             <input type="hidden" name="kKey" value={k.key} />
             <label class="co-field !gap-1 text-xs">{K.label}<input class="co-input" name="kLabel" value={k.label} maxlength="40" placeholder={k.key ? '' : K.newLabel} required={i === 0} data-testid="kind-label" /></label>
             <label class="co-field !gap-1 text-xs">{K.plural}<input class="co-input" name="kPlural" value={k.plural} maxlength="40" placeholder={k.key ? '' : K.newPlural} data-testid="kind-plural" /></label>
             <label class="co-field !gap-1 text-xs">{K.icon}<select class="co-select" name="kIcon">{KIND_ICONS.map((ic) => <option value={ic} selected={ic === k.icon}>{ic}</option>)}</select></label>
+            <label class="co-field !gap-1 text-xs" title={PRF.profileHelp}>{PRF.profile}<select class="co-select" name="kProfile" data-testid="kind-profile">{PROFILES.map((pr) => <option value={pr} selected={pr === (k.profile ?? 'venue')}>{PRF.profiles[pr]}</option>)}</select></label>
             <span class="pb-2">{i === 0 ? <span class="co-badge">{K.main}</span> : k.key ? <label class="co-meta inline-flex items-center gap-1"><input type="checkbox" name="kRemove" value={k.key} data-testid="kind-remove" />{K.remove}</label> : <span class="co-meta">{K.add}</span>}</span>
           </li>
         ))}

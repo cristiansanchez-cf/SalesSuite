@@ -12,7 +12,11 @@ import { AdminError } from '~/lib/admin/service';
 import { flash, formAction } from '~/lib/admin/forms';
 import { STATUS_CLASS } from '~/lib/admin/format';
 import { ELIGIBILITY_LABELS, zonePath } from '~/lib/accounts/rules';
-import { DISCARD_REASONS, type TouchKind } from '~/lib/accounts/types';
+import { ACCOUNT_CONTACT_KEYS, DISCARD_REASONS, profileOf, type TouchKind } from '~/lib/accounts/types';
+import { priorityFor } from '~/lib/crm/score';
+import { profilesMessages } from '~/lib/i18n/messages/profiles';
+import WorkLinks from '~/components/crm/WorkLinks.astro';
+import ProfileCard from '~/components/crm/ProfileCard.astro';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
 import { crmMessages } from '~/lib/i18n/messages/crm';
@@ -80,7 +84,8 @@ if (Astro.request.method === 'POST') {
       case 'fact-star': await admin.crm.factStar(id, str('factId')); to += '?ok=factStarred#facts'; break;
       case 'fact-remove': await admin.crm.factRemove(id, str('factId')); to += '?ok=factRemoved#facts'; break;
       case 'activity-delete': await admin.crm.deleteActivity(str('activityId')); to += '?ok=removed'; break;
-      case 'company-contact': await admin.crm.setCompanyContact(id, { phone: str('phone'), email: str('email'), instagram: str('instagram'), facebook: str('facebook'), linkedin: str('linkedin'), website: str('website'), mapsUrl: str('mapsUrl') }); to += '?ok=companyContact'; break;
+      // Solo lo que trae el formulario (la ficha de una promotora no enseña Facebook: no se borra por no estar).
+      case 'company-contact': await admin.crm.setCompanyContact(id, Object.fromEntries(ACCOUNT_CONTACT_KEYS.filter((k) => f.has(k)).map((k) => [k, str(k)]))); to += '?ok=companyContact'; break;
       case 'claim': { const e = await acc.touch(id, 'claim'); to += `?ok=${e === 'eligible' ? 'claimed' : `not-${e}`}`; break; }
       case 'release': await acc.touch(id, 'release'); to += '?ok=released'; break;
       case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
@@ -94,7 +99,11 @@ if (Astro.request.method === 'POST') {
       case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
       case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
       case 'unlink': await admin.crm.unlink(str('contactId'), id); to += '?ok=unlinked'; break;
-      case 'work-add': { const r = await admin.crm.workLinkAdd(id, { name: str('workName'), kind: str('workKind'), note: str('workNote') }); to += `?ok=${r.created ? 'workNew' : 'work'}#work`; break; }
+      case 'work-add': {
+        const r = await admin.crm.workLinkAdd(id, { otherId: str('otherId'), name: str('workName'), kind: str('workKind'), ...(str('workNote') || str('otherId') ? { note: str('workNote') } : {}),
+          days: f.getAll('days').map(String), ...(f.has('freq') ? { freq: str('freq') } : {}), ...(f.has('role') ? { role: str('role') } : {}) });
+        to += `?ok=${r.created ? 'workNew' : 'work'}#work`; break;
+      }
       case 'work-remove': await admin.crm.workLinkRemove(str('linkId')); to += '?ok=workRemoved#work'; break;
       case 'block': await acc.block(id, str('reason')); to += '?ok=blocked'; break;
       case 'unblock': await acc.unblock(id); to += '?ok=unblocked'; break;
@@ -140,7 +149,13 @@ const googleApplied = () => {
   const keys = (Astro.url.searchParams.get('g') ?? '').split('.').filter((k): k is keyof typeof G.fields => k in G.fields);
   return G.applied(keys.map((k) => G.fields[k]).join(', '), Astro.url.searchParams.get('z') ?? '');
 };
-const prio = priorityOf(a.qualification, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
+// La ficha de su tipo (§24): local, promotora o DJ; cada una con sus preguntas y su nota.
+const profile = profileOf(kindDefs, a.kind);
+const PRF = profilesMessages[locale];
+const prio = priorityFor(a.qualification, profile, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
+// Qué se enseña como «le encaja» en cada ficha (a una promotora o un DJ no les aplica la fidelización).
+const fitKeys = (profile === 'venue' ? PACKAGES : profile === 'promoter' ? (['requests', 'screen', 'photos'] as const) : (['requests'] as const)) as readonly (keyof typeof prio.fit)[];
+const fitLabel = (k: keyof typeof prio.fit) => (profile === 'venue' ? PS.packages[k] : (PRF.packages as Record<string, string>)[k] ?? PS.packages[k]);
 const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
 const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
@@ -198,18 +213,20 @@ const STATE_ALERT = {
             ? <span class="co-tag co-tag--danger">{PS.outBy(prio.kills.map((k) => PS.kills[k]).join(' · '))}</span>
             : <span class="inline-flex items-baseline gap-1"><span class="co-figure text-3xl" data-testid="summary-score">{prio.score}</span><span class="co-meta">/ 100{!prio.qualified && ` · ${PS.unqualified}`}</span></span>)}
           <div class="flex min-w-0 flex-wrap items-center gap-1.5" data-testid="summary-fit">
-            {(() => { const fits = PACKAGES.filter((k) => prio.fit[k] === 'yes' || prio.fit[k] === 'maybe'); return fits.length
-              ? <><span class="co-meta">{PS.summary.fits}:</span>{fits.map((k) => <span class:list={['co-tag', prio.fit[k] === 'yes' ? 'sum-fit-yes' : 'sum-fit-maybe']}>{PS.packages[k]}{PRESALE.includes(k) ? ` (${PS.presale})` : ''}</span>)}</>
+            {(() => { const fits = fitKeys.filter((k) => prio.fit[k] === 'yes' || prio.fit[k] === 'maybe'); return fits.length
+              ? <><span class="co-meta">{PS.summary.fits}:</span>{fits.map((k) => <span class:list={['co-tag', prio.fit[k] === 'yes' ? 'sum-fit-yes' : 'sum-fit-maybe']}>{fitLabel(k)}{PRESALE.includes(k) ? ` (${PS.presale})` : ''}</span>)}</>
               : <span class="co-meta">{PS.summary.noFit}</span>; })()}
           </div>
         </div>
         {/* En la puerta del local: apuntar sobre este sitio, llegar, llamar o escribir (lo que hay, sin buscarlo). */}
         <div class="flex flex-wrap gap-2" data-testid="summary-actions">
           {canQualify && <a class="co-btn co-btn--primary co-btn--sm" href={`/admin/accounts/apuntar?empresa=${a.id}`} data-testid="summary-note"><Icon name="sparkles" size={14} />{PS.summary.act.note}</a>}
-          <a class="co-btn co-btn--ghost co-btn--sm" href={a.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([a.name, a.address, a.zonePath].filter(Boolean).join(', '))}`} target="_blank" rel="noopener" data-testid="summary-directions"><Icon name="route" size={14} />{PS.summary.act.directions}</a>
+          {profile === 'venue' && <a class="co-btn co-btn--ghost co-btn--sm" href={a.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([a.name, a.address, a.zonePath].filter(Boolean).join(', '))}`} target="_blank" rel="noopener" data-testid="summary-directions"><Icon name="route" size={14} />{PS.summary.act.directions}</a>}
           {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`tel:${a.phone.replace(/\s/g, '')}`}><Icon name="phone" size={14} />{PS.summary.act.call}</a>}
           {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`https://wa.me/${a.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener"><Icon name="message-square-text" size={14} />{PS.summary.act.whatsapp}</a>}
           {a.instagram && <a class="co-btn co-btn--ghost co-btn--sm" href={a.instagram} target="_blank" rel="noopener"><Icon name="camera" size={14} />{PS.summary.act.instagram}</a>}
+          {a.tiktok && <a class="co-btn co-btn--ghost co-btn--sm" href={a.tiktok} target="_blank" rel="noopener" data-testid="summary-tiktok"><Icon name="music" size={14} />{PRF.contact.tiktok}</a>}
+          {a.musicUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={a.musicUrl} target="_blank" rel="noopener"><Icon name="speaker" size={14} />{PRF.contact.music}</a>}
         </div>
         {co.people[0] && <p class="co-meta m-0 flex flex-wrap items-center gap-1" data-testid="summary-ask"><Icon name="user" size={14} />{PS.summary.askFor} <a class="font-semibold underline" href={`/admin/people/${co.people[0].id}`}>{co.people[0].name}</a>{co.people[0].role ? ` · ${co.people[0].role}` : ''}</p>}
         <a class="co-inset flex items-center gap-2 !p-3 text-inherit !no-underline" href="#follow" data-testid="summary-next">
@@ -225,6 +242,9 @@ const STATE_ALERT = {
           <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
         )}
       </section>
+
+      {/* Promotora o DJ (§24): lo primero es dónde trabaja, con qué días y frecuencia. */}
+      {profile !== 'venue' && <WorkLinks work={work} others={co.others} kinds={kindDefs} profile={profile} canEdit={canQualify} card />}
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
       <section id="facts" class="co-card grid gap-3" data-testid="facts-card">
@@ -296,16 +316,18 @@ const STATE_ALERT = {
           <form method="post" action="#facts" class="flex flex-wrap gap-2" data-async="facts" data-async-quiet data-testid="fact-form">
             <input type="hidden" name="action" value="fact-add" />
             <label class="sr-only" for="fact-text">{NT.factAdd}</label>
-            <input id="fact-text" class="co-input min-w-0 flex-1" name="text" maxlength="600" required placeholder={NT.factPh} data-testid="fact-text" />
+            <input id="fact-text" class="co-input min-w-0 flex-1 basis-full sm:basis-auto" name="text" maxlength="600" required placeholder={NT.factPh} data-testid="fact-text" />
             <select class="co-select w-auto" name="kind" aria-label={NT.factKind}><option value="fact">{NT.factKindFact}</option><option value="key">{NT.factKindKey}</option><option value="fit">{NT.fit}</option></select>
             <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="fact-add"><Icon name="plus" size={14} /><span>{NT.factAdd}</span></button>
           </form>
         )}
       </section>
 
-      {a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
+      {profile === 'venue' && a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
 
-      {a.state !== 'customer' && <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />}
+      {a.state !== 'customer' && (profile === 'venue'
+        ? <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />
+        : <ProfileCard profile={profile} q={a.qualification as Record<string, unknown>} p={prio} canEdit={canQualify} />)}
 
       <section id="follow" class="co-card grid gap-4" data-testid="follow">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -396,7 +418,7 @@ const STATE_ALERT = {
 
       <section class="co-card grid gap-4" id="acc-people" data-testid="account-people">
         <h2 class="co-entity">{P.group.title}</h2>
-        <div class="grid gap-2" data-testid="account-group">
+        <div class="grid gap-2" data-testid="account-group" hidden={profile !== 'venue'}>
           <p class="text-eyebrow">{P.group.group}</p>
           {co.group ? (
             <form method="post" class="flex flex-wrap items-center gap-2">
@@ -448,33 +470,7 @@ const STATE_ALERT = {
             </ul>
           )}
         </div>
-        {/* «Trabaja con» (§22): promotoras, DJs o locales; en los dos sentidos. Si no está en el CRM, se crea. */}
-        <div id="work" class="grid gap-2" data-testid="work-links">
-          <p class="m-0"><span class="text-eyebrow">{KN.work.title}</span> <span class="co-meta">· {KN.work.help}</span></p>
-          {work.length === 0 ? <p class="co-meta">{KN.work.none}</p> : (
-            <ul class="co-rows">
-              {work.map((w) => (
-                <li class="co-row" data-testid="work-link" data-name={w.account.name}>
-                  <span class="co-row__lead"><Icon name={(kindOf(w.account.kind)?.icon ?? 'building2') as IconName} /></span>
-                  <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${w.account.id}`}>
-                    <span class="co-row-title">{w.account.name}</span>
-                    <span class="co-meta">{[kindOf(w.account.kind)?.label, w.note].filter(Boolean).join(' · ')}</span>
-                  </a>
-                  <form method="post" action="#work"><input type="hidden" name="action" value="work-remove" /><input type="hidden" name="linkId" value={w.id} />
-                    <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={`${KN.work.remove}: ${w.account.name}`} title={KN.work.remove} data-testid="work-remove"><Icon name="x" size={14} /></button></form>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form method="post" action="#work" class="grid gap-2 sm:grid-cols-[1fr_9rem_1fr_auto] sm:items-end" data-testid="work-form">
-            <input type="hidden" name="action" value="work-add" />
-            <label class="co-field">{KN.work.name}<input class="co-input" name="workName" required maxlength="160" list="work-others" placeholder={KN.work.namePh} autocomplete="off" data-testid="work-name" /></label>
-            <datalist id="work-others">{co.others.map((o) => <option value={o.name} label={kindOf(o.kind)?.label} />)}</datalist>
-            <label class="co-field">{KN.work.kind}<select class="co-select" name="workKind" data-testid="work-kind">{kindDefs.map((k) => <option value={k.key} selected={k.key === (kindDefs.some((d) => d.key === 'promotora') ? 'promotora' : kindDefs[0].key)}>{k.label}</option>)}</select></label>
-            <label class="co-field">{KN.work.note}<input class="co-input" name="workNote" maxlength="200" placeholder={KN.work.notePh} data-testid="work-note" /></label>
-            <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="work-add"><Icon name="link" size={14} />{KN.work.add}</button>
-          </form>
-        </div>
+        {profile === 'venue' && <WorkLinks work={work} others={co.others} kinds={kindDefs} profile={profile} canEdit={canQualify} />}
         <form method="post" class="flex flex-wrap items-end gap-2" data-testid="account-tags">
           <input type="hidden" name="action" value="tags" />
           <label class="co-field min-w-[14rem] flex-1">{P.group.lists} <span class="co-help">{P.person.listsHelp}</span>
@@ -483,7 +479,8 @@ const STATE_ALERT = {
         </form>
       </section>
 
-      <section class="co-card grid gap-4" data-testid="account-sheet">
+      {/* Los campos del espacio son de locales (aforo…): una promotora o un DJ no los enseña (§24). */}
+      <section class="co-card grid gap-4" data-testid="account-sheet" hidden={profile !== 'venue'}>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="co-entity">{C.title}</h2>
           {perms.manageTenant && <a class="co-meta underline" href="/admin/team/fields">{C.manage}</a>}
@@ -553,7 +550,7 @@ const STATE_ALERT = {
           <details data-testid="hours"><summary class="co-meta cursor-pointer">{G.hours}</summary>
             <ul class="m-0 mt-2 grid gap-0.5 p-0 text-sm">{a.hours.map((h) => <li class="list-none">{h}</li>)}</ul></details>
         )}
-        {admin.crm.hasGoogle() && canQualify && (
+        {admin.crm.hasGoogle() && canQualify && profile === 'venue' && (
           <div class="co-inset grid gap-2 !p-3" data-testid="google-box">
             <p class="co-row-title flex items-center gap-2"><Icon name="map-pin" size={14} />{G.title}{a.placeId && <span class="co-tag !py-0 text-[11px]" data-testid="google-chosen"><Icon name="check" size={12} />{G.chosen}</span>}</p>
             {/* Con la ficha ya elegida, buscar otra queda escondido tras «¿No es esta?» (no invita a tocar lo que está bien). */}
@@ -613,13 +610,25 @@ const STATE_ALERT = {
           <form method="post" class="mt-3 grid gap-3" data-testid="company-contact-form">
             <input type="hidden" name="action" value="company-contact" />
             <fieldset class="grid gap-3" disabled={!canEdit}>
-              <label class="co-field">{F.contact.phone}<input class="co-input" type="tel" name="phone" value={a.phone ?? ''} maxlength="40" /></label>
-              <label class="co-field">{F.contact.email}<input class="co-input" type="email" name="email" value={a.email ?? ''} maxlength="200" /></label>
-              <label class="co-field">{F.contact.instagram} <span class="co-help">{F.contact.help}</span><input class="co-input" name="instagram" value={a.instagram ?? ''} maxlength="300" placeholder="@" /></label>
-              <label class="co-field">{F.contact.facebook}<input class="co-input" name="facebook" value={a.facebook ?? ''} maxlength="300" /></label>
-              <label class="co-field">{F.contact.linkedin}<input class="co-input" name="linkedin" value={a.linkedin ?? ''} maxlength="300" /></label>
-              <label class="co-field">{F.contact.website}<input class="co-input" name="website" value={a.website ?? ''} maxlength="300" /></label>
-              <label class="co-field">{F.contact.mapsUrl}<input class="co-input" name="mapsUrl" value={a.mapsUrl ?? ''} maxlength="500" placeholder="https://maps.app.goo.gl/…" /></label>
+              {profile === 'venue' ? (
+                <>
+                  <label class="co-field">{F.contact.phone}<input class="co-input" type="tel" name="phone" value={a.phone ?? ''} maxlength="40" /></label>
+                  <label class="co-field">{F.contact.email}<input class="co-input" type="email" name="email" value={a.email ?? ''} maxlength="200" /></label>
+                  <label class="co-field">{F.contact.instagram} <span class="co-help">{F.contact.help}</span><input class="co-input" name="instagram" value={a.instagram ?? ''} maxlength="300" placeholder="@" /></label>
+                  <label class="co-field">{F.contact.facebook}<input class="co-input" name="facebook" value={a.facebook ?? ''} maxlength="300" /></label>
+                  <label class="co-field">{F.contact.linkedin}<input class="co-input" name="linkedin" value={a.linkedin ?? ''} maxlength="300" /></label>
+                  <label class="co-field">{F.contact.website}<input class="co-input" name="website" value={a.website ?? ''} maxlength="300" /></label>
+                  <label class="co-field">{F.contact.mapsUrl}<input class="co-input" name="mapsUrl" value={a.mapsUrl ?? ''} maxlength="500" placeholder="https://maps.app.goo.gl/…" /></label>
+                </>
+              ) : (
+                // Promotora o DJ (§24): Instagram, TikTok y WhatsApp; el DJ, también su música. Nada de Facebook ni Maps.
+                <>
+                  <label class="co-field">{F.contact.instagram} <span class="co-help">{F.contact.help}</span><input class="co-input" name="instagram" value={a.instagram ?? ''} maxlength="300" placeholder="@" data-testid="contact-instagram" /></label>
+                  <label class="co-field">{PRF.contact.tiktok}<input class="co-input" name="tiktok" value={a.tiktok ?? ''} maxlength="300" placeholder="@" data-testid="contact-tiktok" /></label>
+                  <label class="co-field">{PRF.contact.whatsapp}<input class="co-input" type="tel" name="phone" value={a.phone ?? ''} maxlength="40" /></label>
+                  {profile === 'dj' && <label class="co-field">{PRF.contact.music}<input class="co-input" name="musicUrl" value={a.musicUrl ?? ''} maxlength="300" placeholder="https://open.spotify.com/…" /></label>}
+                </>
+              )}
               {canEdit && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{F.contact.save}</button>}
             </fieldset>
           </form>

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { checkFields } from '../accounts/db-demo';
 import { demoDb, type CrmContactRow, type CrmImportRow } from '../data/store';
 import type { CrmDb } from './db';
-import type { Contact, CrmImport, ImportMapping } from './types';
+import type { Contact, CrmImport, ImportMapping, LinkWhen } from './types';
 import type { Activity } from './followup';
 
 const db = () => demoDb();
@@ -106,17 +106,18 @@ export function demoCrmDb(actorId: string): CrmDb {
     async listAccountLinks(t, accountId) {
       if (!isMember(t, actorId)) return [];
       return db().account_link.filter((l) => l.tenant_id === t && (l.a_id === accountId || l.b_id === accountId))
-        .map((l) => ({ id: l.id, aId: l.a_id, bId: l.b_id, note: l.note, createdAt: l.created_at }));
+        .map((l) => ({ id: l.id, aId: l.a_id, bId: l.b_id, note: l.note, createdAt: l.created_at, days: (l.days ?? []) as LinkWhen['days'], freq: (l.freq ?? null) as LinkWhen['freq'], role: (l.role ?? null) as LinkWhen['role'] }));
     },
-    async saveAccountLink(t, aId, bId, note) {
+    async saveAccountLink(t, aId, bId, note, when) {
       if (!isMember(t, actorId)) throw new Error('permission denied: account_link');
       const s = db();
       if (aId === bId) throw new Error('check constraint: account_link');
       if (![aId, bId].every((id) => s.account.some((a) => a.id === id && a.tenant_id === t))) throw new Error('violates foreign key: account_link');
       const prev = s.account_link.find((l) => l.tenant_id === t && ((l.a_id === aId && l.b_id === bId) || (l.a_id === bId && l.b_id === aId)));
-      if (prev) { prev.note = note; return prev.id; }
+      const w = { ...(when?.days ? { days: when.days } : {}), ...(when && 'freq' in when ? { freq: when.freq ?? null } : {}), ...(when && 'role' in when ? { role: when.role ?? null } : {}) };
+      if (prev) { if (note !== undefined) prev.note = note; Object.assign(prev, w); return prev.id; }
       const id = randomUUID();
-      s.account_link.push({ id, tenant_id: t, a_id: aId, b_id: bId, note, created_by: actorId, created_at: iso() });
+      s.account_link.push({ id, tenant_id: t, a_id: aId, b_id: bId, note: note ?? null, created_by: actorId, created_at: iso(), days: [], freq: null, role: null, ...w });
       return id;
     },
     async removeAccountLink(id) {

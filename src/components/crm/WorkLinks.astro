@@ -1,0 +1,87 @@
+---
+/**
+ * «Trabaja con» / «Dónde hace fiestas» / «Dónde pincha» (docs/CRM_DINAMICO.md §22 y §24): las empresas enlazadas, en
+ * los dos sentidos, con qué días suele (nunca es exacto), la frecuencia y, si es un DJ, si es residente o invitado.
+ * Arriba, la frase que importa de una promotora: «Viernes en Sala X · Sábados en Y · esporádico en Z».
+ */
+import Icon from '~/components/ui/Icon.astro';
+import type { KindDef, Profile } from '~/lib/accounts/types';
+import { LINK_DAYS, type LinkWhen } from '~/lib/crm/types';
+import type { IconName } from '~/lib/ui/icons';
+import { i18n } from '~/lib/i18n';
+import { kindsMessages } from '~/lib/i18n/messages/kinds';
+import { profilesMessages } from '~/lib/i18n/messages/profiles';
+
+type W = LinkWhen & { id: string; note: string | null; account: { id: string; name: string; kind: string } };
+interface Props { work: W[]; others: Array<{ id: string; name: string; kind: string }>; kinds: KindDef[]; profile: Profile; canEdit: boolean; card?: boolean }
+const { work, others, kinds, profile, canEdit, card = false } = Astro.props;
+const { m: PM, locale } = i18n(Astro, profilesMessages);
+const KN = kindsMessages[locale];
+const kindOf = (k: string) => kinds.find((d) => d.key === k) ?? kinds[0];
+const isDj = (k: string) => kindOf(k)?.profile === 'dj';
+// Para una promotora o un DJ, lo nuevo suele ser un local; para un local, una promotora (si el espacio la tiene).
+const newKind = profile !== 'venue' ? kinds[0].key : kinds.find((k) => k.profile === 'promoter')?.key ?? kinds[0].key;
+const when = (w: W) => [w.days.length ? w.days.map((d) => PM.daysLong[d]).join(', ') : '', w.role ? PM.roles[w.role] : '', w.freq ? PM.freqs[w.freq] : ''].filter(Boolean).join(' · ');
+// La frase de arriba: lo habitual primero.
+const order = { regular: 0, sporadic: 1, once: 2 } as const;
+const line = [...work].filter((w) => w.days.length || w.freq).sort((a, b) => (order[a.freq ?? 'regular'] - order[b.freq ?? 'regular']))
+  .map((w) => `${w.days.length ? `${w.days.map((d) => PM.daysLong[d]).join(' y ')} en ` : `${PM.freqs[w.freq ?? 'regular']} en `}${w.account.name}`).join(' · ');
+---
+<div id="work" class:list={['grid gap-2', card && 'co-card']} data-testid="work-links">
+  {card ? <h2 class="co-entity">{PM.where[profile]}</h2> : <p class="m-0"><span class="text-eyebrow">{PM.where[profile]}</span></p>}
+  <p class="co-meta m-0">{PM.whereHelp[profile]}</p>
+  {line && <p class="m-0 font-semibold" data-testid="work-line">{line}</p>}
+  {work.length === 0 ? <p class="co-meta">{KN.work.none}</p> : (
+    <ul class="co-rows">
+      {work.map((w) => (
+        <li class="co-row !items-start" data-testid="work-link" data-name={w.account.name}>
+          <span class="co-row__lead"><Icon name={(kindOf(w.account.kind)?.icon ?? 'building2') as IconName} /></span>
+          <div class="co-row__main grid gap-1">
+            <a class="text-inherit !no-underline" href={`/admin/accounts/${w.account.id}`}><span class="co-row-title">{w.account.name}</span></a>
+            <span class="co-meta">{[kindOf(w.account.kind)?.label, when(w), w.note].filter(Boolean).join(' · ')}</span>
+            {canEdit && (
+              <details data-testid="work-when">
+                <summary class="co-meta cursor-pointer underline">{PM.editWhen}</summary>
+                <form method="post" action="#work" class="mt-2 grid gap-2">
+                  <input type="hidden" name="action" value="work-add" /><input type="hidden" name="otherId" value={w.account.id} />
+                  <div class="flex flex-wrap gap-1.5" role="group" aria-label={PM.editWhen}>
+                    {LINK_DAYS.map((d) => <label class="co-chip work-day" title={PM.daysLong[d]}><input type="checkbox" class="sr-only" name="days" value={d} checked={w.days.includes(d)} data-testid={`work-day-${d}`} />{PM.days[d]}</label>)}
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <select class="co-select w-auto" name="freq" aria-label={PM.freq} data-testid="work-freq"><option value="">{PM.freq}: {PM.anyFreq}</option>{(['regular', 'sporadic', 'once'] as const).map((f) => <option value={f} selected={w.freq === f}>{PM.freqs[f]}</option>)}</select>
+                    {(isDj(w.account.kind) || profile === 'dj') && <select class="co-select w-auto" name="role" aria-label={PM.role}><option value="">{PM.role}: {PM.anyRole}</option>{(['resident', 'guest'] as const).map((r) => <option value={r} selected={w.role === r}>{PM.roles[r]}</option>)}</select>}
+                    <input class="co-input min-w-0 flex-1" name="workNote" value={w.note ?? ''} maxlength="200" aria-label={KN.work.note} placeholder={KN.work.notePh} />
+                    <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="work-when-save">{PM.saveWhen}</button>
+                  </div>
+                </form>
+              </details>
+            )}
+          </div>
+          {canEdit && <form method="post" action="#work"><input type="hidden" name="action" value="work-remove" /><input type="hidden" name="linkId" value={w.id} />
+            <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={`${KN.work.remove}: ${w.account.name}`} title={KN.work.remove} data-testid="work-remove"><Icon name="x" size={14} /></button></form>}
+        </li>
+      ))}
+    </ul>
+  )}
+  {canEdit && (
+    <form method="post" action="#work" class="grid gap-2" data-testid="work-form">
+      <input type="hidden" name="action" value="work-add" />
+      <div class="grid gap-2 sm:grid-cols-[1fr_9rem_1fr] sm:items-end">
+        <label class="co-field">{KN.work.name}<input class="co-input" name="workName" required maxlength="160" list="work-others" placeholder={KN.work.namePh} autocomplete="off" data-testid="work-name" /></label>
+        <datalist id="work-others">{others.map((o) => <option value={o.name} label={kindOf(o.kind)?.label} />)}</datalist>
+        <label class="co-field">{KN.work.kind}<select class="co-select" name="workKind" data-testid="work-kind">{kinds.map((k) => <option value={k.key} selected={k.key === newKind}>{k.label}</option>)}</select></label>
+        <label class="co-field">{KN.work.note}<input class="co-input" name="workNote" maxlength="200" placeholder={KN.work.notePh} data-testid="work-note" /></label>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label={PM.editWhen}>
+        {LINK_DAYS.map((d) => <label class="co-chip work-day" title={PM.daysLong[d]}><input type="checkbox" class="sr-only" name="days" value={d} data-testid={`work-new-day-${d}`} />{PM.days[d]}</label>)}
+        <select class="co-select w-auto" name="freq" aria-label={PM.freq} data-testid="work-new-freq"><option value="">{PM.freq}: {PM.anyFreq}</option>{(['regular', 'sporadic', 'once'] as const).map((f) => <option value={f}>{PM.freqs[f]}</option>)}</select>
+        <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="work-add"><Icon name="link" size={14} />{KN.work.add}</button>
+      </div>
+    </form>
+  )}
+</div>
+
+<style>
+  .work-day:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+  .work-day { min-width: 2.25rem; justify-content: center; }
+</style>
