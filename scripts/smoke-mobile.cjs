@@ -38,6 +38,9 @@ const PAGES = {
         return { sw: document.documentElement.scrollWidth, w, worst };
       });
       assert(m.sw <= m.w, `${user} ${u} cabe en ${m.w}px${m.sw > m.w ? ` (mide ${m.sw}: ${m.worst.join(' | ')})` : ''}`);
+      // La cabecera no estruja el texto (pasó en Empresas: una palabra por línea junto a «Lista | Mapa» y «Añadir»).
+      const lede = await p.evaluate(() => { const el = document.querySelector('[data-testid=page-header] .co-lede'); return el ? Math.round(el.getBoundingClientRect().width) : null; });
+      if (lede !== null) assert(lede >= 250, `${user} ${u} cabecera legible (texto de ${lede}px)`);
       if (/^\/admin\/dossiers\/[0-9a-f-]{36}$/.test(u)) {
         for (const pane of ['Vista previa', 'Guion']) {
           await p.locator('[role=tab]:visible', { hasText: pane }).first().click();

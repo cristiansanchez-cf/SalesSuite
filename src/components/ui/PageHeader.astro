@@ -5,7 +5,8 @@ const { eyebrow, title, tail, lede, back } = Astro.props;
 import Icon from './Icon.astro';
 ---
 <header class="mb-6 flex flex-wrap items-end gap-4" data-testid="page-header">
-  <div class="min-w-0 flex-1">
+  {/* Mínimo de ancho para el texto: en el móvil las acciones bajan a su propia línea en vez de estrujar el lede. */}
+  <div class="min-w-[min(100%,20rem)] flex-1">
     {back && <a href={back.href} class="co-meta mb-3 inline-flex items-center gap-1 hover:text-ink"><Icon name="chevron-left" size={14} />{back.label}</a>}
     <p class="text-eyebrow mb-3">{eyebrow}</p>
     <h1 class="co-page-title">{title}{tail && <> <span class="co-tail">{tail}</span></>}</h1>

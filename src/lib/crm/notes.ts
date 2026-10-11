@@ -40,6 +40,10 @@ export interface NotesApi { split(text: string, ctx: NotesCtx): Promise<NoteItem
 
 const S = { type: 'string' } as const;
 const SN = { type: ['string', 'null'] } as const;
+/*
+ * La API limita a 16 los parámetros con tipos unión (['string','null'], anyOf) por herramienta estricta: la
+ * cualificación va como texto, con "" para «no se sabe» (sanitizeNotes ya lo trata igual que null).
+ */
 const QUAL_KEYS = ['kind', 'nights', 'events', 'recurring', 'decider', 'screens', 'dynamics', 'scale', 'size', 'coverage', 'validate', 'debt'] as const;
 export const NOTES_TOOL = {
   name: 'save_notes',
@@ -70,20 +74,20 @@ export const NOTES_TOOL = {
             next_days: { type: ['integer', 'null'], description: 'En cuántos días, si lo dice o se deduce; null si no.' },
             qualification: {
               type: 'object', additionalProperties: false, required: [...QUAL_KEYS],
-              description: 'Solo lo que dice claramente; null en lo demás.',
+              description: 'Solo lo que dice claramente; cadena vacía "" en lo demás.',
               properties: {
-                kind: { ...SN, description: 'venue (local, sala, discoteca, pub, bar) | promoter | concert' },
-                nights: { ...SN, description: 'Noches que abre por semana: 1 | 2 | 3 | 4+' },
-                events: { ...SN, description: 'Eventos al año (promotora): 1-2 | 3-5 | 6-11 | 12+' },
-                recurring: { ...SN, description: 'Conciertos: yes (programa recurrente) | single' },
-                decider: { ...SN, description: 'Quien le atendió: onsite (decide y está en el local) | offsite (decide pero no está) | manager (encargado sin firma)' },
-                screens: { ...SN, description: 'Pantallas: yes (tiene) | wants (no tiene pero quiere) | no (no tiene NI quiere: solo si lo dicen ellos; saca al sitio del ranking). Si solo dice que no tiene, null.' },
-                dynamics: { ...SN, description: 'Hace dinámicas o cuida sus redes: yes | partly | no' },
-                scale: { ...SN, description: 'Cuántos locales tiene el dueño: single (un local) | few (2-3) | group (grupo o varias salas). NO es el tamaño' },
-                size: { ...SN, description: 'Tamaño del local: small (pequeño) | medium (mediano) | large (grande, mucho aforo). Solo si lo dicen o se deduce claro (p. ej. «se llena de 300»)' },
-                coverage: { ...SN, description: 'true solo si dice que NO hay cobertura móvil dentro.' },
-                validate: { ...SN, description: 'true solo si ELLOS han dicho que no pueden validar lo que sale en pantalla.' },
-                debt: { ...SN, description: 'true solo si dice que tiene deudas, va a cerrar o no es viable.' },
+                kind: { ...S, description: 'venue (local, sala, discoteca, pub, bar) | promoter | concert' },
+                nights: { ...S, description: 'Noches que abre por semana: 1 | 2 | 3 | 4+' },
+                events: { ...S, description: 'Eventos al año (promotora): 1-2 | 3-5 | 6-11 | 12+' },
+                recurring: { ...S, description: 'Conciertos: yes (programa recurrente) | single' },
+                decider: { ...S, description: 'Quien le atendió: onsite (decide y está en el local) | offsite (decide pero no está) | manager (encargado sin firma)' },
+                screens: { ...S, description: 'Pantallas: yes (tiene) | wants (no tiene pero quiere) | no (no tiene NI quiere: solo si lo dicen ellos; saca al sitio del ranking). Si solo dice que no tiene, "".' },
+                dynamics: { ...S, description: 'Hace dinámicas o cuida sus redes: yes | partly | no' },
+                scale: { ...S, description: 'Cuántos locales tiene el dueño: single (un local) | few (2-3) | group (grupo o varias salas). NO es el tamaño' },
+                size: { ...S, description: 'Tamaño del local: small (pequeño) | medium (mediano) | large (grande, mucho aforo). Solo si lo dicen o se deduce claro (p. ej. «se llena de 300»)' },
+                coverage: { ...S, description: 'true solo si dice que NO hay cobertura móvil dentro.' },
+                validate: { ...S, description: 'true solo si ELLOS han dicho que no pueden validar lo que sale en pantalla.' },
+                debt: { ...S, description: 'true solo si dice que tiene deudas, va a cerrar o no es viable.' },
               },
             },
           },
