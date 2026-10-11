@@ -15,6 +15,7 @@ import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, typ
 import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
 import { fixtureWebsite, realWebsite, type WebsiteApi } from './website';
+import { areaQuery, markCandidates, slimPlace, RADIUS, type Candidate } from './prospect';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
@@ -730,6 +731,97 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return places.photo(name).catch(() => null);
   }
 
+  // ---------------------------------------------------------------- Buscar clientes por zona (docs/CRM_DINAMICO.md §19)
+
+  const sweepSchema = z.object({
+    what: z.string().trim().min(2).max(80),
+    zoneId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
+    segmentId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
+  });
+  /** Ruta legible de una zona («Valencia, Comunidad Valenciana, España»). */
+  const zonePathOf = (zone: Zone | null, zones: Zone[]) => (zone ? areaQuery('', zone, zones).replace(/^\s*en /, '') : '');
+  /**
+   * Buscar en Google Maps «qué» en «dónde» (hasta 60) y guardar la búsqueda con lo que salió. Cada página de Google
+   * cuenta para el tope del día. Devuelve el id de la búsqueda para revisarla.
+   */
+  async function prospectSearch(input: unknown): Promise<string> {
+    requireUse();
+    const api = requirePlaces();
+    if (!api.area) throw new AdminError(503, 'Falta GOOGLE_MAPS_API_KEY en el servidor');
+    const v = parse(sweepSchema, input);
+    const zones = await accounts.listZones(t);
+    const zone = v.zoneId ? zones.find((z) => z.id === v.zoneId) ?? null : null;
+    if (v.zoneId && !zone) throw new AdminError(404, 'Zona no encontrada');
+    if (v.segmentId && !(await admin.segmentExists(t, v.segmentId).catch(() => false))) throw new AdminError(422, 'Datos no válidos');
+    await quota('google');
+    let r: { results: PlaceResult[]; pages: number } = { results: [], pages: 0 };
+    const near = zone && zone.lat != null && zone.lng != null ? { lat: zone.lat, lng: zone.lng, radius: RADIUS[zone.kind] } : null;
+    try { r = await api.area(areaQuery(v.what, zone, zones), { near }); } catch (e) { googleDown(e); }
+    // Las páginas de más también cuentan (ya están pagadas: se enseñan igual).
+    for (let i = 1; i < r.pages; i++) await accounts.bumpUsage(t, 'google', LIMITS.google).catch(() => true);
+    try {
+      return await accounts.saveSweep(t, { query: v.what, zoneId: zone?.id ?? null, zoneLabel: zonePathOf(zone, zones).slice(0, 300), segmentId: v.segmentId ?? null, results: r.results.map(slimPlace) });
+    } catch (e) { mapError(e); }
+  }
+  /** Las búsquedas del espacio (las últimas primero): qué se ha barrido, dónde y cuántas se importaron. */
+  async function prospectList() {
+    requireUse();
+    const [sweeps, ms] = await Promise.all([accounts.listSweeps(t, 40), members()]);
+    return sweeps.map((w) => ({ ...w, importedCount: Object.keys(w.imported).length, byName: ms.get(w.createdBy ?? '')?.displayName || ms.get(w.createdBy ?? '')?.email || '' }));
+  }
+  async function loadSweep(id: string) {
+    const w = /^[0-9a-f-]{36}$/i.test(id) ? await accounts.getSweep(id) : null;
+    if (!w || w.tenantId !== t) throw new AdminError(404, 'Búsqueda no encontrada');
+    return w;
+  }
+  /** Una búsqueda con cada resultado marcado: nueva, ya en el CRM, mismo nombre o cerrada. */
+  async function prospectGet(id: string): Promise<{ sweep: Awaited<ReturnType<typeof loadSweep>>; candidates: Candidate[] }> {
+    requireUse();
+    const w = await loadSweep(id);
+    return { sweep: w, candidates: markCandidates(w.results, await allAccounts(), w.imported) };
+  }
+  /** Importar de una vez (el navegador manda tandas para enseñar el progreso). */
+  const PROSPECT_CHUNK = 6;
+  /**
+   * Importar lo marcado: cada sitio pasa a ser una empresa con su ficha de Google ya puesta (no hay que volver a buscarla),
+   * su ciudad, el sector elegido, la lista de lo buscado («discotecas») y las redes y el email de su web. Lo que ya está
+   * en el CRM no se duplica. `owner`: «me» (quien importa), «» (libre) o el id de alguien del equipo (solo admin o gerente).
+   */
+  async function prospectImport(id: string, placeIdsIn: unknown, owner: unknown = 'me'): Promise<{ created: number; have: number; failed: number; ids: Record<string, string> }> {
+    requireUse();
+    const w = await loadSweep(id);
+    const want = new Set((Array.isArray(placeIdsIn) ? placeIdsIn : []).map(String).slice(0, PROSPECT_CHUNK));
+    let ownerId: string | null = s.userId;
+    if (perms.manageAccounts && owner !== 'me') {
+      if (owner === '' || owner == null) ownerId = null;
+      else {
+        const m = (await members()).get(String(owner));
+        if (!m || m.role === 'partner') throw new AdminError(404, 'No es del equipo');
+        ownerId = m.userId;
+      }
+    }
+    const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
+    const picked = markCandidates(w.results, all, w.imported).filter((c) => want.has(c.placeId));
+    const tag = tagSchema.parse(w.query);
+    const ids: Record<string, string> = {};
+    let created = 0, have = 0, failed = 0;
+    await Promise.all(picked.map(async (c) => {
+      if (c.state === 'have' && c.accountId) { ids[c.placeId] = c.accountId; have++; return; }
+      try {
+        const zoneId = (c.place ? zoneForPlace(zones, c.place)?.id : null) ?? w.zoneId;
+        const accId = await accounts.insertAccount(t, { name: c.name, zoneId, segmentId: w.segmentId, address: null, externalRef: null, notes: null, ownerId, tags: tag ? [tag] : [] });
+        ids[c.placeId] = accId;
+        const socials = c.website ? await site.scan(c.website).catch(() => null) : null;
+        await accounts.research(accId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
+          status: c.status, rating: c.rating ?? null, reviews: c.reviews ?? null, photo: c.photo ?? null, zoneId: null,
+          email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace: false });
+        created++;
+      } catch (e) { console.warn('[prospect]', e instanceof Error ? e.message : e); failed++; }
+    }));
+    if (Object.keys(ids).length) await accounts.markSwept(w.id, ids).catch((e) => console.warn('[prospect]', e instanceof Error ? e.message : e));
+    return { created, have, failed, ids };
+  }
+
   // ---------------------------------------------------------------- investigación con IA (docs/CRM_DINAMICO.md §13)
 
   /** Entre dos investigaciones de la misma empresa (evita el doble clic y gastar dos veces). */
@@ -1095,6 +1187,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
+    prospectSearch, prospectList, prospectGet, prospectImport, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

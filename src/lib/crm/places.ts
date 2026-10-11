@@ -46,6 +46,34 @@ export async function searchPlaces(query: string, apiKey: string, fetchImpl: typ
   return parsePlaces(await res.json());
 }
 
+/**
+ * Buscar clientes en una zona (docs/CRM_DINAMICO.md §19): «discotecas en Valencia», hasta 3 páginas de 20 (lo máximo
+ * que da Google). Con el punto de la zona, Google prioriza lo que está cerca (`locationBias`, radio en metros).
+ */
+export interface AreaOptions { near?: { lat: number; lng: number; radius: number } | null; maxPages?: number; regionCode?: string; languageCode?: string }
+export async function searchArea(query: string, apiKey: string, o: AreaOptions = {}, fetchImpl: typeof fetch = fetch): Promise<{ results: PlaceResult[]; pages: number }> {
+  const out: PlaceResult[] = [];
+  let token: string | undefined;
+  let pages = 0;
+  const max = Math.max(1, Math.min(o.maxPages ?? 3, 3));
+  do {
+    const body: Record<string, unknown> = { textQuery: query, languageCode: o.languageCode ?? 'es', regionCode: o.regionCode ?? 'ES', pageSize: 20 };
+    if (o.near) body.locationBias = { circle: { center: { latitude: o.near.lat, longitude: o.near.lng }, radius: Math.min(Math.max(o.near.radius, 1000), 50000) } };
+    if (token) body.pageToken = token;
+    const res = await fetchImpl('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': `${FIELDS},nextPageToken` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`Google Places ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
+    const json = (await res.json()) as { nextPageToken?: unknown };
+    pages++;
+    for (const p of parsePlaces(json)) if (!out.some((x) => x.placeId === p.placeId)) out.push(p);
+    token = typeof json.nextPageToken === 'string' && json.nextPageToken ? json.nextPageToken : undefined;
+  } while (token && pages < max);
+  return { results: out.slice(0, 60), pages };
+}
+
 const DETAIL_FIELDS = FIELDS.split(',').map((f) => f.replace(/^places\./, '')).join(',');
 export async function placeDetails(placeId: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<PlaceResult | null> {
   if (!/^[\w-]{5,300}$/.test(placeId)) return null;
@@ -69,8 +97,12 @@ export async function photoUri(name: string, apiKey: string, fetchImpl: typeof f
 }
 
 /** Interfaz para el servicio (en pruebas se cambia por una falsa). */
-export interface PlacesApi { search(query: string): Promise<PlaceResult[]>; details(placeId: string): Promise<PlaceResult | null>; photo?(name: string): Promise<string | null> }
-export const googlePlaces = (apiKey: string): PlacesApi => ({ search: (q) => searchPlaces(q, apiKey), details: (id) => placeDetails(id, apiKey), photo: (n) => photoUri(n, apiKey) });
+export interface PlacesApi {
+  search(query: string): Promise<PlaceResult[]>; details(placeId: string): Promise<PlaceResult | null>; photo?(name: string): Promise<string | null>;
+  /** Buscar clientes en una zona (§19); `pages` = llamadas a Google (cada una cuenta para el tope). */
+  area?(query: string, o?: AreaOptions): Promise<{ results: PlaceResult[]; pages: number }>;
+}
+export const googlePlaces = (apiKey: string): PlacesApi => ({ search: (q) => searchPlaces(q, apiKey), details: (id) => placeDetails(id, apiKey), photo: (n) => photoUri(n, apiKey), area: (q, o) => searchArea(q, apiKey, o) });
 
 /**
  * Google de pruebas (AI_RESEARCH_FIXTURE=1, sin clave): dos resultados fijos con el nombre buscado, sin llamar a nadie.
@@ -87,8 +119,20 @@ export function fixturePlaces(): PlacesApi {
       lat: 37 + (hash(q) % 500) / 100 + i / 100, lng: -6 + ((hash(q) >>> 9) % 700) / 100, status: 'OPERATIONAL', rating: i === 0 ? 4.4 : 3.9, reviews: i === 0 ? 312 : 41, photo: null, type: 'Discoteca',
       place: { city: 'Valencia', province: 'Valencia', region: 'Comunidad Valenciana', country: 'España' } };
   };
+  // Buscar en una zona: 12 sitios fijos con lo buscado (uno cerrado, uno sin web), en dos «páginas».
+  const NAMES = ['Sol', 'Luna', 'Mar', 'Neón', 'Faro', 'Duna', 'Brisa', 'Coral', 'Rayo', 'Nube', 'Eco', 'Vía'];
+  const area = (q: string): PlaceResult[] => NAMES.map((n, i) => {
+    const what = q.split(/\s+en\s+/i)[0].trim() || 'Local';
+    const name = `${what.charAt(0).toUpperCase()}${what.slice(1).replace(/s$/, '')} ${n}`;
+    const slug = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '');
+    return { placeId: `fxa${i}_${hash(q).toString(36)}`, name, address: `Calle ${n} ${i + 1}, 4600${i % 10} Valencia, España`, phone: `+34 961 000 ${String(100 + i)}`,
+      website: i === 3 ? null : `https://${slug}.test/`, mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(name)}`, hours: ['sábado: 23:00–6:00'],
+      lat: 39.46 + i / 300, lng: -0.38 + i / 300, status: i === 5 ? 'CLOSED_PERMANENTLY' : 'OPERATIONAL', rating: 3.5 + (i % 5) / 4, reviews: 20 + i * 37, photo: null, type: 'Discoteca',
+      place: { city: 'Valencia', province: 'Valencia', region: 'Comunidad Valenciana', country: 'España' } };
+  });
   return {
     async search(q) { return [make(q, 0), make(q, 1)]; },
+    async area(q) { return { results: area(q), pages: 2 }; },
     // El id lleva lo buscado: se rehace igual en otra petición.
     async details(id) { const m = /^fx([01])_([\w-]+)$/.exec(id); return m ? make(Buffer.from(m[2], 'base64url').toString(), Number(m[1])) : null; },
     async photo() { return null; },

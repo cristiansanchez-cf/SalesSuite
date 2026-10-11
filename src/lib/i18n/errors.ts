@@ -46,6 +46,7 @@ const EXACT: Record<string, T> = {
   'Propuesta no encontrada': ['Proposal not found', 'Proposta não encontrada', '제안서를 찾을 수 없습니다'],
   'Combinación no encontrada': ['Combination not found', 'Combinação não encontrada', '조합을 찾을 수 없습니다'],
   'Zona no encontrada': ['Zone not found', 'Zona não encontrada', '구역을 찾을 수 없습니다'],
+  'Búsqueda no encontrada': ['Search not found', 'Busca não encontrada', '검색을 찾을 수 없습니다'],
   'Tarifa no encontrada': ['Rate not found', 'Tarifa não encontrada', '요금제를 찾을 수 없습니다'],
   'Plan no encontrado': ['Plan not found', 'Plano não encontrado', '플랜을 찾을 수 없습니다'],
   'Módulo no encontrado en este dossier': ['Module not found in this proposal', 'Módulo não encontrado nesta proposta', '이 제안서에서 모듈을 찾을 수 없습니다'],

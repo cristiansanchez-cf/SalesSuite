@@ -203,6 +203,8 @@ export interface DemoDb {
   /** Topes de uso por persona y día (Google, IA). */
   usage_counter: Array<{ tenant_id: string; user_id: string; kind: string; day: string; n: number }>;
   crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
+  /** Buscar clientes en Google Maps (§19). */
+  crm_sweep: Array<{ id: string; tenant_id: string; query: string; zone_id: string | null; zone_label: string; segment_id: string | null; results: unknown[]; imported: Record<string, string>; created_by: string | null; created_at: string }>;
   account_touch: AccountTouchRow[];
   revenue_event: RevenueEventRow[];
   commission_plan: CommissionPlanRow[];
@@ -388,6 +390,7 @@ export function freshDemoDb(): DemoDb {
     crm_import: [],
     crm_settings: [],
     crm_fix: [],
+    crm_sweep: [],
     usage_counter: [],
     crm_activity: [
       { id: '00000000-0000-4000-8000-0000000ca001', tenant_id: ENJOY, account_id: '00000000-0000-4000-8000-0000000ac001', contact_id: '00000000-0000-4000-8000-0000000cc501',

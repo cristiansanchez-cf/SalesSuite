@@ -494,3 +494,28 @@ Revisión completa en `docs/SECURITY_REVIEW.md`. Lo que afecta al CRM:
 - **Webs de las empresas**: se leen sin seguir a direcciones internas, comprobando la IP al conectar (no solo al
   resolver), para que una web no pueda apuntar al servidor.
 
+## 19. Buscar clientes por zona (hecho)
+
+Criterio de Cristian (11-oct-2026): ir cubriendo España por tipo de cliente y zona («discotecas» en Valencia, «centros
+de buceo» en Murcia), sin IA y sin duplicar. Lo que no está en Google se sigue dando de alta a mano.
+
+**Empresas → «Buscar clientes»** (`/admin/accounts/buscar`; `src/lib/crm/prospect.ts`, servicio `prospect*`):
+
+1. **Qué** (texto libre; se recuerdan las búsquedas anteriores) + **dónde** (cualquier zona del espacio) + sector
+   opcional. Se pide a Google Places «qué en zona, región, país», con el punto de la zona como preferencia (radio
+   según su tamaño). Hasta 3 páginas de 20 = 60 sitios; cada página cuenta para el tope diario de Google.
+2. La búsqueda se **guarda** (`crm_sweep`, con lo que devolvió Google): se revisa sin volver a pagar y queda en el
+   historial («discotecas · Valencia · 12 encontrados · 9 importados», quién y cuándo). Si se repite, avisa.
+3. Cada sitio sale marcado: **Nueva** (marcada) · **Ya la tienes** (misma ficha de Google o importada antes; no se
+   puede marcar) · **¿Ya la tienes? Se llama igual** (sin marcar, con enlace) · **Cerrado en Google** (sin marcar).
+4. **Importar** (por tandas de 6 desde el navegador, con progreso): cada sitio pasa a ser una empresa con su **ficha
+   de Google ya elegida** (teléfono, web, dirección, Maps, horario, ubicación, valoración), su ciudad (por la
+   dirección; si no, la zona buscada), el sector, la lista de lo buscado (`discotecas`) y las **redes y el email de su
+   web**. Se asignan **a quien importa**; un admin o gerente puede dejarlas libres o dárselas a alguien del equipo.
+5. Después, **«Investigar con IA»** lo recién importado (hasta 20) y **«Ver en Empresas»** (filtrado por la lista).
+   En la ficha ya no hace falta «Buscar en Google»: el siguiente paso es la investigación con IA.
+
+Permisos: cualquiera del equipo interno busca e importa (un comercial, siempre para sí); un partner no ve nada; borrar
+búsquedas, solo admin. Migración `20261118000000_crm_prospect.sql`; pruebas `prospect.test.ts`, contrato de cuentas
+(demo y Postgres), `supabase/tests/60_crm_prospect.test.sql`, `scripts/smoke-prospect.cjs`.
+

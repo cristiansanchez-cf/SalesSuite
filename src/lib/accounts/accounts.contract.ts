@@ -11,6 +11,8 @@ import type { AccountsDb } from './db';
 import type { CrmDb } from '../crm/db';
 import { createCrmService } from '../crm/service';
 import { fixtureResearch } from '../crm/research';
+import { fixturePlaces } from '../crm/places';
+import { fixtureWebsite } from '../crm/website';
 import { fixtureZoneNames, REVIEW_TAG } from '../crm/zones-normalize';
 import { NO_ZONE } from './service';
 
@@ -513,6 +515,42 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(await E.accountsDbFor(U.admin.id).setZoneLocation(t.vlc, 39.47, -0.37)).toBe(true);
       await t.admin.accounts.saveZone({ name: 'València', parentId: t.cv }, t.vlc);
       expect((await t.admin.accounts.territory()).zones.find((z) => z.id === t.vlc)).toMatchObject({ name: 'València', lat: 39.47, lng: -0.37 });
+    });
+
+    test('Buscar clientes (§19): buscar en una zona, importar sin duplicar, con su web y redes; el comercial se las queda', async () => {
+      const t = await territory();
+      const opts = { places: fixturePlaces(), website: fixtureWebsite(), routes: null, research: null };
+      const adm = createCrmService(E.crmDbFor(U.admin.id), E.accountsDbFor(U.admin.id), E.adminDbFor(U.admin.id), t.admin.session, opts);
+      const ya = await t.admin.accounts.create({ name: 'Discoteca Luna', zoneId: t.vlc });
+      const id = await adm.prospectSearch({ what: 'discotecas', zoneId: t.vlc });
+      let got = await adm.prospectGet(id);
+      expect(got.sweep).toMatchObject({ query: 'discotecas', zoneId: t.vlc, found: 12 });
+      expect(got.sweep.zoneLabel).toContain('Valencia');
+      const st = Object.fromEntries(got.candidates.map((c) => [c.name, c.state]));
+      expect(st).toMatchObject({ 'Discoteca Sol': 'new', 'Discoteca Luna': 'maybe', 'Discoteca Duna': 'closed' });
+      expect(got.candidates.find((c) => c.name === 'Discoteca Luna')?.accountId).toBe(ya);
+
+      const pick = got.candidates.filter((c) => c.name === 'Discoteca Sol' || c.name === 'Discoteca Mar').map((c) => c.placeId);
+      const r = await adm.prospectImport(id, pick, 'me');
+      expect(r).toMatchObject({ created: 2, have: 0, failed: 0 });
+      const sol = (await t.admin.accounts.get(r.ids[pick[0]])).account;
+      expect(sol).toMatchObject({ name: 'Discoteca Sol', placeId: pick[0], zoneId: t.vlc, ownerId: U.admin.id, website: 'https://discotecasol.test/', instagram: 'https://www.instagram.com/discotecasol/', email: 'hola@discotecasol.test', tags: ['discotecas'] });
+      expect(sol.placeFilled).toMatchObject({ website: 'https://discotecasol.test/' });
+      // Otra vez lo mismo: no se duplica.
+      expect(await adm.prospectImport(id, pick, 'me')).toMatchObject({ created: 0, have: 2 });
+      got = await adm.prospectGet(id);
+      expect(got.candidates.filter((c) => c.state === 'have').map((c) => c.placeId).sort()).toEqual([...pick].sort());
+      expect((await adm.prospectList()).find((w) => w.id === id)).toMatchObject({ found: 12, importedCount: 2 });
+
+      // El comercial ve las búsquedas del espacio; lo que importa es suyo aunque pida otra cosa.
+      const repCtx = await ctx(U.rep);
+      const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, opts);
+      expect((await rep.prospectList()).map((w) => w.id)).toContain(id);
+      const one = got.candidates.find((c) => c.name === 'Discoteca Faro')!.placeId;
+      const r2 = await rep.prospectImport(id, [one], '');
+      expect(r2.created).toBe(1);
+      expect((await t.admin.accounts.get(r2.ids[one])).account.ownerId).toBe(U.rep.id);
+      await rejects(rep.prospectGet('00000000-0000-4000-8000-00000000dead'), 404);
     });
 
     test('CRM terminar ciudades: juntar con pueblos y asignaciones; renombrar encima de otra = juntar; tipo y mover', async () => {

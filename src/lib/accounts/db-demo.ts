@@ -8,7 +8,7 @@ import type { CrmField, FieldType } from '../crm/fields';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
 import type { AccountInsert, AccountsDb } from './db';
 import { eligibility } from './rules';
-import { DEFAULT_RULES, type Account, type AccountRules, type Eligibility, type TouchKind, type Zone, type ZoneKind } from './types';
+import { DEFAULT_RULES, type Account, type AccountRules, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
 
 const db = () => demoDb();
 const now = () => new Date();
@@ -38,6 +38,10 @@ const toField = (r: CrmFieldRow): CrmField => ({
   target: r.target ?? 'account', tags: r.tags ?? [], isStage: r.is_stage ?? false,
 });
 /** = trigger account_fields_check: solo claves de campos del espacio. */
+type SweepRow = ReturnType<typeof demoDb>['crm_sweep'][number];
+const toSweep = (x: SweepRow, full: boolean): Sweep => ({ id: x.id, tenantId: x.tenant_id, query: x.query, zoneId: x.zone_id, zoneLabel: x.zone_label, segmentId: x.segment_id,
+  results: full ? JSON.parse(JSON.stringify(x.results)) : [], found: x.results.length, imported: { ...x.imported }, createdBy: x.created_by, createdAt: x.created_at });
+
 export function checkFields(t: string, fields: Record<string, unknown>, target: 'account' | 'contact' = 'account') {
   const keys = new Set(db().crm_field.filter((f) => f.tenant_id === t && (f.target ?? 'account') === target).map((f) => f.key));
   const unknown = Object.keys(fields).find((k) => !keys.has(k));
@@ -406,6 +410,30 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       const f = db().crm_fix.find((x) => x.id === id);
       if (!f || roleOf(f.tenant_id, actorId) !== 'admin' || f.undone_at) return false;
       f.undone_at = iso();
+      return true;
+    },
+    async saveSweep(t, w) {
+      const r = roleOf(t, actorId);
+      if (!r || r === 'partner') throw new Error('permission denied: No es del equipo');
+      if (w.results.length > 60) throw new Error('check constraint: crm_sweep_results_check');
+      const id = randomUUID();
+      db().crm_sweep.push({ id, tenant_id: t, query: w.query, zone_id: w.zoneId, zone_label: w.zoneLabel, segment_id: w.segmentId, results: JSON.parse(JSON.stringify(w.results)), imported: {}, created_by: actorId, created_at: iso() });
+      return id;
+    },
+    async listSweeps(t, limit) {
+      const r = roleOf(t, actorId);
+      if (!r || r === 'partner') return [];
+      return db().crm_sweep.filter((x) => x.tenant_id === t).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit).map((x) => toSweep(x, false));
+    },
+    async getSweep(id) {
+      const x = db().crm_sweep.find((w) => w.id === id);
+      const r = x ? roleOf(x.tenant_id, actorId) : null;
+      return x && r && r !== 'partner' ? toSweep(x, true) : null;
+    },
+    async markSwept(id, imported) {
+      const x = db().crm_sweep.find((w) => w.id === id);
+      if (!x || !(x.created_by === actorId || isManager(x.tenant_id, actorId))) return false;
+      x.imported = { ...x.imported, ...imported };
       return true;
     },
     async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },

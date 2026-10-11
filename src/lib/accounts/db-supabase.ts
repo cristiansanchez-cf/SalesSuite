@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AccountInsert, AccountsDb } from './db';
 import type { CrmField, FieldType } from '../crm/fields';
 import { paged } from '../crm/db-supabase';
-import { DEFAULT_RULES, type Account, type Eligibility, type TouchKind, type Zone, type ZoneKind } from './types';
+import { DEFAULT_RULES, type Account, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -40,6 +40,9 @@ const accountRow = (t: string, a: AccountInsert) => ({
   owner_id: a.ownerId ?? null, fields: a.fields ?? {}, parent_id: a.parentId ?? null, tags: a.tags ?? [], import_id: a.importId ?? null,
   ...contactRow(a.contact),
 });
+const toSweep = (r: Row): Sweep => ({ id: r.id, tenantId: r.tenant_id, query: r.query, zoneId: r.zone_id ?? null, zoneLabel: r.zone_label ?? '', segmentId: r.segment_id ?? null,
+  results: Array.isArray(r.results) ? r.results : [], found: r.found ?? 0, imported: r.imported ?? {}, createdBy: r.created_by ?? null, createdAt: r.created_at });
+const SWEEP_LIST = 'id, tenant_id, query, zone_id, zone_label, segment_id, found, imported, created_by, created_at';
 const toZone = (r: Row): Zone => ({ id: r.id, tenantId: r.tenant_id, parentId: r.parent_id, name: r.name, kind: r.kind as ZoneKind, position: r.position, lat: r.lat ?? null, lng: r.lng ?? null });
 /** Búsqueda por nombre sin comodines del usuario. */
 const like = (q: string) => `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
@@ -174,6 +177,21 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
     },
     async markFixUndone(id) {
       return (check(await sb.from('crm_fix').update({ undone_at: new Date().toISOString() }).eq('id', id).is('undone_at', null).select('id')) ?? []).length > 0;
+    },
+    async saveSweep(t, w) {
+      return (check(await sb.from('crm_sweep').insert({ tenant_id: t, query: w.query, zone_id: w.zoneId, zone_label: w.zoneLabel, segment_id: w.segmentId, results: w.results }).select('id').single()) as Row).id;
+    },
+    async listSweeps(t, limit) {
+      return ((check(await sb.from('crm_sweep').select(SWEEP_LIST).eq('tenant_id', t).order('created_at', { ascending: false }).limit(limit)) ?? []) as Row[]).map(toSweep);
+    },
+    async getSweep(id) {
+      const r = check(await sb.from('crm_sweep').select(`${SWEEP_LIST}, results`).eq('id', id).maybeSingle()) as Row | null;
+      return r ? toSweep(r) : null;
+    },
+    async markSwept(id, imported) {
+      const r = check(await sb.from('crm_sweep').select('imported').eq('id', id).maybeSingle()) as Row | null;
+      if (!r) return false;
+      return (check(await sb.from('crm_sweep').update({ imported: { ...(r.imported ?? {}), ...imported } }).eq('id', id).select('id')) ?? []).length > 0;
     },
     async getPriorityWeights(t) {
       const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;

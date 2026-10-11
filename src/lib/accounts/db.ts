@@ -1,6 +1,7 @@
 import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
-import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason } from './types';
+import type { PlaceResult } from '../crm/places';
+import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep } from './types';
 
 /** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
 export interface GoogleData {
@@ -90,6 +91,11 @@ export interface AccountsDb {
   saveFix(tenantId: string, fix: { kind: CrmFix['kind']; summary: CrmFix['summary']; undo: CrmFix['undo'] }): Promise<string>;
   listFixes(tenantId: string, kind: CrmFix['kind']): Promise<CrmFix[]>;
   markFixUndone(id: string): Promise<boolean>;
+  /** Buscar clientes (§19): guardar una búsqueda, listarlas (sin resultados), abrir una y apuntar lo importado. */
+  saveSweep(tenantId: string, s: { query: string; zoneId: string | null; zoneLabel: string; segmentId: string | null; results: PlaceResult[] }): Promise<string>;
+  listSweeps(tenantId: string, limit: number): Promise<Sweep[]>;
+  getSweep(id: string): Promise<Sweep | null>;
+  markSwept(id: string, imported: Record<string, string>): Promise<boolean>;
   getPriorityWeights(tenantId: string): Promise<Partial<Weights> | null>;
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */

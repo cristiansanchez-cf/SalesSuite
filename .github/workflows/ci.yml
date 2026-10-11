@@ -94,6 +94,7 @@ jobs:
           node scripts/smoke-google.cjs
           node scripts/smoke-map.cjs
           node scripts/smoke-cleanup.cjs
+          node scripts/smoke-prospect.cjs
           node scripts/smoke-org.cjs
           node scripts/smoke-personalize.cjs
           node scripts/smoke-setup-ai.cjs

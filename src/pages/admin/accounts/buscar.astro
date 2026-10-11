@@ -1,0 +1,238 @@
+---
+/**
+ * Buscar clientes por zona en Google Maps (docs/CRM_DINAMICO.md §19): qué + dónde → lo que sale, marcado (lo nuevo sí; lo
+ * que ya tienes, no) → importar en tandas desde el navegador (cada una lee su web para sacar redes y email) → investigar
+ * con IA si se quiere. Cada búsqueda queda guardada para saber qué zonas se han barrido.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { zonePath } from '~/lib/accounts/rules';
+import { safeHref } from '~/lib/safe-href';
+import { i18n } from '~/lib/i18n';
+import { prospectMessages } from '~/lib/i18n/messages/prospect';
+import { tagSchema } from '~/lib/crm/service';
+import { sweepCounts } from '~/lib/crm/prospect';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: M, f: fmt, locale } = i18n(Astro, prospectMessages);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  let to = '';
+  result = await formAction(async () => {
+    const id = await admin.crm.prospectSearch({ what: String(f.get('what') ?? ''), zoneId: String(f.get('zoneId') ?? ''), segmentId: String(f.get('segmentId') ?? '') });
+    to = `/admin/accounts/buscar?id=${id}`;
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+
+const sweepId = Astro.url.searchParams.get('id') ?? '';
+const [t, segments, history] = await Promise.all([admin.accounts.territory(), admin.playbook.market(), admin.crm.prospectList()]);
+const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
+let open: Awaited<ReturnType<typeof admin.crm.prospectGet>> | null = null;
+if (sweepId) {
+  try { open = await admin.crm.prospectGet(sweepId); } catch { return Astro.rewrite('/404'); }
+}
+const members = open && perms.manageAccounts ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner' && x.userId !== admin.session.userId) : [];
+const counts = open ? sweepCounts(open.candidates) : null;
+// La misma búsqueda (qué y dónde) hecha antes: se avisa (lo ya importado sale como «Ya la tienes»).
+const previous = open ? history.find((w) => w.id !== open!.sweep.id && w.query.toLowerCase() === open!.sweep.query.toLowerCase() && w.zoneId === open!.sweep.zoneId && w.createdAt < open!.sweep.createdAt) : null;
+const tag = open ? tagSchema.parse(open.sweep.query) : '';
+const STATE_TONE = { new: 'co-tag--match', have: '', maybe: 'co-tag--danger', closed: 'co-tag--danger' } as const;
+const lastQuery = history[0]?.query ?? '';
+---
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={M.eyebrow} title={open ? `${open.sweep.query} · ${open.sweep.zoneLabel.split(',')[0] || '—'}` : M.title} lede={open ? M.results(counts!.found) : M.lede}>
+    {open && <a class="co-btn co-btn--ghost" href="/admin/accounts/buscar" data-testid="prospect-back"><Icon name="search" size={16} />{M.back}</a>}
+  </PageHeader>
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {!open ? (
+    <div class="grid gap-6">
+      <form method="post" class="co-card grid max-w-3xl gap-4" data-testid="prospect-form" data-search-form>
+        {!admin.crm.hasProspect() && <Alert kind="info" title={M.noGoogle} />}
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="co-field">{M.what}<input class="co-input" name="what" required minlength="2" maxlength="80" placeholder={M.whatPh} value={lastQuery} list="prospect-whats" data-testid="prospect-what" /></label>
+          <label class="co-field">{M.where}
+            <select class="co-select" name="zoneId" required data-testid="prospect-zone">
+              <option value="">{M.anyZone}</option>
+              {zoneOptions.map((z) => <option value={z.id} selected={t.myZoneIds.length === 1 && z.id === t.myZoneIds[0]}>{z.label}</option>)}
+            </select>
+          </label>
+        </div>
+        <datalist id="prospect-whats">{[...new Set(history.map((w) => w.query))].slice(0, 30).map((w) => <option value={w} />)}</datalist>
+        {segments.length > 0 && (
+          <label class="co-field max-w-sm">{M.sector}
+            <select class="co-select" name="segmentId" data-testid="prospect-sector"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
+          </label>
+        )}
+        <p class="co-help m-0">{M.cost}</p>
+        <button class="co-btn co-btn--primary w-fit" type="submit" disabled={!admin.crm.hasProspect()} data-testid="prospect-search" data-busy={M.searching}><Icon name="search" size={16} /><span>{M.search}</span></button>
+      </form>
+
+      <section class="grid max-w-3xl gap-2" data-testid="prospect-history">
+        <h2 class="co-row-title">{M.history}</h2>
+        {history.length === 0 ? <p class="co-meta">{M.historyEmpty}</p> : (
+          <ul class="co-card m-0 grid gap-0 !p-0">
+            {history.map((w) => (
+              <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--co-line)] px-4 py-3 last:border-b-0" data-testid="prospect-sweep">
+                <a class="font-semibold underline" href={`/admin/accounts/buscar?id=${w.id}`}>{w.query} · {w.zoneLabel.split(',')[0] || '—'}</a>
+                <span class="co-meta">{M.row(w.found, w.importedCount)} · {M.by(w.byName, fmt.relative(w.createdAt))}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  ) : (
+    <div class="grid gap-4" data-testid="prospect-results">
+      {previous && <Alert kind="info" title={M.again(fmt.relative(previous.createdAt))} />}
+      {open.candidates.length === 0 && <p class="co-meta" data-testid="prospect-nothing">{M.nothing}</p>}
+      {open.candidates.length > 0 && (
+        <>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-pick="all" data-testid="prospect-all">{M.all}</button>
+            <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-pick="none">{M.none}</button>
+            <span class="co-meta" data-picked></span>
+          </div>
+          <ul class="m-0 grid gap-2 p-0">
+            {open.candidates.map((c) => (
+              <li class="co-card list-none !p-3" data-testid="prospect-row" data-state={c.state} data-name={c.name}>
+                <label class="flex items-start gap-3">
+                  <input type="checkbox" class="mt-1 h-4 w-4 accent-[var(--co-ink)]" value={c.placeId} checked={c.state === 'new'} disabled={c.state === 'have'} data-pick-row data-testid="prospect-pick" />
+                  <span class="grid min-w-0 flex-1 gap-0.5">
+                    <span class="flex flex-wrap items-center gap-2">
+                      <span class="co-row-title">{c.name}</span>
+                      <span class={`co-tag ${STATE_TONE[c.state]}`} data-testid="prospect-state">{M.states[c.state]}{c.discarded ? ` · ${M.discarded}` : ''}</span>
+                      {c.accountId && <a class="co-meta underline" href={`/admin/accounts/${c.accountId}`} target="_blank" rel="noopener">{M.see}{c.accountName && c.accountName !== c.name ? ` «${c.accountName}»` : ''}</a>}
+                    </span>
+                    <span class="co-meta">
+                      {c.type && <>{c.type} · </>}
+                      {c.rating != null && <>★ {c.rating.toFixed(1)}{c.reviews ? ` (${M.reviews(c.reviews)})` : ''} · </>}
+                      {c.address}
+                    </span>
+                    <span class="co-meta flex flex-wrap gap-3">
+                      {safeHref(c.website ?? '') ? <a class="underline" href={safeHref(c.website ?? '')} target="_blank" rel="noopener nofollow">{(c.website ?? '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').slice(0, 40)}</a> : <span>{M.noWeb}</span>}
+                      {c.phone && <span>{c.phone}</span>}
+                      {safeHref(c.mapsUrl ?? '') && <a class="underline" href={safeHref(c.mapsUrl ?? '')} target="_blank" rel="noopener nofollow">Google Maps</a>}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div class="sticky bottom-0 grid gap-2 border-t border-[var(--co-line)] bg-[var(--co-bg)] py-3">
+            <div class="flex flex-wrap items-end gap-3">
+              {perms.manageAccounts && (
+                <label class="co-field">{M.owner}
+                  <select class="co-select" data-owner data-testid="prospect-owner">
+                    <option value="me">{M.me}</option>
+                    <option value="">{M.free}</option>
+                    {members.map((x) => <option value={x.userId}>{x.displayName || x.email}</option>)}
+                  </select>
+                </label>
+              )}
+              <button type="button" class="co-btn co-btn--primary" data-import data-testid="prospect-import"><Icon name="download" size={16} /><span data-import-label></span></button>
+              <button type="button" class="co-btn co-btn--ghost" hidden data-research data-testid="prospect-research"><Icon name="sparkles" size={16} /><span data-research-label></span></button>
+              <a class="co-btn co-btn--ghost" hidden href={`/admin/accounts?ver=all&lista=${encodeURIComponent(tag)}`} data-see data-testid="prospect-see">{M.seeList}</a>
+            </div>
+            <p class="co-meta m-0" role="status" hidden data-status data-testid="prospect-status"></p>
+          </div>
+        </>
+      )}
+    </div>
+  )}
+
+  <script type="application/json" id="prospect-data" set:html={JSON.stringify({
+    sweep: open?.sweep.id ?? '', chunk: 6, aiMax: 20,
+    T: { have: M.states.have, import: M.import(0), importing: M.importing('{i}', '{n}'), stay: M.stay, failed: M.failed, done: M.done(-1, -2, -3), selected: M.selected(0), research: M.research(0) },
+  }).replace(/</g, '\\u003c')} />
+</AdminLayout>
+
+<script>
+  type D = { sweep: string; chunk: number; aiMax: number; T: Record<string, string> };
+  const d = JSON.parse(document.getElementById('prospect-data')?.textContent ?? '{}') as D;
+
+  // Buscar: el botón dice que está buscando (Google tarda unos segundos).
+  document.querySelector<HTMLFormElement>('[data-search-form]')?.addEventListener('submit', (e) => {
+    const b = (e.currentTarget as HTMLFormElement).querySelector<HTMLButtonElement>('[data-busy]');
+    if (b) { b.disabled = true; b.querySelector('span')!.textContent = b.dataset.busy ?? ''; }
+  });
+
+  const rows = () => [...document.querySelectorAll<HTMLInputElement>('[data-pick-row]')].filter((x) => !x.disabled);
+  const picked = () => rows().filter((x) => x.checked).map((x) => x.value);
+  const sync = () => {
+    const n = picked().length;
+    const lbl = document.querySelector('[data-import-label]');
+    if (lbl) lbl.textContent = d.T.import.replace('0', String(n));
+    const btn = document.querySelector<HTMLButtonElement>('[data-import]');
+    if (btn) btn.disabled = n === 0;
+    const p = document.querySelector('[data-picked]');
+    if (p) p.textContent = d.T.selected.replace('0', String(n));
+  };
+  document.addEventListener('change', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('[data-pick-row]')) sync(); });
+  document.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((b) => b.addEventListener('click', () => { rows().forEach((x) => { x.checked = b.dataset.pick === 'all'; }); sync(); }));
+  sync();
+
+  const status = document.querySelector<HTMLElement>('[data-status]');
+  const created: string[] = [];
+  // Importar: por tandas (cada una lee las webs), con el progreso a la vista. Lo importado pasa a «Ya la tienes».
+  document.querySelector<HTMLButtonElement>('[data-import]')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget as HTMLButtonElement;
+    const ids = picked();
+    if (!ids.length || !status) return;
+    const owner = document.querySelector<HTMLSelectElement>('[data-owner]')?.value ?? 'me';
+    btn.disabled = true; status.hidden = false;
+    let c = 0, h = 0, f = 0, done = 0, error = '';
+    for (let i = 0; i < ids.length && !error; i += d.chunk) {
+      status.textContent = `${d.T.importing.replace('{i}', String(done)).replace('{n}', String(ids.length))} ${d.T.stay}`;
+      const part = ids.slice(i, i + d.chunk);
+      const res = await fetch('/admin/api/crm/prospect-import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sweep: d.sweep, ids: part, owner }) }).catch(() => null);
+      const j = res ? ((await res.json().catch(() => ({}))) as { created?: number; have?: number; failed?: number; ids?: Record<string, string>; error?: string }) : {};
+      if (!res || !res.ok) { error = j.error || d.T.failed; break; }
+      c += j.created ?? 0; h += j.have ?? 0; f += j.failed ?? 0; done += part.length;
+      for (const [placeId, accountId] of Object.entries(j.ids ?? {})) {
+        const box = rows().find((x) => x.value === placeId);
+        if (box) {
+          if (!created.includes(accountId) && box.closest('[data-state]')?.getAttribute('data-state') !== 'have') created.push(accountId);
+          box.checked = false; box.disabled = true; box.closest('[data-state]')?.setAttribute('data-state', 'have');
+          const tag = box.closest('[data-state]')?.querySelector('[data-testid=prospect-state]');
+          if (tag) { tag.textContent = d.T.have; tag.className = 'co-tag'; }
+        }
+      }
+    }
+    status.textContent = error || d.T.done.replace('-1', String(c)).replace('-2', String(h)).replace('-3', String(f));
+    if (!error) {
+      document.querySelector<HTMLElement>('[data-see]')!.hidden = false;
+      const r = document.querySelector<HTMLButtonElement>('[data-research]');
+      if (r && created.length) { r.hidden = false; r.querySelector('[data-research-label]')!.textContent = d.T.research.replace('0', String(Math.min(created.length, d.aiMax))); }
+    }
+    sync();
+  });
+
+  // Investigar con IA lo recién importado (hasta 20, de una en una: cada una tarda hasta un minuto).
+  document.querySelector<HTMLButtonElement>('[data-research]')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget as HTMLButtonElement;
+    if (!status) return;
+    btn.disabled = true;
+    const list = created.slice(0, d.aiMax);
+    let ok = 0;
+    for (const [i, id] of list.entries()) {
+      status.textContent = `${btn.textContent?.trim()} · ${i + 1}/${list.length}… ${d.T.stay}`;
+      const res = await fetch(`/admin/api/accounts/${id}/research`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ skipRecentDays: 30 }) }).catch(() => null);
+      const j = res ? ((await res.json().catch(() => ({}))) as { ok?: boolean; error?: string }) : {};
+      if (j.ok) ok++;
+      else if (j.error) { status.textContent = j.error; return; }
+    }
+    status.textContent = `✓ ${ok}/${list.length}`;
+    created.splice(0, list.length);
+  });
+</script>

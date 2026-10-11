@@ -1,6 +1,7 @@
 /** Zonas y cuentas (docs/ACCOUNTS.md) y campos del CRM (docs/CRM_DINAMICO.md). */
 import type { FieldValues } from '../crm/fields';
 import type { Qualification } from '../crm/priority';
+import type { PlaceResult } from '../crm/places';
 export type ZoneKind = 'country' | 'region' | 'province' | 'city' | 'area';
 export type AccountStatus = 'open' | 'customer' | 'blocked';
 export type Eligibility = 'eligible' | 'claimed_by_other' | 'blocked' | 'out_of_zone' | 'no_account';
@@ -16,6 +17,12 @@ export interface Zone { id: string; tenantId: string; parentId: string | null; n
 export interface AccountMove { id: string; zoneId: string | null; notes: string | null; tags: string[] }
 /** Arreglo de datos con su deshacer (crm_fix). */
 export interface CrmFix { id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: { moves?: AccountMove[]; zoneIds?: string[]; kinds?: Array<{ id: string; kind: AccountKind; reason: DiscardReason | null; note: string | null }> }; createdAt: string; undoneAt: string | null }
+/** Una búsqueda de clientes en Google Maps (docs/CRM_DINAMICO.md §19): lo que salió y lo que se importó (id de Google → empresa). */
+export interface Sweep {
+  id: string; tenantId: string; query: string; zoneId: string | null; zoneLabel: string; segmentId: string | null;
+  /** Vacío en los listados (solo `found`); entero al abrir una. */
+  results: PlaceResult[]; found: number; imported: Record<string, string>; createdBy: string | null; createdAt: string;
+}
 export interface ZoneAssignment { userId: string; zoneId: string }
 export interface AccountRules { claimDays: number; strictZones: boolean; requireAccount: boolean }
 export const DEFAULT_RULES: AccountRules = { claimDays: 30, strictZones: false, requireAccount: false };
