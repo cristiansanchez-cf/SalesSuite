@@ -528,3 +528,26 @@ Permisos: cualquiera del equipo interno busca e importa (un comercial, siempre p
 búsquedas, solo admin. Migración `20261118000000_crm_prospect.sql`; pruebas `prospect.test.ts`, contrato de cuentas
 (demo y Postgres), `supabase/tests/60_crm_prospect.test.sql`, `scripts/smoke-prospect.cjs`.
 
+
+## 20. Apuntar con IA (hecho)
+
+Criterio de Cristian (11-oct-2026): al salir de un sitio, contarlo (escrito o dictado) y que vaya solo a su ficha,
+en vez de apuntarlo en un chat consigo mismo. Primer paso de «hablar con el CRM»; después, MCP o WhatsApp.
+
+**Empresas → «Apuntar»** (`/admin/accounts/apuntar`; `src/lib/crm/notes.ts`, servicio `notesSplit` / `notesApply`):
+
+1. Se escribe o se dicta (en el móvil, el micrófono del teclado) lo visto en uno o varios sitios, hasta 12 000
+   caracteres.
+2. **Una llamada a la IA** lo separa por sitio: la nota de cada uno con sus palabras (sin muletillas, sin inventar), si
+   fue visita, llamada…, cómo fue, el día si lo dice, lo que se puede marcar en la **cualificación** (solo lo claro;
+   «sin pantalla» sin más no se marca como «no quiere», que lo sacaría del ranking) y el **próximo paso** si lo dice.
+   Lo que no es de ningún sitio no se guarda. La IA no guarda nada ni ve el CRM.
+3. **Sin IA**, cada sitio se busca en el CRM por el nombre (sin tildes; uno dentro del otro; casi igual, para el
+   dictado: «Ghecko» ~ «Gecko Valencia»; palabra a palabra). Si se parece ≥ 80 %, sale elegida; si no, «No guardar» o
+   «Crear empresa nueva».
+4. Se revisa (a qué empresa va, la nota, lo que se marca, el próximo paso) y **«Guardar todo»**: en cada empresa, la
+   interacción con la nota, lo marcado en la cualificación (sin quitar lo que ya tenía) y el próximo paso. Cada sitio
+   va por su cuenta: si uno no se puede (p. ej. es de otro comercial), se dice y los demás se guardan.
+
+Permisos: los de siempre (sesión y RLS); cuenta para el tope diario de IA. Pruebas: `notes.test.ts`, contrato de
+cuentas (demo y Postgres), `scripts/smoke-notes.cjs` (en el móvil).

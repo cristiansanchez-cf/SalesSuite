@@ -16,6 +16,7 @@ import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
 import { fixtureWebsite, realWebsite, type WebsiteApi } from './website';
 import { areaQuery, markCandidates, slimPlace, RADIUS, type Candidate } from './prospect';
+import { claudeNotes, fixtureNotes, matchAccounts, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
@@ -99,7 +100,7 @@ export interface PersonView extends Contact {
   ownerName: string | null;
 }
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null; notes?: NotesApi | null } = {}) {
   // Sin clave de Google y con AI_RESEARCH_FIXTURE=1 (pruebas): Google y la web, de mentira.
   const fixtureGoogle = !env('GOOGLE_MAPS_API_KEY') && env('AI_RESEARCH_FIXTURE') === '1';
   const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : fixtureGoogle ? fixturePlaces() : null;
@@ -113,6 +114,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     : env('ANTHROPIC_API_KEY') ? claudeZoneFixes(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneFixes() : null;
   const cleanupAi = opts.cleanup !== undefined ? opts.cleanup
     : env('ANTHROPIC_API_KEY') ? claudeCleanup(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureCleanup() : null;
+  const notesAi = opts.notes !== undefined ? opts.notes
+    : env('ANTHROPIC_API_KEY') ? claudeNotes(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureNotes() : null;
   const perms = can(s.role);
   const requireUse = () => { if (!perms.useAccounts) throw new AdminError(403, 'Las cuentas del CRM son del equipo interno'); };
   const requireManager = () => { if (!perms.manageAccounts) throw new AdminError(403, 'Solo un/a admin o gerente'); };
@@ -848,6 +851,77 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return { accountId };
   }
 
+  // ---------------------------------------------------------------- Apuntar con IA (docs/CRM_DINAMICO.md §20)
+
+  /** Lo que se puede contar de una vez (un buen rato de dictado). */
+  const NOTES_MAX = 12000;
+  /**
+   * La IA separa lo contado por sitio (nota, cualificación, próximo paso) y cada sitio se busca en el CRM por el nombre
+   * (los más parecidos primero). No guarda nada: lo confirma la persona con notesApply.
+   */
+  async function notesSplit(text: string, ctx: { seller: string }): Promise<Array<NoteItem & { candidates: Array<{ id: string; name: string; zone: string; score: number; discarded: boolean }> }>> {
+    requireUse();
+    if (!notesAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const clean = String(text ?? '').trim().slice(0, NOTES_MAX);
+    if (clean.length < 3) throw new AdminError(422, 'Datos no válidos');
+    await quota('ai');
+    let items: NoteItem[] = [];
+    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller }); } catch (e) {
+      console.warn('[notes]', aiReason(e));
+      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
+    }
+    const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
+    const zoneName = new Map(zones.map((z) => [z.id, z.name]));
+    return items.map((it) => ({
+      ...it,
+      candidates: matchAccounts(it.venue, all).map((a) => ({ id: a.id, name: a.name, zone: a.zoneId ? zoneName.get(a.zoneId) ?? '' : '', score: Math.round(a.score * 100) / 100, discarded: !!a.discardedAt })),
+    }));
+  }
+  const noteApplySchema = z.array(z.object({
+    accountId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
+    create: z.string().trim().max(160).nullable().optional().transform((v) => v || null),
+    note: z.string().trim().min(1).max(4000),
+    channel: z.enum(CHANNELS).default('visit'),
+    outcome: z.enum(OUTCOMES).default('note'),
+    day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    qualification: z.record(z.string(), z.string()).default({}),
+    nextStep: z.string().trim().max(300).nullable().optional().transform((v) => v || null),
+    nextDays: z.number().int().min(0).max(365).nullable().optional(),
+  })).max(40);
+  /**
+   * Guardar lo confirmado: en cada empresa (o en una nueva), la interacción con la nota, lo marcado en la cualificación
+   * (sin quitar lo que ya tenía) y el próximo paso si lo hay. Cada sitio va por su cuenta: si uno falla, los demás se guardan.
+   */
+  async function notesApply(input: unknown): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>> {
+    requireUse();
+    const rows = parse(noteApplySchema, input);
+    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string }> = [];
+    for (const r of rows) {
+      let id = r.accountId ?? null;
+      let name = r.create ?? '';
+      try {
+        if (!id && r.create) id = await accounts.insertAccount(t, { name: r.create, zoneId: null, segmentId: null, address: null, externalRef: null, notes: null });
+        if (!id) continue;
+        const a = await accounts.getAccount(id);
+        if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+        name = a.name;
+        const at = r.nextDays != null ? new Date(Date.now() + r.nextDays * 86_400_000).toISOString().slice(0, 10) : undefined;
+        await logActivity(id, { channel: r.channel, outcome: r.outcome, note: r.note, happenedAt: r.day ? `${r.day}T12:00:00` : undefined }, r.nextStep || at ? { step: r.nextStep ?? undefined, at } : undefined);
+        const q: Record<string, unknown> = { ...a.qualification };
+        let changed = false;
+        for (const [k, v] of Object.entries(r.qualification)) {
+          if (!QUAL_VALUES[k]?.includes(v)) continue;
+          q[k] = v === 'true' ? true : v; changed = true;
+        }
+        if (changed) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
+        out.push({ accountId: id, name, ok: true });
+      } catch (e) {
+        out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });
+      }
+    }
+    return out;
+  }
+
   // ---------------------------------------------------------------- investigación con IA (docs/CRM_DINAMICO.md §13)
 
   /** Entre dos investigaciones de la misma empresa (evita el doble clic y gastar dos veces). */
@@ -1213,7 +1287,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
-    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, hasProspect: () => !!places?.area,
+    prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,

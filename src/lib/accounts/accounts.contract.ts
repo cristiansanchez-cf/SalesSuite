@@ -13,6 +13,7 @@ import { createCrmService } from '../crm/service';
 import { fixtureResearch } from '../crm/research';
 import { fixturePlaces } from '../crm/places';
 import { fixtureWebsite } from '../crm/website';
+import { fixtureNotes } from '../crm/notes';
 import { fixtureZoneNames, REVIEW_TAG } from '../crm/zones-normalize';
 import { NO_ZONE } from './service';
 
@@ -555,6 +556,36 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(r2.created).toBe(1);
       expect((await t.admin.accounts.get(r2.ids[one])).account.ownerId).toBe(U.rep.id);
       await rejects(rep.prospectGet('00000000-0000-4000-8000-00000000dead'), 404);
+    });
+
+    test('Apuntar con IA (§20): separa por sitio, busca la empresa y guarda nota, cualificación y próximo paso al confirmar', async () => {
+      const t = await territory();
+      const repCtx = await ctx(U.rep);
+      const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, { notes: fixtureNotes(), places: null, research: null });
+      const gecko = await t.admin.accounts.create({ name: 'Gecko Valencia', zoneId: t.vlc });
+      await t.admin.accounts.assign(gecko, U.rep.id);   // como al importarla desde «Buscar clientes»
+      const items = await rep.notesSplit('GHECKO - dos pantallas pequeñas, mirar redes\nNEGRITO BAR: sin pantalla, buena música', { seller: 'Enjoy' });
+      expect(items.map((x) => x.venue)).toEqual(['GHECKO', 'NEGRITO BAR']);
+      expect(items[0].candidates[0]).toMatchObject({ id: gecko, name: 'Gecko Valencia' });
+      expect(items[0].candidates[0].score).toBeGreaterThanOrEqual(0.8);
+      const r = await rep.notesApply([
+        { accountId: gecko, note: items[0].note, channel: 'visit', outcome: 'note', day: '2026-10-10', qualification: { screens: 'yes', kind: 'venue' }, nextStep: 'Mirar sus redes', nextDays: 2 },
+        { create: 'Negrito Bar', note: items[1].note, channel: 'visit', outcome: 'note', qualification: { screens: 'no', decider: 'nadie' } },
+      ]);
+      expect(r.map((x) => x.ok)).toEqual([true, true]);
+      const g = (await t.admin.accounts.get(gecko)).account;
+      expect(g.qualification).toMatchObject({ screens: 'yes', kind: 'venue' });
+      expect(g.nextStep).toBe('Mirar sus redes');
+      const tl = await rep.timeline(gecko);
+      expect(tl.items.some((x) => x.channel === 'visit' && (x.note ?? '').includes('dos pantallas'))).toBe(true);
+      const neg = (await t.admin.accounts.get(r[1].accountId!)).account;
+      expect(neg).toMatchObject({ name: 'Negrito Bar', ownerId: U.rep.id });
+      expect(neg.qualification).toEqual({ screens: 'no' });
+      // En la de otro, no: se dice cuál ha fallado y las demás se guardan.
+      const ajena = await t.admin.accounts.create({ name: 'Slavia', zoneId: t.vlc });
+      await t.admin.accounts.assign(ajena, E.rep2.id);
+      const r2 = await rep.notesApply([{ accountId: ajena, note: 'Casi vacío', channel: 'visit', outcome: 'note', qualification: { screens: 'yes' } }, { accountId: gecko, note: 'Otra visita', channel: 'visit', outcome: 'note', qualification: {} }]);
+      expect(r2.map((x) => x.ok)).toEqual([false, true]);
     });
 
     test('CRM terminar ciudades: juntar con pueblos y asignaciones; renombrar encima de otra = juntar; tipo y mover', async () => {

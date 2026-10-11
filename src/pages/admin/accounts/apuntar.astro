@@ -1,0 +1,152 @@
+---
+/**
+ * Apuntar con IA (docs/CRM_DINAMICO.md §20): escribir o dictar lo visto → la IA lo separa por sitio → cada sitio, con la
+ * empresa que más se parece (o una nueva), su nota, lo que se marca en la cualificación y el próximo paso → se revisa
+ * y se guarda todo de una vez. La IA no guarda nada.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { notesMessages } from '~/lib/i18n/messages/notes';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+import { cleanupContext } from '~/lib/crm/research-context';
+import type { NoteItem } from '~/lib/crm/notes';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: M, locale } = i18n(Astro, notesMessages);
+const PR = priorityMessages[locale];
+const FU = followupMessages[locale];
+
+type Item = Awaited<ReturnType<typeof admin.crm.notesSplit>>[number];
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const box: { items: Item[] | null; text: string } = { items: null, text: '' };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let to = '';
+  result = await formAction(async () => {
+    if (str('action') === 'split') {
+      box.text = str('text');
+      box.items = await admin.crm.notesSplit(box.text, await cleanupContext(admin));
+      return;
+    }
+    // Guardar lo revisado: lo que dijo la IA (items) con lo que ha cambiado la persona en cada sitio.
+    const items = (() => { try { return JSON.parse(str('items') || '[]') as NoteItem[]; } catch { return []; } })();
+    const rows = items.map((it, i) => {
+      const goes = str(`acc-${i}`);
+      if (!goes || goes === 'skip') return null;
+      const q = Object.fromEntries(f.getAll(`q-${i}`).map(String).map((x) => x.split(':')).filter((x) => x.length === 2));
+      const days = str(`days-${i}`);
+      return { accountId: goes === 'new' ? null : goes, create: goes === 'new' ? it.venue : null, note: str(`note-${i}`) || it.note, channel: it.channel, outcome: it.outcome, day: it.day,
+        qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days) };
+    }).filter(Boolean);
+    const r = await admin.crm.notesApply(rows);
+    const ok = r.filter((x) => x.ok && x.accountId);
+    to = `/admin/accounts/apuntar?ok=saved&n=${ok.length}&f=${r.length - ok.length}&ids=${ok.map((x) => x.accountId).join(',')}`;
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+const q = Astro.url.searchParams;
+const okMsg = flash(Astro.url, { saved: M.saved(Number(q.get('n')) || 0) + (Number(q.get('f')) ? M.failed(Number(q.get('f'))) : '') });
+// Lo que se acaba de guardar, para ir a cada ficha.
+const savedIds = okMsg ? (q.get('ids') ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 40) : [];
+const saved = savedIds.length ? (await Promise.all(savedIds.map((id) => admin.accounts.get(id).then((d) => d.account).catch(() => null)))).filter((a) => !!a) : [];
+const items = box.items;
+const hasAi = admin.crm.hasNotes();
+
+/** «Pantallas: Sí», «Noches a la semana: 4 o más», «Sin cobertura móvil». */
+const qualLabel = (k: string, v: string): string => {
+  const o = PR.options as Record<string, Record<string, string>>;
+  if (k === 'kind') return `${PR.kind}: ${(PR.kinds as Record<string, string>)[v] ?? v}`;
+  if (k === 'nights') return `${PR.hints.recurrence.venue}: ${o.nights[v] ?? v}`;
+  if (k === 'events') return `${PR.hints.recurrence.promoter}: ${o.events[v] ?? v}`;
+  if (k === 'recurring') return `${PR.hints.recurrence.concert} ${o.recurring[v] ?? v}`;
+  if (k in PR.kills && v === 'true') return (PR.kills as Record<string, string>)[k];
+  return `${(PR.criteria as Record<string, string>)[k] ?? k}: ${o[k]?.[v] ?? v}`;
+};
+const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? it.candidates[0].id : it.candidates.length ? '' : 'new');
+---
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={M.eyebrow} title={M.title} lede={items ? M.reviewHelp : M.lede} />
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {saved.length > 0 && (
+    <ul class="mb-6 flex flex-wrap gap-2 p-0" data-testid="notes-saved">
+      {saved.map((a) => <li class="list-none"><a class="co-btn co-btn--ghost co-btn--sm" href={`/admin/accounts/${a!.id}`}><Icon name="building2" size={14} />{a!.name}</a></li>)}
+    </ul>
+  )}
+
+  {!items ? (
+    <form method="post" class="co-card grid max-w-3xl gap-3" data-testid="notes-form" data-notes-form>
+      <input type="hidden" name="action" value="split" />
+      {!hasAi && <Alert kind="info" title={M.noAi} />}
+      <label class="co-field">{M.text}
+        <textarea class="co-textarea !min-h-[220px]" name="text" required minlength="3" maxlength="12000" placeholder={M.placeholder} data-testid="notes-text">{box.text}</textarea>
+      </label>
+      <p class="co-help m-0"><Icon name="mic" size={14} /> {M.dictate}</p>
+      <button class="co-btn co-btn--primary w-fit" type="submit" disabled={!hasAi} data-busy={M.running} data-testid="notes-run"><Icon name="sparkles" size={16} /><span>{M.run}</span></button>
+    </form>
+  ) : (
+    <form method="post" class="grid gap-4" data-testid="notes-review">
+      <input type="hidden" name="action" value="apply" />
+      <input type="hidden" name="items" value={JSON.stringify(items.map(({ candidates: _c, ...it }) => it))} />
+      <h2 class="co-entity">{M.reviewTitle(items.length)}</h2>
+      {items.length === 0 && <p class="co-meta" data-testid="notes-nothing">{M.nothing}</p>}
+      {items.map((it, i) => (
+        <section class="co-card grid gap-3 !p-4" data-testid="notes-item" data-venue={it.venue}>
+          <div class="grid gap-1">
+            <p class="co-meta m-0">{M.said(it.venue)} · {M.how(FU.channels[it.channel], FU.outcomes[it.outcome], it.day ?? M.today)}</p>
+            <label class="co-field">{M.goes}
+              <select class="co-select" name={`acc-${i}`} data-testid="notes-account">
+                {it.candidates.map((c) => <option value={c.id} selected={best(it) === c.id}>{c.name}{c.zone ? ` · ${c.zone}` : ''}{c.discarded ? ` (${M.discarded})` : ''} — {M.match(c.score)}</option>)}
+                <option value="new" selected={best(it) === 'new'}>{M.create(it.venue)}</option>
+                <option value="skip" selected={best(it) === ''}>{M.skip}</option>
+              </select>
+            </label>
+          </div>
+          <label class="co-field">{M.note}<textarea class="co-textarea !min-h-[96px]" name={`note-${i}`} maxlength="4000" data-testid="notes-note">{it.note}</textarea></label>
+          {Object.keys(it.qualification).length > 0 && (
+            <fieldset class="grid gap-1">
+              <legend class="co-field mb-1">{M.qual}</legend>
+              <div class="co-chips">
+                {Object.entries(it.qualification).map(([k, v]) => (
+                  <label class="co-chip"><input type="checkbox" class="mr-1" name={`q-${i}`} value={`${k}:${v}`} checked data-testid="notes-qual" />{qualLabel(k, v)}</label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          <div class="grid gap-3 sm:grid-cols-[1fr_10rem]">
+            <label class="co-field">{M.next}<input class="co-input" name={`next-${i}`} maxlength="300" value={it.nextStep ?? ''} data-testid="notes-next" /></label>
+            <label class="co-field">&nbsp;
+              <select class="co-select" name={`days-${i}`}>
+                <option value="" selected={it.nextDays == null}>—</option>
+                {[0, 1, 2, 3, 7, 14, 30].map((d) => <option value={d} selected={it.nextDays === d}>{M.inDays(d)}</option>)}
+                {it.nextDays != null && ![0, 1, 2, 3, 7, 14, 30].includes(it.nextDays) && <option value={it.nextDays} selected>{M.inDays(it.nextDays)}</option>}
+              </select>
+            </label>
+          </div>
+        </section>
+      ))}
+      <div class="sticky bottom-0 flex flex-wrap gap-3 bg-[var(--co-bg)] py-3">
+        {items.length > 0 && <button class="co-btn co-btn--primary" type="submit" data-testid="notes-save"><Icon name="check" size={16} />{M.save}</button>}
+        <a class="co-btn co-btn--ghost" href="/admin/accounts/apuntar">{M.back}</a>
+      </div>
+    </form>
+  )}
+</AdminLayout>
+
+<script>
+  // Entender: la IA tarda unos segundos; el botón lo dice.
+  document.querySelector<HTMLFormElement>('[data-notes-form]')?.addEventListener('submit', (e) => {
+    const b = (e.currentTarget as HTMLFormElement).querySelector<HTMLButtonElement>('[data-busy]');
+    if (b) { b.disabled = true; b.querySelector('span')!.textContent = b.dataset.busy ?? ''; }
+  });
+</script>

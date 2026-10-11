@@ -27,6 +27,7 @@ import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { routeMessages } from '~/lib/i18n/messages/route';
 import { researchMessages } from '~/lib/i18n/messages/research';
 import { prospectMessages } from '~/lib/i18n/messages/prospect';
+import { notesMessages } from '~/lib/i18n/messages/notes';
 import { compareLeads, priorityOf } from '~/lib/crm/priority';
 
 const { admin } = Astro.locals;
@@ -42,6 +43,7 @@ const R = priorityMessages[locale];
 const CL = cleanupMessages[locale];
 const AI = researchMessages[locale];
 const PR = prospectMessages[locale];
+const NT = notesMessages[locale];
 /** «Investigar zona»: máximo por clic (cada una tarda y cuesta). */
 const AI_MAX = 20;
 
@@ -139,6 +141,7 @@ const panelOpen = nFilters > 0;
   <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede(t.rules.claimDays)}>
     <ViewToggle current="list" />
     {perms.importCrm && <a class="co-btn co-btn--ghost" href="/admin/import"><Icon name="upload" size={16} />{M.import}</a>}
+    <a class="co-btn co-btn--ghost" href="/admin/accounts/apuntar" data-testid="notes-open"><Icon name="sparkles" size={16} />{NT.open}</a>
     <a class="co-btn co-btn--ghost" href="/admin/accounts/buscar" data-testid="prospect-open"><Icon name="search" size={16} />{PR.open}</a>
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="new-account" data-testid="new-account"><Icon name="plus" size={16} />{M.newAccount}</button>
   </PageHeader>
