@@ -18,7 +18,41 @@
 | 1:42 | **CAFÉ BOLSERIA** | Puerta me comenta que la consumición es obligatoria pero como lo controlan? Llenillo 2 plantas pero no cola |
 | 1:45 | **RADIO CITY** | Grande 2 salas una tipo pub y otra disco separadas por cortina, una pantalla mediana (32?) en cada sala, DJ a la vista, público variopinto mayor, música classy pop, reggae?, reggaeton casi lleno |
 
-_(Siguen más notas: pendiente de que Cristian pase el resto.)_
+## Ampliación de Cristian (dictada, 11-oct-2026)
+
+> Pasado de un dictado por voz: lo dudoso va marcado con «(?)». Nada de esto está comprobado todavía; es lo que vio
+> o intuye. Lo que hay que mirar está en «Pendiente».
+
+| Local | Lo que vio / piensa | Encaje (según Cristian) | Pendiente |
+|---|---|---|---|
+| **MCLUB** | Subterránea: puede que no haya cobertura móvil. No vio ningún RPP (relaciones públicas), aunque quizá lo tenga. Puerta vacía. Parece grandecita. | Por ver (ojo: sin cobertura = eliminatorio) | Redes sociales; ¿hay cobertura dentro?; ¿son 2 empresas en el CRM o una? |
+| **Petit Comité** | Más de copeo, casi un cocktail bar. Pequeño, buena música, bastantes mesas. En Google sale como discoteca, pero no lo es. | Quizá fidelización; **no cree que encaje** el concepto | — |
+| **Atenea Rooftop** | Cree que cierra pronto. Sensación de «aquí a lo mejor podría ser». | Por ver | Redes: ¿pincha algún DJ?, ¿hasta qué hora abre? |
+| **Bear Club** | Tipo pub irlandés, 2 plantas. Camareros a tope: duda que tengan tiempo para poner canciones. Las pantallas ponen Spotify; cree que van con un ordenador (las 2 de abajo ponían lo mismo; la de arriba quizá otra cosa). Seguramente ponen deporte el resto del tiempo. | **Fidelización con sellos** (p. ej. a la 5.ª copa, una gratis → sube el ticket medio). Fotos/mensajes en pantalla solo con **autoaceptación + moderación** (el CTO explora moderar sin IA). Concurso de selfies en pantalla (?). | ¿Ordenador o smart TV?; ¿hacen alguna dinámica aparte del deporte? |
+| **The Loungue** | Parecido a Bear Club. Sports bar. | Como Bear Club | — |
+| **Negrito** | Sin pantallas. Buena música, buen volumen; más alternativo, público joven, bastante luminoso (la carta/QR en mesa funcionaría). Mucha gente, pero camareros no agobiados. | **Fidelización con pases** (más de chupitos que de copas). Canciones quizá. QR → **álbum colaborativo** (contenido para sus redes): «un chupito si subes 3 fotos». Idea: que el QR lleve a **dejar reseña en Google Maps**. Implantación rápida. | ¿Cuántas mesas? |
+| **Gecko** (escrito «Ghecko») | **De las mejores opciones.** 2 pantallas pequeñas abajo, conectadas entre sí y ya promocionan cosas. DJ en una zona elevada y accesible: la gente le pide canciones. Una sola sala con parte de arriba y de abajo; la misma música en todo el local. | **Todos los servicios.** Texto grande en pantalla (son pequeñas). Carteles junto al DJ para que pidan las canciones por el QR. | — |
+| **Slavia** | Casi vacío. Proyector apuntando a una superficie rugosa (medio cuadro): ahí las fotos se verían mal sin un fondo blanco. Camareros poco agobiados. | Canciones quizá; fotos, difícil | Probar de todas formas |
+| **Café Bolsería** | La consumición es obligatoria (lo dijo el portero), pero cuesta controlarlo. | **Fidelización con sellos** («a la 5.ª, una gratis»): convierte la obligación en premio. | ¿Tiene pantallas? Mirar redes |
+| **Radio City** | — (ver arriba) | **Todos los servicios** | — |
+
+### Locales que no visitó por dentro (cobran entrada)
+
+| Local | Lo que sabe | Encaje | Pendiente |
+|---|---|---|---|
+| **Fox Congo** | Público internacional. | Fidelización seguro; fotos si hay pantalla | ¿Tiene pantalla? |
+| **Johnny Maracas** | Público muy internacional. | Fidelización | ¿Tiene pantalla? |
+| **«Unique Daily Goodness»** (nombre dictado: comprobar) | Pub-discoteca petadísimo, colas en la puerta, DJ seguro. El que entra ya no sale. | **Fidelización** (que consuman más dentro) | Nombre exacto; ¿pantalla? Mirar redes |
+
+### Ideas que salen (para producto y venta)
+
+- **DJs fundadores**: Cristian tiene una base de datos de DJs fundadores de DJ Club. Hay que **cruzarla con los
+  locales**: si un DJ residente de un local es de los nuestros, es una entrada muy buena. (En el CRM, los DJs ya van
+  aparte: tipo «DJ o artista».)
+- **Pases con sellos** (fidelización): encaja en pubs llenos y en los que tienen consumición obligatoria.
+- **Moderación sin IA + autoaceptación** de fotos y mensajes, para locales donde nadie tiene tiempo de aprobar.
+- **QR → reseña en Google Maps** y **álbum colaborativo** para sus redes.
+- Pantallas pequeñas → plantillas con **texto grande**.
 
 ### Dónde va cada cosa (cuando lo metamos)
 
