@@ -20,7 +20,7 @@ import { i18n } from '~/lib/i18n';
 import { crmMessages } from '~/lib/i18n/messages/crm';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { kindsMessages } from '~/lib/i18n/messages/kinds';
-import { KIND_ICONS, PROFILES } from '~/lib/accounts/types';
+import { CYCLE_DAYS, CYCLE_DAYS_BIG, KIND_ICONS, PROFILES } from '~/lib/accounts/types';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
 
 const { admin } = Astro.locals;
@@ -61,8 +61,9 @@ if (Astro.request.method === 'POST') {
       case 'kinds': {
         // Una fila por tipo (las vacías no cuentan; las marcadas para quitar, tampoco).
         const keys = f.getAll('kKey').map(String), labels = f.getAll('kLabel').map(String), plurals = f.getAll('kPlural').map(String), icons = f.getAll('kIcon').map(String), profiles = f.getAll('kProfile').map(String);
+        const days = f.getAll('kDays').map(Number), daysBig = f.getAll('kDaysBig').map(Number);
         const remove = new Set(f.getAll('kRemove').map(String));
-        await acc.saveKinds(labels.map((label, i) => ({ key: keys[i], label, plural: plurals[i], icon: icons[i], profile: profiles[i] })).filter((k) => k.label.trim() && !(k.key && remove.has(k.key))));
+        await acc.saveKinds(labels.map((label, i) => ({ key: keys[i], label, plural: plurals[i], icon: icons[i], profile: profiles[i], cycleDays: days[i], cycleDaysBig: daysBig[i] })).filter((k) => k.label.trim() && !(k.key && remove.has(k.key))));
         ok = 'kinds';
         break;
       }
@@ -101,21 +102,24 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
     <a class="co-tab" href="/admin/team/fields?de=tipos" aria-current={kindsTab ? 'page' : undefined} data-testid="fields-kinds">{K.tab} · {kindDefs.length}</a>
   </nav>
   {kindsTab && (
-    <form method="post" class="co-card grid max-w-3xl gap-4" data-testid="kinds-form">
+    <form method="post" class="co-card grid max-w-4xl gap-4" data-testid="kinds-form">
       <input type="hidden" name="action" value="kinds" />
       <div><h2 class="co-entity">{K.title}</h2><p class="co-meta mt-1">{K.lede}</p></div>
       <ul class="m-0 grid gap-2 p-0">
-        {[...kindDefs, { key: '', label: '', plural: '', icon: 'building2' }].map((k, i) => (
-          <li class="grid list-none items-end gap-2 sm:grid-cols-[1fr_1fr_8rem_9rem_6rem]" data-testid="kind-row" data-key={k.key}>
+        {[...kindDefs, { key: '', label: '', plural: '', icon: 'building2', cycleDays: CYCLE_DAYS, cycleDaysBig: CYCLE_DAYS_BIG }].map((k, i) => (
+          <li class="grid list-none items-end gap-2 sm:grid-cols-[1fr_1fr_8rem_9rem_5rem_5rem_6rem]" data-testid="kind-row" data-key={k.key}>
             <input type="hidden" name="kKey" value={k.key} />
             <label class="co-field !gap-1 text-xs">{K.label}<input class="co-input" name="kLabel" value={k.label} maxlength="40" placeholder={k.key ? '' : K.newLabel} required={i === 0} data-testid="kind-label" /></label>
             <label class="co-field !gap-1 text-xs">{K.plural}<input class="co-input" name="kPlural" value={k.plural} maxlength="40" placeholder={k.key ? '' : K.newPlural} data-testid="kind-plural" /></label>
             <label class="co-field !gap-1 text-xs">{K.icon}<select class="co-select" name="kIcon">{KIND_ICONS.map((ic) => <option value={ic} selected={ic === k.icon}>{ic}</option>)}</select></label>
             <label class="co-field !gap-1 text-xs" title={PRF.profileHelp}>{PRF.profile}<select class="co-select" name="kProfile" data-testid="kind-profile">{PROFILES.map((pr) => <option value={pr} selected={pr === (k.profile ?? 'venue')}>{PRF.profiles[pr]}</option>)}</select></label>
+            <label class="co-field !gap-1 text-xs" title={K.daysHelp}>{K.days}<input class="co-input" type="number" name="kDays" min="7" max="730" value={k.cycleDays ?? CYCLE_DAYS} data-testid="kind-days" /></label>
+            <label class="co-field !gap-1 text-xs" title={K.daysHelp}>{K.daysBig}<input class="co-input" type="number" name="kDaysBig" min="7" max="730" value={k.cycleDaysBig ?? CYCLE_DAYS_BIG} data-testid="kind-days-big" /></label>
             <span class="pb-2">{i === 0 ? <span class="co-badge">{K.main}</span> : k.key ? <label class="co-meta inline-flex items-center gap-1"><input type="checkbox" name="kRemove" value={k.key} data-testid="kind-remove" />{K.remove}</label> : <span class="co-meta">{K.add}</span>}</span>
           </li>
         ))}
       </ul>
+      <p class="co-help m-0">{K.daysHelp}</p>
       <p class="co-help m-0">{K.removeHelp}</p>
       <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="kinds-save">{K.save}</button>
     </form>

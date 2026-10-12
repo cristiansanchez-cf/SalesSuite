@@ -17,7 +17,15 @@ export const BASE_KIND = 'company';
 /** Qué ficha tiene cada tipo (§24): un local, una promotora o un DJ; cada uno con sus preguntas y su nota. */
 export const PROFILES = ['venue', 'promoter', 'dj'] as const;
 export type Profile = (typeof PROFILES)[number];
-export interface KindDef { key: string; label: string; plural: string; icon: string; profile?: Profile }
+export interface KindDef {
+  key: string; label: string; plural: string; icon: string; profile?: Profile;
+  /** Plazo para cerrar (§34), en días desde el primer contacto; el segundo, para grupos o tamaño grande. */
+  cycleDays?: number; cycleDaysBig?: number;
+}
+/** Plazos por defecto (§34): 2 meses; 6 para grupos o sitios grandes. */
+export const CYCLE_DAYS = 60;
+export const CYCLE_DAYS_BIG = 180;
+const days = (v: unknown, def: number) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 7 && n <= 730 ? n : def; };
 export const KIND_ICONS = ['building2', 'store', 'music', 'mic', 'users', 'heart-handshake', 'party-popper', 'ticket', 'hotel', 'utensils', 'wine', 'waves', 'anchor', 'fish', 'ship', 'briefcase', 'graduation-cap', 'heart', 'star', 'globe'] as const;
 export const DEFAULT_KINDS: KindDef[] = [{ key: BASE_KIND, label: 'Empresa', plural: 'Empresas', icon: 'building2', profile: 'venue' }];
 /** La ficha de un tipo (si no se sabe, la de un local). */
@@ -35,7 +43,7 @@ export function normalizeKinds(raw: unknown): KindDef[] {
     const plural = String(r.plural ?? '').replace(/\s+/g, ' ').trim().slice(0, 40) || label;
     const icon = (KIND_ICONS as readonly string[]).includes(String(r.icon)) ? String(r.icon) : 'building2';
     const profile = (PROFILES as readonly string[]).includes(String(r.profile)) ? (r.profile as Profile) : 'venue';
-    out.push({ key, label, plural, icon, profile });
+    out.push({ key, label, plural, icon, profile, cycleDays: days(r.cycleDays, CYCLE_DAYS), cycleDaysBig: days(r.cycleDaysBig, CYCLE_DAYS_BIG) });
   }
   const base = out.find((k) => k.key === BASE_KIND) ?? DEFAULT_KINDS[0];
   return [base, ...out.filter((k) => k.key !== BASE_KIND)].slice(0, 12);

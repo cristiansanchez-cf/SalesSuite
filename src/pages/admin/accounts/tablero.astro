@@ -1,0 +1,88 @@
+---
+/**
+ * Tablero de ventas (docs/CRM_DINAMICO.md §34): las empresas que lleva cada comercial, en columnas que decide su
+ * historial (Seguimiento), no el comercial. Cada uno ve solo su tablero; admin y gerentes, el de todos con filtro.
+ * Avisa de las atascadas (pasado el plazo de su tipo de cliente o muchas vueltas negociando); no cierra nada solo.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import ViewToggle from '~/components/crm/ViewToggle.astro';
+import { can } from '~/lib/admin/permissions';
+import { STAGES } from '~/lib/crm/pipeline';
+import type { IconName } from '~/lib/ui/icons';
+import { i18n } from '~/lib/i18n';
+import { boardMessages } from '~/lib/i18n/messages/board';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: B, locale } = i18n(Astro, boardMessages);
+const OUT = followupMessages[locale].outcomes as Record<string, string>;
+
+// Quien gestiona elige comercial (?comercial=<id>; vacío = todos). El comercial, siempre el suyo (lo fuerza el servicio).
+const wanted = perms.manageAccounts ? (Astro.url.searchParams.get('comercial') ?? '') : '';
+const [board, kindDefs] = await Promise.all([admin.crm.board({ owner: wanted || null }), admin.accounts.kinds()]);
+const iconOf = new Map(kindDefs.map((k) => [k.key, k.icon as IconName]));
+const me = admin.session.userId;
+/** Por columna, como mucho estas tarjetas (el resto, contadas). */
+const MAX = 60;
+const ago = (d: number | null) => (d === null ? '' : d === 0 ? B.today : B.days(d));
+const fmtDate = (iso: string) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(iso));
+---
+<AdminLayout title={B.title}>
+  <PageHeader eyebrow={B.eyebrow} title={B.title} lede={B.lede}><ViewToggle current="board" /></PageHeader>
+
+  <div class="mb-4 flex flex-wrap items-center gap-3" data-testid="board-head">
+    {perms.manageAccounts && (
+      <nav class="co-chips" aria-label={B.rep} data-testid="board-reps">
+        <a class="co-chip" href="/admin/accounts/tablero" aria-current={!board.owner ? 'true' : undefined} data-testid="board-rep-all">{B.everyone}</a>
+        {board.owners.map((o) => (
+          <a class="co-chip" href={`/admin/accounts/tablero?comercial=${o.id}`} aria-current={board.owner === o.id ? 'true' : undefined} data-testid="board-rep" data-name={o.name}>{o.id === me ? `${o.name} · ${B.mine}` : o.name}</a>
+        ))}
+      </nav>
+    )}
+    <span class="co-meta" data-testid="board-total">{B.count(board.total)}</span>
+    {board.stuck > 0 && <span class="co-tag co-tag--danger" data-testid="board-stuck"><Icon name="triangle-alert" size={12} />{B.stuck(board.stuck)}</span>}
+  </div>
+
+  {board.total === 0 ? (
+    <p class="co-card co-meta" data-testid="board-empty">{B.none}</p>
+  ) : (
+    <div class="-mx-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0" data-scroll-x>
+      <div class="grid grid-flow-col auto-cols-[minmax(15rem,17rem)] gap-3" data-testid="board">
+        {STAGES.map((st) => {
+          const cards = board.columns[st];
+          return (
+            <section class="co-inset flex min-h-[8rem] flex-col gap-2 !p-2" data-testid="board-col" data-stage={st}>
+              <header class="px-1 pt-1" title={B.help[st]}>
+                <h2 class="co-row-title flex items-center justify-between gap-2">{B.stages[st]} <span class="co-meta" data-testid="board-col-count">{cards.length}</span></h2>
+                <p class="co-meta text-xs">{B.help[st]}</p>
+              </header>
+              {cards.length === 0 && <p class="co-meta px-1 text-xs">{B.empty}</p>}
+              {cards.slice(0, MAX).map((c) => (
+                <a href={`/admin/accounts/${c.id}`} class="co-card grid gap-1 !p-3 no-underline" data-testid="board-card" data-name={c.name} data-stage={st}>
+                  <span class="flex items-center gap-2"><Icon name={iconOf.get(c.kind) ?? 'building2'} size={14} /><span class="co-row-title truncate">{c.name}</span></span>
+                  <span class="co-meta text-xs">
+                    {[!board.owner && perms.manageAccounts ? c.ownerName : '', ago(c.since), c.real ? B.touches(c.real) : '', c.lastOutcome ? OUT[c.lastOutcome] ?? '' : ''].filter(Boolean).join(' · ')}
+                  </span>
+                  {(c.nextStep || c.nextStepAt) && <span class="co-meta flex min-w-0 items-center gap-1 text-xs"><Icon name="clock" size={12} /><span class="truncate">{B.next}: {[c.nextStep, c.nextStepAt ? fmtDate(c.nextStepAt) : ''].filter(Boolean).join(' · ')}</span></span>}
+                  {(c.overdue || c.manyTouches) && (
+                    <span class="flex flex-wrap gap-1">
+                      {c.overdue && <span class="co-tag co-tag--danger" data-testid="board-overdue" title={c.big ? B.big : undefined}>{B.overdue(c.overdue, c.limit)}</span>}
+                      {c.manyTouches && <span class="co-tag co-tag--danger" data-testid="board-many">{B.manyTouches(c.manyTouches)}</span>}
+                    </span>
+                  )}
+                </a>
+              ))}
+              {cards.length > MAX && <p class="co-meta px-1 text-xs">+{cards.length - MAX}</p>}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  )}
+  {perms.manageTenant && <p class="co-meta mt-2 text-xs">{B.deadlines}</p>}
+</AdminLayout>

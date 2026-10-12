@@ -5,7 +5,8 @@ export const kindsMessages = defineMessages({
   es: {
     tab: 'Tipos de cliente', title: 'Tipos de cliente',
     lede: 'Cómo se separan tus empresas en pestañas (en Enjoy: Empresas y DJs; en un centro de buceo: Centros y ONGs). El primero es el principal: no se quita, solo se renombra, y es el de las empresas nuevas.',
-    label: 'Nombre (una)', plural: 'Plural (pestaña)', icon: 'Icono', remove: 'Quitar', main: 'Principal',
+    label: 'Nombre (una)', plural: 'Plural (pestaña)', icon: 'Icono', remove: 'Quitar', main: 'Principal', days: 'Plazo (días)', daysBig: 'Grande (días)',
+    daysHelp: 'Plazo para cerrar, en días desde el primer contacto. Si se pasa, el tablero lo avisa (no la cierra). «Grande»: si es un grupo o un sitio grande o masivo.',
     add: 'Añadir tipo', newLabel: 'p. ej. ONG', newPlural: 'p. ej. ONGs', save: 'Guardar tipos', ok: 'Tipos guardados.',
     removeHelp: 'Las empresas de un tipo que quitas pasan al principal (no se pierde nada).',
     work: {
@@ -18,7 +19,8 @@ export const kindsMessages = defineMessages({
   en: {
     tab: 'Client types', title: 'Client types',
     lede: 'How your companies are split into tabs (at Enjoy: Companies and DJs; at a dive business: Centres and NGOs). The first one is the main type: it can’t be removed, only renamed, and new companies get it.',
-    label: 'Name (one)', plural: 'Plural (tab)', icon: 'Icon', remove: 'Remove', main: 'Main',
+    label: 'Name (one)', plural: 'Plural (tab)', icon: 'Icon', remove: 'Remove', main: 'Main', days: 'Deadline (days)', daysBig: 'Large (days)',
+    daysHelp: 'Days from first contact to close. If it goes over, the board flags it (it doesn’t close it). «Large»: a group, or a large or huge place.',
     add: 'Add type', newLabel: 'e.g. NGO', newPlural: 'e.g. NGOs', save: 'Save types', ok: 'Types saved.',
     removeHelp: 'Companies of a removed type move to the main one (nothing is lost).',
     work: {
@@ -31,7 +33,8 @@ export const kindsMessages = defineMessages({
   pt: {
     tab: 'Tipos de cliente', title: 'Tipos de cliente',
     lede: 'Como suas empresas se separam em abas (na Enjoy: Empresas e DJs; num centro de mergulho: Centros e ONGs). O primeiro é o principal: não sai, só se renomeia, e é o das empresas novas.',
-    label: 'Nome (uma)', plural: 'Plural (aba)', icon: 'Ícone', remove: 'Tirar', main: 'Principal',
+    label: 'Nome (uma)', plural: 'Plural (aba)', icon: 'Ícone', remove: 'Tirar', main: 'Principal', days: 'Prazo (dias)', daysBig: 'Grande (dias)',
+    daysHelp: 'Prazo para fechar, em dias desde o primeiro contato. Se passar, o quadro avisa (não fecha). «Grande»: um grupo ou um lugar grande ou massivo.',
     add: 'Adicionar tipo', newLabel: 'ex. ONG', newPlural: 'ex. ONGs', save: 'Salvar tipos', ok: 'Tipos salvos.',
     removeHelp: 'As empresas de um tipo que você tirar passam para o principal (nada se perde).',
     work: {
@@ -44,7 +47,8 @@ export const kindsMessages = defineMessages({
   ko: {
     tab: '고객 유형', title: '고객 유형',
     lede: '회사를 탭으로 나누는 방식입니다(Enjoy: 회사와 DJ, 다이빙 센터: 센터와 NGO). 첫 번째가 기본 유형으로, 삭제할 수 없고 이름만 바꿀 수 있으며 새 회사에 적용됩니다.',
-    label: '이름(단수)', plural: '복수(탭)', icon: '아이콘', remove: '삭제', main: '기본',
+    label: '이름(단수)', plural: '복수(탭)', icon: '아이콘', remove: '삭제', main: '기본', days: '기한(일)', daysBig: '대형(일)',
+    daysHelp: '첫 연락부터 성사까지의 기한(일). 넘기면 보드가 알려줍니다(자동으로 닫지 않음). «대형»: 그룹 또는 대형·초대형 장소.',
     add: '유형 추가', newLabel: '예: NGO', newPlural: '예: NGO들', save: '유형 저장', ok: '저장했습니다.',
     removeHelp: '삭제한 유형의 회사는 기본 유형으로 이동합니다(잃는 것은 없습니다).',
     work: {

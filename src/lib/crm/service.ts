@@ -8,7 +8,8 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import { BASE_KIND, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
+import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
+import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -736,6 +737,56 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     }).sort((x, y) => ORDER[x.bucket] - ORDER[y.bucket] || (y.cooling ?? 0) - (x.cooling ?? 0) || String(x.nextStepAt).localeCompare(String(y.nextStepAt)));
     for (const i of items) counts[i.bucket as keyof typeof counts]++;
     return { items, counts };
+  }
+
+  // ---------------------------------------------------------------- tablero de ventas (docs/CRM_DINAMICO.md §34)
+
+  /**
+   * El tablero: las empresas con dueño, en su columna (la decide el historial, `stageOf`) y con sus avisos. Un comercial
+   * ve solo las suyas; quien gestiona ve todas o las de un comercial (`owner`).
+   */
+  async function board(opts: { owner?: string | null } = {}) {
+    requireUse();
+    const owner = perms.manageAccounts ? (opts.owner || undefined) : s.userId;
+    const [accs, ks, ms, dossiers] = await Promise.all([
+      accounts.listAccounts(t, { ownerId: owner, limit: 5000 }), kinds(), members(), admin.listDossiers(t).catch(() => []),
+    ]);
+    const mine = accs.filter((a) => !!a.ownerId);
+    const sums = new Map((await db.activitySummary(t, mine.map((a) => a.id))).map((x) => [x.accountId, x]));
+    // Cierre: la primera propuesta publicada para esa empresa (o, más adelante, un enlace de pago enviado).
+    const closing = new Map<string, string>();
+    for (const d of dossiers) {
+      if (!d.accountId || d.status !== 'published') continue;
+      const at = d.publishedAt ?? d.updatedAt ?? '';
+      if (at && (!closing.has(d.accountId) || at < closing.get(d.accountId)!)) closing.set(d.accountId, at);
+    }
+    const isGroup = new Set(mine.map((a) => a.parentId).filter(Boolean) as string[]);
+    const now = new Date();
+    const cards = mine.map((a) => {
+      const input: PipelineInput = {
+        wonAt: a.wonAt, discardedAt: a.discardedAt, researched: Object.keys(a.qualification ?? {}).length > 0 || !!a.aiResearchAt,
+        summary: sums.get(a.id) ?? null, closingAt: closing.get(a.id) ?? null,
+      };
+      const stage = stageOf(input);
+      const kd = ks.find((k) => k.key === a.kind) ?? ks[0];
+      // Grande: en un grupo, es un grupo o su tamaño es grande o masivo (más plazo para cerrar).
+      const big = !!a.parentId || isGroup.has(a.id) || ['large', 'huge'].includes(String(a.qualification?.size ?? ''));
+      const limit = big ? kd.cycleDaysBig ?? CYCLE_DAYS_BIG : kd.cycleDays ?? CYCLE_DAYS;
+      const sum = input.summary;
+      return {
+        id: a.id, name: a.name, kind: a.kind, ownerId: a.ownerId!, ownerName: label(ms.get(a.ownerId!)) ?? '', stage,
+        since: daysSince(stageSince(stage, input), now), real: sum?.real ?? 0, lastAt: sum?.lastAt ?? null, lastOutcome: sum?.lastOutcome ?? null,
+        nextStep: a.nextStep, nextStepAt: a.nextStepAt, big, limit, ...alertsOf(stage, input, limit, now),
+      };
+    });
+    const order = (x: (typeof cards)[number]) => (x.overdue ?? 0) + (x.manyTouches ?? 0);
+    const columns = Object.fromEntries(STAGES.map((st) => [st, cards.filter((c) => c.stage === st).sort((x, y) => order(y) - order(x) || (y.since ?? 0) - (x.since ?? 0) || x.name.localeCompare(y.name, 'es'))])) as Record<Stage, typeof cards>;
+    // Para el filtro (quien gestiona): cada comercial con sus empresas en el tablero.
+    const owners = perms.manageAccounts
+      ? [...new Map((opts.owner ? (await accounts.listAccounts(t, { limit: 5000 })).filter((a) => !!a.ownerId) : mine).map((a) => [a.ownerId!, 0])).keys()]
+        .map((id) => ({ id, name: label(ms.get(id)) ?? '' })).filter((o) => o.name).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+      : [];
+    return { columns, owner: owner ?? null, owners, total: cards.length, stuck: cards.filter((c) => c.overdue || c.manyTouches).length };
   }
 
   // ---------------------------------------------------------------- prioridad (docs/CRM_DINAMICO.md §11)
@@ -1588,7 +1639,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
@@ -1605,5 +1656,5 @@ export const emptyCrmDb: CrmDb = {
   async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {}, async listAccountLinks() { return []; }, async saveAccountLink() { throw new Error('sin CRM'); }, async removeAccountLink() { return false; },
   async removeLink() { return false; }, async createImport() { throw new Error('sin CRM'); }, async getImport() { return null; },
   async listImports() { return []; }, async updateImport() { return false; }, async deleteContactsByImport() { return 0; },
-  async listActivities() { return []; }, async lastActivities() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },
+  async listActivities() { return []; }, async lastActivities() { return []; }, async activitySummary() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },
 };

@@ -141,6 +141,12 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
         (check(await sb.from('crm_last_activity').select('account_id, outcome, happened_at').eq('tenant_id', t).in('account_id', g)) ?? []) as Row[]));
       return parts.flat().map((r) => ({ accountId: r.account_id, outcome: r.outcome, happenedAt: r.happened_at }));
     },
+    async activitySummary(t, accountIds) {
+      if (!accountIds.length) return [];
+      const parts = await Promise.all(chunks(accountIds, 300).map(async (g) =>
+        (check(await sb.from('crm_activity_summary').select('account_id, real, first_at, last_at, first_reply_at, last_outcome').eq('tenant_id', t).in('account_id', g)) ?? []) as Row[]));
+      return parts.flat().map((r) => ({ accountId: r.account_id, real: Number(r.real) || 0, firstAt: r.first_at, lastAt: r.last_at, firstReplyAt: r.first_reply_at, lastOutcome: r.last_outcome }));
+    },
     async insertActivity(t, a) {
       const row: Row = { tenant_id: t, account_id: a.accountId, contact_id: a.contactId, channel: a.channel, outcome: a.outcome, note: a.note };
       if (a.happenedAt) row.happened_at = a.happenedAt;

@@ -885,3 +885,33 @@ paso y «Guardar»).
 - **Interacciones**: las 5 últimas; «Ver todas» enseña el resto.
 - Pruebas: `smoke-followup.cjs` (Hecho → nota, «Solo una nota» vacía no se apunta, borrador tras recargar, un toque
   apunta), `smoke-accounts.cjs`, `smoke-route.cjs` (próximo paso con «Cambiar»).
+
+## 34. Tablero: columnas que decide el historial, no el comercial
+
+Pedido de Cristian: un tablero tipo Jira en CRM (pestaña **Tablero**, y «Lista | Mapa | Tablero»). El CRM va antes que
+Propuestas en el menú: la propuesta es el último paso de la venta.
+
+- **Quién ve qué**: el comercial, solo su tablero (las empresas que lleva); `?comercial=` se ignora para él (lo fuerza
+  `crm.board()`, no la página). Admin y gerentes ven todas y filtran por comercial (chips arriba).
+- **Columnas** (`src/lib/crm/pipeline.ts`, lógica pura con pruebas): se calculan con lo apuntado en Seguimiento y no se
+  mueven a mano, para que no se cuele el «ya casi está» de quien vende. En orden de prioridad:
+  - **Cerrada**: ganada (`won_at`; con K3, cuando paga por Stripe).
+  - **Perdida**: descartada o la última interacción es «No interesado».
+  - **Cierre**: tiene una propuesta publicada (con K2, también el enlace de pago enviado), sin pagar.
+  - **Negociando**: ha contestado alguna vez (Contestó, Interesado o Cita).
+  - **Primer contacto**: alguna interacción de verdad (las notas no cuentan), sin respuesta.
+  - **Investigada**: tiene cualificación o investigación con IA, sin contactar.
+  - **Sin empezar**: el resto.
+- **Datos**: la vista `crm_activity_summary` (migración `20261129`, `security_invoker`) da por empresa las interacciones
+  de verdad, la primera y la última, la primera respuesta y el último resultado; una consulta por tablero (en trozos de
+  300), no el historial entero.
+- **Plazos** (Configurar → Datos del CRM → Campos → Tipos de cliente): días desde el primer contacto para cerrar, por
+  tipo de cliente; 60 por defecto y 180 si es «grande» (en un grupo, es un grupo, o tamaño grande o masivo). Se guardan
+  en `crm_settings.kinds` (`cycleDays`, `cycleDaysBig`, de 7 a 730). Pasado el plazo y sin cerrar, la tarjeta avisa
+  («N días sin cerrar»); **no se cierra sola**. También avisa con 8 o más interacciones en Negociando.
+- **Tarjeta**: tipo, comercial (en «Todos»), desde cuándo está en la columna, interacciones, último resultado, próximo
+  paso y avisos. Como mucho 60 por columna (el resto, contadas). Las atascadas van primero.
+- Pruebas: `pipeline.test.ts`, `supabase/tests/68_crm_activity_summary.test.sql`, `smoke-board.cjs` (la columna avanza
+  sola, el comercial no ve otros ni con la URL, filtro del admin, plazo por tipo).
+- Después: «Generar pago» desde la ficha (K2), pagado = Cerrada con aviso y celebración (K3), análisis con IA de las
+  interacciones de cada comercial, recordatorios por WhatsApp.

@@ -55,4 +55,5 @@ run supabase/tests/64_entity_profiles.test.sql
 run supabase/tests/65_account_legal.test.sql
 run supabase/tests/66_crm_last_activity.test.sql
 run supabase/tests/67_enjoy_size_capacity.test.sql
+run supabase/tests/68_crm_activity_summary.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

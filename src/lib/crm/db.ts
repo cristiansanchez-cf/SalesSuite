@@ -1,4 +1,5 @@
 /** Personas, sus empresas e importaciones (docs/CRM_DINAMICO.md). Una implementación por usuario: en Supabase decide la RLS. */
+import type { ActivitySummary } from './pipeline';
 import type { Activity, Channel, Outcome } from './followup';
 import type { AccountLink, LinkWhen, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport } from './types';
 
@@ -29,6 +30,8 @@ export interface CrmDb {
   listActivities(tenantId: string, accountIds: string[], limit: number): Promise<Activity[]>;
   /** La última interacción de verdad (no las notas) de cada empresa: lo único que necesita «se enfría». */
   lastActivities(tenantId: string, accountIds: string[]): Promise<Array<{ accountId: string; outcome: Activity['outcome']; happenedAt: string }>>;
+  /** Resumen de interacciones por empresa (tablero, §34): vista crm_activity_summary. */
+  activitySummary(tenantId: string, accountIds: string[]): Promise<ActivitySummary[]>;
   insertActivity(tenantId: string, a: { accountId: string; contactId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt?: string }): Promise<string>;
   deleteActivity(id: string): Promise<boolean>;
 }

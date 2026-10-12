@@ -29,13 +29,15 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
       : { href: '/admin/inicio', label: L.home, icon: 'gauge' as IconName, testid: 'nav-home', tabs: [
         { href: '/admin/inicio', label: L.home }, { href: '/admin/start', label: L.start, testid: 'tab-start' }, { href: '/admin/compose', label: L.compose, testid: 'tab-compose' },
       ] },
+    // CRM = empresas, su tablero (§34) y personas; antes que Propuestas: la propuesta es el último paso de la venta.
+    // Importar y ordenar los datos va en Configurar (solo admin).
+    ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, testid: 'nav-accounts', tabs: [
+      { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/accounts/tablero', label: L.board, testid: 'tab-board' },
+      { href: '/admin/people', label: L.people, testid: 'tab-people' },
+    ] }] : []),
     { href: '/admin', label: partner ? L.myAccounts : L.dossiers, icon: (partner ? 'store' : 'file-text') as IconName, testid: 'nav-dossiers', tabs: [
       { href: '/admin', label: partner ? L.myAccounts : L.dossiers, exact: true }, { href: '/admin/dossiers', label: '', show: false }, { href: '/admin/analytics', label: L.analytics, testid: 'tab-analytics' },
     ] },
-    // CRM = empresas + personas. Importar y ordenar los datos va en Configurar (solo admin).
-    ...(perms.useAccounts ? [{ href: '/admin/accounts', label: L.accounts, icon: 'map-pin' as IconName, testid: 'nav-accounts', tabs: [
-      { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/people', label: L.people, testid: 'tab-people' },
-    ] }] : []),
     { href: '/admin/learn', label: L.learn, icon: 'graduation-cap', testid: 'nav-learn', tabs: [{ href: '/admin/learn', label: L.learn }, { href: '/admin/wins', label: L.wins, testid: 'tab-wins' }] },
     { href: '/admin/commissions', label: L.myCommissions, icon: 'wallet', testid: 'nav-my-commissions', tabs: [{ href: '/admin/commissions', label: L.myCommissions, exact: true }] },
   ];

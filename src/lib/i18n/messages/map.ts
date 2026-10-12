@@ -4,7 +4,7 @@ import { defineMessages } from '../core';
 export const mapMessages = defineMessages({
   es: {
     place: { country: 'País', region: 'Comunidad', province: 'Provincia', anyCountry: 'Todos los países', anyRegion: 'Todas las comunidades', anyProvince: 'Todas las provincias', noCity: 'Sin ciudad' },
-    view: { label: 'Cómo ver las empresas', list: 'Lista', map: 'Mapa' }, approx: 'Ubicación aproximada: el centro de su ciudad (aún no tiene ficha de Google).',
+    view: { label: 'Cómo ver las empresas', list: 'Lista', map: 'Mapa', board: 'Tablero' }, approx: 'Ubicación aproximada: el centro de su ciudad (aún no tiene ficha de Google).',
     kinds: { venue: 'Local o sala', promoter: 'Promotora', concert: 'Conciertos', none: 'Sin tipo' },
     title: 'Mapa', eyebrow: 'CRM', lede: 'Tus empresas en el mapa. Toca un punto para ver su resumen y abrir su ficha.',
     temp: 'Temperatura', anyTemp: 'Todas', hot: 'Calientes', cold: 'Se enfrían o fuera', unqualified: 'Sin cualificar',
@@ -21,7 +21,7 @@ export const mapMessages = defineMessages({
   },
   en: {
     place: { country: 'Country', region: 'Region', province: 'Province', anyCountry: 'All countries', anyRegion: 'All regions', anyProvince: 'All provinces', noCity: 'No city' },
-    view: { label: 'How to see companies', list: 'List', map: 'Map' }, approx: 'Approximate location: the centre of its city (no Google listing yet).',
+    view: { label: 'How to see companies', list: 'List', map: 'Map', board: 'Board' }, approx: 'Approximate location: the centre of its city (no Google listing yet).',
     kinds: { venue: 'Venue', promoter: 'Promoter', concert: 'Concerts', none: 'No type' },
     title: 'Map', eyebrow: 'CRM', lede: 'Your companies on the map. Tap a point to see its summary and open its page.',
     temp: 'Temperature', anyTemp: 'All', hot: 'Hot', cold: 'Cooling or out', unqualified: 'Not qualified',
@@ -38,7 +38,7 @@ export const mapMessages = defineMessages({
   },
   pt: {
     place: { country: 'País', region: 'Região', province: 'Província', anyCountry: 'Todos os países', anyRegion: 'Todas as regiões', anyProvince: 'Todas as províncias', noCity: 'Sem cidade' },
-    view: { label: 'Como ver as empresas', list: 'Lista', map: 'Mapa' }, approx: 'Localização aproximada: o centro da cidade (ainda sem ficha do Google).',
+    view: { label: 'Como ver as empresas', list: 'Lista', map: 'Mapa', board: 'Quadro' }, approx: 'Localização aproximada: o centro da cidade (ainda sem ficha do Google).',
     kinds: { venue: 'Casa ou sala', promoter: 'Promotora', concert: 'Shows', none: 'Sem tipo' },
     title: 'Mapa', eyebrow: 'CRM', lede: 'Suas empresas no mapa. Toque num ponto para ver o resumo e abrir a ficha.',
     temp: 'Temperatura', anyTemp: 'Todas', hot: 'Quentes', cold: 'Esfriando ou fora', unqualified: 'Sem qualificar',
@@ -55,7 +55,7 @@ export const mapMessages = defineMessages({
   },
   ko: {
     place: { country: '국가', region: '지역', province: '주', anyCountry: '모든 국가', anyRegion: '모든 지역', anyProvince: '모든 주', noCity: '도시 없음' },
-    view: { label: '회사 보기 방식', list: '목록', map: '지도' }, approx: '대략적인 위치: 도시 중심(아직 Google 정보 없음).',
+    view: { label: '회사 보기 방식', list: '목록', map: '지도', board: '보드' }, approx: '대략적인 위치: 도시 중심(아직 Google 정보 없음).',
     kinds: { venue: '매장·클럽', promoter: '프로모터', concert: '공연', none: '유형 없음' },
     title: '지도', eyebrow: 'CRM', lede: '지도 위의 회사들. 점을 누르면 요약을 보고 페이지를 열 수 있습니다.',
     temp: '온도', anyTemp: '전체', hot: '뜨거움', cold: '식는 중 또는 제외', unqualified: '미평가',

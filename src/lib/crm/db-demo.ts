@@ -168,6 +168,16 @@ export function demoCrmDb(actorId: string): CrmDb {
       }
       return [...last.values()];
     },
+    async activitySummary(t, accountIds) {
+      if (!isMember(t, actorId)) return [];
+      const by = new Map<string, Array<{ outcome: string; at: string }>>();
+      for (const a of db().crm_activity) if (a.tenant_id === t && accountIds.includes(a.account_id)) by.set(a.account_id, [...(by.get(a.account_id) ?? []), { outcome: a.outcome, at: a.happened_at }]);
+      return [...by].map(([accountId, xs]) => {
+        const real = xs.filter((x) => x.outcome !== 'note').sort((a, b) => a.at.localeCompare(b.at));
+        const replies = real.filter((x) => ['replied', 'interested', 'meeting'].includes(x.outcome));
+        return { accountId, real: real.length, firstAt: real[0]?.at ?? null, lastAt: xs.map((x) => x.at).sort().at(-1) ?? null, firstReplyAt: replies[0]?.at ?? null, lastOutcome: real.at(-1)?.outcome ?? null };
+      });
+    },
     async insertActivity(t, a) {
       const s = db();
       if (!isMember(t, actorId)) throw new Error('permission denied: crm_activity');
