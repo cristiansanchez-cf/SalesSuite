@@ -84,8 +84,15 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await pub.locator('[data-module=phone-tour]').count()) === 3, 'móvil del invitado en 3 diapositivas');
   const count = async () => (await pub.textContent('[data-count]')).trim();
   const before = await count();
-  await pub.click('[data-next]'); await pub.waitForTimeout(900);
-  assert((await count()) !== before, `flecha → siguiente diapositiva (${before} → ${await count()})`);
+  // La flecha pasa primero por las escenas de la pantalla en vivo (si está en esta diapositiva) y luego cambia de
+  // diapositiva: se pulsa hasta que cambie. Pulsar de más mientras se desliza no salta dos (va a la misma).
+  const moved = await pub.waitForFunction((b) => {
+    const el = document.querySelector('[data-count]');
+    if (el && el.textContent.trim() !== b) return true;
+    document.querySelector('[data-next]')?.click();
+    return false;
+  }, before, { timeout: 12000, polling: 300 }).then(() => true).catch(() => false);
+  assert(moved && (await count()) !== before, `flecha → siguiente diapositiva (${before} → ${await count()})`);
   await pub.keyboard.press('ArrowLeft'); await pub.waitForTimeout(900);
   assert((await count()) === before, 'teclado ← vuelve');
   await p.click('[data-testid=layout-scroll]');

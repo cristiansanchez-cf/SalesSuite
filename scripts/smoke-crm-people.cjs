@@ -81,7 +81,7 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
 
   // Alta con «¿Es de algún grupo?»: se busca el que ya existe y se elige.
   await adm.click('[data-testid=add-open]'); await adm.click('[data-testid=new-account]');
-  await adm.fill('[data-testid=new-account-form] [name=name]', 'Bar Costa Nuevo');
+  await adm.fill('[data-testid=new-account-form] [name=name]', 'Terraza Brisa Alta');
   await adm.fill('[data-testid=new-account-form] [data-testid=group-search]', 'Costa Smoke');
   await adm.locator('[data-testid=new-account-form] [data-testid=group-option]').filter({ hasText: 'Grupo Costa Smoke' }).first().click();
   await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
@@ -93,7 +93,7 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   const zoneOf = await adm.inputValue('#acc-data [name=zoneId]').catch(() => '');
   await adm.goto(`${BASE}/admin/accounts?ver=all`);
   await adm.click('[data-testid=add-open]'); await adm.click('[data-testid=new-account]');
-  await adm.fill('[data-testid=new-account-form] [name=name]', 'Bar Vecino Smoke');
+  await adm.fill('[data-testid=new-account-form] [name=name]', 'Terraza Vecina Alta');
   if (zoneOf) await adm.selectOption('[data-testid=new-account-form] [name=zoneId]', zoneOf);
   await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
   if (zoneOf) {
@@ -130,16 +130,25 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   await rep.goto(`${BASE}/admin/import`);
   assert(!(await rep.isVisible('[data-testid=import-upload]')), 'el comercial no entra en Importar');
 
-  // ---- soltar en bloque: todas las mías de golpe
-  await rep.goto(`${BASE}/admin/accounts?ver=mine`);
+  // ---- soltar en bloque: las que se ven (con un filtro), de golpe. Solo dos creadas aquí: las demás del comercial
+  // (Club Sol…) las usan otros smokes del mismo servidor.
+  for (const name of ['Suelta Uno Smoke', 'Suelta Dos Smoke']) {
+    await rep.goto(`${BASE}/admin/accounts?ver=all`);
+    await rep.click('[data-testid=add-open]'); await rep.click('[data-testid=new-account]');
+    await rep.fill('[data-testid=new-account-form] [name=name]', name);
+    await Promise.all([rep.waitForURL(/ok=created/), rep.click('[data-testid=new-account-form] button[type=submit]')]);
+  }
+  await rep.goto(`${BASE}/admin/accounts?ver=mine&q=Suelta`);
   const mine = await rep.locator('[data-testid=account]').count();
-  assert(mine > 0, 'tiene empresas suyas');
+  assert(mine === 2, `tiene sus dos empresas de prueba (${mine})`);
   await rep.check('[data-testid=bulk-all]');
-  assert((await rep.textContent('[data-testid=bulk-bar]')).includes(String(mine)), 'seleccionar todas marca las que se ven');
+  assert((await rep.textContent('[data-testid=bulk-bar]')).includes('2'), 'seleccionar todas marca las que se ven');
   await rep.click('[data-testid=bulk-release]');
   await Promise.all([rep.waitForURL(/ok=released/), rep.click('[data-testid=bulk-release-confirm]')]);
-  assert((await rep.textContent('[data-testid=toasts]')).includes(`Has soltado ${mine}`) || (await rep.textContent('main')).includes(`Has soltado ${mine}`), 'dice cuántas ha soltado');
-  await rep.goto(`${BASE}/admin/accounts?ver=mine`);
+  assert((await rep.textContent('main')).includes('Has soltado 2'), 'dice cuántas ha soltado');
+  await rep.goto(`${BASE}/admin/accounts?ver=mine&q=Suelta`);
   assert((await rep.locator('[data-testid=account]').count()) === 0, 'ya no queda ninguna suya');
+  await rep.goto(`${BASE}/admin/accounts?ver=mine&q=Club%20Sol`);
+  assert((await rep.locator('[data-testid=account]').count()) === 1, 'las demás siguen siendo suyas');
   await b.close();
 })();

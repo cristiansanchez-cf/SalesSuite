@@ -27,9 +27,9 @@ async function newDossier(p, title) {
 (async () => {
   const b = await chromium.launch();
   const admin = await login(b, 'admin@enjoy.test');
-  const adminDossier = await newDossier(admin, 'Propuesta del admin');
+  const adminDossier = await newDossier(admin, 'Org · propuesta de la dirección');
   const rep = await login(b, 'rep@enjoy.test');
-  await newDossier(rep, 'Propuesta del comercial');
+  await newDossier(rep, 'Org · propuesta del gerente');
 
   // La dirección monta la delegación: nombre + gerente (pasa a gerente de esa delegación) + una zona.
   await admin.goto(`${BASE}/admin/team/org`);
@@ -56,7 +56,7 @@ async function newDossier(p, title) {
   assert((await ger.textContent('[data-testid=role]')).includes('Gerente'), `rol: ${(await ger.textContent('[data-testid=role]')).trim()}`);
   await ger.goto(`${BASE}/admin`);
   const list = await ger.textContent('main');
-  assert(list.includes('Propuesta del comercial') && !list.includes('Propuesta del admin'), 'el gerente ve las de su equipo, no las de fuera');
+  assert(list.includes('Org · propuesta del gerente') && !list.includes('Org · propuesta de la dirección'), `el gerente ve las de su equipo, no las de fuera (${list.includes('Org · propuesta del gerente')}/${list.includes('Org · propuesta de la dirección')})`);
   const r = await ger.goto(adminDossier);
   assert(r.status() === 404, `propuesta de fuera de su delegación → 404 (${r.status()})`);
   await ger.goto(`${BASE}/admin/team/org`);
