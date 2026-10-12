@@ -114,6 +114,9 @@ export const ICONS = {
   'camera': inner(Camera),
   'speaker': inner(Speaker),
   'gift': inner(Gift),
+  // Marcas (Lucide no las trae): dibujadas con el mismo trazo que el resto, para reconocerlas de un vistazo.
+  'instagram': '<rect x="2.75" y="2.75" width="18.5" height="18.5" rx="5.25"/><circle cx="12" cy="12" r="4.25"/><circle cx="17.35" cy="6.65" r="1.1" fill="currentColor" stroke="none"/>',
+  'whatsapp': '<path d="M3.6 20.4l1.35-4.1A8.6 8.6 0 1 1 8.1 19.5z"/><path d="M9.1 8.4c0-.45.35-.8.8-.8h.55c.25 0 .45.15.55.4l.6 1.45c.1.25.05.5-.15.7l-.55.55a5.4 5.4 0 0 0 2.55 2.55l.55-.55c.2-.2.45-.25.7-.15l1.45.6c.25.1.4.3.4.55v.55c0 .45-.35.8-.8.8A6.6 6.6 0 0 1 9.1 8.4z"/>',
 } as const;
 
 export type IconName = keyof typeof ICONS;

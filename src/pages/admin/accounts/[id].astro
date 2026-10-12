@@ -290,8 +290,8 @@ const STATE_ALERT = {
           {canQualify && <a class="co-btn co-btn--primary co-btn--sm" href={`/admin/accounts/apuntar?empresa=${a.id}`} data-testid="summary-note"><Icon name="sparkles" size={14} />{PS.summary.act.note}</a>}
           {profile === 'venue' && <a class="co-btn co-btn--ghost co-btn--sm" href={a.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([a.name, a.address, a.zonePath].filter(Boolean).join(', '))}`} target="_blank" rel="noopener" data-testid="summary-directions"><Icon name="route" size={14} />{PS.summary.act.directions}</a>}
           {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`tel:${a.phone.replace(/\s/g, '')}`}><Icon name="phone" size={14} />{PS.summary.act.call}</a>}
-          {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`https://wa.me/${a.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener"><Icon name="message-square-text" size={14} />{PS.summary.act.whatsapp}</a>}
-          {a.instagram && <a class="co-btn co-btn--ghost co-btn--sm" href={a.instagram} target="_blank" rel="noopener"><Icon name="camera" size={14} />{PS.summary.act.instagram}</a>}
+          {a.phone && <a class="co-btn co-btn--ghost co-btn--sm" href={`https://wa.me/${a.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener"><Icon name="whatsapp" size={14} />{PS.summary.act.whatsapp}</a>}
+          {a.instagram && <a class="co-btn co-btn--ghost co-btn--sm" href={a.instagram} target="_blank" rel="noopener"><Icon name="instagram" size={14} />{PS.summary.act.instagram}</a>}
           {a.tiktok && <a class="co-btn co-btn--ghost co-btn--sm" href={a.tiktok} target="_blank" rel="noopener" data-testid="summary-tiktok"><Icon name="music" size={14} />{PRF.contact.tiktok}</a>}
           {a.musicUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={a.musicUrl} target="_blank" rel="noopener"><Icon name="speaker" size={14} />{PRF.contact.music}</a>}
         </div>

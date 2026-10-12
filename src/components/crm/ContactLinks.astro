@@ -19,9 +19,9 @@ const handle = (u: string) => (/instagram\.com\/([^/?#]+)/i.exec(u)?.[1] ? `@${/
 const phone = pick('phone'); const email = pick('email'); const ig = pick('instagram'); const fb = pick('facebook'); const li = pick('linkedin'); const web = pick('website'); const map = pick('mapsUrl');
 const items = [
   phone && { href: `tel:${phone.v.replace(/\s/g, '')}`, icon: 'phone', label: C.call, title: phone.v, from: phone.from },
-  phone && { href: `https://wa.me/${digits(phone.v)}`, icon: 'message-square-text', label: C.whatsapp, title: phone.v, from: phone.from, external: true },
+  phone && { href: `https://wa.me/${digits(phone.v)}`, icon: 'whatsapp', label: C.whatsapp, title: phone.v, from: phone.from, external: true },
   email && { href: `mailto:${email.v}`, icon: 'mail', label: C.mail, title: email.v, from: email.from },
-  ig && { href: ig.v, icon: 'camera', label: handle(ig.v), title: ig.v, from: ig.from, external: true },
+  ig && { href: ig.v, icon: 'instagram', label: handle(ig.v), title: ig.v, from: ig.from, external: true },
   fb && { href: fb.v, icon: 'users', label: C.facebook, title: fb.v, from: fb.from, external: true },
   li && { href: li.v, icon: 'briefcase', label: C.linkedin, title: li.v, from: li.from, external: true },
   web && { href: web.v, icon: 'globe', label: C.website, title: web.v, from: web.from, external: true },

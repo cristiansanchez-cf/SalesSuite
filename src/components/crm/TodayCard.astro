@@ -31,7 +31,7 @@ const visits = items.filter((a) => a.nextChannel === 'visit' && (a.bucket === 'o
     <ul class="co-rows">
       {items.slice(0, 12).map((a) => (
         <li class:list={['co-row', (a.bucket === 'overdue' || a.bucket === 'cooling') && 'co-row--attention']} data-testid="today-item" data-name={a.name} data-bucket={a.bucket}>
-          <span class="co-row__lead"><Icon name={a.nextChannel === 'visit' ? 'map-pin' : a.nextChannel === 'phone' ? 'phone' : 'message-square-text'} /></span>
+          <span class="co-row__lead"><Icon name={a.nextChannel === 'visit' ? 'map-pin' : a.nextChannel === 'phone' ? 'phone' : a.nextChannel === 'instagram' ? 'instagram' : a.nextChannel === 'whatsapp' ? 'whatsapp' : 'message-square-text'} /></span>
           <a class="co-row__main text-inherit !no-underline" href={`/admin/accounts/${a.id}#follow`}>
             <span class="co-row-title">{a.bucket === 'cooling' ? <span class="co-tag co-tag--danger mr-2" title={R.coolingHelp} data-testid="today-cooling">{R.cooling(a.cooling ?? 0)}</span> : <span class="co-tag mr-2">{F.follow[a.bucket]}</span>}{a.name}</span>
             <span class="co-meta">

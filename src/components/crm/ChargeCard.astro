@@ -49,7 +49,7 @@ const open = charges.filter((x) => x.status !== 'cancelled');
             <>
               <input type="hidden" value={x.url} data-charge-url />
               <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-charge-copy data-copied={C.copied} data-testid="charge-copy"><Icon name="copy" size={14} />{C.copy}</button>
-              <a class="co-btn co-btn--ghost co-btn--sm" href={wa(x.url)} target="_blank" rel="noopener noreferrer" data-testid="charge-whatsapp"><Icon name="message-square-text" size={14} />{C.whatsapp}</a>
+              <a class="co-btn co-btn--ghost co-btn--sm" href={wa(x.url)} target="_blank" rel="noopener noreferrer" data-testid="charge-whatsapp"><Icon name="whatsapp" size={14} />{C.whatsapp}</a>
               {canManage && (
                 <form method="post" class="contents"><input type="hidden" name="action" value="charge-paid" /><input type="hidden" name="chargeId" value={x.id} />
                   <button type="submit" class="co-btn co-btn--ghost co-btn--sm" data-testid="charge-mark-paid"><Icon name="circle-check" size={14} />{C.markPaid}</button></form>

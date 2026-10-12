@@ -202,7 +202,7 @@ const panelOpen = nFilters > 0;
           {colleagues.map((c) => (
             <li class="co-inset flex list-none flex-wrap items-center gap-3 !p-3">
               <span class="min-w-0 flex-1"><span class="co-row-title block truncate">{c.name}</span><span class="co-meta">{c.zones.join(', ')}</span></span>
-              {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={wa(c.phone)} target="_blank" rel="noopener noreferrer" aria-label={M.whatsappTo(c.name)} title={M.whatsapp}><Icon name="message-square-text" size={14} /></a>}
+              {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={wa(c.phone)} target="_blank" rel="noopener noreferrer" aria-label={M.whatsappTo(c.name)} title={M.whatsapp}><Icon name="whatsapp" size={14} /></a>}
               {c.phone && <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`tel:${c.phone}`} aria-label={M.callTo(c.name)} title={M.call}><Icon name="phone" size={14} /></a>}
               <a class="co-btn co-btn--ghost co-btn--icon co-btn--sm" href={`mailto:${c.email}`} aria-label={M.emailTo(c.name)} title={M.email}><Icon name="mail" size={14} /></a>
             </li>
