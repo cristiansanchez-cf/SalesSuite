@@ -244,7 +244,7 @@ const STATE_ALERT = {
       </section>
 
       {/* Promotora o DJ (§24): lo primero es dónde trabaja, con qué días y frecuencia. */}
-      {profile !== 'venue' && <WorkLinks work={work} others={co.others} kinds={kindDefs} profile={profile} canEdit={canQualify} card />}
+      {profile !== 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
       <section id="facts" class="co-card grid gap-3" data-testid="facts-card">
@@ -470,7 +470,7 @@ const STATE_ALERT = {
             </ul>
           )}
         </div>
-        {profile === 'venue' && <WorkLinks work={work} others={co.others} kinds={kindDefs} profile={profile} canEdit={canQualify} />}
+        {profile === 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} />}
         <form method="post" class="flex flex-wrap items-end gap-2" data-testid="account-tags">
           <input type="hidden" name="action" value="tags" />
           <label class="co-field min-w-[14rem] flex-1">{P.group.lists} <span class="co-help">{P.person.listsHelp}</span>

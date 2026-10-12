@@ -10,8 +10,9 @@ export const kindsMessages = defineMessages({
     removeHelp: 'Las empresas de un tipo que quitas pasan al principal (no se pierde nada).',
     work: {
       title: 'Trabaja con', help: 'Promotoras, DJs (residentes o invitados) o locales con los que trabaja. Si no está en el CRM, se crea.',
-      name: 'Nombre', namePh: 'p. ej. Fiestas ucranianas VLC', kind: 'Si es nueva, es', note: 'Nota', notePh: 'p. ej. los jueves en la terraza',
-      add: 'Enlazar', remove: 'Quitar enlace', none: 'Aún no hay ninguna enlazada.', ok: 'Enlazada.', okNew: 'Creada y enlazada.', removed: 'Enlace quitado.',
+      name: 'Busca en tu CRM', namePh: 'Escribe el nombre…', kind: 'Es', note: 'Nota', notePh: 'p. ej. los jueves en la terraza',
+      add: 'Enlazar', remove: 'Quitar enlace', none: 'Aún no hay ninguna enlazada.', ok: 'Enlazada con la que ya tenías.', okNew: 'Creada y enlazada.', removed: 'Enlace quitado.',
+      have: 'Ya en tu CRM', create: (n: string) => `Crear «${n}» nueva`, chosen: 'Enlazar con', newOne: 'Nueva:', change: 'Cambiar', pick: 'Elige una de la lista o «Crear nueva».', searching: 'Buscando…',
     },
   },
   en: {
@@ -22,8 +23,9 @@ export const kindsMessages = defineMessages({
     removeHelp: 'Companies of a removed type move to the main one (nothing is lost).',
     work: {
       title: 'Works with', help: 'Promoters, DJs (resident or guest) or venues they work with. If it’s not in the CRM, it’s created.',
-      name: 'Name', namePh: 'e.g. Ukrainian Parties VLC', kind: 'If new, it is a', note: 'Note', notePh: 'e.g. Thursdays on the terrace',
-      add: 'Link', remove: 'Remove link', none: 'Nothing linked yet.', ok: 'Linked.', okNew: 'Created and linked.', removed: 'Link removed.',
+      name: 'Search your CRM', namePh: 'Type the name…', kind: 'It is a', note: 'Note', notePh: 'e.g. Thursdays on the terrace',
+      add: 'Link', remove: 'Remove link', none: 'Nothing linked yet.', ok: 'Linked to the one you already had.', okNew: 'Created and linked.', removed: 'Link removed.',
+      have: 'Already in your CRM', create: (n: string) => `Create «${n}» as new`, chosen: 'Link with', newOne: 'New:', change: 'Change', pick: 'Pick one from the list or «Create new».', searching: 'Searching…',
     },
   },
   pt: {
@@ -34,8 +36,9 @@ export const kindsMessages = defineMessages({
     removeHelp: 'As empresas de um tipo que você tirar passam para o principal (nada se perde).',
     work: {
       title: 'Trabalha com', help: 'Promotoras, DJs (residentes ou convidados) ou locais com que trabalha. Se não estiver no CRM, é criado.',
-      name: 'Nome', namePh: 'ex. Festas ucranianas VLC', kind: 'Se for nova, é', note: 'Nota', notePh: 'ex. às quintas no terraço',
-      add: 'Vincular', remove: 'Tirar vínculo', none: 'Ainda não há nenhuma vinculada.', ok: 'Vinculada.', okNew: 'Criada e vinculada.', removed: 'Vínculo tirado.',
+      name: 'Busque no seu CRM', namePh: 'Escreva o nome…', kind: 'É', note: 'Nota', notePh: 'ex. às quintas no terraço',
+      add: 'Vincular', remove: 'Tirar vínculo', none: 'Ainda não há nenhuma vinculada.', ok: 'Vinculada à que você já tinha.', okNew: 'Criada e vinculada.', removed: 'Vínculo tirado.',
+      have: 'Já no seu CRM', create: (n: string) => `Criar «${n}» nova`, chosen: 'Vincular com', newOne: 'Nova:', change: 'Trocar', pick: 'Escolha uma da lista ou «Criar nova».', searching: 'Buscando…',
     },
   },
   ko: {
@@ -46,8 +49,9 @@ export const kindsMessages = defineMessages({
     removeHelp: '삭제한 유형의 회사는 기본 유형으로 이동합니다(잃는 것은 없습니다).',
     work: {
       title: '함께 일하는 곳', help: '함께 일하는 프로모터, DJ(레지던트·게스트), 매장. CRM에 없으면 새로 만듭니다.',
-      name: '이름', namePh: '예: 우크라이나 파티 VLC', kind: '새로 만들면 유형', note: '메모', notePh: '예: 목요일 테라스',
-      add: '연결', remove: '연결 해제', none: '아직 연결된 곳이 없습니다.', ok: '연결했습니다.', okNew: '만들고 연결했습니다.', removed: '연결을 해제했습니다.',
+      name: 'CRM에서 찾기', namePh: '이름을 입력하세요…', kind: '유형', note: '메모', notePh: '예: 목요일 테라스',
+      add: '연결', remove: '연결 해제', none: '아직 연결된 곳이 없습니다.', ok: '이미 있던 곳과 연결했습니다.', okNew: '만들고 연결했습니다.', removed: '연결을 해제했습니다.',
+      have: '이미 CRM에 있음', create: (n: string) => `«${n}» 새로 만들기`, chosen: '연결 대상', newOne: '새로:', change: '변경', pick: '목록에서 고르거나 «새로 만들기»를 누르세요.', searching: '찾는 중…',
     },
   },
 });

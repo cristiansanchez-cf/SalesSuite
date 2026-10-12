@@ -932,7 +932,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * La IA separa lo contado por sitio (nota, cualificación, próximo paso) y cada sitio se busca en el CRM por el nombre
    * (los más parecidos primero). No guarda nada: lo confirma la persona con notesApply.
    */
-  type NoteCandidate = { id: string; name: string; zone: string; score: number; discarded: boolean };
+  type NoteCandidate = { id: string; name: string; zone: string; score: number; discarded: boolean; kind?: string };
   /** «Comunidad Valenciana › Valencia»: lo justo para reconocer el sitio. */
   const placeOf = (zones: Zone[], zoneId: string | null) => {
     const byId = new Map(zones.map((z) => [z.id, z]));
@@ -952,7 +952,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const key = nameKey(query);
     const hits = all.map((a) => ({ a, score: nameKey(a.name).includes(key) ? Math.max(0.9, nameScore(query, a.name)) : nameScore(query, a.name) }))
       .filter((x) => x.score >= 0.6).sort((x, y) => y.score - x.score || x.a.name.localeCompare(y.a.name, 'es')).slice(0, 8);
-    return hits.map(({ a, score }) => ({ id: a.id, name: a.name, zone: placeOf(zones, a.zoneId), score: Math.round(score * 100) / 100, discarded: !!a.discardedAt }));
+    return hits.map(({ a, score }) => ({ id: a.id, name: a.name, zone: placeOf(zones, a.zoneId), score: Math.round(score * 100) / 100, discarded: !!a.discardedAt, kind: a.kind }));
   }
   /**
    * La IA separa lo contado por sitio (nota, cualificación, próximo paso) y cada sitio se busca en el CRM por el nombre

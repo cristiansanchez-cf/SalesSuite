@@ -102,6 +102,7 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   // «Trabaja con»: enlazar una promotora nueva desde la ficha; se ve desde los dos lados y se quita.
   await rep.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
   await rep.fill('[data-testid=work-name]', 'Fiestas Ucranianas VLC');
+  await rep.click('[data-testid=work-create]');   // no está en el CRM: «Crear nueva» y entonces se elige qué es
   await rep.selectOption('[data-testid=work-kind]', 'promotora');
   await rep.fill('[data-testid=work-note]', 'los jueves en la terraza');
   await Promise.all([rep.waitForURL(/ok=workNew/), rep.click('[data-testid=work-add]')]);
@@ -125,6 +126,23 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   assert(fit.includes('Peticiones de canciones') && fit.includes('Pantalla y dinámicas') && !fit.includes('Fidelización'), `le encaja (sin fidelización): ${fit.trim()}`);
   await Promise.all([rep.waitForURL(/ok=workRemoved/), rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-remove]')]);
   assert(!(await rep.isVisible('[data-testid=work-link]')), 'enlace quitado');
+  // Desde la promotora, buscar una sala que ya tienes (escrita a medias): sale «Ya en tu CRM» y se enlaza esa, sin duplicar.
+  await rep.fill('[data-testid=work-name]', 'club so');
+  await rep.waitForSelector('[data-testid=work-option]');
+  assert((await rep.textContent('[data-testid=work-list]')).includes('Ya en tu CRM'), 'avisa de que ya la tienes');
+  await rep.click('[data-testid=work-option]:has-text("Club Sol")');
+  assert(await rep.isVisible('[data-testid=work-chosen]') && !(await rep.isVisible('[data-testid=work-kind]')), 'elegida: sin preguntar qué es');
+  await Promise.all([rep.waitForURL(/ok=work(#|$)/), rep.click('[data-testid=work-add]')]);
+  assert(await rep.isVisible('[data-testid=work-link][data-name="Club Sol"]'), 'enlazada con la que ya tenías');
+  await rep.goto(`${BASE}/admin/accounts?ver=all&q=Club%20Sol`);
+  assert((await rep.$$('[data-testid=account]')).length === 1, 'sin duplicar Club Sol');
+  // Sin elegir de la lista no se envía (así no se crea nada sin querer).
+  await rep.goBack();
+  await rep.fill('[data-testid=work-name]', 'Algo nuevo');
+  const before = rep.url();
+  await rep.click('[data-testid=work-add]');
+  await rep.waitForTimeout(400);
+  assert((await rep.textContent('[data-testid=work-form]')).includes('Elige una de la lista') && rep.url() === before, 'sin elegir, no se envía');
   await rep.goto(`${BASE}/admin/accounts?ver=all&tipo=promotora`);
   assert((await rep.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.dataset.name))).includes('Fiestas Ucranianas VLC'), 'en la pestaña Promotoras');
   await b.close();

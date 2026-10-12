@@ -13,8 +13,8 @@ import { kindsMessages } from '~/lib/i18n/messages/kinds';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
 
 type W = LinkWhen & { id: string; note: string | null; account: { id: string; name: string; kind: string } };
-interface Props { work: W[]; others: Array<{ id: string; name: string; kind: string }>; kinds: KindDef[]; profile: Profile; canEdit: boolean; card?: boolean }
-const { work, others, kinds, profile, canEdit, card = false } = Astro.props;
+interface Props { work: W[]; kinds: KindDef[]; profile: Profile; canEdit: boolean; card?: boolean; selfId: string }
+const { work, kinds, profile, canEdit, card = false, selfId } = Astro.props;
 const { m: PM, locale } = i18n(Astro, profilesMessages);
 const KN = kindsMessages[locale];
 const kindOf = (k: string) => kinds.find((d) => d.key === k) ?? kinds[0];
@@ -64,19 +64,27 @@ const line = [...work].filter((w) => w.days.length || w.freq).sort((a, b) => (or
     </ul>
   )}
   {canEdit && (
-    <form method="post" action="#work" class="grid gap-2" data-testid="work-form">
+    /* Buscar primero en el CRM (sin duplicar): lo que ya tienes, con su tipo y ciudad; si no está, «Crear nueva» y
+       solo entonces se elige qué es. Igual desde un local que desde una promotora o un DJ. */
+    <form method="post" action="#work" class="grid gap-2" data-testid="work-form" data-work-form data-self={selfId}
+      data-t={JSON.stringify({ have: KN.work.have, create: KN.work.create('{n}'), pick: KN.work.pick, searching: KN.work.searching, kinds: Object.fromEntries(kinds.map((k) => [k.key, k.label])) })}>
       <input type="hidden" name="action" value="work-add" />
-      <div class="grid gap-2 sm:grid-cols-[1fr_9rem_1fr] sm:items-end">
-        <label class="co-field">{KN.work.name}<input class="co-input" name="workName" required maxlength="160" list="work-others" placeholder={KN.work.namePh} autocomplete="off" data-testid="work-name" /></label>
-        <datalist id="work-others">{others.map((o) => <option value={o.name} label={kindOf(o.kind)?.label} />)}</datalist>
-        <label class="co-field">{KN.work.kind}<select class="co-select" name="workKind" data-testid="work-kind">{kinds.map((k) => <option value={k.key} selected={k.key === newKind}>{k.label}</option>)}</select></label>
-        <label class="co-field">{KN.work.note}<input class="co-input" name="workNote" maxlength="200" placeholder={KN.work.notePh} data-testid="work-note" /></label>
+      <input type="hidden" name="otherId" value="" data-work-id />
+      <div class="relative grid gap-1">
+        <label class="co-field" for={`work-q-${selfId}`}>{KN.work.name}</label>
+        <input id={`work-q-${selfId}`} class="co-input" name="workName" required maxlength="160" placeholder={KN.work.namePh} autocomplete="off" data-work-q data-testid="work-name" />
+        <ul class="co-card absolute left-0 right-0 top-full z-20 m-0 mt-1 grid gap-0 !p-1" hidden data-work-list role="listbox" data-testid="work-list"></ul>
+        <p class="co-chip m-0 w-fit" hidden data-work-chosen data-testid="work-chosen"><Icon name="check" size={14} /><span>{KN.work.chosen} <strong data-work-label></strong></span><button type="button" class="ml-1 underline" data-work-change>{KN.work.change}</button></p>
       </div>
+      <label class="co-field" hidden data-work-new>{KN.work.newOne} {KN.work.kind}
+        <select class="co-select" name="workKind" data-testid="work-kind">{kinds.map((k) => <option value={k.key} selected={k.key === newKind}>{k.label}</option>)}</select></label>
+      <label class="co-field">{KN.work.note}<input class="co-input" name="workNote" maxlength="200" placeholder={KN.work.notePh} data-testid="work-note" /></label>
       <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label={PM.editWhen}>
         {LINK_DAYS.map((d) => <label class="co-chip work-day" title={PM.daysLong[d]}><input type="checkbox" class="sr-only" name="days" value={d} data-testid={`work-new-day-${d}`} />{PM.days[d]}</label>)}
         <select class="co-select w-auto" name="freq" aria-label={PM.freq} data-testid="work-new-freq"><option value="">{PM.freq}: {PM.anyFreq}</option>{(['regular', 'sporadic', 'once'] as const).map((f) => <option value={f}>{PM.freqs[f]}</option>)}</select>
         <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="work-add"><Icon name="link" size={14} />{KN.work.add}</button>
       </div>
+      <p class="co-help m-0" hidden data-work-hint></p>
     </form>
   )}
 </div>
@@ -85,3 +93,53 @@ const line = [...work].filter((w) => w.days.length || w.freq).sort((a, b) => (or
   .work-day:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
   .work-day { min-width: 2.25rem; justify-content: center; }
 </style>
+
+<script>
+  // Buscar en el CRM al escribir (la misma búsqueda que Apuntar: tolera el dictado). Elegir una = enlazar esa; «Crear
+  // nueva» = se crea y se elige qué es. Sin elegir no se envía (así nunca se duplica sin querer).
+  document.querySelectorAll<HTMLFormElement>('[data-work-form]').forEach((form) => {
+    const T = JSON.parse(form.dataset.t ?? '{}') as { have: string; create: string; pick: string; searching: string; kinds: Record<string, string> };
+    const q = form.querySelector<HTMLInputElement>('[data-work-q]')!;
+    const id = form.querySelector<HTMLInputElement>('[data-work-id]')!;
+    const list = form.querySelector<HTMLUListElement>('[data-work-list]')!;
+    const chosen = form.querySelector<HTMLElement>('[data-work-chosen]')!;
+    const label = form.querySelector<HTMLElement>('[data-work-label]')!;
+    const fresh = form.querySelector<HTMLElement>('[data-work-new]')!;
+    const hint = form.querySelector<HTMLElement>('[data-work-hint]')!;
+    let picked: 'none' | 'existing' | 'new' = 'none';
+    let timer = 0;
+    const reset = () => { picked = 'none'; id.value = ''; chosen.hidden = true; fresh.hidden = true; q.hidden = false; q.readOnly = false; };
+    const pick = (mode: 'existing' | 'new', it?: { id: string; name: string; kind?: string; zone?: string }) => {
+      picked = mode; list.hidden = true; hint.hidden = true;
+      if (mode === 'existing' && it) { id.value = it.id; q.value = it.name; label.textContent = [it.name, it.kind ? T.kinds[it.kind] : '', it.zone].filter(Boolean).join(' · '); chosen.hidden = false; q.hidden = true; fresh.hidden = true; }
+      else { id.value = ''; fresh.hidden = false; chosen.hidden = true; q.readOnly = false; }
+    };
+    const option = (text: string, small: string, on: () => void, testid: string) => {
+      const li = document.createElement('li'); li.className = 'list-none';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = testid;
+      const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = text;
+      if (small) { const s = document.createElement('small'); s.textContent = small; t.append(s); }
+      b.append(t); b.addEventListener('click', on); li.append(b); return li;
+    };
+    q.addEventListener('input', () => {
+      reset();
+      const v = q.value.trim();
+      window.clearTimeout(timer);
+      if (v.length < 2) { list.hidden = true; return; }
+      timer = window.setTimeout(async () => {
+        let items: Array<{ id: string; name: string; zone: string; kind?: string }> = [];
+        try { const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(v)}`, { credentials: 'same-origin' }); if (r.ok) items = (await r.json()).items ?? []; } catch { /* sin red: solo «crear» */ }
+        items = items.filter((x) => x.id !== form.dataset.self);
+        list.replaceChildren(
+          ...items.map((x) => option(x.name, [T.have, x.kind ? T.kinds[x.kind] : '', x.zone].filter(Boolean).join(' · '), () => pick('existing', x), 'work-option')),
+          option(T.create.replace('{n}', v), '', () => pick('new'), 'work-create'),
+        );
+        list.hidden = false;
+      }, 250);
+    });
+    form.querySelector('[data-work-change]')?.addEventListener('click', () => { reset(); q.value = ''; q.focus(); });
+    form.addEventListener('submit', (e) => {
+      if (picked === 'none') { e.preventDefault(); hint.textContent = T.pick; hint.hidden = false; list.hidden = q.value.trim().length < 2; }
+    });
+  });
+</script>

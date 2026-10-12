@@ -701,6 +701,9 @@ reserva, historial, próximo paso, personas, «Trabaja con», propuestas); por e
   seguidores (25; da su **caché**: a uno grande no le vale «lo que genere tu local», a uno residente sí), ¿quiere
   darse a conocer? (20), estilo (15). Contacto: Instagram, TikTok, WhatsApp y Spotify/SoundCloud.
 - **Local:** como estaba (§22–23).
+- **Enlazar, buscando primero** (igual desde un local que desde una promotora o un DJ): al escribir salen las que ya
+  tienes («Ya en tu CRM · Promotora · Valencia», tolera nombres a medias o mal escritos); elegir una la enlaza sin
+  duplicar. Si no está, «Crear «X» nueva» y solo entonces se elige qué es. Sin elegir, no se envía.
 - **Apuntar** sabe qué es cada cosa (local, promotora o DJ): «Roneo hace los viernes en Sala X» → Roneo, promotora,
   con «Sala X · viernes · habitual». En la revisión: «Es: Promotora» (si se crea nueva) y los enlaces a crear,
   marcados; al guardar, se crea con su ficha y se enlaza (la sala que no exista, se crea). Rellena también las
