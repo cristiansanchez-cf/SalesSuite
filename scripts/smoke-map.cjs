@@ -33,13 +33,29 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(exact >= 3, `empresas con su sitio exacto (${exact})`);
   assert((await p.locator('[data-testid=map-kinds] li').count()) === 4, 'leyenda con el icono de cada tipo');
 
+  // Sin ficha de Google (§28): por defecto no salen (se amontonaban en el centro de su ciudad); el resumen lo dice.
+  assert((await p.textContent('[data-testid=map-summary]')).includes('sin ficha de Google'), 'las que no tienen sitio exacto no salen, y lo dice');
+  await p.goto(`${BASE}/admin/accounts/mapa?ver=all&aprox=1`);
+  await ready(p);
   // Situar las ciudades: luego las que solo tienen ciudad salen en su centro (aproximadas).
-  assert(await p.isVisible('[data-testid=map-locate]'), 'el admin puede situar las ciudades');
+  assert(await p.isVisible('[data-testid=map-locate]'), 'el admin puede situar las ciudades (si pide verlas)');
   await Promise.all([p.waitForEvent('load', { timeout: 120000 }), p.click('[data-testid=map-locate]')]);
   await ready(p);
-  assert((await count(p)) > exact, `y ahora también las de su ciudad (${await count(p)})`);
+  const withApprox = await count(p);
+  assert(withApprox > exact, `y ahora también las de su ciudad (${withApprox})`);
   assert(!(await p.isVisible('[data-testid=map-locate]')), 'ya no quedan ciudades por situar');
   assert((await p.textContent('[data-testid=map-summary]')).includes('aproximadas'), 'el resumen lo explica');
+  // Deshacer «Situar ciudades»: con confirmación; las aproximadas dejan de salir.
+  await p.click('[data-testid=map-unlocate]');
+  assert(await p.isVisible('[data-testid=unlocate-dialog]'), 'deshacer pide confirmación');
+  await Promise.all([p.waitForURL(/ok=unlocated/), p.click('[data-testid=unlocate-dialog-confirm]')]);
+  assert((await p.textContent('main')).includes('Quitada la ubicación de'), 'dice cuántas ciudades');
+  await p.goto(`${BASE}/admin/accounts/mapa?ver=all&aprox=1`);
+  await ready(p);
+  assert((await count(p)) === exact && await p.isVisible('[data-testid=map-locate]'), 'deshecho: solo las exactas, y se puede volver a situar');
+  // Se vuelven a situar para lo que sigue.
+  await Promise.all([p.waitForEvent('load', { timeout: 120000 }), p.click('[data-testid=map-locate]')]);
+  await ready(p);
 
   // Un grupo: al tocarlo se acerca hasta separarse (o, si están en el mismo sitio, se abre en abanico).
   const z0 = Number(await p.getAttribute('#crm-map', 'data-zoom'));

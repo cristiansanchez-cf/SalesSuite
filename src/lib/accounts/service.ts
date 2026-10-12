@@ -412,7 +412,7 @@ export type AccountsService = ReturnType<typeof createAccountsService>;
 
 /** Para contextos sin cuentas (tests de otros módulos). */
 export const emptyAccountsDb: AccountsDb = {
-  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async bumpUsage() { return true; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
+  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async clearZoneLocations() { return 0; }, async bumpUsage() { return true; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
   async listAssignments() { return []; }, async setAssignments() {}, async getRules() { return { claimDays: 30, strictZones: false, requireAccount: false }; },
   async saveRules() {}, async listAccounts() { return []; }, async listAccountIndex() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
   async insertAccounts() { throw new Error('sin cuentas'); }, async deleteAccountsByImport() { return 0; },

@@ -51,6 +51,8 @@ export interface AccountsDb {
   deleteZone(id: string): Promise<boolean>;
   /** El punto de una ciudad en el mapa (§16; solo admin, por RLS). */
   setZoneLocation(id: string, lat: number, lng: number): Promise<boolean>;
+  /** Quita la ubicación de todas las zonas del espacio (deshacer «Situar ciudades»). Devuelve cuántas. Solo admin. */
+  clearZoneLocations(tenantId: string): Promise<number>;
   /** Suma 1 al uso de hoy (RPC bump_usage) y dice si aún cabe en el tope (Google y la IA cuestan dinero). */
   bumpUsage(tenantId: string, kind: 'google' | 'ai', limit: number): Promise<boolean>;
   /** Alta de zonas en bloque (ciudades de una importación). */

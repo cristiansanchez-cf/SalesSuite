@@ -620,6 +620,10 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(await E.accountsDbFor(U.admin.id).setZoneLocation(t.vlc, 39.47, -0.37)).toBe(true);
       await t.admin.accounts.saveZone({ name: 'València', parentId: t.cv }, t.vlc);
       expect((await t.admin.accounts.territory()).zones.find((z) => z.id === t.vlc)).toMatchObject({ name: 'València', lat: 39.47, lng: -0.37 });
+      // Deshacer «Situar ciudades» (§28): solo admin; las ciudades vuelven a no tener punto.
+      expect(await db.clearZoneLocations(ENJOY)).toBe(0);
+      expect(await E.accountsDbFor(U.admin.id).clearZoneLocations(ENJOY)).toBeGreaterThanOrEqual(1);
+      expect((await t.admin.accounts.territory()).zones.find((z) => z.id === t.vlc)).toMatchObject({ lat: null, lng: null });
     });
 
     test('Buscar clientes (§19): buscar en una zona, importar sin duplicar, con su web y redes; el comercial se las queda', async () => {

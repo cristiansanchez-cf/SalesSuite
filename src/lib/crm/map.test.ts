@@ -28,6 +28,13 @@ describe('mapa del CRM', () => {
     expect([d.exact, d.approx, d.unlocated, d.noCity]).toEqual([1, 1, 1, 1]);   // Requena aún no está situada
   });
 
+  test('sin ficha de Google y sin pedir verlas (§28): no salen, y se cuentan', () => {
+    const items = [acc('exacta', { zoneId: 'm', lat: 40.41, lng: -3.69 }), acc('en-madrid', { zoneId: 'm' }), acc('sin-ciudad', {})];
+    const d = buildMap(items, zones, { prio: () => prio({ kind: 'venue' }), cooling: new Map(), rep: () => null, approx: false });
+    expect(d.points.map((p) => p.id)).toEqual(['exacta']);
+    expect([d.exact, d.approx, d.hidden]).toEqual([1, 0, 2]);
+  });
+
   test('quién lleva la zona: la asignación más cercana subiendo', () => {
     const who = zoneOwners(zones, [{ userId: 'ana', zoneId: 'v' }, { userId: 'luis', zoneId: 'es' }]);
     expect(who('r')).toEqual(['ana']);

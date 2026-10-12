@@ -768,3 +768,19 @@ Medido leyendo el código flujo a flujo (ficha, lista, mapa, Apuntar, Hoy, Busca
   haciendo (leer, separar por sitio, buscar en el CRM, cualificar, pulir).
 - **Pendiente** (medir antes): partir `crm/service.ts` (~1600 líneas) por secciones; un `?part=` para que los
   formularios `data-async` no pinten la página entera; histórico de la ficha en *server island*.
+
+## 28. Mapa: solo lo que tiene sitio exacto; deshacer «Situar ciudades»; grupos más pequeños
+
+Pedido de Cristian: muchas empresas importadas (FBD, eventos…) solo tienen «Valencia» y se amontonaban en el centro de
+la ciudad (un abanico de 123); y el botón «Situar 108 ciudades en el mapa» no se entendía.
+
+- **Por defecto, solo las que tienen su sitio exacto** (ficha de Google). Las demás se cuentan («N sin ficha de Google:
+  no salen») y se pueden ver con el filtro «Sin ficha de Google → En el centro de su ciudad» (`?aprox=1`).
+- **«Situar ciudades»** (solo admin, como antes) busca en Google el punto de cada ciudad; ahora solo sale si se piden
+  ver las de su ciudad, y explica qué hace. **«Deshacer «Situar ciudades»»** (admin, con confirmación) quita el punto de
+  todas las ciudades (`clearZoneLocations`); no toca las empresas ni su ficha de Google.
+- **Grupos más pequeños**: radio de 45 px de lejos, 30 a nivel de ciudad, 18 de barrio, y sin agrupar desde el zoom 16
+  (calle): pegadas, pero cada una suelta.
+- Promotoras y DJs ya tienen su pestaña: el mapa por defecto enseña Empresas.
+- Pruebas: `map.test.ts` (no salen y se cuentan), contrato (deshacer solo admin) y `smoke-map.cjs` (ocultas por
+  defecto, situar, deshacer con confirmación y volver a situar).

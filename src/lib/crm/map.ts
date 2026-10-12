@@ -40,20 +40,24 @@ export interface MapPoint {
   /** Descartada (§23): sale en gris con su motivo, para que los demás sepan que no hay que ir y por qué. */
   off: string | null;
 }
-export interface MapData { points: MapPoint[]; exact: number; approx: number; unlocated: number; noCity: number }
+export interface MapData { points: MapPoint[]; exact: number; approx: number; unlocated: number; noCity: number; /** Sin sitio exacto y sin pedir verlas: no salen. */ hidden: number }
 
 export function buildMap(items: AccountView[], zones: Zone[], o: {
   prio: (a: AccountView) => Priority; cooling: Map<string, number>; rep: (zoneId: string | null) => string | null;
   off?: (a: AccountView) => string | null;
+  /** Las que no tienen sitio exacto (ficha de Google), en el centro de su ciudad. Por defecto, no (§28): amontonan. */
+  approx?: boolean;
 }): MapData {
   const byId = new Map(zones.map((z) => [z.id, z]));
   const points: MapPoint[] = [];
   let exact = 0;
   let unlocated = 0;
   let noCity = 0;
+  let hidden = 0;
   for (const a of items) {
     const z = a.zoneId ? byId.get(a.zoneId) : undefined;
     const own = a.lat != null && a.lng != null;
+    if (!own && o.approx === false) { hidden++; continue; }
     if (!own && !z) { noCity++; continue; }
     if (!own && (z!.lat == null || z!.lng == null)) { unlocated++; continue; }
     const p = o.prio(a);
@@ -62,7 +66,7 @@ export function buildMap(items: AccountView[], zones: Zone[], o: {
       temp: temperature(p, o.cooling.get(a.id)), score: p.score, cooling: o.cooling.get(a.id) ?? null, next: a.nextStep, rating: a.placeRating,
       owner: a.ownerName, rep: o.rep(a.zoneId), off: a.discardedAt ? o.off?.(a) ?? '' : null });
   }
-  return { points, exact, approx: points.length - exact, unlocated, noCity };
+  return { points, exact, approx: points.length - exact, unlocated, noCity, hidden };
 }
 
 /** Colores fijos por estado y una paleta para los comerciales (en orden). */

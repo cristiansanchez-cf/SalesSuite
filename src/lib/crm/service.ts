@@ -1540,6 +1540,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return { located, left: todo.length - located - failed.length, failed };
   }
 
+  /** Deshacer «Situar ciudades» (§28): las ciudades vuelven a no tener punto. Las empresas no se tocan. */
+  async function zonesUnlocate(): Promise<number> {
+    requireImporter();
+    try { return await accounts.clearZoneLocations(t); } catch (e) { mapError(e); }
+  }
   async function zonesCleanup() {
     requireImporter();
     const { empty } = await zoneState();
@@ -1580,7 +1585,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,

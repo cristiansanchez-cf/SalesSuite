@@ -13,6 +13,9 @@ import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { rememberedFilters, saveFilters, myCountry } from '~/lib/ui/remember';
 import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import Alert from '~/components/ui/Alert.astro';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import { NO_ZONE } from '~/lib/accounts/service';
 import { profileOf, type AccountState as State } from '~/lib/accounts/types';
 import { env } from '~/lib/env';
@@ -27,6 +30,18 @@ const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+
+// Deshacer «Situar ciudades» (§28, solo admin).
+let unlocateError: string | null = null;
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  let to = '';
+  const r = await formAction(async () => {
+    if (String(f.get('action')) === 'unlocate') to = `/admin/accounts/mapa?ok=unlocated&n=${await admin.crm.zonesUnlocate()}`;
+  });
+  if (r.error) unlocateError = r.error;
+  else if (to) return Astro.redirect(to, 303);
+}
 const acc = admin.accounts;
 const { m: M, locale } = i18n(Astro, mapMessages);
 const A = accountsMessages[locale];
@@ -46,6 +61,8 @@ const tipoQ = q.get('tipo') ?? '';
 const tipo = tipoQ === 'descartadas' || (tipoQ !== 'company' && (await acc.kinds()).some((k) => k.key === tipoQ)) ? tipoQ : '';
 const tempF = (['caliente', 'frio', 'sin'].includes(q.get('temp') ?? '') ? q.get('temp') : '') as TempFilter;
 const byRep = perms.manageAccounts && q.get('color') === 'comercial';
+// Sin ficha de Google (§28): por defecto no salen; se amontonan todas en el centro de su ciudad.
+const approxOn = q.get('aprox') === '1';
 
 // Las descartadas, en gris con su motivo (§23: «que otros comerciales vean que está, pero marcada como no ir por X»).
 const offF = q.get('descartadas') === '0' ? 'hide' : 'show';
@@ -70,11 +87,13 @@ const owners = zoneOwners(t.zones, t.assignments);
 const repOf = (zoneId: string | null) => { const u = owners(zoneId)[0]; return u ? names.get(u) ?? null : null; };
 const CLR = cleanupMessages[locale];
 const offLabel = (a: (typeof items)[number]) => [a.discardReason ? CLR.reasons[a.discardReason] : '', a.discardNote].filter(Boolean).join(' — ');
-const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf, off: offLabel });
+const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf, off: offLabel, approx: approxOn });
 const reps = [...new Set(data.points.map((p) => p.rep).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, locale));
 const repColor = Object.fromEntries(reps.map((r, i) => [r, REP_COLORS[i % REP_COLORS.length]]));
 
 const toLocate = perms.importCrm ? t.zones.filter((z) => z.lat == null || z.lng == null).length : 0;
+const located = perms.importCrm ? t.zones.filter((z) => z.lat != null && z.lng != null).length : 0;
+const okMsg = flash(Astro.url, { unlocated: M.unlocatedOk(Number(Astro.url.searchParams.get('n')) || 0) });
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, A.list.states[k]]);
 // En el resumen de un punto, el estado en singular («Libre», «Tuya»…).
 const stateLabel: Record<State, string> = { free: A.state.free, mine: A.state.mine, taken: A.state.taken, my_customer: A.state.myCustomer, customer: A.state.customer, blocked: A.state.blocked };
@@ -112,6 +131,8 @@ const payload = {
       <label class="co-field">{CLR.tabs.discarded}
         <select class="co-select" name="descartadas" data-testid="map-off"><option value="">{CLR.offShow}</option><option value="0" selected={offF === 'hide'}>{CLR.offHide}</option></select></label>
     )}
+    <label class="co-field">{M.approxF}
+      <select class="co-select" name="aprox" data-testid="map-approx"><option value="">{M.approxHide}</option><option value="1" selected={approxOn}>{M.approxShow}</option></select></label>
     {perms.manageAccounts && (
       <label class="co-field">{M.color}
         <select class="co-select" name="color" data-testid="map-color"><option value="">{M.byState}</option><option value="comercial" selected={byRep}>{M.byRep}</option></select></label>
@@ -120,12 +141,21 @@ const payload = {
 
   <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
     <p class="co-meta" data-testid="map-summary">{M.summary(data.exact, data.approx)}
+      {data.hidden > 0 && <> · <span data-testid="map-hidden">{M.hidden(data.hidden)}</span></>}
       {data.unlocated > 0 && <> · {M.unlocated(data.unlocated)}</>}
       {data.noCity > 0 && <> · <a class="underline" href={`/admin/accounts?ver=all&zona=${NO_ZONE}`}>{M.noCity(data.noCity)}</a></>}</p>
-    {toLocate > 0 && (admin.crm.hasGoogle()
-      ? <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-locate data-testid="map-locate"><Icon name="map-pin" size={14} /><span>{M.locate(toLocate)}</span></button>
+    {toLocate > 0 && approxOn && (admin.crm.hasGoogle()
+      ? <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-locate data-testid="map-locate" title={M.locateHelp}><Icon name="map-pin" size={14} /><span>{M.locate(toLocate)}</span></button>
       : <span class="co-help">{M.noKeyLocate}</span>)}
+    {located > 0 && <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-dialog-open="unlocate" data-testid="map-unlocate"><Icon name="rotate-ccw" size={14} />{M.unlocate}</button>}
   </div>
+  {okMsg && <div class="mb-3"><Alert kind="success" title={okMsg} /></div>}
+  {unlocateError && <div class="mb-3"><Alert kind="rejection" title={unlocateError} /></div>}
+  {located > 0 && (
+    <ConfirmDialog id="unlocate" title={M.unlocateTitle} confirmLabel={M.unlocate} does={M.unlocateDoes} doesNot={M.unlocateNot} testid="unlocate-dialog">
+      <input type="hidden" name="action" value="unlocate" />
+    </ConfirmDialog>
+  )}
 
   <div class="co-card co-card--flush overflow-hidden">
     <div id="crm-map" class="crm-map" data-testid="map" data-points={data.points.length} role="region" aria-label={M.title}></div>
@@ -197,7 +227,9 @@ const payload = {
 
     // Grupos: al tocar uno, se acerca hasta que se separa (y si están en el mismo sitio, se abren en abanico).
     const group = L.markerClusterGroup({
-      zoomToBoundsOnClick: true, spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 50,
+      zoomToBoundsOnClick: true, spiderfyOnMaxZoom: true, showCoverageOnHover: false,
+      // Se agrupan de lejos; de cerca (barrio, calle) cada una se ve suelta aunque estén pegadas (§28).
+      maxClusterRadius: (z: number) => (z >= 15 ? 18 : z >= 13 ? 30 : 45), disableClusteringAtZoom: 16,
       iconCreateFunction: (c) => {
         const n = c.getChildCount();
         const hot = c.getAllChildMarkers().some((m) => (m.options as { hot?: boolean }).hot);

@@ -173,6 +173,12 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       row.n++;
       return row.n <= Math.max(limit, 1);
     },
+    async clearZoneLocations(t) {
+      if (roleOf(t, actorId) !== 'admin') return 0;
+      const zs = db().zone.filter((z) => z.tenant_id === t && z.lat != null);
+      for (const z of zs) Object.assign(z, { lat: null, lng: null });
+      return zs.length;
+    },
     async setZoneLocation(id, lat, lng) {
       const z = db().zone.find((x) => x.id === id);
       if (!z || roleOf(z.tenant_id, actorId) !== 'admin') return false;
