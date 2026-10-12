@@ -21,7 +21,8 @@ export function readCsv(text: string): { headers: string[]; rows: string[][] } {
   if (!all.length) return { headers: [], rows: [] };
   const width = Math.max(...all.map((r) => r.length));
   const headers = Array.from({ length: width }, (_, i) => all[0][i]?.trim() || `Columna ${i + 1}`);
-  const rows = all.slice(1, MAX_ROWS + 1).map((r) => Array.from({ length: width }, (_, i) => r[i] ?? ''));
+  // Una de más (MAX_ROWS + 1) para que quien la llame sepa si se pasa.
+  const rows = all.slice(1, MAX_ROWS + 2).map((r) => Array.from({ length: width }, (_, i) => r[i] ?? ''));
   return { headers, rows };
 }
 

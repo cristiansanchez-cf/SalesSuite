@@ -56,9 +56,16 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   await rep.waitForURL(/\/admin\/accounts\/[^/?]+$/);
   const people = await rep.textContent('[data-testid=account-people-list]');
   assert(people.includes('Marta Ruiz') && people.includes('Bruno Smoke'), 'la empresa enseña a sus personas');
-  await rep.fill('[data-testid=group-name]', 'Grupo Costa Smoke');
+  // Grupo (§26): se busca; sin elegir no se envía; si no está, «Crear el grupo».
+  const before = rep.url();
+  await rep.click('[data-testid=group-save]');
+  assert(rep.url() === before && await rep.isVisible('[data-group-hint]'), 'sin elegir un grupo no se envía');
+  await rep.fill('[data-testid=group-search]', 'Grupo Costa Smoke');
+  await rep.click('[data-testid=group-create]');
+  assert((await rep.textContent('[data-testid=group-chosen]')).includes('Crear el grupo «Grupo Costa Smoke»'), 'elegido: crear el grupo');
   await Promise.all([rep.waitForURL(/ok=group/), rep.click('[data-testid=group-save]')]);
   assert((await rep.textContent('[data-testid=account-group]')).includes('Grupo Costa Smoke'), 'grupo creado al vuelo');
+  assert(await rep.isVisible('[data-testid=account-people]') && await rep.isVisible('[data-testid=work-links]'), 'grupo, personas y «trabaja con» en tarjetas separadas');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-account-people.png`, fullPage: true });
 
   // ---- el admin mueve en bloque a un grupo
@@ -71,6 +78,30 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   await adm.fill('[data-testid=bulk-group-name]', 'Grupo Costa Smoke');
   await Promise.all([adm.waitForURL(/ok=moved/), adm.click('[data-testid=bulk-move-confirm]')]);
   assert((await adm.textContent('[data-testid=account][data-name="Sala Marina"]')).includes('Grupo Costa Smoke'), 'movidas al grupo');
+
+  // Alta con «¿Es de algún grupo?»: se busca el que ya existe y se elige.
+  await adm.click('[data-testid=add-open]'); await adm.click('[data-testid=new-account]');
+  await adm.fill('[data-testid=new-account-form] [name=name]', 'Bar Costa Nuevo');
+  await adm.fill('[data-testid=new-account-form] [data-testid=group-search]', 'Costa Smoke');
+  await adm.locator('[data-testid=new-account-form] [data-testid=group-option]').filter({ hasText: 'Grupo Costa Smoke' }).first().click();
+  await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
+  assert((await adm.textContent('[data-testid=account-group]')).includes('Grupo Costa Smoke'), 'el alta ya lo mete en el grupo elegido');
+
+  // Grupos de su ciudad: otra empresa de la misma zona sin grupo ve «Grupos en …» y lo elige con un clic.
+  await adm.goto(`${BASE}/admin/accounts?ver=all`);
+  await Promise.all([adm.waitForURL(/\/admin\/accounts\/[^/?]+$/), adm.click('[data-testid=account][data-name="Sala Marina"] a.co-row__main')]);
+  const zoneOf = await adm.inputValue('#acc-data [name=zoneId]').catch(() => '');
+  await adm.goto(`${BASE}/admin/accounts?ver=all`);
+  await adm.click('[data-testid=add-open]'); await adm.click('[data-testid=new-account]');
+  await adm.fill('[data-testid=new-account-form] [name=name]', 'Bar Vecino Smoke');
+  if (zoneOf) await adm.selectOption('[data-testid=new-account-form] [name=zoneId]', zoneOf);
+  await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
+  if (zoneOf) {
+    assert((await adm.textContent('[data-testid=group-nearby]')).includes('Grupo Costa Smoke'), 'sugiere los grupos de su zona');
+    await adm.click('[data-testid=group-suggest]');
+    await Promise.all([adm.waitForURL(/ok=group/), adm.click('[data-testid=group-save]')]);
+    assert((await adm.textContent('[data-testid=account-group]')).includes('Grupo Costa Smoke'), 'metida en el grupo sugerido');
+  } else assert(false, 'la empresa del grupo tiene zona');
 
   // ---- importar un CSV de personas, con vista previa, y deshacer
   await adm.goto(`${BASE}/admin/import`);

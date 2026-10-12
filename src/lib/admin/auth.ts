@@ -36,6 +36,7 @@ import { createEvidenceService, type EvidenceService } from '../evidence/service
 import type { AccountsDb } from '../accounts/db';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { supabaseAccountsDb } from '../accounts/db-supabase';
+import { memoReads, type ReadCache } from '../data/request-cache';
 import { createAccountsService, emptyAccountsDb, type AccountsService } from '../accounts/service';
 import { createCrmService, emptyCrmDb, type CrmService } from '../crm/service';
 import type { CrmDb } from '../crm/db';
@@ -133,6 +134,11 @@ export interface Deps {
   orgDb?: OrgDb;
   /** Contenido traducido (opcional: sin él, todo en el idioma original). */
   contentDb?: ContentI18nDb;
+  /**
+   * Caché de lecturas de esta petición (request-cache.ts). Solo para un contexto que vive una petición (authenticate);
+   * los tests de contrato reutilizan un contexto con varios usuarios escribiendo, y ahí no vale.
+   */
+  requestCache?: boolean;
 }
 
 /** Rol → contexto de consola. Exportado para los tests de contrato (mismo cableado que producción). */
@@ -173,6 +179,13 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
   db = translateAdminDb(db);
   playbookDb = translatePlaybookDb(playbookDb);
   evidenceDb = translateEvidenceDb(evidenceDb);
+  // Lecturas repetidas en la misma petición (zonas, miembros, la empresa…), una sola vez; cualquier escritura la vacía.
+  const cache: ReadCache = new Map();
+  const memo = deps.requestCache ? memoReads : <T extends object>(x: T) => x;
+  db = memo(db, ['listMembers'], cache, 'admin');
+  const accountsDb = memo(deps.accountsDb?.(user.id) ?? emptyAccountsDb,
+    ['listZones', 'listAssignments', 'getRules', 'getKinds', 'listFields', 'getAccount', 'getPriorityWeights', 'listAccountIndex'], cache, 'acc');
+  const crmDb = memo(deps.crmDb?.(user.id) ?? emptyCrmDb, ['listLinks'], cache, 'crm');
   const service = createAdminService(db, session, { defaultLocale: tenant.defaultLocale, assets: deps.assets });
   return {
     kind: 'ok',
@@ -182,12 +195,12 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       playbook: createPlaybookService(playbookDb, db, session, { admin: service, evidence: evidenceDb, minCloses: minClosesFor() }),
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service, minCloses: minClosesFor() }),
       notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
-      accounts: createAccountsService(deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
-      crm: createCrmService(deps.crmDb?.(user.id) ?? emptyCrmDb, deps.accountsDb?.(user.id) ?? emptyAccountsDb, db, session),
+      accounts: createAccountsService(accountsDb, db, session),
+      crm: createCrmService(crmDb, accountsDb, db, session),
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
-        { admin: db, accounts: deps.accountsDb?.(user.id) ?? emptyAccountsDb }, session),
+        { admin: db, accounts: accountsDb }, session),
       analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),
-      org: createOrgService(org, db, session, { zones: async () => (await (deps.accountsDb?.(user.id) ?? emptyAccountsDb).listZones(tenant.id)).map((z) => ({ id: z.id, name: z.name, parentId: z.parentId })) }),
+      org: createOrgService(org, db, session, { zones: async () => (await accountsDb.listZones(tenant.id)).map((z) => ({ id: z.id, name: z.name, parentId: z.parentId })) }),
     },
   };
 }
@@ -207,14 +220,14 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
     return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb() });
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb(), requestCache: true });
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb) });
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb), requestCache: true });
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

@@ -16,6 +16,7 @@ import { ACCOUNT_CONTACT_KEYS, DISCARD_REASONS, profileOf, type TouchKind } from
 import { priorityFor } from '~/lib/crm/score';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
 import WorkLinks from '~/components/crm/WorkLinks.astro';
+import GroupPicker from '~/components/crm/GroupPicker.astro';
 import ProfileCard from '~/components/crm/ProfileCard.astro';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
@@ -32,10 +33,9 @@ import { notesMessages } from '~/lib/i18n/messages/notes';
 import { researchContext } from '~/lib/crm/research-context';
 import { cleanupMessages } from '~/lib/i18n/messages/cleanup';
 import { researchMessages } from '~/lib/i18n/messages/research';
-import { PACKAGES, PRESALE, priorityOf } from '~/lib/crm/priority';
+import { PACKAGES, PRESALE } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { kindsMessages } from '~/lib/i18n/messages/kinds';
-import type { IconName } from '~/lib/ui/icons';
 import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
 
 const { admin } = Astro.locals;
@@ -95,12 +95,12 @@ if (Astro.request.method === 'POST') {
       case 'kind': await admin.crm.classifyAccount(id, { kind: str('kind') }); to += '?ok=kind'; break;
       case 'discard': await admin.crm.classifyAccount(id, { reason: str('reason'), note: str('note') }); to += '?ok=discarded'; break;
       case 'restore': await admin.crm.classifyAccount(id, { reason: null }); to += '?ok=restored'; break;
-      case 'group': await admin.crm.moveToGroup([id], { groupName: str('leave') ? null : str('groupName') }); to += '?ok=group'; break;
+      case 'group': await admin.crm.moveToGroup([id], str('leave') ? {} : { groupId: str('groupId') || null, groupName: str('groupId') ? null : str('groupName') }); to += '?ok=group#acc-group'; break;
       case 'group-owner': {
         // Lo que se junta se calcula aquí otra vez (no se fía de lo que llegue en el formulario).
         const og = (await admin.crm.company(id)).ownerGroup;
         if (og) await admin.crm.moveToGroup(og.move, og.groupId ? { groupId: og.groupId } : { groupName: og.name });
-        to += '?ok=owner#acc-people'; break;
+        to += '?ok=owner#acc-group'; break;
       }
       case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
       case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
@@ -131,24 +131,23 @@ try { data = await acc.get(id); } catch (e) {
   throw e;
 }
 const { account: a, touches, dossiers, canEdit, rules, crmFields } = data;
-const [t, segments, members, co, tl] = await Promise.all([acc.territory(), admin.playbook.market(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id)]);
+// Todo lo que pinta la ficha, a la vez (cada servicio lee lo suyo; lo repetido sale de la caché de la petición).
+const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ] = await Promise.all([
+  acc.territory(), admin.playbook.segmentList(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id),
+  admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id), acc.kinds(), admin.crm.workLinks(id),
+  googleBox.q ? Promise.resolve(googleBox.q) : admin.crm.hasGoogle() ? admin.crm.googleQuery(id) : Promise.resolve(''),
+]);
 // Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
 const primary = tl.actors[0];
 const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
 const sug = tl.suggestion;
 const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
-// Prioridad (docs/CRM_DINAMICO.md §11): la puntuación de esta empresa y si se está enfriando.
-const [weights, coolingMap, aiR] = await Promise.all([admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id)]);
 const googleResults = googleBox.r;
 const G = priorityMessages[locale].google;
 const PS = priorityMessages[locale];
 const CL = cleanupMessages[locale];
 const NT = notesMessages[locale];
-const kindDefs = await acc.kinds();
 const KN = kindsMessages[locale];
-const work = await admin.crm.workLinks(id);
-const kindOf = (k: string) => kindDefs.find((d) => d.key === k) ?? kindDefs[0];
-const googleQ = googleBox.q || (admin.crm.hasGoogle() ? await admin.crm.googleQuery(id) : '');
 const photoSrc = (n: string | null | undefined) => (n ? `/admin/api/crm/place-photo?n=${encodeURIComponent(n)}` : null);
 const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
 const googleApplied = () => {
@@ -158,14 +157,14 @@ const googleApplied = () => {
 // La ficha de su tipo (§24): local, promotora o DJ; cada una con sus preguntas y su nota.
 const profile = profileOf(kindDefs, a.kind);
 const PRF = profilesMessages[locale];
-const prio = priorityFor(a.qualification, profile, segments.find((sg) => sg.id === a.segmentId)?.key ?? null, weights);
+const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
+const prio = priorityFor(a.qualification, profile, segKey, weights);
 // Qué se enseña como «le encaja» en cada ficha (a una promotora o un DJ no les aplica la fidelización).
 const fitKeys = (profile === 'venue' ? PACKAGES : profile === 'promoter' ? (['requests', 'screen', 'photos'] as const) : (['requests'] as const)) as readonly (keyof typeof prio.fit)[];
 const fitLabel = (k: keyof typeof prio.fit) => (profile === 'venue' ? PS.packages[k] : (PRF.packages as Record<string, string>)[k] ?? PS.packages[k]);
 const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
 const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
-const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
 const sheet = fieldsFor(crmFields, segKey, { target: 'account', tags: a.tags });
 const sections = [...new Set(sheet.map((x) => x.group ?? ''))].map((g) => ({ title: g || (sheet.some((x) => x.group) ? C.other : ''), fields: sheet.filter((x) => (x.group ?? '') === g) }));
 const day = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'long' });
@@ -422,10 +421,10 @@ const STATE_ALERT = {
       </section>
 
 
-      <section class="co-card grid gap-4" id="acc-people" data-testid="account-people">
-        <h2 class="co-entity">{P.group.title}</h2>
-        <div class="grid gap-2" data-testid="account-group" hidden={profile !== 'venue'}>
-          <p class="text-eyebrow">{P.group.group}</p>
+      {/* Tres tarjetas (§26): el grupo, las personas y con quién trabaja; cada una con lo suyo. */}
+      <section class="co-card grid gap-4" id="acc-group" data-testid="account-group" hidden={profile !== 'venue'}>
+        <h2 class="co-entity flex items-center gap-2"><Icon name="building2" size={18} />{P.group.group}</h2>
+        <div class="grid gap-2">
           {co.group ? (
             <form method="post" class="flex flex-wrap items-center gap-2">
               <input type="hidden" name="action" value="group" /><input type="hidden" name="leave" value="1" />
@@ -435,15 +434,7 @@ const STATE_ALERT = {
           ) : co.locales.length > 0 ? <p class="co-meta">{P.group.isGroup}</p> : (
             <>
               <p class="co-meta">{P.group.none}</p>
-              {canEdit && (
-                <form method="post" class="flex flex-wrap items-end gap-2">
-                  <input type="hidden" name="action" value="group" />
-                  <label class="co-field min-w-[14rem] flex-1">{P.group.put} <span class="co-help">{P.group.putHelp}</span>
-                    <input class="co-input" name="groupName" required maxlength="160" list="acc-groups" placeholder={P.group.putPh} data-testid="group-name" /></label>
-                  <datalist id="acc-groups">{co.groups.slice(0, 500).map((g) => <option value={g.name} />)}</datalist>
-                  <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="group-save">{P.group.save}</button>
-                </form>
-              )}
+              {canEdit && <GroupPicker selfId={a.id} nearby={co.nearby} zone={co.nearbyZone} />}
             </>
           )}
         </div>
@@ -454,7 +445,7 @@ const STATE_ALERT = {
             <ul class="flex flex-wrap gap-2 p-0">{co.sameOwner.map((x) => <li class="list-none"><a class="co-tag" href={`/admin/accounts/${x.id}`}>{x.name}</a></li>)}</ul>
             <p class="co-help">{P.group.sameOwnerHelp}</p>
             {canEdit && co.ownerGroup && (
-              <form method="post" action="#acc-people"><input type="hidden" name="action" value="group-owner" />
+              <form method="post" action="#acc-group"><input type="hidden" name="action" value="group-owner" />
                 <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="same-owner-join"><Icon name="check" size={14} />{P.group.joinOwner(co.ownerGroup.name)}</button></form>
             )}
           </div>
@@ -465,9 +456,12 @@ const STATE_ALERT = {
             <ul class="flex flex-wrap gap-2 p-0">{co.locales.map((l) => <li class="list-none"><a class="co-tag" href={`/admin/accounts/${l.id}`}><Icon name="store" size={12} />{l.name}</a></li>)}</ul>
           </div>
         )}
+      </section>
+
+      <section class="co-card grid gap-4" id="acc-people" data-testid="account-people">
         <div class="grid gap-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-eyebrow">{P.group.people(co.people.length)}</p>
+            <h2 class="co-entity flex items-center gap-2"><Icon name="users" size={18} />{P.group.people(co.people.length)}</h2>
             <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="add-person" data-testid="account-add-person"><Icon name="user-plus" size={14} />{P.group.addPerson}</button>
           </div>
           {co.people.length === 0 ? <p class="co-meta">{P.group.noPeople}</p> : (
@@ -488,7 +482,6 @@ const STATE_ALERT = {
             </ul>
           )}
         </div>
-        {profile === 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} />}
         <form method="post" class="flex flex-wrap items-end gap-2" data-testid="account-tags">
           <input type="hidden" name="action" value="tags" />
           <label class="co-field min-w-[14rem] flex-1">{P.group.lists} <span class="co-help">{P.person.listsHelp}</span>
@@ -496,6 +489,7 @@ const STATE_ALERT = {
           {canEdit && <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{P.group.save}</button>}
         </form>
       </section>
+      {profile === 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
 
       {/* Los campos del espacio son de locales (aforo…): una promotora o un DJ no los enseña (§24). */}
       <section class="co-card grid gap-4" data-testid="account-sheet" hidden={profile !== 'venue'}>

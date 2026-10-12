@@ -1,6 +1,6 @@
-# CRM dinámico: arquitectura (propuesta para decidir)
+# CRM dinámico: arquitectura
 
-> Estado: **fase 1 hecha** (campos por espacio, ficha, columnas y filtros) y **menú corto** hecho. Lo demás, propuesta. Objetivo: que cada espacio (Enjoy, Oquea…) tenga **su propio CRM**
+> Estado: casi todo **hecho** (cada sección lo dice). Cómo se prueba y reglas de rendimiento: `docs/DESARROLLO.md`. Objetivo: que cada espacio (Enjoy, Oquea…) tenga **su propio CRM**
 > con **sus propios campos**, como una base de datos de Notion, pero dentro de Cofundo Ventas y conectado a lo que ya
 > existe: propuestas, territorio, comisiones, Aprende, Preparar mensaje y el resumen diario.
 >
@@ -633,7 +633,7 @@ Criterio de Cristian tras hacer ruta por Valencia (11-oct-2026). Fases: **A** cu
   local, se mide como local (lo que vendemos entra por el DJ de la noche). Apuntar lo puede devolver junto («hall,pub»)
   y se suma a lo que ya tenía.
 - **Sin pantalla ya no elimina**: solo no suma los puntos de pantalla (le pueden encajar peticiones, fotos o
-  fidelización). Eliminatorios: sin cobertura, no pueden validar, deudas o cierre.
+  fidelización). Eliminatorios: sin cobertura, no pueden validar o deudas (un cierre es un motivo de descarte, no un eliminatorio).
 - **Promotoras, pestaña aparte** en Enjoy (como los DJs); las del sector «Promotoras» pasan a ella.
 - «¿Tiene DJ residente?» de la ficha pasa a la cualificación (migración `20261122`, archivado y recuperable).
 - Apuntar e Investigar con IA rellenan formato, fiesta, DJ y promotoras.
@@ -732,3 +732,39 @@ web (p. ej. Tulum Eventos y el grupo Cosmic). Con eso se ve qué locales son del
   grupo «…»»: el grupo que ya tenga alguna (o esta, si es grupo); si no, uno nuevo con el nombre de la sociedad. Nunca se
   juntan solas: un grupo puede tener varias sociedades (una por local) y eso no se detecta.
 - **Pendiente:** una lista en Limpiar con todas las coincidencias para juntarlas de una vez.
+
+Pruebas (§25): `website.test.ts` (lector, CIF, enlaces legales, redirecciones), contrato «titular», SQL `65_account_legal`
+y `smoke-google.cjs` (titular y «Mismo titular»).
+
+## 26. Grupo, personas y «Trabaja con»: tres tarjetas; el grupo se busca
+
+Pedido de Cristian: en la ficha estaba todo junto y el grupo no se buscaba (había dado de alta «Grupo Cosmic» y no salía).
+
+- **Tres tarjetas**: Grupo (solo locales), Personas (con sus listas) y Trabaja con.
+- **El grupo se busca** (`GroupPicker.astro`), como «Trabaja con»: al escribir salen los que ya están en el CRM
+  («Ya en tu CRM · Valencia»); si no está, «Crear el grupo «X»». Sin elegir no se envía (así no se repiten grupos).
+- **Grupos de su ciudad**: debajo, los grupos con locales (o ellos mismos) en la misma ciudad que la empresa (un barrio
+  cuenta como su ciudad), con más locales allí primero. Un grupo es una empresa con locales dentro o que se llama
+  «Grupo …». Un grupo nuevo se queda en la ciudad de su primer local, para que lo vean los demás de allí.
+- **Al dar de alta** una empresa: «¿Es de algún grupo?» (opcional, mismo buscador).
+- **Soltar en bloque** (lista de empresas): seleccionar las que se ven (o todas las tuyas con los filtros) → «Soltar»;
+  solo suelta las tuyas (`accounts.releaseMany`).
+- Pruebas: contrato (soltar en bloque), `smoke-crm-people.cjs` (buscar, crear, sugerido por zona, alta con grupo,
+  soltar todas).
+
+## 27. Rendimiento de los flujos del comercial (hecho)
+
+Medido leyendo el código flujo a flujo (ficha, lista, mapa, Apuntar, Hoy, Buscar). Lo hecho, con sus reglas en
+`docs/DESARROLLO.md` §3:
+
+- **Ficha**: unas 40 consultas en 6 tandas seguidas → una tanda en paralelo; lo repetido (la empresa ×4, zonas ×3,
+  miembros ×3, enlaces ×2) sale de la caché por petición; «Grupo» ya no carga todas las empresas enteras (índice).
+- **Lista**: no carga todas las personas para el desplegable de listas; nombres de grupo solo de lo que se ve;
+  sectores sin el mapa de mercado.
+- **Mapa**: las activas y las descartadas a la vez; «se enfría» con una fila por empresa (vista
+  `crm_last_activity`, migración `20261127`) en vez de todas las interacciones; nota según el tipo (§24).
+- **Hoy**: igual con «se enfría»; el «lo último que pasó» solo de las que salen hoy.
+- **Apuntar**: tras guardar, solo los nombres (antes, la ficha entera de cada una); mientras piensa, dice lo que va
+  haciendo (leer, separar por sitio, buscar en el CRM, cualificar, pulir).
+- **Pendiente** (medir antes): partir `crm/service.ts` (~1600 líneas) por secciones; un `?part=` para que los
+  formularios `data-async` no pinten la página entera; histórico de la ficha en *server island*.

@@ -35,7 +35,7 @@ if (Astro.request.method === 'POST') {
 }
 
 const sweepId = Astro.url.searchParams.get('id') ?? '';
-const [t, segments, history, kindDefs] = await Promise.all([admin.accounts.territory(), admin.playbook.market(), admin.crm.prospectList(), admin.accounts.kinds()]);
+const [t, segments, history, kindDefs] = await Promise.all([admin.accounts.territory(), admin.playbook.segmentList(), admin.crm.prospectList(), admin.accounts.kinds()]);
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 let open: Awaited<ReturnType<typeof admin.crm.prospectGet>> | null = null;
 if (sweepId) {

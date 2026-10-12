@@ -8,7 +8,7 @@ import type { CrmField, FieldType } from '../crm/fields';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
 import type { AccountInsert, AccountsDb } from './db';
 import { eligibility } from './rules';
-import { DEFAULT_RULES, DISCARD_REASONS, type Account, type AccountRules, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
+import { ACCOUNT_REF_KEYS, DEFAULT_RULES, DISCARD_REASONS, type Account, type AccountRef, type AccountRules, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
 
 const db = () => demoDb();
 const now = () => new Date();
@@ -228,6 +228,10 @@ export function demoAccountsDb(actorId: string): AccountsDb {
           && (!f.parentId || a.parent_id === f.parentId) && (!f.tag || (a.tags ?? []).includes(f.tag)))
         .sort((a, b) => a.name.localeCompare(b.name, 'es'))
         .slice(0, f.limit).map(toAccount);
+    },
+    async listAccountIndex(t, limit) {
+      return db().account.filter((a) => a.tenant_id === t).sort((a, b) => a.name.localeCompare(b.name, 'es')).slice(0, limit)
+        .map(toAccount).map((a) => Object.fromEntries(ACCOUNT_REF_KEYS.map((k) => [k, a[k]])) as AccountRef);
     },
     async getAccount(id) { const a = db().account.find((x) => x.id === id); return a ? toAccount(a) : null; },
     async insertAccount(t, a) { return insertOne(t, a); },

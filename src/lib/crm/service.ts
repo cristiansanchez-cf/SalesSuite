@@ -8,7 +8,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
-import { BASE_KIND, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type KindDef, type Zone } from '../accounts/types';
+import { BASE_KIND, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -141,9 +141,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function members(): Promise<Map<string, MemberRecord>> { return new Map((await admin.listMembers(t)).map((m) => [m.userId, m])); }
   const label = (m: MemberRecord | undefined) => (m ? m.displayName || m.email : null);
   async function allAccounts(): Promise<Account[]> { return accounts.listAccounts(t, { limit: 20000 }); }
+  /** Todas, con pocas columnas: para buscar, agrupar o ver duplicados (mucho más ligero que allAccounts). */
+  async function accountIndex(): Promise<AccountRef[]> { return accounts.listAccountIndex(t, 20000); }
   async function fields(): Promise<CrmField[]> { return (await accounts.listFields(t)).sort((a, b) => a.position - b.position || a.label.localeCompare(b.label, 'es')); }
 
-  function views(cs: Contact[], links: ContactLink[], accs: Map<string, Account>, ms: Map<string, MemberRecord>): PersonView[] {
+  function views(cs: Contact[], links: ContactLink[], accs: Map<string, AccountRef>, ms: Map<string, MemberRecord>): PersonView[] {
     return cs.map((c) => ({
       ...c,
       ownerName: label(ms.get(c.ownerId ?? '')),
@@ -160,7 +162,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function people(f: { q?: string; tag?: string; company?: 'none'; limit?: number } = {}) {
     requireUse();
     const [cs, accs, ms, links] = await Promise.all([
-      db.listContacts(t, { q: f.q, tag: f.tag || undefined, limit: Math.min(f.limit ?? 5000, 20000) }), allAccounts(), members(), db.listLinks(t, {}),
+      db.listContacts(t, { q: f.q, tag: f.tag || undefined, limit: Math.min(f.limit ?? 5000, 20000) }), accountIndex(), members(), db.listLinks(t, {}),
     ]);
     const byId = new Map(accs.map((a) => [a.id, a]));
     let items = views(cs, links, byId, ms);
@@ -172,7 +174,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     const c = await db.getContact(id);
     if (!c || c.tenantId !== t) throw new AdminError(404, 'Persona no encontrada');
-    const [accs, ms, links, fs] = await Promise.all([allAccounts(), members(), db.listLinks(t, { contactIds: [id] }), fields()]);
+    const [accs, ms, links, fs] = await Promise.all([accountIndex(), members(), db.listLinks(t, { contactIds: [id] }), fields()]);
     const view = views([c], links, new Map(accs.map((a) => [a.id, a])), ms)[0];
     return {
       person: view,
@@ -191,7 +193,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   /** Empresa por id o, si no existe, nueva con ese nombre (alta al vuelo). Devuelve su id. */
-  async function companyFor(accountId: string | null | undefined, name: string | null | undefined, tag: string | null): Promise<string | null> {
+  async function companyFor(accountId: string | null | undefined, name: string | null | undefined, tag: string | null, zoneId: string | null = null): Promise<string | null> {
     if (accountId) {
       const a = await accounts.getAccount(accountId);
       if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
@@ -201,7 +203,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const same = (await accounts.listAccounts(t, { q: name, limit: 50 })).find((a) => norm(a.name) === norm(name));
     if (same) return same.id;
     try {
-      return await accounts.insertAccount(t, { name, zoneId: null, segmentId: null, address: null, externalRef: null, notes: null, tags: tag ? [tag] : [] });
+      return await accounts.insertAccount(t, { name, zoneId, segmentId: null, address: null, externalRef: null, notes: null, tags: tag ? [tag] : [] });
     } catch (e) { mapError(e); }
   }
 
@@ -269,32 +271,52 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
-    const [links, accs] = await Promise.all([db.listLinks(t, { accountIds: [accountId] }), allAccounts()]);
+    const [links, accs, zones] = await Promise.all([db.listLinks(t, { accountIds: [accountId] }), accountIndex(), accounts.listZones(t)]);
     const cs = links.length ? await db.listContacts(t, { ids: links.map((l) => l.contactId), limit: 500 }) : [];
     return {
       people: cs.map((c) => ({ id: c.id, name: c.name, email: c.email, phone: c.phone, role: links.find((l) => l.contactId === c.id)?.role ?? null })),
       group: a.parentId ? accs.find((x) => x.id === a.parentId) ?? null : null,
       locales: accs.filter((x) => x.parentId === a.id),
-      /** Candidatas a grupo: las que no están dentro de otro (un solo nivel). */
-      groups: a.parentId || !accs.some((x) => x.parentId === a.id) ? accs.filter((x) => !x.parentId && x.id !== a.id).map((x) => ({ id: x.id, name: x.name })) : [],
       /** Las que comparten titular (§25): mismo CIF o misma razón social. Para proponer juntarlas en un grupo. */
       ...sameOwner(a, accs),
-      /** Para «Trabaja con»: las demás, con su tipo (promotoras y DJs primero). */
-      others: accs.filter((x) => x.id !== a.id && !x.discardedAt).map((x) => ({ id: x.id, name: x.name, kind: x.kind }))
-        .sort((x, y) => Number(x.kind === 'company') - Number(y.kind === 'company') || x.name.localeCompare(y.name, 'es')).slice(0, 3000),
+      /** Grupos con locales en su misma ciudad (§26): «¿es de alguno?». */
+      ...nearbyGroups(a, accs, zones),
     };
+  }
+  /**
+   * Grupos de su ciudad (§26): los que tienen algún local (o están ellos) en la misma ciudad que esta empresa, con más
+   * locales allí primero. Un grupo es una empresa con locales dentro, o una que se llama «Grupo …» (recién dada de alta).
+   */
+  function nearbyGroups(a: AccountRef, accs: AccountRef[], zones: Zone[]) {
+    const none = { nearby: [] as Array<{ id: string; name: string; locales: number }>, nearbyZone: null as string | null };
+    if (a.parentId || !a.zoneId) return none;
+    const byId = new Map(zones.map((z) => [z.id, z]));
+    // La ciudad de una zona: ella misma o la primera de arriba que sea ciudad (un barrio cuenta como su ciudad).
+    const cityOf = (id: string | null) => {
+      for (let z = id ? byId.get(id) : undefined, guard = 0; z && guard < 20; z = z.parentId ? byId.get(z.parentId) : undefined, guard++) if (z.kind === 'city') return z.id;
+      return id;
+    };
+    const city = cityOf(a.zoneId);
+    const kids = new Map<string, AccountRef[]>();
+    for (const x of accs) if (x.parentId && !x.discardedAt) kids.set(x.parentId, [...(kids.get(x.parentId) ?? []), x]);
+    if (kids.has(a.id)) return none;   // ya es un grupo
+    const nearby = accs.filter((g) => g.id !== a.id && !g.parentId && !g.discardedAt && (kids.has(g.id) || /^grupo\b/i.test(g.name)))
+      .map((g) => ({ g, here: (kids.get(g.id) ?? []).filter((l) => cityOf(l.zoneId) === city).length + (cityOf(g.zoneId) === city ? 1 : 0) }))
+      .filter((x) => x.here > 0).sort((x, y) => y.here - x.here || x.g.name.localeCompare(y.g.name, 'es')).slice(0, 6)
+      .map(({ g }) => ({ id: g.id, name: g.name, locales: kids.get(g.id)?.length ?? 0 }));
+    return { nearby, nearbyZone: city ? byId.get(city)?.name ?? null : null };
   }
   /**
    * «Comparten titular» (§25): otras empresas con el mismo CIF o la misma razón social, y el grupo que se propone: el
    * que ya tenga alguna de ellas (o esta, si es grupo); si no, uno nuevo con el nombre de la sociedad. Solo se propone:
    * un grupo puede tener varias sociedades y una sociedad, locales que no se tratan juntos.
    */
-  function sameOwner(a: Account, accs: Account[]) {
+  function sameOwner(a: AccountRef, accs: AccountRef[]) {
     const key = legalKey(a.legalName);
     const same = !a.taxId && key.length < 4 ? [] : accs.filter((x) => x.id !== a.id && !x.discardedAt
       && ((a.taxId && x.taxId === a.taxId) || (key.length >= 4 && legalKey(x.legalName) === key && !(a.taxId && x.taxId && a.taxId !== x.taxId))));
     if (!same.length) return { sameOwner: [], ownerGroup: null };
-    const isGroup = (x: Account) => accs.some((y) => y.parentId === x.id);
+    const isGroup = (x: AccountRef) => accs.some((y) => y.parentId === x.id);
     const parentIds = [a, ...same].map((x) => x.parentId).filter((x): x is string => !!x);
     const target = isGroup(a) ? a : same.find(isGroup) ?? accs.find((x) => x.id === parentIds[0]) ?? null;
     // Las que se moverían: las que no están ya en ese grupo, no son grupo ellas mismas ni están en otro.
@@ -370,7 +392,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   /** Mete una o varias empresas en un grupo (que ya existe o nuevo por su nombre), o las saca (null). */
   async function moveToGroup(accountIds: string[], target: { groupId?: string | null; groupName?: string | null }) {
     requireUse();
-    const groupId = target.groupId || target.groupName?.trim() ? await companyFor(target.groupId || null, target.groupName?.trim() || null, null) : null;
+    // Un grupo nuevo se queda en la ciudad de su (primer) local: así sale como «grupo de la zona» para los demás.
+    const firstZone = !target.groupId && target.groupName?.trim() && accountIds[0] ? (await accounts.getAccount(accountIds[0]))?.zoneId ?? null : null;
+    const groupId = target.groupId || target.groupName?.trim() ? await companyFor(target.groupId || null, target.groupName?.trim() || null, null, firstZone) : null;
     let moved = 0;
     for (const id of accountIds) {
       if (id === groupId) continue;
@@ -392,13 +416,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     const want = [...new Set(ids.filter(Boolean))];
     if (!want.length) return new Map();
-    const rows = want.length <= 100 ? await accounts.listAccounts(t, { ids: want, limit: want.length }) : await allAccounts();
+    const rows = want.length <= 100 ? await accounts.listAccounts(t, { ids: want, limit: want.length }) : await accountIndex();
     return new Map(rows.filter((a) => want.includes(a.id)).map((a) => [a.id, a.name]));
   }
   /** Listas que existen en el espacio (para elegir vista o al importar). */
-  async function lists(): Promise<Array<{ tag: string; accounts: number; people: number }>> {
+  async function lists(o: { people?: boolean } = {}): Promise<Array<{ tag: string; accounts: number; people: number }>> {
     requireUse();
-    const [accs, cs] = await Promise.all([allAccounts(), db.listContacts(t, { limit: 20000 })]);
+    // La lista de empresas solo cuenta empresas: sin cargar todas las personas.
+    const [accs, cs] = await Promise.all([accountIndex(), o.people === false ? Promise.resolve([]) : db.listContacts(t, { limit: 20000 })]);
     const m = new Map<string, { tag: string; accounts: number; people: number }>();
     for (const a of accs) for (const g of a.tags) { const x = m.get(g) ?? { tag: g, accounts: 0, people: 0 }; x.accounts++; m.set(g, x); }
     for (const c of cs) for (const g of c.tags) { const x = m.get(g) ?? { tag: g, accounts: 0, people: 0 }; x.people++; m.set(g, x); }
@@ -412,7 +437,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireImporter();
     const { headers, rows } = readCsv(text);
     if (!headers.length || !rows.length) throw new AdminError(422, 'El archivo está vacío');
-    if (rows.length >= MAX_ROWS) throw new AdminError(422, 'Máximo 5000 filas por importación');
+    // readCsv deja pasar una fila de más: así se distingue «justo 5000» (vale) de «más de 5000» (no).
+    if (rows.length > MAX_ROWS) throw new AdminError(422, 'Máximo 5000 filas por importación');
     const fs = await fields();
     const mapping = suggestMapping(profileColumns(headers, rows, target, fs), fs);
     try {
@@ -690,13 +716,15 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const now = new Date();
     const all = await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 });
     // Lo que se enfría (contestó y llevamos 3 días laborables sin hacer nada) va primero, aunque no tenga próximo paso.
-    const acts = all.length ? await db.listActivities(t, all.map((a) => a.id), 20000) : [];
-    const byAcc = new Map<string, Activity[]>();
-    for (const x of acts) byAcc.set(x.accountId, [...(byAcc.get(x.accountId) ?? []), x]);
-    const mine = all.map((a) => ({ a, cooling: coolingDays(byAcc.get(a.id) ?? [], now), bucket: dueBucket(a.nextStepAt, now) }))
+    const cool = await cooling(all.map((a) => a.id));
+    const mine = all.map((a) => ({ a, cooling: cool.get(a.id) ?? null, bucket: dueBucket(a.nextStepAt, now) }))
       .filter((x) => x.cooling !== null || (x.bucket && ['overdue', 'today', 'tomorrow'].includes(x.bucket)));
     const counts = { cooling: 0, overdue: 0, today: 0, tomorrow: 0 };
     if (!mine.length) return { items: [] as TodayItem[], counts };
+    // El contexto («lo último que pasó») solo de las que salen hoy, no de todas las que llevo.
+    const acts = await db.listActivities(t, mine.map((x) => x.a.id), 5000);
+    const byAcc = new Map<string, Activity[]>();
+    for (const x of acts) byAcc.set(x.accountId, [...(byAcc.get(x.accountId) ?? []), x]);
     const contactIds = [...new Set(mine.map((x) => x.a.nextContactId).filter(Boolean) as string[])];
     const cs = contactIds.length ? await db.listContacts(t, { ids: contactIds, limit: contactIds.length }) : [];
     const ORDER: Record<string, number> = { cooling: 0, overdue: 1, today: 2, tomorrow: 3 };
@@ -735,12 +763,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   /** Días que lleva enfriándose cada empresa (solo las que se enfrían). */
   async function cooling(accountIds: string[]): Promise<Map<string, number>> {
     requireUse();
-    const acts = accountIds.length ? await db.listActivities(t, accountIds, 20000) : [];
-    const by = new Map<string, Activity[]>();
-    for (const x of acts) by.set(x.accountId, [...(by.get(x.accountId) ?? []), x]);
+    // Solo la última interacción de verdad de cada una (una fila por empresa), no todas.
+    const last = accountIds.length ? await db.lastActivities(t, accountIds) : [];
     const now = new Date();
     const out = new Map<string, number>();
-    for (const [id, list] of by) { const d = coolingDays(list, now); if (d !== null) out.set(id, d); }
+    for (const x of last) { const d = coolingDays([x], now); if (d !== null) out.set(x.accountId, d); }
     return out;
   }
 
@@ -898,7 +925,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function prospectGet(id: string): Promise<{ sweep: Awaited<ReturnType<typeof loadSweep>>; candidates: Candidate[] }> {
     requireUse();
     const w = await loadSweep(id);
-    return { sweep: w, candidates: markCandidates(w.results, await allAccounts(), w.imported) };
+    return { sweep: w, candidates: markCandidates(w.results, await accountIndex(), w.imported) };
   }
   /** Importar de una vez (el navegador manda tandas para enseñar el progreso). */
   const PROSPECT_CHUNK = 6;
@@ -933,12 +960,15 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         const zoneId = (c.place ? zoneForPlace(zones, c.place)?.id : null) ?? w.zoneId;
         const accId = await accounts.insertAccount(t, { name: c.name, zoneId, segmentId: w.segmentId, address: null, externalRef: null, notes: null, ownerId, tags: tag ? [tag] : [], kind });
         ids[c.placeId] = accId;
-        const socials = c.website ? await site.scan(c.website).catch(() => null) : null;
-        await accounts.research(accId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
-          status: c.status, rating: c.rating ?? null, reviews: c.reviews ?? null, photo: c.photo ?? null, zoneId: null,
-          email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace: false });
-        await fillLegal(accId, socials);
+        // Ya está creada: si lo de Google o su web falla, se cuenta igual como creada (le faltarán esos datos).
         created++;
+        try {
+          const socials = c.website ? await site.scan(c.website).catch(() => null) : null;
+          await accounts.research(accId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
+            status: c.status, rating: c.rating ?? null, reviews: c.reviews ?? null, photo: c.photo ?? null, zoneId: null,
+            email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace: false });
+          await fillLegal(accId, socials);
+        } catch (e) { console.warn('[prospect] datos de Google', e instanceof Error ? e.message : e); }
       } catch (e) { console.warn('[prospect]', e instanceof Error ? e.message : e); failed++; }
     }));
     if (Object.keys(ids).length) await accounts.markSwept(w.id, ids).catch((e) => console.warn('[prospect]', e instanceof Error ? e.message : e));
@@ -960,7 +990,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const replace = !!a.placeId && a.placeId !== c.placeId;
     const keepsZone = a.zoneId && !(replace && a.placeFilled?.zone_id === a.zoneId);
     const zone = !keepsZone && c.place ? zoneForPlace(zones, c.place) : null;
-    const web = c.website || a.website;
+    // Igual que al elegir la ficha de Google: si se cambia de ficha, la web que puso la anterior no vale.
+    const web = c.website || (replace && a.placeFilled?.website === a.website ? null : a.website);
     const socials = web ? await site.scan(web).catch(() => null) : null;
     try {
       await accounts.research(accountId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
@@ -996,7 +1027,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     const query = String(q ?? '').trim().slice(0, 80);
     if (query.length < 2) return [];
-    const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
+    const [all, zones] = await Promise.all([accountIndex(), accounts.listZones(t)]);
     const key = nameKey(query);
     const hits = all.map((a) => ({ a, score: nameKey(a.name).includes(key) ? Math.max(0.9, nameScore(query, a.name)) : nameScore(query, a.name) }))
       .filter((x) => x.score >= 0.6).sort((x, y) => y.score - x.score || x.a.name.localeCompare(y.a.name, 'es')).slice(0, 8);
@@ -1034,7 +1065,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       }
       it.fields = ok;
     }
-    const [all, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
+    const [all, zones] = await Promise.all([accountIndex(), accounts.listZones(t)]);
     if (chosen) {
       // Todo a la empresa elegida: las notas juntas, lo marcado sumado, el primer próximo paso.
       const q: Record<string, string> = {};
@@ -1125,11 +1156,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         let changed = false;
         for (const [k, raw] of Object.entries(r.qualification)) {
           // Las de varios llegan juntas («club,hall»): se suman a lo que ya tenía.
+          let set = false;
           for (const v of MULTI_QUAL.includes(k) ? raw.split(',').map((x) => x.trim()) : [raw]) {
             if (!QUAL_VALUES[k]?.includes(v)) continue;
-            setQual(q, k, v === 'true' ? true : v); changed = true;
+            setQual(q, k, v === 'true' ? true : v); set = true;
           }
-          if (k === 'format' && changed) delete q.kind;
+          // Solo si de verdad se ha puesto el formato (no porque cambiara otra pregunta antes).
+          if (k === 'format' && set) delete q.kind;
+          changed ||= set;
         }
         if (changed) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
         if (r.discard) await classifyAccount(id, { reason: r.discard, note: r.discardNote });
@@ -1195,8 +1229,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     // Antes de gastar: solo la libre, la mía o, si soy gerente, cualquiera (lo mismo que comprueba la RPC al guardar).
     if (a.ownerId && a.ownerId !== s.userId && !perms.manageAccounts) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
-    await quota('ai');
+    // La espera antes que el cupo: un doble clic no gasta.
     if (a.aiResearchAt && Date.now() - Date.parse(a.aiResearchAt) < AI_COOLDOWN_MS) throw new AdminError(409, 'Se acaba de investigar; espera un par de minutos');
+    await quota('ai');
     const people = (await actorsOf(accountId)).map((c) => c.name);
     const known = Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined));
     let raw: unknown;
@@ -1562,5 +1597,5 @@ export const emptyCrmDb: CrmDb = {
   async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {}, async listAccountLinks() { return []; }, async saveAccountLink() { throw new Error('sin CRM'); }, async removeAccountLink() { return false; },
   async removeLink() { return false; }, async createImport() { throw new Error('sin CRM'); }, async getImport() { return null; },
   async listImports() { return []; }, async updateImport() { return false; }, async deleteContactsByImport() { return 0; },
-  async listActivities() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },
+  async listActivities() { return []; }, async lastActivities() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },
 };

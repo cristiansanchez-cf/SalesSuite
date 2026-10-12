@@ -1,0 +1,93 @@
+---
+/**
+ * Elegir el grupo de una empresa (docs/CRM_DINAMICO.md §26): se BUSCA en el CRM al escribir (la misma búsqueda que
+ * «Trabaja con»); si está, se elige; si no, «Crear el grupo «X»». Debajo, los grupos que se proponen: los de su zona
+ * (tienen locales allí) y, si los hay, el del mismo titular. Sin elegir no se envía: así no se crean grupos repetidos.
+ *
+ * `embedded`: sin formulario propio (va dentro del alta de una empresa) y es opcional.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+
+interface Suggestion { id: string; name: string; locales: number }
+interface Props { selfId?: string; embedded?: boolean; nearby?: Suggestion[]; zone?: string | null }
+const { selfId = '', embedded = false, nearby = [], zone = null } = Astro.props;
+const { m } = i18n(Astro, peopleMessages);
+const G = m.group;
+const T = { have: G.have, create: G.create, pick: G.pick };
+const Tag = embedded ? 'div' : 'form';
+---
+<Tag class="grid gap-2" data-group-picker data-self={selfId} data-embedded={embedded ? '1' : undefined} data-t={JSON.stringify(T)} data-testid="group-picker"
+  {...(embedded ? {} : { method: 'post', action: '#acc-group' })}>
+  {!embedded && <input type="hidden" name="action" value="group" />}
+  <input type="hidden" name="groupId" data-group-id />
+  <input type="hidden" name="groupName" data-group-name />
+  <label class="co-field">{embedded ? G.ask : G.search} <span class="co-help">{embedded ? G.askHelp : G.searchHelp}</span>
+    <input class="co-input" type="search" autocomplete="off" maxlength="160" placeholder={G.searchPh} data-group-q data-testid="group-search" /></label>
+  <ul class="m-0 grid gap-1 p-0" hidden data-group-list data-testid="group-results"></ul>
+  <p class="co-tag w-fit" hidden data-group-chosen data-testid="group-chosen"><Icon name="building2" size={12} /><span data-group-label></span>
+    <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-group-change>{G.change}</button></p>
+  <p class="co-help text-[var(--co-danger)]" hidden data-group-hint role="alert"></p>
+  {nearby.length > 0 && (
+    <div class="grid gap-1" data-testid="group-nearby">
+      <p class="co-help">{zone && <strong>{G.nearby(zone)}</strong>} {G.nearbyHelp}</p>
+      <ul class="flex flex-wrap gap-2 p-0">
+        {nearby.map((g) => (
+          <li class="list-none"><button type="button" class="co-chip" data-group-suggest data-id={g.id} data-name={g.name} data-testid="group-suggest">
+            <Icon name="building2" size={12} />{g.name}{g.locales > 0 && <span class="co-meta"> · {G.localesN(g.locales)}</span>}</button></li>
+        ))}
+      </ul>
+    </div>
+  )}
+  {!embedded && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="group-save">{G.putIn}</button>}
+</Tag>
+
+<script>
+  // Buscar al escribir; elegir uno de la lista (o una sugerencia) = ese grupo; «Crear el grupo» = uno nuevo con ese
+  // nombre. Sin elegir, el formulario propio no se envía (en el alta, va vacío y no pasa nada).
+  document.querySelectorAll<HTMLElement>('[data-group-picker]').forEach((box) => {
+    const T = JSON.parse(box.dataset.t ?? '{}') as { have: string; create: string; pick: string };
+    const q = box.querySelector<HTMLInputElement>('[data-group-q]')!;
+    const gid = box.querySelector<HTMLInputElement>('[data-group-id]')!;
+    const gname = box.querySelector<HTMLInputElement>('[data-group-name]')!;
+    const list = box.querySelector<HTMLUListElement>('[data-group-list]')!;
+    const chosen = box.querySelector<HTMLElement>('[data-group-chosen]')!;
+    const label = box.querySelector<HTMLElement>('[data-group-label]')!;
+    const hint = box.querySelector<HTMLElement>('[data-group-hint]')!;
+    let timer = 0;
+    const reset = () => { gid.value = ''; gname.value = ''; chosen.hidden = true; q.hidden = false; };
+    const pick = (id: string, name: string, text: string) => {
+      gid.value = id; gname.value = id ? '' : name; label.textContent = text;
+      chosen.hidden = false; q.hidden = true; list.hidden = true; hint.hidden = true;
+    };
+    const option = (text: string, small: string, on: () => void, testid: string) => {
+      const li = document.createElement('li'); li.className = 'list-none';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = testid;
+      const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = text;
+      if (small) { const s = document.createElement('small'); s.textContent = small; t.append(s); }
+      b.append(t); b.addEventListener('click', on); li.append(b); return li;
+    };
+    q.addEventListener('input', () => {
+      reset();
+      const v = q.value.trim();
+      window.clearTimeout(timer);
+      if (v.length < 2) { list.hidden = true; return; }
+      timer = window.setTimeout(async () => {
+        let items: Array<{ id: string; name: string; zone: string }> = [];
+        try { const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(v)}`, { credentials: 'same-origin' }); if (r.ok) items = (await r.json()).items ?? []; } catch { /* sin red: solo «crear» */ }
+        items = items.filter((x) => x.id !== box.dataset.self);
+        list.replaceChildren(
+          ...items.map((x) => option(x.name, [T.have, x.zone].filter(Boolean).join(' · '), () => pick(x.id, x.name, x.name), 'group-option')),
+          option(T.create.replace('{n}', v), '', () => pick('', v, T.create.replace('{n}', v)), 'group-create'),
+        );
+        list.hidden = false;
+      }, 250);
+    });
+    box.querySelectorAll<HTMLButtonElement>('[data-group-suggest]').forEach((b) => b.addEventListener('click', () => pick(b.dataset.id ?? '', b.dataset.name ?? '', b.dataset.name ?? '')));
+    box.querySelector('[data-group-change]')?.addEventListener('click', () => { reset(); q.value = ''; q.focus(); });
+    if (box instanceof HTMLFormElement) box.addEventListener('submit', (e) => {
+      if (!gid.value && !gname.value) { e.preventDefault(); hint.textContent = T.pick; hint.hidden = false; q.focus(); }
+    });
+  });
+</script>

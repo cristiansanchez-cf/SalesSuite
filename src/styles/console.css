@@ -597,3 +597,8 @@ button[aria-busy='true'] { cursor: progress; opacity: 0.75; }
 @keyframes co-toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes co-spin { to { transform: rotate(360deg); } }
 @media (max-width: 640px) { .co-toasts { left: 16px; right: 16px; max-width: none; bottom: 84px; } }
+
+/* «Está pensando» (Apuntar): un punto que late junto a lo que va haciendo; quieto si se pide menos movimiento. */
+.co-pulse-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--co-accent, currentColor); animation: co-pulse 1.2s ease-in-out infinite; flex: none; }
+@keyframes co-pulse { 0%, 100% { opacity: .35; transform: scale(.85); } 50% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .co-pulse-dot { animation: none; opacity: .8; } }

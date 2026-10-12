@@ -394,6 +394,14 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
     return pitch ? `${name}. ${stripMarkdown(pitch.body).replace(/\s+/g, ' ').slice(0, 700)}` : name;
   }
 
+  /**
+   * Solo los sectores (id, clave y nombre, en su orden): para las pantallas del CRM que no necesitan el mapa de mercado
+   * entero (actores, módulos, jugadas).
+   */
+  async function segmentList(): Promise<Array<{ id: string; key: string; name: string; status: string }>> {
+    return (await pdb.listSegments(s.tenantId)).filter((x) => x.status !== 'archived' || isAdmin).sort((a, b) => a.position - b.position)
+      .map((x) => ({ id: x.id, key: x.key, name: x.name, status: x.status }));
+  }
   async function market() {
     const m = await loadMarket();
     const { plays } = await load();
@@ -712,7 +720,7 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   return {
     isAdmin, isPartner, learnIndex, topic, learnTopic, modulePreview, pendingCount, markLearned, markSeen,
-    market, sellerLine, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
+    market, segmentList, sellerLine, segmentView, moduleFit, saveSegment, savePersona, deletePersona, setModuleFit, setPersonaAngle, contextBrief, shareTip, proposeChange, withdraw, talkTrack,
     listAll, listAllVisible, createPlay, updatePlay, setPlayStatus, history, inbox, review, metrics, exportCards,
   };
 }

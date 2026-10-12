@@ -14,12 +14,12 @@ import { rememberedFilters, saveFilters, myCountry } from '~/lib/ui/remember';
 import PlaceFilter from '~/components/crm/PlaceFilter.astro';
 import { can } from '~/lib/admin/permissions';
 import { NO_ZONE } from '~/lib/accounts/service';
-import type { AccountState as State } from '~/lib/accounts/types';
+import { profileOf, type AccountState as State } from '~/lib/accounts/types';
 import { env } from '~/lib/env';
 import { i18n } from '~/lib/i18n';
 import { mapMessages } from '~/lib/i18n/messages/map';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
-import { priorityOf } from '~/lib/crm/priority';
+import { priorityFor } from '~/lib/crm/score';
 import { iconSvg } from '~/lib/ui/icons';
 import { buildMap, matchesTemp, temperature, zoneOwners, KIND_ICON, REP_COLORS, STATE_COLOR, type TempFilter } from '~/lib/crm/map';
 
@@ -47,18 +47,21 @@ const tipo = tipoQ === 'descartadas' || (tipoQ !== 'company' && (await acc.kinds
 const tempF = (['caliente', 'frio', 'sin'].includes(q.get('temp') ?? '') ? q.get('temp') : '') as TempFilter;
 const byRep = perms.manageAccounts && q.get('color') === 'comercial';
 
-const [{ items, scope: effective }, segments, weights, members] = await Promise.all([
-  acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: tipo === 'descartadas' ? 'discarded' : tipo || 'company' }), admin.playbook.market(), admin.crm.weights(),
-  perms.manageAccounts ? admin.tenantAdmin.listMembers() : Promise.resolve([]),
-]);
-const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
-const prioOf = (a: (typeof items)[number]) => priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights);
-const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
-const cooling = await admin.crm.cooling(byState.map((a) => a.id));
 // Las descartadas, en gris con su motivo (§23: «que otros comerciales vean que está, pero marcada como no ir por X»).
 const offF = q.get('descartadas') === '0' ? 'hide' : 'show';
-const off = tipo !== 'descartadas' && offF === 'show'
-  ? (await acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: 'discarded' })).items : [];
+const withOff = tipo !== 'descartadas' && offF === 'show';
+const [{ items, scope: effective }, offList, segments, weights, members, kindDefs] = await Promise.all([
+  acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: tipo === 'descartadas' ? 'discarded' : tipo || 'company' }),
+  withOff ? acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: 'discarded' }) : Promise.resolve(null),
+  admin.playbook.segmentList(), admin.crm.weights(),
+  perms.manageAccounts ? admin.tenantAdmin.listMembers() : Promise.resolve([]), acc.kinds(),
+]);
+const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
+// La nota según la ficha de su tipo (§24), como en la lista: local, promotora o DJ.
+const prioOf = (a: (typeof items)[number]) => priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights);
+const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
+const cooling = await admin.crm.cooling(byState.map((a) => a.id));
+const off = offList?.items ?? [];
 const shown = [...byState.filter((a) => matchesTemp(temperature(prioOf(a), cooling.get(a.id)), tempF)), ...off];
 
 // Quién lleva cada zona (para colorear por comercial): la asignación más cercana subiendo por sus zonas.

@@ -29,7 +29,7 @@ const ids = [...new Set(q.getAll('ids').flatMap((x) => x.split(',')).map((x) => 
 const m = /^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/.exec(q.get('desde') ?? '');
 const from = m && Math.abs(Number(m[1])) <= 90 && Math.abs(Number(m[2])) <= 180 ? { lat: Number(m[1]), lng: Number(m[2]) } : null;
 
-const [plan, segments, weights] = await Promise.all([admin.crm.routePlan({ ids, from }), admin.playbook.market(), admin.crm.weights()]);
+const [plan, segments, weights] = await Promise.all([admin.crm.routePlan({ ids, from }), admin.playbook.segmentList(), admin.crm.weights()]);
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 const time = (d: Date) => new Intl.DateTimeFormat(fmt.tag, { hour: '2-digit', minute: '2-digit' }).format(d);
 const keep = new URLSearchParams(ids.length ? { ids: ids.join(',') } : {});

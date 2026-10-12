@@ -1,7 +1,7 @@
 import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
 import type { PlaceResult } from '../crm/places';
-import type { Account, AccountContact, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep, AccountFact, KindDef } from './types';
+import type { Account, AccountContact, AccountRef, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep, AccountFact, KindDef } from './types';
 
 /** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
 export interface GoogleData {
@@ -60,6 +60,8 @@ export interface AccountsDb {
   getRules(tenantId: string): Promise<AccountRules>;
   saveRules(tenantId: string, r: AccountRules): Promise<void>;
   listAccounts(tenantId: string, f: AccountFilter): Promise<Account[]>;
+  /** Todas las del espacio, con pocas columnas (AccountRef), ordenadas por nombre. */
+  listAccountIndex(tenantId: string, limit: number): Promise<AccountRef[]>;
   getAccount(id: string): Promise<Account | null>;
   insertAccount(tenantId: string, a: AccountInsert): Promise<string>;
   /** Alta en bloque (importación). Devuelve los ids en el mismo orden. */

@@ -1,4 +1,5 @@
 ---
+import GroupPicker from '~/components/crm/GroupPicker.astro';
 /**
  * Cuentas (docs/ACCOUNTS.md): los locales de tu zona y quién los trabaja, para no pisarse.
  * Primero lo tuyo; después lo libre; lo de otros y lo bloqueado al final.
@@ -57,6 +58,11 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     if (str('action') === 'create') {
       const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes'), kind: str('kind') });
+      // «¿Es de algún grupo?» (§26): el elegido o uno nuevo. Si fallara, la empresa ya está creada: se sigue a su ficha.
+      if (str('groupId') || str('groupName').trim()) {
+        await admin.crm.moveToGroup([id], { groupId: str('groupId') || null, groupName: str('groupId') ? null : str('groupName') })
+          .catch((e) => console.warn('[alta] grupo', e instanceof Error ? e.message : e));
+      }
       to = `/admin/accounts/${id}?ok=created`;
     } else if (f.getAll('action').includes('release-many')) {
       // Va antes que «mover»: el botón de soltar está en el mismo formulario de la barra.
@@ -100,17 +106,16 @@ const crm = (await acc.crmFields()).filter((x) => x.target === 'account' && (!x.
 const filterable = crm.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
 const columns = crm.filter((x) => x.inList);
-const [{ items, total, scope: effective, kinds }, colleagues, segments, lists] = await Promise.all([
-  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined, view: listView }), acc.colleagues(), admin.playbook.market(), admin.crm.lists(),
+const [{ items, total, scope: effective, kinds }, colleagues, segments, lists, weights] = await Promise.all([
+  acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined, view: listView }), acc.colleagues(), admin.playbook.segmentList(), admin.crm.lists({ people: false }),
+  admin.crm.weights(),
 ]);
 const accountLists = lists.filter((l) => l.accounts > 0);
 // Etapa de la lista: chips por opción (filtran por su campo).
 const stage = lista ? crm.find((x) => x.isStage) : undefined;
-const groupNames = await admin.crm.names(items.map((a) => a.parentId ?? ''));
 // Prioridad (docs/CRM_DINAMICO.md §11): puntuación de cada empresa; ordenar por ella y filtrar sin cualificar / fuera / se enfrían.
 const orden = q.get('orden') === 'prioridad' ? 'prioridad' : '';
 const cual = (['sin', 'fuera', 'enfria', 'ia'].includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia';
-const weights = await admin.crm.weights();
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 // La nota según la ficha de su tipo (§24): local, promotora o DJ.
 const prio = new Map(items.map((a) => [a.id, priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights)]));
@@ -125,6 +130,8 @@ let shown = byState.filter((a) => {
 // Investigadas por IA: las últimas primero (para repasar sus propuestas).
 if (cual === 'ia' && orden !== 'prioridad') shown = [...shown].sort((x, y) => String(y.aiResearchAt).localeCompare(String(x.aiResearchAt)));
 if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.get(x.id)!, prio.get(y.id)!) || x.name.localeCompare(y.name, 'es'));
+// El nombre del grupo solo de las que se van a ver (no de todas las de la zona).
+const groupNames = await admin.crm.names(shown.slice(0, shownMax).map((a) => a.parentId ?? ''));
 const count = (s: State) => items.filter((a) => a.state === s).length;
 const mineCount = count('mine');
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
@@ -421,6 +428,7 @@ const panelOpen = nFilters > 0;
             <select class="co-select" name="kind" data-testid="new-account-kind">{kindDefs.map((k) => <option value={k.key} selected={k.key === (tipo && tipo !== 'descartadas' ? tipo : 'company')}>{k.label}</option>)}</select>
           </label>
         )}
+        <GroupPicker embedded />
         <label class="co-field">{M.address} <span class="co-help">{M.optional}</span><input class="co-input" name="address" maxlength="300" /></label>
         <label class="co-field">{M.notes} <span class="co-help">{M.optional}</span><textarea class="co-textarea !min-h-[64px]" name="notes" maxlength="2000" placeholder={M.notesPlaceholder}></textarea></label>
       </div>

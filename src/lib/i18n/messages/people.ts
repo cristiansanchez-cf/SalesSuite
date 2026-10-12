@@ -32,6 +32,10 @@ export const peopleMessages = defineMessages({
       noPeople: 'Aún no hay nadie de esta empresa.', lists: 'Listas', save: 'Guardar',
       sameOwner: (owner: string) => `Mismo titular (${owner})`, sameOwnerHelp: 'Mismo CIF o misma razón social en su web: suelen ser del mismo grupo, pero compruébalo (un grupo puede tener varias sociedades).',
       joinOwner: (name: string) => `Juntarlas en el grupo «${name}»`,
+      search: 'Buscar el grupo en tu CRM', searchPh: 'Escribe el nombre del grupo…', searchHelp: 'Si ya lo tienes, elígelo de la lista; si no, créalo desde aquí.',
+      have: 'Ya en tu CRM', create: 'Crear el grupo «{n}»', pick: 'Elige uno de la lista o «Crear el grupo».', change: 'Cambiar', putIn: 'Meter en el grupo',
+      nearby: (zone: string) => `Grupos en ${zone}`, nearbyHelp: 'Tienen locales en la misma zona: ¿es de alguno?', localesN: (n: number) => (n === 1 ? '1 local' : `${n} locales`),
+      ask: '¿Es de algún grupo?', askHelp: 'Opcional. Si es de un grupo que ya tienes, búscalo; si no, déjalo vacío.',
       ok: { owner: 'Juntadas en el grupo.', group: 'Grupo actualizado.', person: 'Persona añadida.', tags: 'Listas guardadas.', unlinked: 'Quitada de la empresa.' },
     },
     bulk: {
@@ -106,6 +110,10 @@ export const peopleMessages = defineMessages({
       noPeople: 'Nobody from this company yet.', lists: 'Lists', save: 'Save',
       sameOwner: (owner: string) => `Same legal owner (${owner})`, sameOwnerHelp: 'Same tax ID or company name on their website: they are usually the same group, but check it (a group can have several companies).',
       joinOwner: (name: string) => `Put them in the group «${name}»`,
+      search: 'Find the group in your CRM', searchPh: 'Type the group name…', searchHelp: 'If you already have it, pick it from the list; if not, create it here.',
+      have: 'Already in your CRM', create: 'Create the group «{n}»', pick: 'Pick one from the list or «Create the group».', change: 'Change', putIn: 'Put in the group',
+      nearby: (zone: string) => `Groups in ${zone}`, nearbyHelp: 'They have venues in the same area: is it one of them?', localesN: (n: number) => (n === 1 ? '1 venue' : `${n} venues`),
+      ask: 'Is it part of a group?', askHelp: 'Optional. If it belongs to a group you already have, find it; if not, leave it empty.',
       ok: { owner: 'Put in the group.', group: 'Group updated.', person: 'Person added.', tags: 'Lists saved.', unlinked: 'Removed from the company.' },
     },
     bulk: {
@@ -180,6 +188,10 @@ export const peopleMessages = defineMessages({
       noPeople: 'Ainda não há ninguém desta empresa.', lists: 'Listas', save: 'Salvar',
       sameOwner: (owner: string) => `Mesmo titular (${owner})`, sameOwnerHelp: 'Mesmo número fiscal ou mesma razão social no site: costumam ser do mesmo grupo, mas confirme (um grupo pode ter várias sociedades).',
       joinOwner: (name: string) => `Juntá-las no grupo «${name}»`,
+      search: 'Buscar o grupo no seu CRM', searchPh: 'Escreva o nome do grupo…', searchHelp: 'Se já o tem, escolha-o na lista; se não, crie-o aqui.',
+      have: 'Já no seu CRM', create: 'Criar o grupo «{n}»', pick: 'Escolha um da lista ou «Criar o grupo».', change: 'Mudar', putIn: 'Colocar no grupo',
+      nearby: (zone: string) => `Grupos em ${zone}`, nearbyHelp: 'Têm locais na mesma zona: é de algum?', localesN: (n: number) => (n === 1 ? '1 local' : `${n} locais`),
+      ask: 'É de algum grupo?', askHelp: 'Opcional. Se for de um grupo que já tem, procure-o; se não, deixe vazio.',
       ok: { owner: 'Juntadas no grupo.', group: 'Grupo atualizado.', person: 'Pessoa adicionada.', tags: 'Listas salvas.', unlinked: 'Tirada da empresa.' },
     },
     bulk: {
@@ -254,6 +266,10 @@ export const peopleMessages = defineMessages({
       noPeople: '아직 이 회사 사람이 없습니다.', lists: '목록', save: '저장',
       sameOwner: (owner: string) => `같은 사업자 (${owner})`, sameOwnerHelp: '웹사이트의 사업자 번호나 법인명이 같습니다. 보통 같은 그룹이지만 확인하세요 (한 그룹에 여러 법인이 있을 수 있습니다).',
       joinOwner: (name: string) => `«${name}» 그룹으로 묶기`,
+      search: 'CRM에서 그룹 찾기', searchPh: '그룹 이름을 입력하세요…', searchHelp: '이미 있으면 목록에서 고르고, 없으면 여기서 만드세요.',
+      have: '이미 CRM에 있음', create: '«{n}» 그룹 만들기', pick: '목록에서 고르거나 «그룹 만들기»를 누르세요.', change: '바꾸기', putIn: '그룹에 넣기',
+      nearby: (zone: string) => `${zone}의 그룹`, nearbyHelp: '같은 지역에 매장이 있습니다. 이 중 하나인가요?', localesN: (n: number) => `매장 ${n}개`,
+      ask: '그룹에 속해 있나요?', askHelp: '선택 사항입니다. 이미 있는 그룹이면 찾고, 아니면 비워 두세요.',
       ok: { owner: '그룹으로 묶었습니다.', group: '그룹을 바꿨습니다.', person: '추가했습니다.', tags: '목록을 저장했습니다.', unlinked: '회사에서 뺐습니다.' },
     },
     bulk: {

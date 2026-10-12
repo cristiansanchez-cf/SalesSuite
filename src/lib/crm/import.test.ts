@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { CrmField } from './fields';
-import { buildPlan, niceCase, canonicalOption, cleanLabel, isJunkCompany, matchMember, profileColumns, rawFor, readCsv, suggestMapping, toIsoDate, toNumber, type PlanContext } from './import';
+import { buildPlan, niceCase, canonicalOption, cleanLabel, isJunkCompany, matchMember, profileColumns, rawFor, readCsv, suggestMapping, MAX_ROWS, toIsoDate, toNumber, type PlanContext } from './import';
 
 // Datos inventados: los CSV reales no entran en el repo.
 const PROVEEDORES = `﻿Nombre,Ciudad,Estado Lead,Tipo,Precio desde €,Tiene Contacto,Último Post IG,Email,Canal Contacto,Responsable
@@ -166,3 +166,9 @@ describe('importar: datos limpios', () => {
   });
 });
 
+
+test('importar: justo el máximo de filas vale; una más se nota', () => {
+  const csv = (n: number) => `Nombre\n${Array.from({ length: n }, (_, i) => `Local ${i}`).join('\n')}\n`;
+  expect(readCsv(csv(MAX_ROWS)).rows.length).toBe(MAX_ROWS);
+  expect(readCsv(csv(MAX_ROWS + 50)).rows.length).toBe(MAX_ROWS + 1);
+});

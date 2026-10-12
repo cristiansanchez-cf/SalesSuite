@@ -71,7 +71,9 @@ const q = Astro.url.searchParams;
 const okMsg = flash(Astro.url, { saved: M.saved(Number(q.get('n')) || 0) + (Number(q.get('f')) ? M.failed(Number(q.get('f'))) : '') });
 // Lo que se acaba de guardar, para ir a cada ficha.
 const savedIds = okMsg ? (q.get('ids') ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 40) : [];
-const saved = savedIds.length ? (await Promise.all(savedIds.map((id) => admin.accounts.get(id).then((d) => d.account).catch(() => null)))).filter((a) => !!a) : [];
+// Solo los nombres (una consulta), no la ficha entera de cada una.
+const savedNames = await admin.crm.names(savedIds);
+const saved = savedIds.filter((id) => savedNames.has(id)).map((id) => ({ id, name: savedNames.get(id)! }));
 const items = box.items;
 // «Apuntar sobre este sitio» desde la ficha (§23): la empresa ya elegida, sin buscarla.
 const pre = !items && /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('empresa') ?? '')
@@ -130,6 +132,7 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
       </label>
       <p class="co-help m-0"><Icon name="mic" size={14} /> {M.dictate}</p>
       <button class="co-btn co-btn--primary w-fit" type="submit" disabled={!hasAi} data-busy={M.running} data-testid="notes-run"><Icon name="sparkles" size={16} /><span>{M.run}</span></button>
+      <p class="co-meta flex items-center gap-2" hidden aria-live="polite" data-notes-steps={JSON.stringify(M.steps)} data-testid="notes-steps"><span class="co-pulse-dot" aria-hidden="true"></span><span data-notes-step></span></p>
     </form>
   ) : (
     <form method="post" class="grid gap-4" data-testid="notes-review" data-no-progress>
@@ -255,10 +258,20 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
 </script>
 
 <script>
-  // Entender: la IA tarda unos segundos; el botón lo dice.
+  // Entender: la IA tarda unos segundos. El botón lo dice y, debajo, lo que va haciendo (en el orden en que lo hace:
+  // leer, separar por sitio, buscar en el CRM, cualificar…), cada ~2,5 s; el último se queda hasta que termina.
   document.querySelector<HTMLFormElement>('[data-notes-form]')?.addEventListener('submit', (e) => {
-    const b = (e.currentTarget as HTMLFormElement).querySelector<HTMLButtonElement>('[data-busy]');
+    const form = e.currentTarget as HTMLFormElement;
+    const b = form.querySelector<HTMLButtonElement>('[data-busy]');
     if (b) { b.disabled = true; b.querySelector('span')!.textContent = b.dataset.busy ?? ''; }
+    const box = form.querySelector<HTMLElement>('[data-notes-steps]');
+    const line = box?.querySelector<HTMLElement>('[data-notes-step]');
+    if (!box || !line) return;
+    const steps = JSON.parse(box.dataset.notesSteps ?? '[]') as string[];
+    let i = 0;
+    line.textContent = steps[0] ?? '';
+    box.hidden = false;
+    const tick = window.setInterval(() => { i++; if (i >= steps.length - 1) window.clearInterval(tick); line.textContent = steps[Math.min(i, steps.length - 1)]; }, 2500);
   });
 </script>
 

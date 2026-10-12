@@ -414,7 +414,7 @@ export type AccountsService = ReturnType<typeof createAccountsService>;
 export const emptyAccountsDb: AccountsDb = {
   async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async bumpUsage() { return true; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
   async listAssignments() { return []; }, async setAssignments() {}, async getRules() { return { claimDays: 30, strictZones: false, requireAccount: false }; },
-  async saveRules() {}, async listAccounts() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
+  async saveRules() {}, async listAccounts() { return []; }, async listAccountIndex() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
   async insertAccounts() { throw new Error('sin cuentas'); }, async deleteAccountsByImport() { return 0; },
   async updateAccount() { return false; }, async deleteAccount() { return false; }, async touch() { return 'eligible'; }, async listTouches() { return []; },
   async preview() { return 'eligible'; }, async decide() { return false; },

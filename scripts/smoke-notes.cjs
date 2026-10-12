@@ -18,7 +18,19 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.goto(`${BASE}/admin/accounts?ver=all`);
   await Promise.all([p.waitForURL(/\/admin\/accounts\/apuntar/), p.click('[data-testid=notes-fab]')]);
   await p.fill('[data-testid=notes-text]', 'CLUB SOOL - dos pantallas grandes en la barra, mirar sus redes\nBar Nuevo Setenta: sin pantalla, buena música y gente joven');
-  await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
+  // Mientras piensa: lo que va haciendo, frase a frase (se retrasa la respuesta para verlo; la página lo cuenta
+  // antes de navegar, porque Playwright no deja mirar el DOM mientras hay una navegación en marcha).
+  await p.route('**/admin/accounts/apuntar', async (r) => { if (r.request().method() === 'POST') await new Promise((ok) => setTimeout(ok, 3500)); await r.continue(); });
+  const seen = [];
+  await p.exposeFunction('__step', (t) => { seen.push(t); });
+  await p.evaluate(() => {
+    const el = document.querySelector('[data-notes-step]');
+    new MutationObserver(() => window.__step(el.textContent)).observe(el, { childList: true, characterData: true, subtree: true });
+  });
+  await Promise.all([p.waitForSelector('[data-testid=notes-review]', { timeout: 60000 }), p.click('[data-testid=notes-run]')]);
+  assert(seen[0]?.includes('Leyendo lo que has contado'), 'mientras piensa, dice lo que va haciendo');
+  assert(seen.some((x) => x.includes('Separando')), 'y va cambiando de frase');
+  await p.unroute('**/admin/accounts/apuntar');
   const items = await p.$$eval('[data-testid=notes-item]', (xs) => xs.map((x) => ({ venue: x.getAttribute('data-venue'), goes: x.querySelector('select').selectedOptions[0].textContent })));
   assert(items.length === 2, `dos sitios (${items.map((x) => x.venue)})`);
   assert(items[0].goes.startsWith('Club Sol'), `«CLUB SOOL» va a Club Sol (${items[0].goes})`);

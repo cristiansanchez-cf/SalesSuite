@@ -33,14 +33,15 @@ const chunks = <T,>(xs: T[], n = 300) => Array.from({ length: Math.ceil(xs.lengt
 
 /** PostgREST corta en 1000 filas por petición (db-max-rows): se pide por páginas hasta el límite. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function paged(build: () => any, limit: number, page = 1000): Promise<Row[]> {
-  const out: Row[] = [];
-  for (let from = 0; from < limit; from += page) {
-    const part = (check(await build().range(from, Math.min(from + page, limit) - 1)) ?? []) as Row[];
-    out.push(...part);
-    if (part.length < Math.min(page, limit - from)) break;
+export async function paged(build: () => any, limit: number, page = 1000, parallel = 4): Promise<Row[]> {
+  const get = async (from: number) => (check(await build().range(from, Math.min(from + page, limit) - 1)) ?? []) as Row[];
+  // La primera sola (lo normal es que quepa); si viene llena, las siguientes de `parallel` en `parallel`.
+  const out = await get(0);
+  for (let from = page; out.length === from && from < limit; from += page * parallel) {
+    const starts = Array.from({ length: parallel }, (_, i) => from + i * page).filter((x) => x < limit);
+    for (const part of await Promise.all(starts.map(get))) { out.push(...part); if (part.length < page) break; }
   }
-  return out;
+  return out.slice(0, limit);
 }
 
 export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
@@ -128,11 +129,17 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
     },
     async listActivities(t, accountIds, limit) {
       if (!accountIds.length) return [];
-      const out: Row[] = [];
-      for (const g of chunks(accountIds, 150)) {
-        out.push(...await paged(() => sb.from('crm_activity').select('*').eq('tenant_id', t).in('account_id', g).order('happened_at', { ascending: false }).order('created_at', { ascending: false }).order('id'), limit));
-      }
+      // Por tandas de 150 empresas, todas a la vez.
+      const out = (await Promise.all(chunks(accountIds, 150).map((g) =>
+        paged(() => sb.from('crm_activity').select('*').eq('tenant_id', t).in('account_id', g).order('happened_at', { ascending: false }).order('created_at', { ascending: false }).order('id'), limit)))).flat();
       return out.sort((a, b) => String(b.happened_at).localeCompare(String(a.happened_at))).slice(0, limit).map(toActivity);
+    },
+    async lastActivities(t, accountIds) {
+      if (!accountIds.length) return [];
+      // Una fila por empresa (vista crm_last_activity), por tandas a la vez.
+      const parts = await Promise.all(chunks(accountIds, 300).map(async (g) =>
+        (check(await sb.from('crm_last_activity').select('account_id, outcome, happened_at').eq('tenant_id', t).in('account_id', g)) ?? []) as Row[]));
+      return parts.flat().map((r) => ({ accountId: r.account_id, outcome: r.outcome, happenedAt: r.happened_at }));
     },
     async insertActivity(t, a) {
       const row: Row = { tenant_id: t, account_id: a.accountId, contact_id: a.contactId, channel: a.channel, outcome: a.outcome, note: a.note };

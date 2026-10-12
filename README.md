@@ -76,7 +76,7 @@ Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/op
 | `npm run dev` / `build` / `start` / `start:demo` | Desarrollo / build SSR / servidor Node / servidor Node en demo |
 | `npm run tenant:bootstrap -- tenants/<slug> [--dry-run]` | Alta/actualización idempotente de un tenant en Supabase (service role) |
 | `npm run check` | `astro check` (tipos) |
-| `npm test` | Vitest: tema (incl. inyección CSS), precios, rank fraccional, resolución de props, gates del repo demo, resolución de tenant |
+| `npm test` | Vitest: unitarias de todo `src/` y los contratos contra la base demo (ver `docs/DESARROLLO.md`) |
 | `npm run db:test` | Migración + seed + **aserciones de RLS/RPC** sobre un Postgres pelado (stub de `auth`), sin Supabase CLI |
 | `npm run db:it` | Contrato del servicio de la consola (dossiers, equipo, catálogo, marca) y script de alta contra **Postgres + PostgREST + RLS** reales con `supabase-js` (`POSTGREST_BIN=/ruta/postgrest`) |
 | `npm run db:seed:build` | Regenera `supabase/seed.sql` desde `fixtures.json` (CI comprueba que está al día) |
@@ -86,7 +86,7 @@ Arquitectura: el builder (Svelte) solo envía **operaciones** (`src/lib/admin/op
 | `node scripts/smoke-market.cjs` | Smoke Playwright de sectores/actores, Preparar mensaje, cuenta del dossier, guion «Con quién hablas» y seguimiento |
 | `node scripts/smoke-playbook.cjs` | Smoke Playwright del playbook: aprender, votar, compartir, proponer, bandeja del líder, guion en el builder |
 
-Los smokes van contra un servidor en modo demo: `npm run build && npm run start:demo`.
+Los smokes van contra un servidor en modo demo: `npm run build && npm run start:demo`. Hay uno por flujo en `scripts/smoke-*.cjs` (todos en CI); arriba solo los primeros. **Cómo se prueba, dónde va cada cosa y las reglas de rendimiento: [`docs/DESARROLLO.md`](docs/DESARROLLO.md).**
 
 ## Estructura
 

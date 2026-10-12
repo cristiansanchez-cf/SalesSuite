@@ -158,6 +158,16 @@ export function demoCrmDb(actorId: string): CrmDb {
         .sort((a, b) => b.happened_at.localeCompare(a.happened_at)).slice(0, limit)
         .map((r) => ({ id: r.id, accountId: r.account_id, contactId: r.contact_id, userId: r.user_id, channel: r.channel as Activity['channel'], outcome: r.outcome as Activity['outcome'], note: r.note, happenedAt: r.happened_at }));
     },
+    async lastActivities(t, accountIds) {
+      if (!isMember(t, actorId)) return [];
+      const last = new Map<string, { accountId: string; outcome: Activity['outcome']; happenedAt: string }>();
+      for (const a of db().crm_activity) {
+        if (a.tenant_id !== t || a.outcome === 'note' || !accountIds.includes(a.account_id)) continue;
+        const prev = last.get(a.account_id);
+        if (!prev || a.happened_at > prev.happenedAt) last.set(a.account_id, { accountId: a.account_id, outcome: a.outcome as Activity['outcome'], happenedAt: a.happened_at });
+      }
+      return [...last.values()];
+    },
     async insertActivity(t, a) {
       const s = db();
       if (!isMember(t, actorId)) throw new Error('permission denied: crm_activity');

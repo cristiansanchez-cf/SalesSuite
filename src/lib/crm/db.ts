@@ -27,6 +27,8 @@ export interface CrmDb {
   deleteContactsByImport(importId: string): Promise<number>;
   /** Interacciones de unas empresas, de la más reciente a la más antigua. */
   listActivities(tenantId: string, accountIds: string[], limit: number): Promise<Activity[]>;
+  /** La última interacción de verdad (no las notas) de cada empresa: lo único que necesita «se enfría». */
+  lastActivities(tenantId: string, accountIds: string[]): Promise<Array<{ accountId: string; outcome: Activity['outcome']; happenedAt: string }>>;
   insertActivity(tenantId: string, a: { accountId: string; contactId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt?: string }): Promise<string>;
   deleteActivity(id: string): Promise<boolean>;
 }

@@ -54,7 +54,7 @@ const [{ items, tray: trayCount }, lists, allFields, companies] = await Promise.
   admin.accounts.list({ scope: 'all' }).then((r) => r.items.map((a) => a.name)),
 ]);
 // La prioridad de una persona es la de su mejor empresa (docs/CRM_DINAMICO.md §11).
-const [weights, segs] = await Promise.all([admin.crm.weights(), admin.playbook.market()]);
+const [weights, segs] = await Promise.all([admin.crm.weights(), admin.playbook.segmentList()]);
 const segKey = new Map(segs.map((sg) => [sg.id, sg.key]));
 const bestOf = (cs: (typeof items)[number]['companies']): Priority | null =>
   cs.map((c) => priorityOf(c.qualification, segKey.get(c.segmentId ?? '') ?? null, weights)).sort(compareLeads)[0] ?? null;

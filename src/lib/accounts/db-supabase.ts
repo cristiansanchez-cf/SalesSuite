@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AccountInsert, AccountsDb } from './db';
 import type { CrmField, FieldType } from '../crm/fields';
 import { paged } from '../crm/db-supabase';
-import { DEFAULT_RULES, type Account, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
+import { DEFAULT_RULES, type Account, type AccountRef, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -16,6 +16,13 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
 }
 // En la lista no va «Lo que sabemos» (puede ser largo): solo al abrir una empresa.
 const ACCOUNT_COLS = 'id, tenant_id, name, zone_id, segment_id, address, external_ref, notes, status, blocked_reason, owner_id, claimed_until, last_touch_at, last_touch_by, won_at, won_by, won_dossier_id, created_by, created_at, fields, parent_id, tags, import_id, phone, email, instagram, facebook, linkedin, website, maps_url, tiktok, music_url, legal_name, tax_id, next_step, next_step_at, next_contact_id, next_channel, qualification, place_id, hours, lat, lng, place_status, place_at, place_rating, place_reviews, place_photo, place_filled, kind, discarded_at, discard_reason, discard_note, ai_research_at';
+// Índice ligero (AccountRef): lo justo para buscar, agrupar y ver duplicados entre todas las del espacio.
+const REF_COLS = 'id, tenant_id, name, kind, parent_id, zone_id, segment_id, place_id, owner_id, tags, qualification, discarded_at, tax_id, legal_name';
+const toRef = (r: Row): AccountRef => ({
+  id: r.id, tenantId: r.tenant_id, name: r.name, kind: (r.kind ?? 'company') as Account['kind'], parentId: r.parent_id ?? null, zoneId: r.zone_id ?? null,
+  segmentId: r.segment_id ?? null, placeId: r.place_id ?? null, ownerId: r.owner_id ?? null, tags: r.tags ?? [], qualification: r.qualification ?? {},
+  discardedAt: r.discarded_at ?? null, taxId: r.tax_id ?? null, legalName: r.legal_name ?? null,
+});
 const toAccount = (r: Row): Account => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, zoneId: r.zone_id, segmentId: r.segment_id, address: r.address, externalRef: r.external_ref,
   notes: r.notes, status: r.status, blockedReason: r.blocked_reason, ownerId: r.owner_id, claimedUntil: r.claimed_until, lastTouchAt: r.last_touch_at,
@@ -95,6 +102,9 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
         if (f.q?.trim()) q = q.ilike('name', like(f.q.trim()));
         return q.order('name').order('id');
       }, f.limit)).map(toAccount);
+    },
+    async listAccountIndex(t, limit) {
+      return (await paged(() => sb.from('account').select(REF_COLS).eq('tenant_id', t).order('name').order('id'), limit)).map(toRef);
     },
     async getAccount(id) {
       const r = check(await sb.from('account').select(`${ACCOUNT_COLS}, facts`).eq('id', id).maybeSingle());

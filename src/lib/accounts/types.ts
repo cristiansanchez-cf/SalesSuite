@@ -111,6 +111,14 @@ export interface Account {
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }
+/**
+ * Índice ligero de una empresa: lo justo para buscar por nombre, agrupar, ver duplicados o filtrar por tipo, sin traer
+ * las ~55 columnas (horario, campos, «Lo que sabemos»…). Para pantallas que miran todas las empresas del espacio.
+ */
+export const ACCOUNT_REF_KEYS = ['id', 'tenantId', 'name', 'kind', 'parentId', 'zoneId', 'segmentId', 'placeId', 'ownerId', 'tags', 'qualification',
+  'discardedAt', 'taxId', 'legalName'] as const;
+export type AccountRef = Pick<Account, (typeof ACCOUNT_REF_KEYS)[number]>;
+
 export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl', 'tiktok', 'musicUrl', 'legalName', 'taxId'] as const;
 export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;
 

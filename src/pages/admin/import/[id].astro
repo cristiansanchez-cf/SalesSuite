@@ -74,7 +74,7 @@ if (Astro.request.method === 'POST') {
 
 const mapping = imp.mapping;
 const core: readonly CoreKey[] = imp.target === 'account' ? ACCOUNT_CORE : CONTACT_CORE;
-const segments = imp.target === 'account' ? await admin.playbook.market() : [];
+const segments = imp.target === 'account' ? await admin.playbook.segmentList() : [];
 let plan: ImportPlan | null = null;
 if (imp.status === 'draft' && Astro.url.searchParams.get('preview') === '1') plan = (await admin.crm.importPreview(id)).plan;
 const sel = (p: (typeof profiles)[number]) => {
