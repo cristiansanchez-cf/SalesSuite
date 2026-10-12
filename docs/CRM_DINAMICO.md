@@ -1001,3 +1001,15 @@ botón de guardar.
   con **«Guardar interacción»**.
 - Sin elegir qué pasó no se guarda; «Solo una nota» necesita texto. La nota sigue guardándose como borrador.
 - Pruebas: `smoke-followup.cjs`, `smoke-accounts.cjs`, `smoke-board.cjs`.
+
+## 40. Apuntar también para DJs y promotoras: sus canales y estilo House
+
+Pedido de Cristian (búsqueda de un DJ, Marf Daniels): mucho de lo que sale debería ir a su ficha.
+
+- Apuntar ya sirve para DJs y promotoras (§24): sabe qué es, crea su ficha de su tipo, enlaza dónde pincha o hace
+  fiestas (días, residente o invitado) y marca sus preguntas (estilo, seguidores…). Lo que cuenta (trayectoria,
+  proyectos, academia, radio) va a «Lo que sabemos».
+- Nuevo: **sus canales** (web, Instagram, Facebook, TikTok, su música en SoundCloud/Spotify/YouTube, teléfono, email)
+  salen en la revisión («Sus canales», con casillas) y van a su ficha **solo si no los tiene** (no pisa nada).
+- Nuevo estilo **House (deep, tech, afro)** para DJs y promotoras.
+- Pruebas: `smoke-notes.cjs` (un DJ con su web y su SoundCloud → ficha de DJ con su música).

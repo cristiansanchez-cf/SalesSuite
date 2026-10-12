@@ -11,7 +11,7 @@
  */
 import type { Fit, Priority } from './priority';
 
-export const STYLES = ['international', 'erasmus', 'commercial', 'latin', 'pop', 'lgtb', 'tardeo', 'techno', 'lineup'] as const;
+export const STYLES = ['international', 'erasmus', 'commercial', 'latin', 'pop', 'lgtb', 'tardeo', 'house', 'techno', 'lineup'] as const;
 export type Style = (typeof STYLES)[number];
 /** Estilos con los que no solemos encajar (se suelen descartar): no puntúan y avisan. */
 export const OFF_STYLES: readonly Style[] = ['techno', 'lineup'];

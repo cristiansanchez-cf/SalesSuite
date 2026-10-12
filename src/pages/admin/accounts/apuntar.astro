@@ -26,6 +26,7 @@ if (!can(admin.session.role).useAccounts) return Astro.rewrite('/admin/forbidden
 const { m: M, locale } = i18n(Astro, notesMessages);
 const PR = priorityMessages[locale];
 const PRF = profilesMessages[locale];
+const CK: Record<string, string> = M.contactKeys;
 const CLN = cleanupMessages[locale];
 const FU = followupMessages[locale];
 
@@ -60,7 +61,8 @@ if (Astro.request.method === 'POST') {
         discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null,
         kind: str(`kind-${i}`) || undefined,
         worksAt: f.getAll(`wk-${i}`).map((x) => (it.worksAt ?? [])[Number(x)]).filter(Boolean),
-        people: f.getAll(`pp-${i}`).map((x) => (it.people ?? [])[Number(x)]).filter(Boolean) };
+        people: f.getAll(`pp-${i}`).map((x) => (it.people ?? [])[Number(x)]).filter(Boolean),
+        contact: Object.fromEntries(f.getAll(`ct-${i}`).map(String).filter((k) => (it.contact ?? {})[k as keyof typeof it.contact]).map((k) => [k, it.contact[k as keyof typeof it.contact]!])) };
     }).filter(Boolean);
     const r = await admin.crm.notesApply(rows);
     const ok = r.filter((x) => x.ok && x.accountId);
@@ -164,6 +166,15 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
                 <label class="inline-flex items-center gap-2 text-sm"><input type="checkbox" name={`wk-${i}`} value={String(j)} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-work" />
                   <span><strong>{w.place}</strong>{[w.what ? kindDefs.find((k) => (k.profile ?? 'venue') === w.what)?.label ?? '' : '', ...[w.days.map((d) => PRF.daysLong[d]).join(', '), w.role ? PRF.roles[w.role] : '', w.freq ? PRF.freqs[w.freq] : '']].filter(Boolean).map((x) => ` · ${x}`).join('')}</span></label>
               ))}
+            </fieldset>
+          )}
+          {Object.keys(it.contact ?? {}).length > 0 && (
+            <fieldset class="grid gap-1" data-testid="notes-contact">
+              <legend class="co-field mb-1">{M.contactTitle}</legend>
+              <span class="co-help">{M.contactHelp}</span>
+              <div class="co-chips">
+                {Object.entries(it.contact).map(([k, v]) => <label class="co-chip"><input type="checkbox" class="mr-1" name={`ct-${i}`} value={k} checked data-testid="notes-contact-item" />{CK[k] ?? k}: {v}</label>)}
+              </div>
             </fieldset>
           )}
           {(it.people ?? []).length > 0 && (

@@ -17,7 +17,7 @@ import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
 import { cleanTaxId, fixtureWebsite, realWebsite, type Socials, type WebsiteApi } from './website';
 import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
-import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizePeople, type NoteItem, type NotesApi } from './notes';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizePeople, NOTE_CONTACT_KEYS, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
@@ -1202,6 +1202,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         discard: items.find((it) => it.discard)?.discard ?? null, discardWhy: items.find((it) => it.discard)?.discardWhy ?? null,
         entity: items.find((it) => it.entity)?.entity ?? null, worksAt: items.flatMap((it) => it.worksAt).slice(0, 12),
         people: sanitizePeople(items.flatMap((it) => it.people)),
+        contact: Object.assign({}, ...items.map((it) => it.contact)),
       };
       return [{ ...one, candidates: [{ id: chosen.id, name: chosen.name, zone: placeOf(zones, chosen.zoneId), score: 1, discarded: !!chosen.discardedAt }] }];
     }
@@ -1232,6 +1233,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional(), role: z.enum(['resident', 'guest']).nullable().optional(),
       what: z.enum(PROFILES).nullable().optional() })).max(12).default([]),
     discardNote: z.string().trim().max(500).nullable().optional().transform((v) => v || null),
+    /** Canales del propio sitio confirmados (§40): solo se rellenan los que la ficha no tiene. */
+    contact: z.record(z.enum(NOTE_CONTACT_KEYS), z.string().max(300)).default({}),
     /** Personas confirmadas (§38): se enlazan a la empresa (la que ya esté, por nombre) o se crean. */
     people: z.array(z.object({ name: z.string().trim().min(1).max(120), role: z.string().trim().max(80).nullable().optional(),
       phone: z.string().trim().max(40).nullable().optional(), email: z.string().trim().max(200).nullable().optional(),
@@ -1330,6 +1333,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
           const kindOf = (w: (typeof r.worksAt)[number]) => (w.what === 'venue' ? BASE_KIND : w.what ? ks.find((k) => k.profile === w.what)?.key ?? otherKind : otherKind);
           for (const w of r.worksAt) await workLinkAdd(id, { name: w.place, kind: kindOf(w), days: w.days, ...(w.freq ? { freq: w.freq } : {}), ...(w.role ? { role: w.role } : {}) });
         }
+        // Su web, su Instagram, su música… (§40): solo lo que le falta, sin pisar lo que ya tiene.
+        const fresh = await accounts.getAccount(id);
+        const missing = Object.fromEntries(Object.entries(r.contact).filter(([k, v]) => v && fresh && !fresh[k as keyof Account]));
+        if (Object.keys(missing).length) await setCompanyContact(id, missing).catch(() => undefined);
         if (r.people.length) await notePeople(id, r.people);
         out.push({ accountId: id, name, ok: true });
       } catch (e) {

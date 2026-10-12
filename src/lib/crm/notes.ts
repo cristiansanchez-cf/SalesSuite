@@ -45,8 +45,11 @@ export interface NoteItem {
    */
   worksAt: Array<{ place: string; days: LinkDay[]; freq: LinkFreq | null; role: 'resident' | 'guest' | null; what?: Profile | null }>;
   /** Personas del sitio (dueños, socios, gerentes, encargados…), cada una con su contacto (§38): van a «Personas». */
-  people: NotePerson[];
+  people: NotePerson[];  /** Canales del propio sitio, promotora o DJ (su web, su Instagram, su música…): van a su ficha si no los tiene (§40). */
+  contact: Partial<Record<NoteContactKey, string>>;
 }
+export const NOTE_CONTACT_KEYS = ['website', 'instagram', 'facebook', 'tiktok', 'musicUrl', 'phone', 'email'] as const;
+export type NoteContactKey = (typeof NOTE_CONTACT_KEYS)[number];
 export interface NotePerson { name: string; role: string | null; phone: string | null; email: string | null; instagram: string | null; linkedin: string | null; note: string | null }
 /** Un campo de la ficha del espacio, para que la IA sepa qué puede rellenar. */
 export interface NoteField { key: string; label: string; type: string; options: string[] }
@@ -72,7 +75,7 @@ export const NOTES_TOOL = {
         type: 'array',
         items: {
           type: 'object', additionalProperties: false,
-          required: ['venue', 'entity', 'works_at', 'people', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'qualification', 'discard', 'discard_why'],
+          required: ['venue', 'entity', 'works_at', 'people', 'contact', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'qualification', 'discard', 'discard_why'],
           properties: {
             venue: { ...S, description: 'Nombre del sitio tal como lo dice la persona (corrige solo mayúsculas).' },
             interaction: { ...SN, description: 'Lo que ha PASADO con ellos: que fue y cuándo, con quién habló, el mensaje que les mandó, qué contestaron. Corto, con sus palabras. Si estuvo allí solo mirando: «Visita: solo observar, sin hablar con nadie» (y la hora si la dice). null si no hubo contacto ni visita.' },
@@ -102,6 +105,16 @@ export const NOTES_TOOL = {
                   freq: { ...S, description: 'regular (habitual) | sporadic (de vez en cuando) | once (alguna vez) | "" si no lo dice.' },
                   role: { ...S, description: 'Si es un DJ: resident | guest; si no, "".' },
                 },
+              },
+            },
+            contact: {
+              type: 'object', additionalProperties: false, required: ['website', 'instagram', 'facebook', 'tiktok', 'music', 'phone', 'email'],
+              description: 'Canales del PROPIO elemento (el local, la promotora o el DJ), no de una persona ni de otro sitio. "" en lo que no se diga.',
+              properties: {
+                website: { ...S, description: 'Su web oficial (URL).' }, instagram: { ...S, description: 'Su Instagram (URL o @usuario).' },
+                facebook: { ...S, description: 'Su Facebook (URL).' }, tiktok: { ...S, description: 'Su TikTok (URL).' },
+                music: { ...S, description: 'Donde se escucha su música: SoundCloud, Spotify, Mixcloud o YouTube (la principal, URL).' },
+                phone: { ...S, description: 'Su teléfono.' }, email: { ...S, description: 'Su email.' },
               },
             },
             people: {
@@ -137,7 +150,7 @@ export const NOTES_TOOL = {
                 size: { ...S, description: 'Tamaño (aforo) en tramos: small | medium | large | huge. Local: hasta 150 / 150-500 / 500-1.500 / más. Conciertos: hasta 500 / 500-2.000 / 2.000-10.000 / más. Festival: hasta 5.000 / 5.000-20.000 / 20.000-50.000 / más. Solo si lo dicen o se deduce claro (p. ej. «se llena de 300»)' },
                 coverage: { ...S, description: 'true solo si dice que NO hay cobertura móvil dentro.' },
                 validate: { ...S, description: 'true solo si ELLOS han dicho que no pueden validar lo que sale en pantalla.' },
-                pstyle: { ...S, description: 'PROMOTORA o DJ: estilo, uno o varios separados por coma: international (fiestas de una comunidad: francesa, ucraniana…), erasmus, commercial, latin, pop (indie, revival), lgtb, tardeo, techno (underground), lineup (cartel de DJs y punto). "" si no.' },
+                pstyle: { ...S, description: 'PROMOTORA o DJ: estilo, uno o varios separados por coma: international (fiestas de una comunidad: francesa, ucraniana…), erasmus, commercial, latin, pop (indie, revival), lgtb, tardeo, house (house, deep, tech house, afro house), techno (underground), lineup (cartel de DJs y punto). "" si no.' },
                 pdyn: { ...S, description: 'PROMOTORA: ¿hace dinámicas, juegos o concursos? yes | partly | no | "".' },
                 pcontent: { ...S, description: 'PROMOTORA: ¿cuida el contenido y las redes? yes | partly | no | "".' },
                 pevents: { ...S, description: 'PROMOTORA: fiestas al mes: 1 | 2-3 | 4+ | "".' },
@@ -217,9 +230,23 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
         return [{ place, days, freq, role, what }];
       }),
       people: sanitizePeople(r.people),
+      contact: sanitizeContact(r.contact),
     });
   }
   return out;
+}
+
+/** Canales del propio elemento: solo URLs https (o @usuario de Instagram), teléfono y email con forma de serlo. */
+export function sanitizeContact(raw: unknown): Partial<Record<NoteContactKey, string>> {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const v = (k: string) => String(r[k] ?? '').trim();
+  const url = (x: string) => (/^https:\/\/[^\s"'<>]{4,300}$/.test(x) ? x : '');
+  const out: Partial<Record<NoteContactKey, string>> = {
+    website: url(v('website')), instagram: /^@[\w.]{2,30}$/.test(v('instagram')) ? v('instagram') : url(v('instagram')), facebook: url(v('facebook')),
+    tiktok: url(v('tiktok')), musicUrl: url(v('music')), phone: /^\+?[\d\s().-]{6,20}$/.test(v('phone')) ? v('phone') : '',
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('email')) ? v('email').toLowerCase() : '',
+  };
+  return Object.fromEntries(Object.entries(out).filter(([, x]) => x)) as Partial<Record<NoteContactKey, string>>;
 }
 
 /** Personas con nombre (como mucho 12, sin repetir), cada dato limpio o null. */
@@ -316,6 +343,7 @@ export const fixtureNotes = (): NotesApi => ({
       works_at: [...m[2].matchAll(/(lunes|martes|miércoles|jueves|viernes|sábados?|domingos?) en ([A-ZÁÉÍÓÚ][\wáéíóúñ]*(?: [A-ZÁÉÍÓÚ][\wáéíóúñ]*)*)/g)].map((x) => ({
         place: x[2], what: /promotora|\bdj\b/i.test(m[1] + m[2]) ? 'venue' : /dj/i.test(x[2]) ? 'dj' : 'promoter', days: ({ lunes: 'mon', martes: 'tue', 'miércoles': 'wed', jueves: 'thu', viernes: 'fri', 'sábado': 'sat', 'sábados': 'sat', domingo: 'sun', domingos: 'sun' } as Record<string, string>)[x[1]] ?? '', freq: 'regular', role: '' })),
       discard: /mejor no ir|nos ech|gilipollas/i.test(m[2]) ? 'avoid' : /no les interesa/i.test(m[2]) ? 'not_interested' : /no encaja/i.test(m[2]) ? 'no_fit' : '', discard_why: /mejor no ir|nos ech|gilipollas|no les interesa|no encaja/i.test(m[2]) ? m[2].trim().slice(0, 120) : '',
+      contact: { website: /https:\/\/(?!www\.instagram|soundcloud)[\w./-]+/.exec(m[2])?.[0] ?? '', instagram: '', facebook: '', tiktok: '', music: /https:\/\/soundcloud\.com\/[\w-]+/.exec(m[2])?.[0] ?? '', phone: '', email: '' },
       people: [...m[2].matchAll(/hablé con ([A-ZÁÉÍÓÚ][a-záéíóúñ]+(?: [A-ZÁÉÍÓÚ][a-záéíóúñ]+)?)(?:,? (?:el|la) ([a-záéíóúñ]+))?(?: \(?(@[\w.]+)\)?)?/g)].map((x) => ({ name: x[1], role: x[2] ?? '', phone: '', email: '', instagram: x[3] ?? '', linkedin: '', note: '' })),
       qualification: { screens: /no quiere/i.test(m[2]) ? 'no' : /sin pantalla/i.test(m[2]) ? null : /pantalla/i.test(m[2]) ? 'yes' : null, format: /rooftop/i.test(m[2]) ? 'rooftop' : 'club', dj: /dj invitad/i.test(m[2]) ? 'guests' : /dj/i.test(m[2]) ? 'resident' : null },
     }));
