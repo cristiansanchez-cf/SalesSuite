@@ -89,6 +89,14 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   await adm.locator('[data-testid=new-account-form] [data-testid=group-option]').filter({ hasText: 'Grupo Costa Smoke' }).first().click();
   await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
   assert((await adm.textContent('[data-testid=account-group]')).includes('Grupo Costa Smoke'), 'el alta ya lo mete en el grupo elegido');
+  // El grupo no se cualifica (§37): sus locales, cada uno con lo suyo, y se entra a cada uno a cualificarlo.
+  const back = adm.url();
+  await Promise.all([adm.waitForURL(/\/admin\/accounts\/[^/?#]+/), adm.click('[data-testid=account-group] a:has-text("Grupo Costa Smoke")')]);
+  assert(await adm.isVisible('[data-testid=group-locales] [data-testid=group-local][data-name="Terraza Brisa Alta"]') && !(await adm.isVisible('[data-testid=qual-size-small]')),
+    'grupo: sus locales en vez de la cualificación');
+  await Promise.all([adm.waitForURL(/\/admin\/accounts\/[^/?#]+/), adm.click('[data-testid=group-local][data-name="Terraza Brisa Alta"] a')]);
+  assert(await adm.isVisible('[data-testid=qual-size-small]'), 'el local sí se cualifica');
+  await adm.goto(back);
 
   // Grupos de su ciudad: otra empresa de la misma zona sin grupo ve «Grupos en …» y lo elige con un clic.
   await adm.goto(`${BASE}/admin/accounts?ver=all`);

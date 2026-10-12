@@ -33,6 +33,7 @@ import { suggestTariff } from '~/lib/crm/charge';
 import { chargeMessages } from '~/lib/i18n/messages/charge';
 import { SIZE_LIMITS, SIZES, formatsOf, sizeScaleOf } from '~/lib/crm/priority';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
+import GroupLocalesCard from '~/components/crm/GroupLocalesCard.astro';
 import AiResearchCard from '~/components/crm/AiResearchCard.astro';
 import { notesMessages } from '~/lib/i18n/messages/notes';
 import { researchContext } from '~/lib/crm/research-context';
@@ -180,6 +181,14 @@ const profile = profileOf(kindDefs, a.kind);
 const PRF = profilesMessages[locale];
 const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
 const prio = priorityFor(a.qualification, profile, segKey, weights);
+// Un grupo (§37) no se cualifica: sus locales, cada uno con su tipo, tamaño y nota.
+const isGroup = co.locales.length > 0;
+const groupLocals = isGroup
+  ? (await admin.crm.groupLocales(a.id)).map((l) => ({ id: l.id, name: l.name, zone: l.zoneId ? zonePath(t.zones, l.zoneId) : null, q: l.qualification,
+      owner: l.ownerId ? (members.find((x) => x.userId === l.ownerId)?.displayName ?? null) : null,
+      p: priorityFor(l.qualification, profileOf(kindDefs, l.kind), segments.find((sg) => sg.id === l.segmentId)?.key ?? null, weights) }))
+  : [];
+const groupBest = groupLocals.filter((l) => !l.p.out && l.p.qualified).sort((x, y) => y.p.score - x.p.score)[0] ?? null;
 // Qué se enseña como «le encaja» en cada ficha (a una promotora o un DJ no les aplica la fidelización).
 const fitKeys = (profile === 'venue' ? PACKAGES : profile === 'promoter' ? (['requests', 'screen', 'photos'] as const) : (['requests'] as const)) as readonly (keyof typeof prio.fit)[];
 const fitLabel = (k: keyof typeof prio.fit) => (profile === 'venue' ? PS.packages[k] : (PRF.packages as Record<string, string>)[k] ?? PS.packages[k]);
@@ -245,14 +254,18 @@ const STATE_ALERT = {
       {/* Resumen (§22): lo que hace falta de un vistazo en la puerta del local; y saltos a cada parte (en el móvil la ficha es larga). */}
       <section id="account-summary" class="co-card grid gap-3 !p-4" data-testid="account-summary">
         <div class="grid gap-2">
-          {a.state !== 'customer' && (prio.out
+          {isGroup ? (
+            <span class="inline-flex items-baseline gap-1" data-testid="summary-group">{groupBest
+              ? <><span class="co-figure text-3xl">{groupBest.p.score}</span><span class="co-meta">/ 100 · {PS.group.score}: {groupBest.name}</span></>
+              : <span class="co-meta">{PS.group.title(groupLocals.length)} · {PS.group.pending(groupLocals.filter((l) => !l.p.qualified).length)}</span>}</span>
+          ) : a.state !== 'customer' && (prio.out
             ? <span class="co-tag co-tag--danger">{PS.outBy(prio.kills.map((k) => PS.kills[k]).join(' · '))}</span>
             : <span class="inline-flex items-baseline gap-1"><span class="co-figure text-3xl" data-testid="summary-score">{prio.score}</span><span class="co-meta">/ 100{!prio.qualified && ` · ${PS.unqualified}`}</span></span>)}
-          <div class="flex min-w-0 flex-wrap items-center gap-1.5" data-testid="summary-fit">
+          {!isGroup && <div class="flex min-w-0 flex-wrap items-center gap-1.5" data-testid="summary-fit">
             {(() => { const fits = fitKeys.filter((k) => prio.fit[k] === 'yes' || prio.fit[k] === 'maybe'); return fits.length
               ? <><span class="co-meta">{PS.summary.fits}:</span>{fits.map((k) => <span class:list={['co-tag', prio.fit[k] === 'yes' ? 'sum-fit-yes' : 'sum-fit-maybe']}>{fitLabel(k)}{PRESALE.includes(k) ? ` (${PS.presale})` : ''}</span>)}</>
               : <span class="co-meta">{PS.summary.noFit}</span>; })()}
-          </div>
+          </div>}
         </div>
         {/* En la puerta del local: apuntar sobre este sitio, llegar, llamar o escribir (lo que hay, sin buscarlo). */}
         <div class="flex flex-wrap gap-2" data-testid="summary-actions">
@@ -272,7 +285,7 @@ const STATE_ALERT = {
         </a>
         <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
           {([['facts', '#facts'], ['qual', '#qual'], ['follow', '#follow'], ['people', '#acc-people'], ['data', '#company-contact']] as const).map(([k, h]) => (
-            <a class="co-chip whitespace-nowrap !no-underline" href={h}>{PS.summary.jump[k]}</a>))}
+            <a class="co-chip whitespace-nowrap !no-underline" href={h}>{k === 'qual' && isGroup ? PS.group.jump : PS.summary.jump[k]}</a>))}
         </nav>
         {canQualify && !a.discardedAt && a.state !== 'customer' && a.state !== 'my_customer' && (
           <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
@@ -361,7 +374,7 @@ const STATE_ALERT = {
 
       {profile === 'venue' && a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
 
-      {a.state !== 'customer' && (profile === 'venue'
+      {isGroup ? <GroupLocalesCard locales={groupLocals} /> : a.state !== 'customer' && (profile === 'venue'
         ? <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />
         : <ProfileCard profile={profile} q={a.qualification as Record<string, unknown>} p={prio} canEdit={canQualify} />)}
 

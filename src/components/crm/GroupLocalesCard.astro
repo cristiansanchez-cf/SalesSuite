@@ -1,0 +1,49 @@
+---
+/**
+ * Locales del grupo (docs/CRM_DINAMICO.md §37). Un grupo no se cualifica: cada local es de su tipo (discoteca, rooftop,
+ * sala…) y tiene su tamaño y su nota. Aquí se ve cada uno con lo suyo y se entra a su ficha a cualificarlo.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { formatsOf, type Priority, type Qualification } from '~/lib/crm/priority';
+import { i18n } from '~/lib/i18n';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+
+interface Local { id: string; name: string; zone: string | null; q: Qualification; p: Priority; owner: string | null }
+interface Props { locales: Local[] }
+const { locales } = Astro.props;
+const { m: R } = i18n(Astro, priorityMessages);
+const G = R.group;
+const sorted = [...locales].sort((a, b) => Number(a.p.out) - Number(b.p.out) || b.p.score - a.p.score || a.name.localeCompare(b.name, 'es'));
+const best = sorted.find((x) => !x.p.out && x.p.qualified);
+const pending = locales.filter((x) => !x.p.qualified).length;
+---
+<section id="qual" class="co-card grid gap-3" data-testid="group-locales">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <div>
+      <h2 class="co-entity">{G.title(locales.length)}</h2>
+      <p class="co-meta mt-1">{G.lede}</p>
+    </div>
+    {best && <span class="co-meta" data-testid="group-best">{G.best(best.name, best.p.score)}</span>}
+  </div>
+  <ul class="co-rows m-0 p-0">
+    {sorted.map((l) => {
+      const fs = formatsOf(l.q).map((f) => R.formats[f]).filter(Boolean);
+      const size = l.q.size ? R.sizes[l.q.size as keyof typeof R.sizes] : null;
+      return (
+        <li class="co-row list-none" data-testid="group-local" data-name={l.name}>
+          <a class="co-row__main min-w-0 flex-1 !no-underline" href={`/admin/accounts/${l.id}#qual`}>
+            <span class="co-row-title block truncate">{l.name}</span>
+            <span class="co-meta text-xs">{[fs.length ? fs.join(', ') : G.noFormat, size, l.zone, l.owner].filter(Boolean).join(' · ')}</span>
+          </a>
+          {l.p.out
+            ? <span class="co-tag co-tag--danger">{R.out}</span>
+            : l.p.qualified
+              ? <span class="co-figure text-xl" data-testid="group-local-score">{l.p.score}</span>
+              : <span class="co-chip co-chip--quiet !min-h-0 !py-1 text-xs" data-testid="group-local-qualify">{G.qualify}</span>}
+          <Icon name="chevron-right" size={14} />
+        </li>
+      );
+    })}
+  </ul>
+  {pending > 0 && <p class="co-help m-0">{G.pending(pending)}</p>}
+</section>

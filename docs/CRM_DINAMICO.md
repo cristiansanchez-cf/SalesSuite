@@ -956,3 +956,15 @@ Pedido de Cristian: el cierre se hace desde el CRM, no solo desde la propuesta. 
 - **Tablero**: ganada → columna **Cerrada** (§34).
 - Pruebas: `stripe.test.ts` (pay_, repetido, suscripción, sin cobrar), `supabase/tests/70_payment_paid.test.sql`,
   `smoke-charge.cjs` (webhook firmado → celebración una vez, «Cerrada», aviso al admin; a mano sin enlace).
+
+## 37. Un grupo no se cualifica: se ven sus locales
+
+Pedido de Cristian: en un grupo no tiene sentido marcar formato, tamaño, DJ o pantallas; cada local es de su tipo.
+
+- En la ficha de un grupo (una empresa con locales), la tarjeta de cualificación se sustituye por **Locales del grupo**
+  (`GroupLocalesCard.astro`): cada local con su formato, tamaño, ciudad, quién lo lleva y su nota (o «Cualificar» si
+  falta), ordenados por nota. Tocar uno abre su ficha en la cualificación.
+- El **resumen** de arriba enseña la nota del mejor local del grupo (o cuántos faltan por cualificar) en vez de una nota
+  propia; el salto «Cualificación» pasa a ser «Locales».
+- Lo demás del grupo sigue igual: lo que sabemos, seguimiento, personas, titular y cobro.
+- Pruebas: `smoke-crm-people.cjs` (el grupo enseña sus locales; el local sí se cualifica).

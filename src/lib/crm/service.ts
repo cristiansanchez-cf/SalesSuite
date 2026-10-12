@@ -195,6 +195,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return cs.filter((c) => (email && c.email && norm(c.email) === norm(email)) || norm(c.name) === norm(name)).map((c) => ({ id: c.id, name: c.name, email: c.email }));
   }
 
+  /** Los locales de un grupo con su cualificación (§37): cada uno se cualifica en su ficha; el grupo los resume. */
+  async function groupLocales(groupId: string) {
+    requireUse();
+    return (await accounts.listAccounts(t, { parentId: groupId, limit: 200 })).filter((x) => x.tenantId === t);
+  }
+
   /** Empresa por id o, si no existe, nueva con ese nombre (alta al vuelo). Devuelve su id. */
   async function companyFor(accountId: string | null | undefined, name: string | null | undefined, tag: string | null, zoneId: string | null = null): Promise<string | null> {
     if (accountId) {
@@ -1693,7 +1699,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    board, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
