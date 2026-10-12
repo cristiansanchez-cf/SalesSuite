@@ -28,8 +28,10 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
     await p.goto(`${BASE}/admin/accounts?ver=all&q=${encodeURIComponent(account)}`);
     await p.click(`[data-testid=account][data-name="${account}"] a.co-row__main`);
     await p.waitForURL(/\/admin\/accounts\/[^/?#]+/);
+    // Datos se guarda solo al cambiar (§31): se espera a que termine.
+    const n = Number(await p.evaluate(() => document.documentElement.dataset.asyncDone || 0));
     await p.selectOption('form:has(input[name=action][value=save]) select[name=zoneId]', { label: zone });
-    await Promise.all([p.waitForURL(/ok=saved/), p.click('form:has(input[name=action][value=save]) button[type=submit]')]);
+    await p.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n);
   };
   await moveTo('Sala Marina', 'Requena (Valencia)');
   await moveTo('Discoteca Faro', 'Barcelona creo que no es correcto, que están en Valencia');
