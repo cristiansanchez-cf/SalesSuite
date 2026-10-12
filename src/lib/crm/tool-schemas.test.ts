@@ -15,6 +15,11 @@ function unions(node: unknown): number {
 
 describe('herramientas estrictas', () => {
   for (const [name, tool] of Object.entries({ CLEANUP_TOOL, NOTES_TOOL, SAVE_TOOL, FIXES_TOOL, PLACES_TOOL })) {
-    test(`${name}: 16 uniones como mucho`, () => { expect(unions(tool.input_schema)).toBeLessThanOrEqual(16); });
+    // Solo cuentan las estrictas (las no estrictas no compilan gramática).
+    test(`${name}: 16 uniones como mucho`, () => { if ((tool as { strict?: boolean }).strict) expect(unions(tool.input_schema)).toBeLessThanOrEqual(16); });
   }
+});
+
+test('Apuntar no es estricta: su esquema es demasiado grande para la gramática compilada (400 de la API)', () => {
+  expect(NOTES_TOOL.strict).toBe(false);
 });

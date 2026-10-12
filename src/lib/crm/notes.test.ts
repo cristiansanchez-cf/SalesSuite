@@ -46,13 +46,13 @@ describe('apuntar con IA (§20)', () => {
     expect(r.map((x) => [x.venue, x.qualification.screens, x.nextStep, x.nextDays])).toEqual([['GHECKO', 'yes', null, null], ['NEGRITO', undefined, 'Mirar sus redes', 2]]);
     expect(r[0]).toMatchObject({ interaction: 'Visita: solo observar, sin hablar con nadie', keyFacts: ['dos pantallas pequeñas'], facts: [] });
   });
-  test('la petición a Claude: modelo pequeño (Haiku), sin forzar la herramienta, herramienta estricta', async () => {
+  test('la petición a Claude: modelo pequeño (Haiku), sin forzar la herramienta, herramienta no estricta (gramática demasiado grande)', async () => {
     let body: Record<string, unknown> = {};
     const fetchImpl = (async (_u: string, init: RequestInit) => { body = JSON.parse(String(init.body)); return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"x"}}', { status: 400 }); }) as unknown as typeof fetch;
     await expect(claudeNotes('k', fetchImpl).split('Gecko: lleno', { today: '2026-10-11', seller: 'Enjoy' })).rejects.toBeTruthy();
     expect(body).not.toHaveProperty('tool_choice');
     expect(body).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'low' } });
-    expect((body.tools as Array<{ name: string; strict: boolean }>)[0]).toMatchObject({ name: 'save_notes', strict: true });
+    expect((body.tools as Array<{ name: string; strict: boolean }>)[0]).toMatchObject({ name: 'save_notes', strict: false });
   });
 });
 

@@ -1045,3 +1045,11 @@ Pedido de Cristian: promotoras (Zafiro) y DJs metidos como empresas; el cambio d
 - **Lista**: con varias marcadas, «Cambiar tipo» en la barra de abajo → elegir el tipo → todas a la vez (las que no se
   pueden tocar, por ser de otro, se saltan). Una descartada sigue descartada.
 - Pruebas: `smoke-merge.cjs` (Zafiro a promotora desde la ficha; dos DJs de una vez desde la lista).
+
+## 43. Apuntar: herramienta no estricta y «posible alianza»
+
+- Con personas y canales (§38, §40), la herramienta estricta de Apuntar pasó del límite de la API («The compiled grammar
+  is too large»): Apuntar daba error 400. Ahora va **no estricta**; lo que devuelve la IA se sigue limpiando entero en
+  `sanitizeNotes` (solo valores permitidos), así que no entra nada raro. Prueba: `tool-schemas.test.ts`.
+- Nuevo motivo para proponer descartar: **posible alianza** (no es cliente pero puede ser socio: un equipo de DJs y
+  animación que se contrata para eventos, una tienda, un proveedor). Como siempre, solo si dices que sí.

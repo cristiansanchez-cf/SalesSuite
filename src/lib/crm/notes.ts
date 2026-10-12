@@ -67,7 +67,9 @@ const QUAL_KEYS = ['format', 'party', 'dj', 'promoters', 'nights', 'events', 're
 export const NOTES_TOOL = {
   name: 'save_notes',
   description: 'Guarda lo dicho, separado por sitio (un elemento por sitio).',
-  strict: true,
+  // No estricta: con personas y canales la gramática compilada pasa del límite de la API («compiled grammar is too
+  // large»). Lo que devuelve la IA se limpia igual en sanitizeNotes (solo valores permitidos).
+  strict: false,
   input_schema: {
     type: 'object', additionalProperties: false, required: ['items'],
     properties: {
@@ -91,7 +93,7 @@ export const NOTES_TOOL = {
             day: { ...SN, description: 'AAAA-MM-DD si dice cuándo fue (p. ej. «el sábado»); null si no lo dice.' },
             next_step: { ...SN, description: 'Lo siguiente que dice que hay que hacer con ese sitio (p. ej. «mirar sus redes»); null si no lo dice.' },
             next_days: { type: ['integer', 'null'], description: 'En cuántos días, si lo dice o se deduce; null si no.' },
-            discard: { ...S, description: 'Si por lo que cuenta habría que descartar el sitio: no_fit (no encaja con lo que vendemos: p. ej. «esto no es para nosotros», «aquí no pinta nada»), not_interested (ellos han dicho que no les interesa), avoid (mejor no ir: trato malo, el dueño es un problema), closed (ha cerrado). Si no, cadena vacía "". Solo si lo dice claro: se le preguntará antes de descartar.' },
+            discard: { ...S, description: 'Si por lo que cuenta habría que descartar el sitio: no_fit (no encaja con lo que vendemos: p. ej. «esto no es para nosotros», «aquí no pinta nada»), not_interested (ellos han dicho que no les interesa), avoid (mejor no ir: trato malo, el dueño es un problema), closed (ha cerrado), partner (no es cliente pero puede ser una alianza: p. ej. un equipo de DJs y animación que se contrata para eventos, una tienda, un proveedor). Si no, cadena vacía "". Solo si lo dice claro: se le preguntará antes de descartar.' },
             discard_why: { ...S, description: 'Por qué, en pocas palabras y con las suyas (p. ej. «el dueño nos echó»). "" si discard es "".' },
             entity: { ...S, description: 'Qué es este elemento: venue (un local, sala, bar, discoteca, restaurante), promoter (una promotora o colectivo que monta fiestas en salas de otros), dj (un DJ). "" si no está claro.' },
             works_at: {
@@ -207,7 +209,7 @@ export function sanitizeNotes(raw: unknown): NoteItem[] {
       if (MULTI_QUAL.includes(k)) { const ok = [...new Set(v.split(',').map((x) => x.trim()).filter((x) => QUAL_VALUES[k]?.includes(x)))]; if (ok.length) q[k] = ok.join(','); }
       else if (v && QUAL_VALUES[k]?.includes(v)) q[k] = v;
     }
-    const discard = (['no_fit', 'not_interested', 'avoid', 'closed'] as const).find((k) => k === r.discard) ?? null;
+    const discard = (['no_fit', 'not_interested', 'avoid', 'closed', 'partner'] as const).find((k) => k === r.discard) ?? null;
     const day = typeof r.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.day) && !Number.isNaN(Date.parse(r.day)) ? r.day : null;
     const nd = r.next_days == null || r.next_days === '' ? NaN : Number(r.next_days);
     out.push({
