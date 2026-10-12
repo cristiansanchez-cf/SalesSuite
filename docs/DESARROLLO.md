@@ -30,6 +30,11 @@ problemas (sobre todo de rendimiento). Los detalles de cada parte están en su d
   **añadido a mano** a la lista de `run-local.sh`. En producción se aplica con el workflow `production.yml`
   (`migraciones`, `dry_run: false`).
 - **Un flujo de pantalla** → un smoke, **añadido a mano** a `.github/workflows/ci.yml` (si no, CI no lo corre).
+- **En CI todos los smokes van seguidos contra el mismo servidor demo** (lo que crea uno lo ven los siguientes): usa
+  nombres propios de cada smoke, no compruebes «solo hay N» de algo compartido, no cambies el rol ni sueltes las
+  empresas de los usuarios de ejemplo (y si hace falta, ese smoke va al final de `ci.yml`), y espera a una condición
+  en vez de a una pausa fija (en CI no se sacan capturas y todo va más rápido). Para reproducirlo: arranca un servidor
+  demo y corre los smokes en el orden de `ci.yml` sin reiniciarlo.
 - Antes de subir: `npx astro check`, `npx vitest run`, `run-local.sh`, `run-it.sh` y los smokes de lo tocado
   (mira que `npm run build` termine bien: si falla, el servidor sigue con el `dist/` viejo).
 
