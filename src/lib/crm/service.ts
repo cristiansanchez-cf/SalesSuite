@@ -368,7 +368,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     } else {
       const name = v.name?.replace(/\s+/g, ' ').trim();
       if (!name) throw new AdminError(422, 'Datos no válidos');
-      const same = (await accounts.listAccounts(t, { q: name, limit: 50 })).find((x) => norm(x.name) === norm(name));
+      // La que ya se llame igual (y, si se dice el tipo, de ese tipo: una promotora no se enlaza con un local homónimo).
+      const same = (await accounts.listAccounts(t, { q: name, limit: 50 })).find((x) => norm(x.name) === norm(name) && (!v.kind || x.kind === v.kind));
       if (same) otherId = same.id;
       else {
         const kind = v.kind && (await kinds()).some((k) => k.key === v.kind) ? v.kind : undefined;
@@ -1023,11 +1024,13 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * Buscar una empresa por el nombre para «¿De qué empresa vas a hablar?» (autocompletar): sin IA, tolera errores del
    * dictado. Las 8 que más se parecen, con su sitio.
    */
-  async function accountSearch(q: string): Promise<NoteCandidate[]> {
+  async function accountSearch(q: string, kind?: string | null): Promise<NoteCandidate[]> {
     requireUse();
     const query = String(q ?? '').trim().slice(0, 80);
     if (query.length < 2) return [];
-    const [all, zones] = await Promise.all([accountIndex(), accounts.listZones(t)]);
+    const [index, zones] = await Promise.all([accountIndex(), accounts.listZones(t)]);
+    // «Trabaja con» busca solo entre las de un tipo (promotoras o DJs, §29).
+    const all = kind ? index.filter((a) => a.kind === kind) : index;
     const key = nameKey(query);
     const hits = all.map((a) => ({ a, score: nameKey(a.name).includes(key) ? Math.max(0.9, nameScore(query, a.name)) : nameScore(query, a.name) }))
       .filter((x) => x.score >= 0.6).sort((x, y) => y.score - x.score || x.a.name.localeCompare(y.a.name, 'es')).slice(0, 8);

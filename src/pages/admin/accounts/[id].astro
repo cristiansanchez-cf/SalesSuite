@@ -103,7 +103,10 @@ if (Astro.request.method === 'POST') {
         to += '?ok=owner#acc-group'; break;
       }
       case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
-      case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
+      case 'add-person': {
+        const role = str('roleKey') === '__other' ? str('roleOther') : str('roleKey') || str('role');
+        await admin.crm.quickAdd({ name: str('name'), role, email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
+      }
       case 'unlink': await admin.crm.unlink(str('contactId'), id); to += '?ok=unlinked'; break;
       case 'work-add': {
         const r = await admin.crm.workLinkAdd(id, { otherId: str('otherId'), name: str('workName'), kind: str('workKind'), ...(str('workNote') || str('otherId') ? { note: str('workNote') } : {}),
@@ -715,7 +718,13 @@ const STATE_ALERT = {
       <div class="co-dialog__body">
         <h2 id="add-person-title" class="co-entity">{P.group.addPerson} · {a.name}</h2>
         <label class="co-field">{P.quick.name}<input class="co-input" name="name" required maxlength="160" /></label>
-        <label class="co-field">{P.quick.role} <span class="co-help">{P.quick.optional}</span><input class="co-input" name="role" maxlength="80" placeholder={P.quick.rolePh} /></label>
+        {profile === 'venue' && <p class="co-help m-0" data-testid="add-person-staff">{P.quick.staffOnly}</p>}
+        {/* Su papel en el local, de una lista (§29); «Otro…» deja escribirlo. */}
+        <label class="co-field">{P.quick.role} <span class="co-help">{P.quick.optional}</span>
+          <select class="co-select" name="roleKey" data-role-select data-testid="add-person-role">
+            <option value="">—</option>{P.quick.roles.map((r) => <option value={r}>{r}</option>)}<option value="__other">{P.quick.roleOther}</option>
+          </select></label>
+        <input class="co-input" name="roleOther" maxlength="80" placeholder={P.quick.roleOtherPh} hidden data-role-other data-testid="add-person-role-other" />
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="co-field">{P.quick.email} <span class="co-help">{P.quick.optional}</span><input class="co-input" type="email" name="email" maxlength="200" /></label>
           <label class="co-field">{P.quick.phone} <span class="co-help">{P.quick.optional}</span><input class="co-input" type="tel" name="phone" maxlength="40" /></label>
@@ -727,6 +736,14 @@ const STATE_ALERT = {
       </div>
     </form>
   </dialog>
+
+  <script>
+    // «Otro…» en el papel: aparece el campo para escribirlo.
+    document.querySelectorAll<HTMLSelectElement>('[data-role-select]').forEach((sel) => {
+      const other = sel.closest('form')?.querySelector<HTMLInputElement>('[data-role-other]');
+      sel.addEventListener('change', () => { if (other) { other.hidden = sel.value !== '__other'; if (!other.hidden) other.focus(); } });
+    });
+  </script>
 
   <ConfirmDialog id="release" title={M.releaseTitle(a.name)} confirmLabel={M.releaseConfirm}
     does={M.releaseDoes}

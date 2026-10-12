@@ -99,14 +99,36 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
     await Promise.all([rep.waitForURL(/ok=/), rep.click('[data-testid=sheet-save]')]);
     assert(await tri(v), `campo de sí o no: se guarda «${v}»`);
   }
-  // «Trabaja con»: enlazar una promotora nueva desde la ficha; se ve desde los dos lados y se quita.
+  // «Trabaja con» (§29): un bloque para Promotoras y otro para DJs; cada uno busca solo lo suyo y, si no está,
+  // «Añadir «X» a Promotoras» (se crea en su pestaña y se enlaza).
   await rep.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
-  await rep.fill('[data-testid=work-name]', 'Fiestas Ucranianas VLC');
-  await rep.click('[data-testid=work-create]');   // no está en el CRM: «Crear nueva» y entonces se elige qué es
-  await rep.selectOption('[data-testid=work-kind]', 'promotora');
-  await rep.fill('[data-testid=work-note]', 'los jueves en la terraza');
-  await Promise.all([rep.waitForURL(/ok=workNew/), rep.click('[data-testid=work-add]')]);
-  assert((await rep.textContent('[data-testid=work-link][data-name="Fiestas Ucranianas VLC"]')).includes('Promotora · los jueves en la terraza'), 'promotora nueva, creada y enlazada');
+  const promos = '[data-testid=work-section][data-kind=promotora]';
+  const djs = '[data-testid=work-section][data-kind=dj]';
+  assert(await rep.isVisible(promos) && await rep.isVisible(djs), 'Trabaja con: un bloque de Promotoras y otro de DJs');
+  await rep.fill(`${promos} [data-testid=work-name]`, 'Fiestas Ucranianas VLC');
+  await rep.waitForSelector(`${promos} [data-testid=work-create]`);
+  assert((await rep.textContent(`${promos} [data-testid=work-create]`)).includes('Añadir «Fiestas Ucranianas VLC» a Promotoras'), 'si no está: «Añadir «X» a Promotoras»');
+  await rep.click(`${promos} [data-testid=work-create]`);
+  await rep.fill(`${promos} [data-testid=work-note]`, 'los jueves en la terraza');
+  await Promise.all([rep.waitForURL(/ok=workNew/), rep.click(`${promos} [data-testid=work-add]`)]);
+  assert((await rep.textContent(`${promos} [data-testid=work-link][data-name="Fiestas Ucranianas VLC"]`)).includes('los jueves en la terraza'), 'promotora nueva, creada y enlazada en su bloque');
+  // En DJs se busca solo entre DJs: un local no sale; y un DJ nuevo se añade a DJs (residente).
+  await rep.fill(`${djs} [data-testid=work-name]`, 'club so');
+  await rep.waitForSelector(`${djs} [data-testid=work-create]`);
+  assert((await rep.locator(`${djs} [data-testid=work-option]`).count()) === 0, 'en DJs no salen locales ni promotoras');
+  await rep.fill(`${djs} [data-testid=work-name]`, 'DJ Marf Smoke');
+  await rep.waitForSelector(`${djs} [data-testid=work-create]:has-text("DJ Marf Smoke")`);
+  await rep.click(`${djs} [data-testid=work-create]`);
+  await rep.selectOption(`${djs} select[name=role]`, 'resident');
+  await Promise.all([rep.waitForURL(/ok=workNew/), rep.click(`${djs} [data-testid=work-add]`)]);
+  assert((await rep.textContent(`${djs} [data-testid=work-link][data-name="DJ Marf Smoke"]`)).includes('Residente'), 'DJ nuevo, residente, en el bloque de DJs');
+  // Personas: solo la gente del local, con el papel de una lista.
+  await rep.click('[data-testid=account-add-person]');
+  assert((await rep.textContent('[data-testid=add-person-staff]')).includes('Trabaja con'), 'Personas: avisa de que DJs y promotoras van en «Trabaja con»');
+  assert((await rep.locator('[data-testid=add-person-role] option').count()) >= 8, 'el papel es un desplegable');
+  await rep.selectOption('[data-testid=add-person-role]', '__other');
+  assert(await rep.isVisible('[data-testid=add-person-role-other]'), '«Otro…» deja escribirlo');
+  await rep.keyboard.press('Escape');
   await Promise.all([rep.waitForURL(/\/admin\/accounts\/[^/?#]+$/), rep.click('[data-testid=work-link][data-name="Fiestas Ucranianas VLC"] a')]);
   assert(await rep.isVisible('[data-testid=work-link][data-name="Club Sol"]'), 'desde la promotora se ve el local');
   // Ficha de promotora (§24): sus preguntas, sin Google ni campos de local; días y frecuencia en «Dónde hace fiestas».
@@ -129,6 +151,7 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   // Desde la promotora, buscar una sala que ya tienes (escrita a medias): sale «Ya en tu CRM» y se enlaza esa, sin duplicar.
   await rep.fill('[data-testid=work-name]', 'club so');
   await rep.waitForSelector('[data-testid=work-option]');
+  // (desde una promotora, el bloque es el de locales)
   assert((await rep.textContent('[data-testid=work-list]')).includes('Ya en tu CRM'), 'avisa de que ya la tienes');
   await rep.click('[data-testid=work-option]:has-text("Club Sol")');
   assert(await rep.isVisible('[data-testid=work-chosen]') && !(await rep.isVisible('[data-testid=work-kind]')), 'elegida: sin preguntar qué es');
@@ -140,10 +163,12 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   await rep.goBack();
   await rep.fill('[data-testid=work-name]', 'Algo nuevo');
   const before = rep.url();
-  await rep.click('[data-testid=work-add]');
+  await rep.press('[data-testid=work-name]', 'Enter');
   await rep.waitForTimeout(400);
   assert((await rep.textContent('[data-testid=work-form]')).includes('Elige una de la lista') && rep.url() === before, 'sin elegir, no se envía');
   await rep.goto(`${BASE}/admin/accounts?ver=all&tipo=promotora`);
   assert((await rep.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.dataset.name))).includes('Fiestas Ucranianas VLC'), 'en la pestaña Promotoras');
+  await rep.goto(`${BASE}/admin/accounts?ver=all&tipo=dj`);
+  assert((await rep.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.dataset.name))).includes('DJ Marf Smoke'), 'y el DJ, en la pestaña DJs');
   await b.close();
 })();

@@ -12,7 +12,7 @@ export const kindsMessages = defineMessages({
       title: 'Trabaja con', help: 'Promotoras, DJs (residentes o invitados) o locales con los que trabaja. Si no está en el CRM, se crea.',
       name: 'Busca en tu CRM', namePh: 'Escribe el nombre…', kind: 'Es', note: 'Nota', notePh: 'p. ej. los jueves en la terraza',
       add: 'Enlazar', remove: 'Quitar enlace', none: 'Aún no hay ninguna enlazada.', ok: 'Enlazada con la que ya tenías.', okNew: 'Creada y enlazada.', removed: 'Enlace quitado.',
-      have: 'Ya en tu CRM', create: (n: string) => `Crear «${n}» nueva`, chosen: 'Enlazar con', newOne: 'Nueva:', change: 'Cambiar', pick: 'Elige una de la lista o «Crear nueva».', searching: 'Buscando…',
+      have: 'Ya en tu CRM', create: (n: string) => `Crear «${n}» nueva`, chosen: 'Enlazar con', newOne: 'Nueva:', change: 'Cambiar', pick: 'Elige una de la lista o «Crear nueva».', searching: 'Buscando…', sectionPh: (plural: string) => `Escribe el nombre (se busca en ${plural})…`, addTo: (n: string, plural: string) => `Añadir «${n}» a ${plural}`, addToHelp: (plural: string) => `Si no aparece, lo añades a ${plural} desde aquí y queda enlazado.`, linkNew: (plural: string) => `Añadir a ${plural} y enlazar`, noneYet: 'Ninguno todavía.', others: 'Otros enlaces', min: 'Escribe al menos 2 letras.',
     },
   },
   en: {
@@ -25,7 +25,7 @@ export const kindsMessages = defineMessages({
       title: 'Works with', help: 'Promoters, DJs (resident or guest) or venues they work with. If it’s not in the CRM, it’s created.',
       name: 'Search your CRM', namePh: 'Type the name…', kind: 'It is a', note: 'Note', notePh: 'e.g. Thursdays on the terrace',
       add: 'Link', remove: 'Remove link', none: 'Nothing linked yet.', ok: 'Linked to the one you already had.', okNew: 'Created and linked.', removed: 'Link removed.',
-      have: 'Already in your CRM', create: (n: string) => `Create «${n}» as new`, chosen: 'Link with', newOne: 'New:', change: 'Change', pick: 'Pick one from the list or «Create new».', searching: 'Searching…',
+      have: 'Already in your CRM', create: (n: string) => `Create «${n}» as new`, chosen: 'Link with', newOne: 'New:', change: 'Change', pick: 'Pick one from the list or «Create new».', searching: 'Searching…', sectionPh: (plural: string) => `Type the name (searches in ${plural})…`, addTo: (n: string, plural: string) => `Add «${n}» to ${plural}`, addToHelp: (plural: string) => `If it doesn’t show up, add it to ${plural} from here and it gets linked.`, linkNew: (plural: string) => `Add to ${plural} and link`, noneYet: 'None yet.', others: 'Other links', min: 'Type at least 2 letters.',
     },
   },
   pt: {
@@ -38,7 +38,7 @@ export const kindsMessages = defineMessages({
       title: 'Trabalha com', help: 'Promotoras, DJs (residentes ou convidados) ou locais com que trabalha. Se não estiver no CRM, é criado.',
       name: 'Busque no seu CRM', namePh: 'Escreva o nome…', kind: 'É', note: 'Nota', notePh: 'ex. às quintas no terraço',
       add: 'Vincular', remove: 'Tirar vínculo', none: 'Ainda não há nenhuma vinculada.', ok: 'Vinculada à que você já tinha.', okNew: 'Criada e vinculada.', removed: 'Vínculo tirado.',
-      have: 'Já no seu CRM', create: (n: string) => `Criar «${n}» nova`, chosen: 'Vincular com', newOne: 'Nova:', change: 'Trocar', pick: 'Escolha uma da lista ou «Criar nova».', searching: 'Buscando…',
+      have: 'Já no seu CRM', create: (n: string) => `Criar «${n}» nova`, chosen: 'Vincular com', newOne: 'Nova:', change: 'Trocar', pick: 'Escolha uma da lista ou «Criar nova».', searching: 'Buscando…', sectionPh: (plural: string) => `Escreva o nome (busca em ${plural})…`, addTo: (n: string, plural: string) => `Adicionar «${n}» a ${plural}`, addToHelp: (plural: string) => `Se não aparecer, adicione a ${plural} daqui e fica vinculado.`, linkNew: (plural: string) => `Adicionar a ${plural} e vincular`, noneYet: 'Nenhum ainda.', others: 'Outros vínculos', min: 'Escreva pelo menos 2 letras.',
     },
   },
   ko: {
@@ -51,7 +51,7 @@ export const kindsMessages = defineMessages({
       title: '함께 일하는 곳', help: '함께 일하는 프로모터, DJ(레지던트·게스트), 매장. CRM에 없으면 새로 만듭니다.',
       name: 'CRM에서 찾기', namePh: '이름을 입력하세요…', kind: '유형', note: '메모', notePh: '예: 목요일 테라스',
       add: '연결', remove: '연결 해제', none: '아직 연결된 곳이 없습니다.', ok: '이미 있던 곳과 연결했습니다.', okNew: '만들고 연결했습니다.', removed: '연결을 해제했습니다.',
-      have: '이미 CRM에 있음', create: (n: string) => `«${n}» 새로 만들기`, chosen: '연결 대상', newOne: '새로:', change: '변경', pick: '목록에서 고르거나 «새로 만들기»를 누르세요.', searching: '찾는 중…',
+      have: '이미 CRM에 있음', create: (n: string) => `«${n}» 새로 만들기`, chosen: '연결 대상', newOne: '새로:', change: '변경', pick: '목록에서 고르거나 «새로 만들기»를 누르세요.', searching: '찾는 중…', sectionPh: (plural: string) => `이름을 입력하세요(${plural}에서 검색)…`, addTo: (n: string, plural: string) => `«${n}»을(를) ${plural}에 추가`, addToHelp: (plural: string) => `목록에 없으면 여기서 ${plural}에 추가하고 바로 연결됩니다.`, linkNew: (plural: string) => `${plural}에 추가하고 연결`, noneYet: '아직 없습니다.', others: '기타 연결', min: '2글자 이상 입력하세요.',
     },
   },
 });

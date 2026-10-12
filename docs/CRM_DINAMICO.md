@@ -784,3 +784,21 @@ la ciudad (un abanico de 123); y el botón «Situar 108 ciudades en el mapa» no
 - Promotoras y DJs ya tienen su pestaña: el mapa por defecto enseña Empresas.
 - Pruebas: `map.test.ts` (no salen y se cuentan), contrato (deshacer solo admin) y `smoke-map.cjs` (ocultas por
   defecto, situar, deshacer con confirmación y volver a situar).
+
+## 29. Personas = gente del local; «Trabaja con» = Promotoras y DJs, cada una en su bloque
+
+Pedido de Cristian: no se entendía si un DJ nuevo iba en «Personas» (con papel «DJ») o en «Trabaja con», ni cómo se
+creaba uno que aún no está en el CRM.
+
+- **Personas**: solo la gente del local (dueño, socio, encargado, booking, RR. PP., marketing, staff). El papel es un
+  desplegable (con «Otro…» para escribirlo) y el diálogo avisa: «¿Es un DJ o una promotora? Añádelo en «Trabaja con»».
+  Se guarda como texto (los papeles importados se siguen viendo igual).
+- **Trabaja con** (en un local): un bloque **Promotoras** y otro **DJs**. Cada uno busca **solo en su tipo**
+  (`accountSearch(q, kind)`; `/admin/api/crm/account-search?kind=`). Lo que ya tienes sale como «Ya en tu CRM ·
+  Valencia»; al final, siempre, **«+ Añadir «X» a Promotoras»** (o a DJs), que lo crea en su pestaña y lo enlaza. Al
+  elegir aparecen los días, la frecuencia, la nota y, en DJs, residente o invitado. Sin elegir no se envía.
+- Desde una promotora o un DJ, el bloque es el de locales. Los enlaces de otros tipos salen en «Otros enlaces».
+- Al crear por nombre con un tipo, solo se reutiliza una que se llame igual **y sea de ese tipo**.
+- Un espacio sin tipos de promotora/DJ sigue con un solo bloque en el que se elige qué es lo nuevo.
+- Pruebas: `smoke-crm.cjs` (dos bloques, «Añadir a Promotoras», DJ nuevo residente que no ve locales al buscar, pestañas
+  Promotoras y DJs, papel en desplegable).
