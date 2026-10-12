@@ -75,8 +75,9 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   const provs = await rep.$$eval('[data-testid=filter-place-province] option', (xs) => xs.map((x) => x.textContent.trim()));
   assert(['Valencia', 'Castellón', 'Barcelona', 'Madrid'].every((x) => provs.includes(x)) && !provs.includes('Comunidad Valenciana'), `provincias de España, directamente (${provs})`);
   await place(rep, '[data-testid=filter-place-province]', 'Valencia');
-  const inVlc = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => e.getAttribute('data-name')));
-  assert(inVlc.length > 0 && inVlc.every((n) => ['Club Sol', 'Sala Marina'].includes(n)), `ciudad Valencia: solo las de Valencia (${inVlc})`);
+  // Cada fila dice su ciudad: todas de Valencia (otros smokes del mismo servidor pueden haber creado más allí).
+  const inVlc = await rep.$$eval('[data-testid=account]', (els) => els.map((e) => [e.getAttribute('data-name'), e.querySelector('.co-meta')?.textContent ?? '']));
+  assert(inVlc.some(([n]) => n === 'Club Sol') && inVlc.every(([, m]) => m.includes('Valencia')), `ciudad Valencia: solo las de Valencia (${inVlc.map(([n]) => n)})`);
   assert((await rep.textContent('[data-testid=acc-active]')).includes('Valencia'), 'Valencia, a la vista como chip');
   // Entrar en una y volver con «← Empresas» (o desde el menú): la búsqueda sigue ahí (§23).
   await Promise.all([rep.waitForURL(/\/admin\/accounts\/[^/?#]+$/), rep.click('[data-testid=account] a.co-row__main >> nth=0')]);
