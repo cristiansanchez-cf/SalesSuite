@@ -1,0 +1,178 @@
+---
+/**
+ * Unir dos empresas duplicadas (docs/CRM_DINAMICO.md §41): p. ej. la que vino del Fun Business Days y la de Google Maps.
+ * Arriba se elige cuál se queda; luego, lado a lado, de cuál se coge cada dato, y con casillas las personas, «trabaja
+ * con», lo que sabemos y las listas de las dos. Todo el historial pasa a la que se queda y la otra se borra.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { zonePath } from '~/lib/accounts/rules';
+import { formatValue } from '~/lib/crm/fields';
+import { i18n } from '~/lib/i18n';
+import { mergeMessages } from '~/lib/i18n/messages/merge';
+import { shellMessages } from '~/lib/i18n/messages/shell';
+import { accountsMessages } from '~/lib/i18n/messages/accounts';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: M, locale } = i18n(Astro, mergeMessages);
+const S = shellMessages[locale];
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let to = '';
+  result = await formAction(async () => {
+    const pick = Object.fromEntries([...f.keys()].filter((k) => k.startsWith('v.')).map((k) => [k.slice(2), str(k)]));
+    const keep = await admin.crm.merge(str('keep'), str('drop'), {
+      pick, place: str('place') || 'keep', contactIds: f.getAll('people').map(String), linkIds: f.getAll('work').map(String),
+      factIds: f.getAll('facts').map(String), tags: f.getAll('tags').map(String),
+    });
+    to = `/admin/accounts/${keep}?ok=merged`;
+  });
+  if (!result.error && to) return Astro.redirect(to, 303);
+}
+
+// Las dos: de la lista (ids marcados) o de la URL; la que se queda, la elegida o la que tiene más historia.
+const q = Astro.url.searchParams;
+const ids = [...new Set([...q.getAll('ids'), q.get('a') ?? '', q.get('b') ?? ''].filter((x) => /^[0-9a-f-]{36}$/i.test(x)))].slice(0, 2);
+if (ids.length !== 2) return Astro.redirect('/admin/accounts?ok=pickTwo', 303);
+const [p0, territory, segments, kindDefs] = await Promise.all([admin.crm.mergePreview(ids[0], ids[1]), admin.accounts.territory(), admin.playbook.segmentList(), admin.accounts.kinds()]);
+const weight = (x: typeof p0.a) => x.interactions * 3 + x.people.length * 2 + x.account.facts.length + x.dossiers * 3 + (x.account.placeId ? 2 : 0);
+const keepId = q.get('keep') === ids[1] || (!q.get('keep') && weight(p0.b) > weight(p0.a)) ? ids[1] : ids[0];
+const pv = keepId === ids[0] ? p0 : await admin.crm.mergePreview(ids[1], ids[0]);
+const K = pv.a, D = pv.b;
+const k = K.account, d = D.account;
+const href = (keep: string) => `/admin/accounts/unir?ids=${ids[0]}&ids=${ids[1]}&keep=${keep}`;
+
+// Cómo se ve cada dato.
+const show = (key: string, v: unknown): string => {
+  if (v == null || v === '') return '';
+  if (key === 'zoneId') return zonePath(territory.zones, String(v));
+  if (key === 'segmentId') return segments.find((s) => s.id === v)?.name ?? '';
+  if (key === 'kind') return kindDefs.find((x) => x.key === v)?.label ?? String(v);
+  return String(v);
+};
+const rows = pv.keys.map((key) => ({ key, label: (M.labels as Record<string, string>)[key] ?? key, kv: show(key, (k as unknown as Record<string, unknown>)[key]), dv: show(key, (d as unknown as Record<string, unknown>)[key]) }))
+  .filter((r) => r.kv || r.dv);
+const fieldRows = pv.fields.map((f) => ({ key: `f.${f.key}`, label: f.label, kv: formatValue(f, k.fields[f.key]), dv: formatValue(f, d.fields[f.key]) })).filter((r) => r.kv || r.dv);
+const place = (a: typeof k) => (a.placeId ? (a.placeRating != null ? M.placeOf(String(a.placeRating), String(a.placeReviews ?? 0)) : M.placeSet) : '');
+const people = [...K.people.map((p) => ({ ...p, side: 'keep' })), ...D.people.filter((p) => !K.people.some((x) => x.id === p.id)).map((p) => ({ ...p, side: 'drop' }))];
+const work = [...K.work.map((w) => ({ ...w, side: 'keep' })), ...D.work.filter((w) => w.account.id !== k.id && !K.work.some((x) => x.account.id === w.account.id)).map((w) => ({ ...w, side: 'drop' }))];
+const facts = [...k.facts.map((f) => ({ ...f, side: 'keep' })), ...d.facts.map((f) => ({ ...f, side: 'drop' }))];
+const tags = [...new Set([...k.tags, ...d.tags])];
+---
+<AdminLayout title={M.title} wide>
+  <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} back={{ href: '/admin/accounts', label: accountsMessages[locale].detail.back }} />
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {!pv.allowed && <div class="mb-4"><Alert kind="info" title={M.notAllowed} /></div>}
+
+  <section class="mb-6 grid gap-3" data-testid="merge-keep">
+    <h2 class="co-entity">{M.keepQ}</h2>
+    <div class="grid gap-3 sm:grid-cols-2">
+      {[K, D].map((x) => {
+        const on = x.account.id === k.id;
+        return (
+          <article class:list={['co-card grid gap-1 !p-4', on && 'ring-2 ring-[var(--co-ink)]']} data-testid="merge-side" data-name={x.account.name} data-keep={on ? '1' : '0'}>
+            <span class="co-badge w-fit">{on ? M.keep : M.drop}</span>
+            <a class="co-row-title" href={`/admin/accounts/${x.account.id}`} target="_blank" rel="noopener">{x.account.name}</a>
+            <span class="co-meta text-xs">{[show('zoneId', x.account.zoneId), x.account.tags.join(', ')].filter(Boolean).join(' · ')}</span>
+            <span class="co-meta text-xs">{M.counts(x.interactions, x.people.length, x.dossiers)}</span>
+            {!on && <a class="co-btn co-btn--ghost co-btn--sm mt-2 w-fit" href={href(x.account.id)} data-testid="merge-choose">{M.choose}</a>}
+          </article>
+        );
+      })}
+    </div>
+  </section>
+
+  <form method="post" class="grid gap-6" data-testid="merge-form">
+    <input type="hidden" name="keep" value={k.id} /><input type="hidden" name="drop" value={d.id} />
+
+    {/* Datos: una fila por dato, el de la que se queda a la izquierda. */}
+    <section class="co-card grid gap-3">
+      <div><h2 class="co-entity">{M.data}</h2><p class="co-meta mt-1">{M.dataHelp}</p></div>
+      <div class="grid gap-0">
+        <div class="hidden grid-cols-[10rem_1fr_1fr] gap-3 border-b border-[var(--co-line)] pb-2 sm:grid">
+          <span></span><span class="co-meta text-xs">{M.keep}: <strong>{k.name}</strong></span><span class="co-meta text-xs">{M.drop}: <strong>{d.name}</strong></span>
+        </div>
+        {[...rows, ...fieldRows].map((r) => (
+          <div class="grid gap-2 border-b border-[var(--co-line)] py-2 sm:grid-cols-[10rem_1fr_1fr] sm:items-center" data-testid="merge-row" data-key={r.key}>
+            <span class="co-field text-sm">{r.label}</span>
+            {r.kv === r.dv ? (
+              <span class="text-sm sm:col-span-2">{r.kv} <span class="co-meta text-xs">· {M.same}</span></span>
+            ) : (
+              <>
+                <label class="flex min-w-0 items-start gap-2 text-sm"><input type="radio" name={`v.${r.key}`} value="keep" checked={!!r.kv} disabled={!r.kv} class="mt-1" data-testid="merge-keep-value" /><span class="min-w-0 break-words">{r.kv || M.none}</span></label>
+                <label class="flex min-w-0 items-start gap-2 text-sm"><input type="radio" name={`v.${r.key}`} value="drop" checked={!r.kv} disabled={!r.dv} class="mt-1" data-testid="merge-drop-value" /><span class="min-w-0 break-words">{r.dv || M.none}</span></label>
+              </>
+            )}
+          </div>
+        ))}
+        {(k.placeId || d.placeId) && (
+          <div class="grid gap-2 py-2 sm:grid-cols-[10rem_1fr_1fr] sm:items-center" data-testid="merge-row" data-key="place">
+            <span class="co-field text-sm">{M.place}</span>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="place" value="keep" checked={!!k.placeId} disabled={!k.placeId} />{place(k) || M.placeNone}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="place" value="drop" checked={!k.placeId} disabled={!d.placeId} />{place(d) || M.placeNone}</label>
+          </div>
+        )}
+      </div>
+    </section>
+
+    {/* Listas con casillas: lo de las dos, todo marcado; se desmarca lo que no se quiera. */}
+    {([
+      ['people', M.people, people.map((p) => ({ v: p.id, side: p.side, text: [p.name, p.role, p.email, p.phone, p.instagram].filter(Boolean).join(' · ') }))],
+      ['work', M.work, work.map((w) => ({ v: w.account.id, side: w.side, text: w.account.name }))],
+      ['facts', M.facts, facts.map((f) => ({ v: f.id, side: f.side, text: `${f.key ? '★ ' : ''}${f.text}` }))],
+    ] as const).filter(([, , xs]) => xs.length > 0).map(([name, title, xs]) => (
+      <section class="co-card grid gap-3" data-testid={`merge-${name}`}>
+        <div><h2 class="co-entity">{title}</h2><p class="co-meta mt-1">{M.listsHelp}</p></div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          {(['keep', 'drop'] as const).map((side) => (
+            <div class="grid content-start gap-1.5">
+              <p class="co-meta m-0 text-xs">{side === 'keep' ? `${M.keep}: ${k.name}` : `${M.drop}: ${d.name}`}</p>
+              {xs.filter((x) => x.side === side).map((x) => (
+                <label class="flex items-start gap-2 text-sm"><input type="checkbox" name={name} value={x.v} checked class="mt-1 h-4 w-4 accent-[var(--co-ink)]" data-testid={`merge-${name}-item`} /><span class="min-w-0 break-words">{x.text}</span></label>
+              ))}
+              {xs.filter((x) => x.side === side).length === 0 && <span class="co-meta text-sm">{M.none}</span>}
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+    {tags.length > 0 && (
+      <section class="co-card grid gap-2" data-testid="merge-tags">
+        <h2 class="co-entity">{M.tags}</h2>
+        <div class="co-chips">{tags.map((tg) => <label class="co-chip"><input type="checkbox" name="tags" value={tg} checked />{tg}</label>)}</div>
+      </section>
+    )}
+
+    <section class="co-inset grid gap-1 !p-4" data-testid="merge-moved">
+      <p class="co-row-title m-0">{M.moved}</p>
+      <p class="co-meta m-0">{M.movedList(D.interactions, D.dossiers, D.payments, D.locales)}</p>
+      <p class="co-help m-0">{M.movedMore}</p>
+    </section>
+
+    {pv.allowed && (
+      <>
+        <button type="button" class="co-btn co-btn--primary w-fit" data-dialog-open="merge-confirm" data-testid="merge-run"><Icon name="layers" size={16} />{M.run}</button>
+        <dialog id="merge-confirm" class="co-dialog" aria-labelledby="merge-confirm-title">
+          <div class="co-dialog__body">
+            <h2 id="merge-confirm-title" class="co-entity">{M.confirmTitle(k.name, d.name)}</h2>
+            <p class="co-body">{M.does(k.name, d.name)}</p>
+            <p class="co-dialog__not"><strong>{S.ui.doesNot}</strong> {M.doesNot}</p>
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+            <button type="submit" class="co-btn co-btn--danger" data-testid="merge-confirm">{M.run}</button>
+          </div>
+        </dialog>
+      </>
+    )}
+  </form>
+</AdminLayout>

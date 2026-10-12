@@ -147,6 +147,9 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       if (p.next !== undefined) Object.assign(patch, { next_step: p.next.step, next_step_at: p.next.at, next_contact_id: p.next.contactId, next_channel: p.next.channel });
       return (check(await sb.from('account').update(patch).eq('id', id).select('id')) ?? []).length > 0;
     },
+    async mergeAccounts(keepId, dropId, o) {
+      check(await sb.rpc('account_merge', { p_keep: keepId, p_drop: dropId, p_contacts: o.contactIds, p_links: o.linkIds, p_place: o.place }));
+    },
     async deleteAccount(id) { return (check(await sb.from('account').delete().eq('id', id).select('id')) ?? []).length > 0; },
     async touch(id, kind, note) {
       return check(await sb.rpc('account_touch', { p_account: id, p_kind: kind, p_note: note })) as Eligibility;

@@ -278,6 +278,48 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (a.owner_id !== prev.owner_id) logTouch(a, actorId, a.owner_id ? 'assign' : 'release', userLabel(a.owner_id));
       return true;
     },
+    // = account_merge (20261202).
+    async mergeAccounts(keepId, dropId, o) {
+      const s = db();
+      const k = s.account.find((x) => x.id === keepId), d = s.account.find((x) => x.id === dropId);
+      if (!k || !d || k.tenant_id !== d.tenant_id || k.id === d.id) throw new Error('violates check constraint: Empresas no válidas');
+      const t = k.tenant_id;
+      if (!roleOf(t, actorId)) throw new Error('permission denied: Cuenta no encontrada');
+      const mineOrFree = (a: typeof k) => a.owner_id === actorId;
+      if (!isManager(t, actorId) && !(mineOrFree(k) && mineOrFree(d))) throw new Error('permission denied: Solo quien las lleva o un/a gerente puede unirlas');
+      for (const l of s.crm_contact_account.filter((x) => x.account_id === dropId && o.contactIds.includes(x.contact_id))) {
+        const there = s.crm_contact_account.find((x) => x.account_id === keepId && x.contact_id === l.contact_id);
+        if (there) there.role ??= l.role; else s.crm_contact_account.push({ ...l, account_id: keepId });
+      }
+      const pair = (a: string, b: string) => [a, b].sort().join('|');
+      const pairs = new Set((s.account_link ?? []).map((l) => pair(l.a_id, l.b_id)));
+      for (const l of s.account_link ?? []) {
+        if (l.a_id !== dropId && l.b_id !== dropId) continue;
+        const other = l.a_id === dropId ? l.b_id : l.a_id;
+        if (!o.linkIds.includes(other) || other === keepId || pairs.has(pair(keepId, other))) continue;
+        if (l.a_id === dropId) l.a_id = keepId; else l.b_id = keepId;
+        pairs.add(pair(keepId, other));
+      }
+      for (const x of s.crm_activity) if (x.account_id === dropId) x.account_id = keepId;
+      for (const x of s.account_touch) if (x.account_id === dropId) x.account_id = keepId;
+      for (const x of s.dossier) if (x.account_id === dropId) x.account_id = keepId;
+      for (const x of s.payment_request ?? []) if (x.account_id === dropId) x.account_id = keepId;
+      for (const x of s.revenue_event) if (x.account_id === dropId) x.account_id = keepId;
+      for (const x of s.account) if (x.parent_id === dropId && x.id !== keepId) x.parent_id = k.parent_id && k.parent_id !== dropId ? k.parent_id : keepId;
+      if (k.parent_id === dropId) k.parent_id = null;
+      const PLACE = ['place_id', 'hours', 'lat', 'lng', 'place_status', 'place_at', 'place_rating', 'place_reviews', 'place_photo', 'place_filled'] as const;
+      for (const f of PLACE) (k as unknown as Record<string, unknown>)[f] = o.place ? d[f] ?? null : k[f] ?? d[f] ?? null;
+      k.ai_research ??= d.ai_research; k.ai_research_at ??= d.ai_research_at;
+      const hadNext = !!(k.next_step || k.next_step_at);
+      k.next_step ??= d.next_step; k.next_step_at ??= d.next_step_at; k.next_channel ??= d.next_channel;
+      if (!hadNext && d.next_contact_id && o.contactIds.includes(d.next_contact_id)) k.next_contact_id = d.next_contact_id;
+      if (!k.owner_id) { k.owner_id = d.owner_id; k.claimed_until = d.claimed_until; }
+      if ((d.last_touch_at ?? '') > (k.last_touch_at ?? '')) k.last_touch_at = d.last_touch_at;
+      if (!k.won_at && d.won_at) Object.assign(k, { status: 'customer', won_at: d.won_at, won_by: d.won_by, won_dossier_id: d.won_dossier_id });
+      s.account = s.account.filter((x) => x.id !== dropId);
+      s.crm_contact_account = s.crm_contact_account.filter((l) => l.account_id !== dropId);
+      s.account_link = (s.account_link ?? []).filter((l) => l.a_id !== dropId && l.b_id !== dropId);
+    },
     async deleteAccount(id) {
       const s = db();
       const a = s.account.find((x) => x.id === id);

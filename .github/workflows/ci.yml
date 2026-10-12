@@ -103,6 +103,7 @@ jobs:
           node scripts/smoke-rep-contact.cjs
           node scripts/smoke-board.cjs
           node scripts/smoke-charge.cjs
+          node scripts/smoke-merge.cjs
           # Al final: asciende a rep@enjoy.test a gerente (los de antes lo necesitan como comercial).
           node scripts/smoke-org.cjs
       - name: Build para Vercel

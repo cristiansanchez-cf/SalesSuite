@@ -32,6 +32,7 @@ import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { routeMessages } from '~/lib/i18n/messages/route';
 import { researchMessages } from '~/lib/i18n/messages/research';
 import { prospectMessages } from '~/lib/i18n/messages/prospect';
+import { mergeMessages } from '~/lib/i18n/messages/merge';
 import { compareLeads, priorityOf } from '~/lib/crm/priority';
 
 const { admin } = Astro.locals;
@@ -47,6 +48,7 @@ const R = priorityMessages[locale];
 const CL = cleanupMessages[locale];
 const AI = researchMessages[locale];
 const PR = prospectMessages[locale];
+const MG = mergeMessages[locale];
 /** «Investigar zona»: máximo por clic (cada una tarda y cuesta). */
 const AI_MAX = 20;
 
@@ -146,7 +148,7 @@ const href = (p: Record<string, string>) => {
 saveFilters(Astro.cookies, 'co_f_list', new URL(href({}), Astro.url).searchParams, t.zones);
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
-const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0) });
+const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];
@@ -346,6 +348,7 @@ const panelOpen = nFilters > 0;
     <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open="move-group" data-testid="bulk-move"><Icon name="building2" size={14} /><span data-bulk-label></span></button>
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/route" formmethod="get" formnovalidate data-testid="bulk-route"><Icon name="map" size={14} />{routeMessages[locale].bulk}</button>
     {admin.crm.hasAi() && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-ai data-testid="bulk-ai" title={AI.zone.max(AI_MAX)}><Icon name="sparkles" size={14} />{AI.zone.run}</button>}
+    <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/accounts/unir" formmethod="get" formnovalidate hidden data-bulk-merge data-testid="bulk-merge"><Icon name="layers" size={14} />{MG.bulk}</button>
     <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-release" data-testid="bulk-release"><Icon name="log-out" size={14} />{M.bulkRelease}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
     <dialog id="bulk-release" class="co-dialog" aria-labelledby="bulk-release-title">
@@ -386,6 +389,8 @@ const panelOpen = nFilters > 0;
     const sync = () => {
       const n = boxes().filter((b) => b.checked).length;
       bar.hidden = n === 0;
+      // Unir: solo con dos marcadas (§41).
+      bar.querySelector('[data-bulk-merge]').hidden = n !== 2;
       const all = document.querySelector('[data-bulk-all]');
       if (all) all.checked = n > 0 && n === boxes().length;
       bar.querySelector('[data-bulk-label]').textContent = label.replace('0', String(n));

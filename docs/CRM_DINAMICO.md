@@ -1013,3 +1013,24 @@ Pedido de Cristian (búsqueda de un DJ, Marf Daniels): mucho de lo que sale debe
   salen en la revisión («Sus canales», con casillas) y van a su ficha **solo si no los tiene** (no pisa nada).
 - Nuevo estilo **House (deep, tech, afro)** para DJs y promotoras.
 - Pruebas: `smoke-notes.cjs` (un DJ con su web y su SoundCloud → ficha de DJ con su música).
+
+## 41. Unir empresas duplicadas
+
+Pedido de Cristian: la misma empresa entra dos veces (una del Fun Business Days, otra de Google Maps), cada una con
+cosas que la otra no tiene.
+
+- En la lista, con **dos marcadas**, sale **«Unir»** en la barra de abajo. Abre `/admin/accounts/unir`.
+- **¿Cuál se queda?**: las dos lado a lado (interacciones, personas, propuestas); por defecto la que tiene más
+  historia, y «Quedarme esta» cambia.
+- **Datos**: una fila por dato (nombre, tipo, ciudad, sector, dirección, notas, teléfono, email, redes, web, Google Maps,
+  su música, razón social, CIF y cada campo del espacio): si son iguales, una vez; si solo una lo tiene, ese; si son
+  distintos, se elige con un botón de cada lado. **Ficha de Google**: la de una o la de la otra.
+- **Personas, Trabaja con, Lo que sabemos y Listas**: lo de las dos, cada cosa con su casilla (todo marcado); lo que se
+  desmarca no se conserva (las personas y empresas enlazadas no se borran, solo dejan de estar en esta).
+- **Sin elegir, pasa a la que se queda**: interacciones, toques, propuestas, cobros e ingresos, sus locales (si era un
+  grupo), su próximo paso y quién la lleva (si la que se queda no tiene), la cualificación que falte y, si estaba
+  ganada, la venta. El libro de comisiones no se toca (es historia).
+- **Unir** pide confirmación (no se puede deshacer); la otra se borra y se abre la que se queda.
+- Quién: gerentes y admin; un comercial, si las dos son suyas.
+- Base de datos: `account_merge` (migración `20261202`), en una transacción. Pruebas: `supabase/tests/71_account_merge.test.sql`,
+  `smoke-merge.cjs`.

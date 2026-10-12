@@ -53,7 +53,7 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await bg(p, () => p.click('[data-testid=restore]'));
   assert(!(await p.isVisible('[data-testid=discarded-banner]')), 'recuperada, sin recargar');
   await p.click('[data-testid=discard-open]');
-  await p.check('[data-testid=discard-reason-not_sector]', { force: true });
+  await p.click('label:has([data-testid=discard-reason-not_sector])');
   await p.fill('[data-testid=discard-note]', 'Tienda online');
   await Promise.all([p.waitForURL(/ok=discarded/), p.click('[data-testid=discard-dialog-confirm]')]);
   assert((await p.textContent('[data-testid=discarded-banner]')).includes('No es del sector'), 'descartada a mano, con motivo y nota');

@@ -9,7 +9,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
-import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
+import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -798,6 +798,89 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         .map((id) => ({ id, name: label(ms.get(id)) ?? '' })).filter((o) => o.name).sort((a, b) => a.name.localeCompare(b.name, 'es'))
       : [];
     return { columns, owner: owner ?? null, owners, total: cards.length, stuck: cards.filter((c) => c.overdue || c.manyTouches).length };
+  }
+
+  // ---------------------------------------------------------------- unir empresas (docs/CRM_DINAMICO.md §41)
+
+  /** Datos que se eligen de una u otra (uno por fila): básicos, contacto y titular. Los campos del espacio van aparte. */
+  const MERGE_KEYS = ['name', 'kind', 'zoneId', 'segmentId', 'address', 'notes', 'phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl',
+    'tiktok', 'musicUrl', 'legalName', 'taxId'] as const;
+  type MergeKey = (typeof MERGE_KEYS)[number];
+  async function mergeSide(id: string) {
+    const a = await accounts.getAccount(id);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    const [links, work, acts, pays] = await Promise.all([db.listLinks(t, { accountIds: [id] }), workLinks(id), db.activitySummary(t, [id]), db.listPaymentRequests(t, [id]).catch(() => [])]);
+    const cs = links.length ? await db.listContacts(t, { ids: links.map((l) => l.contactId), limit: 500 }) : [];
+    const people = links.flatMap((l) => { const c = cs.find((x) => x.id === l.contactId); return c ? [{ id: c.id, name: c.name, role: l.role, email: c.email, phone: c.phone, instagram: c.instagram }] : []; });
+    return { account: a, people, work, interactions: acts[0]?.real ?? 0, payments: pays.length };
+  }
+  /** Las dos, lado a lado, para elegir qué se queda (§41). Solo quien gestiona o quien lleva las dos. */
+  async function mergePreview(aId: string, bId: string) {
+    requireUse();
+    if (aId === bId) throw new AdminError(422, 'Elige dos empresas distintas');
+    const [a, b, accFields, dossiers] = await Promise.all([mergeSide(aId), mergeSide(bId), fields(), admin.listDossiers(t).catch(() => [])]);
+    const mine = (x: Account) => x.ownerId === s.userId;
+    const allowed = perms.manageAccounts || (mine(a.account) && mine(b.account));
+    const dossiersOf = (id: string) => dossiers.filter((d) => d.accountId === id).length;
+    const locales = await Promise.all([aId, bId].map((id) => accounts.listAccounts(t, { parentId: id, limit: 500 }).then((xs) => xs.length)));
+    return {
+      allowed, keys: MERGE_KEYS, fields: accFields.filter((f) => f.target === 'account' && !f.archivedAt),
+      a: { ...a, dossiers: dossiersOf(aId), locales: locales[0] }, b: { ...b, dossiers: dossiersOf(bId), locales: locales[1] },
+    };
+  }
+  const mergeSchema = z.object({
+    /** Por cada dato con dos valores distintos, de cuál se coge: keep (la que se queda) o drop (la otra). */
+    pick: z.record(z.string(), z.enum(['keep', 'drop'])).default({}),
+    place: z.enum(['keep', 'drop']).default('keep'),
+    contactIds: z.array(uuid).max(500).default([]),
+    linkIds: z.array(uuid).max(500).default([]),
+    factIds: z.array(z.string().max(80)).max(400).default([]),
+    tags: z.array(z.string().trim().min(1).max(60)).max(60).default([]),
+  });
+  /**
+   * Unir (§41): la que se queda recibe lo elegido de cada lado (datos, campos, lo que sabemos, listas y personas y
+   * «trabaja con» marcados), la cualificación se completa con lo que le falte y todo el historial pasa a ella. La otra
+   * se borra. Lo de la que se queda que se desmarca (una persona, un enlace, un dato) se quita.
+   */
+  async function merge(keepId: string, dropId: string, input: unknown) {
+    requireUse();
+    const v = parse(mergeSchema, input);
+    const prev = await mergePreview(keepId, dropId);
+    if (!prev.allowed) throw new AdminError(403, 'Solo quien las lleva o un/a gerente puede unirlas');
+    const k = prev.a.account, d = prev.b.account;
+    const from = (key: string) => (v.pick[key] === 'drop' ? d : k);
+    const val = (key: MergeKey) => { const x = (from(key) as unknown as Record<string, unknown>)[key]; const y = (k as unknown as Record<string, unknown>)[key]; return x ?? y ?? null; };
+    // Datos de la ficha: cada uno de donde se haya elegido (si solo uno lo tiene, ese).
+    const pickOr = (key: MergeKey) => { const kv = (k as unknown as Record<string, unknown>)[key], dv = (d as unknown as Record<string, unknown>)[key]; return v.pick[key] ? val(key) : kv ?? dv ?? null; };
+    const fieldsOut: FieldValues = { ...k.fields };
+    for (const f of prev.fields) {
+      const kv = k.fields[f.key], dv = d.fields[f.key];
+      const empty = (x: unknown) => x == null || x === '' || (Array.isArray(x) && !x.length);
+      fieldsOut[f.key] = (v.pick[`f.${f.key}`] === 'drop' || (empty(kv) && !empty(dv)) ? dv : kv) as FieldValues[string];
+      if (empty(fieldsOut[f.key])) delete fieldsOut[f.key];
+    }
+    const facts = [...k.facts, ...d.facts].filter((f) => v.factIds.includes(f.id)).sort((x, y) => (y.at ?? '').localeCompare(x.at ?? '')).slice(0, 200);
+    const contact = Object.fromEntries((['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl', 'tiktok', 'musicUrl', 'legalName', 'taxId'] as const).map((key) => [key, pickOr(key)])) as AccountContact;
+    let ok = false;
+    try {
+      ok = await accounts.updateAccount(keepId, {
+        name: String(pickOr('name') ?? k.name), zoneId: pickOr('zoneId') as string | null, segmentId: pickOr('segmentId') as string | null,
+        address: pickOr('address') as string | null, notes: pickOr('notes') as string | null, fields: fieldsOut, facts, contact, tags: [...new Set(v.tags)],
+      });
+    } catch (e) { mapError(e); }
+    if (!ok) throw new AdminError(403, 'Solo quien las lleva o un/a gerente puede unirlas');
+    // La cualificación: la de la que se queda, completada con lo que solo sabe la otra.
+    const q: Record<string, unknown> = { ...d.qualification, ...Object.fromEntries(Object.entries(k.qualification).filter(([, x]) => x != null && x !== '')) };
+    if (JSON.stringify(q) !== JSON.stringify(k.qualification)) { try { await accounts.qualify(keepId, q as Qualification); } catch (e) { mapError(e); } }
+    const kind = String(pickOr('kind') ?? k.kind);
+    if (kind !== k.kind) await classifyAccount(keepId, { kind });
+    // Lo de la que se queda que se ha desmarcado, fuera.
+    for (const p of prev.a.people) if (!v.contactIds.includes(p.id)) await db.removeLink(p.id, keepId).catch(() => false);
+    for (const w of prev.a.work) if (!v.linkIds.includes(w.account.id)) await db.removeAccountLink(w.id).catch(() => false);
+    try {
+      await accounts.mergeAccounts(keepId, dropId, { contactIds: v.contactIds, linkIds: v.linkIds, place: v.place === 'drop' && !!d.placeId });
+    } catch (e) { mapError(e); }
+    return keepId;
   }
 
   // ---------------------------------------------------------------- generar pago (docs/CRM_DINAMICO.md §35)
@@ -1748,7 +1831,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    board, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,

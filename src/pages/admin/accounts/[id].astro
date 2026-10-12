@@ -31,6 +31,7 @@ import ContactLinks from '~/components/crm/ContactLinks.astro';
 import ChargeCard from '~/components/crm/ChargeCard.astro';
 import { suggestTariff } from '~/lib/crm/charge';
 import { chargeMessages } from '~/lib/i18n/messages/charge';
+import { mergeMessages } from '~/lib/i18n/messages/merge';
 import { SIZE_LIMITS, SIZES, formatsOf, sizeScaleOf } from '~/lib/crm/priority';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
 import GroupLocalesCard from '~/components/crm/GroupLocalesCard.astro';
@@ -212,7 +213,7 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   owner: P.group.ok.owner, group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, work: KN.work.ok, workNew: KN.work.okNew, workRemoved: KN.work.removed, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
-  charge: chargeMessages[locale].ok, chargeCancelled: chargeMessages[locale].okCancelled, paid: chargeMessages[locale].okPaid,
+  charge: chargeMessages[locale].ok, chargeCancelled: chargeMessages[locale].okCancelled, paid: chargeMessages[locale].okPaid, merged: mergeMessages[locale].ok,
 });
 // Cobrar (§35): los tramos del tamaño según lo que es y quién generó cada enlace.
 const sizeRangeOf = (q: typeof a.qualification) => {

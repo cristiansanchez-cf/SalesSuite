@@ -72,6 +72,11 @@ export interface AccountsDb {
   deleteAccountsByImport(importId: string): Promise<number>;
   updateAccount(id: string, p: AccountPatch): Promise<boolean>;
   deleteAccount(id: string): Promise<boolean>;
+  /**
+   * Unir (§41, RPC account_merge): mueve a keep las personas y «trabaja con» elegidos, todo el historial, sus locales,
+   * su ficha de Google (si place) y lo que le falte (próximo paso, quien la lleva, ganada); y borra drop.
+   */
+  mergeAccounts(keepId: string, dropId: string, o: { contactIds: string[]; linkIds: string[]; place: boolean }): Promise<void>;
   /** Contacto, quedársela o soltarla (RPC account_touch). */
   touch(id: string, kind: 'contact' | 'claim' | 'release', note: string | null): Promise<Eligibility>;
   listTouches(accountId: string, limit: number): Promise<AccountTouch[]>;
