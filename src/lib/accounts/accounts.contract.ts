@@ -126,6 +126,20 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect((await rep.accounts.get(nueva)).account.state).toBe('free');
     });
 
+    test('soltar en bloque: solo las tuyas; las de otro y las libres se saltan', async () => {
+      const t = await territory();
+      const rep = await ctx(U.rep);
+      const ana = await ctx(E.rep2);
+      const a = await rep.accounts.create({ name: 'Suelta A', zoneId: t.vlc });
+      const b = await rep.accounts.create({ name: 'Suelta B', zoneId: t.vlc });
+      const deAna = await ana.accounts.create({ name: 'Suelta Ana', zoneId: t.vlc });
+      const libre = await t.admin.accounts.create({ name: 'Suelta Libre', zoneId: t.vlc });
+      expect(await rep.accounts.releaseMany([a, b, deAna, libre, a, ''])).toBe(2);
+      for (const id of [a, b]) expect((await rep.accounts.get(id)).account.state).toBe('free');
+      expect((await ana.accounts.get(deAna)).account.state).toBe('mine');
+      expect(await rep.accounts.releaseMany([])).toBe(0);
+    });
+
     test('vender una cuenta ajena: sin comisión, el admin se entera y decide', async () => {
       const t = await territory();
       const rep = await ctx(U.rep);

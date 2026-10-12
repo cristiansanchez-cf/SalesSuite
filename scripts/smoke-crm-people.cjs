@@ -98,5 +98,17 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   // ---- el comercial no importa
   await rep.goto(`${BASE}/admin/import`);
   assert(!(await rep.isVisible('[data-testid=import-upload]')), 'el comercial no entra en Importar');
+
+  // ---- soltar en bloque: todas las mías de golpe
+  await rep.goto(`${BASE}/admin/accounts?ver=mine`);
+  const mine = await rep.locator('[data-testid=account]').count();
+  assert(mine > 0, 'tiene empresas suyas');
+  await rep.check('[data-testid=bulk-all]');
+  assert((await rep.textContent('[data-testid=bulk-bar]')).includes(String(mine)), 'seleccionar todas marca las que se ven');
+  await rep.click('[data-testid=bulk-release]');
+  await Promise.all([rep.waitForURL(/ok=released/), rep.click('[data-testid=bulk-release-confirm]')]);
+  assert((await rep.textContent('[data-testid=toasts]')).includes(`Has soltado ${mine}`) || (await rep.textContent('main')).includes(`Has soltado ${mine}`), 'dice cuántas ha soltado');
+  await rep.goto(`${BASE}/admin/accounts?ver=mine`);
+  assert((await rep.locator('[data-testid=account]').count()) === 0, 'ya no queda ninguna suya');
   await b.close();
 })();

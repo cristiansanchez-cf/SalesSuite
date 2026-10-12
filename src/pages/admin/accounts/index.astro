@@ -38,7 +38,7 @@ if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
-const { m: { list: M }, f: fmt, locale } = i18n(Astro, accountsMessages);
+const { m: { list: M, detail: D }, f: fmt, locale } = i18n(Astro, accountsMessages);
 const S = shellMessages[locale];
 const CF = crmMessages[locale].filters;
 const P = peopleMessages[locale];
@@ -58,6 +58,13 @@ if (Astro.request.method === 'POST') {
     if (str('action') === 'create') {
       const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes'), kind: str('kind') });
       to = `/admin/accounts/${id}?ok=created`;
+    } else if (f.getAll('action').includes('release-many')) {
+      // Va antes que «mover»: el botón de soltar está en el mismo formulario de la barra.
+      // «También las que no se ven»: todas las tuyas con los filtros de ahora (la lista solo enseña las primeras).
+      const all = str('allMine') ? (await acc.list({ scope: 'mine', q: str('q') || undefined, zoneId: str('zona') || undefined, tag: str('lista') || undefined, view: str('view') || 'company' })).items
+        .filter((a) => a.state === 'mine').map((a) => a.id) : [];
+      const n = await acc.releaseMany([...f.getAll('ids').map(String), ...all]);
+      to = `/admin/accounts?ok=released&n=${n}`;
     } else if (str('action') === 'move-group') {
       const ids = f.getAll('ids').map(String).filter(Boolean);
       const r = await admin.crm.moveToGroup(ids, { groupName: str('groupName') });
@@ -119,6 +126,7 @@ let shown = byState.filter((a) => {
 if (cual === 'ia' && orden !== 'prioridad') shown = [...shown].sort((x, y) => String(y.aiResearchAt).localeCompare(String(x.aiResearchAt)));
 if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.get(x.id)!, prio.get(y.id)!) || x.name.localeCompare(y.name, 'es'));
 const count = (s: State) => items.filter((a) => a.state === s).length;
+const mineCount = count('mine');
 const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken', 'my_customer', 'customer', 'blocked'] as const).map((k) => [k, M.states[k]]);
 const href = (p: Record<string, string>) => {
   const u = new URLSearchParams({ ...(scope !== 'zone' ? { ver: scope } : {}), ...(stateF !== 'all' ? { estado: stateF } : {}), ...(search ? { q: search } : {}), ...(lista ? { lista } : {}), ...(zona ? { zona } : {}), ...(tipo ? { tipo } : {}),
@@ -131,7 +139,7 @@ const href = (p: Record<string, string>) => {
 saveFilters(Astro.cookies, 'co_f_list', new URL(href({}), Astro.url).searchParams, t.zones);
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
-const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0) });
+const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0) });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];
@@ -284,7 +292,11 @@ const panelOpen = nFilters > 0;
     ? (total === 0
         ? <EmptyState kind="create" title={effective === 'mine' ? M.emptyMine : M.emptyZone} detail={M.emptyDetail} action={{ dialog: 'new-account', label: M.newAccount }} />
         : <EmptyState kind="filter" title={M.emptyFilter} clearHref="/admin/accounts" />)
-    : <ul class="co-rows" data-testid="accounts">
+    : <>
+      <label class="co-meta flex w-fit cursor-pointer items-center gap-2" data-testid="bulk-all-label">
+        <input type="checkbox" class="h-4 w-4 accent-[var(--co-ink)]" data-bulk-all data-testid="bulk-all" />{M.selectAll(Math.min(shown.length, shownMax))}
+      </label>
+      <ul class="co-rows" data-testid="accounts">
         {shown.slice(0, shownMax).map((a) => (
           <li class:list={['co-row', a.state === 'mine' && 'co-row--attention']} data-testid="account" data-name={a.name}>
             <label class="co-row__lead cursor-pointer" title={P.bulk.select(a.name)}>
@@ -314,7 +326,8 @@ const panelOpen = nFilters > 0;
             )}
           </li>
         ))}
-      </ul>}
+      </ul>
+    </>}
   {shown.length > shownMax && (
     <p class="mt-4 flex items-center gap-3"><a class="co-btn co-btn--ghost co-btn--sm" href={href({ n: String(shownMax + 200) })} data-testid="more">{P.people.more}</a><span class="co-meta">{P.people.shown(shownMax, shown.length)}</span></p>
   )}
@@ -326,7 +339,25 @@ const panelOpen = nFilters > 0;
     <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open="move-group" data-testid="bulk-move"><Icon name="building2" size={14} /><span data-bulk-label></span></button>
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/route" formmethod="get" formnovalidate data-testid="bulk-route"><Icon name="map" size={14} />{routeMessages[locale].bulk}</button>
     {admin.crm.hasAi() && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-ai data-testid="bulk-ai" title={AI.zone.max(AI_MAX)}><Icon name="sparkles" size={14} />{AI.zone.run}</button>}
+    <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-release" data-testid="bulk-release"><Icon name="log-out" size={14} />{M.bulkRelease}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
+    <dialog id="bulk-release" class="co-dialog" aria-labelledby="bulk-release-title">
+      <div class="co-dialog__body">
+        <h2 id="bulk-release-title" class="co-entity">{M.bulkReleaseTitle}</h2>
+        <p class="co-body">{D.releaseDoes}</p>
+        <p class="co-meta">{D.releaseDoesNot} {M.bulkReleaseOnlyMine}</p>
+        {mineCount > shownMax && (
+          <label class="co-check mt-2 flex items-center gap-2" data-testid="bulk-release-all">
+            <input type="checkbox" name="allMine" value="1" class="h-4 w-4 accent-[var(--co-ink)]" />{M.bulkReleaseAll(mineCount)}
+            <input type="hidden" name="q" value={search} /><input type="hidden" name="zona" value={zona} /><input type="hidden" name="lista" value={lista} /><input type="hidden" name="view" value={listView} />
+          </label>
+        )}
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+        <button class="co-btn co-btn--primary" type="submit" name="action" value="release-many" formnovalidate data-testid="bulk-release-confirm">{D.releaseConfirm}</button>
+      </div>
+    </dialog>
     <dialog id="move-group" class="co-dialog" aria-labelledby="move-group-title">
       <div class="co-dialog__body">
         <h2 id="move-group-title" class="co-entity">{P.bulk.moveTitle}</h2>
@@ -348,10 +379,14 @@ const panelOpen = nFilters > 0;
     const sync = () => {
       const n = boxes().filter((b) => b.checked).length;
       bar.hidden = n === 0;
+      const all = document.querySelector('[data-bulk-all]');
+      if (all) all.checked = n > 0 && n === boxes().length;
       bar.querySelector('[data-bulk-label]').textContent = label.replace('0', String(n));
     };
     document.addEventListener('change', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('[data-bulk]')) sync(); });
     bar.querySelector('[data-bulk-clear]').addEventListener('click', () => { boxes().forEach((b) => { b.checked = false; }); sync(); });
+    // «Seleccionar las que se ven»: marca o desmarca todas las filas de la página.
+    document.querySelector('[data-bulk-all]')?.addEventListener('change', (e) => { boxes().forEach((b) => { b.checked = e.target.checked; }); sync(); });
   </script>
   <script define:vars={{ max: AI_MAX, T: { bg: PR.bg } }}>
     // «Investigar zona»: las marcadas (hasta 20) se investigan en segundo plano (AdminLayout): se puede seguir usando la

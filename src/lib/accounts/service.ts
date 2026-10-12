@@ -201,6 +201,27 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const n = note?.trim().slice(0, 500) || null;
     try { return await db.touch(accountId, kind, n); } catch (e) { mapError(e); }
   }
+  /**
+   * Soltar varias de golpe (las que son tuyas; las demás se saltan). De 8 en 8 para no tardar con cientos.
+   * Devuelve cuántas se han soltado.
+   */
+  async function releaseMany(ids: string[]): Promise<number> {
+    requireUse();
+    const want = [...new Set(ids.filter(Boolean))].slice(0, 2000);
+    if (!want.length) return 0;
+    // Por tandas de 200 (la lista de ids va en la URL de la consulta).
+    const mine: string[] = [];
+    for (let i = 0; i < want.length; i += 200) {
+      const part = want.slice(i, i + 200);
+      mine.push(...(await db.listAccounts(s.tenantId, { ids: part, ownerId: s.userId, limit: part.length })).map((a) => a.id));
+    }
+    let done = 0;
+    for (let i = 0; i < mine.length; i += 8) {
+      const r = await Promise.allSettled(mine.slice(i, i + 8).map((id) => db.touch(id, 'release', null)));
+      done += r.filter((x) => x.status === 'fulfilled').length;
+    }
+    return done;
+  }
   async function managerPatch(accountId: string, p: Parameters<AccountsDb['updateAccount']>[1]) {
     requireManager();
     let ok: boolean;
@@ -379,7 +400,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
 
   return {
-    territory, list, get, create, update, touch, block, unblock, assign, remove, colleagues,
+    territory, list, get, create, update, touch, releaseMany, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
     crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds,
     preview: (accountId: string) => db.preview(accountId).catch(mapError),

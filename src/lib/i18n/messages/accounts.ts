@@ -13,6 +13,8 @@ const es = {
     blocked: 'Bloqueada', blockedText: 'No se puede vender',
   },
   list: {
+      bulkRelease: 'Soltar', bulkReleaseTitle: 'Soltar las seleccionadas', bulkReleaseAll: (n: number) => `También las que no se ven: todas tus ${n} con estos filtros`, bulkReleaseOnlyMine: 'Solo se sueltan las que son tuyas; las demás se quedan como están.',
+      bulkReleased: (n: number) => (n === 1 ? 'Has soltado 1 empresa.' : `Has soltado ${n} empresas.`), selectAll: (n: number) => `Seleccionar las ${n} que se ven`,
     eyebrow: 'CRM', title: 'Empresas',
     lede: (days: number) => `Si ya la lleva otra persona, no la toques. Cada contacto te la reserva ${days} días.`,
     import: 'Importar', newAccount: 'Nueva empresa',
@@ -111,6 +113,8 @@ export const accountsMessages = defineMessages({
       blocked: 'Blocked', blockedText: 'Cannot be sold to',
     },
     list: {
+      bulkRelease: 'Release', bulkReleaseTitle: 'Release the selected ones', bulkReleaseAll: (n: number) => `Also the ones not shown: all ${n} of yours with these filters`, bulkReleaseOnlyMine: 'Only the ones that are yours are released; the rest stay as they are.',
+      bulkReleased: (n: number) => (n === 1 ? 'You released 1 company.' : `You released ${n} companies.`), selectAll: (n: number) => `Select the ${n} shown`,
       eyebrow: 'CRM', title: 'Companies',
       lede: (days) => `If someone else already has it, leave it. Each contact reserves it for you for ${days} days.`,
       import: 'Import', newAccount: 'New company',
@@ -205,6 +209,8 @@ export const accountsMessages = defineMessages({
       blocked: 'Bloqueada', blockedText: 'Não se pode vender',
     },
     list: {
+      bulkRelease: 'Liberar', bulkReleaseTitle: 'Liberar as selecionadas', bulkReleaseAll: (n: number) => `Também as que não aparecem: todas as suas ${n} com estes filtros`, bulkReleaseOnlyMine: 'Só são liberadas as que são suas; as outras ficam como estão.',
+      bulkReleased: (n: number) => (n === 1 ? 'Você liberou 1 empresa.' : `Você liberou ${n} empresas.`), selectAll: (n: number) => `Selecionar as ${n} visíveis`,
       eyebrow: 'CRM', title: 'Empresas',
       lede: (days) => `Se outra pessoa já cuida dela, não mexa. Cada contato a reserva para você por ${days} dias.`,
       import: 'Importar', newAccount: 'Nova empresa',
@@ -299,6 +305,8 @@ export const accountsMessages = defineMessages({
       blocked: '차단됨', blockedText: '판매할 수 없습니다',
     },
     list: {
+      bulkRelease: '놓기', bulkReleaseTitle: '선택한 계정 놓기', bulkReleaseAll: (n: number) => `보이지 않는 것도: 이 필터의 내 계정 ${n}개 모두`, bulkReleaseOnlyMine: '내 계정만 놓습니다. 나머지는 그대로 둡니다.',
+      bulkReleased: (n: number) => `${n}개 회사를 놓았습니다.`, selectAll: (n: number) => `보이는 ${n}개 선택`,
       eyebrow: 'CRM', title: '회사',
       lede: (days) => `다른 사람이 이미 담당 중이면 건드리지 마세요. 연락할 때마다 ${days}일 동안 내게 예약됩니다.`,
       import: '가져오기', newAccount: '새 회사',
