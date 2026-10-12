@@ -92,6 +92,8 @@ export interface Account {
   phone: string | null; email: string | null; instagram: string | null; facebook: string | null; linkedin: string | null; website: string | null; mapsUrl: string | null;
   /** Promotoras y DJs (§24): TikTok y su música (Spotify, SoundCloud). */
   tiktok: string | null; musicUrl: string | null;
+  /** Titular (§25): razón social y CIF de la sociedad, del aviso legal de su web o a mano. */
+  legalName: string | null; taxId: string | null;
   /** Próximo paso (lo que sale en «Hoy»). */
   nextStep: string | null; nextStepAt: string | null; nextContactId: string | null; nextChannel: string | null;
   /** Cualificación para la prioridad (docs/CRM_DINAMICO.md §11). */
@@ -109,7 +111,7 @@ export interface Account {
   /** Investigación con IA (§13): cuándo se hizo la última (el detalle se lee aparte, con getAiResearch). */
   aiResearchAt: string | null;
 }
-export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl', 'tiktok', 'musicUrl'] as const;
+export const ACCOUNT_CONTACT_KEYS = ['phone', 'email', 'instagram', 'facebook', 'linkedin', 'website', 'mapsUrl', 'tiktok', 'musicUrl', 'legalName', 'taxId'] as const;
 export type AccountContact = Partial<Pick<Account, (typeof ACCOUNT_CONTACT_KEYS)[number]>>;
 
 export interface AccountTouch { id: string; accountId: string; userId: string | null; kind: TouchKind; note: string | null; createdAt: string }

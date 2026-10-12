@@ -518,6 +518,36 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       await rejects(rep.crm.workLinkRemove(r1.linkId), 404);
     });
 
+    test('titular (§25): razón social y CIF; las que lo comparten se proponen como grupo', async () => {
+      const t = await territory();
+      const rep = await ctx(U.rep);
+      const a = await t.admin.accounts.create({ name: 'Tulum Titular', zoneId: t.vlc });
+      const b = await t.admin.accounts.create({ name: 'Cosmic Titular', zoneId: t.vlc });
+      const c = await t.admin.accounts.create({ name: 'Otra Titular', zoneId: t.vlc });
+      for (const id of [a, b, c]) await t.admin.accounts.assign(id, U.rep.id);
+      await rep.crm.setCompanyContact(a, { legalName: 'Ocio Cosmic Titular, S.L.', taxId: 'b-12.345.674' });
+      expect((await t.admin.accounts.get(a)).account).toMatchObject({ legalName: 'Ocio Cosmic Titular, S.L.', taxId: 'B12345674' });
+      // El DNI/NIE de una persona no se guarda como titular.
+      await rejects(rep.crm.setCompanyContact(c, { taxId: '12345678Z' }), 422);
+      await rejects(rep.crm.setCompanyContact(c, { taxId: 'X1234567L' }), 422);
+      expect((await rep.crm.company(a)).sameOwner).toEqual([]);
+      // Misma razón social escrita de otra forma: se propone un grupo nuevo con el nombre de la sociedad.
+      await rep.crm.setCompanyContact(b, { legalName: 'OCIO COSMIC TITULAR SL' });
+      let co = await rep.crm.company(a);
+      expect(co.sameOwner.map((x) => x.id)).toEqual([b]);
+      expect(co.ownerGroup).toMatchObject({ groupId: null, name: 'Ocio Cosmic Titular' });
+      expect(new Set(co.ownerGroup!.move)).toEqual(new Set([a, b]));
+      // Un CIF distinto: otra sociedad aunque el nombre se parezca.
+      await rep.crm.setCompanyContact(c, { legalName: 'Ocio Cosmic Titular, S.L.', taxId: 'B87654323' });
+      expect((await rep.crm.company(a)).sameOwner.map((x) => x.id)).toEqual([b]);
+      // Si una ya está en un grupo, se propone ese.
+      const g = await rep.crm.moveToGroup([b], { groupName: 'Grupo Cosmic Titular' });
+      co = await rep.crm.company(a);
+      expect(co.ownerGroup).toMatchObject({ groupId: g.groupId, name: 'Grupo Cosmic Titular', move: [a] });
+      await rep.crm.moveToGroup(co.ownerGroup!.move, { groupId: g.groupId });
+      expect((await rep.crm.company(a)).ownerGroup).toBeNull();
+    });
+
     test('tipos de cliente por espacio (§21): renombrar, añadir y quitar (sus empresas pasan al principal)', async () => {
       const t = await territory();
       const rep = await ctx(U.rep);

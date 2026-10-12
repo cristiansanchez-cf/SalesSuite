@@ -96,6 +96,12 @@ if (Astro.request.method === 'POST') {
       case 'discard': await admin.crm.classifyAccount(id, { reason: str('reason'), note: str('note') }); to += '?ok=discarded'; break;
       case 'restore': await admin.crm.classifyAccount(id, { reason: null }); to += '?ok=restored'; break;
       case 'group': await admin.crm.moveToGroup([id], { groupName: str('leave') ? null : str('groupName') }); to += '?ok=group'; break;
+      case 'group-owner': {
+        // Lo que se junta se calcula aquí otra vez (no se fía de lo que llegue en el formulario).
+        const og = (await admin.crm.company(id)).ownerGroup;
+        if (og) await admin.crm.moveToGroup(og.move, og.groupId ? { groupId: og.groupId } : { groupName: og.name });
+        to += '?ok=owner#acc-people'; break;
+      }
       case 'tags': await admin.crm.setTags('account', id, str('tags').split(',')); to += '?ok=tags'; break;
       case 'add-person': await admin.crm.quickAdd({ name: str('name'), role: str('role'), email: str('email'), phone: str('phone'), accountId: id }); to += '?ok=person'; break;
       case 'unlink': await admin.crm.unlink(str('contactId'), id); to += '?ok=unlinked'; break;
@@ -170,7 +176,7 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   claimed: M.okClaimed(day(a.claimedUntil)), released: M.okReleased,
   qualified: priorityMessages[locale].ok, ai: researchMessages[locale].ok.run, aiAccept: researchMessages[locale].ok.accept, aiDismiss: researchMessages[locale].ok.dismiss, google: googleApplied(), googleCleared: G.cleared, fact: NT.factSaved, factRemoved: NT.factRemoved, factStarred: NT.factStarred, kind: CL.ok.kind, discarded: CL.ok.discarded, restored: CL.ok.restored,
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
-  group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
+  owner: P.group.ok.owner, group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, work: KN.work.ok, workNew: KN.work.okNew, workRemoved: KN.work.removed, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
 });
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
@@ -441,6 +447,18 @@ const STATE_ALERT = {
             </>
           )}
         </div>
+        {co.sameOwner.length > 0 && (
+          // Mismo titular (§25): misma sociedad en su web. Se propone el grupo; juntarlas es decisión de quien vende.
+          <div class="co-inset grid gap-2 !p-3" data-testid="same-owner">
+            <p class="co-row-title flex items-center gap-2"><Icon name="building2" size={14} />{P.group.sameOwner(a.legalName ?? a.taxId ?? '')}</p>
+            <ul class="flex flex-wrap gap-2 p-0">{co.sameOwner.map((x) => <li class="list-none"><a class="co-tag" href={`/admin/accounts/${x.id}`}>{x.name}</a></li>)}</ul>
+            <p class="co-help">{P.group.sameOwnerHelp}</p>
+            {canEdit && co.ownerGroup && (
+              <form method="post" action="#acc-people"><input type="hidden" name="action" value="group-owner" />
+                <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="same-owner-join"><Icon name="check" size={14} />{P.group.joinOwner(co.ownerGroup.name)}</button></form>
+            )}
+          </div>
+        )}
         {co.locales.length > 0 && (
           <div class="grid gap-2" data-testid="group-locales">
             <p class="text-eyebrow">{P.group.locales(co.locales.length)}</p>
@@ -536,6 +554,9 @@ const STATE_ALERT = {
         {(a.phone || a.email || a.instagram || a.facebook || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
           ? <ContactLinks reach={a} fallback={fallback} size="sm" testid="contact-links" />
           : <p class="co-meta">{F.contact.none}</p>}
+        {(a.legalName || a.taxId) && (
+          <p class="co-meta" data-testid="legal-owner"><span class="text-eyebrow">{F.contact.owner}</span> {[a.legalName, a.taxId].filter(Boolean).join(' · ')}</p>
+        )}
         {a.placeAt && a.placeId && (
           <div class="flex items-center gap-3" data-testid="google-profile">
             {a.placePhoto && <img src={photoSrc(a.placePhoto)} alt="" loading="lazy" class="h-16 w-16 shrink-0 rounded-lg object-cover" />}
@@ -629,6 +650,11 @@ const STATE_ALERT = {
                   {profile === 'dj' && <label class="co-field">{PRF.contact.music}<input class="co-input" name="musicUrl" value={a.musicUrl ?? ''} maxlength="300" placeholder="https://open.spotify.com/…" /></label>}
                 </>
               )}
+              <div class="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                <label class="co-field">{F.contact.legalName}<input class="co-input" name="legalName" value={a.legalName ?? ''} maxlength="200" placeholder="Ocio Ejemplo, S.L." data-testid="contact-legal-name" /></label>
+                <label class="co-field">{F.contact.taxId}<input class="co-input" name="taxId" value={a.taxId ?? ''} maxlength="20" placeholder="B12345678" data-testid="contact-tax-id" /></label>
+              </div>
+              <p class="co-help -mt-2">{F.contact.ownerHelp}</p>
               {canEdit && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{F.contact.save}</button>}
             </fieldset>
           </form>

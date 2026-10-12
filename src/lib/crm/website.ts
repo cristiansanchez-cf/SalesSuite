@@ -3,7 +3,11 @@
  * apuntan los enlaces que la propia web publica (Instagram, Facebook, LinkedIn y email). Sin buscadores ni scraping de
  * redes: solo la portada que Google da como su web. Solo servidor.
  */
-export interface Socials { instagram: string | null; facebook: string | null; linkedin: string | null; email: string | null }
+export interface Socials {
+  instagram: string | null; facebook: string | null; linkedin: string | null; email: string | null;
+  /** Titular (§25): la razón social y el CIF que publica su aviso legal (o la portada). */
+  legalName?: string | null; taxId?: string | null;
+}
 export interface WebsiteApi { scan(url: string): Promise<Socials> }
 const NONE: Socials = { instagram: null, facebook: null, linkedin: null, email: null };
 
@@ -90,24 +94,117 @@ export function parseSocials(html: string): Socials {
   return out;
 }
 
-/** Abre la web (como mucho 3 redirecciones, 6 s y 800 KB) y lee sus enlaces. Si algo falla: nada, sin error. */
+// ---------------------------------------------------------------- Titular (§25)
+
+/** CIF de una sociedad española con su dígito de control bien (así no vale cualquier código que se le parezca). */
+export function validCif(raw: string): boolean {
+  const v = raw.toUpperCase();
+  const m = /^([ABCDEFGHJNPQRSUVW])(\d{7})([0-9A-J])$/.exec(v);
+  if (!m) return false;
+  let sum = 0;
+  [...m[2]].forEach((d, i) => { const n = Number(d); sum += i % 2 ? n : Math.floor(n * 2 / 10) + (n * 2) % 10; });
+  const c = (10 - (sum % 10)) % 10;
+  const letter = 'JABCDEFGHI'[c];
+  if ('PQRSNW'.includes(m[1])) return m[3] === letter;
+  if ('ABEH'.includes(m[1])) return m[3] === String(c);
+  return m[3] === String(c) || m[3] === letter;
+}
+/** «B-12.345.678» → «B12345678». */
+export const cleanTaxId = (v: string) => v.toUpperCase().replace(/[\s.\-/]/g, '');
+
+const FORM = String.raw`S\.?\s?L\.?\s?U\.?|S\.?\s?L\.?(?:\s?P\.?)?|S\.?\s?A\.?\s?U\.?|S\.?\s?A\.?|S\.?\s?Coop\.?|Sociedad\s+Limitada(?:\s+Unipersonal)?|Sociedad\s+An[oó]nima|Lda\.?|Unipessoal`;
+const WORD = String.raw`[A-ZÁÉÍÓÚÑÜÇ0-9][A-Za-zÁÉÍÓÚÑÜÇáéíóúñüç0-9&'’.\-]*`;
+/** Nombre que acaba en la forma social: «Ocio Cosmic Group 2010, S.L.». Palabras en mayúscula (y «de», «y»…). */
+const LEGAL_RE = new RegExp(String.raw`(${WORD}(?:\s+(?:(?:de|del|la|las|los|y|e|i|&)\s+)?${WORD}){0,7}?),?\s*(${FORM})(?=[\s,;:)(]|$)`, 'g');
+const CIF_RE = /\b([ABCDEFGHJNPQRSUVW])[\s.\-]?(\d{2})[\s.]?(\d{3})[\s.]?(\d{2})[\s.\-]?([0-9A-J])\b/g;
+/** Lo que no es el titular aunque lo parezca (los avisos de cookies nombran a otros). */
+const NOT_OWNER = /^(google|meta|facebook|wix|squarespace|wordpress|automattic|hubspot|mailchimp|stripe|paypal|amazon|microsoft|cloudflare|hotjar|vimeo|youtube)\b/i;
+
+const HEADING = /^(datos|identificativos|identificaci[oó]n|del?|titular|titularidad|aviso|legal|responsable|empresa|pol[ií]tica|privacidad|informaci[oó]n|general|generales|denominaci[oó]n|social|raz[oó]n|nombre|condiciones|t[eé]rminos|cookies|copyright|©|todos|derechos|reservados|web|sitio)$/i;
+
+/** Texto plano de una página (sin scripts, estilos ni etiquetas). */
+export function pageText(html: string): string {
+  return html.replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"')
+    .replace(/&([aeiou])acute;/gi, (_, c: string) => ({ a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú', A: 'Á', E: 'É', I: 'Í', O: 'Ó', U: 'Ú' } as Record<string, string>)[c] ?? c)
+    .replace(/&ntilde;/g, 'ñ').replace(/&Ntilde;/g, 'Ñ').replace(/\s+/g, ' ');
+}
+
+/**
+ * La razón social y el CIF de la página. El CIF tiene que cuadrar (dígito de control); la razón social es la que acaba
+ * en S.L./S.A./… más cerca del CIF (o tras «titular», «razón social»…). Si no está claro: null.
+ */
+export function parseLegal(html: string): { legalName: string | null; taxId: string | null } {
+  const text = pageText(html);
+  const cifs = [...text.matchAll(CIF_RE)].map((m) => ({ id: m.slice(1).join(''), at: m.index ?? 0 })).filter((c) => validCif(c.id));
+  // Si hay «CIF»/«NIF» delante, ese manda; si no, el primero.
+  const cif = cifs.find((c) => /(C\.?\s?I\.?\s?F|N\.?\s?I\.?\s?F|NIPC|VAT|identificaci[oó]n fiscal)[^A-Za-z0-9]{0,30}$/i.test(text.slice(Math.max(0, c.at - 40), c.at))) ?? cifs[0] ?? null;
+  const names = [...text.matchAll(LEGAL_RE)].map((m) => {
+    // Fuera lo de delante que es título, no nombre: «1. DATOS DEL TITULAR Ocio Cosmic» → «Ocio Cosmic».
+    const words = m[1].trim().replace(/[,\s]+$/, '').split(/\s+/);
+    while (words.length > 1 && (HEADING.test(words[0]) || /^[\d.]+$/.test(words[0]))) words.shift();
+    const name = words.join(' ').replace(/^(?:de|del|la|las|los|y|e|i|&)\s+/i, '');
+    const short = m[2].replace(/[\s.]/g, '').toUpperCase();
+    const form = ({ SL: 'S.L.', SLU: 'S.L.U.', SLP: 'S.L.P.', SA: 'S.A.', SAU: 'S.A.U.', SCOOP: 'S.Coop.' } as Record<string, string>)[short] ?? m[2].replace(/\s+/g, ' ');
+    return { full: `${name}, ${form}`.replace(/\s+/g, ' '), name, at: m.index ?? 0 };
+  }).filter((n) => n.name.length >= 3 && n.name.length <= 120 && !NOT_OWNER.test(n.name) && /[A-Za-zÁÉÍÓÚÑ]{2}/.test(n.name));
+  const owner = /(titular|raz[oó]n social|denominaci[oó]n|responsable|propietari|empresa|sociedad|entidad|gestionad[oa]|operad[oa]|explotad[oa]|perteneciente)[^.]{0,80}$/i;
+  const pick = cif ? names.filter((n) => Math.abs(n.at - cif.at) < 300).sort((a, b) => Math.abs(a.at - cif.at) - Math.abs(b.at - cif.at))[0]
+    : names.find((n) => owner.test(text.slice(Math.max(0, n.at - 100), n.at)));
+  return { legalName: pick?.full.slice(0, 200) ?? null, taxId: cif?.id ?? null };
+}
+
+/** Enlaces de la portada a su aviso legal, privacidad, términos… (de su misma web), los más prometedores primero. */
+export function legalLinks(html: string, base: URL): URL[] {
+  const rank = (s: string) => /aviso[\s_-]*legal|legal[\s_-]*notice|nota[\s_-]*legal|informaci[oó]n[\s_-]*legal|^\/?legal\b|impressum/i.test(s) ? 0
+    : /t[eé]rminos|condiciones|terms|conditions/i.test(s) ? 1 : /privacidad|privacy|protecci[oó]n[\s_-]*de[\s_-]*datos/i.test(s) ? 2 : /legal/i.test(s) ? 1 : /cookies/i.test(s) ? 3 : -1;
+  const host = base.hostname.replace(/^www\./, '');
+  const seen = new Map<string, { url: URL; rank: number }>();
+  for (const m of html.matchAll(/<a\b[^>]*?href\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]{0,300}?)<\/a>/gi)) {
+    let u: URL | null;
+    try { u = safeUrl(new URL(m[1].replace(/&amp;/g, '&'), base).toString()); } catch { u = null; }
+    if (!u || u.hostname.replace(/^www\./, '') !== host) continue;
+    const r = Math.max(rank(decodeURIComponent(u.pathname).toLowerCase()), rank(pageText(m[2])));
+    const key = u.origin + u.pathname;
+    if (r >= 0 && key !== base.origin + base.pathname && (!seen.has(key) || seen.get(key)!.rank > r)) seen.set(key, { url: u, rank: r });
+  }
+  return [...seen.values()].sort((a, b) => a.rank - b.rank).map((x) => x.url);
+}
+
+/**
+ * Abre la web (como mucho 3 redirecciones, 800 KB por página) y lee sus enlaces; si la portada no dice de quién es, mira
+ * también hasta 2 de sus páginas legales (aviso legal, términos, privacidad). En total, 10 s. Si algo falla: nada, sin error.
+ */
 export function realWebsite(get: WebGet = nodeGet(), lookup: Lookup = dnsLookup): WebsiteApi {
+  async function page(start: URL | null, signal: AbortSignal): Promise<{ url: URL; body: string } | null> {
+    let url = start;
+    for (let hop = 0; url && hop < 4; hop++) {
+      // Primer filtro (barato); el de verdad va al conectar (nodeGet).
+      const ips = await lookup(url.hostname).catch(() => []);
+      if (!ips.length || ips.some(privateIp)) return null;
+      const res = await get(url, signal);
+      if (res.status >= 300 && res.status < 400) { url = res.location ? safeUrl(new URL(res.location, url).toString()) : null; continue; }
+      return res.status >= 200 && res.status < 300 && res.body ? { url, body: res.body } : null;
+    }
+    return null;
+  }
   return {
     async scan(raw) {
-      let url = safeUrl(raw);
       const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 6000);
+      const timer = setTimeout(() => ctl.abort(), 10_000);
       try {
-        for (let hop = 0; url && hop < 4; hop++) {
-          // Primer filtro (barato); el de verdad va al conectar (nodeGet).
-          const ips = await lookup(url.hostname).catch(() => []);
-          if (!ips.length || ips.some(privateIp)) return NONE;
-          const res = await get(url, ctl.signal);
-          if (res.status >= 300 && res.status < 400) { url = res.location ? safeUrl(new URL(res.location, url).toString()) : null; continue; }
-          if (res.status < 200 || res.status >= 300 || !res.body) return NONE;
-          return parseSocials(res.body);
+        const home = await page(safeUrl(raw), ctl.signal);
+        if (!home) return NONE;
+        const out: Socials = { ...parseSocials(home.body), ...parseLegal(home.body) };
+        for (const u of legalLinks(home.body, home.url).slice(0, 2)) {
+          if (out.legalName && out.taxId) break;
+          const p = await page(u, ctl.signal).catch(() => null);
+          if (!p) continue;
+          const l = parseLegal(p.body);
+          // El CIF y el nombre de la misma página van juntos; de otra, solo lo que falte.
+          if (!out.taxId && l.taxId) { out.taxId = l.taxId; out.legalName = l.legalName ?? out.legalName; } else out.legalName ??= l.legalName;
         }
-        return NONE;
+        return out;
       } catch { return NONE; } finally { clearTimeout(timer); }
     },
   };
@@ -118,7 +215,19 @@ export function fixtureWebsite(): WebsiteApi {
   return {
     async scan(raw) {
       const slug = /^https:\/\/([a-z0-9]+)\.test\//.exec(raw)?.[1];
-      return slug ? { instagram: `https://www.instagram.com/${slug}/`, facebook: `https://www.facebook.com/${slug}`, linkedin: null, email: `hola@${slug}.test` } : NONE;
+      if (!slug) return NONE;
+      // Titular de mentira (§25): las de «cosmic…» comparten sociedad, como un grupo; las demás, cada una la suya.
+      const owner = slug.startsWith('cosmic') ? 'cosmic' : slug;
+      return { instagram: `https://www.instagram.com/${slug}/`, facebook: `https://www.facebook.com/${slug}`, linkedin: null, email: `hola@${slug}.test`,
+        legalName: `${owner[0].toUpperCase()}${owner.slice(1)} Ocio, S.L.`, taxId: fixtureCif(owner) };
     },
   };
+}
+/** Un CIF que cuadra, siempre el mismo para el mismo texto. */
+export function fixtureCif(seed: string): string {
+  let h = 7;
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) % 10_000_000;
+  const digits = String(h).padStart(7, '0');
+  for (let c = 0; c < 10; c++) if (validCif(`B${digits}${c}`)) return `B${digits}${c}`;
+  return 'B00000000';
 }

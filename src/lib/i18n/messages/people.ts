@@ -30,7 +30,9 @@ export const peopleMessages = defineMessages({
       putHelp: 'Si no existe, se crea.', leave: 'Sacar del grupo', isGroup: 'Es un grupo: estos locales cuelgan de él.',
       locales: (n: number) => `Locales del grupo · ${n}`, people: (n: number) => `Personas · ${n}`, addPerson: 'Añadir persona',
       noPeople: 'Aún no hay nadie de esta empresa.', lists: 'Listas', save: 'Guardar',
-      ok: { group: 'Grupo actualizado.', person: 'Persona añadida.', tags: 'Listas guardadas.', unlinked: 'Quitada de la empresa.' },
+      sameOwner: (owner: string) => `Mismo titular (${owner})`, sameOwnerHelp: 'Mismo CIF o misma razón social en su web: suelen ser del mismo grupo, pero compruébalo (un grupo puede tener varias sociedades).',
+      joinOwner: (name: string) => `Juntarlas en el grupo «${name}»`,
+      ok: { owner: 'Juntadas en el grupo.', group: 'Grupo actualizado.', person: 'Persona añadida.', tags: 'Listas guardadas.', unlinked: 'Quitada de la empresa.' },
     },
     bulk: {
       select: (n: string) => `Seleccionar ${n}`, move: (n: number) => `Mover ${n} a un grupo`, moveTitle: 'Mover a un grupo',
@@ -102,7 +104,9 @@ export const peopleMessages = defineMessages({
       putHelp: 'Created if it doesn’t exist.', leave: 'Take out of the group', isGroup: 'This is a group: these venues belong to it.',
       locales: (n: number) => `Venues in the group · ${n}`, people: (n: number) => `People · ${n}`, addPerson: 'Add person',
       noPeople: 'Nobody from this company yet.', lists: 'Lists', save: 'Save',
-      ok: { group: 'Group updated.', person: 'Person added.', tags: 'Lists saved.', unlinked: 'Removed from the company.' },
+      sameOwner: (owner: string) => `Same legal owner (${owner})`, sameOwnerHelp: 'Same tax ID or company name on their website: they are usually the same group, but check it (a group can have several companies).',
+      joinOwner: (name: string) => `Put them in the group «${name}»`,
+      ok: { owner: 'Put in the group.', group: 'Group updated.', person: 'Person added.', tags: 'Lists saved.', unlinked: 'Removed from the company.' },
     },
     bulk: {
       select: (n: string) => `Select ${n}`, move: (n: number) => `Move ${n} to a group`, moveTitle: 'Move to a group',
@@ -174,7 +178,9 @@ export const peopleMessages = defineMessages({
       putHelp: 'Se não existir, é criado.', leave: 'Tirar do grupo', isGroup: 'É um grupo: estes locais pertencem a ele.',
       locales: (n: number) => `Locais do grupo · ${n}`, people: (n: number) => `Pessoas · ${n}`, addPerson: 'Adicionar pessoa',
       noPeople: 'Ainda não há ninguém desta empresa.', lists: 'Listas', save: 'Salvar',
-      ok: { group: 'Grupo atualizado.', person: 'Pessoa adicionada.', tags: 'Listas salvas.', unlinked: 'Tirada da empresa.' },
+      sameOwner: (owner: string) => `Mesmo titular (${owner})`, sameOwnerHelp: 'Mesmo número fiscal ou mesma razão social no site: costumam ser do mesmo grupo, mas confirme (um grupo pode ter várias sociedades).',
+      joinOwner: (name: string) => `Juntá-las no grupo «${name}»`,
+      ok: { owner: 'Juntadas no grupo.', group: 'Grupo atualizado.', person: 'Pessoa adicionada.', tags: 'Listas salvas.', unlinked: 'Tirada da empresa.' },
     },
     bulk: {
       select: (n: string) => `Selecionar ${n}`, move: (n: number) => `Mover ${n} para um grupo`, moveTitle: 'Mover para um grupo',
@@ -246,7 +252,9 @@ export const peopleMessages = defineMessages({
       putHelp: '없으면 만들어집니다.', leave: '그룹에서 빼기', isGroup: '그룹입니다: 이 매장들이 속해 있습니다.',
       locales: (n: number) => `그룹 매장 · ${n}`, people: (n: number) => `사람 · ${n}`, addPerson: '사람 추가',
       noPeople: '아직 이 회사 사람이 없습니다.', lists: '목록', save: '저장',
-      ok: { group: '그룹을 바꿨습니다.', person: '추가했습니다.', tags: '목록을 저장했습니다.', unlinked: '회사에서 뺐습니다.' },
+      sameOwner: (owner: string) => `같은 사업자 (${owner})`, sameOwnerHelp: '웹사이트의 사업자 번호나 법인명이 같습니다. 보통 같은 그룹이지만 확인하세요 (한 그룹에 여러 법인이 있을 수 있습니다).',
+      joinOwner: (name: string) => `«${name}» 그룹으로 묶기`,
+      ok: { owner: '그룹으로 묶었습니다.', group: '그룹을 바꿨습니다.', person: '추가했습니다.', tags: '목록을 저장했습니다.', unlinked: '회사에서 뺐습니다.' },
     },
     bulk: {
       select: (n: string) => `${n} 선택`, move: (n: number) => `${n}개를 그룹으로 이동`, moveTitle: '그룹으로 이동',

@@ -101,7 +101,7 @@ export interface AccountRow {
   /** Grupo (otra empresa), listas e importación de origen (fase 2). */
   parent_id?: string | null; tags?: string[]; import_id?: string | null;
   phone?: string | null; email?: string | null; instagram?: string | null; facebook?: string | null; linkedin?: string | null; website?: string | null; maps_url?: string | null;
-  tiktok?: string | null; music_url?: string | null;
+  tiktok?: string | null; music_url?: string | null; legal_name?: string | null; tax_id?: string | null;
   next_step?: string | null; next_step_at?: string | null; next_contact_id?: string | null; next_channel?: string | null;
   qualification?: Record<string, unknown>;
   place_id?: string | null; hours?: string[] | null; lat?: number | null; lng?: number | null; place_status?: string | null; place_at?: string | null;

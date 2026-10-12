@@ -714,3 +714,21 @@ reserva, historial, próximo paso, personas, «Trabaja con», propuestas); por e
 **Pendiente (decidido no hacerlo aún):** la promotora como «comercial» de Enjoy: gratis si consigue que sus salas se
 suscriban y un porcentaje de lo que genere cada sala los primeros 6 meses. Haría falta llevar qué salas trae cada
 promotora y engancharlo con Comisiones.
+
+## 25. Titular: razón social, CIF y grupos que se proponen
+
+Idea de Cristian: la sociedad que hay detrás de un local suele estar en el aviso legal, la privacidad o los términos de su
+web (p. ej. Tulum Eventos y el grupo Cosmic). Con eso se ve qué locales son del mismo dueño.
+
+- **Dónde se guarda:** `account.legal_name` y `account.tax_id` (migración `20261126_account_legal`). Solo el CIF de
+  una sociedad: el DNI/NIE de una persona (un autónomo) es un dato personal y la base de datos lo rechaza.
+- **De dónde sale:** al mirar la web (elegir su ficha de Google, «Es la misma» o el alta desde Buscar clientes), además
+  de la portada se abren hasta 2 páginas legales enlazadas desde ella (aviso legal primero), con las mismas protecciones
+  (solo su misma web, sin direcciones internas, 10 s en total). El CIF tiene que cuadrar con su dígito de control; la
+  razón social es la que acaba en S.L./S.A./… más cerca del CIF. Solo rellena lo que falte: lo escrito a mano manda.
+  También se puede escribir en «Editar contacto».
+- **Ficha:** «Titular: Ocio Cosmic, S.L. · B12345678» en Contacto. En «Grupo y personas», si otras empresas tienen el
+  mismo CIF o la misma razón social (y no un CIF distinto), sale «Mismo titular» con ellas y el botón «Juntarlas en el
+  grupo «…»»: el grupo que ya tenga alguna (o esta, si es grupo); si no, uno nuevo con el nombre de la sociedad. Nunca se
+  juntan solas: un grupo puede tener varias sociedades (una por local) y eso no se detecta.
+- **Pendiente:** una lista en Limpiar con todas las coincidencias para juntarlas de una vez.

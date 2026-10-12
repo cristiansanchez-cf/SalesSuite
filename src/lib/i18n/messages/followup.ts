@@ -12,7 +12,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: 'Contacto', phone: 'Teléfono', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Web', mapsUrl: 'Google Maps',
       from: (name: string) => `de ${name}`, none: 'Aún no hay datos de contacto.', edit: 'Editar contacto', save: 'Guardar contacto',
-      call: 'Llamar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Pega el enlace o el usuario (@club).',
+      call: 'Llamar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Pega el enlace o el usuario (@club).', owner: 'Titular', legalName: 'Razón social', taxId: 'CIF', ownerHelp: 'Sale en el aviso legal o la política de privacidad de su web. Se rellena solo al mirar su web; solo el CIF de una sociedad, nunca el DNI de una persona.',
     },
     follow: {
       title: 'Seguimiento', next: 'Próximo paso', noNext: 'Sin próximo paso.', when: 'Cuándo', with: 'Con quién', company: 'La empresa', via: 'Por dónde',
@@ -41,7 +41,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: 'Contact', phone: 'Phone', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Website', mapsUrl: 'Google Maps',
       from: (name: string) => `from ${name}`, none: 'No contact details yet.', edit: 'Edit contact', save: 'Save contact',
-      call: 'Call', whatsapp: 'WhatsApp', mail: 'Email', open: 'Open', help: 'Paste the link or the handle (@club).',
+      call: 'Call', whatsapp: 'WhatsApp', mail: 'Email', open: 'Open', help: 'Paste the link or the handle (@club).', owner: 'Legal owner', legalName: 'Company name', taxId: 'Tax ID (CIF)', ownerHelp: 'It appears in the legal notice or privacy policy of their website. Filled in automatically when the website is checked; only a company’s tax ID, never a person’s ID.',
     },
     follow: {
       title: 'Follow-up', next: 'Next step', noNext: 'No next step.', when: 'When', with: 'With whom', company: 'The company', via: 'Channel',
@@ -70,7 +70,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: 'Contato', phone: 'Telefone', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Site', mapsUrl: 'Google Maps',
       from: (name: string) => `de ${name}`, none: 'Ainda não há dados de contato.', edit: 'Editar contato', save: 'Salvar contato',
-      call: 'Ligar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Cole o link ou o usuário (@club).',
+      call: 'Ligar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Cole o link ou o usuário (@club).', owner: 'Titular', legalName: 'Razão social', taxId: 'NIF da empresa', ownerHelp: 'Aparece no aviso legal ou na política de privacidade do site. Preenche-se sozinho ao ver o site; só o número fiscal de uma sociedade, nunca o de uma pessoa.',
     },
     follow: {
       title: 'Acompanhamento', next: 'Próximo passo', noNext: 'Sem próximo passo.', when: 'Quando', with: 'Com quem', company: 'A empresa', via: 'Por onde',
@@ -99,7 +99,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: '연락처', phone: '전화', email: '이메일', instagram: '인스타그램', facebook: '페이스북', linkedin: '링크드인', website: '웹사이트', mapsUrl: '구글 지도',
       from: (name: string) => `${name}의 연락처`, none: '아직 연락처가 없습니다.', edit: '연락처 수정', save: '연락처 저장',
-      call: '전화', whatsapp: '왓츠앱', mail: '이메일', open: '열기', help: '링크나 아이디(@club)를 붙여넣으세요.',
+      call: '전화', whatsapp: '왓츠앱', mail: '이메일', open: '열기', help: '링크나 아이디(@club)를 붙여넣으세요.', owner: '사업자', legalName: '법인명', taxId: '사업자 번호(CIF)', ownerHelp: '웹사이트의 법적 고지나 개인정보 처리방침에 나옵니다. 웹사이트를 확인할 때 자동으로 채워집니다. 회사 번호만, 개인 신분증 번호는 저장하지 않습니다.',
     },
     follow: {
       title: '후속 조치', next: '다음 단계', noNext: '다음 단계 없음.', when: '언제', with: '누구와', company: '회사', via: '채널',

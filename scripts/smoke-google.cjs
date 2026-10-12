@@ -48,6 +48,7 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   const links = await p.$$eval('[data-testid=contact-links] a', (xs) => xs.map((x) => x.getAttribute('href')));
   assert(links.includes('https://www.instagram.com/salabrisa/') && links.includes('https://www.facebook.com/salabrisa') && links.includes('mailto:hola@salabrisa.test'), 'redes y email de su web');
   assert((await p.textContent('[data-testid=google-profile]')).includes('★ 4,4'), 'su valoración en la ficha');
+  assert(/Salabrisa Ocio, S\.L\. · B\d{7}[0-9A-J]/.test(await p.textContent('[data-testid=legal-owner]')), 'titular de su aviso legal (razón social y CIF)');
   if (OUT) await p.screenshot({ path: `${OUT}/google-applied.png`, fullPage: true });
 
   assert((await p.textContent('#acc-head')).includes('Valencia'), 'la cabecera ya dice su ciudad, sin recargar');
@@ -72,5 +73,22 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
 
   await p.goto(`${BASE}/admin/accounts?ver=all&q=Sala%20Brisa`);
   assert((await p.textContent('[data-testid=account][data-name="Sala Brisa"]')).includes('Valencia'), 'en la lista, ya con su ciudad');
+
+  // Mismo titular (§25): dos locales cuya web dice la misma sociedad → se propone juntarlas en un grupo.
+  for (const name of ['Cosmic Sur', 'Cosmic Norte']) {
+    await p.goto(`${BASE}/admin/accounts?ver=all`);
+    await p.click('[data-testid=add-open]'); await p.click('[data-testid=new-account]');
+    await p.fill('[data-testid=new-account-form] [name=name]', name);
+    await Promise.all([p.waitForURL(/ok=created/), p.click('[data-testid=new-account-form] button[type=submit]')]);
+    await bg(p, () => p.click('[data-testid=google-search]'));
+    await bg(p, () => p.locator('[data-testid=google-result]').first().locator('[data-testid=google-apply]').click());
+  }
+  await p.reload();
+  const same = await p.textContent('[data-testid=same-owner]');
+  assert(same.includes('Mismo titular (Cosmic Ocio, S.L.)') && same.includes('Cosmic Sur'), 'avisa de que comparten titular');
+  assert((await p.textContent('[data-testid=same-owner-join]')).includes('«Cosmic Ocio»'), 'propone el grupo con el nombre de la sociedad');
+  if (OUT) await p.screenshot({ path: `${OUT}/google-same-owner.png`, fullPage: true });
+  await Promise.all([p.waitForURL(/ok=owner/), p.click('[data-testid=same-owner-join]')]);
+  assert((await p.textContent('[data-testid=account-group]')).includes('Cosmic Ocio') && !(await p.isVisible('[data-testid=same-owner-join]')), 'juntadas en el grupo; ya no lo propone');
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -14,7 +14,7 @@ import { parseValue, parseValues, type CrmField, type FieldValues } from './fiel
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
 import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
-import { fixtureWebsite, realWebsite, type WebsiteApi } from './website';
+import { cleanTaxId, fixtureWebsite, realWebsite, type Socials, type WebsiteApi } from './website';
 import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
 import { claudeNotes, fixtureNotes, matchAccounts, nameScore, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
@@ -58,7 +58,17 @@ export const companyContactSchema = z.object({
   phone: opt(40), email: z.string().trim().toLowerCase().max(200).refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'email no válido').transform((v) => v || null).nullable().optional(),
   instagram: urlOpt(300, 'instagram'), facebook: urlOpt(300, 'facebook'), linkedin: urlOpt(300, 'linkedin'), website: urlOpt(300, 'web'), mapsUrl: urlOpt(500, 'web'),
   tiktok: urlOpt(300, 'tiktok'), musicUrl: urlOpt(300, 'web'),
+  // Titular (§25): la sociedad y su CIF. El DNI/NIE de una persona (un autónomo) no: es un dato personal.
+  legalName: opt(200),
+  taxId: z.string().max(20).transform((v) => cleanTaxId(v) || null)
+    .refine((v) => !v || (/^[A-Z0-9]{8,14}$/.test(v) && !PERSONAL_ID.test(v)), 'solo el CIF de una sociedad').nullable().optional(),
 });
+/** DNI o NIE de una persona: no se guarda como titular. */
+export const PERSONAL_ID = /^([0-9]{8}|[XYZKLM][0-9]{7})[A-Z]$/;
+/** «Ocio Cosmic Group 2010, S.L.» → «ocio cosmic group 2010» (para ver si dos son la misma sociedad). */
+export const legalKey = (v: string | null | undefined) => (v ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  .replace(/\b(s\.?\s?l\.?\s?[up]?\.?|s\.?\s?a\.?\s?u?\.?|s\.?\s?coop\.?|sociedad limitada( unipersonal)?|sociedad anonima|lda\.?|unipessoal)\s*$/i, '')
+  .replace(/[^a-z0-9]+/g, ' ').trim();
 export const classifySchema = z.object({
   kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).nullable().optional().or(z.literal('').transform(() => null)),
   reason: z.enum(DISCARD_REASONS).nullable().optional().or(z.literal('').transform(() => null)),
@@ -267,9 +277,32 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       locales: accs.filter((x) => x.parentId === a.id),
       /** Candidatas a grupo: las que no están dentro de otro (un solo nivel). */
       groups: a.parentId || !accs.some((x) => x.parentId === a.id) ? accs.filter((x) => !x.parentId && x.id !== a.id).map((x) => ({ id: x.id, name: x.name })) : [],
+      /** Las que comparten titular (§25): mismo CIF o misma razón social. Para proponer juntarlas en un grupo. */
+      ...sameOwner(a, accs),
       /** Para «Trabaja con»: las demás, con su tipo (promotoras y DJs primero). */
       others: accs.filter((x) => x.id !== a.id && !x.discardedAt).map((x) => ({ id: x.id, name: x.name, kind: x.kind }))
         .sort((x, y) => Number(x.kind === 'company') - Number(y.kind === 'company') || x.name.localeCompare(y.name, 'es')).slice(0, 3000),
+    };
+  }
+  /**
+   * «Comparten titular» (§25): otras empresas con el mismo CIF o la misma razón social, y el grupo que se propone: el
+   * que ya tenga alguna de ellas (o esta, si es grupo); si no, uno nuevo con el nombre de la sociedad. Solo se propone:
+   * un grupo puede tener varias sociedades y una sociedad, locales que no se tratan juntos.
+   */
+  function sameOwner(a: Account, accs: Account[]) {
+    const key = legalKey(a.legalName);
+    const same = !a.taxId && key.length < 4 ? [] : accs.filter((x) => x.id !== a.id && !x.discardedAt
+      && ((a.taxId && x.taxId === a.taxId) || (key.length >= 4 && legalKey(x.legalName) === key && !(a.taxId && x.taxId && a.taxId !== x.taxId))));
+    if (!same.length) return { sameOwner: [], ownerGroup: null };
+    const isGroup = (x: Account) => accs.some((y) => y.parentId === x.id);
+    const parentIds = [a, ...same].map((x) => x.parentId).filter((x): x is string => !!x);
+    const target = isGroup(a) ? a : same.find(isGroup) ?? accs.find((x) => x.id === parentIds[0]) ?? null;
+    // Las que se moverían: las que no están ya en ese grupo, no son grupo ellas mismas ni están en otro.
+    const move = [a, ...same].filter((x) => x.id !== target?.id && !isGroup(x) && !x.parentId).map((x) => x.id);
+    const name = (a.legalName ?? same.find((x) => x.legalName)?.legalName ?? '').replace(/,?\s*(S\.?\s?L\.?\s?[UP]?\.?|S\.?\s?A\.?\s?U?\.?|S\.?\s?Coop\.?)\s*$/i, '').trim();
+    return {
+      sameOwner: same.map((x) => ({ id: x.id, name: x.name, groupId: x.parentId })),
+      ownerGroup: move.length && (target || name) ? { groupId: target?.id ?? null, name: target?.name ?? name, move } : null,
     };
   }
   // ---------------------------------------------------------------- «Trabaja con» (§22)
@@ -568,6 +601,18 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   // ---------------------------------------------------------------- contacto de la empresa, interacciones, próximo paso (fase 3)
 
+  /**
+   * Titular leído de su web (§25): solo rellena lo que falta (lo escrito a mano manda) y nunca un DNI. Si quien mira la
+   * web no puede editar la empresa, no pasa nada.
+   */
+  async function fillLegal(accountId: string, socials: Socials | null) {
+    if (!socials?.legalName && !socials?.taxId) return;
+    const a = await accounts.getAccount(accountId);
+    if (!a) return;
+    const taxId = socials.taxId && !PERSONAL_ID.test(socials.taxId) ? socials.taxId : null;
+    const contact = { ...(!a.legalName && socials.legalName ? { legalName: socials.legalName.slice(0, 200) } : {}), ...(!a.taxId && taxId ? { taxId } : {}) };
+    if (Object.keys(contact).length) await accounts.updateAccount(accountId, { contact }).catch((e) => console.warn('[legal]', e instanceof Error ? e.message : e));
+  }
   async function setCompanyContact(accountId: string, input: unknown) {
     requireUse();
     const v = parse(companyContactSchema, input);
@@ -783,6 +828,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         status: p.status, rating: p.rating ?? null, reviews: p.reviews ?? null, photo: p.photo ?? null, zoneId: zone?.id ?? null,
         email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace });
     } catch (e) { mapError(e); }
+    await fillLegal(accountId, socials);
     // Qué ha puesto esta ficha (lo apunta la base de datos).
     const f = (await accounts.getAccount(accountId))?.placeFilled ?? {};
     const COLS = { phone: 'phone', website: 'website', address: 'address', mapsUrl: 'maps_url', email: 'email', instagram: 'instagram', facebook: 'facebook', linkedin: 'linkedin' } as const;
@@ -891,6 +937,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         await accounts.research(accId, { placeId: c.placeId, phone: c.phone, website: c.website, address: c.address, mapsUrl: c.mapsUrl, hours: c.hours, lat: c.lat, lng: c.lng,
           status: c.status, rating: c.rating ?? null, reviews: c.reviews ?? null, photo: c.photo ?? null, zoneId: null,
           email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace: false });
+        await fillLegal(accId, socials);
         created++;
       } catch (e) { console.warn('[prospect]', e instanceof Error ? e.message : e); failed++; }
     }));
@@ -920,6 +967,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         status: c.status, rating: c.rating ?? null, reviews: c.reviews ?? null, photo: c.photo ?? null, zoneId: zone?.id ?? null,
         email: socials?.email ?? null, instagram: socials?.instagram ?? null, facebook: socials?.facebook ?? null, linkedin: socials?.linkedin ?? null, replace });
     } catch (e) { mapError(e); }
+    await fillLegal(accountId, socials);
     await accounts.markSwept(w.id, { [c.placeId]: accountId }).catch((e) => console.warn('[prospect]', e instanceof Error ? e.message : e));
     return { accountId };
   }
