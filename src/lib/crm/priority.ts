@@ -32,15 +32,31 @@ export const OPTIONS = {
   dynamics: { yes: 1, partly: 0.5, no: 0 },
   scale: { single: 0.2, few: 0.6, group: 1 },
 } as const;
-/** Tamaño del local: no es lo mismo que «Locales que tiene» (scale), y por ahora no entra en la puntuación. */
-export const SIZES = ['small', 'medium', 'large'] as const;
+/** Tamaño (el aforo, en tramos): no es lo mismo que «Locales que tiene» (scale), y por ahora no entra en la puntuación. */
+export const SIZES = ['small', 'medium', 'large', 'huge'] as const;
+/**
+ * Los tramos dependen de qué es (§30): un local grande es un festival pequeño. Aforo máximo de cada tramo (el último,
+ * sin tope). Se enseñan debajo de cada opción y sirven para pasar un aforo en número a su tramo.
+ */
+export type SizeScale = 'venue' | 'concert' | 'festival';
+export const SIZE_LIMITS: Record<SizeScale, [number, number, number]> = {
+  venue: [150, 500, 1500], concert: [500, 2000, 10000], festival: [5000, 20000, 50000],
+};
+/** La escala de un sitio: si hace festivales, la de festivales; si conciertos, la de conciertos; si no, la de local. */
+export const sizeScaleOf = (fs: readonly string[]): SizeScale => (fs.includes('festival') ? 'festival' : fs.includes('concerts') ? 'concert' : 'venue');
+/** Un aforo en número → su tramo en esa escala. */
+export function sizeOfCapacity(n: number, scale: SizeScale): (typeof SIZES)[number] {
+  const [a, b, c] = SIZE_LIMITS[scale];
+  return n <= a ? 'small' : n <= b ? 'medium' : n <= c ? 'large' : 'huge';
+}
 /**
  * Cómo es el sitio (no puntúa por ahora; sirve para preparar la visita y para el encaje por paquete). El formato decide
  * cómo se mide la recurrencia (FORMAT_KIND): una promotora por eventos al año; un local por noches con fiesta.
  */
-export const FORMATS = ['club', 'pub', 'cocktail', 'rooftop', 'restaurant', 'hall', 'hotel', 'promoter', 'concerts'] as const;
+// Una promotora no es un formato de local: tiene su propia ficha (§24, §30). Lo viejo marcado como «promoter» se ignora.
+export const FORMATS = ['club', 'pub', 'cocktail', 'rooftop', 'restaurant', 'hall', 'hotel', 'concerts', 'festival'] as const;
 export const FORMAT_KIND: Record<(typeof FORMATS)[number], LeadKind> = {
-  club: 'venue', pub: 'venue', cocktail: 'venue', rooftop: 'venue', restaurant: 'venue', hall: 'venue', hotel: 'venue', promoter: 'promoter', concerts: 'concert',
+  club: 'venue', pub: 'venue', cocktail: 'venue', rooftop: 'venue', restaurant: 'venue', hall: 'venue', hotel: 'venue', concerts: 'concert', festival: 'concert',
 };
 export type Format = (typeof FORMATS)[number];
 /** Claves con varios valores a la vez (se marcan y desmarcan de una en una). */

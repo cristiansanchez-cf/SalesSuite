@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { businessDaysBetween, compareLeads, coolingDays, normalizeWeights, priorityOf, setQual } from './priority';
+import { businessDaysBetween, compareLeads, coolingDays, normalizeWeights, priorityOf, setQual, sizeOfCapacity, sizeScaleOf } from './priority';
 
 describe('prioridad de leads', () => {
   test('lead completo: suma ponderada y de dónde sale cada punto', () => {
@@ -37,13 +37,24 @@ describe('prioridad de leads', () => {
     expect(priorityOf({ coverage: true, validate: true, debt: true }, null).kills).toEqual(['coverage', 'validate', 'debt']);
   });
 
+  test('tamaño en tramos según lo que es (§30): local, conciertos o festival', () => {
+    expect(sizeScaleOf(['club'])).toBe('venue');
+    expect(sizeScaleOf(['hall', 'concerts'])).toBe('concert');
+    expect(sizeScaleOf(['concerts', 'festival'])).toBe('festival');
+    expect([100, 151, 1500, 1501].map((n) => sizeOfCapacity(n, 'venue'))).toEqual(['small', 'medium', 'large', 'huge']);
+    expect(sizeOfCapacity(5000, 'festival')).toBe('small');   // un festival pequeño es un local enorme
+    expect(sizeOfCapacity(5000, 'concert')).toBe('large');
+  });
+
   test('el formato decide cómo se mide la recurrencia (y sustituye al antiguo «Qué es»)', () => {
     expect(priorityOf({ format: 'restaurant', nights: '2' }, null)).toMatchObject({ kind: 'venue' });
-    expect(priorityOf({ format: 'promoter', events: '12+' }, 'ocio-nocturno').parts[0]).toMatchObject({ key: 'recurrence', points: 30 });
+    expect(priorityOf({ kind: 'promoter', events: '12+' }, null).parts[0]).toMatchObject({ key: 'recurrence', points: 30 });   // lo antiguo
     expect(priorityOf({ kind: 'concert' }, null).kind).toBe('concert');   // lo antiguo se sigue leyendo
     // Varios formatos (sala de conciertos que luego sigue con DJ): si alguno es un local, se mide como local.
     expect(priorityOf({ format: ['concerts', 'pub'] }, null).kind).toBe('venue');
-    expect(priorityOf({ format: ['promoter', 'concerts'] }, null).kind).toBe('promoter');
+    // Una promotora ya no es un formato (§30): lo viejo marcado se ignora; un festival se mide como conciertos.
+    expect(priorityOf({ format: ['promoter', 'concerts'] } as never, null).kind).toBe('concert');
+    expect(priorityOf({ format: 'festival' }, null).kind).toBe('concert');
     const q: Record<string, unknown> = { format: 'hall' };
     setQual(q, 'format', 'pub', true); expect(q.format).toEqual(['hall', 'pub']);
     setQual(q, 'format', 'hall', true); expect(q.format).toEqual(['pub']);

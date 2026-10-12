@@ -207,6 +207,19 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
           return el;
         };
         const queue = new Map();
+        // Autoguardado (docs/CRM_DINAMICO.md §31): un formulario con data-autosave se manda solo al cambiar un campo (un
+        // clic en una casilla o un desplegable, o al salir de un texto); su botón de guardar no se enseña.
+        const hideSave = () => document.querySelectorAll('form[data-autosave] [data-autosave-btn]').forEach((b) => { b.hidden = true; });
+        hideSave(); document.addEventListener('co:swapped', hideSave);
+        document.addEventListener('change', (e) => {
+          const el = e.target;
+          const form = el instanceof Element ? el.closest('form[data-autosave]') : null;
+          if (!(form instanceof HTMLFormElement) || el.closest('[data-no-autosave]')) return;
+          const st = form.querySelector('[data-autosave-status]');
+          if (st) { st.textContent = T.saving; st.dataset.state = 'saving'; }
+          clearTimeout(form._autosave);
+          form._autosave = setTimeout(() => form.requestSubmit(), 120);
+        });
         document.addEventListener('submit', async (e) => {
           const form = e.target;
           if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-async') || !window.fetch || !window.DOMParser) return;
@@ -233,14 +246,16 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
             // Hecho = el servidor redirige con ?ok= (y su aviso); si no redirige y trae un rechazo, es un error.
             const flashed = res.redirected && new URL(res.url).searchParams.has('ok');
             const err = flashed ? null : doc.querySelector('main [data-testid=alert-rejection], main [data-testid=alert-failure]');
-            if (err) { restore(); toast(err.textContent.replace(/\s+/g, ' ').trim(), 'error'); return; }
+            if (err) { restore(); const st = form.querySelector('[data-autosave-status]'); if (st) st.textContent = ''; toast(err.textContent.replace(/\s+/g, ' ').trim(), 'error'); return; }
             for (const id of (form.dataset.async || '').split(/\s+/).filter(Boolean)) {
               const next = doc.getElementById(id); const cur = document.getElementById(id);
               if (next && cur) cur.replaceWith(document.importNode(next, true));
             }
             restore();
             const ok = flashed ? doc.querySelector('main [data-testid=alert-success]') : null;
-            if (ok || !form.hasAttribute('data-async-quiet')) toast(ok ? ok.textContent.replace(/\s+/g, ' ').trim() : form.dataset.asyncDone || T.done, 'ok');
+            // Autoguardado: sin aviso abajo; al lado, «Guardado ✓».
+            if (form.hasAttribute('data-autosave')) { const st = (document.getElementById(form.id) || form).querySelector('[data-autosave-status]'); if (st) { st.textContent = T.saved; st.dataset.state = 'saved'; } }
+            else if (ok || !form.hasAttribute('data-async-quiet')) toast(ok ? ok.textContent.replace(/\s+/g, ' ').trim() : form.dataset.asyncDone || T.done, 'ok');
             document.dispatchEvent(new CustomEvent('co:swapped'));
           } catch {
             restore(); toast(T.failed, 'error');

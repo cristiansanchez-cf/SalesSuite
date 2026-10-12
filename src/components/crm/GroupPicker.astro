@@ -24,23 +24,13 @@ const Tag = embedded ? 'div' : 'form';
   <input type="hidden" name="groupId" data-group-id />
   <input type="hidden" name="groupName" data-group-name />
   <label class="co-field">{embedded ? G.ask : G.search} <span class="co-help">{embedded ? G.askHelp : G.searchHelp}</span>
-    <input class="co-input" type="search" autocomplete="off" maxlength="160" placeholder={G.searchPh} data-group-q data-testid="group-search" /></label>
+    <input class="co-input" type="search" autocomplete="off" maxlength="160" placeholder={G.searchPh} data-group-q data-no-autosave data-testid="group-search" /></label>
   <ul class="m-0 grid gap-1 p-0" hidden data-group-list data-testid="group-results"></ul>
   <p class="co-tag w-fit" hidden data-group-chosen data-testid="group-chosen"><Icon name="building2" size={12} /><span data-group-label></span>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-group-change>{G.change}</button></p>
   <p class="co-help text-[var(--co-danger)]" hidden data-group-hint role="alert"></p>
-  {nearby.length > 0 && (
-    <div class="grid gap-1" data-testid="group-nearby">
-      <p class="co-help">{zone && <strong>{G.nearby(zone)}</strong>} {G.nearbyHelp}</p>
-      <ul class="flex flex-wrap gap-2 p-0">
-        {nearby.map((g) => (
-          <li class="list-none"><button type="button" class="co-chip" data-group-suggest data-id={g.id} data-name={g.name} data-testid="group-suggest">
-            <Icon name="building2" size={12} />{g.name}{g.locales > 0 && <span class="co-meta"> · {G.localesN(g.locales)}</span>}</button></li>
-        ))}
-      </ul>
-    </div>
-  )}
-  {!embedded && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="group-save">{G.putIn}</button>}
+  {/* Los grupos de su ciudad salen al pinchar en el buscador, antes de escribir (§31). */}
+  {nearby.length > 0 && <script type="application/json" data-group-nearby set:html={JSON.stringify({ title: zone ? G.nearby(zone) : G.nearbyHelp, items: nearby.map((g) => ({ id: g.id, name: g.name, small: g.locales ? G.localesN(g.locales) : '' })) }).replace(/</g, '\\u003c')} />}
 </Tag>
 
 <script>
@@ -60,7 +50,10 @@ const Tag = embedded ? 'div' : 'form';
     const pick = (id: string, name: string, text: string) => {
       gid.value = id; gname.value = id ? '' : name; label.textContent = text;
       chosen.hidden = false; q.hidden = true; list.hidden = true; hint.hidden = true;
+      // En la ficha, elegir ya lo guarda (sin botón); en el alta, va con el resto.
+      if (box instanceof HTMLFormElement) box.requestSubmit();
     };
+    const near = JSON.parse(box.querySelector('[data-group-nearby]')?.textContent ?? 'null') as { title: string; items: Array<{ id: string; name: string; small: string }> } | null;
     const option = (text: string, small: string, on: () => void, testid: string) => {
       const li = document.createElement('li'); li.className = 'list-none';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = testid;
@@ -68,11 +61,19 @@ const Tag = embedded ? 'div' : 'form';
       if (small) { const s = document.createElement('small'); s.textContent = small; t.append(s); }
       b.append(t); b.addEventListener('click', on); li.append(b); return li;
     };
+    // Sin escribir nada: los grupos de su ciudad, para elegir con un toque.
+    const showNear = () => {
+      if (!near?.items.length || q.value.trim()) return;
+      const head = document.createElement('li'); head.className = 'list-none co-help px-2 pt-1'; head.textContent = near.title;
+      list.replaceChildren(head, ...near.items.map((x) => option(x.name, x.small, () => pick(x.id, x.name, x.name), 'group-suggest')));
+      list.hidden = false;
+    };
+    q.addEventListener('focus', showNear);
     q.addEventListener('input', () => {
       reset();
       const v = q.value.trim();
       window.clearTimeout(timer);
-      if (v.length < 2) { list.hidden = true; return; }
+      if (v.length < 2) { if (!v) showNear(); else list.hidden = true; return; }
       timer = window.setTimeout(async () => {
         let items: Array<{ id: string; name: string; zone: string }> = [];
         try { const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(v)}`, { credentials: 'same-origin' }); if (r.ok) items = (await r.json()).items ?? []; } catch { /* sin red: solo «crear» */ }
@@ -84,7 +85,6 @@ const Tag = embedded ? 'div' : 'form';
         list.hidden = false;
       }, 250);
     });
-    box.querySelectorAll<HTMLButtonElement>('[data-group-suggest]').forEach((b) => b.addEventListener('click', () => pick(b.dataset.id ?? '', b.dataset.name ?? '', b.dataset.name ?? '')));
     box.querySelector('[data-group-change]')?.addEventListener('click', () => { reset(); q.value = ''; q.focus(); });
     if (box instanceof HTMLFormElement) box.addEventListener('submit', (e) => {
       if (!gid.value && !gname.value) { e.preventDefault(); hint.textContent = T.pick; hint.hidden = false; q.focus(); }

@@ -1,0 +1,48 @@
+---
+/**
+ * Listas de una empresa (§31): chips con ✕ y «+ Lista» (busca entre las que ya hay o escribe una nueva). Se guarda al
+ * añadir o quitar, sin botón. Son etiquetas de la empresa (p. ej. «fbd», de dónde vino); las de una persona, en su ficha.
+ */
+import { i18n } from '~/lib/i18n';
+import { peopleMessages } from '~/lib/i18n/messages/people';
+
+interface Props { tags: string[]; lists: string[]; canEdit: boolean }
+const { tags, lists, canEdit } = Astro.props;
+const { m } = i18n(Astro, peopleMessages);
+const G = m.group;
+---
+<form method="post" id="acc-tags" class="grid gap-1.5 border-t border-[var(--co-rule)] pt-3" data-testid="account-tags" data-async="acc-tags" data-async-quiet data-autosave data-tag-chips>
+  <input type="hidden" name="action" value="tags" />
+  <input type="hidden" name="tags" value={tags.join(', ')} data-tags-value />
+  <div class="flex items-baseline justify-between gap-2"><span class="text-eyebrow">{G.lists}</span><span class="co-meta text-xs" aria-live="polite" data-autosave-status></span></div>
+  <ul class="m-0 flex flex-wrap items-center gap-1.5 p-0">
+    {tags.map((t) => (
+      <li class="list-none"><span class="co-tag !pr-1" data-testid="tag" data-tag={t}>{t}
+        {canEdit && <button type="button" class="ml-1 opacity-60 hover:opacity-100" aria-label={G.tagsRemove(t)} title={G.tagsRemove(t)} data-tag-remove={t} data-testid="tag-remove">✕</button>}</span></li>
+    ))}
+    {canEdit && (
+      <li class="list-none">
+        <input class="co-input !h-8 !w-44 !py-1 text-sm" list="acc-tag-lists" maxlength="48" placeholder={G.tagsAdd} aria-label={G.tagsPh} data-tag-input data-no-autosave data-testid="tag-input" />
+        <datalist id="acc-tag-lists">{lists.filter((l) => !tags.includes(l)).slice(0, 300).map((l) => <option value={l} />)}</datalist>
+      </li>
+    )}
+  </ul>
+  <p class="co-help m-0">{G.tagsHelp}</p>
+</form>
+
+<script>
+  // Añadir (Enter o elegir de la lista) o quitar (✕) cambia el valor y se manda solo (data-async, sin recargar).
+  const wire = () => document.querySelectorAll<HTMLFormElement>('form[data-tag-chips]').forEach((form) => {
+    if (form.dataset.wired) return;
+    form.dataset.wired = '1';
+    const value = form.querySelector<HTMLInputElement>('[data-tags-value]')!;
+    const input = form.querySelector<HTMLInputElement>('[data-tag-input]');
+    const current = () => value.value.split(',').map((x) => x.trim()).filter(Boolean);
+    const send = (next: string[]) => { value.value = [...new Set(next)].join(', '); form.requestSubmit(); };
+    form.querySelectorAll<HTMLButtonElement>('[data-tag-remove]').forEach((b) => b.addEventListener('click', () => send(current().filter((t) => t !== b.dataset.tagRemove))));
+    const add = () => { const v = input?.value.trim(); if (v) send([...current(), v]); };
+    input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    input?.addEventListener('change', add);
+  });
+  wire(); document.addEventListener('co:swapped', wire);
+</script>

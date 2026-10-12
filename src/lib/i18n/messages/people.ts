@@ -27,6 +27,7 @@ export const peopleMessages = defineMessages({
       ok: { created: 'Persona añadida.', saved: 'Datos guardados.', linked: 'Añadida a la empresa.', unlinked: 'Quitada de la empresa.', fields: 'Ficha guardada.', tags: 'Listas guardadas.', owner: 'Asignada.' },
     },
     group: {
+     tagsHelp: 'De dónde viene o en qué campaña está (p. ej. fbd). Se guarda al añadir o quitar.', tagsAdd: '+ Lista', tagsPh: 'Busca o escribe una lista', tagsRemove: (t: string) => `Quitar ${t}`,
       title: 'Grupo y personas', group: 'Grupo', none: 'No está en ningún grupo.', put: 'Meter en un grupo', putPh: 'Nombre del grupo',
       putHelp: 'Si no existe, se crea.', leave: 'Sacar del grupo', isGroup: 'Es un grupo: estos locales cuelgan de él.',
       locales: (n: number) => `Locales del grupo · ${n}`, people: (n: number) => `Personas · ${n}`, addPerson: 'Añadir persona',
@@ -106,6 +107,7 @@ export const peopleMessages = defineMessages({
       ok: { created: 'Person added.', saved: 'Details saved.', linked: 'Added to the company.', unlinked: 'Removed from the company.', fields: 'Record saved.', tags: 'Lists saved.', owner: 'Assigned.' },
     },
     group: {
+     tagsHelp: 'Where it comes from or which campaign it’s in (e.g. fbd). Saved when you add or remove one.', tagsAdd: '+ List', tagsPh: 'Search or type a list', tagsRemove: (t: string) => `Remove ${t}`,
       title: 'Group and people', group: 'Group', none: 'Not in any group.', put: 'Put in a group', putPh: 'Group name',
       putHelp: 'Created if it doesn’t exist.', leave: 'Take out of the group', isGroup: 'This is a group: these venues belong to it.',
       locales: (n: number) => `Venues in the group · ${n}`, people: (n: number) => `People · ${n}`, addPerson: 'Add person',
@@ -185,6 +187,7 @@ export const peopleMessages = defineMessages({
       ok: { created: 'Pessoa adicionada.', saved: 'Dados salvos.', linked: 'Adicionada à empresa.', unlinked: 'Tirada da empresa.', fields: 'Ficha salva.', tags: 'Listas salvas.', owner: 'Atribuída.' },
     },
     group: {
+     tagsHelp: 'De onde vem ou em que campanha está (ex. fbd). Salva ao adicionar ou tirar.', tagsAdd: '+ Lista', tagsPh: 'Procure ou escreva uma lista', tagsRemove: (t: string) => `Tirar ${t}`,
       title: 'Grupo e pessoas', group: 'Grupo', none: 'Não está em nenhum grupo.', put: 'Colocar num grupo', putPh: 'Nome do grupo',
       putHelp: 'Se não existir, é criado.', leave: 'Tirar do grupo', isGroup: 'É um grupo: estes locais pertencem a ele.',
       locales: (n: number) => `Locais do grupo · ${n}`, people: (n: number) => `Pessoas · ${n}`, addPerson: 'Adicionar pessoa',
@@ -264,6 +267,7 @@ export const peopleMessages = defineMessages({
       ok: { created: '추가했습니다.', saved: '저장했습니다.', linked: '회사에 추가했습니다.', unlinked: '회사에서 뺐습니다.', fields: '기록을 저장했습니다.', tags: '목록을 저장했습니다.', owner: '배정했습니다.' },
     },
     group: {
+     tagsHelp: '출처나 캠페인(예: fbd). 추가하거나 빼면 바로 저장됩니다.', tagsAdd: '+ 목록', tagsPh: '목록 검색 또는 입력', tagsRemove: (t: string) => `${t} 빼기`,
       title: '그룹과 사람', group: '그룹', none: '어느 그룹에도 없습니다.', put: '그룹에 넣기', putPh: '그룹 이름',
       putHelp: '없으면 만들어집니다.', leave: '그룹에서 빼기', isGroup: '그룹입니다: 이 매장들이 속해 있습니다.',
       locales: (n: number) => `그룹 매장 · ${n}`, people: (n: number) => `사람 · ${n}`, addPerson: '사람 추가',

@@ -56,16 +56,19 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   await rep.waitForURL(/\/admin\/accounts\/[^/?]+$/);
   const people = await rep.textContent('[data-testid=account-people-list]');
   assert(people.includes('Marta Ruiz') && people.includes('Bruno Smoke'), 'la empresa enseña a sus personas');
-  // Grupo (§26): se busca; sin elegir no se envía; si no está, «Crear el grupo».
-  const before = rep.url();
-  await rep.click('[data-testid=group-save]');
-  assert(rep.url() === before && await rep.isVisible('[data-group-hint]'), 'sin elegir un grupo no se envía');
+  // Grupo (§26, §31): se busca; si no está, «Crear el grupo»; elegir ya lo guarda (sin botón).
+  assert(!(await rep.isVisible('[data-testid=group-save]')), 'sin botón de guardar el grupo');
   await rep.fill('[data-testid=group-search]', 'Grupo Costa Smoke');
-  await rep.click('[data-testid=group-create]');
-  assert((await rep.textContent('[data-testid=group-chosen]')).includes('Crear el grupo «Grupo Costa Smoke»'), 'elegido: crear el grupo');
-  await Promise.all([rep.waitForURL(/ok=group/), rep.click('[data-testid=group-save]')]);
+  await Promise.all([rep.waitForURL(/ok=group/), rep.click('[data-testid=group-create]')]);
   assert((await rep.textContent('[data-testid=account-group]')).includes('Grupo Costa Smoke'), 'grupo creado al vuelo');
   assert(await rep.isVisible('[data-testid=account-people]') && await rep.isVisible('[data-testid=work-links]'), 'grupo, personas y «trabaja con» en tarjetas separadas');
+  // Listas (§31): chips en Datos; añadir y quitar se guarda solo.
+  const bg = async (fn) => { const n = Number(await rep.evaluate(() => document.documentElement.dataset.asyncDone || 0)); await fn(); await rep.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n); };
+  await bg(async () => { await rep.fill('[data-testid=tag-input]', 'vip smoke'); await rep.press('[data-testid=tag-input]', 'Enter'); });
+  assert(await rep.isVisible('[data-testid=tag][data-tag="vip-smoke"]') && (await rep.textContent('[data-testid=account-tags]')).includes('Guardado'), 'lista añadida y guardada sin botón');
+  await bg(() => rep.click('[data-testid=tag][data-tag="vip-smoke"] [data-testid=tag-remove]'));
+  await rep.reload();
+  assert(!(await rep.isVisible('[data-testid=tag][data-tag="vip-smoke"]')), 'quitada, también tras recargar');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-account-people.png`, fullPage: true });
 
   // ---- el admin mueve en bloque a un grupo
@@ -97,9 +100,11 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   if (zoneOf) await adm.selectOption('[data-testid=new-account-form] [name=zoneId]', zoneOf);
   await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
   if (zoneOf) {
-    assert((await adm.textContent('[data-testid=group-nearby]')).includes('Grupo Costa Smoke'), 'sugiere los grupos de su zona');
-    await adm.click('[data-testid=group-suggest]');
-    await Promise.all([adm.waitForURL(/ok=group/), adm.click('[data-testid=group-save]')]);
+    // Al pinchar en el buscador, sin escribir: los grupos de su ciudad; uno, y guardado.
+    await adm.click('[data-testid=group-search]');
+    await adm.waitForSelector('[data-testid=group-suggest]');
+    assert((await adm.textContent('[data-testid=group-results]')).includes('Grupo Costa Smoke'), 'sugiere los grupos de su zona al pinchar');
+    await Promise.all([adm.waitForURL(/ok=group/), adm.locator('[data-testid=group-suggest]').filter({ hasText: 'Grupo Costa Smoke' }).click()]);
     assert((await adm.textContent('[data-testid=account-group]')).includes('Grupo Costa Smoke'), 'metida en el grupo sugerido');
   } else assert(false, 'la empresa del grupo tiene zona');
 

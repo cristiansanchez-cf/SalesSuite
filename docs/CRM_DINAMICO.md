@@ -802,3 +802,34 @@ creaba uno que aún no está en el CRM.
 - Un espacio sin tipos de promotora/DJ sigue con un solo bloque en el que se elige qué es lo nuevo.
 - Pruebas: `smoke-crm.cjs` (dos bloques, «Añadir a Promotoras», DJ nuevo residente que no ve locales al buscar, pestañas
   Promotoras y DJs, papel en desplegable).
+
+## 30. Tamaño en tramos (según local, conciertos o festival); Festival sí, Promotora no
+
+Pedido de Cristian: el «Aforo» en número (abajo, en la Ficha) repetía «Tamaño del local».
+
+- **Un solo dato: Tamaño**, con cuatro tramos (Pequeño, Mediano, Grande, Masivo) y, debajo de cada uno y en pequeño,
+  su rango. Los rangos dependen de lo que es (`SIZE_LIMITS` en `priority.ts`): local hasta 150 / 500 / 1.500;
+  conciertos hasta 500 / 2.000 / 10.000; festival hasta 5.000 / 20.000 / 50.000. Al marcar «Festival» o «Conciertos»
+  en el formato, los rangos cambian.
+- **Formato**: se añade **Festival** (se mide como conciertos) y se quita **Promotora** (tiene su propia ficha, §24; lo
+  viejo marcado se ignora).
+- Migración `20261128` (Enjoy): el aforo apuntado pasa a su tramo (sin pisar el tamaño que ya hubiera) y el campo
+  «Aforo» se archiva (se puede recuperar en Campos). La tarjeta «Ficha» no sale si no le quedan campos.
+- Pruebas: `priority.test.ts` (escalas y tramos), SQL `67_enjoy_size_capacity`, `smoke-crm.cjs`.
+
+## 31. Lo que cambias se guarda solo; lo que apuntas, con botón
+
+Pedido de Cristian: había «Guardar» en cada bloque y no se sabía qué necesitaba botón.
+
+- **Regla**: cambiar un dato se guarda al momento (un clic en un chip o desplegable; al salir de un texto), con
+  «Guardado ✓» al lado. Apuntar un hecho (una interacción, enlazar, añadir una persona) sí lleva botón, que se llama
+  por lo que hace.
+- **Cómo** (`AdminLayout.astro`): un formulario con `data-autosave` (y `data-async`) se manda solo al cambiar un campo
+  y su botón (`data-autosave-btn`) no se enseña; `[data-autosave-status]` dice «Guardando…» / «Guardado ✓»; un error
+  sale abajo como siempre. `data-no-autosave` excluye un campo (p. ej. un buscador).
+- **Dónde**: Contacto (actualiza los botones de contacto), Datos (actualiza la cabecera), tipo de cliente, campos de
+  la Ficha. **Grupo**: al pinchar en el buscador salen los grupos de su ciudad; elegir uno (o «Crear el grupo») ya lo
+  guarda. **Listas**: chips en Datos («fbd ✕», «+ Lista» con las que ya existen), se guardan al añadir o quitar; ya no
+  están en Personas (las de una persona, en su ficha).
+- Pruebas: `smoke-crm.cjs` (campos sin botón, error en aviso), `smoke-crm-people.cjs` (grupo al elegir, sugeridos al
+  pinchar, listas), `smoke-followup.cjs` (contacto al salir del campo).

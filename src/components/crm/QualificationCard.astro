@@ -3,7 +3,7 @@
  * Cualificación de un clic (docs/CRM_DINAMICO.md §11): cada criterio son botones visibles, sin desplegables. Pulsar
  * marca; pulsar lo marcado lo desmarca (vuelve a «no se sabe»). Arriba, la puntuación, el máximo y de dónde sale.
  */
-import { DJ, FORMATS, formatsOf, OPTIONS, PACKAGES, PARTY, PRESALE, SIZES, type Priority, type Qualification } from '~/lib/crm/priority';
+import { DJ, FORMATS, formatsOf, OPTIONS, PACKAGES, PARTY, PRESALE, SIZE_LIMITS, SIZES, sizeScaleOf, type Priority, type Qualification } from '~/lib/crm/priority';
 import { i18n } from '~/lib/i18n';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 
@@ -28,6 +28,10 @@ const about: Array<{ field: 'format' | 'party' | 'size' | 'dj' | 'screens' | 'pr
   { field: 'screens', label: R.screensQ, options: Object.keys(OPTIONS.screens).map((k) => [k, R.options.screens[k as keyof typeof R.options.screens]]) },
   { field: 'promoters', label: R.promoters, options: [['yes', R.promotersYes], ['no', R.promotersNo]] },
 ];
+// Tramos del tamaño según lo que es (local, conciertos o festival): debajo de cada opción, en pequeño (§30).
+const lim = SIZE_LIMITS[sizeScaleOf(formatsOf(q))];
+const num = (n: number) => n.toLocaleString('es-ES');
+const sizeRange: Record<string, string> = Object.fromEntries(SIZES.map((k, i) => [k, R.sizeRange(i ? num(lim[i - 1]) : '', i < 3 ? num(lim[i]) : '')]));
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ','));
 ---
 <section id="qual" class="co-card grid gap-4" data-testid="qualification" data-score={p.score} data-out={p.out ? 'true' : 'false'} data-qualified={p.qualified ? 'true' : 'false'}>
@@ -56,7 +60,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
             <span class="co-row-title">{r.label}{r.hint && <span class="co-meta font-normal"> · {r.hint}</span>}</span>
             <div class="flex flex-wrap gap-2">
               {r.options.map(([v, l]) => (
-                <button type="submit" name="set" value={`${r.field}:${v}`} class="co-chip" aria-pressed={(r.field === 'format' ? (formatsOf(q) as string[]).includes(v) : q[r.field] === v) ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{l}</button>
+                <button type="submit" name="set" value={`${r.field}:${v}`} class="co-chip" aria-pressed={(r.field === 'format' ? (formatsOf(q) as string[]).includes(v) : q[r.field] === v) ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{r.field === 'size' ? <span class="grid text-left leading-tight"><span>{l}</span><small class="co-meta !text-[11px]" data-testid={`qual-size-range-${v}`}>{sizeRange[v]}</small></span> : l}</button>
               ))}
             </div>
           </div>
@@ -80,7 +84,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
           <div class="flex flex-wrap gap-2">
             {r.field && r.options.map(([v, l]) => (
               <button type="submit" name="set" value={`${r.field}:${v}`} class="co-chip"
-                aria-pressed={q[r.field!] === v ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{l}</button>
+                aria-pressed={q[r.field!] === v ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{r.field === 'size' ? <span class="grid text-left leading-tight"><span>{l}</span><small class="co-meta !text-[11px]" data-testid={`qual-size-range-${v}`}>{sizeRange[v]}</small></span> : l}</button>
             ))}
           </div>
         </div>

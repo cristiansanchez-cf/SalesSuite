@@ -17,6 +17,7 @@ import { priorityFor } from '~/lib/crm/score';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
 import WorkLinks from '~/components/crm/WorkLinks.astro';
 import GroupPicker from '~/components/crm/GroupPicker.astro';
+import TagChips from '~/components/crm/TagChips.astro';
 import ProfileCard from '~/components/crm/ProfileCard.astro';
 import { i18n } from '~/lib/i18n';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
@@ -135,11 +136,13 @@ try { data = await acc.get(id); } catch (e) {
 }
 const { account: a, touches, dossiers, canEdit, rules, crmFields } = data;
 // Todo lo que pinta la ficha, a la vez (cada servicio lee lo suyo; lo repetido sale de la caché de la petición).
-const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ] = await Promise.all([
+const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ, listsAll] = await Promise.all([
   acc.territory(), admin.playbook.segmentList(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id),
   admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id), acc.kinds(), admin.crm.workLinks(id),
   googleBox.q ? Promise.resolve(googleBox.q) : admin.crm.hasGoogle() ? admin.crm.googleQuery(id) : Promise.resolve(''),
+  admin.crm.lists({ people: false }),
 ]);
+const accountLists = listsAll.filter((l) => l.accounts > 0).map((l) => l.tag);
 // Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
 const primary = tl.actors[0];
 const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
@@ -485,24 +488,20 @@ const STATE_ALERT = {
             </ul>
           )}
         </div>
-        <form method="post" class="flex flex-wrap items-end gap-2" data-testid="account-tags">
-          <input type="hidden" name="action" value="tags" />
-          <label class="co-field min-w-[14rem] flex-1">{P.group.lists} <span class="co-help">{P.person.listsHelp}</span>
-            <input class="co-input" name="tags" value={a.tags.join(', ')} maxlength="400" disabled={!canEdit} /></label>
-          {canEdit && <button class="co-btn co-btn--ghost co-btn--sm" type="submit">{P.group.save}</button>}
-        </form>
       </section>
       {profile === 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
 
       {/* Los campos del espacio son de locales (aforo…): una promotora o un DJ no los enseña (§24). */}
-      <section class="co-card grid gap-4" data-testid="account-sheet" hidden={profile !== 'venue'}>
+      {/* Sin campos activos (en Enjoy, el aforo pasó a «Tamaño» en tramos, §30), la tarjeta no sale. */}
+      <section class="co-card grid gap-4" data-testid="account-sheet" hidden={profile !== 'venue' || sheet.length === 0}>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="co-entity">{C.title}</h2>
           {perms.manageTenant && <a class="co-meta underline" href="/admin/team/fields">{C.manage}</a>}
         </div>
         {sheet.length === 0 ? <p class="co-meta">{C.noFields} {perms.manageTenant && C.noFieldsAdmin}</p>
         : canEdit ? (
-          <form method="post" class="grid gap-5" data-testid="sheet-form">
+          <form method="post" class="grid gap-5" data-testid="sheet-form" id="sheet-form" data-async="" data-autosave>
+            <span class="co-meta text-xs" aria-live="polite" data-autosave-status></span>
             <input type="hidden" name="action" value="fields" />
             {sections.map((sec) => (
               <fieldset class="grid gap-4 sm:grid-cols-2">
@@ -510,7 +509,7 @@ const STATE_ALERT = {
                 {sec.fields.map((fd) => <div class:list={[(fd.type === 'long_text' || fd.type === 'multi_select') && 'sm:col-span-2']}><FieldInput field={fd} value={a.fields[fd.key]} labels={C} /></div>)}
               </fieldset>
             ))}
-            <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="sheet-save">{C.save}</button>
+            <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="sheet-save" data-autosave-btn>{C.save}</button>
           </form>
         ) : (
           <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -548,12 +547,14 @@ const STATE_ALERT = {
     <aside class="grid content-start gap-4">
       <section id="company-contact" class="co-card grid gap-3" data-testid="company-contact">
         <h2 class="co-entity">{F.contact.title}</h2>
+        <div id="contact-view" class="grid gap-3">
         {(a.phone || a.email || a.instagram || a.facebook || a.linkedin || a.website || a.mapsUrl || fallback?.phone || fallback?.email || fallback?.instagram)
           ? <ContactLinks reach={a} fallback={fallback} size="sm" testid="contact-links" />
           : <p class="co-meta">{F.contact.none}</p>}
         {(a.legalName || a.taxId) && (
           <p class="co-meta" data-testid="legal-owner"><span class="text-eyebrow">{F.contact.owner}</span> {[a.legalName, a.taxId].filter(Boolean).join(' · ')}</p>
         )}
+        </div>
         {a.placeAt && a.placeId && (
           <div class="flex items-center gap-3" data-testid="google-profile">
             {a.placePhoto && <img src={photoSrc(a.placePhoto)} alt="" loading="lazy" class="h-16 w-16 shrink-0 rounded-lg object-cover" />}
@@ -625,7 +626,8 @@ const STATE_ALERT = {
         ))}
         <details open={!(a.phone || a.email || a.instagram)}>
           <summary class="co-meta cursor-pointer">{F.contact.edit}</summary>
-          <form method="post" class="mt-3 grid gap-3" data-testid="company-contact-form">
+          <form method="post" class="mt-3 grid gap-3" data-testid="company-contact-form" id="company-contact-form" data-async="contact-view" data-autosave>
+            <span class="co-meta text-xs" aria-live="polite" data-autosave-status></span>
             <input type="hidden" name="action" value="company-contact" />
             <fieldset class="grid gap-3" disabled={!canEdit}>
               {profile === 'venue' ? (
@@ -652,7 +654,7 @@ const STATE_ALERT = {
                 <label class="co-field">{F.contact.taxId}<input class="co-input" name="taxId" value={a.taxId ?? ''} maxlength="20" placeholder="B12345678" data-testid="contact-tax-id" /></label>
               </div>
               <p class="co-help -mt-2">{F.contact.ownerHelp}</p>
-              {canEdit && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit">{F.contact.save}</button>}
+              {canEdit && <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-autosave-btn>{F.contact.save}</button>}
             </fieldset>
           </form>
         </details>
@@ -661,12 +663,12 @@ const STATE_ALERT = {
         <section class="co-card grid gap-3" id="acc-kind" data-testid="acc-kind">
           {/* El tipo de cliente, si el espacio tiene más de uno (§21). */}
           {kindDefs.length > 1 && (
-            <form method="post" class="grid gap-2" data-async="acc-kind acc-head">
+            <form method="post" class="grid gap-2" data-async="acc-kind acc-head" data-autosave>
               <input type="hidden" name="action" value="kind" />
               <label class="co-field">{CL.kind}
                 <select class="co-select" name="kind" data-testid="kind-select">{kindDefs.map((k) => <option value={k.key} selected={(kindDefs.some((d) => d.key === a.kind) ? a.kind : 'company') === k.key}>{k.label}</option>)}</select>
                 {kindDefs.some((k) => k.key === 'dj') && <span class="co-help">{CL.kindHelp}</span>}</label>
-              <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="kind-save"><span>{F.contact.save}</span></button>
+              <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="kind-save" data-autosave-btn><span>{F.contact.save}</span></button>
             </form>
           )}
           {a.discardedAt
@@ -675,9 +677,11 @@ const STATE_ALERT = {
             : <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit" data-dialog-open="discard" data-testid="discard-open"><Icon name="archive" size={14} />{CL.discard}</button>}
         </section>
       )}
-      <form method="post" class="co-card grid gap-3" id="acc-data" data-testid="account-info">
+      {/* Datos (§31): cada campo se guarda solo al cambiarlo (sin botón); debajo, sus listas. */}
+      <section class="co-card grid gap-3" data-testid="account-data-card">
+      <form method="post" class="grid gap-3" id="acc-data" data-testid="account-info" data-async="acc-head" data-autosave>
         <input type="hidden" name="action" value="save" />
-        <h2 class="co-entity">{M.data}</h2>
+        <div class="flex items-baseline justify-between gap-2"><h2 class="co-entity">{M.data}</h2><span class="co-meta text-xs" aria-live="polite" data-autosave-status></span></div>
         <fieldset class="grid gap-3" disabled={!canEdit}>
           <label class="co-field">{M.name}<input class="co-input" name="name" value={a.name} required maxlength="160" /></label>
           <label class="co-field">{M.zone}<select class="co-select" name="zoneId"><option value="">{M.noZone}</option>{t.zones.map((z) => <option value={z.id} selected={z.id === a.zoneId}>{zonePath(t.zones, z.id)}</option>)}</select></label>
@@ -685,10 +689,12 @@ const STATE_ALERT = {
           <label class="co-field">{M.address}<input class="co-input" name="address" value={a.address ?? ''} maxlength="300" /></label>
           <label class="co-field">{M.externalRef} <span class="co-help">{M.externalRefHelp}</span><input class="co-input" name="externalRef" value={a.externalRef ?? ''} maxlength="120" /></label>
           <label class="co-field">{M.notes}<textarea class="co-textarea" name="notes" maxlength="2000">{a.notes ?? ''}</textarea></label>
-          {canEdit && <button class="co-btn co-btn--ghost w-fit" type="submit">{M.saveData}</button>}
+          {canEdit && <button class="co-btn co-btn--ghost w-fit" type="submit" data-autosave-btn>{M.saveData}</button>}
         </fieldset>
         {!canEdit && <p class="co-help">{M.editHint}</p>}
       </form>
+      <TagChips tags={a.tags} lists={accountLists} canEdit={canEdit} />
+      </section>
 
       {perms.manageAccounts && (
         <section class="co-card grid gap-3" data-testid="account-manage">

@@ -45,7 +45,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // ---- editar el contacto de la empresa
   await p.click('[data-testid=company-contact] details:has([data-testid=company-contact-form]) > summary');
   await p.fill('[data-testid=company-contact-form] [name=email]', 'hola@clubsol.test');
-  await Promise.all([p.waitForURL(/ok=companyContact/), p.click('[data-testid=company-contact-form] button[type=submit]')]);
+  // Se guarda solo al salir del campo (§31): sin botón.
+  { const n = Number(await p.evaluate(() => document.documentElement.dataset.asyncDone || 0));
+    await p.press('[data-testid=company-contact-form] [name=email]', 'Tab');
+    await p.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n); }
+  assert((await p.textContent('[data-testid=company-contact-form]')).includes('Guardado'), 'contacto: «Guardado» sin botón');
+  await p.reload();
   assert(await p.isVisible('[data-testid=contact-links] a[href="mailto:hola@clubsol.test"]'), 'email de la empresa guardado');
 
   await p.goto(`${BASE}/admin/inicio`);

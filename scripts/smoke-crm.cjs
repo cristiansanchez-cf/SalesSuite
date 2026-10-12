@@ -42,19 +42,21 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   await rep.click('[data-testid=account][data-name="Club Sol"] a');
   await rep.waitForURL(/\/admin\/accounts\/[^/?]+$/);
   assert(await rep.isVisible('[data-testid=account-sheet] [data-field=noches-que-abre]'), 'la ficha enseña el campo nuevo');
-  await rep.check('[data-field=noches-que-abre] input[value=viernes]', { force: true });
-  await rep.check('[data-field=noches-que-abre] input[value=sabado]', { force: true });
-  await rep.fill('[data-field=aforo] input[name="f:aforo"]', '520');
-  await rep.click('[data-testid=sheet-save]');
-  await rep.waitForURL(/ok=fields/);
+  // Se guarda solo (§31): cada cambio, sin botón; «Guardado» al lado.
+  const saved = async (fn) => { const n = Number(await rep.evaluate(() => document.documentElement.dataset.asyncDone || 0)); await fn(); await rep.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n); };
+  assert(!(await rep.isVisible('[data-testid=sheet-save]')), 'la ficha no tiene botón de guardar');
+  await saved(() => rep.check('[data-field=noches-que-abre] input[value=viernes]', { force: true }));
+  await saved(() => rep.check('[data-field=noches-que-abre] input[value=sabado]', { force: true }));
+  await saved(async () => { await rep.fill('[data-field=aforo] input[name="f:aforo"]', '520'); await rep.press('[data-field=aforo] input[name="f:aforo"]', 'Tab'); });
+  assert((await rep.textContent('[data-testid=sheet-form]')).includes('Guardado'), '«Guardado» al lado');
+  await rep.reload();
   assert((await rep.inputValue('[data-field=aforo] input[name="f:aforo"]')) === '520', 'aforo guardado');
   assert(await rep.isChecked('[data-field=noches-que-abre] input[value=sabado]'), 'noches guardadas');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-sheet.png`, fullPage: true });
 
   // ---- valor no válido: se rechaza con el motivo
-  await rep.evaluate(() => { const i = document.querySelector('[data-field=aforo] input[name="f:aforo"]'); i.type = 'text'; i.value = 'muchos'; });
-  await Promise.all([rep.waitForNavigation(), rep.click('[data-testid=sheet-save]')]);
-  assert((await rep.textContent('main')).includes('Aforo: tiene que ser un número'), 'error claro con el nombre del campo');
+  await saved(() => rep.evaluate(() => { const i = document.querySelector('[data-field=aforo] input[name="f:aforo"]'); i.type = 'text'; i.value = 'muchos'; i.dispatchEvent(new Event('change', { bubbles: true })); }));
+  assert((await rep.textContent('[data-testid=toasts]')).includes('Aforo: tiene que ser un número'), 'error claro con el nombre del campo');
 
   // ---- la lista enseña la columna y filtra por el campo
   await rep.goto(`${BASE}/admin/accounts?ver=all`);
@@ -96,10 +98,16 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   const tri = (v) => rep.isChecked(`[data-testid=field-tiene-pantalla-${v}]`);
   assert(await tri('yes'), 'campo de sí o no: «Sí» marcado');
   for (const v of ['no', 'unknown']) {
-    await rep.locator(`label:has([data-testid=field-tiene-pantalla-${v}])`).click();
-    await Promise.all([rep.waitForURL(/ok=/), rep.click('[data-testid=sheet-save]')]);
+    await saved(() => rep.locator(`label:has([data-testid=field-tiene-pantalla-${v}])`).click());
+    await rep.reload();
     assert(await tri(v), `campo de sí o no: se guarda «${v}»`);
   }
+  // Tamaño en tramos (§30): cambian si hace festivales; «Promotora» ya no es un formato.
+  assert(!(await rep.isVisible('[data-testid=qual-format-promoter]')) && await rep.isVisible('[data-testid=qual-format-festival]'), 'formatos: Festival sí, Promotora no');
+  assert((await rep.textContent('[data-testid=qual-size-range-small]')).includes('150'), 'local: pequeño hasta 150');
+  await saved(() => rep.click('[data-testid=qual-format-festival]'));
+  { const sm = await rep.textContent('[data-testid=qual-size-range-small]'); const hg = await rep.textContent('[data-testid=qual-size-huge]'); assert(/5\.?000/.test(sm) && hg.includes('Masivo'), `festival: pequeño hasta 5.000; y «Masivo» (${sm} / ${hg})`); }
+  await saved(() => rep.click('[data-testid=qual-format-festival]'));
   // «Trabaja con» (§29): un bloque para Promotoras y otro para DJs; cada uno busca solo lo suyo y, si no está,
   // «Añadir «X» a Promotoras» (se crea en su pestaña y se enlaza).
   await rep.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);

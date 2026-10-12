@@ -101,7 +101,7 @@ export const NOTES_TOOL = {
               type: 'object', additionalProperties: false, required: [...QUAL_KEYS],
               description: 'Solo lo que dice claramente; cadena vacía "" en lo demás.',
               properties: {
-                format: { ...S, description: 'Uno o VARIOS separados por coma si el sitio es varias cosas (p. ej. «hall,pub»: sala de conciertos que después del concierto sigue con DJ). club (discoteca) | pub (pub o bar de copas) | cocktail (cóctel bar) | rooftop (rooftop o terraza) | restaurant (restaurante que acaba en fiesta, cenas con DJ) | hall (sala de conciertos) | hotel (hotel o beach club) | promoter (promotora de fiestas o eventos) | concerts (ciclo de conciertos o artista)' },
+                format: { ...S, description: 'Uno o VARIOS separados por coma si el sitio es varias cosas (p. ej. «hall,pub»: sala de conciertos que después del concierto sigue con DJ). club (discoteca) | pub (pub o bar de copas) | cocktail (cóctel bar) | rooftop (rooftop o terraza) | restaurant (restaurante que acaba en fiesta, cenas con DJ) | hall (sala de conciertos) | hotel (hotel o beach club) | concerts (ciclo de conciertos o artista) | festival (festival). Una promotora NO es un formato: va en «entity»' },
                 party: { ...S, description: '¿Hay fiesta? core (es su negocio) | some (algunas noches, p. ej. un restaurante que se pone de fiesta) | none' },
                 dj: { ...S, description: 'resident (DJ residente) | guests (DJs invitados) | both (residente e invitados) | none (sin DJ, ponen una lista)' },
                 promoters: { ...S, description: 'yes si trabajan promotoras en el sitio (p. ej. «hacen fiestas ucranianas con una promotora»); no si dicen que no' },
@@ -112,7 +112,7 @@ export const NOTES_TOOL = {
                 screens: { ...S, description: 'Pantallas: yes (tiene) | wants (no tiene pero quiere) | no (no tiene NI quiere: solo si lo dicen ellos; saca al sitio del ranking). Si solo dice que no tiene, "".' },
                 dynamics: { ...S, description: 'Hace dinámicas o cuida sus redes: yes | partly | no' },
                 scale: { ...S, description: 'Cuántos locales tiene el dueño: single (un local) | few (2-3) | group (grupo o varias salas). NO es el tamaño' },
-                size: { ...S, description: 'Tamaño del local: small (pequeño) | medium (mediano) | large (grande, mucho aforo). Solo si lo dicen o se deduce claro (p. ej. «se llena de 300»)' },
+                size: { ...S, description: 'Tamaño (aforo) en tramos: small | medium | large | huge. Local: hasta 150 / 150-500 / 500-1.500 / más. Conciertos: hasta 500 / 500-2.000 / 2.000-10.000 / más. Festival: hasta 5.000 / 5.000-20.000 / 20.000-50.000 / más. Solo si lo dicen o se deduce claro (p. ej. «se llena de 300»)' },
                 coverage: { ...S, description: 'true solo si dice que NO hay cobertura móvil dentro.' },
                 validate: { ...S, description: 'true solo si ELLOS han dicho que no pueden validar lo que sale en pantalla.' },
                 pstyle: { ...S, description: 'PROMOTORA o DJ: estilo, uno o varios separados por coma: international (fiestas de una comunidad: francesa, ucraniana…), erasmus, commercial, latin, pop (indie, revival), lgtb, tardeo, techno (underground), lineup (cartel de DJs y punto). "" si no.' },
