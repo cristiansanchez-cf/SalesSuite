@@ -1635,6 +1635,16 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const note = has('reason') ? v.note ?? null : a.discardNote;
     try { await accounts.classify(accountId, v.kind ?? null, reason, note); } catch (e) { mapError(e); }
   }
+  /** Cambiar el tipo de varias a la vez (lista, §42): solo el tipo; lo descartado sigue descartado. */
+  async function setKindMany(ids: string[], kind: string) {
+    requireUse();
+    if (!(await kinds()).some((k) => k.key === kind)) throw new AdminError(422, 'Datos no válidos');
+    let n = 0;
+    for (const id of [...new Set(ids)].slice(0, 500)) {
+      try { await classifyAccount(id, { kind }); n++; } catch { /* la que no se puede (no es suya), se salta */ }
+    }
+    return n;
+  }
   /** Empresas por tanda que la IA revisa cada vez (cada tanda es una petición corta desde el navegador). */
   const CLEANUP_CHUNK = 40;
   async function cleanupOverview() {
@@ -1831,7 +1841,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    board, mergePreview, merge, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,

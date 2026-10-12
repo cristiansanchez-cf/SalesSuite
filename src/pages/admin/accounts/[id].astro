@@ -4,6 +4,7 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
+import type { IconName } from '~/lib/ui/icons';
 import { safeHref } from '~/lib/safe-href';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import AccountState from '~/components/accounts/AccountState.astro';
@@ -239,6 +240,19 @@ const STATE_ALERT = {
     {(a.state === 'free' || a.state === 'mine' || a.state === 'my_customer') && (
       <form method="post"><input type="hidden" name="action" value="dossier" />
         <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
+    )}
+    {/* Qué es (§42): local/empresa, promotora o DJ, a un toque (cambia su ficha). */}
+    {kindDefs.length > 1 && (
+      <form method="post" slot="below" class="mt-3 flex flex-wrap items-center gap-2" data-testid="kind-switch">
+        <input type="hidden" name="action" value="kind" />
+        <span class="co-meta text-sm">{CL.isA}:</span>
+        <div class="co-segmented w-fit !px-1">
+          {kindDefs.map((k) => (
+            <button type="submit" name="kind" value={k.key} class="!px-3" aria-current={(kindDefs.some((x) => x.key === a.kind) ? a.kind : kindDefs[0].key) === k.key ? 'page' : undefined}
+              disabled={!canQualify} data-testid={`kind-switch-${k.key}`}><Icon name={k.icon as IconName} size={14} />{k.label}</button>
+          ))}
+        </div>
+      </form>
     )}
     {a.discardedAt && a.discardReason && (
       <p slot="below" class="co-tag co-tag--danger mt-3 w-fit" data-testid="discarded-banner">{CL.discarded(CL.reasons[a.discardReason])}{a.discardNote && <span class="font-normal"> — {a.discardNote}</span>}</p>
@@ -697,16 +711,6 @@ const STATE_ALERT = {
       </section>
       {canEdit && (
         <section class="co-card grid gap-3" id="acc-kind" data-testid="acc-kind">
-          {/* El tipo de cliente, si el espacio tiene más de uno (§21). */}
-          {kindDefs.length > 1 && (
-            <form method="post" class="grid gap-2" data-async="acc-kind acc-head" data-autosave>
-              <input type="hidden" name="action" value="kind" />
-              <label class="co-field">{CL.kind}
-                <select class="co-select" name="kind" data-testid="kind-select">{kindDefs.map((k) => <option value={k.key} selected={(kindDefs.some((d) => d.key === a.kind) ? a.kind : 'company') === k.key}>{k.label}</option>)}</select>
-                {kindDefs.some((k) => k.key === 'dj') && <span class="co-help">{CL.kindHelp}</span>}</label>
-              <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="kind-save" data-autosave-btn><span>{F.contact.save}</span></button>
-            </form>
-          )}
           {a.discardedAt
             ? <form method="post" data-async="acc-kind acc-head"><input type="hidden" name="action" value="restore" />
                 <button class="co-btn co-btn--ghost co-btn--sm w-fit" type="submit" data-testid="restore"><Icon name="rotate-ccw" size={14} /><span>{CL.restore}</span></button></form>

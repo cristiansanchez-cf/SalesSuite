@@ -65,5 +65,22 @@ const A = 'Mya Fusion', B = 'Mya Fusion Valencia';
   assert((await p.textContent('[data-testid=interactions]')).includes('Hablé con el encargado'), 'la interacción de la otra');
   await p.goto(`${BASE}/admin/accounts?ver=all&q=${encodeURIComponent('Mya Fusion')}`);
   assert((await p.$$('[data-testid=account]')).length === 1, 'la otra, borrada');
+
+  // ---- Tipo (§42): en la ficha, a un toque; en la lista, varias a la vez.
+  const zafiro = await create('Zafiro Fusion');
+  await Promise.all([p.waitForURL(/ok=kind/), p.click('[data-testid=kind-switch-promotora]')]);
+  assert((await p.getAttribute('[data-testid=kind-switch-promotora]', 'aria-current')) === 'page' && (await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'promoter',
+    'Zafiro: promotora, con su ficha de promotora');
+  await create('DJ Uno Fusion'); await create('DJ Dos Fusion');
+  await p.goto(`${BASE}/admin/accounts?ver=all&q=${encodeURIComponent('DJ')}`);
+  for (const n of ['DJ Uno Fusion', 'DJ Dos Fusion']) await p.check(`[data-testid=account][data-name="${n}"] [data-bulk]`);
+  await p.click('[data-testid=bulk-kind]');
+  await p.click('[data-testid=bulk-kind-dj]');
+  await Promise.all([p.waitForURL(/ok=kinds/), p.click('[data-testid=bulk-kind-confirm]')]);
+  assert((await p.textContent('main')).includes('Tipo cambiado en 2'), 'dos cambiadas a DJ de una vez');
+  await p.goto(`${BASE}/admin/accounts?ver=all&tipo=dj&q=${encodeURIComponent('Fusion')}`);
+  const djs = await p.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.getAttribute('data-name')));
+  assert(djs.includes('DJ Uno Fusion') && djs.includes('DJ Dos Fusion'), `en la pestaña DJs (${djs})`);
+  void zafiro;
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

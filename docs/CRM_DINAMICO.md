@@ -1034,3 +1034,14 @@ cosas que la otra no tiene.
 - Quién: gerentes y admin; un comercial, si las dos son suyas.
 - Base de datos: `account_merge` (migración `20261202`), en una transacción. Pruebas: `supabase/tests/71_account_merge.test.sql`,
   `smoke-merge.cjs`.
+
+## 42. Cambiar el tipo: a un toque en la ficha y en bloque en la lista
+
+Pedido de Cristian: promotoras (Zafiro) y DJs metidos como empresas; el cambio de tipo estaba escondido en «Datos».
+
+- **Ficha**: debajo del nombre, «Es: Empresa · DJ o artista · Promotora» (los tipos del espacio). Un toque cambia el tipo
+  y con él su ficha (las preguntas de local, promotora o DJ); lo apuntado no se pierde. Lo puede cambiar quien la
+  trabaja (o si está libre) y quien gestiona. Se quita el desplegable de «Datos» (había dos sitios para lo mismo).
+- **Lista**: con varias marcadas, «Cambiar tipo» en la barra de abajo → elegir el tipo → todas a la vez (las que no se
+  pueden tocar, por ser de otro, se saltan). Una descartada sigue descartada.
+- Pruebas: `smoke-merge.cjs` (Zafiro a promotora desde la ficha; dos DJs de una vez desde la lista).

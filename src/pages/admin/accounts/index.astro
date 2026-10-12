@@ -66,6 +66,10 @@ if (Astro.request.method === 'POST') {
           .catch((e) => console.warn('[alta] grupo', e instanceof Error ? e.message : e));
       }
       to = `/admin/accounts/${id}?ok=created`;
+    } else if (f.getAll('action').includes('kind-many')) {
+      // Cambiar tipo en bloque (§42): va antes que «mover» (mismo formulario de la barra).
+      const n = await admin.crm.setKindMany(f.getAll('ids').map(String), str('newKind'));
+      to = `/admin/accounts?ok=kinds&n=${n}`;
     } else if (f.getAll('action').includes('release-many')) {
       // Va antes que «mover»: el botón de soltar está en el mismo formulario de la barra.
       // «También las que no se ven»: todas las tuyas con los filtros de ahora (la lista solo enseña las primeras).
@@ -148,7 +152,7 @@ const href = (p: Record<string, string>) => {
 saveFilters(Astro.cookies, 'co_f_list', new URL(href({}), Astro.url).searchParams, t.zones);
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
-const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo });
+const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];
@@ -349,8 +353,22 @@ const panelOpen = nFilters > 0;
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/route" formmethod="get" formnovalidate data-testid="bulk-route"><Icon name="map" size={14} />{routeMessages[locale].bulk}</button>
     {admin.crm.hasAi() && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-ai data-testid="bulk-ai" title={AI.zone.max(AI_MAX)}><Icon name="sparkles" size={14} />{AI.zone.run}</button>}
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/accounts/unir" formmethod="get" formnovalidate hidden data-bulk-merge data-testid="bulk-merge"><Icon name="layers" size={14} />{MG.bulk}</button>
+    {kindDefs.length > 1 && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-kind" data-testid="bulk-kind"><Icon name="tag" size={14} />{CL.changeKind}</button>}
     <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-release" data-testid="bulk-release"><Icon name="log-out" size={14} />{M.bulkRelease}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
+    {kindDefs.length > 1 && (
+      <dialog id="bulk-kind" class="co-dialog" aria-labelledby="bulk-kind-title">
+        <div class="co-dialog__body">
+          <h2 id="bulk-kind-title" class="co-entity">{CL.changeKind}</h2>
+          <p class="co-body">{CL.changeKindBody}</p>
+          <div class="co-chips">{kindDefs.map((k, i) => <label class="co-chip" data-testid={`bulk-kind-${k.key}`}><input type="radio" name="newKind" value={k.key} checked={i === 0} />{k.label}</label>)}</div>
+        </div>
+        <div class="co-dialog__foot">
+          <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+          <button class="co-btn co-btn--primary" type="submit" name="action" value="kind-many" formnovalidate data-testid="bulk-kind-confirm">{CL.changeKind}</button>
+        </div>
+      </dialog>
+    )}
     <dialog id="bulk-release" class="co-dialog" aria-labelledby="bulk-release-title">
       <div class="co-dialog__body">
         <h2 id="bulk-release-title" class="co-entity">{M.bulkReleaseTitle}</h2>
