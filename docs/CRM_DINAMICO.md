@@ -833,3 +833,37 @@ Pedido de Cristian: había «Guardar» en cada bloque y no se sabía qué necesi
   están en Personas (las de una persona, en su ficha).
 - Pruebas: `smoke-crm.cjs` (campos sin botón, error en aviso), `smoke-crm-people.cjs` (grupo al elegir, sugeridos al
   pinchar, listas), `smoke-followup.cjs` (contacto al salir del campo).
+
+## 32. Otros espacios: lo mismo con otros nombres (Oquea, Trama, Sizec…)
+
+Criterio de Cristian: nada de esto puede ser solo de Enjoy; dar de alta otro espacio tiene que ser configurar, no
+programar. La forma es la misma en todos: **clientes** a los que se vende, que pueden ir en **grupos**, y alrededor
+**figuras externas** que trabajan con varios clientes a la vez y pesan más que su gente de dentro.
+
+| Ficha (perfil del tipo) | Qué es | Enjoy | Oquea | Trama | Sizec |
+|---|---|---|---|---|---|
+| Cliente (`venue`) | A quien se vende | Local, sala | Centro de buceo | Director/agencia de casting | Empresa de nutrición |
+| Organizador (`promoter`) | Trabaja con muchos clientes y monta cosas con ellos | Promotora | ONG | Representante | (la que haya) |
+| Profesional (`dj`) | Persona que colabora con varios clientes | DJ | Instructor autónomo | — | Nutricionista externo |
+| Grupo (`parent_id`) | Varios clientes de un mismo dueño | Grupo Cosmic | Cadena de centros | Grupo de casting | Grupo de empresas |
+| Personas | La gente de dentro del cliente | Dueño, encargado | Dueño, staff | Director, ayudante | Dirección, calidad |
+
+**Ya es de cada espacio** (sin tocar código): los tipos y sus pestañas (Empresas · Instructores · ONGs · Descartadas),
+el perfil de cada tipo (`kinds` en `crm_settings`, editor en Campos del CRM), los bloques de «Trabaja con» (uno por
+tipo de organizador/profesional, con su nombre), grupos (buscar, sugerir por ciudad y por titular), titular y CIF,
+listas, soltar en bloque, mapa, autoguardado, Apuntar (separa por sitio y sabe el tipo).
+
+**Todavía es de Enjoy** (lo resuelve #71 «Configura tu CRM», presets por sector en vez de constantes):
+
+- Las preguntas y pesos de cada perfil (`priority.ts`, `profiles.ts`): formato de local, fiesta, DJ, pantallas,
+  tamaño en tramos (`SIZE_LIMITS`), dinámicas; de promotora y DJ (estilo, seguidores, caché…). En otro espacio:
+  p. ej. Oquea — tipo de centro, alumnos al mes, temporada; instructor — certificaciones, centros con los que
+  colabora.
+- El «encaje con lo que vendemos» (paquetes de Enjoy: pantalla, peticiones, fotos, fidelización).
+- En el enlace de un profesional, «residente / invitado» (en Oquea sería «fijo / colabora»).
+
+Plan para #71: un **preset por sector** (ocio nocturno = lo de hoy; buceo; casting; nutrición…) con las preguntas, los
+pesos, los tramos de tamaño, los paquetes y las palabras del enlace, guardado en `crm_settings` del espacio y editable
+por el admin. El código lee el preset del espacio en vez de las constantes; Enjoy se queda con el de ocio nocturno sin
+cambiar nada. Los nombres internos de los perfiles (`venue`, `promoter`, `dj`) se mantienen (no hace falta migrar);
+en pantalla siempre sale el nombre del tipo del espacio.

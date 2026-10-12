@@ -3,8 +3,8 @@ import { defineMessages } from '../core';
 
 export const profilesMessages = defineMessages({
   es: {
-    profile: 'Ficha', profiles: { venue: 'Local o empresa', promoter: 'Promotora', dj: 'DJ' },
-    profileHelp: 'Qué preguntas y qué nota tiene: la de un local, la de una promotora o la de un DJ.',
+    profile: 'Ficha', profiles: { venue: 'Cliente (local, centro, empresa…)', promoter: 'Organizador: trabaja con muchos clientes (promotora, ONG, representante…)', dj: 'Profesional: colabora con varios clientes (DJ, instructor…)' },
+    profileHelp: 'Cómo se comporta este tipo: un cliente al que vendes; un organizador o un profesional salen aparte en «Trabaja con» de cada cliente, con sus propias preguntas y su nota.',
     where: { promoter: 'Dónde hace fiestas', dj: 'Dónde pincha', venue: 'Trabaja con' },
     whereHelp: { promoter: 'Las salas con las que trabaja y qué días suele (nunca es exacto).', dj: 'Dónde es residente o invitado, y qué días.', venue: 'Las promotoras y los DJs (residentes o invitados) con los que trabaja. La gente del local (dueño, encargado…) va en «Personas».' },
     days: { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' },
@@ -30,8 +30,8 @@ export const profilesMessages = defineMessages({
     contact: { tiktok: 'TikTok', music: 'Spotify o SoundCloud', whatsapp: 'WhatsApp (teléfono)' },
   },
   en: {
-    profile: 'Record', profiles: { venue: 'Venue or company', promoter: 'Promoter', dj: 'DJ' },
-    profileHelp: 'Which questions and score it has: a venue’s, a promoter’s or a DJ’s.',
+    profile: 'Record', profiles: { venue: 'Client (venue, centre, company…)', promoter: 'Organiser: works with many clients (promoter, NGO, agent…)', dj: 'Professional: works with several clients (DJ, instructor…)' },
+    profileHelp: 'How this type behaves: a client you sell to; an organiser or a professional shows up separately in each client’s «Works with», with their own questions and score.',
     where: { promoter: 'Where they throw parties', dj: 'Where they play', venue: 'Works with' },
     whereHelp: { promoter: 'The venues they work with and which days they usually do (never exact).', dj: 'Where they are resident or guest, and which days.', venue: 'The promoters and DJs (resident or guest) they work with. The venue’s own people (owner, manager…) go in «People».' },
     days: { mon: 'M', tue: 'T', wed: 'W', thu: 'T', fri: 'F', sat: 'S', sun: 'S' },
@@ -57,8 +57,8 @@ export const profilesMessages = defineMessages({
     contact: { tiktok: 'TikTok', music: 'Spotify or SoundCloud', whatsapp: 'WhatsApp (phone)' },
   },
   pt: {
-    profile: 'Ficha', profiles: { venue: 'Local ou empresa', promoter: 'Promotora', dj: 'DJ' },
-    profileHelp: 'Que perguntas e que nota tem: a de um local, de uma promotora ou de um DJ.',
+    profile: 'Ficha', profiles: { venue: 'Cliente (local, centro, empresa…)', promoter: 'Organizador: trabalha com muitos clientes (promotora, ONG, agente…)', dj: 'Profissional: colabora com vários clientes (DJ, instrutor…)' },
+    profileHelp: 'Como este tipo se comporta: um cliente a quem vende; um organizador ou um profissional aparece à parte em «Trabalha com» de cada cliente, com as suas perguntas e nota.',
     where: { promoter: 'Onde faz festas', dj: 'Onde toca', venue: 'Trabalha com' },
     whereHelp: { promoter: 'As salas com que trabalha e que dias costuma (nunca é exato).', dj: 'Onde é residente ou convidado, e que dias.', venue: 'As promotoras e os DJs (residentes ou convidados) com que trabalha. As pessoas do local (dono, gerente…) vão em «Pessoas».' },
     days: { mon: 'S', tue: 'T', wed: 'Q', thu: 'Q', fri: 'S', sat: 'S', sun: 'D' },
@@ -84,8 +84,8 @@ export const profilesMessages = defineMessages({
     contact: { tiktok: 'TikTok', music: 'Spotify ou SoundCloud', whatsapp: 'WhatsApp (telefone)' },
   },
   ko: {
-    profile: '기록 유형', profiles: { venue: '매장·회사', promoter: '프로모터', dj: 'DJ' },
-    profileHelp: '어떤 질문과 점수를 쓰는지: 매장, 프로모터 또는 DJ.',
+    profile: '기록 유형', profiles: { venue: '고객(매장·센터·회사…)', promoter: '주최자: 여러 고객과 일함(프로모터, NGO, 에이전트…)', dj: '전문가: 여러 고객과 협업(DJ, 강사…)' },
+    profileHelp: '이 유형의 동작: 판매 대상 고객, 또는 각 고객의 «함께 일하는 곳»에 따로 표시되는 주최자·전문가(고유 질문과 점수).',
     where: { promoter: '파티 여는 곳', dj: '공연하는 곳', venue: '함께 일하는 곳' },
     whereHelp: { promoter: '함께 일하는 공연장과 주로 하는 요일(정확하지 않음).', dj: '레지던트·게스트로 서는 곳과 요일.', venue: '함께 일하는 프로모터와 DJ(레지던트·게스트). 매장 사람(사장, 매니저 등)은 «사람»에 넣으세요.' },
     days: { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' },
