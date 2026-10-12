@@ -20,6 +20,7 @@ export const followupMessages = defineMessages({
       result: 'Qué pasó', note: 'Nota', notePh: 'Lo que has visto o te han dicho…', save: 'Guardar', change: 'Cambiar el próximo paso', clear: 'Quitar',
       saveNext: 'Guardar próximo paso', history: (n: number) => `Interacciones · ${n}`, empty: 'Todavía no hay nada apuntado.', remove: 'Borrar',
       suggested: 'La app propone', overdue: 'Vencido', today: 'Hoy', tomorrow: 'Mañana', later: 'Más adelante', rule: 'Regla: 3 mensajes sin respuesta por persona, hasta 3 personas; después, en persona.',
+      done: 'Hecho: ¿qué pasó?', edit: 'Cambiar', whatHappened: '¿Qué ha pasado?', tapHelp: 'Toca lo que pasó y queda apuntado. La nota es opcional (salvo en «Solo una nota»).', withVia: (who: string, via: string) => `Con ${who} · por ${via}`, changeWho: 'Cambiar', draft: 'Tienes una nota sin apuntar.', discard: 'Descartar', noteNeeded: 'Escribe la nota para apuntar «Solo una nota».', more: (n: number) => `Ver todas (${n})`, nextHelp: 'Después de apuntar, la app propone el siguiente con la regla de los 3 intentos; aquí lo cambias.',
       ok: { logged: 'Apuntado. Próximo paso actualizado.', noted: 'Nota guardada.', next: 'Próximo paso guardado.', cleared: 'Próximo paso quitado.', contact: 'Contacto guardado.', removed: 'Borrado.' },
     },
     today: {
@@ -49,6 +50,7 @@ export const followupMessages = defineMessages({
       result: 'What happened', note: 'Note', notePh: 'What you saw or were told…', save: 'Save', change: 'Change the next step', clear: 'Remove',
       saveNext: 'Save next step', history: (n: number) => `Interactions · ${n}`, empty: 'Nothing logged yet.', remove: 'Delete',
       suggested: 'The app suggests', overdue: 'Overdue', today: 'Today', tomorrow: 'Tomorrow', later: 'Later', rule: 'Rule: 3 unanswered messages per person, up to 3 people; then in person.',
+      done: 'Done: what happened?', edit: 'Change', whatHappened: 'What happened?', tapHelp: 'Tap what happened and it’s logged. The note is optional (except for «Just a note»).', withVia: (who: string, via: string) => `With ${who} · via ${via}`, changeWho: 'Change', draft: 'You have a note you haven’t logged.', discard: 'Discard', noteNeeded: 'Write the note to log «Just a note».', more: (n: number) => `See all (${n})`, nextHelp: 'After you log something, the app suggests the next one with the 3-attempt rule; change it here.',
       ok: { logged: 'Logged. Next step updated.', noted: 'Note saved.', next: 'Next step saved.', cleared: 'Next step removed.', contact: 'Contact saved.', removed: 'Deleted.' },
     },
     today: {
@@ -78,6 +80,7 @@ export const followupMessages = defineMessages({
       result: 'O que aconteceu', note: 'Nota', notePh: 'O que você viu ou ouviu…', save: 'Salvar', change: 'Mudar o próximo passo', clear: 'Tirar',
       saveNext: 'Salvar próximo passo', history: (n: number) => `Interações · ${n}`, empty: 'Ainda não há nada anotado.', remove: 'Apagar',
       suggested: 'O app sugere', overdue: 'Atrasado', today: 'Hoje', tomorrow: 'Amanhã', later: 'Mais tarde', rule: 'Regra: 3 mensagens sem resposta por pessoa, até 3 pessoas; depois, pessoalmente.',
+      done: 'Feito: o que aconteceu?', edit: 'Mudar', whatHappened: 'O que aconteceu?', tapHelp: 'Toque no que aconteceu e fica registado. A nota é opcional (exceto em «Só uma nota»).', withVia: (who: string, via: string) => `Com ${who} · por ${via}`, changeWho: 'Mudar', draft: 'Tem uma nota por registar.', discard: 'Descartar', noteNeeded: 'Escreva a nota para registar «Só uma nota».', more: (n: number) => `Ver todas (${n})`, nextHelp: 'Depois de registar, a app propõe o seguinte com a regra das 3 tentativas; aqui muda-o.',
       ok: { logged: 'Anotado. Próximo passo atualizado.', noted: 'Nota salva.', next: 'Próximo passo salvo.', cleared: 'Próximo passo removido.', contact: 'Contato salvo.', removed: 'Apagado.' },
     },
     today: {
@@ -107,6 +110,7 @@ export const followupMessages = defineMessages({
       result: '결과', note: '메모', notePh: '보거나 들은 것…', save: '저장', change: '다음 단계 바꾸기', clear: '지우기',
       saveNext: '다음 단계 저장', history: (n: number) => `연락 기록 · ${n}`, empty: '아직 기록이 없습니다.', remove: '삭제',
       suggested: '앱의 제안', overdue: '기한 지남', today: '오늘', tomorrow: '내일', later: '나중에', rule: '규칙: 한 사람당 응답 없는 메시지 3번, 최대 3명; 그다음 직접 방문.',
+      done: '완료: 무슨 일이?', edit: '바꾸기', whatHappened: '무슨 일이 있었나요?', tapHelp: '있었던 일을 누르면 바로 기록됩니다. 메모는 선택(«메모만»은 필수).', withVia: (who: string, via: string) => `${who} · ${via}`, changeWho: '바꾸기', draft: '기록하지 않은 메모가 있습니다.', discard: '버리기', noteNeeded: '«메모만»을 기록하려면 메모를 쓰세요.', more: (n: number) => `모두 보기 (${n})`, nextHelp: '기록하면 3회 시도 규칙으로 다음 단계를 제안합니다. 여기서 바꿀 수 있습니다.',
       ok: { logged: '기록했습니다. 다음 단계를 업데이트했습니다.', noted: '메모를 저장했습니다.', next: '다음 단계를 저장했습니다.', cleared: '다음 단계를 지웠습니다.', contact: '연락처를 저장했습니다.', removed: '삭제했습니다.' },
     },
     today: {

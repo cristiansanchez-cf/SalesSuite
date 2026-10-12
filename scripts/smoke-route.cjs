@@ -47,13 +47,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.goto(`${BASE}/admin/accounts?ver=all&q=Club%20Sol`);
   await p.click('[data-testid=account][data-name="Club Sol"] a.co-row__main');
   await p.waitForURL(/\/admin\/accounts\/[^/?#]+/);
-  await p.click('[data-testid=contact-form] details summary');
+  // Próximo paso: «Cambiar» → hoy, en persona (§33).
+  await p.click('[data-testid=next-edit] summary');
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  await p.fill('[data-testid=contact-form] [name=nextAt]', today);
-  await p.selectOption('[data-testid=contact-form] [name=nextChannel]', 'visit');
-  await p.fill('[data-testid=contact-form] [name=note]', 'Mejor pasar en persona');
-  await Promise.all([p.waitForURL(/ok=(contact|noted)/), p.click('[data-testid=log-save]')]);
+  await p.fill('[data-testid=next-form] [name=nextAt]', today);
+  await p.selectOption('[data-testid=next-form] [name=nextChannel]', 'visit');
+  await p.fill('[data-testid=next-form] [name=nextStep]', 'Mejor pasar en persona');
+  await Promise.all([p.waitForURL(/ok=next/), p.click('[data-testid=next-save]')]);
   await p.goto(`${BASE}/admin/inicio`);
   await p.waitForSelector('[data-testid=today-route]');
   assert((await p.textContent('[data-testid=today-route]')).includes('Ruta del día'), '«Hoy»: botón «Ruta del día»');

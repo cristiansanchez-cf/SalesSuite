@@ -59,7 +59,8 @@ if (Astro.request.method === 'POST') {
   const str = (k: string) => String(f.get(k) ?? '');
   let to = `/admin/accounts/${id}`;
   result = await formAction(async () => {
-    switch (str('action')) {
+    // El botón pulsado puede traer su propia acción (p. ej. «Quitar próximo paso» dentro del formulario de cambiarlo).
+    switch (String(f.getAll('action').pop() ?? '')) {
       case 'contact': {
         // Apuntar una interacción (cuenta como contacto) y dejar el próximo paso: el que diga el comercial o el de la regla.
         const custom = str('nextAt') || str('nextStep') ? { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') } : undefined;
@@ -169,6 +170,8 @@ const prio = priorityFor(a.qualification, profile, segKey, weights);
 const fitKeys = (profile === 'venue' ? PACKAGES : profile === 'promoter' ? (['requests', 'screen', 'photos'] as const) : (['requests'] as const)) as readonly (keyof typeof prio.fit)[];
 const fitLabel = (k: keyof typeof prio.fit) => (profile === 'venue' ? PS.packages[k] : (PRF.packages as Record<string, string>)[k] ?? PS.packages[k]);
 const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
+// Apuntar en el seguimiento: como antes, salvo en las bloqueadas, las de otro y las ya clientes.
+const canLog = a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer';
 const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
 const sheet = fieldsFor(crmFields, segKey, { target: 'account', tags: a.tags });
@@ -345,6 +348,7 @@ const STATE_ALERT = {
           <h2 class="co-entity">{F.follow.title}</h2>
           {a.state === 'mine' && <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-dialog-open="release">{M.release}</button>}
         </div>
+        {/* Seguimiento (§33): arriba, el próximo paso (Hecho / Cambiar); debajo, «¿Qué ha pasado?»: un toque lo apunta. */}
         <div class:list={['co-inset grid gap-2 !p-4', tl.next?.bucket === 'overdue' && 'co-row--attention']} data-testid="next-step" data-bucket={tl.next?.bucket ?? ''}>
           <p class="text-eyebrow">{F.follow.next}</p>
           {tl.next ? (
@@ -361,53 +365,65 @@ const STATE_ALERT = {
           {sug.reason !== 'closed' && (!tl.next || tl.next.channel !== sug.channel || tl.next.contactId !== sug.contactId) && (
             <p class="co-meta" data-testid="suggestion">{F.follow.suggested}: {sug.reason === 'retry' ? F.reasons.retry(sug.attempt) : F.reasons[sug.reason]}{sug.channel ? ` · ${F.channels[sug.channel]}` : ''}{sug.contactId ? ` · ${actorName(sug.contactId)}` : ''}</p>
           )}
+          {canLog && (
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              {tl.next && <a class="co-btn co-btn--primary co-btn--sm" href="#follow-log" data-follow-done data-testid="next-done"><Icon name="check" size={14} />{F.follow.done}</a>}
+              <details class="w-full sm:w-auto" data-testid="next-edit" open={!tl.next && !tl.items.length ? undefined : undefined}>
+                <summary class="co-btn co-btn--ghost co-btn--sm cursor-pointer list-none"><Icon name="calendar" size={14} />{tl.next ? F.follow.edit : F.follow.saveNext}</summary>
+                <form method="post" class="mt-3 grid gap-3 sm:grid-cols-3" data-testid="next-form">
+                  <input type="hidden" name="action" value="next" />
+                  <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" value={tl.next?.at ? tl.next.at.slice(0, 10) : ''} /></label>
+                  <label class="co-field">{F.follow.via}<select class="co-select" name="nextChannel"><option value=""></option>{CHANNELS.map((c) => <option value={c} selected={c === tl.next?.channel}>{F.channels[c]}</option>)}</select></label>
+                  <label class="co-field">{F.follow.with}<select class="co-select" name="nextContactId"><option value="">{F.follow.company}</option>{tl.actors.map((x) => <option value={x.id} selected={x.id === tl.next?.contactId}>{x.name}</option>)}</select></label>
+                  <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="300" value={tl.next?.step ?? ''} placeholder={F.follow.whatPh} /></label>
+                  <div class="flex flex-wrap items-center gap-3 sm:col-span-3">
+                    <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="next-save">{F.follow.saveNext}</button>
+                    {tl.next && <button class="co-meta underline" type="submit" name="action" value="next-clear" formnovalidate data-testid="next-clear">{F.follow.clear} {F.follow.next.toLowerCase()}</button>}
+                  </div>
+                  <p class="co-help m-0 sm:col-span-3">{F.follow.nextHelp}</p>
+                </form>
+              </details>
+            </div>
+          )}
         </div>
 
-        {a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer' && (
-          <form method="post" class="grid gap-3" data-testid="contact-form">
+        {canLog && (
+          <form method="post" id="follow-log" class="grid gap-3" data-testid="contact-form" data-follow-log>
             <input type="hidden" name="action" value="contact" />
-            <p class="co-row-title">{F.follow.log}</p>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="co-field">{F.follow.with}
-                <select class="co-select" name="contactId">
-                  {tl.actors.map((x) => <option value={x.id} selected={x.id === (tl.next?.contactId ?? sug.contactId)}>{x.name}{x.role ? ` · ${x.role}` : ''}</option>)}
-                  <option value="" selected={!tl.actors.length}>{F.follow.company}</option>
-                </select></label>
-              <label class="co-field">{F.follow.via}
-                <select class="co-select" name="channel" data-testid="log-channel">{CHANNELS.map((c) => <option value={c} selected={c === (tl.next?.channel ?? sug.channel ?? 'other')}>{F.channels[c]}</option>)}</select></label>
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <p class="co-row-title m-0">{F.follow.whatHappened}</p>
+              {/* Con quién y por dónde: lo previsto (o lo que propone la app); se cambia si hace falta. */}
+              <details class="text-sm" data-testid="log-who">
+                <summary class="co-meta cursor-pointer" data-log-who-label>{F.follow.withVia(actorName(tl.next?.contactId ?? sug.contactId ?? null), F.channels[tl.next?.channel ?? sug.channel ?? 'other'])} · <span class="underline">{F.follow.changeWho}</span></summary>
+                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                  <label class="co-field">{F.follow.with}
+                    <select class="co-select" name="contactId">
+                      {tl.actors.map((x) => <option value={x.id} selected={x.id === (tl.next?.contactId ?? sug.contactId)}>{x.name}{x.role ? ` · ${x.role}` : ''}</option>)}
+                      <option value="" selected={!tl.actors.length}>{F.follow.company}</option>
+                    </select></label>
+                  <label class="co-field">{F.follow.via}
+                    <select class="co-select" name="channel" data-testid="log-channel">{CHANNELS.map((c) => <option value={c} selected={c === (tl.next?.channel ?? sug.channel ?? 'other')}>{F.channels[c]}</option>)}</select></label>
+                </div>
+              </details>
             </div>
-            <fieldset class="grid gap-2">
-              <legend class="co-field mb-1">{F.follow.result}</legend>
-              <div class="co-chips">
-                {OUTCOMES.map((o) => <label class="co-chip outcome"><input type="radio" class="sr-only" name="outcome" value={o} checked={o === 'note'} data-testid={`outcome-${o}`} />{F.outcomes[o]}</label>)}
-              </div>
-            </fieldset>
-            <label class="co-field">{F.follow.note}<textarea class="co-textarea !min-h-[64px]" name="note" maxlength="4000" placeholder={F.follow.notePh}></textarea></label>
-            <details>
-              <summary class="co-meta cursor-pointer">{F.follow.change}</summary>
-              <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" /></label>
-                <label class="co-field">{F.follow.via}<select class="co-select" name="nextChannel"><option value=""></option>{CHANNELS.map((c) => <option value={c}>{F.channels[c]}</option>)}</select></label>
-                <label class="co-field">{F.follow.with}<select class="co-select" name="nextContactId"><option value="">{F.follow.company}</option>{tl.actors.map((x) => <option value={x.id}>{x.name}</option>)}</select></label>
-                <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="300" placeholder={F.follow.whatPh} /></label>
-              </div>
-            </details>
-            <div class="flex flex-wrap items-center gap-3">
-              <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="log-save">{F.follow.save}</button>
-              <span class="co-help">{F.follow.logHelp}</span>
+            <p class="co-chip m-0 w-fit" hidden data-draft-note data-testid="log-draft">{F.follow.draft} <button type="button" class="ml-1 underline" data-draft-discard>{F.follow.discard}</button></p>
+            <label class="co-field">{F.follow.note} <span class="co-help">{F.follow.tapHelp}</span>
+              <textarea class="co-textarea !min-h-[64px]" name="note" maxlength="4000" placeholder={F.follow.notePh} data-draft={`follow.${a.id}`} data-testid="log-note"></textarea></label>
+            {/* Cada resultado es su propio botón: un toque y queda apuntado (con la nota, si hay). */}
+            <div class="flex flex-wrap gap-2" role="group" aria-label={F.follow.result}>
+              {OUTCOMES.map((o) => (
+                <button type="submit" name="outcome" value={o} class:list={['co-btn co-btn--sm', o === 'note' ? 'co-btn--quiet' : 'co-btn--ghost']} data-testid={`outcome-${o}`}>{F.outcomes[o]}</button>
+              ))}
             </div>
+            <p class="co-help m-0 text-[var(--co-danger)]" hidden data-log-hint role="alert">{F.follow.noteNeeded}</p>
           </form>
         )}
-        {tl.next && canEdit && (
-          <form method="post"><input type="hidden" name="action" value="next-clear" /><button class="co-meta underline" type="submit">{F.follow.clear} {F.follow.next.toLowerCase()}</button></form>
-        )}
-
         <div class="grid gap-2" data-testid="interactions">
           <p class="text-eyebrow">{F.follow.history(tl.items.length)}</p>
           {tl.items.length === 0 ? <p class="co-meta">{F.follow.empty}</p> : (
             <ol class="grid gap-2 p-0">
-              {tl.items.slice(0, 30).map((x) => (
-                <li class="flex list-none items-start gap-3 text-sm" data-outcome={x.outcome}>
+              {tl.items.slice(0, 30).map((x, i) => (
+                <li class="flex list-none items-start gap-3 text-sm" data-outcome={x.outcome} hidden={i >= 5 ? true : undefined} data-more-item={i >= 5 ? '' : undefined}>
                   <span class="co-meta w-24 shrink-0">{fmt.relative(x.happenedAt)}</span>
                   <span class="min-w-0 flex-1">
                     <strong>{x.outcome === 'note' ? F.outcomes.note : `${F.channels[x.channel]} · ${F.outcomes[x.outcome]}`}</strong>
@@ -422,6 +438,7 @@ const STATE_ALERT = {
               ))}
             </ol>
           )}
+          {tl.items.length > 5 && <button type="button" class="co-meta w-fit underline" data-more-show data-testid="interactions-more">{F.follow.more(Math.min(tl.items.length, 30))}</button>}
           <p class="co-help">{F.follow.rule}</p>
         </div>
       </section>
@@ -742,6 +759,26 @@ const STATE_ALERT = {
       </div>
     </form>
   </dialog>
+
+  <script>
+    // Seguimiento (§33). «Hecho»: baja a «¿Qué ha pasado?» con la nota lista. La nota se guarda como borrador en este
+    // navegador mientras se escribe (si se cierra la página, al volver se recupera) y se borra al apuntar.
+    // «Solo una nota» necesita texto; los demás resultados, no.
+    const log = document.querySelector<HTMLFormElement>('[data-follow-log]');
+    const note = log?.querySelector<HTMLTextAreaElement>('[data-draft]');
+    const key = note ? `co.draft.${note.dataset.draft}` : '';
+    const banner = log?.querySelector<HTMLElement>('[data-draft-note]');
+    try { const d = key && localStorage.getItem(key); if (note && d) { note.value = d; if (banner) banner.hidden = false; } } catch { /* sin almacenamiento */ }
+    note?.addEventListener('input', () => { try { if (note.value.trim()) localStorage.setItem(key, note.value); else localStorage.removeItem(key); } catch { /* */ } });
+    banner?.querySelector('[data-draft-discard]')?.addEventListener('click', () => { if (note) note.value = ''; try { localStorage.removeItem(key); } catch { /* */ } banner.hidden = true; });
+    log?.addEventListener('submit', (e) => {
+      const btn = (e as SubmitEvent).submitter as HTMLButtonElement | null;
+      if (btn?.value === 'note' && !note?.value.trim()) { e.preventDefault(); log.querySelector<HTMLElement>('[data-log-hint]')!.hidden = false; note?.focus(); return; }
+      try { localStorage.removeItem(key); } catch { /* */ }
+    });
+    document.querySelector('[data-follow-done]')?.addEventListener('click', (e) => { e.preventDefault(); log?.scrollIntoView({ behavior: 'smooth', block: 'center' }); note?.focus({ preventScroll: true }); });
+    document.querySelector('[data-more-show]')?.addEventListener('click', (e) => { document.querySelectorAll<HTMLElement>('[data-more-item]').forEach((x) => { x.hidden = false; }); (e.currentTarget as HTMLElement).remove(); });
+  </script>
 
   <script>
     // «Otro…» en el papel: aparece el campo para escribirlo.

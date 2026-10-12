@@ -33,10 +33,23 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.textContent('[data-testid=interactions]')).includes('Le interesa para los viernes'), 'historial de interacciones');
 
   // ---- apuntar: sin respuesta por WhatsApp → la app propone otra vía en 2 días
+  // (§33) «Hecho» lleva a «¿Qué ha pasado?»; con quién/por dónde, ya puesto y se cambia si hace falta; un toque apunta.
+  await p.click('[data-testid=next-done]');
+  assert(await p.evaluate(() => document.activeElement?.getAttribute('data-testid') === 'log-note'), '«Hecho»: a la nota, lista para escribir');
+  await p.click('[data-testid=log-who] summary');
   await p.selectOption('[data-testid=log-channel]', 'whatsapp');
-  await p.check('[data-testid=outcome-no_reply]', { force: true });
+  // «Solo una nota» sin texto no se apunta.
+  const before = p.url();
+  await p.click('[data-testid=outcome-note]');
+  assert(p.url() === before && await p.isVisible('[data-log-hint]'), '«Solo una nota» sin nota: no se apunta');
+  // Borrador: lo escrito sigue ahí si se recarga sin apuntar.
   await p.fill('[data-testid=contact-form] [name=note]', 'Le escribo para cerrar día; sin respuesta');
-  await Promise.all([p.waitForURL(/ok=contact/), p.click('[data-testid=log-save]')]);
+  await p.reload();
+  assert((await p.inputValue('[data-testid=log-note]')) === 'Le escribo para cerrar día; sin respuesta' && await p.isVisible('[data-testid=log-draft]'), 'borrador recuperado al volver');
+  await p.click('[data-testid=log-who] summary');
+  await p.selectOption('[data-testid=log-channel]', 'whatsapp');
+  await Promise.all([p.waitForURL(/ok=contact/), p.click('[data-testid=outcome-no_reply]')]);
+  assert((await p.inputValue('[data-testid=log-note]')) === '', 'apuntado: el borrador se borra');
   assert((await p.getAttribute('[data-testid=next-step]', 'data-bucket')) === 'later', 'próximo paso movido a dentro de 2 días');
   assert((await p.textContent('[data-testid=next-step]')).includes('Llamada'), 'por otra vía (llamada)');
   assert((await p.textContent('[data-testid=interactions]')).includes('WhatsApp · Sin respuesta'), 'la interacción en el historial');

@@ -867,3 +867,21 @@ pesos, los tramos de tamaño, los paquetes y las palabras del enlace, guardado e
 por el admin. El código lee el preset del espacio en vez de las constantes; Enjoy se queda con el de ocio nocturno sin
 cambiar nada. Los nombres internos de los perfiles (`venue`, `promoter`, `dj`) se mantienen (no hace falta migrar);
 en pantalla siempre sale el nombre del tipo del espacio.
+
+## 33. Seguimiento rehecho: próximo paso arriba, «¿Qué ha pasado?» de un toque
+
+Pedido de Cristian: el seguimiento era un formulario largo (con quién, por dónde, qué pasó, nota, cambiar el próximo
+paso y «Guardar»).
+
+- **Próximo paso** arriba, con lo que propone la app debajo, y dos botones: **«Hecho: ¿qué pasó?»** (baja a apuntar
+  con la nota lista) y **«Cambiar»** (cuándo, por dónde, con quién y qué; «Guardar próximo paso» y «Quitar próximo
+  paso» dentro).
+- **¿Qué ha pasado?**: con quién y por dónde ya vienen puestos (lo previsto o lo que propone la app; «Cambiar» si hace
+  falta); la nota es opcional y **cada resultado es su botón** (Sin respuesta, Contestó, Interesado, No interesado,
+  Cita conseguida, Solo una nota): un toque y queda apuntado; la app propone el siguiente paso con la regla de los 3
+  intentos. «Solo una nota» sin texto no se apunta (lo avisa).
+- **Borrador**: la nota se guarda en el navegador mientras se escribe; si se cierra la página, al volver sale «Tienes
+  una nota sin apuntar» (con «Descartar»); al apuntar se borra.
+- **Interacciones**: las 5 últimas; «Ver todas» enseña el resto.
+- Pruebas: `smoke-followup.cjs` (Hecho → nota, «Solo una nota» vacía no se apunta, borrador tras recargar, un toque
+  apunta), `smoke-accounts.cjs`, `smoke-route.cjs` (próximo paso con «Cambiar»).
