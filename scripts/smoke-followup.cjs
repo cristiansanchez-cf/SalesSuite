@@ -33,22 +33,26 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.textContent('[data-testid=interactions]')).includes('Le interesa para los viernes'), 'historial de interacciones');
 
   // ---- apuntar: sin respuesta por WhatsApp → la app propone otra vía en 2 días
-  // (§33) «Hecho» lleva a «¿Qué ha pasado?»; con quién/por dónde, ya puesto y se cambia si hace falta; un toque apunta.
+  // (§39) «Hecho» abre «Nueva interacción» (modal): cuándo, con quién, por dónde, qué pasó y su botón de guardar.
   await p.click('[data-testid=next-done]');
-  assert(await p.evaluate(() => document.activeElement?.getAttribute('data-testid') === 'log-note'), '«Hecho»: a la nota, lista para escribir');
-  await p.click('[data-testid=log-who] summary');
+  assert(await p.isVisible('[data-testid=log-dialog]') && await p.evaluate(() => document.activeElement?.getAttribute('data-testid') === 'log-note'), '«Hecho»: el modal, con la nota lista para escribir');
+  assert((await p.inputValue('[data-testid=log-day]')) === new Date().toISOString().slice(0, 10), 'cuándo: hoy');
   await p.selectOption('[data-testid=log-channel]', 'whatsapp');
-  // «Solo una nota» sin texto no se apunta.
+  // Sin elegir qué pasó, no se guarda; «Solo una nota» sin texto, tampoco.
   const before = p.url();
+  await p.click('[data-testid=log-save]');
+  assert(p.url() === before && await p.isVisible('[data-log-hint]'), 'sin «qué pasó»: no se guarda');
   await p.click('[data-testid=outcome-note]');
+  await p.click('[data-testid=log-save]');
   assert(p.url() === before && await p.isVisible('[data-log-hint]'), '«Solo una nota» sin nota: no se apunta');
   // Borrador: lo escrito sigue ahí si se recarga sin apuntar.
   await p.fill('[data-testid=contact-form] [name=note]', 'Le escribo para cerrar día; sin respuesta');
   await p.reload();
+  await p.click('[data-testid=log-open]');
   assert((await p.inputValue('[data-testid=log-note]')) === 'Le escribo para cerrar día; sin respuesta' && await p.isVisible('[data-testid=log-draft]'), 'borrador recuperado al volver');
-  await p.click('[data-testid=log-who] summary');
   await p.selectOption('[data-testid=log-channel]', 'whatsapp');
-  await Promise.all([p.waitForURL(/ok=contact/), p.click('[data-testid=outcome-no_reply]')]);
+  await p.click('[data-testid=outcome-no_reply]');
+  await Promise.all([p.waitForURL(/ok=contact/), p.click('[data-testid=log-save]')]);
   assert((await p.inputValue('[data-testid=log-note]')) === '', 'apuntado: el borrador se borra');
   assert((await p.getAttribute('[data-testid=next-step]', 'data-bucket')) === 'later', 'próximo paso movido a dentro de 2 días');
   assert((await p.textContent('[data-testid=next-step]')).includes('Llamada'), 'por otra vía (llamada)');

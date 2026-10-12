@@ -987,3 +987,17 @@ y metía el Instagram de una persona en la ficha del local.
 - Pruebas: `notes.test.ts` (personas válidas, sin repetir; el Instagram en la persona), `smoke-notes.cjs` (propone a la
   persona con su Instagram, la guarda en la empresa y en su ficha de persona; y con quién trabaja).
 - Pendiente: **fusionar** duplicados (dos promotoras o personas que son la misma) desde la ficha.
+
+## 39. Seguimiento: «Añadir interacción» en un modal
+
+Pedido de Cristian: lo que ha pasado no es un dato de la ficha sino algo nuevo; tiene que verse como «añadir» y con su
+botón de guardar.
+
+- La tarjeta Seguimiento queda: **próximo paso** (con «Hecho: ¿qué pasó?» y «Cambiar») e **Interacciones** (el
+  historial) con el botón **«+ Añadir interacción»**.
+- «Añadir interacción» (y «Hecho») abren el modal **Nueva interacción**: cuándo fue (hoy por defecto; otro día queda a
+  mediodía de ese día), con quién, por dónde, **qué pasó** (Sin respuesta, Contestó, Interesado, No interesado, Cita,
+  Solo una nota, y el atajo **«Visita (solo mirar)»**: por dónde = visita y una nota para empezar) y la nota. Se guarda
+  con **«Guardar interacción»**.
+- Sin elegir qué pasó no se guarda; «Solo una nota» necesita texto. La nota sigue guardándose como borrador.
+- Pruebas: `smoke-followup.cjs`, `smoke-accounts.cjs`, `smoke-board.cjs`.

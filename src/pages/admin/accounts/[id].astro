@@ -69,7 +69,9 @@ if (Astro.request.method === 'POST') {
       case 'contact': {
         // Apuntar una interacción (cuenta como contacto) y dejar el próximo paso: el que diga el comercial o el de la regla.
         const custom = str('nextAt') || str('nextStep') ? { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') } : undefined;
-        await admin.crm.logActivity(id, { contactId: str('contactId'), channel: str('channel') || 'other', outcome: str('outcome') || 'note', note: str('note') }, custom);
+        // Cuándo fue: hoy, ahora; otro día, a mediodía de ese día (para que el historial quede en orden).
+        const day = /^\d{4}-\d{2}-\d{2}$/.test(str('day')) && str('day') < new Date().toISOString().slice(0, 10) ? `${str('day')}T12:00:00` : undefined;
+        await admin.crm.logActivity(id, { contactId: str('contactId'), channel: str('channel') || 'other', outcome: str('outcome') || 'note', note: str('note'), happenedAt: day }, custom);
         to += str('outcome') === 'note' || !str('outcome') ? '?ok=noted' : '?ok=contact';
         break;
       }
@@ -194,6 +196,7 @@ const fitKeys = (profile === 'venue' ? PACKAGES : profile === 'promoter' ? (['re
 const fitLabel = (k: keyof typeof prio.fit) => (profile === 'venue' ? PS.packages[k] : (PRF.packages as Record<string, string>)[k] ?? PS.packages[k]);
 const canQualify = perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId;
 // Apuntar en el seguimiento: como antes, salvo en las bloqueadas, las de otro y las ya clientes.
+const TODAY = new Date().toISOString().slice(0, 10);
 const canLog = a.state !== 'blocked' && a.state !== 'taken' && a.state !== 'customer';
 const actorName = (cid: string | null) => (cid ? tl.actors.find((x) => x.id === cid)?.name ?? F.follow.company : F.follow.company);
 // Ficha (campos del CRM): los de su sector, agrupados por sección.
@@ -402,7 +405,7 @@ const STATE_ALERT = {
           )}
           {canLog && (
             <div class="flex flex-wrap items-center gap-2 pt-1">
-              {tl.next && <a class="co-btn co-btn--primary co-btn--sm" href="#follow-log" data-follow-done data-testid="next-done"><Icon name="check" size={14} />{F.follow.done}</a>}
+              {tl.next && canLog && <a class="co-btn co-btn--primary co-btn--sm" href="#log-dialog" data-follow-done data-testid="next-done"><Icon name="check" size={14} />{F.follow.done}</a>}
               <details class="w-full sm:w-auto" data-testid="next-edit" open={!tl.next && !tl.items.length ? undefined : undefined}>
                 <summary class="co-btn co-btn--ghost co-btn--sm cursor-pointer list-none"><Icon name="calendar" size={14} />{tl.next ? F.follow.edit : F.follow.saveNext}</summary>
                 <form method="post" class="mt-3 grid gap-3 sm:grid-cols-3" data-testid="next-form">
@@ -422,39 +425,11 @@ const STATE_ALERT = {
           )}
         </div>
 
-        {canLog && (
-          <form method="post" id="follow-log" class="grid gap-3" data-testid="contact-form" data-follow-log>
-            <input type="hidden" name="action" value="contact" />
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <p class="co-row-title m-0">{F.follow.whatHappened}</p>
-              {/* Con quién y por dónde: lo previsto (o lo que propone la app); se cambia si hace falta. */}
-              <details class="text-sm" data-testid="log-who">
-                <summary class="co-meta cursor-pointer" data-log-who-label>{F.follow.withVia(actorName(tl.next?.contactId ?? sug.contactId ?? null), F.channels[tl.next?.channel ?? sug.channel ?? 'other'])} · <span class="underline">{F.follow.changeWho}</span></summary>
-                <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                  <label class="co-field">{F.follow.with}
-                    <select class="co-select" name="contactId">
-                      {tl.actors.map((x) => <option value={x.id} selected={x.id === (tl.next?.contactId ?? sug.contactId)}>{x.name}{x.role ? ` · ${x.role}` : ''}</option>)}
-                      <option value="" selected={!tl.actors.length}>{F.follow.company}</option>
-                    </select></label>
-                  <label class="co-field">{F.follow.via}
-                    <select class="co-select" name="channel" data-testid="log-channel">{CHANNELS.map((c) => <option value={c} selected={c === (tl.next?.channel ?? sug.channel ?? 'other')}>{F.channels[c]}</option>)}</select></label>
-                </div>
-              </details>
-            </div>
-            <p class="co-chip m-0 w-fit" hidden data-draft-note data-testid="log-draft">{F.follow.draft} <button type="button" class="ml-1 underline" data-draft-discard>{F.follow.discard}</button></p>
-            <label class="co-field">{F.follow.note} <span class="co-help">{F.follow.tapHelp}</span>
-              <textarea class="co-textarea !min-h-[64px]" name="note" maxlength="4000" placeholder={F.follow.notePh} data-draft={`follow.${a.id}`} data-testid="log-note"></textarea></label>
-            {/* Cada resultado es su propio botón: un toque y queda apuntado (con la nota, si hay). */}
-            <div class="flex flex-wrap gap-2" role="group" aria-label={F.follow.result}>
-              {OUTCOMES.map((o) => (
-                <button type="submit" name="outcome" value={o} class:list={['co-btn co-btn--sm', o === 'note' ? 'co-btn--quiet' : 'co-btn--ghost']} data-testid={`outcome-${o}`}>{F.outcomes[o]}</button>
-              ))}
-            </div>
-            <p class="co-help m-0 text-[var(--co-danger)]" hidden data-log-hint role="alert">{F.follow.noteNeeded}</p>
-          </form>
-        )}
         <div class="grid gap-2" data-testid="interactions">
-          <p class="text-eyebrow">{F.follow.history(tl.items.length)}</p>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-eyebrow m-0">{F.follow.history(tl.items.length)}</p>
+            {canLog && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="log-dialog" data-log-open data-testid="log-open"><Icon name="plus" size={14} />{F.follow.add}</button>}
+          </div>
           {tl.items.length === 0 ? <p class="co-meta">{F.follow.empty}</p> : (
             <ol class="grid gap-2 p-0">
               {tl.items.slice(0, 30).map((x, i) => (
@@ -803,6 +778,48 @@ const STATE_ALERT = {
     </form>
   </dialog>
 
+  {/* Nueva interacción (§39): algo nuevo que ha pasado, en su propio modal y con su botón de guardar. */}
+  {canLog && (
+    <dialog id="log-dialog" class="co-dialog co-dialog--wide" aria-labelledby="log-dialog-title" data-testid="log-dialog">
+      <form method="post" id="follow-log" data-testid="contact-form" data-follow-log data-pick={F.follow.pick} data-note-needed={F.follow.noteNeeded} data-visit-note={F.follow.visitNote}>
+        <input type="hidden" name="action" value="contact" />
+        <div class="co-dialog__body grid gap-3">
+          <div>
+            <h2 id="log-dialog-title" class="co-entity">{F.follow.addTitle}</h2>
+            <p class="co-meta mt-1">{F.follow.addHelp}</p>
+          </div>
+          <p class="co-chip m-0 w-fit" hidden data-draft-note data-testid="log-draft">{F.follow.draft} <button type="button" class="ml-1 underline" data-draft-discard>{F.follow.discard}</button></p>
+          <div class="grid gap-2 sm:grid-cols-3">
+            <label class="co-field">{F.follow.day}<input class="co-input" type="date" name="day" value={TODAY} max={TODAY} data-testid="log-day" /></label>
+            <label class="co-field">{F.follow.with}
+              <select class="co-select" name="contactId" data-testid="log-with">
+                {tl.actors.map((x) => <option value={x.id} selected={x.id === (tl.next?.contactId ?? sug.contactId)}>{x.name}{x.role ? ` · ${x.role}` : ''}</option>)}
+                <option value="" selected={!tl.actors.length}>{F.follow.company}</option>
+              </select></label>
+            <label class="co-field">{F.follow.via}
+              <select class="co-select" name="channel" data-testid="log-channel">{CHANNELS.map((c) => <option value={c} selected={c === (tl.next?.channel ?? sug.channel ?? 'other')}>{F.channels[c]}</option>)}</select></label>
+          </div>
+          <fieldset class="grid gap-2">
+            <legend class="co-field mb-1">{F.follow.result}</legend>
+            <div class="co-chips" role="radiogroup">
+              {OUTCOMES.map((o) => (
+                <label class="co-chip" data-testid={`outcome-${o}`}><input type="radio" name="outcome" value={o} />{F.outcomes[o]}</label>
+              ))}
+              <label class="co-chip co-chip--quiet" data-testid="outcome-visit"><input type="radio" name="outcome" value="note" data-quick-visit />{F.follow.quickVisit}</label>
+            </div>
+          </fieldset>
+          <label class="co-field">{F.follow.note}
+            <textarea class="co-textarea !min-h-[96px]" name="note" maxlength="4000" placeholder={F.follow.notePh} data-draft={`follow.${a.id}`} data-testid="log-note"></textarea></label>
+          <p class="co-help m-0 text-[var(--co-danger)]" hidden data-log-hint role="alert"></p>
+        </div>
+        <div class="co-dialog__foot">
+          <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{shellMessages[locale].ui.cancel}</button>
+          <button class="co-btn co-btn--primary" type="submit" data-testid="log-save"><Icon name="check" size={16} />{F.follow.saveLog}</button>
+        </div>
+      </form>
+    </dialog>
+  )}
+
   <script>
     // Seguimiento (§33). «Hecho»: baja a «¿Qué ha pasado?» con la nota lista. La nota se guarda como borrador en este
     // navegador mientras se escribe (si se cierra la página, al volver se recupera) y se borra al apuntar.
@@ -814,12 +831,24 @@ const STATE_ALERT = {
     try { const d = key && localStorage.getItem(key); if (note && d) { note.value = d; if (banner) banner.hidden = false; } } catch { /* sin almacenamiento */ }
     note?.addEventListener('input', () => { try { if (note.value.trim()) localStorage.setItem(key, note.value); else localStorage.removeItem(key); } catch { /* */ } });
     banner?.querySelector('[data-draft-discard]')?.addEventListener('click', () => { if (note) note.value = ''; try { localStorage.removeItem(key); } catch { /* */ } banner.hidden = true; });
+    const hint = log?.querySelector<HTMLElement>('[data-log-hint]');
+    const say = (msg: string) => { if (hint) { hint.textContent = msg; hint.hidden = false; } };
     log?.addEventListener('submit', (e) => {
-      const btn = (e as SubmitEvent).submitter as HTMLButtonElement | null;
-      if (btn?.value === 'note' && !note?.value.trim()) { e.preventDefault(); log.querySelector<HTMLElement>('[data-log-hint]')!.hidden = false; note?.focus(); return; }
+      const picked = log.querySelector<HTMLInputElement>('input[name=outcome]:checked');
+      if (!picked) { e.preventDefault(); say(log.dataset.pick ?? ''); return; }
+      if (picked.value === 'note' && !note?.value.trim()) { e.preventDefault(); say(log.dataset.noteNeeded ?? ''); note?.focus(); return; }
       try { localStorage.removeItem(key); } catch { /* */ }
     });
-    document.querySelector('[data-follow-done]')?.addEventListener('click', (e) => { e.preventDefault(); log?.scrollIntoView({ behavior: 'smooth', block: 'center' }); note?.focus({ preventScroll: true }); });
+    // «Visita (solo mirar)»: por dónde = visita y, si no hay nota, una para empezar.
+    log?.querySelector('[data-quick-visit]')?.addEventListener('change', () => {
+      const ch = log.querySelector<HTMLSelectElement>('select[name=channel]');
+      if (ch) ch.value = 'visit';
+      if (note && !note.value.trim()) note.value = log.dataset.visitNote ?? '';
+    });
+    // «Hecho» y «Añadir interacción»: el modal, con la nota lista para escribir.
+    const dlg = document.getElementById('log-dialog') as HTMLDialogElement | null;
+    document.querySelector('[data-follow-done]')?.addEventListener('click', (e) => { e.preventDefault(); dlg?.showModal(); note?.focus(); });
+    document.querySelector('[data-log-open]')?.addEventListener('click', () => setTimeout(() => note?.focus(), 0));
     document.querySelector('[data-more-show]')?.addEventListener('click', (e) => { document.querySelectorAll<HTMLElement>('[data-more-item]').forEach((x) => { x.hidden = false; }); (e.currentTarget as HTMLElement).remove(); });
   </script>
 

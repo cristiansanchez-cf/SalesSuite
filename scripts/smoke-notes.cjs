@@ -100,12 +100,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // Personas (§38): las que nombra van a la empresa, con su Instagram en la persona (no en la ficha del sitio).
   await p.goto(`${BASE}/admin/accounts/apuntar`);
-  await p.fill('[data-testid=notes-text]', 'Sabbia Smoke: hablé con Marco Curro, el gerente (@marco_sabbia), quiere verlo; los viernes en Fiesta Italiana');
+  await p.fill('[data-testid=notes-text]', 'Sabbia Neptuno: hablé con Marco Curro, el gerente (@marco_sabbia), quiere verlo; los viernes en Fiesta Italiana');
   await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
   assert((await p.textContent('[data-testid=notes-people]')).includes('Marco Curro') && (await p.textContent('[data-testid=notes-people]')).includes('@marco_sabbia'), 'propone a Marco Curro con su Instagram');
   assert((await p.textContent('[data-testid=notes-works]')).includes('Fiesta Italiana'), 'y con quién trabaja');
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
-  await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("Sabbia Smoke")')]);
+  await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("Sabbia Neptuno")')]);
   assert((await p.textContent('[data-testid=account-people]')).includes('Marco Curro'), 'la persona, en la empresa');
   await p.click('[data-testid=account-people] a:has-text("Marco Curro")');
   await p.waitForURL(/\/admin\/people\//);

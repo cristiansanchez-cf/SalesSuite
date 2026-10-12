@@ -65,8 +65,10 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await rep.waitForURL(/ok=claimed/);
   assert((await rep.getAttribute('[data-testid=account-status]', 'data-state')) === 'mine', 'me la quedo: reservada para mí');
   // «¿Qué ha pasado?»: la nota y un toque en el resultado (§33).
+  await rep.click('[data-testid=log-open]');
   await rep.fill('[data-testid=contact-form] [name=note]', 'Visita: el dueño quiere verlo un viernes');
-  await Promise.all([rep.waitForURL(/ok=contact/), rep.click('[data-testid=contact-form] [data-testid=outcome-replied]')]);
+  await rep.click('[data-testid=contact-form] [data-testid=outcome-replied]');
+  await Promise.all([rep.waitForURL(/ok=contact/), rep.click('[data-testid=log-save]')]);
   assert((await rep.textContent('[data-testid=history]')).includes('el dueño quiere verlo un viernes'), 'contacto en el historial');
   await rep.click('[data-testid=account-dossier]');
   await rep.waitForURL(/\/admin\/dossiers\//);
