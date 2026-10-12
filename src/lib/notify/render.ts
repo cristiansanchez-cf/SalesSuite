@@ -23,6 +23,7 @@ export const KINDS: Record<string, KindDef> = {
   payout_ready: { icon: 'wallet', resolvesOnRead: true, href: () => '/admin/commissions' },
   payout_paid: { icon: 'circle-check', resolvesOnRead: true, href: () => '/admin/commissions' },
   story_shared: { icon: 'trophy', resolvesOnRead: true, href: () => '/admin/wins' },
+  payment_paid: { icon: 'party-popper', resolvesOnRead: true, href: (n) => (n.params.accountId ? `/admin/accounts/${String(n.params.accountId)}` : '/admin/accounts/tablero') },
   dossier_opened: { icon: 'eye', resolvesOnRead: true, href: (n) => `/admin/dossiers/${String(n.params.dossierId ?? n.entityKey.split(':')[0])}/analytics` },
 };
 
@@ -44,6 +45,7 @@ function texts(n: Notification, locale: Locale): { title: string; detail: string
     case 'payout_ready': return { title: m.payout_ready.title(p, money), detail: m.payout_ready.detail };
     case 'payout_paid': return { title: m.payout_paid.title(p, money), detail: null };
     case 'dossier_opened': return { title: m.dossier_opened.title(p), detail: m.dossier_opened.detail };
+    case 'payment_paid': return { title: m.payment_paid.title(p), detail: m.payment_paid.detail(p, money) || null };
     case 'story_shared': return { title: m.story_shared.title(p), detail: p.title ? `«${p.title}»` : null };
     default: return { title: m.fallback, detail: null };
   }

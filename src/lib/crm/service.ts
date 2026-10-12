@@ -26,8 +26,10 @@ import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type A
 import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, setQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
+import { chargeRef, paymentUrl } from '../admin/payment';
+import { chargeable } from './charge';
 import { LINK_DAYS, type LinkWhen } from './types';
-import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo } from './types';
+import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo, PaymentRequest } from './types';
 
 const uuid = z.string().uuid();
 const opt = (n: number) => z.string().trim().max(n).transform((v) => v || null).nullable().optional();
@@ -752,14 +754,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       accounts.listAccounts(t, { ownerId: owner, limit: 5000 }), kinds(), members(), admin.listDossiers(t).catch(() => []),
     ]);
     const mine = accs.filter((a) => !!a.ownerId);
-    const sums = new Map((await db.activitySummary(t, mine.map((a) => a.id))).map((x) => [x.accountId, x]));
-    // Cierre: la primera propuesta publicada para esa empresa (o, más adelante, un enlace de pago enviado).
+    const ids = mine.map((a) => a.id);
+    const [summaries, pays] = await Promise.all([db.activitySummary(t, ids), db.listPaymentRequests(t, ids).catch(() => [])]);
+    const sums = new Map(summaries.map((x) => [x.accountId, x]));
+    // Cierre: lo primero entre la propuesta publicada para esa empresa y el enlace de pago enviado (§35), sin anular.
     const closing = new Map<string, string>();
-    for (const d of dossiers) {
-      if (!d.accountId || d.status !== 'published') continue;
-      const at = d.publishedAt ?? d.updatedAt ?? '';
-      if (at && (!closing.has(d.accountId) || at < closing.get(d.accountId)!)) closing.set(d.accountId, at);
-    }
+    const closeAt = (id: string, at: string) => { if (at && (!closing.has(id) || at < closing.get(id)!)) closing.set(id, at); };
+    for (const d of dossiers) if (d.accountId && d.status === 'published') closeAt(d.accountId, d.publishedAt ?? d.updatedAt ?? '');
+    for (const p of pays) if (p.status !== 'cancelled') closeAt(p.accountId, p.createdAt);
     const isGroup = new Set(mine.map((a) => a.parentId).filter(Boolean) as string[]);
     const now = new Date();
     const cards = mine.map((a) => {
@@ -787,6 +789,58 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         .map((id) => ({ id, name: label(ms.get(id)) ?? '' })).filter((o) => o.name).sort((a, b) => a.name.localeCompare(b.name, 'es'))
       : [];
     return { columns, owner: owner ?? null, owners, total: cards.length, stuck: cards.filter((c) => c.overdue || c.manyTouches).length };
+  }
+
+  // ---------------------------------------------------------------- generar pago (docs/CRM_DINAMICO.md §35)
+
+  const chargeSchema = z.object({
+    priceOptionId: z.preprocess((v) => v || null, z.string().uuid().nullable()),
+    couponId: z.preprocess((v) => v || null, z.string().uuid().nullable()),
+    // Precio a medida (solo admin): con su propio enlace de Stripe.
+    custom: z.object({
+      label: z.string().trim().min(1).max(80), amount: z.coerce.number().min(0).max(10_000_000),
+      period: z.enum(['once', 'event', 'month', 'year']).default('once'), paymentLink: z.string().trim().url().max(500).regex(/^https:\/\//),
+    }).nullable().optional(),
+  });
+  const withUrl = (r: PaymentRequest) => ({ ...r, url: paymentUrl(r.paymentLink, { ref: chargeRef(r.id), couponCode: r.couponCode }) });
+  /** Tarifas que se cobran con un enlace (activas, no a medida, con enlace de Stripe), en el orden del admin. */
+  async function chargeOptions() { requireUse(); return chargeable(await admin.listPriceOptions(t).catch(() => [])); }
+  /** Los enlaces de pago de una empresa, lo último primero, con su enlace listo para copiar. */
+  async function charges(accountId: string) {
+    requireUse();
+    return (await db.listPaymentRequests(t, [accountId])).map(withUrl);
+  }
+  /**
+   * Generar el enlace de pago: tarifa (la de su tamaño o una superior) y, si toca, cupón. El importe lo copia la base de
+   * datos de la tarifa; a medida, solo un admin. Con el enlace, la empresa pasa a «Cierre» en el tablero.
+   */
+  async function charge(accountId: string, input: unknown) {
+    requireUse();
+    const v = parse(chargeSchema, input);
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    if (!perms.manageAccounts && a.ownerId && a.ownerId !== s.userId) throw new AdminError(403, 'Esta empresa la lleva otro comercial');
+    if (v.custom && !perms.manageTenant) throw new AdminError(403, 'El precio lo fija tu empresa: elige una tarifa');
+    if (!v.priceOptionId && !v.custom) throw new AdminError(422, 'Elige una tarifa');
+    try {
+      return withUrl(await db.insertPaymentRequest(t, { accountId, priceOptionId: v.custom ? null : v.priceOptionId, couponId: v.couponId, ...(v.custom ?? {}) }));
+    } catch (e) { mapError(e); }
+  }
+  /** Pagado por otra vía (transferencia…): gerente o admin. La empresa pasa a «Cerrada» y avisa (§36). */
+  async function chargeMarkPaid(id: string) {
+    requireUse();
+    if (!perms.manageAccounts) throw new AdminError(403, 'Solo un gerente o admin lo marca pagado');
+    try { if ((await db.markPaymentPaid(t, id)) === 'missing') throw new AdminError(404, 'Enlace no encontrado o ya no se puede anular'); } catch (e) { if (e instanceof AdminError) throw e; mapError(e); }
+  }
+  /** Ganada sin enlace de pago (espacios sin Stripe): gerente o admin. */
+  async function markWon(accountId: string) {
+    requireUse();
+    if (!perms.manageAccounts) throw new AdminError(403, 'Solo un gerente o admin la da por ganada');
+    try { await db.markWon(t, accountId); } catch (e) { mapError(e); }
+  }
+  async function chargeCancel(id: string) {
+    requireUse();
+    if (!(await db.cancelPaymentRequest(t, id))) throw new AdminError(404, 'Enlace no encontrado o ya no se puede anular');
   }
 
   // ---------------------------------------------------------------- prioridad (docs/CRM_DINAMICO.md §11)
@@ -1639,7 +1693,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    board, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,
@@ -1652,6 +1706,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 export type CrmService = ReturnType<typeof createCrmService>;
 
 export const emptyCrmDb: CrmDb = {
+  async listPaymentRequests() { return []; }, async insertPaymentRequest() { throw new Error('sin CRM'); }, async cancelPaymentRequest() { return false; }, async markPaymentPaid() { return 'missing' as const; }, async markWon() {},
   async listContacts() { return []; }, async getContact() { return null; }, async insertContacts() { throw new Error('sin CRM'); },
   async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {}, async listAccountLinks() { return []; }, async saveAccountLink() { throw new Error('sin CRM'); }, async removeAccountLink() { return false; },
   async removeLink() { return false; }, async createImport() { throw new Error('sin CRM'); }, async getImport() { return null; },

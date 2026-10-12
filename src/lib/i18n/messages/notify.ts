@@ -18,6 +18,7 @@ const es = {
   payout_paid: { title: (p: P, money: string) => `Pagado: ${money} de ${p.period}` },
   dossier_opened: { title: (p: P) => `${p.company || 'Tu cliente'} ha abierto tu propuesta${p.title ? ` «${p.title}»` : ''}`, detail: 'Buen momento para escribirle: mira qué ha leído.' },
   story_shared: { title: (p: P) => `${p.author || 'El equipo'} ha documentado ${p.outcome === 'lost' ? 'una venta perdida' : 'un cierre ganado'}` },
+  payment_paid: { title: (p: P) => `🎉 ${p.account || 'Un cliente'} ha pagado`, detail: (p: P, money: string) => [p.label, p.amount && p.amount !== '0' ? money : '', p.seller ? `lo ha cerrado ${p.seller}` : ''].filter(Boolean).join(' · ') },
   daily: {
     subject: (tenant: string, n: number) => `${tenant}: ${n === 1 ? '1 cosa' : `${n} cosas`} para hoy`,
     subjectTeam: (tenant: string) => `${tenant}: cómo va el equipo hoy`,
@@ -71,6 +72,7 @@ export const notifyMessages = defineMessages({
     payout_paid: { title: (p, money) => `Paid: ${money} for ${p.period}` },
     dossier_opened: { title: (p) => `${p.company || 'Your prospect'} opened your proposal${p.title ? ` “${p.title}”` : ''}`, detail: 'Good moment to follow up: see what they read.' },
     story_shared: { title: (p) => `${p.author || 'The team'} documented ${p.outcome === 'lost' ? 'a lost deal' : 'a won deal'}` },
+    payment_paid: { title: (p) => `🎉 ${p.account || 'A client'} has paid`, detail: (p, money) => [p.label, p.amount && p.amount !== '0' ? money : '', p.seller ? `closed by ${p.seller}` : ''].filter(Boolean).join(' · ') },
     daily: {
       subject: (tenant, n) => `${tenant}: ${n === 1 ? '1 thing' : `${n} things`} for today`,
       subjectTeam: (tenant) => `${tenant}: how the team is doing today`,
@@ -121,6 +123,7 @@ export const notifyMessages = defineMessages({
     payout_paid: { title: (p, money) => `Pago: ${money} de ${p.period}` },
     dossier_opened: { title: (p) => `${p.company || 'Seu cliente'} abriu sua proposta${p.title ? ` “${p.title}”` : ''}`, detail: 'Bom momento para escrever: veja o que leu.' },
     story_shared: { title: (p) => `${p.author || 'A equipe'} documentou ${p.outcome === 'lost' ? 'uma venda perdida' : 'um fechamento ganho'}` },
+    payment_paid: { title: (p) => `🎉 ${p.account || 'Um cliente'} pagou`, detail: (p, money) => [p.label, p.amount && p.amount !== '0' ? money : '', p.seller ? `fechado por ${p.seller}` : ''].filter(Boolean).join(' · ') },
     daily: {
       subject: (tenant, n) => `${tenant}: ${n === 1 ? '1 coisa' : `${n} coisas`} para hoje`,
       subjectTeam: (tenant) => `${tenant}: como está a equipe hoje`,
@@ -171,6 +174,7 @@ export const notifyMessages = defineMessages({
     payout_paid: { title: (p, money) => `지급 완료: ${p.period} ${money}` },
     dossier_opened: { title: (p) => `${p.company || '고객'}님이 제안서${p.title ? ` “${p.title}”` : ''}를 열었습니다`, detail: '연락하기 좋은 때입니다. 무엇을 읽었는지 확인하세요.' },
     story_shared: { title: (p) => `${p.author || '팀'}님이 ${p.outcome === 'lost' ? '실패한 거래' : '성사된 거래'}를 기록했습니다` },
+    payment_paid: { title: (p) => `🎉 ${p.account || '고객'}이(가) 결제했습니다`, detail: (p, money) => [p.label, p.amount && p.amount !== '0' ? money : '', p.seller ? `${p.seller}님이 성사` : ''].filter(Boolean).join(' · ') },
     daily: {
       subject: (tenant, n) => `${tenant}: 오늘 할 일 ${n}건`,
       subjectTeam: (tenant) => `${tenant}: 오늘의 팀 현황`,

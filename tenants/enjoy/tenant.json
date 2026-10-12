@@ -4167,7 +4167,8 @@
       "period": "month",
       "segment": "ocio-nocturno",
       "kind": "Local",
-      "default": true
+      "default": true,
+      "size": "small"
     },
     {
       "label": "Local mediano (150–500)",
@@ -4176,7 +4177,8 @@
       "period": "month",
       "segment": "ocio-nocturno",
       "kind": "Local",
-      "default": false
+      "default": false,
+      "size": "medium"
     },
     {
       "label": "Local grande (más de 500)",
@@ -4185,7 +4187,8 @@
       "period": "month",
       "segment": "ocio-nocturno",
       "kind": "Local",
-      "default": false
+      "default": false,
+      "size": "large"
     },
     {
       "label": "Validación · 5 primeros locales",

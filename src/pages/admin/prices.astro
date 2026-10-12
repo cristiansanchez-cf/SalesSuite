@@ -10,12 +10,15 @@ import { flash, formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { pricesMessages } from '~/lib/i18n/messages/prices';
 import { STRIPE_EVENTS } from '~/lib/commissions/stripe';
+import { SIZES } from '~/lib/crm/priority';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
-const { m, f } = i18n(Astro, pricesMessages);
+const { m, f, locale } = i18n(Astro, pricesMessages);
+const SZ = priorityMessages[locale].sizes;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -24,11 +27,14 @@ if (Astro.request.method === 'POST') {
   let ok = '';
   result = await formAction(async () => {
     if (str('action') === 'create') {
-      await t.savePriceOption({ label: str('label'), amount: str('amount'), currency: str('currency'), period: str('period'), paymentLink: str('paymentLink'), segmentId: str('segmentId') });
+      await t.savePriceOption({ label: str('label'), amount: str('amount'), currency: str('currency'), period: str('period'), paymentLink: str('paymentLink'), segmentId: str('segmentId'), size: str('size') });
       ok = 'created';
     } else if (str('action') === 'stripe') {
       await t.setStripeSecret(str('secret'));
       ok = str('secret') ? 'stripe' : 'nostripe';
+    } else if (str('action') === 'size') {
+      await t.setPriceOptionSize(str('id'), str('size'));
+      ok = 'size';
     } else if (str('action') === 'toggle') {
       await t.setPriceOptionActive(str('id'), str('active') === '1');
       ok = str('active') === '1' ? 'on' : 'off';
@@ -65,6 +71,11 @@ const sectorName = new Map(market.map((s) => [s.id, s.name]));
                 : <span class="text-xs text-[color:var(--console-attention,#b42318)]">{m.noLink}</span>}
             </span>
             <span class="co-figure text-3xl">{o.quoteOnly && !o.amount ? '—' : f.money(Math.round(o.amount * 100), o.currency)}</span>
+            <form method="post" data-size-form>
+              <input type="hidden" name="action" value="size" /><input type="hidden" name="id" value={o.id} />
+              <label class="co-field !gap-1 text-xs" title={m.sizeHelp}>{m.size}
+                <select class="co-select w-auto" name="size" data-testid="price-size"><option value="">{m.anySize}</option>{SIZES.map((k) => <option value={k} selected={o.size === k}>{SZ[k]}</option>)}</select></label>
+            </form>
             <form method="post">
               <input type="hidden" name="action" value="toggle" /><input type="hidden" name="id" value={o.id} /><input type="hidden" name="active" value={o.active ? '0' : '1'} />
               <button class="co-btn co-btn--quiet co-btn--sm" type="submit">{o.active ? m.deactivate : m.activate}</button>
@@ -88,6 +99,7 @@ const sectorName = new Map(market.map((s) => [s.id, s.name]));
           </div>
         </fieldset>
         <label class="co-field">{m.link}<input class="co-input" name="paymentLink" type="url" maxlength="500" placeholder="https://buy.stripe.com/…" /><span class="co-help">{m.linkHelp}</span></label>
+        <label class="co-field">{m.size}<select class="co-select" name="size"><option value="">{m.anySize}</option>{SIZES.map((k) => <option value={k}>{SZ[k]}</option>)}</select><span class="co-help">{m.sizeHelp}</span></label>
         {market.length > 0 && (
           <label class="co-field">{m.segment}<select class="co-select" name="segmentId"><option value="">{m.anySegment}</option>{market.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select></label>
         )}
@@ -126,4 +138,8 @@ const sectorName = new Map(market.map((s) => [s.id, s.name]));
     const url = document.querySelector('[data-hook-url]')?.textContent ?? '';
     try { await navigator.clipboard.writeText(url); (e.currentTarget as HTMLButtonElement).textContent = '✓'; } catch { /* se puede seleccionar a mano */ }
   });
+</script>
+<script>
+  // El tamaño de una tarifa se guarda al cambiarlo.
+  document.querySelectorAll<HTMLFormElement>('[data-size-form]').forEach((f) => f.addEventListener('change', () => f.requestSubmit()));
 </script>

@@ -66,7 +66,9 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await p.goto(`${BASE}/admin`);
   await p.waitForSelector('[data-testid=bg-research][data-state=done]', { timeout: 150000 });
   const done = await p.textContent('[data-testid=bg-research]');
-  assert(done.includes('2 listas') && done.includes('1 ya estaban'), `zona, en segundo plano y cambiando de página: 2 investigadas y la ya investigada, saltada (${done.trim()})`);
+  // Al cambiar de página, la que estaba en curso la retoma la página nueva: si ya había terminado, cuenta como «ya estaban».
+  const [listas, ya] = [Number(/(\d+) listas?/.exec(done)?.[1] ?? 0), Number(/(\d+) ya estaban/.exec(done)?.[1] ?? 0)];
+  assert(listas >= 1 && ya >= 1 && listas + ya === 3 && !done.includes('sin terminar'), `zona, en segundo plano y cambiando de página: todas hechas, la ya investigada saltada (${done.trim()})`);
   if (OUT) await p.screenshot({ path: `${OUT}/ai-zone.png` });
   await Promise.all([p.waitForURL(/cual=ia/), p.click('[data-testid=bg-research-see]')]);
   const names = await p.$$eval('[data-testid=account]', (xs) => xs.map((x) => x.getAttribute('data-name')));

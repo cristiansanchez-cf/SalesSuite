@@ -21,6 +21,7 @@ import { shellMessages } from '~/lib/i18n/messages/shell';
 import { sectionTabs } from '~/lib/ui/nav';
 import { can } from '~/lib/admin/permissions';
 import { notesMessages } from '~/lib/i18n/messages/notes';
+import Celebration from '~/components/ui/Celebration.astro';
 
 interface Props {
   title: string;
@@ -40,6 +41,8 @@ const [pending, feed] = await Promise.all([
   admin ? admin.playbook.pendingCount() : 0,
   admin && !bare ? admin.notifications.feed({ limit: 8, locale }) : { items: [], open: 0 },
 ]);
+// «X ha pagado» sin ver todavía: se celebra (una vez por aviso, §36).
+const party = feed.items.find((n) => n.kind === 'payment_paid' && !n.readAt && !n.dismissedAt);
 const back = Astro.url.pathname + Astro.url.search;
 const tenantName = tenant?.name ?? BRAND.app;
 const shell = !!admin && !bare;
@@ -290,7 +293,8 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
             s.busy = {}; s.lock = null; write(s);
           };
           const box = document.getElementById('co-toasts');
-          let el = null; let running = false;
+          let el = null; let running = false; let leaving = false;
+          addEventListener('pagehide', () => { leaving = true; });
           const render = () => {
             const s = read();
             if (!s) { if (el) el.remove(); el = null; return; }
@@ -327,7 +331,10 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
                 r = j.ok ? 'ok' : j.skipped ? 'skipped' : 'failed';
                 // Tope del día o sin IA: no seguir gastando intentos.
                 if (!j.ok && !j.skipped && (res.status === 409 || res.status === 503) && j.error) stop = j.error;
-              } catch {}
+              } catch {
+                // Se ha cambiado de página y el navegador cortó la petición: queda «en curso» y la página siguiente la retoma.
+                if (leaving) return;
+              }
               s = read();
               if (!s) return;
               delete s.busy[id]; delete s.wait[id]; s[r]++;
@@ -362,5 +369,6 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
         })();
       </script>
     )}
+    {party && <Celebration id={party.id} title={party.title} detail={party.detail} href={party.href} see={m.celebrate.see} close={m.celebrate.close} />}
   </body>
 </html>

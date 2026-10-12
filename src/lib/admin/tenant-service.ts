@@ -11,6 +11,7 @@ import { AdminError } from './service';
 import type { AdminSession, CatalogModuleView, DossierRecord, MemberRecord, PartnerView, Role, TenantSettings } from './types';
 import { partnerPrice, priceModeFor } from '../partner/scope';
 import { can } from './permissions';
+import { SIZES } from '../crm/priority';
 
 const ROLE_ORDER: Record<Role, number> = { admin: 0, lead: 1, rep: 2, partner: 3 };
 import type { z } from 'zod';
@@ -374,7 +375,7 @@ export function createTenantAdminService(
   // ---------------------------------------------------------------- tarifas (docs/COMMISSIONS.md §Tarifas)
   const PERIODS = ['once', 'event', 'month', 'year'] as const;
   async function listPriceOptions() { requireAdmin(); return db.listPriceOptions(s.tenantId); }
-  async function savePriceOption(input: { label: unknown; amount: unknown; currency?: unknown; period: unknown; paymentLink?: unknown; segmentId?: unknown; kind?: unknown; isDefault?: unknown }, id?: string) {
+  async function savePriceOption(input: { label: unknown; amount: unknown; currency?: unknown; period: unknown; paymentLink?: unknown; segmentId?: unknown; kind?: unknown; isDefault?: unknown; size?: unknown }, id?: string) {
     requireAdmin();
     const label = String(input.label ?? '').trim();
     if (!label || label.length > 80) throw new AdminError(422, 'Ponle un nombre corto (p. ej. «Local mediano»)');
@@ -394,8 +395,18 @@ export function createTenantAdminService(
       label, amount, currency, period, paymentLink: link || null, segmentId,
       ...(input.kind !== undefined ? { kind: String(input.kind ?? '').trim().slice(0, 60) || null } : {}),
       ...(input.isDefault !== undefined ? { isDefault: !!input.isDefault } : {}),
+      ...(input.size !== undefined ? { size: sizeOf(input.size) } : {}),
       position: cur?.position ?? Math.max(0, ...all.map((o) => o.position)) + 1, active: cur?.active ?? true,
     }, id);
+  }
+  /** Tamaño de cliente de la tarifa (§35): «Generar pago» marca la de su tamaño. Vacío = cualquiera. */
+  const sizeOf = (v: unknown) => { const x = String(v ?? ''); if (x && !(SIZES as readonly string[]).includes(x)) throw new AdminError(422, 'Tamaño no válido'); return x || null; };
+  async function setPriceOptionSize(id: string, size: unknown) {
+    requireAdmin();
+    const cur = (await db.listPriceOptions(s.tenantId)).find((o) => o.id === id);
+    if (!cur) throw new AdminError(404, 'Tarifa no encontrada');
+    const { id: _id, ...rest } = cur;
+    await db.savePriceOption(s.tenantId, { ...rest, size: sizeOf(size) }, id);
   }
   async function setPriceOptionActive(id: string, active: boolean) {
     requireAdmin();
@@ -415,7 +426,7 @@ export function createTenantAdminService(
   }
 
   return {
-    listPriceOptions, savePriceOption, setPriceOptionActive, stripeStatus, setStripeSecret,
+    listPriceOptions, savePriceOption, setPriceOptionActive, setPriceOptionSize, stripeStatus, setStripeSecret,
     partnerInvite, myInvitees,
     listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
     listMembers, invite, setRole, removeMember,

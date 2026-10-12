@@ -9,6 +9,9 @@
  *  · invoice.paid → cuota (clave: la factura), con la propuesta de su suscripción.
  *  · charge.refunded / refund.created → devolución del ingreso original (clave: el reembolso).
  * Idempotente: Stripe reintenta y repite eventos; la clave de cada ingreso es única por espacio.
+ *
+ * Enlaces generados en la ficha de una empresa (docs/CRM_DINAMICO.md §35-36, client_reference_id = pay_<id>): al
+ * pagarse, el cobro queda pagado y la empresa ganada para quien lo generó (y el ingreso, atribuido a ella y a esa persona).
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { IngestDb } from './db';
@@ -19,6 +22,7 @@ export const STRIPE_SOURCE = 'stripe';
 export const STRIPE_EVENTS = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'invoice.paid', 'charge.refunded'] as const;
 const TOLERANCE_S = 300;
 const DOSSIER_REF = /^dossier_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+const CHARGE_REF = /^pay_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 /** Firma de Stripe: «t=<segundos>,v1=<hmac sha256 de "t.cuerpo">». Rechaza firmas viejas (repetición). */
 export function verifyStripeSignature(raw: string, header: string | null, secret: string, nowMs = Date.now()): boolean {
@@ -39,6 +43,7 @@ type Obj = Record<string, any>;
 const id = (v: unknown): string | null => (typeof v === 'string' ? v : v && typeof v === 'object' && typeof (v as Obj).id === 'string' ? (v as Obj).id : null);
 const at = (s: unknown) => new Date((typeof s === 'number' ? s : Date.now() / 1000) * 1000).toISOString();
 const dossierOf = (ref: unknown) => (typeof ref === 'string' ? DOSSIER_REF.exec(ref)?.[1]?.toLowerCase() ?? null : null);
+const chargeOf = (ref: unknown) => (typeof ref === 'string' ? CHARGE_REF.exec(ref)?.[1]?.toLowerCase() ?? null : null);
 const net = (total: number, tax: unknown) => Math.max(0, total - (typeof tax === 'number' ? tax : 0));
 
 export interface StripePlan {
@@ -48,6 +53,8 @@ export interface StripePlan {
   link?: { subscription: string; dossierId: string; invoice: string | null };
   /** Por qué no se registra nada (evento que no nos toca). */
   skip?: string;
+  /** Enlace de la ficha pagado: el cobro, la referencia del pago y los ids de Stripe de sus ingresos (para atribuirlos). */
+  charge?: { requestId: string; ref: string; refs: string[] };
 }
 
 /** Evento de Stripe → lo que hay que hacer. Puro: sin base de datos (la suscripción se resuelve fuera). */
@@ -57,6 +64,22 @@ export function planStripe(ev: Obj, subscriptionDossier: string | null = null): 
     case 'checkout.session.completed':
     case 'checkout.session.async_payment_succeeded': {
       const dossierId = dossierOf(o.client_reference_id);
+      const chargeId = chargeOf(o.client_reference_id);
+      // Pagado (o sin nada que pagar: cupón de meses gratis).
+      const settled = o.payment_status === 'paid' || o.payment_status === 'no_payment_required';
+      if (chargeId) {
+        if (!settled) return { events: [], skip: 'pago aún no cobrado' };
+        const charge = { requestId: chargeId, ref: String(o.id ?? ''), refs: [id(o.payment_intent), id(o.invoice)].filter((x): x is string => !!x) };
+        if (o.mode === 'subscription' || o.payment_status !== 'paid') return { events: [], charge };
+        const amount = Number(o.amount_total ?? 0);
+        return {
+          charge,
+          events: [{
+            external_id: id(o.payment_intent) ?? o.id, kind: 'sale', occurred_at: at(o.created), amount_cents: amount,
+            revenue_cents: net(amount, o.total_details?.amount_tax), currency: o.currency ?? 'eur', note: 'Stripe · pago desde la ficha',
+          }],
+        };
+      }
       if (o.mode === 'subscription') {
         const sub = id(o.subscription);
         return sub && dossierId ? { events: [], link: { subscription: sub, dossierId, invoice: id(o.invoice) } } : { events: [], skip: 'suscripción sin propuesta' };
@@ -120,8 +143,10 @@ export async function handleStripe(db: IngestDb, tenantId: string, raw: string, 
     // Si la factura llegó antes que el checkout, se le pone ahora la propuesta (no toca importes).
     if (plan.link.invoice) await db.attachDossier(tenantId, STRIPE_SOURCE, plan.link.invoice, plan.link.dossierId);
   }
-  if (!plan.events.length) return { status: 200, body: { skipped: plan.skip ?? null, linked: !!plan.link } };
-  const r: IngestResult = await ingest(db, tenantId, STRIPE_SOURCE, plan.events);
+  if (!plan.events.length && !plan.charge) return { status: 200, body: { skipped: plan.skip ?? null, linked: !!plan.link } };
+  const r: IngestResult | null = plan.events.length ? await ingest(db, tenantId, STRIPE_SOURCE, plan.events) : null;
+  // Después del ingreso, para poder atribuírselo a la empresa y a quien generó el enlace.
+  if (plan.charge) return { status: 200, body: { ...(r ?? {}), charge: await db.chargePaid(tenantId, plan.charge.requestId, plan.charge.ref, plan.charge.refs) } };
   // Errores de datos (p. ej. devolución de un pago que no vino de una propuesta) no se arreglan reintentando.
-  return { status: 200, body: r };
+  return { status: 200, body: r ?? {} };
 }

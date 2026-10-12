@@ -210,6 +210,9 @@ export function supabaseIngestDb(sb: SupabaseClient): IngestDb {
     async linkSubscription(t, sub, dossierId) {
       check(await sb.from('stripe_subscription').upsert({ tenant_id: t, subscription_id: sub, dossier_id: dossierId }, { onConflict: 'tenant_id,subscription_id', ignoreDuplicates: true }));
     },
+    async chargePaid(t, requestId, ref, refs) {
+      return check(await sb.rpc('payment_request_paid', { p_tenant: t, p_request: requestId, p_ref: ref, p_refs: refs })) as 'paid' | 'already' | 'missing';
+    },
     async attachDossier(t, source, externalId, dossierId) {
       check(await sb.from('revenue_event').update({ dossier_id: dossierId }).eq('tenant_id', t).eq('source', source).eq('external_id', externalId).is('dossier_id', null));
     },

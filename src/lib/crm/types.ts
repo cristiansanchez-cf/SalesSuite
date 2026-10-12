@@ -73,3 +73,16 @@ export interface CrmImport {
   headers: string[]; rows: string[][]; mapping: ImportMapping; status: 'draft' | 'done' | 'undone'; stats: Partial<ImportStats>;
   createdAt: string; doneAt: string | null;
 }
+
+/** Un enlace de pago enviado desde la ficha (docs/CRM_DINAMICO.md §35): copia de la tarifa y del cupón al generarlo. */
+export interface PaymentRequest {
+  id: string; accountId: string; priceOptionId: string | null; couponId: string | null;
+  label: string; amount: number; currency: string; period: 'once' | 'event' | 'month' | 'year'; paymentLink: string;
+  couponCode: string | null; discount: { kind: 'percent' | 'fixed' | 'free_months'; value: number; label: string } | null;
+  status: 'sent' | 'paid' | 'cancelled'; createdBy: string | null; createdAt: string; paidAt: string | null; cancelledAt: string | null;
+}
+/** Lo que se pide al generarlo: con tarifa, el resto lo pone la base de datos; sin tarifa (solo admin), importe y enlace. */
+export interface PaymentRequestInsert {
+  accountId: string; priceOptionId: string | null; couponId: string | null;
+  label?: string; amount?: number; currency?: string; period?: PaymentRequest['period']; paymentLink?: string;
+}

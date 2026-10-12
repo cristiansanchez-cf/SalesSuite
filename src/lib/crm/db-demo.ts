@@ -1,10 +1,11 @@
 /** Personas e importaciones en memoria (modo DEMO). Replica supabase/migrations/20261103000000_crm_people.sql (RLS y triggers). */
 import { randomUUID } from 'node:crypto';
 import { checkFields } from '../accounts/db-demo';
-import { demoDb, type CrmContactRow, type CrmImportRow } from '../data/store';
+import { demoDb, type CrmContactRow, type CrmImportRow, type PaymentRequestRow } from '../data/store';
 import type { CrmDb } from './db';
-import type { Contact, CrmImport, ImportMapping, LinkWhen } from './types';
+import type { Contact, CrmImport, ImportMapping, LinkWhen, PaymentRequest } from './types';
 import type { Activity } from './followup';
+import { notifyRoles, userLabel } from '../notify/db-demo';
 
 const db = () => demoDb();
 const iso = () => new Date().toISOString();
@@ -19,10 +20,41 @@ const toContact = (r: CrmContactRow): Contact => ({
   id: r.id, tenantId: r.tenant_id, name: r.name, email: r.email, phone: r.phone, instagram: r.instagram, linkedin: r.linkedin, city: r.city, notes: r.notes,
   fields: r.fields as Contact['fields'], tags: r.tags, ownerId: r.owner_id, importId: r.import_id, createdBy: r.created_by, createdAt: r.created_at, updatedAt: r.updated_at,
 });
+const toPaymentRequest = (r: PaymentRequestRow): PaymentRequest => ({
+  id: r.id, accountId: r.account_id, priceOptionId: r.price_option_id, couponId: r.coupon_id, label: r.label, amount: r.amount, currency: r.currency,
+  period: r.period, paymentLink: r.payment_link, couponCode: r.coupon_code, discount: r.discount, status: r.status, createdBy: r.created_by,
+  createdAt: r.created_at, paidAt: r.paid_at, cancelledAt: r.cancelled_at,
+});
 const toImport = (r: CrmImportRow): CrmImport => ({
   id: r.id, tenantId: r.tenant_id, createdBy: r.created_by, fileName: r.file_name, target: r.target, headers: r.headers, rows: r.rows,
   mapping: r.mapping as unknown as ImportMapping, status: r.status, stats: r.stats, createdAt: r.created_at, doneAt: r.done_at,
 });
+
+/** = payment_paid_effects (20261201): empresa ganada para quien vendió, en su historial, y aviso «X ha pagado». */
+function paidEffects(t: string, accountId: string, seller: string | null, entity: string, label: string | null, amount: number | null, currency: string | null) {
+  const s = db();
+  const a = s.account.find((x) => x.id === accountId && x.tenant_id === t);
+  if (!a) return;
+  Object.assign(a, { status: 'customer', won_at: a.won_at ?? iso(), won_by: a.won_by ?? seller, owner_id: a.owner_id ?? seller, claimed_until: null, last_touch_at: iso(), last_touch_by: seller ?? a.last_touch_by });
+  s.account_touch.push({ id: randomUUID(), tenant_id: t, account_id: a.id, user_id: seller, kind: 'won', note: label, created_at: iso() });
+  const params = { account: a.name, accountId: a.id, seller: userLabel(seller), sellerId: seller, label, amount: Math.round((amount ?? 0) * 100), currency: currency ?? 'EUR' };
+  notifyRoles(t, ['admin', 'lead'], 'payment_paid', 'action', entity, params, seller);
+  if (seller && roleOf(t, seller) && !s.notification.some((n) => n.user_id === seller && n.tenant_id === t && n.kind === 'payment_paid' && n.entity_key === entity)) {
+    s.notification.push({ id: randomUUID(), tenant_id: t, user_id: seller, kind: 'payment_paid', severity: 'action', entity_key: entity, params, created_at: iso(),
+      read_at: null, dismissed_at: null, emailed_at: null, resolved_at: null });
+  }
+}
+/** = payment_request_paid (servidor: webhook de Stripe). */
+export function demoChargePaid(t: string, requestId: string, ref: string, refs: string[]): 'paid' | 'already' | 'missing' {
+  const s = db();
+  const r = (s.payment_request ?? []).find((x) => x.id === requestId && x.tenant_id === t);
+  if (!r) return 'missing';
+  if (r.status === 'paid') return 'already';
+  Object.assign(r, { status: 'paid', paid_at: iso(), paid_ref: ref.slice(0, 200), cancelled_at: null });
+  for (const e of s.revenue_event) if (e.tenant_id === t && e.source === 'stripe' && refs.includes(e.external_id)) { e.account_id ??= r.account_id; e.seller_id ??= r.created_by; }
+  paidEffects(t, r.account_id, r.created_by, r.id, r.label, r.amount, r.currency);
+  return 'paid';
+}
 
 export function demoCrmDb(actorId: string): CrmDb {
   const canEdit = (c: CrmContactRow) => isManager(c.tenant_id, actorId) || c.owner_id === actorId || c.created_by === actorId || c.owner_id === null;
@@ -177,6 +209,54 @@ export function demoCrmDb(actorId: string): CrmDb {
         const replies = real.filter((x) => ['replied', 'interested', 'meeting'].includes(x.outcome));
         return { accountId, real: real.length, firstAt: real[0]?.at ?? null, lastAt: xs.map((x) => x.at).sort().at(-1) ?? null, firstReplyAt: replies[0]?.at ?? null, lastOutcome: real.at(-1)?.outcome ?? null };
       });
+    },
+    async listPaymentRequests(t, accountIds) {
+      if (!isMember(t, actorId)) return [];
+      return (db().payment_request ?? []).filter((r) => r.tenant_id === t && accountIds.includes(r.account_id)).map(toPaymentRequest)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    // Replica payment_request_guard (20261130): la tarifa y el cupón los copia la base de datos; sin tarifa, solo admin.
+    async insertPaymentRequest(t, r) {
+      const s = db();
+      if (!isMember(t, actorId)) throw new Error('permission denied: payment_request');
+      if (!s.account.some((x) => x.id === r.accountId && x.tenant_id === t)) throw new Error('violates foreign key: payment_request account');
+      let base: Pick<PaymentRequestRow, 'label' | 'amount' | 'currency' | 'period' | 'payment_link'>;
+      if (r.priceOptionId) {
+        const o = s.price_option.find((x) => x.id === r.priceOptionId && x.tenant_id === t);
+        if (!o || !o.active) throw new Error('Tarifa no disponible');
+        if (o.quote_only) throw new Error('Esta tarifa es a medida: no se cobra con un enlace');
+        if (!o.payment_link) throw new Error('Esta tarifa no tiene enlace de pago de Stripe');
+        base = { label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.payment_link };
+      } else {
+        if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: El precio lo fija tu empresa: elige una tarifa');
+        if (!r.label || r.amount == null || !r.paymentLink || !/^https:\/\/[^\s"'<>]+$/.test(r.paymentLink)) throw new Error('violates check constraint: payment_request');
+        base = { label: r.label, amount: r.amount, currency: r.currency ?? 'EUR', period: r.period ?? 'once', payment_link: r.paymentLink };
+      }
+      let coupon: Pick<PaymentRequestRow, 'coupon_code' | 'discount'> = { coupon_code: null, discount: null };
+      if (r.couponId) {
+        const c = s.coupon.find((x) => x.id === r.couponId && x.tenant_id === t);
+        if (!c || !c.active || (c.valid_until && c.valid_until < iso().slice(0, 10))) throw new Error('Cupón no disponible');
+        coupon = { coupon_code: c.code, discount: { kind: c.kind, value: c.value, label: c.label } };
+      }
+      const row: PaymentRequestRow = { id: randomUUID(), tenant_id: t, account_id: r.accountId, price_option_id: r.priceOptionId, coupon_id: r.couponId, ...base, ...coupon,
+        status: 'sent', created_by: actorId, created_at: monotonic(), paid_at: null, paid_ref: null, cancelled_at: null };
+      (s.payment_request ??= []).push(row);
+      return toPaymentRequest(row);
+    },
+    async markPaymentPaid(t, id) {
+      if (!isManager(t, actorId)) throw new Error('permission denied: Solo un gerente o admin lo marca pagado');
+      return demoChargePaid(t, id, 'manual', []);
+    },
+    async markWon(t, accountId) {
+      const a = db().account.find((x) => x.id === accountId && x.tenant_id === t);
+      if (!a || !isManager(t, actorId)) throw new Error('permission denied: Solo un gerente o admin la da por ganada');
+      if (!a.won_at) paidEffects(t, a.id, a.owner_id ?? actorId, `account:${a.id}`, null, null, null);
+    },
+    async cancelPaymentRequest(t, id) {
+      const r = (db().payment_request ?? []).find((x) => x.id === id && x.tenant_id === t && x.status === 'sent');
+      if (!r || !isMember(t, actorId) || !(r.created_by === actorId || isManager(t, actorId))) return false;
+      r.status = 'cancelled'; r.cancelled_at = iso();
+      return true;
     },
     async insertActivity(t, a) {
       const s = db();

@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import { demoDb, type CommissionEntryRow, type RevenueEventRow } from '../data/store';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
+import { demoChargePaid } from '../crm/db-demo';
 import type { CommissionsDb, IngestDb } from './db';
 import type { Entry, EventKind, EventStatus, Plan, RevenueEvent } from './types';
 
@@ -339,6 +340,7 @@ export function demoIngestDb(): IngestDb {
     async webhookSecret(t) { return demoStripe.secrets.get(t)?.secret ?? null; },
     async subscriptionDossier(t, sub) { return demoStripe.subs.get(`${t}|${sub}`) ?? null; },
     async linkSubscription(t, sub, dossierId) { if (!demoStripe.subs.has(`${t}|${sub}`)) demoStripe.subs.set(`${t}|${sub}`, dossierId); },
+    async chargePaid(t, requestId, ref, refs) { return demoChargePaid(t, requestId, ref, refs); },
     async attachDossier(t, source, externalId, dossierId) {
       const e = db().revenue_event.find((x) => x.tenant_id === t && x.source === source && x.external_id === externalId);
       if (e && !e.dossier_id) e.dossier_id = dossierId;

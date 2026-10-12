@@ -17,7 +17,8 @@ const es = {
     step1: 'Desarrolladores → Webhooks → «Añadir destino». URL:', step2: 'Eventos:', step3: 'Copia el «Secreto de firma» (whsec_…) y pégalo aquí.',
     secret: 'Secreto de firma', save: 'Conectar', change: 'Cambiar secreto', disconnect: 'Desconectar', copy: 'Copiar',
   },
-  ok: { stripe: 'Stripe conectado.', nostripe: 'Stripe desconectado.', created: 'Tarifa creada.', on: 'Tarifa activada.', off: 'Tarifa desactivada.' } as Record<string, string>,
+  size: 'Tamaño de cliente', anySize: 'Cualquiera', sizeHelp: '«Generar pago» en la ficha marca la tarifa de su tamaño.',
+  ok: { stripe: 'Stripe conectado.', nostripe: 'Stripe desconectado.', created: 'Tarifa creada.', size: 'Tamaño guardado.', on: 'Tarifa activada.', off: 'Tarifa desactivada.' } as Record<string, string>,
 };
 
 export const pricesMessages = defineMessages({
@@ -38,7 +39,8 @@ export const pricesMessages = defineMessages({
       step1: 'Developers → Webhooks → “Add destination”. URL:', step2: 'Events:', step3: 'Copy the “Signing secret” (whsec_…) and paste it here.',
       secret: 'Signing secret', save: 'Connect', change: 'Change secret', disconnect: 'Disconnect', copy: 'Copy',
     },
-    ok: { stripe: 'Stripe connected.', nostripe: 'Stripe disconnected.', created: 'Price option created.', on: 'Price option on.', off: 'Price option off.' },
+    size: 'Client size', anySize: 'Any', sizeHelp: '«Create payment» on a company picks the tariff for its size.',
+    ok: { stripe: 'Stripe connected.', nostripe: 'Stripe disconnected.', created: 'Price option created.', size: 'Size saved.', on: 'Price option on.', off: 'Price option off.' },
   },
   pt: {
     title: 'Tarifas e pagamentos', eyebrow: 'Configurar',
@@ -56,7 +58,8 @@ export const pricesMessages = defineMessages({
       step1: 'Desenvolvedores → Webhooks → «Adicionar destino». URL:', step2: 'Eventos:', step3: 'Copie o «Segredo de assinatura» (whsec_…) e cole aqui.',
       secret: 'Segredo de assinatura', save: 'Conectar', change: 'Trocar segredo', disconnect: 'Desconectar', copy: 'Copiar',
     },
-    ok: { stripe: 'Stripe conectada.', nostripe: 'Stripe desconectada.', created: 'Tarifa criada.', on: 'Tarifa ativada.', off: 'Tarifa desativada.' },
+    size: 'Tamanho do cliente', anySize: 'Qualquer', sizeHelp: '«Gerar pagamento» na ficha marca a tarifa do seu tamanho.',
+    ok: { stripe: 'Stripe conectada.', nostripe: 'Stripe desconectada.', created: 'Tarifa criada.', size: 'Tamanho salvo.', on: 'Tarifa ativada.', off: 'Tarifa desativada.' },
   },
   ko: {
     title: '요금과 결제', eyebrow: '설정',
@@ -74,6 +77,7 @@ export const pricesMessages = defineMessages({
       step1: '개발자 → Webhooks → “대상 추가”. URL:', step2: '이벤트:', step3: '“서명 비밀”(whsec_…)을 복사해 여기에 붙여 넣으세요.',
       secret: '서명 비밀', save: '연결', change: '비밀 바꾸기', disconnect: '연결 해제', copy: '복사',
     },
-    ok: { stripe: 'Stripe를 연결했어요.', nostripe: 'Stripe 연결을 해제했어요.', created: '요금을 만들었어요.', on: '요금을 켰어요.', off: '요금을 껐어요.' },
+    size: '고객 규모', anySize: '전체', sizeHelp: '회사 페이지의 «결제 만들기»가 규모에 맞는 요금을 선택합니다.',
+    ok: { stripe: 'Stripe를 연결했어요.', nostripe: 'Stripe 연결을 해제했어요.', created: '요금을 만들었어요.', size: '규모를 저장했어요.', on: '요금을 켰어요.', off: '요금을 껐어요.' },
   },
 });

@@ -170,7 +170,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
 
     async listPriceOptions(tenantId) {
       return db().price_option.filter((o) => o.tenant_id === tenantId)
-        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default, quoteOnly: !!o.quote_only, note: o.note ?? null }))
+        .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default, quoteOnly: !!o.quote_only, note: o.note ?? null, size: o.size ?? null }))
         .sort((a, b) => a.position - b.position || a.amount - b.amount);
     },
     async stripeWebhookStatus(tenantId) { return demoStripe.secrets.get(tenantId)?.at ?? null; },
@@ -179,7 +179,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     },
     async savePriceOption(tenantId, o, id) {
       const s = db();
-      const row = { id: id ?? randomUUID(), tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink, segment_id: o.segmentId, position: o.position, active: o.active, kind: o.kind ?? null, is_default: !!o.isDefault };
+      const row = { id: id ?? randomUUID(), tenant_id: tenantId, label: o.label, amount: o.amount, currency: o.currency, period: o.period, payment_link: o.paymentLink, segment_id: o.segmentId, position: o.position, active: o.active, kind: o.kind ?? null, is_default: !!o.isDefault, quote_only: !!o.quoteOnly, note: o.note ?? null, size: o.size ?? null };
       if (id && !s.price_option.some((x) => x.id === id && x.tenant_id === tenantId)) throw new Error('Tarifa no encontrada');
       s.price_option = [...s.price_option.filter((x) => x.id !== row.id), row];
       return row.id;

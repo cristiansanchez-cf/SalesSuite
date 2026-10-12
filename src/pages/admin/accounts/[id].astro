@@ -28,6 +28,10 @@ import { peopleMessages } from '~/lib/i18n/messages/people';
 import { shellMessages } from '~/lib/i18n/messages/shell';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import ContactLinks from '~/components/crm/ContactLinks.astro';
+import ChargeCard from '~/components/crm/ChargeCard.astro';
+import { suggestTariff } from '~/lib/crm/charge';
+import { chargeMessages } from '~/lib/i18n/messages/charge';
+import { SIZE_LIMITS, SIZES, formatsOf, sizeScaleOf } from '~/lib/crm/priority';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
 import AiResearchCard from '~/components/crm/AiResearchCard.astro';
 import { notesMessages } from '~/lib/i18n/messages/notes';
@@ -80,6 +84,15 @@ if (Astro.request.method === 'POST') {
       case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
       case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
       case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
+      case 'charge-size': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#charge'; break;
+      case 'charge': {
+        const custom = str('customLink') ? { label: str('customLabel'), amount: str('customAmount').replace(',', '.'), paymentLink: str('customLink') } : null;
+        await admin.crm.charge(id, { priceOptionId: str('priceOptionId'), couponId: str('couponId'), custom });
+        to += '?ok=charge#charge'; break;
+      }
+      case 'charge-cancel': await admin.crm.chargeCancel(str('chargeId')); to += '?ok=chargeCancelled#charge'; break;
+      case 'charge-paid': await admin.crm.chargeMarkPaid(str('chargeId')); to += '?ok=paid#charge'; break;
+      case 'mark-won': await admin.crm.markWon(id); to += '?ok=paid#charge'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
       case 'fact-add': await admin.crm.factAdd(id, str('text'), str('kind') === 'fit' ? 'fit' : str('kind') === 'key' ? 'key' : 'fact'); to += '?ok=fact#facts'; break;
@@ -137,11 +150,12 @@ try { data = await acc.get(id); } catch (e) {
 }
 const { account: a, touches, dossiers, canEdit, rules, crmFields } = data;
 // Todo lo que pinta la ficha, a la vez (cada servicio lee lo suyo; lo repetido sale de la caché de la petición).
-const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ, listsAll] = await Promise.all([
+const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ, listsAll, chargeList, chargeOpts, coupons] = await Promise.all([
   acc.territory(), admin.playbook.segmentList(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id),
   admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id), acc.kinds(), admin.crm.workLinks(id),
   googleBox.q ? Promise.resolve(googleBox.q) : admin.crm.hasGoogle() ? admin.crm.googleQuery(id) : Promise.resolve(''),
   admin.crm.lists({ people: false }),
+  admin.crm.charges(id), admin.crm.chargeOptions(), admin.commissions.coupons().catch(() => []),
 ]);
 const accountLists = listsAll.filter((l) => l.accounts > 0).map((l) => l.tag);
 // Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
@@ -186,7 +200,15 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   owner: P.group.ok.owner, group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, work: KN.work.ok, workNew: KN.work.okNew, workRemoved: KN.work.removed, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
+  charge: chargeMessages[locale].ok, chargeCancelled: chargeMessages[locale].okCancelled, paid: chargeMessages[locale].okPaid,
 });
+// Cobrar (§35): los tramos del tamaño según lo que es y quién generó cada enlace.
+const sizeRangeOf = (q: typeof a.qualification) => {
+  const lim = SIZE_LIMITS[sizeScaleOf(formatsOf(q))];
+  const num = (n: number) => n.toLocaleString('es-ES');
+  return Object.fromEntries(SIZES.map((k, i) => [k, PS.sizeRange(i ? num(lim[i - 1]) : '', i < 3 ? num(lim[i]) : '')]));
+};
+const chargeNames = new Map([...members.map((x) => [x.userId, x.displayName || x.email] as const), [admin.session.userId, admin.session.displayName || admin.session.email]]);
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
 const STATE_ALERT = {
@@ -443,6 +465,14 @@ const STATE_ALERT = {
         </div>
       </section>
 
+
+      {/* Cobrar (§35): la tarifa de su tamaño, cupón y el enlace de pago. */}
+      {a.state !== 'blocked' && (
+        <ChargeCard name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
+          suggestedId={suggestTariff(chargeOpts, { size: (a.qualification?.size as string | undefined) ?? null, segmentId: a.segmentId })?.id ?? null}
+          coupons={coupons} charges={chargeList} canCharge={perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId}
+          canCustom={perms.manageTenant} canManage={perms.manageAccounts} won={!!a.wonAt} names={chargeNames} phone={a.phone ?? fallback?.phone ?? null} />
+      )}
 
       {/* Tres tarjetas (§26): el grupo, las personas y con quién trabaja; cada una con lo suyo. */}
       <section class="co-card grid gap-4" id="acc-group" data-testid="account-group" hidden={profile !== 'venue'}>

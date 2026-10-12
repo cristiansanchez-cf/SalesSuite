@@ -2,11 +2,12 @@
 import type { IngestDb } from './db';
 import type { RevenueEvent } from './types';
 
-export function memDb(): IngestDb & { rows: RevenueEvent[]; subs: Map<string, string> } {
+export function memDb(): IngestDb & { rows: RevenueEvent[]; subs: Map<string, string>; paid: Array<{ requestId: string; ref: string; refs: string[] }> } {
   const rows: RevenueEvent[] = [];
   const subs = new Map<string, string>();
+  const paid: Array<{ requestId: string; ref: string; refs: string[] }> = [];
   return {
-    rows, subs,
+    rows, subs, paid,
     async tenantForKey() { return null; }, async touchKey() {}, async connector() { return null; },
     async findEvent(t, s, x) { return rows.find((r) => r.tenantId === t && r.source === s && r.externalId === x) ?? null; },
     async insertEvent(t, e) { const id = `id${rows.length + 1}`; rows.push({ ...e, id, tenantId: t, createdAt: '' }); return id; },
@@ -16,6 +17,7 @@ export function memDb(): IngestDb & { rows: RevenueEvent[]; subs: Map<string, st
     async webhookSecret(t) { return t === 't' ? 'whsec_test_secret_123' : null; },
     async subscriptionDossier(_t, sub) { return subs.get(sub) ?? null; },
     async linkSubscription(_t, sub, d) { if (!subs.has(sub)) subs.set(sub, d); },
+    async chargePaid(_t, requestId, ref, refs) { if (paid.some((p) => p.requestId === requestId)) return 'already'; paid.push({ requestId, ref, refs }); return 'paid'; },
     async attachDossier(t, s, x, d) { const r = rows.find((e) => e.tenantId === t && e.source === s && e.externalId === x); if (r && !r.dossierId) r.dossierId = d; },
   };
 }

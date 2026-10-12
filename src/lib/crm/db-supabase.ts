@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CrmDb } from './db';
-import type { Contact, CrmImport } from './types';
+import type { Contact, CrmImport, PaymentRequest } from './types';
 import type { Activity } from './followup';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -29,6 +29,11 @@ const contactRow = (t: string, c: Partial<Contact>) => ({
   notes: c.notes ?? null, fields: c.fields ?? {}, tags: c.tags ?? [], owner_id: c.ownerId ?? null, import_id: c.importId ?? null,
 });
 /** En bloques: PostgREST y el tamaño de las peticiones agradecen trozos de unos cientos. */
+const toPaymentRequest = (r: Row): PaymentRequest => ({
+  id: r.id, accountId: r.account_id, priceOptionId: r.price_option_id ?? null, couponId: r.coupon_id ?? null, label: r.label, amount: Number(r.amount),
+  currency: r.currency, period: r.period, paymentLink: r.payment_link, couponCode: r.coupon_code ?? null, discount: r.discount ?? null,
+  status: r.status, createdBy: r.created_by ?? null, createdAt: r.created_at, paidAt: r.paid_at ?? null, cancelledAt: r.cancelled_at ?? null,
+});
 const chunks = <T,>(xs: T[], n = 300) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
 
 /** PostgREST corta en 1000 filas por petición (db-max-rows): se pide por páginas hasta el límite. */
@@ -153,6 +158,23 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       return (check(await sb.from('crm_activity').insert(row).select('id').single()) as Row).id;
     },
     async deleteActivity(id) { return (check(await sb.from('crm_activity').delete().eq('id', id).select('id')) ?? []).length > 0; },
+    async listPaymentRequests(t, accountIds) {
+      if (!accountIds.length) return [];
+      const parts = await Promise.all(chunks(accountIds, 300).map(async (g) =>
+        (check(await sb.from('payment_request').select('*').eq('tenant_id', t).in('account_id', g)) ?? []) as Row[]));
+      return parts.flat().map(toPaymentRequest).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    async insertPaymentRequest(t, r) {
+      // Con tarifa, lo demás lo copia la guardia de la base de datos (estos valores solo cumplen las restricciones).
+      const row: Row = { tenant_id: t, account_id: r.accountId, price_option_id: r.priceOptionId, coupon_id: r.couponId,
+        label: r.label ?? '-', amount: r.amount ?? 0, currency: r.currency ?? 'EUR', period: r.period ?? 'once', payment_link: r.paymentLink ?? 'https://-' };
+      return toPaymentRequest(check(await sb.from('payment_request').insert(row).select('*').single()) as Row);
+    },
+    async markPaymentPaid(_t, id) { return check(await sb.rpc('payment_request_mark_paid', { p_request: id })) as 'paid' | 'already' | 'missing'; },
+    async markWon(_t, accountId) { check(await sb.rpc('account_mark_won', { p_account: accountId })); },
+    async cancelPaymentRequest(t, id) {
+      return (check(await sb.from('payment_request').update({ status: 'cancelled' }).eq('tenant_id', t).eq('id', id).eq('status', 'sent').select('id')) ?? []).length > 0;
+    },
     async deleteContactsByImport(importId) {
       return (check(await sb.from('crm_contact').delete().eq('import_id', importId).select('id')) ?? []).length;
     },

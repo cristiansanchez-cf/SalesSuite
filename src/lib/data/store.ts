@@ -148,6 +148,12 @@ export interface CouponRow {
   id: string; tenant_id: string; code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number; max_uses: number | null;
   valid_until: string | null; active: boolean; note: string | null; created_at: string;
 }
+export interface PaymentRequestRow {
+  id: string; tenant_id: string; account_id: string; price_option_id: string | null; coupon_id: string | null; label: string; amount: number;
+  currency: string; period: 'once' | 'event' | 'month' | 'year'; payment_link: string; coupon_code: string | null;
+  discount: { kind: 'percent' | 'fixed' | 'free_months'; value: number; label: string } | null; status: 'sent' | 'paid' | 'cancelled';
+  created_by: string | null; created_at: string; paid_at: string | null; paid_ref: string | null; cancelled_at: string | null;
+}
 export interface ConnectorRow { id: string; tenant_id: string; key: string; name: string; mapping: Record<string, unknown>; active: boolean }
 export interface NotificationRow {
   id: string; tenant_id: string; user_id: string; kind: string; severity: 'action' | 'info'; entity_key: string; params: Record<string, unknown>;
@@ -162,7 +168,7 @@ export interface DossierViewRow {
 export interface PriceOptionRow {
   id: string; tenant_id: string; label: string; amount: number; currency: string; period: 'once' | 'event' | 'month' | 'year';
   payment_link: string | null; segment_id: string | null; position: number; active: boolean;
-  kind?: string | null; is_default?: boolean; quote_only?: boolean; note?: string | null;
+  kind?: string | null; is_default?: boolean; quote_only?: boolean; note?: string | null; size?: string | null;
 }
 export interface TeamIpRow { tenant_id: string; ip_hash: string; last_seen_at: string }
 
@@ -219,6 +225,7 @@ export interface DemoDb {
   connector: ConnectorRow[];
   coupon: CouponRow[];
   price_option: PriceOptionRow[];
+  payment_request?: PaymentRequestRow[];
   proposal_template?: Array<{ id: string; tenant_id: string; segment_id: string; name: string; mode: 'full' | 'visual'; answers: string[]; price_option_id: string | null; created_by: string | null; created_at: string }>;
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
   dossier_view: DossierViewRow[];
@@ -429,10 +436,13 @@ export function freshDemoDb(): DemoDb {
     // Tarifas de ejemplo (docs/COMMISSIONS.md §Tarifas); los enlaces son de prueba de Stripe.
     price_option: [
       { id: '00000000-0000-4000-8000-0000000f0001', tenant_id: ENJOY, label: 'Boda completa', amount: 700, currency: 'EUR', period: 'event', payment_link: 'https://buy.stripe.com/test_boda', segment_id: '00000000-0000-4000-8000-0000005e0001', position: 1, active: true, kind: 'Boda', is_default: true },
-      { id: '00000000-0000-4000-8000-0000000f0002', tenant_id: ENJOY, label: 'Local mediano', amount: 249, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_mediano', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 2, active: true, kind: 'Local', is_default: true },
+      { id: '00000000-0000-4000-8000-0000000f0002', tenant_id: ENJOY, label: 'Local mediano', amount: 249, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_mediano', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 2, active: true, kind: 'Local', is_default: true, size: 'medium' },
       { id: '00000000-0000-4000-8000-0000000f0003', tenant_id: ENJOY, label: 'Evento suelto', amount: 150, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 3, active: true },
       // A medida: se ve con su aviso, no se elige (docs/COMMISSIONS.md §Tarifas).
       { id: '00000000-0000-4000-8000-0000000f0004', tenant_id: ENJOY, label: 'Festival +20.000', amount: 0, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 4, active: true, kind: 'Festival', quote_only: true, note: 'A medida · no se cotiza sin prueba de carga' },
+      // Por tamaño («Generar pago» marca la de su tamaño, docs/CRM_DINAMICO.md §35).
+      { id: '00000000-0000-4000-8000-0000000f0005', tenant_id: ENJOY, label: 'Local pequeño', amount: 99, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_pequeno', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 5, active: true, kind: 'Local', size: 'small' },
+      { id: '00000000-0000-4000-8000-0000000f0006', tenant_id: ENJOY, label: 'Local grande', amount: 499, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_grande', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 6, active: true, kind: 'Local', size: 'large' },
     ],
   };
 }

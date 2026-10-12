@@ -122,6 +122,8 @@ export interface PriceOption {
   quoteOnly?: boolean;
   /** Aviso que acompaña a la tarifa («no se cotiza sin prueba de carga»). */
   note?: string | null;
+  /** Tamaño del cliente al que corresponde (pequeño, mediano, grande, masivo): «Generar pago» la marca según el tamaño. */
+  size?: string | null;
   position: number;
   active: boolean;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { paymentUrl } from './payment';
+import { chargeRef, paymentUrl } from './payment';
 
 describe('enlace de pago', () => {
   const D = '0d0c0b0a-0000-4000-8000-000000000001';
@@ -17,5 +17,10 @@ describe('enlace de pago', () => {
     expect(paymentUrl('http://buy.stripe.com/x', { dossierId: D })).toBeNull();
     expect(paymentUrl('javascript:alert(1)', { dossierId: D })).toBeNull();
     expect(paymentUrl('no es un enlace', { dossierId: D })).toBeNull();
+  });
+  it('desde la ficha: la referencia es el enlace generado (pay_<id>)', () => {
+    const u = new URL(paymentUrl('https://buy.stripe.com/abc123', { ref: chargeRef(D), couponCode: 'LANZA30' })!);
+    expect(u.searchParams.get('client_reference_id')).toBe(`pay_${D}`);
+    expect(u.searchParams.get('prefilled_promo_code')).toBe('LANZA30');
   });
 });

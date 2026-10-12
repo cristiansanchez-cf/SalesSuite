@@ -1,0 +1,63 @@
+---
+/**
+ * «X ha pagado» (docs/CRM_DINAMICO.md §36): la primera vez que se ve el aviso, confeti y el nombre del cliente.
+ * Una vez por aviso (se recuerda en el navegador); sin animación si la persona la tiene desactivada en su sistema.
+ */
+interface Props { id: string; title: string; detail: string | null; href: string; see: string; close: string }
+const { id, title, detail, href, see, close } = Astro.props;
+---
+<div class="co-celebrate" data-celebrate={id} data-testid="celebrate" role="dialog" aria-modal="true" aria-labelledby="co-celebrate-title" hidden>
+  <div class="co-celebrate__confetti" aria-hidden="true"></div>
+  <div class="co-celebrate__card">
+    <p class="co-celebrate__emoji" aria-hidden="true">🎉</p>
+    <h2 id="co-celebrate-title" class="co-entity">{title.replace(/^🎉\s*/u, '')}</h2>
+    {detail && <p class="co-meta">{detail}</p>}
+    <div class="mt-4 flex justify-center gap-2">
+      <a class="co-btn co-btn--primary" href={href} data-testid="celebrate-see">{see}</a>
+      <button type="button" class="co-btn co-btn--ghost" data-celebrate-close data-testid="celebrate-close">{close}</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .co-celebrate { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgb(0 0 0 / .35); }
+  .co-celebrate[hidden] { display: none; }
+  .co-celebrate__card { position: relative; max-width: 26rem; margin: 16px; padding: 28px 24px; text-align: center; border-radius: 18px;
+    background: var(--co-canvas-elevated, #fff); box-shadow: 0 24px 60px rgb(0 0 0 / .25); animation: co-pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+  .co-celebrate__emoji { font-size: 48px; margin: 0 0 8px; line-height: 1; }
+  .co-celebrate__confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .co-celebrate__confetti :global(i) { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: .9;
+    animation: co-fall var(--d) linear var(--w) forwards; }
+  @keyframes co-pop { from { transform: scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes co-fall { to { transform: translate(var(--x), 105vh) rotate(var(--r)); opacity: .7; } }
+  @media (prefers-reduced-motion: reduce) { .co-celebrate__card, .co-celebrate__confetti :global(i) { animation: none; } .co-celebrate__confetti { display: none; } }
+</style>
+
+<script>
+  const el = document.querySelector<HTMLElement>('[data-celebrate]');
+  if (el) {
+    const key = `co.celebrated.${el.dataset.celebrate}`;
+    let seen = false;
+    try { seen = localStorage.getItem(key) === '1'; } catch { /* sin almacenamiento: se enseña */ }
+    if (!seen) {
+      const box = el.querySelector('.co-celebrate__confetti')!;
+      const colors = ['#ff27bb', '#ffb800', '#2bd4a4', '#4c7dff', '#ff5a36', '#9b5cff'];
+      for (let i = 0; i < 90; i++) {
+        const c = document.createElement('i');
+        c.style.left = `${Math.random() * 100}%`;
+        c.style.background = colors[i % colors.length];
+        c.style.setProperty('--d', `${2.2 + Math.random() * 2}s`);
+        c.style.setProperty('--w', `${Math.random() * .8}s`);
+        c.style.setProperty('--x', `${(Math.random() - .5) * 240}px`);
+        c.style.setProperty('--r', `${Math.random() * 720}deg`);
+        box.append(c);
+      }
+      el.hidden = false;
+      const done = () => { el.hidden = true; try { localStorage.setItem(key, '1'); } catch { /* nada */ } };
+      el.querySelector('[data-celebrate-close]')?.addEventListener('click', done);
+      el.querySelector('[data-testid=celebrate-see]')?.addEventListener('click', done);
+      el.addEventListener('click', (e) => { if (e.target === el) done(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') done(); }, { once: true });
+    }
+  }
+</script>

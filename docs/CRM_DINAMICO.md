@@ -915,3 +915,44 @@ Propuestas en el menú: la propuesta es el último paso de la venta.
   sola, el comercial no ve otros ni con la URL, filtro del admin, plazo por tipo).
 - Después: «Generar pago» desde la ficha (K2), pagado = Cerrada con aviso y celebración (K3), análisis con IA de las
   interacciones de cada comercial, recordatorios por WhatsApp.
+
+## 35. Generar pago desde la ficha (tarifa por tamaño, cupón, enlace)
+
+Pedido de Cristian: el cierre se hace desde el CRM, no solo desde la propuesta. Tarjeta **Cobrar** en la ficha:
+
+1. **Tamaño**: si no se sabe, lo pregunta (Pequeño, Mediano, Grande, Masivo, con los tramos según sea local, conciertos
+   o festival, §30) y lo guarda en la cualificación.
+2. **Tarifa**: sale marcada la de su tamaño (`price_option.size`, que el admin pone en Configurar → Precios) y de su
+   sector; si no hay de su tamaño, la más típica. Se puede elegir otra («plan superior»). Solo las activas, no «a medida»
+   y con enlace de pago de Stripe (`src/lib/crm/charge.ts`, con pruebas).
+3. **Cupón** (opcional): los que se pueden usar hoy. Stripe lo aplica con su código de promoción; la tarjeta enseña lo
+   que paga con el descuento.
+4. **Enlace**: el Payment Link de la tarifa con `client_reference_id=pay_<id>` (este cobro) y `prefilled_promo_code`.
+   «Copiar enlace» y «Mandar por WhatsApp» (con un mensaje y su teléfono). Se puede anular mientras no esté pagado.
+
+- **El precio lo fija la empresa**: la base de datos (`payment_request_guard`, migración `20261130`) copia importe,
+  periodo y enlace de la tarifa e ignora lo que mande el navegador; un precio **a medida** (sin tarifa, con un enlace de
+  Stripe creado para ese importe) solo lo pone un admin. Un enlace enviado solo se puede anular; pagado lo marca el
+  servidor (K3, webhook).
+- **Tablero**: con un enlace enviado (sin anular) la empresa pasa a **Cierre** (§34).
+- El comercial cobra lo suyo (o lo libre); gerentes y admin, cualquiera.
+- Pruebas: `charge.test.ts`, `payment.test.ts`, `supabase/tests/69_payment_request.test.sql`, `smoke-charge.cjs`.
+- Al pagarse: §36.
+
+## 36. Pagado = Cerrada: aviso, email y celebración
+
+- **Stripe** (webhook del espacio, `src/lib/commissions/stripe.ts`): `checkout.session.completed` con
+  `client_reference_id = pay_<id>` y cobrado (o sin nada que cobrar, p. ej. primer mes gratis) → se registra el ingreso
+  (pago único) y `payment_request_paid` (migración `20261201`): el cobro queda **pagado**, la empresa **ganada** para quien
+  generó el enlace (estado cliente, en su historial), el ingreso atribuido a la empresa y a esa persona (comisiones) y
+  aviso **«X ha pagado»** a quien lo vendió y a admins y gerentes. Stripe repite avisos: la segunda vez no hace nada.
+  En suscripciones, las cuotas siguientes entran como hasta ahora (sin atribución automática a la empresa).
+- **Sin Stripe** o pagado por transferencia: un gerente o admin pulsa «Marcar pagado» en el enlace o «Ya ha pagado (sin
+  enlace)» en la tarjeta Cobrar. Mismo efecto y mismo aviso. El comercial no puede: lo que cierra es el dinero, no él.
+- **Aviso**: tipo `payment_paid` (acción, se da por visto al abrirlo), con email inmediato como el resto de avisos que
+  piden atención. Lleva a la ficha de la empresa.
+- **Celebración** (`Celebration.astro`): la primera vez que alguien ve el aviso sin leer, confeti y «X ha pagado»; una
+  sola vez por aviso (se recuerda en el navegador) y sin animación si la persona la tiene desactivada en su sistema.
+- **Tablero**: ganada → columna **Cerrada** (§34).
+- Pruebas: `stripe.test.ts` (pay_, repetido, suscripción, sin cobrar), `supabase/tests/70_payment_paid.test.sql`,
+  `smoke-charge.cjs` (webhook firmado → celebración una vez, «Cerrada», aviso al admin; a mano sin enlace).

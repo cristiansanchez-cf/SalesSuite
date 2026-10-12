@@ -1,7 +1,7 @@
 /** Personas, sus empresas e importaciones (docs/CRM_DINAMICO.md). Una implementación por usuario: en Supabase decide la RLS. */
 import type { ActivitySummary } from './pipeline';
 import type { Activity, Channel, Outcome } from './followup';
-import type { AccountLink, LinkWhen, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport } from './types';
+import type { AccountLink, LinkWhen, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport, PaymentRequest, PaymentRequestInsert } from './types';
 
 export interface ContactFilter { ids?: string[]; tag?: string; q?: string; limit: number }
 
@@ -34,4 +34,14 @@ export interface CrmDb {
   activitySummary(tenantId: string, accountIds: string[]): Promise<ActivitySummary[]>;
   insertActivity(tenantId: string, a: { accountId: string; contactId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt?: string }): Promise<string>;
   deleteActivity(id: string): Promise<boolean>;
+  /** Enlaces de pago de esas empresas (§35), lo último primero. */
+  listPaymentRequests(tenantId: string, accountIds: string[]): Promise<PaymentRequest[]>;
+  /** La base de datos copia tarifa y cupón y comprueba quién puede poner un precio a medida. */
+  insertPaymentRequest(tenantId: string, r: PaymentRequestInsert): Promise<PaymentRequest>;
+  /** Anular uno enviado (quien lo generó, o gerente/admin). */
+  cancelPaymentRequest(tenantId: string, id: string): Promise<boolean>;
+  /** Pagado por otra vía (gerente o admin): mismo efecto que el aviso de Stripe (§36). */
+  markPaymentPaid(tenantId: string, id: string): Promise<'paid' | 'already' | 'missing'>;
+  /** Ganada sin enlace (espacios sin Stripe; gerente o admin). */
+  markWon(tenantId: string, accountId: string): Promise<void>;
 }

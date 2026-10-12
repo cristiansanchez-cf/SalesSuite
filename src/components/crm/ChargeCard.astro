@@ -1,0 +1,139 @@
+---
+/**
+ * «Generar pago» en la ficha (docs/CRM_DINAMICO.md §35): tamaño (si no se sabe) → tarifa (la de su tamaño o una
+ * superior) → cupón → enlace para copiar o mandar por WhatsApp. El precio lo fija la empresa; a medida, solo admin.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import type { PriceOption } from '~/lib/admin/types';
+import type { Coupon } from '~/lib/commissions/types';
+import type { PaymentRequest } from '~/lib/crm/types';
+import { withCoupon } from '~/lib/crm/charge';
+import { SIZES } from '~/lib/crm/priority';
+import { i18n } from '~/lib/i18n';
+import { chargeMessages } from '~/lib/i18n/messages/charge';
+import { pricesMessages } from '~/lib/i18n/messages/prices';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+
+interface Props {
+  name: string; size: string | null; sizeRange: Record<string, string>; options: PriceOption[]; suggestedId: string | null; coupons: Coupon[];
+  charges: Array<PaymentRequest & { url: string | null }>; canCharge: boolean; canCustom: boolean; names: Map<string, string>; phone: string | null;
+  /** Gerente o admin: marcar pagado a mano o darla por ganada sin enlace (§36). */
+  canManage: boolean; won: boolean;
+}
+const { name, size, sizeRange, options, suggestedId, coupons, charges, canCharge, canCustom, names, phone, canManage, won } = Astro.props;
+const { m: C, f: fmt, locale } = i18n(Astro, chargeMessages);
+const PER = pricesMessages[locale].periods;
+const R = priorityMessages[locale];
+const price = (amount: number, currency: string, period: string) => `${fmt.money(Math.round(amount * 100), currency)}${period !== 'once' ? ` · ${PER[period] ?? period}` : ''}`;
+// Agrupadas por tipo («Local», «Promotora»…), en el orden del admin.
+const kinds = [...new Set(options.map((o) => o.kind ?? ''))];
+const wa = (url: string) => (phone ? `https://wa.me/${phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(C.message(name, url))}` : `https://wa.me/?text=${encodeURIComponent(C.message(name, url))}`);
+const open = charges.filter((x) => x.status !== 'cancelled');
+---
+<section id="charge" class="co-card grid gap-4" data-testid="charge">
+  <div>
+    <h2 class="co-entity flex items-center gap-2"><Icon name="wallet" size={18} />{C.title}</h2>
+    <p class="co-meta mt-1">{C.lede}</p>
+  </div>
+
+  {open.length > 0 && (
+    <ul class="co-rows m-0 p-0" data-testid="charge-list">
+      {open.map((x) => (
+        <li class="co-row list-none flex-wrap gap-2" data-testid="charge-item" data-status={x.status}>
+          <span class="min-w-0 flex-1">
+            <span class="co-row-title block truncate">{x.label}{x.couponCode ? ` · ${x.couponCode}` : ''}</span>
+            <span class="co-meta text-xs">{C.pays(price(withCoupon(x.amount, x.discount), x.currency, x.period))} · {C.by(names.get(x.createdBy ?? '') ?? '', fmt.relative(x.createdAt))}</span>
+          </span>
+          <span class:list={['co-badge', x.status === 'paid' && 'co-badge--signal']} data-testid="charge-status">{C.status[x.status]}</span>
+          {x.status === 'sent' && x.url && (
+            <>
+              <input type="hidden" value={x.url} data-charge-url />
+              <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-charge-copy data-copied={C.copied} data-testid="charge-copy"><Icon name="copy" size={14} />{C.copy}</button>
+              <a class="co-btn co-btn--ghost co-btn--sm" href={wa(x.url)} target="_blank" rel="noopener noreferrer" data-testid="charge-whatsapp"><Icon name="message-square-text" size={14} />{C.whatsapp}</a>
+              {canManage && (
+                <form method="post" class="contents"><input type="hidden" name="action" value="charge-paid" /><input type="hidden" name="chargeId" value={x.id} />
+                  <button type="submit" class="co-btn co-btn--ghost co-btn--sm" data-testid="charge-mark-paid"><Icon name="circle-check" size={14} />{C.markPaid}</button></form>
+              )}
+              <form method="post" class="contents"><input type="hidden" name="action" value="charge-cancel" /><input type="hidden" name="chargeId" value={x.id} />
+                <button type="submit" class="co-btn co-btn--quiet co-btn--sm" data-testid="charge-cancel">{C.cancel}</button></form>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+
+  {won ? <p class="co-meta flex items-center gap-2" data-testid="charge-won"><Icon name="party-popper" size={16} />{C.won}</p> : !canCharge ? <p class="co-meta">{C.notYours}</p> : options.length === 0 && !canCustom ? <p class="co-meta" data-testid="charge-none">{C.noTariffs}</p> : (
+    <details class="co-inset grid gap-3" open={open.length === 0} data-testid="charge-wizard">
+      <summary class="co-btn co-btn--primary w-fit" data-testid="charge-open"><Icon name="wallet" size={16} />{C.open}</summary>
+      {!size && options.some((o) => o.size) && (
+        <form method="post" class="mt-3 grid gap-2" data-testid="charge-size">
+          <input type="hidden" name="action" value="charge-size" />
+          <p class="co-field-label m-0">{C.sizeQ}</p>
+          <div class="co-chips">
+            {SIZES.map((k) => (
+              <button type="submit" name="set" value={`size:${k}`} class="co-chip" data-testid={`charge-size-${k}`}>
+                <span class="grid text-left leading-tight"><span>{R.sizes[k]}</span><small class="co-meta !text-[11px]">{sizeRange[k]}</small></span>
+              </button>
+            ))}
+          </div>
+        </form>
+      )}
+      <form method="post" class="mt-3 grid gap-3" data-testid="charge-form">
+        <input type="hidden" name="action" value="charge" />
+        {options.length > 0 && (
+          <label class="co-field">{C.tariff}
+            <select class="co-select" name="priceOptionId" data-testid="charge-tariff">
+              {kinds.map((k) => {
+                const os = options.filter((o) => (o.kind ?? '') === k).map((o) => (
+                  <option value={o.id} selected={o.id === suggestedId}>{o.label} · {price(o.amount, o.currency, o.period)}{o.id === suggestedId && size ? ` (${C.suggested})` : ''}</option>
+                ));
+                return k ? <optgroup label={k}>{os}</optgroup> : os;
+              })}
+            </select>
+          </label>
+        )}
+        {coupons.length > 0 && (
+          <label class="co-field">{C.coupon}
+            <select class="co-select" name="couponId" data-testid="charge-coupon">
+              <option value="">{C.noCoupon}</option>
+              {coupons.map((c) => <option value={c.id}>{c.code} · {c.label}</option>)}
+            </select>
+          </label>
+        )}
+        {canCustom && (
+          <details class="grid gap-2" data-testid="charge-custom" open={options.length === 0}>
+            <summary class="co-meta cursor-pointer">{C.custom}</summary>
+            <p class="co-help m-0">{C.customHelp}</p>
+            <div class="grid gap-2 sm:grid-cols-[1fr_8rem]">
+              <label class="co-field !gap-1 text-xs">{C.customLabel}<input class="co-input" name="customLabel" maxlength="80" /></label>
+              <label class="co-field !gap-1 text-xs">{C.amount}<input class="co-input" name="customAmount" inputmode="decimal" /></label>
+            </div>
+            <label class="co-field !gap-1 text-xs">{C.link}<input class="co-input" name="customLink" type="url" maxlength="500" placeholder="https://buy.stripe.com/…" data-testid="charge-custom-link" /></label>
+          </details>
+        )}
+        <button type="submit" class="co-btn co-btn--primary w-fit" data-testid="charge-generate">{C.generate}</button>
+      </form>
+    </details>
+  )}
+  {canManage && !won && (
+    <form method="post" class="flex flex-wrap items-center gap-2" data-testid="charge-mark-won-form">
+      <input type="hidden" name="action" value="mark-won" />
+      <button type="submit" class="co-btn co-btn--quiet co-btn--sm" data-testid="charge-mark-won"><Icon name="circle-check" size={14} />{C.markWon}</button>
+      <span class="co-help">{C.markWonHelp}</span>
+    </form>
+  )}
+</section>
+
+<script>
+  document.addEventListener('click', async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-charge-copy]');
+    if (!b) return;
+    const url = b.parentElement?.querySelector<HTMLInputElement>('[data-charge-url]')?.value ?? '';
+    try { await navigator.clipboard.writeText(url); } catch { /* sin permiso: queda el enlace en WhatsApp */ }
+    const was = b.innerHTML;
+    b.textContent = b.dataset.copied ?? '✓';
+    b.dataset.done = '1';
+    setTimeout(() => { b.innerHTML = was; }, 1800);
+  });
+</script>

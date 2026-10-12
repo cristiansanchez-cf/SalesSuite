@@ -16,6 +16,7 @@ const es = {
     delegation: 'de delegación', global: 'global', workspaceHint: 'Espacio en el que trabajas', myAccount: 'Mi cuenta', logout: 'Salir', language: 'Idioma',
     demo: 'Modo demo: los datos viven en memoria y se pierden al reiniciar el servidor.',
   },
+  celebrate: { see: 'Ver la empresa', close: 'Seguir' },
   bell: {
     title: 'Avisos', label: (n: number) => (n ? `Avisos: ${n} ${n === 1 ? 'pendiente' : 'pendientes'}` : 'Avisos'), markAll: 'Marcar todo como leído',
     empty: 'Todo al día. Te avisaremos aquí cuando algo necesite tu atención.', needsAction: 'Pide tu acción', dismiss: 'Descartar', dismissLabel: (t: string) => `Descartar: ${t}`,
@@ -62,6 +63,7 @@ export const shellMessages = defineMessages({
       delegation: 'of a branch', global: 'global', workspaceHint: 'The workspace you are in', myAccount: 'My account', logout: 'Log out', language: 'Language',
       demo: 'Demo mode: data lives in memory and is lost when the server restarts.',
     },
+    celebrate: { see: 'See the company', close: 'Carry on' },
     bell: {
       title: 'Notifications', label: (n) => (n ? `Notifications: ${n} open` : 'Notifications'), markAll: 'Mark all as read',
       empty: 'All caught up. We will let you know here when something needs your attention.', needsAction: 'Needs your action', dismiss: 'Dismiss', dismissLabel: (t) => `Dismiss: ${t}`,
@@ -105,6 +107,7 @@ export const shellMessages = defineMessages({
       delegation: 'de delegação', global: 'global', workspaceHint: 'O espaço em que você trabalha', myAccount: 'Minha conta', logout: 'Sair', language: 'Idioma',
       demo: 'Modo demo: os dados ficam na memória e se perdem ao reiniciar o servidor.',
     },
+    celebrate: { see: 'Ver a empresa', close: 'Continuar' },
     bell: {
       title: 'Avisos', label: (n) => (n ? `Avisos: ${n} ${n === 1 ? 'pendente' : 'pendentes'}` : 'Avisos'), markAll: 'Marcar tudo como lido',
       empty: 'Tudo em dia. Avisaremos aqui quando algo precisar da sua atenção.', needsAction: 'Precisa da sua ação', dismiss: 'Descartar', dismissLabel: (t) => `Descartar: ${t}`,
@@ -148,6 +151,7 @@ export const shellMessages = defineMessages({
       delegation: '지사', global: '전체', workspaceHint: '현재 작업 중인 워크스페이스', myAccount: '내 계정', logout: '로그아웃', language: '언어',
       demo: '데모 모드: 데이터는 메모리에만 저장되며 서버를 다시 시작하면 사라집니다.',
     },
+    celebrate: { see: '회사 보기', close: '계속' },
     bell: {
       title: '알림', label: (n) => (n ? `알림: 대기 ${n}건` : '알림'), markAll: '모두 읽음으로 표시',
       empty: '모두 처리했습니다. 확인이 필요한 일이 생기면 여기서 알려드립니다.', needsAction: '처리 필요', dismiss: '닫기', dismissLabel: (t) => `닫기: ${t}`,

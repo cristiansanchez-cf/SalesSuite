@@ -49,6 +49,27 @@ describe('Stripe → comisiones', () => {
     expect(db.rows[1]).toMatchObject({ externalId: 'in_2', kind: 'recurring', amountCents: 9900, dossierId: D1 });
   });
 
+  test('enlace de la ficha (pay_<id>): ingreso y cobro pagado (empresa ganada); repetir no duplica', async () => {
+    const db = memDb();
+    const P1 = '00000000-0000-4000-8000-0000000a0001';
+    const ev = checkout({ client_reference_id: `pay_${P1}`, mode: 'payment', payment_status: 'paid', payment_intent: 'pi_p', amount_total: 99_00 });
+    expect((await send(db, ev)).body).toMatchObject({ created: 1, charge: 'paid' });
+    expect(db.rows[0]).toMatchObject({ externalId: 'pi_p', kind: 'sale', amountCents: 9900, dossierId: null });
+    expect(db.paid).toEqual([{ requestId: P1, ref: 'cs_1', refs: ['pi_p'] }]);
+    expect((await send(db, ev)).body).toMatchObject({ duplicates: 1, charge: 'already' });
+  });
+
+  test('enlace de la ficha: suscripción o primer mes gratis también cierran; sin cobrar aún, no', async () => {
+    const db = memDb();
+    const P2 = '00000000-0000-4000-8000-0000000a0002';
+    await send(db, checkout({ client_reference_id: `pay_${P2}`, mode: 'payment', payment_status: 'unpaid' }));
+    expect(db.paid).toHaveLength(0);
+    expect((await send(db, checkout({ client_reference_id: `pay_${P2}`, mode: 'subscription', payment_status: 'paid', subscription: 'sub_1', invoice: 'in_9' }))).body).toMatchObject({ charge: 'paid' });
+    expect(db.paid[0].refs).toEqual(['in_9']);
+    const P3 = '00000000-0000-4000-8000-0000000a0003';
+    expect((await send(db, checkout({ client_reference_id: `pay_${P3}`, mode: 'subscription', payment_status: 'no_payment_required', subscription: 'sub_2' }))).body).toMatchObject({ charge: 'paid' });
+  });
+
   test('devolución: resta del ingreso original', async () => {
     const db = memDb();
     await send(db, checkout({ mode: 'payment', payment_status: 'paid', payment_intent: 'pi_9', amount_total: 200_00 }));

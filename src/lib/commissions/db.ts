@@ -64,4 +64,6 @@ export interface IngestDb {
   linkSubscription(tenantId: string, subscriptionId: string, dossierId: string): Promise<void>;
   /** Pone la propuesta a un ingreso que llegó sin ella (solo si no tenía): no toca importes. */
   attachDossier(tenantId: string, source: string, externalId: string, dossierId: string): Promise<void>;
+  /** Enlace de la ficha pagado (payment_request_paid): cobro pagado, empresa ganada, ingreso atribuido y aviso. */
+  chargePaid(tenantId: string, requestId: string, ref: string, refs: string[]): Promise<'paid' | 'already' | 'missing'>;
 }
