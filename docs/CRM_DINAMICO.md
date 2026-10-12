@@ -968,3 +968,22 @@ Pedido de Cristian: en un grupo no tiene sentido marcar formato, tamaño, DJ o p
   propia; el salto «Cualificación» pasa a ser «Locales».
 - Lo demás del grupo sigue igual: lo que sabemos, seguimiento, personas, titular y cobro.
 - Pruebas: `smoke-crm-people.cjs` (el grupo enseña sus locales; el local sí se cualifica).
+
+## 38. Apuntar: personas y con quién trabaja (promotoras, DJs)
+
+Pedido de Cristian: al pegar un informe (p. ej. el del grupo Marelli-Curró de Sabbia) Apuntar no creaba a las personas
+y metía el Instagram de una persona en la ficha del local.
+
+- La IA saca **personas** del sitio (dueños, socios, gerentes, encargados) con su papel y su contacto: Instagram,
+  LinkedIn, teléfono, email y una nota corta. En la revisión salen en «Personas», cada una con su casilla (marcadas):
+  nada se crea sin confirmar.
+- Al guardar: si la persona ya está en la empresa (mismo nombre), solo se completa lo que le falta; si existe con ese
+  nombre exacto en otra, se enlaza; si no, se crea y se enlaza con su papel.
+- **El contacto de una persona es suyo**: el prompt lo pide y, además, si un campo de la ficha del sitio coincide con
+  el Instagram, LinkedIn, teléfono o email de una persona, se quita de los datos de la ficha.
+- **Trabaja con**: cada promotora, DJ o local que se nombre lleva qué es (`what`); si no existe, se crea provisional de
+  ese tipo y se enlaza (con días y frecuencia si se dicen). Si luego resulta que tenía otro nombre, se arregla en su ficha.
+- Un informe de una empresa con varias sociedades pero un solo local es un solo elemento: el local.
+- Pruebas: `notes.test.ts` (personas válidas, sin repetir; el Instagram en la persona), `smoke-notes.cjs` (propone a la
+  persona con su Instagram, la guarda en la empresa y en su ficha de persona; y con quién trabaja).
+- Pendiente: **fusionar** duplicados (dos promotoras o personas que son la misma) desde la ficha.

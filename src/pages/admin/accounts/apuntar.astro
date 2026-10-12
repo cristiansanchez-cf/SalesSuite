@@ -59,7 +59,8 @@ if (Astro.request.method === 'POST') {
         qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days),
         discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null,
         kind: str(`kind-${i}`) || undefined,
-        worksAt: f.getAll(`wk-${i}`).map((x) => (it.worksAt ?? [])[Number(x)]).filter(Boolean) };
+        worksAt: f.getAll(`wk-${i}`).map((x) => (it.worksAt ?? [])[Number(x)]).filter(Boolean),
+        people: f.getAll(`pp-${i}`).map((x) => (it.people ?? [])[Number(x)]).filter(Boolean) };
     }).filter(Boolean);
     const r = await admin.crm.notesApply(rows);
     const ok = r.filter((x) => x.ok && x.accountId);
@@ -161,7 +162,17 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
               <legend class="co-field px-1">{PRF.where[it.entity ?? 'venue']}</legend>
               {it.worksAt.map((w, j) => (
                 <label class="inline-flex items-center gap-2 text-sm"><input type="checkbox" name={`wk-${i}`} value={String(j)} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-work" />
-                  <span><strong>{w.place}</strong>{[w.days.map((d) => PRF.daysLong[d]).join(', '), w.role ? PRF.roles[w.role] : '', w.freq ? PRF.freqs[w.freq] : ''].filter(Boolean).map((x) => ` · ${x}`).join('')}</span></label>
+                  <span><strong>{w.place}</strong>{[w.what ? kindDefs.find((k) => (k.profile ?? 'venue') === w.what)?.label ?? '' : '', ...[w.days.map((d) => PRF.daysLong[d]).join(', '), w.role ? PRF.roles[w.role] : '', w.freq ? PRF.freqs[w.freq] : '']].filter(Boolean).map((x) => ` · ${x}`).join('')}</span></label>
+              ))}
+            </fieldset>
+          )}
+          {(it.people ?? []).length > 0 && (
+            <fieldset class="grid gap-1.5 rounded-xl border border-[var(--co-line)] p-3" data-testid="notes-people">
+              <legend class="co-field px-1">{M.people}</legend>
+              <span class="co-help">{M.peopleHelp}</span>
+              {it.people.map((p, j) => (
+                <label class="inline-flex items-start gap-2 text-sm"><input type="checkbox" name={`pp-${i}`} value={String(j)} checked class="mt-0.5 h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-person" />
+                  <span><strong>{p.name}</strong>{[p.role, p.instagram, p.linkedin ? 'LinkedIn' : '', p.phone, p.email].filter(Boolean).map((x) => ` · ${x}`).join('')}{p.note && <span class="co-meta block">{p.note}</span>}</span></label>
               ))}
             </fieldset>
           )}

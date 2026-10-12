@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizeNotes } from './notes';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizeNotes, sanitizePeople } from './notes';
 
 describe('apuntar con IA (§20)', () => {
   test('solo lo que vale: sitio, interacción y lo que sabemos por separado, campos y cualificación permitidos', () => {
@@ -53,5 +53,24 @@ describe('apuntar con IA (§20)', () => {
     expect(body).not.toHaveProperty('tool_choice');
     expect(body).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'low' } });
     expect((body.tools as Array<{ name: string; strict: boolean }>)[0]).toMatchObject({ name: 'save_notes', strict: true });
+  });
+});
+
+describe('apuntar: personas (§38)', () => {
+  test('con nombre, sin repetir; contacto válido o null', () => {
+    const r = sanitizePeople([
+      { name: 'Marco Daniele Curró', role: 'Gerente operativo', instagram: 'https://www.instagram.com/marco_sabbia/', email: 'no-es-email', phone: '', linkedin: 'https://evil.example', note: 'Relaciones públicas' },
+      { name: 'marco daniele curro', role: 'Otro' },
+      { name: '', role: 'Sin nombre' },
+      { name: 'Davide Marelli', role: 'Gerente general', linkedin: 'https://www.linkedin.com/in/davide', instagram: '@davide.m' },
+    ]);
+    expect(r).toEqual([
+      { name: 'Marco Daniele Curró', role: 'Gerente operativo', phone: null, email: null, instagram: 'https://www.instagram.com/marco_sabbia/', linkedin: null, note: 'Relaciones públicas' },
+      { name: 'Davide Marelli', role: 'Gerente general', phone: null, email: null, instagram: '@davide.m', linkedin: 'https://www.linkedin.com/in/davide', note: null },
+    ]);
+  });
+  test('el Instagram de una persona va en la persona (la herramienta lo pide y la limpieza lo guarda)', async () => {
+    const [it] = await fixtureNotes().split('Sabbia: hablé con Marco Curro, el gerente (@marco_sabbia), quiere verlo', { today: '2026-10-12', seller: 'Enjoy' });
+    expect(it.people).toEqual([{ name: 'Marco Curro', role: 'gerente', phone: null, email: null, instagram: '@marco_sabbia', linkedin: null, note: null }]);
   });
 });

@@ -9,7 +9,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
-import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
+import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
@@ -17,7 +17,7 @@ import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
 import { cleanTaxId, fixtureWebsite, realWebsite, type Socials, type WebsiteApi } from './website';
 import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
-import { claudeNotes, fixtureNotes, matchAccounts, nameScore, type NoteItem, type NotesApi } from './notes';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizePeople, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
@@ -115,6 +115,9 @@ export interface PersonView extends Contact {
   companies: Array<{ accountId: string; name: string; role: string | null; groupName: string | null; qualification: Qualification; segmentId: string | null }>;
   ownerName: string | null;
 }
+
+/** Para comparar un contacto escrito de varias formas («@marco_sabbia», «https://www.instagram.com/marco_sabbia/»). */
+const socialKey = (v: string) => v.toLowerCase().replace(/^https?:\/\/(www\.)?(instagram\.com|linkedin\.com\/in)\//, '').replace(/^@/, '').replace(/[\/\s]+$/g, '').replace(/[\s()-]/g, '');
 
 export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null; notes?: NotesApi | null } = {}) {
   // Sin clave de Google y con AI_RESEARCH_FIXTURE=1 (pruebas): Google y la web, de mentira.
@@ -1177,7 +1180,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         if (!f || !r || !r.ok || r.value === null || r.value === '') continue;
         ok[k] = f.type === 'checkbox' ? (r.value ? 'sí' : 'no') : f.type === 'select' ? f.options.find((o) => o.key === r.value)?.label ?? String(r.value) : String(raw);
       }
-      it.fields = ok;
+      // Lo que es de una persona (su Instagram, su teléfono…) va en la persona, no en la ficha del sitio (§38).
+      const theirs = new Set(it.people.flatMap((p) => [p.instagram, p.linkedin, p.phone, p.email]).filter(Boolean).map((x) => socialKey(x!)));
+      it.fields = Object.fromEntries(Object.entries(ok).filter(([, v]) => !theirs.has(socialKey(v))));
     }
     const [all, zones] = await Promise.all([accountIndex(), accounts.listZones(t)]);
     if (chosen) {
@@ -1196,6 +1201,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
         discard: items.find((it) => it.discard)?.discard ?? null, discardWhy: items.find((it) => it.discard)?.discardWhy ?? null,
         entity: items.find((it) => it.entity)?.entity ?? null, worksAt: items.flatMap((it) => it.worksAt).slice(0, 12),
+        people: sanitizePeople(items.flatMap((it) => it.people)),
       };
       return [{ ...one, candidates: [{ id: chosen.id, name: chosen.name, zone: placeOf(zones, chosen.zoneId), score: 1, discarded: !!chosen.discardedAt }] }];
     }
@@ -1223,9 +1229,42 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     /** Tipo de la empresa nueva (§24: promotora, DJ…) y dónde trabaja (enlaces con días y frecuencia). */
     kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional().or(z.literal('').transform(() => undefined)),
     worksAt: z.array(z.object({ place: z.string().trim().min(1).max(160), days: z.array(z.enum(LINK_DAYS)).max(7).default([]),
-      freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional(), role: z.enum(['resident', 'guest']).nullable().optional() })).max(12).default([]),
+      freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional(), role: z.enum(['resident', 'guest']).nullable().optional(),
+      what: z.enum(PROFILES).nullable().optional() })).max(12).default([]),
     discardNote: z.string().trim().max(500).nullable().optional().transform((v) => v || null),
+    /** Personas confirmadas (§38): se enlazan a la empresa (la que ya esté, por nombre) o se crean. */
+    people: z.array(z.object({ name: z.string().trim().min(1).max(120), role: z.string().trim().max(80).nullable().optional(),
+      phone: z.string().trim().max(40).nullable().optional(), email: z.string().trim().max(200).nullable().optional(),
+      instagram: z.string().trim().max(200).nullable().optional(), linkedin: z.string().trim().max(300).nullable().optional(),
+      note: z.string().trim().max(300).nullable().optional() })).max(12).default([]),
   })).max(40);
+  /**
+   * Personas de «Apuntar» (§38): la que ya está en la empresa (mismo nombre) se completa con lo que le falte; si no, la
+   * que ya existe con ese nombre exacto se enlaza; si no, se crea. Su Instagram, teléfono… van en la persona.
+   */
+  async function notePeople(accountId: string, people: Array<{ name: string; role?: string | null; phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; note?: string | null }>) {
+    const links = await db.listLinks(t, { accountIds: [accountId] });
+    const linked = links.length ? await db.listContacts(t, { ids: links.map((l) => l.contactId), limit: 500 }) : [];
+    for (const p of people) {
+      const key = nameKey(p.name);
+      const info = { phone: p.phone ?? null, email: p.email ?? null, instagram: p.instagram ?? null, linkedin: p.linkedin ?? null };
+      let c = linked.find((x) => nameKey(x.name) === key) ?? null;
+      const isNew = !c;
+      if (!c) c = (await db.listContacts(t, { q: p.name, limit: 20 })).find((x) => nameKey(x.name) === key) ?? null;
+      try {
+        if (c) {
+          // Solo lo que le falta: no se pisa lo que ya tenía.
+          const patch = Object.fromEntries(Object.entries(info).filter(([k, v]) => v && !c![k as keyof typeof info])) as ContactPatch;
+          if (p.note && !c.notes) patch.notes = p.note;
+          if (Object.keys(patch).length) await db.updateContact(c.id, patch).catch(() => false);
+          if (isNew) await db.saveLinks(t, [{ contactId: c.id, accountId, role: p.role ?? null }]);
+        } else {
+          const [cid] = await db.insertContacts(t, [{ name: p.name, ...info, city: null, notes: p.note ?? null, fields: {}, tags: [], ownerId: s.userId, importId: null }]);
+          await db.saveLinks(t, [{ contactId: cid, accountId, role: p.role ?? null }]);
+        }
+      } catch (e) { mapError(e); }
+    }
+  }
   /**
    * Guardar lo confirmado, en cada empresa (o en una nueva), cada cosa en su sitio: la interacción en el historial (con
    * el próximo paso), lo que sabemos y lo que le encaja en «Lo que sabemos», los campos de la ficha y lo marcado en la
@@ -1287,8 +1326,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
           const ks = await kinds();
           const mine = (await accounts.getAccount(id))?.kind ?? BASE_KIND;
           const otherKind = profileOf(ks, mine) === 'venue' ? ks.find((k) => k.profile === 'promoter')?.key ?? BASE_KIND : BASE_KIND;
-          for (const w of r.worksAt) await workLinkAdd(id, { name: w.place, kind: otherKind, days: w.days, ...(w.freq ? { freq: w.freq } : {}), ...(w.role ? { role: w.role } : {}) });
+          // Si la IA dice qué es (promotora, DJ o local), de ese tipo; si no, lo que suele ser.
+          const kindOf = (w: (typeof r.worksAt)[number]) => (w.what === 'venue' ? BASE_KIND : w.what ? ks.find((k) => k.profile === w.what)?.key ?? otherKind : otherKind);
+          for (const w of r.worksAt) await workLinkAdd(id, { name: w.place, kind: kindOf(w), days: w.days, ...(w.freq ? { freq: w.freq } : {}), ...(w.role ? { role: w.role } : {}) });
         }
+        if (r.people.length) await notePeople(id, r.people);
         out.push({ accountId: id, name, ok: true });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });
