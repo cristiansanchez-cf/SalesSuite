@@ -1053,3 +1053,26 @@ Pedido de Cristian: promotoras (Zafiro) y DJs metidos como empresas; el cambio d
   `sanitizeNotes` (solo valores permitidos), así que no entra nada raro. Prueba: `tool-schemas.test.ts`.
 - Nuevo motivo para proponer descartar: **posible alianza** (no es cliente pero puede ser socio: un equipo de DJs y
   animación que se contrata para eventos, una tienda, un proveedor). Como siempre, solo si dices que sí.
+
+## 44. Ciudad de cualquier sitio, sin que el admin configure zonas
+
+Criterio de Cristian: «el admin no tiene que poner las zonas; si tengo un comercial en Corea y otro en Japón, yo no sé
+las ciudades de allí. Buscador y que se añada automáticamente». Al dar de alta una empresa (y en Datos) la ciudad es un
+buscador (`components/crm/ZonePicker.astro`), no un desplegable de las zonas configuradas:
+
+- **Lo que ya hay**: las zonas del espacio, buscando sin mayúsculas ni tildes («bilb» → Bilbao).
+- **España, al instante y sin coste** (`lib/accounts/spain.ts`): las 17 comunidades, 52 provincias y las ciudades que más
+  se buscan (capitales con otro nombre que su provincia, como Bilbao, y las grandes), con sus otros nombres (Bizkaia,
+  Lérida…) para reutilizar zonas escritas de otra forma. Un pueblo que no está: «Pueblo, Provincia». Solo si el espacio
+  opera en España (tiene «España» arriba o aún ningún país).
+- **Cualquier otro sitio del mundo**: si no hay nada que empiece igual, se pregunta a Google Places (`/admin/api/crm/city-search`,
+  solo municipios, provincias, regiones y países; cuenta para el tope diario de Google). En España se pasa por el
+  catálogo para que los nombres coincidan.
+
+Al guardar, lo elegido que aún no es una zona se crea con su ruta (España › Comunidad › Provincia › Ciudad; fuera,
+País › Región › Ciudad), reutilizando los tramos que ya existan. Lo crea la RPC `zone_ensure` (migración 20261203), que
+puede usar cualquiera que trabaje empresas (no partners); insertar zonas a mano sigue siendo solo del admin. El cliente
+solo manda una clave (`es|Comunidad|Provincia|Ciudad`, validada contra el catálogo, o `g:<id de Google>`, que el servidor
+vuelve a pedir a Google): nunca una ruta inventada.
+
+Pruebas: `spain.test.ts`, SQL 72, `scripts/smoke-zone-pick.cjs` (un comercial da de alta en Bilbao y en Busan).

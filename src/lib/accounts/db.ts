@@ -57,6 +57,8 @@ export interface AccountsDb {
   bumpUsage(tenantId: string, kind: 'google' | 'ai', limit: number): Promise<boolean>;
   /** Alta de zonas en bloque (ciudades de una importación). */
   insertZones(tenantId: string, rows: Array<{ parentId: string | null; name: string; kind: ZoneKind; position: number }>): Promise<string[]>;
+  /** Ruta de zonas (España › Comunidad › Provincia › Ciudad) que se crea si falta, para quien trabaja empresas (RPC zone_ensure, §44). Devuelve la última. */
+  ensureZonePath(tenantId: string, path: Array<{ name: string; kind: ZoneKind }>): Promise<string>;
   listAssignments(tenantId: string): Promise<ZoneAssignment[]>;
   setAssignments(tenantId: string, userId: string, zoneIds: string[]): Promise<void>;
   getRules(tenantId: string): Promise<AccountRules>;

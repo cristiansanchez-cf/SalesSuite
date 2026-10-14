@@ -1,0 +1,132 @@
+---
+/**
+ * Ciudad de una empresa (docs/CRM_DINAMICO.md §44, criterio de Cristian: «buscaba Bilbao y solo salen las
+ * configuradas»): un buscador en vez de un desplegable. Salen las zonas que ya hay y, si el espacio opera en España,
+ * cualquier comunidad, provincia o ciudad del catálogo; lo que no esté, se busca en Google (cualquier país: «Busan»,
+ * «Osaka»). Lo elegido que aún no es una zona se crea al guardar (País › Región › Ciudad): el admin no configura nada.
+ * Envía `name` (zoneId) con el id de la zona o la clave del catálogo; vacío = sin ciudad.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { zonePickMessages } from '~/lib/i18n/messages/zonePick';
+import { zonePath } from '~/lib/accounts/rules';
+import { missingPlaces, operatesInSpain, SPAIN, SPAIN_NAME } from '~/lib/accounts/spain';
+import type { Zone } from '~/lib/accounts/types';
+
+interface Props { zones: Zone[]; value?: string | null; name?: string; testid?: string }
+const { zones, value = null, name = 'zoneId', testid = 'zone-picker' } = Astro.props;
+const { m: M } = i18n(Astro, zonePickMessages);
+const short = (path: string[]) => (path[0] === SPAIN_NAME ? path.slice(1) : path).join(' › ');
+const byId = new Map(zones.map((z) => [z.id, z]));
+const parentPath = (z: Zone) => (z.parentId ? zonePath(zones, z.parentId).split(' › ') : []);
+const spain = operatesInSpain(zones);
+const data = {
+  zones: zones.map((z) => ({ v: z.id, n: z.name, p: short(parentPath(z)), k: z.kind })),
+  places: missingPlaces(zones).map((c) => ({ v: c.key, n: c.name, a: c.aka, p: short(c.path.slice(0, -1).map((x) => x.name)), k: c.path[c.path.length - 1].kind })),
+  provinces: spain ? SPAIN.flatMap((r) => r.provinces.map((p) => ({ r: r.name, n: p.name, a: p.aka ?? [] }))) : [],
+  t: { townIn: M.townIn('{t}', '{p}'), newTown: M.newTown, nothing: M.nothing, searching: M.searching },
+};
+const current = value ? byId.get(value) : undefined;
+const currentLabel = current ? [current.name, short(parentPath(current))].filter(Boolean).join(' · ') : '';
+---
+<div class="grid gap-1.5" data-zone-picker data-testid={testid}>
+  <span class="co-field !gap-1">{M.label}<span class="co-help">{M.help}</span></span>
+  <input type="hidden" name={name} value={current?.id ?? ''} data-zp-value />
+  <p class="co-tag w-fit" hidden={!current} data-zp-chosen data-testid={`${testid}-chosen`}><Icon name="map-pin" size={12} /><span data-zp-label>{currentLabel}</span>
+    <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-zp-change>{M.change}</button>
+    <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-zp-clear data-testid={`${testid}-clear`}>{M.clear}</button></p>
+  <input class="co-input" type="search" autocomplete="off" maxlength="80" placeholder={M.ph} hidden={!!current} aria-label={M.label}
+    data-zp-q data-no-autosave data-testid={`${testid}-q`} />
+  <ul class="m-0 grid max-h-72 gap-1 overflow-y-auto p-0" hidden data-zp-list data-testid={`${testid}-list`}></ul>
+  <script type="application/json" data-zp-data set:html={JSON.stringify(data).replace(/</g, '\\u003c')} />
+</div>
+
+<script>
+  // Buscar sin mirar mayúsculas ni tildes: primero lo que empieza igual, luego lo que lo contiene; las zonas que ya hay
+  // antes que las del catálogo. Elegir pone el valor; «Cambiar» vuelve al buscador; «Quitar» la deja sin ciudad.
+  interface Opt { v: string; n: string; p: string; k: string; a?: string[] }
+  interface Data { zones: Opt[]; places: Opt[]; provinces: Array<{ r: string; n: string; a: string[] }>; t: { townIn: string; newTown: string; nothing: string; searching: string } }
+  const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const KIND = ['city', 'area', 'province', 'region', 'country'];
+  document.querySelectorAll<HTMLElement>('[data-zone-picker]').forEach((box) => {
+    const D = JSON.parse(box.querySelector('[data-zp-data]')?.textContent ?? '{}') as Data;
+    const q = box.querySelector<HTMLInputElement>('[data-zp-q]')!;
+    const val = box.querySelector<HTMLInputElement>('[data-zp-value]')!;
+    const list = box.querySelector<HTMLUListElement>('[data-zp-list]')!;
+    const chosen = box.querySelector<HTMLElement>('[data-zp-chosen]')!;
+    const label = box.querySelector<HTMLElement>('[data-zp-label]')!;
+    const all = [...D.zones.map((o) => ({ ...o, old: 0 })), ...D.places.map((o) => ({ ...o, old: 1 }))]
+      .map((o) => ({ ...o, names: [o.n, ...(o.a ?? [])].map(norm), path: norm(o.p) }));
+    const pick = (v: string, text: string) => {
+      val.value = v; label.textContent = text; chosen.hidden = !v; q.hidden = !!v; list.hidden = true;
+      val.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const option = (text: string, small: string, on: () => void, testid: string, v: string) => {
+      const li = document.createElement('li'); li.className = 'list-none';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = testid; b.dataset.value = v;
+      const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = text;
+      if (small) { const s = document.createElement('small'); s.textContent = small; t.append(s); }
+      b.append(t); b.addEventListener('click', on); li.append(b); return li;
+    };
+    const score = (o: (typeof all)[number], s: string) => {
+      if (o.names.some((n) => n === s)) return 0;
+      if (o.names.some((n) => n.startsWith(s))) return 1;
+      if (o.names.some((n) => n.split(/[\s'-]+/).some((w) => w.startsWith(s)))) return 2;
+      if (o.names.some((n) => n.includes(s))) return 3;
+      if (s.length >= 3 && o.path.includes(s)) return 4;
+      return -1;
+    };
+    // Lo que no está aquí, a Google (cualquier país), un momento después de dejar de escribir; lo de antes no se pisa.
+    let timer = 0; let seq = 0;
+    const world = (raw: string, have: Set<string>, good: boolean) => {
+      window.clearTimeout(timer);
+      if (raw.length < 3 || raw.includes(',') || good) return;
+      const my = ++seq;
+      const wait = document.createElement('li'); wait.className = 'list-none co-help px-2'; wait.textContent = D.t.searching; wait.dataset.zpWait = '1';
+      timer = window.setTimeout(async () => {
+        list.querySelector('[data-zp-nothing]')?.remove(); list.append(wait); list.hidden = false;
+        let items: Opt[] = [];
+        try { const r = await fetch(`/admin/api/crm/city-search?q=${encodeURIComponent(raw)}`, { credentials: 'same-origin' }); if (r.ok) items = (await r.json()).items ?? []; } catch { /* sin red: lo de aquí */ }
+        if (my !== seq) return;
+        wait.remove();
+        const add = items.filter((o) => !have.has(o.v)).map((o) => option(o.n, o.p, () => pick(o.v, [o.n, o.p].filter(Boolean).join(' · ')), 'zone-world', o.v));
+        if (add.length) { list.querySelector('[data-zp-nothing]')?.remove(); list.append(...add); }
+        else if (!list.querySelector('button')) { const li = document.createElement('li'); li.className = 'list-none co-help px-2'; li.textContent = D.t.nothing; li.dataset.zpNothing = '1'; list.replaceChildren(li); }
+      }, 450);
+    };
+    const search = () => {
+      const raw = q.value.trim();
+      seq++;
+      if (!raw) { list.hidden = true; window.clearTimeout(timer); return; }
+      const [head, tail] = raw.split(',').map((x) => x.trim());
+      const s = norm(head);
+      const found = all.map((o) => ({ o, sc: score(o, s) })).filter((x) => x.sc >= 0)
+        .sort((x, y) => x.sc - y.sc || x.o.old - y.o.old || KIND.indexOf(x.o.k) - KIND.indexOf(y.o.k) || x.o.n.localeCompare(y.o.n, 'es'))
+        .slice(0, 12);
+      const items: HTMLElement[] = found.map(({ o }) => option(o.n, o.p, () => pick(o.v, [o.n, o.p].filter(Boolean).join(' · ')), 'zone-option', o.v));
+      // «Pueblo, Provincia»: un pueblo que no está en ningún sitio, colgado de su provincia.
+      const prov = tail ? D.provinces.find((p) => [p.n, ...p.a].some((x) => norm(x) === norm(tail))) : undefined;
+      if (prov && head && !all.some((o) => o.names.includes(s) && o.path.includes(norm(prov.n)))) {
+        const v = ['es', prov.r, prov.n, head.replace(/[|]/g, ' ')].join('|');
+        const text = D.t.townIn.replace('{t}', head).replace('{p}', prov.n);
+        items.unshift(option(text, D.t.newTown, () => pick(v, text), 'zone-town', v));
+      }
+      // Con algo que empieza igual, no se pregunta a Google (cuesta); si no, sí.
+      const good = found.some((x) => x.sc <= 1);
+      if (!items.length && (raw.length < 3 || raw.includes(','))) { const li = document.createElement('li'); li.className = 'list-none co-help px-2'; li.textContent = D.t.nothing; li.dataset.zpNothing = '1'; items.push(li); }
+      list.replaceChildren(...items);
+      list.hidden = !items.length;
+      world(raw, new Set(found.map(({ o }) => o.v)), good);
+    };
+    q.addEventListener('input', search);
+    q.addEventListener('focus', search);
+    // Enter elige el primero (y no envía el formulario a medias).
+    q.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      list.querySelector<HTMLButtonElement>('button')?.click();
+    });
+    box.querySelector('[data-zp-change]')?.addEventListener('click', () => { chosen.hidden = true; q.hidden = false; q.value = ''; q.focus(); });
+    box.querySelector('[data-zp-clear]')?.addEventListener('click', () => { pick('', ''); q.hidden = false; q.value = ''; });
+  });
+</script>

@@ -211,6 +211,20 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       for (const a of s.account) if (a.zone_id && gone.has(a.zone_id)) a.zone_id = null;
       return s.zone.length < before;
     },
+    async ensureZonePath(t, path) {
+      // Como zone_ensure: cualquiera que trabaja empresas (no partners); reutiliza los tramos con el mismo nombre.
+      if (!['admin', 'lead', 'rep'].includes(roleOf(t, actorId) ?? '')) throw new Error('permission denied: Cuenta no encontrada');
+      if (!path.length || path.length > 5 || path.some((z) => !z.name.trim() || z.name.trim().length > 80)) throw new Error('check violation: Ruta de zona no válida');
+      const s = db();
+      let parent: string | null = null;
+      for (const z of path) {
+        const name = z.name.trim();
+        let hit = s.zone.find((x) => x.tenant_id === t && (x.parent_id ?? null) === parent && x.name.toLowerCase() === name.toLowerCase());
+        if (!hit) { hit = { id: randomUUID(), tenant_id: t, parent_id: parent, name, kind: z.kind, position: 0 }; s.zone = [...s.zone, hit]; }
+        parent = hit.id;
+      }
+      return parent as string;
+    },
     async insertZones(t, rows) {
       const ids: string[] = [];
       for (const z of rows) ids.push(await this.saveZone(t, z));

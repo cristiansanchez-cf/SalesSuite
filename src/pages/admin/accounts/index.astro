@@ -1,4 +1,5 @@
 ---
+import ZonePicker from '~/components/crm/ZonePicker.astro';
 import GroupPicker from '~/components/crm/GroupPicker.astro';
 /**
  * Cuentas (docs/ACCOUNTS.md): los locales de tu zona y quién los trabaja, para no pisarse.
@@ -59,7 +60,7 @@ if (Astro.request.method === 'POST') {
   let to = '';
   result = await formAction(async () => {
     if (str('action') === 'create') {
-      const id = await acc.create({ name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), notes: str('notes'), kind: str('kind') });
+      const id = await acc.create({ name: str('name'), zoneId: await admin.crm.pickZone(str('zoneId')), segmentId: str('segmentId'), address: str('address'), notes: str('notes'), kind: str('kind') });
       // «¿Es de algún grupo?» (§26): el elegido o uno nuevo. Si fallara, la empresa ya está creada: se sigue a su ficha.
       if (str('groupId') || str('groupName').trim()) {
         await admin.crm.moveToGroup([id], { groupId: str('groupId') || null, groupName: str('groupId') ? null : str('groupName') })
@@ -438,14 +439,10 @@ const panelOpen = nFilters > 0;
         <h2 id="new-account-title" class="co-entity">{M.newAccount}</h2>
         <p class="co-body">{M.newBody(t.rules.claimDays)}</p>
         <label class="co-field">{M.venueName}<input class="co-input" name="name" required maxlength="160" placeholder="Club Sol" /></label>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="co-field">{M.zone}
-            <select class="co-select" name="zoneId"><option value="">{M.noZoneOption}</option>{t.zones.map((z) => <option value={z.id} selected={t.myZoneIds.length === 1 && z.id === t.myZoneIds[0]}>{zonePath(t.zones, z.id)}</option>)}</select>
-          </label>
-          <label class="co-field">{M.sector}
-            <select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
-          </label>
-        </div>
+        <ZonePicker zones={t.zones} value={t.myZoneIds.length === 1 ? t.myZoneIds[0] : null} testid="new-zone" />
+        <label class="co-field">{M.sector}
+          <select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
+        </label>
         {kindDefs.length > 1 && (
           <label class="co-field">{CL.kind}
             <select class="co-select" name="kind" data-testid="new-account-kind">{kindDefs.map((k) => <option value={k.key} selected={k.key === (tipo && tipo !== 'descartadas' ? tipo : 'company')}>{k.label}</option>)}</select>

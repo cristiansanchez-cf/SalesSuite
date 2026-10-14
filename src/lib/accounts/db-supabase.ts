@@ -74,6 +74,9 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       return (check(await sb.from('zone').insert(row).select('id').single()) as Row).id;
     },
     async deleteZone(id) { return (check(await sb.from('zone').delete().eq('id', id).select('id')) ?? []).length > 0; },
+    async ensureZonePath(t, path) {
+      return check(await sb.rpc('zone_ensure', { p_tenant: t, p_path: path.map((z) => ({ name: z.name, kind: z.kind })) })) as string;
+    },
     async insertZones(t, rows) {
       if (!rows.length) return [];
       return (check(await sb.from('zone').insert(rows.map((z) => ({ tenant_id: t, parent_id: z.parentId, name: z.name, kind: z.kind, position: z.position }))).select('id')) ?? []).map((r: Row) => r.id);

@@ -11,6 +11,7 @@ import type { AdminSession, DossierRecord, MemberRecord } from '../admin/types';
 import type { AccountsDb } from './db';
 import { fieldInputSchema, matches, parseValues, slugKey, type CrmField, type FieldValues } from '../crm/fields';
 import { stateFor, withDescendants, zoneCovers, zonePath } from './rules';
+import { isPlaceKey, pathForKey, planPath, type PathStep } from './spain';
 import { BASE_KIND, normalizeKinds, type Account, type AccountDecision, type AccountRules, type AccountState, type AccountTouch, type Eligibility, type KindDef, type Zone, type ZoneAssignment } from './types';
 
 const id = z.string().uuid();
@@ -63,6 +64,7 @@ function mapError(e: unknown): never {
   if (/duplicate key|unique/i.test(msg)) throw new AdminError(409, /zone/i.test(msg) ? 'Ya hay una zona con ese nombre en ese nivel' : 'Ya hay una cuenta con esa referencia externa');
   if (/permission denied|insufficient|row-level/i.test(msg)) throw new AdminError(403, msg.replace(/^.*permission denied:\s*/i, '').replace(/^\[supabase\]\s*/, '') || 'Sin permiso para esta operación');
   if (/foreign key/i.test(msg)) throw new AdminError(404, 'Zona o sector no encontrado');
+  if (/Ruta de zona no válida/.test(msg)) throw new AdminError(422, 'Ruta de zona no válida');
   if (/Campo desconocido/i.test(msg)) throw new AdminError(422, 'Ese campo no existe en este espacio');
   throw e;
 }
@@ -181,9 +183,30 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     };
   }
 
+  /**
+   * La ciudad elegida en el buscador (§44): una zona o un sitio del catálogo de España («es|País Vasco|Vizcaya|Bilbao»),
+   * que se crea si aún no es una zona (reutilizando la que ya exista con ese nombre en su sitio).
+   */
+  async function placeZone(input: unknown): Promise<unknown> {
+    const key = input && typeof input === 'object' ? (input as Record<string, unknown>).zoneId : null;
+    if (!isPlaceKey(key)) return input;
+    const path = pathForKey(key);
+    if (!path) throw new AdminError(422, 'Ciudad no válida');
+    return { ...(input as Record<string, unknown>), zoneId: await ensurePath(path) };
+  }
+
+  /** La zona de una ruta (España › País Vasco › Vizcaya › Bilbao): la que ya existe o se crea (§44). */
+  async function ensurePath(path: PathStep[]): Promise<string> {
+    requireUse();
+    // Los tramos que ya existen van con su nombre de verdad («Bizkaia»), para que la RPC los reutilice.
+    const plan = planPath(await db.listZones(s.tenantId), path);
+    if ('id' in plan) return plan.id;
+    try { return await db.ensureZonePath(s.tenantId, plan.create); } catch (e) { mapError(e); }
+  }
+
   async function create(input: unknown): Promise<string> {
     requireUse();
-    const v = parse(accountSchema, input);
+    const v = parse(accountSchema, await placeZone(input));
     const kind = v.kind && (await kinds()).some((k) => k.key === v.kind) ? v.kind : undefined;
     try {
       return await db.insertAccount(s.tenantId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null, kind });
@@ -191,7 +214,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function update(accountId: string, input: unknown) {
     requireUse();
-    const v = parse(accountSchema, input);
+    const v = parse(accountSchema, await placeZone(input));
     let ok: boolean;
     try { ok = await db.updateAccount(accountId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null }); } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
@@ -400,7 +423,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
 
   return {
-    territory, list, get, create, update, touch, releaseMany, block, unblock, assign, remove, colleagues,
+    territory, list, get, create, update, ensurePath, touch, releaseMany, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
     crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds,
     preview: (accountId: string) => db.preview(accountId).catch(mapError),
@@ -413,7 +436,7 @@ export type AccountsService = ReturnType<typeof createAccountsService>;
 /** Para contextos sin cuentas (tests de otros módulos). */
 export const emptyAccountsDb: AccountsDb = {
   async mergeAccounts() { throw new Error('sin cuentas'); },
-  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async clearZoneLocations() { return 0; }, async bumpUsage() { return true; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; },
+  async listZones() { return []; }, async saveZone() { throw new Error('sin cuentas'); }, async deleteZone() { return false; }, async setZoneLocation() { return false; }, async clearZoneLocations() { return 0; }, async bumpUsage() { return true; }, async classify() { throw new Error('sin cuentas'); }, async classifyMany() { return 0; }, async insertZones() { return []; }, async ensureZonePath() { throw new Error('sin cuentas'); },
   async listAssignments() { return []; }, async setAssignments() {}, async getRules() { return { claimDays: 30, strictZones: false, requireAccount: false }; },
   async saveRules() {}, async listAccounts() { return []; }, async listAccountIndex() { return []; }, async getAccount() { return null; }, async insertAccount() { throw new Error('sin cuentas'); },
   async insertAccounts() { throw new Error('sin cuentas'); }, async deleteAccountsByImport() { return 0; },

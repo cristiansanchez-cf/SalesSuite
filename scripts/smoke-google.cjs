@@ -24,7 +24,7 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   // Una empresa nueva, sin ciudad.
   await p.click('[data-testid=add-open]'); await p.click('[data-testid=new-account]');
   await p.fill('[data-testid=new-account-form] [name=name]', 'Sala Brisa');
-  await p.selectOption('[data-testid=new-account-form] [name=zoneId]', '');
+  await p.$eval('[data-testid=new-account-form] [name=zoneId]', (el) => { el.value = ''; });
   await Promise.all([p.waitForURL(/ok=created/), p.click('[data-testid=new-account-form] button[type=submit]')]);
 
   // Google vs. IA, explicado.

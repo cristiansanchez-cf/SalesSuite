@@ -105,7 +105,7 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   await adm.goto(`${BASE}/admin/accounts?ver=all`);
   await adm.click('[data-testid=add-open]'); await adm.click('[data-testid=new-account]');
   await adm.fill('[data-testid=new-account-form] [name=name]', 'Terraza Vecina Alta');
-  if (zoneOf) await adm.selectOption('[data-testid=new-account-form] [name=zoneId]', zoneOf);
+  if (zoneOf) await adm.$eval('[data-testid=new-account-form] [name=zoneId]', (el, v) => { el.value = v; }, zoneOf);
   await Promise.all([adm.waitForURL(/ok=created/), adm.click('[data-testid=new-account-form] button[type=submit]')]);
   if (zoneOf) {
     // Al pinchar en el buscador, sin escribir: los grupos de su ciudad; uno, y guardado.

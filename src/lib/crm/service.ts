@@ -22,6 +22,7 @@ import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type C
 import { googleRoutes, planRoute, todayHours, type Point, type RoutesApi } from './route';
 import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZoneFixes, fixtureZoneNames, sanitizeFixes, sanitizePlaces, withNote, zoneForPlace, zoneRows, REVIEW_TAG, type ZoneFix, type ZoneFixesApi, type ZoneNamesApi } from './zones-normalize';
 import type { AccountMove } from '../accounts/types';
+import { pathForParts, planPath, SPAIN_NAME } from '../accounts/spain';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, setQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
@@ -1221,6 +1222,41 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * Buscar una empresa por el nombre para «¿De qué empresa vas a hablar?» (autocompletar): sin IA, tolera errores del
    * dictado. Las 8 que más se parecen, con su sitio.
    */
+  // ---- Ciudad de cualquier país (docs/CRM_DINAMICO.md §44): el buscador de ciudad pregunta a Google lo que no tiene.
+  /** Sitios de Google para lo escrito: `v` es la zona si ya existe o «g:<id de Google>» (se crea al guardar). */
+  async function citySearch(qIn: unknown): Promise<Array<{ v: string; n: string; p: string; k: string }>> {
+    requireUse();
+    const q = String(qIn ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (q.length < 3 || !places?.cities) return [];
+    await quota('google');
+    let hits: Awaited<ReturnType<NonNullable<PlacesApi['cities']>>> = [];
+    try { hits = await places.cities(q); } catch (e) { console.warn('[places]', e instanceof Error ? e.message : e); return []; }
+    const zones = await accounts.listZones(t);
+    const out = new Map<string, { v: string; n: string; p: string; k: string }>();
+    for (const h of hits) {
+      const path = pathForParts(h.place, h.kind);
+      if (!path) continue;
+      const plan = planPath(zones, path);
+      const v = 'id' in plan ? plan.id : `g:${h.placeId}`;
+      const last = path[path.length - 1];
+      if (!out.has(v)) out.set(v, { v, n: last.name, p: path.slice(0, -1).map((x) => x.name).filter((n, i) => !(i === 0 && n === SPAIN_NAME)).join(' › '), k: last.kind });
+    }
+    return [...out.values()];
+  }
+  /** La ciudad elegida: «g:<id>» → su zona (creando País › Región › Ciudad si falta); lo demás, tal cual. */
+  async function pickZone(v: string | null): Promise<string | null> {
+    if (!v || !v.startsWith('g:')) return v;
+    requireUse();
+    const api = requirePlaces();
+    await quota('google');
+    const h = await api.city?.(v.slice(2)).catch(() => null);
+    const path = h ? pathForParts(h.place, h.kind) : null;
+    if (!path) throw new AdminError(422, 'Ciudad no válida');
+    const plan = planPath(await accounts.listZones(t), path);
+    if ('id' in plan) return plan.id;
+    return accounts.ensureZonePath(t, plan.create);
+  }
+
   async function accountSearch(q: string, kind?: string | null): Promise<NoteCandidate[]> {
     requireUse();
     const query = String(q ?? '').trim().slice(0, 80);
@@ -1841,7 +1877,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    board, mergePreview, merge, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling,

@@ -47,6 +47,39 @@ export async function searchPlaces(query: string, apiKey: string, fetchImpl: typ
 }
 
 /**
+ * Buscar una ciudad de cualquier país (docs/CRM_DINAMICO.md §44): lo que se escribe en el buscador de ciudad cuando no
+ * está entre las zonas ni en el catálogo de España («Busan», «Osaka»). Solo sitios (municipio, provincia, región,
+ * país), no locales; con sus partes para colgarlo de su país y región.
+ */
+export interface CityHit { placeId: string; name: string; address: string | null; place: PlaceParts; kind: 'city' | 'province' | 'region' | 'country' }
+const CITY_TYPES: Record<string, CityHit['kind']> = { locality: 'city', postal_town: 'city', administrative_area_level_3: 'city', administrative_area_level_2: 'province', administrative_area_level_1: 'region', country: 'country' };
+export function parseCities(json: any): CityHit[] {
+  return (json?.places ?? []).map((p: any) => {
+    const types: string[] = Array.isArray(p.types) ? p.types : [];
+    const kind = Object.keys(CITY_TYPES).map((t) => (types.includes(t) ? CITY_TYPES[t] : null)).find(Boolean) ?? null;
+    return kind && p.id ? { placeId: String(p.id), name: String(p.displayName?.text ?? ''), address: p.formattedAddress ?? null, place: parts(p.addressComponents), kind } : null;
+  }).filter((x: CityHit | null): x is CityHit => !!x && !!x.name);
+}
+export async function searchCities(query: string, apiKey: string, languageCode = 'es', fetchImpl: typeof fetch = fetch): Promise<CityHit[]> {
+  const res = await fetchImpl('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.addressComponents' },
+    body: JSON.stringify({ textQuery: query, languageCode, maxResultCount: 8 }),
+  });
+  if (!res.ok) throw new Error(`Google Places ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
+  return parseCities(await res.json());
+}
+/** Un sitio por su id, con su tipo (al elegirlo en el buscador de ciudad). */
+export async function cityDetails(placeId: string, apiKey: string, languageCode = 'es', fetchImpl: typeof fetch = fetch): Promise<CityHit | null> {
+  if (!/^[\w-]{5,300}$/.test(placeId)) return null;
+  const res = await fetchImpl(`https://places.googleapis.com/v1/places/${placeId}?languageCode=${languageCode}`, {
+    headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'id,displayName,formattedAddress,types,addressComponents' },
+  });
+  if (!res.ok) throw new Error(`Google Places ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
+  return parseCities({ places: [await res.json()] })[0] ?? null;
+}
+
+/**
  * Buscar clientes en una zona (docs/CRM_DINAMICO.md §19): «discotecas en Valencia», hasta 3 páginas de 20 (lo máximo
  * que da Google). Con el punto de la zona, Google prioriza lo que está cerca (`locationBias`, radio en metros).
  */
@@ -101,14 +134,21 @@ export interface PlacesApi {
   search(query: string): Promise<PlaceResult[]>; details(placeId: string): Promise<PlaceResult | null>; photo?(name: string): Promise<string | null>;
   /** Buscar clientes en una zona (§19); `pages` = llamadas a Google (cada una cuenta para el tope). */
   area?(query: string, o?: AreaOptions): Promise<{ results: PlaceResult[]; pages: number }>;
+  /** Ciudades de cualquier país (§44). */
+  cities?(query: string): Promise<CityHit[]>; city?(placeId: string): Promise<CityHit | null>;
 }
-export const googlePlaces = (apiKey: string): PlacesApi => ({ search: (q) => searchPlaces(q, apiKey), details: (id) => placeDetails(id, apiKey), photo: (n) => photoUri(n, apiKey), area: (q, o) => searchArea(q, apiKey, o) });
+export const googlePlaces = (apiKey: string): PlacesApi => ({ search: (q) => searchPlaces(q, apiKey), details: (id) => placeDetails(id, apiKey), photo: (n) => photoUri(n, apiKey), area: (q, o) => searchArea(q, apiKey, o),
+  cities: (q) => searchCities(q, apiKey), city: (id) => cityDetails(id, apiKey) });
 
 /**
  * Google de pruebas (AI_RESEARCH_FIXTURE=1, sin clave): dos resultados fijos con el nombre buscado, sin llamar a nadie.
  * La web es de mentira (.test) y su «escaneo» también (fixtureWebsite).
  */
 const hash = (s: string) => [...s].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7);
+const fxCity = (q: string): CityHit => {
+  const name = q.trim().slice(0, 60);
+  return { placeId: `fxc_${Buffer.from(name).toString('base64url')}`, name, address: `${name}, Corea del Sur`, kind: 'city', place: { city: name, province: null, region: null, country: 'Corea del Sur' } };
+};
 export function fixturePlaces(): PlacesApi {
   const make = (q: string, i: number): PlaceResult => {
     const name = i === 0 ? q.split(' ').slice(0, 3).join(' ') : `${q.split(' ')[0]} Bar`;
@@ -136,5 +176,8 @@ export function fixturePlaces(): PlacesApi {
     // El id lleva lo buscado: se rehace igual en otra petición.
     async details(id) { const m = /^fx([01])_([\w-]+)$/.exec(id); return m ? make(Buffer.from(m[2], 'base64url').toString(), Number(m[1])) : null; },
     async photo() { return null; },
+    // Ciudades (§44): lo buscado como ciudad de Corea del Sur, para ver que se crea un país que no estaba.
+    async cities(q) { return [fxCity(q)]; },
+    async city(id) { const m = /^fxc_([\w-]+)$/.exec(id); return m ? fxCity(Buffer.from(m[1], 'base64url').toString()) : null; },
   };
 }

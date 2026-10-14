@@ -153,6 +153,8 @@ const EXACT: Record<string, T> = {
   'Esa persona no está en el equipo interno': ['That person is not on the internal team', 'Essa pessoa não está na equipe interna', '이 사람은 내부 팀에 없습니다'],
   'El texto propuesto es igual al actual': ['The proposed text is the same as the current one', 'O texto proposto é igual ao atual', '제안한 텍스트가 현재 텍스트와 같습니다'],
   'Una zona no puede estar dentro de sí misma': ['A zone can\'t be inside itself', 'Uma zona não pode estar dentro de si mesma', '구역은 자기 자신 안에 있을 수 없습니다'],
+  'Ciudad no válida': ['Invalid city', 'Cidade inválida', '잘못된 도시입니다'],
+  'Ruta de zona no válida': ['Invalid zone path', 'Caminho de zona inválido', '잘못된 구역 경로입니다'],
   'Tarifa no disponible': ['Rate not available', 'Tarifa não disponível', '사용할 수 없는 요금제입니다'],
   'Esta tarifa es a medida: no se elige en una propuesta': ['This rate is custom: it can\'t be chosen in a proposal', 'Esta tarifa é sob medida: não se escolhe numa proposta', '맞춤 요금제입니다: 제안서에서 선택할 수 없습니다'],
   'Cupón no disponible': ['Coupon not available', 'Cupom não disponível', '사용할 수 없는 쿠폰입니다'],

@@ -1,5 +1,6 @@
 ---
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
+import ZonePicker from '~/components/crm/ZonePicker.astro';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
@@ -108,7 +109,7 @@ if (Astro.request.method === 'POST') {
       case 'company-contact': await admin.crm.setCompanyContact(id, Object.fromEntries(ACCOUNT_CONTACT_KEYS.filter((k) => f.has(k)).map((k) => [k, str(k)]))); to += '?ok=companyContact'; break;
       case 'claim': { const e = await acc.touch(id, 'claim'); to += `?ok=${e === 'eligible' ? 'claimed' : `not-${e}`}`; break; }
       case 'release': await acc.touch(id, 'release'); to += '?ok=released'; break;
-      case 'save': await acc.update(id, { name: str('name'), zoneId: str('zoneId'), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
+      case 'save': await acc.update(id, { name: str('name'), zoneId: await admin.crm.pickZone(str('zoneId')), segmentId: str('segmentId'), address: str('address'), externalRef: str('externalRef'), notes: str('notes') }); to += '?ok=saved'; break;
       case 'assign': await acc.assign(id, str('userId') || null); to += '?ok=assigned'; break;
       case 'fields': await acc.setFields(id, valuesFromForm(await acc.crmFields(), f)); to += '?ok=fields'; break;
       // Tipo y descartar (§17): cambiar el tipo no recupera una descartada.
@@ -724,7 +725,7 @@ const STATE_ALERT = {
         <div class="flex items-baseline justify-between gap-2"><h2 class="co-entity">{M.data}</h2><span class="co-meta text-xs" aria-live="polite" data-autosave-status></span></div>
         <fieldset class="grid gap-3" disabled={!canEdit}>
           <label class="co-field">{M.name}<input class="co-input" name="name" value={a.name} required maxlength="160" /></label>
-          <label class="co-field">{M.zone}<select class="co-select" name="zoneId"><option value="">{M.noZone}</option>{t.zones.map((z) => <option value={z.id} selected={z.id === a.zoneId}>{zonePath(t.zones, z.id)}</option>)}</select></label>
+          <ZonePicker zones={t.zones} value={a.zoneId} testid="acc-zone" />
           <label class="co-field">{M.sector}<select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id} selected={sg.id === a.segmentId}>{sg.name}</option>)}</select></label>
           <label class="co-field">{M.address}<input class="co-input" name="address" value={a.address ?? ''} maxlength="300" /></label>
           <label class="co-field">{M.externalRef} <span class="co-help">{M.externalRefHelp}</span><input class="co-input" name="externalRef" value={a.externalRef ?? ''} maxlength="120" /></label>

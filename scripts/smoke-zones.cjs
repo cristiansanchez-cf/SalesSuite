@@ -30,7 +30,10 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
     await p.waitForURL(/\/admin\/accounts\/[^/?#]+/);
     // Datos se guarda solo al cambiar (§31): se espera a que termine.
     const n = Number(await p.evaluate(() => document.documentElement.dataset.asyncDone || 0));
-    await p.selectOption('form:has(input[name=action][value=save]) select[name=zoneId]', { label: zone });
+    // La ciudad, con el buscador (§44): «Cambiar» si ya tiene, escribir y elegir la que se llama así.
+    if (await p.isVisible('[data-testid=acc-zone] [data-zp-change]')) await p.click('[data-testid=acc-zone] [data-zp-change]');
+    await p.fill('[data-testid=acc-zone-q]', zone.slice(0, 30));
+    await p.locator('[data-testid=acc-zone-list] [data-testid=zone-option]').filter({ has: p.locator('.co-action__label', { hasText: zone }) }).first().click();
     await p.waitForFunction((k) => Number(document.documentElement.dataset.asyncDone || 0) > k, n);
   };
   await moveTo('Sala Marina', 'Requena (Valencia)');
