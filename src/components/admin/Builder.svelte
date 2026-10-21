@@ -15,6 +15,7 @@
   import { DEFAULT_STYLE, MUSIC_STYLES } from '~/modules/live-screen/music';
   import { INTL_LOCALE, type Locale } from '~/lib/i18n/core';
   import { builderMessages } from '~/lib/i18n/messages/builder';
+  import LiveScenes from './LiveScenes.svelte';
 
   interface MarketLite {
     /** modules: ids de módulo recomendados para el sector, por prioridad. */
@@ -207,6 +208,12 @@
     const v = raw.trim() === '' ? null : Number(raw.replace(',', '.'));
     if (v !== null && !(v >= 0)) return;
     await run({ op: 'setProps', itemId: item.id, propOverrides: { ...(item.propOverrides ?? {}), [k]: v } });
+  }
+  /** Pantallas de la pantalla en vivo de esta propuesta (LiveScenes): null = las del catálogo. */
+  function saveScenes(item: BuilderItem, scenes: unknown[] | null) {
+    const next: Record<string, unknown> = { ...(item.propOverrides ?? {}) };
+    if (scenes) next.scenes = scenes; else delete next.scenes;
+    return run({ op: 'setProps', itemId: item.id, propOverrides: next });
   }
   async function saveProps(item: BuilderItem) {
     let parsed: unknown;
@@ -743,6 +750,9 @@
                   {/each}
                   <p class="co-meta sm:col-span-3">{t.cost.help}</p>
                 </div>
+              {/if}
+              {#if item.blockType === 'live-screen'}
+                <LiveScenes {item} photos={media.photos ?? []} hasVideo={!!media.video} {editable} t={t.scenes} onsave={(sc) => saveScenes(item, sc)} />
               {/if}
               {#if openProps === item.id}
                 <div class="space-y-2 border-t border-line p-3 text-sm">

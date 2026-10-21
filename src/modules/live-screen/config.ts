@@ -13,7 +13,7 @@ export interface ScreenSource {
   autoplay: boolean;
 }
 
-export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<{ scene: string; video?: boolean; text?: string }>) {
+export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<{ scene: string; video?: boolean; text?: string; images?: string[] }>) {
   const ownPhotos = (media.photos ?? []).filter(Boolean);
   // Canciones del estilo de SU local (Personalizar → estilo musical).
   const styles = p.musicStyles ?? MUSIC_STYLES;
@@ -30,6 +30,6 @@ export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<
     // Sus visuales: su vídeo si lo han subido; si no, uno de ejemplo de un local (el navegador elige el formato).
     video: media.video ? { own: media.video } : { webm: p.venueVideo?.webm, mp4: p.venueVideo?.mp4 },
     phone: p.phone ?? {}, ownPhoto: ownPhotos[0] ?? null, autoplay: p.autoplay,
-    scenes: scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ?? '' })),
+    scenes: scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ?? '', images: (s.images ?? []).filter(Boolean) })),
   };
 }

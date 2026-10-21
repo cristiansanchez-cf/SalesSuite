@@ -3,7 +3,7 @@ import { z } from 'zod';
 const url = z.string().refine((u) => /^(https:\/\/|\/)/.test(u), 'https o ruta absoluta');
 
 /** Estados de la pantalla del local (kit de Enjoy). club = pantalla completa; tp = encima de los visuales del local. */
-export const LIVE_SCENES = ['club.idle', 'club.song', 'club.photo', 'club.message', 'club.promo', 'club.toast', 'tp.idle', 'tp.song', 'tp.photo', 'tp.message', 'tp.full'] as const;
+export const LIVE_SCENES = ['club.idle', 'club.song', 'club.photo', 'club.message', 'club.promo', 'club.carousel', 'club.toast', 'tp.idle', 'tp.song', 'tp.photo', 'tp.message', 'tp.full'] as const;
 export type LiveScene = (typeof LIVE_SCENES)[number];
 
 export const liveScreenSchema = z.object({
@@ -31,7 +31,14 @@ export const liveScreenSchema = z.object({
      * minutos»); en el resto, el mensaje, el pie de la foto o la dedicatoria de la canción (las dinámicas de «Imagínatelo»).
      */
     text: z.string().max(120).optional(),
-  })).min(1).max(10),
+    /**
+     * Fotos de esta pantalla (las sube el comercial en Personalizar): en club.promo, su cartel (anuncio con foto); en
+     * club.carousel, las que el local elige para el carrusel; en una foto, la que sale. Sin ellas, las del cliente.
+     */
+    images: z.array(url).max(8).optional(),
+    /** Pantalla «Su vídeo»: el móvil sube su vídeo y sale de fondo (con su vídeo subido en Personalizar). */
+    video: z.boolean().optional(),
+  })).min(1).max(16),
   /** Vídeo del local de ejemplo (los visuales sobre los que va el modo transparente). webm y mp4: cada navegador coge el suyo. */
   venueVideo: z.object({ webm: url.optional(), mp4: url.optional(), poster: url.optional() }).optional(),
   /** Pantalla extra cuando el comercial sube un vídeo del cliente (Personalizar): sus visuales de fondo. */

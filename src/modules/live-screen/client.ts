@@ -5,7 +5,7 @@ import { DEMO } from './demo';
  * Por instancia: una pantalla (motor del producto) + el móvil que escanea y pide + la botonera del vendedor.
  * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla (o pasa con la flecha), se queda en ella.
  */
-type Scene = { scene: string; video?: boolean; text?: string };
+type Scene = { scene: string; video?: boolean; text?: string; images?: string[] };
 interface Config {
   assets: Record<string, unknown> & { covers: string[]; venueName?: string };
   phone: { song?: string; photo?: string; message?: string };
@@ -59,6 +59,20 @@ function loadEngine(cfg: Config) {
 
 const isRequest = (scene: string) => /\.(song|photo|message|full)$/.test(scene) || scene === 'club.toast';
 const isPromo = (scene: string) => scene === 'club.promo';
+const isCarousel = (scene: string) => scene === 'club.carousel';
+/** Segundos por foto del carrusel (como CAROUSEL_STEP del motor). */
+const CAROUSEL_STEP = 2.6;
+/**
+ * Lo que una pantalla enseña de suyo (sin el móvil): el anuncio, firmado por el local y con su cartel si lo tiene; el
+ * carrusel, sus fotos; el reclamo, su pregunta en grande (una dinámica); el resto, su texto como mensaje o pie.
+ */
+function saidOf(sc: Scene, venue: string, photos: string[]): Record<string, unknown> {
+  const imgs = sc.images ?? [];
+  if (isPromo(sc.scene)) return { dedication: sc.text ?? '', by: venue, ...(imgs[0] ? { img: imgs[0] } : {}) };
+  if (isCarousel(sc.scene)) return { dedication: sc.text ?? '', by: venue, imgs: imgs.length ? imgs : photos.slice(0, 5) };
+  if (sc.scene.endsWith('idle')) return sc.text ? { title: sc.text } : {};
+  return sc.text ? { dedication: sc.text } : {};
+}
 /** Cuánto se queda cada pantalla (ms): ni a toda prisa ni pesado. */
 const HOLD = { scene: 3800, idle: 3200, video: 5500 };
 const phoneKey = (scene: string): 'song' | 'photo' | 'message' => (/photo|full/.test(scene) ? 'photo' : /message/.test(scene) ? 'message' : 'song');
@@ -110,7 +124,11 @@ export function init(root: HTMLElement): () => void {
     const s = cfg.scenes[idx];
     mark(idx);
     // Lo que se queda en pantalla; la barrita de abajo dura justo eso.
-    const hold = s.video ? HOLD.video : s.scene.endsWith('idle') ? HOLD.idle : HOLD.scene;
+    const venue = String(cfg.assets?.venueName ?? '');
+    const photos = (cfg.assets?.photos as string[] | undefined) ?? [];
+    const said = saidOf(s, venue, photos);
+    // El carrusel se queda lo que tardan sus fotos en pasar una vez.
+    const hold = s.video ? HOLD.video : isCarousel(s.scene) ? Math.max(1, (said.imgs as string[]).length) * CAROUSEL_STEP * 1000 : s.scene.endsWith('idle') ? HOLD.idle : HOLD.scene;
     const seconds = auto && visible ? hold / 1000 : undefined;
     // Sin tramos de pago en la propuesta: nunca se enseñan importes.
     // Su texto (si lo trae): el mensaje, el pie de la foto o la dedicatoria; en club.promo, firmado por el local.
@@ -118,7 +136,7 @@ export function init(root: HTMLElement): () => void {
     let data: Record<string, unknown> = {};
     const show = () => {
       screen?.set('amount', 0);
-      screen?.show(s.scene, { ...(isPromo(s.scene) ? { dedication: s.text ?? '', by: cfg.assets?.venueName ?? '' } : s.text ? { dedication: s.text } : {}), ...data, seconds });
+      screen?.show(s.scene, { ...said, ...data, seconds });
     };
     const box = root.querySelector<HTMLElement>('[data-phone-compose-text]');
     let lead = 0;
@@ -152,7 +170,7 @@ export function init(root: HTMLElement): () => void {
         if (box) box.textContent = m.dedication ?? '';
         data = { ...m };
       } else if (key === 'photo') {
-        const img = at(w.ASSETS?.photos) ?? '';
+        const img = s.images?.[0] || (at(w.ASSETS?.photos) ?? '');
         const said = at(w.DEMO?.photos) ?? {};
         const caption = s.text || said.dedication || '';
         fillReq('Tu foto en pantalla', img, caption, '', 'Enviar');
@@ -229,7 +247,7 @@ export function initMini(root: HTMLElement): () => void {
     screen.set('amount', 0);
     const many = cfg.scenes.length > 1 && !reduced;
     const sc = cfg.scenes[idx % cfg.scenes.length];
-    const said = isPromo(sc.scene) ? { dedication: sc.text ?? '', by: cfg.assets?.venueName ?? '' } : sc.text ? { dedication: sc.text } : {};
+    const said = saidOf(sc, String(cfg.assets?.venueName ?? ''), (cfg.assets?.photos as string[] | undefined) ?? []);
     screen.show(sc.scene, many ? { ...said, seconds: 4.5 } : said);
     if (many) timer = setTimeout(() => { idx++; step(); }, 4500);
   };

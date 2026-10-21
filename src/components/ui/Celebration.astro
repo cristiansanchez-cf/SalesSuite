@@ -3,14 +3,15 @@
  * «X ha pagado» (docs/CRM_DINAMICO.md §36): la primera vez que se ve el aviso, confeti y el nombre del cliente.
  * Una vez por aviso (se recuerda en el navegador); sin animación si la persona la tiene desactivada en su sistema.
  */
+import Icon from './Icon.astro';
 interface Props { id: string; title: string; detail: string | null; href: string; see: string; close: string }
 const { id, title, detail, href, see, close } = Astro.props;
 ---
 <div class="co-celebrate" data-celebrate={id} data-testid="celebrate" role="dialog" aria-modal="true" aria-labelledby="co-celebrate-title" hidden>
   <div class="co-celebrate__confetti" aria-hidden="true"></div>
   <div class="co-celebrate__card">
-    <p class="co-celebrate__emoji" aria-hidden="true">🎉</p>
-    <h2 id="co-celebrate-title" class="co-entity">{title.replace(/^🎉\s*/u, '')}</h2>
+    <p class="co-celebrate__emoji" aria-hidden="true"><Icon name="party-popper" size={44} /></p>
+    <h2 id="co-celebrate-title" class="co-entity">{title.replace(/^\u{1F389}\s*/u, '')}</h2>
     {detail && <p class="co-meta">{detail}</p>}
     <div class="mt-4 flex justify-center gap-2">
       <a class="co-btn co-btn--primary" href={href} data-testid="celebrate-see">{see}</a>

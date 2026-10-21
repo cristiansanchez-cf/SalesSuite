@@ -407,3 +407,14 @@
   text-transform: uppercase; font-size: 1cqw; padding: 1cqw;
 }
 .es-np-img.es-ph { font-size: 2.4cqw; }
+
+/* Carrusel (club.carousel): las fotos que elige el local, enteras, una tras otra; puntos que avanzan con ellas. */
+.es-car .es-car-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; opacity: 0; animation-name: es-car; animation-iteration-count: infinite; animation-timing-function: linear; }
+.es-car--one .es-car-img { opacity: 1; animation: none; }
+.es-car-dots { display: inline-flex; gap: .5cqw; margin-left: auto; }
+.es-car-dots span { width: .8cqw; height: .8cqw; border-radius: 50%; background: rgba(255,255,255,.35); animation-name: es-car-dot; animation-iteration-count: infinite; animation-timing-function: linear; }
+@keyframes es-car { 0% { opacity: 0; transform: scale(1.03); } 3% { opacity: 1; transform: scale(1); } 22% { opacity: 1; } 26% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes es-car-dot { 0%, 25% { background: #fff; } 26%, 100% { background: rgba(255,255,255,.35); } }
+.es-cta-title--long { font-size: 4.2cqw; max-width: 80cqw; margin-inline: auto; text-wrap: balance; }
+/* Anuncio del local solo con texto: es un titular, no una dedicatoria. */
+.es-promo .es-msg-text { font-size: 4.4cqw; line-height: 1.12; font-weight: 800; text-wrap: balance; }

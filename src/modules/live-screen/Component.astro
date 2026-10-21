@@ -20,15 +20,22 @@ const t = (s: string) => interpolate(s, ctx);
 const media = ctx.media ?? {};
 // Lo que el cliente no tiene, no se enseña: sin canciones, ninguna pantalla de canciones; igual con fotos y mensajes.
 const feat = featuresOf(media.features);
+// El carrusel y el anuncio son del local (sus fotos), no del público: salen siempre.
 const needs = (sc: string) => (/song|toast/.test(sc) ? feat.songs : /photo|full/.test(sc) ? feat.photos : /message/.test(sc) ? feat.messages : true);
-const shown = baseScenes.filter((s) => needs(s.scene));
+// «Su vídeo» elegido a mano sin vídeo subido: fuera (no hay nada que enseñar).
+const shown = baseScenes.filter((s) => needs(s.scene) && (!s.video || !!media.video));
 const visible = shown.length ? shown : baseScenes.slice(0, 1);
-const scenes = media.video
+// Con su vídeo subido, la pantalla «Su vídeo» va la segunda, salvo que el comercial ya la haya puesto donde quiere.
+const scenes: Array<(typeof baseScenes)[number]> = media.video && !visible.some((s) => s.video)
   ? [visible[0], { scene: 'tp.idle' as const, label: videoScene.label, says: videoScene.says, video: true }, ...visible.slice(1)]
   : visible;
+// Fotos de una pantalla que ya no están en Personalizar (las quitó): fuera; sin ninguna, las del cliente.
+const own = new Set(media.photos ?? []);
+const uploaded = (u: string) => u.includes('/dossiers/') || u.includes('/demo-media/');
+const imagesOf = (xs?: string[]) => (xs ?? []).filter((u) => own.has(u) || !uploaded(u));
 const config = screenConfig(
   { venueName: t(venueName), djName, qrImage, photos, covers, phone, musicStyles: Astro.props.musicStyles, venueVideo, autoplay },
-  media, scenes.map((s) => ({ scene: s.scene, video: 'video' in s && !!s.video, text: 'text' in s && s.text ? t(s.text) : undefined })),
+  media, scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ? t(s.text) : undefined, images: imagesOf(s.images) })),
 );
 ---
 <div data-module="live-screen" class="live-screen">

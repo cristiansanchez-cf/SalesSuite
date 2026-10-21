@@ -122,6 +122,25 @@ const es = {
     all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
   },
   cost: { perNight: 'Lo que cobra quien viene a hacer fotos (€ por noche)', nights: 'Noches al mes que lo trae', hours: 'Horas suyas editando cada domingo', help: 'Solo las cifras que te dio el cliente. Sin ninguna, esta diapositiva no sale.' },
+  scenes: {
+    title: 'Pantallas', help: 'Qué sale en la pantalla en vivo de esta propuesta, en orden. El texto sale en la pantalla; las fotos, de las que subes en Personaliza.',
+    edit: 'Elegir pantallas', custom: 'Pantallas hechas para esta propuesta', reset: 'Volver a las del catálogo', save: 'Guardar pantallas', cancel: 'Cancelar',
+    add: 'Añadir pantalla…', addLove: 'Añadir «Encontrar el amor»', name: 'Nombre (a la izquierda)', text: 'Texto en la pantalla', says: 'Qué cuentas tú (debajo del nombre)',
+    photos: 'Fotos', textOnly: 'Solo texto', noPhotos: 'Sube fotos en Personaliza para elegirlas aquí.', noVideo: 'Sube su vídeo en Personaliza para que salga.',
+    up: 'Subir', down: 'Bajar', remove: 'Quitar', max: (n: number) => `Hasta ${n} pantallas.`,
+    kinds: {
+      'tp.idle': 'Sus visuales + QR pequeño', video: 'Su vídeo (lo sube desde el móvil)', 'tp.full': 'Foto a pantalla completa sobre sus visuales',
+      'tp.photo': 'Foto en pequeño sobre sus visuales', 'tp.message': 'Mensaje en pequeño sobre sus visuales', 'tp.song': 'Canción en pequeño sobre sus visuales',
+      'club.idle': 'QR en grande (con su texto)', 'club.photo': 'Foto a pantalla completa', 'club.message': 'Mensaje a pantalla completa',
+      'club.promo': 'Anuncio del local (texto o foto)', 'club.carousel': 'Carrusel de fotos', 'club.song': 'Canción a pantalla completa', 'club.toast': 'Canción en pequeño',
+    } as Record<string, string>,
+    love: [
+      { scene: 'club.idle', label: '¿Quién busca el amor?', text: '¿Quién quiere encontrar el amor? ¡Sube tu foto!', says: 'El presentador lo lanza y el QR sale en grande: quien quiera, sube su foto.' },
+      { scene: 'club.photo', label: 'El elegido', text: 'Busca el amor ❤️', says: 'Desde su móvil elige una de las fotos y la saca a pantalla completa.' },
+      { scene: 'club.idle', label: '¿Te interesa?', text: '¿Te interesa? Sube tu foto con un «1!»', says: 'Ahora los interesados: suben su foto con el mensaje «1!» para que se sepa que es por él o por ella.' },
+      { scene: 'club.photo', label: '«1!»', text: '1! 😍', says: 'Cada interesado sale en grande con su «1!».' },
+    ],
+  },
   preset: {
     title: 'Monta la propuesta para este cliente', lede: 'Elige cómo la vas a usar y marca lo que sabes del cliente: los módulos y los textos salen solos.',
     mode: '¿Cómo la vas a usar?', full: 'Va sola', fullHint: 'No vas a estar delante: tiene que convencer sola.',
@@ -282,6 +301,25 @@ export const builderMessages = defineMessages({
       all: (n) => `Add the whole catalog (${n})`, add: 'Add', dragHint: 'Drag to reorder, or drag in from «Add».',
     },
     cost: { perNight: 'What the photographer charges (€ per night)', nights: 'Nights a month', hours: 'Their hours editing each Sunday', help: 'Only figures the client gave you. With none, this slide is not shown.' },
+    scenes: {
+      title: 'Screens', help: 'What the live screen shows in this proposal, in order. The text appears on the screen; photos come from the ones you upload in Personalise.',
+      edit: 'Choose screens', custom: 'Screens made for this proposal', reset: 'Back to the catalogue ones', save: 'Save screens', cancel: 'Cancel',
+      add: 'Add screen…', addLove: 'Add «Find love»', name: 'Name (on the left)', text: 'Text on the screen', says: 'What you say (under the name)',
+      photos: 'Photos', textOnly: 'Text only', noPhotos: 'Upload photos in Personalise to choose them here.', noVideo: 'Upload their video in Personalise for it to show.',
+      up: 'Move up', down: 'Move down', remove: 'Remove', max: (n: number) => `Up to ${n} screens.`,
+      kinds: {
+        'tp.idle': 'Their visuals + small QR', video: 'Their video (uploaded from the phone)', 'tp.full': 'Full-screen photo over their visuals',
+        'tp.photo': 'Small photo over their visuals', 'tp.message': 'Small message over their visuals', 'tp.song': 'Small song over their visuals',
+        'club.idle': 'Big QR (with their text)', 'club.photo': 'Full-screen photo', 'club.message': 'Full-screen message',
+        'club.promo': 'Venue announcement (text or photo)', 'club.carousel': 'Photo carousel', 'club.song': 'Full-screen song', 'club.toast': 'Small song',
+      } as Record<string, string>,
+      love: [
+        { scene: 'club.idle', label: 'Who wants love?', text: 'Who wants to find love? Upload your photo!', says: 'The host launches it and the QR goes big: whoever wants to, uploads a photo.' },
+        { scene: 'club.photo', label: 'The chosen one', text: 'Looking for love ❤️', says: 'From their phone they pick one photo and show it full screen.' },
+        { scene: 'club.idle', label: 'Interested?', text: 'Interested? Upload your photo with a «1!»', says: 'Now those interested upload their photo with the message «1!» so everyone knows who it is for.' },
+        { scene: 'club.photo', label: '«1!»', text: '1! 😍', says: 'Each interested person shows up big with their «1!».' },
+      ],
+    },
     preset: {
       title: 'Build the proposal for this client', lede: 'Choose how you will use it and tick what you know about the client: modules and copy come ready.',
       mode: 'How will you use it?', full: 'On its own', fullHint: 'You will not be there: it has to convince on its own.',
@@ -439,6 +477,25 @@ export const builderMessages = defineMessages({
       all: (n) => `Adicionar todo o catálogo (${n})`, add: 'Adicionar', dragHint: 'Arraste para ordenar, ou arraste de «Adicionar».',
     },
     cost: { perNight: 'Quanto cobra quem faz as fotos (€ por noite)', nights: 'Noites por mês', hours: 'Horas dele editando cada domingo', help: 'Só os números que o cliente deu. Sem nenhum, este slide não aparece.' },
+    scenes: {
+      title: 'Ecrãs', help: 'O que aparece no ecrã ao vivo desta proposta, por ordem. O texto sai no ecrã; as fotos, das que carrega em Personalizar.',
+      edit: 'Escolher ecrãs', custom: 'Ecrãs feitos para esta proposta', reset: 'Voltar aos do catálogo', save: 'Guardar ecrãs', cancel: 'Cancelar',
+      add: 'Adicionar ecrã…', addLove: 'Adicionar «Encontrar o amor»', name: 'Nome (à esquerda)', text: 'Texto no ecrã', says: 'O que conta (debaixo do nome)',
+      photos: 'Fotos', textOnly: 'Só texto', noPhotos: 'Carregue fotos em Personalizar para as escolher aqui.', noVideo: 'Carregue o vídeo em Personalizar para que apareça.',
+      up: 'Subir', down: 'Descer', remove: 'Remover', max: (n: number) => `Até ${n} ecrãs.`,
+      kinds: {
+        'tp.idle': 'Os seus visuais + QR pequeno', video: 'O seu vídeo (carregado do telemóvel)', 'tp.full': 'Foto em ecrã inteiro sobre os visuais',
+        'tp.photo': 'Foto pequena sobre os visuais', 'tp.message': 'Mensagem pequena sobre os visuais', 'tp.song': 'Música pequena sobre os visuais',
+        'club.idle': 'QR grande (com o seu texto)', 'club.photo': 'Foto em ecrã inteiro', 'club.message': 'Mensagem em ecrã inteiro',
+        'club.promo': 'Anúncio do local (texto ou foto)', 'club.carousel': 'Carrossel de fotos', 'club.song': 'Música em ecrã inteiro', 'club.toast': 'Música pequena',
+      } as Record<string, string>,
+      love: [
+        { scene: 'club.idle', label: 'Quem procura o amor?', text: 'Quem quer encontrar o amor? Carrega a tua foto!', says: 'O apresentador lança e o QR aparece em grande: quem quiser, carrega a sua foto.' },
+        { scene: 'club.photo', label: 'O escolhido', text: 'Procura o amor ❤️', says: 'Do telemóvel escolhe uma foto e mostra-a em ecrã inteiro.' },
+        { scene: 'club.idle', label: 'Interessa-te?', text: 'Interessa-te? Carrega a tua foto com um «1!»', says: 'Agora os interessados carregam a foto com a mensagem «1!» para se saber que é por ele ou por ela.' },
+        { scene: 'club.photo', label: '«1!»', text: '1! 😍', says: 'Cada interessado aparece em grande com o seu «1!».' },
+      ],
+    },
     preset: {
       title: 'Monte a proposta para este cliente', lede: 'Escolha como vai usá-la e marque o que sabe do cliente: módulos e textos saem prontos.',
       mode: 'Como vai usá-la?', full: 'Vai sozinha', fullHint: 'Você não vai estar presente: tem de convencer sozinha.',
@@ -596,6 +653,25 @@ export const builderMessages = defineMessages({
       all: (n) => `카탈로그 전체 추가 (${n})`, add: '추가', dragHint: '끌어서 순서를 바꾸거나 «추가»에서 끌어오세요.',
     },
     cost: { perNight: '사진 촬영 비용 (1박 €)', nights: '월 횟수', hours: '일요일마다 편집하는 시간', help: '고객이 알려준 숫자만 넣으세요. 없으면 이 슬라이드는 표시되지 않습니다.' },
+    scenes: {
+      title: '화면', help: '이 제안서의 라이브 화면에 나오는 것과 순서입니다. 텍스트는 화면에, 사진은 맞춤 설정에서 올린 것 중에서 고릅니다.',
+      edit: '화면 고르기', custom: '이 제안서용 화면', reset: '카탈로그 화면으로 되돌리기', save: '화면 저장', cancel: '취소',
+      add: '화면 추가…', addLove: '«사랑 찾기» 추가', name: '이름(왼쪽)', text: '화면 텍스트', says: '설명(이름 아래)',
+      photos: '사진', textOnly: '텍스트만', noPhotos: '맞춤 설정에서 사진을 올리면 여기서 고를 수 있습니다.', noVideo: '맞춤 설정에서 영상을 올려야 나옵니다.',
+      up: '위로', down: '아래로', remove: '삭제', max: (n: number) => `최대 ${n}개 화면.`,
+      kinds: {
+        'tp.idle': '고객 비주얼 + 작은 QR', video: '고객 영상(휴대폰에서 업로드)', 'tp.full': '비주얼 위 전체 화면 사진',
+        'tp.photo': '비주얼 위 작은 사진', 'tp.message': '비주얼 위 작은 메시지', 'tp.song': '비주얼 위 작은 노래',
+        'club.idle': '큰 QR(문구 포함)', 'club.photo': '전체 화면 사진', 'club.message': '전체 화면 메시지',
+        'club.promo': '매장 공지(텍스트 또는 사진)', 'club.carousel': '사진 슬라이드', 'club.song': '전체 화면 노래', 'club.toast': '작은 노래',
+      } as Record<string, string>,
+      love: [
+        { scene: 'club.idle', label: '사랑을 찾는 사람?', text: '사랑을 찾고 싶은 사람? 사진을 올려요!', says: '진행자가 외치면 QR이 크게 나옵니다. 원하는 사람은 사진을 올립니다.' },
+        { scene: 'club.photo', label: '선택된 사람', text: '사랑을 찾아요 ❤️', says: '휴대폰에서 사진 한 장을 골라 전체 화면으로 보여 줍니다.' },
+        { scene: 'club.idle', label: '관심 있나요?', text: '관심 있나요? «1!»과 함께 사진을 올려요', says: '이제 관심 있는 사람들이 «1!» 메시지와 함께 사진을 올립니다.' },
+        { scene: 'club.photo', label: '«1!»', text: '1! 😍', says: '관심 있는 사람마다 «1!»과 함께 크게 나옵니다.' },
+      ],
+    },
     preset: {
       title: '이 고객을 위한 제안서 만들기', lede: '어떻게 쓸지 고르고 고객에 대해 아는 것을 체크하세요. 모듈과 문구가 자동으로 채워집니다.',
       mode: '어떻게 쓰나요?', full: '단독으로', fullHint: '직접 설명하지 않아도 설득해야 합니다.',

@@ -26,6 +26,23 @@ En la misma tarjeta, **Cómo se ve**: «Presentación» (por defecto) o «Hacia 
 - El destinatario puede cambiarlo con «Ver hacia abajo» / «Ver como presentación» (`?ver=scroll|slides`).
 - Analítica: el tiempo por sección sigue igual (`data-item-id` en cada diapositiva); «hasta dónde ha llegado» es la diapositiva más lejana vista.
 
+## Pantallas de la propuesta
+
+En el editor, dentro del módulo **Pantalla en vivo**, la tarjeta **Pantallas** dice cuáles salen. Con «Elegir pantallas» el comercial las monta para ESTA propuesta sin tocar JSON: el tipo, el nombre (a la izquierda), el texto que sale en la pantalla, lo que cuenta él (debajo del nombre) y, donde toca, las fotos (de las que ha subido arriba). Se guarda en las props de la propuesta (`scenes`); «Volver a las del catálogo» lo quita. Componente: `src/components/admin/LiveScenes.svelte`.
+
+| Tipo | Escena | Qué enseña |
+|---|---|---|
+| Sus visuales + QR pequeño | `tp.idle` | Sus visuales (su vídeo, o el de ejemplo) con el QR en una tarjeta |
+| Su vídeo | `tp.idle` + `video` | El móvil sube su vídeo y sale de fondo (solo si hay vídeo subido; si no se elige, va la segunda como antes) |
+| Foto a pantalla completa (sobre sus visuales) | `tp.full` / `club.photo` | La foto que suben, entera; se puede fijar cuál |
+| QR en grande (con su texto) | `club.idle` | El QR gigante; con texto, ese texto en grande en vez de los reclamos (dinámicas) |
+| Anuncio del local (texto o foto) | `club.promo` | Lo que el local manda desde su móvil: solo texto, como titular; con foto (su cartel), la foto entera y el texto debajo |
+| Carrusel de fotos | `club.carousel` | Las fotos que el local elige (anuncios o gente), una tras otra cada 2,6 s, enteras, con el QR |
+
+**«Añadir «Encontrar el amor»»** mete cuatro pantallas: QR en grande «¿Quién quiere encontrar el amor? ¡Sube tu foto!» → la foto elegida en grande → QR en grande «¿Te interesa? Sube tu foto con un «1!»» → los interesados en grande con su «1!». Los textos están en `messages/builder.ts` (`scenes.love`), en los cuatro idiomas.
+
+Una foto que se quita en Personaliza deja de salir en las pantallas que la usaban (vuelven a las del cliente). Smoke: `scripts/smoke-live-scenes.cjs` (la propuesta simplificada de una promotora).
+
 ## Vídeo del local de ejemplo
 
 Las pantallas «Encima de tus visuales» y «Foto en tarjeta» necesitan unos visuales de fondo. Si el comercial no ha subido el vídeo del cliente, sale uno de ejemplo (`venueVideo` en la pantalla en vivo: `img/live/venue.webm` y `.mp4`, luces de club generadas, sin derechos de terceros). El navegador elige el formato que reproduce.

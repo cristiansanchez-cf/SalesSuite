@@ -154,11 +154,12 @@
     { es: 'Deja tu dedicatoria', en: 'Send a message' }
   ];
   function sceneClubIdle(o) {
-    var c = CTAS[o._cta % CTAS.length];
+    // Con texto propio (una dinámica: «¿Quién quiere encontrar el amor?»), ese texto en grande en vez de los reclamos.
+    var c = o._data && o._data.title && o.scene === 'club.idle' ? { es: o._data.title, en: '' } : CTAS[o._cta % CTAS.length];
     return topBar(o) +
       '<div class="es-idle">' +
-        '<div class="es-cta"><h1 class="es-cta-title">' + c.es + '</h1>' +
-        '<p class="es-cta-sub">' + c.en + '</p></div>' +
+        '<div class="es-cta"><h1 class="es-cta-title' + (c.es.length > 26 ? ' es-cta-title--long' : '') + '">' + esc(c.es) + '</h1>' +
+        (c.en ? '<p class="es-cta-sub">' + c.en + '</p>' : '') + '</div>' +
         '<div class="es-qr-box">' + qrTag('') + '</div>' +
         (o.free ? '<span class="es-free">GRATIS</span>' : '') +
       '</div>';
@@ -213,9 +214,9 @@
   }
 
   /* DEDICATORIA SIN IMAGEN — tarjeta centrada sobre el fondo con brillos. */
-  function sceneMessage(o, data) {
+  function sceneMessage(o, data, promo) {
     var tier = tierOf(data.amount || 0);
-    return '<div class="es-np es-np-nocover tier-' + tier + (o.fx ? ' fx' : '') + '">' +
+    return '<div class="es-np es-np-nocover tier-' + tier + (o.fx ? ' fx' : '') + (promo ? ' es-promo' : '') + '">' +
       (o.fx ? '<div class="es-np-glow"><span class="g1"></span><span class="g2"></span></div>' : '') +
       topBar(o) +
       '<div class="es-msg-card">' +
@@ -226,6 +227,30 @@
       '<div class="es-qr-mini"><span class="es-qr-label">SUBE EL TUYO</span>' +
         '<div class="es-qr-mini-card">' + qrTag('') + '</div></div>' +
       '<div class="es-timebar"><span style="animation-duration:' + (data.seconds || tierSeconds(30, tier)) + 's"></span></div>' +
+    '</div>';
+  }
+
+  /* CARRUSEL — el local elige unas fotos en su móvil (sus anuncios o fotos del álbum) y salen una tras otra, enteras
+     (nunca se recorta una cara), con su nombre y el QR. Solo CSS: cada foto entra con su retraso. */
+  var CAROUSEL_STEP = 2.6;
+  function sceneCarousel(o, data) {
+    var imgs = (data.imgs && data.imgs.length ? data.imgs : (A.photos || [])).filter(Boolean).slice(0, 8);
+    var n = Math.max(imgs.length, 1), total = n * CAROUSEL_STEP;
+    var slides = imgs.map(function (src, i) {
+      return '<img class="es-car-img" src="' + esc(src) + '" alt="" style="animation-duration:' + total + 's;animation-delay:' + (i * CAROUSEL_STEP) + 's">';
+    }).join('');
+    var dots = imgs.map(function (_, i) {
+      return '<span style="animation-duration:' + total + 's;animation-delay:' + (i * CAROUSEL_STEP) + 's"></span>';
+    }).join('');
+    return '<div class="es-np es-car' + (n === 1 ? ' es-car--one' : '') + '">' +
+      (imgs.length ? slides : '<div class="es-np-img es-ph">Fotos</div>') +
+      '<div class="es-np-scrim"></div>' +
+      topBar(o) +
+      '<div class="es-np-bottom">' + userBadge(data.by, '', true) +
+        (data.dedication ? '<span class="es-sep"></span><p class="es-np-text">' + esc(data.dedication) + '</p>' : '') +
+        (n > 1 ? '<span class="es-car-dots">' + dots + '</span>' : '') + '</div>' +
+      '<div class="es-qr-mini"><span class="es-qr-label pink">SUBE LA TUYA</span>' +
+        '<div class="es-qr-mini-card">' + qrTag('') + '</div></div>' +
     '</div>';
   }
 
@@ -327,8 +352,11 @@
     'club.song':    function (o) { return sceneFull(o, 'song',  o._data); },
     'club.photo':   function (o) { return sceneFull(o, 'photo', o._data); },
     'club.message': function (o) { return sceneMessage(o, o._data); },
-    // El local escribe a su pantalla desde su móvil (promoción, aviso): mismo formato, firmado por el local.
-    'club.promo':   function (o) { return sceneMessage(o, o._data); },
+    // El local escribe a su pantalla desde su móvil (promoción, aviso): mismo formato, firmado por el local. Con foto
+    // (su cartel), la foto entera a pantalla completa con su texto debajo.
+    'club.promo':   function (o) { return o._data.img ? sceneFull(o, 'photo', o._data) : sceneMessage(o, o._data, true); },
+    // Carrusel: las fotos que el local elige en su móvil (anuncios o gente), pasando solas cada pocos segundos.
+    'club.carousel': function (o) { return sceneCarousel(o, o._data); },
     // Carátulas apagadas: la base idle NO se va, la canción asoma en pequeño.
     'club.toast':   function (o) { return sceneClubIdle(o) + sceneCompact(o, 'song', o._data, 'toast', 'bottom-center', true); },
     'tp.idle':      function (o) { return sceneTpIdle(o); },
