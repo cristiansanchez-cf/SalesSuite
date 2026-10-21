@@ -35,7 +35,7 @@ En el editor, dentro del módulo **Pantalla en vivo**, la tarjeta **Pantallas** 
 | Sus visuales (su vídeo) + QR pequeño | `tp.idle` | Su vídeo de fondo (o unos visuales de ejemplo si no lo ha subido) con el QR en una tarjeta pequeña, que asoma cada pocos minutos |
 | Foto a pantalla completa (sobre sus visuales) | `tp.full` / `club.photo` | La foto que suben, entera; se puede fijar cuál |
 | QR en grande (con su texto) | `club.idle` | El QR gigante; con texto, ese texto en grande en vez de los reclamos (dinámicas) |
-| Anuncio del local (texto o foto) | `club.promo` | Lo que el local manda desde su móvil: solo texto, como titular; con foto (su cartel), la foto entera y el texto debajo |
+| Anuncio del local (texto o foto) | `club.promo` | Lo que el local manda desde su móvil: solo texto, a pantalla completa de un color (amarillo por defecto; rosa, naranja, morado, blanco u oscuro), con la pastilla «LOCAL · ANUNCIO» y el texto como titular; con foto (su cartel), la foto entera y el texto debajo |
 | Carrusel de fotos | `club.carousel` | Las fotos que el local elige (anuncios o gente), una tras otra cada 2,6 s, enteras, con el QR |
 
 **«Añadir «Encontrar el amor»»** mete cuatro pantallas: QR en grande «¿Quién quiere encontrar el amor? ¡Sube tu foto!» → la foto elegida en grande → QR en grande «¿Te interesa? Sube tu foto con un «1!»» → los interesados en grande con su «1!». Los textos están en `messages/builder.ts` (`scenes.love`), en los cuatro idiomas.

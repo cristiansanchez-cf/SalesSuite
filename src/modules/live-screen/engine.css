@@ -418,3 +418,21 @@
 .es-cta-title--long { font-size: 4.2cqw; max-width: 80cqw; margin-inline: auto; text-wrap: balance; }
 /* Anuncio del local solo con texto: es un titular, no una dedicatoria. */
 .es-promo .es-msg-text { font-size: 4.4cqw; line-height: 1.12; font-weight: 800; text-wrap: balance; }
+
+/* Anuncio de color (club.promo con color): fondo entero, pastilla oscura con el local y «ANUNCIO», titular en grande. */
+.es-promo-c { --pc-bg: #e8ff3a; --pc-glow: #f7ffc4; --pc-ink: #0b0b0b; --pc-tag: #e1ff00; background: var(--pc-bg); color: var(--pc-ink); }
+.es-promo-c.c-pink   { --pc-bg: #ff3fc4; --pc-glow: #ff9fe0; --pc-ink: #0b0b0b; --pc-tag: #ff8ad9; }
+.es-promo-c.c-orange { --pc-bg: #fb873c; --pc-glow: #ffc59c; --pc-ink: #0b0b0b; --pc-tag: #ffb07a; }
+.es-promo-c.c-violet { --pc-bg: #6d28d9; --pc-glow: #a78bfa; --pc-ink: #ffffff; --pc-tag: #e1ff00; }
+.es-promo-c.c-white  { --pc-bg: #f4f4f6; --pc-glow: #ffffff; --pc-ink: #0b0b0b; --pc-tag: #ff27bb; }
+.es-promo-c-glow { position: absolute; inset: 0; background: radial-gradient(60% 45% at 50% 8%, var(--pc-glow) 0%, transparent 70%); opacity: .85; }
+.es-promo-c .es-venue, .es-promo-c .es-brand { color: var(--pc-ink); }
+.es-promo-c-body { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw; padding: 0 8cqw; text-align: center; }
+.es-promo-c-pill { display: inline-flex; align-items: center; gap: 1.1cqw; padding: 1cqw 2.4cqw; border-radius: var(--es-radius-pill); background: rgba(10,10,10,.6); color: #fff; font-size: 1.7cqw; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; animation: es-cta-in .5s var(--es-ease) both; }
+.es-promo-c-dot { width: 1cqw; height: 1cqw; border-radius: 50%; background: var(--pc-tag); box-shadow: 0 0 1cqw var(--pc-tag); }
+.es-promo-c-sep { opacity: .5; font-size: 1.2cqw; }
+.es-promo-c-tag { color: var(--pc-tag); }
+.es-promo-c-text { margin: 0; font-family: var(--font-display, inherit); font-weight: 800; font-size: 6.2cqw; line-height: 1.04; letter-spacing: -.02em; text-wrap: balance; max-width: 86cqw; animation: es-cta-in .5s var(--es-ease) both 80ms; }
+.es-promo-c-text.is-long { font-size: 4.4cqw; }
+.es-promo-c .es-timebar span { background: var(--pc-ink); opacity: .5; }
+.es-promo-c .es-dj { color: #fff; }

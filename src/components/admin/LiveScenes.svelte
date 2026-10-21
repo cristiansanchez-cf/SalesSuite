@@ -8,8 +8,8 @@
   import type { builderMessages } from '~/lib/i18n/messages/builder';
 
   type T = typeof builderMessages.es.scenes;
-  type Scene = { scene: string; label: string; says?: string; text?: string; images?: string[]; video?: boolean };
-  type Row = { id: number; kind: string; label: string; says: string; text: string; images: string[] };
+  type Scene = { scene: string; label: string; says?: string; text?: string; images?: string[]; video?: boolean; color?: string };
+  type Row = { id: number; kind: string; label: string; says: string; text: string; images: string[]; color: string };
   let { item, photos, hasVideo, editable, t, onsave }:
     { item: BuilderItem; photos: string[]; hasVideo: boolean; editable: boolean; t: T; onsave: (scenes: Scene[] | null) => Promise<boolean> } = $props();
 
@@ -20,6 +20,8 @@
   const NO_TEXT = new Set(['tp.idle', 'video', 'club.toast', 'tp.song']);
   /** Una foto (el cartel, la que sale) o varias (el carrusel). */
   const ONE_PHOTO = new Set(['club.promo', 'club.photo', 'tp.full']);
+  /** Colores del anuncio (como PROMO_COLORS del módulo), con su muestra. */
+  const COLORS: Array<[string, string]> = [['dark', '#17191d'], ['yellow', '#e8ff3a'], ['pink', '#ff3fc4'], ['orange', '#fb873c'], ['violet', '#6d28d9'], ['white', '#f4f4f6']];
 
   const custom = $derived(Array.isArray(item.propOverrides?.scenes));
   const current = $derived(((custom ? item.propOverrides.scenes : item.defaultProps?.scenes) ?? []) as Scene[]);
@@ -28,12 +30,16 @@
   let seq = 0;
   let saving = $state(false);
 
-  const toRow = (s: Scene): Row => ({ id: seq++, kind: s.video ? 'video' : s.scene, label: s.label ?? '', says: s.says ?? '', text: s.text ?? '', images: [...(s.images ?? [])] });
+  const toRow = (s: Scene): Row => ({ id: seq++, kind: s.video ? 'video' : s.scene, label: s.label ?? '', says: s.says ?? '', text: s.text ?? '', images: [...(s.images ?? [])], color: s.color ?? 'dark' });
   const toScene = (r: Row): Scene => {
     const base = { label: r.label.trim().slice(0, 30) || short(t.kinds[r.kind] ?? r.kind), says: r.says.trim().slice(0, 220) };
     if (r.kind === 'video') return { scene: 'tp.idle', video: true, ...base };
     const imgs = r.images.filter((u) => photos.includes(u));
-    return { scene: r.kind, ...base, ...(r.text.trim() && !NO_TEXT.has(r.kind) ? { text: r.text.trim().slice(0, 120) } : {}), ...(imgs.length ? { images: ONE_PHOTO.has(r.kind) ? imgs.slice(0, 1) : imgs.slice(0, 8) } : {}) };
+    return {
+      scene: r.kind, ...base, ...(r.text.trim() && !NO_TEXT.has(r.kind) ? { text: r.text.trim().slice(0, 120) } : {}),
+      ...(imgs.length ? { images: ONE_PHOTO.has(r.kind) ? imgs.slice(0, 1) : imgs.slice(0, 8) } : {}),
+      ...(r.kind === 'club.promo' && !imgs.length && r.color !== 'dark' ? { color: r.color } : {}),
+    };
   };
   /** Nombre por defecto: el tipo sin su aclaración entre paréntesis, cortado por una palabra (máx. 30). */
   function short(raw: string) {
@@ -46,7 +52,7 @@
   function start() { rows = current.map(toRow); open = true; }
   function add(kind: string) {
     if (!kind || rows.length >= MAX) return;
-    rows = [...rows, { id: seq++, kind, label: short(t.kinds[kind] ?? kind), says: '', text: '', images: kind === 'club.carousel' ? photos.slice(0, 5) : [] }];
+    rows = [...rows, { id: seq++, kind, label: short(t.kinds[kind] ?? kind), says: '', text: '', images: kind === 'club.carousel' ? photos.slice(0, 5) : [], color: kind === 'club.promo' ? 'yellow' : 'dark' }];
   }
   function addLove() { rows = [...rows, ...t.love.map((s) => toRow(s))].slice(0, MAX); }
   function move(i: number, d: number) { const n = [...rows]; const [x] = n.splice(i, 1); n.splice(i + d, 0, x); rows = n; }
@@ -98,6 +104,17 @@
           </div>
           {#if r.kind === 'video' && !hasVideo}<p class="co-help">{t.noVideo}</p>{/if}
           {#if r.kind === 'tp.idle'}<p class="co-help">{hasVideo ? t.idleVideo : t.idleNoVideo}</p>{/if}
+          {#if r.kind === 'club.promo' && !r.images.some((u) => photos.includes(u))}
+            <div class="grid gap-1">
+              <span class="text-xs text-muted">{t.color}</span>
+              <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t.color}>
+                {#each COLORS as [c, hex] (c)}
+                  <button type="button" role="radio" aria-checked={r.color === c} aria-label={t.colors[c]} title={t.colors[c]} onclick={() => (r.color = c)} data-testid="scene-color-{c}"
+                    class="h-7 w-7 rounded-full border-2 {r.color === c ? 'border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)] ring-offset-1' : 'border-[var(--console-card-border)]'}" style="background:{hex}"></button>
+                {/each}
+              </div>
+            </div>
+          {/if}
           {#if ONE_PHOTO.has(r.kind) || r.kind === 'club.carousel'}
             <div class="grid gap-1">
               <span class="text-xs text-muted">{t.photos}{ONE_PHOTO.has(r.kind) && r.kind === 'club.promo' && !r.images.length ? ` · ${t.textOnly}` : ''}</span>

@@ -230,6 +230,23 @@
     '</div>';
   }
 
+  /* ANUNCIO DE COLOR — el local escribe a su pantalla y elige el color: fondo entero de color, su nombre y «ANUNCIO»
+     en una pastilla, y el texto como un titular. Sin color (o «oscuro»), la tarjeta de siempre. */
+  var PROMO_COLORS = ['yellow', 'pink', 'orange', 'violet', 'white'];
+  function scenePromoColor(o, data) {
+    var text = data.dedication || '';
+    return '<div class="es-np es-promo-c c-' + data.color + '">' +
+      '<div class="es-promo-c-glow"></div>' +
+      topBar(o) +
+      '<div class="es-promo-c-body">' +
+        '<span class="es-promo-c-pill"><span class="es-promo-c-dot"></span><b>' + esc(data.by || A.venueName || '') + '</b>' +
+          '<span class="es-promo-c-sep">•</span><span class="es-promo-c-tag">ANUNCIO</span></span>' +
+        '<p class="es-promo-c-text' + (text.length > 60 ? ' is-long' : '') + '">' + esc(text) + '</p>' +
+      '</div>' +
+      '<div class="es-timebar"><span style="animation-duration:' + (data.seconds || 30) + 's"></span></div>' +
+    '</div>';
+  }
+
   /* CARRUSEL — el local elige unas fotos en su móvil (sus anuncios o fotos del álbum) y salen una tras otra, enteras
      (nunca se recorta una cara), con su nombre y el QR. Solo CSS: cada foto entra con su retraso. */
   var CAROUSEL_STEP = 2.6;
@@ -354,7 +371,10 @@
     'club.message': function (o) { return sceneMessage(o, o._data); },
     // El local escribe a su pantalla desde su móvil (promoción, aviso): mismo formato, firmado por el local. Con foto
     // (su cartel), la foto entera a pantalla completa con su texto debajo.
-    'club.promo':   function (o) { return o._data.img ? sceneFull(o, 'photo', o._data) : sceneMessage(o, o._data, true); },
+    'club.promo':   function (o) {
+      if (o._data.img) return sceneFull(o, 'photo', o._data);
+      return PROMO_COLORS.indexOf(o._data.color) >= 0 ? scenePromoColor(o, o._data) : sceneMessage(o, o._data, true);
+    },
     // Carrusel: las fotos que el local elige en su móvil (anuncios o gente), pasando solas cada pocos segundos.
     'club.carousel': function (o) { return sceneCarousel(o, o._data); },
     // Carátulas apagadas: la base idle NO se va, la canción asoma en pequeño.

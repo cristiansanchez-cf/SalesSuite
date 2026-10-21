@@ -5,7 +5,7 @@ import { DEMO } from './demo';
  * Por instancia: una pantalla (motor del producto) + el móvil que escanea y pide + la botonera del vendedor.
  * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla (o pasa con la flecha), se queda en ella.
  */
-type Scene = { scene: string; video?: boolean; text?: string; images?: string[] };
+type Scene = { scene: string; video?: boolean; text?: string; images?: string[]; color?: string };
 interface Config {
   assets: Record<string, unknown> & { covers: string[]; venueName?: string };
   phone: { song?: string; photo?: string; message?: string };
@@ -68,7 +68,7 @@ const CAROUSEL_STEP = 2.6;
  */
 function saidOf(sc: Scene, venue: string, photos: string[]): Record<string, unknown> {
   const imgs = sc.images ?? [];
-  if (isPromo(sc.scene)) return { dedication: sc.text ?? '', by: venue, ...(imgs[0] ? { img: imgs[0] } : {}) };
+  if (isPromo(sc.scene)) return { dedication: sc.text ?? '', by: venue, ...(imgs[0] ? { img: imgs[0] } : sc.color ? { color: sc.color } : {}) };
   if (isCarousel(sc.scene)) return { dedication: sc.text ?? '', by: venue, imgs: imgs.length ? imgs : photos.slice(0, 5) };
   if (sc.scene.endsWith('idle')) return sc.text ? { title: sc.text } : {};
   return sc.text ? { dedication: sc.text } : {};

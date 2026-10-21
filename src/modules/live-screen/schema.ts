@@ -5,6 +5,8 @@ const url = z.string().refine((u) => /^(https:\/\/|\/)/.test(u), 'https o ruta a
 /** Estados de la pantalla del local (kit de Enjoy). club = pantalla completa; tp = encima de los visuales del local. */
 export const LIVE_SCENES = ['club.idle', 'club.song', 'club.photo', 'club.message', 'club.promo', 'club.carousel', 'club.toast', 'tp.idle', 'tp.song', 'tp.photo', 'tp.message', 'tp.full'] as const;
 export type LiveScene = (typeof LIVE_SCENES)[number];
+/** Colores del anuncio del local (los de la marca Enjoy y blanco); «dark» = la tarjeta oscura de siempre. */
+export const PROMO_COLORS = ['dark', 'yellow', 'pink', 'orange', 'violet', 'white'] as const;
 
 export const liveScreenSchema = z.object({
   eyebrow: z.string().max(60).optional(),
@@ -36,6 +38,8 @@ export const liveScreenSchema = z.object({
      * club.carousel, las que el local elige para el carrusel; en una foto, la que sale. Sin ellas, las del cliente.
      */
     images: z.array(url).max(8).optional(),
+    /** Color del anuncio (club.promo sin foto): fondo entero de ese color y el texto como titular. Sin él, oscuro. */
+    color: z.enum(PROMO_COLORS).optional(),
     /** Pantalla «Su vídeo»: el móvil sube su vídeo y sale de fondo (con su vídeo subido en Personalizar). */
     video: z.boolean().optional(),
   })).min(1).max(16),

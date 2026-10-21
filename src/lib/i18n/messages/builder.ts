@@ -126,7 +126,7 @@ const es = {
     title: 'Pantallas', help: 'Qué sale en la pantalla en vivo de esta propuesta, en orden. El texto sale en la pantalla; las fotos, de las que subes en Personaliza.',
     edit: 'Elegir pantallas', custom: 'Pantallas hechas para esta propuesta', reset: 'Volver a las del catálogo', save: 'Guardar pantallas', cancel: 'Cancelar',
     add: 'Añadir pantalla…', addLove: 'Añadir «Encontrar el amor»', name: 'Nombre (a la izquierda)', text: 'Texto en la pantalla', says: 'Qué cuentas tú (debajo del nombre)',
-    photos: 'Fotos', textOnly: 'Solo texto', noPhotos: 'Sube fotos en Personaliza para elegirlas aquí.', noVideo: 'Sube su vídeo en Personaliza para que salga.', idleVideo: 'Aquí sale su vídeo de fondo con el QR en pequeño encima.', idleNoVideo: 'Sin su vídeo, unos visuales de ejemplo. Súbelo en Personaliza y saldrá aquí.',
+    photos: 'Fotos', textOnly: 'Solo texto', color: 'Color del anuncio (sin foto)', colors: { dark: 'Oscuro', yellow: 'Amarillo', pink: 'Rosa', orange: 'Naranja', violet: 'Morado', white: 'Blanco' } as Record<string, string>, noPhotos: 'Sube fotos en Personaliza para elegirlas aquí.', noVideo: 'Sube su vídeo en Personaliza para que salga.', idleVideo: 'Aquí sale su vídeo de fondo con el QR en pequeño encima.', idleNoVideo: 'Sin su vídeo, unos visuales de ejemplo. Súbelo en Personaliza y saldrá aquí.',
     up: 'Subir', down: 'Bajar', remove: 'Quitar', max: (n: number) => `Hasta ${n} pantallas.`,
     kinds: {
       'tp.idle': 'Sus visuales (su vídeo) + QR pequeño', video: 'Su vídeo (lo sube desde el móvil)', 'tp.full': 'Foto a pantalla completa sobre sus visuales',
@@ -305,7 +305,7 @@ export const builderMessages = defineMessages({
       title: 'Screens', help: 'What the live screen shows in this proposal, in order. The text appears on the screen; photos come from the ones you upload in Personalise.',
       edit: 'Choose screens', custom: 'Screens made for this proposal', reset: 'Back to the catalogue ones', save: 'Save screens', cancel: 'Cancel',
       add: 'Add screen…', addLove: 'Add «Find love»', name: 'Name (on the left)', text: 'Text on the screen', says: 'What you say (under the name)',
-      photos: 'Photos', textOnly: 'Text only', noPhotos: 'Upload photos in Personalise to choose them here.', noVideo: 'Upload their video in Personalise for it to show.', idleVideo: 'Their video plays here in the background with the small QR on top.', idleNoVideo: 'Without their video, sample visuals. Upload it in Personalise and it will show here.',
+      photos: 'Photos', textOnly: 'Text only', color: 'Announcement colour (no photo)', colors: { dark: 'Dark', yellow: 'Yellow', pink: 'Pink', orange: 'Orange', violet: 'Purple', white: 'White' } as Record<string, string>, noPhotos: 'Upload photos in Personalise to choose them here.', noVideo: 'Upload their video in Personalise for it to show.', idleVideo: 'Their video plays here in the background with the small QR on top.', idleNoVideo: 'Without their video, sample visuals. Upload it in Personalise and it will show here.',
       up: 'Move up', down: 'Move down', remove: 'Remove', max: (n: number) => `Up to ${n} screens.`,
       kinds: {
         'tp.idle': 'Their visuals (their video) + small QR', video: 'Their video (uploaded from the phone)', 'tp.full': 'Full-screen photo over their visuals',
@@ -481,7 +481,7 @@ export const builderMessages = defineMessages({
       title: 'Ecrãs', help: 'O que aparece no ecrã ao vivo desta proposta, por ordem. O texto sai no ecrã; as fotos, das que carrega em Personalizar.',
       edit: 'Escolher ecrãs', custom: 'Ecrãs feitos para esta proposta', reset: 'Voltar aos do catálogo', save: 'Guardar ecrãs', cancel: 'Cancelar',
       add: 'Adicionar ecrã…', addLove: 'Adicionar «Encontrar o amor»', name: 'Nome (à esquerda)', text: 'Texto no ecrã', says: 'O que conta (debaixo do nome)',
-      photos: 'Fotos', textOnly: 'Só texto', noPhotos: 'Carregue fotos em Personalizar para as escolher aqui.', noVideo: 'Carregue o vídeo em Personalizar para que apareça.', idleVideo: 'Aqui aparece o seu vídeo de fundo com o QR pequeno por cima.', idleNoVideo: 'Sem o vídeo, visuais de exemplo. Carregue-o em Personalizar e aparece aqui.',
+      photos: 'Fotos', textOnly: 'Só texto', color: 'Cor do anúncio (sem foto)', colors: { dark: 'Escuro', yellow: 'Amarelo', pink: 'Rosa', orange: 'Laranja', violet: 'Roxo', white: 'Branco' } as Record<string, string>, noPhotos: 'Carregue fotos em Personalizar para as escolher aqui.', noVideo: 'Carregue o vídeo em Personalizar para que apareça.', idleVideo: 'Aqui aparece o seu vídeo de fundo com o QR pequeno por cima.', idleNoVideo: 'Sem o vídeo, visuais de exemplo. Carregue-o em Personalizar e aparece aqui.',
       up: 'Subir', down: 'Descer', remove: 'Remover', max: (n: number) => `Até ${n} ecrãs.`,
       kinds: {
         'tp.idle': 'Os seus visuais (o vídeo) + QR pequeno', video: 'O seu vídeo (carregado do telemóvel)', 'tp.full': 'Foto em ecrã inteiro sobre os visuais',
@@ -657,7 +657,7 @@ export const builderMessages = defineMessages({
       title: '화면', help: '이 제안서의 라이브 화면에 나오는 것과 순서입니다. 텍스트는 화면에, 사진은 맞춤 설정에서 올린 것 중에서 고릅니다.',
       edit: '화면 고르기', custom: '이 제안서용 화면', reset: '카탈로그 화면으로 되돌리기', save: '화면 저장', cancel: '취소',
       add: '화면 추가…', addLove: '«사랑 찾기» 추가', name: '이름(왼쪽)', text: '화면 텍스트', says: '설명(이름 아래)',
-      photos: '사진', textOnly: '텍스트만', noPhotos: '맞춤 설정에서 사진을 올리면 여기서 고를 수 있습니다.', noVideo: '맞춤 설정에서 영상을 올려야 나옵니다.', idleVideo: '여기에 고객 영상이 배경으로 나오고 작은 QR이 위에 표시됩니다.', idleNoVideo: '영상이 없으면 예시 비주얼이 나옵니다. 맞춤 설정에서 올리면 여기에 나옵니다.',
+      photos: '사진', textOnly: '텍스트만', color: '공지 색상(사진 없을 때)', colors: { dark: '어두운색', yellow: '노랑', pink: '분홍', orange: '주황', violet: '보라', white: '흰색' } as Record<string, string>, noPhotos: '맞춤 설정에서 사진을 올리면 여기서 고를 수 있습니다.', noVideo: '맞춤 설정에서 영상을 올려야 나옵니다.', idleVideo: '여기에 고객 영상이 배경으로 나오고 작은 QR이 위에 표시됩니다.', idleNoVideo: '영상이 없으면 예시 비주얼이 나옵니다. 맞춤 설정에서 올리면 여기에 나옵니다.',
       up: '위로', down: '아래로', remove: '삭제', max: (n: number) => `최대 ${n}개 화면.`,
       kinds: {
         'tp.idle': '고객 비주얼(영상) + 작은 QR', video: '고객 영상(휴대폰에서 업로드)', 'tp.full': '비주얼 위 전체 화면 사진',

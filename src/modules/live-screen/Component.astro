@@ -43,7 +43,7 @@ const uploaded = (u: string) => u.includes('/dossiers/') || u.includes('/demo-me
 const imagesOf = (xs?: string[]) => (xs ?? []).filter((u) => own.has(u) || !uploaded(u));
 const config = screenConfig(
   { venueName: t(venueName), djName, qrImage, photos, covers, phone, musicStyles: Astro.props.musicStyles, venueVideo, autoplay },
-  media, scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ? t(s.text) : undefined, images: imagesOf(s.images) })),
+  media, scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ? t(s.text) : undefined, images: imagesOf(s.images), color: s.color })),
 );
 ---
 <div data-module="live-screen" class="live-screen">
