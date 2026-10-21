@@ -46,8 +46,10 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await pub.waitForSelector('[data-module=live-screen] .es-stage');
   assert((await pub.getAttribute('[data-module=live-screen] .es-venue-logo', 'src'))?.startsWith('/demo-media/'), 'su logo arriba en la pantalla');
   const labels = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => (e.querySelector('b') ?? e).textContent.trim()));
-  assert(labels[1] === 'Su vídeo', `«Su vídeo» entre las pantallas (${labels.join(', ')})`);
-  await pub.click('[data-scene-btn="1"]');
+  // Su vídeo no es una pantalla aparte: la de sus visuales lo enseña de fondo, con el QR pequeño encima.
+  const vis = labels.indexOf('Encima de tus visuales');
+  assert(!labels.includes('Su vídeo') && vis >= 0, `sus visuales + su vídeo, en una sola pantalla (${labels.join(', ')})`);
+  await pub.click(`[data-scene-btn="${vis}"]`);
   await pub.waitForTimeout(3200);
   const vsrc = await pub.$eval('[data-module=live-screen] .es-stage video', (v) => v.currentSrc || v.src).catch(() => '');
   assert(vsrc.includes('/demo-media/'), 'su vídeo de fondo en la pantalla');

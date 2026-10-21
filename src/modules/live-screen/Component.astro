@@ -25,10 +25,18 @@ const needs = (sc: string) => (/song|toast/.test(sc) ? feat.songs : /photo|full/
 // «Su vídeo» elegido a mano sin vídeo subido: fuera (no hay nada que enseñar).
 const shown = baseScenes.filter((s) => needs(s.scene) && (!s.video || !!media.video));
 const visible = shown.length ? shown : baseScenes.slice(0, 1);
-// Con su vídeo subido, la pantalla «Su vídeo» va la segunda, salvo que el comercial ya la haya puesto donde quiere.
-const scenes: Array<(typeof baseScenes)[number]> = media.video && !visible.some((s) => s.video)
-  ? [visible[0], { scene: 'tp.idle' as const, label: videoScene.label, says: videoScene.says, video: true }, ...visible.slice(1)]
-  : visible;
+// Con su vídeo subido no hay pantalla aparte (criterio de Cristian: «sus visuales + su vídeo, a una sola»): la de sus
+// visuales (tp.idle) o, si no hay, el reclamo pasa a ser su vídeo de fondo con el QR pequeño encima, que asoma cada
+// pocos minutos. Sin ninguna de las dos, «Su vídeo» va la segunda. Una «Su vídeo» puesta a mano (de antes) se respeta.
+type Sc = (typeof baseScenes)[number];
+function withVideo(list: Sc[]): Sc[] {
+  if (!media.video || list.some((s) => s.video)) return list;
+  const tp = list.findIndex((s) => s.scene === 'tp.idle');
+  const at = tp >= 0 ? tp : list.findIndex((s) => s.scene === 'club.idle');
+  if (at < 0) return [list[0], { scene: 'tp.idle', label: videoScene.label, says: videoScene.says, video: true }, ...list.slice(1)];
+  return list.map((s, i) => (i !== at ? s : { ...s, scene: 'tp.idle', video: true, text: undefined, says: tp >= 0 && s.says ? s.says : videoScene.says }));
+}
+const scenes = withVideo(visible);
 // Fotos de una pantalla que ya no están en Personalizar (las quitó): fuera; sin ninguna, las del cliente.
 const own = new Set(media.photos ?? []);
 const uploaded = (u: string) => u.includes('/dossiers/') || u.includes('/demo-media/');

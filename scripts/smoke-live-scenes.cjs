@@ -40,7 +40,6 @@ const AD = 'Molan los 2000 ya tiene nueva fecha!!';
   while (await ed.locator('[data-testid=scene-remove]').count()) await ed.locator('[data-testid=scene-remove]').first().click();
   const add = async (kind) => { await ed.locator('[data-testid=scene-add]').selectOption(kind); return ed.locator('[data-testid=scene-row]').last(); };
   await (await add('tp.idle')).locator('[data-testid=scene-label]').fill('Sus visuales');
-  await add('video');
   await (await add('tp.full')).locator('[data-testid=scene-label]').fill('Su foto, en grande');
   let r = await add('club.promo');
   await r.locator('[data-testid=scene-label]').fill('Anuncio');
@@ -56,7 +55,7 @@ const AD = 'Molan los 2000 ya tiene nueva fecha!!';
   if (OUT) await p.screenshot({ path: `${OUT}/scenes-editor.png`, fullPage: true });
   await ed.locator('[data-testid=scenes-save]').click(); await settle();
   await p.waitForFunction(() => !document.querySelector('[data-item-key=pantalla-en-vivo] [data-testid=scene-row]'));
-  assert((await ed.textContent()).includes('Pantallas hechas para esta propuesta · 10'), 'guardadas: 10 pantallas, hechas para esta propuesta');
+  assert((await ed.textContent()).includes('Pantallas hechas para esta propuesta · 9'), 'guardadas: 9 pantallas, hechas para esta propuesta');
   assert(!(await p.isVisible('[data-item-key=pantalla-en-vivo] .co-alert--rejection')), 'sin errores en el módulo');
 
   // ---- La propuesta, como la ve el cliente.
@@ -66,10 +65,15 @@ const AD = 'Molan los 2000 ya tiene nueva fecha!!';
   await pub.goto(`${url}?ver=scroll`, { waitUntil: 'networkidle' });
   await pub.waitForSelector('[data-module=live-screen] .es-stage');
   const labels = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => (e.querySelector('b') ?? e).textContent.trim()));
-  assert(labels.join('|') === 'Sus visuales|Su vídeo|Su foto, en grande|Anuncio|Anuncio con foto|¿Quién busca el amor?|El elegido|¿Te interesa?|«1!»|Carrusel', `en orden: ${labels.join(', ')}`);
+  assert(labels.join('|') === 'Sus visuales|Su foto, en grande|Anuncio|Anuncio con foto|¿Quién busca el amor?|El elegido|¿Te interesa?|«1!»|Carrusel', `en orden: ${labels.join(', ')}`);
   const stage = '[data-module=live-screen] .es-stage';
   const open = async (label, wait = 2600) => { await pub.click(`[data-scene-btn="${labels.indexOf(label)}"]`); await pub.waitForTimeout(wait); };
   await pub.locator('[data-module=live-screen]').scrollIntoViewIfNeeded();
+  // Sus visuales y su vídeo, en una: su vídeo de fondo y el QR en pequeño.
+  await open('Sus visuales', 3200);
+  const vsrc = await pub.$eval(`${stage} video`, (v) => v.currentSrc || v.src).catch(() => '');
+  assert(vsrc.includes('/demo-media/') && (await pub.isVisible(`${stage} .es-qr-card`)), 'sus visuales: su vídeo de fondo y el QR pequeño');
+  if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/scenes-visuals.png` });
   await open('Anuncio');
   assert((await pub.textContent(stage)).includes(AD), 'anuncio con su texto');
   if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/scenes-ad.png` });
@@ -84,6 +88,22 @@ const AD = 'Molan los 2000 ya tiene nueva fecha!!';
   await open('Carrusel', 1200);
   assert((await pub.$$(`${stage} .es-car-img`)).length === 2, 'carrusel con sus 2 fotos');
   if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/scenes-carousel.png` });
+
+  // ---- Sin pantalla de sus visuales: el reclamo se convierte en ella (su vídeo de fondo + QR pequeño), sin «Su vídeo».
+  await ed.locator('[data-testid=scenes-open]').click();
+  while (await ed.locator('[data-testid=scene-remove]').count()) await ed.locator('[data-testid=scene-remove]').first().click();
+  await (await add('club.idle')).locator('[data-testid=scene-label]').fill('Reclamo');
+  await (await add('club.photo')).locator('[data-testid=scene-label]').fill('Foto');
+  await ed.locator('[data-testid=scenes-save]').click(); await settle();
+  await p.waitForFunction(() => !document.querySelector('[data-item-key=pantalla-en-vivo] [data-testid=scene-row]'));
+  await pub.reload({ waitUntil: 'networkidle' });
+  await pub.waitForSelector('[data-module=live-screen] .es-stage');
+  const two = await pub.$$eval('[data-scene-btn]', (els) => els.map((e) => (e.querySelector('b') ?? e).textContent.trim()));
+  assert(two.join('|') === 'Reclamo|Foto', `reclamo + su vídeo, en una (${two.join(', ')})`);
+  assert((await pub.textContent('[data-scene-btn="0"]')).includes('QR en pequeño'), 'el reclamo cuenta: sus visuales de fondo y el QR en pequeño');
+  await pub.click('[data-scene-btn="0"]'); await pub.waitForTimeout(3200);
+  assert(((await pub.$eval(`${stage} video`, (v) => v.currentSrc || v.src).catch(() => '')).includes('/demo-media/')) && (await pub.isVisible(`${stage} .es-qr-card`)), 'el reclamo enseña su vídeo y el QR pequeño');
+  if (OUT) await pub.locator('[data-module=live-screen]').screenshot({ path: `${OUT}/scenes-reclamo-video.png` });
 
   // ---- Volver a las del catálogo.
   await ed.locator('[data-testid=scenes-open]').click();

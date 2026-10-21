@@ -41,10 +41,13 @@ export const liveScreenSchema = z.object({
   })).min(1).max(16),
   /** Vídeo del local de ejemplo (los visuales sobre los que va el modo transparente). webm y mp4: cada navegador coge el suyo. */
   venueVideo: z.object({ webm: url.optional(), mp4: url.optional(), poster: url.optional() }).optional(),
-  /** Pantalla extra cuando el comercial sube un vídeo del cliente (Personalizar): sus visuales de fondo. */
+  /**
+   * Su vídeo (Personalizar): la pantalla de sus visuales (o el reclamo) pasa a ser su vídeo con el QR pequeño encima, con
+   * este texto si era el reclamo; sin ninguna de las dos, sale como pantalla extra con este nombre.
+   */
   videoScene: z.object({ label: z.string().min(1).max(30), says: z.string().max(220) }).default({
     label: 'Su vídeo',
-    says: 'Sus visuales de fondo y la pantalla encima. Lo cambian desde el móvil cuando quieran, y sale cada pocos minutos.',
+    says: 'Sus visuales de fondo y, encima, el QR en pequeño, que asoma cada pocos minutos. Los cambian desde el móvil cuando quieran.',
   }),
   /** Canciones por estilo (con carátulas resueltas por el alta del espacio). Sin esto, las de music.ts sin carátula. */
   musicStyles: z.record(z.string().regex(/^[a-z0-9-]{1,40}$/), z.object({

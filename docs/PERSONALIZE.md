@@ -6,7 +6,7 @@ En el editor, justo debajo de «Compartir»: **Personaliza para {cliente}**. Tre
 |---|---|---|
 | Logo | Su logo (PNG, JPG, WebP o SVG, hasta 5 MB) | Arriba a la izquierda de la pantalla en vivo, en lugar de su nombre |
 | Fotos | Hasta 8: de su local, de su Instagram (PNG, JPG o WebP, hasta 8 MB) | En «Foto» (su foto a pantalla completa) y dentro del móvil que la envía |
-| Vídeo | Uno, con sus visuales (MP4 o WebM, hasta 30 MB) | Pantalla extra «Su vídeo»: el móvil lo sube, desaparece y el vídeo sale de fondo con la pantalla encima |
+| Vídeo | Uno, con sus visuales (MP4 o WebM, hasta 30 MB) | En la pantalla de sus visuales (o el reclamo): el móvil lo sube y el vídeo sale de fondo con el QR pequeño encima |
 
 Idea de venta: con su logo, un generador de vídeo (Gemini, Runway…) hace en 5 minutos un visual suyo. Lo subes y la propuesta enseña **su** local funcionando.
 
@@ -32,14 +32,15 @@ En el editor, dentro del módulo **Pantalla en vivo**, la tarjeta **Pantallas** 
 
 | Tipo | Escena | Qué enseña |
 |---|---|---|
-| Sus visuales + QR pequeño | `tp.idle` | Sus visuales (su vídeo, o el de ejemplo) con el QR en una tarjeta |
-| Su vídeo | `tp.idle` + `video` | El móvil sube su vídeo y sale de fondo (solo si hay vídeo subido; si no se elige, va la segunda como antes) |
+| Sus visuales (su vídeo) + QR pequeño | `tp.idle` | Su vídeo de fondo (o unos visuales de ejemplo si no lo ha subido) con el QR en una tarjeta pequeña, que asoma cada pocos minutos |
 | Foto a pantalla completa (sobre sus visuales) | `tp.full` / `club.photo` | La foto que suben, entera; se puede fijar cuál |
 | QR en grande (con su texto) | `club.idle` | El QR gigante; con texto, ese texto en grande en vez de los reclamos (dinámicas) |
 | Anuncio del local (texto o foto) | `club.promo` | Lo que el local manda desde su móvil: solo texto, como titular; con foto (su cartel), la foto entera y el texto debajo |
 | Carrusel de fotos | `club.carousel` | Las fotos que el local elige (anuncios o gente), una tras otra cada 2,6 s, enteras, con el QR |
 
 **«Añadir «Encontrar el amor»»** mete cuatro pantallas: QR en grande «¿Quién quiere encontrar el amor? ¡Sube tu foto!» → la foto elegida en grande → QR en grande «¿Te interesa? Sube tu foto con un «1!»» → los interesados en grande con su «1!». Los textos están en `messages/builder.ts` (`scenes.love`), en los cuatro idiomas.
+
+**Su vídeo, en una sola pantalla** (criterio de Cristian): con su vídeo subido no sale una pantalla «Su vídeo» aparte. La primera pantalla de sus visuales (`tp.idle`) pasa a enseñarlo, con el móvil subiéndolo; si no hay ninguna, el reclamo (`club.idle`) se convierte en ella, con el texto de `videoScene.says` («Sus visuales de fondo y, encima, el QR en pequeño…»). Solo sin ninguna de las dos sale como pantalla extra. Las «Su vídeo» puestas a mano antes se respetan.
 
 Una foto que se quita en Personaliza deja de salir en las pantallas que la usaban (vuelven a las del cliente). Smoke: `scripts/smoke-live-scenes.cjs` (la propuesta simplificada de una promotora).
 

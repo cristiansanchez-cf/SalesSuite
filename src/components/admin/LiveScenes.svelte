@@ -14,7 +14,8 @@
     { item: BuilderItem; photos: string[]; hasVideo: boolean; editable: boolean; t: T; onsave: (scenes: Scene[] | null) => Promise<boolean> } = $props();
 
   const MAX = 16;
-  const KINDS = ['tp.idle', 'video', 'tp.full', 'tp.photo', 'tp.message', 'club.idle', 'club.photo', 'club.message', 'club.promo', 'club.carousel', 'club.song', 'club.toast', 'tp.song'];
+  // «Su vídeo» ya no es una pantalla aparte: con su vídeo subido, «Sus visuales» lo enseña (lo de antes se respeta).
+  const KINDS = ['tp.idle', 'tp.full', 'tp.photo', 'tp.message', 'club.idle', 'club.photo', 'club.message', 'club.promo', 'club.carousel', 'club.song', 'club.toast', 'tp.song'];
   /** Lo que no lleva texto propio (el reclamo pequeño, su vídeo, las canciones en pequeño). */
   const NO_TEXT = new Set(['tp.idle', 'video', 'club.toast', 'tp.song']);
   /** Una foto (el cartel, la que sale) o varias (el carrusel). */
@@ -36,7 +37,7 @@
   };
   /** Nombre por defecto: el tipo sin su aclaración entre paréntesis, cortado por una palabra (máx. 30). */
   function short(raw: string) {
-    const s = raw.replace(/\s*\(.*\)\s*$/, '');
+    const s = raw.replace(/\s*\([^)]*\)/g, '');
     if (s.length <= 30) return s;
     const cut = s.slice(0, 30);
     return cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s+]+$/, '');
@@ -77,7 +78,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <span class="co-meta w-6 text-right">{String(i + 1).padStart(2, '0')}</span>
             <select class="co-select !min-h-[32px] !w-auto !py-1" bind:value={r.kind} aria-label={t.add} data-testid="scene-kind">
-              {#each KINDS as k (k)}<option value={k}>{t.kinds[k]}</option>{/each}
+              {#each r.kind === 'video' ? ['video', ...KINDS] : KINDS as k (k)}<option value={k}>{t.kinds[k]}</option>{/each}
             </select>
             <span class="ml-auto flex gap-1">
               <button type="button" class="co-btn co-btn--quiet co-btn--sm" disabled={i === 0} onclick={() => move(i, -1)} aria-label={t.up}>↑</button>
@@ -96,6 +97,7 @@
               <input class="co-input !min-h-[32px] !py-1" maxlength="220" bind:value={r.says} data-testid="scene-says" /></label>
           </div>
           {#if r.kind === 'video' && !hasVideo}<p class="co-help">{t.noVideo}</p>{/if}
+          {#if r.kind === 'tp.idle'}<p class="co-help">{hasVideo ? t.idleVideo : t.idleNoVideo}</p>{/if}
           {#if ONE_PHOTO.has(r.kind) || r.kind === 'club.carousel'}
             <div class="grid gap-1">
               <span class="text-xs text-muted">{t.photos}{ONE_PHOTO.has(r.kind) && r.kind === 'club.promo' && !r.images.length ? ` · ${t.textOnly}` : ''}</span>
