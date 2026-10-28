@@ -17,7 +17,20 @@ interface Config {
   autoplay: boolean;
   scenes: Scene[];
 }
-interface Screen { show(scene: string, data?: Record<string, unknown>): void; set(k: string, v: unknown): void; destroy(): void }
+interface Screen { show(scene: string, data?: Record<string, unknown>): void; set(k: string, v: unknown): void; prime(): void; destroy(): void }
+
+/**
+ * El iPhone en ahorro de batería no deja arrancar ningún vídeo solo. Con el primer toque en la página (un botón, la
+ * flecha, la propia pantalla) se desbloquea el de cada pantalla, y desde ahí va solo el resto de la visita.
+ */
+const screens = new Set<Screen>();
+let unlockOn = false;
+function primeAll() { screens.forEach((s) => s.prime()); }
+function watchFirstTouch() {
+  if (unlockOn) return;
+  unlockOn = true;
+  for (const ev of ['pointerup', 'touchend', 'keydown']) document.addEventListener(ev, primeAll, { capture: true, passive: true });
+}
 
 /** Carátula de color con el título cuando no hay carátulas reales (mejor que un marcador vacío en un dossier). */
 function coverFor(title: string, i: number): string {
@@ -221,6 +234,7 @@ export function init(root: HTMLElement): () => void {
   loadEngine(cfg).then((EnjoyScreen) => {
     if (!alive) return;
     screen = EnjoyScreen(stage, { scene: cfg.scenes[0].scene });
+    screens.add(screen); watchFirstTouch();
     go(0, false);
   });
   const stopVis = onVisibility(root, (v) => {
@@ -229,7 +243,7 @@ export function init(root: HTMLElement): () => void {
     if (v && auto) go(idx, false); else clear();
   });
 
-  return () => { alive = false; clear(); stopVis(); root.removeEventListener('deck:step', onDeckStep); screen?.destroy(); };
+  return () => { alive = false; clear(); stopVis(); root.removeEventListener('deck:step', onDeckStep); if (screen) screens.delete(screen); screen?.destroy(); };
 }
 
 /**
@@ -261,8 +275,9 @@ export function initMini(root: HTMLElement): () => void {
   loadEngine(cfg).then((EnjoyScreen) => {
     if (!alive) return;
     screen = EnjoyScreen(stage, { scene: cfg.scenes[0].scene });
+    screens.add(screen); watchFirstTouch();
     if (visible) step(); else screen.show(cfg.scenes[0].scene);
   });
   const stopVis = onVisibility(root, (v) => { visible = v; if (v) step(); else stop(); });
-  return () => { alive = false; stop(); stopVis(); screen?.destroy(); };
+  return () => { alive = false; stop(); stopVis(); if (screen) screens.delete(screen); screen?.destroy(); };
 }

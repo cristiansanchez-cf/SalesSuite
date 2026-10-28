@@ -107,6 +107,14 @@
 .es-bg-video.contain { object-fit: contain; }
 /* En pausa y oculto mientras la pantalla enseña otra cosa (así vuelve al instante). */
 .es-bg-video.es-vid-off { visibility: hidden; }
+/* ▶ cuando el móvil no deja arrancar el vídeo solo (iPhone en ahorro de batería): un toque y va. */
+.es-vid-play {
+  position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%);
+  width: 14cqw; height: 14cqw; border-radius: 50%; border: 0; padding: 0; cursor: pointer; pointer-events: auto;
+  display: grid; place-items: center; background: rgba(8,3,12,.62); color: #fff;
+  box-shadow: 0 0 0 .5cqw rgba(255,255,255,.85); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.es-vid-play svg { width: 46%; height: 46%; fill: currentColor; margin-left: 8%; }
 /* Marcador cuando aún no has puesto vídeos */
 .es-bg-fake {
   position: absolute; inset: 0;

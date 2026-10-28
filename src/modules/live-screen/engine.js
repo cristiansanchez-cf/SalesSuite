@@ -476,6 +476,7 @@
       vid.setAttribute('muted', ''); vid.setAttribute('playsinline', ''); vid.setAttribute('preload', 'auto');
       vid.addEventListener('ended', nextClip);
       vid.addEventListener('error', clipFailed);
+      vid.addEventListener('playing', function () { showPlay(false); });
       setClip();
       return vid;
     }
@@ -488,7 +489,18 @@
     function playClip() {
       if (!vid || !clips.length) return;
       var p = vid.play();
-      if (p && p.catch) p.catch(function () {});
+      // El móvil no lo deja arrancar solo (iPhone en ahorro de batería): el botón ▶, nunca un vídeo congelado.
+      if (p && p.catch) p.catch(function () { if (o.mode === 'tp') showPlay(true); });
+    }
+    function showPlay(on) {
+      var b = elBase.querySelector('.es-vid-play');
+      if (on && !b && vid && vid.parentNode === elBase) {
+        b = document.createElement('button');
+        b.type = 'button'; b.className = 'es-vid-play'; b.setAttribute('aria-label', 'Ver el vídeo');
+        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>';
+        b.addEventListener('click', function (e) { e.stopPropagation(); playClip(); });
+        elBase.appendChild(b);
+      } else if (!on && b) b.remove();
     }
     function nextClip() { vidIdx++; setClip(); if (o.mode === 'tp') playClip(); }
     /* Si su vídeo no se puede reproducir, el de ejemplo (una vez); si tampoco, se queda quieto (nada de reintentar en
@@ -537,6 +549,16 @@
         return api;
       },
       get: function (k) { return o[k]; },
+      /** Dentro de un toque (en cualquier sitio de la página): el móvil desbloquea el vídeo y desde entonces arranca
+          solo, también con el iPhone en ahorro de batería. Si ahora no toca vídeo, se vuelve a pausar. */
+      prime: function () {
+        if (!vid || vid._primed) return api;
+        vid._primed = true;
+        var p = vid.play();
+        var back = function () { if (o.mode !== 'tp') vid.pause(); };
+        if (p && p.then) p.then(back, function () { vid._primed = false; }); else back();
+        return api;
+      },
       /** Dispara el aviso de precio (el producto lo lanza solo al cambiar la tarifa). */
       price: function (text, kind) {
         o._price = { text: text, kind: kind || 'up' };
