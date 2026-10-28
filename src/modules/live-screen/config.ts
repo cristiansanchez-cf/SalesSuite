@@ -27,8 +27,9 @@ export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<
       photos: ownPhotos.length ? ownPhotos : p.photos, covers: resolved ? songs.map((x) => x.cover ?? '') : p.covers, avatars: [], videos: [] as string[],
     },
     songs: songs.map((x) => ({ song: x.song, artist: x.artist })),
-    // Sus visuales: su vídeo si lo han subido; si no, uno de ejemplo de un local (el navegador elige el formato).
-    video: media.video ? { own: media.video } : { webm: p.venueVideo?.webm, mp4: p.venueVideo?.mp4 },
+    // Sus visuales: su vídeo si lo han subido; si no (o si en ese móvil no se puede reproducir), uno de ejemplo de un
+    // local (el navegador elige el formato).
+    video: { ...(media.video ? { own: media.video } : {}), webm: p.venueVideo?.webm, mp4: p.venueVideo?.mp4 },
     phone: p.phone ?? {}, ownPhoto: ownPhotos[0] ?? null, autoplay: p.autoplay,
     scenes: scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ?? '', images: (s.images ?? []).filter(Boolean), color: s.color ?? '' })),
   };

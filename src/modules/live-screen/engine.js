@@ -417,6 +417,8 @@
     elRank.innerHTML = rankingHTML();
 
     var timers = [], vid = null, vidIdx = 0, lastBase = '';
+    // Los clips de ESTA pantalla: su vídeo; si falla (formato, red), una vez el de ejemplo (A.videoFallback).
+    var clips = (A.videos || []).slice(), fellBack = false;
 
     function after(ms, fn) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 
@@ -425,7 +427,7 @@
       var key = o.mode + '|' + (o.videos ? '1' : '0') + '|' + (o.fx ? '1' : '0') + '|' + (o.videoCover ? '1' : '0');
       if (key === lastBase) return;         // no reiniciar el vídeo sin motivo
       lastBase = key;
-      vid = null;
+      if (vid) vid.pause();
 
       if (o.mode === 'club') {
         elBase.className = 'es-layer es-base es-bg-club' + (o.fx ? ' fx' : '');
@@ -435,15 +437,16 @@
             '<span class="es-blob-anchor es-orbit delay"><span class="es-blob es-blob--yellow"></span></span>' +
             '<div class="es-particles">' + particles() + '</div>'
           : '';
+        // El vídeo se queda (oculto y en pausa) para que, al volver a sus visuales, salga al momento y no en negro.
+        if (o.videos && clips.length) { ensureVid().className = 'es-bg-video es-vid-off'; elBase.appendChild(vid); }
         return;
       }
       // Transparente: o la playlist de vídeo, o el damero de "aquí no hay nada".
-      if (o.videos && A.videos && A.videos.length) {
+      if (o.videos && clips.length) {
         elBase.className = 'es-layer es-base';
-        elBase.innerHTML = '<video class="es-bg-video' + (o.videoCover ? '' : ' contain') + '" muted playsinline></video>';
-        vid = elBase.querySelector('video');
-        vid.addEventListener('ended', nextClip);
-        vid.addEventListener('error', nextClip);
+        elBase.innerHTML = '';
+        ensureVid().className = 'es-bg-video' + (o.videoCover ? '' : ' contain');
+        elBase.appendChild(vid);
         playClip();
       } else if (o.videos) {
         elBase.className = 'es-layer es-base';
@@ -463,16 +466,40 @@
       }
       return out;
     }
-    /* La playlist: un solo <video>, se le cambia el src al acabar cada clip.
-       Así es exactamente como lo hace el producto (no crea players nuevos). */
+    /* La playlist: un solo <video> por pantalla, que se reutiliza (no se vuelve a descargar al cambiar de escena);
+       con varios clips se le cambia el src al acabar cada uno, como el producto; con uno, va en bucle.
+       Sin sonido e inline (si no, el móvil no lo arranca solo). */
+    function ensureVid() {
+      if (vid) return vid;
+      vid = document.createElement('video');
+      vid.muted = true; vid.defaultMuted = true; vid.playsInline = true;
+      vid.setAttribute('muted', ''); vid.setAttribute('playsinline', ''); vid.setAttribute('preload', 'auto');
+      vid.addEventListener('ended', nextClip);
+      vid.addEventListener('error', clipFailed);
+      setClip();
+      return vid;
+    }
+    /* «#t=0.001»: el iPhone enseña el primer fotograma aunque no le deje arrancarlo solo (modo ahorro), no un negro. */
+    function setClip() {
+      var u = clips[vidIdx % clips.length];
+      vid.loop = clips.length === 1;
+      vid.src = /^(data|blob):|#/.test(u) ? u : u + '#t=0.001';
+    }
     function playClip() {
-      if (!vid || !A.videos.length) return;
-      vid.src = A.videos[vidIdx % A.videos.length];
-      vid.load();
+      if (!vid || !clips.length) return;
       var p = vid.play();
       if (p && p.catch) p.catch(function () {});
     }
-    function nextClip() { vidIdx++; playClip(); }
+    function nextClip() { vidIdx++; setClip(); if (o.mode === 'tp') playClip(); }
+    /* Si su vídeo no se puede reproducir, el de ejemplo (una vez); si tampoco, se queda quieto (nada de reintentar en
+       bucle, que en el móvil se come los datos). */
+    function clipFailed() {
+      if (fellBack || !(A.videoFallback && A.videoFallback.length)) return;
+      fellBack = true; clips = A.videoFallback.slice(); vidIdx = 0; setClip();
+      if (o.mode === 'tp') playClip();
+    }
+    // Con el móvil sin arranque automático, tocar la pantalla lo pone en marcha.
+    mount.addEventListener('click', function () { if (vid && vid.paused && o.mode === 'tp') playClip(); });
 
     /* --- Estado --------------------------------------------------------- */
     function renderScene() {
@@ -519,7 +546,11 @@
       },
       /** Guion automático: encadena los estados en bucle. Para dejarlo rodando. */
       auto: function (on) { on === false ? stopAuto() : startAuto(); return api; },
-      destroy: function () { stopAuto(); clearInterval(ctaTimer); timers.forEach(clearTimeout); timers = []; mount.innerHTML = ''; }
+      destroy: function () {
+        stopAuto(); clearInterval(ctaTimer); timers.forEach(clearTimeout); timers = [];
+        if (vid) { vid.pause(); vid.removeAttribute('src'); vid.load(); vid = null; }
+        mount.innerHTML = '';
+      }
     };
 
     function defaultData(scene) {

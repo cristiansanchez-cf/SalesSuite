@@ -32,6 +32,11 @@ function coverFor(title: string, i: number): string {
 function pickVideo(v: Config['video']): string[] {
   if (!v) return [];
   if (v.own) return [v.own];
+  return pickSample(v);
+}
+/** El de ejemplo: también es el de repuesto si el suyo no se puede reproducir en este móvil. */
+function pickSample(v: Config['video']): string[] {
+  if (!v) return [];
   const probe = document.createElement('video');
   const src = v.webm && probe.canPlayType('video/webm; codecs="vp9"') ? v.webm : v.mp4 && probe.canPlayType('video/mp4; codecs="avc1.4D401E"') ? v.mp4 : v.webm ?? v.mp4;
   return src ? [src] : [];
@@ -50,7 +55,7 @@ function loadEngine(cfg: Config) {
     const ranking = cfg.songs?.length ? cfg.songs.map((x, i) => ({ ...x, votes: [12, 8, 5, 3, 2, 1][i] ?? 1 })) : DEMO.ranking;
     // Una carátula por canción, en el mismo orden; la que falte, vinilo de color.
     const covers = songs.map((s, i) => cfg.assets.covers[i] || coverFor(s.song, i));
-    w.ASSETS = { ...cfg.assets, videos: pickVideo(cfg.video), covers };
+    w.ASSETS = { ...cfg.assets, videos: pickVideo(cfg.video), videoFallback: cfg.video?.own ? pickSample(cfg.video) : [], covers };
     w.DEMO = { ...DEMO, songs, ranking };
     engineReady = import('./engine.js').then(() => w.EnjoyScreen as (el: HTMLElement, o?: Record<string, unknown>) => Screen);
   }

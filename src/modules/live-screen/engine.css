@@ -105,6 +105,8 @@
 /* Vídeo de fondo del local (la playlist) */
 .es-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
 .es-bg-video.contain { object-fit: contain; }
+/* En pausa y oculto mientras la pantalla enseña otra cosa (así vuelve al instante). */
+.es-bg-video.es-vid-off { visibility: hidden; }
 /* Marcador cuando aún no has puesto vídeos */
 .es-bg-fake {
   position: absolute; inset: 0;
