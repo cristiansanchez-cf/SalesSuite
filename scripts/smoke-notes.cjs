@@ -118,6 +118,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
   const ct = await p.textContent('[data-testid=notes-contact]');
   assert(ct.includes('https://marf.example.com/') && ct.includes('soundcloud.com/marf-daniels'), `sus canales: web y música (${ct.replace(/\s+/g, ' ').trim()})`);
+  // Otros smokes dejan un «DJ Marf Smoke» parecido (70 %): sin seguridad, la app no adivina y deja elegir; aquí, nueva.
+  await p.selectOption('[data-testid=notes-account]', 'new');
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
   await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("DJ Marf Daniels")')]);
   assert((await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'dj', 'ficha de DJ');
