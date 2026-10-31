@@ -55,6 +55,7 @@ export function inheritedAnswers(p: Proposal, f: AccountFacts): string[] {
 export function inheritedStyle(p: Proposal, f: AccountFacts): string | null {
   const ms = p.fromAccount?.musicStyle;
   if (!ms) return null;
-  for (const k of ms.from) for (const v of factValues(f, k)) if (ms.map[v]) return ms.map[v];
+  // hasOwn: un valor de la ficha como «constructor» no puede devolver lo que hereda el objeto.
+  for (const k of ms.from) for (const v of factValues(f, k)) if (Object.hasOwn(ms.map, v) && ms.map[v]) return ms.map[v];
   return null;
 }
