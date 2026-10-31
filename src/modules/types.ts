@@ -18,6 +18,8 @@ export interface ModuleContext {
   payUrl?: string | null;
   /** Periodo de la tarifa elegida: once, event, month, year. */
   pricePeriod?: string | null;
+  /** Ejemplos de la pantalla del espacio (marca → screenExamples): los que salen en las pantallas sin texto propio. */
+  screenExamples?: import('~/lib/brand').Brand['screenExamples'];
 }
 
 export interface ModuleBaseProps {

@@ -44,6 +44,7 @@ const imagesOf = (xs?: string[]) => (xs ?? []).filter((u) => own.has(u) || !uplo
 const config = screenConfig(
   { venueName: t(venueName), djName, qrImage, photos, covers, phone, musicStyles: Astro.props.musicStyles, venueVideo, autoplay },
   media, scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ? t(s.text) : undefined, images: imagesOf(s.images), color: s.color })),
+  ctx.screenExamples,
 );
 ---
 <div data-module="live-screen" class="live-screen">

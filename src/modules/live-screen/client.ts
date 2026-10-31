@@ -6,6 +6,7 @@ import { DEMO } from './demo';
  * El recorrido va solo mientras se ve; en cuanto alguien toca una pantalla (o pasa con la flecha), se queda en ella.
  */
 type Scene = { scene: string; video?: boolean; text?: string; images?: string[]; color?: string };
+type Example = { by: string; text: string };
 interface Config {
   assets: Record<string, unknown> & { covers: string[]; venueName?: string };
   phone: { song?: string; photo?: string; message?: string };
@@ -14,6 +15,8 @@ interface Config {
   video?: { own?: string; webm?: string; mp4?: string };
   /** Su propia foto (Personalizar): el móvil la enseña al enviarla. */
   ownPhoto?: string | null;
+  /** Ejemplos del espacio (Catálogo → Mensajes de la pantalla); null = los del kit. */
+  examples?: { messages?: Example[]; photos?: Example[]; songs?: Example[] } | null;
   autoplay: boolean;
   scenes: Scene[];
 }
@@ -60,16 +63,20 @@ function loadEngine(cfg: Config) {
   // El motor lee ASSETS/DEMO al cargarse: se ponen antes (los del espacio; mismas para todas las pantallas de la página).
   const w = window as unknown as Record<string, unknown>;
   if (!engineReady) {
+    // Quién firma y qué dedica cada petición: los ejemplos del espacio si los tiene; si no, los del kit.
+    const ex = cfg.examples ?? {};
+    const said = (xs: Example[] | undefined) => (xs?.length ? xs.map((x) => ({ by: x.by, dedication: x.text })) : null);
+    const exSongs = said(ex.songs);
     const BY = ['Laura', 'Marc', 'Ana', 'Jorge', 'Lucía', 'Dani'];
     const DED = ['¡Va por Marta, feliz cumple! 🎉', '', 'Para la mesa 7, que no para 🔥', '', 'La nuestra 💃', ''];
     const songs = cfg.songs?.length
-      ? cfg.songs.map((x, i) => ({ ...x, by: BY[i % BY.length], dedication: DED[i % DED.length] }))
-      : DEMO.songs;
+      ? cfg.songs.map((x, i) => ({ ...x, ...(exSongs ? exSongs[i % exSongs.length] : { by: BY[i % BY.length], dedication: DED[i % DED.length] }) }))
+      : exSongs ? DEMO.songs.map((x, i) => ({ ...x, ...exSongs[i % exSongs.length] })) : DEMO.songs;
     const ranking = cfg.songs?.length ? cfg.songs.map((x, i) => ({ ...x, votes: [12, 8, 5, 3, 2, 1][i] ?? 1 })) : DEMO.ranking;
     // Una carátula por canción, en el mismo orden; la que falte, vinilo de color.
     const covers = songs.map((s, i) => cfg.assets.covers[i] || coverFor(s.song, i));
     w.ASSETS = { ...cfg.assets, videos: pickVideo(cfg.video), videoFallback: cfg.video?.own ? pickSample(cfg.video) : [], covers };
-    w.DEMO = { ...DEMO, songs, ranking };
+    w.DEMO = { ...DEMO, songs, ranking, messages: said(ex.messages) ?? DEMO.messages, photos: said(ex.photos) ?? DEMO.photos };
     engineReady = import('./engine.js').then(() => w.EnjoyScreen as (el: HTMLElement, o?: Record<string, unknown>) => Screen);
   }
   return engineReady;

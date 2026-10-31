@@ -1,0 +1,75 @@
+---
+/**
+ * Catálogo → Mensajes de la pantalla: los ejemplos (mensajes, pies de foto, dedicatorias) que salen en la pantalla en
+ * vivo de todas las propuestas del espacio, en las pantallas sin texto propio. Se guardan en la marca (brand.screenExamples)
+ * y se leen al pintar cada propuesta: cambian en todas (en un minuto como mucho, por la caché del espacio). Solo admin y solo si el espacio tiene la pantalla.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { flash, formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { MAX_EXAMPLES, parseBrand, type ScreenExample } from '~/lib/brand';
+import { i18n } from '~/lib/i18n';
+import { screenExamplesMessages } from '~/lib/i18n/messages/screenExamples';
+import { KIT_EXAMPLES } from '~/modules/live-screen/demo';
+import { clearTenantCache } from '~/lib/tenant';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const t = admin.tenantAdmin;
+const { m: M } = i18n(Astro, screenExamplesMessages);
+if (!(await t.listCatalog()).some((m) => m.blockType === 'live-screen')) return Astro.rewrite('/404');
+
+const GROUPS = ['messages', 'photos', 'songs'] as const;
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const reset = f.get('action') === 'reset';
+  result = await formAction(async () => {
+    if (reset) { await t.saveScreenExamples(null); clearTenantCache(); return; }
+    const read = (g: string): ScreenExample[] => Array.from({ length: MAX_EXAMPLES }, (_, i) => ({
+      by: String(f.get(`${g}-by-${i}`) ?? '').trim(), text: String(f.get(`${g}-text-${i}`) ?? '').trim(),
+    })).filter((x) => x.text);
+    const next = Object.fromEntries(GROUPS.map((g) => [g, read(g)]).filter(([, xs]) => xs.length));
+    if (!Object.keys(next).length) throw new AdminError(422, M.empty);
+    await t.saveScreenExamples(next);
+    clearTenantCache();
+  });
+  if (!result.error) return Astro.redirect(`/admin/catalog/pantalla?ok=${reset ? 'reset' : 'saved'}`, 303);
+}
+
+const own = parseBrand((await t.getSettings()).brand).screenExamples;
+// Un grupo que no han tocado sigue con los del kit (es lo que sale): se enseñan para cambiarlos.
+const shown = Object.fromEntries(GROUPS.map((g) => [g, own?.[g]?.length ? own[g]! : KIT_EXAMPLES[g]])) as Record<(typeof GROUPS)[number], ScreenExample[]>;
+const rows = (g: (typeof GROUPS)[number]) => Math.min(MAX_EXAMPLES, Math.max(shown[g].length + 2, 4));
+const okMsg = flash(Astro.url, { saved: M.saved, reset: M.resetDone });
+---
+<AdminLayout title={M.title}>
+  <a href="/admin/catalog" class="text-sm text-muted hover:text-ink">← {M.back}</a>
+  <h1 class="co-page-title mt-2">{M.title}</h1>
+  <p class="co-lede max-w-2xl">{M.lede}</p>
+  <p class="co-meta mt-1" data-testid="examples-source">{own ? M.custom : M.kit}</p>
+  {okMsg && <p class="mt-3 co-alert co-alert--success" role="status">{okMsg}</p>}
+  {result.error && <p class="mt-3 co-alert co-alert--rejection" role="alert" data-testid="error">{result.error}</p>}
+
+  <form method="post" class="mt-5 grid max-w-3xl gap-4" data-testid="examples-form">
+    {GROUPS.map((g) => (
+      <section class="co-card grid gap-2" data-testid={`examples-${g}`}>
+        <h2 class="co-card-title">{M.groups[g]}</h2>
+        <p class="co-help m-0">{M.helps[g]}</p>
+        <div class="grid gap-2">
+          {Array.from({ length: rows(g) }, (_, i) => (
+            <div class="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+              <input class="co-input" name={`${g}-by-${i}`} value={shown[g][i]?.by ?? ''} maxlength="30" placeholder={M.byPh} aria-label={`${M.by} ${i + 1}`} />
+              <input class="co-input" name={`${g}-text-${i}`} value={shown[g][i]?.text ?? ''} maxlength="140" placeholder={M.textPh} aria-label={`${M.text} ${i + 1}`} />
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+    <div class="flex flex-wrap gap-2">
+      <button class="co-btn co-btn--primary" name="action" value="save" type="submit" data-testid="examples-save">{M.save}</button>
+      {own && <button class="co-btn co-btn--ghost" name="action" value="reset" type="submit" formnovalidate data-testid="examples-reset">{M.reset}</button>}
+    </div>
+  </form>
+</AdminLayout>

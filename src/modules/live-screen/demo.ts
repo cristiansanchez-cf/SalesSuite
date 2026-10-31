@@ -21,3 +21,14 @@ export const DEMO = {
     { song: 'Tití me preguntó',  artist: 'Bad Bunny',   votes: 2  }
   ]
 };
+
+/** Los ejemplos del kit en el formato de Catálogo → Mensajes de la pantalla (lo que sale si el espacio no pone los suyos). */
+export const KIT_EXAMPLES = {
+  messages: DEMO.messages.map((x) => ({ by: x.by, text: x.dedication })),
+  photos: DEMO.photos.map((x) => ({ by: x.by, text: x.dedication })),
+  songs: [
+    { by: 'Laura', text: '¡Va por Marta, feliz cumple! 🎉' },
+    { by: 'Ana', text: 'Para la mesa 7, que no para 🔥' },
+    { by: 'Lucía', text: 'La nuestra 💃' },
+  ],
+};

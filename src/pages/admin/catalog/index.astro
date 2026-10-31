@@ -4,12 +4,14 @@ import { flash, formAction } from '~/lib/admin/forms';
 import { REGISTRY } from '~/modules/registry';
 import { i18n } from '~/lib/i18n';
 import { teamMessages } from '~/lib/i18n/messages/team';
+import { screenExamplesMessages } from '~/lib/i18n/messages/screenExamples';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
 const { m: { catalog: M }, f: fmt } = i18n(Astro, teamMessages);
+const { m: SX } = i18n(Astro, screenExamplesMessages);
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -44,6 +46,11 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
       <h1 class="co-page-title">{M.title}</h1>
       <p class="text-sm text-muted">{M.introA}<strong>{M.introStrong}</strong>{M.introB}</p>
       {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
+      {catalog.some((m) => m.blockType === 'live-screen') && (
+        <a href="/admin/catalog/pantalla" class="mt-4 co-card flex items-center justify-between gap-3 !py-3 no-underline hover:border-[color:var(--co-signal)]" data-testid="screen-examples-link">
+          <span><b>{SX.cta}</b><span class="co-help block">{SX.ctaHelp}</span></span><span aria-hidden="true">→</span>
+        </a>
+      )}
       {result.error && (
         <div class="mt-4 co-alert co-alert--rejection" role="alert">
           <p class="font-semibold">{result.error}</p>

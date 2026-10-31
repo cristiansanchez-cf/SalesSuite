@@ -44,6 +44,15 @@ En el editor, dentro del módulo **Pantalla en vivo**, la tarjeta **Pantallas** 
 
 Una foto que se quita en Personaliza deja de salir en las pantallas que la usaban (vuelven a las del cliente). Smoke: `scripts/smoke-live-scenes.cjs` (la propuesta simplificada de una promotora).
 
+## Mensajes de ejemplo de la pantalla
+
+Catálogo → «Mensajes de ejemplo de la pantalla» (`/admin/catalog/pantalla`, solo admin y solo si el espacio tiene la
+pantalla en vivo): los mensajes, pies de foto y dedicatorias de canciones que salen en las pantallas **sin texto propio**
+de todas las propuestas, con quién los firma (hasta 8 por grupo). Se guardan en la marca del espacio
+(`tenant.brand.screenExamples`) y se leen al pintar cada propuesta: cambian en todas, también en las ya enviadas (en un
+minuto como mucho, por la caché del espacio). Un grupo vacío sigue con los del kit; «Volver a los de ejemplo» los quita.
+El texto puesto a mano en una pantalla (Pantallas → «Texto en pantalla») siempre manda sobre estos ejemplos.
+
 ## Vídeo del local de ejemplo
 
 Las pantallas «Encima de tus visuales» y «Foto en tarjeta» necesitan unos visuales de fondo. Si el comercial no ha subido el vídeo del cliente, sale uno de ejemplo (`venueVideo` en la pantalla en vivo: `img/live/venue.webm` y `.mp4`, luces de club generadas, sin derechos de terceros). El navegador elige el formato que reproduce.

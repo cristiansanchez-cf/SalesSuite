@@ -8,6 +8,7 @@ import type { PublicDossier } from '../types';
 import type { AdminDb, AssetStore, Identity } from './db';
 import { draftSchema, inviteSchema, moduleCreateSchema, moduleUpdateSchema, partnerAccountSchema, partnerInviteSchema, partnerProfileSchema, roleSchema, settingsSchema } from './ops';
 import { AdminError } from './service';
+import { brandSchema, parseBrand } from '../brand';
 import type { AdminSession, CatalogModuleView, DossierRecord, MemberRecord, PartnerView, Role, TenantSettings } from './types';
 import { partnerPrice, priceModeFor } from '../partner/scope';
 import { can } from './permissions';
@@ -244,7 +245,20 @@ export function createTenantAdminService(
   async function saveSettings(input: unknown) {
     requireAdmin();
     const d = parse(settingsSchema, input);
-    try { wrote(await db.updateTenant(s.tenantId, d)); } catch (e) { mapDbError(e); }
+    // Los ejemplos de la pantalla no están en el formulario de Marca: se conservan.
+    const kept = parseBrand((await db.getTenant(s.tenantId))?.brand).screenExamples;
+    try { wrote(await db.updateTenant(s.tenantId, { ...d, brand: { ...d.brand, ...(kept && !d.brand.screenExamples ? { screenExamples: kept } : {}) } })); } catch (e) { mapDbError(e); }
+  }
+
+  /** Ejemplos de la pantalla en vivo (Catálogo → Mensajes de la pantalla); `null` vuelve a los del kit. */
+  async function saveScreenExamples(input: unknown) {
+    requireAdmin();
+    const t = await db.getTenant(s.tenantId);
+    if (!t) throw new AdminError(404, 'Tenant no encontrado');
+    const { screenExamples: _old, ...brand } = parseBrand(t.brand);
+    const next = input == null ? brand : { ...brand, screenExamples: input };
+    const d = parse(brandSchema, next);
+    try { wrote(await db.updateTenant(s.tenantId, { brand: d })); } catch (e) { mapDbError(e); }
   }
 
   async function uploadAsset(file: { name: string; type: string; bytes: Uint8Array }, kind: string): Promise<string> {
@@ -431,7 +445,7 @@ export function createTenantAdminService(
     listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
     listMembers, invite, setRole, removeMember,
     listCatalog, createModule, updateModule, newDraft, saveDraft, publish, archive, previewVersion, previewSample,
-    getSettings, saveSettings, uploadAsset,
+    getSettings, saveSettings, saveScreenExamples, uploadAsset,
   };
 }
 

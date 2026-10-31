@@ -1,3 +1,4 @@
+import type { Brand } from '~/lib/brand';
 import type { ClientMedia } from '~/lib/types';
 import { DEFAULT_STYLE, MUSIC_STYLES, type MusicStyle } from './music';
 
@@ -13,7 +14,7 @@ export interface ScreenSource {
   autoplay: boolean;
 }
 
-export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<{ scene: string; video?: boolean; text?: string; images?: string[]; color?: string }>) {
+export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<{ scene: string; video?: boolean; text?: string; images?: string[]; color?: string }>, examples?: Brand['screenExamples']) {
   const ownPhotos = (media.photos ?? []).filter(Boolean);
   // Canciones del estilo de SU local (Personalizar → estilo musical).
   const styles = p.musicStyles ?? MUSIC_STYLES;
@@ -31,6 +32,8 @@ export function screenConfig(p: ScreenSource, media: ClientMedia, scenes: Array<
     // local (el navegador elige el formato).
     video: { ...(media.video ? { own: media.video } : {}), webm: p.venueVideo?.webm, mp4: p.venueVideo?.mp4 },
     phone: p.phone ?? {}, ownPhoto: ownPhotos[0] ?? null, autoplay: p.autoplay,
+    // Los ejemplos del espacio (Catálogo → Mensajes de la pantalla); sin ellos, los del kit.
+    examples: examples ?? null,
     scenes: scenes.map((s) => ({ scene: s.scene, video: !!s.video, text: s.text ?? '', images: (s.images ?? []).filter(Boolean), color: s.color ?? '' })),
   };
 }

@@ -34,6 +34,7 @@ const total = resolveTotal(dossier);
 const blocks = await Promise.all(
   dossier.items.map(async (it) => {
     const r = resolveItem(it, dossier, total);
+    if (r.ok) r.ctx.screenExamples = tenant.brand.screenExamples;
     if (!r.ok) {
       console.error(`[dossier ${dossier.id}] item ${r.item.id} omitido: ${r.reason}`);
       return null;
