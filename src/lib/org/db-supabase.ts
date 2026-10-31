@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OrgDb } from './db';
-import type { Delegation, PlatformTenant } from './types';
+import type { Delegation, PlatformSetup, PlatformTenant } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -48,6 +48,10 @@ export function supabaseOrgDb(sb: SupabaseClient): OrgDb {
       const rows = check(await sb.from('zone').update({ delegation_id: delegationId }).eq('tenant_id', t).eq('id', zoneId).select('id')) ?? [];
       if (!rows.length) throw new Error('permission denied: zona no encontrada o sin permiso');
     },
+    async createTenant(t) {
+      return check(await sb.rpc('platform_create_tenant', { p_slug: t.slug, p_name: t.name, p_locale: t.locale, p_hostname: t.hostname })) as string;
+    },
+    async addTenantAdmin(tenantId, userId) { check(await sb.rpc('platform_add_admin', { p_tenant: tenantId, p_user: userId })); },
     async platformOverview() {
       const r = await sb.rpc('platform_overview');
       if (missing(r.error)) return null;
@@ -55,7 +59,15 @@ export function supabaseOrgDb(sb: SupabaseClient): OrgDb {
       return rows ? rows.map((x): PlatformTenant => ({
         id: x.id, slug: x.slug, name: x.name, status: x.status, createdAt: x.created_at, domain: x.domain ?? null,
         members: Number(x.members), delegations: Number(x.delegations), dossiers: Number(x.dossiers), published: Number(x.published), revenueCents: Number(x.revenue_cents),
+        setup: setupOf(x.setup),
       })) : null;
     },
   };
+}
+
+/** El «setup» de platform_overview (sin él, si la migración aún no está: todo a cero). */
+function setupOf(v: unknown): PlatformSetup {
+  const o = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+  const n = (k: string) => Number(o[k] ?? 0) || 0;
+  return { admins: n('admins'), pitch: n('pitch'), segments: n('segments'), personas: n('personas'), facets: n('facets'), plays: n('plays'), prices: n('prices'), logo: o.logo === true, accounts: n('accounts') };
 }

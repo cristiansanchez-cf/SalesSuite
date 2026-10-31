@@ -5,4 +5,9 @@ export interface Delegation { id: string; tenantId: string; name: string; manage
 export interface PlatformTenant {
   id: string; slug: string; name: string; status: string; createdAt: string; domain: string | null;
   members: number; delegations: number; dossiers: number; published: number; revenueCents: number;
+  /** Lo que ya tiene montado (estado del alta, `setupSteps`). */
+  setup: PlatformSetup;
+}
+export interface PlatformSetup {
+  admins: number; pitch: number; segments: number; personas: number; facets: number; plays: number; prices: number; logo: boolean; accounts: number;
 }

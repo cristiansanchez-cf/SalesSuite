@@ -200,7 +200,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
         { admin: db, accounts: accountsDb }, session),
       analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),
-      org: createOrgService(org, db, session, { zones: async () => (await accountsDb.listZones(tenant.id)).map((z) => ({ id: z.id, name: z.name, parentId: z.parentId })) }),
+      org: createOrgService(org, db, session, { zones: async () => (await accountsDb.listZones(tenant.id)).map((z) => ({ id: z.id, name: z.name, parentId: z.parentId })), identity: deps.identity }),
     },
   };
 }

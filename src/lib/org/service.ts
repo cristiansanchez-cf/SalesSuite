@@ -5,7 +5,7 @@
  *  · gerente de delegación: solo su equipo (session.team), y ve su delegación;
  *  · comercial: lo suyo.
  */
-import type { AdminDb } from '../admin/db';
+import type { AdminDb, Identity } from '../admin/db';
 import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { OrgDb } from './db';
@@ -24,7 +24,15 @@ export interface Chart {
   canEdit: boolean;
 }
 
-export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, deps: { zones: () => Promise<Array<{ id: string; name: string; parentId: string | null }>> }) {
+/** Dirección de un espacio a partir de su nombre: «Ocean Dive Lab» → «ocean-dive-lab». */
+export const slugOf = (name: string) => name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+export const SPACE_LOCALES = ['es-ES', 'en-GB', 'pt-PT', 'ko-KR', 'ca-ES', 'fr-FR'] as const;
+
+export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, deps: {
+  zones: () => Promise<Array<{ id: string; name: string; parentId: string | null }>>;
+  /** Para invitar al admin de un espacio nuevo (Plataforma). */
+  identity?: Identity | null;
+}) {
   const requireGlobal = () => { if (!isGlobal(s)) throw new AdminError(403, 'Solo el admin o un gerente global monta el organigrama'); };
   const mapError = (e: unknown): never => {
     const msg = e instanceof Error ? e.message : String(e);
@@ -79,7 +87,41 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
     return (await db.platformOverview()) ?? [];
   }
-  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform };
+
+  /**
+   * Alta de una empresa desde Plataforma (docs/ORG.md §Alta de una empresa): crea el espacio en `<dirección>.<base>`
+   * (la base tiene el comodín en Vercel y en Supabase Auth, así que no hay que tocar nada más) y, si se da su email,
+   * invita a su admin; la invitación le lleva directo a la configuración del espacio.
+   */
+  async function createSpace(input: { name?: unknown; slug?: unknown; locale?: unknown; adminEmail?: unknown }, o: { base: string; scheme: 'https' | 'http'; port?: string }) {
+    if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin da de alta empresas');
+    const name = String(input.name ?? '').trim();
+    if (!name || name.length > 80) throw new AdminError(422, 'Pon el nombre de la empresa');
+    const slug = slugOf(String(input.slug ?? '').trim() || name);
+    if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) throw new AdminError(422, 'La dirección solo puede llevar letras, números y guiones');
+    const locale = String(input.locale ?? 'es-ES');
+    if (!(SPACE_LOCALES as readonly string[]).includes(locale)) throw new AdminError(422, 'Idioma no válido');
+    const email = String(input.adminEmail ?? '').trim().toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AdminError(422, 'El email del admin no es válido');
+    if (email && !deps.identity) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
+    const hostname = `${slug}.${o.base}`;
+    let id: string;
+    try { id = await db.createTenant({ slug, name, locale, hostname }); } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/duplicate|unique/i.test(msg)) throw new AdminError(409, 'Ya hay un espacio con esa dirección: elige otra');
+      if (/permission|42501/i.test(msg)) throw new AdminError(403, 'Solo el superadmin da de alta empresas');
+      throw e;
+    }
+    const origin = `${o.scheme}://${hostname}${o.port ? `:${o.port}` : ''}`;
+    let invited = false;
+    if (email) {
+      const r = await deps.identity!.findOrInvite(email, { redirectTo: `${origin}/admin/auth/confirm?next=${encodeURIComponent('/admin/setup/ia?first=1')}` });
+      await db.addTenantAdmin(id, r.userId);
+      invited = r.invited;
+    }
+    return { id, slug, hostname, origin, invited, adminEmail: email || null };
+  }
+  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, createSpace };
 }
 
 export type OrgService = ReturnType<typeof createOrgService>;

@@ -14,4 +14,8 @@ export interface OrgDb {
   zoneDelegations(tenantId: string): Promise<Map<string, string>>;
   setZoneDelegation(tenantId: string, zoneId: string, delegationId: string | null): Promise<void>;
   platformOverview(): Promise<PlatformTenant[] | null>;
+  /** Alta de un espacio (solo superadmin; la base de datos lo comprueba). Devuelve su id. */
+  createTenant(t: { slug: string; name: string; locale: string; hostname: string }): Promise<string>;
+  /** Hace admin de un espacio a un usuario (solo superadmin). */
+  addTenantAdmin(tenantId: string, userId: string): Promise<void>;
 }

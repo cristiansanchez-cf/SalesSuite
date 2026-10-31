@@ -11,4 +11,6 @@ export const emptyOrgDb: OrgDb = {
   async zoneDelegations() { return new Map(); },
   async setZoneDelegation() { throw new Error('permission denied: sin organigrama'); },
   async platformOverview() { return null; },
+  async createTenant() { throw new Error('permission denied: sin organigrama'); },
+  async addTenantAdmin() { throw new Error('permission denied: sin organigrama'); },
 };

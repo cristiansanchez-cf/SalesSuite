@@ -5,6 +5,11 @@
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
+import { formAction } from '~/lib/admin/forms';
+import { env } from '~/lib/env';
+import { requestOrigin } from '~/lib/http';
+import { setupSteps } from '~/lib/org/setup-status';
+import { SPACE_LOCALES } from '~/lib/org/service';
 import { i18n } from '~/lib/i18n';
 import { orgMessages } from '~/lib/i18n/messages/org';
 
@@ -12,9 +17,28 @@ const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
 const { m: { platform: m }, f } = i18n(Astro, orgMessages);
+const here = new URL(requestOrigin(Astro.request, Astro.url));
+const local = /^(localhost|127\.|.*\.localhost$)/.test(here.hostname);
+const hrefOf = (domain: string | null, path = '/admin') => (domain ? (local ? `http://${domain}${here.port ? `:${here.port}` : ''}${path}` : `https://${domain}${path}`) : null);
+
+// Nueva empresa (docs/ORG.md §Alta de una empresa): las direcciones cuelgan de la base con comodín (PLATFORM_DOMAIN).
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let draft: Record<string, string> = {};
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  draft = Object.fromEntries(['name', 'slug', 'locale', 'adminEmail'].map((k) => [k, String(fd.get(k) ?? '')]));
+  let done: { slug: string; invited: boolean; adminEmail: string | null } | null = null;
+  result = await formAction(async () => {
+    done = await admin.org.createSpace(draft, local ? { base: 'localhost', scheme: 'http', port: here.port } : { base: env('PLATFORM_DOMAIN') || 'ventas.cofundo.io', scheme: 'https' });
+  });
+  if (!result.error && done) {
+    const d = done as { slug: string; invited: boolean; adminEmail: string | null };
+    return Astro.redirect(`/admin/platform?ok=created&s=${d.slug}${d.adminEmail ? '&inv=1' : ''}`, 303);
+  }
+}
 const spaces = await admin.org.platform();
-const local = /^(localhost|127\.|.*\.localhost$)/.test(Astro.url.hostname);
-const hrefOf = (domain: string | null) => (domain ? (local ? `http://${domain}${Astro.url.port ? `:${Astro.url.port}` : ''}/admin` : `https://${domain}/admin`) : null);
+const createdSlug = Astro.url.searchParams.get('ok') === 'created' ? Astro.url.searchParams.get('s') : null;
+const created = createdSlug ? spaces.find((x) => x.slug === createdSlug) ?? null : null;
 const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossiers: a.dossiers + x.dossiers, revenue: a.revenue + x.revenueCents }), { members: 0, dossiers: 0, revenue: 0 });
 ---
 <AdminLayout title={m.title} wide>
@@ -31,6 +55,26 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
       <div class="co-card grid !p-5"><span class="co-figure text-4xl">{f.money(total.revenue, 'EUR')}</span><span class="co-meta">{m.revenue}</span></div>
     </div>
 
+    {created && (
+      <div class="co-alert co-alert--success grid gap-2" role="status" data-testid="space-created">
+        <p class="m-0 font-semibold">{m.created(created.name)}{Astro.url.searchParams.get('inv') && ` ${m.invited}`}</p>
+        <p class="m-0">{m.nextStep}</p>
+        <div><a class="co-btn co-btn--primary co-btn--sm" href={hrefOf(created.domain, '/admin/setup/ia?first=1')} data-testid="space-configure">{m.configure} <Icon name="external-link" size={14} /></a></div>
+      </div>
+    )}
+    <details class="co-card grid gap-3 !p-6" open={!!result.error || spaces.length < 2} data-testid="new-space">
+      <summary class="cursor-pointer list-none"><span class="co-entity !text-xl inline-flex items-center gap-2"><Icon name="plus" size={18} />{m.new}</span><span class="co-meta block">{m.newLede}</span></summary>
+      {result.error && <p class="co-alert co-alert--rejection m-0" role="alert" data-testid="error">{result.error}</p>}
+      <form method="post" class="grid gap-3 sm:grid-cols-2" data-testid="new-space-form">
+        <label class="co-field sm:col-span-2">{m.name}<input class="co-input" name="name" required maxlength="80" value={draft.name ?? ''} placeholder={m.namePh} data-space-name /></label>
+        <label class="co-field">{m.slug}
+          <span class="flex items-center gap-1"><input class="co-input" name="slug" maxlength="40" pattern="[a-z0-9][a-z0-9\-]{1,39}" value={draft.slug ?? ''} data-space-slug /><span class="co-meta whitespace-nowrap">.{local ? 'localhost' : (env('PLATFORM_DOMAIN') || 'ventas.cofundo.io')}</span></span>
+          <span class="co-help">{m.slugHelp}</span></label>
+        <label class="co-field">{m.locale}<select class="co-select" name="locale">{SPACE_LOCALES.map((l) => <option value={l} selected={(draft.locale || 'es-ES') === l}>{m.locales[l] ?? l}</option>)}</select></label>
+        <label class="co-field sm:col-span-2">{m.adminEmail}<input class="co-input" type="email" name="adminEmail" value={draft.adminEmail ?? ''} placeholder="admin@empresa.com" /><span class="co-help">{m.adminHelp}</span></label>
+        <div class="sm:col-span-2"><button class="co-btn co-btn--primary" type="submit" data-testid="new-space-create">{m.create}</button></div>
+      </form>
+    </details>
     <ul class="grid gap-3 p-0 sm:grid-cols-2">{spaces.map((x) => {
       const href = hrefOf(x.domain);
       const here = x.id === tenant?.id;
@@ -50,8 +94,36 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
             ))}
           </dl>
           <p class="co-meta">{m.revenue}: <b>{f.money(x.revenueCents, 'EUR')}</b></p>
+          {(() => {
+            const steps = setupSteps(x.setup, x.published);
+            const n = steps.filter((s) => s.done).length;
+            return (
+              <details class="grid gap-2" open={n < steps.length && created?.id === x.id} data-testid="platform-setup" data-done={n} data-total={steps.length}>
+                <summary class="co-meta cursor-pointer"><b>{m.setup}</b> · {m.setupDone(n, steps.length)}</summary>
+                <ul class="mt-2 flex flex-wrap gap-1.5 p-0">{steps.map((s) => (
+                  <li class="list-none">
+                    <a class:list={['co-chip !inline-flex items-center gap-1.5 !text-xs', s.done && 'opacity-80']} href={hrefOf(x.domain, s.path) ?? undefined} data-step={s.key} data-done={s.done ? '1' : '0'}>
+                      <span class:list={[s.done ? 'text-[color:var(--co-signal)]' : 'opacity-50']}><Icon name={s.done ? 'circle-check' : 'circle-x'} size={14} /></span>{m.steps[s.key]}
+                    </a>
+                  </li>))}
+                </ul>
+              </details>
+            );
+          })()}
         </li>
       );
     })}</ul>
   </div>
 </AdminLayout>
+
+<script>
+  // La dirección se rellena sola con el nombre mientras no la toquen.
+  const name = document.querySelector<HTMLInputElement>('[data-space-name]');
+  const slug = document.querySelector<HTMLInputElement>('[data-space-slug]');
+  let touched = !!slug?.value;
+  slug?.addEventListener('input', () => { touched = true; });
+  name?.addEventListener('input', () => {
+    if (!slug || touched) return;
+    slug.value = name.value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  });
+</script>

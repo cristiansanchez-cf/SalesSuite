@@ -62,6 +62,12 @@ export function parseBlock<B extends AiBlock>(block: B, text: string): AiData<B>
   return r.data as AiData<B>;
 }
 
+/** Lo mismo con un objeto ya leído (el borrador del agente de alta): null si no tiene el formato del bloque. */
+export function parseData<B extends AiBlock>(block: B, obj: unknown): AiData<B> | null {
+  const r = SCHEMAS[block].safeParse(obj);
+  return r.success ? (r.data as AiData<B>) : null;
+}
+
 const norm = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const ROLE_ALIASES: Record<string, PersonaRole> = {
   decisor: 'decisor', decide: 'decisor', 'quien decide': 'decisor', pagador: 'pagador', paga: 'pagador', 'quien paga': 'pagador',
@@ -81,7 +87,7 @@ const keyOf = (x: string, fallback: string) => slug(x).slice(0, 60) || fallback;
 
 // ------------------------------------------------------------------- prompts
 
-const FORMATS: Record<AiBlock, string> = {
+export const FORMATS: Record<AiBlock, string> = {
   empresa: `{"empresa": {"nombre": "", "que_vendemos": "", "para_quien": "", "por_que_nos_compran": "", "pruebas": [""], "no_somos": ""}}`,
   mercado: `{"sectores": [{"nombre": "", "descripcion": "", "cliente_ideal": "", "descartar_si": "", "como_compran": "", "ticket": "", "ciclo": "",
   "actores": [{"nombre": "", "papel": "decisor | pagador | influenciador | campeon | usuario | guardian", "que_quiere": "", "que_le_duele": "", "puede_frenar": "", "puede_ayudar": "", "como_entrarle": ""}]}]}`,
@@ -91,7 +97,7 @@ const FORMATS: Record<AiBlock, string> = {
  "descuentos": [{"codigo": "", "nombre": "", "porcentaje": 0, "a_cambio_de": ""}]}`,
 };
 
-const GOALS: Record<AiBlock, { goal: string; first: string; cover: string[]; rules: string[] }> = {
+export const GOALS: Record<AiBlock, { goal: string; first: string; cover: string[]; rules: string[] }> = {
   empresa: {
     goal: 'entender qué vende su empresa, a quién y por qué le compran',
     first: '«Cuéntame con tus palabras qué hace tu empresa, como se lo contarías a alguien en un bar.»',

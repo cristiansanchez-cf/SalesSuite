@@ -61,4 +61,5 @@ run supabase/tests/70_payment_paid.test.sql
 run supabase/tests/71_account_merge.test.sql
 run supabase/tests/72_zone_ensure.test.sql
 run supabase/tests/73_crm_qualification.test.sql
+run supabase/tests/74_platform_create_tenant.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

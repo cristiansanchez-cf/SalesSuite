@@ -16,6 +16,13 @@ const es = {
   platform: {
     eyebrow: 'Superadmin', title: 'Plataforma', lede: 'Todos los espacios. Entra en cualquiera como admin.',
     spaces: 'espacios', members: 'personas', delegations: 'delegaciones', dossiers: 'propuestas', published: 'publicadas', revenue: 'ingresos', open: 'Entrar', here: 'Estás aquí', suspended: 'Suspendido',
+    new: 'Nueva empresa', newLede: 'Crea su espacio en un minuto: luego entras y lo configuras con el asistente.',
+    name: 'Nombre de la empresa', namePh: 'Ocean Dive Lab', slug: 'Dirección', slugHelp: 'Se rellena sola con el nombre.',
+    locale: 'Idioma', adminEmail: 'Email de su admin', adminHelp: 'Opcional: le llega una invitación y entra directo a configurarlo.',
+    create: 'Crear empresa', created: (n: string) => `${n} ya está creada.`, invited: 'Su admin ya tiene la invitación en su correo.',
+    nextStep: 'Siguiente paso: entra y configúrala con el asistente.', configure: 'Entrar y configurar',
+    setup: 'Alta', setupDone: (n: number, t: number) => `${n} de ${t}`, steps: { admin: 'Su admin', empresa: 'Qué vende', mercado: 'Clientes y actores', situaciones: 'Situaciones', jugadas: 'Cómo se vende', precios: 'Precios', marca: 'Logo', crm: 'CRM con empresas', propuesta: 'Primera propuesta' } as Record<string, string>,
+    locales: { 'es-ES': 'Español', 'en-GB': 'Inglés', 'pt-PT': 'Portugués', 'ko-KR': 'Coreano', 'ca-ES': 'Catalán', 'fr-FR': 'Francés' } as Record<string, string>,
   },
 };
 
@@ -36,6 +43,13 @@ export const orgMessages = defineMessages({
     platform: {
       eyebrow: 'Superadmin', title: 'Platform', lede: 'Every space. Enter any of them as admin.',
       spaces: 'spaces', members: 'people', delegations: 'branches', dossiers: 'proposals', published: 'published', revenue: 'revenue', open: 'Enter', here: 'You are here', suspended: 'Suspended',
+      new: 'New company', newLede: 'Create their space in a minute: then go in and set it up with the assistant.',
+      name: 'Company name', namePh: 'Ocean Dive Lab', slug: 'Address', slugHelp: 'Filled in from the name.',
+      locale: 'Language', adminEmail: 'Their admin’s email', adminHelp: 'Optional: they get an invitation and go straight to setting it up.',
+      create: 'Create company', created: (n: string) => `${n} has been created.`, invited: 'Their admin already has the invitation in their inbox.',
+      nextStep: 'Next step: go in and set it up with the assistant.', configure: 'Go in and set up',
+      setup: 'Onboarding', setupDone: (n: number, t: number) => `${n} of ${t}`, steps: { admin: 'Their admin', empresa: 'What they sell', mercado: 'Customers and actors', situaciones: 'Situations', jugadas: 'How it sells', precios: 'Pricing', marca: 'Logo', crm: 'CRM with companies', propuesta: 'First proposal' } as Record<string, string>,
+      locales: { 'es-ES': 'Spanish', 'en-GB': 'English', 'pt-PT': 'Portuguese', 'ko-KR': 'Korean', 'ca-ES': 'Catalan', 'fr-FR': 'French' } as Record<string, string>,
     },
   },
   pt: {
@@ -53,6 +67,13 @@ export const orgMessages = defineMessages({
     platform: {
       eyebrow: 'Superadmin', title: 'Plataforma', lede: 'Todos os espaços. Entre em qualquer um como admin.',
       spaces: 'espaços', members: 'pessoas', delegations: 'delegações', dossiers: 'propostas', published: 'publicadas', revenue: 'receita', open: 'Entrar', here: 'Você está aqui', suspended: 'Suspenso',
+      new: 'Nova empresa', newLede: 'Crie o espaço dela num minuto: depois entre e configure-o com o assistente.',
+      name: 'Nome da empresa', namePh: 'Ocean Dive Lab', slug: 'Endereço', slugHelp: 'Preenche-se a partir do nome.',
+      locale: 'Idioma', adminEmail: 'Email do admin', adminHelp: 'Opcional: recebe um convite e entra direto para configurar.',
+      create: 'Criar empresa', created: (n: string) => `${n} já está criada.`, invited: 'O admin já tem o convite no correio.',
+      nextStep: 'Próximo passo: entre e configure-a com o assistente.', configure: 'Entrar e configurar',
+      setup: 'Alta', setupDone: (n: number, t: number) => `${n} de ${t}`, steps: { admin: 'O seu admin', empresa: 'O que vende', mercado: 'Clientes e atores', situaciones: 'Situações', jugadas: 'Como se vende', precios: 'Preços', marca: 'Logótipo', crm: 'CRM com empresas', propuesta: 'Primeira proposta' } as Record<string, string>,
+      locales: { 'es-ES': 'Espanhol', 'en-GB': 'Inglês', 'pt-PT': 'Português', 'ko-KR': 'Coreano', 'ca-ES': 'Catalão', 'fr-FR': 'Francês' } as Record<string, string>,
     },
   },
   ko: {
@@ -70,6 +91,13 @@ export const orgMessages = defineMessages({
     platform: {
       eyebrow: '슈퍼관리자', title: '플랫폼', lede: '모든 공간. 어디든 관리자로 들어갈 수 있어요.',
       spaces: '공간', members: '명', delegations: '지사', dossiers: '제안서', published: '게시됨', revenue: '매출', open: '들어가기', here: '현재 공간', suspended: '정지됨',
+      new: '새 회사', newLede: '1분이면 공간을 만들 수 있어요. 그다음 들어가서 도우미로 설정하세요.',
+      name: '회사 이름', namePh: 'Ocean Dive Lab', slug: '주소', slugHelp: '이름으로 자동 입력됩니다.',
+      locale: '언어', adminEmail: '관리자 이메일', adminHelp: '선택 사항: 초대를 받고 바로 설정하러 들어갑니다.',
+      create: '회사 만들기', created: (n: string) => `${n}을(를) 만들었습니다.`, invited: '관리자에게 초대 메일을 보냈습니다.',
+      nextStep: '다음 단계: 들어가서 도우미로 설정하세요.', configure: '들어가서 설정하기',
+      setup: '온보딩', setupDone: (n: number, t: number) => `${t}개 중 ${n}개`, steps: { admin: '관리자', empresa: '판매 상품', mercado: '고객과 관계자', situaciones: '상황', jugadas: '판매 방법', precios: '가격', marca: '로고', crm: '회사가 있는 CRM', propuesta: '첫 제안서' } as Record<string, string>,
+      locales: { 'es-ES': '스페인어', 'en-GB': '영어', 'pt-PT': '포르투갈어', 'ko-KR': '한국어', 'ca-ES': '카탈루냐어', 'fr-FR': '프랑스어' } as Record<string, string>,
     },
   },
 });

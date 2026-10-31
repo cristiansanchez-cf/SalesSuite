@@ -24,6 +24,29 @@ Se nombra desde GitHub → Actions → **Producción** → `superadmin`, con el 
 «Solo comprobar» desmarcado. Si aún no tiene usuario, se le invita. Quitarlo: `ADMIN_EMAILS=… npx tsx scripts/superadmin.ts --remove`.
 Entra en cada espacio por su dominio (la Plataforma tiene un «Entrar» por espacio); dentro es admin aunque no sea miembro.
 
+## Alta de una empresa
+
+**Plataforma → Nueva empresa** (solo superadmin): nombre, dirección (sale del nombre), idioma y, si se quiere, el email de su
+admin. Crea el espacio con su dirección `<dirección>.ventas.cofundo.io` (o la de `PLATFORM_DOMAIN`), su fila de ajustes del CRM
+(sin cualificación: la eligen ellos) e invita a su admin, cuyo enlace le lleva a la configuración guiada con IA
+(`/admin/setup/ia?first=1`). «Entrar y configurar» lleva al superadmin al mismo sitio (allí hay que iniciar sesión otra vez: la
+sesión es de cada dirección). Una dirección repetida se rechaza.
+
+Una sola vez, para que cualquier dirección nueva funcione sin tocar nada:
+- Vercel → el proyecto → Settings → Domains: añadir `*.ventas.cofundo.io` (el comodín pide los nameservers de Vercel para
+  `ventas.cofundo.io`, o un registro CNAME `*.ventas` → `cname.vercel-dns.com` y la verificación que pida Vercel).
+- Supabase → Authentication → URL Configuration → Redirect URLs: añadir `https://*.ventas.cofundo.io/**`.
+
+Después, su admin (o el superadmin) le da al **agente de alta** su web y sus documentos y en unos minutos tiene el borrador de
+qué vende, clientes y actores, situaciones, cómo se vende y precios (docs/SETUP_WIZARD.md §Agente de alta). En Plataforma, cada
+espacio enseña su **Alta**: los nueve pasos (su admin, qué vende, clientes y actores, situaciones, cómo se vende, precios, logo,
+CRM con empresas y primera propuesta), cuáles faltan y un enlace a cada uno en su espacio (`src/lib/org/setup-status.ts`; los
+cuenta `platform_overview()`).
+
+Un dominio propio de la empresa (p. ej. `ventas.suempresa.com`) se sigue añadiendo como hasta ahora (docs/SETUP.md).
+Hecho con `platform_create_tenant()` y `platform_add_admin()` (migración `20261212000000_platform_create_tenant.sql`, test
+`supabase/tests/74_platform_create_tenant.test.sql`) y `org.createSpace()`; smoke `scripts/smoke-new-space.cjs`.
+
 ## Cómo está hecho
 
 - Migración `20261026000000_org.sql`: `delegation`, `membership.delegation_id`, `zone.delegation_id`, `platform_admin`

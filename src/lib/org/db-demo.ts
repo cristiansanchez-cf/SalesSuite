@@ -55,6 +55,23 @@ export function demoOrgDb(): OrgDb {
       if (!z) throw new Error('permission denied: zona no encontrada');
       z.delegation_id = delegationId;
     },
+    async createTenant(t) {
+      const d = db();
+      if (d.tenant.some((x) => x.slug === t.slug)) throw new Error('duplicate: ya hay un espacio con esa dirección');
+      if (d.domain.some((x) => x.hostname === t.hostname)) throw new Error('duplicate: esa dirección ya está en uso');
+      const id = randomUUID();
+      d.tenant.push({ id, slug: t.slug, name: t.name, status: 'active', default_locale: t.locale, theme_tokens: {}, brand: {}, tour: [], content_locales: [], created_at: new Date().toISOString() } as (typeof d.tenant)[number]);
+      d.domain.push({ id: randomUUID(), tenant_id: id, hostname: t.hostname, is_primary: true, ssl_status: 'active' });
+      d.crm_settings.push({ tenant_id: id, priority_weights: {}, qualification: null });
+      return id;
+    },
+    async addTenantAdmin(tenantId, userId) {
+      const u = db().users.find((x) => x.id === userId);
+      if (!u) throw new Error('permission denied: usuario no encontrado');
+      const m = u.memberships.find((x) => x.tenant_id === tenantId);
+      if (m) m.role = 'admin';
+      else u.memberships.push({ tenant_id: tenantId, role: 'admin', invited_by: null, created_at: new Date().toISOString() });
+    },
     async platformOverview() {
       const d = db();
       return d.tenant.map((t) => ({
@@ -65,6 +82,17 @@ export function demoOrgDb(): OrgDb {
         dossiers: d.dossier.filter((x) => x.tenant_id === t.id).length,
         published: d.dossier.filter((x) => x.tenant_id === t.id && x.status === 'published').length,
         revenueCents: d.revenue_event.filter((e) => e.tenant_id === t.id && e.status === 'confirmed').reduce((s, e) => s + (e.kind === 'refund' ? -1 : 1) * Number(e.revenue_cents), 0),
+        setup: {
+          admins: d.users.filter((u) => u.memberships.some((m) => m.tenant_id === t.id && m.role === 'admin')).length,
+          pitch: d.play.filter((p) => p.tenant_id === t.id && !p.module_id && p.status === 'official' && p.kind === 'pitch').length,
+          segments: d.segment.filter((x) => x.tenant_id === t.id).length,
+          personas: d.persona.filter((x) => x.tenant_id === t.id).length,
+          facets: d.situation_facet.filter((x) => x.tenant_id === t.id && x.status === 'official').length,
+          plays: d.play.filter((p) => p.tenant_id === t.id && !p.module_id && p.status === 'official').length,
+          prices: d.price_option.filter((x) => x.tenant_id === t.id).length,
+          logo: !!(t.brand as { logoUrl?: string } | null)?.logoUrl,
+          accounts: d.account.filter((x) => x.tenant_id === t.id).length,
+        },
       }));
     },
   };

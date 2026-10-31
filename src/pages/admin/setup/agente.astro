@@ -1,0 +1,184 @@
+---
+/**
+ * Agente de alta (docs/SETUP_WIZARD.md §Agente de alta): web + documentos + lo que cuenten → borrador de los cinco bloques
+ * con las preguntas que falten → contestar y afinar → importar todo (solo añade). El borrador viaja en el formulario: no
+ * se guarda nada hasta importar.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { env } from '~/lib/env';
+import { i18n } from '~/lib/i18n';
+import { setupAgentMessages } from '~/lib/i18n/messages/setupAgent';
+import { setupAiMessages } from '~/lib/i18n/messages/setupAi';
+import { AI_BLOCKS, importBlock, preview, type AiBlock, type Preview } from '~/lib/setup/ai-import';
+import { countOf, MAX_FILES, MAX_UPLOAD_BYTES, readDraft, setupAgent, type AgentFile, type Draft } from '~/lib/setup/agent';
+
+const { admin, tenant } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.managePlaybook) return Astro.rewrite('/admin/forbidden');
+const { m } = i18n(Astro, setupAgentMessages);
+const { m: ai } = i18n(Astro, setupAiMessages);
+const agent = setupAgent(env);
+
+const deps = {
+  playbook: admin.playbook,
+  evidence: admin.evidence,
+  prices: { list: () => (perms.manageTenant ? admin.tenantAdmin.listPriceOptions() : Promise.resolve([])), save: (i: Record<string, unknown>) => admin.tenantAdmin.savePriceOption(i as never) },
+  coupons: { list: () => admin.commissions.coupons({ all: true }).catch(() => []), save: (i: { code: string; label: string; kind: string; value: string; note?: string }) => admin.commissions.saveCoupon(i) },
+};
+// Los precios solo los toca quien gestiona el espacio.
+const BLOCKS = AI_BLOCKS.filter((b) => b !== 'precios' || perms.manageTenant);
+const ICON: Record<AiBlock, 'building2' | 'users' | 'layers' | 'book-open' | 'wallet'> = { empresa: 'building2', mercado: 'users', situaciones: 'layers', jugadas: 'book-open', precios: 'wallet' };
+const who = { person: (admin.session.displayName || admin.session.email.split('@')[0]).split(' ')[0], company: tenant?.name ?? 'tu empresa' };
+
+let website = '';
+let notes = '';
+const st: { draft: Draft | null; redirect: string | null } = { draft: null, redirect: null };
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  website = String(f.get('website') ?? '').trim().slice(0, 300);
+  notes = String(f.get('notes') ?? '').slice(0, 60_000);
+  const action = String(f.get('action') ?? '');
+  result = await formAction(async () => {
+    const previous = (() => { try { return readDraft(JSON.parse(String(f.get('draft') ?? 'null'))); } catch { return null; } })();
+    if (action === 'import') {
+      if (!previous) throw new AdminError(422, 'No hay borrador que importar');
+      let n = 0;
+      for (const b of BLOCKS) { const d = previous.blocks[b]; if (d) n += (await importBlock(b, d, deps)).add.length; }
+      st.redirect = `/admin/setup/ia?b=listo&n=${n}`;
+      return;
+    }
+    if (!agent) throw new AdminError(503, 'La IA no está activada en este despliegue');
+    if (website && !/^https?:\/\//i.test(website)) website = `https://${website}`;
+    if (website) { try { new URL(website); } catch { throw new AdminError(422, 'La web no es una dirección válida'); } }
+    const files: AgentFile[] = [];
+    let bytes = 0;
+    for (const x of f.getAll('files')) {
+      if (!(x instanceof File) || x.size === 0) continue;
+      if (files.length >= MAX_FILES) throw new AdminError(422, 'Como mucho 4 documentos');
+      bytes += x.size;
+      if (bytes > MAX_UPLOAD_BYTES) throw new AdminError(422, 'Los documentos pasan de 4 MB: quita alguno');
+      const pdf = x.type === 'application/pdf' || /\.pdf$/i.test(x.name);
+      if (!pdf && !/^text\//.test(x.type) && !/\.(txt|md|csv)$/i.test(x.name)) throw new AdminError(422, 'Solo PDF o texto');
+      const buf = Buffer.from(await x.arrayBuffer());
+      files.push({ name: x.name.slice(0, 120), mediaType: pdf ? 'application/pdf' : 'text/plain', data: pdf ? buf.toString('base64') : buf.toString('utf8') });
+    }
+    const answers = action === 'refine'
+      ? f.getAll('question').map((q, i) => ({ question: String(q), answer: String(f.getAll('answer')[i] ?? '') }))
+      : [];
+    if (!previous && !website && !files.length && !notes.trim()) throw new AdminError(422, 'Dale al menos la web, un documento o unas líneas');
+    const raw = await agent.draft({
+      company: who.company, person: who.person, locale: tenant?.defaultLocale ?? 'es-ES', website: website || null, notes, files,
+      previous: action === 'refine' ? previous : null, answers,
+    });
+    const d = readDraft(raw);
+    if (!d) throw new AdminError(503, 'La IA no ha devuelto un borrador. Prueba otra vez o con más información.');
+    st.draft = d;
+  });
+  if (st.redirect) return Astro.redirect(st.redirect, 303);
+}
+const draft = st.draft;
+const previews: Partial<Record<AiBlock, Preview>> = {};
+// Un bloque sin nada dentro (p. ej. sin precios en las fuentes) sale como «sin datos», no como «0 cosas».
+if (draft) for (const b of BLOCKS) if (draft.blocks[b] && countOf(draft, b) > 0) previews[b] = await preview(b, draft.blocks[b], deps);
+const total = Object.values(previews).reduce((n, p) => n + (p?.add.length ?? 0), 0);
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-8 pb-10">
+    <header class="grid gap-3">
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{m.title}</h1>
+      <p class="co-lede !text-lg">{m.lede}</p>
+    </header>
+
+    {result.error && <Alert kind="rejection" title={result.error} />}
+    {!agent && <p class="co-alert w-fit" role="status" data-testid="agent-off">{m.noAgent}</p>}
+
+    {!draft ? (
+      <form method="post" enctype="multipart/form-data" class="co-card grid gap-5 !p-8" data-testid="agent-form" data-working>
+        <label class="grid gap-1"><span class="co-entity">{m.website}</span>
+          <input class="co-input" name="website" type="text" inputmode="url" value={website} placeholder={m.websitePh} data-testid="agent-website" /></label>
+        <label class="grid gap-1"><span class="co-entity">{m.files}</span>
+          <input class="co-input" name="files" type="file" multiple accept=".pdf,.txt,.md,.csv,application/pdf,text/plain" data-testid="agent-files" />
+          <span class="co-meta">{m.filesHelp}</span></label>
+        <label class="grid gap-1"><span class="co-entity">{m.notes}</span>
+          <textarea class="co-textarea h-40" name="notes" placeholder={m.notesPh} data-testid="agent-notes">{notes}</textarea></label>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="co-btn co-btn--primary" name="action" value="start" disabled={!agent} data-testid="agent-start">{m.start} <span aria-hidden="true">→</span></button>
+          <span class="co-meta hidden" data-working-note>{m.working}</span>
+        </div>
+      </form>
+    ) : (
+      <form method="post" enctype="multipart/form-data" class="grid gap-6" data-testid="agent-draft" data-working>
+        <input type="hidden" name="draft" value={JSON.stringify(draft)} />
+        <input type="hidden" name="website" value={website} />
+        <input type="hidden" name="notes" value={notes} />
+        {draft.summary && <p class="co-lede" data-testid="agent-summary">{draft.summary}</p>}
+
+        <div class="grid gap-3">
+          {BLOCKS.map((b) => {
+            const pv = previews[b];
+            return (
+              <section class="co-card grid gap-3 !p-6" data-testid="agent-block" data-block={b}>
+                <div class="flex items-center gap-3">
+                  <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={ICON[b]} size={20} /></span>
+                  <h2 class="co-entity flex-1 !text-lg">{ai.blocks[b]}</h2>
+                  {pv && <span class="co-meta">{m.willAdd(pv.add.length)}</span>}
+                </div>
+                {pv ? (
+                  <>
+                    <ul class="grid gap-1 p-0">{pv.add.map((x) => <li class="list-none flex gap-2"><span class="font-bold text-[color:var(--co-signal)]">+</span>{x}</li>)}</ul>
+                    {pv.skip.length > 0 && <p class="co-meta">{m.already(pv.skip.length)}</p>}
+                  </>
+                ) : <p class="co-meta">{m.empty}</p>}
+              </section>
+            );
+          })}
+        </div>
+
+        {draft.questions.length > 0 && (
+          <section class="co-card grid gap-4 !p-6" data-testid="agent-questions">
+            <div class="grid gap-1"><h2 class="co-entity !text-lg">{m.questions}</h2><p class="co-meta">{m.questionsLede}</p></div>
+            {draft.questions.map((q) => (
+              <label class="grid gap-1" data-testid="agent-question">
+                <span>{q.question} <span class="co-meta">· {ai.blocks[q.block]}</span></span>
+                <input type="hidden" name="question" value={q.question} />
+                <input class="co-input" name="answer" placeholder={m.answerPh} />
+              </label>
+            ))}
+            <button class="co-btn co-btn--ghost w-fit" name="action" value="refine" disabled={!agent} data-testid="agent-refine">{m.refine}</button>
+          </section>
+        )}
+
+        {draft.sources.length > 0 && (
+          <p class="co-meta">{m.sources}: {draft.sources.map((s, i) => <>{i > 0 && ' · '}<a class="underline" href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></>)}</p>
+        )}
+
+        <div class="flex flex-wrap items-center gap-3">
+          {total > 0 && <button class="co-btn co-btn--primary" name="action" value="import" data-testid="agent-import">{m.importAll(total)} <span aria-hidden="true">→</span></button>}
+          <a class="co-btn co-btn--ghost" href="/admin/setup/agente">{m.again}</a>
+          <span class="co-meta hidden" data-working-note>{m.working}</span>
+        </div>
+        {total > 0 && <p class="co-meta -mt-3">{m.importHelp}</p>}
+      </form>
+    )}
+
+    <a class="co-meta underline w-fit" href="/admin/setup/ia">{m.byHand}</a>
+  </div>
+</AdminLayout>
+
+<script>
+  // Mientras la IA lee (uno o dos minutos): botones quietos y el aviso de que tarda.
+  document.querySelectorAll<HTMLFormElement>('form[data-working]').forEach((f) => f.addEventListener('submit', (e) => {
+    const b = (e as SubmitEvent).submitter as HTMLButtonElement | null;
+    if (b?.value === 'import') return;
+    f.querySelectorAll<HTMLElement>('[data-working-note]').forEach((n) => n.classList.remove('hidden'));
+    setTimeout(() => f.querySelectorAll<HTMLButtonElement>('button').forEach((x) => { x.disabled = true; }), 0);
+  }));
+</script>

@@ -11,12 +11,14 @@ import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
 import { i18n } from '~/lib/i18n';
 import { setupAiMessages } from '~/lib/i18n/messages/setupAi';
+import { setupAgentMessages } from '~/lib/i18n/messages/setupAgent';
 import { AI_BLOCKS, importBlock, parseBlock, preview, promptFor, type AiBlock, type Preview } from '~/lib/setup/ai-import';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).managePlaybook) return Astro.rewrite('/admin/forbidden');
 const { m } = i18n(Astro, setupAiMessages);
+const { m: ag } = i18n(Astro, setupAgentMessages);
 const perms = can(admin.session.role);
 
 const STEPS = [...AI_BLOCKS, 'listo'] as const;
@@ -96,6 +98,14 @@ const CHECK: Array<{ b: AiBlock; href: string; count: number }> = [
         </a>
       ))}
     </nav>
+
+    {block && !pv && (
+      <a href="/admin/setup/agente" class="co-card co-card--link !flex items-center gap-4 !p-5" data-testid="ai-agent-cta">
+        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name="sparkles" size={20} /></span>
+        <span class="grid flex-1"><span class="co-entity">{ag.cta}</span><span class="co-meta">{ag.ctaHelp}</span></span>
+        <span aria-hidden="true">→</span>
+      </a>
+    )}
 
     {imported > 0 && <p class="co-alert co-alert--success w-fit" role="status">{m.imported(imported)}</p>}
     {result.error && <Alert kind="rejection" title={result.error} />}
