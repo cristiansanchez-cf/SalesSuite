@@ -78,7 +78,9 @@ if (Astro.request.method === 'POST') {
   const back = new URLSearchParams({ ...(target === 'contact' ? { de: 'persona' } : {}), ...(ok === 'weights' ? { de: 'prioridad' } : {}), ...(ok === 'kinds' ? { de: 'tipos' } : {}), ...(ok ? { ok } : {}) });
   if (!result.error) return Astro.redirect(`/admin/team/fields${back.size ? `?${back}` : ''}`, 303);
 }
-const weights = await admin.crm.weights();
+const [weights, pack] = await Promise.all([admin.crm.weights(), admin.crm.qualPack()]);
+// Los pesos son de la cualificación (§45): sin ella en el espacio, no hay pestaña de prioridad.
+const showWeights = weightsTab && pack !== null;
 const kindDefs = await acc.kinds();
 const okMsg = flash(Astro.url, { kinds: K.ok, weights: R.weights.ok, saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
 const [all, segments] = await Promise.all([acc.crmFields({ archived: true }), admin.playbook.market()]);
@@ -98,7 +100,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
   <nav class="co-tabs mb-4" aria-label={PF.target} data-scroll-x>
     <a class="co-tab" href="/admin/team/fields" aria-current={target === 'account' && !weightsTab && !kindsTab ? 'page' : undefined} data-testid="fields-companies">{PF.companies} · {count('account')}</a>
     <a class="co-tab" href="/admin/team/fields?de=persona" aria-current={target === 'contact' && !weightsTab ? 'page' : undefined} data-testid="fields-people">{PF.people} · {count('contact')}</a>
-    <a class="co-tab" href="/admin/team/fields?de=prioridad" aria-current={weightsTab ? 'page' : undefined} data-testid="fields-priority">{R.weights.tab}</a>
+    {pack && <a class="co-tab" href="/admin/team/fields?de=prioridad" aria-current={weightsTab ? 'page' : undefined} data-testid="fields-priority">{R.weights.tab}</a>}
     <a class="co-tab" href="/admin/team/fields?de=tipos" aria-current={kindsTab ? 'page' : undefined} data-testid="fields-kinds">{K.tab} · {kindDefs.length}</a>
   </nav>
   {kindsTab && (
@@ -124,7 +126,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
       <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="kinds-save">{K.save}</button>
     </form>
   )}
-  {weightsTab && (
+  {showWeights && (
     <form method="post" class="co-card grid max-w-xl gap-4" data-testid="weights-form">
       <input type="hidden" name="action" value="weights" />
       <div><h2 class="co-entity">{R.weights.title}</h2><p class="co-meta mt-1">{R.weights.lede}</p></div>

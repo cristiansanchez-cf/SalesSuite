@@ -169,4 +169,6 @@ insert into public.content_i18n (tenant_id, locale, kind, ref, texts, source_has
 insert into public.content_i18n (tenant_id, locale, kind, ref, texts, source_hash, status) values ('00000000-0000-4000-8000-000000000b01', 'ko', 'module', '00000000-0000-4000-8000-0000000b0103', $json${"name":"센터 콘솔"}$json$::jsonb, 'demo-oquea-module', 'auto');
 insert into public.content_i18n (tenant_id, locale, kind, ref, texts, source_hash, status) values ('00000000-0000-4000-8000-000000000b01', 'ko', 'module_version', '00000000-0000-4000-8000-0000000b1002', $json${"props/title":"모든 다이빙에 센터 이름을","props/highlight":"센터 이름","props/lede":"다이버는 다이빙 카드를 내보내 공유할 수 있습니다. 다이빙 카드, 개인 기록 카드, 마일스톤 카드 세 가지가 있습니다.","props/cards/0/title":"모든 카드에 센터 이름이 들어갑니다."}$json$::jsonb, '14478b804d663e433536cc5d37400c39', 'auto');
 
+insert into public.crm_settings (tenant_id, qualification) values ('00000000-0000-4000-8000-000000000e01', 'nightlife');
+
 commit;

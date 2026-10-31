@@ -2695,5 +2695,11 @@
       "source_hash": "14478b804d663e433536cc5d37400c39",
       "status": "auto"
     }
+  ],
+  "crm_settings": [
+    {
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "qualification": "nightlife"
+    }
   ]
 }

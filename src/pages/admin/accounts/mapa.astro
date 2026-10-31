@@ -22,8 +22,8 @@ import { env } from '~/lib/env';
 import { i18n } from '~/lib/i18n';
 import { mapMessages } from '~/lib/i18n/messages/map';
 import { accountsMessages } from '~/lib/i18n/messages/accounts';
-import { priorityFor } from '~/lib/crm/score';
-import { iconSvg } from '~/lib/ui/icons';
+import { NO_PRIORITY, priorityFor } from '~/lib/crm/score';
+import { iconSvg, type IconName } from '~/lib/ui/icons';
 import { buildMap, matchesTemp, temperature, zoneOwners, KIND_ICON, REP_COLORS, STATE_COLOR, type TempFilter } from '~/lib/crm/map';
 
 const { admin } = Astro.locals;
@@ -67,15 +67,17 @@ const approxOn = q.get('aprox') === '1';
 // Las descartadas, en gris con su motivo (§23: «que otros comerciales vean que está, pero marcada como no ir por X»).
 const offF = q.get('descartadas') === '0' ? 'hide' : 'show';
 const withOff = tipo !== 'descartadas' && offF === 'show';
-const [{ items, scope: effective }, offList, segments, weights, members, kindDefs] = await Promise.all([
+const [{ items, scope: effective }, offList, segments, weights, members, kindDefs, pack] = await Promise.all([
   acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: tipo === 'descartadas' ? 'discarded' : tipo || 'company' }),
   withOff ? acc.list({ scope, zoneId: zona && zona !== NO_ZONE ? zona : undefined, view: 'discarded' }) : Promise.resolve(null),
   admin.playbook.segmentList(), admin.crm.weights(),
-  perms.manageAccounts ? admin.tenantAdmin.listMembers() : Promise.resolve([]), acc.kinds(),
+  perms.manageAccounts ? admin.tenantAdmin.listMembers() : Promise.resolve([]), acc.kinds(), admin.crm.qualPack(),
 ]);
+// Sin cualificación en el espacio (§45): sin nota ni «caliente»; el icono, el de su tipo de cliente.
+const qual = pack !== null;
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 // La nota según la ficha de su tipo (§24), como en la lista: local, promotora o DJ.
-const prioOf = (a: (typeof items)[number]) => priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights);
+const prioOf = (a: (typeof items)[number]) => !qual ? NO_PRIORITY : priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights);
 const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
 const cooling = await admin.crm.cooling(byState.map((a) => a.id));
 const off = offList?.items ?? [];
@@ -87,7 +89,8 @@ const owners = zoneOwners(t.zones, t.assignments);
 const repOf = (zoneId: string | null) => { const u = owners(zoneId)[0]; return u ? names.get(u) ?? null : null; };
 const CLR = cleanupMessages[locale];
 const offLabel = (a: (typeof items)[number]) => [a.discardReason ? CLR.reasons[a.discardReason] : '', a.discardNote].filter(Boolean).join(' — ');
-const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf, off: offLabel, approx: approxOn });
+const kindKey = (k: string | null | undefined) => (kindDefs.some((x) => x.key === k) ? k! : kindDefs[0].key);
+const data = buildMap(shown, t.zones, { prio: prioOf, cooling, rep: repOf, off: offLabel, approx: approxOn, ...(qual ? {} : { kind: (a) => kindKey(a.kind) }) });
 const reps = [...new Set(data.points.map((p) => p.rep).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, locale));
 const repColor = Object.fromEntries(reps.map((r, i) => [r, REP_COLORS[i % REP_COLORS.length]]));
 
@@ -98,7 +101,12 @@ const STATES: Array<[State | 'all', string]> = (['all', 'mine', 'free', 'taken',
 // En el resumen de un punto, el estado en singular («Libre», «Tuya»…).
 const stateLabel: Record<State, string> = { free: A.state.free, mine: A.state.mine, taken: A.state.taken, my_customer: A.state.myCustomer, customer: A.state.customer, blocked: A.state.blocked };
 // Iconos de cada tipo (los del set de la consola), en blanco dentro del punto.
-const kindSvg = { venue: iconSvg(KIND_ICON.venue, 14), promoter: iconSvg(KIND_ICON.promoter, 14), concert: iconSvg(KIND_ICON.concert, 14), none: iconSvg('store', 14) };
+// Con la cualificación de ocio nocturno, lo que es cada sitio (local, promotora, conciertos); sin ella, los tipos del espacio.
+const legend: Array<[string, string, string]> = qual
+  ? (['venue', 'promoter', 'concert', 'none'] as const).map((k) => [k, k === 'none' ? 'store' : KIND_ICON[k], M.kinds[k]])
+  : kindDefs.map((k) => [k.key, k.icon, k.label]);
+const kindSvg: Record<string, string> = { ...Object.fromEntries(legend.map(([k, ic]) => [k, iconSvg(ic as IconName, 14)])), none: iconSvg('store', 14) };
+const kindLabels: Record<string, string> = { ...Object.fromEntries(legend.map(([k, , l]) => [k, l])), none: M.kinds.none };
 // Fondo del mapa: MapTiler si hay clave (más bonito); si no, OpenStreetMap (sin clave).
 const maptiler = env('MAPTILER_KEY');
 const tiles = maptiler
@@ -106,7 +114,7 @@ const tiles = maptiler
   : { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' };
 const payload = {
   points: data.points, byRep, repColor, stateColor: STATE_COLOR, kindSvg, tiles,
-  T: { stateLabel, kinds: M.kinds, open: M.open, score: M.score(Number.NaN).replace('NaN', '{n}'), cooling: M.cooling(Number.NaN).replace('NaN', '{n}'), next: M.next,
+  T: { stateLabel, kinds: kindLabels, open: M.open, score: qual ? M.score(Number.NaN).replace('NaN', '{n}') : '', cooling: M.cooling(Number.NaN).replace('NaN', '{n}'), next: M.next,
     rep: M.rep, noRep: M.noRep, owner: M.owner, reviews: M.reviews, approx: M.approx, off: CLR.offOnMap },
 };
 ---
@@ -119,8 +127,8 @@ const payload = {
     <label class="co-field">{A.list.state}
       <select class="co-select" name="estado" data-testid="map-state">{STATES.map(([k, l]) => <option value={k} selected={stateF === k}>{l}</option>)}</select></label>
     <label class="co-field">{M.temp}
-      <select class="co-select" name="temp" data-testid="map-temp"><option value="">{M.anyTemp}</option><option value="caliente" selected={tempF === 'caliente'}>{M.hot}</option>
-        <option value="frio" selected={tempF === 'frio'}>{M.cold}</option><option value="sin" selected={tempF === 'sin'}>{M.unqualified}</option></select></label>
+      <select class="co-select" name="temp" data-testid="map-temp"><option value="">{M.anyTemp}</option>{qual && <option value="caliente" selected={tempF === 'caliente'}>{M.hot}</option>}
+        <option value="frio" selected={tempF === 'frio'}>{M.cold}</option>{qual && <option value="sin" selected={tempF === 'sin'}>{M.unqualified}</option>}</select></label>
     <label class="co-field">{A.list.scope}
       <select class="co-select" name="ver" data-testid="map-scope">
         {t.myZoneIds.length > 0 && <option value="zone" selected={effective === 'zone'}>{A.list.myZone}</option>}
@@ -171,9 +179,9 @@ const payload = {
           : STATES.filter(([k]) => k !== 'all').map(([k, l]) => <li class="flex list-none items-center gap-1.5"><span class="map-dot" style={`background:${STATE_COLOR[k as State]}`}></span>{l}</li>)}
       </ul>
       <ul class="m-0 flex flex-wrap gap-x-4 gap-y-1 p-0 text-sm" data-testid="map-kinds">
-        {(['venue', 'promoter', 'concert', 'none'] as const).map((k) => <li class="flex list-none items-center gap-1.5"><span class="map-pin map-pin--legend" set:html={kindSvg[k]} />{M.kinds[k]}</li>)}
+        {legend.map(([k, , l]) => <li class="flex list-none items-center gap-1.5"><span class="map-pin map-pin--legend" set:html={kindSvg[k]} />{l}</li>)}
       </ul>
-      <p class="co-help">{M.hotRing} · {M.coldDash}</p>
+      <p class="co-help">{qual ? `${M.hotRing} · ${M.coldDash}` : M.coldDash}</p>
       <p class="co-help">{M.exactHelp}</p>
     </div>
   </details>
@@ -251,7 +259,7 @@ const payload = {
       pop.append(node('strong', p.name));
       pop.append(node('span', [T.kinds[p.kind ?? 'none'], p.zone].filter(Boolean).join(' · '), 'muted'));
       if (p.off !== null) pop.append(node('span', `${T.off}${p.off ? `: ${p.off}` : ''}`, 'off'));
-      pop.append(node('span', [T.stateLabel[p.state] ?? p.state, T.score.replace('{n}', String(p.score))].join(' · ')));
+      pop.append(node('span', [T.stateLabel[p.state] ?? p.state, T.score.replace('{n}', String(p.score))].filter(Boolean).join(' · ')));
       if (p.cooling !== null) pop.append(node('span', T.cooling.replace('{n}', String(p.cooling))));
       if (p.rating !== null) pop.append(node('span', `★ ${p.rating.toLocaleString(document.documentElement.lang || 'es')} ${T.reviews}`, 'muted'));
       if (p.next) pop.append(node('span', `${T.next}: ${p.next}`));

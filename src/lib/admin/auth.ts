@@ -184,7 +184,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
   const memo = deps.requestCache ? memoReads : <T extends object>(x: T) => x;
   db = memo(db, ['listMembers'], cache, 'admin');
   const accountsDb = memo(deps.accountsDb?.(user.id) ?? emptyAccountsDb,
-    ['listZones', 'listAssignments', 'getRules', 'getKinds', 'listFields', 'getAccount', 'getPriorityWeights', 'listAccountIndex'], cache, 'acc');
+    ['listZones', 'listAssignments', 'getRules', 'getKinds', 'listFields', 'getAccount', 'getPriorityWeights', 'getQualPack', 'listAccountIndex'], cache, 'acc');
   const crmDb = memo(deps.crmDb?.(user.id) ?? emptyCrmDb, ['listLinks'], cache, 'crm');
   const service = createAdminService(db, session, { defaultLocale: tenant.defaultLocale, assets: deps.assets });
   return {

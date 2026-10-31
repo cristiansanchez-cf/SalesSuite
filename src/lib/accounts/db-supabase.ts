@@ -228,6 +228,10 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;
       return r?.priority_weights ?? null;
     },
+    async getQualPack(t) {
+      const r = check(await sb.from('crm_settings').select('qualification').eq('tenant_id', t).maybeSingle()) as Row | null;
+      return r?.qualification ?? null;
+    },
     async savePriorityWeights(t, w) {
       check(await sb.from('crm_settings').upsert({ tenant_id: t, priority_weights: w, updated_at: new Date().toISOString() }));
     },

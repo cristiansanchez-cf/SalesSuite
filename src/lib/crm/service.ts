@@ -24,6 +24,7 @@ import { buildZonePlan, isUnordered, claudeZoneFixes, claudeZoneNames, fixtureZo
 import type { AccountMove } from '../accounts/types';
 import { pathForParts, planPath, SPAIN_NAME } from '../accounts/spain';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
+import { NO_PACK_QUAL, normalizePack, type QualPack } from './pack';
 import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, setQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
@@ -144,6 +145,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   const t = s.tenantId;
   /** Tipos de cliente del espacio (§21). */
   const kinds = async (): Promise<KindDef[]> => normalizeKinds(await accounts.getKinds(t).catch(() => null));
+  /** Cualificación del espacio (§45): «nightlife» (la de Enjoy) o null (sin cualificación ni nota). */
+  const qualPack = async (): Promise<QualPack | null> => normalizePack(await accounts.getQualPack(t).catch(() => null));
 
   async function members(): Promise<Map<string, MemberRecord>> { return new Map((await admin.listMembers(t)).map((m) => [m.userId, m])); }
   const label = (m: MemberRecord | undefined) => (m ? m.displayName || m.email : null);
@@ -951,6 +954,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     const [key, value] = set.split(':');
     if (!key || !QUAL_VALUES[key] || !QUAL_VALUES[key].includes(value)) throw new AdminError(422, 'Datos no válidos');
+    // Sin cualificación en el espacio (§45), solo el tamaño (el de «Generar pago»).
+    if (!(await qualPack()) && !NO_PACK_QUAL.includes(key)) throw new AdminError(422, 'Datos no válidos');
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     const q: Record<string, unknown> = { ...a.qualification };
@@ -1880,7 +1885,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     board, mergePreview, merge, citySearch, pickZone, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
-    weights, saveWeights, qualify, cooling,
+    weights, saveWeights, qualify, cooling, qualPack,
     setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
     company, moveToGroup, setTags, lists, names,
