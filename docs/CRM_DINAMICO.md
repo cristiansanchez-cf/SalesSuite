@@ -40,6 +40,18 @@ Así un espacio nuevo arranca con un CRM útil desde el minuto uno y cada empres
 
 ## 3. Modelo de datos
 
+> **Ojo: es el diseño inicial (§3–§6).** Lo construido se apartó en varios puntos; para el código, mandan las secciones
+> «hecho» (§8 bis en adelante):
+> - **No hay `crm_stage`.** La etapa es un campo de selección marcado `is_stage` (§8 ter) y el tablero calcula sus
+>   columnas con lo apuntado (`src/lib/crm/pipeline.ts`, §34).
+> - **No hay `crm_view`** (vistas guardadas): pendiente. Hay pestañas Lista | Mapa | Tablero y filtros en la lista.
+> - **La actividad** (`crm_activity`, §10) guarda `channel` (instagram, linkedin, whatsapp, phone, email, visit,
+>   meeting, other) y `outcome` (no_reply, replied, interested, not_interested, meeting, note), no los `kind` de §3.6.
+>   El próximo paso de la empresa es `next_step`, `next_step_at` y `next_channel` (sin `next_step_by`).
+> - **Importar** guarda el lote en `crm_import` (no `import_batch`), y se deshace entero (§8 ter).
+> - **Situaciones = campos** (§3.4, `use_as_situation`): sin hacer; las situaciones siguen en `situation_facet`
+>   (docs/EVIDENCE.md).
+
 ### 3.1 Definición de campos: `crm_field`
 
 | Columna | Qué es |
@@ -151,8 +163,9 @@ Lo mismo sirve para cargar locales investigados («foco Valencia») y para Oquea
 - **Puntos de partida por sector** en la configuración guiada (como hoy los sectores y actores de ejemplo): «Ocio
   nocturno» propone pantalla, DJ, aforo, noches, estilo e Instagram; «Buceo» propone certificadora, instructores,
   buceadores al mes, idiomas y temporada. Se aplican con un clic y se ajustan.
-- En `tenants/<espacio>/tenant.json` habrá `crm.fields`, `crm.stages` y `crm.views`, cargados por el alta del espacio
-  como el resto (idempotente, con `--dry-run`).
+- En `tenants/<espacio>/tenant.json` hay `crm.fields`, cargado por el alta del espacio como el resto (idempotente, con
+  `--dry-run`). `crm.stages` y `crm.views` no existen; los tipos de cliente (`crm_settings.kinds`) se editan en la
+  consola y el paquete de cualificación (§45), por ahora, por SQL.
 - **Permisos**: los campos los define el admin (y el líder); los valores, quien trabaja la cuenta o un responsable; los
   colaboradores solo ven sus cuentas asignadas (como hoy).
 
@@ -164,9 +177,9 @@ Lo mismo sirve para cargar locales investigados («foco Valencia») y para Oquea
 |---|---|---|
 | **1 · Campos** ✅ | `crm_field` + `account.fields` (migración `20261102000000_crm_fields.sql`), editor en *Equipo → Campos del CRM*, «Ficha» en cada cuenta con secciones, columnas y filtros en la lista, `crm.fields` en `tenant.json` | `src/lib/crm/fields.test.ts`, `supabase/tests/47_crm_fields.test.sql`, contrato de cuentas (demo y Postgres), `scripts/smoke-crm.cjs` |
 | **2 · Empresas, personas e importar** ✅ | Grupos de un nivel, personas en varias empresas con su papel, alta rápida con «¿dónde?», bandeja sin empresa, listas (etiquetas) con sus campos y su etapa, mover en bloque a un grupo, importador (mapeo → vista previa → importar → deshacer). Migración `20261103000000_crm_people.sql` | `src/lib/crm/import.test.ts`, `supabase/tests/48_crm_people.test.sql`, contrato de cuentas (demo y Postgres), `scripts/smoke-crm-people.cjs` (CSV inventado) |
-| **3 · Etapas, actividad y «Hoy»** | `crm_stage`, `crm_activity`, próximo paso en la cuenta, «Hoy» en Inicio, resumen diario ampliado | Smoke del ciclo completo |
-| **4 · Vistas** | Vistas guardadas, tablero por etapa, «Foco Valencia» | Smoke de filtros y tablero |
-| **5 · Automatizar** | Cadencias, disparadores, contactos con campos propios, unificación total con situaciones | Por regla |
+| **3 · Etapas, actividad y «Hoy»** ✅ (de otra forma) | `crm_activity`, próximo paso en la empresa y «Hoy en tus cuentas» en Inicio (§10, §33); sin `crm_stage` (ver la nota de §3). El resumen diario por email sigue siendo de propuestas (docs/NOTIFICATIONS.md) | `followup.test.ts`, `supabase/tests/49_crm_activity.test.sql`, `scripts/smoke-followup.cjs` |
+| **4 · Vistas** (a medias) | Tablero ✅ (§34, columnas calculadas). Vistas guardadas y «Foco Valencia»: pendiente | `pipeline.test.ts`, `scripts/smoke-board.cjs` |
+| **5 · Automatizar** (pendiente) | Cadencias, disparadores, contactos con campos propios, unificación total con situaciones. Lo que ya hay: el próximo paso propuesto por regla (§10) y los avisos de apertura (docs/ANALYTICS.md) | Por regla |
 
 Cada fase sale a producción sola y no rompe lo anterior (el checkpoint de tests del agente en paralelo lo vigila).
 
@@ -720,7 +733,7 @@ promotora y engancharlo con Comisiones.
 Idea de Cristian: la sociedad que hay detrás de un local suele estar en el aviso legal, la privacidad o los términos de su
 web (p. ej. Tulum Eventos y el grupo Cosmic). Con eso se ve qué locales son del mismo dueño.
 
-- **Dónde se guarda:** `account.legal_name` y `account.tax_id` (migración `20261126_account_legal`). Solo el CIF de
+- **Dónde se guarda:** `account.legal_name` y `account.tax_id` (migración `20261126000000_account_legal.sql`). Solo el CIF de
   una sociedad: el DNI/NIE de una persona (un autónomo) es un dato personal y la base de datos lo rechaza.
 - **De dónde sale:** al mirar la web (elegir su ficha de Google, «Es la misma» o el alta desde Buscar clientes), además
   de la portada se abren hasta 2 páginas legales enlazadas desde ella (aviso legal primero), con las mismas protecciones
@@ -853,7 +866,8 @@ el perfil de cada tipo (`kinds` en `crm_settings`, editor en Campos del CRM), lo
 tipo de organizador/profesional, con su nombre), grupos (buscar, sugerir por ciudad y por titular), titular y CIF,
 listas, soltar en bloque, mapa, autoguardado, Apuntar (separa por sitio y sabe el tipo).
 
-**Todavía es de Enjoy** (lo resuelve #71 «Configura tu CRM», presets por sector en vez de constantes):
+**Todavía es de Enjoy** (lo resuelve #71 «Configura tu CRM», presets por sector en vez de constantes; desde §45, un
+espacio sin el paquete `nightlife` ya no ve nada de esto):
 
 - Las preguntas y pesos de cada perfil (`priority.ts`, `profiles.ts`): formato de local, fiesta, DJ, pantallas,
   tamaño en tramos (`SIZE_LIMITS`), dinámicas; de promotora y DJ (estilo, seguidores, caché…). En otro espacio:
@@ -1083,7 +1097,7 @@ Hasta ahora todo espacio sin configurar veía su ficha como la de un local de oc
 ficha `venue` y las preguntas, pesos, tramos de aforo, paquetes («Le encaja») y las fichas de promotora y DJ eran las de
 Enjoy, fijas en el código (`priority.ts`, `profiles.ts`). Ahora son un **paquete con nombre** que el espacio tiene o no:
 
-- `crm_settings.qualification` = `'nightlife'` (ocio nocturno, lo de siempre) o `null`. Migración `20261204` (Enjoy,
+- `crm_settings.qualification` = `'nightlife'` (ocio nocturno, lo de siempre) o `null`. Migración `20261211000000_crm_qualification.sql` (Enjoy,
   por slug; idempotente), `seed/fixtures.json` (Enjoy) y el modo demo (`store.ts`). Se lee con `crm.qualPack()`
   (`lib/crm/pack.ts`). Para dar a otro espacio el de ocio nocturno: `update crm_settings set qualification = 'nightlife'`.
 - **Sin paquete**: la ficha no enseña Cualificación (ni la de promotora o DJ, ni «Locales del grupo»), ni nota, ni

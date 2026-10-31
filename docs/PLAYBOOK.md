@@ -47,7 +47,7 @@ Cada jugada lleva los **mismos campos que una ficha del Cerebro de Ventas**: *cu
 - **En "Aprende"**: una ficha de venta por módulo con la **vista previa en vivo del módulo** (el comercial ve exactamente lo que verá el cliente), sus jugadas y lo que ha aportado el equipo.
 
 ### 3. Dos capas: oficial y equipo ✅
-- **Oficial**: lo mantiene el CEO o el líder de ventas (rol admin). Cada cambio crea una **revisión con nota** ("qué cambió y por qué"), y los comerciales ven las **novedades desde su última visita**.
+- **Oficial**: lo mantiene el CEO o el jefe/a de ventas (rol admin o «Gerente»). Cada cambio crea una **revisión con nota** ("qué cambió y por qué"), y los comerciales ven las **novedades desde su última visita**.
 - **Equipo**:
   - Cualquier comercial puede **compartir un truco** ("me funciona decir X"). Es visible al momento para el equipo, marcado como *del equipo*.
   - O puede **proponer una mejora** a una jugada oficial, que va a la **bandeja del líder**.
@@ -116,7 +116,7 @@ Con eso genera una **petición** con la etapa y la objeción en la taxonomía de
 - **Abrir en Claude / ChatGPT** con un clic (o copiar). Con el MCP del Cerebro conectado, el asistente busca la técnica (`buscar_tecnica`), dice de qué creador sale y redacta el mensaje con ese contexto;
 - pegarla en cualquier otro sitio.
 
-No hay IA dentro de la app: no inventa nada ni necesita claves de API. Cuando el Cerebro tenga API de servidor, la misma función alimentará una sugerencia automática.
+«Preparar mensaje» no llama a ninguna IA desde la app: no inventa nada ni necesita claves de API (la IA de la app está en el CRM y en el agente de alta, docs/CRM_DINAMICO.md y docs/SETUP_WIZARD.md). Cuando el Cerebro tenga API de servidor, la misma función alimentará una sugerencia automática.
 
 ## Integración con el Cerebro de Ventas
 
@@ -125,7 +125,7 @@ El Cerebro es conocimiento de **expertos** (técnicas generales y atribuidas). E
 | Dirección | Cómo | Estado |
 |---|---|---|
 | Cerebro → Playbook | Una jugada puede **referenciar fichas del Cerebro** (id, título, creador, enlace a la fuente), p. ej. la objeción "es caro" enlaza a *[707] El cliente dice 'caro' porque traduce precio a horas trabajadas*. Se muestra el título con atribución y enlace. Si la jugada usa el guion del creador, va **literal** (no se reescribe ni se resume) y la adaptación propia se marca como tal; es material interno, no lo ve el cliente. | ✅ |
-| Cerebro → Playbook | Botón *"Sugerir técnicas"* en el editor de jugadas y en el guion: consulta el Cerebro por etapa y objeción. Necesita que el Cerebro exponga una API de servidor por tenant; la interfaz `TechniqueProvider` ya está prevista. | 🔜 |
+| Cerebro → Playbook | Botón *"Sugerir técnicas"* en el editor de jugadas y en el guion: consulta el Cerebro por etapa y objeción. Necesita que el Cerebro exponga una API de servidor por tenant; la interfaz de la app (prevista como `TechniqueProvider`) aún no está escrita. | 🔜 |
 | Playbook → Cerebro | **Exportación** `GET /admin/api/playbook/export` con formato de ficha: técnica, cuándo usarla, por qué funciona, guion, etapa, objeción, evidencia del equipo. Así el Cerebro puede ingerir "el cerebro del equipo Enjoy" y aprender de los fallos y aciertos del equipo. | ✅ export · 🔜 ingesta |
 | Contexto → Cerebro | «Preparar mensaje»: petición con etapa y objeción del Cerebro + todo el contexto de empresa, sector, actor, cuenta y propuesta, para abrir en Claude/ChatGPT con el MCP. | ✅ |
 | Mercado → Cerebro/CRM | La exportación incluye el **mapa de mercado** (sectores, actores, ángulos). | ✅ |
@@ -144,12 +144,12 @@ El Cerebro es conocimiento de **expertos** (técnicas generales y atribuidas). E
 
 Permisos (RLS):
 - Cualquier miembro lee lo oficial y lo compartido, comparte trucos, propone mejoras y vota.
-- Solo los admins editan lo oficial y revisan propuestas.
+- Solo admins y gerentes (`lead`) editan lo oficial y revisan propuestas (políticas `play_manager`, `contribution_manager`).
 - Cada persona solo ve sus propuestas pendientes; los admins ven todas.
 
 ## Preguntas para revisar juntos
 
-1. ¿Rol propio de **"líder de ventas"** (edita el playbook pero no la marca ni el equipo), o basta con admin? Hoy: admin.
+1. ~~¿Rol propio de **"líder de ventas"**?~~ Hecho: rol «Gerente» (`lead`), que edita el playbook, el mercado y el equipo, pero no la marca, el catálogo ni los precios (docs/ORG.md).
 2. ¿Los trucos del equipo son visibles **al momento** o pasan antes por el líder? Hoy: al momento, etiquetados como *del equipo*, y el líder puede ocultarlos.
 3. ¿Quién valida el **mapa de mercado** de Enjoy? Los 4 sectores y 15 actores son **ejemplo** redactado por mí a partir de lo que me contaste. Se importa con `tenants/enjoy/tenant.json` → `market`.
 4. ¿Quién escribe el playbook inicial de Enjoy? El de este repo es **contenido de ejemplo** que yo he redactado; se importa con `tenants/enjoy/tenant.json` → `playbook`.

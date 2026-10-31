@@ -7,16 +7,16 @@
 | | Comercial (rep) | Colaborador (partner) |
 |---|---|---|
 | Entra con | Código por email (o contraseña) | **Código por email**, sin contraseña |
-| Ve dossiers | Todos los del equipo | **Solo los suyos** |
+| Ve dossiers | Los suyos en la lista (docs/ORG.md §Propuestas) | **Solo los suyos** |
 | Crea propuestas | Libres | **Solo para sus cuentas** (locales, centros…) que asigna el admin |
 | Módulos | Todo el catálogo | **Solo los que el admin le permite** (p. ej. 1, 2 y 3, no el 4) |
-| Precios | Los ve y los ajusta | **Nunca ve la tarifa ni toca precios**: los fija la política de cada cuenta |
+| Precios | Los ve; elige tarifa y cupón (docs/COMMISSIONS.md §Tarifas) | **Nunca ve la tarifa ni toca precios**: los fija la política de cada cuenta |
 | Playbook | Todo lo oficial + trucos del equipo; aporta | Lo oficial de **sus** módulos, **sin monetización**; trucos del equipo solo si el admin lo permite; **no aporta** (vota «me funcionó») |
 | Mercado | Todos los sectores | Solo los sectores de **sus cuentas** |
 | Cosas solo para él | — | **Su guía** (nota de bienvenida) e **indicaciones por cuenta** |
 | Caducidad | — | Opcional: al caducar no entra, sus propuestas se conservan |
 
-**El líder de ventas** de momento es el admin (lo pediste así). Un rol de líder separado (gestiona playbook y colaboradores, pero no marca ni catálogo) es fácil de añadir más adelante: sería otro valor del mismo enum y otra lista de permisos.
+**El jefe/a de ventas** es el rol «Gerente» (`lead`): gestiona playbook, equipo y colaboradores, pero no marca, catálogo ni precios (`src/lib/admin/permissions.ts`, docs/ORG.md).
 
 ## 2. Precio por cuenta: lo decide el admin
 
@@ -58,6 +58,6 @@ Cada cuenta del colaborador tiene una **política de precio**:
 
 1. **¿Aportan al playbook?** Hoy no (solo votan). Propuesta: que puedan proponer trucos que pasen por la bandeja del líder antes de verse.
 2. **¿Publican solos?** Hoy sí: publican y envían. Alternativa: «enviar a revisión» y que el admin publique, al menos para cuentas con precio especial.
-3. **Comisiones:** ya queda registrado quién creó cada propuesta, de qué cuenta y su resultado (ganado/perdido). El cálculo y la liquidación serían la siguiente pieza.
+3. **Comisiones:** hechas (docs/COMMISSIONS.md): los colaboradores pueden tener su plan o una regla por rol, y sus ventas en cuentas asignadas siempre son elegibles.
 4. **¿Puede el colaborador dar de alta cuentas nuevas?** Hoy solo el admin. Podría proponerlas (pendientes de aprobar).
-5. **Líder de ventas:** rol aparte cuando haga falta (ver §1).
+5. **Líder de ventas:** hecho, rol «Gerente» (ver §1).
