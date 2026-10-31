@@ -41,4 +41,4 @@ Lo que no se sabe («no lo sé») no suma ni resta. A igualdad, primero lo ganad
 
 ## 5. Siguiente paso: CRM y WhatsApp
 
-Hoy el cierre se documenta a mano en dos minutos. Cuando haya CRM y conectores (WhatsApp vía n8n), el cierre se rellenará con la interacción registrada: mensajes, respuestas y momento clave. El aviso de seguimiento («hoy te toca escribir a X, te dejo un mensaje») podrá proponer lo que funcionó en situaciones parecidas. El modelo de datos (`win_story`) ya está preparado para recibirlo.
+Hoy el cierre se documenta a mano en dos minutos. El CRM ya registra las interacciones de cada empresa (docs/CRM_DINAMICO.md §10), pero el cierre todavía no se rellena con ellas. Pendiente: que se rellene con la interacción registrada (y con conectores como WhatsApp vía n8n): mensajes, respuestas y momento clave. El aviso de seguimiento («hoy te toca escribir a X, te dejo un mensaje») podrá proponer lo que funcionó en situaciones parecidas. El modelo de datos (`win_story`) ya está preparado para recibirlo.

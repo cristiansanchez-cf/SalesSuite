@@ -26,11 +26,16 @@ Entra en cada espacio por su dominio (la Plataforma tiene un «Entrar» por espa
 
 ## Alta de una empresa
 
+Paso a paso para el superadmin (una sola vez + cada empresa): [`ONBOARDING_TENANT.md`](ONBOARDING_TENANT.md). Aquí, qué
+hace cada pieza.
+
 **Plataforma → Nueva empresa** (solo superadmin): nombre, dirección (sale del nombre), idioma y, si se quiere, el email de su
-admin. Crea el espacio con su dirección `<dirección>.ventas.cofundo.io` (o la de `PLATFORM_DOMAIN`), su fila de ajustes del CRM
-(sin cualificación: la eligen ellos) e invita a su admin, cuyo enlace le lleva a la configuración guiada con IA
-(`/admin/setup/ia?first=1`). «Entrar y configurar» lleva al superadmin al mismo sitio (allí hay que iniciar sesión otra vez: la
-sesión es de cada dirección). Una dirección repetida se rechaza.
+admin. Crea el espacio con su dirección `<dirección>.ventas.cofundo.io` (o la base de `PLATFORM_DOMAIN`; en local,
+`<dirección>.localhost`), su fila de ajustes del CRM (sin paquete de cualificación: por ahora solo se pone por SQL,
+docs/CRM_DINAMICO.md §45) e invita a su admin (hace falta `SUPABASE_SERVICE_ROLE_KEY`), cuyo enlace le lleva a la
+configuración guiada (`/admin/setup/ia?first=1`). «Entrar y configurar» lleva al superadmin al mismo sitio (allí hay que
+iniciar sesión otra vez: la sesión es de cada dirección). Una dirección repetida se rechaza. El espacio nace vacío: sin
+marca, sin módulos en el catálogo y sin contenido.
 
 Una sola vez, para que cualquier dirección nueva funcione sin tocar nada:
 - Vercel → el proyecto → Settings → Domains: añadir `*.ventas.cofundo.io` (el comodín pide los nameservers de Vercel para
@@ -43,9 +48,14 @@ espacio enseña su **Alta**: los nueve pasos (su admin, qué vende, clientes y a
 CRM con empresas y primera propuesta), cuáles faltan y un enlace a cada uno en su espacio (`src/lib/org/setup-status.ts`; los
 cuenta `platform_overview()`).
 
-Un dominio propio de la empresa (p. ej. `ventas.suempresa.com`) se sigue añadiendo como hasta ahora (docs/SETUP.md).
+Un dominio propio de la empresa (p. ej. `ventas.suempresa.com`) no tiene pantalla: Vercel + DNS + Redirect URL
+(docs/SETUP.md §3.1 y §6) y la fila en `domain` (con `tenants/<slug>/tenant.json` y el alta por script, o por SQL; ver
+docs/ONBOARDING_TENANT.md). La carpeta `tenants/<slug>/` sigue siendo la alternativa para cargar de una vez marca, catálogo y
+contenido, también sobre un espacio creado aquí.
+
 Hecho con `platform_create_tenant()` y `platform_add_admin()` (migración `20261212000000_platform_create_tenant.sql`, test
-`supabase/tests/74_platform_create_tenant.test.sql`) y `org.createSpace()`; smoke `scripts/smoke-new-space.cjs`.
+`supabase/tests/74_platform_create_tenant.test.sql`), `org.createSpace()` (`src/lib/org/service.ts`) y
+`src/pages/admin/platform.astro`; smoke `scripts/smoke-new-space.cjs`.
 
 ## Cómo está hecho
 

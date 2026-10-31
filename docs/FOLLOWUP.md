@@ -1,6 +1,6 @@
 # Seguimiento comercial: diseño (para revisar)
 
-> El seguimiento es donde se pierden más ventas: la propuesta se envía y nadie vuelve a escribir en el momento justo. Este documento propone cómo cubrirlo en SalesSuite por fases. La **fase A está implementada**; el resto queda diseñado.
+> El seguimiento es donde se pierden más ventas: la propuesta se envía y nadie vuelve a escribir en el momento justo. Este documento propone cómo cubrirlo en SalesSuite por fases. Las **fases A y B están implementadas**, la C se hizo en el CRM y de la D hay una parte; lo demás queda diseñado. El seguimiento de **empresas** (no de propuestas) está en docs/CRM_DINAMICO.md §10 y §33.
 
 ## Fase A: próximo paso con fecha ✅ (implementada)
 
@@ -13,15 +13,15 @@
 - **Mapa de la cuenta**: personas reales con su papel (decide, paga, puede vetar…) y su postura (aliado, neutral, bloqueador). El guion avisa de quién falta por mapear.
 - **Resultado** del dossier: en curso, ganado o perdido.
 
-## Fase B: recordatorios 🔜
+## Fase B: recordatorios ✅ (por email)
 
-- **Resumen diario** por email (o WhatsApp vía n8n) a cada comercial: seguimientos de hoy y vencidos, con enlace directo a "Preparar mensaje".
-- Implementación: un cron (Supabase `pg_cron` + Edge Function, o un workflow de n8n) que consulta `dossier.next_step_at` por autor. El índice `dossier_next_step_idx` ya existe.
-- Para el líder: "dossiers publicados sin próximo paso" (propuestas abandonadas).
+- **Resumen diario** por email a cada comercial: vencidos, para hoy, abiertas en 24 h y sin próximo paso, con *Preparar mensaje* y *Abrir*; a admins y gerentes, además, cómo va el equipo (propuestas sin próximo paso, vencidos por persona). Detalle: docs/NOTIFICATIONS.md §Resumen diario.
+- Implementación: `src/lib/notify/daily.ts` y `daily-job.ts`, desde `GET /api/cron/notifications` (Supabase `pg_cron` + `pg_net` cada 10 min, docs/PUESTA_EN_MARCHA.md paso 8). Registro en `daily_digest_log`.
+- Pendiente: por WhatsApp.
 
-## Fase C: actividad y cadencias 🔜
+## Fase C: actividad ✅ (en el CRM) · cadencias 🔜
 
-- Tabla `activity` (llamada, mensaje, reunión, nota) por dossier y contacto, con fecha y resultado. Es la semilla del CRM: se convierte en `activity` de `contact`/`deal` sin migrar datos.
+- La actividad se hizo en el CRM, por empresa y persona: `crm_activity` (canal, resultado, con quién, nota) y próximo paso propuesto por regla (`src/lib/crm/followup.ts`). Ver docs/CRM_DINAMICO.md §10.
 - **Cadencias por sector**, definidas por el líder en el playbook. Ejemplo para ocio nocturno:
 
   | Día | Acción |
@@ -33,12 +33,14 @@
 
   Cada paso propone la jugada adecuada (las de etapa *Seguimiento*) y su técnica del Cerebro.
 
-## Fase D: disparadores por comportamiento 🔜 (con la analítica de visionado, Fase 2 del plan)
+## Fase D: disparadores por comportamiento (a medias)
+
+Hecho: la analítica de visionado (`dossier_view`, docs/ANALYTICS.md), el aviso «… ha abierto tu propuesta» en la campana (uno por propuesta y día), la lista «Escríbele hoy» en Analítica y las aperturas en el resumen diario. Pendiente, lo de abajo:
 
 - "Ha abierto la propuesta 3 veces hoy" → avisar y proponer llamar ahora.
 - "Lleva 5 días sin abrirla" → mensaje de reactivación.
 - "Ha mirado mucho el precio" → preparar la objeción de precio.
-- Datos: `dossier_event` (Fase 2) + reglas simples. El aviso llega con el contexto ya preparado.
+- Datos: `dossier_view` (aperturas, tiempo y tiempo por sección) + reglas simples. El aviso llega con el contexto ya preparado.
 
 ## Fase E: Cerebro de Ventas en bucle 🔜
 

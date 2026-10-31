@@ -12,8 +12,13 @@ Los avisos los crean **triggers de Postgres** a partir de hechos reales (`supaba
 | `partner_referred` | Un colaborador invita a otro («DJ Sebastián viene invitado por DJ Antonio») | Admins | Acción | Lo abres |
 | `member_added` | Un/a jefe/a de ventas suma a alguien al equipo | Admins | Info | Lo abres |
 | `story_shared` | Alguien documenta un cierre (ganado o perdido) | Admins y jefes/as de ventas (menos el autor) | Info | Lo abres |
+| `account_conflict` | Una venta ganada no es elegible para comisión (cuenta de otro, bloqueada, fuera de zona…; docs/ACCOUNTS.md) | Admins y jefes/as de ventas | Acción | Se decide pagar o no, o se deshace la venta |
+| `sale_to_confirm` | Entra un ingreso pendiente de confirmar (venta declarada; docs/COMMISSIONS.md) | Admins (menos quien lo creó) | Acción | Se confirma o se anula |
+| `payout_ready` / `payout_paid` | Se crea tu liquidación / se marca pagada | La persona liquidada | Info | Lo abres |
+| `dossier_opened` | El cliente abre tu propuesta (no cuentan las aperturas internas; docs/ANALYTICS.md) | El autor, una vez por propuesta y día | Info | Lo abres |
+| `payment_paid` | Un cliente paga el enlace de pago de una empresa, o se marca pagado a mano (docs/CRM_DINAMICO.md §36) | Quien lo vendió, admins y jefes/as de ventas | Acción | Lo abres |
 
-Próximos tipos, con el mismo mecanismo: conflicto de cuenta (zonas), venta declarada que confirmar y liquidación lista (comisiones), error al recibir datos de una API externa.
+Pendiente, con el mismo mecanismo: error al recibir datos de una API externa.
 
 El aviso guarda **el tipo y sus datos**, no la frase. La frase, el icono y el enlace salen de `src/lib/notify/render.ts`, así que se pintan en el idioma de quien lo lee. Para añadir un tipo: trigger o RPC que llame a `public.notify_roles(...)`, su réplica en `src/lib/notify/db-demo.ts` y su entrada en `KINDS`.
 
@@ -74,7 +79,7 @@ En modo demo no sale ningún email: el cron los guarda en memoria.
 
 ### Emails de acceso de Supabase (enlace mágico y código)
 
-Son independientes de estos avisos: los envía Supabase Auth. Para que salgan desde tu dominio con Resend, configura el SMTP de Resend en Supabase (Authentication → SMTP). Pendiente: incorporar la guía de magic link / passwordless con Resend que tiene el equipo.
+Son independientes de estos avisos: los envía Supabase Auth. Para que salgan desde tu dominio con Resend, configura el SMTP de Resend en Supabase y sus plantillas (`supabase/templates/`): docs/SETUP.md §3.3–3.5 y docs/PUESTA_EN_MARCHA.md paso 2.
 
 ## Pruebas
 

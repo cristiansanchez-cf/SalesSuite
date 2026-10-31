@@ -46,6 +46,12 @@ preguntas y textos de discotecas.
 Se arregla con la configuración del CRM por espacio de «Configura tu CRM» (siguiente fase): cada espacio guarda su país,
 idioma, tipos de cliente, cualificación y eliminatorios, y Enjoy queda como un espacio más con lo de hoy como semilla.
 
+**Estado (después del checkpoint):** los tipos de cliente ya son de cada espacio (`crm_settings.kinds`,
+docs/CRM_DINAMICO.md §32) y la cualificación, los pesos, «Le encaja» y los prompts de ocio nocturno ahora son un paquete
+(`crm_settings.qualification = 'nightlife'`, solo Enjoy): un espacio sin él no ve nada de la noche (§45, smoke
+`scripts/smoke-white-label.cjs`). Las ciudades fuera de España ya se buscan en Google (§44). Sigue pendiente un paquete
+para otros sectores o editable por el admin.
+
 ## Cómo se comprueba
 
 `npx astro check` (0 errores, 0 avisos), `npx vitest run`, `bash supabase/tests/run-local.sh`,

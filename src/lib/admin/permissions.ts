@@ -1,5 +1,5 @@
 /**
- * Qué puede hacer cada rol (docs/TEAM.md). Un único sitio: las páginas, los servicios y el menú preguntan aquí.
+ * Qué puede hacer cada rol (docs/ORG.md §Quién ve qué). Un único sitio: las páginas, los servicios y el menú preguntan aquí.
  * La RLS de Postgres repite estas reglas (defensa en profundidad).
  *  - admin: todo.
  *  - lead (gerente): equipo comercial y colaboradores, playbook, mercado, situaciones y todos los dossiers.
