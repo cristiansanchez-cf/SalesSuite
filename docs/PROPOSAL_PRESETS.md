@@ -59,3 +59,20 @@ Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como mód
 - **Oquea · Centros de buceo:** receta de la guía de inicio (`scripts/apply-oquea-03.py`): completa (9) y apoyo visual
   (5); 4 preguntas (salidas diarias, equipo, montarlo, varios centros). Sin precio hasta su documento 04.
 - Bodas: sin receta todavía (módulos recomendados como siempre).
+
+## Desde la ficha
+
+«Crear propuesta» en la ficha de una empresa la crea ya con lo que su ficha sabe (src/lib/proposal/from-account.ts):
+
+- **Sector**: el de la empresa; si no tiene, el de la receta cuyo `fromAccount.match` cumple con más condiciones.
+- **Receta montada** (modo argumentario) con las respuestas que la ficha contesta: `fromAccount.answers` = lista de
+  `{ answer, if }`; `answer` es una pregunta («dj») o «elección:opción» («tipo:grupo») y `if` las condiciones
+  (dato → valores; vale con uno, todas a la vez).
+- **Estilo de las canciones de ejemplo**: `fromAccount.musicStyle` = `{ from: [datos], map: { valor → estilo } }`.
+- **Empresa y persona**: el nombre de la empresa y la primera persona de su ficha.
+
+Los datos son la cualificación de la ficha (`screens`, `dj`, `scale`, `decider`, `format`, `pdyn`, `pstyle`…), más
+`profile` (perfil de su tipo: venue, promoter, dj…) y `accountKind` (el tipo en sí). Es configuración de cada espacio
+(tenant.json → `market[].proposal.fromAccount`); sin ella, la propuesta nace vacía como antes. Una respuesta que la
+receta no tenga se ignora. Lo que la ficha no sabe lo marca el comercial, y todo se puede cambiar después.
+

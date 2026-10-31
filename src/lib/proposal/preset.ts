@@ -12,6 +12,11 @@ const key = z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/);
 /** Una respuesta: la clave de una pregunta («dj») o «elección:opción» («angulo:d»). */
 const answer = z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}(:[a-z0-9][a-z0-9-]{0,62})?$/);
 
+/** Condiciones sobre la ficha de la empresa: dato → valores (vale con uno). */
+const factKey = z.string().regex(/^[a-z][a-zA-Z0-9_-]{0,40}$/);
+const factValue = z.string().min(1).max(60);
+const facts = z.record(factKey, z.array(factValue).min(1).max(20)).refine((o) => Object.keys(o).length > 0 && Object.keys(o).length <= 6, 'de 1 a 6 condiciones');
+
 export const PRESET_MODES = ['full', 'visual'] as const;
 export type PresetMode = (typeof PRESET_MODES)[number];
 
@@ -54,6 +59,12 @@ export const proposalSchema = z.object({
    * diapositivas de la propuesta (que le hablan al cliente).
    */
   learn: z.array(z.object({ title: z.string().min(1).max(80), body: z.string().min(1).max(600), ui: z.string().regex(TOUR_UI).nullable().optional() }).strict()).max(10).optional(),
+  /** Propuesta desde una empresa: lo que su ficha ya contesta (src/lib/proposal/from-account.ts). */
+  fromAccount: z.object({
+    match: facts.optional(),
+    answers: z.array(z.object({ answer, if: facts }).strict()).max(30).default([]),
+    musicStyle: z.object({ from: z.array(factKey).min(1).max(4), map: z.record(factValue, key) }).strict().optional(),
+  }).strict().optional(),
 }).strict().superRefine((p, c) => {
   const ids = new Set(Object.keys(p.blocks));
   const check = (id: string, where: string) => { if (!ids.has(id)) c.addIssue({ code: 'custom', message: `${where}: el bloque «${id}» no existe` }); };
@@ -73,6 +84,7 @@ export const proposalSchema = z.object({
     ch.options.forEach((o) => { rules(o.rules, `choices.${ch.key}.${o.key}`); o.priority?.forEach((b) => check(b, `choices.${ch.key}.${o.key}.priority`)); });
   }
   p.questions.forEach((q) => rules(q.rules, `questions.${q.key}`));
+  // fromAccount: una respuesta que la receta no tenga se ignora al heredar (no invalida la receta entera).
 });
 export type Proposal = z.infer<typeof proposalSchema>;
 

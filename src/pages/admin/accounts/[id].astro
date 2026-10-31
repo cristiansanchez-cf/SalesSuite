@@ -139,8 +139,12 @@ if (Astro.request.method === 'POST') {
       case 'unblock': await acc.unblock(id); to += '?ok=unblocked'; break;
       case 'delete': await acc.remove(id); to = '/admin/accounts'; break;
       case 'dossier': {
-        const a = (await acc.get(id)).account;
-        const d = await admin.service.createDossier({ title: a.name, prospectCompany: a.name, accountId: id });
+        // La propuesta nace con lo que ya sabe su ficha: sector, receta con sus respuestas, estilo y con quién hablar.
+        const [a, kinds, segs, people] = await Promise.all([acc.get(id).then((x) => x.account), acc.kinds(), admin.playbook.segmentList(), admin.crm.company(id).then((c) => c.people).catch(() => [])]);
+        const d = await admin.service.createFromAccount({
+          title: a.name, prospectCompany: a.name, prospectName: people[0]?.name?.slice(0, 120) || undefined, accountId: id, segmentIds: segs.map((x) => x.id),
+          facts: { segmentId: a.segmentId, profile: profileOf(kinds, a.kind), kind: a.kind, qualification: (a.qualification ?? {}) as Record<string, unknown> },
+        });
         to = `/admin/dossiers/${d}`;
         break;
       }

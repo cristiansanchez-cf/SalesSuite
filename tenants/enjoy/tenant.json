@@ -1715,7 +1715,49 @@
               "tipo:privados"
             ]
           }
-        ]
+        ],
+        "fromAccount": {
+          "match": {
+            "profile": [
+              "venue"
+            ]
+          },
+          "answers": [
+            {
+              "answer": "tipo:grupo",
+              "if": {
+                "scale": [
+                  "group"
+                ]
+              }
+            },
+            {
+              "answer": "sin-pantalla",
+              "if": {
+                "screens": [
+                  "no"
+                ]
+              }
+            },
+            {
+              "answer": "dj",
+              "if": {
+                "dj": [
+                  "resident",
+                  "both"
+                ]
+              }
+            },
+            {
+              "answer": "oficina",
+              "if": {
+                "decider": [
+                  "offsite"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     {
@@ -2433,7 +2475,37 @@
               }
             ]
           }
-        ]
+        ],
+        "fromAccount": {
+          "match": {
+            "profile": [
+              "promoter"
+            ]
+          },
+          "answers": [
+            {
+              "answer": "dinamicas",
+              "if": {
+                "pdyn": [
+                  "yes"
+                ]
+              }
+            }
+          ],
+          "musicStyle": {
+            "from": [
+              "pstyle"
+            ],
+            "map": {
+              "latin": "reggaeton",
+              "commercial": "exitos-es",
+              "pop": "exitos-es",
+              "international": "internacional",
+              "erasmus": "internacional",
+              "tardeo": "clasicos-es"
+            }
+          }
+        }
       }
     },
     {
@@ -3137,7 +3209,14 @@
               }
             ]
           }
-        ]
+        ],
+        "fromAccount": {
+          "match": {
+            "kind": [
+              "concert"
+            ]
+          }
+        }
       }
     },
     {
@@ -3722,7 +3801,17 @@
               }
             ]
           }
-        ]
+        ],
+        "fromAccount": {
+          "match": {
+            "profile": [
+              "venue"
+            ],
+            "format": [
+              "festival"
+            ]
+          }
+        }
       }
     },
     {
@@ -3896,6 +3985,16 @@
         },
         "max": {
           "full": 6
+        },
+        "fromAccount": {
+          "match": {
+            "profile": [
+              "venue"
+            ],
+            "format": [
+              "hotel"
+            ]
+          }
         }
       },
       "modules": [

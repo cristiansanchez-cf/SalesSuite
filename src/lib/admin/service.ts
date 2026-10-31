@@ -16,6 +16,7 @@ import { can } from './permissions';
 import { paymentUrl } from './payment';
 import { inTeam } from '../org/scope';
 import { effectiveAnswers, planProposal } from '../proposal/preset';
+import { inheritedAnswers, inheritedStyle, pickSegment, type AccountFacts } from '../proposal/from-account';
 import { localizeError } from '../i18n/errors';
 import { requestLocale } from '../i18n/request';
 import { builderOpSchema, dossierPatchSchema, type BuilderOpInput, type CreateDossierInput } from './ops';
@@ -231,6 +232,27 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       }
     }
     return d.id;
+  }
+
+  /**
+   * Propuesta desde una empresa (docs/PROPOSAL_PRESETS.md §Desde la ficha): la crea ya con lo que su ficha sabe — su
+   * sector (o el que encaja), la receta montada con las respuestas que la ficha contesta y el estilo de sus canciones.
+   * Lo que falla al montar (receta incompleta) no impide crearla: se queda vacía para montarla a mano.
+   */
+  async function createFromAccount(input: CreateDossierInput & { accountId: string; facts: AccountFacts; segmentIds: string[] }): Promise<string> {
+    const { facts, segmentIds, ...create } = input;
+    const id = await createDossier(create);
+    const recipes = await Promise.all(segmentIds.map(async (sid) => ({ id: sid, proposal: await db.segmentProposal(s.tenantId, sid) })));
+    const segmentId = pickSegment(facts, recipes);
+    if (!segmentId || !(await db.segmentExists(s.tenantId, segmentId))) return id;
+    await assertWrote(await db.updateDossier(id, { segmentId }));
+    const recipe = recipes.find((r) => r.id === segmentId)?.proposal ?? (await db.segmentProposal(s.tenantId, segmentId));
+    if (!recipe) return id;
+    const d = await load(id);
+    await mountPreset(id, d, 'full', inheritedAnswers(recipe, facts)).catch((e) => { if (!(e instanceof AdminError)) throw e; });
+    const style = inheritedStyle(recipe, facts);
+    if (style) await assertWrote(await db.updateDossier(id, { clientMedia: { ...(d.clientMedia ?? {}), musicStyle: style } }));
+    return id;
   }
 
   /**
@@ -527,7 +549,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
   }
 
   const media = createMediaService(db, s, opts.assets, canEdit);
-  return { getState, listDossiers, createDossier, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
+  return { getState, listDossiers, createDossier, createFromAccount, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
 }
 
 export type AdminService = ReturnType<typeof createAdminService>;

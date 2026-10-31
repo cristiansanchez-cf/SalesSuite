@@ -1790,7 +1790,25 @@
               }
             ]
           }
-        ]
+        ],
+        "fromAccount": {
+          "match": {
+            "profile": [
+              "venue"
+            ]
+          },
+          "answers": [
+            {
+              "answer": "dj",
+              "if": {
+                "dj": [
+                  "resident",
+                  "both"
+                ]
+              }
+            }
+          ]
+        }
       }
     },
     {
