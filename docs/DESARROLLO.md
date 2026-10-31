@@ -23,7 +23,7 @@ AI_RESEARCH_FIXTURE=1 DEMO_MODE=1 DEV_TENANT_SLUG=enjoy node ./dist/server/entry
 - `npm run dev` (Astro en modo desarrollo, con recarga) también entra en demo sin `.env`; el build es lo que corren los
   smokes y CI.
 
-**Usuarios de demo** (`/admin/login` → «Entrar como…», un clic): `admin@enjoy.test` (admin de Enjoy),
+**Usuarios de demo** (`/admin/login` → «Modo demo: entrar como…», un clic): `admin@enjoy.test` (admin de Enjoy),
 `rep@enjoy.test` (comercial), `dj@enjoy.test` (colaborador: entra con código, que en demo sale en pantalla),
 `rep@retheme.test` (comercial de otro espacio: en Enjoy da 403) y `super@cofundo.test` (superadmin: ve **Plataforma**).
 En la consola, «Cambiar de espacio» guarda el espacio en la cookie `ss_demo_tenant`.
