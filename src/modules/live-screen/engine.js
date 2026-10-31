@@ -3,7 +3,8 @@
 /*
  * Enjoy Screen: motor del kit de Enjoy («enjoy-screen-ui-kit.html»), VERBATIM salvo:
  *  - ASSETS/DEMO opcionales (los pone client.ts antes de cargar este fichero, con los assets del espacio);
- *  - la rotación del reclamo se limpia en destroy (varias pantallas por página).
+ *  - la rotación del reclamo se limpia en destroy (varias pantallas por página);
+ *  - tras destroy, los avisos que aún lleguen del vídeo (ended, error, play) no tocan nada.
  */
 /* ==========================================================================
    6. EL MOTOR
@@ -502,11 +503,11 @@
         elBase.appendChild(b);
       } else if (!on && b) b.remove();
     }
-    function nextClip() { vidIdx++; setClip(); if (o.mode === 'tp') playClip(); }
+    function nextClip() { if (!vid) return; vidIdx++; setClip(); if (o.mode === 'tp') playClip(); }
     /* Si su vídeo no se puede reproducir, el de ejemplo (una vez); si tampoco, se queda quieto (nada de reintentar en
        bucle, que en el móvil se come los datos). */
     function clipFailed() {
-      if (fellBack || !(A.videoFallback && A.videoFallback.length)) return;
+      if (!vid || fellBack || !(A.videoFallback && A.videoFallback.length)) return;
       fellBack = true; clips = A.videoFallback.slice(); vidIdx = 0; setClip();
       if (o.mode === 'tp') playClip();
     }
@@ -553,10 +554,12 @@
           solo, también con el iPhone en ahorro de batería. Si ahora no toca vídeo, se vuelve a pausar. */
       prime: function () {
         if (!vid || vid._primed) return api;
-        vid._primed = true;
-        var p = vid.play();
-        var back = function () { if (o.mode !== 'tp') vid.pause(); };
-        if (p && p.then) p.then(back, function () { vid._primed = false; }); else back();
+        // El de ahora: si se desmonta antes de que arranque, `vid` ya es null.
+        var v = vid;
+        v._primed = true;
+        var p = v.play();
+        var back = function () { if (o.mode !== 'tp') v.pause(); };
+        if (p && p.then) p.then(back, function () { v._primed = false; }); else back();
         return api;
       },
       /** Dispara el aviso de precio (el producto lo lanza solo al cambiar la tarifa). */
