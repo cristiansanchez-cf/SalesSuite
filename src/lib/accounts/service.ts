@@ -164,10 +164,19 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     return { items, total: all.length, scope, kinds: counts };
   }
 
-  async function get(accountId: string) {
-    requireUse();
+  /**
+   * La cuenta tiene que ser de este espacio: la RLS (y la demo) solo miran que seas miembro de SU espacio, así que
+   * alguien que está en dos (o el superadmin) podría tocar la de otro por su id.
+   */
+  async function ownAccount(accountId: string) {
     const a = await db.getAccount(accountId);
     if (!a || a.tenantId !== s.tenantId) throw new AdminError(404, 'Cuenta no encontrada');
+    return a;
+  }
+
+  async function get(accountId: string) {
+    requireUse();
+    const a = await ownAccount(accountId);
     const [t, members, touches, dossiers, elig, crm] = await Promise.all([
       territory(), names(), db.listTouches(accountId, 50), admin.listDossiers(s.tenantId), db.preview(accountId).catch(() => null), db.listFields(s.tenantId),
     ]);
@@ -215,6 +224,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   async function update(accountId: string, input: unknown) {
     requireUse();
     const v = parse(accountSchema, await placeZone(input));
+    await ownAccount(accountId);
     let ok: boolean;
     try { ok = await db.updateAccount(accountId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null }); } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
@@ -222,6 +232,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   async function touch(accountId: string, kind: 'contact' | 'claim' | 'release', note?: string | null): Promise<Eligibility> {
     requireUse();
     const n = note?.trim().slice(0, 500) || null;
+    await ownAccount(accountId);
     try { return await db.touch(accountId, kind, n); } catch (e) { mapError(e); }
   }
   /**
@@ -247,6 +258,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function managerPatch(accountId: string, p: Parameters<AccountsDb['updateAccount']>[1]) {
     requireManager();
+    await ownAccount(accountId);
     let ok: boolean;
     try { ok = await db.updateAccount(accountId, p); } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(404, 'Cuenta no encontrada');
@@ -267,6 +279,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function remove(accountId: string) {
     requireManager();
+    await ownAccount(accountId);
     if (!(await db.deleteAccount(accountId))) throw new AdminError(404, 'Cuenta no encontrada');
   }
 
@@ -296,6 +309,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function deleteZone(zoneId: string) {
     requireZones();
+    if (!(await db.listZones(s.tenantId)).some((z) => z.id === zoneId)) throw new AdminError(404, 'Zona no encontrada');
     if (!(await db.deleteZone(zoneId))) throw new AdminError(404, 'Zona no encontrada');
   }
   async function setAssignments(userId: string, zoneIds: string[]) {
@@ -378,6 +392,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function archiveField(fieldId: string, archived = true) {
     requireAdmin();
+    if (!(await db.listFields(s.tenantId)).some((f) => f.id === fieldId)) throw new AdminError(404, 'Clave no encontrada');
     if (!(await db.archiveField(fieldId, archived))) throw new AdminError(404, 'Clave no encontrada');
   }
   /** Sube o baja un campo en el orden (intercambia la posición con el vecino). */
@@ -397,8 +412,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   /** Guarda valores de campos de una cuenta: solo los que llegan; los vacíos se borran; errores juntos. */
   async function setFields(accountId: string, input: Record<string, unknown>) {
     requireUse();
-    const a = await db.getAccount(accountId);
-    if (!a || a.tenantId !== s.tenantId) throw new AdminError(404, 'Cuenta no encontrada');
+    const a = await ownAccount(accountId);
     const fields = (await db.listFields(s.tenantId)).filter((f) => f.target === 'account');
     const r = parseValues(fields, input);
     if (r.errors.length) throw new AdminError(422, 'Datos no válidos', r.errors);
@@ -417,6 +431,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function decide(dossierId: string, decision: AccountDecision | null) {
     requireManager();
+    if ((await admin.getDossier(dossierId))?.tenantId !== s.tenantId) throw new AdminError(404, 'Propuesta no encontrada');
     let ok: boolean;
     try { ok = await db.decide(dossierId, decision); } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(404, 'Propuesta no encontrada');
