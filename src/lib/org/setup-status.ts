@@ -9,7 +9,7 @@ export type SetupStep = (typeof SETUP_STEPS)[number];
 
 const PATH: Record<SetupStep, string> = {
   admin: '/admin/team', empresa: '/admin/setup/agente', mercado: '/admin/setup/ia?b=mercado', situaciones: '/admin/setup/ia?b=situaciones',
-  jugadas: '/admin/setup/ia?b=jugadas', precios: '/admin/prices', marca: '/admin/brand', crm: '/admin/accounts', propuesta: '/admin/dossiers',
+  jugadas: '/admin/setup/ia?b=jugadas', precios: '/admin/prices', marca: '/admin/brand', crm: '/admin/accounts', propuesta: '/admin',
 };
 
 export function setupSteps(s: PlatformSetup, published: number): Array<{ key: SetupStep; done: boolean; path: string }> {
