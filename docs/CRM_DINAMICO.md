@@ -1076,3 +1076,28 @@ solo manda una clave (`es|Comunidad|Provincia|Ciudad`, validada contra el catál
 vuelve a pedir a Google): nunca una ruta inventada.
 
 Pruebas: `spain.test.ts`, SQL 72, `scripts/smoke-zone-pick.cjs` (un comercial da de alta en Bilbao y en Busan).
+
+## 45. La cualificación es del espacio (marca blanca)
+
+Hasta ahora todo espacio sin configurar veía su ficha como la de un local de ocio nocturno: el tipo principal tenía la
+ficha `venue` y las preguntas, pesos, tramos de aforo, paquetes («Le encaja») y las fichas de promotora y DJ eran las de
+Enjoy, fijas en el código (`priority.ts`, `profiles.ts`). Ahora son un **paquete con nombre** que el espacio tiene o no:
+
+- `crm_settings.qualification` = `'nightlife'` (ocio nocturno, lo de siempre) o `null`. Migración `20261204` (Enjoy,
+  por slug; idempotente), `seed/fixtures.json` (Enjoy) y el modo demo (`store.ts`). Se lee con `crm.qualPack()`
+  (`lib/crm/pack.ts`). Para dar a otro espacio el de ocio nocturno: `update crm_settings set qualification = 'nightlife'`.
+- **Sin paquete**: la ficha no enseña Cualificación (ni la de promotora o DJ, ni «Locales del grupo»), ni nota, ni
+  «Le encaja»; la lista, el mapa, personas y ruta no puntúan ni ordenan por prioridad (sí «se enfría» e «investigadas
+  por IA»); no hay pestaña de pesos; el mapa usa el icono y el nombre de los tipos del espacio; «Generar pago» pregunta
+  el tamaño sin tramos de aforo. Solo se puede marcar `size` (lo de «Generar pago»).
+- **La IA** (Apuntar, Investigar, Limpiar) solo pide lo general: empresa, personas, contacto, interacción, próximo paso,
+  datos clave y los campos del CRM del espacio; los ejemplos y reglas del sector salen de los sectores y tipos del
+  espacio, no de la noche. Con el paquete, las peticiones son las de antes.
+- Los nombres internos de las fichas (`venue` = cliente, `promoter` = organizador, `dj` = profesional; §32) se quedan:
+  sin paquete, `venue` es una ficha de cliente neutra. «Trabaja con» en un cliente solo sale si el espacio tiene tipos
+  de organizador o profesional.
+
+Siguiente paso (#71): más paquetes (buceo, casting…) o uno editable por el admin, con la misma forma.
+
+Pruebas: SQL 73, `map.test.ts`, `notes.test.ts`, `research.test.ts`, `cleanup.test.ts` (caso sin paquete) y
+`scripts/smoke-white-label.cjs` (espacio de prueba sin paquete: sin cualificación ni copy de la noche).

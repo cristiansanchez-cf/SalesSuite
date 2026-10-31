@@ -84,6 +84,7 @@ jobs:
           node scripts/smoke-welcome.cjs
           node scripts/smoke-learn.cjs
           node scripts/smoke-crm.cjs
+          node scripts/smoke-white-label.cjs
           node scripts/smoke-crm-people.cjs
           node scripts/smoke-spaces.cjs
           node scripts/smoke-followup.cjs
