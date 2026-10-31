@@ -106,7 +106,7 @@ export function demoAccountsOnDossier(prev: DossierRow | null, d: DossierRow) {
   if (!prev) { d.account_eligibility = null; d.account_decision = null; d.account_decided_by = null; d.account_decided_at = null; }
   if (roleOf(d.tenant_id, seller) === 'partner') d.account_id = prev?.account_id ?? null;
   if (d.account_id && (!prev || prev.account_id !== d.account_id) && seller) {
-    const a = s.account.find((x) => x.id === d.account_id);
+    const a = s.account.find((x) => x.id === d.account_id && x.tenant_id === d.tenant_id);
     if (a) {
       const elig = eligibilityFor(d.tenant_id, a.id, seller);
       logTouch(a, seller, 'dossier', d.title);
@@ -116,7 +116,7 @@ export function demoAccountsOnDossier(prev: DossierRow | null, d: DossierRow) {
     }
   }
   if (prev && (prev.outcome ?? 'open') !== (d.outcome ?? 'open')) {
-    const a = d.account_id ? s.account.find((x) => x.id === d.account_id) : undefined;
+    const a = d.account_id ? s.account.find((x) => x.id === d.account_id && x.tenant_id === d.tenant_id) : undefined;
     if (d.outcome === 'won') {
       const elig: Eligibility = d.partner_account_id && !d.account_id ? 'eligible' : eligibilityFor(d.tenant_id, d.account_id ?? null, seller ?? '');
       d.account_eligibility = elig;
