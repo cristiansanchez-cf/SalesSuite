@@ -1291,7 +1291,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     // Los campos de la ficha del espacio (los de la empresa): la IA propone valores y aquí se validan con su tipo.
     const accFields = (await fields()).filter((f) => f.target === 'account' && !f.archivedAt);
     const forAi = accFields.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options.map((o) => o.label) }));
-    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, fields: forAi }); } catch (e) {
+    // Sin cualificación en el espacio (§45), la IA solo saca lo general y habla con los tipos del espacio.
+    const [pack, ks] = await Promise.all([qualPack(), kinds()]);
+    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, fields: forAi, pack, kinds: ks }); } catch (e) {
       console.warn('[notes]', aiReason(e));
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
@@ -1434,7 +1436,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         }
         const q: Record<string, unknown> = { ...a.qualification };
         let changed = false;
-        for (const [k, raw] of Object.entries(r.qualification)) {
+        // Sin cualificación en el espacio (§45), no se marca nada aunque llegue.
+        for (const [k, raw] of Object.entries((await qualPack()) ? r.qualification : {})) {
           // Las de varios llegan juntas («club,hall»): se suman a lo que ya tenía.
           let set = false;
           for (const v of MULTI_QUAL.includes(k) ? raw.split(',').map((x) => x.trim()) : [raw]) {
