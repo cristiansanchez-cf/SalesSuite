@@ -40,6 +40,8 @@ export interface ResearchInput {
   known: Record<string, unknown>;
   /** Cualificación del espacio (§45). Sin decirlo, la de ocio nocturno; null = sin cualificación (solo lo general). */
   pack?: QualPack | null;
+  /** País del espacio para la búsqueda web (ISO, «ES»); sin decirlo, España. null = sin país. */
+  country?: string | null;
 }
 export interface ResearchApi { research(input: ResearchInput): Promise<unknown> }
 
@@ -246,7 +248,7 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
           output_config: { effort: 'medium' },
           system: researchSystem(input.pack),
           tools: [
-            { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', country: 'ES', ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
+            { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', ...(input.country !== null ? { country: input.country ?? 'ES' } : {}), ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
             { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 },
             researchTool(input.pack) as unknown as Anthropic.Beta.BetaTool,
           ],

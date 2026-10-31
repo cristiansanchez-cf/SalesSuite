@@ -196,7 +196,7 @@ export async function buildAdminContext(baseDb: AdminDb, user: { id: string; ema
       evidence: createEvidenceService(evidenceDb, playbookDb, db, session, { admin: service, minCloses: minClosesFor() }),
       notifications: createNotifyService(deps.notifyDb ?? emptyNotifyDb, session),
       accounts: createAccountsService(accountsDb, db, session),
-      crm: createCrmService(crmDb, accountsDb, db, session),
+      crm: createCrmService(crmDb, accountsDb, db, session, { locale: tenant.defaultLocale }),
       commissions: createCommissionsService(deps.commissionsDb?.(user.id) ?? emptyCommissionsDb,
         { admin: db, accounts: accountsDb }, session),
       analytics: createAnalyticsService(deps.analyticsDb ?? emptyAnalyticsDb, service, session),

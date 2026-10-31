@@ -36,11 +36,22 @@ function parts(cs: any): PlaceParts {
   return { city: get('locality') ?? get('postal_town') ?? get('administrative_area_level_4'), province: get('administrative_area_level_2'), region: get('administrative_area_level_1'), country: get('country') };
 }
 
-export async function searchPlaces(query: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<PlaceResult[]> {
+/**
+ * Idioma y país de las búsquedas en Google (§45): los del espacio, de su idioma por defecto («es-ES» → es / ES;
+ * «ko-KR» → ko / KR). Sin país en el idioma, Google no sesga por país.
+ */
+export interface PlacesLocale { languageCode: string; regionCode?: string }
+export function placesLocale(tag: string | null | undefined): PlacesLocale {
+  const [l, r] = String(tag || 'es-ES').split('-');
+  return { languageCode: /^[a-z]{2,3}$/i.test(l) ? l.toLowerCase() : 'es', ...(r && /^[a-z]{2}$/i.test(r) ? { regionCode: r.toUpperCase() } : {}) };
+}
+const ES: PlacesLocale = { languageCode: 'es', regionCode: 'ES' };
+
+export async function searchPlaces(query: string, apiKey: string, fetchImpl: typeof fetch = fetch, loc: PlacesLocale = ES): Promise<PlaceResult[]> {
   const res = await fetchImpl('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': FIELDS },
-    body: JSON.stringify({ textQuery: query, languageCode: 'es', regionCode: 'ES', maxResultCount: 5 }),
+    body: JSON.stringify({ textQuery: query, languageCode: loc.languageCode, ...(loc.regionCode ? { regionCode: loc.regionCode } : {}), maxResultCount: 5 }),
   });
   if (!res.ok) throw new Error(`Google Places ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
   return parsePlaces(await res.json());
@@ -90,7 +101,7 @@ export async function searchArea(query: string, apiKey: string, o: AreaOptions =
   let pages = 0;
   const max = Math.max(1, Math.min(o.maxPages ?? 3, 3));
   do {
-    const body: Record<string, unknown> = { textQuery: query, languageCode: o.languageCode ?? 'es', regionCode: o.regionCode ?? 'ES', pageSize: 20 };
+    const body: Record<string, unknown> = { textQuery: query, languageCode: o.languageCode ?? 'es', ...(o.regionCode !== '' ? { regionCode: o.regionCode ?? 'ES' } : {}), pageSize: 20 };
     if (o.near) body.locationBias = { circle: { center: { latitude: o.near.lat, longitude: o.near.lng }, radius: Math.min(Math.max(o.near.radius, 1000), 50000) } };
     if (token) body.pageToken = token;
     const res = await fetchImpl('https://places.googleapis.com/v1/places:searchText', {
@@ -108,9 +119,9 @@ export async function searchArea(query: string, apiKey: string, o: AreaOptions =
 }
 
 const DETAIL_FIELDS = FIELDS.split(',').map((f) => f.replace(/^places\./, '')).join(',');
-export async function placeDetails(placeId: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<PlaceResult | null> {
+export async function placeDetails(placeId: string, apiKey: string, fetchImpl: typeof fetch = fetch, languageCode = 'es'): Promise<PlaceResult | null> {
   if (!/^[\w-]{5,300}$/.test(placeId)) return null;
-  const res = await fetchImpl(`https://places.googleapis.com/v1/places/${placeId}?languageCode=es`, {
+  const res = await fetchImpl(`https://places.googleapis.com/v1/places/${placeId}?languageCode=${encodeURIComponent(languageCode)}`, {
     headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': DETAIL_FIELDS },
   });
   if (!res.ok) throw new Error(`Google Places ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
@@ -137,8 +148,11 @@ export interface PlacesApi {
   /** Ciudades de cualquier país (§44). */
   cities?(query: string): Promise<CityHit[]>; city?(placeId: string): Promise<CityHit | null>;
 }
-export const googlePlaces = (apiKey: string): PlacesApi => ({ search: (q) => searchPlaces(q, apiKey), details: (id) => placeDetails(id, apiKey), photo: (n) => photoUri(n, apiKey), area: (q, o) => searchArea(q, apiKey, o),
-  cities: (q) => searchCities(q, apiKey), city: (id) => cityDetails(id, apiKey) });
+/** `loc`: idioma y país del espacio (§45); por defecto, español de España. */
+export const googlePlaces = (apiKey: string, loc: PlacesLocale = ES): PlacesApi => ({
+  search: (q) => searchPlaces(q, apiKey, fetch, loc), details: (id) => placeDetails(id, apiKey, fetch, loc.languageCode), photo: (n) => photoUri(n, apiKey),
+  area: (q, o) => searchArea(q, apiKey, { languageCode: loc.languageCode, regionCode: loc.regionCode ?? '', ...o }),
+  cities: (q) => searchCities(q, apiKey, loc.languageCode), city: (id) => cityDetails(id, apiKey, loc.languageCode) });
 
 /**
  * Google de pruebas (AI_RESEARCH_FIXTURE=1, sin clave): dos resultados fijos con el nombre buscado, sin llamar a nadie.

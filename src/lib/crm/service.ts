@@ -14,7 +14,7 @@ import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
 import { buildPlan, norm, profileColumns, readCsv, suggestMapping, MAX_ROWS, type ImportPlan, type PlanContext } from './import';
 import { env } from '../env';
-import { fixturePlaces, googlePlaces, PHOTO_NAME, type PlaceResult, type PlacesApi } from './places';
+import { fixturePlaces, googlePlaces, PHOTO_NAME, placesLocale, type PlaceResult, type PlacesApi } from './places';
 import { cleanTaxId, fixtureWebsite, realWebsite, type Socials, type WebsiteApi } from './website';
 import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
 import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizePeople, NOTE_CONTACT_KEYS, type NoteItem, type NotesApi } from './notes';
@@ -121,10 +121,12 @@ export interface PersonView extends Contact {
 /** Para comparar un contacto escrito de varias formas («@marco_sabbia», «https://www.instagram.com/marco_sabbia/»). */
 const socialKey = (v: string) => v.toLowerCase().replace(/^https?:\/\/(www\.)?(instagram\.com|linkedin\.com\/in)\//, '').replace(/^@/, '').replace(/[\/\s]+$/g, '').replace(/[\s()-]/g, '');
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null; notes?: NotesApi | null } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null; notes?: NotesApi | null; locale?: string } = {}) {
+  // Idioma y país del espacio para Google y la investigación (§45): «es-ES» → es / ES.
+  const loc = placesLocale(opts.locale);
   // Sin clave de Google y con AI_RESEARCH_FIXTURE=1 (pruebas): Google y la web, de mentira.
   const fixtureGoogle = !env('GOOGLE_MAPS_API_KEY') && env('AI_RESEARCH_FIXTURE') === '1';
-  const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!) : fixtureGoogle ? fixturePlaces() : null;
+  const places = opts.places !== undefined ? opts.places : env('GOOGLE_MAPS_API_KEY') ? googlePlaces(env('GOOGLE_MAPS_API_KEY')!, loc) : fixtureGoogle ? fixturePlaces() : null;
   const site = opts.website ?? (opts.places === undefined && fixtureGoogle ? fixtureWebsite() : realWebsite());
   const routes = opts.routes !== undefined ? opts.routes : env('GOOGLE_MAPS_API_KEY') ? googleRoutes(env('GOOGLE_MAPS_API_KEY')!) : null;
   const ai = opts.research !== undefined ? opts.research
@@ -1529,7 +1531,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
-        sector: ctx.sector, seller: ctx.seller, known, pack });
+        sector: ctx.sector, seller: ctx.seller, known, pack, country: loc.regionCode ?? null });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
     const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack });
