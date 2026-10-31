@@ -12,10 +12,10 @@ export const peopleMessages = defineMessages({
       shown: (n: number, total: number) => `${n} de ${total}`, noCompany: 'Sin empresa', import: 'Importar',
     },
     quick: {
-     roles: ['Dueño/a', 'Socio/a', 'Gerente o encargado/a', 'Eventos o booking', 'Relaciones públicas', 'Marketing o redes', 'Staff'], roleOther: 'Otro…', roleOtherPh: 'Escribe su papel', staffOnly: 'Aquí va la gente del local (dueño, encargado, staff…). ¿Es un DJ o una promotora? Añádelo en «Trabaja con».',
+     roles: ['Dueño/a', 'Socio/a', 'Gerente o encargado/a', 'Eventos o booking', 'Relaciones públicas', 'Marketing o redes', 'Staff'], roleOther: 'Otro…', roleOtherPh: 'Escribe su papel', staffOnly: 'Aquí va la gente de la empresa (dueño, encargado, equipo…). ¿Es alguien de fuera que trabaja con ella? Añádelo en «Trabaja con».',
       title: 'Añadir persona', body: 'Lo mínimo es el nombre. El resto, si lo tienes a mano.', name: 'Nombre', where: '¿Dónde?',
-      whereHelp: 'Elige una empresa o escribe una nueva: se crea al guardar.', wherePh: 'Empresa o local', role: 'Su papel',
-      rolePh: 'Fundador, gerente, DJ…', email: 'Email', phone: 'Teléfono', instagram: 'Instagram', linkedin: 'LinkedIn', city: 'Ciudad',
+      whereHelp: 'Elige una empresa o escribe una nueva: se crea al guardar.', wherePh: 'Empresa', role: 'Su papel',
+      rolePh: 'Fundador, gerente, compras…', email: 'Email', phone: 'Teléfono', instagram: 'Instagram', linkedin: 'LinkedIn', city: 'Ciudad',
       notes: 'Notas', list: 'Lista', listHelp: 'Opcional, p. ej. fbd.', create: 'Añadir', optional: 'opcional', more: 'Más datos',
     },
     person: {
@@ -92,10 +92,10 @@ export const peopleMessages = defineMessages({
       shown: (n: number, total: number) => `${n} of ${total}`, noCompany: 'No company', import: 'Import',
     },
     quick: {
-     roles: ['Owner', 'Partner', 'Manager', 'Events or booking', 'Public relations', 'Marketing or social', 'Staff'], roleOther: 'Other…', roleOtherPh: 'Type their role', staffOnly: 'This is for the venue’s own people (owner, manager, staff…). Is it a DJ or a promoter? Add it in «Works with».',
+     roles: ['Owner', 'Partner', 'Manager', 'Events or booking', 'Public relations', 'Marketing or social', 'Staff'], roleOther: 'Other…', roleOtherPh: 'Type their role', staffOnly: 'This is for the company’s own people (owner, manager, team…). Is it someone outside who works with them? Add it in «Works with».',
       title: 'Add person', body: 'Only the name is required. The rest, if you have it handy.', name: 'Name', where: 'Where?',
-      whereHelp: 'Pick a company or type a new one: it’s created when you save.', wherePh: 'Company or venue', role: 'Their role',
-      rolePh: 'Founder, manager, DJ…', email: 'Email', phone: 'Phone', instagram: 'Instagram', linkedin: 'LinkedIn', city: 'City',
+      whereHelp: 'Pick a company or type a new one: it’s created when you save.', wherePh: 'Company', role: 'Their role',
+      rolePh: 'Founder, manager, purchasing…', email: 'Email', phone: 'Phone', instagram: 'Instagram', linkedin: 'LinkedIn', city: 'City',
       notes: 'Notes', list: 'List', listHelp: 'Optional, e.g. fbd.', create: 'Add', optional: 'optional', more: 'More details',
     },
     person: {
@@ -172,10 +172,10 @@ export const peopleMessages = defineMessages({
       shown: (n: number, total: number) => `${n} de ${total}`, noCompany: 'Sem empresa', import: 'Importar',
     },
     quick: {
-     roles: ['Dono/a', 'Sócio/a', 'Gerente', 'Eventos ou booking', 'Relações públicas', 'Marketing ou redes', 'Staff'], roleOther: 'Outro…', roleOtherPh: 'Escreva o papel', staffOnly: 'Aqui vão as pessoas do local (dono, gerente, staff…). É um DJ ou uma promotora? Adicione em «Trabalha com».',
+     roles: ['Dono/a', 'Sócio/a', 'Gerente', 'Eventos ou booking', 'Relações públicas', 'Marketing ou redes', 'Staff'], roleOther: 'Outro…', roleOtherPh: 'Escreva o papel', staffOnly: 'Aqui vão as pessoas da empresa (dono, gerente, equipe…). É alguém de fora que trabalha com ela? Adicione em «Trabalha com».',
       title: 'Adicionar pessoa', body: 'O mínimo é o nome. O resto, se tiver à mão.', name: 'Nome', where: 'Onde?',
-      whereHelp: 'Escolha uma empresa ou escreva uma nova: é criada ao salvar.', wherePh: 'Empresa ou local', role: 'O papel dela',
-      rolePh: 'Fundador, gerente, DJ…', email: 'Email', phone: 'Telefone', instagram: 'Instagram', linkedin: 'LinkedIn', city: 'Cidade',
+      whereHelp: 'Escolha uma empresa ou escreva uma nova: é criada ao salvar.', wherePh: 'Empresa', role: 'O papel dela',
+      rolePh: 'Fundador, gerente, compras…', email: 'Email', phone: 'Telefone', instagram: 'Instagram', linkedin: 'LinkedIn', city: 'Cidade',
       notes: 'Notas', list: 'Lista', listHelp: 'Opcional, p. ex. fbd.', create: 'Adicionar', optional: 'opcional', more: 'Mais dados',
     },
     person: {
@@ -252,10 +252,10 @@ export const peopleMessages = defineMessages({
       shown: (n: number, total: number) => `${total}명 중 ${n}명`, noCompany: '회사 없음', import: '가져오기',
     },
     quick: {
-     roles: ['사장', '공동 대표', '매니저', '이벤트·부킹', '홍보(PR)', '마케팅·SNS', '스태프'], roleOther: '기타…', roleOtherPh: '역할을 입력하세요', staffOnly: '매장 사람(사장, 매니저, 스태프 등)을 넣는 곳입니다. DJ나 프로모터라면 «함께 일하는 곳»에 추가하세요.',
+     roles: ['사장', '공동 대표', '매니저', '이벤트·부킹', '홍보(PR)', '마케팅·SNS', '스태프'], roleOther: '기타…', roleOtherPh: '역할을 입력하세요', staffOnly: '회사 사람(사장, 매니저, 팀원 등)을 넣는 곳입니다. 외부에서 함께 일하는 사람이라면 «함께 일하는 곳»에 추가하세요.',
       title: '사람 추가', body: '이름만 필수입니다. 나머지는 알고 있다면.', name: '이름', where: '어디?',
-      whereHelp: '회사를 고르거나 새 이름을 입력하세요: 저장할 때 만들어집니다.', wherePh: '회사 또는 매장', role: '역할',
-      rolePh: '창업자, 매니저, DJ…', email: '이메일', phone: '전화', instagram: '인스타그램', linkedin: '링크드인', city: '도시',
+      whereHelp: '회사를 고르거나 새 이름을 입력하세요: 저장할 때 만들어집니다.', wherePh: '회사', role: '역할',
+      rolePh: '창업자, 매니저, 구매…', email: '이메일', phone: '전화', instagram: '인스타그램', linkedin: '링크드인', city: '도시',
       notes: '메모', list: '목록', listHelp: '선택, 예: fbd.', create: '추가', optional: '선택', more: '추가 정보',
     },
     person: {

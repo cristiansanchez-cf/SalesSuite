@@ -11,13 +11,13 @@ import { REGISTRY, isBlockType } from './registry';
 
 /** small: tarjetas pequeñas (bienvenida), todo a escala. */
 interface Props { blockType: string; props: unknown; price?: string | null; venue?: string; small?: boolean; class?: string }
-const { blockType, props, price, venue = 'Tu local', small = false, class: cls } = Astro.props;
+const { blockType, props, price, venue = 'Tu cliente', small = false, class: cls } = Astro.props;
 const parsed = isBlockType(blockType) ? REGISTRY[blockType].schema.safeParse(props) : null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p: any = parsed?.success ? parsed.data : null;
 const fill = (s: string | undefined) => (s ?? '').replace(/\{(company|prospect)\}/g, venue);
-// app-steps es de otro producto (buceo): sin cliente, «Tu centro», no «Tu local».
-const appFill = (x: string | undefined) => (x ?? '').replace(/\{(company|prospect)\}/g, venue === 'Tu local' ? 'Tu centro' : venue);
+// app-steps es de otro producto (buceo): sin cliente, «Tu centro», no «Tu cliente».
+const appFill = (x: string | undefined) => (x ?? '').replace(/\{(company|prospect)\}/g, venue === 'Tu cliente' ? 'Tu centro' : venue);
 const firstChat = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind === 'chat')?.mock ?? null;
 const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind === 'image')?.mock?.src ?? null;
 ---
@@ -68,7 +68,7 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
   ) : blockType === 'app-steps' ? (
     p.screens.length ? (
       <div class="thumb__phones">
-        <AppScreen screen={p.screens[0].screen} src={p.screens[0].src} sample={p.sample} center={venue === 'Tu local' ? 'Tu centro' : venue} photo={p.photo} zoom={small ? 0.4 : 0.5} class="thumb__phone" />
+        <AppScreen screen={p.screens[0].screen} src={p.screens[0].src} sample={p.sample} center={venue === 'Tu cliente' ? 'Tu centro' : venue} photo={p.photo} zoom={small ? 0.4 : 0.5} class="thumb__phone" />
       </div>
     ) : p.cards.length ? (
       <div class="thumb__ps">{p.cards.slice(0, 3).map((c: { title: string }) => <span class="thumb__ps-card thumb__ps-card--plain"><em>{appFill(c.title)}</em></span>)}</div>

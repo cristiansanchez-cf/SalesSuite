@@ -27,7 +27,7 @@ const es = {
     partnerInviteBody: 'Después de invitarlo le asignas sus cuentas (locales, centros…) y decides cómo se cotiza cada una.',
     accessUntilLabel: 'Acceso hasta', noEndDate: 'Vacío = sin fecha de fin', whatCan: 'Qué puede ver y vender',
     welcomeNote: 'Nota de bienvenida', onlyThem: 'Solo la ve él',
-    welcomePlaceholder: 'Hola Dani: ofrece Experiencias en tus tres locales. Del precio nos encargamos nosotros.',
+    welcomePlaceholder: 'Hola Dani: ofrece el servicio a tus tres clientes. Del precio nos encargamos nosotros.',
     partnerInviteNot: 'no le da acceso a la tarifa, a las propuestas del equipo ni a la configuración.',
   },
   partner: {
@@ -131,7 +131,7 @@ export const teamMessages = defineMessages({
       partnerInviteBody: 'Once invited, you assign their accounts (venues, centres…) and decide how each one is priced.',
       accessUntilLabel: 'Access until', noEndDate: 'Empty = no end date', whatCan: 'What they can see and sell',
       welcomeNote: 'Welcome note', onlyThem: 'Only they see it',
-      welcomePlaceholder: 'Hi Dani: offer Experiences in your three venues. We will handle the price.',
+      welcomePlaceholder: 'Hi Dani: offer the service to your three clients. We will handle the price.',
       partnerInviteNot: 'it does not give access to the price list, the team’s proposals or settings.',
     },
     partner: {
@@ -232,7 +232,7 @@ export const teamMessages = defineMessages({
       partnerInviteBody: 'Depois do convite, você atribui as contas (casas, centros…) e decide como cada uma é cotada.',
       accessUntilLabel: 'Acesso até', noEndDate: 'Vazio = sem data de término', whatCan: 'O que pode ver e vender',
       welcomeNote: 'Nota de boas-vindas', onlyThem: 'Só o parceiro vê',
-      welcomePlaceholder: 'Oi Dani: ofereça Experiências nas suas três casas. Do preço cuidamos nós.',
+      welcomePlaceholder: 'Oi Dani: ofereça o serviço aos seus três clientes. Do preço cuidamos nós.',
       partnerInviteNot: 'não dá acesso à tabela de preços, às propostas da equipe nem à configuração.',
     },
     partner: {
@@ -333,7 +333,7 @@ export const teamMessages = defineMessages({
       partnerInviteBody: '초대한 뒤 담당 계정(매장, 센터 등)을 지정하고 각 계정의 가격 방식을 정합니다.',
       accessUntilLabel: '접근 기한', noEndDate: '비워 두면 종료일 없음', whatCan: '보고 판매할 수 있는 것',
       welcomeNote: '환영 메모', onlyThem: '파트너만 볼 수 있습니다',
-      welcomePlaceholder: 'Dani님, 세 매장에서 Experiences를 제안해 주세요. 가격은 저희가 맡겠습니다.',
+      welcomePlaceholder: 'Dani님, 세 고객에게 서비스를 제안해 주세요. 가격은 저희가 맡겠습니다.',
       partnerInviteNot: '가격표, 팀 제안서, 설정에는 접근 권한을 주지 않습니다.',
     },
     partner: {

@@ -440,7 +440,7 @@ const panelOpen = nFilters > 0;
       <div class="co-dialog__body">
         <h2 id="new-account-title" class="co-entity">{M.newAccount}</h2>
         <p class="co-body">{M.newBody(t.rules.claimDays)}</p>
-        <label class="co-field">{M.venueName}<input class="co-input" name="name" required maxlength="160" placeholder="Club Sol" /></label>
+        <label class="co-field">{M.venueName}<input class="co-input" name="name" required maxlength="160" placeholder={M.venueNamePh} /></label>
         <ZonePicker zones={t.zones} value={t.myZoneIds.length === 1 ? t.myZoneIds[0] : null} testid="new-zone" />
         <label class="co-field">{M.sector}
           <select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>

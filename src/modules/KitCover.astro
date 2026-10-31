@@ -12,7 +12,7 @@ import { appStepsSchema } from './app-steps/schema';
 import type { UiKit } from '~/lib/playbook/service';
 
 interface Props { kit: UiKit; venue?: string; photo?: string | null; class?: string }
-const { kit, venue = 'Tu local', photo = null, class: cls } = Astro.props;
+const { kit, venue = 'Tu cliente', photo = null, class: cls } = Astro.props;
 const phone = kit.phone ? phoneTourSchema.safeParse(kit.phone) : null;
 // La app: los datos de ejemplo del módulo que enseña las tarjetas (si no, los del primero).
 const appRaw = kit.screen || phone?.success ? null : (kit.apps ?? []).find((x) => Array.isArray(x.screens) && (x.screens as Array<{ screen?: string }>).some((y) => y.screen === 'share-card')) ?? kit.app ?? null;

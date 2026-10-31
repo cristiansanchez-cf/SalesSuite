@@ -12,7 +12,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: 'Contacto', phone: 'Teléfono', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Web', mapsUrl: 'Google Maps',
       from: (name: string) => `de ${name}`, none: 'Aún no hay datos de contacto.', edit: 'Editar contacto', save: 'Guardar contacto',
-      call: 'Llamar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Pega el enlace o el usuario (@club).', owner: 'Titular', legalName: 'Razón social', taxId: 'CIF', ownerHelp: 'Sale en el aviso legal o la política de privacidad de su web. Se rellena solo al mirar su web; solo el CIF de una sociedad, nunca el DNI de una persona.',
+      call: 'Llamar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Pega el enlace o el usuario (@empresa).', owner: 'Titular', legalName: 'Razón social', taxId: 'CIF', ownerHelp: 'Sale en el aviso legal o la política de privacidad de su web. Se rellena solo al mirar su web; solo el CIF de una sociedad, nunca el DNI de una persona.',
     },
     follow: {
       title: 'Seguimiento', next: 'Próximo paso', noNext: 'Sin próximo paso.', when: 'Cuándo', with: 'Con quién', company: 'La empresa', via: 'Por dónde',
@@ -29,7 +29,7 @@ export const followupMessages = defineMessages({
       counts: (o: number, t: number, m: number) => [o && `${o} vencidos`, t && `${t} hoy`, m && `${m} mañana`].filter(Boolean).join(' · '), last: 'Último', open: 'Abrir ficha', done: 'Apuntar',
     },
     fix: {
-      title: 'Arreglos', igTitle: 'Instagram del local guardado en la persona', igBody: (n: number) => (n ? `${n} locales tienen su Instagram en la ficha de una persona. Pasarlo a la empresa:` : 'No hay nada que pasar.'),
+      title: 'Arreglos', igTitle: 'Instagram de la empresa guardado en la persona', igBody: (n: number) => (n ? `${n} empresas tienen su Instagram en la ficha de una persona. Pasarlo a la empresa:` : 'No hay nada que pasar.'),
       igApply: (n: number) => `Pasar ${n} a sus empresas`, igDone: (n: number) => `${n} Instagram pasados a sus empresas.`,
     },
   },
@@ -43,7 +43,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: 'Contact', phone: 'Phone', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Website', mapsUrl: 'Google Maps',
       from: (name: string) => `from ${name}`, none: 'No contact details yet.', edit: 'Edit contact', save: 'Save contact',
-      call: 'Call', whatsapp: 'WhatsApp', mail: 'Email', open: 'Open', help: 'Paste the link or the handle (@club).', owner: 'Legal owner', legalName: 'Company name', taxId: 'Tax ID (CIF)', ownerHelp: 'It appears in the legal notice or privacy policy of their website. Filled in automatically when the website is checked; only a company’s tax ID, never a person’s ID.',
+      call: 'Call', whatsapp: 'WhatsApp', mail: 'Email', open: 'Open', help: 'Paste the link or the handle (@empresa).', owner: 'Legal owner', legalName: 'Company name', taxId: 'Tax ID (CIF)', ownerHelp: 'It appears in the legal notice or privacy policy of their website. Filled in automatically when the website is checked; only a company’s tax ID, never a person’s ID.',
     },
     follow: {
       title: 'Follow-up', next: 'Next step', noNext: 'No next step.', when: 'When', with: 'With whom', company: 'The company', via: 'Channel',
@@ -60,7 +60,7 @@ export const followupMessages = defineMessages({
       counts: (o: number, t: number, m: number) => [o && `${o} overdue`, t && `${t} today`, m && `${m} tomorrow`].filter(Boolean).join(' · '), last: 'Last', open: 'Open record', done: 'Log',
     },
     fix: {
-      title: 'Fixes', igTitle: 'Venue Instagram saved on the person', igBody: (n: number) => (n ? `${n} venues have their Instagram on a person’s record. Move it to the company:` : 'Nothing to move.'),
+      title: 'Fixes', igTitle: 'Company Instagram saved on the person', igBody: (n: number) => (n ? `${n} companies have their Instagram on a person’s record. Move it to the company:` : 'Nothing to move.'),
       igApply: (n: number) => `Move ${n} to their companies`, igDone: (n: number) => `${n} Instagram accounts moved to their companies.`,
     },
   },
@@ -74,7 +74,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: 'Contato', phone: 'Telefone', email: 'Email', instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', website: 'Site', mapsUrl: 'Google Maps',
       from: (name: string) => `de ${name}`, none: 'Ainda não há dados de contato.', edit: 'Editar contato', save: 'Salvar contato',
-      call: 'Ligar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Cole o link ou o usuário (@club).', owner: 'Titular', legalName: 'Razão social', taxId: 'NIF da empresa', ownerHelp: 'Aparece no aviso legal ou na política de privacidade do site. Preenche-se sozinho ao ver o site; só o número fiscal de uma sociedade, nunca o de uma pessoa.',
+      call: 'Ligar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Cole o link ou o usuário (@empresa).', owner: 'Titular', legalName: 'Razão social', taxId: 'NIF da empresa', ownerHelp: 'Aparece no aviso legal ou na política de privacidade do site. Preenche-se sozinho ao ver o site; só o número fiscal de uma sociedade, nunca o de uma pessoa.',
     },
     follow: {
       title: 'Acompanhamento', next: 'Próximo passo', noNext: 'Sem próximo passo.', when: 'Quando', with: 'Com quem', company: 'A empresa', via: 'Por onde',
@@ -91,7 +91,7 @@ export const followupMessages = defineMessages({
       counts: (o: number, t: number, m: number) => [o && `${o} atrasados`, t && `${t} hoje`, m && `${m} amanhã`].filter(Boolean).join(' · '), last: 'Último', open: 'Abrir ficha', done: 'Anotar',
     },
     fix: {
-      title: 'Ajustes', igTitle: 'Instagram do local salvo na pessoa', igBody: (n: number) => (n ? `${n} locais têm o Instagram na ficha de uma pessoa. Passar para a empresa:` : 'Nada para passar.'),
+      title: 'Ajustes', igTitle: 'Instagram da empresa salvo na pessoa', igBody: (n: number) => (n ? `${n} empresas têm o Instagram na ficha de uma pessoa. Passar para a empresa:` : 'Nada para passar.'),
       igApply: (n: number) => `Passar ${n} para as empresas`, igDone: (n: number) => `${n} Instagram passados para as empresas.`,
     },
   },
@@ -105,7 +105,7 @@ export const followupMessages = defineMessages({
     contact: {
       title: '연락처', phone: '전화', email: '이메일', instagram: '인스타그램', facebook: '페이스북', linkedin: '링크드인', website: '웹사이트', mapsUrl: '구글 지도',
       from: (name: string) => `${name}의 연락처`, none: '아직 연락처가 없습니다.', edit: '연락처 수정', save: '연락처 저장',
-      call: '전화', whatsapp: '왓츠앱', mail: '이메일', open: '열기', help: '링크나 아이디(@club)를 붙여넣으세요.', owner: '사업자', legalName: '법인명', taxId: '사업자 번호(CIF)', ownerHelp: '웹사이트의 법적 고지나 개인정보 처리방침에 나옵니다. 웹사이트를 확인할 때 자동으로 채워집니다. 회사 번호만, 개인 신분증 번호는 저장하지 않습니다.',
+      call: '전화', whatsapp: '왓츠앱', mail: '이메일', open: '열기', help: '링크나 아이디(@company)를 붙여넣으세요.', owner: '사업자', legalName: '법인명', taxId: '사업자 번호(CIF)', ownerHelp: '웹사이트의 법적 고지나 개인정보 처리방침에 나옵니다. 웹사이트를 확인할 때 자동으로 채워집니다. 회사 번호만, 개인 신분증 번호는 저장하지 않습니다.',
     },
     follow: {
       title: '후속 조치', next: '다음 단계', noNext: '다음 단계 없음.', when: '언제', with: '누구와', company: '회사', via: '채널',
@@ -122,7 +122,7 @@ export const followupMessages = defineMessages({
       counts: (o: number, t: number, m: number) => [o && `기한 지남 ${o}`, t && `오늘 ${t}`, m && `내일 ${m}`].filter(Boolean).join(' · '), last: '최근', open: '기록 열기', done: '기록',
     },
     fix: {
-      title: '정리', igTitle: '사람 기록에 저장된 매장 인스타그램', igBody: (n: number) => (n ? `${n}개 매장의 인스타그램이 사람 기록에 있습니다. 회사로 옮기기:` : '옮길 것이 없습니다.'),
+      title: '정리', igTitle: '사람 기록에 저장된 회사 인스타그램', igBody: (n: number) => (n ? `${n}개 회사의 인스타그램이 사람 기록에 있습니다. 회사로 옮기기:` : '옮길 것이 없습니다.'),
       igApply: (n: number) => `${n}개를 회사로 옮기기`, igDone: (n: number) => `인스타그램 ${n}개를 회사로 옮겼습니다.`,
     },
   },
