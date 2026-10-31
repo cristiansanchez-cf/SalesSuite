@@ -1718,7 +1718,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       website: a.website, instagram: a.instagram, email: a.email ? a.email.replace(/^[^@]*/, '…') : null, tags: a.tags.slice(0, 8),
       sector: a.segmentId ? ctx.sectors?.[a.segmentId] ?? null : null,
     }));
-    try { return await cleanupAi.classify(items, { seller: ctx.seller, clients: ctx.clients, kinds: await kinds() }); } catch (e) {
+    try { return await cleanupAi.classify(items, { seller: ctx.seller, clients: ctx.clients, kinds: await kinds(), pack: await qualPack() }); } catch (e) {
       console.warn('[cleanup-ai]', e instanceof Error ? e.message : e);
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
