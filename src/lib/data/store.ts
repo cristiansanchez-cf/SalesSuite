@@ -209,7 +209,7 @@ export interface DemoDb {
   account_link: AccountLinkRow[];
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
-  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[] }>;
+  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[]; qualification?: string | null }>;
   /** Topes de uso por persona y día (Google, IA). */
   usage_counter: Array<{ tenant_id: string; user_id: string; kind: string; day: string; n: number }>;
   crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
@@ -400,7 +400,7 @@ export function freshDemoDb(): DemoDb {
     ],
     account_link: [],
     crm_import: [],
-    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }] }],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }] }],
     crm_fix: [],
     crm_sweep: [],
     usage_counter: [],

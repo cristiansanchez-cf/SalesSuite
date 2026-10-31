@@ -12,7 +12,9 @@ accountsContract('demo', () => ({
   async reset() {
     const db = resetDemoDb();
     // Mismo punto de partida que Supabase: sin territorio ni cuentas de ejemplo.
-    Object.assign(db, { play_contribution: [], notification: [], zone: [], membership_zone: [], account_rules: [], account: [], account_touch: [], crm_field: [], crm_contact: [], crm_contact_account: [], account_link: [], crm_import: [], crm_activity: [], crm_settings: [] });
+    Object.assign(db, { play_contribution: [], notification: [], zone: [], membership_zone: [], account_rules: [], account: [], account_touch: [], crm_field: [], crm_contact: [], crm_contact_account: [], account_link: [], crm_import: [], crm_activity: [],
+      // Como el seed: Enjoy, con la cualificación de ocio nocturno (§45).
+      crm_settings: [{ tenant_id: '00000000-0000-4000-8000-000000000e01', priority_weights: {}, qualification: 'nightlife' }] });
     db.users.push({ id: REP2.id, email: REP2.email, display_name: '', memberships: [{ tenant_id: '00000000-0000-4000-8000-000000000e01', role: 'rep' }] });
   },
   adminDbFor: () => demoAdminDb(),

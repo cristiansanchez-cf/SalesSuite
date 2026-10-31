@@ -8,6 +8,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { QUAL_VALUES } from './priority';
+import type { QualPack } from './pack';
 
 /** Criterios que la IA puede proponer (lo que se ve desde fuera). «Decide quien te atiende», la cobertura y «no pueden
  *  validar» solo los sabe el comercial en persona; «validate» además solo si lo dicen ellos. */
@@ -37,6 +38,10 @@ export interface ResearchInput {
   seller: string;
   /** Lo que ya está marcado (para no proponerlo otra vez). */
   known: Record<string, unknown>;
+  /** Cualificación del espacio (§45). Sin decirlo, la de ocio nocturno; null = sin cualificación (solo lo general). */
+  pack?: QualPack | null;
+  /** País del espacio para la búsqueda web (ISO, «ES»); sin decirlo, España. null = sin país. */
+  country?: string | null;
 }
 export interface ResearchApi { research(input: ResearchInput): Promise<unknown> }
 
@@ -106,6 +111,26 @@ ${VALUE_HELP}
 - No repitas lo que ya está marcado en la ficha.
 - Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
 
+// ---------------------------------------------------------------- sin cualificación en el espacio (§45)
+
+/** La herramienta sin cualificación: contacto, personas y fuentes (lo general). Con ella, la de siempre (SAVE_TOOL). */
+export function researchTool(pack?: QualPack | null) {
+  if (pack !== null) return SAVE_TOOL;
+  const { qualification: _q, ...props } = SAVE_TOOL.input_schema.properties;
+  return { ...SAVE_TOOL, input_schema: { ...SAVE_TOOL.input_schema, required: SAVE_TOOL.input_schema.required.filter((k) => k !== 'qualification'),
+    properties: { ...props, people: { ...props.people, description: 'Personas con un papel público en la empresa (dueño, gerente, dirección, responsables…).' } } } };
+}
+export const SYSTEM_GENERAL = `Eres el investigador de un equipo comercial. Preparas la ficha de una empresa antes de que el comercial la contacte.
+Busca en la web lo público de la empresa (su web, Google, prensa, directorios del sector, redes que se puedan leer) y guarda lo que encuentres con la herramienta save_research.
+
+Reglas:
+- Nada sin fuente. Cada dato lleva la URL donde lo has leído y la frase que lo prueba. Si no lo has leído, no lo pongas.
+- Es otra empresa con el mismo nombre si la ciudad o la actividad no cuadran: entonces no la uses.
+- Solo datos de contacto de la empresa (teléfono, email genérico, perfiles de la empresa). De las personas, solo nombre, papel y perfil profesional o público si lo publican ellas.
+- No repitas lo que ya está en la ficha.
+- Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
+export const researchSystem = (pack?: QualPack | null) => (pack !== null ? SYSTEM : SYSTEM_GENERAL);
+
 export function userPrompt(i: ResearchInput): string {
   const lines = [
     `Empresa: ${i.name}`,
@@ -143,7 +168,7 @@ function contactValue(key: AiContactKey, v: string): string | null {
  * Lo que devuelve la IA → lo que se enseña. Descarta lo que no tiene fuente, valores fuera de lo permitido, lo que ya
  * está marcado o ya está en la ficha, y duplicados.
  */
-export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unknown>; contact: Partial<Record<AiContactKey, string | null>>; people: string[]; now: Date }): AiResearch {
+export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unknown>; contact: Partial<Record<AiContactKey, string | null>>; people: string[]; now: Date; qual?: boolean }): AiResearch {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const r: any = raw && typeof raw === 'object' ? raw : {};
   const list = (v: unknown): any[] => (Array.isArray(v) ? v : []);
@@ -151,7 +176,7 @@ export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unkn
   let n = 0;
   const id = () => `s${++n}`;
   const seen = new Set<string>();
-  for (const q of list(r.qualification)) {
+  for (const q of ctx.qual === false ? [] : list(r.qualification)) {
     const key = clip(q?.key, 20); const value = clip(q?.value, 20); const source = sourceUrl(q?.source); const evidence = clip(q?.evidence, MAX.evidence);
     if (!(AI_QUAL_KEYS as readonly string[]).includes(key) || !QUAL_VALUES[key]?.includes(value) || !source || !evidence) continue;
     if (ctx.known[key] !== undefined || seen.has(`q:${key}`)) continue;
@@ -221,11 +246,11 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
           output_config: { effort: 'medium' },
-          system: SYSTEM,
+          system: researchSystem(input.pack),
           tools: [
-            { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', country: 'ES', ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
+            { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', ...(input.country !== null ? { country: input.country ?? 'ES' } : {}), ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
             { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 },
-            SAVE_TOOL as unknown as Anthropic.Beta.BetaTool,
+            researchTool(input.pack) as unknown as Anthropic.Beta.BetaTool,
           ],
           messages,
         });
@@ -249,6 +274,14 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
 export const fixtureResearch = (): ResearchApi => ({
   async research(i) {
     const src = `https://example.com/${encodeURIComponent(i.name.toLowerCase().replace(/\s+/g, '-'))}`;
+    // Sin cualificación en el espacio (§45): lo general, sin nada de la noche.
+    if (i.pack === null) return {
+      summary: `Ejemplo de prueba (sin IA): ${i.name}, con web y contacto públicos.`,
+      look: ['Mira sus redes para ver cómo trabaja y con quién.'], qualification: [],
+      contact: [{ key: 'email', value: 'hola@ejemplo.test', evidence: 'Email en el pie de su web.', source: src }],
+      people: [{ name: 'Laura Gil', role: 'Gerente', instagram: null, linkedin: null, evidence: 'La entrevistan como gerente.', source: `${src}/prensa` }],
+      sources: [{ title: 'Web de la empresa', url: src }],
+    };
     return {
       summary: `Ejemplo de prueba (sin IA): ${i.name} es un local de ocio nocturno.`,
       look: ['Mira sus stories para ver si hace dinámicas con el público.'],

@@ -5,13 +5,15 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { BASE_KIND, DISCARD_REASONS, type AccountKind, type DiscardReason, type KindDef } from '../accounts/types';
+import type { QualPack } from './pack';
 
 export interface CleanupInput {
   id: string; name: string; city: string | null; notes: string | null; website: string | null; instagram: string | null; email: string | null;
   tags: string[]; sector: string | null;
 }
 export interface CleanupSuggestion { id: string; kind: AccountKind; discard: DiscardReason | null; why: string }
-export interface CleanupContext { seller: string; clients: string[]; kinds?: KindDef[] }
+/** `pack`: la cualificación del espacio (§45). Sin decirlo, la de ocio nocturno (las reglas de la música y los eventos); null = reglas generales. */
+export interface CleanupContext { seller: string; clients: string[]; kinds?: KindDef[]; pack?: QualPack | null }
 export interface CleanupApi { classify(items: CleanupInput[], ctx: CleanupContext): Promise<CleanupSuggestion[]> }
 
 const S = { type: 'string' } as const;
@@ -39,7 +41,7 @@ export const CLEANUP_TOOL = {
   },
 } as const;
 
-export const CLEANUP_SYSTEM = (ctx: CleanupContext) => `Revisas el CRM de ${ctx.seller}. Sus clientes posibles son: ${ctx.clients.join(', ') || 'locales, salas, discotecas, promotoras, festivales y organizadores de conciertos y eventos'}.
+export const CLEANUP_SYSTEM = (ctx: CleanupContext) => (ctx.pack === null ? cleanupGeneral(ctx) : `Revisas el CRM de ${ctx.seller}. Sus clientes posibles son: ${ctx.clients.join(', ') || 'locales, salas, discotecas, promotoras, festivales y organizadores de conciertos y eventos'}.
 Para cada registro (empresa importada de un Notion y de ferias del sector) devuelve:
 - kind: la clave del tipo que le corresponde, de esta lista: ${kindLines(ctx)}. Si no está claro, «${BASE_KIND}».
 - discard (si habría que sacarlo de la lista de ventas; null si puede ser cliente o si no está claro):
@@ -49,16 +51,30 @@ Para cada registro (empresa importada de un Notion y de ferias del sector) devue
   · «duplicate»: es claramente el mismo negocio que otro de esta misma tanda (descarta la copia con menos datos).
   · «other»: otra razón clara (dila en «why»).
   Que sea de un tipo distinto del principal no es motivo para descartarlo: se le pone su tipo y discard null.
+- why: el porqué en una frase corta, basándote solo en los datos que tienes (nombre, notas, web, Instagram, listas, sector). No inventes. Si no está claro, «${BASE_KIND}», null y «No está claro con estos datos».`);
+/** Sin cualificación en el espacio (§45): sus sectores y sus tipos, sin nada de la música ni los eventos. */
+const cleanupGeneral = (ctx: CleanupContext) => `Revisas el CRM de ${ctx.seller}. ${ctx.clients.length ? `Sus clientes posibles son: ${ctx.clients.join(', ')}.` : 'Sus clientes posibles: los que compran lo que vende.'}
+Para cada registro (empresa importada al CRM) devuelve:
+- kind: la clave del tipo que le corresponde, de esta lista: ${kindLines(ctx)}. Si no está claro, «${BASE_KIND}».
+- discard (si habría que sacarlo de la lista de ventas; null si puede ser cliente o si no está claro):
+  · «partner»: es de su sector pero no es cliente: proveedor, distribuidor, medio, asociación, escuela o similar. Puede servir para una alianza.
+  · «not_sector»: no tiene que ver con lo que vende ${ctx.seller} ni con sus clientes.
+  · «closed»: los datos dicen que ha cerrado.
+  · «duplicate»: es claramente el mismo negocio que otro de esta misma tanda (descarta la copia con menos datos).
+  · «other»: otra razón clara (dila en «why»).
+  Que sea de un tipo distinto del principal no es motivo para descartarlo: se le pone su tipo y discard null.
 - why: el porqué en una frase corta, basándote solo en los datos que tienes (nombre, notas, web, Instagram, listas, sector). No inventes. Si no está claro, «${BASE_KIND}», null y «No está claro con estos datos».`;
 /** «company» (Empresa: …) · «dj» (DJ o artista: …). En Enjoy, el DJ es una persona que pincha por su cuenta. */
 function kindLines(ctx: CleanupContext): string {
   const ks = ctx.kinds?.length ? ctx.kinds : [{ key: BASE_KIND, label: 'Empresa', plural: 'Empresas', icon: 'building2' }];
-  const hint: Record<string, string> = { dj: ' (una persona con nombre artístico que pincha o produce por su cuenta; una empresa de DJs para bodas es «company»)', company: ' (empresa, local, promotora, agencia o cualquier negocio)' };
+  // Las pistas de la noche (DJ, local, promotora), solo con la cualificación de ocio nocturno.
+  const hint: Record<string, string> = ctx.pack === null ? { company: ' (cualquier negocio que no sea de otro tipo de la lista)' }
+    : { dj: ' (una persona con nombre artístico que pincha o produce por su cuenta; una empresa de DJs para bodas es «company»)', company: ' (empresa, local, promotora, agencia o cualquier negocio)' };
   return ks.map((k) => `«${k.key}» = ${k.label}${hint[k.key] ?? ''}`).join(' · ');
 }
 
 /** Solo lo que vale: ids de la tanda, tipos y motivos conocidos, frase corta. */
-export function sanitizeCleanup(raw: unknown, items: CleanupInput[], kinds: string[] = [BASE_KIND, 'dj']): CleanupSuggestion[] {
+export function sanitizeCleanup(raw: unknown, items: CleanupInput[], kinds: string[] = [BASE_KIND]): CleanupSuggestion[] {
   const ids = new Set(items.map((x) => x.id));
   const list = Array.isArray((raw as { items?: unknown })?.items) ? (raw as { items: unknown[] }).items : [];
   const out = new Map<string, CleanupSuggestion>();
@@ -99,11 +115,12 @@ export function claudeCleanup(apiKey: string, fetchImpl?: typeof fetch): Cleanup
 export const fixtureCleanup = (): CleanupApi => ({
   async classify(items, ctx) {
     const hasDj = !ctx?.kinds || ctx.kinds.some((k) => k.key === 'dj');
+    const general = ctx?.pack === null;
     return items.map((x) => {
       const n = x.name.toLowerCase();
       if (hasDj && /\bdj\b/.test(n) && !/(eventos|bodas|s\.l\.|sl\b|events)/.test(n)) return { id: x.id, kind: 'dj' as const, discard: null, why: 'Nombre de DJ: trabaja por su cuenta.' };
-      if (/(tienda|records|shop|sello)/.test(n)) return { id: x.id, kind: 'company' as const, discard: 'partner' as const, why: 'Tienda de música: no es cliente, puede ser alianza.' };
-      if (/(seguros|inmobiliaria|asesor)/.test(n)) return { id: x.id, kind: 'company' as const, discard: 'not_sector' as const, why: 'No tiene que ver con música ni eventos.' };
+      if (/(tienda|records|shop|sello)/.test(n)) return { id: x.id, kind: 'company' as const, discard: 'partner' as const, why: general ? 'Tienda: no es cliente, puede ser alianza.' : 'Tienda de música: no es cliente, puede ser alianza.' };
+      if (/(seguros|inmobiliaria|asesor)/.test(n)) return { id: x.id, kind: 'company' as const, discard: 'not_sector' as const, why: general ? 'No tiene que ver con lo que vendemos.' : 'No tiene que ver con música ni eventos.' };
       return { id: x.id, kind: 'company' as const, discard: null, why: 'Puede ser cliente.' };
     });
   },

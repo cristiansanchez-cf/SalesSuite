@@ -116,6 +116,8 @@ export interface AccountsDb {
   saveKinds(tenantId: string, kinds: KindDef[]): Promise<void>;
   getPriorityWeights(tenantId: string): Promise<Partial<Weights> | null>;
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
+  /** Cualificación del espacio (§45): el paquete guardado tal cual (`crm_settings.qualification`), o null. */
+  getQualPack(tenantId: string): Promise<unknown>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */
   deleteField(id: string): Promise<boolean>;
 }

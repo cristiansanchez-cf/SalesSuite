@@ -5,7 +5,7 @@ import { demoAccountsDb } from '../accounts/db-demo';
 import { createAccountsService } from '../accounts/service';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
-import { CLEANUP_TOOL, fixtureCleanup, sanitizeCleanup, type CleanupInput } from './cleanup';
+import { CLEANUP_SYSTEM, CLEANUP_TOOL, fixtureCleanup, sanitizeCleanup, type CleanupInput } from './cleanup';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const ADMIN = '22222222-2222-4222-8222-222222222222';
@@ -21,7 +21,7 @@ describe('limpiar el CRM', () => {
     const r = sanitizeCleanup({ items: [
       { id: 'a', kind: 'dj', discard: null, why: 'DJ   residente' }, { id: 'b', kind: 'otro', discard: 'spam', why: 'x' }, { id: 'fuera', kind: 'dj', discard: null, why: '' },
       { id: 'a', kind: 'company', discard: 'partner', why: 'repetida' },
-    ] }, [input('a', 'A'), input('b', 'B')]);
+    ] }, [input('a', 'A'), input('b', 'B')], ['company', 'dj']);
     expect(r).toEqual([{ id: 'a', kind: 'dj', discard: null, why: 'DJ residente' }, { id: 'b', kind: 'company', discard: null, why: 'x' }]);
     expect(JSON.stringify(CLEANUP_TOOL)).not.toContain('enum');
   });
@@ -61,5 +61,20 @@ describe('limpiar el CRM', () => {
     expect(club).toMatchObject({ kind: 'dj', discard_reason: 'not_sector', discard_note: 'Inmobiliaria' });
     await rep.classifyAccount(club.id, { reason: null });
     expect(club).toMatchObject({ discarded_at: null, discard_reason: null });
+  });
+});
+
+describe('limpiar sin cualificación en el espacio (§45)', () => {
+  const kinds = [{ key: 'company', label: 'Centro de buceo', plural: 'Centros', icon: 'waves' }, { key: 'ong', label: 'ONG', plural: 'ONGs', icon: 'heart' }];
+  test('con ella, las reglas de siempre; sin ella, sus sectores y sus tipos, nada de la música', () => {
+    expect(CLEANUP_SYSTEM({ seller: 'Enjoy', clients: [] })).toBe(CLEANUP_SYSTEM({ seller: 'Enjoy', clients: [], pack: 'nightlife' }));
+    expect(CLEANUP_SYSTEM({ seller: 'Enjoy', clients: [] })).toContain('discotecas');
+    const t = CLEANUP_SYSTEM({ seller: 'Oquea', clients: ['Centros de buceo'], kinds, pack: null });
+    expect(t).toContain('Centros de buceo');
+    expect(t).toContain('«ong» = ONG');
+    for (const w of [/música/i, /eventos/i, /\bDJ\b/i, /discoteca/i, /promotora/i, /\blocal/i, /Notion/]) expect(t).not.toMatch(w);
+  });
+  test('sin decir los tipos, solo vale el principal', () => {
+    expect(sanitizeCleanup({ items: [{ id: 'a', kind: 'dj', discard: null, why: '' }] }, [input('a', 'A')])).toMatchObject([{ kind: 'company' }]);
   });
 });

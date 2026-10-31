@@ -54,11 +54,13 @@ const [{ items, tray: trayCount }, lists, allFields, companies] = await Promise.
   admin.accounts.list({ scope: 'all' }).then((r) => r.items.map((a) => a.name)),
 ]);
 // La prioridad de una persona es la de su mejor empresa (docs/CRM_DINAMICO.md §11).
-const [weights, segs] = await Promise.all([admin.crm.weights(), admin.playbook.segmentList()]);
+const [weights, segs, pack] = await Promise.all([admin.crm.weights(), admin.playbook.segmentList(), admin.crm.qualPack()]);
+// Sin cualificación en el espacio (§45), ni nota ni ordenar por ella.
+const qual = pack !== null;
 const segKey = new Map(segs.map((sg) => [sg.id, sg.key]));
-const bestOf = (cs: (typeof items)[number]['companies']): Priority | null =>
+const bestOf = (cs: (typeof items)[number]['companies']): Priority | null => !qual ? null :
   cs.map((c) => priorityOf(c.qualification, segKey.get(c.segmentId ?? '') ?? null, weights)).sort(compareLeads)[0] ?? null;
-const orden = q.get('orden') === 'prioridad';
+const orden = qual && q.get('orden') === 'prioridad';
 const fields = allFields.filter((x) => x.target === 'contact' && (!x.tags.length || x.tags.includes(lista)));
 const filterable = fields.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
@@ -93,7 +95,7 @@ const newId = q.get('id');
   )}
   <nav class="co-tabs mb-4" aria-label={P.people.title} data-scroll-x>
     <a class="co-tab" href={href({ ver: '' })} aria-current={!tray ? 'page' : undefined}>{P.people.all}</a>
-    <a class="co-tab" href={href({ orden: orden ? '' : 'prioridad' })} aria-current={orden ? 'page' : undefined} data-testid="sort-priority">↓ {R.list.sort}</a>
+    {qual && <a class="co-tab" href={href({ orden: orden ? '' : 'prioridad' })} aria-current={orden ? 'page' : undefined} data-testid="sort-priority">↓ {R.list.sort}</a>}
     <a class="co-tab" href={href({ ver: 'sin-empresa' })} aria-current={tray ? 'page' : undefined} data-testid="tray">{P.people.tray} · {trayCount}</a>
   </nav>
   {tray && <p class="co-meta mb-4">{P.people.trayHelp}</p>}

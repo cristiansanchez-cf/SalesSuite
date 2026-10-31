@@ -9,7 +9,7 @@ export const problemSolutionSchema = z.object({
   title: z.string().min(1).max(120),
   lede: z.string().max(300).optional(),
   beforeLabel: z.string().min(1).max(30).default('Hoy'),
-  afterLabel: z.string().min(1).max(30).default('Con Enjoy'),
+  afterLabel: z.string().min(1).max(30).default('Con nosotros'),
   cards: z.array(z.object({
     problem: z.string().min(1).max(200),
     solution: z.string().min(1).max(240),

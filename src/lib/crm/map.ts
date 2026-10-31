@@ -35,7 +35,8 @@ export function zoneOwners(zones: Zone[], assignments: Array<{ userId: string; z
 }
 
 export interface MapPoint {
-  id: string; name: string; lat: number; lng: number; exact: boolean; kind: Priority['kind']; state: AccountView['state']; zone: string; temp: Temperature; score: number;
+  /** El icono del punto: lo que es según la cualificación (local, promotora, conciertos) o, sin ella, su tipo de cliente. */
+  id: string; name: string; lat: number; lng: number; exact: boolean; kind: string | null; state: AccountView['state']; zone: string; temp: Temperature; score: number;
   cooling: number | null; next: string | null; rating: number | null; owner: string | null; rep: string | null;
   /** Descartada (§23): sale en gris con su motivo, para que los demás sepan que no hay que ir y por qué. */
   off: string | null;
@@ -45,6 +46,8 @@ export interface MapData { points: MapPoint[]; exact: number; approx: number; un
 export function buildMap(items: AccountView[], zones: Zone[], o: {
   prio: (a: AccountView) => Priority; cooling: Map<string, number>; rep: (zoneId: string | null) => string | null;
   off?: (a: AccountView) => string | null;
+  /** Sin cualificación en el espacio (§45): el icono sale de su tipo de cliente (los del espacio), no de la nota. */
+  kind?: (a: AccountView) => string | null;
   /** Las que no tienen sitio exacto (ficha de Google), en el centro de su ciudad. Por defecto, no (§28): amontonan. */
   approx?: boolean;
 }): MapData {
@@ -62,7 +65,7 @@ export function buildMap(items: AccountView[], zones: Zone[], o: {
     if (!own && (z!.lat == null || z!.lng == null)) { unlocated++; continue; }
     const p = o.prio(a);
     if (own) exact++;
-    points.push({ id: a.id, name: a.name, lat: own ? a.lat! : z!.lat!, lng: own ? a.lng! : z!.lng!, exact: own, kind: p.kind, state: a.state, zone: a.zonePath,
+    points.push({ id: a.id, name: a.name, lat: own ? a.lat! : z!.lat!, lng: own ? a.lng! : z!.lng!, exact: own, kind: o.kind ? o.kind(a) : p.kind, state: a.state, zone: a.zonePath,
       temp: temperature(p, o.cooling.get(a.id)), score: p.score, cooling: o.cooling.get(a.id) ?? null, next: a.nextStep, rating: a.placeRating,
       owner: a.ownerName, rep: o.rep(a.zoneId), off: a.discardedAt ? o.off?.(a) ?? '' : null });
   }
@@ -73,6 +76,6 @@ export function buildMap(items: AccountView[], zones: Zone[], o: {
 export const STATE_COLOR: Record<AccountView['state'], string> = {
   mine: '#6a2bd9', free: '#15803d', taken: '#9ca3af', my_customer: '#0e7490', customer: '#2563eb', blocked: '#b42318',
 };
-/** Icono de cada tipo (del set de la consola). */
+/** Icono de cada tipo de lead de la cualificación de ocio nocturno (del set de la consola); sin ella, el de cada tipo de cliente. */
 export const KIND_ICON = { venue: 'music', promoter: 'megaphone', concert: 'ticket' } as const;
 export const REP_COLORS = ['#6a2bd9', '#0e7490', '#c2410c', '#15803d', '#be185d', '#2563eb', '#a16207', '#4d7c0f', '#7c3aed', '#0f766e'];

@@ -518,6 +518,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (!row) { row = { tenant_id: t, priority_weights: {} }; s.crm_settings.push(row); }
       row.kinds = JSON.parse(JSON.stringify(kinds));
     },
+    async getQualPack(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.qualification ?? null; },
     async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },
     async savePriorityWeights(t, w) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');

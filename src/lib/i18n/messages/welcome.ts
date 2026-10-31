@@ -26,7 +26,7 @@ const es = {
   },
   first: {
     title: 'Tu primera propuesta', lede: '¿A quién le vas a vender primero? Solo el nombre: el resto lo preparas en la propuesta.',
-    company: 'Empresa o cliente', companyPlaceholder: 'Sala Luna', create: 'Crear y abrir', later: 'Lo hago luego',
+    company: 'Empresa o cliente', companyPlaceholder: 'Empresa Ejemplo', create: 'Crear y abrir', later: 'Lo hago luego',
     partner: 'Tus cuentas están en «Mis cuentas». Abre una y crea su propuesta.', partnerGo: 'Ir a mis cuentas',
     cerebro: 'Y conecta el Cerebro de Ventas a tu Claude o ChatGPT para preparar cada mensaje.',
     proposalTitle: (company: string) => `Propuesta para ${company}`,
@@ -60,7 +60,7 @@ export const welcomeMessages = defineMessages({
     },
     first: {
       title: 'Your first proposal', lede: 'Who will you sell to first? Just the name: you prepare the rest in the proposal.',
-      company: 'Company or client', companyPlaceholder: 'Sala Luna', create: 'Create and open', later: 'I will do it later',
+      company: 'Company or client', companyPlaceholder: 'Empresa Ejemplo', create: 'Create and open', later: 'I will do it later',
       partner: 'Your accounts are in “My accounts”. Open one and create its proposal.', partnerGo: 'Go to my accounts',
       cerebro: 'And connect the Sales Brain to your Claude or ChatGPT to prepare each message.',
       proposalTitle: (company) => `Proposal for ${company}`,
@@ -91,7 +91,7 @@ export const welcomeMessages = defineMessages({
     },
     first: {
       title: 'Sua primeira proposta', lede: 'Para quem você vai vender primeiro? Só o nome: o resto você prepara na proposta.',
-      company: 'Empresa ou cliente', companyPlaceholder: 'Sala Luna', create: 'Criar e abrir', later: 'Faço depois',
+      company: 'Empresa ou cliente', companyPlaceholder: 'Empresa Ejemplo', create: 'Criar e abrir', later: 'Faço depois',
       partner: 'Suas contas estão em “Minhas contas”. Abra uma e crie a proposta.', partnerGo: 'Ir para minhas contas',
       cerebro: 'E conecte o Cérebro de Vendas ao seu Claude ou ChatGPT para preparar cada mensagem.',
       proposalTitle: (company) => `Proposta para ${company}`,
@@ -122,7 +122,7 @@ export const welcomeMessages = defineMessages({
     },
     first: {
       title: '첫 제안서', lede: '누구에게 먼저 팔 건가요? 이름만 적으세요. 나머지는 제안서에서 준비합니다.',
-      company: '회사 또는 고객', companyPlaceholder: 'Sala Luna', create: '만들고 열기', later: '나중에 할게요',
+      company: '회사 또는 고객', companyPlaceholder: 'Empresa Ejemplo', create: '만들고 열기', later: '나중에 할게요',
       partner: '계정은 “내 계정”에 있습니다. 하나를 열고 제안서를 만드세요.', partnerGo: '내 계정으로 가기',
       cerebro: '그리고 세일즈 브레인을 Claude 또는 ChatGPT에 연결해 메시지마다 준비하세요.',
       proposalTitle: (company) => `${company} 제안서`,

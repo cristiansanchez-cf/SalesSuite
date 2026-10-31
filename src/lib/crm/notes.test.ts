@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizeNotes, sanitizePeople } from './notes';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, NOTES_SYSTEM, NOTES_TOOL, notesSystem, notesTool, sanitizeNotes, sanitizePeople } from './notes';
 
 describe('apuntar con IA (§20)', () => {
   test('solo lo que vale: sitio, interacción y lo que sabemos por separado, campos y cualificación permitidos', () => {
@@ -72,5 +72,38 @@ describe('apuntar: personas (§38)', () => {
   test('el Instagram de una persona va en la persona (la herramienta lo pide y la limpieza lo guarda)', async () => {
     const [it] = await fixtureNotes().split('Sabbia: hablé con Marco Curro, el gerente (@marco_sabbia), quiere verlo', { today: '2026-10-12', seller: 'Enjoy' });
     expect(it.people).toEqual([{ name: 'Marco Curro', role: 'gerente', phone: null, email: null, instagram: '@marco_sabbia', linkedin: null, note: null }]);
+  });
+});
+
+describe('apuntar sin cualificación en el espacio (§45)', () => {
+  const kinds = [{ key: 'company', label: 'Centro de buceo', plural: 'Centros', icon: 'waves', profile: 'venue' as const }];
+  test('con la cualificación, la herramienta y el sistema de siempre', () => {
+    expect(notesTool({})).toBe(NOTES_TOOL);
+    expect(notesTool({ pack: 'nightlife' })).toBe(NOTES_TOOL);
+    expect(notesSystem({ today: '2026-10-11', seller: 'Enjoy' })).toBe(NOTES_SYSTEM({ today: '2026-10-11', seller: 'Enjoy' }));
+  });
+  test('sin ella: ni cualificación ni copy de la noche; los tipos del espacio', () => {
+    const tool = notesTool({ pack: null, kinds });
+    const item = tool.input_schema.properties.items.items as { required: readonly string[]; properties: Record<string, unknown> };
+    expect(item.required).not.toContain('qualification');
+    expect(item.properties).not.toHaveProperty('qualification');
+    expect(item.properties).not.toHaveProperty('works_at');   // sin organizadores ni profesionales
+    const text = JSON.stringify(tool) + notesSystem({ today: '2026-10-11', seller: 'Oquea', pack: null, kinds });
+    expect(text).toContain('centro de buceo');
+    for (const w of [/\bDJ\b/i, /promotora/i, /pantalla/i, /discoteca/i, /fiesta/i, /aforo/i, /Enjoy/, /\blocal\b/i]) expect(text).not.toMatch(w);
+    const withPro = notesTool({ pack: null, kinds: [...kinds, { key: 'instructor', label: 'Instructor', plural: 'Instructores', icon: 'users', profile: 'dj' as const }] });
+    expect((withPro.input_schema.properties.items.items as { properties: Record<string, unknown> }).properties).toHaveProperty('works_at');
+  });
+  test('sin ella, lo que llegue de cualificación no se guarda', async () => {
+    const [it] = await fixtureNotes().split('Azul: dos pantallas, mirar redes', { today: '2026-10-11', seller: 'x', pack: null });
+    expect(it.qualification).toEqual({});
+    expect(sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', qualification: { screens: 'yes' } }] }, { qual: false })[0].qualification).toEqual({});
+  });
+  test('la petición a Claude, sin cualificación', async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl = (async (_u: string, init: RequestInit) => { body = JSON.parse(String(init.body)); return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"x"}}', { status: 400 }); }) as unknown as typeof fetch;
+    await expect(claudeNotes('k', fetchImpl).split('Azul: bien', { today: '2026-10-11', seller: 'Oquea', pack: null, kinds })).rejects.toBeTruthy();
+    expect(JSON.stringify(body.tools)).not.toContain('qualification');
+    expect(String(body.system)).toContain('empresa');
   });
 });

@@ -4,7 +4,7 @@ import { demoAdminDb } from '../admin/db-demo';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
-import { parsePlaces, type PlaceResult, type PlacesApi } from './places';
+import { parsePlaces, placesLocale, searchPlaces, type PlaceResult, type PlacesApi } from './places';
 import type { WebsiteApi } from './website';
 import { zoneForPlace } from './zones-normalize';
 import type { Zone } from '../accounts/types';
@@ -94,5 +94,24 @@ describe('Google Places', () => {
 
   test('sin clave, un aviso claro', async () => {
     await expect(svc(null).googleCandidates(demoDb().account[0].id)).rejects.toMatchObject({ status: 503 });
+  });
+});
+
+describe('Google en el idioma y el país del espacio (§45)', () => {
+  test('del idioma por defecto: es-ES → es / ES; ko-KR → ko / KR; sin país, sin sesgo', () => {
+    expect(placesLocale('es-ES')).toEqual({ languageCode: 'es', regionCode: 'ES' });
+    expect(placesLocale('ko-KR')).toEqual({ languageCode: 'ko', regionCode: 'KR' });
+    expect(placesLocale('pt')).toEqual({ languageCode: 'pt' });
+    expect(placesLocale(null)).toEqual({ languageCode: 'es', regionCode: 'ES' });
+  });
+  test('la búsqueda lleva el idioma y el país; en España, igual que siempre', async () => {
+    const bodies: string[] = [];
+    const fetchImpl = (async (_u: string, init: RequestInit) => { bodies.push(String(init.body)); return new Response('{"places":[]}', { status: 200 }); }) as unknown as typeof fetch;
+    await searchPlaces('Gecko Valencia', 'k', fetchImpl);
+    await searchPlaces('Busan Dive', 'k', fetchImpl, placesLocale('ko-KR'));
+    await searchPlaces('Centro', 'k', fetchImpl, placesLocale('pt'));
+    expect(bodies[0]).toBe('{"textQuery":"Gecko Valencia","languageCode":"es","regionCode":"ES","maxResultCount":5}');
+    expect(JSON.parse(bodies[1])).toMatchObject({ languageCode: 'ko', regionCode: 'KR' });
+    expect(JSON.parse(bodies[2])).not.toHaveProperty('regionCode');
   });
 });

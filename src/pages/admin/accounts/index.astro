@@ -113,16 +113,18 @@ const crm = (await acc.crmFields()).filter((x) => x.target === 'account' && (!x.
 const filterable = crm.filter((x) => x.filterable);
 const fieldFilter: Record<string, string> = Object.fromEntries(filterable.map((x) => [x.key, q.get(`c.${x.key}`) ?? '']).filter(([, v]) => v));
 const columns = crm.filter((x) => x.inList);
-const [{ items, total, scope: effective, kinds }, colleagues, segments, lists, weights] = await Promise.all([
+const [{ items, total, scope: effective, kinds }, colleagues, segments, lists, weights, pack] = await Promise.all([
   acc.list({ scope, q: search, fields: fieldFilter, tag: lista, zoneId: zona || undefined, view: listView }), acc.colleagues(), admin.playbook.segmentList(), admin.crm.lists({ people: false }),
-  admin.crm.weights(),
+  admin.crm.weights(), admin.crm.qualPack(),
 ]);
+// Sin cualificación en el espacio (§45): ni nota, ni ordenar por prioridad, ni «sin cualificar» / «fuera».
+const qual = pack !== null;
 const accountLists = lists.filter((l) => l.accounts > 0);
 // Etapa de la lista: chips por opción (filtran por su campo).
 const stage = lista ? crm.find((x) => x.isStage) : undefined;
 // Prioridad (docs/CRM_DINAMICO.md §11): puntuación de cada empresa; ordenar por ella y filtrar sin cualificar / fuera / se enfrían.
-const orden = q.get('orden') === 'prioridad' ? 'prioridad' : '';
-const cual = (['sin', 'fuera', 'enfria', 'ia'].includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia';
+const orden = qual && q.get('orden') === 'prioridad' ? 'prioridad' : '';
+const cual = ((qual ? ['sin', 'fuera', 'enfria', 'ia'] : ['enfria', 'ia']).includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia';
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 // La nota según la ficha de su tipo (§24): local, promotora o DJ.
 const prio = new Map(items.map((a) => [a.id, priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights)]));
@@ -156,7 +158,7 @@ const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
-const QUALITY: Array<[string, string]> = [['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]];
+const QUALITY: Array<[string, string]> = ([['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]] as Array<[string, string]>).filter(([k]) => qual || k === 'enfria' || k === 'ia');
 const fieldLabel = (k: string, v: string) => { const fd = filterable.find((x) => x.key === k); const o = fd?.options.find((x) => x.key === v);
   return `${fd?.label.replace(/^¿|\?$/g, '') ?? k}: ${fd?.type === 'checkbox' ? (v === 'yes' ? crmMessages[locale].card.yes : crmMessages[locale].card.no) : o?.label ?? v}`; };
 const active = [
@@ -248,8 +250,8 @@ const panelOpen = nFilters > 0;
           <option value="">{M.anyQuality}</option>
           {QUALITY.map(([k, l]) => <option value={k} selected={cual === k}>{l}</option>)}
         </select></label>
-      <label class="co-field !gap-1 text-xs">{M.order}
-        <select class="co-select" name="orden" data-testid="filter-order"><option value="">{M.orderDefault}</option><option value="prioridad" selected={orden === 'prioridad'}>{R.list.sort}</option></select></label>
+      {qual && <label class="co-field !gap-1 text-xs">{M.order}
+        <select class="co-select" name="orden" data-testid="filter-order"><option value="">{M.orderDefault}</option><option value="prioridad" selected={orden === 'prioridad'}>{R.list.sort}</option></select></label>}
       {filterable.length > 0 && (
         <div class="contents" data-testid="crm-filters">
           {filterable.map((fd) => (
@@ -329,7 +331,7 @@ const panelOpen = nFilters > 0;
               <span class="flex flex-wrap items-center justify-end gap-1.5" data-testid="account-priority" data-score={p.score} data-out={p.out ? 'true' : 'false'}>
                 {c !== undefined && <span class="co-tag co-tag--danger" title={R.coolingHelp}>{R.cooling(c)}</span>}
                 {a.aiResearchAt && <span class="co-tag" title={AI.at(fmt.relative(a.aiResearchAt))} data-testid="account-ai"><Icon name="sparkles" size={12} />{AI.zone.badge}</span>}
-                {p.out ? <span class="co-tag" title={p.kills.map((k) => R.kills[k]).join(' · ')}>{R.outBy(R.kills[p.kills[0]])}</span>
+                {!qual ? null : p.out ? <span class="co-tag" title={p.kills.map((k) => R.kills[k]).join(' · ')}>{R.outBy(R.kills[p.kills[0]])}</span>
                   : <span class="co-tag" title={p.parts.map((x) => `${critLabel(x.key)}: ${x.points ?? R.unknown}/${x.weight}`).join('\n')}><strong>{p.score}</strong>{!p.qualified && <span class="co-meta">&nbsp;· {R.upTo(p.max)}</span>}</span>}
               </span>
             ); })()}
@@ -438,7 +440,7 @@ const panelOpen = nFilters > 0;
       <div class="co-dialog__body">
         <h2 id="new-account-title" class="co-entity">{M.newAccount}</h2>
         <p class="co-body">{M.newBody(t.rules.claimDays)}</p>
-        <label class="co-field">{M.venueName}<input class="co-input" name="name" required maxlength="160" placeholder="Club Sol" /></label>
+        <label class="co-field">{M.venueName}<input class="co-input" name="name" required maxlength="160" placeholder={M.venueNamePh} /></label>
         <ZonePicker zones={t.zones} value={t.myZoneIds.length === 1 ? t.myZoneIds[0] : null} testid="new-zone" />
         <label class="co-field">{M.sector}
           <select class="co-select" name="segmentId"><option value="">{M.noSector}</option>{segments.map((sg) => <option value={sg.id}>{sg.name}</option>)}</select>
