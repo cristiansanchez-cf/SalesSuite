@@ -24,8 +24,11 @@ export interface Chart {
   canEdit: boolean;
 }
 
-/** Dirección de un espacio a partir de su nombre: «Ocean Dive Lab» → «ocean-dive-lab». */
-export const slugOf = (name: string) => name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+/**
+ * Dirección de un espacio a partir de su nombre: «Ocean Dive Lab» → «ocean-dive-lab». Se corta a 40 ANTES de quitar los
+ * guiones de los extremos: un subdominio no puede acabar en guion. (La misma cuenta en el script de platform.astro.)
+ */
+export const slugOf = (name: string) => name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').slice(0, 40).replace(/^-+|-+$/g, '');
 export const SPACE_LOCALES = ['es-ES', 'en-GB', 'pt-PT', 'ko-KR', 'ca-ES', 'fr-FR'] as const;
 
 export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, deps: {
@@ -115,9 +118,16 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     const origin = `${o.scheme}://${hostname}${o.port ? `:${o.port}` : ''}`;
     let invited = false;
     if (email) {
-      const r = await deps.identity!.findOrInvite(email, { redirectTo: `${origin}/admin/auth/confirm?next=${encodeURIComponent('/admin/setup/ia?first=1')}` });
-      await db.addTenantAdmin(id, r.userId);
-      invited = r.invited;
+      // El espacio ya existe: si la invitación falla (p. ej. el límite de correos de Supabase), que se sepa y se pueda
+      // invitar desde dentro; un reintento aquí daría «ya hay un espacio con esa dirección».
+      try {
+        const r = await deps.identity!.findOrInvite(email, { redirectTo: `${origin}/admin/auth/confirm?next=${encodeURIComponent('/admin/setup/ia?first=1')}` });
+        await db.addTenantAdmin(id, r.userId);
+        invited = r.invited;
+      } catch (e) {
+        console.warn('[platform] invitación del admin:', e instanceof Error ? e.message : e);
+        throw new AdminError(503, 'El espacio está creado, pero no se ha podido invitar a su admin: entra en él e invítalo desde Equipo');
+      }
     }
     return { id, slug, hostname, origin, invited, adminEmail: email || null };
   }

@@ -232,6 +232,7 @@ const EXACT: Record<string, T> = {
   'Idioma no válido': ['Invalid language', 'Idioma não válido', '유효하지 않은 언어입니다'],
   'El email del admin no es válido': ['The admin email is not valid', 'O email do admin não é válido', '관리자 이메일이 올바르지 않습니다'],
   'Ya hay un espacio con esa dirección: elige otra': ['There is already a space at that address: choose another', 'Já existe um espaço com esse endereço: escolha outro', '그 주소의 공간이 이미 있습니다: 다른 주소를 고르세요'],
+  'El espacio está creado, pero no se ha podido invitar a su admin: entra en él e invítalo desde Equipo': ['The space is created, but its admin could not be invited: open it and invite them from Team', 'O espaço foi criado, mas não foi possível convidar o admin: entre nele e convide-o em Equipe', '공간은 만들어졌지만 관리자를 초대하지 못했습니다: 공간에 들어가 팀에서 초대하세요'],
   'Solo el admin o un gerente global': ['Only the admin or a global manager', 'Só o admin ou um gerente global', '관리자 또는 총괄 매니저만 가능합니다'],
   'Solo admins y jefes/as de ventas ven las comisiones del equipo': ['Only admins and sales leads see the team\'s commissions', 'Só admins e chefes de vendas veem as comissões da equipe', '팀 커미션은 관리자와 영업 팀장만 볼 수 있습니다'],
   'Solo un/a admin o jefe/a decide sobre la comisión': ['Only an admin or sales lead decides on the commission', 'Só um admin ou chefe decide sobre a comissão', '커미션은 관리자 또는 팀장만 결정합니다'],

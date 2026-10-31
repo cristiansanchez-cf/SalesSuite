@@ -124,6 +124,6 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
   slug?.addEventListener('input', () => { touched = true; });
   name?.addEventListener('input', () => {
     if (!slug || touched) return;
-    slug.value = name.value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    slug.value = name.value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').slice(0, 40).replace(/^-+|-+$/g, '');
   });
 </script>
