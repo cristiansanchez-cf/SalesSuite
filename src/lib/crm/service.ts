@@ -1523,14 +1523,16 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (a.aiResearchAt && Date.now() - Date.parse(a.aiResearchAt) < AI_COOLDOWN_MS) throw new AdminError(409, 'Se acaba de investigar; espera un par de minutos');
     await quota('ai');
     const people = (await actorsOf(accountId)).map((c) => c.name);
-    const known = Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined));
+    // Sin cualificación en el espacio (§45), la IA no propone criterios: solo contacto y personas.
+    const pack = await qualPack();
+    const known = pack ? Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined)) : {};
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
-        sector: ctx.sector, seller: ctx.seller, known });
+        sector: ctx.sector, seller: ctx.seller, known, pack });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
-    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date() });
+    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack });
     try { await accounts.saveAiResearch(accountId, r); } catch (e) { mapError(e); }
     return r;
   }
@@ -1545,6 +1547,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       const a = await accounts.getAccount(accountId);
       if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
       if (sg.kind === 'qual') {
+        if (!(await qualPack())) throw new AdminError(422, 'Datos no válidos');
         const q: Record<string, unknown> = { ...a.qualification };
         if (q[sg.key] === undefined || (MULTI_QUAL.includes(sg.key) && !formatsOf(q as Qualification).includes(sg.value as Format))) {
           setQual(q, sg.key, sg.value === 'true' ? true : sg.value);

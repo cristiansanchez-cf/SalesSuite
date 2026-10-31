@@ -5,7 +5,7 @@ import { demoAccountsDb } from '../accounts/db-demo';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
 import { AdminError } from '../admin/service';
-import { claudeResearch, fixtureResearch, sanitizeResearch, SAVE_TOOL, sourceUrl, userPrompt, type ResearchApi } from './research';
+import { claudeResearch, fixtureResearch, researchSystem, researchTool, sanitizeResearch, SAVE_TOOL, sourceUrl, SYSTEM, SYSTEM_GENERAL, userPrompt, type ResearchApi } from './research';
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
 const REP = '11111111-1111-4111-8111-111111111111';
@@ -143,5 +143,39 @@ describe('la llamada a Claude', () => {
   test('si se niega: null', async () => {
     const fake = (async () => new Response(JSON.stringify(msg([], 'refusal')), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
     expect(await claudeResearch('k', fake).research({ name: 'X', city: null, address: null, website: null, instagram: null, sector: null, seller: 'E', known: {} })).toBeNull();
+  });
+});
+
+describe('investigar sin cualificación en el espacio (§45)', () => {
+  beforeEach(() => { resetDemoDb(); });
+  test('herramienta y sistema: con ella los de siempre; sin ella, sin criterios ni copy de la noche', () => {
+    expect(researchTool()).toBe(SAVE_TOOL);
+    expect(researchTool('nightlife')).toBe(SAVE_TOOL);
+    expect(researchSystem('nightlife')).toBe(SYSTEM);
+    const tool = researchTool(null);
+    expect(tool.strict).toBe(true);
+    expect(tool.input_schema.required).not.toContain('qualification');
+    expect(tool.input_schema.properties).not.toHaveProperty('qualification');
+    const text = JSON.stringify(tool) + researchSystem(null);
+    for (const w of [/\bDJ\b/i, /promotora/i, /pantalla/i, /discoteca/i, /local/i, /noche/i, /eventos/i]) expect(text).not.toMatch(w);
+  });
+  test('lo que llegue de cualificación no se propone', () => {
+    const r = sanitizeResearch({ qualification: [{ key: 'nights', value: '3', evidence: 'x', source: 'https://a.example/b' }] }, { known: {}, contact: {}, people: [], now: new Date(), qual: false });
+    expect(r.suggestions).toEqual([]);
+  });
+  test('en un espacio sin ella: solo contacto y personas', async () => {
+    demoDb().crm_settings.forEach((x) => { x.qualification = null; });
+    const s = svc(fixtureResearch());
+    const id = demoDb().account.find((a) => a.name === 'Sala Marina')!.id;
+    const r = await s.aiRun(id, { sector: null, seller: 'Oquea' });
+    expect(r.suggestions.map((x) => x.kind)).toEqual(['contact', 'person']);
+    expect(r.summary).not.toMatch(/noche|local/i);
+  });
+  test('la petición a Claude, sin cualificación', async () => {
+    let body: Record<string, unknown> = {};
+    const fake = (async (_u: string, init: RequestInit) => { body = JSON.parse(String(init.body)); return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"x"}}', { status: 400 }); }) as unknown as typeof fetch;
+    await expect(claudeResearch('k', fake).research({ name: 'Azul', city: null, address: null, website: null, instagram: null, sector: null, seller: 'Oquea', known: {}, pack: null })).rejects.toBeTruthy();
+    expect(body.system).toBe(SYSTEM_GENERAL);
+    expect(JSON.stringify(body.tools)).not.toContain('"qualification"');
   });
 });
