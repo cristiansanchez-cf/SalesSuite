@@ -20,8 +20,10 @@ Formato de cada bloque: `FORMATS` en `ai-import.ts`. Es tolerante: lo que sobre 
 
 ### Agente de alta — `/admin/setup/agente`
 
-Lo más rápido para una empresa nueva (y lo que usa el superadmin justo después de **Plataforma → Nueva empresa**, docs/ORG.md
-§Alta de una empresa). En `/admin/setup/ia` sale arriba «Que lo prepare la IA con su web y sus documentos».
+Lo más rápido para una empresa nueva: es el tercer paso del alta (Plataforma → Nueva empresa → su admin → **agente de alta**
+→ estado del alta; paso a paso en docs/ONBOARDING_TENANT.md, qué crea cada pieza en docs/ORG.md §Alta de una empresa). En
+`/admin/setup/ia` sale arriba «Que lo prepare la IA con su web y sus documentos». Lo puede usar quien configura el espacio
+(su admin, un gerente o el superadmin, que dentro es admin).
 
 1. Se le da **su web**, **hasta 4 documentos** (PDF o texto, 4 MB en total: presentación, tarifas, argumentario…) y, si se
    quiere, unas líneas.

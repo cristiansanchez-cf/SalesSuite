@@ -1,8 +1,8 @@
 # Puesta en marcha (Supabase + despliegue + dominio)
 
-Guía para pasar de "funciona en demo" a **producción con Enjoy**. El código ya está preparado; estos pasos requieren tus cuentas (Supabase, Vercel, DNS de Enjoy), así que los haces tú. Tiempo estimado: **45–60 min**.
+Referencia detallada para pasar de "funciona en demo" a **producción**. La guía paso a paso vigente, desde el navegador y con el estado de lo ya hecho, es [`PUESTA_EN_MARCHA.md`](PUESTA_EN_MARCHA.md) (Enjoy vive en `enjoy.ventas.cofundo.io`). Las empresas nuevas se dan de alta desde la consola: [`ONBOARDING_TENANT.md`](ONBOARDING_TENANT.md).
 
-> **Importante:** nada de esto se ha creado todavía. No había acceso a ninguna cuenta de Supabase ni de Vercel desde el entorno de desarrollo. Todo lo probado se probó contra un Postgres + PostgREST locales que imitan Supabase (`npm run db:test`, `npm run db:it`).
+> Desde el entorno de desarrollo no hay acceso a Supabase ni a Vercel: todo lo probado se probó contra un Postgres + PostgREST locales que imitan Supabase (`npm run db:test`, `npm run db:it`). Los ejemplos de abajo usan el dominio propio `pitch.enjoytheclub.es`; con un subdominio de plataforma (`<empresa>.ventas.cofundo.io`) los pasos son los mismos.
 
 ## Resumen
 
@@ -14,7 +14,7 @@ Guía para pasar de "funciona en demo" a **producción con Enjoy**. El código y
 | 4 | Copiar las claves | Panel de Supabase | Tú |
 | 5 | Desplegar | Vercel (o Docker) | Tú |
 | 6 | Dominio `pitch.enjoytheclub.es` | Vercel + DNS de Enjoy | Tú / quien gestione el DNS de Enjoy |
-| 7 | Alta del tenant Enjoy | Terminal (`npm run tenant:bootstrap`) | Tú, con la carpeta `tenants/enjoy` que rellena el agente de Enjoy |
+| 7 | Alta del tenant Enjoy | GitHub → Actions → Producción (`alta-espacio`) o terminal (`npm run tenant:bootstrap`) | Tú, con la carpeta `tenants/enjoy` que rellena el agente de Enjoy |
 | 8 | Verificación | Navegador | Tú (checklist abajo) |
 
 ---
@@ -53,7 +53,7 @@ Comprobación: en *Table Editor* deben aparecer `tenant`, `domain`, `users`, `me
 - **Site URL:** `https://pitch.enjoytheclub.es`
 - **Redirect URLs** (añade las tres):
   - `https://pitch.enjoytheclub.es/**`
-  - `https://*.cofundo.app/**` (para los subdominios de plataforma, si los usas)
+  - `https://*.ventas.cofundo.io/**` (todos los espacios de plataforma, también los que se crean desde Plataforma → Nueva empresa)
   - `http://localhost:4321/**` (desarrollo)
 
   Cada tenant nuevo con dominio propio = una línea más aquí.
@@ -113,7 +113,7 @@ Valen los dos formatos de clave de Supabase: los antiguos JWT y los nuevos `sb_p
 
 ### Opción A: Vercel (recomendada)
 1. https://vercel.com/new → importa `cristiansanchez-cf/SalesSuite`. Vercel detecta Astro y el código usa automáticamente `@astrojs/vercel`.
-2. **Environment Variables** (Production y Preview): las tres del paso 4. Marca `SUPABASE_SERVICE_ROLE_KEY` como *Sensitive*.
+2. **Environment Variables** (Production y Preview): las tres del paso 4, y las de avisos (`RESEND_API_KEY`, `RESEND_FROM`, `CRON_SECRET`, [`NOTIFICATIONS.md`](NOTIFICATIONS.md)). Opcionales: `ANTHROPIC_API_KEY` (IA), `GOOGLE_MAPS_API_KEY`, `MAPTILER_KEY`, `IP_HASH_SALT`, `PLATFORM_DOMAIN`; todas explicadas en `.env.example`. Marca como *Sensitive* las claves secretas.
 3. Deploy. Después abre `https://<tu-proyecto>.vercel.app/api/health`. Debe responder:
    ```json
    { "status": "ok", "mode": "supabase", "database": "ok", "serviceRoleConfigured": true }
@@ -135,13 +135,13 @@ El contenedor escucha en el puerto 8080 y trae healthcheck en `/api/health`. Det
    pitch   CNAME   cname.vercel-dns.com.
    ```
 3. Vercel emite el certificado SSL solo (unos minutos).
-4. Opcional, para subdominios de plataforma (`enjoy.cofundo.app`, `oquea.cofundo.app`…): añade `*.cofundo.app` en Vercel. Requiere que `cofundo.app` use los nameservers de Vercel.
+4. Para los subdominios de plataforma (`enjoy.ventas.cofundo.io`, `oquea.ventas.cofundo.io` y los que cree Plataforma → Nueva empresa): añade `*.ventas.cofundo.io` en Vercel, una sola vez ([`ONBOARDING_TENANT.md`](ONBOARDING_TENANT.md) §Una sola vez). La base se cambia con `PLATFORM_DOMAIN`.
 
-La app decide el tenant por el dominio, usando la tabla `domain` que rellena el paso 7. Un dominio que no esté en esa tabla da 404.
+La app decide el tenant por el dominio, usando la tabla `domain` que rellena el paso 7 (o Plataforma → Nueva empresa, para su `<dirección>.ventas.cofundo.io`). Un dominio que no esté en esa tabla da 404.
 
 ## 7. Alta del tenant Enjoy
 
-El agente o equipo de Enjoy rellena `tenants/enjoy/` siguiendo [`BRAND_INTAKE.md`](./BRAND_INTAKE.md). Después, desde tu máquina:
+El agente o equipo de Enjoy rellena `tenants/enjoy/` siguiendo [`BRAND_INTAKE.md`](./BRAND_INTAKE.md). Sin terminal: GitHub → Actions → **Producción** → `alta-espacio` ([`PUESTA_EN_MARCHA.md`](PUESTA_EN_MARCHA.md) paso 7). Desde tu máquina:
 
 ```bash
 cp .env.example .env    # pon PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY

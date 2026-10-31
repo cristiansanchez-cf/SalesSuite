@@ -73,6 +73,7 @@ Hechos: estado de partida, pasos 1 a 6. Para la siguiente sesión:
   - Redirect URLs: añade, una a una:
     - `https://enjoy.ventas.cofundo.io/**`
     - `https://oquea.ventas.cofundo.io/**`
+    - `https://*.ventas.cofundo.io/**` (cualquier empresa nueva creada desde Plataforma: `docs/ONBOARDING_TENANT.md`)
     - `http://localhost:4321/**`
 - [ ] **1.5** (Supabase no deja editar las plantillas hasta que el SMTP propio esté activo: haz antes el paso 2.5.) **Authentication → Emails → Templates.** Para cada plantilla, pega el asunto y el contenido del archivo indicado. Los archivos están en el repositorio, en `supabase/templates/`: ábrelos en GitHub, pulsa *Raw* y copia todo.
 
@@ -140,7 +141,7 @@ El repositorio tiene un botón (*Actions → Producción*) que aplica la base de
   - What: `migraciones`.
   - Dry run: **marcado**.
   - *Run workflow*.
-- [ ] **4.2** Abre la ejecución. En el paso «Migraciones (qué se aplicaría)» debe salir la lista de migraciones, desde `20261002000000_init.sql` hasta `20261101000000_proposal_template.sql`.
+- [ ] **4.2** Abre la ejecución. En el paso «Migraciones (qué se aplicaría)» debe salir la lista de migraciones pendientes: la primera vez, desde `20261002000000_init.sql` hasta la última de `supabase/migrations/` (hoy, `20261212000000_platform_create_tenant.sql`).
 - [ ] **4.3** Repite el 4.1 con **Dry run desmarcado**. Debe acabar en verde.
 - [ ] **Comprobación 4:** en Supabase → *Table Editor* aparecen, entre otras, `tenant`, `dossier`, `dossier_view` y `member_conditions_history`, con el candado de seguridad activado. En *Storage* existe el bucket `tenant-assets`.
 
@@ -160,6 +161,16 @@ Si falla con «Faltan secretos», revisa el paso 3. Si falla con un error de con
   | `RESEND_FROM` | `Cofundo Ventas <hola@correo.cofundo.io>` | No |
   | `CRON_SECRET` | una cadena aleatoria de 40 caracteres (genérala en el gestor de contraseñas y guárdala ahí: se usa en el paso 8) | **Sí** |
 
+  Opcionales (cada una enciende algo; sin ella, ese botón sale desactivado; detalle en `.env.example`):
+
+  | Key | Para qué | ¿Sensitive? |
+  |---|---|---|
+  | `ANTHROPIC_API_KEY` | IA: agente de alta, Investigar, Apuntar, Limpiar, traducir al copiar una propuesta | **Sí** |
+  | `GOOGLE_MAPS_API_KEY` | Google Places y Routes en el CRM (buscar, ruta del día, ciudades de fuera de España) | **Sí** |
+  | `MAPTILER_KEY` | Fondo del mapa del CRM (sin ella, OpenStreetMap) | No |
+  | `IP_HASH_SALT` | Sal para las IP del equipo en la analítica (cadena aleatoria) | **Sí** |
+  | `PLATFORM_DOMAIN` | Base de las direcciones de las empresas nuevas; por defecto `ventas.cofundo.io` | No |
+
 - [ ] **5.3** **Deployments** → el último despliegue → menú **⋯** → **Redeploy**. Las variables solo se aplican a despliegues nuevos.
 - [ ] **5.4 Velocidad: la web, en la misma región que la base de datos.** Vercel → el proyecto → **Settings → Functions → Function Region** → la región más cercana a la de Supabase (Supabase → *Project Settings → General → Region*; el botón «Producción» también la escribe en su resumen). Ejemplos: Supabase `eu-west-3` (París) → Vercel `cdg1`; `eu-central-1` (Fráncfort) → `fra1`; `eu-west-1` (Irlanda) → `dub1`. Guardar y **Redeploy**. Es lo que más se nota: cada página hace varias consultas y, si la web está en EE. UU. y la base en Europa, cada una cruza el Atlántico.
 - [ ] **Comprobación 5:** `https://<proyecto>.vercel.app/api/health` responde con `"status": "ok"`, `"mode": "supabase"` y `"database": "ok"`. Si dice `"misconfigured"`, el campo `problems` dice qué falta.
@@ -175,6 +186,9 @@ Si falla con «Faltan secretos», revisa el paso 3. Si falla con un error de con
 - [ ] **Comprobación 6:** Vercel muestra el dominio con el check azul («Valid Configuration»), y `https://enjoy.ventas.cofundo.io/api/health` responde igual que en la comprobación 5.
 
 Hasta el paso 7, `https://enjoy.ventas.cofundo.io/admin` da 404. Es lo esperado: aún no existe el espacio Enjoy.
+
+Para que las empresas nuevas (Plataforma → Nueva empresa) funcionen sin tocar nada, añade también, una sola vez,
+`*.ventas.cofundo.io` en *Settings → Domains* (`docs/ONBOARDING_TENANT.md` §Una sola vez).
 
 ## Paso 7 · Dar de alta el espacio de Enjoy (5 min)
 
