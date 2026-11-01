@@ -1,0 +1,44 @@
+{
+  "$comment": "Solo la marca de SciScreen (su design system 1.0, 1 nov 2026): colores, tipografía, radios, logo, favicon e imagen para compartir. El espacio se creó desde Plataforma; su contenido (agente de alta) y su CRM (importado) viven en la base de datos y este archivo no los toca: no hay catálogo, mercado, jugadas, precios ni campos. Ver README.md.",
+  "slug": "sciscreen",
+  "name": "SciScreen",
+  "default_locale": "es-ES",
+  "theme_tokens": {
+    "colors": {
+      "bg": "#fcfaf5",
+      "surface": "#f6f2e6",
+      "text": "#242320",
+      "muted": "#53524f",
+      "border": "#e9e8e3",
+      "primary": "#2246b2",
+      "primary-contrast": "#fcfaf5",
+      "accent": "#e1f5ff",
+      "accent-contrast": "#000341"
+    },
+    "radius": {
+      "card": "24px",
+      "button": "999px",
+      "pill": "999px"
+    },
+    "font": {
+      "display": "'Darker Grotesque', ui-sans-serif, system-ui, sans-serif",
+      "sans": "'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "faces": [
+        { "family": "Darker Grotesque", "src": "asset:fonts/DarkerGrotesque-Medium.woff2", "weight": "500" },
+        { "family": "Darker Grotesque", "src": "asset:fonts/DarkerGrotesque-Bold.woff2", "weight": "700" },
+        { "family": "Instrument Sans", "src": "asset:fonts/InstrumentSans-Variable.woff2", "weight": "400 700" }
+      ]
+    }
+  },
+  "brand": {
+    "logoUrl": "asset:logo.svg",
+    "logoOnDarkUrl": "asset:logo-on-dark.svg",
+    "logoAlt": "SciScreen",
+    "faviconUrl": "asset:favicon.svg",
+    "ogImageUrl": "asset:og.png",
+    "contact": { "website": "https://www.sciscreen.com" }
+  },
+  "domains": [
+    { "hostname": "sciscreen.ventas.cofundo.io", "is_primary": true }
+  ]
+}
