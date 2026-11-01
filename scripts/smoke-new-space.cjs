@@ -72,6 +72,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(await ana.isVisible('[data-testid=ai-check]'), 'y a comprobar que está bien');
   await ana.goto(`${origin}/admin/prices`);
   assert((await ana.textContent('body')).includes('Bautismo de grupo'), 'la tarifa ya está en Precios');
+  // ---- Dónde vende (docs/ACCOUNTS.md §Zonas): escribe «Madrid» y se crea España › Comunidad de Madrid › Madrid.
+  await ana.goto(`${origin}/admin/territory`);
+  await ana.fill('[data-testid=zone-place-q]', 'Madrid');
+  await ana.click('[data-testid=zone-place-list] [data-testid=zone-option] >> nth=0');
+  await Promise.all([ana.waitForNavigation(), ana.click('[data-testid=place-add]')]);
+  const zones = await ana.$$eval('[data-testid=zone]', (els) => els.map((e) => e.dataset.name));
+  assert(zones.includes('España') && zones.includes('Comunidad de Madrid') && zones.some((z) => z === 'Madrid'), `Madrid, con todo lo que la contiene (${zones.join(' › ')})`);
+  await ana.fill('[data-testid=zone-place-q]', 'Madrid');
+  await ana.click('[data-testid=zone-place-list] [data-testid=zone-option] >> nth=0');
+  await Promise.all([ana.waitForNavigation(), ana.click('[data-testid=place-add]')]);
+  assert((await ana.$$('[data-testid=zone]')).length === zones.length, 'la misma otra vez: no se repite');
+
   await sup.goto(`${BASE}/admin/platform`);
   assert((await doneOf()) >= 5, `estado del alta al día en Plataforma (${await doneOf()} de 9)`);
   await b.close();

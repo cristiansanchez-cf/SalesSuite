@@ -226,6 +226,7 @@ const EXACT: Record<string, T> = {
   'Solo PDF o texto': ['PDF or text only', 'Só PDF ou texto', 'PDF 또는 텍스트만 가능합니다'],
   'Dale al menos la web, un documento o unas líneas': ['Give it at least the website, a document or a few lines', 'Dê-lhe pelo menos o site, um documento ou umas linhas', '웹사이트, 문서 또는 몇 줄이라도 주세요'],
   'La IA no ha devuelto un borrador. Prueba otra vez o con más información.': ['The AI did not return a draft. Try again or with more information.', 'A IA não devolveu um rascunho. Tente de novo ou com mais informação.', 'AI가 초안을 돌려주지 않았습니다. 다시 시도하거나 정보를 더 주세요.'],
+  'Elige un sitio de la lista': ['Pick a place from the list', 'Escolha um sítio da lista', '목록에서 장소를 고르세요'],
   'Solo el superadmin da de alta empresas': ['Only the superadmin can add companies', 'Só o superadmin dá de alta empresas', '회사 등록은 최고 관리자만 할 수 있습니다'],
   'Pon el nombre de la empresa': ['Enter the company name', 'Indique o nome da empresa', '회사 이름을 입력하세요'],
   'La dirección solo puede llevar letras, números y guiones': ['The address can only contain letters, numbers and hyphens', 'O endereço só pode ter letras, números e hífens', '주소에는 영문자, 숫자, 하이픈만 쓸 수 있습니다'],

@@ -23,6 +23,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // ---- admin: territorio, teléfono y bloqueo
   const admin = await login('admin@enjoy.test');
   await admin.goto(`${BASE}/admin/territory`);
+  await admin.click('[data-testid=zone-manual] summary');
   await admin.fill('[data-testid=zone-form] [name=name]', `Alicante ${RUN}`);
   await admin.selectOption('[data-testid=zone-form] [name=parentId]', { label: '   Comunidad Valenciana' });
   await admin.click('[data-testid=zone-form] button[type=submit]');

@@ -20,6 +20,7 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   // ---- ciudades como las dejó el Notion
   for (const name of ['Requena (Valencia)', 'Barcelona creo que no es correcto, que están en Valencia', 'Account Executive', '28039']) {
     await p.goto(`${BASE}/admin/territory`);
+    await p.click('[data-testid=zone-manual] summary');
     await p.fill('[data-testid=zone-form] [name=name]', name);
     await p.click('[data-testid=zone-form] button[type=submit]');
     await p.waitForSelector(`[data-testid=zone][data-name="${name}"]`);

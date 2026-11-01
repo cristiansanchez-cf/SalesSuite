@@ -9,6 +9,9 @@ import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import ZonePicker from '~/components/crm/ZonePicker.astro';
+import { AdminError } from '~/lib/admin/service';
+import { isPlaceKey, pathForKey } from '~/lib/accounts/spain';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
 import { ELIGIBILITY_LABELS } from '~/lib/accounts/rules';
@@ -35,6 +38,19 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     switch (str('action')) {
       case 'rules': await acc.saveRules({ claimDays: str('claimDays'), strictZones: f.get('strictZones') === 'on', requireAccount: f.get('requireAccount') === 'on' }); ok = M.okRules; break;
+      case 'place': {
+        // «Dónde vendéis»: una zona que ya hay, una del catálogo de España (es|…) o una ciudad de Google (g:…).
+        const v = str('place');
+        if (!v) throw new AdminError(422, 'Elige un sitio de la lista');
+        const before = new Set((await acc.territory()).zones.map((z) => z.id));
+        const path = isPlaceKey(v) ? pathForKey(v) : null;
+        if (isPlaceKey(v) && !path) throw new AdminError(422, 'Elige un sitio de la lista');
+        const id = path ? await acc.ensurePath(path) : await admin.crm.pickZone(v);
+        const z = (await acc.territory()).zones.find((x) => x.id === id);
+        if (!z) throw new AdminError(422, 'Elige un sitio de la lista');
+        ok = before.has(z.id) ? M.placeExists(z.name) : M.okPlace(z.name);
+        break;
+      }
       case 'zone': await acc.saveZone({ name: str('name'), parentId: str('parentId'), kind: str('kind') || 'city' }); ok = M.okZone; break;
       case 'zone-delete': await acc.deleteZone(str('id')); ok = M.okZoneDeleted; break;
       case 'assign': await acc.setAssignments(str('userId'), f.getAll('zoneIds').map(String)); ok = M.okAssigned; break;
@@ -113,6 +129,15 @@ const zonesOf = (u: string) => t.assignments.filter((a) => a.userId === u).map((
               ))}
             </ul>}
         {perms.manageZones && (
+          <form method="post" class="co-card mt-3 grid gap-3" data-testid="place-form">
+            <input type="hidden" name="action" value="place" />
+            <ZonePicker zones={t.zones} name="place" testid="zone-place" label={M.where} help={M.whereHelp} ph={M.wherePh} />
+            <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="place-add">{M.addPlace}</button>
+          </form>
+        )}
+        {perms.manageZones && (
+          <details class="mt-3" data-testid="zone-manual">
+          <summary class="co-meta cursor-pointer">{M.manual}</summary>
           <form method="post" class="co-card mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end" data-testid="zone-form">
             <input type="hidden" name="action" value="zone" />
             <label class="co-field">{M.newZone}<input class="co-input" name="name" required maxlength="80" placeholder={M.newZonePlaceholder} /></label>
@@ -120,6 +145,7 @@ const zonesOf = (u: string) => t.assignments.filter((a) => a.userId === u).map((
             <label class="co-field">{M.type}<select class="co-select" name="kind">{Object.entries(KIND).map(([k, v]) => <option value={k} selected={k === 'city'}>{v}</option>)}</select></label>
             <button class="co-btn co-btn--primary" type="submit">{M.add}</button>
           </form>
+          </details>
         )}
       </section>
 

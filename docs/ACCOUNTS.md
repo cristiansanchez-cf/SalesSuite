@@ -39,7 +39,7 @@ Si no es elegible, el admin y los jefes/as reciben un aviso (`account_conflict`)
 
 ## Configurar (Territorio)
 
-- **Zonas:** solo admins.
+- **Zonas:** solo admins. Arriba, **Dónde vendéis**: se escribe una ciudad, provincia o comunidad (el catálogo de España de `src/lib/accounts/spain.ts`) o, si no está, se busca en Google en cualquier país; al añadirla se crea sola con todo lo que la contiene («Madrid» → España › Comunidad de Madrid › Madrid). Repetirla no duplica nada. Para algo que no es un sitio del mapa (un barrio, una zona comercial), «Crear una zona a mano». Smoke: el final de `scripts/smoke-new-space.cjs`.
 - **Quién cubre qué:** admins y jefes/as.
 - **Reglas** (solo admins): días de reserva, solo comisión en su zona, exigir cuenta del CRM.
 - **Importar CSV** (solo admins; también en Configurar → Datos del CRM): columnas `nombre`, `ciudad` o `zona`, `dirección`, `referencia`, `notas`. Las zonas se buscan por nombre, sin tildes ni mayúsculas. Una referencia repetida no se duplica. Las cuentas importadas entran libres. Este es el camino para cargar locales scrapeados de toda España.

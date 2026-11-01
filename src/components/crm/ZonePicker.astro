@@ -13,8 +13,8 @@ import { zonePath } from '~/lib/accounts/rules';
 import { missingPlaces, operatesInSpain, SPAIN, SPAIN_NAME } from '~/lib/accounts/spain';
 import type { Zone } from '~/lib/accounts/types';
 
-interface Props { zones: Zone[]; value?: string | null; name?: string; testid?: string }
-const { zones, value = null, name = 'zoneId', testid = 'zone-picker' } = Astro.props;
+interface Props { zones: Zone[]; value?: string | null; name?: string; testid?: string; label?: string; help?: string; ph?: string }
+const { zones, value = null, name = 'zoneId', testid = 'zone-picker', label, help, ph } = Astro.props;
 const { m: M } = i18n(Astro, zonePickMessages);
 const short = (path: string[]) => (path[0] === SPAIN_NAME ? path.slice(1) : path).join(' › ');
 const byId = new Map(zones.map((z) => [z.id, z]));
@@ -30,12 +30,12 @@ const current = value ? byId.get(value) : undefined;
 const currentLabel = current ? [current.name, short(parentPath(current))].filter(Boolean).join(' · ') : '';
 ---
 <div class="grid gap-1.5" data-zone-picker data-testid={testid}>
-  <span class="co-field !gap-1">{M.label}<span class="co-help">{M.help}</span></span>
+  <span class="co-field !gap-1">{label ?? M.label}<span class="co-help">{help ?? M.help}</span></span>
   <input type="hidden" name={name} value={current?.id ?? ''} data-zp-value />
   <p class="co-tag w-fit" hidden={!current} data-zp-chosen data-testid={`${testid}-chosen`}><Icon name="map-pin" size={12} /><span data-zp-label>{currentLabel}</span>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-zp-change>{M.change}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-zp-clear data-testid={`${testid}-clear`}>{M.clear}</button></p>
-  <input class="co-input" type="search" autocomplete="off" maxlength="80" placeholder={M.ph} hidden={!!current} aria-label={M.label}
+  <input class="co-input" type="search" autocomplete="off" maxlength="80" placeholder={ph ?? M.ph} hidden={!!current} aria-label={label ?? M.label}
     data-zp-q data-no-autosave data-testid={`${testid}-q`} />
   <ul class="m-0 grid max-h-72 gap-1 overflow-y-auto p-0" hidden data-zp-list data-testid={`${testid}-list`}></ul>
   <script type="application/json" data-zp-data set:html={JSON.stringify(data).replace(/</g, '\\u003c')} />
