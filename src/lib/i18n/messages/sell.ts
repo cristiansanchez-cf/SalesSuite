@@ -22,7 +22,7 @@ const es = {
     emptyFiltered: 'Ninguna propuesta coincide con estos filtros', emptyTitle: 'Todavía no hay propuestas',
     emptyDetail: 'Crea la primera con «Nueva propuesta»: eliges los módulos, la publicas y envías el enlace.', emptyAction: 'Crear la primera',
     noProspect: 'Sin prospecto', modules: (n: number) => `${n} ${n === 1 ? 'módulo' : 'módulos'}`, links: (n: number) => ` · ${n} ${n > 1 ? 'enlaces' : 'enlace'}`,
-    noAuthor: 'Sin autor', newEyebrow: 'Nueva', newTitle: 'Nueva propuesta', titlePlaceholder: 'Empresa Ejemplo · 2027', company: 'Empresa del prospecto', emptyDossier: 'No, empezar en blanco',
+    noAuthor: 'Sin autor', newEyebrow: 'Nueva', newTitle: 'Nueva propuesta', titlePlaceholder: 'Empresa Ejemplo · 2027', company: 'Empresa del prospecto', companySearch: 'Escribe el nombre o búscala en tu CRM', companyHelp: 'Si está en tu CRM, elígela: la propuesta nace con su sector y lo que ya sabes de ella.', companyUnlink: 'No es esta', emptyDossier: 'No, empezar en blanco',
   },
   home: {
     focus: 'Lo siguiente', open: 'Abrir', create: 'Crear propuesta',
@@ -175,7 +175,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: 'No proposals match these filters', emptyTitle: 'No proposals yet',
       emptyDetail: 'Create the first one with the «New proposal» form: pick the modules, publish it and send the link.', emptyAction: 'Create the first one',
       noProspect: 'No prospect', modules: (n) => `${n} ${n === 1 ? 'module' : 'modules'}`, links: (n) => ` · ${n} ${n > 1 ? 'links' : 'link'}`,
-      noAuthor: 'No author', newEyebrow: 'New', newTitle: 'New proposal', titlePlaceholder: 'Sample Company · 2027', company: 'Prospect company', emptyDossier: 'No, start blank',
+      noAuthor: 'No author', newEyebrow: 'New', newTitle: 'New proposal', titlePlaceholder: 'Sample Company · 2027', company: 'Prospect company', companySearch: 'Type the name or find it in your CRM', companyHelp: 'If it is in your CRM, pick it: the proposal starts with its sector and what you already know.', companyUnlink: 'Not this one', emptyDossier: 'No, start blank',
     },
     home: {
       focus: 'Up next', open: 'Open', create: 'Create proposal',
@@ -325,7 +325,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: 'Nenhuma proposta corresponde a estes filtros', emptyTitle: 'Ainda não há propostas',
       emptyDetail: 'Crie a primeira com o formulário «Nova proposta»: você escolhe os módulos, publica e envia o link.', emptyAction: 'Criar a primeira',
       noProspect: 'Sem prospect', modules: (n) => `${n} ${n === 1 ? 'módulo' : 'módulos'}`, links: (n) => ` · ${n} ${n > 1 ? 'links' : 'link'}`,
-      noAuthor: 'Sem autor', newEyebrow: 'Nova', newTitle: 'Nova proposta', titlePlaceholder: 'Empresa Exemplo · 2027', company: 'Empresa do prospect', emptyDossier: 'Não, começar em branco',
+      noAuthor: 'Sem autor', newEyebrow: 'Nova', newTitle: 'Nova proposta', titlePlaceholder: 'Empresa Exemplo · 2027', company: 'Empresa do prospect', companySearch: 'Escreva o nome ou procure no seu CRM', companyHelp: 'Se estiver no seu CRM, escolha-a: a proposta nasce com o setor e o que já sabe dela.', companyUnlink: 'Não é esta', emptyDossier: 'Não, começar em branco',
     },
     home: {
       focus: 'A seguir', open: 'Abrir', create: 'Criar proposta',
@@ -475,7 +475,7 @@ export const sellMessages = defineMessages({
       emptyFiltered: '이 필터에 맞는 제안서가 없습니다', emptyTitle: '아직 제안서가 없습니다',
       emptyDetail: '«새 제안서» 양식으로 첫 제안서를 만드세요. 모듈을 고르고 게시한 뒤 링크를 보내면 됩니다.', emptyAction: '첫 제안서 만들기',
       noProspect: '잠재 고객 없음', modules: (n) => `모듈 ${n}개`, links: (n) => ` · 링크 ${n}개`,
-      noAuthor: '작성자 없음', newEyebrow: '새로 만들기', newTitle: '새 제안서', titlePlaceholder: '예시 회사 · 2027', company: '잠재 고객 회사', emptyDossier: '아니요, 빈 제안서로 시작',
+      noAuthor: '작성자 없음', newEyebrow: '새로 만들기', newTitle: '새 제안서', titlePlaceholder: '예시 회사 · 2027', company: '잠재 고객 회사', companySearch: '이름을 입력하거나 CRM에서 찾으세요', companyHelp: 'CRM에 있다면 선택하세요: 제안서가 업종과 이미 아는 정보로 시작합니다.', companyUnlink: '이 회사가 아님', emptyDossier: '아니요, 빈 제안서로 시작',
     },
     home: {
       focus: '다음 할 일', open: '열기', create: '제안서 만들기',

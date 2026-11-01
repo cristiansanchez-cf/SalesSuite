@@ -5,6 +5,7 @@
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { createDossierSchema } from '~/lib/admin/ops';
+import { dossierFromAccount } from '~/lib/admin/from-account';
 import { AdminError } from '~/lib/admin/service';
 import { relativeTime, STATUS_CLASS, STATUS_LABELS } from '~/lib/admin/format';
 import type { DossierStatus } from '~/lib/types';
@@ -47,10 +48,14 @@ if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).
     fromDossierId: form.get('fromDossierId') || undefined,
     partnerAccountId: errorAccount ?? undefined,
   });
+  // Empresa elegida del CRM: la propuesta nace vinculada y con lo que ya sabe su ficha (sector, receta, estilo).
+  const crmAccountId = String(form.get('accountId') ?? '').trim();
   if (!parsed.success) error = parsed.error.issues[0]?.message ?? m.dossiers.invalid;
   else {
     try {
-      const id = await service.createDossier(parsed.data);
+      const id = crmAccountId && can(session.role).useAccounts
+        ? await dossierFromAccount(admin, crmAccountId, { title: parsed.data.title, prospectName: parsed.data.prospectName ?? undefined, fromDossierId: parsed.data.fromDossierId })
+        : await service.createDossier(parsed.data);
       return Astro.redirect(`/admin/dossiers/${id}`, 303);
     } catch (e) {
       if (!(e instanceof AdminError)) throw e;
@@ -60,6 +65,8 @@ if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).
 }
 
 const isPartner = session.role === 'partner';
+// En «Nueva propuesta», la empresa se puede elegir del CRM (quien trabaja con cuentas; los colaboradores, no).
+const crmPick = can(session.role).useAccounts;
 const team = isPartner ? [] : await service.listDossiers();
 // Cada uno ve sus propuestas. Admin y gerentes eligen de quién (por defecto, las suyas): todo el equipo, un comercial
 // o las que no tienen autor. Así a nadie le salen arriba las de otros (docs/ORG.md).
@@ -209,7 +216,16 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
           <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-close-new>{m.dossiers.close}</button>
         </div>
         {error && <Alert kind="rejection" title={error} />}
-        <label class="co-field">{m.dossiers.company}<input class="co-input" name="prospectCompany" maxlength="120" autofocus data-company /></label>
+        <div class="co-field relative">
+          <label for="create-company">{m.dossiers.company}</label>
+          <input id="create-company" class="co-input" name="prospectCompany" maxlength="120" autofocus autocomplete="off" data-company data-testid="create-company"
+            {...(crmPick ? { 'data-search': '1', placeholder: m.dossiers.companySearch } : {})} />
+          <input type="hidden" name="accountId" value="" data-account-id />
+          {crmPick && <span class="co-help" data-company-help>{m.dossiers.companyHelp}</span>}
+          {crmPick && <p class="co-tag w-fit" hidden data-company-linked data-testid="create-company-linked"><Icon name="link" size={12} /><span data-company-linked-name></span>
+            <button type="button" class="co-btn co-btn--quiet co-btn--sm !py-0" data-company-unlink>{m.dossiers.companyUnlink}</button></p>}
+          <ul class="m-0 grid max-h-64 gap-1 overflow-y-auto p-0" hidden data-company-list data-testid="create-company-list"></ul>
+        </div>
         <label class="co-field">{m.common.contactPerson}<input class="co-input" name="prospectName" maxlength="120" /></label>
         <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title data-template={welcomeMessages[locale].first.proposalTitle('{c}')} /></label>
         {(manager ? team : all).some((d) => d.itemCount > 0) && (
@@ -247,6 +263,43 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
     const title = dlg.querySelector<HTMLInputElement>('[data-title]');
     let touched = false;
     title?.addEventListener('input', () => { touched = true; });
-    company?.addEventListener('input', () => { if (title && !touched) title.value = company.value.trim() ? (title.dataset.template ?? '{c}').replace('{c}', company.value.trim()) : ''; });
+    const setTitle = () => { if (title && company && !touched) title.value = company.value.trim() ? (title.dataset.template ?? '{c}').replace('{c}', company.value.trim()) : ''; };
+    company?.addEventListener('input', setTitle);
+    // Empresa del CRM: se busca mientras se escribe; si se elige una, la propuesta nace vinculada a su ficha. Si no, el
+    // nombre escrito vale tal cual.
+    const list = dlg.querySelector<HTMLUListElement>('[data-company-list]');
+    const accountId = dlg.querySelector<HTMLInputElement>('[data-account-id]');
+    const linked = dlg.querySelector<HTMLElement>('[data-company-linked]');
+    const linkedName = dlg.querySelector<HTMLElement>('[data-company-linked-name]');
+    const help = dlg.querySelector<HTMLElement>('[data-company-help]');
+    if (company?.dataset.search && list && accountId && linked && linkedName) {
+      let timer = 0; let seq = 0;
+      const unlink = () => { accountId.value = ''; linked.hidden = true; if (help) help.hidden = false; };
+      const pick = (id: string, name: string) => {
+        accountId.value = id; company.value = name; linkedName.textContent = name; linked.hidden = false; if (help) help.hidden = true;
+        list.hidden = true; setTitle();
+      };
+      company.addEventListener('input', () => {
+        if (accountId.value) unlink();
+        window.clearTimeout(timer);
+        const q = company.value.trim();
+        if (q.length < 2) { list.hidden = true; return; }
+        const my = ++seq;
+        timer = window.setTimeout(async () => {
+          let items: Array<{ id: string; name: string; zone: string; discarded: boolean }> = [];
+          try { const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(q)}`, { credentials: 'same-origin' }); if (r.ok) items = (await r.json()).items ?? []; } catch { /* sin red: vale el nombre escrito */ }
+          if (my !== seq) return;
+          list.replaceChildren(...items.filter((x) => !x.discarded).slice(0, 6).map((x) => {
+            const li = document.createElement('li'); li.className = 'list-none';
+            const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = 'create-company-option';
+            const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = x.name;
+            if (x.zone) { const s = document.createElement('small'); s.textContent = x.zone; t.append(s); }
+            b.append(t); b.addEventListener('click', () => pick(x.id, x.name)); li.append(b); return li;
+          }));
+          list.hidden = !list.children.length;
+        }, 250);
+      });
+      dlg.querySelector('[data-company-unlink]')?.addEventListener('click', () => { unlink(); company.focus(); });
+    }
   }
 </script>

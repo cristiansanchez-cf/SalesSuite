@@ -32,6 +32,28 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await p.$$('[data-item-key]')).length > 0, 'la receta del sector, ya montada');
   assert((await p.textContent('[data-testid=builder]')).includes('Sala Herencia'), 'con el nombre de la empresa');
 
+  // ---- Lo mismo desde «Nueva propuesta»: se busca en el CRM y, elegida, nace con su sector y lo que sabe su ficha.
+  await p.goto(`${BASE}/admin`);
+  await p.click('[data-testid=new-dossier]');
+  await p.fill('[data-testid=create-company]', 'Sala Her');
+  await p.waitForSelector('[data-testid=create-company-list] [data-testid=create-company-option]');
+  await p.click('[data-testid=create-company-list] [data-testid=create-company-option] >> text=Sala Herencia');
+  assert(await p.isVisible('[data-testid=create-company-linked]'), 'elegida del CRM: queda vinculada');
+  assert((await p.inputValue('#create-title')).includes('Sala Herencia'), 'el título sale de la empresa');
+  await Promise.all([p.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/), p.click('[data-testid=create-form] button[type=submit]')]);
+  await p.waitForSelector('[data-testid=builder]');
+  const sector2 = await p.$eval('[data-testid=segment]', (s) => s.selectedOptions[0]?.textContent?.trim() ?? '');
+  assert(/ocio nocturno/i.test(sector2) && await p.isChecked('[data-testid=preset-q-dj]'), `desde el modal: su sector y «DJ residente» (${sector2})`);
+
+  // ---- Un nombre que no está en el CRM: vale tal cual, sin vincular.
+  await p.goto(`${BASE}/admin`);
+  await p.click('[data-testid=new-dossier]');
+  await p.fill('[data-testid=create-company]', 'Empresa Inventada Zeta');
+  await p.waitForTimeout(600);
+  await Promise.all([p.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/), p.click('[data-testid=create-form] button[type=submit]')]);
+  await p.waitForSelector('[data-testid=builder]');
+  assert((await p.textContent('[data-testid=builder]')).includes('Empresa Inventada Zeta'), 'un nombre cualquiera también vale');
+
   // ---- Un local sin el dato: la pregunta queda para el comercial.
   await p.goto(`${BASE}/admin/accounts?ver=all`);
   await p.click('[data-testid=add-open]'); await p.click('[data-testid=new-account]');

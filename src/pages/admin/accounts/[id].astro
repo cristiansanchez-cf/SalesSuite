@@ -1,5 +1,6 @@
 ---
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
+import { dossierFromAccount } from '~/lib/admin/from-account';
 import ZonePicker from '~/components/crm/ZonePicker.astro';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
@@ -140,12 +141,7 @@ if (Astro.request.method === 'POST') {
       case 'delete': await acc.remove(id); to = '/admin/accounts'; break;
       case 'dossier': {
         // La propuesta nace con lo que ya sabe su ficha: sector, receta con sus respuestas, estilo y con quién hablar.
-        const [a, kinds, segs, people] = await Promise.all([acc.get(id).then((x) => x.account), acc.kinds(), admin.playbook.segmentList(), admin.crm.company(id).then((c) => c.people).catch(() => [])]);
-        const d = await admin.service.createFromAccount({
-          title: a.name, prospectCompany: a.name, prospectName: people[0]?.name?.slice(0, 120) || undefined, accountId: id, segmentIds: segs.map((x) => x.id),
-          facts: { segmentId: a.segmentId, profile: profileOf(kinds, a.kind), kind: a.kind, qualification: (a.qualification ?? {}) as Record<string, unknown> },
-        });
-        to = `/admin/dossiers/${d}`;
+        to = `/admin/dossiers/${await dossierFromAccount(admin, id)}`;
         break;
       }
     }
