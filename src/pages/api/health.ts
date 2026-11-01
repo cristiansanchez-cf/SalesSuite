@@ -26,6 +26,9 @@ export const GET: APIRoute = async () => {
     serviceRoleConfigured: Boolean(env('SUPABASE_SERVICE_ROLE_KEY')),
     emailConfigured: Boolean(env('RESEND_API_KEY') && env('RESEND_FROM')),
     cronConfigured: Boolean(env('CRON_SECRET')),
+    // Leads (docs/LEADS.md): WhatsApp y su webhook. Solo dice si las claves están puestas.
+    whatsappConfigured: Boolean(env('WHATSAPP_TOKEN')),
+    whatsappWebhookConfigured: Boolean(env('WHATSAPP_VERIFY_TOKEN') && env('WHATSAPP_APP_SECRET')),
     version: env('APP_VERSION') ?? 'dev',
   };
   return Response.json(body, { status: body.status === 'ok' ? 200 : 503, headers: { 'cache-control': 'no-store' } });

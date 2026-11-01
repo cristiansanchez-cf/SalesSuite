@@ -1,0 +1,124 @@
+---
+/**
+ * Ajustes de leads (docs/LEADS.md §Ajustes): marca, webs permitidas, remitente y firma, a quién avisar, enlace de
+ * reserva, WhatsApp (número de Meta y plantillas aprobadas) y horario. Solo admin. Las claves viven en el servidor.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { env } from '~/lib/env';
+import { requestOrigin } from '~/lib/http';
+import { appMode } from '~/lib/mode';
+import { i18n } from '~/lib/i18n';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
+import { leadsFor } from '~/lib/leads/service';
+import { autoreplyEmail, waParams, waPreview } from '~/lib/leads/templates';
+
+const { admin, tenant } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
+const { m: L } = i18n(Astro, leadsMessages);
+const S = L.set;
+const svc = await leadsFor(admin);
+
+const lines = (v: FormDataEntryValue | null) => String(v ?? '').split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
+const orNull = (v: FormDataEntryValue | null) => String(v ?? '').trim() || null;
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  result = await formAction(async () => {
+    const tpl = (step: string) => Object.fromEntries(['es', 'en', 'fr'].map((l) => [l, String(f.get(`tpl_${step}_${l}`) ?? '').trim()]).filter(([, v]) => v));
+    await svc.saveSettings({
+      enabled: f.get('enabled') === 'on', brand: String(f.get('brand') ?? ''), allowedOrigins: lines(f.get('origins')),
+      fromEmail: orNull(f.get('fromEmail')), fromName: orNull(f.get('fromName')), replyTo: orNull(f.get('replyTo')), signerName: orNull(f.get('signerName')),
+      notifyEmails: lines(f.get('notify')), bookingUrl: orNull(f.get('bookingUrl')), videoUrl: orNull(f.get('videoUrl')),
+      whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2') },
+      sendFromHour: Number(f.get('fromHour') ?? 8), sendToHour: Number(f.get('toHour') ?? 22), holidays: lines(f.get('holidays')),
+    });
+  });
+  if (!result.error) return Astro.redirect('/admin/leads?ok=saved', 303);
+}
+const s = (await svc.settings()) ?? {
+  tenantId: admin.session.tenantId, enabled: false, brand: tenant?.slug ?? '', allowedOrigins: [], fromEmail: null, fromName: null, replyTo: null, signerName: null,
+  notifyEmails: [admin.session.email], bookingUrl: null, videoUrl: null, whatsappPhoneId: null, whatsappEnabled: false, whatsappTemplates: {}, timezone: 'Europe/Madrid',
+  sendFromHour: 8, sendToHour: 22, holidays: [],
+};
+const demo = appMode() === 'demo';
+const mailReady = demo || !!(env('RESEND_API_KEY') && env('RESEND_FROM'));
+const waReady = demo || !!env('WHATSAPP_TOKEN');
+const endpoint = `${requestOrigin(Astro.request, Astro.url)}/api/v1/leads`;
+// Vista previa con un lead de ejemplo.
+const brandName = tenant?.name ?? s.brand;
+const signer = s.signerName ?? brandName;
+const sample = { name: 'Laura Gómez', type: 'venue' as const, fields: { venue_name: 'Sala Ejemplo', city: 'Valencia' } };
+const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
+  loc,
+  wa1: waPreview('wa1', loc, signer, brandName, waParams('wa1', { ...sample, locale: loc, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl })),
+  wa2: waPreview('wa2', loc, signer, brandName, waParams('wa2', { ...sample, locale: loc, bookingUrl: s.bookingUrl ?? 'https://…', videoUrl: s.videoUrl })),
+  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null }),
+}));
+---
+<AdminLayout title={S.title}>
+  <PageHeader eyebrow={L.title} title={S.title} lede={S.lede} back={{ href: '/admin/leads', label: L.title }} />
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  <form method="post" class="grid max-w-3xl gap-5" data-testid="leads-settings-form">
+    <section class="co-card grid gap-3 !p-6">
+      <p class="co-meta">{S.endpoint}</p>
+      <code class="co-inset break-all !p-3" data-testid="leads-endpoint">{endpoint}</code>
+      <p class="co-meta">{S.endpointHelp}</p>
+      <label class="co-check"><input type="checkbox" name="enabled" checked={s.enabled} data-testid="leads-enabled" /> {S.enabled}</label>
+      <label class="co-field">{S.brand}<input class="co-input" name="brand" value={s.brand} required pattern="[a-z0-9][a-z0-9\-]{1,39}" /></label>
+      <label class="co-field">{S.origins}<textarea class="co-textarea h-28" name="origins">{s.allowedOrigins.join('\n')}</textarea><span class="co-meta">{S.originsHelp}</span></label>
+    </section>
+
+    <section class="co-card grid gap-3 !p-6">
+      <h2 class="co-entity !text-lg">{S.email}</h2>
+      <Alert kind={mailReady ? 'success' : 'info'} title={mailReady ? S.mailReady : S.mailMissing} />
+      <label class="co-field">{S.fromEmail}<input class="co-input" type="email" name="fromEmail" value={s.fromEmail ?? ''} /><span class="co-meta">{S.fromEmailHelp}</span></label>
+      <label class="co-field">{S.fromName}<input class="co-input" name="fromName" value={s.fromName ?? ''} maxlength="80" /></label>
+      <label class="co-field">{S.replyTo}<input class="co-input" type="email" name="replyTo" value={s.replyTo ?? ''} /><span class="co-meta">{S.replyToHelp}</span></label>
+      <label class="co-field">{S.signer}<input class="co-input" name="signerName" value={s.signerName ?? ''} maxlength="80" /></label>
+      <label class="co-field">{S.notify}<textarea class="co-textarea h-20" name="notify">{s.notifyEmails.join('\n')}</textarea><span class="co-meta">{S.notifyHelp}</span></label>
+      <label class="co-field">{S.booking}<input class="co-input" type="url" name="bookingUrl" value={s.bookingUrl ?? ''} placeholder="https://" /></label>
+      <label class="co-field">{S.video}<input class="co-input" type="url" name="videoUrl" value={s.videoUrl ?? ''} placeholder="https://" /></label>
+    </section>
+
+    <section class="co-card grid gap-3 !p-6">
+      <h2 class="co-entity !text-lg">{S.whatsapp}</h2>
+      <Alert kind={waReady ? 'success' : 'info'} title={waReady ? S.waReady : S.waMissing} />
+      <label class="co-check"><input type="checkbox" name="waEnabled" checked={s.whatsappEnabled} /> {S.waEnabled}</label>
+      <label class="co-field">{S.waPhone}<input class="co-input" name="waPhone" value={s.whatsappPhoneId ?? ''} inputmode="numeric" pattern="[0-9]{5,30}" /></label>
+      <p class="co-meta">{S.templates}</p>
+      <div class="grid gap-2 sm:grid-cols-3">
+        {(['wa1', 'wa2'] as const).flatMap((step) => (['es', 'en', 'fr'] as const).map((loc) => (
+          <label class="co-field text-xs">{L.steps[step]} · {loc}<input class="co-input" name={`tpl_${step}_${loc}`} value={s.whatsappTemplates?.[step]?.[loc] ?? ''} pattern="[a-z0-9_]{1,512}" placeholder={`lead_${step}_${loc}`} /></label>
+        )))}
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <label class="co-field">{S.hours} · {S.from}<input class="co-input w-24" type="number" name="fromHour" min="0" max="23" value={s.sendFromHour} /></label>
+        <label class="co-field">{S.to}<input class="co-input w-24" type="number" name="toHour" min="1" max="24" value={s.sendToHour} /></label>
+      </div>
+      <label class="co-field">{S.holidays}<textarea class="co-textarea h-24" name="holidays" placeholder="2026-12-08">{s.holidays.join('\n')}</textarea><span class="co-meta">{S.holidaysHelp}</span></label>
+    </section>
+
+    <button class="co-btn co-btn--primary w-fit" data-testid="leads-settings-save">{S.save}</button>
+  </form>
+
+  <section class="mt-8 grid max-w-3xl gap-3" data-testid="leads-preview">
+    <h2 class="co-entity !text-lg">{S.preview}</h2>
+    <p class="co-meta">{S.previewHelp}</p>
+    {previews.map((p) => (
+      <details class="co-card !p-5">
+        <summary class="cursor-pointer font-semibold">{p.loc.toUpperCase()}</summary>
+        <div class="mt-3 grid gap-3">
+          <div><p class="co-meta">{L.steps.wa1}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.wa1}</pre></div>
+          <div><p class="co-meta">{L.steps.wa2}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.wa2}</pre></div>
+          <div><p class="co-meta">{L.steps.autoreply} · {p.mail.subject}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.mail.text}</pre></div>
+        </div>
+      </details>
+    ))}
+  </section>
+</AdminLayout>

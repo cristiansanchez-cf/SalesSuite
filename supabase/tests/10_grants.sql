@@ -14,3 +14,13 @@ revoke insert, update, delete on public.member_conditions_history from authentic
 revoke insert, update, delete on public.dossier_view from authenticated;
 -- Registro del resumen diario: solo el cron (service role).
 revoke all on public.daily_digest_log from authenticated;
+-- Leads (20261215): lo que llega de la web lo escribe solo el servidor; el equipo gestiona etapas y cancela envíos.
+revoke insert, delete on public.lead from authenticated;
+revoke update on public.lead from authenticated;
+grant update (stage, stage_at, discard_reason, quarantined, quarantine_reasons, validated_at, validated_by, first_response_at,
+  first_response_mins, sequence_stopped_at, sequence_stop_reason, account_id, contact_id, facts, updated_at) on public.lead to authenticated;
+revoke insert, update, delete on public.lead_submission from authenticated;
+revoke update, delete on public.lead_event from authenticated;
+revoke insert, update, delete on public.lead_message from authenticated;
+grant update (status) on public.lead_message to authenticated;
+revoke delete on public.lead_settings from authenticated;

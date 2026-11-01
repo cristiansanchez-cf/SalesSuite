@@ -1,0 +1,107 @@
+---
+/**
+ * Leads de la web (docs/LEADS.md §Consola): la bandeja «por validar», la cuarentena y lo que está en curso, con la métrica
+ * que más importa (cuánto tarda el primer contacto) y de dónde vienen. Lo ve quien gestiona cuentas.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
+import { leadsFor } from '~/lib/leads/service';
+import type { View } from '~/lib/leads/types';
+import { summary } from '~/lib/leads/templates';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: L, locale } = i18n(Astro, leadsMessages);
+const svc = await leadsFor(admin);
+
+const VIEWS: View[] = ['inbox', 'quarantine', 'active', 'closed', 'test', 'all'];
+const q = Astro.url.searchParams;
+const view = (VIEWS as string[]).includes(q.get('ver') ?? '') ? (q.get('ver') as View) : 'inbox';
+const search = q.get('q') ?? '';
+const [items, counts, metrics, settings] = await Promise.all([svc.list(view, search), svc.counts(), svc.metrics(), svc.settings()]);
+const okMsg = flash(Astro.url, { validated: L.ok.validated, stage: L.ok.stage, saved: L.ok.saved });
+const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const host = (u: string) => { try { return new URL(u.startsWith('http') ? u : `https://${u}`).hostname.replace(/^www\./, ''); } catch { return u; } };
+const sourceOf = (x: unknown): string | null => {
+  const a = x as Record<string, string> | null;
+  if (!a) return null;
+  return a.utm_source ?? (a.gclid ? 'Google Ads' : a.fbclid ? 'Meta' : a.referrer ? host(a.referrer) : null);
+};
+const reason = (r: string) => (L.reasons as Record<string, string>)[r] ?? r;
+const fieldsOf = (l: { facts: Record<string, unknown> }) => (l.facts.fields as Record<string, string>) ?? {};
+const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURIComponent(search)}` : ''}`;
+---
+<AdminLayout title={L.title}>
+  <PageHeader eyebrow={L.eyebrow} title={L.title} lede={L.lede}>
+    {svc.canConfigure && <a class="co-btn co-btn--ghost" href="/admin/leads/ajustes" data-testid="leads-settings"><Icon name="settings" size={16} />{L.settings}</a>}
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {settings && !settings.enabled && <div class="mb-4"><Alert kind="info" title={L.off} /></div>}
+
+  <section class="mb-6 grid gap-3 sm:grid-cols-3" data-testid="leads-metrics">
+    <div class="co-card !p-5">
+      <p class="co-meta">{L.metrics.response}</p>
+      <p class="co-num mt-1 text-2xl">{metrics.medianMins == null ? L.metrics.none : L.metrics.mins(metrics.medianMins)}</p>
+      {metrics.answered > 0 && <p class="co-meta mt-1">{L.metrics.within5(metrics.within5, metrics.answered)}</p>}
+    </div>
+    <div class="co-card !p-5">
+      <p class="co-meta">{L.metrics.total(metrics.total)}</p>
+      <p class="co-num mt-1 text-2xl">{counts.inbox} <span class="co-meta">{L.views.inbox}</span></p>
+      {counts.quarantine > 0 && <p class="co-meta mt-1">{counts.quarantine} · {L.views.quarantine}</p>}
+    </div>
+    <div class="co-card !p-5">
+      <p class="co-meta">{L.metrics.sources}</p>
+      <p class="mt-1 flex flex-wrap gap-1">{metrics.bySource.length ? metrics.bySource.map(([k, n]) => <span class="co-tag">{k} · {n}</span>) : <span class="co-meta">{L.metrics.none}</span>}</p>
+    </div>
+  </section>
+
+  <div class="mb-4 flex flex-wrap items-end gap-3">
+    <nav class="co-tabs" aria-label={L.title} data-scroll-x>
+      {VIEWS.map((v) => (
+        <a class="co-tab" href={href(v)} aria-current={view === v ? 'page' : undefined} data-testid={`leads-view-${v}`}>
+          {L.views[v]}{v === 'inbox' && counts.inbox ? ` · ${counts.inbox}` : v === 'quarantine' && counts.quarantine ? ` · ${counts.quarantine}` : ''}
+        </a>
+      ))}
+    </nav>
+    <form method="get" class="ml-auto flex min-w-[14rem] flex-1 sm:flex-none" role="search">
+      <input type="hidden" name="ver" value={view} />
+      <label class="sr-only" for="leads-q">{L.search}</label>
+      <input id="leads-q" class="co-input" type="search" name="q" value={search} placeholder={L.search} />
+    </form>
+  </div>
+
+  {items.length === 0 ? (
+    <div class="co-empty" data-testid="leads-empty"><p>{view === 'inbox' && !search ? L.emptyInbox : L.empty}</p></div>
+  ) : (
+    <ul class="co-rows" data-testid="leads">
+      {items.map((l) => {
+        const band = l.scoreDetail?.band as 'hot' | 'normal' | 'low' | undefined;
+        const src = sourceOf(l.attributionFirst ?? l.attributionLast);
+        return (
+          <li class:list={['co-row', band === 'hot' && 'co-row--attention']} data-testid="lead" data-email={l.email}>
+            <a class="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1" href={`/admin/leads/${l.id}`}>
+              <span class="min-w-0 flex-1">
+                <span class="co-row-title block truncate">{l.name}</span>
+                <span class="co-meta block truncate">{l.email} · {L.emailKinds[l.emailKind]}</span>
+              </span>
+              <span class="co-meta min-w-[10rem] flex-1">{L.types[l.type]} · {summary(l.type, fieldsOf(l), locale)}</span>
+              {src && <span class="co-tag">{src}</span>}
+              {band && <span class:list={['co-tag', band === 'hot' && 'co-tag--match']}>{L.bands[band]}</span>}
+              {l.quarantined && <span class="co-tag co-tag--danger" data-testid="lead-quarantine">{l.quarantineReasons.map(reason).join(', ')}</span>}
+              <span class="co-tag" data-testid="lead-stage">{L.stages[l.stage]}</span>
+              {l.submissions > 1 && <span class="co-meta">{L.repeat(l.submissions)}</span>}
+              <span class="co-meta whitespace-nowrap">{fmt.format(new Date(l.lastSubmissionAt))}</span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+</AdminLayout>

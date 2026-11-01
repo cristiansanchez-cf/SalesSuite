@@ -9,6 +9,10 @@ type T = [en: string, pt: string, ko: string];
 
 /** Español → [inglés, portugués, coreano]. */
 const EXACT: Record<string, T> = {
+  // ------------------------------------------------------------ Leads de las webs
+  'Lead no encontrado': ['Lead not found', 'Lead não encontrado', '리드를 찾을 수 없습니다'],
+  'Indica el motivo para descartarlo': ['Say why you are discarding it', 'Indique o motivo para descartá-lo', '제외하는 이유를 입력하세요'],
+  'Esa marca ya la usa otro espacio': ['Another space already uses that brand', 'Outro espaço já usa essa marca', '다른 공간에서 이미 사용 중인 브랜드입니다'],
   // ------------------------------------------------------------ CRM: personas, grupos e importación
   'Persona no encontrada': ['Person not found', 'Pessoa não encontrada', '사람을 찾을 수 없습니다'],
   'Importación no encontrada': ['Import not found', 'Importação não encontrada', '가져오기를 찾을 수 없습니다'],

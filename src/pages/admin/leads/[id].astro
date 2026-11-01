@@ -1,0 +1,188 @@
+---
+/**
+ * Ficha de un lead (docs/LEADS.md §Consola): lo que pidió, de dónde viene, la prueba legal, los envíos automáticos y el
+ * historial con fecha y hora. Acciones: validar al CRM, cambiar etapa (con motivo para descartar), cuarentena, parar la
+ * secuencia y dar de baja.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
+import { leadsFor } from '~/lib/leads/service';
+import { summary } from '~/lib/leads/templates';
+import { STAGES, type Stage } from '~/lib/leads/types';
+import { safeHref } from '~/lib/safe-href';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: L, locale } = i18n(Astro, leadsMessages);
+const D = L.detail;
+const svc = await leadsFor(admin);
+const id = Astro.params.id ?? '';
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let ok = '';
+  result = await formAction(async () => {
+    switch (str('action')) {
+      case 'validate': await svc.validate(id); ok = 'validated'; break;
+      case 'stage': await svc.setStage(id, str('stage') as Stage, str('reason') || null); ok = 'stage'; break;
+      case 'spam': await svc.setStage(id, 'spam'); ok = 'stage'; break;
+      case 'contacted': await svc.markContacted(id); ok = 'contacted'; break;
+      case 'release': await svc.release(id); ok = 'released'; break;
+      case 'stop': await svc.stopSequence(id); ok = 'stopped'; break;
+      case 'suppress': await svc.suppress(id); ok = 'suppressed'; break;
+      case 'note': await svc.note(id, str('text')); ok = 'note'; break;
+    }
+  });
+  if (!result.error && ok) return Astro.redirect(`/admin/leads/${id}?ok=${ok}`, 303);
+}
+
+let data;
+try { data = await svc.detail(id); } catch { return Astro.rewrite('/404'); }
+const { lead: l, submissions, events, messages, suppressed } = data;
+const fields = (l.facts.fields as Record<string, string>) ?? {};
+const okMsg = flash(Astro.url, L.ok);
+const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const when = (iso: string | null) => (iso ? fmt.format(new Date(iso)) : '—');
+const last = submissions[0];
+const lastCtx = (last?.context ?? {}) as { page_url?: string; cta?: { label?: string | null; id?: string | null } };
+const attrRows = (a: unknown) => (a ? Object.entries(a as Record<string, string>) : []);
+const reason = (r: string) => (L.reasons as Record<string, string>)[r] ?? r;
+const bandLabel = l.scoreDetail ? (L.bands as Record<string, string>)[l.scoreDetail.band] ?? l.scoreDetail.band : '';
+const origins: [string, unknown][] = [[D.first, l.attributionFirst], [D.last, l.attributionLast]];
+const evText = (e: (typeof events)[number]) => {
+  const d = e.data as Record<string, unknown>;
+  if (e.kind === 'stage') return `${L.stages[(e.fromStage ?? 'new') as Stage] ?? e.fromStage} → ${L.stages[(e.toStage ?? 'new') as Stage] ?? e.toStage}${d.reason ? ` · ${d.reason}` : ''}${d.auto ? ' (auto)' : ''}`;
+  if (e.kind === 'message_out') return `${L.steps[(d.step as 'wa1') ?? 'wa1'] ?? d.step}${d.status === 'failed' ? ` · ${L.status.failed}: ${d.error ?? ''}` : ''}${d.text ? ` · «${String(d.text).slice(0, 160)}…»` : ''}`;
+  if (e.kind === 'message_in') return `«${String(d.text ?? '').slice(0, 300)}»`;
+  if (e.kind === 'note') return String(d.text ?? '');
+  if (e.kind === 'submission') return [d.message ? `«${String(d.message).slice(0, 200)}»` : '', (d.cta as { label?: string } | undefined)?.label ?? '', d.page ?? ''].filter(Boolean).join(' · ');
+  if (e.kind === 'quarantine') return ((d.reasons as string[]) ?? []).map((r) => (L.reasons as Record<string, string>)[r] ?? r).join(', ');
+  return '';
+};
+---
+<AdminLayout title={l.name}>
+  <PageHeader eyebrow={`${L.types[l.type]} · ${L.stages[l.stage]}`} title={l.name} lede={summary(l.type, fields, locale)} back={{ href: '/admin/leads', label: D.back }}>
+    {l.validatedAt
+      ? (l.contactId && <a class="co-btn co-btn--ghost" href={`/admin/people/${l.contactId}`} data-testid="lead-open-contact"><Icon name="user" size={16} />{D.openContact}</a>)
+      : !l.isTest && <form method="post"><button class="co-btn co-btn--primary" name="action" value="validate" data-testid="lead-validate"><Icon name="check" size={16} />{D.validate}</button></form>}
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {l.isTest && <div class="mb-4"><Alert kind="info" title={D.test} /></div>}
+  {l.quarantined && (
+    <div class="co-inset co-inset--warn mb-4 flex flex-wrap items-center gap-3 !p-4" data-testid="lead-quarantine-box">
+      <Icon name="shield-alert" size={18} />
+      <span class="flex-1">{D.quarantine}: {l.quarantineReasons.map(reason).join(', ')}</span>
+      <form method="post" class="flex gap-2">
+        <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="release" data-testid="lead-release">{D.release}</button>
+        {l.stage !== 'spam' && <button class="co-btn co-btn--danger co-btn--sm" name="action" value="spam" data-testid="lead-spam">{D.spam}</button>}
+      </form>
+    </div>
+  )}
+
+  <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+    <div class="grid content-start gap-5">
+      <section class="co-card grid gap-3 !p-6" data-testid="lead-data">
+        <h2 class="co-entity !text-lg">{D.data}</h2>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+          <dt class="co-meta">Email</dt><dd><a class="underline" href={`mailto:${l.email}`}>{l.email}</a> <span class="co-meta">({L.emailKinds[l.emailKind]})</span></dd>
+          {(l.phoneE164 || l.phoneRaw) && <><dt class="co-meta">Tel.</dt><dd>{l.phoneE164 ? <a class="underline" href={`https://wa.me/${l.phoneE164.slice(1)}`} target="_blank" rel="noopener noreferrer">{l.phoneE164}</a> : l.phoneRaw}</dd></>}
+          {Object.entries(fields).map(([k, v]) => <><dt class="co-meta">{k}</dt><dd>{v}</dd></>)}
+          {last?.message && <><dt class="co-meta">{D.message}</dt><dd class="whitespace-pre-wrap">{last.message}</dd></>}
+          {(lastCtx.cta?.label || lastCtx.cta?.id) && <><dt class="co-meta">{D.cta}</dt><dd>{lastCtx.cta?.label ?? lastCtx.cta?.id}</dd></>}
+          {lastCtx.page_url && <><dt class="co-meta">{D.page}</dt><dd class="break-all"><a class="underline" href={safeHref(lastCtx.page_url)} target="_blank" rel="noopener noreferrer">{lastCtx.page_url}</a></dd></>}
+        </dl>
+      </section>
+
+      <section class="co-card grid gap-3 !p-6" data-testid="lead-messages">
+        <h2 class="co-entity !text-lg">{D.messages}</h2>
+        {messages.length === 0 ? <p class="co-meta">—</p> : (
+          <ul class="grid gap-2 p-0">
+            {messages.map((x) => (
+              <li class="list-none flex flex-wrap items-baseline gap-2" data-testid="lead-message" data-step={x.step} data-status={x.status}>
+                <span class="co-tag">{L.steps[x.step]}</span>
+                <span class="co-meta">{x.toAddr}</span>
+                <span>{L.status[x.status]} · {when(x.sentAt ?? x.sendAt)}</span>
+                {x.error && x.status !== 'sent' && <span class="co-meta">({x.error})</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {messages.some((x) => x.status === 'pending' && x.channel === 'whatsapp') && (
+          <form method="post"><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="stop" data-testid="lead-stop">{D.stop}</button></form>
+        )}
+      </section>
+
+      <section class="co-card grid gap-3 !p-6" data-testid="lead-history">
+        <h2 class="co-entity !text-lg">{D.history}</h2>
+        <ol class="grid gap-2 p-0">
+          {events.map((e) => (
+            <li class="list-none grid grid-cols-[9rem_1fr] gap-3" data-kind={e.kind}>
+              <span class="co-meta">{when(e.at)}</span>
+              <span><strong>{L.events[e.kind]}</strong>{evText(e) && <> · {evText(e)}</>}</span>
+            </li>
+          ))}
+        </ol>
+        <form method="post" class="flex gap-2">
+          <input type="hidden" name="action" value="note" />
+          <label class="sr-only" for="lead-note">{D.note}</label>
+          <input id="lead-note" class="co-input flex-1" name="text" maxlength="2000" placeholder={D.note} required />
+          <button class="co-btn co-btn--ghost">{D.addNote}</button>
+        </form>
+      </section>
+    </div>
+
+    <aside class="grid content-start gap-5">
+      <section class="co-card grid gap-3 !p-5" data-testid="lead-stage-box">
+        <form method="post" class="grid gap-2">
+          <input type="hidden" name="action" value="stage" />
+          <label class="co-field">{D.stage}
+            <select class="co-select" name="stage" data-testid="lead-stage-select">{STAGES.map((s) => <option value={s} selected={s === l.stage}>{L.stages[s]}</option>)}</select>
+          </label>
+          <label class="co-field">{D.reason}<input class="co-input" name="reason" maxlength="300" value={l.discardReason ?? ''} /></label>
+          <button class="co-btn co-btn--primary co-btn--sm w-fit" data-testid="lead-stage-save">{D.save}</button>
+        </form>
+        {!l.firstResponseAt && <form method="post"><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="contacted" data-testid="lead-contacted">{D.contacted}</button></form>}
+        <p class="co-meta">{D.firstResponse}: {l.firstResponseAt ? `${when(l.firstResponseAt)}${l.firstResponseMins != null ? ` · ${L.metrics.mins(l.firstResponseMins)}` : ''}` : '—'}</p>
+        {l.sequenceStoppedAt && <p class="co-meta">{D.stopped} · {l.sequenceStopReason}</p>}
+      </section>
+
+      {l.scoreDetail && (
+        <section class="co-card grid gap-2 !p-5">
+          <h2 class="co-entity">{D.score}: {bandLabel} · {l.score}</h2>
+          <details><summary class="co-meta cursor-pointer">{D.why}</summary><ul class="mt-2 grid gap-1 p-0">{l.scoreDetail.detail.map((x) => <li class="list-none co-meta">{x}</li>)}</ul></details>
+        </section>
+      )}
+
+      <section class="co-card grid gap-2 !p-5" data-testid="lead-origin">
+        <h2 class="co-entity">{D.origin}</h2>
+        {origins.map(([label, a]) => (
+          <div><p class="co-meta">{label}</p>
+            {attrRows(a).length ? <ul class="p-0">{attrRows(a).map(([k, v]) => <li class="list-none break-all text-sm"><span class="co-meta">{k}:</span> {v}</li>)}</ul> : <p>—</p>}
+          </div>
+        ))}
+      </section>
+
+      <section class="co-card grid gap-1 !p-5 text-sm" data-testid="lead-legal">
+        <h2 class="co-entity">{D.legal}</h2>
+        <p>{D.marketing}: {l.consentMarketing ? D.yes : D.no} · {D.ads}: {l.consentAds ? D.yes : D.no}</p>
+        <p>{D.whatsapp}: {l.whatsappOk ? D.whatsappOk : D.whatsappNo}</p>
+        {suppressed.email && <p class="co-meta">{D.suppressedEmail}</p>}
+        {suppressed.whatsapp && <p class="co-meta">{D.suppressedWa}</p>}
+        <details><summary class="co-meta cursor-pointer">{D.submissions} ({submissions.length})</summary>
+          <ul class="mt-2 grid gap-2 p-0">{submissions.map((s) => <li class="list-none"><p class="co-meta">{when(s.receivedAt)} · {s.schema}</p><pre class="co-inset overflow-x-auto !p-2 text-xs">{JSON.stringify(s.consent, null, 1)}</pre></li>)}</ul>
+        </details>
+        {!(suppressed.email && (suppressed.whatsapp || !l.phoneE164)) && <form method="post" class="mt-2"><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="suppress" data-testid="lead-suppress">{D.suppress}</button></form>}
+      </section>
+    </aside>
+  </div>
+</AdminLayout>
