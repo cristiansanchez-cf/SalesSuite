@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { claudeNotes, fixtureNotes, matchAccounts, nameScore, NOTES_SYSTEM, NOTES_TOOL, notesSystem, notesTool, sanitizeNotes, sanitizePeople } from './notes';
+import { claudeNotes, fixtureNotes, matchAccounts, nameScore, NOTES_SYSTEM, NOTES_TOOL, notesSystem, notesTool, sanitizeContact, sanitizeNotes, sanitizePeople } from './notes';
 
 describe('apuntar con IA (§20)', () => {
   test('solo lo que vale: sitio, interacción y lo que sabemos por separado, campos y cualificación permitidos', () => {
@@ -105,5 +105,61 @@ describe('apuntar sin cualificación en el espacio (§45)', () => {
     await expect(claudeNotes('k', fetchImpl).split('Azul: bien', { today: '2026-10-11', seller: 'Oquea', pack: null, kinds })).rejects.toBeTruthy();
     expect(JSON.stringify(body.tools)).not.toContain('qualification');
     expect(String(body.system)).toContain('empresa');
+  });
+});
+
+describe('apuntar: limpieza de lo que devuelve la IA (casos límite)', () => {
+  test('entrada que no es lo esperado: lista vacía, sin lanzar', () => {
+    for (const raw of [null, undefined, 'texto', 42, [], {}, { items: 'no' }, { items: [null, 7, 'x', []] }]) expect(sanitizeNotes(raw)).toEqual([]);
+  });
+
+  test('topes: 40 sitios, 3 puntos clave, 12 personas, 12 sitios donde trabaja; textos recortados', () => {
+    const many = Array.from({ length: 50 }, (_, i) => ({ venue: `Sitio ${i}`, interaction: 'x' }));
+    expect(sanitizeNotes({ items: many })).toHaveLength(40);
+    const [it] = sanitizeNotes({ items: [{
+      venue: 'V'.repeat(500), interaction: 'i'.repeat(5000), key_facts: ['a', 'b', 'c', 'd'], facts: ['f'.repeat(700)],
+      people: Array.from({ length: 20 }, (_, i) => ({ name: `Persona ${i}` })),
+      works_at: Array.from({ length: 20 }, (_, i) => ({ place: `Sala ${i}` })), next_step: 'n'.repeat(400), discard: 'avoid', discard_why: 'w'.repeat(400),
+    }] });
+    expect([it.venue.length, it.interaction!.length, it.keyFacts.length, it.facts[0].length, it.people.length, it.worksAt.length, it.nextStep!.length, it.discardWhy!.length])
+      .toEqual([160, 4000, 3, 600, 12, 12, 300, 300]);
+  });
+
+  test('claves de campo raras, próximos días fuera de rango y días que no son fecha: fuera', () => {
+    const [it] = sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', next_days: -1, day: '2026-13-01',
+      fields: [{ key: '__proto__', value: 'x' }, { key: 'aforo', value: '' }, { key: 'Aforo', value: '3' }, { key: 'ok-1', value: ' 3 ' }, { key: 'x'.repeat(70), value: '1' }] }] });
+    expect(it.fields).toEqual({ 'ok-1': '3' });
+    expect(Object.getPrototypeOf(it.fields)).toBe(Object.prototype);
+    expect([it.nextDays, it.day]).toEqual([null, null]);
+    expect(sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', next_days: '3' }] })[0].nextDays).toBe(3);
+    expect(sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', next_days: 2.5 }] })[0].nextDays).toBeNull();
+    expect(sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', next_days: 366 }] })[0].nextDays).toBeNull();
+  });
+
+  // BUG (src/lib/crm/notes.ts:287, sanitizeNotes): el día se valida con Date.parse, que en V8 acepta fechas que no existen
+  // («2026-02-30» → 2 de marzo). Si la IA se equivoca de fecha, la interacción se guarda en otro día sin avisar (el
+  // servicio hace new Date(`${day}T12:00:00`)). Arreglo: comprobar que new Date(day).toISOString().slice(0, 10) === day.
+  // Quitar `.fails` cuando esté arreglado.
+  test.fails('un día que no existe en el calendario no se guarda', () => {
+    expect(sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', day: '2026-02-30' }] })[0].day).toBeNull();
+  });
+
+  test('canales del sitio: solo https (o @usuario en Instagram), teléfono y email con forma de serlo', () => {
+    expect(sanitizeContact({ website: 'https://sala.es', instagram: '@sala.luna', facebook: 'http://facebook.com/sala', tiktok: 'javascript:alert(1)',
+      music: 'https://soundcloud.com/x"onload="y', phone: '+34 600 11 22 33', email: ' Hola@Sala.ES ' }))
+      .toEqual({ website: 'https://sala.es', instagram: '@sala.luna', phone: '+34 600 11 22 33', email: 'hola@sala.es' });
+    expect(sanitizeContact({ instagram: 'https://www.instagram.com/sala/', phone: 'llámame', email: 'no@valido' })).toEqual({ instagram: 'https://www.instagram.com/sala/' });
+    expect(sanitizeContact(null)).toEqual({});
+    expect(sanitizeContact({ website: `https://${'a'.repeat(400)}.es` })).toEqual({});
+  });
+
+  test('personas: LinkedIn solo de linkedin.com por https; Instagram de instagram.com o @usuario', () => {
+    const r = sanitizePeople([
+      { name: 'Ana', linkedin: 'http://linkedin.com/in/ana', instagram: 'https://evil.example/ana' },
+      { name: 'Luis', linkedin: 'https://linkedin.com.evil.example/in/luis', instagram: 'javascript:alert(1)' },
+      { name: 'Eva', linkedin: 'https://es.linkedin.com/in/eva', instagram: 'eva_ig' },
+    ]);
+    expect(r.map((p) => [p.name, p.linkedin, p.instagram])).toEqual([['Ana', null, null], ['Luis', null, null], ['Eva', 'https://es.linkedin.com/in/eva', 'eva_ig']]);
+    expect(sanitizePeople('no')).toEqual([]);
   });
 });

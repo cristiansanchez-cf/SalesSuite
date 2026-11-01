@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { effectiveAnswers, planProposal, proposalSchema } from './preset';
+import { effectiveAnswers, liteOf, parseProposal, planProposal, proposalSchema } from './preset';
 
 const P = proposalSchema.parse({
   blocks: {
@@ -65,5 +65,60 @@ describe('propuesta por sector', () => {
     const base = { blocks: { a: { module: 'x' } }, modes: { full: ['a'] } };
     expect(proposalSchema.safeParse({ ...base, learn: [{ title: 'Paso', body: 'Texto', ui: 'app:qr-scan' }, { title: 'Sin UI', body: 'Texto' }] }).success).toBe(true);
     expect(proposalSchema.safeParse({ ...base, learn: [{ title: 'Paso', body: 'Texto', ui: 'javascript:alert(1)' }] }).success).toBe(false);
+  });
+});
+
+describe('propuesta por sector: casos límite', () => {
+  test('planificar no toca la receta (se comparte entre peticiones) y da siempre lo mismo', () => {
+    const before = JSON.stringify(P);
+    const a = planProposal(P, 'full', ['angulo:a', 'vj', 'oficina', 'dj']);
+    const b = planProposal(P, 'full', ['angulo:a', 'vj', 'oficina', 'dj']);
+    expect(JSON.stringify(P)).toBe(before);
+    expect(a).toEqual(b);
+    // Los textos devueltos son copias: retocarlos no cambia la receta.
+    (props(a, 'pantalla')!.scenes as string[]).push('otra');
+    expect(P.blocks.pantalla.props.scenes).toEqual(['promo', 'foto']);
+  });
+
+  test('sin modo visual en la receta, «visual» usa el completo y su tope', () => {
+    const r = proposalSchema.parse({ blocks: { a: { module: 'm' }, b: { module: 'm' }, c: { module: 'm' } }, modes: { full: ['a', 'b', 'c'] }, max: { full: 2 }, priority: ['c', 'a'] });
+    expect(keys(planProposal(r, 'visual', []))).toEqual(['a', 'c']);
+  });
+
+  test('respuestas que no existen o con forma rara se ignoran (no rompen la propuesta)', () => {
+    expect(effectiveAnswers(P, ['tipo:inventado', 'nada', 'angulo:', ':x'])).toEqual(['tipo:estandar', 'angulo:d']);
+    expect(keys(planProposal(P, 'full', ['tipo:inventado', 'nada']))).toEqual(keys(planProposal(P, 'full', [])));
+  });
+
+  test('meter en una lista más allá del final la añade al final; en un texto que no es lista, crea la lista', () => {
+    const r = proposalSchema.parse({
+      blocks: { a: { module: 'm', props: { xs: ['1'], s: 'texto' } } }, modes: { full: ['a'] },
+      questions: [{ key: 'q', label: 'Q', rules: [{ insert: 'a', into: 'xs', at: 20, value: 'fin' }, { insert: 'a', into: 's', at: 0, value: 'v' }] }],
+    });
+    expect(planProposal(r, 'full', ['q'])[0].props).toEqual({ xs: ['1', 'fin'], s: ['v'] });
+  });
+
+  test('recetas mal formadas: parseProposal devuelve null en vez de lanzar', () => {
+    for (const raw of [null, undefined, 'x', 42, [], {}, { blocks: {} }, { blocks: { a: { module: 'm' } }, modes: { full: ['a'] }, extra: 1 },
+      { blocks: { a: { module: 'm' } }, modes: { full: ['a'] }, choices: [{ key: 'c', label: 'C', default: 'z', options: [{ key: 'x', label: 'X' }, { key: 'y', label: 'Y' }] }] }]) {
+      expect(parseProposal(raw)).toBeNull();
+    }
+    expect(parseProposal({ blocks: { a: { module: 'm' } }, modes: { full: ['a'] } })).not.toBeNull();
+  });
+
+  test('claves: solo minúsculas, cifras y guiones (nada que se pueda colar en un selector o una URL)', () => {
+    for (const k of ['A', 'a b', 'a/b', '../a', 'a"', '-a', '']) {
+      expect(proposalSchema.safeParse({ blocks: { [k]: { module: 'm' } }, modes: { full: [k] } }).success, k).toBe(false);
+    }
+  });
+
+  test('liteOf: lo que necesita el editor, sin los textos de los bloques', () => {
+    const l = liteOf(P)!;
+    expect(l.hasVisual).toBe(true);
+    expect(l.choices.map((c) => c.key)).toEqual(['tipo', 'angulo']);
+    expect(JSON.stringify(l)).not.toContain('"Hoy"');   // ni los textos de los bloques ni sus reglas
+    expect(JSON.stringify(l)).not.toContain('props');
+    expect(JSON.stringify(l)).not.toContain('rules');
+    expect(liteOf(null)).toBeNull();
   });
 });
