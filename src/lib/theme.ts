@@ -87,11 +87,13 @@ const isDark = (h: string) => { const [r, g, b] = hexToChannels(h).split(' ').ma
 /**
  * Colores de marca del espacio para lo que la consola enseña de su producto (miniaturas, portadas, tour):
  * --tn-primary, --tn-accent, --tn-accent-ink y --tn-dark (el oscuro de la marca: su fondo si es oscuro,
- * si no su color de contraste del acento si es oscuro). Sin tema, los de siempre.
+ * si no su color de contraste del acento si es oscuro). Sin tema, los de Cofundo (no los de ningún espacio).
  */
+export const COFUNDO = { primary: '#6a2bd9', accent: '#cbb6ff', 'accent-ink': '#2a1066', dark: '#0a0a0a' } as const;
+
 export function brandVars(tokens: ThemeTokens): string {
   const c = tokens.colors ?? {};
-  const dark = [c.bg, c['accent-contrast'], c.text].find((x) => x && isDark(x)) ?? '#0d0a12';
-  const vars = { primary: c.primary ?? '#ff27bb', accent: c.accent ?? '#e1ff00', 'accent-ink': c['accent-contrast'] ?? '#08030c', dark };
+  const dark = [c.bg, c['accent-contrast'], c.text].find((x) => x && isDark(x)) ?? COFUNDO.dark;
+  const vars = { primary: c.primary ?? COFUNDO.primary, accent: c.accent ?? COFUNDO.accent, 'accent-ink': c['accent-contrast'] ?? COFUNDO['accent-ink'], dark };
   return Object.entries(vars).map(([k, v]) => `--tn-${k}:${v};`).join('');
 }

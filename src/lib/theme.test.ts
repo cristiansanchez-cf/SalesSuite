@@ -14,8 +14,9 @@ describe('theme', () => {
 
   test('colores de marca para la consola: el oscuro sale del fondo o del contraste del acento', () => {
     expect(brandVars({ colors: { bg: '#08030c', primary: '#ff27bb' } })).toContain('--tn-dark:#08030c;');
-    expect(brandVars({ colors: { bg: '#ffffff', primary: '#3757be', 'accent-contrast': '#1f294c' } })).toBe('--tn-primary:#3757be;--tn-accent:#e1ff00;--tn-accent-ink:#1f294c;--tn-dark:#1f294c;');
-    expect(brandVars({})).toContain('--tn-primary:#ff27bb;');
+    expect(brandVars({ colors: { bg: '#ffffff', primary: '#3757be', 'accent-contrast': '#1f294c' } })).toBe('--tn-primary:#3757be;--tn-accent:#cbb6ff;--tn-accent-ink:#1f294c;--tn-dark:#1f294c;');
+    // Sin tema, los de Cofundo: nunca los de Enjoy ni de otro espacio.
+    expect(brandVars({})).toBe('--tn-primary:#6a2bd9;--tn-accent:#cbb6ff;--tn-accent-ink:#2a1066;--tn-dark:#0a0a0a;');
   });
 
   test('override de dossier gana al tenant', () => {

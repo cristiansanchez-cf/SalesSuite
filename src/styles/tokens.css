@@ -1,6 +1,7 @@
 /*
  * Tokens de diseño = el "seam" white-label.
- * Los valores de :root son el tema por defecto de la plataforma (neutro).
+ * Los valores de :root son el tema por defecto de la plataforma: el de Cofundo (docs/DESIGN_SYSTEM.md), para los
+ * espacios que aún no tienen el suyo. Nunca los de un espacio concreto.
  * Cada tenant los sobreescribe vía `tenant.theme_tokens` (⊕ `dossier.theme_override`),
  * que ThemedShell inyecta sobre `.ds-root`. Los módulos SOLO consumen var(--…).
  * Mismo mecanismo que el bloque de override de :root de la página `bodas` de Enjoy.
@@ -11,15 +12,15 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: var(--font-sans);
 
-  --color-bg: 255 255 255;
-  --color-surface: 246 246 248;
-  --color-text: 17 17 20;
-  --color-muted: 102 102 115;
-  --color-border: 228 228 234;
-  --color-primary: 37 99 235;
+  --color-bg: 250 250 247;
+  --color-surface: 255 255 255;
+  --color-text: 10 10 10;
+  --color-muted: 74 74 74;
+  --color-border: 232 232 228;
+  --color-primary: 106 43 217;
   --color-primary-contrast: 255 255 255;
-  --color-accent: 16 185 129;
-  --color-accent-contrast: 17 17 20;
+  --color-accent: 203 182 255;
+  --color-accent-contrast: 42 16 102;
 
   --radius-card: 20px;
   --radius-button: 999px;
