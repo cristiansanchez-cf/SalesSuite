@@ -455,6 +455,15 @@ export function demoDb(): DemoDb {
   return (g[KEY] ??= freshDemoDb());
 }
 
+/**
+ * Rol de un usuario en un espacio para la «RLS» de la demo, = public.my_role (20261026000000_org.sql): el de su
+ * membership y, si no la tiene, el superadmin cuenta como admin en todos los espacios.
+ */
+export function demoRoleOf(tenantId: string, userId: string | null | undefined): Role | null {
+  const u = demoDb().users.find((x) => x.id === userId);
+  return u?.memberships.find((m) => m.tenant_id === tenantId)?.role ?? (u?.platform_admin ? 'admin' : null);
+}
+
 /** Solo tests. */
 export function resetDemoDb(): DemoDb {
   const g = globalThis as G;

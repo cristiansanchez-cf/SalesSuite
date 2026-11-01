@@ -472,6 +472,8 @@ export function createPlaybookService(pdb: PlaybookDb, adb: AdminDb, s: AdminSes
 
   async function deletePersona(id: string) {
     requireAdmin();
+    // Como savePersona: solo los actores de este espacio (la RLS deja al admin de varios espacios borrar en todos).
+    if (!(await pdb.listPersonas(s.tenantId)).some((x) => x.id === id)) throw new AdminError(404, 'Actor no encontrado');
     wrote(await pdb.deletePersona(id));
   }
 

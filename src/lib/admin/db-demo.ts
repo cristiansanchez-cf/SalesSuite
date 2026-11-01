@@ -50,6 +50,12 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     const d = db().dossier.find((x) => x.id === dossierId);
     if (d) d.updated_at = new Date().toISOString();
   };
+  // = foreign key (tenant_id, account_id) → account de 20261012000000_accounts.sql: solo cuentas del mismo espacio.
+  const accountFk = (tenantId: string, accountId: string | null | undefined) => {
+    if (accountId && !db().account.some((a) => a.tenant_id === tenantId && a.id === accountId)) {
+      throw new Error('insert or update on table "dossier" violates foreign key constraint "dossier_tenant_id_account_id_fkey"');
+    }
+  };
 
   return {
     async membershipRole(userId, tenantId) {
@@ -67,6 +73,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       return d ? toDossier(d) : null;
     },
     async insertDossier(n) {
+      accountFk(n.tenantId, n.accountId);
       const now = new Date().toISOString();
       const row: DossierRow = {
         id: randomUUID(), tenant_id: n.tenantId, author_id: n.authorId, title: n.title,
@@ -82,6 +89,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     async updateDossier(id, p) {
       const d = db().dossier.find((x) => x.id === id);
       if (!d) return null;
+      if (p.accountId !== undefined) accountFk(d.tenant_id, p.accountId);
       const prev = { ...d };
       if (p.title !== undefined) d.title = p.title;
       if (p.prospectName !== undefined) d.prospect_name = p.prospectName;

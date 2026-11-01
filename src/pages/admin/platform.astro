@@ -6,6 +6,7 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { formAction } from '~/lib/admin/forms';
+import { clearSpacesCache } from '~/lib/admin/spaces';
 import { env } from '~/lib/env';
 import { requestOrigin } from '~/lib/http';
 import { setupSteps } from '~/lib/org/setup-status';
@@ -32,6 +33,8 @@ if (Astro.request.method === 'POST') {
     done = await admin.org.createSpace(draft, local ? { base: 'localhost', scheme: 'http', port: here.port } : { base: env('PLATFORM_DOMAIN') || 'ventas.cofundo.io', scheme: 'https' });
   });
   if (!result.error && done) {
+    // «Cambiar de espacio» guarda la lista un minuto: que el nuevo salga ya.
+    clearSpacesCache();
     const d = done as { slug: string; invited: boolean; adminEmail: string | null };
     return Astro.redirect(`/admin/platform?ok=created&s=${d.slug}${d.adminEmail ? '&inv=1' : ''}`, 303);
   }
@@ -124,6 +127,6 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
   slug?.addEventListener('input', () => { touched = true; });
   name?.addEventListener('input', () => {
     if (!slug || touched) return;
-    slug.value = name.value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    slug.value = name.value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').slice(0, 40).replace(/^-+|-+$/g, '');
   });
 </script>

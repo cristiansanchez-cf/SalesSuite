@@ -40,13 +40,15 @@ let website = '';
 let notes = '';
 const st: { draft: Draft | null; redirect: string | null } = { draft: null, redirect: null };
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
+// El borrador que venía en el formulario: si algo falla (la IA, importar), se vuelve a enseñar en vez de perderlo.
+let previous: Draft | null = null;
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   website = String(f.get('website') ?? '').trim().slice(0, 300);
   notes = String(f.get('notes') ?? '').slice(0, 60_000);
   const action = String(f.get('action') ?? '');
   result = await formAction(async () => {
-    const previous = (() => { try { return readDraft(JSON.parse(String(f.get('draft') ?? 'null'))); } catch { return null; } })();
+    previous = (() => { try { return readDraft(JSON.parse(String(f.get('draft') ?? 'null'))); } catch { return null; } })();
     if (action === 'import') {
       if (!previous) throw new AdminError(422, 'No hay borrador que importar');
       let n = 0;
@@ -73,17 +75,23 @@ if (Astro.request.method === 'POST') {
       ? f.getAll('question').map((q, i) => ({ question: String(q), answer: String(f.getAll('answer')[i] ?? '') }))
       : [];
     if (!previous && !website && !files.length && !notes.trim()) throw new AdminError(422, 'Dale al menos la web, un documento o unas líneas');
-    const raw = await agent.draft({
-      company: who.company, person: who.person, locale: tenant?.defaultLocale ?? 'es-ES', website: website || null, notes, files,
-      previous: action === 'refine' ? previous : null, answers,
-    });
+    let raw: unknown;
+    try {
+      raw = await agent.draft({
+        company: who.company, person: who.person, locale: tenant?.defaultLocale ?? 'es-ES', website: website || null, notes, files,
+        previous: action === 'refine' ? previous : null, answers,
+      });
+    } catch (e) {
+      console.warn('[setup-agent]', e instanceof Error ? e.message : e);
+      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
+    }
     const d = readDraft(raw);
     if (!d) throw new AdminError(503, 'La IA no ha devuelto un borrador. Prueba otra vez o con más información.');
     st.draft = d;
   });
   if (st.redirect) return Astro.redirect(st.redirect, 303);
 }
-const draft = st.draft;
+const draft = st.draft ?? (result.error ? previous : null);
 const previews: Partial<Record<AiBlock, Preview>> = {};
 // Un bloque sin nada dentro (p. ej. sin precios en las fuentes) sale como «sin datos», no como «0 cosas».
 if (draft) for (const b of BLOCKS) if (draft.blocks[b] && countOf(draft, b) > 0) previews[b] = await preview(b, draft.blocks[b], deps);

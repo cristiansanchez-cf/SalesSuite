@@ -3,7 +3,7 @@
  * account_guard, account_audit, account_touch y dossier_account_sync, con las reglas de rules.ts.
  */
 import { randomUUID } from 'node:crypto';
-import { demoDb, type AccountRow, type CrmFieldRow, type DossierRow } from '../data/store';
+import { demoDb, demoRoleOf, type AccountRow, type CrmFieldRow, type DossierRow } from '../data/store';
 import type { CrmField, FieldType } from '../crm/fields';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
 import type { AccountInsert, AccountsDb } from './db';
@@ -66,9 +66,7 @@ function setKind(a: AccountRow, kind: string | null, reason: string | null, note
   a.discard_note = reason ? (note ?? '').trim().slice(0, 500) || null : null;
   a.discarded_by = reason ? by : null;
 }
-function roleOf(tenantId: string, userId: string | null) {
-  return db().users.find((u) => u.id === userId)?.memberships.find((m) => m.tenant_id === tenantId)?.role ?? null;
-}
+const roleOf = demoRoleOf;
 const isManager = (t: string, u: string | null) => ['admin', 'lead'].includes(roleOf(t, u) ?? '');
 function rulesOf(t: string): AccountRules {
   const r = db().account_rules.find((x) => x.tenant_id === t);
@@ -106,7 +104,7 @@ export function demoAccountsOnDossier(prev: DossierRow | null, d: DossierRow) {
   if (!prev) { d.account_eligibility = null; d.account_decision = null; d.account_decided_by = null; d.account_decided_at = null; }
   if (roleOf(d.tenant_id, seller) === 'partner') d.account_id = prev?.account_id ?? null;
   if (d.account_id && (!prev || prev.account_id !== d.account_id) && seller) {
-    const a = s.account.find((x) => x.id === d.account_id);
+    const a = s.account.find((x) => x.id === d.account_id && x.tenant_id === d.tenant_id);
     if (a) {
       const elig = eligibilityFor(d.tenant_id, a.id, seller);
       logTouch(a, seller, 'dossier', d.title);
@@ -116,7 +114,7 @@ export function demoAccountsOnDossier(prev: DossierRow | null, d: DossierRow) {
     }
   }
   if (prev && (prev.outcome ?? 'open') !== (d.outcome ?? 'open')) {
-    const a = d.account_id ? s.account.find((x) => x.id === d.account_id) : undefined;
+    const a = d.account_id ? s.account.find((x) => x.id === d.account_id && x.tenant_id === d.tenant_id) : undefined;
     if (d.outcome === 'won') {
       const elig: Eligibility = d.partner_account_id && !d.account_id ? 'eligible' : eligibilityFor(d.tenant_id, d.account_id ?? null, seller ?? '');
       d.account_eligibility = elig;

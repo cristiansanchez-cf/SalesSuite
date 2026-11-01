@@ -237,9 +237,19 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     } catch (e) { mapError(e); }
     return { id, accountId };
   }
+  /**
+   * La persona tiene que ser de este espacio: la RLS (y la demo) solo miran que seas miembro de SU espacio, así que
+   * alguien que está en dos (o el superadmin) podría tocar la de otro por su id.
+   */
+  async function ownContact(id: string) {
+    const c = await db.getContact(id);
+    if (!c || c.tenantId !== t) throw new AdminError(404, 'Persona no encontrada');
+    return c;
+  }
   async function updatePerson(id: string, input: unknown) {
     requireUse();
     const v = parse(personSchema.partial({ name: true }), input);
+    await ownContact(id);
     const patch: ContactPatch = {};
     for (const k of ['name', 'email', 'phone', 'instagram', 'linkedin', 'city', 'notes'] as const) if (v[k] !== undefined) (patch as Record<string, unknown>)[k] = v[k];
     let ok: boolean;
@@ -248,8 +258,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   async function setPersonFields(id: string, input: Record<string, unknown>) {
     requireUse();
-    const c = await db.getContact(id);
-    if (!c || c.tenantId !== t) throw new AdminError(404, 'Persona no encontrada');
+    const c = await ownContact(id);
     const r = parseValues((await fields()).filter((f) => f.target === 'contact'), input);
     if (r.errors.length) throw new AdminError(422, 'Datos no válidos', r.errors);
     const next: FieldValues = { ...c.fields, ...r.values };
@@ -260,11 +269,13 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   async function deletePerson(id: string) {
     requireManager();
+    await ownContact(id);
     if (!(await db.deleteContact(id))) throw new AdminError(404, 'Persona no encontrada');
   }
   async function setOwner(id: string, ownerId: string | null) {
     requireManager();
     if (ownerId && !(await members()).has(ownerId)) throw new AdminError(404, 'Miembro no encontrado');
+    await ownContact(id);
     if (!(await db.updateContact(id, { ownerId }))) throw new AdminError(404, 'Persona no encontrada');
   }
 
@@ -279,6 +290,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   async function unlink(contactId: string, accountId: string) {
     requireUse();
+    await ownContact(contactId);
     if (!(await db.removeLink(contactId, accountId))) throw new AdminError(404, 'Persona no encontrada');
   }
 
