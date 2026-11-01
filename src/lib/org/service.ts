@@ -7,6 +7,7 @@
  */
 import type { AdminDb, Identity } from '../admin/db';
 import { AdminError } from '../admin/service';
+import { slug } from '../evidence/schema';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { OrgDb } from './db';
 import type { Delegation } from './types';
@@ -25,10 +26,10 @@ export interface Chart {
 }
 
 /**
- * Dirección de un espacio a partir de su nombre: «Ocean Dive Lab» → «ocean-dive-lab». Se corta a 40 ANTES de quitar los
- * guiones de los extremos: un subdominio no puede acabar en guion. (La misma cuenta en el script de platform.astro.)
+ * Dirección de un espacio a partir de su nombre: «Ocean Dive Lab» → «ocean-dive-lab». Al cortarla a 40 se quita el guion
+ * que quede al final: un subdominio no puede acabar en guion. (La misma cuenta en el script de platform.astro.)
  */
-export const slugOf = (name: string) => name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').slice(0, 40).replace(/^-+|-+$/g, '');
+export const slugOf = (name: string) => slug(name).slice(0, 40).replace(/-+$/, '');
 export const SPACE_LOCALES = ['es-ES', 'en-GB', 'pt-PT', 'ko-KR', 'ca-ES', 'fr-FR'] as const;
 
 export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, deps: {
