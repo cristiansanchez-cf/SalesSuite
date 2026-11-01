@@ -1,6 +1,6 @@
 /**
  * Nombra superadmin de la plataforma (docs/ORG.md) a una persona, por email. Ve y gestiona todos los espacios.
- * Si aún no tiene usuario, se le invita (le llega el email para entrar). No imprime el email.
+ * Si aún no tiene usuario, se le crea la cuenta (entra con su email y el código de la pantalla de acceso). No imprime el email.
  *
  *   ADMIN_EMAILS=tu@email.com npx tsx scripts/superadmin.ts [--dry-run] [--remove]
  */
@@ -18,13 +18,15 @@ const must = <T>(r: { data: T; error: { message: string } | null }, what: string
 
 let user = must(await sb.from('users').select('id').ilike('email', email).maybeSingle(), 'buscar usuario') as { id: string } | null;
 if (!user && !REMOVE) {
-  if (DRY) { console.log('• [prueba] no tiene usuario: se le invitaría por email'); process.exit(0); }
-  const inv = await sb.auth.admin.inviteUserByEmail(email);
-  if (inv.error || !inv.data.user) { console.error(`✗ invitar: ${inv.error?.message ?? 'sin usuario'}`); process.exit(1); }
+  if (DRY) { console.log('• [prueba] no tiene usuario: se le crearía la cuenta'); process.exit(0); }
+  // Sin email de invitación de Supabase: su enlace va a la «Site URL» y no al /admin/auth/confirm de un espacio, y los
+  // filtros de Outlook gastan el enlace de un solo uso al abrirlo. La cuenta queda lista y entra con su código.
+  const inv = await sb.auth.admin.createUser({ email, email_confirm: true });
+  if (inv.error || !inv.data.user) { console.error(`✗ crear la cuenta: ${inv.error?.message ?? 'sin usuario'}`); process.exit(1); }
   user = { id: inv.data.user.id };
   // El trigger crea la fila en public.users; por si tarda, se asegura.
   await sb.from('users').upsert({ id: user.id, email }, { onConflict: 'id', ignoreDuplicates: true });
-  console.log('• invitado: le llega un email para entrar');
+  console.log('• cuenta creada: entra en cualquier espacio desde /admin/login con su email (le llega un código)');
 }
 if (!user) { console.log('• no tenía usuario: nada que quitar'); process.exit(0); }
 if (DRY) { console.log(`• [prueba] ${REMOVE ? 'dejaría de ser' : 'pasaría a ser'} superadmin`); process.exit(0); }

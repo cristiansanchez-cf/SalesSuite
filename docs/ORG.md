@@ -21,7 +21,7 @@ delegación. Un gerente de zona ve aquí solo la suya, sin poder cambiarla. En *
 ## Superadmin
 
 Se nombra desde GitHub → Actions → **Producción** → `superadmin`, con el email en «admin_email» (oculto en los registros) y
-«Solo comprobar» desmarcado. Si aún no tiene usuario, se le invita. Quitarlo: `ADMIN_EMAILS=… npx tsx scripts/superadmin.ts --remove`.
+«Solo comprobar» desmarcado. Si aún no tiene usuario, se le crea la cuenta (sin email de invitación): entra desde `/admin/login` de cualquier espacio con su email y el código que le llega. Quitarlo: `ADMIN_EMAILS=… npx tsx scripts/superadmin.ts --remove`.
 Entra en cada espacio por su dominio (la Plataforma tiene un «Entrar» por espacio); dentro es admin aunque no sea miembro.
 
 ## Alta de una empresa
