@@ -1293,7 +1293,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * (los más parecidos primero; sin IA). Si quien cuenta ya ha elegido la empresa, todo va a esa (un solo sitio) y la IA
    * solo ordena. No guarda nada: lo confirma la persona con notesApply.
    */
-  async function notesSplit(text: string, ctx: { seller: string }, accountId?: string | null): Promise<Array<NoteItem & { candidates: NoteCandidate[] }>> {
+  async function notesSplit(text: string, ctx: { seller: string; clients?: string[] }, accountId?: string | null): Promise<Array<NoteItem & { candidates: NoteCandidate[] }>> {
     requireUse();
     if (!notesAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const clean = String(text ?? '').trim().slice(0, NOTES_MAX);
@@ -1307,7 +1307,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const forAi = accFields.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options.map((o) => o.label) }));
     // Sin cualificación en el espacio (§45), la IA solo saca lo general y habla con los tipos del espacio.
     const [pack, ks] = await Promise.all([qualPack(), kinds()]);
-    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, fields: forAi, pack, kinds: ks }); } catch (e) {
+    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, clients: ctx.clients ?? [], fields: forAi, pack, kinds: ks }); } catch (e) {
       console.warn('[notes]', aiReason(e));
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
@@ -1526,7 +1526,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return readResearch(await accounts.getAiResearch(accountId).catch(() => null));
   }
   /** Investiga con IA y guarda las propuestas (pendientes). `ctx`: el sector y lo que vende el equipo (del playbook). */
-  async function aiRun(accountId: string, ctx: { sector: ResearchInput['sector']; seller: string }) {
+  async function aiRun(accountId: string, ctx: { sector: ResearchInput['sector']; seller: string; clients?: string[] }) {
     requireUse();
     if (!ai) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const a = await accounts.getAccount(accountId);
@@ -1543,7 +1543,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
-        sector: ctx.sector, seller: ctx.seller, known, pack, country: loc.regionCode ?? null });
+        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, country: loc.regionCode ?? null });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
     const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack });

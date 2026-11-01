@@ -40,6 +40,8 @@ export interface ResearchInput {
   known: Record<string, unknown>;
   /** Cualificación del espacio (§45). Sin decirlo, la de ocio nocturno; null = sin cualificación (solo lo general). */
   pack?: QualPack | null;
+  /** A quién vende el espacio (sus sectores con su cliente ideal), para cuando la empresa aún no tiene sector. */
+  clients?: string[];
   /** País del espacio para la búsqueda web (ISO, «ES»); sin decirlo, España. null = sin país. */
   country?: string | null;
 }
@@ -140,6 +142,7 @@ export function userPrompt(i: ResearchInput): string {
     i.sector?.icp && `A quién vendemos en este sector: ${i.sector.icp}`,
     i.sector?.personas.length && `Con quién solemos hablar: ${i.sector.personas.join(', ')}`,
     `Qué vende el equipo: ${i.seller}`,
+    !i.sector && i.clients?.length && `A quién vende el equipo (la empresa aún no tiene sector; di en summary a cuál se parece, si a alguno): ${i.clients.join('; ')}`,
     Object.keys(i.known).length ? `Ya marcado en la ficha (no lo repitas): ${JSON.stringify(i.known)}` : null,
   ].filter(Boolean);
   return `${lines.join('\n')}\n\nInvestiga y llama a save_research con lo que encuentres.`;

@@ -88,6 +88,7 @@ describe('apuntar sin cualificación en el espacio (§45)', () => {
     expect(item.required).not.toContain('qualification');
     expect(item.properties).not.toHaveProperty('qualification');
     expect(item.properties).not.toHaveProperty('works_at');   // sin organizadores ni profesionales
+    expect(notesSystem({ today: '2026-10-11', seller: 'Oquea', pack: null, kinds, clients: ['Centros de buceo (5-30 instructores)'] })).toContain('Vendemos a: Centros de buceo (5-30 instructores)');
     const text = JSON.stringify(tool) + notesSystem({ today: '2026-10-11', seller: 'Oquea', pack: null, kinds });
     expect(text).toContain('centro de buceo');
     for (const w of [/\bDJ\b/i, /promotora/i, /pantalla/i, /discoteca/i, /fiesta/i, /aforo/i, /Enjoy/, /\blocal\b/i]) expect(text).not.toMatch(w);

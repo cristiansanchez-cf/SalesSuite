@@ -70,6 +70,14 @@ describe('qué se acepta de la IA', () => {
       sector: { name: 'Ocio nocturno', icp: 'Salas con DJ', personas: ['Dueño'] } });
     expect(p).toContain('Sala X'); expect(p).toContain('Valencia'); expect(p).toContain('Salas con DJ'); expect(p).toContain('"nights":"4+"');
   });
+  test('sin sector, la IA sabe a quién vende el espacio (empresas importadas sin sector)', () => {
+    const base = { name: 'Essential Diet', city: null, address: null, website: 'https://essentialdiet.es', instagram: null, seller: 'SciScreen. Revisión científica de claims.', known: {},
+      clients: ['Laboratorios de suplementos (marcas con claims de salud)', 'Cadenas de gimnasios'] };
+    const p = userPrompt({ ...base, sector: null });
+    expect(p).toContain('A quién vende el equipo'); expect(p).toContain('Laboratorios de suplementos'); expect(p).toContain('Cadenas de gimnasios');
+    // Con sector, manda el suyo.
+    expect(userPrompt({ ...base, sector: { name: 'Laboratorios', icp: 'Marcas con claims', personas: [] } })).not.toContain('A quién vende el equipo');
+  });
 });
 
 describe('investigar desde la ficha', () => {

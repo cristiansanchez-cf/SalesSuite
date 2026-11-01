@@ -58,7 +58,7 @@ export interface NoteField { key: string; label: string; type: string; options: 
  * `pack`: la cualificación del espacio (§45). Sin decirlo, la de ocio nocturno (lo de siempre); null = sin
  * cualificación: la IA solo saca lo general y las palabras salen de los tipos del espacio (`kinds`), no de la noche.
  */
-export interface NotesCtx { today: string; seller: string; fields?: NoteField[]; pack?: QualPack | null; kinds?: KindDef[] }
+export interface NotesCtx { today: string; seller: string; fields?: NoteField[]; pack?: QualPack | null; kinds?: KindDef[]; /** A quién vende (sectores y cliente ideal). */ clients?: string[] }
 export interface NotesApi { split(text: string, ctx: NotesCtx): Promise<NoteItem[]> }
 
 const S = { type: 'string' } as const;
@@ -250,6 +250,7 @@ export function notesSystem(ctx: NotesCtx): string {
     '- Un elemento por empresa. Si una empresa sale varias veces, júntala en una.',
     '- Separa la interacción (lo que ha pasado con ellos) de lo que sabemos de la empresa. Lo que sabemos es lo más valioso: no pierdas ningún detalle, con sus palabras y sin muletillas; pero júntalo por temas en pocos puntos completos, para que se lea de un vistazo.',
     `- Lo más importante para vender ${ctx.seller} (lo que decide si encaja y cómo entrarle) va en key_facts; el resto en facts, ordenado de más a menos importante.`,
+    ...(ctx.clients?.length ? [`- Vendemos a: ${ctx.clients.join('; ')}. Úsalo para saber qué pesa y si encaja (fit), no para inventar datos.`] : []),
     '- No inventes ni añadas opiniones tuyas. Si una palabra parece mal dictada y está claro qué quería decir, corrígela.',
     '- Lo que no es de ninguna empresa concreta (ideas generales) no va en ningún elemento.',
     ...(others.length ? [`- Cada elemento es de un tipo (entity): ${(Object.entries(lbl) as Array<[Profile, string]>).map(([pr, l]) => `${pr} = ${l}`).join(', ')}. Si una empresa trabaja con ${others.map((pr) => lbl[pr]).join(' o ')}, cada uno en works_at con qué es (what).`] : []),
