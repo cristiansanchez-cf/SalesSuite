@@ -14,6 +14,8 @@ import { appMode } from '~/lib/mode';
 import { i18n } from '~/lib/i18n';
 import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
+import { ownDomains, setResendKey } from '~/lib/leads/resend-key';
+import { flash } from '~/lib/admin/forms';
 import { autoreplyEmail, waParams, waPreview } from '~/lib/leads/templates';
 
 const { admin, tenant } = Astro.locals;
@@ -28,7 +30,11 @@ const orNull = (v: FormDataEntryValue | null) => String(v ?? '').trim() || null;
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
-  result = await formAction(async () => {
+  const action = String(f.get('action') ?? '');
+  if (action === 'resend-key' || action === 'resend-key-clear') {
+    result = await formAction(async () => { await setResendKey(admin, action === 'resend-key' ? String(f.get('resendKey') ?? '') : null); });
+    if (!result.error) return Astro.redirect(`/admin/leads/ajustes?ok=${action === 'resend-key' ? 'resendSaved' : 'resendCleared'}`, 303);
+  } else result = await formAction(async () => {
     const tpl = (step: string) => Object.fromEntries(['es', 'en', 'fr'].map((l) => [l, String(f.get(`tpl_${step}_${l}`) ?? '').trim()]).filter(([, v]) => v));
     await svc.saveSettings({
       enabled: f.get('enabled') === 'on', brand: String(f.get('brand') ?? ''), allowedOrigins: lines(f.get('origins')),
@@ -38,7 +44,7 @@ if (Astro.request.method === 'POST') {
       sendFromHour: Number(f.get('fromHour') ?? 8), sendToHour: Number(f.get('toHour') ?? 22), holidays: lines(f.get('holidays')),
     });
   });
-  if (!result.error) return Astro.redirect('/admin/leads?ok=saved', 303);
+  if (!result.error && action !== 'resend-key' && action !== 'resend-key-clear') return Astro.redirect('/admin/leads?ok=saved', 303);
 }
 const s = (await svc.settings()) ?? {
   tenantId: admin.session.tenantId, enabled: false, brand: tenant?.slug ?? '', allowedOrigins: [], fromEmail: null, fromName: null, replyTo: null, signerName: null,
@@ -46,7 +52,11 @@ const s = (await svc.settings()) ?? {
   sendFromHour: 8, sendToHour: 22, holidays: [],
 };
 const demo = appMode() === 'demo';
-const mailReady = demo || !!(env('RESEND_API_KEY') && env('RESEND_FROM'));
+const okMsg = flash(Astro.url, { resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared });
+const domains = s.resendKeyHint ? await ownDomains(admin) : null;
+const fromDomain = s.fromEmail?.split('@')[1]?.toLowerCase() ?? null;
+const fromVerified = !domains || !fromDomain || domains.some((d) => d.status === 'verified' && (fromDomain === d.name || fromDomain.endsWith(`.${d.name}`)));
+const mailReady = demo || !!s.resendKeyHint || !!(env('RESEND_API_KEY') && env('RESEND_FROM'));
 const waReady = demo || !!env('WHATSAPP_TOKEN');
 const endpoint = `${requestOrigin(Astro.request, Astro.url)}/api/v1/leads`;
 // Vista previa con un lead de ejemplo.
@@ -62,7 +72,24 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
 ---
 <AdminLayout title={S.title}>
   <PageHeader eyebrow={L.title} title={S.title} lede={S.lede} back={{ href: '/admin/leads', label: L.title }} />
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  <section class="co-card mb-5 grid max-w-3xl gap-3 !p-6" data-testid="leads-resend">
+    <h2 class="co-entity !text-lg">{S.resend}</h2>
+    <p class="co-meta">{S.resendHelp}</p>
+    <p data-testid="leads-resend-status">{s.resendKeyHint ? S.resendOwn(s.resendKeyHint) : S.resendShared}</p>
+    {domains && domains.length > 0 && (
+      <p class="co-meta">{S.domains}: {domains.map((d, i) => <>{i > 0 && ' · '}{d.name} ({d.status === 'verified' ? S.domainOk : S.domainPending})</>)}</p>
+    )}
+    {!fromVerified && fromDomain && <Alert kind="info" title={S.fromNotVerified(fromDomain)} />}
+    <form method="post" class="flex flex-wrap items-end gap-2" autocomplete="off">
+      <input type="hidden" name="action" value="resend-key" />
+      <label class="co-field min-w-[16rem] flex-1">{S.resendKey}<input class="co-input" type="password" name="resendKey" required autocomplete="off" spellcheck="false" data-testid="leads-resend-key" /></label>
+      <button class="co-btn co-btn--primary" data-testid="leads-resend-save">{S.resendSave}</button>
+    </form>
+    {s.resendKeyHint && <form method="post"><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="resend-key-clear" data-testid="leads-resend-clear">{S.resendClear}</button></form>}
+  </section>
 
   <form method="post" class="grid max-w-3xl gap-5" data-testid="leads-settings-form">
     <section class="co-card grid gap-3 !p-6">

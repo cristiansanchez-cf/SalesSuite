@@ -19,6 +19,6 @@ export const GET: APIRoute = async ({ request }) => {
   }
   const rt = await leadsRuntime();
   if ('error' in rt) return Response.json({ error: rt.error }, { status: 503 });
-  const r = await processDue({ db: rt.db, mailer: rt.mailer, whatsapp: rt.whatsapp, now: new Date(), secret: rt.secret }, { limit: 100 });
+  const r = await processDue({ db: rt.db, mailer: rt.mailer, whatsapp: rt.whatsapp, now: new Date(), secret: rt.secret, mailerFor: rt.mailerFor }, { limit: 100 });
   return Response.json({ ok: true, ...r, email: !!rt.mailer, whatsapp: !!rt.whatsapp });
 };

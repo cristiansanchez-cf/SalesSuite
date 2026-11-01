@@ -7,6 +7,9 @@ export interface LeadsDb {
   settings(tenantId: string): Promise<LeadSettings | null>;
   settingsByWhatsappPhone(phoneId: string): Promise<LeadSettings | null>;
   saveSettings(s: LeadSettings): Promise<void>;
+  /** Clave propia de Resend, cifrada (solo con service role). */
+  resendKey(tenantId: string): Promise<string | null>;
+  setResendKey(tenantId: string, sealed: string | null, hint: string | null, by: string | null): Promise<void>;
 
   submissionByKey(tenantId: string, key: string): Promise<Submission | null>;
   leadByEmail(tenantId: string, email: string, isTest: boolean): Promise<Lead | null>;

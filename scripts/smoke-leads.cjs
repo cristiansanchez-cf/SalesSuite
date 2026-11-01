@@ -94,6 +94,15 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   await p.goto(`${BASE}/admin/leads/ajustes`);
   assert((await p.textContent('[data-testid=leads-endpoint]')).endsWith('/api/v1/leads'), 'la dirección para la web');
   assert((await p.textContent('[data-testid=leads-preview]')).includes('Hola {{1}}') === false, 'vista previa con el lead de ejemplo');
+  assert((await p.textContent('[data-testid=leads-resend-status]')).includes('plataforma'), 'sin clave propia: usa la cuenta de la plataforma');
+  await p.fill('[data-testid=leads-resend-key]', 'no-es-una-clave');
+  await p.click('[data-testid=leads-resend-save]');
+  assert((await p.textContent('main')).includes('no es válida'), 'una clave mala no se guarda');
+  await p.fill('[data-testid=leads-resend-key]', 're_smokeKey12345678');
+  await Promise.all([p.waitForURL(/ok=resendSaved/), p.click('[data-testid=leads-resend-save]')]);
+  const st = await p.textContent('[data-testid=leads-resend-status]');
+  assert(st.includes('re_…5678') && !(await p.content()).includes('re_smokeKey12345678'), 'clave propia guardada: solo se ve la pista');
+  await Promise.all([p.waitForURL(/ok=resendCleared/), p.click('[data-testid=leads-resend-clear]')]);
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
   assert(true, 'ajustes guardados');
   if (OUT) await p.screenshot({ path: `${OUT}/leads-settings.png`, fullPage: true });

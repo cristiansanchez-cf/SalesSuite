@@ -255,3 +255,34 @@ describe('entrada y cola (memoria)', () => {
     expect(parseWebhook(JSON.parse(raw)).inbound[0]).toMatchObject({ phoneId: '123', from: '+34600123123', text: 'Hola' });
   });
 });
+
+describe('Resend por empresa', () => {
+  test('la clave se guarda cifrada y solo la abre el mismo secreto', async () => {
+    const { seal, open, hintOf } = await import('./secret-box');
+    const box = seal('re_abc123456789', 'sec');
+    expect(box).not.toContain('re_abc');
+    expect(open(box, 'sec')).toBe('re_abc123456789');
+    expect(open(box, 'otro')).toBeNull();
+    expect(open('basura', 'sec')).toBeNull();
+    expect(hintOf('re_abc123456789')).toBe('re_…6789');
+  });
+  test('con clave propia envía su cuenta y su remitente; sin ella, la de la plataforma', async () => {
+    resetDemoLeads();
+    const { seal } = await import('./secret-box');
+    const { mailerFactory } = await import('./server');
+    const db = demoLeadsDb();
+    const calls: { auth: string; from: string }[] = [];
+    const fake = (async (_u: string, init: RequestInit) => {
+      calls.push({ auth: String((init.headers as Record<string, string>).Authorization), from: JSON.parse(String(init.body)).from });
+      return new Response(JSON.stringify({ id: 'x' }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const platform: Mailer = { async send() { calls.push({ auth: 'platform', from: '' }); } };
+    await db.setResendKey(ENJOY, seal('re_enjoykey123', 'sec'), 're_…y123', null);
+    const forTenant = mailerFactory(db, platform, 'sec', fake);
+    await (await forTenant(ENJOY))!.send({ to: 'a@b.es', subject: 's', html: 'h', text: 't', tag: 'x' });
+    expect(calls[0]).toEqual({ auth: 'Bearer re_enjoykey123', from: 'Cristian · Enjoy the Club <cristian@mail.enjoytheclub.es>' });
+    await (await mailerFactory(db, platform, 'sec', fake)('otro-espacio'))!.send({ to: 'a@b.es', subject: 's', html: 'h', text: 't', tag: 'x' });
+    expect(calls[1].auth).toBe('platform');
+    expect(demoLeadsStore().settings[0].resendKeyHint).toBe('re_…y123');
+  });
+});

@@ -27,6 +27,8 @@ export interface LeadSettings {
   sendFromHour: number;
   sendToHour: number;
   holidays: string[];
+  /** Pista de la clave propia de Resend («re_…abcd»); null = usa la de la plataforma. */
+  resendKeyHint?: string | null;
 }
 
 export interface Lead {

@@ -93,3 +93,22 @@ select pg_temp.assert((select stage = 'contacted' and validated_at is not null f
 select pg_temp.assert((select status = 'cancelled' from public.lead_message where id = '77000000-0000-4000-8000-0000000000b1'), 'el envío pendiente se canceló');
 delete from public.lead where id = '77000000-0000-4000-8000-0000000000a1';
 delete from public.membership where user_id in ('77777777-0000-4000-8000-000000000001', '77777777-0000-4000-8000-000000000002', '77777777-0000-4000-8000-000000000003');
+
+-- Claves de Resend (20261216): las escribe y lee solo el servidor; un admin no las ve ni las toca.
+set role service_role;
+insert into public.lead_secret (tenant_id, resend_key_enc) values ('00000000-0000-4000-8000-000000000e01', 'v1:cifrada');
+reset role;
+insert into public.membership (user_id, tenant_id, role) values ('77777777-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000e01', 'admin');
+set role authenticated;
+set request.jwt.claim.sub = '77777777-0000-4000-8000-000000000001';
+do $$ begin
+  perform 1 from public.lead_secret;
+  raise exception 'ASSERT FAILED: un admin lee las claves cifradas';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  update public.lead_secret set resend_key_enc = 'x';
+  raise exception 'ASSERT FAILED: un admin cambia la clave sin pasar por el servidor';
+exception when insufficient_privilege then null; end $$;
+reset role;
+delete from public.lead_secret where tenant_id = '00000000-0000-4000-8000-000000000e01';
+delete from public.membership where user_id = '77777777-0000-4000-8000-000000000001';

@@ -11,7 +11,11 @@ import { autoreplyEmail, notifyEmail, waParams, waPreview } from './templates';
 import { STOP_STAGES, type Lead, type LeadMessage, type LeadSettings } from './types';
 import type { WhatsApp } from './whatsapp';
 
-export interface JobDeps { db: LeadsDb; mailer: Mailer | null; whatsapp: WhatsApp | null; now: Date; secret: string }
+export interface JobDeps {
+  db: LeadsDb; mailer: Mailer | null; whatsapp: WhatsApp | null; now: Date; secret: string;
+  /** El mailer de cada empresa (su cuenta de Resend si tiene clave propia; si no, `mailer`). */
+  mailerFor?: (tenantId: string) => Promise<Mailer | null>;
+}
 export interface JobResult { sent: number; failed: number; retried: number; cancelled: number; skipped: number }
 
 const MAX_ATTEMPTS = 3;
@@ -54,9 +58,10 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
   const s = cache.get(m.tenantId);
   const done = async (status: 'cancelled' | 'skipped', why: string) => { await db.updateMessage(m.id, { status, error: why }); return status; };
   if (!lead || !s || lead.isTest) return done('skipped', 'sin lead, sin ajustes o es prueba');
+  const mailer = m.channel === 'email' ? (d.mailerFor ? await d.mailerFor(m.tenantId) : d.mailer) : null;
 
   if (m.step === 'notify') {
-    if (!d.mailer) return done('skipped', 'sin email configurado');
+    if (!mailer) return done('skipped', 'sin email configurado');
     const sub = (await db.submissions(lead.id)).find((x) => x.id === m.payload.submission) ?? (await db.submissions(lead.id))[0];
     const ctx = (sub?.context ?? {}) as { cta?: { id?: string | null; label?: string | null }; page_url?: string };
     const reply = m.payload.kind === 'reply';
@@ -68,7 +73,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
       next: reply ? 'Te toca a ti: la secuencia automática se ha parado.' : m.payload.next === 'whatsapp' ? 'WhatsApp automático (1-3 min) y email de confirmación' : 'Email de confirmación; contéstale tú',
       test: false,
     });
-    const sent = await d.mailer.send({ to: m.toAddr, subject: reply ? `💬 ${lead.name} ha contestado por WhatsApp` : e.subject, html: e.html, text: e.text, tag: 'lead-notify',
+    const sent = await mailer.send({ to: m.toAddr, subject: reply ? `💬 ${lead.name} ha contestado por WhatsApp` : e.subject, html: e.html, text: e.text, tag: 'lead-notify',
       from: s.fromEmail ? fromHeader(s) : undefined, replyTo: lead.email });
     await db.updateMessage(m.id, { status: 'sent', sentAt: d.now.toISOString(), providerId: (sent && sent.id) || null, attempts: m.attempts + 1 });
     return 'sent';
@@ -79,14 +84,14 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
 
   if (m.step === 'autoreply') {
     if (sup.email) return done('skipped', 'se dio de baja');
-    if (!d.mailer || !s.fromEmail) return done('skipped', 'sin remitente configurado');
+    if (!mailer || !s.fromEmail) return done('skipped', 'sin remitente configurado');
     const unsub = `${m.payload.base}/api/v1/leads/unsubscribe?l=${lead.id}&t=${unsubscribeToken(lead.id, d.secret)}`;
     const e = autoreplyEmail({
       name: lead.name, type: lead.type, fields: ((lead.facts.fields as Record<string, string>) ?? {}), locale: lead.locale, signer: s.signerName ?? String(m.payload.brandName ?? ''),
       brand: String(m.payload.brandName ?? s.brand), channel: (m.payload.channel as 'whatsapp' | 'email') ?? 'email', eta: (m.payload.eta as Eta) ?? 'today',
       bookingUrl: s.bookingUrl, unsubscribeUrl: unsub,
     });
-    const sent = await d.mailer.send({ to: lead.email, subject: e.subject, html: e.html, text: e.text, tag: 'lead-autoreply', from: fromHeader(s), replyTo: s.replyTo ?? undefined,
+    const sent = await mailer.send({ to: lead.email, subject: e.subject, html: e.html, text: e.text, tag: 'lead-autoreply', from: fromHeader(s), replyTo: s.replyTo ?? undefined,
       headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } });
     await db.updateMessage(m.id, { status: 'sent', sentAt: d.now.toISOString(), providerId: (sent && sent.id) || null, attempts: m.attempts + 1 });
     await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, kind: 'message_out', data: { step: 'autoreply', channel: 'email', subject: e.subject } });

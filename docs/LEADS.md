@@ -154,15 +154,21 @@ guardados; la subida de conversiones a Google Ads (reunión o ganado, hasta 90 d
    ```
    Una sola tarea sirve para todas las empresas. Sin ella, el email automático y el aviso salen igual (envío inmediato),
    pero los WhatsApp programados no.
-4. **Dominio de envío por empresa (Resend).** Cada empresa envía desde su dominio. En Resend → *Domains* → *Add domain*
-   con un subdominio para lo transaccional, p. ej. `mail.enjoytheclub.es` (y otro aparte para marketing, p. ej.
-   `news.enjoytheclub.es`, cuando haya nurture). Resend muestra los registros; quien lleva el DNS los añade:
-   - **SPF** y **DKIM** (registros `TXT`/`MX` que da Resend para ese subdominio),
-   - **DMARC** en el dominio principal: `_dmarc.enjoytheclub.es TXT "v=DMARC1; p=none; rua=mailto:dmarc@enjoytheclub.es"`
-     (empezar en `p=none`, subir a `quarantine` cuando esté estable).
-   Enjoy: lo hace Cristian. Oquea, SciScreen, Trama: se le pasa al fundador la lista que muestra Resend para su dominio.
-5. **Leads → Ajustes** (admin): remitente (`cristian@mail.enjoytheclub.es`), nombre, *Responder a* (un buzón que se
-   lea), firma, a quién avisar, enlace de reserva, webs permitidas, festivos. Revisar la vista previa y **Recibir leads**.
+4. **Resend de cada empresa.** Cada empresa usa **su propia cuenta de Resend** (su dominio, su factura, su
+   reputación; el plan gratuito vale porque cada cuenta tiene su dominio):
+   - En su Resend → *Domains* → *Add domain* con su dominio (p. ej. `enjoytheclub.es`, región EU). Los registros que
+     muestra Resend van en `send.<dominio>` y `resend._domainkey.<dominio>`: no tocan el MX ni el correo que ya usan.
+   - **DMARC** en el dominio, si no tiene: `_dmarc TXT "v=DMARC1; p=none; rua=mailto:hello@<dominio>"`.
+   - En su Resend → *API Keys* → crear una clave (permiso completo para que la consola pueda mostrar el estado del
+     dominio, o «Sending access» si se prefiere) y pegarla en **Leads web → Ajustes → Cuenta de Resend**. Se comprueba,
+     se guarda cifrada (`lead_secret`, solo la lee el servidor) y no se vuelve a mostrar (solo `re_…abcd`).
+   - Sin clave propia, el espacio envía con la cuenta de la plataforma (`RESEND_API_KEY`), que solo sirve si el
+     remitente es de un dominio verificado en esa cuenta.
+   - **Importante:** las claves se cifran con `LEADS_SECRET` (o `CRON_SECRET` si no hay). Ponlo en Vercel antes de
+     guardar claves y no lo cambies: si cambia, habría que volver a pegar las claves.
+   - Para el nurture, más adelante, un subdominio aparte (`news.<dominio>`) para proteger la reputación del principal.
+5. **Leads → Ajustes** (admin): remitente (`hello@enjoytheclub.es`), nombre (`Cristian · Enjoy the Club`), *Responder a*
+   (un buzón compartido que se lea, p. ej. `hello@`), firma, a quién avisar, enlace de reserva, webs permitidas, festivos. Revisar la vista previa y **Recibir leads**.
 6. **Dar la URL a la web** (`https://enjoy.ventas.cofundo.io/api/v1/leads`) y probar con `"test": true` o desde
    localhost; luego un envío real.
 7. **WhatsApp, cuando haya SIM:**

@@ -17,7 +17,7 @@ const settingsOf = (r: Row): LeadSettings => ({
   tenantId: r.tenant_id, enabled: r.enabled, brand: r.brand, allowedOrigins: r.allowed_origins ?? [], fromEmail: r.from_email, fromName: r.from_name,
   replyTo: r.reply_to, signerName: r.signer_name, notifyEmails: r.notify_emails ?? [], bookingUrl: r.booking_url, videoUrl: r.video_url,
   whatsappPhoneId: r.whatsapp_phone_id, whatsappEnabled: r.whatsapp_enabled, whatsappTemplates: r.whatsapp_templates ?? {}, timezone: r.timezone,
-  sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [],
+  sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [], resendKeyHint: r.resend_key_hint ?? null,
 });
 const leadOf = (r: Row): Lead => ({
   id: r.id, tenantId: r.tenant_id, createdAt: r.created_at, isTest: r.is_test, email: r.email, emailKind: r.email_kind, domain: r.domain, name: r.name,
@@ -67,6 +67,14 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
         whatsapp_phone_id: s.whatsappPhoneId, whatsapp_enabled: s.whatsappEnabled, whatsapp_templates: s.whatsappTemplates, timezone: s.timezone,
         send_from_hour: s.sendFromHour, send_to_hour: s.sendToHour, holidays: s.holidays,
       }, { onConflict: 'tenant_id' }));
+    },
+    async resendKey(tenantId) {
+      const r = check(await sb.from('lead_secret').select('resend_key_enc').eq('tenant_id', tenantId).maybeSingle()) as Row | null;
+      return r?.resend_key_enc ?? null;
+    },
+    async setResendKey(tenantId, sealed, hint, by) {
+      check(await sb.from('lead_secret').upsert({ tenant_id: tenantId, resend_key_enc: sealed, updated_by: by, updated_at: new Date().toISOString() }, { onConflict: 'tenant_id' }));
+      check(await sb.from('lead_settings').update({ resend_key_hint: hint }).eq('tenant_id', tenantId));
     },
     async submissionByKey(tenantId, key) {
       const r = check(await sb.from('lead_submission').select('*').eq('tenant_id', tenantId).eq('idempotency_key', key).maybeSingle()) as Row | null;

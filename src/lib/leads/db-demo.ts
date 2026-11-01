@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { DuplicateKey, type LeadsDb } from './db';
 import type { Lead, LeadEvent, LeadMessage, LeadSettings, Submission } from './types';
 
-export interface LeadsStore { settings: LeadSettings[]; leads: Lead[]; subs: Submission[]; events: LeadEvent[]; msgs: LeadMessage[]; supp: { tenantId: string; channel: string; value: string; reason: string }[] }
+export interface LeadsStore { secrets?: Record<string, string>; settings: LeadSettings[]; leads: Lead[]; subs: Submission[]; events: LeadEvent[]; msgs: LeadMessage[]; supp: { tenantId: string; channel: string; value: string; reason: string }[] }
 const KEY = Symbol.for('salessuite.demoLeads');
 type G = typeof globalThis & { [KEY]?: LeadsStore };
 
@@ -29,7 +29,15 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
     async settingsByWhatsappPhone(phoneId) { const r = s.settings.find((x) => x.whatsappPhoneId === phoneId); return r ? clone(r) : null; },
     async saveSettings(v) {
       if (s.settings.some((x) => x.brand === v.brand && x.tenantId !== v.tenantId)) throw new DuplicateKey('brand');
-      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat(clone(v));
+      const hint = s.settings.find((x) => x.tenantId === v.tenantId)?.resendKeyHint ?? null;
+      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint });
+    },
+    async resendKey(tenantId) { return s.secrets?.[tenantId] ?? null; },
+    async setResendKey(tenantId, sealed, hint) {
+      s.secrets ??= {};
+      if (sealed) s.secrets[tenantId] = sealed; else delete s.secrets[tenantId];
+      const st = s.settings.find((x) => x.tenantId === tenantId);
+      if (st) st.resendKeyHint = hint;
     },
     async submissionByKey(tenantId, key) { const r = s.subs.find((x) => x.tenantId === tenantId && x.idempotencyKey === key); return r ? clone(r) : null; },
     async leadByEmail(tenantId, email, isTest) { const r = s.leads.find((x) => x.tenantId === tenantId && x.email === email && x.isTest === isTest); return r ? clone(r) : null; },

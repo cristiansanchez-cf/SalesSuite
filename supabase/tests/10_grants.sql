@@ -24,3 +24,5 @@ revoke update, delete on public.lead_event from authenticated;
 revoke insert, update, delete on public.lead_message from authenticated;
 grant update (status) on public.lead_message to authenticated;
 revoke delete on public.lead_settings from authenticated;
+-- Claves de Resend de cada empresa (20261216): solo el servidor.
+revoke all on public.lead_secret from anon, authenticated;

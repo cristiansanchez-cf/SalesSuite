@@ -55,7 +55,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     }, body);
     // Lo que toca ya (respuesta automática y aviso interno): en segundo plano, sin hacer esperar a la web.
     if (r.schedule && r.leadId) {
-      waitUntil(processDue({ db: rt.db, mailer: rt.mailer, whatsapp: rt.whatsapp, now, secret: rt.secret }, { leadId: r.leadId })
+      waitUntil(processDue({ db: rt.db, mailer: rt.mailer, whatsapp: rt.whatsapp, now, secret: rt.secret, mailerFor: rt.mailerFor }, { leadId: r.leadId })
         .catch((e) => console.error('[leads] envío inmediato', e instanceof Error ? e.message : e)));
     }
     return json(r.body, r.status, cors);
