@@ -79,3 +79,76 @@ describe('titular de la web (§25)', () => {
     expect(validCif(a.taxId!)).toBe(true);
   });
 });
+
+describe('mirar la web: casos límite (seguridad y robustez)', () => {
+  const NONE = { instagram: null, facebook: null, linkedin: null, email: null };
+  const PUBLIC = async () => ['93.184.216.34'];
+
+  test('safeUrl: los puertos normales valen; nombres internos, sin punto o de pruebas no', () => {
+    expect(safeUrl('https://club.es:443/')?.hostname).toBe('club.es');
+    expect(safeUrl('http://club.es:80/carta')?.pathname).toBe('/carta');
+    for (const u of ['https://impresora.local/', 'https://nas.lan/', 'https://intranet.corp/', 'https://web.test/', 'https://router.home/', 'https://servidor/', 'http://1.2.3.4/', 'ftp://club.es/', 'data:text/html,hola', 'no es una url', '']) {
+      expect(safeUrl(u), u).toBeNull();
+    }
+  });
+
+  test('privateIp: bordes de los rangos internos', () => {
+    for (const ip of ['100.64.0.1', '100.127.255.255', '192.0.2.10', '224.0.0.1', '255.255.255.255', '0.0.0.0', 'fe80::1', 'FD12::1', '::']) expect(privateIp(ip), ip).toBe(true);
+    for (const ip of ['100.63.255.255', '100.128.0.1', '172.15.0.1', '172.32.0.1', '192.169.0.1', '11.0.0.1', '2001:4860:4860::8888']) expect(privateIp(ip), ip).toBe(false);
+  });
+
+  test('redirecciones: como mucho 3 saltos; un bucle no deja colgado al servidor', async () => {
+    const calls: string[] = [];
+    const get = async (u: URL) => { calls.push(String(u)); return { status: 301, location: `/salto-${calls.length}`, type: 'text/html', body: '' }; };
+    expect(await realWebsite(get, PUBLIC).scan('https://club.es/')).toEqual(NONE);
+    expect(calls).toEqual(['https://club.es/', 'https://club.es/salto-1', 'https://club.es/salto-2', 'https://club.es/salto-3']);
+  });
+
+  test('una redirección relativa se resuelve contra la página; una a otro esquema se corta', async () => {
+    const calls: string[] = [];
+    const get = async (u: URL) => {
+      calls.push(String(u));
+      if (u.pathname === '/') return { status: 302, location: '/es/', type: 'text/html', body: '' };
+      if (u.pathname === '/es/') return { status: 302, location: 'file:///etc/passwd', type: 'text/html', body: '' };
+      return { status: 200, location: null, type: 'text/html', body: '<a href="https://www.instagram.com/club/">IG</a>' };
+    };
+    expect(await realWebsite(get, PUBLIC).scan('https://club.es/')).toEqual(NONE);
+    expect(calls).toEqual(['https://club.es/', 'https://club.es/es/']);
+  });
+
+  test('error, 404, página vacía, DNS que falla o URL no válida: nada, sin lanzar', async () => {
+    const ok = (status: number, body: string) => async () => ({ status, location: null, type: 'text/html', body });
+    expect(await realWebsite(ok(404, '<a href="https://www.instagram.com/club/">IG</a>'), PUBLIC).scan('https://club.es/')).toEqual(NONE);
+    expect(await realWebsite(ok(200, ''), PUBLIC).scan('https://club.es/')).toEqual(NONE);
+    expect(await realWebsite(async () => { throw new Error('ECONNRESET'); }, PUBLIC).scan('https://club.es/')).toEqual(NONE);
+    expect(await realWebsite(ok(200, 'x'), async () => { throw new Error('ENOTFOUND'); }).scan('https://club.es/')).toEqual(NONE);
+    expect(await realWebsite(ok(200, 'x'), async () => []).scan('https://club.es/')).toEqual(NONE);
+    const never = async () => { throw new Error('no debería abrirse'); };
+    expect(await realWebsite(never, PUBLIC).scan('http://localhost/')).toEqual(NONE);
+    // Un nombre que resuelve a la vez a una pública y a una interna tampoco se abre.
+    expect(await realWebsite(never, async () => ['93.184.216.34', '10.0.0.1']).scan('https://club.es/')).toEqual(NONE);
+  });
+
+  test('redes: se saltan los enlaces genéricos y se queda el perfil del sitio', () => {
+    const html = `<a href="https://www.instagram.com/reels/abc/">r</a><a href="https://instagram.com/explore/">e</a><a href="https://instagram.com/sala.luna">IG</a>
+      <a href="https://www.facebook.com/plugins/page.php">p</a><a href="https://facebook.com/profile.php?id=1000123456">FB</a>`;
+    expect(parseSocials(html)).toMatchObject({ instagram: 'https://www.instagram.com/sala.luna/', facebook: 'https://www.facebook.com/profile.php?id=1000123456' });
+  });
+
+  test('email: fuera los de ejemplo, plantillas e imágenes «@2x»; el primero bueno, en minúsculas', () => {
+    const html = 'logo@2x.png tu@email.com user@example.com errores@sentry.io Info@SalaLuna.ES';
+    expect(parseSocials(html).email).toBe('info@salaluna.es');
+    expect(parseSocials('<a href="mailto:hola%40sala.es">x</a>').email).toBe('hola@sala.es');
+  });
+
+  test('titular: el CIF con etiqueta manda sobre otro que aparezca antes; las plataformas no son el titular', () => {
+    const html = '<p>Pedido B12345674 de ejemplo.</p><p>Titular: Sala Luna Ocio, S.L. — CIF: Q2826000H</p>';
+    expect(parseLegal(html).taxId).toBe('Q2826000H');
+    expect(parseLegal('<p>Este sitio usa Google Ireland, S.L. y CIF B12345674</p>').legalName).toBeNull();
+  });
+
+  test('enlaces legales: nada de otros dominios, ni la propia portada, ni esquemas raros', () => {
+    const html = '<a href="javascript:alert(1)">Aviso legal</a><a href="/">Inicio legal</a><a href="mailto:x@club.es">Legal</a><a href="https://club.es.evil.com/aviso-legal">Aviso legal</a><a href="/terminos">Términos</a>';
+    expect(legalLinks(html, new URL('https://club.es/')).map(String)).toEqual(['https://club.es/terminos']);
+  });
+});
