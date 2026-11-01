@@ -109,7 +109,7 @@ describe('adjuntar: solo URLs de esta propuesta', () => {
   // propuesta u otro espacio. El bucket es público (impacto bajo: se ve un archivo ajeno), pero rompe la regla «solo
   // URLs de la carpeta de ESTA propuesta». Arreglo: normalizar con new URL() y comprobar el pathname resultante, o
   // rechazar «..» y «%2e». Quitar `.fails` cuando esté arreglado.
-  test.fails('una URL que sale de la carpeta con «..» no cuela', async () => {
+  test('una URL que sale de la carpeta con «..» no cuela', async () => {
     const { svc } = env();
     await rejects(svc.attach(D, { kind: 'logo', url: `${PREFIX}dossiers/${D}/../../../${OTHER_T}/dossiers/x/logo.png` }), 422);
   });

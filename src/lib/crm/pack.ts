@@ -8,6 +8,6 @@
 export const QUAL_PACKS = ['nightlife'] as const;
 export type QualPack = (typeof QUAL_PACKS)[number];
 /** Lo guardado → un paquete conocido, o null (sin cualificación). */
-export const normalizePack = (v: unknown): QualPack | null => ((QUAL_PACKS as readonly string[]).includes(String(v)) ? (v as QualPack) : null);
+export const normalizePack = (v: unknown): QualPack | null => ((QUAL_PACKS as readonly string[]).includes(v as string) ? (v as QualPack) : null);
 /** Lo que se puede marcar sin paquete: solo el tamaño (lo pregunta «Generar pago» si las tarifas van por tamaño, §35). */
 export const NO_PACK_QUAL: readonly string[] = ['size'];

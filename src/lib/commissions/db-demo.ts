@@ -75,6 +75,8 @@ export function demoCommissionsDb(actor: string): CommissionsDb {
     async savePlan(t, p, id) {
       admin(t);
       const s = db();
+      // Como la RLS: con id, solo se guarda sobre un plan de este espacio (el UPDATE no vería el de otro).
+      if (id && s.commission_plan.some((x) => x.id === id && x.tenant_id !== t)) deny('plan de otro espacio');
       if (p.isDefault && s.commission_plan.some((x) => x.tenant_id === t && x.is_default && x.id !== id)) throw new Error('duplicate key: commission_plan_default_uidx');
       const row = { id: id ?? randomUUID(), tenant_id: t, name: p.name, is_default: p.isDefault, rules: structuredClone(p.rules), referral: p.referral, updated_at: now() };
       s.commission_plan = [...s.commission_plan.filter((x) => x.id !== row.id), row];

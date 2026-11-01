@@ -140,7 +140,7 @@ describe('apuntar: limpieza de lo que devuelve la IA (casos límite)', () => {
   // («2026-02-30» → 2 de marzo). Si la IA se equivoca de fecha, la interacción se guarda en otro día sin avisar (el
   // servicio hace new Date(`${day}T12:00:00`)). Arreglo: comprobar que new Date(day).toISOString().slice(0, 10) === day.
   // Quitar `.fails` cuando esté arreglado.
-  test.fails('un día que no existe en el calendario no se guarda', () => {
+  test('un día que no existe en el calendario no se guarda', () => {
     expect(sanitizeNotes({ items: [{ venue: 'A', interaction: 'x', day: '2026-02-30' }] })[0].day).toBeNull();
   });
 

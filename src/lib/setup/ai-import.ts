@@ -15,6 +15,18 @@ export type AiBlock = (typeof AI_BLOCKS)[number];
 const s = (max: number) => z.preprocess((v) => (v == null ? '' : String(v)), z.string().trim().max(max));
 const list = <T extends z.ZodTypeAny>(item: T, max: number) => z.preprocess((v) => (Array.isArray(v) ? v.slice(0, max) : []), z.array(item));
 
+/**
+ * Importe escrito a la española o a la inglesa: «1.200 €» y «1.200,50 €» son miles con punto; «12,5» lleva coma decimal;
+ * «12.5» y los números de verdad, tal cual. Sin cifras («a consultar»), 0.
+ */
+export function amountOf(v: unknown): number {
+  if (typeof v === 'number') return v;
+  const x = String(v ?? '').replace(/[^\d.,-]/g, '');
+  if (x.includes(',')) return Number(x.replace(/\./g, '').replace(',', '.'));
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(x)) return Number(x.replace(/\./g, ''));
+  return Number(x);
+}
+
 /** Formatos que pedimos al asistente (lo que devuelve el JSON). Tolerantes: lo que sobre se recorta, lo que falte queda vacío. */
 const SCHEMAS = {
   empresa: z.object({
@@ -39,7 +51,7 @@ const SCHEMAS = {
   }),
   precios: z.object({
     tarifas: list(z.object({
-      tipo: s(60), nombre: s(80), importe: z.preprocess((v) => Number(String(v ?? '').replace(/[^\d.,-]/g, '').replace(',', '.')), z.number().finite().min(0)),
+      tipo: s(60), nombre: s(80), importe: z.preprocess(amountOf, z.number().finite().min(0)),
       cobro: s(20), sector: s(80), tipica: z.preprocess((v) => v === true || v === 'true' || v === 'sí', z.boolean()),
     }), 40),
     descuentos: list(z.object({ codigo: s(32), nombre: s(80), porcentaje: z.preprocess((v) => Number(String(v ?? '').replace(/[^\d.,]/g, '').replace(',', '.')), z.number().min(0).max(100)), a_cambio_de: s(300) }), 12),
@@ -277,6 +289,7 @@ async function run(block: AiBlock, raw: unknown, d: Deps, dry: boolean): Promise
   const codes = new Set((await d.coupons.list()).map((c) => c.code.toUpperCase()));
   for (const c of pr.descuentos.filter((x) => x.codigo && x.porcentaje > 0)) {
     const code = c.codigo.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 32);
+    if (!code) continue;  // solo signos o letras con tilde: no queda código que guardar
     if (codes.has(code)) { out.skip.push(`Descuento ${code}`); continue; }
     out.add.push(`Descuento ${code} · ${c.porcentaje} %${c.a_cambio_de ? ` (a cambio de: ${c.a_cambio_de})` : ''}`);
     if (!dry) await d.coupons.save({ code, label: (c.nombre || `${c.porcentaje} %`).slice(0, 80), kind: 'percent', value: String(c.porcentaje), note: c.a_cambio_de });

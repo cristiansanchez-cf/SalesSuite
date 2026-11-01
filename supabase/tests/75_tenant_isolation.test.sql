@@ -67,27 +67,21 @@ exception when foreign_key_violation then null; end $$;
 set request.jwt.claim.sub = '75757575-0000-4000-8000-0000000000a2';
 select pg_temp.assert((select count(*) from public.crm_contact where id = '75000000-0000-4000-8000-0000000000c1') = 1, 'dual: ve la persona de Enjoy (es de Enjoy)');
 do $$ declare n int := 0; begin
-  -- Con empresa no se mueve: lo frena la clave (tenant_id, contact_id) del vínculo. Una cuenta tampoco (la frena la de
-  -- account_touch, que toda cuenta tiene desde que se crea).
+  -- Con empresa no se mueve (antes lo frenaba la clave del vínculo; ahora, keep_tenant_id en todas las tablas).
   begin
     update public.crm_contact set tenant_id = '00000000-0000-4000-8000-000000000a01' where id = '75000000-0000-4000-8000-0000000000c1';
     get diagnostics n = row_count;
-  exception when foreign_key_violation then n := 0; end;
+  exception when foreign_key_violation or insufficient_privilege then n := 0; end;
   perform pg_temp.assert(n = 0, 'dual: mueve a otro espacio una persona con empresa');
 end $$;
--- KNOWN BUG 75 (equivale a un test «.fails»: el bloque pasa MIENTRAS el fallo exista y falla cuando se arregle, para
--- que entonces se cambie por una aserción normal). supabase/migrations/20261103000000_crm_people.sql:122, política
--- crm_contact_update: el USING deja editar una persona sin dueño y el WITH CHECK solo exige ser miembro del espacio
--- NUEVO, y nada fija tenant_id; quien está en dos espacios MUEVE una persona suelta (sin empresa) de Enjoy a su otro
--- espacio. Arreglo (migración nueva, no tocar las aplicadas): trigger que rechace cambiar tenant_id en crm_contact (y,
--- por defensa, en account y el resto de tablas con tenant_id), o WITH CHECK que compare con el de antes.
+-- Antes «KNOWN BUG 75»: quien está en dos espacios movía una persona sin dueño ni empresa cambiando tenant_id. Desde
+-- 20261213000000_tenant_id_fixed.sql ninguna fila cambia de espacio.
 do $$ declare n int := 0; begin
   begin
     update public.crm_contact set tenant_id = '00000000-0000-4000-8000-000000000a01' where id = '75000000-0000-4000-8000-0000000000c2';
     get diagnostics n = row_count;
-  exception when others then n := 0; end;
-  if n = 0 then raise exception 'ASSERT FAILED: KNOWN BUG 75 arreglado (crm_contact.tenant_id ya no se cambia): convierte este bloque en una aserción'; end if;
-  raise warning 'KNOWN BUG 75: una persona sin dueño se puede mover a otro espacio cambiando tenant_id';
+  exception when insufficient_privilege then n := 0; end;
+  perform pg_temp.assert(n = 0, 'dual: mueve a otro espacio una persona suelta');
 end $$;
 reset role;
 update public.crm_contact set tenant_id = '00000000-0000-4000-8000-000000000e01' where id = '75000000-0000-4000-8000-0000000000c2';

@@ -100,7 +100,7 @@ describe('configuración con IA: casos límite', () => {
   // «1.200 €» → 1.2 € (la tarifa se crea 1000 veces más barata, sin avisar) y «1.200,50 €» → NaN → el bloque entero se
   // rechaza. Arreglo: si hay coma, quitar los puntos y usar la coma como decimal; si solo hay puntos seguidos de 3
   // cifras, son miles. Quitar `.fails` cuando esté arreglado.
-  test.fails('importe con separador de miles español («1.200 €», «1.200,50 €»)', () => {
+  test('importe con separador de miles español («1.200 €», «1.200,50 €»)', () => {
     const imp = (v: unknown) => parseBlock('precios', JSON.stringify({ tarifas: [{ nombre: 'T', importe: v }] })).tarifas[0].importe;
     expect(imp('1.200 €')).toBe(1200);
     expect(imp('1.200,50 €')).toBe(1200.5);
@@ -122,7 +122,7 @@ describe('configuración con IA: casos límite', () => {
   // BUG (src/lib/setup/ai-import.ts:303-305, descuentos): el filtro mira el código ANTES de limpiarlo; un código hecho
   // solo de signos o letras con tilde («¡Ñ!», «€€») se queda vacío y se intenta crear un cupón con código "". Arreglo:
   // limpiar primero y saltar los que queden vacíos. Quitar `.fails` cuando esté arreglado.
-  test.fails('un código que se queda vacío al limpiarlo no se importa', async () => {
+  test('un código que se queda vacío al limpiarlo no se importa', async () => {
     const data = parseBlock('precios', JSON.stringify({ tarifas: [], descuentos: [{ codigo: '¡Ñ!', porcentaje: 10 }] }));
     const { d, saved } = deps();
     await importBlock('precios', data, d);

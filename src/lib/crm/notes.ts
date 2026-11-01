@@ -259,6 +259,9 @@ export function notesSystem(ctx: NotesCtx): string {
 }
 
 /** Solo lo que vale: sitio con nombre, canal y resultado conocidos, cualificación con valores permitidos (si la hay). */
+/** Un día que existe en el calendario («2026-02-30» no: Date.parse lo pasaría al 2 de marzo). */
+const realDay = (d: string) => { const t = Date.parse(`${d}T00:00:00Z`); return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === d; };
+
 export function sanitizeNotes(raw: unknown, o: { qual?: boolean } = {}): NoteItem[] {
   const list = Array.isArray((raw as { items?: unknown })?.items) ? (raw as { items: unknown[] }).items : [];
   const out: NoteItem[] = [];
@@ -284,7 +287,7 @@ export function sanitizeNotes(raw: unknown, o: { qual?: boolean } = {}): NoteIte
       else if (v && QUAL_VALUES[k]?.includes(v)) q[k] = v;
     }
     const discard = (['no_fit', 'not_interested', 'avoid', 'closed', 'partner'] as const).find((k) => k === r.discard) ?? null;
-    const day = typeof r.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.day) && !Number.isNaN(Date.parse(r.day)) ? r.day : null;
+    const day = typeof r.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.day) && realDay(r.day) ? r.day : null;
     const nd = r.next_days == null || r.next_days === '' ? NaN : Number(r.next_days);
     out.push({
       venue, interaction, keyFacts, facts, fit, fields,

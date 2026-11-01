@@ -58,7 +58,8 @@ export function demoChargePaid(t: string, requestId: string, ref: string, refs: 
 }
 
 export function demoCrmDb(actorId: string): CrmDb {
-  const canEdit = (c: CrmContactRow) => isManager(c.tenant_id, actorId) || c.owner_id === actorId || c.created_by === actorId || c.owner_id === null;
+  // Como la RLS: hace falta ser del espacio; dentro, edita el gerente, su dueño, quien la creó o cualquiera si no tiene dueño.
+  const canEdit = (c: CrmContactRow) => isMember(c.tenant_id, actorId) && (isManager(c.tenant_id, actorId) || c.owner_id === actorId || c.created_by === actorId || c.owner_id === null);
   return {
     async listContacts(t, f) {
       if (!isMember(t, actorId)) return [];

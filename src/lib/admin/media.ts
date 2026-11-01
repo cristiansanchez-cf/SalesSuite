@@ -49,7 +49,8 @@ export function createMediaService(db: AdminDb, s: AdminSession, assets: AssetSt
     const url = String(input.url ?? '');
     const prefix = assets?.publicPrefix?.(s.tenantId) ?? '';
     const own = prefix === '/demo-media/' ? url.startsWith(prefix) : url.startsWith(`${prefix}dossiers/${id}/`);
-    if (!prefix || !own || /[\s"'<>]/.test(url)) throw new AdminError(422, 'Archivo no válido');
+    // «..» o su forma codificada sacarían la URL de la carpeta de esta propuesta al normalizarla.
+    if (!prefix || !own || /[\s"'<>]/.test(url) || /(^|\/)\.\.(\/|$)|%2e/i.test(url)) throw new AdminError(422, 'Archivo no válido');
     const m: ClientMedia = { ...(d.clientMedia ?? {}) };
     if (kind === 'logo') m.logo = url;
     if (kind === 'video') m.video = url;

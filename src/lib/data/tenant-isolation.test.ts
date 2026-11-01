@@ -163,7 +163,7 @@ describe('personas, historial y cobros (CRM)', () => {
   // (crm/service.ts updatePerson/setTags) tampoco mira el espacio y confía en la RLS. En Supabase la RLS lo impide
   // (crm_contact_update usa también la política de lectura is_member; ver 75_tenant_isolation.test.sql), así que es
   // solo de la demo, pero la demo dice replicar la RLS. Quitar `.fails` cuando esté arreglado.
-  test.fails('una persona sin dueño no se edita desde otro espacio', async () => {
+  test('una persona sin dueño no se edita desde otro espacio', async () => {
     const enjoy = await ctx(U.admin, ENJOY_T);
     const { id } = await enjoy.crm.quickAdd({ name: 'Sin dueño' });
     await enjoy.crm.setOwner(id, null);
@@ -243,7 +243,7 @@ describe('comisiones', () => {
   // «roba» (mueve) el plan. En Supabase es un UPDATE … where id que la RLS limita a su espacio (0 filas → «permission
   // denied»), y el servicio solo pasa ids de planes leídos de su espacio (getPlan), así que hoy no se llega desde la
   // consola: es fidelidad de la demo. Quitar `.fails` cuando esté arreglado.
-  test.fails('la demo no deja guardar sobre el plan de otro espacio (como la RLS)', async () => {
+  test('la demo no deja guardar sobre el plan de otro espacio (como la RLS)', async () => {
     const dbAlt = demoCommissionsDb(U.altAdmin.id);
     await expect(dbAlt.savePlan(ALT, { name: 'Robado', isDefault: false, rules: [], referral: null }, PLAN)).rejects.toThrow(/permission/);
     expect(db().commission_plan.find((p) => p.id === PLAN)?.tenant_id).toBe(ENJOY);

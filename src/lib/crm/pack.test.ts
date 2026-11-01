@@ -12,7 +12,7 @@ describe('paquete de cualificación', () => {
   // BUG (src/lib/crm/pack.ts:12, normalizePack): compara String(v) pero devuelve `v` tal cual, así que ['nightlife']
   // pasa y sale un array tipado como QualPack. En Supabase la columna es text con check (no llega un array); en demo o
   // si cambia el origen, sí. Arreglo: devolver String(v). Quitar `.fails` cuando esté arreglado.
-  test.fails('una lista con el paquete dentro tampoco vale (String(["nightlife"]) no cuela)', () => {
+  test('una lista con el paquete dentro tampoco vale (String(["nightlife"]) no cuela)', () => {
     expect(normalizePack(['nightlife'])).toBeNull();
   });
 
