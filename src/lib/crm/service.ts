@@ -1537,18 +1537,46 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (a.aiResearchAt && Date.now() - Date.parse(a.aiResearchAt) < AI_COOLDOWN_MS) throw new AdminError(409, 'Se acaba de investigar; espera un par de minutos');
     await quota('ai');
     const people = (await actorsOf(accountId)).map((c) => c.name);
+    // Primero lo que sale gratis (§25): la razón social y el CIF de su aviso legal, sin IA. Con ellos la IA busca el grupo.
+    let legal = { legalName: a.legalName, taxId: a.taxId };
+    if (a.website && (!a.legalName || !a.taxId)) {
+      const socials = await site.scan(a.website).catch(() => null);
+      await fillLegal(accountId, socials);
+      legal = { legalName: a.legalName || socials?.legalName || null, taxId: a.taxId || (socials?.taxId && !PERSONAL_ID.test(socials.taxId) ? socials.taxId : null) };
+    }
+    const groupName = a.parentId ? (await accounts.getAccount(a.parentId))?.name ?? null : null;
     // Sin cualificación en el espacio (§45), la IA no propone criterios: solo contacto y personas.
     const pack = await qualPack();
     const known = pack ? Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined)) : {};
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
-        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, country: loc.regionCode ?? null });
+        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, country: loc.regionCode ?? null, legalName: legal.legalName ?? null, taxId: legal.taxId ?? null });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
-    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack });
+    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack, name: a.name, group: groupName });
     try { await accounts.saveAiResearch(accountId, r); } catch (e) { mapError(e); }
     return r;
+  }
+  /**
+   * Leer el titular de todas (§25, gratis: sin IA ni Google): las empresas con web y sin razón social o CIF, por tandas;
+   * el navegador repite con `after` (la última mirada) hasta acabar. Solo rellena lo que falta. Con el titular,
+   * «Comparten titular» propone grupos y «Investigar» busca a qué grupo pertenece.
+   */
+  const LEGAL_CHUNK = 6;
+  async function legalScan(after: unknown) {
+    requireImporter();
+    const from = typeof after === 'string' ? after : '';
+    const todo = (await allAccounts()).filter((a) => a.website && !a.discardedAt && (!a.legalName || !a.taxId)).sort((x, y) => x.id.localeCompare(y.id));
+    const batch = todo.filter((a) => a.id > from).slice(0, LEGAL_CHUNK);
+    let found = 0;
+    for (const a of batch) {
+      const socials = await site.scan(a.website!).catch(() => null);
+      if (socials?.legalName || (socials?.taxId && !PERSONAL_ID.test(socials.taxId))) found++;
+      await fillLegal(a.id, socials);
+    }
+    const last = batch[batch.length - 1]?.id ?? null;
+    return { done: batch.length, found, total: todo.length, next: last && todo.some((a) => a.id > last) ? last : null };
   }
   /** Aceptar (se guarda en la ficha) o descartar una propuesta. Aceptar nunca pisa lo que ya hay. */
   async function aiDecide(accountId: string, suggestionId: string, accept: boolean) {
@@ -1569,6 +1597,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         }
       } else if (sg.kind === 'contact') {
         fill = { [sg.key]: sg.value };
+      } else if (sg.kind === 'group') {
+        // Al grupo que ya esté en el CRM con ese nombre; si no hay, se crea (como «Mover a un grupo»).
+        const g = (await allAccounts()).find((x) => x.id !== accountId && norm(x.name) === norm(sg.name));
+        await moveToGroup([accountId], g ? { groupId: g.id } : { groupName: sg.name });
       } else {
         await quickAdd({ name: sg.name, role: sg.role ?? '', instagram: sg.instagram ?? '', linkedin: sg.linkedin ?? '', accountId,
           notes: `Propuesta por la IA: ${sg.evidence} (${sg.source})` });
@@ -1902,7 +1934,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   return {
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
-    board, mergePreview, merge, citySearch, pickZone, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

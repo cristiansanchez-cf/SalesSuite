@@ -34,7 +34,7 @@ describe('qué se acepta de la IA', () => {
       people: [{ name: 'Ana Ruiz', role: 'Programadora', instagram: null, linkedin: 'https://www.linkedin.com/in/ana', evidence: 'Entrevista', source: SRC }],
       sources: [{ title: 'Agenda', url: SRC }, { title: 'rota', url: 'javascript:alert(1)' }],
     }, ctx);
-    expect(r.suggestions.map((s) => (s.kind === 'person' ? s.name : `${s.key}=${s.value}`)))
+    expect(r.suggestions.map((s) => (s.kind === 'person' || s.kind === 'group' ? s.name : `${s.key}=${s.value}`)))
       .toEqual(['nights=4+', 'email=hola@salax.test', 'instagram=https://www.instagram.com/sala_x/', 'Ana Ruiz']);
     expect(r.suggestions.every((s) => s.status === 'open' && s.source === SRC)).toBe(true);
     expect(r.sources).toEqual([{ title: 'Agenda', url: SRC }]);
@@ -70,6 +70,22 @@ describe('qué se acepta de la IA', () => {
       sector: { name: 'Ocio nocturno', icp: 'Salas con DJ', personas: ['Dueño'] } });
     expect(p).toContain('Sala X'); expect(p).toContain('Valencia'); expect(p).toContain('Salas con DJ'); expect(p).toContain('"nights":"4+"');
   });
+  test('grupo: con fuente y prueba se propone; sin fuente, la propia empresa o el grupo en el que ya está, no', () => {
+    const ctx = { known: {}, contact: {}, people: [], now: new Date('2026-11-01T10:00:00Z'), qual: false, name: 'Essential Diet' };
+    const g = (group: Record<string, string>, extra: Record<string, unknown> = {}) => sanitizeResearch({ summary: 'x', group }, { ...ctx, ...extra }).suggestions.filter((x) => x.kind === 'group');
+    const ok = { name: 'Ligna Diet Pharma', relation: 'marca de', evidence: 'Essential Diet es una marca de Ligna Diet Pharma, S.L.', source: 'https://essentialdiet.es/aviso-legal' };
+    expect(g(ok)).toEqual([expect.objectContaining({ kind: 'group', name: 'Ligna Diet Pharma', relation: 'marca de', status: 'open' })]);
+    expect(g({ ...ok, source: 'no-es-una-url' })).toEqual([]);
+    expect(g({ ...ok, evidence: '' })).toEqual([]);
+    expect(g({ name: '', relation: '', evidence: '', source: '' })).toEqual([]);
+    expect(g({ ...ok, name: 'essential diet' })).toEqual([]);
+    expect(g(ok, { group: 'Ligna Diet Pharma' })).toEqual([]);
+  });
+  test('el prompt lleva la razón social y el CIF, para buscar el grupo', () => {
+    const p = userPrompt({ name: 'Essential Diet', city: null, address: null, website: null, instagram: null, seller: 'SciScreen', known: {}, sector: null, legalName: 'Ligna Diet Pharma, S.L.', taxId: 'B12345678' });
+    expect(p).toContain('Razón social (de su aviso legal): Ligna Diet Pharma, S.L.'); expect(p).toContain('CIF: B12345678');
+    expect(SYSTEM_GENERAL).toMatch(/Grupo: comprueba/); expect(SYSTEM).toMatch(/Grupo: comprueba/);
+  });
   test('sin sector, la IA sabe a quién vende el espacio (empresas importadas sin sector)', () => {
     const base = { name: 'Essential Diet', city: null, address: null, website: 'https://essentialdiet.es', instagram: null, seller: 'SciScreen. Revisión científica de claims.', known: {},
       clients: ['Laboratorios de suplementos (marcas con claims de salud)', 'Cadenas de gimnasios'] };
@@ -93,9 +109,9 @@ describe('investigar desde la ficha', () => {
     const id = marina().id;
     const r = await s.aiRun(id, { sector: null, seller: 'Enjoy' });
     // decider (no se puede saber desde fuera), scale (sin prueba) y la web sin fuente se descartan solos.
-    expect(r.suggestions.map((x) => (x.kind === 'person' ? 'person' : x.key))).toEqual(['nights', 'screens', 'email', 'person']);
+    expect(r.suggestions.map((x) => (x.kind === 'person' || x.kind === 'group' ? x.kind : x.key))).toEqual(['nights', 'screens', 'email', 'person']);
     expect(marina().owner_id ?? null).toBeNull();  // investigar no reserva
-    const by = (k: string) => r.suggestions.find((x) => (x.kind === 'person' ? 'person' : x.key) === k)!.id;
+    const by = (k: string) => r.suggestions.find((x) => (x.kind === 'person' || x.kind === 'group' ? x.kind : x.key) === k)!.id;
     await s.aiDecide(id, by('nights'), true);
     await s.aiDecide(id, by('email'), true);
     await s.aiDecide(id, by('person'), true);
@@ -171,12 +187,12 @@ describe('investigar sin cualificación en el espacio (§45)', () => {
     const r = sanitizeResearch({ qualification: [{ key: 'nights', value: '3', evidence: 'x', source: 'https://a.example/b' }] }, { known: {}, contact: {}, people: [], now: new Date(), qual: false });
     expect(r.suggestions).toEqual([]);
   });
-  test('en un espacio sin ella: solo contacto y personas', async () => {
+  test('en un espacio sin ella: contacto, personas y grupo (sin cualificación)', async () => {
     demoDb().crm_settings.forEach((x) => { x.qualification = null; });
     const s = svc(fixtureResearch());
     const id = demoDb().account.find((a) => a.name === 'Sala Marina')!.id;
     const r = await s.aiRun(id, { sector: null, seller: 'Oquea' });
-    expect(r.suggestions.map((x) => x.kind)).toEqual(['contact', 'person']);
+    expect(r.suggestions.map((x) => x.kind)).toEqual(['contact', 'person', 'group']);
     expect(r.summary).not.toMatch(/noche|local/i);
   });
   test('la petición a Claude, sin cualificación', async () => {

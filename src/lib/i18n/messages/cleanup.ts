@@ -14,6 +14,7 @@ export const cleanupMessages = defineMessages({
     reason: 'Motivo', note: 'Nota (opcional)', notePh: 'Por qué, o para qué podría servir',
     discarded: (reason: string) => `Descartada · ${reason}`, restore: 'Recuperar',
     ok: { discarded: 'Descartada: ahora está en «Descartadas».', restored: 'Recuperada: vuelve a la lista.', kind: 'Tipo guardado.' },
+    legal: { title: 'Titular de cada empresa', lede: 'Lee el aviso legal de la web de cada empresa y apunta su razón social y su CIF. Gratis (sin IA). Con ellos, la ficha propone juntar las que comparten titular e «Investigar» busca a qué grupo pertenecen.', run: 'Leer los avisos legales', progress: (d: number, t: number) => `Leyendo… ${d} de ${t}`, done: (f: number, d: number) => `Hecho: ${f} de ${d} con razón social o CIF.`, failed: 'No se ha podido terminar. Prueba otra vez: sigue donde se quedó.' },
     page: {
       eyebrow: 'Datos del CRM', title: 'Limpiar empresas',
       lede: 'La IA revisa tus empresas y propone de qué tipo es cada una y cuáles descartar (no son del sector, posible alianza, duplicadas o cerradas), con el porqué. Nada cambia hasta que lo apliques, y se puede deshacer.',
@@ -41,6 +42,7 @@ export const cleanupMessages = defineMessages({
     reason: 'Reason', note: 'Note (optional)', notePh: 'Why, or what it could be useful for',
     discarded: (reason: string) => `Discarded · ${reason}`, restore: 'Bring back',
     ok: { discarded: 'Discarded: it is now in «Discarded».', restored: 'Brought back to the list.', kind: 'Type saved.' },
+    legal: { title: 'Each company’s legal holder', lede: 'Reads the legal notice on each company’s website and stores its registered name and tax ID. Free (no AI). With them, the record suggests grouping companies with the same holder and «Research» looks up which group they belong to.', run: 'Read the legal notices', progress: (d: number, t: number) => `Reading… ${d} of ${t}`, done: (f: number, d: number) => `Done: ${f} of ${d} with a registered name or tax ID.`, failed: 'It could not finish. Try again: it continues where it stopped.' },
     page: {
       eyebrow: 'CRM data', title: 'Clean up companies',
       lede: 'The AI reviews your companies and suggests the type of each one and which to discard (not our sector, possible partner, duplicates or closed), with the reason. Nothing changes until you apply it, and it can be undone.',
@@ -68,6 +70,7 @@ export const cleanupMessages = defineMessages({
     reason: 'Motivo', note: 'Nota (opcional)', notePh: 'Por quê, ou para que poderia servir',
     discarded: (reason: string) => `Descartada · ${reason}`, restore: 'Recuperar',
     ok: { discarded: 'Descartada: agora está em «Descartadas».', restored: 'Recuperada: volta para a lista.', kind: 'Tipo salvo.' },
+    legal: { title: 'Titular de cada empresa', lede: 'Lê o aviso legal do site de cada empresa e guarda a razão social e o NIF. Grátis (sem IA). Com eles, a ficha propõe juntar as que partilham titular e «Investigar» procura a que grupo pertencem.', run: 'Ler os avisos legais', progress: (d: number, t: number) => `A ler… ${d} de ${t}`, done: (f: number, d: number) => `Feito: ${f} de ${d} com razão social ou NIF.`, failed: 'Não foi possível terminar. Tente de novo: continua onde parou.' },
     page: {
       eyebrow: 'Dados do CRM', title: 'Limpar empresas',
       lede: 'A IA revisa suas empresas e propõe o tipo de cada uma e quais descartar (não são do setor, possível parceria, duplicadas ou fechadas), com o porquê. Nada muda até você aplicar, e dá para desfazer.',
@@ -95,6 +98,7 @@ export const cleanupMessages = defineMessages({
     reason: '이유', note: '메모(선택)', notePh: '이유 또는 쓸모',
     discarded: (reason: string) => `제외됨 · ${reason}`, restore: '되돌리기',
     ok: { discarded: '제외했습니다: «제외됨»에 있습니다.', restored: '되돌렸습니다: 목록으로 돌아왔습니다.', kind: '유형을 저장했습니다.' },
+    legal: { title: '회사별 법인 정보', lede: '각 회사 웹사이트의 법적 고지를 읽어 법인명과 사업자 번호를 저장합니다. 무료(AI 없음). 이를 바탕으로 같은 법인의 회사를 묶자고 제안하고, 「조사」가 어느 그룹에 속하는지 찾습니다.', run: '법적 고지 읽기', progress: (d: number, t: number) => `읽는 중… ${t}개 중 ${d}개`, done: (f: number, d: number) => `완료: ${d}개 중 ${f}개에서 법인명 또는 사업자 번호를 찾았습니다.`, failed: '끝내지 못했습니다. 다시 시도하세요: 멈춘 곳부터 이어집니다.' },
     page: {
       eyebrow: 'CRM 데이터', title: '회사 정리',
       lede: 'AI가 회사를 검토하고 각 회사의 유형과 제외할 곳(업종 아님, 제휴 가능, 중복, 폐업)을 이유와 함께 제안합니다. 적용하기 전에는 바뀌지 않으며 되돌릴 수 있습니다.',

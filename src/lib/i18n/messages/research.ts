@@ -9,7 +9,7 @@ export const researchMessages = defineMessages({
     at: (when: string) => `Investigada ${when}`, look: 'Para mirar tú', proposals: (n: number) => `Propuestas · ${n}`,
     none: 'No ha encontrado nada que se pueda comprobar.', accept: 'Aceptar', dismiss: 'Descartar', source: 'Fuente',
     decided: (a: number, d: number) => `${a} aceptadas · ${d} descartadas`, sources: (n: number) => `Fuentes · ${n}`,
-    person: 'Persona', debt: 'Cierre o deudas', noKey: 'Para usarla, añade ANTHROPIC_API_KEY en Vercel.',
+    person: 'Persona', group: 'Grupo', debt: 'Cierre o deudas', noKey: 'Para usarla, añade ANTHROPIC_API_KEY en Vercel.',
     zone: {
       run: 'Investigar con IA', max: (n: number) => `Hasta ${n} por vez`, progress: (i: number | string, n: number | string, name: string) => `Investigando ${i} de ${n}: ${name}…`,
       done: (n: number | string) => `Listo: ${n} investigadas`, skipped: (n: number | string) => ` · ${n} saltadas (ya investigadas o de otro)`, failed: (n: number | string) => ` · ${n} con error`,
@@ -24,7 +24,7 @@ export const researchMessages = defineMessages({
     at: (when: string) => `Researched ${when}`, look: 'For you to check', proposals: (n: number) => `Suggestions · ${n}`,
     none: 'Found nothing that can be checked.', accept: 'Accept', dismiss: 'Dismiss', source: 'Source',
     decided: (a: number, d: number) => `${a} accepted · ${d} dismissed`, sources: (n: number) => `Sources · ${n}`,
-    person: 'Person', debt: 'Closure or debts', noKey: 'To use it, add ANTHROPIC_API_KEY in Vercel.',
+    person: 'Person', group: 'Group', debt: 'Closure or debts', noKey: 'To use it, add ANTHROPIC_API_KEY in Vercel.',
     zone: {
       run: 'Research with AI', max: (n: number) => `Up to ${n} at a time`, progress: (i: number | string, n: number | string, name: string) => `Researching ${i} of ${n}: ${name}…`,
       done: (n: number | string) => `Done: ${n} researched`, skipped: (n: number | string) => ` · ${n} skipped (already researched or someone else’s)`, failed: (n: number | string) => ` · ${n} failed`,
@@ -39,7 +39,7 @@ export const researchMessages = defineMessages({
     at: (when: string) => `Pesquisada ${when}`, look: 'Para você conferir', proposals: (n: number) => `Sugestões · ${n}`,
     none: 'Não encontrou nada que possa ser comprovado.', accept: 'Aceitar', dismiss: 'Descartar', source: 'Fonte',
     decided: (a: number, d: number) => `${a} aceitas · ${d} descartadas`, sources: (n: number) => `Fontes · ${n}`,
-    person: 'Pessoa', debt: 'Fechamento ou dívidas', noKey: 'Para usar, adicione ANTHROPIC_API_KEY na Vercel.',
+    person: 'Pessoa', group: 'Grupo', debt: 'Fechamento ou dívidas', noKey: 'Para usar, adicione ANTHROPIC_API_KEY na Vercel.',
     zone: {
       run: 'Pesquisar com IA', max: (n: number) => `Até ${n} por vez`, progress: (i: number | string, n: number | string, name: string) => `Pesquisando ${i} de ${n}: ${name}…`,
       done: (n: number | string) => `Pronto: ${n} pesquisadas`, skipped: (n: number | string) => ` · ${n} puladas (já pesquisadas ou de outra pessoa)`, failed: (n: number | string) => ` · ${n} com erro`,
@@ -54,7 +54,7 @@ export const researchMessages = defineMessages({
     at: (when: string) => `조사 ${when}`, look: '직접 확인할 것', proposals: (n: number) => `제안 · ${n}`,
     none: '확인할 수 있는 정보를 찾지 못했습니다.', accept: '수락', dismiss: '버리기', source: '출처',
     decided: (a: number, d: number) => `수락 ${a} · 버림 ${d}`, sources: (n: number) => `출처 · ${n}`,
-    person: '사람', debt: '폐업 또는 부채', noKey: '사용하려면 Vercel에 ANTHROPIC_API_KEY를 추가하세요.',
+    person: '사람', group: '그룹', debt: '폐업 또는 부채', noKey: '사용하려면 Vercel에 ANTHROPIC_API_KEY를 추가하세요.',
     zone: {
       run: 'AI로 조사', max: (n: number) => `한 번에 최대 ${n}곳`, progress: (i: number | string, n: number | string, name: string) => `${n}곳 중 ${i}번째 조사 중: ${name}…`,
       done: (n: number | string) => `완료: ${n}곳 조사`, skipped: (n: number | string) => ` · ${n}곳 건너뜀(이미 조사했거나 다른 사람 담당)`, failed: (n: number | string) => ` · ${n}곳 오류`,

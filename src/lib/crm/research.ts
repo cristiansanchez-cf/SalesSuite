@@ -20,7 +20,9 @@ export type SuggestionStatus = 'open' | 'accepted' | 'dismissed';
 export type Suggestion =
   | { id: string; kind: 'qual'; key: string; value: string; evidence: string; source: string; status: SuggestionStatus }
   | { id: string; kind: 'contact'; key: AiContactKey; value: string; evidence: string; source: string; status: SuggestionStatus }
-  | { id: string; kind: 'person'; name: string; role: string | null; instagram: string | null; linkedin: string | null; evidence: string; source: string; status: SuggestionStatus };
+  | { id: string; kind: 'person'; name: string; role: string | null; instagram: string | null; linkedin: string | null; evidence: string; source: string; status: SuggestionStatus }
+  /** El grupo al que pertenece (sociedad matriz, holding o marca de otra empresa): aceptarla la mete en ese grupo. */
+  | { id: string; kind: 'group'; name: string; relation: string | null; evidence: string; source: string; status: SuggestionStatus };
 
 export interface AiResearch {
   at: string;
@@ -40,6 +42,9 @@ export interface ResearchInput {
   known: Record<string, unknown>;
   /** Cualificación del espacio (§45). Sin decirlo, la de ocio nocturno; null = sin cualificación (solo lo general). */
   pack?: QualPack | null;
+  /** Titular que publica su aviso legal (lo lee la app sin IA antes de investigar): para buscar si es de un grupo. */
+  legalName?: string | null;
+  taxId?: string | null;
   /** A quién vende el espacio (sus sectores con su cliente ideal), para cuando la empresa aún no tiene sector. */
   clients?: string[];
   /** País del espacio para la búsqueda web (ISO, «ES»); sin decirlo, España. null = sin país. */
@@ -57,7 +62,7 @@ export const SAVE_TOOL = {
   strict: true,
   input_schema: {
     type: 'object', additionalProperties: false,
-    required: ['summary', 'look', 'qualification', 'contact', 'people', 'sources'],
+    required: ['summary', 'look', 'qualification', 'contact', 'people', 'group', 'sources'],
     properties: {
       summary: { ...str, description: 'Dos frases: qué es la empresa y por qué podría encajar o no. Sin inventar.' },
       look: { type: 'array', items: str, description: 'Lo que no se puede saber desde fuera y el comercial debería mirar (máximo 4).' },
@@ -86,6 +91,15 @@ export const SAVE_TOOL = {
           properties: { name: str, role: strOrNull, instagram: strOrNull, linkedin: strOrNull, evidence: str, source: str },
         },
       },
+      group: {
+        type: 'object', additionalProperties: false, required: ['name', 'relation', 'evidence', 'source'],
+        description: 'El grupo empresarial al que pertenece (sociedad matriz, holding, o es una marca de otra empresa). Todo "" si no pertenece a ninguno o no lo has podido comprobar con una fuente.',
+        properties: {
+          name: { ...str, description: 'Nombre del grupo o de la sociedad matriz, como lo conoce el mercado (sin S.L./S.A.).' },
+          relation: { ...str, description: 'Cómo: «filial de», «marca de», «participada por»… Corto.' },
+          evidence: str, source: str,
+        },
+      },
       sources: {
         type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'url'], properties: { title: str, url: str } },
       },
@@ -110,6 +124,7 @@ ${VALUE_HELP}
   nights = noches que abre a la semana (si es un local). events = eventos al año (si es promotora). recurring = si programa de forma recurrente (conciertos).
   screens = si tiene pantallas en sala (yes) o no. dynamics = si hace dinámicas con el público o cuida sus redes (yes / partly / no).
   scale = un local (single), 2–3 locales (few), grupo o varias salas (group). debt = true solo si hay noticia de cierre, concurso o deudas.
+- Grupo: comprueba si la empresa pertenece a un grupo (sociedad matriz, holding, o si es una marca de otra empresa). Busca su razón social (o su CIF) y mira su «quiénes somos», el aviso legal, prensa económica y registros mercantiles públicos. Si lo confirmas con una fuente, ponlo en group; si no, todo vacío. Es lo primero que necesita saber el comercial: con quién se decide.
 - No repitas lo que ya está marcado en la ficha.
 - Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
 
@@ -129,6 +144,7 @@ Reglas:
 - Nada sin fuente. Cada dato lleva la URL donde lo has leído y la frase que lo prueba. Si no lo has leído, no lo pongas.
 - Es otra empresa con el mismo nombre si la ciudad o la actividad no cuadran: entonces no la uses.
 - Solo datos de contacto de la empresa (teléfono, email genérico, perfiles de la empresa). De las personas, solo nombre, papel y perfil profesional o público si lo publican ellas.
+- Grupo: comprueba si la empresa pertenece a un grupo (sociedad matriz, holding, o si es una marca de otra empresa). Busca su razón social (o su CIF) y mira su «quiénes somos», el aviso legal, prensa económica y registros mercantiles públicos. Si lo confirmas con una fuente, ponlo en group; si no, todo vacío. Es lo primero que necesita saber el comercial: con quién se decide.
 - No repitas lo que ya está en la ficha.
 - Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
 export const researchSystem = (pack?: QualPack | null) => (pack !== null ? SYSTEM : SYSTEM_GENERAL);
@@ -138,6 +154,7 @@ export function userPrompt(i: ResearchInput): string {
     `Empresa: ${i.name}`,
     i.city && `Ciudad o zona: ${i.city}`, i.address && `Dirección: ${i.address}`,
     i.website && `Web: ${i.website}`, i.instagram && `Instagram: ${i.instagram}`,
+    i.legalName && `Razón social (de su aviso legal): ${i.legalName}`, i.taxId && `CIF: ${i.taxId}`,
     i.sector && `Sector en el que la tenemos: ${i.sector.name}`,
     i.sector?.icp && `A quién vendemos en este sector: ${i.sector.icp}`,
     i.sector?.personas.length && `Con quién solemos hablar: ${i.sector.personas.join(', ')}`,
@@ -171,7 +188,7 @@ function contactValue(key: AiContactKey, v: string): string | null {
  * Lo que devuelve la IA → lo que se enseña. Descarta lo que no tiene fuente, valores fuera de lo permitido, lo que ya
  * está marcado o ya está en la ficha, y duplicados.
  */
-export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unknown>; contact: Partial<Record<AiContactKey, string | null>>; people: string[]; now: Date; qual?: boolean }): AiResearch {
+export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unknown>; contact: Partial<Record<AiContactKey, string | null>>; people: string[]; now: Date; qual?: boolean; name?: string; group?: string | null }): AiResearch {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const r: any = raw && typeof raw === 'object' ? raw : {};
   const list = (v: unknown): any[] => (Array.isArray(v) ? v : []);
@@ -202,6 +219,13 @@ export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unkn
     const ig = clip(p?.instagram, 300); const li = clip(p?.linkedin, 300);
     out.push({ id: id(), kind: 'person', name, role: clip(p?.role, 80) || null,
       instagram: ig ? contactValue('instagram', ig) : null, linkedin: li ? contactValue('linkedin', li) : null, evidence, source, status: 'open' });
+  }
+  // Grupo: con fuente y prueba, y que no sea la propia empresa ni el grupo en el que ya está.
+  const g = (r.group && typeof r.group === 'object' ? r.group : {}) as Record<string, unknown>;
+  const gName = clip(g.name, 160); const gSource = sourceUrl(g.source); const gEvidence = clip(g.evidence, MAX.evidence);
+  const same = (x?: string | null) => !!x && x.trim().toLowerCase() === gName.toLowerCase();
+  if (gName && gSource && gEvidence && !same(ctx.name) && !same(ctx.group)) {
+    out.push({ id: id(), kind: 'group', name: gName, relation: clip(g.relation, 80) || null, evidence: gEvidence, source: gSource, status: 'open' });
   }
   const sources = list(r.sources).map((x) => ({ title: clip(x?.title, 200), url: sourceUrl(x?.url) }))
     .filter((x): x is { title: string; url: string } => !!x.url);
@@ -283,6 +307,7 @@ export const fixtureResearch = (): ResearchApi => ({
       look: ['Mira sus redes para ver cómo trabaja y con quién.'], qualification: [],
       contact: [{ key: 'email', value: 'hola@ejemplo.test', evidence: 'Email en el pie de su web.', source: src }],
       people: [{ name: 'Laura Gil', role: 'Gerente', instagram: null, linkedin: null, evidence: 'La entrevistan como gerente.', source: `${src}/prensa` }],
+      group: { name: 'Grupo Ejemplo', relation: 'marca de', evidence: `${i.name} es una marca de Grupo Ejemplo, S.L.${i.legalName ? ` (${i.legalName})` : ''}.`, source: `${src}/aviso-legal` },
       sources: [{ title: 'Web de la empresa', url: src }],
     };
     return {

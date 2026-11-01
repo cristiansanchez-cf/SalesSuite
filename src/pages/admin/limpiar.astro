@@ -109,6 +109,13 @@ const groups = preview ? [
     </form>
   )}
 
+  <section class="co-card mt-6 grid max-w-2xl gap-3" data-testid="legal-scan" data-t-progress={m.legal.progress(-1, -2)} data-t-done={m.legal.done(-1, -2)} data-t-failed={m.legal.failed}>
+    <h2 class="co-entity flex items-center gap-2"><Icon name="building2" size={18} />{m.legal.title}</h2>
+    <p class="co-body">{m.legal.lede}</p>
+    <button type="button" class="co-btn co-btn--ghost w-fit" data-legal-run data-testid="legal-scan-run"><Icon name="search" size={16} />{m.legal.run}</button>
+    <p class="co-meta" role="status" hidden data-legal-status data-testid="legal-scan-status"></p>
+  </section>
+
   <script type="application/json" id="cleanup-data" set:html={JSON.stringify({ ids: o.ids, chunk: o.chunk, T: { analyzing: M.analyzing('{i}', '{n}'), stay: M.stay, failed: M.failed } }).replace(/</g, '\\u003c')} />
 </AdminLayout>
 
@@ -139,5 +146,28 @@ const groups = preview ? [
     if (failed) { status.textContent = failed; btn.disabled = false; return; }
     form.querySelector<HTMLInputElement>('[name=items]')!.value = JSON.stringify(out);
     form.submit();
+  });
+</script>
+
+<script>
+  // Titular de todas (gratis): tandas cortas en el servidor hasta acabar; si se corta, se puede repetir y sigue.
+  document.querySelector<HTMLButtonElement>('[data-legal-run]')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget as HTMLButtonElement;
+    const box = btn.closest<HTMLElement>('[data-testid=legal-scan]')!;
+    const status = box.querySelector<HTMLElement>('[data-legal-status]')!;
+    const fill = (tpl: string, a: number, b: number) => tpl.replace('-1', String(a)).replace('-2', String(b));
+    btn.disabled = true; status.hidden = false;
+    let after: string | null = null; let done = 0; let found = 0; let total = 0;
+    do {
+      type Batch = { done: number; found: number; total: number; next: string | null };
+      const res: Response | null = await fetch('/admin/api/crm/legal-scan', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ after }) }).catch(() => null);
+      const j: Batch | null = res && res.ok ? ((await res.json().catch(() => null)) as Batch | null) : null;
+      if (!j) { status.textContent = box.dataset.tFailed ?? ''; btn.disabled = false; return; }
+      if (!total) total = j.total;
+      done += j.done; found += j.found; after = j.next;
+      status.textContent = fill(box.dataset.tProgress ?? '', done, total);
+    } while (after);
+    status.textContent = fill(box.dataset.tDone ?? '', found, done);
+    btn.disabled = false;
   });
 </script>

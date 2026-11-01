@@ -436,8 +436,8 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       const rep = createCrmService(E.crmDbFor(U.rep.id), E.accountsDbFor(U.rep.id), E.adminDbFor(U.rep.id), repCtx.session, { places: null, routes: null, research: fixtureResearch() });
       const libre = await admin.accounts.create({ name: 'Sala IA' });
       const r = await rep.aiRun(libre, { sector: null, seller: 'Enjoy' });
-      expect(r.suggestions.map((x) => (x.kind === 'person' ? 'person' : x.key))).toEqual(['nights', 'screens', 'email', 'person']);
-      const sid = (k: string) => r.suggestions.find((x) => (x.kind === 'person' ? 'person' : x.key) === k)!.id;
+      expect(r.suggestions.map((x) => (x.kind === 'person' || x.kind === 'group' ? x.kind : x.key))).toEqual(['nights', 'screens', 'email', 'person']);
+      const sid = (k: string) => r.suggestions.find((x) => (x.kind === 'person' || x.kind === 'group' ? x.kind : x.key) === k)!.id;
       await rep.aiDecide(libre, sid('email'), true);
       await rep.aiDecide(libre, sid('nights'), true);
       await rep.aiDecide(libre, sid('screens'), false);

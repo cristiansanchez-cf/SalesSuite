@@ -35,6 +35,7 @@ const QUAL_LABEL: Record<string, [string, (v: string) => string]> = {
 const label = (sg: Suggestion): [string, string] =>
   sg.kind === 'qual' ? [(QUAL_LABEL[sg.key]?.[0] ?? sg.key).replace(/^¿|\?$/g, ''), QUAL_LABEL[sg.key]?.[1](sg.value) ?? sg.value]
   : sg.kind === 'contact' ? [F.contact[sg.key], sg.value]
+  : sg.kind === 'group' ? [M.group, [sg.relation, sg.name].filter(Boolean).join(' ')]
   : [M.person, [sg.name, sg.role].filter(Boolean).join(' · ')];
 const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
 const open = r?.suggestions.filter((x) => x.status === 'open') ?? [];
@@ -63,7 +64,7 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
           <p class="text-eyebrow">{M.proposals(open.length)}</p>
           <ul class="m-0 grid gap-2 p-0">
             {open.map((sg) => { const [k, v] = label(sg); return (
-              <li class="co-inset grid list-none gap-1 !p-3" data-testid="ai-suggestion" data-kind={sg.kind} data-key={sg.kind === 'person' ? 'person' : sg.key}>
+              <li class="co-inset grid list-none gap-1 !p-3" data-testid="ai-suggestion" data-kind={sg.kind} data-key={sg.kind === 'person' || sg.kind === 'group' ? sg.kind : sg.key}>
                 <span class="co-row-title">{k}: <strong>{v}</strong></span>
                 <span class="co-meta">«{sg.evidence}» · <a class="inline-flex items-center gap-1" href={safeHref(sg.source)} target="_blank" rel="noopener nofollow">{M.source}: {host(sg.source)}<Icon name="external-link" size={12} /></a></span>
                 {canEdit && (

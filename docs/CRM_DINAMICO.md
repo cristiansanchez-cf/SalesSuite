@@ -1115,3 +1115,22 @@ Siguiente paso (#71): más paquetes (buceo, casting…) o uno editable por el ad
 
 Pruebas: SQL 73, `map.test.ts`, `notes.test.ts`, `research.test.ts`, `cleanup.test.ts` (caso sin paquete) y
 `scripts/smoke-white-label.cjs` (espacio de prueba sin paquete: sin cualificación ni copy de la noche).
+
+## 46. Investigar: razón social, CIF y el grupo al que pertenece (lo más barato primero)
+
+Saber si una empresa es de un grupo cuesta poco si se mira en el orden correcto:
+
+1. **Aviso legal, sin IA** (`lib/crm/website.ts` `scan()`): la razón social y el CIF salen casi siempre del aviso legal o
+   la política de privacidad de su web. Se rellenan solo si están vacíos (`fillLegal`).
+   - Al **Investigar** una empresa con web y sin razón social o CIF, se lee antes de llamar a la IA (`aiRun`).
+   - En bloque: **Configurar → Datos del CRM → Limpiar → «Leer los avisos legales»** (`legalScan`, de 6 en 6,
+     `POST /admin/api/crm/legal-scan`). Solo importadores.
+2. **La misma llamada de Investigar** (sin llamadas extra): la petición lleva la razón social y el CIF, y la IA comprueba
+   con ellos (registros mercantiles públicos, «quiénes somos», notas de prensa) si la empresa es de un grupo. Devuelve
+   `group {name, relation, evidence, source}`; solo se propone con fuente y prueba, y no si es la propia empresa o el
+   grupo que ya tiene.
+3. **Aceptar** la propuesta mueve la empresa al grupo: al existente con el mismo nombre o a uno nuevo (`moveToGroup`).
+4. Además, en la ficha, «mismo titular» (§ unir/agrupar) propone juntar las empresas que comparten razón social o CIF.
+
+Pruebas: `research.test.ts` (grupo y razón social en la petición), `scripts/smoke-white-label.cjs` (Investigar
+propone el grupo y aceptarlo lo crea) y `scripts/smoke-cleanup.cjs` (leer avisos legales).

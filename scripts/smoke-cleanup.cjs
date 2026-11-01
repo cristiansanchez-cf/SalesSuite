@@ -63,6 +63,12 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   await Promise.all([p.waitForURL(/ok=undone/), p.click('[data-testid=cleanup-undo]')]);
   await p.goto(`${BASE}/admin/accounts?ver=all`);
   assert((await list()).includes('DJ Nova'), 'deshacer: el DJ vuelve a Empresas');
+  // ---- Titular de todas desde el aviso legal (gratis, por tandas).
+  await p.goto(`${BASE}/admin/limpiar`);
+  await p.click('[data-testid=legal-scan-run]');
+  await p.waitForFunction(() => /Hecho:/.test(document.querySelector('[data-testid=legal-scan-status]')?.textContent ?? ''), null, { timeout: 60000 });
+  assert(/Hecho: \d+ de \d+/.test(await p.textContent('[data-testid=legal-scan-status]')), `avisos legales leídos (${await p.textContent('[data-testid=legal-scan-status]')})`);
+
   // ---- Un comercial no entra en lo de admin (Datos del CRM).
   const r = await (await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'es-ES' })).newPage();
   await r.goto(`${BASE}/admin/login`);

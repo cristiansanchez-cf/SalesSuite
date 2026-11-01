@@ -47,6 +47,16 @@ const NIGHT = /discoteca|\bDJs?\b|pantalla|promotora|aforo|ocio nocturno|Cualifi
   const posted = await rep.evaluate(async (u) => (await fetch(u, { method: 'POST', body: new URLSearchParams({ action: 'qualify', set: 'screens:yes' }), redirect: 'manual' })).type, `/admin/accounts/${id}`);
   assert(posted !== 'opaqueredirect', `cualificar sin paquete no se guarda (${posted})`);
 
+  // Investigar (sin cualificación): propone el grupo al que pertenece, con su fuente; aceptarlo la mete en ese grupo.
+  const act = (body) => rep.evaluate(async ([u, b]) => (await fetch(u, { method: 'POST', body: new URLSearchParams(b), redirect: 'manual' })).type, [`/admin/accounts/${id}`, body]);
+  await act({ action: 'ai-run' });
+  await rep.goto(`${ALT}/admin/accounts/${id}`);
+  const gsid = await rep.getAttribute('[data-testid=ai-suggestion][data-key=group] input[name=sid]', 'value').catch(() => null);
+  assert(!!gsid && /Grupo Ejemplo/.test(await rep.textContent('[data-testid=ai-suggestion][data-key=group]')), 'Investigar propone el grupo, con fuente');
+  if (gsid) await act({ action: 'ai-accept', sid: gsid });
+  await rep.goto(`${ALT}/admin/accounts?ver=all&q=${encodeURIComponent('Grupo Ejemplo')}`);
+  assert((await rep.locator('[data-testid=account][data-name="Grupo Ejemplo"]').count()) === 1, 'aceptado: la empresa queda en «Grupo Ejemplo»');
+
   // El mapa: la leyenda son los tipos del espacio, sin «Local o sala» ni «Promotora».
   await rep.goto(`${ALT}/admin/accounts/mapa?ver=all`);
   const legend = await rep.textContent('[data-testid=map-kinds]');
