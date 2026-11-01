@@ -42,6 +42,16 @@ describe('resolución de tenant', () => {
     expect(await resolveTenant(repo, 'evil.example.com', { devTenantSlug: 'enjoy' })).toBeNull();
   });
 
+  test('un «no hay espacio» caduca enseguida (abrir la dirección antes de crearlo no deja un 404 un minuto)', async () => {
+    clearTenantCache();
+    let known = false;
+    const r = { ...repo, resolveTenantByHost: async (h: string) => (known ? repo.resolveTenantByHost('pitch.enjoytheclub.es') : null) } as typeof repo;
+    expect(await resolveTenant(r, 'nueva.ventas.cofundo.io', { now: 0 })).toBeNull();
+    known = true;
+    expect(await resolveTenant(r, 'nueva.ventas.cofundo.io', { now: 1_000 })).toBeNull();
+    expect((await resolveTenant(r, 'nueva.ventas.cofundo.io', { now: 6_000 }))?.slug).toBe('enjoy');
+  });
+
   test('demo pública (DEMO_MODE=1): cualquier host sirve el espacio de demo', async () => {
     clearTenantCache();
     expect((await resolveTenant(repo, 'demo-ventas.cofundo.io', { devTenantSlug: 'enjoy', demoAnyHost: true }))?.slug).toBe('enjoy');

@@ -2,6 +2,7 @@ import type { TenantContext } from './types';
 import type { PublicRepository } from './data';
 
 const TTL_MS = 60_000;
+const MISS_TTL_MS = 5_000;
 const cache = new Map<string, { at: number; value: TenantContext | null }>();
 
 export function normalizeHost(raw: string | null | undefined): string {
@@ -23,7 +24,8 @@ export async function resolveTenant(
   const host = normalizeHost(rawHost);
   const now = opts.now ?? Date.now();
   const hit = cache.get(host);
-  if (hit && now - hit.at < TTL_MS) return hit.value;
+  // Un «no hay espacio» dura poco: si alguien abre la dirección antes de crearlo en Plataforma, no se queda en 404 un minuto.
+  if (hit && now - hit.at < (hit.value ? TTL_MS : MISS_TTL_MS)) return hit.value;
 
   let value = host ? await repo.resolveTenantByHost(host) : null;
   if (!value && opts.devTenantSlug && (LOCAL_HOSTS.has(host) || opts.demoAnyHost)) value = await repo.resolveTenantBySlug(opts.devTenantSlug);
