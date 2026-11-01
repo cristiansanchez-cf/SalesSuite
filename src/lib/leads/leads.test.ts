@@ -158,7 +158,7 @@ describe('entrada y cola (memoria)', () => {
     const j = await processDue({ db: demoLeadsDb(), mailer, whatsapp: null, now: new Date('2026-11-03T10:00:05Z'), secret: 's' });
     expect(j).toMatchObject({ sent: 2, failed: 0 });
     const auto = sent.find((e) => e.tag === 'lead-autoreply')!;
-    expect(auto).toMatchObject({ to: 'laura@salax.es', replyTo: 'cristian@enjoytheclub.es', from: 'Cristian · Enjoy the Club <cristian@hola.enjoytheclub.es>' });
+    expect(auto).toMatchObject({ to: 'laura@salax.es', replyTo: 'cristian@enjoytheclub.es', from: 'Cristian · Enjoy the Club <cristian@mail.enjoytheclub.es>' });
     expect(auto.headers?.['List-Unsubscribe']).toContain(`t=${unsubscribeToken(st.leads[0].id, 's')}`);
     expect(sent.find((e) => e.tag === 'lead-notify')).toMatchObject({ to: 'cristian@enjoytheclub.es', replyTo: 'laura@salax.es' });
   });

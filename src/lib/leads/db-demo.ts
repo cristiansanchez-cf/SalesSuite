@@ -10,7 +10,7 @@ type G = typeof globalThis & { [KEY]?: LeadsStore };
 /** Enjoy de la demo: activado, con su web y localhost, y un remitente de prueba (los emails se quedan en memoria). */
 const DEMO_ENJOY: LeadSettings = {
   tenantId: '00000000-0000-4000-8000-000000000e01', enabled: true, brand: 'enjoy',
-  allowedOrigins: ['https://enjoytheclub.es', 'https://corporativeweb-b0ce4--*.web.app'], fromEmail: 'cristian@hola.enjoytheclub.es', fromName: 'Cristian · Enjoy the Club',
+  allowedOrigins: ['https://enjoytheclub.es', 'https://corporativeweb-b0ce4--*.web.app'], fromEmail: 'cristian@mail.enjoytheclub.es', fromName: 'Cristian · Enjoy the Club',
   replyTo: 'cristian@enjoytheclub.es', signerName: 'Cristian', notifyEmails: ['cristian@enjoytheclub.es'], bookingUrl: 'https://cal.example.com/cristian', videoUrl: null,
   whatsappPhoneId: null, whatsappEnabled: false, whatsappTemplates: {}, timezone: 'Europe/Madrid', sendFromHour: 8, sendToHour: 22, holidays: [],
 };

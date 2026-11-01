@@ -155,13 +155,13 @@ guardados; la subida de conversiones a Google Ads (reunión o ganado, hasta 90 d
    Una sola tarea sirve para todas las empresas. Sin ella, el email automático y el aviso salen igual (envío inmediato),
    pero los WhatsApp programados no.
 4. **Dominio de envío por empresa (Resend).** Cada empresa envía desde su dominio. En Resend → *Domains* → *Add domain*
-   con un subdominio para lo transaccional, p. ej. `hola.enjoytheclub.es` (y otro aparte para marketing, p. ej.
+   con un subdominio para lo transaccional, p. ej. `mail.enjoytheclub.es` (y otro aparte para marketing, p. ej.
    `news.enjoytheclub.es`, cuando haya nurture). Resend muestra los registros; quien lleva el DNS los añade:
    - **SPF** y **DKIM** (registros `TXT`/`MX` que da Resend para ese subdominio),
    - **DMARC** en el dominio principal: `_dmarc.enjoytheclub.es TXT "v=DMARC1; p=none; rua=mailto:dmarc@enjoytheclub.es"`
      (empezar en `p=none`, subir a `quarantine` cuando esté estable).
    Enjoy: lo hace Cristian. Oquea, SciScreen, Trama: se le pasa al fundador la lista que muestra Resend para su dominio.
-5. **Leads → Ajustes** (admin): remitente (`cristian@hola.enjoytheclub.es`), nombre, *Responder a* (un buzón que se
+5. **Leads → Ajustes** (admin): remitente (`cristian@mail.enjoytheclub.es`), nombre, *Responder a* (un buzón que se
    lea), firma, a quién avisar, enlace de reserva, webs permitidas, festivos. Revisar la vista previa y **Recibir leads**.
 6. **Dar la URL a la web** (`https://enjoy.ventas.cofundo.io/api/v1/leads`) y probar con `"test": true` o desde
    localhost; luego un envío real.
