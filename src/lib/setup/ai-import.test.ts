@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'vitest';
-import { extractJson, importBlock, kindOf, parseBlock, periodOf, preview, promptFor, roleOf } from './ai-import';
+import { amountOf, extractJson, importBlock, kindOf, parseBlock, periodOf, preview, promptFor, roleOf } from './ai-import';
 
 describe('configuración con IA', () => {
   it('saca el JSON aunque venga con texto y ```json alrededor', () => {
@@ -104,6 +104,11 @@ describe('configuración con IA: casos límite', () => {
     const imp = (v: unknown) => parseBlock('precios', JSON.stringify({ tarifas: [{ nombre: 'T', importe: v }] })).tarifas[0].importe;
     expect(imp('1.200 €')).toBe(1200);
     expect(imp('1.200,50 €')).toBe(1200.5);
+  });
+
+  test('importe: formato inglés y decimales no se confunden con miles', () => {
+    expect([amountOf('1,234.56'), amountOf('1,234,567'), amountOf('0.500'), amountOf('12.5'), amountOf('0.99'), amountOf('12,5'), amountOf(49.9), amountOf('49.900 €'), amountOf('a consultar')])
+      .toEqual([1234.56, 1234567, 0.5, 12.5, 0.99, 12.5, 49.9, 49900, 0]);
   });
 
   test('descuento: porcentaje 0–100; el código va en MAYÚSCULAS sin espacios ni signos', async () => {

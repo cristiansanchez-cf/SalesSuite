@@ -17,13 +17,19 @@ const list = <T extends z.ZodTypeAny>(item: T, max: number) => z.preprocess((v) 
 
 /**
  * Importe escrito a la española o a la inglesa: «1.200 €» y «1.200,50 €» son miles con punto; «12,5» lleva coma decimal;
- * «12.5» y los números de verdad, tal cual. Sin cifras («a consultar»), 0.
+ * «1,234.56» a la inglesa; «12.5», «0.500» y los números de verdad, tal cual. Sin cifras («a consultar»), 0.
  */
 export function amountOf(v: unknown): number {
   if (typeof v === 'number') return v;
   const x = String(v ?? '').replace(/[^\d.,-]/g, '');
-  if (x.includes(',')) return Number(x.replace(/\./g, '').replace(',', '.'));
-  if (/^-?\d{1,3}(\.\d{3})+$/.test(x)) return Number(x.replace(/\./g, ''));
+  const comma = x.lastIndexOf(',');
+  const dot = x.lastIndexOf('.');
+  // Con los dos signos, el último es el decimal: «1.234,56» (español) o «1,234.56» (inglés).
+  if (comma >= 0 && dot >= 0) return dot > comma ? Number(x.replace(/,/g, '')) : Number(x.replace(/\./g, '').replace(',', '.'));
+  // Solo comas: varias son miles («1,234,567»); una sola, decimal («12,5»).
+  if (comma >= 0) return x.indexOf(',') !== comma ? Number(x.replace(/,/g, '')) : Number(x.replace(',', '.'));
+  // Solo puntos en grupos de tres tras una cifra que no es 0: miles («1.200»); si no, decimal («0.500», «12.5»).
+  if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(x)) return Number(x.replace(/\./g, ''));
   return Number(x);
 }
 

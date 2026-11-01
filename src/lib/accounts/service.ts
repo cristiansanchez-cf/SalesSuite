@@ -223,8 +223,8 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   async function update(accountId: string, input: unknown) {
     requireUse();
+    await ownAccount(accountId);  // antes de placeZone, que puede crear zonas
     const v = parse(accountSchema, await placeZone(input));
-    await ownAccount(accountId);
     let ok: boolean;
     try { ok = await db.updateAccount(accountId, { name: v.name, zoneId: v.zoneId ?? null, segmentId: v.segmentId ?? null, address: v.address ?? null, externalRef: v.externalRef ?? null, notes: v.notes ?? null }); } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
