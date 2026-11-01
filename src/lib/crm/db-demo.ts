@@ -1,7 +1,7 @@
 /** Personas e importaciones en memoria (modo DEMO). Replica supabase/migrations/20261103000000_crm_people.sql (RLS y triggers). */
 import { randomUUID } from 'node:crypto';
 import { checkFields } from '../accounts/db-demo';
-import { demoDb, type CrmContactRow, type CrmImportRow, type PaymentRequestRow } from '../data/store';
+import { demoDb, demoRoleOf, type CrmContactRow, type CrmImportRow, type PaymentRequestRow } from '../data/store';
 import type { CrmDb } from './db';
 import type { Contact, CrmImport, ImportMapping, LinkWhen, PaymentRequest } from './types';
 import type { Activity } from './followup';
@@ -12,8 +12,9 @@ const iso = () => new Date().toISOString();
 /** Dos interacciones en el mismo milisegundo no deben empatar (en Postgres, now() lleva microsegundos). */
 let lastAt = 0;
 const monotonic = () => { lastAt = Math.max(Date.now(), lastAt + 1); return new Date(lastAt).toISOString(); };
-const roleOf = (t: string, u: string) => db().users.find((x) => x.id === u)?.memberships.find((m) => m.tenant_id === t)?.role ?? null;
-const isMember = (t: string, u: string) => !!roleOf(t, u);
+const roleOf = demoRoleOf;
+/** = public.is_member: el equipo (los colaboradores no). */
+const isMember = (t: string, u: string) => ['admin', 'lead', 'rep'].includes(roleOf(t, u) ?? '');
 const isManager = (t: string, u: string) => ['admin', 'lead'].includes(roleOf(t, u) ?? '');
 
 const toContact = (r: CrmContactRow): Contact => ({

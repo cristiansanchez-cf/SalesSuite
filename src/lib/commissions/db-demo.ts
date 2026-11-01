@@ -3,7 +3,7 @@
  * supabase/migrations/20261013000000_commissions.sql (mismos errores, mismas transiciones).
  */
 import { randomUUID } from 'node:crypto';
-import { demoDb, type CommissionEntryRow, type RevenueEventRow } from '../data/store';
+import { demoDb, demoRoleOf, type CommissionEntryRow, type RevenueEventRow } from '../data/store';
 import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo';
 import { demoChargePaid } from '../crm/db-demo';
 import type { CommissionsDb, IngestDb } from './db';
@@ -31,7 +31,7 @@ function notifyUser(t: string, userId: string, kind: string, entity: string, par
   s.notification.push({ id: randomUUID(), tenant_id: t, user_id: userId, kind, severity: 'info', entity_key: entity, params, created_at: now(),
     read_at: null, dismissed_at: null, emailed_at: null, resolved_at: null });
 }
-const roleOf = (t: string, u: string) => db().users.find((x) => x.id === u)?.memberships.find((m) => m.tenant_id === t)?.role ?? null;
+const roleOf = demoRoleOf;
 
 function insertEventRow(t: string, e: Parameters<CommissionsDb['insertEvent']>[1], actor: string | null): string {
   const s = db();
