@@ -1,0 +1,118 @@
+---
+/**
+ * Derechos de las personas (docs/LEADS.md §Privacidad): buscar por email lo que hay de alguien en este espacio,
+ * descargarlo en JSON (acceso y portabilidad) o suprimirlo (se queda la prueba del consentimiento, bloqueada, y si se
+ * pide su hash en la lista de supresión). Solo admin; cada exportación y supresión queda registrada.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { privacyMessages } from '~/lib/i18n/messages/privacy';
+import { privacyFor } from '~/lib/leads/privacy-service';
+import type { EraseResult, SubjectData } from '~/lib/leads/privacy';
+
+const { admin, tenant } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
+const { m: P, locale } = i18n(Astro, privacyMessages);
+const T = P.page;
+const svc = await privacyFor(admin);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+let erased: EraseResult | null = null;
+let email = (Astro.url.searchParams.get('email') ?? '').trim();
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const action = String(f.get('action') ?? '');
+  email = String(f.get('email') ?? '').trim();
+  if (action === 'export') {
+    let out: unknown = null;
+    result = await formAction(async () => { out = await svc.exportData(email, tenant?.name ?? admin.session.tenantId); });
+    if (!result.error) {
+      const name = `datos-${email.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}.json`;
+      return new Response(JSON.stringify(out, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'no-store' } });
+    }
+  } else if (action === 'erase') {
+    result = await formAction(async () => { erased = await svc.erase(email, String(f.get('confirm') ?? ''), f.get('suppress') === 'on'); });
+  }
+}
+let data: SubjectData | null = null;
+if (email && !result.error && !erased) {
+  const r = await formAction(async () => { data = await svc.search(email); });
+  if (r.error) result = r;
+}
+const d = data as SubjectData | null;
+const subs = d ? d.leads.reduce((n, b) => n + b.submissions.length, 0) : 0;
+const evs = d ? d.leads.reduce((n, b) => n + b.events.length, 0) : 0;
+const empty = d && !d.leads.length && !d.crm.contacts.length && !d.crm.inbound.length && !d.crm.activities.length;
+const log = await svc.requests(20);
+const members = await admin.tenantAdmin.listMembers().catch(() => []);
+const who = new Map(members.map((m) => [m.userId, m.displayName || m.email]));
+const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: await svc.timezone() });
+const done = erased as EraseResult | null;
+---
+<AdminLayout title={T.title}>
+  <PageHeader eyebrow={T.eyebrow} title={T.title} lede={T.lede} back={{ href: '/admin/leads/ajustes#privacy', label: P.title }} />
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+  {done && <div class="mb-4" data-testid="privacy-erased"><Alert kind="success" title={P.ok.erased}><p>{T.erased(done)}</p></Alert></div>}
+
+  <form method="get" class="co-card mb-5 flex max-w-3xl flex-wrap items-end gap-2 !p-6" data-testid="privacy-search">
+    <label class="co-field min-w-[16rem] flex-1">{T.email}<input class="co-input" type="email" name="email" value={email} required autocomplete="off" data-testid="privacy-email" /></label>
+    <button class="co-btn co-btn--primary" data-testid="privacy-search-go"><Icon name="search" size={16} />{T.search}</button>
+  </form>
+
+  {d && (
+    <section class="co-card mb-5 grid max-w-3xl gap-3 !p-6" data-testid="privacy-found">
+      <h2 class="co-entity !text-lg">{T.found}</h2>
+      {empty ? <p class="co-meta" data-testid="privacy-nothing">{T.nothing}</p> : (
+        <ul class="grid gap-1 pl-5" data-testid="privacy-summary">
+          <li class="list-disc" data-testid="privacy-count-leads" data-n={d.leads.length}>{T.leads(d.leads.length)} · {T.subs(subs)} · {T.events(evs)}</li>
+          <li class="list-disc" data-testid="privacy-count-contacts" data-n={d.crm.contacts.length}>{T.contacts(d.crm.contacts.length)} · {T.activities(d.crm.activities.length)}</li>
+          <li class="list-disc">{T.emails(d.crm.inbound.length)}</li>
+        </ul>
+      )}
+      <p class="co-meta" data-testid="privacy-proofs" data-n={d.proofs}>{T.proofs(d.proofs)}</p>
+      <p class="co-meta" data-testid="privacy-suppressed" data-on={d.suppression.length ? '1' : '0'}>{d.suppression.length ? T.suppressed : T.notSuppressed}</p>
+      {d.crm.accounts.length > 0 && (
+        <div class="grid gap-1">
+          <p class="co-meta">{T.accounts}</p>
+          <ul class="grid gap-1 pl-5">{d.crm.accounts.map((a) => <li class="list-disc"><a class="underline" href={`/admin/accounts/${a.id}`}>{a.name}</a></li>)}</ul>
+        </div>
+      )}
+      <form method="post">
+        <input type="hidden" name="email" value={d.email} />
+        <button class="co-btn co-btn--ghost" name="action" value="export" data-testid="privacy-export"><Icon name="download" size={16} />{T.export}</button>
+      </form>
+      {!empty && (
+        <form method="post" class="co-inset grid gap-3 !p-4" data-testid="privacy-erase-form">
+          <h3 class="font-semibold">{T.eraseTitle}</h3>
+          <p class="co-meta">{T.eraseHelp}</p>
+          <input type="hidden" name="email" value={d.email} />
+          <label class="co-field">{T.confirm}<input class="co-input" type="email" name="confirm" required autocomplete="off" data-testid="privacy-confirm" /></label>
+          <label class="co-check"><input type="checkbox" name="suppress" checked /> {T.suppress}</label>
+          <button class="co-btn co-btn--danger w-fit" name="action" value="erase" data-testid="privacy-erase"><Icon name="triangle-alert" size={16} />{T.erase}</button>
+        </form>
+      )}
+    </section>
+  )}
+
+  <section class="co-section max-w-3xl" data-testid="privacy-log">
+    <div class="co-section__head"><h2 class="text-eyebrow">{T.log}</h2></div>
+    {log.length === 0 ? <p class="co-meta">{T.logEmpty}</p> : (
+      <ul class="co-rows">
+        {log.map((r) => (
+          <li class="co-row" data-testid="privacy-log-row" data-kind={r.kind}>
+            <span class="co-row__main grid gap-1">
+              <span class="co-row-title">{T.kinds[r.kind] ?? r.kind}</span>
+              <span class="co-meta">{fmt.format(new Date(r.at))} · {T.by} {r.byUser ? (who.get(r.byUser) ?? r.byUser.slice(0, 8)) : '—'} · <code>{r.subjectHash.slice(3, 15)}</code></span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</AdminLayout>

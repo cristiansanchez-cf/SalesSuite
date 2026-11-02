@@ -2,9 +2,10 @@
  * Aperturas internas (docs/ANALYTICS.md §Internas): quién abre el enlace público NO es el cliente si
  * · el navegador tiene sesión de la consola en este dominio (eres tú), o
  * · llega desde una red (IP) desde la que alguien del equipo ha usado la consola esta semana.
- * La IP nunca se guarda en claro: hash SHA-256 con sal por espacio (y IP_HASH_SALT si está definida).
+ * La IP nunca se guarda en claro: HMAC-SHA-256 con un secreto del servidor (IP_HASH_SALT o, si no, LEADS_SECRET /
+ * CRON_SECRET), por espacio.
  */
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import type { AstroCookies } from 'astro';
 import { env } from '../env';
 import { DEMO_COOKIE } from '../admin/auth';
@@ -19,7 +20,8 @@ export function clientIp(req: Request): string | null {
 
 export function ipHash(ip: string | null, tenantId: string): string | null {
   if (!ip) return null;
-  return createHash('sha256').update(`${env('IP_HASH_SALT') ?? ''}:${tenantId}:${ip}`).digest('hex');
+  const key = env('IP_HASH_SALT') || env('LEADS_SECRET') || env('CRON_SECRET') || 'salessuite-ip';
+  return createHmac('sha256', key).update(`ip:${tenantId}:${ip}`).digest('hex');
 }
 
 /** Hay sesión de la consola en este navegador (cookie de Supabase o de la demo). No hace falta validarla: solo sirve para no contarte a ti. */

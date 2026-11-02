@@ -115,12 +115,14 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
   const step = m.step as 'wa1' | 'wa2';
   const template = whatsappTemplate(s, step, lead.locale);
   if (!d.whatsapp || !s.whatsappEnabled || !s.whatsappPhoneId || !template) return done('skipped', 'WhatsApp sin configurar');
+  const fields = (lead.facts.fields as Record<string, string>) ?? {};
+  const media = mediaFor(s, lead.type, fields, lead.locale);
   if (step === 'wa2') {
+    if (s.whatsappWa2 === false) return done('cancelled', 'WhatsApp 2 desactivado en Ajustes');
+    if (!media.booking) return done('cancelled', 'sin enlace de reserva');
     const wa1 = (await db.messages(lead.id)).find((x) => x.step === 'wa1');
     if (!wa1 || wa1.status !== 'sent') return done('cancelled', 'el primer mensaje no salió');
   }
-  const fields = (lead.facts.fields as Record<string, string>) ?? {};
-  const media = mediaFor(s, lead.type, fields, lead.locale);
   const params = waParams(step, { name: lead.name, type: lead.type, fields, locale: lead.locale, bookingUrl: media.booking, videoUrl: media.video, custom: s.templates });
   const out = await d.whatsapp.sendTemplate(s.whatsappPhoneId, m.toAddr, template, lead.locale, params);
   const text = waPreview(step, lead.locale, s.signerName ?? '', String(m.payload.brandName ?? s.brand), params, s.templates);

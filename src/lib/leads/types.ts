@@ -37,7 +37,25 @@ export interface LeadSettings {
   emailSignature?: EmailSignature;
   /** Vídeo y enlace de reserva por tipo de lead y por idioma (lo que falte: el del tipo «general» y luego los de arriba). */
   media?: LeadMedia;
+  /** WhatsApp 2 (el recordatorio): se puede apagar si Meta lo pasa a Marketing; el 1 sigue. Por defecto, encendido. */
+  whatsappWa2?: boolean;
+  /** Plazos de conservación (docs/LEADS.md §Privacidad). */
+  retention?: Retention;
+  /** Último borrado automático (lo escribe el servidor). */
+  lastPurgeAt?: string | null;
 }
+
+export interface Retention {
+  /** Leads que no contratan: meses desde el último contacto (se anonimizan). */
+  leadMonths: number;
+  /** Spam y cuarentena: meses desde el último contacto (se borran). */
+  spamMonths: number;
+  /** Pruebas (test: true o localhost): días desde que entraron, como mucho 183 (se borran). */
+  testDays: number;
+  /** Prueba legal del consentimiento de lo borrado: años bloqueada antes de borrarse. */
+  proofYears: number;
+}
+export const DEFAULT_RETENTION: Retention = { leadMonths: 24, spamMonths: 6, testDays: 30, proofYears: 5 };
 
 export interface MediaLinks { video?: string; booking?: string }
 /** { venue: { es: { video, booking }, en: {…} }, … } */
@@ -86,9 +104,11 @@ export interface Lead {
   lastSubmissionAt: string;
   accountId: string | null;
   contactId: string | null;
+  /** Anonimizado al cumplir su plazo: solo quedan los datos para las métricas. */
+  anonymizedAt?: string | null;
 }
 export type NewLead = Omit<Lead, 'id' | 'createdAt' | 'stage' | 'stageAt' | 'discardReason' | 'validatedAt' | 'validatedBy' | 'firstResponseAt' | 'firstResponseMins'
-  | 'lastInboundAt' | 'sequenceStoppedAt' | 'sequenceStopReason' | 'accountId' | 'contactId' | 'submissions' | 'lastSubmissionAt'> & { createdAt?: string };
+  | 'lastInboundAt' | 'sequenceStoppedAt' | 'sequenceStopReason' | 'accountId' | 'contactId' | 'submissions' | 'lastSubmissionAt' | 'anonymizedAt'> & { createdAt?: string };
 export type LeadPatch = Partial<Omit<Lead, 'id' | 'tenantId' | 'createdAt' | 'isTest' | 'email'>>;
 
 export interface Submission {

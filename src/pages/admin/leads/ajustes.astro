@@ -21,12 +21,16 @@ import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
 import { cleanupContext } from '~/lib/crm/research-context';
 import type { LeadSettings, LeadTemplates, QuestionKey } from '~/lib/leads/types';
 import Icon from '~/components/ui/Icon.astro';
+import { privacyMessages } from '~/lib/i18n/messages/privacy';
+import { privacyFor } from '~/lib/leads/privacy-service';
+import { retentionOf } from '~/lib/leads/privacy';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
 const { m: L, locale } = i18n(Astro, leadsMessages);
 const S = L.set;
+const { m: P } = i18n(Astro, privacyMessages);
 const svc = await leadsFor(admin);
 
 const lines = (v: FormDataEntryValue | null) => String(v ?? '').split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
@@ -77,6 +81,12 @@ if (Astro.request.method === 'POST') {
   } else if (action === 'resend-key' || action === 'resend-key-clear') {
     result = await formAction(async () => { await setResendKey(admin, action === 'resend-key' ? String(f.get('resendKey') ?? '') : null); });
     if (!result.error) return Astro.redirect(`/admin/leads/ajustes?ok=${action === 'resend-key' ? 'resendSaved' : 'resendCleared'}`, 303);
+  } else if (action === 'save-retention') {
+    result = await formAction(async () => { await svc.saveRetention({ leadMonths: f.get('leadMonths'), spamMonths: f.get('spamMonths'), testDays: f.get('testDays'), proofYears: f.get('proofYears') }); });
+    if (!result.error) return Astro.redirect('/admin/leads/ajustes?ok=retentionSaved#privacy', 303);
+  } else if (action === 'purge-now') {
+    result = await formAction(async () => { await (await privacyFor(admin)).purgeNow(); });
+    if (!result.error) return Astro.redirect('/admin/leads/ajustes?ok=purged#privacy', 303);
   } else if (action === 'toggle') {
     const on = f.get('on') === '1';
     const cur = await svc.settings();
@@ -95,7 +105,7 @@ if (Astro.request.method === 'POST') {
       enabled: cur?.enabled ?? false, brand: String(f.get('brand') ?? ''), allowedOrigins: lines(f.get('origins')),
       fromEmail: orNull(f.get('fromEmail')), fromName: orNull(f.get('fromName')), replyTo: orNull(f.get('replyTo')), signerName: orNull(f.get('signerName')),
       notifyEmails: lines(f.get('notify')), bookingUrl: orNull(f.get('bookingUrl')), videoUrl: orNull(f.get('videoUrl')),
-      whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2') },
+      whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappWa2: f.get('waWa2') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2') },
       sendFromHour: Number(f.get('fromHour') ?? 8), sendToHour: Number(f.get('toHour') ?? 22), holidays: lines(f.get('holidays')),
       // Vídeo y reserva por tipo e idioma: solo lo rellenado (vacío = el del tipo general o el general del espacio).
       media: Object.fromEntries(MEDIA_TYPES.map((ty) => [ty, Object.fromEntries(LOCS.map((l) => {
@@ -115,7 +125,7 @@ const s = (await svc.settings()) ?? {
   sendFromHour: 8, sendToHour: 22, holidays: [],
 };
 const demo = appMode() === 'demo';
-const okMsg = flash(Astro.url, { saved: L.ok.saved, live: L.ok.live, paused: L.ok.paused, resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared, textsSaved: L.ok.textsSaved, textsReset: L.ok.textsReset, sigSaved: L.ok.sigSaved });
+const okMsg = flash(Astro.url, { saved: L.ok.saved, live: L.ok.live, paused: L.ok.paused, resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared, textsSaved: L.ok.textsSaved, textsReset: L.ok.textsReset, sigSaved: L.ok.sigSaved, retentionSaved: P.ok.saved, purged: P.ok.purged });
 // La firma: la guardada o, la primera vez, lo que ya se sabe (firma, responder a, web y logo de la marca si es PNG/JPG).
 const brandLogo = tenant?.brand?.logoUrl && /^https:/.test(tenant.brand.logoUrl) && !/\.svg(\?|$)/i.test(tenant.brand.logoUrl) ? tenant.brand.logoUrl : '';
 const sigSaved = s.emailSignature && Object.keys(s.emailSignature).length ? s.emailSignature : null;
@@ -144,7 +154,12 @@ const checks = [
   { key: 'web', ok: !!last, req: false, at: 'connection', note: last ? S.webLast(fmt.format(new Date(last.at)), last.test) : S.webNone },
   { key: 'whatsapp', ok: waOn, req: false, at: 'whatsapp', note: waOn ? S.waOn : S.waPending },
 ] as const;
-const SECTIONS = ['connection', 'email', 'signature', 'texts', 'whatsapp', 'preview'] as const;
+const SECTIONS = ['connection', 'email', 'signature', 'texts', 'whatsapp', 'privacy', 'preview'] as const;
+const sectionLabel = (k: (typeof SECTIONS)[number]) => (k === 'privacy' ? P.chip : S.sections[k]);
+// Privacidad: los plazos del espacio y lo que ha hecho el borrado diario.
+const retention = retentionOf(s);
+const purgeLog = await privacyFor(admin).then((p) => p.purges(7)).catch(() => []);
+const fmtDay = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 const endpoint = `${requestOrigin(Astro.request, Astro.url)}/api/v1/leads`;
 // Vista previa con un lead de ejemplo.
 const brandName = tenant?.name ?? s.brand;
@@ -177,7 +192,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
   <nav class="co-chips mb-5 max-w-3xl" aria-label={S.title} data-testid="leads-sections">
-    {SECTIONS.map((k) => <a class="co-chip" href={`#${k}`}>{S.sections[k]}</a>)}
+    {SECTIONS.map((k) => <a class="co-chip" href={`#${k}`}>{sectionLabel(k)}</a>)}
   </nav>
 
   <section class="co-card mb-5 grid max-w-3xl gap-2 !p-6" data-testid="leads-checklist">
@@ -303,6 +318,8 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <h2 class="co-entity !text-lg">{S.whatsapp}</h2>
     <Alert kind={waReady ? 'success' : 'info'} title={waReady ? S.waReady : S.waMissing} />
     <label class="co-check"><input form="lead-settings" type="checkbox" name="waEnabled" checked={s.whatsappEnabled} /> {S.waEnabled}</label>
+ <label class="co-check"><input form="lead-settings" type="checkbox" name="waWa2" checked={s.whatsappWa2 !== false} data-testid="leads-wa2" /> {P.wa2}</label>
+    <p class="co-meta">{P.wa2Help}</p>
     <label class="co-field">{S.waPhone}<input form="lead-settings" class="co-input" name="waPhone" value={s.whatsappPhoneId ?? ''} inputmode="numeric" pattern="[0-9]{5,30}" /></label>
     <p class="co-meta">{S.templates}</p>
     <div class="grid gap-2 sm:grid-cols-3">
@@ -316,6 +333,36 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     </div>
     <label class="co-field">{S.holidays}<textarea form="lead-settings" class="co-textarea h-24" name="holidays" placeholder="2026-12-08">{s.holidays.join('\n')}</textarea><span class="co-meta">{S.holidaysHelp}</span></label>
     <button form="lead-settings" class="co-btn co-btn--primary w-fit" name="at" value="whatsapp">{S.save}</button>
+  </section>
+
+ <section id="privacy" class="co-card mb-5 grid max-w-3xl scroll-mt-6 gap-3 !p-6" data-testid="leads-privacy">
+    <h2 class="co-entity !text-lg">{P.title}</h2>
+    <p class="co-meta">{P.lede}</p>
+    <form method="post" class="grid gap-3">
+      <input type="hidden" name="action" value="save-retention" />
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="co-field">{P.leadMonths}<input class="co-input w-28" type="number" name="leadMonths" min="1" max="120" value={retention.leadMonths} required data-testid="leads-retention-lead" /><span class="co-meta">{P.leadHelp}</span></label>
+        <label class="co-field">{P.spamMonths}<input class="co-input w-28" type="number" name="spamMonths" min="1" max="60" value={retention.spamMonths} required /><span class="co-meta">{P.spamHelp}</span></label>
+        <label class="co-field">{P.testDays}<input class="co-input w-28" type="number" name="testDays" min="1" max="183" value={retention.testDays} required data-testid="leads-retention-test" /><span class="co-meta">{P.testHelp}</span></label>
+        <label class="co-field">{P.proofYears}<input class="co-input w-28" type="number" name="proofYears" min="1" max="10" value={retention.proofYears} required /><span class="co-meta">{P.proofHelp}</span></label>
+      </div>
+      <p class="co-meta">{P.suppressionNote}</p>
+      <button class="co-btn co-btn--primary w-fit" data-testid="leads-retention-save">{P.save}</button>
+    </form>
+    <div class="co-inset grid gap-2 !p-4" data-testid="leads-purge">
+      <p><span class="font-semibold">{P.lastPurge}:</span> <span data-testid="leads-last-purge">{s.lastPurgeAt ? fmtDay.format(new Date(s.lastPurgeAt)) : P.never}</span></p>
+      {purgeLog.length > 0 && (
+        <>
+          <p class="co-meta">{P.logTitle}</p>
+          <ul class="grid gap-1 text-sm" data-testid="leads-purge-log">
+            {purgeLog.map((x) => <li><span class="font-semibold">{fmtDay.format(new Date(x.ranAt))}</span> · {P.logRow(x.anonymized, x.deleted, x.tests, x.proofsDeleted)}</li>)}
+          </ul>
+        </>
+      )}
+      <form method="post"><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="purge-now" data-testid="leads-purge-now">{P.runNow}</button></form>
+    </div>
+    <p><a class="co-btn co-btn--ghost w-fit" href="/admin/leads/privacidad" data-testid="leads-rights-link"><Icon name="shield-check" size={16} />{P.rights}</a></p>
+    <p class="co-meta">{P.rightsHelp}</p>
   </section>
 
   <section id="preview" class="grid max-w-3xl scroll-mt-6 gap-3" data-testid="leads-preview">

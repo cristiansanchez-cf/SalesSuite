@@ -9,6 +9,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import { DuplicateKey, type LeadsDb } from './db';
 import { businessMinutes } from './schedule';
+import { RETENTION_LIMITS, sourceKey } from './privacy';
 import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type LeadTemplates, type Stage, type View } from './types';
 import { DEFAULT_TEXTS, MEDIA_TYPES } from './templates';
 
@@ -63,6 +64,8 @@ const settingsSchema = z.object({
   videoUrl: z.string().trim().url().startsWith('https://').max(500).nullable(),
   whatsappPhoneId: z.string().trim().regex(/^\d{5,30}$/).nullable(),
   whatsappEnabled: z.boolean(),
+  /** WhatsApp 2: se apaga si Meta lo pasa a Marketing (el 1 sigue). */
+  whatsappWa2: z.boolean().optional(),
   whatsappTemplates: z.record(z.enum(['wa1', 'wa2']), z.record(z.enum(['es', 'en', 'fr']), z.string().trim().regex(/^[a-z0-9_]{1,512}$/))),
   sendFromHour: z.number().int().min(0).max(23),
   sendToHour: z.number().int().min(1).max(24),
@@ -73,6 +76,10 @@ const settingsSchema = z.object({
     booking: z.string().trim().url().startsWith('https://').max(500).optional(),
   }))).optional(),
 });
+
+const int = (k: keyof typeof RETENTION_LIMITS) => z.coerce.number().int().min(RETENTION_LIMITS[k][0]).max(RETENTION_LIMITS[k][1]);
+/** Plazos de conservación (docs/LEADS.md §Privacidad); las pruebas, nunca más de 6 meses. */
+export const retentionSchema = z.object({ leadMonths: int('leadMonths'), spamMonths: int('spamMonths'), testDays: int('testDays'), proofYears: int('proofYears') }).strict();
 
 export function createLeadsService(db: LeadsDb, admin: AdminContext) {
   const s = admin.session;
@@ -222,18 +229,29 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.saveSettings({ ...prev, emailSignature: clean });
   }
 
+  /** Plazos de conservación del espacio (lo que diga su política de privacidad). */
+  async function saveRetention(input: unknown) {
+    requireAdmin();
+    const r = retentionSchema.safeParse(input);
+    if (!r.success) throw new AdminError(422, 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
+    const prev = await db.settings(t);
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    await db.saveSettings({ ...prev, retention: r.data });
+  }
+
   /** Lo que más importa: cuánto tarda el primer contacto humano (minutos laborables), y de dónde vienen. */
   async function metrics() {
     requireManager();
-    const ls = (await db.list(t, 'all', { limit: 500 })).filter((l) => Date.parse(l.createdAt) > Date.now() - 30 * 86_400_000);
+    // Los anonimizados cuentan igual (de ellos solo queda lo que usan las métricas).
+    const ls = (await db.list(t, 'all', { limit: 500, anonymized: true })).filter((l) => Date.parse(l.createdAt) > Date.now() - 30 * 86_400_000);
     const mins = ls.map((l) => l.firstResponseMins).filter((x): x is number => x != null).sort((a, b) => a - b);
     const median = mins.length ? mins[Math.floor(mins.length / 2)] : null;
     const bySource = new Map<string, number>();
-    for (const l of ls) { const k = l.attributionFirst?.utm_source ?? (l.attributionFirst?.gclid ? 'google-ads' : l.attributionFirst?.referrer ? 'referral' : 'directo'); bySource.set(k, (bySource.get(k) ?? 0) + 1); }
+    for (const l of ls) { const k = sourceKey(l.attributionFirst); bySource.set(k, (bySource.get(k) ?? 0) + 1); }
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, setEnabled, lastSubmission, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, saveRetention, setEnabled, lastSubmission, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

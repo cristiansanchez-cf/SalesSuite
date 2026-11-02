@@ -36,10 +36,12 @@ export interface LeadsDb {
   /** Cancela lo pendiente de un lead (todo o esos pasos). Devuelve cuántos. */
   cancelPending(leadId: string, steps: string[] | null): Promise<number>;
 
+  /** La lista de supresión guarda el hash del valor (privacy.ts), nunca el email o el teléfono. */
   suppressed(tenantId: string, values: { email?: string | null; phone?: string | null }): Promise<{ email: boolean; whatsapp: boolean }>;
   suppress(tenantId: string, channel: 'email' | 'whatsapp' | 'all', value: string, reason: string): Promise<void>;
 
-  list(tenantId: string, view: View, opts?: { q?: string; limit?: number }): Promise<Lead[]>;
+  /** Sin los anonimizados, salvo `anonymized` (las métricas). */
+  list(tenantId: string, view: View, opts?: { q?: string; limit?: number; anonymized?: boolean }): Promise<Lead[]>;
   counts(tenantId: string): Promise<{ inbox: number; quarantine: number }>;
   /** El último envío que llegó de la web (pruebas incluidas): para saber si la web ya está conectada. */
   lastSubmission(tenantId: string): Promise<{ at: string; test: boolean } | null>;

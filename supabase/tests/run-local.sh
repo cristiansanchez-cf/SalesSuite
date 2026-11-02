@@ -67,4 +67,5 @@ run supabase/tests/76_superadmin_crm.test.sql
 run supabase/tests/77_leads.test.sql
 run supabase/tests/78_membership_last_seen.test.sql
 run supabase/tests/79_inbound_email.test.sql
+run supabase/tests/80_lead_privacy.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

@@ -126,7 +126,7 @@ describe('textos', () => {
     expect(summary('wedding', { wedding_date: '2027-06-14' }, 'fr')).toBe('votre mariage du 14 juin 2027');
     const p = waParams('wa1', { name: 'Laura Gómez', type: 'venue', fields: { venue_name: 'Sala X' }, locale: 'es', bookingUrl: null, videoUrl: null });
     expect(p[0]).toBe('Laura');
-    expect(waPreview('wa1', 'es', 'Cristian', 'Enjoy the Club', p)).toContain('Hola Laura, soy Cristian, de Enjoy the Club. He visto tu mensaje sobre Sala X');
+    expect(waPreview('wa1', 'es', 'Cristian', 'Enjoy the Club', p)).toContain('Hola Laura, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste desde la web sobre Sala X');
     const e = autoreplyEmail({ name: 'Laura', type: 'venue', fields: { venue_name: 'Sala X' }, locale: 'en', signer: 'Cristian', brand: 'Enjoy', channel: 'whatsapp', eta: 'next_business_day', bookingUrl: 'https://cal.x/c', unsubscribeUrl: 'https://u' });
     expect(e.text).toContain("I'll message you on WhatsApp first thing tomorrow");
     expect(e.html).toContain('<a href="https://cal.x/c">');
@@ -388,13 +388,14 @@ describe('vídeo y reserva por tipo e idioma', () => {
     expect(mediaFor(s, 'general', { event_type: 'venue' }, 'es').video).toBe('https://v.x/locales-es.mp4');
     expect(mediaFor(s, 'venue', {}, 'de').video).toBe('https://v.x/locales-en.mp4');
   });
-  test('el email lleva el vídeo; el WhatsApp 2, la reserva (o el vídeo si no hay)', () => {
+  test('el email lleva el vídeo; el WhatsApp 2, solo la reserva (Utility: sin vídeo)', () => {
     const e = autoreplyEmail({ name: 'Laura', type: 'venue', fields: {}, locale: 'es', signer: 'Cristian', brand: 'Enjoy', channel: 'email', eta: 'minutes', bookingUrl: 'https://cal.x/locales', videoUrl: 'https://v.x/locales-es.mp4', unsubscribeUrl: null });
     expect(e.text).toContain('vídeo corto para verlo en marcha: https://v.x/locales-es.mp4');
     expect(e.html).toContain('<a href="https://v.x/locales-es.mp4">');
     const sin = autoreplyEmail({ name: 'Laura', type: 'venue', fields: {}, locale: 'es', signer: 'Cristian', brand: 'Enjoy', channel: 'email', eta: 'minutes', bookingUrl: null, unsubscribeUrl: null });
     expect(sin.text).not.toContain('vídeo');
-    expect(waParams('wa2', { name: 'Laura', type: 'venue', fields: {}, locale: 'es', bookingUrl: null, videoUrl: 'https://v.x/locales-es.mp4' })[2]).toBe('https://v.x/locales-es.mp4');
+    expect(waParams('wa2', { name: 'Laura', type: 'venue', fields: {}, locale: 'es', bookingUrl: null, videoUrl: 'https://v.x/locales-es.mp4' })[2]).toBe('');
+    expect(waParams('wa2', { name: 'Laura', type: 'venue', fields: {}, locale: 'es', bookingUrl: 'https://cal.x/locales', videoUrl: 'https://v.x/locales-es.mp4' })[2]).toBe('https://cal.x/locales');
   });
 });
 

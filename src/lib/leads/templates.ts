@@ -1,7 +1,8 @@
 /**
  * Textos de los envíos (docs/LEADS.md §Plantillas): respuesta automática por email, aviso interno y las dos plantillas
  * de WhatsApp. Con la voz de quien firma (signer_name), en el idioma del lead (es, en o fr; si no, en). Sin contenido
- * promocional: son mensajes de servicio sobre lo que pidió. Las de WhatsApp tienen que estar aprobadas por Meta tal cual
+ * promocional: son mensajes de servicio sobre lo que pidió. Las de WhatsApp se aprueban en Meta como «Utilidad»
+ * (Utility): responden a su solicitud, sin descuentos, ofertas, vídeos ni lenguaje comercial. Las de WhatsApp tienen que estar aprobadas por Meta tal cual
  * (WA_BODIES); aquí solo se rellenan las variables.
  */
 import type { LeadType } from './contract';
@@ -74,24 +75,24 @@ export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questi
   es: {
     subject: '{asunto}',
     body: 'Hola {nombre}:\n\nGracias por escribir. Me llega tu mensaje{sobre} y lo leo yo.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nY si quieres añadir algo, responde a este email.\n\nUn saludo,\n{firma_email}',
-    wa1: 'Hola {{1}}, soy {firma}, de {marca}. He visto tu mensaje sobre {{2}} y quería escribirte yo directamente.\n\n{{3}}\n\nCon eso te digo cómo lo veo.\n\n{firma}',
-    wa2: 'Hola {{1}}, te escribo de nuevo por lo de {{2}}. Si te va mejor hablarlo, elige aquí la hora que te venga bien: {{3}}\n\nY si prefieres seguir por aquí, contéstame cuando puedas.\n\n{firma}',
+    wa1: 'Hola {{1}}, soy {firma}, de {marca}. Te escribo por la solicitud que nos enviaste desde la web sobre {{2}}.\n\nPara poder responderte: {{3}}\n\nPuedes contestar a este mensaje.\n\n{firma}',
+    wa2: 'Hola {{1}}, sigo con tu solicitud sobre {{2}}. Si prefieres que lo hablemos por teléfono, puedes elegir la hora aquí: {{3}}\n\nTambién puedes contestar a este mensaje.\n\n{firma}',
     questions: { venue: '¿Qué noches abrís y cuánta gente os suele venir?', dj: '¿En qué salas estás pinchando ahora?', festival: '¿Para qué fechas lo estáis planteando?',
       wedding: '¿Tenéis ya el sitio de la celebración?', general: '¿Me cuentas un poco más de lo que tienes en mente?' },
   },
   en: {
     subject: '{asunto}',
     body: "Hi {nombre},\n\nThanks for getting in touch. I've got your message{sobre} and I'm reading it myself.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nAnd if you want to add anything, just reply to this email.\n\nBest,\n{firma_email}",
-    wa1: "Hi {{1}}, it's {firma} from {marca}. I saw your message about {{2}} and wanted to get back to you myself.\n\n{{3}}\n\nWith that I can tell you how I see it.\n\n{firma}",
-    wa2: "Hi {{1}}, following up on {{2}}. If it's easier to talk it through, pick a time that suits you here: {{3}}\n\nOr just reply here whenever you can.\n\n{firma}",
+    wa1: "Hi {{1}}, it's {firma} from {marca}. I'm writing about the request you sent us through the website about {{2}}.\n\nSo I can answer it: {{3}}\n\nYou can reply to this message.\n\n{firma}",
+    wa2: "Hi {{1}}, following up on your request about {{2}}. If you'd rather discuss it by phone, you can pick a time here: {{3}}\n\nYou can also reply to this message.\n\n{firma}",
     questions: { venue: 'Which nights are you open and how many people do you usually get?', dj: 'Which venues are you playing at right now?', festival: 'Which dates are you planning for?',
       wedding: 'Do you already have the venue for the celebration?', general: 'Could you tell me a bit more about what you have in mind?' },
   },
   fr: {
     subject: '{asunto}',
     body: "Bonjour {nombre},\n\nMerci pour ton message{sobre}. Je le lis moi-même.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nEt si tu veux ajouter quelque chose, réponds simplement à cet e-mail.\n\nÀ bientôt,\n{firma_email}",
-    wa1: "Bonjour {{1}}, c'est {firma}, de {marca}. J'ai vu ton message à propos de {{2}} et je voulais te répondre moi-même.\n\n{{3}}\n\nAvec ça, je te dis ce que j'en pense.\n\n{firma}",
-    wa2: "Bonjour {{1}}, je reviens vers toi pour {{2}}. Si c'est plus simple d'en parler, choisis ici le créneau qui te convient : {{3}}\n\nSinon, réponds-moi ici quand tu peux.\n\n{firma}",
+    wa1: "Bonjour {{1}}, c'est {firma}, de {marca}. Je t'écris au sujet de la demande que tu nous as envoyée depuis le site à propos de {{2}}.\n\nPour pouvoir te répondre : {{3}}\n\nTu peux répondre à ce message.\n\n{firma}",
+    wa2: "Bonjour {{1}}, je reviens vers toi au sujet de ta demande concernant {{2}}. Si tu préfères en parler par téléphone, tu peux choisir le créneau ici : {{3}}\n\nTu peux aussi répondre à ce message.\n\n{firma}",
     questions: { venue: 'Vous ouvrez quels soirs et combien de monde vient en général ?', dj: 'Dans quelles salles tu joues en ce moment ?', festival: 'Vous le prévoyez pour quelles dates ?',
       wedding: 'Avez-vous déjà le lieu de la réception ?', general: "Tu peux m'en dire un peu plus sur ce que tu as en tête ?" },
   },
@@ -142,7 +143,8 @@ export const WA_BODIES: Record<'wa1' | 'wa2', Record<MsgLocale, (signer: string,
 export function waParams(step: 'wa1' | 'wa2', d: { name: string; type: LeadType; fields: Record<string, string>; locale: string; bookingUrl: string | null; videoUrl: string | null; custom?: LeadTemplates }): string[] {
   const p = [firstName(d.name), summary(d.type, d.fields, d.locale)];
   if (step === 'wa1') p.push(question(d.type, d.fields, d.locale, d.custom));
-  else p.push(d.bookingUrl ?? d.videoUrl ?? '');
+  // Solo el enlace de reserva (para hablar de lo que pidió). Nada de vídeos ni contenido: Utility, no Marketing.
+  else p.push(d.bookingUrl ?? '');
   return p;
 }
 /** El texto que verá el lead (para la ficha y para probar sin WhatsApp). */

@@ -10,6 +10,32 @@ export const HOW_HEARD = ['google', 'instagram', 'tiktok', 'linkedin', 'recommen
 const ATTR_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'gbraid', 'wbraid', 'fbclid', 'fbp', 'fbc', 'ttclid', 'msclkid', 'referrer', 'landing_page', 'at'] as const;
 export type AttributionKey = (typeof ATTR_KEYS)[number];
 export type Attribution = Partial<Record<AttributionKey, string>>;
+/**
+ * Identificadores de clic de las plataformas de anuncios (y las cookies de Meta). Sin consentimiento de cookies de
+ * publicidad (context.cookie_consent.ads) no se guardan aunque lleguen: ni en la atribución ni dentro de las URLs.
+ */
+export const CLICK_IDS = ['gclid', 'gbraid', 'wbraid', 'fbclid', 'ttclid', 'msclkid', 'fbp', 'fbc'] as const;
+const CLICK_SET = new Set<string>(CLICK_IDS);
+
+/** Quita los identificadores de clic de la query de una URL (absoluta o una ruta «/es/?gclid=…»). */
+export function stripClickIds(u: string): string {
+  const q = u.indexOf('?');
+  if (q < 0) return u;
+  const hash = u.indexOf('#', q);
+  const query = u.slice(q + 1, hash < 0 ? undefined : hash);
+  const kept = query.split('&').filter((kv) => kv && !CLICK_SET.has(decodeURIComponentSafe(kv.split('=')[0]).toLowerCase()));
+  return u.slice(0, q) + (kept.length ? `?${kept.join('&')}` : '') + (hash < 0 ? '' : u.slice(hash));
+}
+const decodeURIComponentSafe = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
+function withoutClickIds(a: Attribution | null): Attribution | null {
+  if (!a) return null;
+  const out: Attribution = {};
+  for (const [k, v] of Object.entries(a) as [AttributionKey, string][]) {
+    if (CLICK_SET.has(k)) continue;
+    out[k] = k === 'landing_page' || k === 'referrer' ? stripClickIds(v) : v;
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 /** Los campos que se esperan por tipo; los obligatorios, con `required`. Lo demás que llegue se guarda igual (string). */
 export const FIELDS: Record<LeadType, { key: string; required?: boolean; values?: readonly string[] }[]> = {
@@ -146,11 +172,18 @@ export function parseLead(body: unknown): ParseResult {
   const ctx = d.context as Record<string, unknown> & typeof d.context;
   const cta = typeof ctx.cta === 'string' ? { id: null, label: ctx.cta, location: null }
     : { id: ctx.cta?.id ?? null, label: ctx.cta?.label ?? null, location: ctx.cta?.location ?? null };
-  const att = (ctx.attribution ?? {}) as { current?: Attribution | null; first?: Attribution | null; last?: Attribution | null };
-  const { attribution: _a, ...rest } = ctx;
   const consentRaw = d.consent as Record<string, unknown>;
   const v2c = d.schema === 'enjoy.lead.v2' ? (d.consent as z.infer<typeof v2>['consent']) : null;
   const cookie = d.schema === 'enjoy.lead.v2' ? (ctx as z.infer<typeof v2>['context']).cookie_consent : null;
+  const ads = cookie?.ads === true;
+  const rawAtt = (ctx.attribution ?? {}) as { current?: Attribution | null; first?: Attribution | null; last?: Attribution | null };
+  // Sin consentimiento de publicidad: fuera gclid, fbclid… (también de page_url, landing_page y el resto del contexto).
+  const att = ads ? rawAtt : { current: withoutClickIds(rawAtt.current ?? null), first: withoutClickIds(rawAtt.first ?? null), last: withoutClickIds(rawAtt.last ?? null) };
+  const { attribution: _a, ...rawRest } = ctx;
+  const rest: Record<string, unknown> = ads ? rawRest : Object.fromEntries(Object.entries(rawRest)
+    .filter(([k]) => !CLICK_SET.has(k.toLowerCase()))
+    .map(([k, v]) => [k, typeof v === 'string' && /^(page_url|landing_page|referrer|url)$/.test(k) ? stripClickIds(v) : v]));
+  const pageUrl = ctx.page_url ? (ads ? ctx.page_url : stripClickIds(ctx.page_url)) : null;
   return {
     ok: true,
     lead: {
@@ -170,12 +203,12 @@ export function parseLead(body: unknown): ParseResult {
         marketing: v2c?.marketing === true,
         // v1 no avisaba de WhatsApp: no se escribe por WhatsApp a quien no lo vio.
         whatsappNotice: v2c ? (v2c.whatsapp_notice_shown ?? v2c.whatsapp_contact) === true : false,
-        ads: cookie?.ads === true,
+        ads,
         raw: consentRaw,
       },
       locale: ctx.locale ?? 'es',
       cta,
-      page: { url: ctx.page_url ?? null, path: ctx.page_path ?? null, title: ctx.page_title ?? null },
+      page: { url: pageUrl, path: ctx.page_path ? (ads ? ctx.page_path : stripClickIds(ctx.page_path)) : null, title: ctx.page_title ?? null },
       // Sin cookies aceptadas, la web solo manda «current»: hace de primer y último contacto.
       attribution: { current: att.current ?? null, first: att.first ?? null, last: att.last ?? null },
       timeToSubmitMs: ctx.time_to_submit_ms ?? null,

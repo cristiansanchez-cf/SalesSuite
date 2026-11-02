@@ -31,3 +31,7 @@ revoke insert, update, delete on public.inbound_address from authenticated, anon
 revoke insert, delete on public.inbound_email from authenticated, anon;
 revoke update on public.inbound_email from authenticated;
 grant update (status, account_id, activity_id, detail) on public.inbound_email to authenticated;
+-- Privacidad de los leads (20261222): la prueba bloqueada no la toca nadie con sesión; los registros, solo el servidor.
+revoke all on public.lead_consent_proof from authenticated, anon;
+revoke insert, update, delete on public.lead_purge_log from authenticated, anon;
+revoke insert, update, delete on public.privacy_request from authenticated, anon;

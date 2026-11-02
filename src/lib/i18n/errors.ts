@@ -15,6 +15,9 @@ const EXACT: Record<string, T> = {
   'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}': ['Each WhatsApp message must include {{1}}, {{2}} and {{3}}', 'Cada mensagem de WhatsApp tem de levar {{1}}, {{2}} e {{3}}', '각 WhatsApp 메시지에는 {{1}}, {{2}}, {{3}}이 있어야 합니다'],
   'El logo tiene que ser PNG o JPG: Gmail no muestra SVG': ['The logo must be PNG or JPG: Gmail does not show SVG', 'O logo tem de ser PNG ou JPG: o Gmail não mostra SVG', '로고는 PNG 또는 JPG여야 합니다: Gmail은 SVG를 표시하지 않습니다'],
   'Lead no encontrado': ['Lead not found', 'Lead não encontrado', '리드를 찾을 수 없습니다'],
+  'Leads sin configurar en este espacio': ['Leads are not set up in this space', 'Leads não configurados neste espaço', '이 공간에는 리드가 설정되지 않았습니다'],
+  'Escribe un email válido': ['Enter a valid email', 'Escreve um email válido', '올바른 이메일을 입력하세요'],
+  'Para suprimir, escribe el email otra vez tal cual': ['To erase, type the email again exactly', 'Para apagar, escreve o email outra vez tal e qual', '삭제하려면 이메일을 똑같이 다시 입력하세요'],
   'Indica el motivo para descartarlo': ['Say why you are discarding it', 'Indique o motivo para descartá-lo', '제외하는 이유를 입력하세요'],
   'Esa marca ya la usa otro espacio': ['Another space already uses that brand', 'Outro espaço já usa essa marca', '다른 공간에서 이미 사용 중인 브랜드입니다'],
   // ------------------------------------------------------------ CRM: personas, grupos e importación

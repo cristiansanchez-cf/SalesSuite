@@ -178,9 +178,46 @@ se ve en la ficha. Lo que se sabe queda estructurado en `lead.facts` para un mod
 ## 6. Prueba legal y anuncios
 Cada envío guarda el bloque `consent` completo (con `legal_text_version`, `policy_url`) más la URL, la hora del
 servidor, el origen y el hash de la IP (art. 7.1 RGPD). `consent_marketing` solo se activa con `marketing: true` (el
-nurture solo se mandará a esos). `gclid`, `gbraid`, `wbraid`, `fbclid` y UTMs del primer y último contacto quedan
-guardados; la subida de conversiones a Google Ads (reunión o ganado, hasta 90 días tras el clic) se hará **solo** con
-`cookie_consent.ads = true` (`consent_ads`).
+nurture solo se mandará a esos). Las UTMs del primer y último contacto se guardan siempre. Los identificadores de clic
+(`gclid`, `gbraid`, `wbraid`, `fbclid`, `ttclid`, `msclkid`, y las cookies `fbp`/`fbc`) **solo** con
+`context.cookie_consent.ads = true` (`consent_ads`): sin él se descartan aunque lleguen, también de la query de
+`page_url`, `page_path`, `landing_page` y `referrer` (`src/lib/leads/contract.ts`). La subida de conversiones a Google Ads
+(reunión o ganado, hasta 90 días tras el clic) se hará solo con `consent_ads`.
+
+## 6b. Privacidad (plazos, borrado y derechos)
+Lo que diga la política de privacidad de cada espacio; se configura en **Leads → Ajustes → Privacidad**
+(`lead_settings.retention_*`, migración `20261222000000_lead_privacy.sql`). Valores por defecto (Enjoy incluida):
+
+| Qué | Plazo por defecto | Qué se hace |
+| --- | --- | --- |
+| Leads que no contratan (no validados, no ganados) | 24 meses desde el último contacto | Se **anonimizan** |
+| Spam y cuarentena | 6 meses desde el último contacto | Se **borran** |
+| Pruebas (`test: true` o localhost) | 30 días desde que entraron (máx. 183) | Se **borran** |
+| Prueba legal del consentimiento de lo borrado | 5 años bloqueada (1-10) | Se borra al acabar |
+| Lista de supresión | Mientras haga falta | Solo un hash (HMAC) del email/teléfono |
+
+- **Último contacto** = lo más reciente de: último envío del formulario, última respuesta suya y último cambio de etapa.
+- **Borrado diario:** `/api/cron/leads` (cada minuto) lo hace una vez al día por espacio (`last_purge_at` de hace más de
+  23 h). Se queda en `lead_purge_log` (cuántos anonimizados, spam borrados, pruebas, pruebas legales caducadas, bajas
+  pasadas a hash) y Ajustes enseña la fecha del último y los últimos 7. «Borrar ahora lo caducado» lo lanza a mano.
+- **Anonimizar** borra sus envíos (con el hash de la IP), historial y cola de mensajes, y del lead deja solo tipo, etapa,
+  fechas, tiempo de primer contacto, encaje y la fuente (`utm_source`/`medium`/`campaign` o `google-ads`/`referral`):
+  las métricas siguen cuadrando. Nombre «Anónimo», email `anon-<id>@anon.invalid`, sin teléfono, campos, mensajes ni
+  identificadores de clic. Ya no sale en las listas (`anonymized_at`).
+- **Lo validado** (ya en el CRM principal) no lo toca el borrado de leads: tiene el ciclo del CRM.
+- **Prueba bloqueada** (`lead_consent_proof`): de cada envío borrado (salvo pruebas y lo marcado como spam) se guarda
+  qué aceptó (`consent`), versión del texto, URL de la política, página, origen y hora, con un HMAC del email (no el
+  email ni la IP), hasta `delete_after`. Sin políticas RLS: nadie con sesión la lee; solo el servidor.
+- **Lista de supresión:** desde esta versión guarda `h1:<HMAC-SHA-256>` del valor; las filas antiguas en claro las
+  convierte el borrado diario. El secreto es `LEADS_SECRET` (o `CRON_SECRET`): **no se puede cambiar** sin perder las bajas.
+- **IP:** nunca en claro; HMAC-SHA-256 con `LEADS_SECRET` (`ip_hash` del envío) y se borra con el lead. Las IP del equipo
+  (analítica de propuestas) también usan HMAC (`IP_HASH_SALT`, o `LEADS_SECRET`/`CRON_SECRET`).
+- **Derechos** (`/admin/leads/privacidad`, solo admin): buscar por email; **descargar en JSON** sus leads (envíos,
+  historial, mensajes), sus personas del CRM con ese email, sus interacciones y los correos apuntados; **suprimir** todo
+  eso (también pruebas y lo validado), con la prueba del consentimiento bloqueada y, si se marca, su hash en la lista de
+  supresión. Las empresas con ese mismo email se enseñan pero no se borran solas. Cada exportación o supresión queda en
+  `privacy_request` (quién, cuándo, hash del email y recuento), visible para los admins.
+- **WhatsApp 2:** se puede apagar por espacio (Ajustes → WhatsApp) si Meta lo reclasifica como Marketing; el 1 sigue.
 
 ## 7. Puesta en marcha
 
@@ -238,9 +275,11 @@ guardados; la subida de conversiones a Google Ads (reunión o ganado, hasta 90 d
 
 ## 8. Plantillas (para revisar y pedir la aprobación a Meta)
 Con la voz de quien firma (Ajustes → Firma) y en el idioma del lead (`es`, `en`, `fr`; otros → `en`). Son mensajes de
-servicio sobre lo que pidió, sin promoción. Variables: `{{1}}` nombre, `{{2}}` lo que pidió (generado: «Sala X en
-Valencia», «vuestra boda del 14 de junio de 2027»…), `{{3}}` una pregunta según el tipo (mensaje 1) o el enlace de
-reserva (mensaje 2; si no hay, el vídeo). Fuente: `src/lib/leads/templates.ts` (si se cambian aquí, cambiarlas también
+servicio sobre lo que pidió, sin promoción: se piden a Meta en la categoría **Utilidad (Utility)** — responden a la
+solicitud que la persona envió desde la web, sin descuentos, ofertas, precios, vídeos ni lenguaje comercial. Variables:
+`{{1}}` nombre, `{{2}}` lo que pidió (generado: «Sala X en Valencia», «vuestra boda del 14 de junio de 2027»…), `{{3}}`
+una pregunta según el tipo (mensaje 1) o el enlace de reserva (mensaje 2; sin enlace, el 2 no sale). Si Meta pasa la 2 a
+Marketing, se apaga en Ajustes → WhatsApp («Enviar el WhatsApp 2») y la 1 sigue saliendo. Fuente: `src/lib/leads/templates.ts` (si se cambian aquí, cambiarlas también
 en Meta). Ajustes → Leads muestra la vista previa con los datos reales del espacio.
 
 ### ES
@@ -248,11 +287,11 @@ en Meta). Ajustes → Leads muestra la vista previa con los datos reales del esp
 **wa1 (plantilla para Meta)**
 
 ```
-Hola {{1}}, soy Cristian, de Enjoy the Club. He visto tu mensaje sobre {{2}} y quería escribirte yo directamente.
+Hola {{1}}, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste desde la web sobre {{2}}.
 
-{{3}}
+Para poder responderte: {{3}}
 
-Con eso te digo cómo lo veo.
+Puedes contestar a este mensaje.
 
 Cristian
 ```
@@ -260,11 +299,11 @@ Cristian
 Ejemplo (local «Sala X» en Valencia):
 
 ```
-Hola Laura, soy Cristian, de Enjoy the Club. He visto tu mensaje sobre Sala X en Valencia y quería escribirte yo directamente.
+Hola Laura, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste desde la web sobre Sala X en Valencia.
 
-¿Qué noches abrís y cuánta gente os suele venir?
+Para poder responderte: ¿Qué noches abrís y cuánta gente os suele venir?
 
-Con eso te digo cómo lo veo.
+Puedes contestar a este mensaje.
 
 Cristian
 ```
@@ -272,9 +311,9 @@ Cristian
 **wa2 (plantilla para Meta)**
 
 ```
-Hola {{1}}, te escribo de nuevo por lo de {{2}}. Si te va mejor hablarlo, elige aquí la hora que te venga bien: {{3}}
+Hola {{1}}, sigo con tu solicitud sobre {{2}}. Si prefieres que lo hablemos por teléfono, puedes elegir la hora aquí: {{3}}
 
-Y si prefieres seguir por aquí, contéstame cuando puedas.
+También puedes contestar a este mensaje.
 
 Cristian
 ```
@@ -282,9 +321,9 @@ Cristian
 Ejemplo (local «Sala X» en Valencia):
 
 ```
-Hola Laura, te escribo de nuevo por lo de Sala X en Valencia. Si te va mejor hablarlo, elige aquí la hora que te venga bien: https://cal.com/cristian
+Hola Laura, sigo con tu solicitud sobre Sala X en Valencia. Si prefieres que lo hablemos por teléfono, puedes elegir la hora aquí: https://cal.com/cristian
 
-Y si prefieres seguir por aquí, contéstame cuando puedas.
+También puedes contestar a este mensaje.
 
 Cristian
 ```
@@ -336,23 +375,23 @@ Si no quieres que te escribamos más: https://enjoy.ventas.cofundo.io/api/v1/lea
 **wa1 (plantilla para Meta)**
 
 ```
-Hi {{1}}, it's Cristian from Enjoy the Club. I saw your message about {{2}} and wanted to get back to you myself.
+Hi {{1}}, it's Cristian from Enjoy the Club. I'm writing about the request you sent us through the website about {{2}}.
 
-{{3}}
+So I can answer it: {{3}}
 
-With that I can tell you how I see it.
+You can reply to this message.
 
 Cristian
 ```
 
-Ejemplo (local «Sala X» en Valencia):
+Example (venue “Sala X” in Valencia):
 
 ```
-Hi Laura, it's Cristian from Enjoy the Club. I saw your message about Sala X in Valencia and wanted to get back to you myself.
+Hi Laura, it's Cristian from Enjoy the Club. I'm writing about the request you sent us through the website about Sala X in Valencia.
 
-Which nights are you open and how many people do you usually get?
+So I can answer it: Which nights are you open and how many people do you usually get?
 
-With that I can tell you how I see it.
+You can reply to this message.
 
 Cristian
 ```
@@ -360,19 +399,19 @@ Cristian
 **wa2 (plantilla para Meta)**
 
 ```
-Hi {{1}}, following up on {{2}}. If it's easier to talk it through, pick a time that suits you here: {{3}}
+Hi {{1}}, following up on your request about {{2}}. If you'd rather discuss it by phone, you can pick a time here: {{3}}
 
-Or just reply here whenever you can.
+You can also reply to this message.
 
 Cristian
 ```
 
-Ejemplo (local «Sala X» en Valencia):
+Example (venue “Sala X” in Valencia):
 
 ```
-Hi Laura, following up on Sala X in Valencia. If it's easier to talk it through, pick a time that suits you here: https://cal.com/cristian
+Hi Laura, following up on your request about Sala X in Valencia. If you'd rather discuss it by phone, you can pick a time here: https://cal.com/cristian
 
-Or just reply here whenever you can.
+You can also reply to this message.
 
 Cristian
 ```
@@ -424,23 +463,23 @@ If you'd rather not hear from us again: https://enjoy.ventas.cofundo.io/api/v1/l
 **wa1 (plantilla para Meta)**
 
 ```
-Bonjour {{1}}, c'est Cristian, de Enjoy the Club. J'ai vu ton message à propos de {{2}} et je voulais te répondre moi-même.
+Bonjour {{1}}, c'est Cristian, de Enjoy the Club. Je t'écris au sujet de la demande que tu nous as envoyée depuis le site à propos de {{2}}.
 
-{{3}}
+Pour pouvoir te répondre : {{3}}
 
-Avec ça, je te dis ce que j'en pense.
+Tu peux répondre à ce message.
 
 Cristian
 ```
 
-Ejemplo (local «Sala X» en Valencia):
+Exemple (établissement « Sala X » à Valencia) :
 
 ```
-Bonjour Laura, c'est Cristian, de Enjoy the Club. J'ai vu ton message à propos de Sala X à Valencia et je voulais te répondre moi-même.
+Bonjour Laura, c'est Cristian, de Enjoy the Club. Je t'écris au sujet de la demande que tu nous as envoyée depuis le site à propos de Sala X à Valencia.
 
-Vous ouvrez quels soirs et combien de monde vient en général ?
+Pour pouvoir te répondre : Vous ouvrez quels soirs et combien de monde vient en général ?
 
-Avec ça, je te dis ce que j'en pense.
+Tu peux répondre à ce message.
 
 Cristian
 ```
@@ -448,19 +487,19 @@ Cristian
 **wa2 (plantilla para Meta)**
 
 ```
-Bonjour {{1}}, je reviens vers toi pour {{2}}. Si c'est plus simple d'en parler, choisis ici le créneau qui te convient : {{3}}
+Bonjour {{1}}, je reviens vers toi au sujet de ta demande concernant {{2}}. Si tu préfères en parler par téléphone, tu peux choisir le créneau ici : {{3}}
 
-Sinon, réponds-moi ici quand tu peux.
+Tu peux aussi répondre à ce message.
 
 Cristian
 ```
 
-Ejemplo (local «Sala X» en Valencia):
+Exemple (établissement « Sala X » à Valencia) :
 
 ```
-Bonjour Laura, je reviens vers toi pour Sala X à Valencia. Si c'est plus simple d'en parler, choisis ici le créneau qui te convient : https://cal.com/cristian
+Bonjour Laura, je reviens vers toi au sujet de ta demande concernant Sala X à Valencia. Si tu préfères en parler par téléphone, tu peux choisir le créneau ici : https://cal.com/cristian
 
-Sinon, réponds-moi ici quand tu peux.
+Tu peux aussi répondre à ce message.
 
 Cristian
 ```

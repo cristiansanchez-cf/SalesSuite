@@ -1,10 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { DuplicateKey, type LeadsDb } from './db';
-import type { Lead, LeadEvent, LeadMessage, LeadSettings, Submission } from './types';
+import { suppressionKey } from './privacy';
+import { DEFAULT_RETENTION, type Lead, type LeadEvent, type LeadMessage, type LeadSettings, type Submission } from './types';
 
 type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-function check<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
+export function check<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
   if (res.error) {
     if (res.error.code === '23505') throw new DuplicateKey(res.error.message);
     if (res.error.code === '42501') throw new Error(`permission denied: ${res.error.message}`);
@@ -19,8 +20,13 @@ const settingsOf = (r: Row): LeadSettings => ({
   whatsappPhoneId: r.whatsapp_phone_id, whatsappEnabled: r.whatsapp_enabled, whatsappTemplates: r.whatsapp_templates ?? {}, timezone: r.timezone,
   sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [], resendKeyHint: r.resend_key_hint ?? null,
   templates: r.templates ?? {}, aiContext: r.ai_context ?? null, emailSignature: r.email_signature ?? {}, media: r.media ?? {},
+  whatsappWa2: r.whatsapp_wa2_enabled ?? true, lastPurgeAt: r.last_purge_at ?? null,
+  retention: {
+    leadMonths: r.retention_lead_months ?? DEFAULT_RETENTION.leadMonths, spamMonths: r.retention_spam_months ?? DEFAULT_RETENTION.spamMonths,
+    testDays: r.retention_test_days ?? DEFAULT_RETENTION.testDays, proofYears: r.retention_proof_years ?? DEFAULT_RETENTION.proofYears,
+  },
 });
-const leadOf = (r: Row): Lead => ({
+export const leadOf = (r: Row): Lead => ({
   id: r.id, tenantId: r.tenant_id, createdAt: r.created_at, isTest: r.is_test, email: r.email, emailKind: r.email_kind, domain: r.domain, name: r.name,
   phoneRaw: r.phone_raw, phoneE164: r.phone_e164, type: r.type, locale: r.locale, stage: r.stage, stageAt: r.stage_at, discardReason: r.discard_reason,
   quarantined: r.quarantined, quarantineReasons: r.quarantine_reasons ?? [], validatedAt: r.validated_at, validatedBy: r.validated_by, score: r.score,
@@ -28,28 +34,29 @@ const leadOf = (r: Row): Lead => ({
   consentMarketing: r.consent_marketing, consentAds: r.consent_ads, whatsappOk: r.whatsapp_ok, firstResponseAt: r.first_response_at,
   firstResponseMins: r.first_response_mins, lastInboundAt: r.last_inbound_at, sequenceStoppedAt: r.sequence_stopped_at,
   sequenceStopReason: r.sequence_stop_reason, submissions: r.submissions, lastSubmissionAt: r.last_submission_at, accountId: r.account_id, contactId: r.contact_id,
+  anonymizedAt: r.anonymized_at ?? null,
 });
-const subOf = (r: Row): Submission => ({
+export const subOf = (r: Row): Submission => ({
   id: r.id, tenantId: r.tenant_id, leadId: r.lead_id, receivedAt: r.received_at, idempotencyKey: r.idempotency_key, schema: r.schema, isTest: r.is_test,
   type: r.type, fields: r.fields ?? {}, message: r.message, consent: r.consent ?? {}, context: r.context ?? {}, origin: r.origin, ipHash: r.ip_hash,
   spamReasons: r.spam_reasons ?? [], response: r.response ?? {},
 });
-const eventOf = (r: Row): LeadEvent => ({ id: r.id, tenantId: r.tenant_id, leadId: r.lead_id, at: r.at, kind: r.kind, fromStage: r.from_stage, toStage: r.to_stage, byUser: r.by_user, data: r.data ?? {} });
-const msgOf = (r: Row): LeadMessage => ({
+export const eventOf = (r: Row): LeadEvent => ({ id: r.id, tenantId: r.tenant_id, leadId: r.lead_id, at: r.at, kind: r.kind, fromStage: r.from_stage, toStage: r.to_stage, byUser: r.by_user, data: r.data ?? {} });
+export const msgOf = (r: Row): LeadMessage => ({
   id: r.id, tenantId: r.tenant_id, leadId: r.lead_id, createdAt: r.created_at, channel: r.channel, step: r.step, toAddr: r.to_addr, sendAt: r.send_at,
   status: r.status, attempts: r.attempts, sentAt: r.sent_at, providerId: r.provider_id, error: r.error, payload: r.payload ?? {},
 });
 
-const LEAD_COLS: Record<string, string> = {
+export const LEAD_COLS: Record<string, string> = {
   tenantId: 'tenant_id', createdAt: 'created_at', isTest: 'is_test', email: 'email', emailKind: 'email_kind', domain: 'domain', name: 'name', phoneRaw: 'phone_raw',
   phoneE164: 'phone_e164', type: 'type', locale: 'locale', stage: 'stage', stageAt: 'stage_at', discardReason: 'discard_reason', quarantined: 'quarantined',
   quarantineReasons: 'quarantine_reasons', validatedAt: 'validated_at', validatedBy: 'validated_by', score: 'score', scoreDetail: 'score_detail', facts: 'facts',
   attributionFirst: 'attribution_first', attributionLast: 'attribution_last', consentMarketing: 'consent_marketing', consentAds: 'consent_ads',
   whatsappOk: 'whatsapp_ok', firstResponseAt: 'first_response_at', firstResponseMins: 'first_response_mins', lastInboundAt: 'last_inbound_at',
   sequenceStoppedAt: 'sequence_stopped_at', sequenceStopReason: 'sequence_stop_reason', submissions: 'submissions', lastSubmissionAt: 'last_submission_at',
-  accountId: 'account_id', contactId: 'contact_id',
+  accountId: 'account_id', contactId: 'contact_id', anonymizedAt: 'anonymized_at',
 };
-const toRow = (o: Record<string, unknown>, cols: Record<string, string>) => Object.fromEntries(Object.entries(o).filter(([k, v]) => v !== undefined && cols[k]).map(([k, v]) => [cols[k], v]));
+export const toRow = (o: Record<string, unknown>, cols: Record<string, string>) => Object.fromEntries(Object.entries(o).filter(([k, v]) => v !== undefined && cols[k]).map(([k, v]) => [cols[k], v]));
 
 export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
   return {
@@ -68,6 +75,8 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
         whatsapp_phone_id: s.whatsappPhoneId, whatsapp_enabled: s.whatsappEnabled, whatsapp_templates: s.whatsappTemplates, timezone: s.timezone,
         send_from_hour: s.sendFromHour, send_to_hour: s.sendToHour, holidays: s.holidays,
         ...(s.templates !== undefined ? { templates: s.templates } : {}), ...(s.aiContext !== undefined ? { ai_context: s.aiContext } : {}), ...(s.emailSignature !== undefined ? { email_signature: s.emailSignature } : {}), ...(s.media !== undefined ? { media: s.media } : {}),
+        ...(s.whatsappWa2 !== undefined ? { whatsapp_wa2_enabled: s.whatsappWa2 } : {}),
+        ...(s.retention ? { retention_lead_months: s.retention.leadMonths, retention_spam_months: s.retention.spamMonths, retention_test_days: s.retention.testDays, retention_proof_years: s.retention.proofYears } : {}),
       }, { onConflict: 'tenant_id' }));
     },
     async resendKey(tenantId) {
@@ -150,17 +159,20 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
       return (check(await q.select('id')) as Row[]).length;
     },
     async suppressed(tenantId, v) {
-      const vals = [v.email, v.phone].filter((x): x is string => !!x);
+      // Se guarda el hash; las filas antiguas en claro valen hasta que el borrado diario las convierte.
+      const keys = (x: string | null | undefined) => (x ? [x, suppressionKey(x)].filter((k): k is string => !!k) : []);
+      const vals = [...keys(v.email), ...keys(v.phone)];
       if (!vals.length) return { email: false, whatsapp: false };
       const rows = check(await sb.from('lead_suppression').select('channel, value').eq('tenant_id', tenantId).in('value', vals)) as Row[];
-      const hit = (val: string | null | undefined, ch: string) => !!val && rows.some((r) => r.value === val && (r.channel === ch || r.channel === 'all'));
+      const hit = (val: string | null | undefined, ch: string) => !!val && rows.some((r) => keys(val).includes(r.value) && (r.channel === ch || r.channel === 'all'));
       return { email: hit(v.email, 'email'), whatsapp: hit(v.phone, 'whatsapp') || hit(v.email, 'all') };
     },
     async suppress(tenantId, channel, value, reason) {
-      check(await sb.from('lead_suppression').upsert({ tenant_id: tenantId, channel, value, reason }, { onConflict: 'tenant_id,channel,value', ignoreDuplicates: true }));
+      check(await sb.from('lead_suppression').upsert({ tenant_id: tenantId, channel, value: suppressionKey(value) ?? value, reason }, { onConflict: 'tenant_id,channel,value', ignoreDuplicates: true }));
     },
     async list(tenantId, view, opts = {}) {
       let q = sb.from('lead').select('*').eq('tenant_id', tenantId).order('last_submission_at', { ascending: false }).limit(opts.limit ?? 200);
+      if (!opts.anonymized) q = q.is('anonymized_at', null);
       if (view === 'test') q = q.eq('is_test', true);
       else {
         q = q.eq('is_test', false);
@@ -178,7 +190,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
     },
     async counts(tenantId) {
       const c = async (quar: boolean) => {
-        let q = sb.from('lead').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_test', false).eq('quarantined', quar).neq('stage', 'spam');
+        let q = sb.from('lead').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_test', false).eq('quarantined', quar).neq('stage', 'spam').is('anonymized_at', null);
         if (!quar) q = q.is('validated_at', null);
         const r = await q;
         return r.count ?? 0;

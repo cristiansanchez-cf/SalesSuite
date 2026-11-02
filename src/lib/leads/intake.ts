@@ -45,6 +45,9 @@ export function whatsappTemplate(s: LeadSettings, step: 'wa1' | 'wa2', locale: s
   return s.whatsappTemplates?.[step]?.[msgLocale(locale)] ?? null;
 }
 const whatsappOn = (s: LeadSettings, ready: boolean, locale: string) => ready && s.whatsappEnabled && !!s.whatsappPhoneId && !!whatsappTemplate(s, 'wa1', locale);
+/** WhatsApp 2: encendido en el espacio (se apaga si Meta lo pasa a Marketing), con plantilla y con enlace de reserva. */
+export const wa2On = (s: LeadSettings, type: LeadInput['type'], fields: Record<string, string>, locale: string) =>
+  s.whatsappWa2 !== false && !!whatsappTemplate(s, 'wa2', locale) && !!mediaFor(s, type, fields, locale).booking;
 
 function facts(i: LeadInput, base: string, prev: Record<string, unknown> = {}): Record<string, unknown> {
   const f = i.fields;
@@ -179,7 +182,8 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
       const second = nextBusinessAt(first1.at, d.settings, 10, (d.rand ?? Math.random)());
       if (canAuto) {
         msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa1', toAddr: lead.phoneE164, sendAt: first1.at.toISOString(), payload });
-        msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa2', toAddr: lead.phoneE164, sendAt: second.toISOString(), payload });
+        // El 2 (recordatorio con el enlace de reserva) solo si está encendido, tiene plantilla y hay enlace que mandar.
+        if (wa2On(d.settings, i.type, cls.auto ? i.fields : {}, lead.locale)) msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa2', toAddr: lead.phoneE164, sendAt: second.toISOString(), payload });
       }
       next = { channel: 'whatsapp', eta: first1.eta, at: first1.at.toISOString() };
     }

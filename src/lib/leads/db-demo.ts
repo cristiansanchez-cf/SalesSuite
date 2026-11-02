@@ -1,9 +1,15 @@
 /** Leads en memoria (demo y pruebas). Mismo comportamiento que Supabase salvo la RLS (la consola filtra por espacio). */
 import { randomUUID } from 'node:crypto';
 import { DuplicateKey, type LeadsDb } from './db';
+import { suppressionKey } from './privacy';
 import type { Lead, LeadEvent, LeadMessage, LeadSettings, Submission } from './types';
 
-export interface LeadsStore { secrets?: Record<string, string>; settings: LeadSettings[]; leads: Lead[]; subs: Submission[]; events: LeadEvent[]; msgs: LeadMessage[]; supp: { tenantId: string; channel: string; value: string; reason: string }[] }
+export interface LeadsStore {
+  secrets?: Record<string, string>; settings: LeadSettings[]; leads: Lead[]; subs: Submission[]; events: LeadEvent[]; msgs: LeadMessage[];
+  supp: { tenantId: string; channel: string; value: string; reason: string; at?: string }[];
+  /** Privacidad (privacy-db-demo.ts): pruebas de consentimiento bloqueadas, registro de borrados y de peticiones. */
+  proofs?: import('./privacy').ConsentProof[]; purges?: import('./privacy').PurgeLog[]; requests?: import('./privacy').PrivacyRequest[];
+}
 const KEY = Symbol.for('salessuite.demoLeads');
 type G = typeof globalThis & { [KEY]?: LeadsStore };
 
@@ -34,7 +40,8 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
       if (s.settings.some((x) => x.brand === v.brand && x.tenantId !== v.tenantId)) throw new DuplicateKey('brand');
       const prev = s.settings.find((x) => x.tenantId === v.tenantId);
       const hint = prev?.resendKeyHint ?? null;
-      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null, emailSignature: v.emailSignature ?? prev?.emailSignature ?? {}, media: v.media ?? prev?.media ?? {} });
+      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null, emailSignature: v.emailSignature ?? prev?.emailSignature ?? {}, media: v.media ?? prev?.media ?? {},
+        whatsappWa2: v.whatsappWa2 ?? prev?.whatsappWa2 ?? true, retention: v.retention ?? prev?.retention, lastPurgeAt: prev?.lastPurgeAt ?? null });
     },
     async resendKey(tenantId) { return s.secrets?.[tenantId] ?? null; },
     async setResendKey(tenantId, sealed, hint) {
@@ -90,16 +97,19 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
       return n;
     },
     async suppressed(tenantId, v) {
-      const hit = (val: string | null | undefined, ch: string) => !!val && s.supp.some((x) => x.tenantId === tenantId && x.value === val && (x.channel === ch || x.channel === 'all'));
+      const keys = (x: string) => [x, suppressionKey(x)];
+      const hit = (val: string | null | undefined, ch: string) => !!val && s.supp.some((x) => x.tenantId === tenantId && keys(val).includes(x.value) && (x.channel === ch || x.channel === 'all'));
       return { email: hit(v.email, 'email'), whatsapp: hit(v.phone, 'whatsapp') || hit(v.email, 'all') };
     },
-    async suppress(tenantId, channel, value, reason) {
-      if (!s.supp.some((x) => x.tenantId === tenantId && x.channel === channel && x.value === value)) s.supp.push({ tenantId, channel, value, reason });
+    async suppress(tenantId, channel, raw, reason) {
+      const value = suppressionKey(raw) ?? raw;
+      if (!s.supp.some((x) => x.tenantId === tenantId && x.channel === channel && x.value === value)) s.supp.push({ tenantId, channel, value, reason, at: now() });
     },
     async list(tenantId, view, opts = {}) {
       const q = opts.q?.trim().toLowerCase();
       return s.leads.filter((l) => {
         if (l.tenantId !== tenantId) return false;
+        if (l.anonymizedAt && !opts.anonymized) return false;
         if (view === 'test') { if (!l.isTest) return false; } else if (l.isTest) return false;
         if (view === 'inbox' && (l.validatedAt || l.quarantined || l.stage === 'spam')) return false;
         if (view === 'quarantine' && (!l.quarantined || l.stage === 'spam')) return false;
@@ -113,7 +123,7 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
       return r ? { at: r.receivedAt, test: r.isTest } : null;
     },
     async counts(tenantId) {
-      const ls = s.leads.filter((l) => l.tenantId === tenantId && !l.isTest && l.stage !== 'spam');
+      const ls = s.leads.filter((l) => l.tenantId === tenantId && !l.isTest && l.stage !== 'spam' && !l.anonymizedAt);
       return { inbox: ls.filter((l) => !l.validatedAt && !l.quarantined).length, quarantine: ls.filter((l) => l.quarantined).length };
     },
   };

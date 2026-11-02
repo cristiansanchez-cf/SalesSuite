@@ -97,6 +97,7 @@ jobs:
           node scripts/smoke-cleanup.cjs
           node scripts/smoke-leads.cjs
           node scripts/smoke-inbox.cjs
+          node scripts/smoke-privacy.cjs
           node scripts/smoke-prospect.cjs
           node scripts/smoke-notes.cjs
           node scripts/smoke-kinds.cjs
