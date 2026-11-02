@@ -1,4 +1,4 @@
-/** Buscador de ciudad al dar de alta o editar una empresa (docs/CRM_DINAMICO.md §47). */
+/** Buscador de ciudad al dar de alta o editar una empresa (docs/CRM_DINAMICO.md §44). */
 import { defineMessages } from '../core';
 
 export const zonePickMessages = defineMessages({

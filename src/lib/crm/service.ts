@@ -1259,7 +1259,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * Buscar una empresa por el nombre para «¿De qué empresa vas a hablar?» (autocompletar): sin IA, tolera errores del
    * dictado. Las 8 que más se parecen, con su sitio.
    */
-  // ---- Ciudad de cualquier país (docs/CRM_DINAMICO.md §47): el buscador de ciudad pregunta a Google lo que no tiene.
+  // ---- Ciudad de cualquier país (docs/CRM_DINAMICO.md §44): el buscador de ciudad pregunta a Google lo que no tiene.
   /** Sitios de Google para lo escrito: `v` es la zona si ya existe o «g:<id de Google>» (se crea al guardar). */
   async function citySearch(qIn: unknown): Promise<Array<{ v: string; n: string; p: string; k: string }>> {
     requireUse();

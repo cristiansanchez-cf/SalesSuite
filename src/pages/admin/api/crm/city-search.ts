@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { AdminError } from '~/lib/admin/service';
 import { localizeError } from '~/lib/i18n/errors';
 
-/** Buscador de ciudad (docs/CRM_DINAMICO.md §47): ciudades de cualquier país, en Google, para lo que no está ya. */
+/** Buscador de ciudad (docs/CRM_DINAMICO.md §44): ciudades de cualquier país, en Google, para lo que no está ya. */
 export const GET: APIRoute = async ({ locals, url }) => {
   const admin = locals.admin;
   if (!admin) return Response.json({ error: 'No autenticado' }, { status: 401 });

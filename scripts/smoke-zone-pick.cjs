@@ -1,5 +1,5 @@
 /**
- * Smoke del buscador de ciudad (docs/CRM_DINAMICO.md §47): un comercial da de alta una empresa en Bilbao (del catálogo
+ * Smoke del buscador de ciudad (docs/CRM_DINAMICO.md §44): un comercial da de alta una empresa en Bilbao (del catálogo
  * de España, sin que el admin la haya configurado) y otra en Busan (Google, con la de pruebas: Corea del Sur); las dos
  * zonas se crean solas. En Datos se cambia la ciudad con el mismo buscador.
  *   npm run build && npm run start:demo ; node scripts/smoke-zone-pick.cjs   (con AI_RESEARCH_FIXTURE=1)

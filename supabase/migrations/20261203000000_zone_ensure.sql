@@ -1,4 +1,4 @@
--- Ciudad de cualquier sitio de España al dar de alta una empresa (docs/CRM_DINAMICO.md §47): quien trabaja empresas
+-- Ciudad de cualquier sitio de España al dar de alta una empresa (docs/CRM_DINAMICO.md §44): quien trabaja empresas
 -- (admin, jefe/a, comercial; no partners) elige una provincia o ciudad aunque aún no sea una zona, y se crea su ruta
 -- (España › Comunidad › Provincia › Ciudad) reutilizando los tramos que ya existen (mismo nombre bajo el mismo padre).
 -- La ruta la arma el servidor desde su catálogo de provincias; aquí solo se valida la forma. Devuelve la última zona.

@@ -58,7 +58,7 @@ export async function searchPlaces(query: string, apiKey: string, fetchImpl: typ
 }
 
 /**
- * Buscar una ciudad de cualquier país (docs/CRM_DINAMICO.md §47): lo que se escribe en el buscador de ciudad cuando no
+ * Buscar una ciudad de cualquier país (docs/CRM_DINAMICO.md §44): lo que se escribe en el buscador de ciudad cuando no
  * está entre las zonas ni en el catálogo de España («Busan», «Osaka»). Solo sitios (municipio, provincia, región,
  * país), no locales; con sus partes para colgarlo de su país y región.
  */

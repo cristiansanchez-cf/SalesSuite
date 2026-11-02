@@ -1,5 +1,5 @@
 /**
- * Cualquier sitio de España al dar de alta una empresa (docs/CRM_DINAMICO.md §47, criterio de Cristian: «deberías
+ * Cualquier sitio de España al dar de alta una empresa (docs/CRM_DINAMICO.md §44, criterio de Cristian: «deberías
  * poder dar de alta de cualquier ciudad del país en el que operas»). Catálogo fijo de comunidades, provincias y las
  * ciudades que más se buscan (las capitales con otro nombre que su provincia, como Bilbao, y las grandes). Los nombres,
  * como los que deja «Ordenar ciudades» (zones-normalize): en español, provincia «Baleares», «Vizcaya»… con sus otros
