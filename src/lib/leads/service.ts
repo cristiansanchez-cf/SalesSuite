@@ -197,6 +197,16 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.saveSettings({ ...prev, templates: onlyCustom(r.data as LeadTemplates), ...(aiContext !== undefined ? { aiContext } : {}) });
   }
 
+  /** Activar (entran leads reales) o pausar (solo pruebas). */
+  async function setEnabled(on: boolean) {
+    requireAdmin();
+    const prev = await db.settings(t);
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    if (prev.enabled === on) return;
+    await db.saveSettings({ ...prev, enabled: on });
+  }
+  async function lastSubmission() { requireManager(); return db.lastSubmission(t); }
+
   async function saveSignature(input: unknown) {
     requireAdmin();
     const r = signatureSchema.safeParse(input);
@@ -218,7 +228,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, setEnabled, lastSubmission, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

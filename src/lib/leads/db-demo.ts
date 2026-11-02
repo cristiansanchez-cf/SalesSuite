@@ -105,6 +105,10 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
         return !q || l.name.toLowerCase().includes(q) || l.email.includes(q);
       }).sort((a, b) => b.lastSubmissionAt.localeCompare(a.lastSubmissionAt)).slice(0, opts.limit ?? 200).map(clone);
     },
+    async lastSubmission(tenantId) {
+      const r = s.subs.filter((x) => x.tenantId === tenantId).sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))[0];
+      return r ? { at: r.receivedAt, test: r.isTest } : null;
+    },
     async counts(tenantId) {
       const ls = s.leads.filter((l) => l.tenantId === tenantId && !l.isTest && l.stage !== 'spam');
       return { inbox: ls.filter((l) => !l.validatedAt && !l.quarantined).length, quarantine: ls.filter((l) => l.quarantined).length };

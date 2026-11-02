@@ -41,4 +41,6 @@ export interface LeadsDb {
 
   list(tenantId: string, view: View, opts?: { q?: string; limit?: number }): Promise<Lead[]>;
   counts(tenantId: string): Promise<{ inbox: number; quarantine: number }>;
+  /** El último envío que llegó de la web (pruebas incluidas): para saber si la web ya está conectada. */
+  lastSubmission(tenantId: string): Promise<{ at: string; test: boolean } | null>;
 }

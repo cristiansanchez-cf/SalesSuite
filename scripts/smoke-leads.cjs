@@ -112,7 +112,16 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   assert(st.includes('re_…5678') && !(await p.content()).includes('re_smokeKey12345678'), 'clave propia guardada: solo se ve la pista');
   await Promise.all([p.waitForURL(/ok=resendCleared/), p.click('[data-testid=leads-resend-clear]')]);
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
-  assert(true, 'ajustes guardados');
+  assert((await p.textContent('[data-testid=leads-status-badge]')).includes('Activo'), 'ajustes guardados: guardar no apaga la entrada');
+  // ---- Activar / pausar (arriba a la derecha) y la lista de lo que falta
+  assert(await p.getAttribute('[data-testid=leads-check-resend]', 'data-ok') === '1', 'lista: lo obligatorio está');
+  await Promise.all([p.waitForURL(/ok=paused/), p.click('[data-testid=leads-toggle]')]);
+  assert((await p.textContent('[data-testid=leads-status-badge]')).includes('En pruebas'), 'pausado');
+  await p.goto(`${BASE}/admin/leads`);
+  assert(await p.isVisible('[data-testid=leads-go-settings]'), 'bandeja pausada: botón a Ajustes');
+  await p.goto(`${BASE}/admin/leads/ajustes`);
+  await Promise.all([p.waitForURL(/ok=live/), p.click('[data-testid=leads-toggle]')]);
+  assert((await p.textContent('[data-testid=leads-status-badge]')).includes('Activo'), 'activado otra vez');
   if (OUT) await p.screenshot({ path: `${OUT}/leads-settings.png`, fullPage: true });
   // ---- Firma del email
   await p.goto(`${BASE}/admin/leads/ajustes`);

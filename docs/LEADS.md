@@ -196,7 +196,9 @@ guardados; la subida de conversiones a Google Ads (reunión o ganado, hasta 90 d
      guardar claves y no lo cambies: si cambia, habría que volver a pegar las claves.
    - Para el nurture, más adelante, un subdominio aparte (`news.<dominio>`) para proteger la reputación del principal.
 5. **Leads → Ajustes** (admin): remitente (`hello@enjoytheclub.es`), nombre (`Cristian · Enjoy the Club`), *Responder a*
-   (un buzón compartido que se lea, p. ej. `hello@`), firma, a quién avisar, enlace de reserva, webs permitidas, festivos. Revisar la vista previa y **Recibir leads**.
+   (un buzón compartido que se lea, p. ej. `hello@`), firma, a quién avisar, enlace de reserva, webs permitidas, festivos. Revisar la vista previa. Arriba de Ajustes, «Lo que tienes» dice qué falta; **Activar** (arriba a la
+   derecha) solo se puede con lo obligatorio listo (cuenta de email y dominio, remitente y respuestas, a quién avisar).
+   En pruebas (pausado) solo entran los envíos de prueba. Se llega desde Leads web (bandeja) o desde Configurar → Empresa.
 6. **Dar la URL a la web** (`https://enjoy.ventas.cofundo.io/api/v1/leads`) y probar con `"test": true` o desde
    localhost; luego un envío real.
 7. **WhatsApp, cuando haya SIM:**
@@ -210,6 +212,9 @@ guardados; la subida de conversiones a Google Ads (reunión o ganado, hasta 90 d
      `WHATSAPP_VERIFY_TOKEN`, suscribir `messages`. `WHATSAPP_APP_SECRET` = el App Secret de la app de Meta. Un solo
      webhook sirve para todas las empresas (el número dice de cuál es).
    - En Ajustes: el `phone_number_id`, los nombres de las plantillas y **Enviar por WhatsApp**.
+   - Se llama a la Graph API v25.0 (`src/lib/leads/whatsapp.ts`; vigente hasta julio de 2028). Subirla antes de que caduque.
+   - Categoría: el WhatsApp 1 responde a lo que pidió (servicio, *Utility*). El 2 es un recordatorio: si Meta lo pasa a
+     *Marketing*, sigue funcionando pero cuesta más (en España ~0,06 € frente a ~0,017 €).
    - En la web, el aviso bajo el teléfono debe nombrar WhatsApp y la marca (es la prueba de que aceptó que le escribieran
      por ahí) y mandar `whatsapp_notice_shown` y `whatsapp_text_version`.
 

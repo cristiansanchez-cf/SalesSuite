@@ -45,6 +45,8 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
   const setup: Group[] = [
     { href: '/admin/setup', label: L.company, icon: 'building2', testid: 'nav-company', tabs: [
       { href: '/admin/setup', label: L.setup }, { href: '/admin/brand', label: L.brand, show: perms.manageTenant },
+      // Ajustes de los leads de la web: también desde Configurar, que es donde se busca lo que se configura.
+      { href: '/admin/leads/ajustes', label: L.leads, testid: 'tab-leads-settings', show: perms.manageTenant },
     ] },
     { href: '/admin/playbook', label: L.playbook, icon: 'book-open', count: counts.pendingPlaybook || undefined, tabs: [] },
     ...(perms.manageTenant ? [{ href: '/admin/catalog', label: L.catalogPrices, icon: 'boxes' as IconName, testid: 'nav-catalog', tabs: [

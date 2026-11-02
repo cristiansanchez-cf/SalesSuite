@@ -172,6 +172,10 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
       if (opts.q?.trim()) { const s = opts.q.trim().replace(/[%,()]/g, ' '); q = q.or(`name.ilike.%${s}%,email.ilike.%${s}%`); }
       return (check(await q) as Row[]).map(leadOf);
     },
+    async lastSubmission(tenantId) {
+      const r = check(await sb.from('lead_submission').select('received_at, is_test').eq('tenant_id', tenantId).order('received_at', { ascending: false }).limit(1).maybeSingle()) as Row | null;
+      return r ? { at: r.received_at, test: r.is_test } : null;
+    },
     async counts(tenantId) {
       const c = async (quar: boolean) => {
         let q = sb.from('lead').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_test', false).eq('quarantined', quar).neq('stage', 'spam');

@@ -41,10 +41,13 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
 ---
 <AdminLayout title={L.title}>
   <PageHeader eyebrow={L.eyebrow} title={L.title} lede={L.lede}>
+    {settings && <a href={svc.canConfigure ? '/admin/leads/ajustes' : undefined} class={`co-badge ${settings.enabled ? 'co-badge--signal' : 'co-badge--attention'}`} data-testid="leads-status-badge">{settings.enabled ? L.set.live : L.set.paused}</a>}
     {svc.canConfigure && <a class="co-btn co-btn--ghost" href="/admin/leads/ajustes" data-testid="leads-settings"><Icon name="settings" size={16} />{L.settings}</a>}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
-  {settings && !settings.enabled && <div class="mb-4"><Alert kind="info" title={L.off} /></div>}
+  {settings && !settings.enabled && (
+    <div class="mb-4 grid gap-2"><Alert kind="info" title={L.off} />{svc.canConfigure && <a class="co-btn co-btn--primary co-btn--sm w-fit" href="/admin/leads/ajustes" data-testid="leads-go-settings">{L.settings}</a>}</div>
+  )}
 
   <section class="mb-6 grid gap-3 sm:grid-cols-3" data-testid="leads-metrics">
     <div class="co-card !p-5">

@@ -5,7 +5,8 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-const GRAPH = 'https://graph.facebook.com/v21.0';
+// v25.0: vigente hasta julio de 2028 (la v21.0 deja de funcionar el 21/01/2027).
+const GRAPH = 'https://graph.facebook.com/v25.0';
 const LANG: Record<string, string> = { es: 'es_ES', en: 'en', fr: 'fr' };
 
 export interface WhatsApp {
