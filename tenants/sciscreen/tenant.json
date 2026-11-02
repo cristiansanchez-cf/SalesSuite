@@ -1,5 +1,5 @@
 {
-  "$comment": "Solo la marca de SciScreen (su design system 1.0, 1 nov 2026): colores, tipografía, radios, logo, favicon e imagen para compartir. El espacio se creó desde Plataforma; su contenido (agente de alta) y su CRM (importado) viven en la base de datos y este archivo no los toca: no hay catálogo, mercado, jugadas, precios ni campos. Ver README.md.",
+  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, el sello en su página y la inversión. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
   "slug": "sciscreen",
   "name": "SciScreen",
   "default_locale": "es-ES",
@@ -24,9 +24,21 @@
       "display": "'Darker Grotesque', ui-sans-serif, system-ui, sans-serif",
       "sans": "'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
       "faces": [
-        { "family": "Darker Grotesque", "src": "asset:fonts/DarkerGrotesque-Medium.woff2", "weight": "500" },
-        { "family": "Darker Grotesque", "src": "asset:fonts/DarkerGrotesque-Bold.woff2", "weight": "700" },
-        { "family": "Instrument Sans", "src": "asset:fonts/InstrumentSans-Variable.woff2", "weight": "400 700" }
+        {
+          "family": "Darker Grotesque",
+          "src": "asset:fonts/DarkerGrotesque-Medium.woff2",
+          "weight": "500"
+        },
+        {
+          "family": "Darker Grotesque",
+          "src": "asset:fonts/DarkerGrotesque-Bold.woff2",
+          "weight": "700"
+        },
+        {
+          "family": "Instrument Sans",
+          "src": "asset:fonts/InstrumentSans-Variable.woff2",
+          "weight": "400 700"
+        }
       ]
     }
   },
@@ -36,9 +48,201 @@
     "logoAlt": "SciScreen",
     "faviconUrl": "asset:favicon.svg",
     "ogImageUrl": "asset:og.png",
-    "contact": { "website": "https://www.sciscreen.com" }
+    "contact": {
+      "website": "https://www.sciscreen.com"
+    }
   },
   "domains": [
-    { "hostname": "sciscreen.ventas.cofundo.io", "is_primary": true }
+    {
+      "hostname": "sciscreen.ventas.cofundo.io",
+      "is_primary": true
+    }
+  ],
+  "catalog": [
+    {
+      "key": "portada",
+      "block_type": "hero-pitch",
+      "name": "Portada",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "La primera diapositiva: la marca y lo que cambia en su página.",
+      "props": {
+        "eyebrow": "Propuesta para {company}",
+        "title": "Lo que tu página afirma, con la evidencia a la vista",
+        "subtitle": "Un verificador revisa cada afirmación de tu página con la literatura científica. Si la evidencia la sostiene, la página lleva el sello de SciScreen y cualquiera puede comprobar qué se revisó y cuándo.",
+        "rotatingWords": [],
+        "ctas": [],
+        "stats": []
+      }
+    },
+    {
+      "key": "lo-que-te-pasa",
+      "block_type": "problem-solution",
+      "name": "Lo que le pasa hoy a la marca",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Hoy y con SciScreen, contado desde la marca.",
+      "props": {
+        "eyebrow": "Hoy",
+        "title": "Tu página afirma cosas que nadie de fuera ha comprobado",
+        "beforeLabel": "Hoy",
+        "afterLabel": "Con SciScreen",
+        "cards": [
+          {
+            "problem": "Tu página dice que el producto ayuda a algo y nadie fuera de tu equipo ha comprobado si los estudios lo sostienen.",
+            "solution": "Un verificador revisa cada afirmación con la evidencia publicada y firma un dictamen con su nivel de evidencia."
+          },
+          {
+            "problem": "Quien te compra no puede saber qué afirmaciones están respaldadas por estudios.",
+            "solution": "El sello enlaza a una página nuestra que dice qué se revisó, en qué página y en qué fecha."
+          },
+          {
+            "problem": "Una afirmación que no se sostiene es un riesgo con la normativa de publicidad.",
+            "solution": "Te ayudamos a revisar y preparar lo que publicas: lo que no se sostiene, te lo decimos antes de poner el sello."
+          }
+        ],
+        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+      }
+    },
+    {
+      "key": "como-funciona",
+      "block_type": "tabs-showcase",
+      "name": "Cómo funciona",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Los cuatro pasos, de la página al sello.",
+      "props": {
+        "eyebrow": "Cómo funciona",
+        "title": "De tu página al sello, en cuatro pasos",
+        "autoAdvanceMs": 0,
+        "tabs": [
+          {
+            "label": "Tu página",
+            "title": "Nos cuentas qué publicas",
+            "body": "Nos pasas la página que quieres verificar. Cada página se revisa por separado y lleva su propio sello.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "asset:img/foto-tarjeta.webp",
+              "alt": "Una mano sostiene una tarjeta transparente con el isotipo de SciScreen"
+            }
+          },
+          {
+            "label": "Evidencia",
+            "title": "Buscamos la evidencia",
+            "body": "Buscamos en bases de datos científicas los estudios que hay detrás de cada afirmación.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "asset:img/foto-laboratorio.webp",
+              "alt": "Una persona mira por un microscopio en un laboratorio"
+            }
+          },
+          {
+            "label": "Dictamen",
+            "title": "Un verificador firma el dictamen",
+            "body": "Decide una persona, no una herramienta. El dictamen dice qué afirmaciones se sostienen y con qué nivel de evidencia.",
+            "bullets": [
+              "Lo que no se sostiene, te lo decimos antes de poner el sello",
+              "Sin dictamen firmado no hay sello"
+            ],
+            "mock": {
+              "kind": "image",
+              "src": "asset:img/foto-producto.webp",
+              "alt": "Una persona a punto de morder un bizcocho de avena con marcas de escaneo"
+            }
+          },
+          {
+            "label": "El sello",
+            "title": "El sello, en tu página",
+            "body": "Lo servimos nosotros: va en tu página como un pequeño script, no como una imagen. Enlaza a su página de registro, con las afirmaciones, la evidencia y la fecha del dictamen.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "asset:seal/sello-cream.svg",
+              "alt": "Sello de SciScreen: Vigente, evaluación válida"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "el-sello",
+      "block_type": "seal-showcase",
+      "name": "El sello en su página",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El sello junto a las afirmaciones, dónde va y qué pasa cada año.",
+      "props": {
+        "eyebrow": "El sello",
+        "title": "Un sello por página, junto a lo que afirma",
+        "lede": "Quien lee tu página ve qué se comprobó y cuándo. El sello enlaza a su página de registro, con la dirección verificada tal cual.",
+        "seal": {
+          "src": "asset:seal/sello-cream.svg",
+          "alt": "Sello de SciScreen: Vigente, evaluación válida"
+        },
+        "ground": "paper",
+        "page": {
+          "label": "Ejemplo",
+          "address": "tumarca.com/producto",
+          "claims": [
+            "La vitamina C contribuye al funcionamiento normal del sistema inmunitario.",
+            "Con 20 g de proteína por ración."
+          ]
+        },
+        "rules": [
+          "En la página verificada, cerca de las afirmaciones que cubre",
+          "Un sello por página, nunca en el pie de toda la web",
+          "Ni en envases ni en publicidad",
+          "Enlaza a su página de registro, con la evidencia y la fecha del dictamen"
+        ],
+        "states": [
+          {
+            "name": "Vigente",
+            "body": "La evidencia se sostiene y la suscripción está al día. Se lee «Verificado a día» y la fecha."
+          },
+          {
+            "name": "Pendiente de renovación",
+            "body": "Si no se renueva, el sello espera 30 días. Al renovar, vuelve el mismo."
+          },
+          {
+            "name": "Retirado",
+            "body": "Pasados esos 30 días no se pinta nada. Al renovar, vuelve el mismo sello."
+          },
+          {
+            "name": "Revocado",
+            "body": "Solo si una revisión científica concluye que la evidencia ya no se sostiene. Nunca por un pago."
+          }
+        ],
+        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+      }
+    },
+    {
+      "key": "pricing",
+      "block_type": "pricing-card",
+      "name": "Inversión",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "El precio de la propuesta (la tarifa se elige en la propuesta; se configuran en Precios).",
+      "props": {
+        "eyebrow": "Inversión",
+        "title": "Propuesta para {company}",
+        "subtitle": "Una suscripción anual: el sello sigue vigente mientras la evidencia se sostenga y la suscripción esté al día.",
+        "features": [
+          "Revisión de cada afirmación por un verificador",
+          "Búsqueda en bases de datos científicas",
+          "Dictamen firmado con su nivel de evidencia",
+          "Sello en tu página y su página de registro"
+        ],
+        "noPriceLabel": "Según las páginas que verifiquemos",
+        "taxNote": "IVA no incluido",
+        "smallPrint": "Un pago anual. Si no se renueva, el sello queda pendiente de renovación 30 días y después se retira."
+      }
+    }
   ]
 }

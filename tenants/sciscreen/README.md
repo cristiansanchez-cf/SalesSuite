@@ -1,8 +1,9 @@
 # SciScreen
 
 Espacio creado desde **Plataforma → Nueva empresa** (docs/ORG.md §Alta de una empresa). Su contenido (agente de alta) y
-su CRM (importado desde su export de HubSpot) están en la base de datos; **este directorio solo trae la marca**, para
-aplicarla con `alta-espacio` sin tocar nada más (no hay catálogo, mercado, jugadas, precios ni campos del CRM).
+su CRM (importado desde su export de HubSpot) están en la base de datos; **este directorio trae la marca y el catálogo de
+propuestas**, para aplicarlos con `alta-espacio` sin tocar nada más (no hay mercado, jugadas, precios ni campos del CRM:
+`market` pisaría los sectores que creó el agente).
 
 ## De dónde sale (SciScreen design system 1.0, 1 nov 2026)
 
@@ -19,8 +20,30 @@ aplicarla con `alta-espacio` sin tocar nada más (no hay catálogo, mercado, jug
 | `favicon.svg` | `mark.svg` (isotipo, navy) |
 | `og.png` | 1200×630: el lockup crema sobre navy-950, hecho aquí (sus fotos no tienen el formato y algunas llevan texto) |
 
-Fuera a propósito: las fotos (pendientes de versiones limpias, SCI-88), el sello (es su producto, no su marca comercial) y
-el verde/rojo de estados (la propuesta no los usa).
+Fuera a propósito: las fotos con texto incrustado o marcas ajenas (photo1 con esquinas, photo4–8; SCI-88), el sello
+`Liquid_glass` (C6/D10), el logo `lockup-light-AS-DELIVERED` y el verde/rojo de estados (la propuesta no los usa).
+
+## Propuestas (catálogo)
+
+| Módulo | Tipo | Qué enseña |
+|---|---|---|
+| `portada` | hero-pitch | La marca y lo que cambia en su página |
+| `lo-que-te-pasa` | problem-solution | Hoy → con SciScreen (verificador, sello con registro, revisar y preparar) |
+| `como-funciona` | tabs-showcase | Tu página → evidencia → dictamen → el sello, con sus fotos y el sello |
+| `el-sello` | seal-showcase | El sello en una página de ejemplo junto a sus afirmaciones, dónde va y los cuatro estados en palabras |
+| `pricing` | pricing-card | La suscripción anual; sin tarifas hasta que estén confirmadas («Según las páginas que verifiquemos») |
+
+Reglas del design system que sigue (07-the-seal, 06-copy):
+- **Sello:** solo el dibujo «Vigente» (`assets/seal/sello-cream.svg` sobre papel; `sello-navy.svg` para fondo navy, con
+  su `#030050` tal cual, D4). Entero, nunca recortado ni por debajo de 72 px de alto. Los otros estados no tienen dibujo
+  (C4): se cuentan con palabras. Un sello por página, nunca en envases, publicidad ni el pie de toda la web.
+- **Textos:** «marca» (no «cliente»), «afirmación», «evidencia», «dictamen», «verificador», «sello». Nunca «avalado»
+  (art. 44 Ley 17/2011): el sello dice qué se comprobó y cuándo. Sin exclamaciones, sin emoji, sin «arriba/abajo».
+- **Fotos:** `img/foto-tarjeta.webp` (photo2), `img/foto-laboratorio.webp` (photo9) y `img/foto-producto.webp` (photo3),
+  pasadas a WebP.
+
+Pendiente de SciScreen: las tres tarifas (nombre, precio, qué incluye; se ponen en Precios), el enlace de «Hablamos 15
+min» para los botones, si se puede citar AERTeM y un caso real con permiso.
 
 ## Aplicar
 

@@ -1,0 +1,91 @@
+---
+/**
+ * seal-showcase ← «El sello»: el dibujo entero (mín. 72 px de alto, nunca recortado), en una página de ejemplo de la
+ * marca junto a sus afirmaciones; dónde va y dónde no; y qué pasa cada año, en palabras. Solo tokens del tema.
+ */
+import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { SealShowcaseProps } from './schema';
+
+type Props = SealShowcaseProps & ModuleBaseProps;
+const { eyebrow, title, lede, seal, ground, page, rules, states, note, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const brand = ctx.prospectCompany || ctx.prospectName || '';
+---
+<div data-module="seal-showcase" class="seal-showcase">
+  <Section>
+    <div class="ss-grid">
+      <div>
+        {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+        <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
+        {lede && <p class="mt-3 max-w-xl text-lg text-muted">{t(lede)}</p>}
+        {rules.length > 0 && (
+          <ul class="ss-rules mt-6">
+            {rules.map((r) => <li>{t(r)}</li>)}
+          </ul>
+        )}
+      </div>
+
+      <div class:list={['ss-stage', ground === 'navy' && 'ss-stage--navy']}>
+        {page ? (
+          <figure class="ss-page">
+            <div class="ss-bar" aria-hidden="true"><span></span><span></span><span></span><em>{page.address}</em></div>
+            <div class="ss-body">
+              <p class="ss-label">{page.label}</p>
+              {brand && <p class="ss-brand">{brand}</p>}
+              <ul class="ss-claims">{page.claims.map((c) => <li>{t(c)}</li>)}</ul>
+              <img class="ss-seal" src={seal.src} alt={seal.alt} loading="lazy" decoding="async" />
+            </div>
+          </figure>
+        ) : (
+          <img class="ss-seal ss-seal--alone" src={seal.src} alt={seal.alt} loading="lazy" decoding="async" />
+        )}
+      </div>
+    </div>
+
+    {states.length > 0 && (
+      <ol class="ss-states mt-10">
+        {states.map((s) => (
+          <li><p class="ss-state-name">{t(s.name)}</p><p class="ss-state-body">{t(s.body)}</p></li>
+        ))}
+      </ol>
+    )}
+    {note && <p class="ss-note mt-8 max-w-3xl">{t(note)}</p>}
+  </Section>
+</div>
+
+<style>
+  .ss-grid { display: grid; gap: 2rem; align-items: center; }
+  @media (min-width: 900px) { .ss-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 3rem; } }
+
+  .ss-rules { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
+  .ss-rules li { position: relative; padding-left: 1.4rem; font-size: 1.05rem; line-height: 1.5; }
+  .ss-rules li::before { content: ''; position: absolute; left: 0; top: .6em; width: .5rem; height: .5rem; border-radius: 99px; background: rgb(var(--color-primary, 34 70 178)); }
+
+  /* El escenario: papel (sello claro) o navy (sello oscuro). El radio es el de las tarjetas del tema. */
+  .ss-stage { border-radius: var(--radius-card, 24px); background: rgb(var(--color-surface, 246 242 230)); padding: clamp(1.25rem, 3vw, 2.5rem); }
+  .ss-stage--navy { background: rgb(var(--color-accent-contrast, 0 3 65)); }
+
+  .ss-page { margin: 0; border-radius: calc(var(--radius-card, 24px) * .66); overflow: hidden; background: rgb(var(--color-bg, 252 250 245)); border: 1px solid rgb(var(--color-border, 233 232 227)); }
+  .ss-bar { display: flex; align-items: center; gap: .35rem; padding: .6rem .9rem; border-bottom: 1px solid rgb(var(--color-border, 233 232 227)); }
+  .ss-bar span { width: .55rem; height: .55rem; border-radius: 99px; background: rgb(var(--color-border, 233 232 227)); }
+  .ss-bar em { margin-left: .6rem; font-style: normal; font-size: .8rem; color: rgb(var(--color-muted, 83 82 79)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ss-body { padding: clamp(1rem, 2.5vw, 1.75rem); display: grid; gap: .75rem; }
+  .ss-label { margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--color-muted, 83 82 79)); }
+  .ss-brand { margin: 0; font-family: var(--font-display, inherit); font-weight: 700; font-size: clamp(1.4rem, 2.6vw, 1.9rem); line-height: 1.1; }
+  .ss-claims { margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
+  .ss-claims li { padding: .6rem .8rem; border-radius: .75rem; background: rgb(var(--color-surface, 246 242 230)); line-height: 1.45; }
+  /* El sello entero: nunca recortado, nunca por debajo de 72 px de alto (su tamaño mínimo legible). */
+  .ss-seal { display: block; width: min(100%, 240px); height: auto; min-height: 72px; object-fit: contain; margin-top: .25rem; }
+  .ss-seal--alone { width: min(100%, 320px); margin: 0 auto; }
+
+  .ss-states { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; counter-reset: ss; }
+  @media (min-width: 700px) { .ss-states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .ss-states { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .ss-states li { padding: 1.1rem 1.2rem; border-radius: var(--radius-card, 24px); border: 1px solid rgb(var(--color-border, 233 232 227)); }
+  .ss-state-name { margin: 0 0 .35rem; font-family: var(--font-display, inherit); font-weight: 700; font-size: 1.2rem; }
+  .ss-state-body { margin: 0; color: rgb(var(--color-muted, 83 82 79)); line-height: 1.5; }
+  .ss-note { padding-left: 1rem; border-left: 3px solid rgb(var(--color-primary, 34 70 178)); font-size: 1.05rem; line-height: 1.5; }
+</style>

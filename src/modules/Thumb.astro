@@ -78,11 +78,16 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
       <span class="thumb__chip">{p.client}</span>
       <b>{fill(p.title)}</b>
     </div>
+  ) : blockType === 'seal-showcase' ? (
+    <div class:list={['thumb__seal', p.ground === 'navy' && 'thumb__seal--navy']}><img src={p.seal.src} alt="" loading="lazy" /></div>
   ) : null}
 </div>
 
 <style>
   .thumb { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: var(--tn-dark, #0a0a0a); }
+  .thumb__seal { position: absolute; right: 6%; top: 10%; width: 56%; max-width: 280px; padding: 18px; border-radius: 18px; background: #f6f2e6; transform: rotate(-2deg); }
+  .thumb__seal--navy { background: #000341; }
+  .thumb__seal img { display: block; width: 100%; height: auto; }
   .thumb__media { position: absolute; right: 5%; top: 8%; display: flex; gap: 8px; width: 62%; }
   .thumb__media img { flex: 1; min-width: 0; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 12px; }
   .thumb__glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 22%, color-mix(in srgb, var(--tn-primary, #6a2bd9) 35%, transparent), transparent 55%), radial-gradient(ellipse at 18% 90%, color-mix(in srgb, var(--tn-accent, #cbb6ff) 12%, transparent), transparent 50%); }

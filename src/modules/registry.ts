@@ -10,6 +10,7 @@ import { costMathSchema, hasFigures } from './cost-math/schema';
 import { mediaStripSchema } from './media-strip/schema';
 import { appStepsSchema } from './app-steps/schema';
 import { centerConsoleSchema } from './center-console/schema';
+import { sealShowcaseSchema } from './seal-showcase/schema';
 import { partsFor } from './phone-tour/steps';
 import type { ModuleContext } from './types';
 
@@ -87,6 +88,12 @@ export const REGISTRY = {
     schema: centerConsoleSchema,
     example: { title: 'Tu centro, en una pantalla', views: [{ view: 'today', label: 'Hoy', says: 'Las salidas del día y quién viene.' }] },
     load: () => import('./center-console/Component.astro'),
+  },
+  'seal-showcase': {
+    label: 'Sello en la página (certificación)',
+    schema: sealShowcaseSchema,
+    example: { title: 'El sello, en tu página', seal: { src: '/favicon.svg', alt: 'Sello' }, rules: [] },
+    load: () => import('./seal-showcase/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;
