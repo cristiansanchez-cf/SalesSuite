@@ -6,7 +6,7 @@
  */
 import type { LeadType } from './contract';
 import type { Eta } from './schedule';
-import type { EmailSignature, LeadTemplates, LocaleTexts, QuestionKey } from './types';
+import type { EmailSignature, LeadMedia, LeadTemplates, LocaleTexts, QuestionKey } from './types';
 
 export type MsgLocale = 'es' | 'en' | 'fr';
 export const msgLocale = (l: string): MsgLocale => (l === 'es' || l === 'fr' ? l : 'en');
@@ -67,13 +67,13 @@ export function summary(type: LeadType, f: Record<string, string>, loc: string):
 /**
  * Los textos de por defecto, con marcadores. Cada empresa los cambia en Leads → Ajustes → Mensajes (por idioma); lo que
  * deje vacío sale de aquí. Marcadores del email: {nombre}, {asunto}, {sobre} (« sobre Sala X» o nada si no está claro qué
- * es), {siguiente_paso}, {reserva}, {firma}, {marca}, {firma_email} (la firma completa de Ajustes o, sin ella, nombre y marca). WhatsApp: {{1}} nombre, {{2}} lo que pidió, {{3}} la pregunta
+ * es), {siguiente_paso}, {video} (el vídeo corto de su tipo, si lo hay), {reserva}, {firma}, {marca}, {firma_email} (la firma completa de Ajustes o, sin ella, nombre y marca). WhatsApp: {{1}} nombre, {{2}} lo que pidió, {{3}} la pregunta
  * (mensaje 1) o el enlace de reserva (mensaje 2), y {firma}/{marca}, que quedan fijos en la plantilla de Meta.
  */
 export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questions'>> & { questions: Record<QuestionKey, string> }> = {
   es: {
     subject: '{asunto}',
-    body: 'Hola {nombre}:\n\nGracias por escribir. Me llega tu mensaje{sobre} y lo leo yo.\n\n{siguiente_paso}\n\n{reserva}\n\nY si quieres añadir algo, responde a este email.\n\nUn saludo,\n{firma_email}',
+    body: 'Hola {nombre}:\n\nGracias por escribir. Me llega tu mensaje{sobre} y lo leo yo.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nY si quieres añadir algo, responde a este email.\n\nUn saludo,\n{firma_email}',
     wa1: 'Hola {{1}}, soy {firma}, de {marca}. He visto tu mensaje sobre {{2}} y quería escribirte yo directamente.\n\n{{3}}\n\nCon eso te digo cómo lo veo.\n\n{firma}',
     wa2: 'Hola {{1}}, te escribo de nuevo por lo de {{2}}. Si te va mejor hablarlo, elige aquí la hora que te venga bien: {{3}}\n\nY si prefieres seguir por aquí, contéstame cuando puedas.\n\n{firma}',
     questions: { venue: '¿Qué noches abrís y cuánta gente os suele venir?', dj: '¿En qué salas estás pinchando ahora?', festival: '¿Para qué fechas lo estáis planteando?',
@@ -81,7 +81,7 @@ export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questi
   },
   en: {
     subject: '{asunto}',
-    body: "Hi {nombre},\n\nThanks for getting in touch. I've got your message{sobre} and I'm reading it myself.\n\n{siguiente_paso}\n\n{reserva}\n\nAnd if you want to add anything, just reply to this email.\n\nBest,\n{firma_email}",
+    body: "Hi {nombre},\n\nThanks for getting in touch. I've got your message{sobre} and I'm reading it myself.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nAnd if you want to add anything, just reply to this email.\n\nBest,\n{firma_email}",
     wa1: "Hi {{1}}, it's {firma} from {marca}. I saw your message about {{2}} and wanted to get back to you myself.\n\n{{3}}\n\nWith that I can tell you how I see it.\n\n{firma}",
     wa2: "Hi {{1}}, following up on {{2}}. If it's easier to talk it through, pick a time that suits you here: {{3}}\n\nOr just reply here whenever you can.\n\n{firma}",
     questions: { venue: 'Which nights are you open and how many people do you usually get?', dj: 'Which venues are you playing at right now?', festival: 'Which dates are you planning for?',
@@ -89,7 +89,7 @@ export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questi
   },
   fr: {
     subject: '{asunto}',
-    body: "Bonjour {nombre},\n\nMerci pour ton message{sobre}. Je le lis moi-même.\n\n{siguiente_paso}\n\n{reserva}\n\nEt si tu veux ajouter quelque chose, réponds simplement à cet e-mail.\n\nÀ bientôt,\n{firma_email}",
+    body: "Bonjour {nombre},\n\nMerci pour ton message{sobre}. Je le lis moi-même.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nEt si tu veux ajouter quelque chose, réponds simplement à cet e-mail.\n\nÀ bientôt,\n{firma_email}",
     wa1: "Bonjour {{1}}, c'est {firma}, de {marca}. J'ai vu ton message à propos de {{2}} et je voulais te répondre moi-même.\n\n{{3}}\n\nAvec ça, je te dis ce que j'en pense.\n\n{firma}",
     wa2: "Bonjour {{1}}, je reviens vers toi pour {{2}}. Si c'est plus simple d'en parler, choisis ici le créneau qui te convient : {{3}}\n\nSinon, réponds-moi ici quand tu peux.\n\n{firma}",
     questions: { venue: 'Vous ouvrez quels soirs et combien de monde vient en général ?', dj: 'Dans quelles salles tu joues en ce moment ?', festival: 'Vous le prévoyez pour quelles dates ?',
@@ -112,6 +112,20 @@ export function question(type: LeadType, f: Record<string, string>, loc: string,
 }
 
 const firstName = (n: string) => n.trim().split(/\s+/)[0] ?? n;
+
+/** Tipos con vídeo y reserva propios en Ajustes (la lista de espera usa los generales). */
+export const MEDIA_TYPES = ['general', 'venue', 'dj', 'festival', 'wedding', 'wedding_partner', 'custom_dev'] as const;
+/**
+ * El vídeo y el enlace de reserva de un lead: los de su tipo en su idioma; si no, los del tipo «general» en su idioma; si
+ * no, los generales del espacio. Un lead «general» que dice qué es (event_type: venue, dj…) usa los de ese tipo.
+ */
+export function mediaFor(s: { bookingUrl: string | null; videoUrl: string | null; media?: LeadMedia }, type: LeadType, fields: Record<string, string>, locale: string): { booking: string | null; video: string | null } {
+  const l = msgLocale(locale);
+  const eff = type === 'general' && (MEDIA_TYPES as readonly string[]).includes(fields.event_type ?? '') ? fields.event_type! : type;
+  const own = s.media?.[eff]?.[l];
+  const gen = s.media?.general?.[l];
+  return { booking: own?.booking || gen?.booking || s.bookingUrl || null, video: own?.video || gen?.video || s.videoUrl || null };
+}
 
 // ---------------------------------------------------------------- WhatsApp (plantillas para Meta)
 
@@ -149,6 +163,8 @@ function plainHtml(text: string): string {
 export interface AutoreplyData {
   name: string; type: LeadType; fields: Record<string, string>; locale: string; signer: string; brand: string;
   channel: 'whatsapp' | 'email'; eta: Eta; bookingUrl: string | null; unsubscribeUrl: string | null;
+  /** El vídeo corto de su tipo (Ajustes → Vídeo y reserva por tipo). */
+  videoUrl?: string | null;
   /** false si no está claro qué es (marca, prensa, otro…): el email no nombra lo que pidió. Por defecto, true. */
   specific?: boolean;
   custom?: LeadTemplates;
@@ -177,14 +193,17 @@ const PHRASES = {
   es: { about: (w: string) => ` sobre ${w}`, subject: (w: string | null) => (w ? `Sobre ${w}` : 'Gracias por escribir'),
     wa: (when: string) => `Te escribo por WhatsApp ${when} para que me cuentes un poco más.`, email: 'Te contesto yo personalmente a este mismo email, normalmente en el día.',
     book: (u: string) => `Si prefieres hablarlo directamente, elige aquí la hora que te venga bien: ${u}`, unsub: 'Si no quieres que te escribamos más:',
+    video: (u: string) => `Mientras, aquí tienes un vídeo corto para verlo en marcha: ${u}`,
     when: { minutes: 'en unos minutos', today: 'hoy a primera hora', next_business_day: 'mañana a primera hora' } },
   en: { about: (w: string) => ` about ${w}`, subject: (w: string | null) => (w ? `About ${w}` : 'Thanks for getting in touch'),
     wa: (when: string) => `I'll message you on WhatsApp ${when} so you can tell me a bit more.`, email: "I'll reply to this email personally, usually the same day.",
     book: (u: string) => `If you'd rather talk it through, pick a time that suits you here: ${u}`, unsub: "If you'd rather not hear from us again:",
+    video: (u: string) => `In the meantime, here's a short video to see it in action: ${u}`,
     when: { minutes: 'in a few minutes', today: 'first thing today', next_business_day: 'first thing tomorrow' } },
   fr: { about: (w: string) => ` à propos de ${w}`, subject: (w: string | null) => (w ? `À propos de ${w}` : 'Merci pour ton message'),
     wa: (when: string) => `Je t'écris sur WhatsApp ${when} pour que tu m'en dises un peu plus.`, email: 'Je te réponds personnellement à cet e-mail, en général dans la journée.',
     book: (u: string) => `Si tu préfères en parler directement, choisis ici le créneau qui te convient : ${u}`, unsub: 'Si tu ne veux plus recevoir de messages de notre part :',
+    video: (u: string) => `En attendant, voici une courte vidéo pour le voir en action : ${u}`,
     when: { minutes: "d'ici quelques minutes", today: "aujourd'hui en début de matinée", next_business_day: 'demain en début de matinée' } },
 } as const;
 
@@ -195,7 +214,7 @@ export function autoreplyEmail(d: AutoreplyData): { subject: string; text: strin
   const sig = hasSignature(d.signature) ? d.signature! : null;
   const vars = {
     nombre: firstName(d.name), asunto: P.subject(what), sobre: what ? P.about(what) : '',
-    siguiente_paso: d.channel === 'whatsapp' ? P.wa(P.when[d.eta]) : P.email, reserva: d.bookingUrl ? P.book(d.bookingUrl) : '',
+    siguiente_paso: d.channel === 'whatsapp' ? P.wa(P.when[d.eta]) : P.email, reserva: d.bookingUrl ? P.book(d.bookingUrl) : '', video: d.videoUrl ? P.video(d.videoUrl) : '',
     firma: d.signer, marca: d.brand, firma_email: sig ? SIG : `${d.signer}\n${d.brand}`,
   };
   const subject = fill(pick('subject', l, d.custom), vars).replace(/\s+/g, ' ').slice(0, 200);

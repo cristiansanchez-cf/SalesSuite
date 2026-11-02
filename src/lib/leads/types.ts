@@ -35,7 +35,13 @@ export interface LeadSettings {
   aiContext?: string | null;
   /** Firma del email automático (vacía = solo el nombre y la marca). */
   emailSignature?: EmailSignature;
+  /** Vídeo y enlace de reserva por tipo de lead y por idioma (lo que falte: el del tipo «general» y luego los de arriba). */
+  media?: LeadMedia;
 }
+
+export interface MediaLinks { video?: string; booking?: string }
+/** { venue: { es: { video, booking }, en: {…} }, … } */
+export type LeadMedia = Partial<Record<string, Partial<Record<'es' | 'en' | 'fr', MediaLinks>>>>;
 
 export interface EmailSignature { name?: string; title?: string; phone?: string; address?: string; email?: string; website?: string; logoUrl?: string; legal?: string }
 

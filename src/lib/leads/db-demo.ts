@@ -13,6 +13,9 @@ const DEMO_ENJOY: LeadSettings = {
   allowedOrigins: ['https://enjoytheclub.es', 'https://corporativeweb-b0ce4--*.web.app'], fromEmail: 'cristian@mail.enjoytheclub.es', fromName: 'Cristian · Enjoy the Club',
   replyTo: 'cristian@enjoytheclub.es', signerName: 'Cristian', notifyEmails: ['cristian@enjoytheclub.es'], bookingUrl: 'https://cal.example.com/cristian', videoUrl: null,
   whatsappPhoneId: null, whatsappEnabled: false, whatsappTemplates: {}, timezone: 'Europe/Madrid', sendFromHour: 8, sendToHour: 22, holidays: [],
+  // Como en producción (migración 20261220): los vídeos que publica la web por tipo.
+  media: { venue: { es: { video: 'https://enjoytheclub.es/videos/proof/locales-es.mp4' }, en: { video: 'https://enjoytheclub.es/videos/proof/locales-en.mp4' } },
+    dj: { es: { video: 'https://enjoytheclub.es/videos/proof/dj-testimonio-es.mp4' } } },
 };
 export function demoLeadsStore(): LeadsStore {
   return ((globalThis as G)[KEY] ??= { settings: [structuredClone(DEMO_ENJOY)], leads: [], subs: [], events: [], msgs: [], supp: [] });
@@ -31,7 +34,7 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
       if (s.settings.some((x) => x.brand === v.brand && x.tenantId !== v.tenantId)) throw new DuplicateKey('brand');
       const prev = s.settings.find((x) => x.tenantId === v.tenantId);
       const hint = prev?.resendKeyHint ?? null;
-      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null, emailSignature: v.emailSignature ?? prev?.emailSignature ?? {} });
+      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null, emailSignature: v.emailSignature ?? prev?.emailSignature ?? {}, media: v.media ?? prev?.media ?? {} });
     },
     async resendKey(tenantId) { return s.secrets?.[tenantId] ?? null; },
     async setResendKey(tenantId, sealed, hint) {

@@ -16,7 +16,7 @@ import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
 import { ownDomains, setResendKey } from '~/lib/leads/resend-key';
 import { flash } from '~/lib/admin/forms';
-import { DEFAULT_TEXTS, autoreplyEmail, waParams, waPreview } from '~/lib/leads/templates';
+import { DEFAULT_TEXTS, MEDIA_TYPES, autoreplyEmail, mediaFor, waParams, waPreview } from '~/lib/leads/templates';
 import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
 import { cleanupContext } from '~/lib/crm/research-context';
 import type { LeadSettings, LeadTemplates, QuestionKey } from '~/lib/leads/types';
@@ -97,6 +97,11 @@ if (Astro.request.method === 'POST') {
       notifyEmails: lines(f.get('notify')), bookingUrl: orNull(f.get('bookingUrl')), videoUrl: orNull(f.get('videoUrl')),
       whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2') },
       sendFromHour: Number(f.get('fromHour') ?? 8), sendToHour: Number(f.get('toHour') ?? 22), holidays: lines(f.get('holidays')),
+      // Vídeo y reserva por tipo e idioma: solo lo rellenado (vacío = el del tipo general o el general del espacio).
+      media: Object.fromEntries(MEDIA_TYPES.map((ty) => [ty, Object.fromEntries(LOCS.map((l) => {
+        const v = String(f.get(`m_${ty}_${l}_video`) ?? '').trim(), b = String(f.get(`m_${ty}_${l}_booking`) ?? '').trim();
+        return [l, { ...(v ? { video: v } : {}), ...(b ? { booking: b } : {}) }];
+      }).filter(([, x]) => Object.keys(x as object).length))]).filter(([, x]) => Object.keys(x as object).length)),
     }, ctx);
   });
   if (!result.error && action === 'save') {
@@ -148,8 +153,8 @@ const sample = { name: 'Laura Gómez', type: 'venue' as const, fields: { venue_n
 const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
   loc,
   wa1: waPreview('wa1', loc, signer, brandName, waParams('wa1', { ...sample, locale: loc, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl, custom }), custom),
-  wa2: waPreview('wa2', loc, signer, brandName, waParams('wa2', { ...sample, locale: loc, bookingUrl: s.bookingUrl ?? 'https://…', videoUrl: s.videoUrl, custom }), custom),
-  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, custom, signature: s.emailSignature }),
+  wa2: waPreview('wa2', loc, signer, brandName, waParams('wa2', { ...sample, locale: loc, bookingUrl: mediaFor(s, sample.type, sample.fields, loc).booking ?? 'https://…', videoUrl: mediaFor(s, sample.type, sample.fields, loc).video, custom }), custom),
+  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: mediaFor(s, sample.type, sample.fields, loc).booking, videoUrl: mediaFor(s, sample.type, sample.fields, loc).video, unsubscribeUrl: null, custom, signature: s.emailSignature }),
   neutral: autoreplyEmail({ name: 'Marta Ruiz', type: 'general', fields: { event_type: 'other' }, locale: loc, signer, brand: brandName, channel: 'email', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, specific: false, custom }),
 }));
 ---
@@ -226,6 +231,27 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <label class="co-field">{S.notify}<textarea form="lead-settings" class="co-textarea h-20" name="notify">{s.notifyEmails.join('\n')}</textarea><span class="co-meta">{S.notifyHelp}</span></label>
     <label class="co-field">{S.booking}<input form="lead-settings" class="co-input" type="url" name="bookingUrl" value={s.bookingUrl ?? ''} placeholder="https://" /></label>
     <label class="co-field">{S.video}<input form="lead-settings" class="co-input" type="url" name="videoUrl" value={s.videoUrl ?? ''} placeholder="https://" /></label>
+    <div class="grid gap-2" data-testid="leads-media">
+      <h3 class="font-semibold">{S.media}</h3>
+      <p class="co-meta">{S.mediaHelp}</p>
+      {MEDIA_TYPES.map((ty) => {
+        const has = LOCS.some((l) => s.media?.[ty]?.[l]?.video || s.media?.[ty]?.[l]?.booking);
+        return (
+          <details class="co-inset !p-3" open={has || undefined} data-testid={`leads-media-${ty}`}>
+            <summary class="cursor-pointer font-semibold">{L.types[ty]}{has && <span class="co-meta"> · {S.mediaOwn}</span>}</summary>
+            <div class="mt-2 grid gap-2">
+              {LOCS.map((l) => (
+                <div class="grid gap-2 sm:grid-cols-[2.5rem_1fr_1fr] sm:items-end">
+                  <span class="co-meta font-semibold uppercase">{l}</span>
+                  <label class="co-field text-xs">{S.mediaVideo}<input form="lead-settings" class="co-input" type="url" name={`m_${ty}_${l}_video`} value={s.media?.[ty]?.[l]?.video ?? ''} placeholder={ty === 'general' ? (s.videoUrl ?? 'https://') : S.mediaInherit} /></label>
+                  <label class="co-field text-xs">{S.mediaBooking}<input form="lead-settings" class="co-input" type="url" name={`m_${ty}_${l}_booking`} value={s.media?.[ty]?.[l]?.booking ?? ''} placeholder={ty === 'general' ? (s.bookingUrl ?? 'https://') : S.mediaInherit} /></label>
+                </div>
+              ))}
+            </div>
+          </details>
+        );
+      })}
+    </div>
     <button form="lead-settings" class="co-btn co-btn--primary w-fit" name="at" value="email">{S.save}</button>
   </section>
 

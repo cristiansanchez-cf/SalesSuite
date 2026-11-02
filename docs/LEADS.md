@@ -60,7 +60,7 @@ Como lo propuso la web, con estos cambios (todos opcionales, compatibles hacia a
 ### Respuestas
 | Código | Cuándo | Cuerpo |
 |---|---|---|
-| `201` | Creado | `{ id, next: { channel: 'whatsapp' \| 'email', eta: 'minutes' \| 'today' \| 'next_business_day', at? } }` |
+| `201` | Creado | `{ id, next: { channel: 'whatsapp' \| 'email', eta: 'minutes' \| 'today' \| 'next_business_day', at?, booking_url? } }` |
 | `200` | `idempotency_key` repetido | La misma respuesta que la primera vez + `duplicate: true` (la web lo trata como éxito, con su `next`). |
 | `400` | Validación | `{ errors: { 'contact.email': 'invalid', 'fields.event_type': 'required', schema: 'unknown_schema' … } }` |
 | `403` | Origen no permitido | `{ error: 'origin_not_allowed' }` |
@@ -70,7 +70,13 @@ Como lo propuso la web, con estos cambios (todos opcionales, compatibles hacia a
 
 `next.channel = 'whatsapp'` solo si hay WhatsApp configurado, el lead vio el aviso y el teléfono es válido; si no,
 `email` con `eta: 'minutes'` (la confirmación llega en segundos). `next.at` es la hora exacta del primer WhatsApp.
-Lo sospechoso responde igual que lo normal (no se le dan pistas) y va a cuarentena.
+`eta: 'today'` solo sale si no se le va a escribir solo: sin remitente configurado, ya recibió el email automático en
+las últimas 24 h, se dio de baja o lo sospechoso (cuarentena). Las **pruebas** (`test: true` o desde localhost) responden
+lo mismo que un lead real, pero no se envía nada.
+`next.booking_url` (https, opcional): el enlace de reserva de su tipo e idioma (Ajustes → Vídeo y reserva por tipo; si no,
+el del tipo «general» y luego el general). Si no está claro qué es (marca, prensa…), el general. Si no hay ninguno, no
+viene. Va también en la respuesta `200` de un duplicado (la de la primera vez).
+Lo sospechoso responde con el mismo formato (`201`, sin pistas de por qué) y va a cuarentena.
 
 ```bash
 curl -i -X POST https://enjoy.ventas.cofundo.io/api/v1/leads -H 'Content-Type: application/json' -d '{
@@ -114,6 +120,18 @@ Leads → Ajustes → **Mensajes**, por idioma: asunto y cuerpo del email, Whats
 según lo que pidió. **Proponer con IA** los escribe a partir de qué vende la empresa, a quién y quién firma (no guarda:
 se revisa y se guarda). Solo se guarda lo que difiere de los de por defecto. Los de WhatsApp tienen que llevar
 `{{1}}`, `{{2}}` y `{{3}}` y coincidir con la plantilla aprobada en Meta (si se cambian, nueva aprobación).
+
+## 2e. Vídeo y reserva por tipo
+Leads → Ajustes → Email → **Vídeo y reserva por tipo de lead**: para `general`, `venue`, `dj`, `festival`, `wedding`,
+`wedding_partner` y `custom_dev`, en `es`, `en` y `fr` (`lead_settings.media`, migración `20261220000000_lead_media.sql`).
+Cada lead usa los de su tipo en su idioma; lo vacío, los del tipo «general» en su idioma y, si tampoco, el vídeo y el enlace
+generales de arriba. Un lead `general` que dice qué es (`event_type`: venue, dj…) usa los de ese tipo. Se usan en:
+- el email automático: `{video}` («Mientras, aquí tienes un vídeo corto para verlo en marcha: …») y `{reserva}`. Un
+  texto propio del email tiene que llevar `{video}` para que salga;
+- el `{{3}}` del WhatsApp 2: la reserva o, si no hay, el vídeo;
+- `next.booking_url` de la respuesta (el botón «Elige hora para hablar» de la web).
+Si no está claro qué es (marca, prensa…), el email no lleva vídeo y la reserva es la general. Enjoy viene con los vídeos
+de su web (locales, testimonio de DJ y festival, en los tres idiomas); las bodas usan el general.
 
 ## 2d. Firma del email
 Leads → Ajustes → **Firma del email**: nombre, cargo y empresa, teléfono, dirección, email, web, logo (PNG o JPG por

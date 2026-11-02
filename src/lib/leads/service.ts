@@ -10,7 +10,7 @@ import { AdminError } from '../admin/service';
 import { DuplicateKey, type LeadsDb } from './db';
 import { businessMinutes } from './schedule';
 import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type LeadTemplates, type Stage, type View } from './types';
-import { DEFAULT_TEXTS } from './templates';
+import { DEFAULT_TEXTS, MEDIA_TYPES } from './templates';
 
 export const LEAD_ERRORS = {
   notFound: 'Lead no encontrado',
@@ -67,6 +67,11 @@ const settingsSchema = z.object({
   sendFromHour: z.number().int().min(0).max(23),
   sendToHour: z.number().int().min(1).max(24),
   holidays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(60),
+  /** Vídeo y reserva por tipo e idioma (vacío = el general). */
+  media: z.record(z.enum(MEDIA_TYPES), z.record(z.enum(['es', 'en', 'fr']), z.object({
+    video: z.string().trim().url().startsWith('https://').max(500).optional(),
+    booking: z.string().trim().url().startsWith('https://').max(500).optional(),
+  }))).optional(),
 });
 
 export function createLeadsService(db: LeadsDb, admin: AdminContext) {

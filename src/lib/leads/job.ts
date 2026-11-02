@@ -8,7 +8,7 @@ import { decide, type Classification, type Classifier, type ClassifyInput } from
 import type { LeadsDb } from './db';
 import { unsubscribeToken, whatsappTemplate } from './intake';
 import type { Eta } from './schedule';
-import { autoreplyEmail, notifyEmail, waParams, waPreview } from './templates';
+import { autoreplyEmail, mediaFor, notifyEmail, waParams, waPreview } from './templates';
 import { STOP_STAGES, type Lead, type LeadMessage, type LeadSettings } from './types';
 import type { WhatsApp } from './whatsapp';
 
@@ -92,10 +92,13 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     if (sup.email) return done('skipped', 'se dio de baja');
     if (!mailer || !s.fromEmail) return done('skipped', 'sin remitente configurado');
     const unsub = `${m.payload.base}/api/v1/leads/unsubscribe?l=${lead.id}&t=${unsubscribeToken(lead.id, d.secret)}`;
+    const specific = cls?.auto ?? true;
+    // Vídeo y reserva de su tipo e idioma. Si no está claro qué es (marca, prensa…), sin vídeo y con la reserva general.
+    const media = specific ? mediaFor(s, lead.type, ((lead.facts.fields as Record<string, string>) ?? {}), lead.locale) : { booking: mediaFor(s, 'general', {}, lead.locale).booking, video: null };
     const e = autoreplyEmail({
       name: lead.name, type: lead.type, fields: ((lead.facts.fields as Record<string, string>) ?? {}), locale: lead.locale, signer: s.signerName ?? String(m.payload.brandName ?? ''),
       brand: String(m.payload.brandName ?? s.brand), channel: cls && !cls.auto ? 'email' : ((m.payload.channel as 'whatsapp' | 'email') ?? 'email'), eta: (m.payload.eta as Eta) ?? 'today',
-      bookingUrl: s.bookingUrl, unsubscribeUrl: unsub, specific: cls?.auto ?? true, custom: s.templates, signature: s.emailSignature,
+      bookingUrl: media.booking, videoUrl: media.video, unsubscribeUrl: unsub, specific, custom: s.templates, signature: s.emailSignature,
     });
     const sent = await mailer.send({ to: lead.email, subject: e.subject, html: e.html, text: e.text, tag: 'lead-autoreply', from: fromHeader(s), replyTo: s.replyTo ?? undefined,
       headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } });
@@ -117,7 +120,8 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     if (!wa1 || wa1.status !== 'sent') return done('cancelled', 'el primer mensaje no salió');
   }
   const fields = (lead.facts.fields as Record<string, string>) ?? {};
-  const params = waParams(step, { name: lead.name, type: lead.type, fields, locale: lead.locale, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl, custom: s.templates });
+  const media = mediaFor(s, lead.type, fields, lead.locale);
+  const params = waParams(step, { name: lead.name, type: lead.type, fields, locale: lead.locale, bookingUrl: media.booking, videoUrl: media.video, custom: s.templates });
   const out = await d.whatsapp.sendTemplate(s.whatsappPhoneId, m.toAddr, template, lead.locale, params);
   const text = waPreview(step, lead.locale, s.signerName ?? '', String(m.payload.brandName ?? s.brand), params, s.templates);
   await db.updateMessage(m.id, { status: 'sent', sentAt: d.now.toISOString(), providerId: out.id, attempts: m.attempts + 1, payload: { ...m.payload, text } });

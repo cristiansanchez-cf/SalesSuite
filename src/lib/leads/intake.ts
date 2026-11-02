@@ -10,7 +10,7 @@ import { classifyRules } from './classify';
 import { accountDomain, emailKind, spamReasons, toE164 } from './normalize';
 import { firstSendAt, nextBusinessAt, type Eta } from './schedule';
 import { scoreLead } from './score';
-import { msgLocale } from './templates';
+import { mediaFor, msgLocale } from './templates';
 import type { Lead, LeadSettings, NewMessage } from './types';
 
 export interface IntakeDeps {
@@ -30,7 +30,8 @@ export interface IntakeDeps {
   turnstile?: ((token: string, ip: string | null) => Promise<boolean>) | null;
   rand?: () => number;
 }
-export interface Next { channel: 'whatsapp' | 'email'; eta: Eta; at?: string }
+/** Lo que la web le dice al lead. booking_url: el enlace de reserva de su tipo e idioma, si lo hay. */
+export interface Next { channel: 'whatsapp' | 'email'; eta: Eta; at?: string; booking_url?: string }
 export interface IntakeResult { status: number; body: Record<string, unknown>; leadId?: string; schedule?: boolean }
 
 export const IP_LIMIT = { count: 8, minutes: 10 } as const;
@@ -161,7 +162,9 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   // ---------------------------------------------------------------- qué pasa ahora
   const msgs: NewMessage[] = [];
   const sup = await db.suppressed(t, { email: lead.email, phone: lead.phoneE164 });
-  const canAuto = !isTest && !lead.quarantined && !NO_AUTO.has(lead.stage);
+  // Una prueba responde lo mismo que un lead real (la web enseña su pantalla de verdad), pero no se le envía nada.
+  const live = !lead.quarantined && !NO_AUTO.has(lead.stage);
+  const canAuto = live && !isTest;
   const history = existing ? await db.messages(lead.id) : [];
   const payload = { base: d.baseUrl, brandName: d.tenant.name, submission: subId };
   let next: Next = { channel: 'email', eta: 'today' };
@@ -169,22 +172,27 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   // WhatsApp: no se reinicia si ya hay una conversación (secuencia en marcha, respuesta suya o un primer mensaje reciente).
   const openChat = !!lead.lastInboundAt || !!lead.sequenceStoppedAt
     || history.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && !['cancelled', 'skipped'].includes(m.status) && Date.parse(m.createdAt) > d.now.getTime() - 30 * 86_400_000);
-  if (canAuto && cls.auto && lead.whatsappOk && lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale)) {
+  if (live && cls.auto && lead.whatsappOk && lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale)) {
     if (openChat) next = { channel: 'whatsapp', eta: 'today' };
     else {
       const first1 = firstSendAt(d.now, d.settings, (d.rand ?? Math.random)());
       const second = nextBusinessAt(first1.at, d.settings, 10, (d.rand ?? Math.random)());
-      msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa1', toAddr: lead.phoneE164, sendAt: first1.at.toISOString(), payload });
-      msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa2', toAddr: lead.phoneE164, sendAt: second.toISOString(), payload });
+      if (canAuto) {
+        msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa1', toAddr: lead.phoneE164, sendAt: first1.at.toISOString(), payload });
+        msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa2', toAddr: lead.phoneE164, sendAt: second.toISOString(), payload });
+      }
       next = { channel: 'whatsapp', eta: first1.eta, at: first1.at.toISOString() };
     }
   }
   // Respuesta automática por email: a todos (también con WhatsApp), una vez al día como mucho.
   const recentReply = history.some((m) => m.step === 'autoreply' && m.status !== 'cancelled' && Date.parse(m.createdAt) > d.now.getTime() - 86_400_000);
-  if (canAuto && !sup.email && d.settings.fromEmail && !recentReply) {
-    msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'autoreply', toAddr: lead.email, sendAt: nowIso, payload: { ...payload, channel: next.channel, eta: next.eta } });
+  if (live && !sup.email && d.settings.fromEmail && !recentReply) {
+    if (canAuto) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'autoreply', toAddr: lead.email, sendAt: nowIso, payload: { ...payload, channel: next.channel, eta: next.eta } });
     if (next.channel === 'email') next = { channel: 'email', eta: 'minutes' };
   }
+  // El enlace de reserva de su tipo e idioma (si no está claro qué es, el general), para el botón de la web.
+  const booking = mediaFor(d.settings, cls.auto ? i.type : 'general', cls.auto ? i.fields : {}, lead.locale).booking;
+  if (booking) next = { ...next, booking_url: booking };
   // Aviso a quien atiende: siempre que no sea prueba ni cuarentena (eso se revisa en la bandeja).
   if (!isTest && !lead.quarantined) {
     for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'notify', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, band: score.band } });

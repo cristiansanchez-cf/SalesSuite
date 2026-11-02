@@ -8,7 +8,7 @@ import { processDue } from './job';
 import { accountDomain, emailKind, spamReasons, toE164 } from './normalize';
 import { businessMinutes, firstSendAt, local, nextBusinessAt, type Hours } from './schedule';
 import { scoreLead } from './score';
-import { autoreplyEmail, summary, waParams, waPreview } from './templates';
+import { autoreplyEmail, mediaFor, summary, waParams, waPreview } from './templates';
 import { demoWhatsApp, demoWhatsAppOutbox, isStopWord, parseWebhook, validSignature } from './whatsapp';
 import { createHmac } from 'node:crypto';
 import type { Email, Mailer } from '../notify/mailer';
@@ -189,11 +189,27 @@ describe('entrada y cola (memoria)', () => {
     expect(demoLeadsStore().msgs).toHaveLength(0);
   });
 
-  test('desde localhost o con test:true: prueba, sin envíos', async () => {
-    await intake(deps({ origin: 'http://localhost:4321' }), v2());
-    await intake(deps(), v2({ test: true, contact: { name: 'T', email: 't@salax.es' } }));
+  test('desde localhost o con test:true: prueba, sin envíos, pero con la misma respuesta que un lead real', async () => {
+    const a = await intake(deps({ origin: 'http://localhost:4321' }), v2());
+    const b = await intake(deps(), v2({ test: true, contact: { name: 'T', email: 't@salax.es' } }));
     expect(demoLeadsStore().leads.every((l) => l.isTest)).toBe(true);
     expect(demoLeadsStore().msgs).toHaveLength(0);
+    // La web enseña su pantalla de verdad: «en unos minutos te llega un email» y el botón de reserva.
+    for (const r of [a, b]) expect(r.body).toMatchObject({ next: { channel: 'email', eta: 'minutes', booking_url: 'https://cal.example.com/cristian' } });
+  });
+
+  test('next.booking_url: el de su tipo e idioma; sin reserva configurada, no viene', async () => {
+    const st = demoLeadsStore();
+    st.settings[0].media = { venue: { en: { booking: 'https://cal.x/venue-en' } } };
+    const en = v2({ idempotency_key: 'en-1', context: { ...v2().context, locale: 'en' } });
+    const r = await intake(deps(), en);
+    expect((r.body as { next: { booking_url?: string } }).next.booking_url).toBe('https://cal.x/venue-en');
+    const dup = await intake(deps(), en);
+    expect(dup.status).toBe(200);
+    expect((dup.body as { next: { booking_url?: string } }).next.booking_url).toBe('https://cal.x/venue-en');
+    st.settings[0].media = {}; st.settings[0].bookingUrl = null;
+    const none = await intake(deps(), v2({ contact: { name: 'Otro', email: 'otro@salax.es' } }));
+    expect((none.body as { next: Record<string, unknown> }).next).not.toHaveProperty('booking_url');
   });
 
   test('marca que no es la del espacio → 400; espacio apagado → 503 (salvo pruebas)', async () => {
@@ -355,6 +371,30 @@ describe('clasificar antes de escribir', () => {
     expect(e.subject).toBe('Hola desde Enjoy');
     expect(e.text).toBe('Hola Laura sobre Sala X.\n\nCristian');
     expect(wp('wa1', 'es', 'Cristian', 'Enjoy', ['Laura', 'Sala X', '¿Qué tal?'], { es: { wa1: 'Hola {{1}}, {firma} aquí. Sobre {{2}}: {{3}}' } })).toBe('Hola Laura, Cristian aquí. Sobre Sala X: ¿Qué tal?');
+  });
+});
+
+describe('vídeo y reserva por tipo e idioma', () => {
+  const s = { bookingUrl: 'https://cal.x/general', videoUrl: 'https://v.x/general.mp4', media: {
+    general: { es: { video: 'https://v.x/gen-es.mp4' } },
+    venue: { es: { video: 'https://v.x/locales-es.mp4', booking: 'https://cal.x/locales' }, en: { video: 'https://v.x/locales-en.mp4' } },
+  } };
+  test('el de su tipo e idioma; si no, el del tipo general en su idioma; si no, los generales', () => {
+    expect(mediaFor(s, 'venue', {}, 'es')).toEqual({ video: 'https://v.x/locales-es.mp4', booking: 'https://cal.x/locales' });
+    expect(mediaFor(s, 'venue', {}, 'en')).toEqual({ video: 'https://v.x/locales-en.mp4', booking: 'https://cal.x/general' });
+    expect(mediaFor(s, 'wedding', {}, 'es')).toEqual({ video: 'https://v.x/gen-es.mp4', booking: 'https://cal.x/general' });
+    expect(mediaFor(s, 'wedding', {}, 'fr')).toEqual({ video: 'https://v.x/general.mp4', booking: 'https://cal.x/general' });
+    // Un lead «general» que dice que es un local usa los de locales; otros idiomas (de) van como inglés.
+    expect(mediaFor(s, 'general', { event_type: 'venue' }, 'es').video).toBe('https://v.x/locales-es.mp4');
+    expect(mediaFor(s, 'venue', {}, 'de').video).toBe('https://v.x/locales-en.mp4');
+  });
+  test('el email lleva el vídeo; el WhatsApp 2, la reserva (o el vídeo si no hay)', () => {
+    const e = autoreplyEmail({ name: 'Laura', type: 'venue', fields: {}, locale: 'es', signer: 'Cristian', brand: 'Enjoy', channel: 'email', eta: 'minutes', bookingUrl: 'https://cal.x/locales', videoUrl: 'https://v.x/locales-es.mp4', unsubscribeUrl: null });
+    expect(e.text).toContain('vídeo corto para verlo en marcha: https://v.x/locales-es.mp4');
+    expect(e.html).toContain('<a href="https://v.x/locales-es.mp4">');
+    const sin = autoreplyEmail({ name: 'Laura', type: 'venue', fields: {}, locale: 'es', signer: 'Cristian', brand: 'Enjoy', channel: 'email', eta: 'minutes', bookingUrl: null, unsubscribeUrl: null });
+    expect(sin.text).not.toContain('vídeo');
+    expect(waParams('wa2', { name: 'Laura', type: 'venue', fields: {}, locale: 'es', bookingUrl: null, videoUrl: 'https://v.x/locales-es.mp4' })[2]).toBe('https://v.x/locales-es.mp4');
   });
 });
 

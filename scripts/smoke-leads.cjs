@@ -32,6 +32,7 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   const r1 = await post(body);
   const j1 = await r1.json();
   assert(r1.status === 201 && j1.id && j1.next?.channel === 'email' && j1.next?.eta === 'minutes', `201 con next (${JSON.stringify(j1.next)})`);
+  assert(/^https:\/\//.test(j1.next?.booking_url ?? ''), `next.booking_url (${j1.next?.booking_url})`);
   assert(r1.headers.get('access-control-allow-origin') === WEB, 'la respuesta lleva el CORS');
   const r2 = await post(body);
   const j2 = await r2.json();
@@ -111,8 +112,13 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   const st = await p.textContent('[data-testid=leads-resend-status]');
   assert(st.includes('re_…5678') && !(await p.content()).includes('re_smokeKey12345678'), 'clave propia guardada: solo se ve la pista');
   await Promise.all([p.waitForURL(/ok=resendCleared/), p.click('[data-testid=leads-resend-clear]')]);
+  // Vídeo y reserva por tipo: los de la web vienen puestos (locales, DJ); uno nuevo se guarda.
+  assert((await p.inputValue('[name=m_venue_es_video]')).includes('locales-es.mp4'), 'vídeo de locales ya puesto');
+  await p.click('[data-testid=leads-media-wedding] summary');
+  await p.fill('[name=m_wedding_es_booking]', 'https://cal.example.com/bodas');
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
   assert((await p.textContent('[data-testid=leads-status-badge]')).includes('Activo'), 'ajustes guardados: guardar no apaga la entrada');
+  assert((await p.inputValue('[name=m_wedding_es_booking]')) === 'https://cal.example.com/bodas' && (await p.inputValue('[name=m_venue_es_video]')).includes('locales-es.mp4'), 'reserva de bodas guardada y el resto intacto');
   // ---- Activar / pausar (arriba a la derecha) y la lista de lo que falta
   assert(await p.getAttribute('[data-testid=leads-check-resend]', 'data-ok') === '1', 'lista: lo obligatorio está');
   await Promise.all([p.waitForURL(/ok=paused/), p.click('[data-testid=leads-toggle]')]);
