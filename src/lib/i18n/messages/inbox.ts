@@ -7,6 +7,8 @@ const es = {
   address: 'Tu dirección para apuntar correos', addressHelp: 'Es solo tuya y de este espacio. Lo que llegue aquí se apunta en tu nombre.',
   copy: 'Copiar', copied: 'Copiada', rotate: 'Cambiar la dirección', rotateHelp: 'La de ahora deja de funcionar (por si se ha compartido sin querer).',
   notConfigured: 'Falta configurar el dominio de entrada en el servidor (INBOUND_EMAIL_DOMAIN). Hasta entonces no hay dirección.',
+  superadminOnly: 'Entras como superadmin y no eres del equipo de este espacio: la dirección es de cada persona del equipo. Entra con tu usuario de este espacio (o añádete en Equipo) para tener la tuya.',
+  addressError: 'No se ha podido crear tu dirección ahora mismo. Vuelve a cargar la página en un rato.',
   howTitle: 'Cómo usarla',
   how: [
     'Al escribir a un cliente: pon tu dirección en CCO (copia oculta). Se apunta como «escribí».',
@@ -32,6 +34,8 @@ export const inboxMessages = defineMessages({
     address: 'Your address for logging emails', addressHelp: 'It is yours alone, for this space. Whatever arrives here is logged in your name.',
     copy: 'Copy', copied: 'Copied', rotate: 'Change the address', rotateHelp: 'The current one stops working (in case it was shared by mistake).',
     notConfigured: 'The inbound domain is not set on the server yet (INBOUND_EMAIL_DOMAIN). Until then there is no address.',
+    superadminOnly: 'You are signed in as superadmin and are not on this space’s team: each team member has their own address. Sign in with your user for this space (or add yourself in Team) to get yours.',
+    addressError: 'Your address could not be created right now. Reload the page in a while.',
     howTitle: 'How to use it',
     how: [
       'When you write to a client: BCC your address. It is logged as «I wrote».',
@@ -54,6 +58,8 @@ export const inboxMessages = defineMessages({
     address: 'O teu endereço para registar emails', addressHelp: 'É só teu e deste espaço. O que chegar aqui é registado em teu nome.',
     copy: 'Copiar', copied: 'Copiado', rotate: 'Mudar o endereço', rotateHelp: 'O atual deixa de funcionar (caso tenha sido partilhado sem querer).',
     notConfigured: 'Falta configurar o domínio de entrada no servidor (INBOUND_EMAIL_DOMAIN). Até lá não há endereço.',
+    superadminOnly: 'Entraste como superadmin e não és da equipa deste espaço: o endereço é de cada pessoa da equipa. Entra com o teu utilizador deste espaço (ou adiciona-te em Equipa) para teres o teu.',
+    addressError: 'Não foi possível criar o teu endereço agora. Recarrega a página daqui a pouco.',
     howTitle: 'Como usar',
     how: [
       'Ao escrever a um cliente: põe o teu endereço em Cco. Fica registado como «escrevi».',
@@ -76,6 +82,8 @@ export const inboxMessages = defineMessages({
     address: '이메일 기록용 주소', addressHelp: '이 공간에서 나만 쓰는 주소입니다. 여기로 온 것은 내 이름으로 기록됩니다.',
     copy: '복사', copied: '복사됨', rotate: '주소 바꾸기', rotateHelp: '지금 주소는 더 이상 쓸 수 없습니다(실수로 공유된 경우).',
     notConfigured: '서버에 수신 도메인(INBOUND_EMAIL_DOMAIN)이 아직 설정되지 않았습니다. 그때까지 주소가 없습니다.',
+    superadminOnly: '슈퍼관리자로 들어왔고 이 공간의 팀원이 아닙니다: 주소는 팀원마다 있습니다. 이 공간의 사용자로 들어오거나 팀에 자신을 추가하면 주소가 생깁니다.',
+    addressError: '지금은 주소를 만들 수 없습니다. 잠시 후 페이지를 새로고침하세요.',
     howTitle: '사용 방법',
     how: [
       '고객에게 쓸 때: 숨은 참조에 주소를 넣으세요. «보냄»으로 기록됩니다.',

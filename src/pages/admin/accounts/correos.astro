@@ -33,7 +33,13 @@ if (Astro.request.method === 'POST') {
   if (!result.error) return Astro.redirect(`/admin/accounts/correos?ok=${ok}`, 303);
 }
 const okMsg = flash(Astro.url, M.ok);
-const [address, items] = await Promise.all([svc.address().catch(() => null), svc.list(50)]);
+// Sin dirección: o falta el dominio en el servidor, o no se pudo crear (p. ej. superadmin que no es del equipo de este espacio).
+let addressProblem: string | null = null;
+const [address, items] = await Promise.all([svc.address().catch((e) => {
+  console.error('[inbox] dirección', e instanceof Error ? e.message : e);
+  addressProblem = admin.session.superadmin ? M.superadminOnly : M.addressError;
+  return null;
+}), svc.list(50)]);
 const accIds = [...new Set(items.map((e) => e.accountId).filter((x): x is string => !!x))];
 const names = new Map((await Promise.all(accIds.slice(0, 30).map((id) => admin.accounts.get(id).then((r) => [id, r.account.name] as const).catch(() => null)))).filter((x): x is readonly [string, string] => !!x));
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -58,7 +64,7 @@ const badge: Record<string, string> = { logged: 'co-badge--signal', unmatched: '
           <span class="co-meta">{M.rotateHelp}</span>
         </form>
       </>
-    ) : <Alert kind="info" title={M.notConfigured} />}
+    ) : <Alert kind="info" title={addressProblem ?? M.notConfigured} />}
   </section>
 
   <section class="co-card mb-5 grid max-w-3xl gap-2 !p-6">
