@@ -150,7 +150,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
       <label class="co-field">{S.fromEmail}<input class="co-input" type="email" name="fromEmail" value={s.fromEmail ?? ''} /><span class="co-meta">{S.fromEmailHelp}</span></label>
       <label class="co-field">{S.fromName}<input class="co-input" name="fromName" value={s.fromName ?? ''} maxlength="80" /></label>
       <label class="co-field">{S.replyTo}<input class="co-input" type="email" name="replyTo" value={s.replyTo ?? ''} /><span class="co-meta">{S.replyToHelp}</span></label>
-      <label class="co-field">{S.signer}<input class="co-input" name="signerName" value={s.signerName ?? ''} maxlength="80" /></label>
+      <label class="co-field">{S.signer}<input class="co-input" name="signerName" value={s.signerName ?? ''} maxlength="80" /><span class="co-meta">{S.signerHelp}</span></label>
       <label class="co-field">{S.notify}<textarea class="co-textarea h-20" name="notify">{s.notifyEmails.join('\n')}</textarea><span class="co-meta">{S.notifyHelp}</span></label>
       <label class="co-field">{S.booking}<input class="co-input" type="url" name="bookingUrl" value={s.bookingUrl ?? ''} placeholder="https://" /></label>
       <label class="co-field">{S.video}<input class="co-input" type="url" name="videoUrl" value={s.videoUrl ?? ''} placeholder="https://" /></label>
