@@ -226,6 +226,8 @@ export interface MemberRecord {
   /** Quién le invitó (trazabilidad de la red de colaboradores). */
   invitedBy: string | null;
   joinedAt: string | null;
+  /** Última vez que abrió la consola de este espacio (null = invitado que aún no ha entrado). */
+  lastSeenAt?: string | null;
   /** Para que los compañeros de zona puedan llamarle o escribirle por WhatsApp. */
   phone?: string | null;
 }

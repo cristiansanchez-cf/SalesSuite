@@ -339,8 +339,11 @@ function full(sb: SupabaseClient): AdminDb {
     },
 
     async listMembers(tenantId) {
-      const rows = check(await sb.from('membership').select('user_id, role, invited_by, created_at, users!membership_user_id_fkey!inner(email, display_name, phone)').eq('tenant_id', tenantId)) ?? [];
-      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role, invitedBy: r.invited_by ?? null, joinedAt: r.created_at ?? null, phone: r.users.phone ?? null }));
+      const rows = check(await sb.from('membership').select('user_id, role, invited_by, created_at, last_seen_at, users!membership_user_id_fkey!inner(email, display_name, phone)').eq('tenant_id', tenantId)) ?? [];
+      return rows.map((r: Row): MemberRecord => ({ userId: r.user_id, email: r.users.email, displayName: r.users.display_name, role: r.role, invitedBy: r.invited_by ?? null, joinedAt: r.created_at ?? null, lastSeenAt: r.last_seen_at ?? null, phone: r.users.phone ?? null }));
+    },
+    async touchMembership(tenantId) { // la persona es la de la sesión (auth.uid())
+      check(await sb.rpc('touch_membership', { p_tenant: tenantId }));
     },
     async addMember(tenantId, userId, role) {
       // invited_by lo pone el trigger membership_set_inviter con la sesión.
@@ -501,6 +504,18 @@ export function supabaseIdentity(url: string, serviceRoleKey: string, mailer: Ma
         console.warn('[invite] email no enviado:', err instanceof Error ? err.message : err);
       }
       return { userId, invited: !existing };
+    },
+    async resendInvite(email, { redirectTo }) {
+      const e = email.trim().toLowerCase();
+      const target = new URL(redirectTo);
+      if (!mailer) {
+        // Sin correo propio: Supabase reenvía su invitación a una cuenta que aún no ha entrado.
+        const { error } = await admin.auth.admin.inviteUserByEmail(e, { redirectTo });
+        if (error) throw new Error(`[supabase] reenviar invitación: ${error.message}`);
+        return;
+      }
+      const o = await oneTime(e);
+      await mailer.send(inviteEmail(e, { link: confirmLink(target.origin, o, target.searchParams.get('next') || '/admin'), loginUrl: `${target.origin}/admin/login`, space: await spaceName(target.origin), existing: false }));
     },
     async oneTimeLogin(email) {
       return (await oneTime(email.trim().toLowerCase())).hash;

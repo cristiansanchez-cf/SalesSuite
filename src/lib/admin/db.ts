@@ -105,6 +105,8 @@ export interface AdminDb {
   addMember(tenantId: string, userId: string, role: Role, inviter?: string): Promise<boolean>;
   setMemberRole(tenantId: string, userId: string, role: Role): Promise<boolean>;
   removeMember(tenantId: string, userId: string): Promise<boolean>;
+  /** Apunta que la persona de la sesión ha entrado en el espacio (como mucho una vez por hora). */
+  touchMembership?(tenantId: string, userId: string): Promise<void>;
 
   listModules(tenantId: string): Promise<ModuleRecord[]>;
   listModuleVersions(tenantId: string): Promise<ModuleVersionRecord[]>;
@@ -142,6 +144,8 @@ export interface Identity {
    * Supabase). Si la cuenta no existe no envía nada y devuelve `true` igual: la pantalla no dice si existe.
    */
   sendLoginCode?(email: string, opts: { origin: string; next: string }): Promise<boolean>;
+  /** Vuelve a enviar la invitación a quien aún no ha entrado (enlace nuevo; el anterior puede haber caducado). */
+  resendInvite?(email: string, opts: { redirectTo: string }): Promise<void>;
 }
 
 /** Subida de assets (logos, fuentes, imágenes) al almacenamiento del tenant. */

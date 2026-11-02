@@ -65,6 +65,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=invite-form] button[type=submit]');
   await p.waitForURL(`${BASE}/admin/team?ok=invited`);
   assert((await p.textContent('[data-testid=members]')).includes(INVITE), 'invitada aparece en el equipo');
+  // aún no ha entrado: se ve y se puede reenviar la invitación
+  const invRow = p.locator('[data-testid=members] li', { hasText: INVITE });
+  assert(await invRow.locator('[data-testid=member-pending]').isVisible(), 'invitada: «Sin entrar»');
+  assert(!(await p.locator('[data-testid=members] li', { hasText: 'admin@enjoy.test' }).locator('[data-testid=member-pending]').count()), 'quien ya entró no sale como pendiente');
+  await Promise.all([p.waitForURL(/ok=resent/), invRow.locator('[data-testid=member-resend]').click()]);
+  assert(true, 'invitación reenviada');
   // no se puede quitar el último admin
   const adminRow = p.locator('[data-testid=members] li', { hasText: 'admin@enjoy.test' });
   await adminRow.locator('[data-testid=remove-open]').click();
@@ -73,6 +79,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // la invitada puede entrar (demo) como comercial
   const nueva = await login(INVITE);
   assert((await nueva.textContent('[data-testid=role]')).includes('Comercial'), 'invitada entra como comercial');
+  await p.goto(`${BASE}/admin/team`);
+  assert(!(await p.locator('[data-testid=members] li', { hasText: INVITE }).locator('[data-testid=member-pending]').count()), 'tras entrar ya no está pendiente');
 
   // ---- marca: color + WhatsApp + logo → visible en enlace público
   await p.goto(`${BASE}/admin/brand`);

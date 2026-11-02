@@ -49,6 +49,9 @@ export function validateProps(blockType: string, props: unknown): string[] {
   return r.success ? [] : issues(r.error);
 }
 
+/** Último reenvío de invitación por persona (un envío por minuto por servidor). */
+const inviteResentAt: Map<string, number> = ((globalThis as { __inviteResentAt?: Map<string, number> }).__inviteResentAt ??= new Map());
+
 export function createTenantAdminService(
   db: AdminDb,
   s: AdminSession,
@@ -81,6 +84,24 @@ export function createTenantAdminService(
     const { userId, invited } = await deps.identity.findOrInvite(email, { redirectTo });
     try { wrote(await db.addMember(s.tenantId, userId, role, s.userId)); } catch (e) { mapDbError(e); }
     return { invited };
+  }
+
+  /**
+   * Reenvía la invitación a quien aún no ha entrado (equipo o colaborador). Un gerente solo a comerciales y colaboradores,
+   * como al invitar. Como mucho una vez por minuto por persona.
+   */
+  async function resendInvite(userId: string, redirectTo: string): Promise<void> {
+    requireTeam();
+    const target = (await db.listMembers(s.tenantId)).find((m) => m.userId === userId);
+    if (!target || (target.role !== 'partner' && !inTeam(s, userId))) throw new AdminError(404, 'Miembro no encontrado');
+    if ((target.role === 'admin' || target.role === 'lead') && !perms.manageTenant) throw new AdminError(403, 'Un gerente invita comerciales y colaboradores; los admins y jefes los da de alta un admin');
+    if (target.lastSeenAt) throw new AdminError(409, 'Ya ha entrado: no hace falta reenviarle la invitación');
+    if (!deps.identity?.resendInvite) throw new AdminError(503, 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor para poder invitar (ver docs/SETUP.md)');
+    const key = `${s.tenantId}:${userId}`;
+    const last = inviteResentAt.get(key) ?? 0;
+    if (Date.now() - last < 60_000) throw new AdminError(409, 'Acabas de reenviarla: espera un minuto');
+    inviteResentAt.set(key, Date.now());
+    await deps.identity.resendInvite(target.email, { redirectTo });
   }
 
   async function assertNotLastAdmin(userId: string, nextRole: Role | null) {
@@ -443,7 +464,7 @@ export function createTenantAdminService(
     listPriceOptions, savePriceOption, setPriceOptionActive, setPriceOptionSize, stripeStatus, setStripeSecret,
     partnerInvite, myInvitees,
     listPartners, partner, invitePartner, updatePartner, savePartnerAccount, deletePartnerAccount,
-    listMembers, invite, setRole, removeMember,
+    listMembers, invite, resendInvite, setRole, removeMember,
     listCatalog, createModule, updateModule, newDraft, saveDraft, publish, archive, previewVersion, previewSample,
     getSettings, saveSettings, saveScreenExamples, uploadAsset,
   };

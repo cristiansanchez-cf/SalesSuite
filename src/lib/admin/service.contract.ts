@@ -328,6 +328,22 @@ export function serviceContract(name: string, env: () => ContractEnv) {
       expect((await t2.listMembers()).some((m) => m.userId === USERS.rep.id)).toBe(false);
     });
 
+    test('invitaciones: quién no ha entrado y reenviar', async () => {
+      const t = tsvc(USERS.admin);
+      await t.invite({ email: 'pendiente@enjoy.test', role: 'rep' }, 'https://x/admin/auth/confirm?next=/admin/account');
+      const nuevo = (await t.listMembers()).find((m) => m.email === 'pendiente@enjoy.test')!;
+      expect(nuevo.lastSeenAt ?? null).toBeNull();
+      await t.resendInvite(nuevo.userId, 'https://x/admin/auth/confirm?next=/admin/account');
+      await rejects(t.resendInvite(nuevo.userId, 'https://x/admin/auth/confirm'), 409);  // una vez por minuto
+      await rejects(tsvc(USERS.rep).resendInvite(nuevo.userId, 'x'), 403);
+      await rejects(t.resendInvite('00000000-0000-4000-8000-00000000dead', 'x'), 404);
+      // Entra: ya no hace falta reenviar.
+      await E.dbFor(nuevo.userId).touchMembership?.(ENJOY, nuevo.userId);
+      const visto = (await t.listMembers()).find((m) => m.userId === nuevo.userId)!;
+      expect(visto.lastSeenAt).toBeTruthy();
+      await rejects(t.resendInvite(nuevo.userId, 'x'), 409);
+    });
+
     test('catálogo: crear módulo, publicar, nueva versión, archivar', async () => {
       const t = tsvc(USERS.admin);
       const { moduleId, versionId } = await t.createModule({ key: 'hero-locales', blockType: 'hero-pitch', name: 'Hero · Locales', description: '' });

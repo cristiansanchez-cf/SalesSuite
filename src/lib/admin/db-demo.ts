@@ -298,12 +298,16 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     async listMembers(tenantId) {
       return db().users.flatMap((u) => u.memberships
         .filter((m) => m.tenant_id === tenantId)
-        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role, invitedBy: m.invited_by ?? null, joinedAt: m.created_at ?? null, phone: u.phone ?? null })));
+        .map((m) => ({ userId: u.id, email: u.email, displayName: u.display_name || null, role: m.role, invitedBy: m.invited_by ?? null, joinedAt: m.created_at ?? null, lastSeenAt: m.last_seen_at === undefined ? (m.created_at ?? '2026-10-01T09:00:00.000Z') : m.last_seen_at, phone: u.phone ?? null })));
+    },
+    async touchMembership(tenantId, userId) {
+      const m = db().users.find((x) => x.id === userId)?.memberships.find((x) => x.tenant_id === tenantId);
+      if (m) m.last_seen_at = new Date().toISOString();
     },
     async addMember(tenantId, userId, role, inviter) {
       const u = db().users.find((x) => x.id === userId);
       if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) return false;
-      u.memberships.push({ tenant_id: tenantId, role, invited_by: inviter ?? null, created_at: new Date().toISOString() });
+      u.memberships.push({ tenant_id: tenantId, role, invited_by: inviter ?? null, created_at: new Date().toISOString(), last_seen_at: null });
       demoEmitMembership(tenantId, userId, role, inviter);
       return true;
     },
@@ -423,7 +427,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (!me?.can_invite) throw new Error('No tienes permiso para invitar colaboradores');
       const u = s.users.find((x) => x.id === userId);
       if (!u || u.memberships.some((m) => m.tenant_id === tenantId)) throw new Error('duplicate key: Esa persona ya tiene acceso');
-      u.memberships.push({ tenant_id: tenantId, role: 'partner', invited_by: inviterId, created_at: new Date().toISOString() });
+      u.memberships.push({ tenant_id: tenantId, role: 'partner', invited_by: inviterId, created_at: new Date().toISOString(), last_seen_at: null });
       demoEmitMembership(tenantId, userId, 'partner', inviterId);
       s.partner_profile.push({ tenant_id: tenantId, user_id: userId, module_ids: [...me.module_ids], see_team_tips: false, welcome_note: null, expires_at: me.expires_at, can_invite: false });
     },
@@ -448,6 +452,7 @@ export function demoIdentity(getDb: () => DemoDb = demoDb): Identity {
       getDb().users.push({ id, email: e, display_name: '', memberships: [] });
       return { userId: id, invited: true };
     },
+    async resendInvite() { /* en demo no se envían emails */ },
   };
 }
 

@@ -215,19 +215,34 @@ export function serviceIdentity(): Identity | null {
   return key ? supabaseIdentity(env('PUBLIC_SUPABASE_URL')!, key, mail) : null;
 }
 
+/**
+ * Apunta que la persona ha entrado en este espacio (Equipo enseña quién no ha entrado aún, para reenviarle la invitación).
+ * Una vez por hora como mucho: una cookie evita llamar a la base de datos en cada petición.
+ */
+async function touchSeen(ctx: RequestLike, db: AdminDb, r: AuthResult, tenantId: string): Promise<AuthResult> {
+  if (r.kind !== 'ok' || !db.touchMembership) return r;
+  const name = `co_seen_${tenantId.slice(0, 8)}`;
+  if (ctx.cookies.get(name)?.value) return r;
+  await db.touchMembership(tenantId, r.admin.session.userId).catch(() => {});
+  try { ctx.cookies.set(name, '1', { ...cookieBase(ctx.url), maxAge: 3600 }); } catch { /* respuesta ya enviada */ }
+  return r;
+}
+
 export async function authenticate(ctx: RequestLike, tenant: TenantContext): Promise<AuthResult> {
   if (authMode() === 'demo') {
     const u = demoDb().users.find((x) => x.id === ctx.cookies.get(DEMO_COOKIE)?.value);
     if (!u) return { kind: 'anonymous' };
-    return buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
-      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb(), requestCache: true });
+    const ddb = demoAdminDb();
+    return touchSeen(ctx, ddb, await buildAdminContext(ddb, { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb(), requestCache: true }), tenant.id);
   }
   const sb = supabaseServerClient(ctx);
   // getUser() valida el JWT contra Supabase Auth (getSession() solo lee la cookie).
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
-  return buildAdminContext(supabaseAdminDb(sb), { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb), requestCache: true });
+  const sdb = supabaseAdminDb(sb);
+  return touchSeen(ctx, sdb, await buildAdminContext(sdb, { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
+    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb), requestCache: true }), tenant.id);
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

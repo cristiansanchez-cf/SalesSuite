@@ -156,6 +156,8 @@ const EXACT: Record<string, T> = {
   'Una versión archivada no se vuelve a publicar: crea una nueva': ['An archived version can\'t be republished: create a new one', 'Uma versão arquivada não volta a ser publicada: crie uma nova', '보관된 버전은 다시 게시할 수 없습니다: 새 버전을 만드세요'],
   'Esa persona ya tiene acceso a este espacio': ['That person already has access to this workspace', 'Essa pessoa já tem acesso a este espaço', '이 사람은 이미 이 워크스페이스에 접근할 수 있습니다'],
   'Esa persona ya tiene acceso': ['That person already has access', 'Essa pessoa já tem acesso', '이 사람은 이미 접근 권한이 있습니다'],
+  'Ya ha entrado: no hace falta reenviarle la invitación': ['They have already signed in: no need to resend the invitation', 'Já entrou: não é preciso reenviar o convite', '이미 접속했습니다: 초대를 다시 보낼 필요가 없습니다'],
+  'Acabas de reenviarla: espera un minuto': ['You just resent it: wait a minute', 'Acabou de reenviar: espere um minuto', '방금 다시 보냈습니다: 1분 기다리세요'],
   'Esa persona ya está en el equipo': ['That person is already on the team', 'Essa pessoa já está na equipe', '이 사람은 이미 팀에 있습니다'],
   'Esa persona no está en el equipo': ['That person is not on the team', 'Essa pessoa não está na equipe', '이 사람은 팀에 없습니다'],
   'Esa persona no está en el equipo interno': ['That person is not on the internal team', 'Essa pessoa não está na equipe interna', '이 사람은 내부 팀에 없습니다'],

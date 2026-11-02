@@ -3,6 +3,7 @@
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
+import { requestOrigin } from '~/lib/http';
 import { AdminError } from '~/lib/admin/service';
 import { STATUS_CLASS } from '~/lib/admin/format';
 import { PRICE_POLICY_LABELS } from '~/lib/partner/labels';
@@ -55,6 +56,9 @@ if (Astro.request.method === 'POST') {
     } else if (action === 'remove') {
       await t.removeMember(userId);
       ok = 'removed';
+    } else if (action === 'resend') {
+      await t.resendInvite(userId, `${requestOrigin(Astro.request, Astro.url)}/admin/auth/confirm?next=/admin`);
+      ok = 'resent';
     }
   });
   if (!result.error) return Astro.redirect(ok === 'removed' ? '/admin/team?ok=removed' : `/admin/team/partners/${userId}?ok=${ok}`, 303);
@@ -83,6 +87,7 @@ const okMsg = flash(Astro.url, {
   'account-added': M.okAccountAdded,
   'account-saved': M.okAccountSaved,
   'account-deleted': M.okAccountDeleted,
+  resent: T.okResent,
 });
 const dateInput = p.profile?.expiresAt ? p.profile.expiresAt.slice(0, 10) : '';
 const segName = new Map(segments.map((sg) => [sg.id, sg.name]));
@@ -91,7 +96,13 @@ const pct = (n: number) => `${n > 0 ? '+' : ''}${n} %`;
 ---
 <AdminLayout title={p.displayName || p.email}>
   <PageHeader eyebrow={S.role.partner} title={p.displayName || p.email} back={{ href: '/admin/team', label: T.title }}
-    lede={`${p.email} · ${T.accounts(p.accounts.length)} · ${T.proposals(p.dossierCount)}`}>
+    lede={`${p.email} · ${T.accounts(p.accounts.length)} · ${T.proposals(p.dossierCount)} · ${p.lastSeenAt ? T.seen(fmt.date(p.lastSeenAt, { day: 'numeric', month: 'short' })) : T.pendingSince(fmt.date(p.joinedAt, { day: 'numeric', month: 'short' }))}`}>
+    {!p.lastSeenAt && (
+      <form method="post">
+        <input type="hidden" name="action" value="resend" />
+        <button class="co-btn co-btn--ghost" data-testid="partner-resend"><Icon name="send" size={16} />{T.resend}</button>
+      </form>
+    )}
     {p.expired && <span class="co-badge co-badge--attention" data-testid="expired">{M.expired}</span>}
     <button type="button" class="co-btn co-btn--primary" data-dialog-open="add-account-dialog"><Icon name="plus" size={16} />{M.addAccount}</button>
   </PageHeader>

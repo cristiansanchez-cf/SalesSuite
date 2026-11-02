@@ -45,6 +45,7 @@ if (!URL || !SECRET || !DB_URL) {
         sql(`insert into auth.users (id, email) values ('${id}', '${e.replace(/'/g, "''")}')`);
         return { userId: id, invited: true };
       },
+      async resendInvite() { /* el email no se prueba aquí */ },
     }),
     async publicTenant(slug) {
       const { data, error } = await client(jwt({ role: 'anon' })).rpc('resolve_tenant', { p_slug: slug });

@@ -39,6 +39,11 @@ if (Astro.request.method === 'POST') {
       ok = r.invited ? 'invited' : 'added';
     } else if (action === 'role') { await t.setRole(userId, f.get('role')); ok = 'role'; }
     else if (action === 'remove') { await t.removeMember(userId); ok = 'removed'; }
+    else if (action === 'resend') {
+      const partner = f.get('partner') === '1';
+      await t.resendInvite(userId, `${requestOrigin(Astro.request, Astro.url)}/admin/auth/confirm?next=${partner ? '/admin' : '/admin/account'}`);
+      ok = 'resent';
+    }
   });
   if (!result.error) return Astro.redirect(partnerId ? `/admin/team/partners/${partnerId}?ok=${ok}` : `/admin/team?ok=${ok}`, 303);
 }
@@ -47,6 +52,7 @@ const okMsg = flash(Astro.url, {
   added: M.okAdded,
   role: M.okRole,
   removed: M.okRemoved,
+  resent: M.okResent,
 });
 const [members, partners, catalog, chart] = await Promise.all([t.listMembers(), t.listPartners(), t.listCatalog(), admin.org.chart().catch(() => null)]);
 // Delegación de cada persona (organigrama).
@@ -76,7 +82,16 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
           <span class="co-row__main">
             <span class="co-row-title">{m.displayName || m.email}{m.userId === admin.session.userId && <span class="co-meta"> {M.you}</span>}</span>
             <span class="co-meta">{m.email}{m.invitedBy && nameOf(m.invitedBy) ? ` · ${M.invitedByLower(nameOf(m.invitedBy)!)}` : ''}</span>
+            <span class="co-meta" data-testid="member-seen">{m.lastSeenAt ? M.seen(dateShort(m.lastSeenAt)) : M.pendingSince(dateShort(m.joinedAt))}</span>
           </span>
+          {!m.lastSeenAt && <span class="co-badge co-badge--attention" data-testid="member-pending">{M.pending}</span>}
+          {!m.lastSeenAt && (perms.manageTenant || m.role === 'rep') && (
+            <form method="post">
+              <input type="hidden" name="action" value="resend" />
+              <input type="hidden" name="userId" value={m.userId} />
+              <button class="co-btn co-btn--ghost co-btn--sm" data-testid="member-resend"><Icon name="send" size={14} />{M.resend}</button>
+            </form>
+          )}
           {delegationOf.get(m.userId) && <span class="co-badge" data-testid="member-delegation"><Icon name="network" size={12} />{delegationOf.get(m.userId)}</span>}
           <span class:list={['co-badge', m.role !== 'rep' && 'co-badge--ink']}>{S.role[m.role]}</span>
           {perms.manageTenant && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`role-${m.userId}`}>{M.changeRole}</button>}
@@ -122,6 +137,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
                   <span class="co-row-title">{p.displayName || p.email}</span>
                   <span class="co-meta">{p.invitedBy && nameOf(p.invitedBy) ? `${M.partnerInvitedBy(nameOf(p.invitedBy)!, dateShort(p.joinedAt))} · ` : ''}{M.accounts(p.accounts.length)} · {M.modules(p.profile?.moduleIds.length ?? 0)} · {M.proposals(p.dossierCount)}{p.expired ? ` · ${M.expiredMeta}` : p.profile?.expiresAt ? ` · ${M.accessUntil(dateFmt(p.profile.expiresAt))}` : ''}</span>
                 </span>
+                {!p.lastSeenAt && <span class="co-badge co-badge--attention" data-testid="partner-pending">{M.pending}</span>}
                 <span class="co-badge">{S.role.partner}</span>
                 <span class="co-row__chevron"><Icon name="chevron-right" /></span>
               </a>
