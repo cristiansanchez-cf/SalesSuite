@@ -29,8 +29,9 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
     async settingsByWhatsappPhone(phoneId) { const r = s.settings.find((x) => x.whatsappPhoneId === phoneId); return r ? clone(r) : null; },
     async saveSettings(v) {
       if (s.settings.some((x) => x.brand === v.brand && x.tenantId !== v.tenantId)) throw new DuplicateKey('brand');
-      const hint = s.settings.find((x) => x.tenantId === v.tenantId)?.resendKeyHint ?? null;
-      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint });
+      const prev = s.settings.find((x) => x.tenantId === v.tenantId);
+      const hint = prev?.resendKeyHint ?? null;
+      s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null });
     },
     async resendKey(tenantId) { return s.secrets?.[tenantId] ?? null; },
     async setResendKey(tenantId, sealed, hint) {

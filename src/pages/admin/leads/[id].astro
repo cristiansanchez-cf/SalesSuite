@@ -55,6 +55,7 @@ const when = (iso: string | null) => (iso ? fmt.format(new Date(iso)) : '—');
 const last = submissions[0];
 const lastCtx = (last?.context ?? {}) as { page_url?: string; cta?: { label?: string | null; id?: string | null } };
 const attrRows = (a: unknown) => (a ? Object.entries(a as Record<string, string>) : []);
+const cls = l.facts.classification as { category: keyof typeof L.cats; auto: boolean; reason: string; by: string } | undefined;
 const reason = (r: string) => (L.reasons as Record<string, string>)[r] ?? r;
 const bandLabel = l.scoreDetail ? (L.bands as Record<string, string>)[l.scoreDetail.band] ?? l.scoreDetail.band : '';
 const origins: [string, unknown][] = [[D.first, l.attributionFirst], [D.last, l.attributionLast]];
@@ -156,6 +157,13 @@ const evText = (e: (typeof events)[number]) => {
         {l.sequenceStoppedAt && <p class="co-meta">{D.stopped} · {l.sequenceStopReason}</p>}
       </section>
 
+      {cls && (
+        <section class="co-card grid gap-1 !p-5" data-testid="lead-classification" data-category={cls.category} data-auto={String(cls.auto)}>
+          <h2 class="co-entity">{L.looksLike}: {L.cats[cls.category]}</h2>
+          <p class:list={['text-sm', !cls.auto && 'font-semibold']}>{cls.auto ? L.auto : L.review}</p>
+          <p class="co-meta">{cls.reason}{cls.by === 'ai' ? ' · IA' : ''}</p>
+        </section>
+      )}
       {l.scoreDetail && (
         <section class="co-card grid gap-2 !p-5">
           <h2 class="co-entity">{D.score}: {bandLabel} · {l.score}</h2>

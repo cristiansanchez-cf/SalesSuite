@@ -12,6 +12,7 @@ const EXACT: Record<string, T> = {
   // ------------------------------------------------------------ Leads de las webs
   'La clave de Resend no es válida': ['That Resend key is not valid', 'A chave do Resend não é válida', 'Resend 키가 유효하지 않습니다'],
   'Falta LEADS_SECRET o CRON_SECRET en el servidor': ['LEADS_SECRET or CRON_SECRET is missing on the server', 'Falta LEADS_SECRET ou CRON_SECRET no servidor', '서버에 LEADS_SECRET 또는 CRON_SECRET이 없습니다'],
+  'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}': ['Each WhatsApp message must include {{1}}, {{2}} and {{3}}', 'Cada mensagem de WhatsApp tem de levar {{1}}, {{2}} e {{3}}', '각 WhatsApp 메시지에는 {{1}}, {{2}}, {{3}}이 있어야 합니다'],
   'Lead no encontrado': ['Lead not found', 'Lead não encontrado', '리드를 찾을 수 없습니다'],
   'Indica el motivo para descartarlo': ['Say why you are discarding it', 'Indique o motivo para descartá-lo', '제외하는 이유를 입력하세요'],
   'Esa marca ya la usa otro espacio': ['Another space already uses that brand', 'Outro espaço já usa essa marca', '다른 공간에서 이미 사용 중인 브랜드입니다'],

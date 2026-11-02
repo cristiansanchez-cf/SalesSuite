@@ -46,6 +46,10 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   const local = await post(lead({ contact: { name: 'Prueba Local', email: 'local@salasmoke.es' } }), 'http://localhost:4321');
   assert(local.status === 201, 'desde localhost se acepta (como prueba)');
 
+  const brand = await post(lead({ contact: { name: 'Ana Marca', email: 'ana@cervezasmoke.com', phone: '600222333' }, fields: { venue_name: 'Cervezas Smoke' },
+    message: 'Somos una marca de cerveza y buscamos un acuerdo de patrocinio con vuestros locales' }));
+  assert(brand.status === 201 && (await brand.json()).next?.channel === 'email', 'una marca que escribe desde «locales»: sin WhatsApp');
+
   // ---- Cola: el cron manda lo que toca
   const cron = await (await fetch(`${BASE}/api/cron/leads`)).json();
   assert(cron.ok && cron.failed === 0, `cron de leads (${JSON.stringify(cron)})`);
@@ -67,6 +71,10 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   await p.click('[data-testid=leads-view-test]');
   assert((await p.$$eval('[data-testid=lead]', (xs) => xs.map((x) => x.getAttribute('data-email')))).includes('local@salasmoke.es'), 'lo de localhost, en pruebas');
   if (OUT) await p.screenshot({ path: `${OUT}/leads-list.png`, fullPage: true });
+
+  await p.goto(`${BASE}/admin/leads`);
+  const review = await p.$$eval('[data-testid=lead]', (xs) => xs.filter((x) => x.querySelector('[data-testid=lead-review]')).map((x) => x.getAttribute('data-email')));
+  assert(review.includes('ana@cervezasmoke.com') && !review.includes('laura@salasmoke.es'), `la marca, marcada «lo sigues tú» (${review})`);
 
   // ---- Ficha
   await p.goto(`${BASE}/admin/leads/${j1.id}`);
@@ -106,6 +114,23 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
   assert(true, 'ajustes guardados');
   if (OUT) await p.screenshot({ path: `${OUT}/leads-settings.png`, fullPage: true });
+  // ---- Mensajes: propuesta con IA, guardar, validar las variables de WhatsApp y volver a los de por defecto
+  await p.goto(`${BASE}/admin/leads/ajustes`);
+  assert((await p.textContent('[data-testid=leads-preview-neutral]')).includes('Te contesto yo personalmente'), 'vista previa del email neutro');
+  await p.click('[data-testid=leads-texts-ai]');
+  await p.waitForLoadState('load');
+  const q = await p.inputValue('[data-testid=leads-texts-es-q-venue]');
+  assert(q.includes('propuesta para') || (await p.textContent('main')).includes('no está activada'), `propuesta de la IA en el editor (${q.slice(0, 40)})`);
+  await p.fill('[data-testid=leads-texts-es-q-venue]', '¿Cuántas noches abrís a la semana?');
+  await Promise.all([p.waitForURL(/ok=textsSaved/), p.click('[data-testid=leads-texts-save]')]);
+  assert((await p.inputValue('[data-testid=leads-texts-es-q-venue]')) === '¿Cuántas noches abrís a la semana?', 'mensajes guardados');
+  await p.fill('[data-testid=leads-texts-es-wa1]', 'Hola {{1}}, sin las otras variables');
+  await p.click('[data-testid=leads-texts-save]');
+  await p.waitForLoadState('load');
+  assert((await p.textContent('main')).includes('{{1}}, {{2}} y {{3}}'), 'WhatsApp sin sus variables → aviso');
+  await Promise.all([p.waitForURL(/ok=textsReset/), p.click('[data-testid=leads-texts-reset]')]);
+  assert((await p.inputValue('[data-testid=leads-texts-es-q-venue]')).startsWith('¿Qué noches abrís'), 'vuelta a los de por defecto');
+
   await b.close();
 
   // ---- Baja con un clic (el enlace del email)

@@ -6,6 +6,7 @@ import { createHmac } from 'node:crypto';
 import { parseLead, type LeadInput } from './contract';
 import { isLocalOrigin } from './cors';
 import { DuplicateKey, type LeadsDb } from './db';
+import { classifyRules } from './classify';
 import { accountDomain, emailKind, spamReasons, toE164 } from './normalize';
 import { firstSendAt, nextBusinessAt, type Eta } from './schedule';
 import { scoreLead } from './score';
@@ -94,6 +95,8 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   const first = i.attribution.first ?? current;
   const last = i.attribution.last ?? current;
   const whatsappOk = i.consent.whatsappNotice && !!e164;
+  // Qué es de verdad (docs/LEADS.md §Clasificar): solo reglas aquí; la IA lo revisa en la cola antes del primer envío.
+  const cls = classifyRules({ type: i.type, fields: i.fields, message: i.message, name: i.name, email: i.email, emailKind: kind, cta: i.cta.label ?? i.cta.id, page: i.page.path });
   const score = scoreLead({ type: i.type, fields: i.fields, emailKind: kind, message: i.message, ctaId: i.cta.id ?? i.cta.label, pagePath: i.page.path, submissions: (existing?.submissions ?? 0) + 1, now: d.now });
 
   let lead: Lead;
@@ -102,7 +105,7 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
       lead = await db.insertLead({
         tenantId: t, isTest, email: i.email, emailKind: kind, domain: accountDomain(i.email), name: i.name, phoneRaw: i.phone, phoneE164: e164, type: i.type,
         locale: i.locale, quarantined: reasons.length > 0, quarantineReasons: reasons, score: score.score,
-        scoreDetail: { fit: score.fit, intent: score.intent, band: score.band, detail: score.detail }, facts: facts(i, d.baseUrl),
+        scoreDetail: { fit: score.fit, intent: score.intent, band: score.band, detail: score.detail }, facts: { ...facts(i, d.baseUrl), classification: cls },
         attributionFirst: first, attributionLast: last, consentMarketing: i.consent.marketing, consentAds: i.consent.ads, whatsappOk, createdAt: nowIso,
       });
     } catch (e) {
@@ -130,7 +133,7 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
       lastSubmissionAt: nowIso,
       score: score.score,
       scoreDetail: { fit: score.fit, intent: score.intent, band: score.band, detail: score.detail },
-      facts: facts(i, d.baseUrl, existing.facts),
+      facts: { ...facts(i, d.baseUrl, existing.facts), classification: cls },
       ...(reopen && reasons.length && !existing.quarantined ? { quarantined: true, quarantineReasons: reasons } : {}),
     };
     await db.updateLead(existing.id, patch);
@@ -166,7 +169,7 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   // WhatsApp: no se reinicia si ya hay una conversación (secuencia en marcha, respuesta suya o un primer mensaje reciente).
   const openChat = !!lead.lastInboundAt || !!lead.sequenceStoppedAt
     || history.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && !['cancelled', 'skipped'].includes(m.status) && Date.parse(m.createdAt) > d.now.getTime() - 30 * 86_400_000);
-  if (canAuto && lead.whatsappOk && lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale)) {
+  if (canAuto && cls.auto && lead.whatsappOk && lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale)) {
     if (openChat) next = { channel: 'whatsapp', eta: 'today' };
     else {
       const first1 = firstSendAt(d.now, d.settings, (d.rand ?? Math.random)());

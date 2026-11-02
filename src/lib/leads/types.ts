@@ -29,7 +29,15 @@ export interface LeadSettings {
   holidays: string[];
   /** Pista de la clave propia de Resend («re_…abcd»); null = usa la de la plataforma. */
   resendKeyHint?: string | null;
+  /** Textos propios de la empresa por idioma (vacío = los de por defecto). */
+  templates?: LeadTemplates;
+  /** Qué vende la empresa y a quién (para clasificar los leads). */
+  aiContext?: string | null;
 }
+
+export type QuestionKey = 'venue' | 'dj' | 'festival' | 'wedding' | 'general';
+export interface LocaleTexts { subject?: string; body?: string; wa1?: string; wa2?: string; questions?: Partial<Record<QuestionKey, string>> }
+export type LeadTemplates = Partial<Record<'es' | 'en' | 'fr', LocaleTexts>>;
 
 export interface Lead {
   id: string;

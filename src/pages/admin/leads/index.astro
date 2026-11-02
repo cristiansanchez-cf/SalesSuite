@@ -34,6 +34,7 @@ const sourceOf = (x: unknown): string | null => {
   if (!a) return null;
   return a.utm_source ?? (a.gclid ? 'Google Ads' : a.fbclid ? 'Meta' : a.referrer ? host(a.referrer) : null);
 };
+const clsOf = (l: { facts: Record<string, unknown> }) => l.facts.classification as { category: keyof typeof L.cats; auto: boolean } | undefined;
 const reason = (r: string) => (L.reasons as Record<string, string>)[r] ?? r;
 const fieldsOf = (l: { facts: Record<string, unknown> }) => (l.facts.fields as Record<string, string>) ?? {};
 const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURIComponent(search)}` : ''}`;
@@ -94,6 +95,7 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
               <span class="co-meta min-w-[10rem] flex-1">{L.types[l.type]} · {summary(l.type, fieldsOf(l), locale)}</span>
               {src && <span class="co-tag">{src}</span>}
               {band && <span class:list={['co-tag', band === 'hot' && 'co-tag--match']}>{L.bands[band]}</span>}
+              {clsOf(l) && !clsOf(l)!.auto && <span class="co-tag co-tag--danger" data-testid="lead-review">{L.cats[clsOf(l)!.category]} · {L.review}</span>}
               {l.quarantined && <span class="co-tag co-tag--danger" data-testid="lead-quarantine">{l.quarantineReasons.map(reason).join(', ')}</span>}
               <span class="co-tag" data-testid="lead-stage">{L.stages[l.stage]}</span>
               {l.submissions > 1 && <span class="co-meta">{L.repeat(l.submissions)}</span>}

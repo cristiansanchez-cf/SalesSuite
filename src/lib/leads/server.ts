@@ -8,6 +8,7 @@ import { appMode } from '../mode';
 import { demoMailer, resendMailer, type Mailer } from '../notify/mailer';
 import type { LeadsDb } from './db';
 import { open } from './secret-box';
+import { claudeClassifier, fixtureClassifier, type Classifier } from './classify';
 import { cloudWhatsApp, demoWhatsApp, type WhatsApp } from './whatsapp';
 
 export const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -17,13 +18,15 @@ export interface LeadsRuntime {
   db: LeadsDb; mailer: Mailer | null; whatsapp: WhatsApp | null; secret: string; demo: boolean;
   /** Cuenta de Resend de cada empresa: la suya si guardó clave; si no, la de la plataforma. */
   mailerFor: (tenantId: string) => Promise<Mailer | null>;
+  /** Clasificar cada lead con IA (si hay clave; con AI_RESEARCH_FIXTURE=1, la de pruebas). */
+  classifier: Classifier | null;
 }
 
 /** null + motivo si falta configuración (el endpoint responde 503 y lo dice en los registros). */
 export async function leadsRuntime(): Promise<LeadsRuntime | { error: string }> {
   if (appMode() === 'demo') {
     const { demoLeadsDb } = await import('./db-demo');
-    return { db: demoLeadsDb(), mailer: demoMailer, whatsapp: demoWhatsApp, secret: env('LEADS_SECRET') || 'demo-leads-secret', demo: true, mailerFor: async () => demoMailer };
+    return { db: demoLeadsDb(), mailer: demoMailer, whatsapp: demoWhatsApp, secret: env('LEADS_SECRET') || 'demo-leads-secret', demo: true, mailerFor: async () => demoMailer, classifier: classifierFromEnv() };
   }
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   const secret = env('LEADS_SECRET') || env('CRON_SECRET');
@@ -34,7 +37,7 @@ export async function leadsRuntime(): Promise<LeadsRuntime | { error: string }> 
   const mailer = env('RESEND_API_KEY') && env('RESEND_FROM') ? resendMailer(env('RESEND_API_KEY')!, env('RESEND_FROM')!) : null;
   const wa = env('WHATSAPP_TOKEN') ? cloudWhatsApp(env('WHATSAPP_TOKEN')!) : null;
   const db = supabaseLeadsDb(sb);
-  return { db, mailer, whatsapp: wa, secret, demo: false, mailerFor: mailerFactory(db, mailer, secret) };
+  return { db, mailer, whatsapp: wa, secret, demo: false, mailerFor: mailerFactory(db, mailer, secret), classifier: classifierFromEnv() };
 }
 
 /** Cloudflare Turnstile (opcional): solo si hay TURNSTILE_SECRET. */
@@ -76,4 +79,10 @@ export function mailerFactory(db: LeadsDb, platform: Mailer | null, secret: stri
     cache.set(tenantId, { at: Date.now(), m });
     return m;
   };
+}
+
+function classifierFromEnv(): Classifier | null {
+  if (env('AI_RESEARCH_FIXTURE') === '1') return fixtureClassifier;
+  const k = env('ANTHROPIC_API_KEY');
+  return k ? claudeClassifier(k) : null;
 }

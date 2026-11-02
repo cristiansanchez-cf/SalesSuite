@@ -286,3 +286,72 @@ describe('Resend por empresa', () => {
     expect(demoLeadsStore().settings[0].resendKeyHint).toBe('re_…y123');
   });
 });
+
+describe('clasificar antes de escribir', () => {
+  const base = { fields: {}, message: null, name: 'X', email: 'x@empresa.es', emailKind: 'business' as const, cta: null, page: null };
+  test('reglas: lo que encaja va solo; marcas, prensa, proveedores o «otro», a una persona', async () => {
+    const { classifyRules } = await import('./classify');
+    expect(classifyRules({ ...base, type: 'venue', fields: { venue_name: 'Sala X' }, message: 'Abrimos de jueves a sábado y vendemos muchas bebidas' })).toMatchObject({ category: 'venue', auto: true });
+    expect(classifyRules({ ...base, type: 'venue', message: 'Somos una marca de cerveza y buscamos un acuerdo de patrocinio con vosotros' })).toMatchObject({ category: 'partner', auto: false });
+    expect(classifyRules({ ...base, type: 'general', fields: { event_type: 'other' } })).toMatchObject({ auto: false });
+    expect(classifyRules({ ...base, type: 'festival', message: 'Somos una promotora y organizamos fiestas' })).toMatchObject({ category: 'promoter', auto: true });
+    expect(classifyRules({ ...base, type: 'venue', message: 'Somos una promotora, hacemos fiestas en varias salas' })).toMatchObject({ category: 'promoter', auto: false });
+    expect(classifyRules({ ...base, type: 'wedding', message: 'Ofrecemos posicionamiento web para vuestra empresa' })).toMatchObject({ category: 'vendor', auto: false });
+  });
+  test('la IA puede quitar el automático (nunca darlo si no encaja)', async () => {
+    const { decide } = await import('./classify');
+    expect(decide('venue', { category: 'venue', confidence: 0.9, reason: 'ok' }).auto).toBe(true);
+    expect(decide('venue', { category: 'venue', confidence: 0.6, reason: 'duda' }).auto).toBe(false);
+    expect(decide('venue', { category: 'partner', confidence: 0.95, reason: 'dominio de una marca de bebidas' }).auto).toBe(false);
+    expect(decide('festival', { category: 'promoter', confidence: 0.9, reason: 'promotora' }).auto).toBe(true);
+    expect(decide(null, { category: 'venue', confidence: 0.99, reason: '' }).auto).toBe(false);
+  });
+
+  const deps2 = (over: Partial<IntakeDeps> = {}): IntakeDeps => ({
+    db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: demoLeadsStore().settings[0], now: new Date('2026-11-03T10:00:00Z'),
+    origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://enjoy.ventas.cofundo.io', whatsappReady: true, rand: () => 0.5, ...over,
+  });
+  const waOn = () => { const s = { ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 't1' }, wa2: { es: 't2' } } }; demoLeadsStore().settings = [s]; return s; };
+
+  test('la marca de bebidas que escribe desde «locales»: ni WhatsApp ni email que hable de su local', async () => {
+    resetDemoLeads(); demoWhatsAppOutbox().length = 0;
+    const s = waOn();
+    const r = await intake(deps2({ settings: s }), v2({ contact: { name: 'Ana Brand', email: 'ana@cervezasx.com', phone: '600111222' }, fields: { venue_name: 'Cervezas X' },
+      message: 'Somos una marca de cerveza y queremos un acuerdo de patrocinio con vuestros locales' }));
+    expect(r.body).toMatchObject({ next: { channel: 'email' } });
+    expect(demoLeadsStore().msgs.map((m) => m.step).sort()).toEqual(['autoreply', 'notify']);
+    const sent: Email[] = [];
+    await processDue({ db: demoLeadsDb(), mailer: { async send(e) { sent.push(e); } }, whatsapp: demoWhatsApp, now: new Date('2026-11-03T10:00:05Z'), secret: 's' });
+    const auto = sent.find((e) => e.tag === 'lead-autoreply')!;
+    expect(auto.subject).toBe('Gracias por escribir');
+    expect(auto.text).not.toContain('Cervezas X');
+    expect(auto.text).toContain('Te contesto yo personalmente');
+    expect(sent.find((e) => e.tag === 'lead-notify')!.text).toContain('Marca o alianza · revísalo tú');
+  });
+
+  test('si la IA dice que no es lo que parece, se cancelan los WhatsApp y el email sale neutro', async () => {
+    resetDemoLeads(); demoWhatsAppOutbox().length = 0;
+    const s = waOn();
+    await intake(deps2({ settings: s }), v2({ message: 'Hola, queremos información' }));
+    expect(demoLeadsStore().msgs.filter((m) => m.channel === 'whatsapp')).toHaveLength(2);
+    const sent: Email[] = [];
+    const veto = async () => ({ category: 'partner' as const, confidence: 0.9, reason: 'El dominio es de una distribuidora de bebidas' });
+    await processDue({ db: demoLeadsDb(), mailer: { async send(e) { sent.push(e); } }, whatsapp: demoWhatsApp, now: new Date('2026-11-03T10:05:00Z'), secret: 's', classifier: veto });
+    expect(demoWhatsAppOutbox()).toHaveLength(0);
+    expect(demoLeadsStore().msgs.filter((m) => m.channel === 'whatsapp').every((m) => m.status === 'cancelled')).toBe(true);
+    expect(sent.find((e) => e.tag === 'lead-autoreply')!.subject).toBe('Gracias por escribir');
+    expect(sent.find((e) => e.tag === 'lead-notify')!.text).toContain('escríbele tú');
+    expect((demoLeadsStore().leads[0].facts.classification as { by: string }).by).toBe('ai');
+  });
+
+  test('textos propios: se usan; lo igual al de por defecto no se guarda', async () => {
+    const { onlyCustom } = await import('./service');
+    const { DEFAULT_TEXTS, autoreplyEmail: ar, waPreview: wp } = await import('./templates');
+    expect(onlyCustom({ es: { ...DEFAULT_TEXTS.es, questions: { ...DEFAULT_TEXTS.es.questions, venue: '¿Cuántas noches abrís?' } } })).toEqual({ es: { questions: { venue: '¿Cuántas noches abrís?' } } });
+    const custom = { es: { subject: 'Hola desde {marca}', body: 'Hola {nombre}{sobre}.\n\n{reserva}\n\n{firma}' } };
+    const e = ar({ name: 'Laura G', type: 'venue', fields: { venue_name: 'Sala X' }, locale: 'es', signer: 'Cristian', brand: 'Enjoy', channel: 'email', eta: 'minutes', bookingUrl: null, unsubscribeUrl: null, custom });
+    expect(e.subject).toBe('Hola desde Enjoy');
+    expect(e.text).toBe('Hola Laura sobre Sala X.\n\nCristian');
+    expect(wp('wa1', 'es', 'Cristian', 'Enjoy', ['Laura', 'Sala X', '¿Qué tal?'], { es: { wa1: 'Hola {{1}}, {firma} aquí. Sobre {{2}}: {{3}}' } })).toBe('Hola Laura, Cristian aquí. Sobre Sala X: ¿Qué tal?');
+  });
+});

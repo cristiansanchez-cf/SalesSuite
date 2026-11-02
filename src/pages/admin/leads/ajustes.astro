@@ -16,7 +16,10 @@ import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
 import { ownDomains, setResendKey } from '~/lib/leads/resend-key';
 import { flash } from '~/lib/admin/forms';
-import { autoreplyEmail, waParams, waPreview } from '~/lib/leads/templates';
+import { DEFAULT_TEXTS, autoreplyEmail, waParams, waPreview } from '~/lib/leads/templates';
+import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
+import { cleanupContext } from '~/lib/crm/research-context';
+import type { LeadTemplates, QuestionKey } from '~/lib/leads/types';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -28,13 +31,37 @@ const svc = await leadsFor(admin);
 const lines = (v: FormDataEntryValue | null) => String(v ?? '').split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const orNull = (v: FormDataEntryValue | null) => String(v ?? '').trim() || null;
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
+const LOCS = ['es', 'en', 'fr'] as const;
+const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general'];
+let draft: LeadTemplates | null = null;
+let posted: LeadTemplates | null = null;
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const action = String(f.get('action') ?? '');
-  if (action === 'resend-key' || action === 'resend-key-clear') {
+  // Qué vende y a quién: lo usa la clasificación de cada lead (se guarda con los ajustes y con los mensajes).
+  const aiContext = async () => { const c = await cleanupContext(admin).catch(() => null); return c ? [c.seller, c.clients.length ? `Clientes: ${c.clients.join('; ')}` : ''].filter(Boolean).join('\n').slice(0, 4000) || null : undefined; };
+  const readTexts = (): LeadTemplates => Object.fromEntries(LOCS.map((l) => [l, {
+    subject: String(f.get(`t_${l}_subject`) ?? ''), body: String(f.get(`t_${l}_body`) ?? ''), wa1: String(f.get(`t_${l}_wa1`) ?? ''), wa2: String(f.get(`t_${l}_wa2`) ?? ''),
+    questions: Object.fromEntries(QKEYS.map((k) => [k, String(f.get(`t_${l}_q_${k}`) ?? '')])),
+  }]));
+  if (action === 'save-texts' || action === 'reset-texts') {
+    result = await formAction(async () => { await svc.saveTexts(action === 'reset-texts' ? {} : readTexts(), await aiContext()); });
+    if (!result.error) return Astro.redirect(`/admin/leads/ajustes?ok=${action === 'reset-texts' ? 'textsReset' : 'textsSaved'}#texts`, 303);
+    posted = readTexts();
+  } else if (action === 'ai-draft') {
+    const drafter = env('AI_RESEARCH_FIXTURE') === '1' ? fixtureDrafter : env('ANTHROPIC_API_KEY') ? claudeDrafter(env('ANTHROPIC_API_KEY')!) : null;
+    if (!drafter) result = { error: S.aiOff, details: [] };
+    else {
+      const c = await cleanupContext(admin).catch(() => ({ seller: '', clients: [] as string[] }));
+      const cur = await svc.settings();
+      draft = await drafter({ brand: tenant?.name ?? cur?.brand ?? '', signer: cur?.signerName ?? tenant?.name ?? '', seller: c.seller, clients: c.clients }).catch(() => null);
+      if (!draft) result = { error: S.aiOff, details: [] };
+    }
+  } else if (action === 'resend-key' || action === 'resend-key-clear') {
     result = await formAction(async () => { await setResendKey(admin, action === 'resend-key' ? String(f.get('resendKey') ?? '') : null); });
     if (!result.error) return Astro.redirect(`/admin/leads/ajustes?ok=${action === 'resend-key' ? 'resendSaved' : 'resendCleared'}`, 303);
   } else result = await formAction(async () => {
+    const ctx = await aiContext();
     const tpl = (step: string) => Object.fromEntries(['es', 'en', 'fr'].map((l) => [l, String(f.get(`tpl_${step}_${l}`) ?? '').trim()]).filter(([, v]) => v));
     await svc.saveSettings({
       enabled: f.get('enabled') === 'on', brand: String(f.get('brand') ?? ''), allowedOrigins: lines(f.get('origins')),
@@ -42,9 +69,9 @@ if (Astro.request.method === 'POST') {
       notifyEmails: lines(f.get('notify')), bookingUrl: orNull(f.get('bookingUrl')), videoUrl: orNull(f.get('videoUrl')),
       whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2') },
       sendFromHour: Number(f.get('fromHour') ?? 8), sendToHour: Number(f.get('toHour') ?? 22), holidays: lines(f.get('holidays')),
-    });
+    }, ctx);
   });
-  if (!result.error && action !== 'resend-key' && action !== 'resend-key-clear') return Astro.redirect('/admin/leads?ok=saved', 303);
+  if (!result.error && action === 'save') return Astro.redirect('/admin/leads?ok=saved', 303);
 }
 const s = (await svc.settings()) ?? {
   tenantId: admin.session.tenantId, enabled: false, brand: tenant?.slug ?? '', allowedOrigins: [], fromEmail: null, fromName: null, replyTo: null, signerName: null,
@@ -52,7 +79,11 @@ const s = (await svc.settings()) ?? {
   sendFromHour: 8, sendToHour: 22, holidays: [],
 };
 const demo = appMode() === 'demo';
-const okMsg = flash(Astro.url, { resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared });
+const okMsg = flash(Astro.url, { resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared, textsSaved: L.ok.textsSaved, textsReset: L.ok.textsReset });
+// Lo que se enseña en el editor: la propuesta de la IA, lo que se envió con error, o lo guardado sobre lo de por defecto.
+const custom: LeadTemplates = draft ?? posted ?? s.templates ?? {};
+const textOf = (l: 'es' | 'en' | 'fr', k: 'subject' | 'body' | 'wa1' | 'wa2') => custom[l]?.[k]?.trim() || DEFAULT_TEXTS[l][k];
+const qOf = (l: 'es' | 'en' | 'fr', k: QuestionKey) => custom[l]?.questions?.[k]?.trim() || DEFAULT_TEXTS[l].questions[k];
 const domains = s.resendKeyHint ? await ownDomains(admin) : null;
 const fromDomain = s.fromEmail?.split('@')[1]?.toLowerCase() ?? null;
 const fromVerified = !domains || !fromDomain || domains.some((d) => d.status === 'verified' && (fromDomain === d.name || fromDomain.endsWith(`.${d.name}`)));
@@ -65,9 +96,10 @@ const signer = s.signerName ?? brandName;
 const sample = { name: 'Laura Gómez', type: 'venue' as const, fields: { venue_name: 'Sala Ejemplo', city: 'Valencia' } };
 const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
   loc,
-  wa1: waPreview('wa1', loc, signer, brandName, waParams('wa1', { ...sample, locale: loc, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl })),
-  wa2: waPreview('wa2', loc, signer, brandName, waParams('wa2', { ...sample, locale: loc, bookingUrl: s.bookingUrl ?? 'https://…', videoUrl: s.videoUrl })),
-  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null }),
+  wa1: waPreview('wa1', loc, signer, brandName, waParams('wa1', { ...sample, locale: loc, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl, custom }), custom),
+  wa2: waPreview('wa2', loc, signer, brandName, waParams('wa2', { ...sample, locale: loc, bookingUrl: s.bookingUrl ?? 'https://…', videoUrl: s.videoUrl, custom }), custom),
+  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, custom }),
+  neutral: autoreplyEmail({ name: 'Marta Ruiz', type: 'general', fields: { event_type: 'other' }, locale: loc, signer, brand: brandName, channel: 'email', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, specific: false, custom }),
 }));
 ---
 <AdminLayout title={S.title}>
@@ -92,6 +124,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
   </section>
 
   <form method="post" class="grid max-w-3xl gap-5" data-testid="leads-settings-form">
+    <input type="hidden" name="action" value="save" />
     <section class="co-card grid gap-3 !p-6">
       <p class="co-meta">{S.endpoint}</p>
       <code class="co-inset break-all !p-3" data-testid="leads-endpoint">{endpoint}</code>
@@ -134,6 +167,33 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <button class="co-btn co-btn--primary w-fit" data-testid="leads-settings-save">{S.save}</button>
   </form>
 
+  <form method="post" id="texts" class="co-card mt-8 grid max-w-3xl gap-4 !p-6" data-testid="leads-texts">
+    <h2 class="co-entity !text-lg">{S.texts}</h2>
+    <p class="co-meta">{S.textsHelp}</p>
+    <p class="co-meta">{S.waNote}</p>
+    {draft && <Alert kind="info" title={S.aiDrafted} />}
+    {LOCS.map((l) => (
+      <details class="co-inset !p-4" open={l === 'es' || undefined} data-testid={`leads-texts-${l}`}>
+        <summary class="cursor-pointer font-semibold">{l.toUpperCase()}</summary>
+        <div class="mt-3 grid gap-3">
+          <label class="co-field">{S.subject}<input class="co-input" name={`t_${l}_subject`} value={textOf(l, 'subject')} maxlength="200" /></label>
+          <label class="co-field">{S.body}<textarea class="co-textarea h-56" name={`t_${l}_body`} maxlength="4000">{textOf(l, 'body')}</textarea></label>
+          <label class="co-field">{S.wa1}<textarea class="co-textarea h-36" name={`t_${l}_wa1`} maxlength="1024" data-testid={`leads-texts-${l}-wa1`}>{textOf(l, 'wa1')}</textarea></label>
+          <label class="co-field">{S.wa2}<textarea class="co-textarea h-32" name={`t_${l}_wa2`} maxlength="1024">{textOf(l, 'wa2')}</textarea></label>
+          <p class="co-meta">{S.questions}</p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            {QKEYS.map((k) => <label class="co-field text-xs">{S.qKeys[k]}<input class="co-input" name={`t_${l}_q_${k}`} value={qOf(l, k)} maxlength="300" data-testid={`leads-texts-${l}-q-${k}`} /></label>)}
+          </div>
+        </div>
+      </details>
+    ))}
+    <div class="flex flex-wrap gap-2">
+      <button class="co-btn co-btn--primary" name="action" value="save-texts" data-testid="leads-texts-save">{S.saveTexts}</button>
+      <button class="co-btn co-btn--ghost" name="action" value="ai-draft" formnovalidate data-testid="leads-texts-ai">{S.aiDraft}</button>
+      <button class="co-btn co-btn--ghost" name="action" value="reset-texts" formnovalidate data-testid="leads-texts-reset">{S.resetTexts}</button>
+    </div>
+  </form>
+
   <section class="mt-8 grid max-w-3xl gap-3" data-testid="leads-preview">
     <h2 class="co-entity !text-lg">{S.preview}</h2>
     <p class="co-meta">{S.previewHelp}</p>
@@ -144,6 +204,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
           <div><p class="co-meta">{L.steps.wa1}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.wa1}</pre></div>
           <div><p class="co-meta">{L.steps.wa2}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.wa2}</pre></div>
           <div><p class="co-meta">{L.steps.autoreply} · {p.mail.subject}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.mail.text}</pre></div>
+          <div><p class="co-meta">{S.neutral} · {p.neutral.subject}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm" data-testid="leads-preview-neutral">{p.neutral.text}</pre></div>
         </div>
       </details>
     ))}

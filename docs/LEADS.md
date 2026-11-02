@@ -93,6 +93,28 @@ curl -i -X POST https://enjoy.ventas.cofundo.io/api/v1/leads -H 'Content-Type: a
   la última sí. Con una conversación de WhatsApp abierta (secuencia en marcha, respuesta suya o un primer mensaje en los
   últimos 30 días) no se reinicia la secuencia. El email automático, como mucho uno al día.
 
+## 2b. Clasificar antes de escribir
+El tipo de formulario no basta: una marca de bebidas que busca un acuerdo puede escribir desde «locales» o desde
+«otro». Antes de mandar nada automático (`src/lib/leads/classify.ts`):
+
+1. **Reglas, al momento (en la entrada):** el formulario dice qué se espera (local, DJ, festival, boda; «otro»,
+   proveedores de bodas, desarrollo a medida y lista de espera no tienen mensaje automático). Si en lo que escribió hay
+   señales de marca o alianza (patrocinio, distribución, «nuestra marca», marca de bebidas, inversión…), prensa,
+   trabajo o alguien que nos vende algo, **no hay WhatsApp automático** y `next` es `email`.
+2. **IA, antes del primer envío (en la cola, con Haiku, si hay `ANTHROPIC_API_KEY`):** con el dominio del email, la
+   empresa, el mensaje y el contexto del espacio (qué vende y a quién, `lead_settings.ai_context`, que se actualiza al
+   guardar los ajustes o los mensajes). Puede **quitar** el automático (si no coincide o la confianza es < 0,75: se
+   cancelan los WhatsApp), nunca darlo si las reglas lo quitaron.
+3. Cuando no hay automático: el email sale **neutro** («Gracias por escribir… te contesto personalmente», sin nombrar lo
+   que pidió), en la bandeja aparece «Marca o alianza · Lo sigues tú» y el aviso a quien atiende lo dice. Si la web ya
+   le había dicho «te escribo por WhatsApp», el aviso pide escribirle a mano.
+
+## 2c. Mensajes de cada empresa
+Leads → Ajustes → **Mensajes**, por idioma: asunto y cuerpo del email, WhatsApp 1 y 2 y la pregunta del WhatsApp 1
+según lo que pidió. **Proponer con IA** los escribe a partir de qué vende la empresa, a quién y quién firma (no guarda:
+se revisa y se guarda). Solo se guarda lo que difiere de los de por defecto. Los de WhatsApp tienen que llevar
+`{{1}}`, `{{2}}` y `{{3}}` y coincidir con la plantilla aprobada en Meta (si se cambian, nueva aprobación).
+
 ## 3. Ciclo de vida y métrica
 `new → contacted → replied/booked → meeting → opportunity → won | lost`, además de `nurture`, `discarded` (motivo
 obligatorio) y `spam`. Cada cambio queda en el historial con fecha, hora y quién. Los leads entran **por validar**,

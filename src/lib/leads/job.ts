@@ -4,6 +4,7 @@
  * así dos ejecuciones a la vez no mandan dos veces. Antes de enviar se vuelve a mirar si sigue teniendo sentido.
  */
 import type { Mailer } from '../notify/mailer';
+import { decide, type Classification, type Classifier, type ClassifyInput } from './classify';
 import type { LeadsDb } from './db';
 import { unsubscribeToken, whatsappTemplate } from './intake';
 import type { Eta } from './schedule';
@@ -15,6 +16,8 @@ export interface JobDeps {
   db: LeadsDb; mailer: Mailer | null; whatsapp: WhatsApp | null; now: Date; secret: string;
   /** El mailer de cada empresa (su cuenta de Resend si tiene clave propia; si no, `mailer`). */
   mailerFor?: (tenantId: string) => Promise<Mailer | null>;
+  /** Si hay IA: revisa la clasificación por reglas antes del primer envío (docs/LEADS.md §Clasificar). */
+  classifier?: Classifier | null;
 }
 export interface JobResult { sent: number; failed: number; retried: number; cancelled: number; skipped: number }
 
@@ -58,6 +61,9 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
   const s = cache.get(m.tenantId);
   const done = async (status: 'cancelled' | 'skipped', why: string) => { await db.updateMessage(m.id, { status, error: why }); return status; };
   if (!lead || !s || lead.isTest) return done('skipped', 'sin lead, sin ajustes o es prueba');
+  // Antes del primer envío, la IA revisa qué es (una vez por lead). Si no encaja con un mensaje automático, se paran los
+  // WhatsApp y el email sale neutro; lo sigue una persona.
+  const cls = await classified(d, lead, s);
   const mailer = m.channel === 'email' ? (d.mailerFor ? await d.mailerFor(m.tenantId) : d.mailer) : null;
 
   if (m.step === 'notify') {
@@ -70,8 +76,8 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
       phone: lead.phoneRaw, phoneE164: lead.phoneE164, type: lead.type, fields: (sub?.fields ?? {}) as Record<string, string>,
       message: reply ? `Ha contestado por WhatsApp: «${m.payload.text ?? ''}»` : sub?.message ?? null, cta: ctx.cta?.label ?? ctx.cta?.id ?? null, page: ctx.page_url ?? null,
       source: sourceOf(lead), score: lead.score, band: lead.scoreDetail?.band ?? null, repeat: lead.submissions, quarantine: lead.quarantineReasons.filter(() => lead.quarantined),
-      next: reply ? 'Te toca a ti: la secuencia automática se ha parado.' : m.payload.next === 'whatsapp' ? 'WhatsApp automático (1-3 min) y email de confirmación' : 'Email de confirmación; contéstale tú',
-      test: false,
+      next: reply ? 'Te toca a ti: la secuencia automática se ha parado.' : m.payload.next === 'whatsapp' ? (cls && !cls.auto ? 'La web le dijo que le escribirías por WhatsApp en unos minutos, pero no encaja con el mensaje automático: escríbele tú.' : 'WhatsApp automático (1-3 min) y email de confirmación') : 'Email de confirmación neutro o específico; contéstale tú',
+      test: false, classification: cls ? `${CAT_ES[cls.category]} · ${cls.auto ? 'mensaje automático' : 'revísalo tú'} (${cls.reason})` : null,
     });
     const sent = await mailer.send({ to: m.toAddr, subject: reply ? `💬 ${lead.name} ha contestado por WhatsApp` : e.subject, html: e.html, text: e.text, tag: 'lead-notify',
       from: s.fromEmail ? fromHeader(s) : undefined, replyTo: lead.email });
@@ -88,8 +94,8 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     const unsub = `${m.payload.base}/api/v1/leads/unsubscribe?l=${lead.id}&t=${unsubscribeToken(lead.id, d.secret)}`;
     const e = autoreplyEmail({
       name: lead.name, type: lead.type, fields: ((lead.facts.fields as Record<string, string>) ?? {}), locale: lead.locale, signer: s.signerName ?? String(m.payload.brandName ?? ''),
-      brand: String(m.payload.brandName ?? s.brand), channel: (m.payload.channel as 'whatsapp' | 'email') ?? 'email', eta: (m.payload.eta as Eta) ?? 'today',
-      bookingUrl: s.bookingUrl, unsubscribeUrl: unsub,
+      brand: String(m.payload.brandName ?? s.brand), channel: cls && !cls.auto ? 'email' : ((m.payload.channel as 'whatsapp' | 'email') ?? 'email'), eta: (m.payload.eta as Eta) ?? 'today',
+      bookingUrl: s.bookingUrl, unsubscribeUrl: unsub, specific: cls?.auto ?? true, custom: s.templates,
     });
     const sent = await mailer.send({ to: lead.email, subject: e.subject, html: e.html, text: e.text, tag: 'lead-autoreply', from: fromHeader(s), replyTo: s.replyTo ?? undefined,
       headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } });
@@ -102,6 +108,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
   if (sup.whatsapp) return done('cancelled', 'pidió que no le escribamos');
   if (lead.sequenceStoppedAt || lead.lastInboundAt) return done('cancelled', 'la secuencia está parada');
   if (STOP_STAGES.includes(lead.stage)) return done('cancelled', `etapa ${lead.stage}`);
+  if (cls && !cls.auto) return done('cancelled', `revisión humana: ${cls.reason}`);
   const step = m.step as 'wa1' | 'wa2';
   const template = whatsappTemplate(s, step, lead.locale);
   if (!d.whatsapp || !s.whatsappEnabled || !s.whatsappPhoneId || !template) return done('skipped', 'WhatsApp sin configurar');
@@ -110,9 +117,9 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     if (!wa1 || wa1.status !== 'sent') return done('cancelled', 'el primer mensaje no salió');
   }
   const fields = (lead.facts.fields as Record<string, string>) ?? {};
-  const params = waParams(step, { name: lead.name, type: lead.type, fields, locale: lead.locale, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl });
+  const params = waParams(step, { name: lead.name, type: lead.type, fields, locale: lead.locale, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl, custom: s.templates });
   const out = await d.whatsapp.sendTemplate(s.whatsappPhoneId, m.toAddr, template, lead.locale, params);
-  const text = waPreview(step, lead.locale, s.signerName ?? '', String(m.payload.brandName ?? s.brand), params);
+  const text = waPreview(step, lead.locale, s.signerName ?? '', String(m.payload.brandName ?? s.brand), params, s.templates);
   await db.updateMessage(m.id, { status: 'sent', sentAt: d.now.toISOString(), providerId: out.id, attempts: m.attempts + 1, payload: { ...m.payload, text } });
   await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, kind: 'message_out', data: { step, channel: 'whatsapp', text } });
   if (step === 'wa1' && lead.stage === 'new') {
@@ -120,4 +127,29 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, kind: 'stage', fromStage: 'new', toStage: 'contacted', data: { auto: true } });
   }
   return 'sent';
+}
+
+const CAT_ES: Record<Classification['category'], string> = { venue: 'Local', dj: 'DJ', promoter: 'Promotora', festival: 'Festival', wedding: 'Boda', partner: 'Marca o alianza', press: 'Prensa', vendor: 'Nos quiere vender algo', job: 'Busca trabajo', other: 'No está claro' };
+
+/** La clasificación del lead, revisada con IA la primera vez que se va a enviar algo (si hay IA). */
+async function classified(d: JobDeps, lead: Lead, s: LeadSettings): Promise<Classification | null> {
+  const cur = (lead.facts.classification as Classification | undefined) ?? null;
+  if (!cur || cur.by === 'ai' || !d.classifier) return cur;
+  const sub = (await d.db.submissions(lead.id))[0];
+  const ctx = (sub?.context ?? {}) as { cta?: { label?: string | null; id?: string | null }; page_path?: string };
+  const input: ClassifyInput = { type: lead.type, fields: (lead.facts.fields as Record<string, string>) ?? {}, message: sub?.message ?? null, name: lead.name, email: lead.email,
+    emailKind: lead.emailKind, cta: ctx.cta?.label ?? ctx.cta?.id ?? null, page: ctx.page_path ?? null };
+  let ai: Awaited<ReturnType<Classifier>> = null;
+  try { ai = await d.classifier(input, s.aiContext ?? null); } catch (e) { console.warn('[leads] clasificar', e instanceof Error ? e.message : e); }
+  if (!ai) return cur;
+  // La IA puede quitar el automático, nunca darlo si las reglas ya lo quitaron (señales claras de marca, prensa…).
+  const next = decide(cur.expected, ai);
+  if (!cur.auto) next.auto = false;
+  await d.db.updateLead(lead.id, { facts: { ...lead.facts, classification: next } });
+  lead.facts = { ...lead.facts, classification: next };
+  if (cur.auto && !next.auto) {
+    await d.db.cancelPending(lead.id, ['wa1', 'wa2']);
+    await d.db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, kind: 'note', data: { text: `Sin WhatsApp automático: ${CAT_ES[next.category]} (${next.reason}). Lo sigues tú.` } });
+  }
+  return next;
 }

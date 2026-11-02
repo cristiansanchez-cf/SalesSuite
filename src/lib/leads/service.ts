@@ -9,13 +9,37 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import { DuplicateKey, type LeadsDb } from './db';
 import { businessMinutes } from './schedule';
-import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type Stage, type View } from './types';
+import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type LeadTemplates, type Stage, type View } from './types';
+import { DEFAULT_TEXTS } from './templates';
 
 export const LEAD_ERRORS = {
   notFound: 'Lead no encontrado',
   needsReason: 'Indica el motivo para descartarlo',
   brandTaken: 'Esa marca ya la usa otro espacio',
+  waVars: 'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}',
 } as const;
+
+const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
+const localeTexts = z.object({
+  subject: z.string().trim().max(200).optional(), body: z.string().trim().max(4000).optional(), wa1: wa.optional(), wa2: wa.optional(),
+  questions: z.record(z.enum(['venue', 'dj', 'festival', 'wedding', 'general']), z.string().trim().max(300)).optional(),
+}).strict();
+const templatesSchema = z.record(z.enum(['es', 'en', 'fr']), localeTexts);
+
+/** Guarda solo lo que difiere de los textos por defecto (así, si mejoran los de por defecto, lo no tocado mejora solo). */
+export function onlyCustom(t: LeadTemplates): LeadTemplates {
+  const out: LeadTemplates = {};
+  for (const l of ['es', 'en', 'fr'] as const) {
+    const v = t[l]; if (!v) continue;
+    const d = DEFAULT_TEXTS[l];
+    const o: NonNullable<LeadTemplates['es']> = {};
+    for (const k of ['subject', 'body', 'wa1', 'wa2'] as const) { const x = v[k]?.trim(); if (x && x !== d[k]) o[k] = x; }
+    const q = Object.fromEntries(Object.entries(v.questions ?? {}).filter(([k, x]) => x?.trim() && x.trim() !== d.questions[k as keyof typeof d.questions]));
+    if (Object.keys(q).length) o.questions = q;
+    if (Object.keys(o).length) out[l] = o;
+  }
+  return out;
+}
 
 const settingsSchema = z.object({
   enabled: z.boolean(),
@@ -141,17 +165,27 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.addEvent({ tenantId: t, leadId: id, kind: 'suppressed', byUser: s.userId, data: { channel: 'all', via: 'manual' } });
   }
 
-  async function saveSettings(input: unknown) {
+  async function saveSettings(input: unknown, aiContext?: string | null) {
     requireAdmin();
     const r = settingsSchema.safeParse(input);
     if (!r.success) throw new AdminError(422, 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
     const prev = await db.settings(t);
     try {
-      await db.saveSettings({ ...r.data, tenantId: t, timezone: prev?.timezone ?? 'Europe/Madrid' });
+      await db.saveSettings({ ...r.data, tenantId: t, timezone: prev?.timezone ?? 'Europe/Madrid', ...(aiContext !== undefined ? { aiContext } : {}) });
     } catch (e) {
       if (e instanceof DuplicateKey) throw new AdminError(409, LEAD_ERRORS.brandTaken);
       throw e;
     }
+  }
+
+  /** Los textos de la empresa (vacío o igual que el de por defecto = el de por defecto). */
+  async function saveTexts(input: unknown, aiContext?: string | null) {
+    requireAdmin();
+    const r = templatesSchema.safeParse(input);
+    if (!r.success) throw new AdminError(422, r.error.issues.some((i) => i.message === LEAD_ERRORS.waVars) ? LEAD_ERRORS.waVars : 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
+    const prev = await db.settings(t);
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    await db.saveSettings({ ...prev, templates: onlyCustom(r.data as LeadTemplates), ...(aiContext !== undefined ? { aiContext } : {}) });
   }
 
   /** Lo que más importa: cuánto tarda el primer contacto humano (minutos laborables), y de dónde vienen. */
@@ -165,7 +199,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 
