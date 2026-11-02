@@ -114,6 +114,17 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
   assert(true, 'ajustes guardados');
   if (OUT) await p.screenshot({ path: `${OUT}/leads-settings.png`, fullPage: true });
+  // ---- Firma del email
+  await p.goto(`${BASE}/admin/leads/ajustes`);
+  await p.fill('[data-testid=leads-sig-name]', 'Cristian Smoke Salido');
+  await p.fill('[data-testid=leads-sig-logo]', 'https://example.com/logo.svg');
+  await p.click('[data-testid=leads-sig-save]');
+  await p.waitForLoadState('load');
+  assert((await p.textContent('main')).includes('PNG o JPG'), 'logo SVG → aviso');
+  await p.fill('[data-testid=leads-sig-logo]', 'https://example.com/logo.png');
+  await Promise.all([p.waitForURL(/ok=sigSaved/), p.click('[data-testid=leads-sig-save]')]);
+  assert((await p.innerHTML('[data-testid=leads-preview-html]')).includes('Cristian Smoke Salido'), 'la firma, en la vista previa del email');
+
   // ---- Mensajes: propuesta con IA, guardar, validar las variables de WhatsApp y volver a los de por defecto
   await p.goto(`${BASE}/admin/leads/ajustes`);
   assert((await p.textContent('[data-testid=leads-preview-neutral]')).includes('Te contesto yo personalmente'), 'vista previa del email neutro');

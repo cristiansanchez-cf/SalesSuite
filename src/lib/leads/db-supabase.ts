@@ -18,7 +18,7 @@ const settingsOf = (r: Row): LeadSettings => ({
   replyTo: r.reply_to, signerName: r.signer_name, notifyEmails: r.notify_emails ?? [], bookingUrl: r.booking_url, videoUrl: r.video_url,
   whatsappPhoneId: r.whatsapp_phone_id, whatsappEnabled: r.whatsapp_enabled, whatsappTemplates: r.whatsapp_templates ?? {}, timezone: r.timezone,
   sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [], resendKeyHint: r.resend_key_hint ?? null,
-  templates: r.templates ?? {}, aiContext: r.ai_context ?? null,
+  templates: r.templates ?? {}, aiContext: r.ai_context ?? null, emailSignature: r.email_signature ?? {},
 });
 const leadOf = (r: Row): Lead => ({
   id: r.id, tenantId: r.tenant_id, createdAt: r.created_at, isTest: r.is_test, email: r.email, emailKind: r.email_kind, domain: r.domain, name: r.name,
@@ -67,7 +67,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
         reply_to: s.replyTo, signer_name: s.signerName, notify_emails: s.notifyEmails, booking_url: s.bookingUrl, video_url: s.videoUrl,
         whatsapp_phone_id: s.whatsappPhoneId, whatsapp_enabled: s.whatsappEnabled, whatsapp_templates: s.whatsappTemplates, timezone: s.timezone,
         send_from_hour: s.sendFromHour, send_to_hour: s.sendToHour, holidays: s.holidays,
-        ...(s.templates !== undefined ? { templates: s.templates } : {}), ...(s.aiContext !== undefined ? { ai_context: s.aiContext } : {}),
+        ...(s.templates !== undefined ? { templates: s.templates } : {}), ...(s.aiContext !== undefined ? { ai_context: s.aiContext } : {}), ...(s.emailSignature !== undefined ? { email_signature: s.emailSignature } : {}),
       }, { onConflict: 'tenant_id' }));
     },
     async resendKey(tenantId) {

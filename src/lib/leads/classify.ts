@@ -8,7 +8,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { LeadType } from './contract';
 import type { EmailKind } from './normalize';
 
-export const CATEGORIES = ['venue', 'dj', 'promoter', 'festival', 'wedding', 'partner', 'press', 'vendor', 'job', 'other'] as const;
+export const CATEGORIES = ['venue', 'dj', 'promoter', 'festival', 'event', 'wedding', 'partner', 'press', 'vendor', 'job', 'other'] as const;
 export type Category = (typeof CATEGORIES)[number];
 export interface Classification { category: Category; confidence: number; reason: string; by: 'rules' | 'ai'; auto: boolean; expected: Category | null }
 
@@ -21,7 +21,10 @@ export interface ClassifyInput {
 export function expectedCategory(type: LeadType, fields: Record<string, string>): Category | null {
   if (type === 'venue' || type === 'dj' || type === 'festival' || type === 'wedding') return type;
   if (type === 'general' && ['venue', 'dj', 'festival', 'wedding'].includes(fields.event_type ?? '')) return fields.event_type as Category;
-  return null; // general/other, wedding_partner, custom_dev, waitlist
+  // «Otro» del formulario general: un evento o un espacio que no está en la lista (gimnasio, hotel, congreso…). Va con la
+  // pregunta general, y solo si nada dice que sea otra cosa (la IA lo confirma antes de enviar).
+  if (type === 'general') return 'event';
+  return null; // wedding_partner, custom_dev, waitlist: siempre una persona
 }
 
 const SIGNALS: [Category, RegExp][] = [
@@ -39,7 +42,7 @@ export function signals(i: ClassifyInput): Category[] {
   return SIGNALS.filter(([, re]) => re.test(text)).map(([c]) => c);
 }
 
-const SAFE_WITH: Partial<Record<Category, Category[]>> = { festival: ['festival', 'promoter'], venue: ['venue'], dj: ['dj'], wedding: ['wedding'] };
+const SAFE_WITH: Partial<Record<Category, Category[]>> = { festival: ['festival', 'promoter'], venue: ['venue'], dj: ['dj'], wedding: ['wedding'], event: ['event', 'venue', 'promoter', 'festival'] };
 const RISKY: Category[] = ['partner', 'press', 'job', 'vendor'];
 
 /** Solo reglas: al momento, en la entrada. Automático si el formulario es de un tipo con mensaje y no hay señales de otra cosa. */
@@ -70,7 +73,7 @@ const TOOL = {
   input_schema: {
     type: 'object', additionalProperties: false, required: ['category', 'confidence', 'reason'],
     properties: {
-      category: { type: 'string', enum: [...CATEGORIES], description: 'venue = local/discoteca/bar/sala/hotel que lo usaría; dj; promoter = promotora u organizador de fiestas; festival; wedding = una pareja que se casa; partner = marca, patrocinador, distribuidor, inversor o alianza comercial; press = prensa o medio; vendor = alguien que nos quiere vender algo; job = busca trabajo; other = no está claro.' },
+      category: { type: 'string', enum: [...CATEGORIES], description: 'venue = cualquier espacio con público que lo usaría: discoteca, bar, sala, pub, hotel, restaurante, gimnasio, centro deportivo, club, caseta de feria…; dj; promoter = promotora u organizador de fiestas recurrentes; festival; event = alguien que organiza un evento puntual (corporativo, privado, congreso, cumpleaños, concierto) que no es boda ni festival; wedding = una pareja que se casa; partner = marca, patrocinador, distribuidor, inversor o alianza comercial; press = prensa o medio; vendor = alguien que nos quiere vender algo; job = busca trabajo; other = no está claro.' },
       confidence: { type: 'number', description: 'De 0 a 1. Por debajo de 0.75 si hay cualquier duda.' },
       reason: { type: 'string', description: 'Una frase corta en español con la pista que lo decide.' },
     },

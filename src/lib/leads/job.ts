@@ -95,7 +95,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     const e = autoreplyEmail({
       name: lead.name, type: lead.type, fields: ((lead.facts.fields as Record<string, string>) ?? {}), locale: lead.locale, signer: s.signerName ?? String(m.payload.brandName ?? ''),
       brand: String(m.payload.brandName ?? s.brand), channel: cls && !cls.auto ? 'email' : ((m.payload.channel as 'whatsapp' | 'email') ?? 'email'), eta: (m.payload.eta as Eta) ?? 'today',
-      bookingUrl: s.bookingUrl, unsubscribeUrl: unsub, specific: cls?.auto ?? true, custom: s.templates,
+      bookingUrl: s.bookingUrl, unsubscribeUrl: unsub, specific: cls?.auto ?? true, custom: s.templates, signature: s.emailSignature,
     });
     const sent = await mailer.send({ to: lead.email, subject: e.subject, html: e.html, text: e.text, tag: 'lead-autoreply', from: fromHeader(s), replyTo: s.replyTo ?? undefined,
       headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } });
@@ -129,7 +129,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
   return 'sent';
 }
 
-const CAT_ES: Record<Classification['category'], string> = { venue: 'Local', dj: 'DJ', promoter: 'Promotora', festival: 'Festival', wedding: 'Boda', partner: 'Marca o alianza', press: 'Prensa', vendor: 'Nos quiere vender algo', job: 'Busca trabajo', other: 'No está claro' };
+const CAT_ES: Record<Classification['category'], string> = { venue: 'Local', dj: 'DJ', promoter: 'Promotora', festival: 'Festival', event: 'Evento', wedding: 'Boda', partner: 'Marca o alianza', press: 'Prensa', vendor: 'Nos quiere vender algo', job: 'Busca trabajo', other: 'No está claro' };
 
 /** La clasificación del lead, revisada con IA la primera vez que se va a enviar algo (si hay IA). */
 async function classified(d: JobDeps, lead: Lead, s: LeadSettings): Promise<Classification | null> {

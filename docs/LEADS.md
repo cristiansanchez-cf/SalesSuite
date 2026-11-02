@@ -115,6 +115,12 @@ según lo que pidió. **Proponer con IA** los escribe a partir de qué vende la 
 se revisa y se guarda). Solo se guarda lo que difiere de los de por defecto. Los de WhatsApp tienen que llevar
 `{{1}}`, `{{2}}` y `{{3}}` y coincidir con la plantilla aprobada en Meta (si se cambian, nueva aprobación).
 
+## 2d. Firma del email
+Leads → Ajustes → **Firma del email**: nombre, cargo y empresa, teléfono, dirección, email, web, logo (PNG o JPG por
+https: Gmail no muestra SVG) y texto legal. Va donde esté `{firma_email}` en el email automático (en los textos por
+defecto, tras la despedida), maquetada con tablas y estilos en línea para que se vea igual en Gmail y Outlook, y en
+texto en la versión sin formato. Sin firma, `{firma_email}` es el nombre de quien firma y la marca.
+
 ## 3. Ciclo de vida y métrica
 `new → contacted → replied/booked → meeting → opportunity → won | lost`, además de `nurture`, `discarded` (motivo
 obligatorio) y `spam`. Cada cambio queda en el historial con fecha, hora y quién. Los leads entran **por validar**,

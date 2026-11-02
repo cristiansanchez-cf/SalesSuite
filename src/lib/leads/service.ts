@@ -17,6 +17,7 @@ export const LEAD_ERRORS = {
   needsReason: 'Indica el motivo para descartarlo',
   brandTaken: 'Esa marca ya la usa otro espacio',
   waVars: 'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}',
+  svgLogo: 'El logo tiene que ser PNG o JPG: Gmail no muestra SVG',
 } as const;
 
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
@@ -25,6 +26,14 @@ const localeTexts = z.object({
   questions: z.record(z.enum(['venue', 'dj', 'festival', 'wedding', 'general']), z.string().trim().max(300)).optional(),
 }).strict();
 const templatesSchema = z.record(z.enum(['es', 'en', 'fr']), localeTexts);
+const opt = (max: number) => z.string().trim().max(max).optional().transform((v) => v || undefined);
+export const signatureSchema = z.object({
+  name: opt(120), title: opt(160), phone: opt(40), address: opt(200), email: z.string().trim().max(200).email().optional().or(z.literal('').transform(() => undefined)),
+  website: z.string().trim().max(300).url().startsWith('https://').optional().or(z.literal('').transform(() => undefined)),
+  // Gmail no enseña SVG: PNG o JPG, por https.
+  logoUrl: z.string().trim().max(500).url().startsWith('https://').refine((u) => !/\.svg(\?|$)/i.test(u), 'svg').optional().or(z.literal('').transform(() => undefined)),
+  legal: opt(2000),
+}).strict();
 
 /** Guarda solo lo que difiere de los textos por defecto (así, si mejoran los de por defecto, lo no tocado mejora solo). */
 export function onlyCustom(t: LeadTemplates): LeadTemplates {
@@ -188,6 +197,16 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.saveSettings({ ...prev, templates: onlyCustom(r.data as LeadTemplates), ...(aiContext !== undefined ? { aiContext } : {}) });
   }
 
+  async function saveSignature(input: unknown) {
+    requireAdmin();
+    const r = signatureSchema.safeParse(input);
+    if (!r.success) throw new AdminError(422, r.error.issues.some((i) => i.message === 'svg') ? LEAD_ERRORS.svgLogo : 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
+    const prev = await db.settings(t);
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    const clean = Object.fromEntries(Object.entries(r.data).filter(([, v]) => v));
+    await db.saveSettings({ ...prev, emailSignature: clean });
+  }
+
   /** Lo que más importa: cuánto tarda el primer contacto humano (minutos laborables), y de dónde vienen. */
   async function metrics() {
     requireManager();
@@ -199,7 +218,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

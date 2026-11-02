@@ -293,7 +293,9 @@ describe('clasificar antes de escribir', () => {
     const { classifyRules } = await import('./classify');
     expect(classifyRules({ ...base, type: 'venue', fields: { venue_name: 'Sala X' }, message: 'Abrimos de jueves a sábado y vendemos muchas bebidas' })).toMatchObject({ category: 'venue', auto: true });
     expect(classifyRules({ ...base, type: 'venue', message: 'Somos una marca de cerveza y buscamos un acuerdo de patrocinio con vosotros' })).toMatchObject({ category: 'partner', auto: false });
-    expect(classifyRules({ ...base, type: 'general', fields: { event_type: 'other' } })).toMatchObject({ auto: false });
+    expect(classifyRules({ ...base, type: 'general', fields: { event_type: 'other' }, message: 'Tenemos un gimnasio y queremos animar las clases' })).toMatchObject({ category: 'event', auto: true });
+    expect(classifyRules({ ...base, type: 'waitlist' })).toMatchObject({ auto: false });
+    expect(classifyRules({ ...base, type: 'general', fields: { event_type: 'other' }, message: 'Somos una marca de ron y nos interesa una alianza' })).toMatchObject({ category: 'partner', auto: false });
     expect(classifyRules({ ...base, type: 'festival', message: 'Somos una promotora y organizamos fiestas' })).toMatchObject({ category: 'promoter', auto: true });
     expect(classifyRules({ ...base, type: 'venue', message: 'Somos una promotora, hacemos fiestas en varias salas' })).toMatchObject({ category: 'promoter', auto: false });
     expect(classifyRules({ ...base, type: 'wedding', message: 'Ofrecemos posicionamiento web para vuestra empresa' })).toMatchObject({ category: 'vendor', auto: false });
@@ -353,5 +355,27 @@ describe('clasificar antes de escribir', () => {
     expect(e.subject).toBe('Hola desde Enjoy');
     expect(e.text).toBe('Hola Laura sobre Sala X.\n\nCristian');
     expect(wp('wa1', 'es', 'Cristian', 'Enjoy', ['Laura', 'Sala X', '¿Qué tal?'], { es: { wa1: 'Hola {{1}}, {firma} aquí. Sobre {{2}}: {{3}}' } })).toBe('Hola Laura, Cristian aquí. Sobre Sala X: ¿Qué tal?');
+  });
+});
+
+describe('firma del email', () => {
+  test('va donde está {firma_email}, maquetada en HTML y en texto; sin firma, nombre y marca', async () => {
+    const { autoreplyEmail: ar } = await import('./templates');
+    const base = { name: 'Laura', type: 'venue' as const, fields: { venue_name: 'Sala X' }, locale: 'es', signer: 'Cristian', brand: 'Enjoy the Club', channel: 'email' as const, eta: 'minutes' as const, bookingUrl: null, unsubscribeUrl: 'https://u' };
+    const sig = { name: 'Cristian Alberto Sánchez Salido', title: 'CEO AppXpert Solutions SL.', phone: '+34 727 743 567', email: 'cristian.sanchez@enjoytheclub.es', logoUrl: 'https://x.es/logo.png', legal: 'La información contenida en este mensaje es confidencial.' };
+    const e = ar({ ...base, signature: sig });
+    expect(e.text).toContain('Un saludo,\nCristian Alberto Sánchez Salido\nCEO AppXpert Solutions SL.');
+    expect(e.text).not.toContain('\u0007');
+    expect(e.html).toContain('<strong style="font-size:16px">Cristian Alberto Sánchez Salido</strong>');
+    expect(e.html).toContain('href="tel:+34727743567"');
+    expect(e.html).toContain('<img src="https://x.es/logo.png"');
+    expect(e.html).toContain('font-size:11px');
+    expect(e.html.indexOf('Cristian Alberto')).toBeLessThan(e.html.indexOf('https://u'));
+    expect(ar(base).text).toContain('Un saludo,\nCristian\nEnjoy the Club');
+  });
+  test('el logo no puede ser SVG', async () => {
+    const { signatureSchema } = await import('./service');
+    expect(signatureSchema.safeParse({ logoUrl: 'https://x.es/logo.svg' }).success).toBe(false);
+    expect(signatureSchema.safeParse({ logoUrl: 'https://x.es/logo.png', name: 'C', email: '' }).success).toBe(true);
   });
 });

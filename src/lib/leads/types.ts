@@ -33,7 +33,11 @@ export interface LeadSettings {
   templates?: LeadTemplates;
   /** Qué vende la empresa y a quién (para clasificar los leads). */
   aiContext?: string | null;
+  /** Firma del email automático (vacía = solo el nombre y la marca). */
+  emailSignature?: EmailSignature;
 }
+
+export interface EmailSignature { name?: string; title?: string; phone?: string; address?: string; email?: string; website?: string; logoUrl?: string; legal?: string }
 
 export type QuestionKey = 'venue' | 'dj' | 'festival' | 'wedding' | 'general';
 export interface LocaleTexts { subject?: string; body?: string; wa1?: string; wa2?: string; questions?: Partial<Record<QuestionKey, string>> }

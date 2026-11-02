@@ -6,7 +6,7 @@
  */
 import type { LeadType } from './contract';
 import type { Eta } from './schedule';
-import type { LeadTemplates, LocaleTexts, QuestionKey } from './types';
+import type { EmailSignature, LeadTemplates, LocaleTexts, QuestionKey } from './types';
 
 export type MsgLocale = 'es' | 'en' | 'fr';
 export const msgLocale = (l: string): MsgLocale => (l === 'es' || l === 'fr' ? l : 'en');
@@ -36,7 +36,7 @@ export function summary(type: LeadType, f: Record<string, string>, loc: string):
       wedding_partner: () => (f.company ? `colaborar con ${f.company}` : 'colaborar en bodas'),
       custom_dev: () => (f.company ? `un desarrollo a medida para ${f.company}` : 'un desarrollo a medida'),
       waitlist: () => 'la lista de espera',
-      general: () => ({ venue: 'tu local', festival: 'tu festival', wedding: 'vuestra boda', dj: 'tus sesiones' } as Record<string, string>)[f.event_type] ?? 'tu evento',
+      general: () => ({ venue: 'tu local', festival: 'tu festival', wedding: 'vuestra boda', dj: 'tus sesiones' } as Record<string, string>)[f.event_type] ?? 'tu proyecto',
     },
     en: {
       venue: () => (f.venue_name ? `${f.venue_name}${where(f, l)}` : `your venue${where(f, l)}`),
@@ -46,7 +46,7 @@ export function summary(type: LeadType, f: Record<string, string>, loc: string):
       wedding_partner: () => (f.company ? `working together with ${f.company}` : 'working together on weddings'),
       custom_dev: () => (f.company ? `a custom build for ${f.company}` : 'a custom build'),
       waitlist: () => 'the waiting list',
-      general: () => ({ venue: 'your venue', festival: 'your festival', wedding: 'your wedding', dj: 'your DJ sets' } as Record<string, string>)[f.event_type] ?? 'your event',
+      general: () => ({ venue: 'your venue', festival: 'your festival', wedding: 'your wedding', dj: 'your DJ sets' } as Record<string, string>)[f.event_type] ?? 'your project',
     },
     fr: {
       venue: () => (f.venue_name ? `${f.venue_name}${where(f, l)}` : `ton établissement${where(f, l)}`),
@@ -56,7 +56,7 @@ export function summary(type: LeadType, f: Record<string, string>, loc: string):
       wedding_partner: () => (f.company ? `une collaboration avec ${f.company}` : 'une collaboration pour les mariages'),
       custom_dev: () => (f.company ? `un développement sur mesure pour ${f.company}` : 'un développement sur mesure'),
       waitlist: () => "la liste d'attente",
-      general: () => ({ venue: 'ton établissement', festival: 'ton festival', wedding: 'votre mariage', dj: 'tes sets' } as Record<string, string>)[f.event_type] ?? 'ton événement',
+      general: () => ({ venue: 'ton établissement', festival: 'ton festival', wedding: 'votre mariage', dj: 'tes sets' } as Record<string, string>)[f.event_type] ?? 'ton projet',
     },
   };
   return T[l][type]();
@@ -67,13 +67,13 @@ export function summary(type: LeadType, f: Record<string, string>, loc: string):
 /**
  * Los textos de por defecto, con marcadores. Cada empresa los cambia en Leads → Ajustes → Mensajes (por idioma); lo que
  * deje vacío sale de aquí. Marcadores del email: {nombre}, {asunto}, {sobre} (« sobre Sala X» o nada si no está claro qué
- * es), {siguiente_paso}, {reserva}, {firma}, {marca}. WhatsApp: {{1}} nombre, {{2}} lo que pidió, {{3}} la pregunta
+ * es), {siguiente_paso}, {reserva}, {firma}, {marca}, {firma_email} (la firma completa de Ajustes o, sin ella, nombre y marca). WhatsApp: {{1}} nombre, {{2}} lo que pidió, {{3}} la pregunta
  * (mensaje 1) o el enlace de reserva (mensaje 2), y {firma}/{marca}, que quedan fijos en la plantilla de Meta.
  */
 export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questions'>> & { questions: Record<QuestionKey, string> }> = {
   es: {
     subject: '{asunto}',
-    body: 'Hola {nombre}:\n\nGracias por escribir. Me llega tu mensaje{sobre} y lo leo yo.\n\n{siguiente_paso}\n\n{reserva}\n\nY si quieres añadir algo, responde a este email.\n\nUn saludo,\n{firma}\n{marca}',
+    body: 'Hola {nombre}:\n\nGracias por escribir. Me llega tu mensaje{sobre} y lo leo yo.\n\n{siguiente_paso}\n\n{reserva}\n\nY si quieres añadir algo, responde a este email.\n\nUn saludo,\n{firma_email}',
     wa1: 'Hola {{1}}, soy {firma}, de {marca}. He visto tu mensaje sobre {{2}} y quería escribirte yo directamente.\n\n{{3}}\n\nCon eso te digo cómo lo veo.\n\n{firma}',
     wa2: 'Hola {{1}}, te escribo de nuevo por lo de {{2}}. Si te va mejor hablarlo, elige aquí la hora que te venga bien: {{3}}\n\nY si prefieres seguir por aquí, contéstame cuando puedas.\n\n{firma}',
     questions: { venue: '¿Qué noches abrís y cuánta gente os suele venir?', dj: '¿En qué salas estás pinchando ahora?', festival: '¿Para qué fechas lo estáis planteando?',
@@ -81,7 +81,7 @@ export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questi
   },
   en: {
     subject: '{asunto}',
-    body: "Hi {nombre},\n\nThanks for getting in touch. I've got your message{sobre} and I'm reading it myself.\n\n{siguiente_paso}\n\n{reserva}\n\nAnd if you want to add anything, just reply to this email.\n\nBest,\n{firma}\n{marca}",
+    body: "Hi {nombre},\n\nThanks for getting in touch. I've got your message{sobre} and I'm reading it myself.\n\n{siguiente_paso}\n\n{reserva}\n\nAnd if you want to add anything, just reply to this email.\n\nBest,\n{firma_email}",
     wa1: "Hi {{1}}, it's {firma} from {marca}. I saw your message about {{2}} and wanted to get back to you myself.\n\n{{3}}\n\nWith that I can tell you how I see it.\n\n{firma}",
     wa2: "Hi {{1}}, following up on {{2}}. If it's easier to talk it through, pick a time that suits you here: {{3}}\n\nOr just reply here whenever you can.\n\n{firma}",
     questions: { venue: 'Which nights are you open and how many people do you usually get?', dj: 'Which venues are you playing at right now?', festival: 'Which dates are you planning for?',
@@ -89,7 +89,7 @@ export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questi
   },
   fr: {
     subject: '{asunto}',
-    body: "Bonjour {nombre},\n\nMerci pour ton message{sobre}. Je le lis moi-même.\n\n{siguiente_paso}\n\n{reserva}\n\nEt si tu veux ajouter quelque chose, réponds simplement à cet e-mail.\n\nÀ bientôt,\n{firma}\n{marca}",
+    body: "Bonjour {nombre},\n\nMerci pour ton message{sobre}. Je le lis moi-même.\n\n{siguiente_paso}\n\n{reserva}\n\nEt si tu veux ajouter quelque chose, réponds simplement à cet e-mail.\n\nÀ bientôt,\n{firma_email}",
     wa1: "Bonjour {{1}}, c'est {firma}, de {marca}. J'ai vu ton message à propos de {{2}} et je voulais te répondre moi-même.\n\n{{3}}\n\nAvec ça, je te dis ce que j'en pense.\n\n{firma}",
     wa2: "Bonjour {{1}}, je reviens vers toi pour {{2}}. Si c'est plus simple d'en parler, choisis ici le créneau qui te convient : {{3}}\n\nSinon, réponds-moi ici quand tu peux.\n\n{firma}",
     questions: { venue: 'Vous ouvrez quels soirs et combien de monde vient en général ?', dj: 'Dans quelles salles tu joues en ce moment ?', festival: 'Vous le prévoyez pour quelles dates ?',
@@ -152,6 +152,26 @@ export interface AutoreplyData {
   /** false si no está claro qué es (marca, prensa, otro…): el email no nombra lo que pidió. Por defecto, true. */
   specific?: boolean;
   custom?: LeadTemplates;
+  signature?: EmailSignature;
+}
+const SIG = '\u0007SIG\u0007';
+export const hasSignature = (s?: EmailSignature | null) => !!s && Object.values(s).some((v) => typeof v === 'string' && v.trim());
+/** La firma en texto (para la versión sin formato del email). */
+export function signatureText(s: EmailSignature): string {
+  return [s.name, s.title, s.phone, s.address, s.email, s.website, s.legal ? `\n${s.legal}` : ''].filter((x) => x && x.trim()).join('\n');
+}
+/** La firma maquetada: nombre y cargo en negrita, datos, logo y el texto legal en pequeño. Tablas e inline: va en Gmail y Outlook. */
+export function signatureHtml(s: EmailSignature): string {
+  const tel = s.phone ? `<a href="tel:${esc(s.phone.replace(/[^\d+]/g, ''))}" style="color:#1a56db">${esc(s.phone)}</a>` : '';
+  const mail = s.email ? `<a href="mailto:${esc(s.email)}" style="color:#1a56db">${esc(s.email)}</a>` : '';
+  const web = s.website ? `<a href="${esc(s.website)}" style="color:#1a56db">${esc(s.website.replace(/^https?:\/\//, ''))}</a>` : '';
+  const lines = [
+    s.name ? `<strong style="font-size:16px">${esc(s.name)}</strong>` : '', s.title ? `<strong>${esc(s.title)}</strong>` : '',
+    tel ? `M. ${tel}` : '', s.address ? esc(s.address) : '', mail, web,
+  ].filter(Boolean).join('<br>');
+  const logo = s.logoUrl ? `<tr><td style="padding-top:14px"><img src="${esc(s.logoUrl)}" alt="" height="40" style="display:block;height:40px;width:auto;border:0"></td></tr>` : '';
+  const legal = s.legal ? `<tr><td style="padding-top:12px;font-size:11px;line-height:1.4;color:#555">${esc(s.legal).replace(/\n/g, '<br>')}</td></tr>` : '';
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.45;color:#111;max-width:560px"><tr><td>${lines}</td></tr>${logo}${legal}</table>`;
 }
 const PHRASES = {
   es: { about: (w: string) => ` sobre ${w}`, subject: (w: string | null) => (w ? `Sobre ${w}` : 'Gracias por escribir'),
@@ -172,15 +192,21 @@ export function autoreplyEmail(d: AutoreplyData): { subject: string; text: strin
   const l = msgLocale(d.locale);
   const P = PHRASES[l];
   const what = d.specific === false ? null : summary(d.type, d.fields, l);
+  const sig = hasSignature(d.signature) ? d.signature! : null;
   const vars = {
     nombre: firstName(d.name), asunto: P.subject(what), sobre: what ? P.about(what) : '',
     siguiente_paso: d.channel === 'whatsapp' ? P.wa(P.when[d.eta]) : P.email, reserva: d.bookingUrl ? P.book(d.bookingUrl) : '',
-    firma: d.signer, marca: d.brand,
+    firma: d.signer, marca: d.brand, firma_email: sig ? SIG : `${d.signer}\n${d.brand}`,
   };
   const subject = fill(pick('subject', l, d.custom), vars).replace(/\s+/g, ' ').slice(0, 200);
-  const body = fill(pick('body', l, d.custom), vars);
-  const text = [body, d.unsubscribeUrl ? `—\n${P.unsub} ${d.unsubscribeUrl}` : ''].filter(Boolean).join('\n\n');
-  return { subject, text, html: plainHtml(text) };
+  let body = fill(pick('body', l, d.custom), vars);
+  // Con firma y un texto propio sin {firma_email}: la firma va al final.
+  if (sig && !body.includes(SIG)) body = `${body}\n\n${SIG}`;
+  const unsub = d.unsubscribeUrl ? `—\n${P.unsub} ${d.unsubscribeUrl}` : '';
+  const text = [body.replace(SIG, sig ? signatureText(sig) : ''), unsub].filter(Boolean).join('\n\n');
+  let html = plainHtml([body, unsub].filter(Boolean).join('\n\n'));
+  if (sig) html = html.replace(/(<br>)?\u0007SIG\u0007/, `</p>${signatureHtml(sig)}<p style="margin:0">`).replace(/<p style="margin:0( 0 14px)?"><\/p>/g, '');
+  return { subject, text, html };
 }
 
 // ---------------------------------------------------------------- Email: aviso interno (en español: es para el equipo)

@@ -35,6 +35,7 @@ const LOCS = ['es', 'en', 'fr'] as const;
 const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general'];
 let draft: LeadTemplates | null = null;
 let posted: LeadTemplates | null = null;
+let postedSig: Record<string, string> | null = null;
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const action = String(f.get('action') ?? '');
@@ -44,7 +45,12 @@ if (Astro.request.method === 'POST') {
     subject: String(f.get(`t_${l}_subject`) ?? ''), body: String(f.get(`t_${l}_body`) ?? ''), wa1: String(f.get(`t_${l}_wa1`) ?? ''), wa2: String(f.get(`t_${l}_wa2`) ?? ''),
     questions: Object.fromEntries(QKEYS.map((k) => [k, String(f.get(`t_${l}_q_${k}`) ?? '')])),
   }]));
-  if (action === 'save-texts' || action === 'reset-texts') {
+  if (action === 'save-signature') {
+    const sig = Object.fromEntries(['name', 'title', 'phone', 'address', 'email', 'website', 'logoUrl', 'legal'].map((k) => [k, String(f.get(`sig_${k}`) ?? '')]));
+    result = await formAction(async () => { await svc.saveSignature(sig); });
+    if (!result.error) return Astro.redirect('/admin/leads/ajustes?ok=sigSaved#signature', 303);
+    postedSig = sig;
+  } else if (action === 'save-texts' || action === 'reset-texts') {
     result = await formAction(async () => { await svc.saveTexts(action === 'reset-texts' ? {} : readTexts(), await aiContext()); });
     if (!result.error) return Astro.redirect(`/admin/leads/ajustes?ok=${action === 'reset-texts' ? 'textsReset' : 'textsSaved'}#texts`, 303);
     posted = readTexts();
@@ -79,7 +85,11 @@ const s = (await svc.settings()) ?? {
   sendFromHour: 8, sendToHour: 22, holidays: [],
 };
 const demo = appMode() === 'demo';
-const okMsg = flash(Astro.url, { resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared, textsSaved: L.ok.textsSaved, textsReset: L.ok.textsReset });
+const okMsg = flash(Astro.url, { resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared, textsSaved: L.ok.textsSaved, textsReset: L.ok.textsReset, sigSaved: L.ok.sigSaved });
+// La firma: la guardada o, la primera vez, lo que ya se sabe (firma, responder a, web y logo de la marca si es PNG/JPG).
+const brandLogo = tenant?.brand?.logoUrl && /^https:/.test(tenant.brand.logoUrl) && !/\.svg(\?|$)/i.test(tenant.brand.logoUrl) ? tenant.brand.logoUrl : '';
+const sigSaved = s.emailSignature && Object.keys(s.emailSignature).length ? s.emailSignature : null;
+const sig: Record<string, string> = postedSig ?? (sigSaved as Record<string, string> | null) ?? { name: s.signerName ?? '', email: s.replyTo ?? '', website: tenant?.brand?.contact?.website ?? '', logoUrl: brandLogo };
 // Lo que se enseña en el editor: la propuesta de la IA, lo que se envió con error, o lo guardado sobre lo de por defecto.
 const custom: LeadTemplates = draft ?? posted ?? s.templates ?? {};
 const textOf = (l: 'es' | 'en' | 'fr', k: 'subject' | 'body' | 'wa1' | 'wa2') => custom[l]?.[k]?.trim() || DEFAULT_TEXTS[l][k];
@@ -98,7 +108,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
   loc,
   wa1: waPreview('wa1', loc, signer, brandName, waParams('wa1', { ...sample, locale: loc, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl, custom }), custom),
   wa2: waPreview('wa2', loc, signer, brandName, waParams('wa2', { ...sample, locale: loc, bookingUrl: s.bookingUrl ?? 'https://…', videoUrl: s.videoUrl, custom }), custom),
-  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, custom }),
+  mail: autoreplyEmail({ ...sample, locale: loc, signer, brand: brandName, channel: 'whatsapp', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, custom, signature: s.emailSignature }),
   neutral: autoreplyEmail({ name: 'Marta Ruiz', type: 'general', fields: { event_type: 'other' }, locale: loc, signer, brand: brandName, channel: 'email', eta: 'minutes', bookingUrl: s.bookingUrl, unsubscribeUrl: null, specific: false, custom }),
 }));
 ---
@@ -167,6 +177,23 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <button class="co-btn co-btn--primary w-fit" data-testid="leads-settings-save">{S.save}</button>
   </form>
 
+  <form method="post" id="signature" class="co-card mt-8 grid max-w-3xl gap-3 !p-6" data-testid="leads-signature">
+    <h2 class="co-entity !text-lg">{S.sig}</h2>
+    <p class="co-meta">{S.sigHelp}</p>
+    <input type="hidden" name="action" value="save-signature" />
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="co-field">{S.sigName}<input class="co-input" name="sig_name" value={sig.name ?? ''} maxlength="120" data-testid="leads-sig-name" /></label>
+      <label class="co-field">{S.sigTitle}<input class="co-input" name="sig_title" value={sig.title ?? ''} maxlength="160" /></label>
+      <label class="co-field">{S.sigPhone}<input class="co-input" name="sig_phone" value={sig.phone ?? ''} maxlength="40" /></label>
+      <label class="co-field">{S.sigEmail}<input class="co-input" type="email" name="sig_email" value={sig.email ?? ''} maxlength="200" /></label>
+      <label class="co-field sm:col-span-2">{S.sigAddress}<input class="co-input" name="sig_address" value={sig.address ?? ''} maxlength="200" /></label>
+      <label class="co-field">{S.sigWebsite}<input class="co-input" type="url" name="sig_website" value={sig.website ?? ''} placeholder="https://" /></label>
+      <label class="co-field">{S.sigLogo}<input class="co-input" type="url" name="sig_logoUrl" value={sig.logoUrl ?? ''} placeholder="https://…/logo.png" data-testid="leads-sig-logo" /><span class="co-meta">{S.sigLogoHelp}</span></label>
+    </div>
+    <label class="co-field">{S.sigLegal}<textarea class="co-textarea h-28" name="sig_legal" maxlength="2000">{sig.legal ?? ''}</textarea></label>
+    <button class="co-btn co-btn--primary w-fit" data-testid="leads-sig-save">{S.saveSig}</button>
+  </form>
+
   <form method="post" id="texts" class="co-card mt-8 grid max-w-3xl gap-4 !p-6" data-testid="leads-texts">
     <h2 class="co-entity !text-lg">{S.texts}</h2>
     <p class="co-meta">{S.textsHelp}</p>
@@ -203,7 +230,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
         <div class="mt-3 grid gap-3">
           <div><p class="co-meta">{L.steps.wa1}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.wa1}</pre></div>
           <div><p class="co-meta">{L.steps.wa2}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.wa2}</pre></div>
-          <div><p class="co-meta">{L.steps.autoreply} · {p.mail.subject}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm">{p.mail.text}</pre></div>
+          <div><p class="co-meta">{S.htmlPreview} · {p.mail.subject}</p><div class="rounded-xl border border-[var(--co-line,#e5e5e5)] bg-white !p-4 text-black" data-testid="leads-preview-html" set:html={p.mail.html} /></div>
           <div><p class="co-meta">{S.neutral} · {p.neutral.subject}</p><pre class="co-inset whitespace-pre-wrap !p-3 text-sm" data-testid="leads-preview-neutral">{p.neutral.text}</pre></div>
         </div>
       </details>
