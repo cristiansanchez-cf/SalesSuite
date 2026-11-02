@@ -726,6 +726,24 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     await accounts.updateAccount(accountId, { next: { step: null, at: sug.at?.toISOString() ?? null, contactId: sug.contactId, channel: sug.channel } }).catch(() => false);
     return sug;
   }
+  /**
+   * Correos al CRM (§47): a qué empresa va un correo con estos emails del otro lado. Primero la persona del CRM con ese
+   * email (su empresa), luego la empresa con ese email y, si no, la única empresa con ese dominio (web o email). Si hay
+   * dudas (varias por dominio), ninguna: mejor preguntar que apuntarlo donde no es.
+   */
+  async function findByEmail(emails: string[], domains: string[]): Promise<{ accountId: string | null; contactId: string | null; how: 'contact' | 'account' | 'domain' | null }> {
+    requireUse();
+    if (!emails.length) return { accountId: null, contactId: null, how: null };
+    const rows = await db.findByEmail(t, emails.slice(0, 20), domains.slice(0, 10));
+    const contact = rows.find((r) => r.kind === 'contact' && r.accountId) ?? null;
+    if (contact) return { accountId: contact.accountId, contactId: contact.contactId, how: 'contact' };
+    const contactOnly = rows.find((r) => r.kind === 'contact')?.contactId ?? null;
+    const acc = rows.find((r) => r.kind === 'account');
+    if (acc) return { accountId: acc.accountId, contactId: contactOnly, how: 'account' };
+    const byDomain = [...new Set(rows.filter((r) => r.kind === 'domain').map((r) => r.accountId))];
+    if (byDomain.length === 1) return { accountId: byDomain[0]!, contactId: contactOnly, how: 'domain' };
+    return { accountId: null, contactId: contactOnly, how: null };
+  }
   async function setNextStep(accountId: string, input: unknown | null) {
     requireUse();
     const v = input ? parse(nextStepSchema, input) : null;
@@ -1241,7 +1259,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
    * Buscar una empresa por el nombre para «¿De qué empresa vas a hablar?» (autocompletar): sin IA, tolera errores del
    * dictado. Las 8 que más se parecen, con su sitio.
    */
-  // ---- Ciudad de cualquier país (docs/CRM_DINAMICO.md §44): el buscador de ciudad pregunta a Google lo que no tiene.
+  // ---- Ciudad de cualquier país (docs/CRM_DINAMICO.md §47): el buscador de ciudad pregunta a Google lo que no tiene.
   /** Sitios de Google para lo escrito: `v` es la zona si ya existe o «g:<id de Google>» (se crea al guardar). */
   async function citySearch(qIn: unknown): Promise<Array<{ v: string; n: string; p: string; k: string }>> {
     requireUse();
@@ -1938,7 +1956,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,
-    setCompanyContact, timeline, logActivity, setNextStep, deleteActivity, today, instagramToCompanies,
+    setCompanyContact, timeline, logActivity, findByEmail, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
     company, moveToGroup, setTags, lists, names,
     imports, importStart, importDraft, importPreview, importRun, importUndo,
@@ -1952,5 +1970,5 @@ export const emptyCrmDb: CrmDb = {
   async updateContact() { return false; }, async deleteContact() { return false; }, async listLinks() { return []; }, async saveLinks() {}, async listAccountLinks() { return []; }, async saveAccountLink() { throw new Error('sin CRM'); }, async removeAccountLink() { return false; },
   async removeLink() { return false; }, async createImport() { throw new Error('sin CRM'); }, async getImport() { return null; },
   async listImports() { return []; }, async updateImport() { return false; }, async deleteContactsByImport() { return 0; },
-  async listActivities() { return []; }, async lastActivities() { return []; }, async activitySummary() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; },
+  async listActivities() { return []; }, async lastActivities() { return []; }, async activitySummary() { return []; }, async insertActivity() { throw new Error('sin CRM'); }, async deleteActivity() { return false; }, async findByEmail() { return []; },
 };

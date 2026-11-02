@@ -26,3 +26,8 @@ grant update (status) on public.lead_message to authenticated;
 revoke delete on public.lead_settings from authenticated;
 -- Claves de Resend de cada empresa (20261216): solo el servidor.
 revoke all on public.lead_secret from anon, authenticated;
+-- Correos al CRM (20261221): las direcciones solo por RPC; lo recibido lo escribe el servidor y la persona solo asigna.
+revoke insert, update, delete on public.inbound_address from authenticated, anon;
+revoke insert, delete on public.inbound_email from authenticated, anon;
+revoke update on public.inbound_email from authenticated;
+grant update (status, account_id, activity_id, detail) on public.inbound_email to authenticated;

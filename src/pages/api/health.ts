@@ -29,6 +29,8 @@ export const GET: APIRoute = async () => {
     // Leads (docs/LEADS.md): WhatsApp y su webhook. Solo dice si las claves están puestas.
     whatsappConfigured: Boolean(env('WHATSAPP_TOKEN')),
     whatsappWebhookConfigured: Boolean(env('WHATSAPP_VERIFY_TOKEN') && env('WHATSAPP_APP_SECRET')),
+    // Correos al CRM (docs/CRM_DINAMICO.md §47): dominio de entrada y firma del webhook de Resend.
+    inboundEmailConfigured: Boolean(env('INBOUND_EMAIL_DOMAIN') && env('RESEND_INBOUND_SECRET') && env('RESEND_API_KEY')),
     version: env('APP_VERSION') ?? 'dev',
   };
   return Response.json(body, { status: body.status === 'ok' ? 200 : 503, headers: { 'cache-control': 'no-store' } });

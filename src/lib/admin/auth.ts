@@ -4,7 +4,7 @@
  * - Demo (sin Supabase): cookie con el id de un usuario de DEMO_USERS. Solo existe en modo demo.
  */
 import { createServerClient, parseCookieHeader } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AstroCookies } from 'astro';
 import { appMode } from '../mode';
 import { demoDb } from '../data/store';
@@ -241,8 +241,37 @@ export async function authenticate(ctx: RequestLike, tenant: TenantContext): Pro
   const { data, error } = await sb.auth.getUser();
   if (error || !data.user) return { kind: 'anonymous' };
   const sdb = supabaseAdminDb(sb);
-  return touchSeen(ctx, sdb, await buildAdminContext(sdb, { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase',
-    { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb), requestCache: true }), tenant.id);
+  return touchSeen(ctx, sdb, await buildAdminContext(sdb, { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null }, tenant, 'supabase', supabaseDeps(sb)), tenant.id);
+}
+
+/** El cableado de Supabase con el cliente de una sesión (la RLS es la de esa persona). */
+function supabaseDeps(sb: SupabaseClient): Deps {
+  return { identity: serviceIdentity(), assets: supabaseAssets(sb), supabase: sb, playbookDb: supabasePlaybookDb(sb), evidenceDb: supabaseEvidenceDb(sb), partnerDb: () => supabaseAdminDb(sb, { partner: true }), notifyDb: supabaseNotifyDb(sb), accountsDb: () => supabaseAccountsDb(sb), crmDb: () => supabaseCrmDb(sb), commissionsDb: () => supabaseCommissionsDb(sb), analyticsDb: supabaseAnalyticsDb(sb), orgDb: supabaseOrgDb(sb), contentDb: supabaseContentI18nDb(sb), requestCache: true };
+}
+
+/**
+ * El contexto de una persona para un trabajo del servidor hecho en su nombre (correos al CRM, docs/CRM_DINAMICO.md §47):
+ * con SUS permisos (una sesión suya de un solo uso), nunca con los de la plataforma. null si ya no es del espacio.
+ */
+export async function contextAs(tenant: TenantContext, userId: string): Promise<AdminContext | null> {
+  if (authMode() === 'demo') {
+    const u = demoDb().users.find((x) => x.id === userId);
+    if (!u) return null;
+    const r = await buildAdminContext(demoAdminDb(), { id: u.id, email: u.email, name: u.display_name || null }, tenant, 'demo',
+      { identity: demoIdentity(), assets: demoAssets, supabase: null, playbookDb: demoPlaybookDb(), evidenceDb: demoEvidenceDb(), partnerDb: () => demoAdminDb(), notifyDb: demoNotifyDb(), accountsDb: demoAccountsDb, crmDb: demoCrmDb, commissionsDb: demoCommissionsDb, analyticsDb: demoAnalyticsDb(), orgDb: demoOrgDb(), contentDb: demoContentI18nDb() });
+    return r.kind === 'ok' ? r.admin : null;
+  }
+  const url = env('PUBLIC_SUPABASE_URL'), anon = env('PUBLIC_SUPABASE_ANON_KEY'), key = env('SUPABASE_SERVICE_ROLE_KEY');
+  const identity = serviceIdentity();
+  if (!url || !anon || !key || !identity?.oneTimeLogin) return null;
+  const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: user } = await admin.from('users').select('email, display_name').eq('id', userId).maybeSingle();
+  if (!user?.email) return null;
+  const sb = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data, error } = await sb.auth.verifyOtp({ type: 'magiclink', token_hash: await identity.oneTimeLogin(user.email) });
+  if (error || !data.user || data.user.id !== userId) return null;
+  const r = await buildAdminContext(supabaseAdminDb(sb), { id: userId, email: user.email, name: user.display_name ?? null }, tenant, 'supabase', supabaseDeps(sb));
+  return r.kind === 'ok' ? r.admin : null;
 }
 
 export function demoLogin(ctx: RequestLike, userId: string): boolean {

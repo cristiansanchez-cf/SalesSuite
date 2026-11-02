@@ -81,6 +81,8 @@ const EXACT: Record<string, T> = {
   'Sector o módulo no encontrado': ['Sector or module not found', 'Setor ou módulo não encontrado', '업종 또는 모듈을 찾을 수 없습니다'],
   'Punto de partida no encontrado': ['Starting point not found', 'Ponto de partida não encontrado', '시작점을 찾을 수 없습니다'],
   'Módulo no encontrado en el catálogo': ['Module not found in the catalogue', 'Módulo não encontrado no catálogo', '카탈로그에서 모듈을 찾을 수 없습니다'],
+  'Correo no encontrado': ['Email not found', 'Email não encontrado', '이메일을 찾을 수 없습니다'],
+  'Ese correo ya está apuntado': ['That email is already logged', 'Esse email já está registado', '이미 기록된 이메일입니다'],
   'Miembro no encontrado': ['Member not found', 'Membro não encontrado', '멤버를 찾을 수 없습니다'],
   'Faceta no encontrada': ['Situation not found', 'Situação não encontrada', '상황을 찾을 수 없습니다'],
   'Enlace no encontrado': ['Link not found', 'Link não encontrado', '링크를 찾을 수 없습니다'],

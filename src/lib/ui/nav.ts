@@ -35,6 +35,7 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
       { href: '/admin/accounts', label: L.companies, testid: 'tab-companies' }, { href: '/admin/accounts/tablero', label: L.board, testid: 'tab-board' },
       { href: '/admin/people', label: L.people, testid: 'tab-people' },
       { href: '/admin/leads', label: L.leads, testid: 'tab-leads', show: perms.manageAccounts },
+      { href: '/admin/accounts/correos', label: L.emails, testid: 'tab-emails', show: !partner },
     ] }] : []),
     { href: '/admin', label: partner ? L.myAccounts : L.dossiers, icon: (partner ? 'store' : 'file-text') as IconName, testid: 'nav-dossiers', tabs: [
       { href: '/admin', label: partner ? L.myAccounts : L.dossiers, exact: true }, { href: '/admin/dossiers', label: '', show: false }, { href: '/admin/analytics', label: L.analytics, testid: 'tab-analytics' },

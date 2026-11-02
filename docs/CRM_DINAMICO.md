@@ -1134,3 +1134,34 @@ Saber si una empresa es de un grupo cuesta poco si se mira en el orden correcto:
 
 Pruebas: `research.test.ts` (grupo y razón social en la petición), `scripts/smoke-white-label.cjs` (Investigar
 propone el grupo y aceptarlo lo crea) y `scripts/smoke-cleanup.cjs` (leer avisos legales).
+
+## 47. Correos al CRM: reenviar o poner en copia y se apunta solo
+
+Pedido de Cristian: que lo que se habla por email con un cliente quede en su ficha sin copiarlo a mano (Enjoy usa
+Microsoft 365; Oquea, Google Workspace: tiene que valer para cualquier correo).
+
+- **Dirección propia** por persona y espacio: **CRM → Correos** enseña `apuntar-<código>@<INBOUND_EMAIL_DOMAIN>` (solo la
+  ve ella; «Cambiar la dirección» invalida la anterior). Tabla `inbound_address` y RPC `inbound_address_get` /
+  `inbound_address_rotate` (migración `20261221000000_inbound_email.sql`).
+- **Cómo se usa**: al escribir a un cliente, la dirección en **CCO** (se apunta «escribí»: sin respuesta); si el cliente
+  escribe, **reenviar** su correo a la dirección («contestó»). Vale cualquier correo; en Outlook o Gmail se puede
+  automatizar con una regla o un filtro de reenvío (en Microsoft 365 el admin tiene que permitir el reenvío automático
+  hacia fuera; Gmail manda un código de confirmación, que aparece en la lista).
+- **Qué hace el servidor** (`src/lib/inbox/`): Resend recibe el correo y avisa a `POST /api/v1/email/inbound`
+  (`email.received`, firmado con Svix: `RESEND_INBOUND_SECRET`); se pide el cuerpo a Resend
+  (`GET /emails/receiving/{id}`) y se lee (`parse.ts`): reenviado (Outlook «RV:»/«De: … Enviado:», Gmail «Forwarded
+  message», Apple) o en copia; quién está al otro lado (sin la persona, sus compañeros ni la dirección de apuntar) y lo
+  nuevo del texto, sin lo citado. Luego, **con los permisos de esa persona** (una sesión suya de un solo uso,
+  `contextAs` en `admin/auth.ts`; nunca con la service role): a qué empresa va (`crm_find_by_email`: la persona del CRM
+  con ese email y su empresa, la empresa con ese email o la única con ese dominio en la web o el email; si es un lead
+  de la web ya validado, su empresa) y se apunta como interacción por email con su nota; el CRM propone el siguiente
+  paso como siempre. Si es un **lead de la web**, también va a su historial y, si contestó, se para la secuencia.
+- **Lo que no encaja** queda en la lista **«Sin empresa»** para elegirla con el buscador (o «No apuntar»). Los
+  correos entre compañeros no se apuntan. Resend reintenta: el mismo correo no se apunta dos veces (`message_id`).
+- **Puesta en marcha**: en Resend, un dominio de recepción (un subdominio con su MX, p. ej. `in.cofundo.io`, para no
+  tocar el correo de la empresa) y un webhook `email.received` a `https://<cualquier dominio de la plataforma>/api/v1/email/inbound`.
+  En Vercel: `INBOUND_EMAIL_DOMAIN`, `RESEND_INBOUND_SECRET` (y la `RESEND_API_KEY` de la plataforma). `/api/health`
+  dice `inboundEmailConfigured`.
+- Pruebas: `src/lib/inbox/inbox.test.ts` (lectura de correos de Outlook y Gmail, firma, de punta a punta en memoria),
+  SQL 79 (direcciones, lista y búsqueda con su RLS) y `scripts/smoke-inbox.cjs`.
+- Después: conectar Microsoft 365 (Graph) y Gmail directamente para no tener que reenviar; WhatsApp con el mismo motor.

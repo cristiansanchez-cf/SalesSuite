@@ -3,6 +3,7 @@ import type { ActivitySummary } from './pipeline';
 import type { Activity, Channel, Outcome } from './followup';
 import type { AccountLink, LinkWhen, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport, PaymentRequest, PaymentRequestInsert } from './types';
 
+export interface EmailMatch { kind: 'contact' | 'account' | 'domain'; contactId: string | null; accountId: string | null; matched: string }
 export interface ContactFilter { ids?: string[]; tag?: string; q?: string; limit: number }
 
 export interface CrmDb {
@@ -34,6 +35,8 @@ export interface CrmDb {
   activitySummary(tenantId: string, accountIds: string[]): Promise<ActivitySummary[]>;
   insertActivity(tenantId: string, a: { accountId: string; contactId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt?: string }): Promise<string>;
   deleteActivity(id: string): Promise<boolean>;
+  /** Correos al CRM: la persona con ese email (y sus empresas), la empresa con ese email o la de ese dominio. */
+  findByEmail(tenantId: string, emails: string[], domains: string[]): Promise<EmailMatch[]>;
   /** Enlaces de pago de esas empresas (§35), lo último primero. */
   listPaymentRequests(tenantId: string, accountIds: string[]): Promise<PaymentRequest[]>;
   /** La base de datos copia tarifa y cupón y comprueba quién puede poner un precio a medida. */

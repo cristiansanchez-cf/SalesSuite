@@ -1,0 +1,140 @@
+---
+/**
+ * Correos al CRM (docs/CRM_DINAMICO.md §47): la dirección de cada persona para reenviar o poner en copia sus correos con
+ * clientes, cómo usarla en Outlook y Gmail, y lo que ha llegado (apuntado, sin empresa para asignarla, o no apuntado).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { i18n } from '~/lib/i18n';
+import { inboxMessages } from '~/lib/i18n/messages/inbox';
+import { inboxFor } from '~/lib/inbox/service';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).useAccounts || admin.session.role === 'partner') return Astro.rewrite('/admin/forbidden');
+const { m: M, locale } = i18n(Astro, inboxMessages);
+const svc = await inboxFor(admin);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const action = String(f.get('action') ?? '');
+  const id = String(f.get('id') ?? '');
+  let ok = '';
+  result = await formAction(async () => {
+    if (action === 'assign') { await svc.assign(id, String(f.get('accountId') ?? '')); ok = 'assigned'; }
+    else if (action === 'ignore') { await svc.ignore(id); ok = 'ignored'; }
+    else if (action === 'rotate') { await svc.rotate(); ok = 'rotated'; }
+  });
+  if (!result.error) return Astro.redirect(`/admin/accounts/correos?ok=${ok}`, 303);
+}
+const okMsg = flash(Astro.url, M.ok);
+const [address, items] = await Promise.all([svc.address().catch(() => null), svc.list(50)]);
+const accIds = [...new Set(items.map((e) => e.accountId).filter((x): x is string => !!x))];
+const names = new Map((await Promise.all(accIds.slice(0, 30).map((id) => admin.accounts.get(id).then((r) => [id, r.account.name] as const).catch(() => null)))).filter((x): x is readonly [string, string] => !!x));
+const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const badge: Record<string, string> = { logged: 'co-badge--signal', unmatched: 'co-badge--attention', ignored: 'co-badge--soft', error: 'co-badge--soft' };
+---
+<AdminLayout title={M.title}>
+  <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} />
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  <section class="co-card mb-5 grid max-w-3xl gap-3 !p-6" data-testid="inbox-address">
+    <h2 class="co-entity !text-lg">{M.address}</h2>
+    {address ? (
+      <>
+        <div class="flex flex-wrap items-center gap-2">
+          <code class="co-inset break-all !p-3" data-testid="inbox-address-value">{address}</code>
+          <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-copy={address} data-copied={M.copied}><Icon name="copy" size={14} />{M.copy}</button>
+        </div>
+        <p class="co-meta">{M.addressHelp}</p>
+        <form method="post" class="flex flex-wrap items-center gap-2">
+          <button class="co-btn co-btn--quiet co-btn--sm" name="action" value="rotate" data-testid="inbox-rotate">{M.rotate}</button>
+          <span class="co-meta">{M.rotateHelp}</span>
+        </form>
+      </>
+    ) : <Alert kind="info" title={M.notConfigured} />}
+  </section>
+
+  <section class="co-card mb-5 grid max-w-3xl gap-2 !p-6">
+    <h2 class="co-entity !text-lg">{M.howTitle}</h2>
+    <ul class="grid gap-1 pl-5">{M.how.map((x) => <li class="list-disc">{x}</li>)}</ul>
+    <p class="co-meta mt-2">{M.outlook}</p>
+    <p class="co-meta">{M.gmail}</p>
+  </section>
+
+  <section class="co-section max-w-3xl" data-testid="inbox-list">
+    <div class="co-section__head"><h2 class="text-eyebrow">{M.received}</h2></div>
+    {items.length === 0 ? <p class="co-meta" data-testid="inbox-empty">{M.empty}</p> : (
+      <ul class="co-rows">
+        {items.map((e) => (
+          <li class="co-row !items-start" data-testid="inbox-item" data-status={e.status}>
+            <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name={e.direction === 'in' ? 'arrow-down' : 'arrow-up'} size={16} /></span>
+            <span class="co-row__main grid gap-1">
+              <span class="co-row-title">{e.subject || '—'}</span>
+              <span class="co-meta">{e.direction === 'in' ? M.dirIn : M.dirOut} · {e.counterpart ?? e.fromAddr ?? ''} · {fmt.format(new Date(e.receivedAt))}</span>
+              {e.snippet && <span class="co-meta line-clamp-3 whitespace-pre-line">{e.snippet.replace(/^«[^»]*»\s*/, '')}</span>}
+              {e.detail && <span class="co-meta">{e.detail}</span>}
+              {e.status === 'logged' && e.accountId && (
+                <a class="co-meta underline" href={`/admin/accounts/${e.accountId}`} data-testid="inbox-account">{M.inAccount} {names.get(e.accountId) ?? M.open}</a>
+              )}
+              {(e.status === 'unmatched' || e.status === 'error') && (
+                <form method="post" class="mt-1 grid gap-2" data-pick>
+                  <input type="hidden" name="id" value={e.id} />
+                  <input type="hidden" name="accountId" value="" data-pick-id />
+                  <div class="relative">
+                    <input class="co-input" type="search" autocomplete="off" placeholder={M.pickPh} aria-label={M.pick} data-pick-q data-testid="inbox-pick" />
+                    <ul class="co-card absolute left-0 right-0 top-full z-20 m-0 mt-1 grid gap-0 !p-1" hidden data-pick-list role="listbox"></ul>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button class="co-btn co-btn--primary co-btn--sm" name="action" value="assign" disabled data-pick-go data-testid="inbox-assign">{M.assign}</button>
+                    <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="ignore" formnovalidate data-testid="inbox-ignore">{M.ignore}</button>
+                  </div>
+                </form>
+              )}
+            </span>
+            <span class={`co-badge ${badge[e.status] ?? ''}`}>{M.status[e.status]}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</AdminLayout>
+
+<script define:vars={{ none: M.pickNone }}>
+  // Copiar la dirección.
+  document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.lastChild.textContent = b.dataset.copied; } catch { /* sin portapapeles */ }
+  }));
+  // Elegir empresa para lo que llegó sin ella (el mismo buscador que Apuntar, sin IA).
+  document.querySelectorAll('[data-pick]').forEach((form) => {
+    const q = form.querySelector('[data-pick-q]'), id = form.querySelector('[data-pick-id]'), list = form.querySelector('[data-pick-list]'), go = form.querySelector('[data-pick-go]');
+    let timer = 0, seq = 0;
+    q.addEventListener('input', () => {
+      id.value = ''; go.disabled = true;
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const mine = ++seq;
+        if (q.value.trim().length < 2) { list.hidden = true; return; }
+        const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(q.value.trim())}`).then((x) => x.json()).catch(() => ({ items: [] }));
+        if (mine !== seq) return;
+        list.replaceChildren(...(r.items?.length ? r.items.map((it) => {
+          const li = document.createElement('li'); li.className = 'list-none';
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = 'inbox-pick-option';
+          const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = it.name;
+          if (it.zone) { const s = document.createElement('small'); s.textContent = it.zone; t.append(s); }
+          b.append(t);
+          b.addEventListener('click', () => { id.value = it.id; q.value = it.zone ? `${it.name} · ${it.zone}` : it.name; list.hidden = true; go.disabled = false; });
+          li.append(b); return li;
+        }) : [Object.assign(document.createElement('li'), { className: 'list-none co-meta p-2', textContent: none })]));
+        list.hidden = false;
+      }, 200);
+    });
+    document.addEventListener('click', (e) => { if (!form.contains(e.target)) list.hidden = true; });
+  });
+</script>

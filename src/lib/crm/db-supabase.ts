@@ -157,6 +157,10 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       if (a.happenedAt) row.happened_at = a.happenedAt;
       return (check(await sb.from('crm_activity').insert(row).select('id').single()) as Row).id;
     },
+    async findByEmail(t, emails, domains) {
+      const rows = (check(await sb.rpc('crm_find_by_email', { p_tenant: t, p_emails: emails, p_domains: domains })) ?? []) as Row[];
+      return rows.map((r) => ({ kind: r.kind, contactId: r.contact_id ?? null, accountId: r.account_id ?? null, matched: r.matched }));
+    },
     async deleteActivity(id) { return (check(await sb.from('crm_activity').delete().eq('id', id).select('id')) ?? []).length > 0; },
     async listPaymentRequests(t, accountIds) {
       if (!accountIds.length) return [];

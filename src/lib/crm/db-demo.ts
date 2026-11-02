@@ -269,6 +269,27 @@ export function demoCrmDb(actorId: string): CrmDb {
       s.crm_activity.push(row);
       return row.id;
     },
+    async findByEmail(t, emails, domains) {
+      // = public.crm_find_by_email (security invoker: solo quien es del espacio).
+      if (!isMember(t, actorId) && !demoRoleOf(t, actorId)) return [];
+      const s = db();
+      const es = new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')));
+      const ds = [...new Set(domains.map((d) => d.trim().toLowerCase()).filter((d) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)))];
+      const out: Array<{ kind: 'contact' | 'account' | 'domain'; contactId: string | null; accountId: string | null; matched: string }> = [];
+      for (const c of s.crm_contact.filter((x) => x.tenant_id === t && x.email && es.has(x.email.toLowerCase()))) {
+        const links = s.crm_contact_account.filter((l) => l.contact_id === c.id);
+        if (!links.length) out.push({ kind: 'contact', contactId: c.id, accountId: null, matched: c.email!.toLowerCase() });
+        for (const l of links) out.push({ kind: 'contact', contactId: c.id, accountId: l.account_id, matched: c.email!.toLowerCase() });
+      }
+      for (const a of s.account.filter((x) => x.tenant_id === t && x.email && es.has(x.email.toLowerCase()))) out.push({ kind: 'account', contactId: null, accountId: a.id, matched: a.email!.toLowerCase() });
+      for (const d of ds) {
+        const re = new RegExp(`^(https?://)?(www\\.)?${d.replace(/\./g, '\\.')}(/|$)`);
+        for (const a of s.account.filter((x) => x.tenant_id === t && ((x.email ?? '').toLowerCase().endsWith(`@${d}`) || re.test((x.website ?? '').toLowerCase())))) {
+          out.push({ kind: 'domain', contactId: null, accountId: a.id, matched: d });
+        }
+      }
+      return out.slice(0, 50);
+    },
     async deleteActivity(id) {
       const s = db();
       const a = s.crm_activity.find((x) => x.id === id);
