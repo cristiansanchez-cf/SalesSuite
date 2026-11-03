@@ -10,7 +10,7 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm, buscar-nombres]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm, buscar-nombres, tope-ia]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
@@ -22,6 +22,14 @@ on:
         default: ''
       nombres:
         description: En buscar-nombres, los nombres separados por comas (variantes con «|», p. ej. ghecko|gecko)
+        type: string
+        default: ''
+      tope:
+        description: En tope-ia, el gasto máximo de IA al mes en dólares (p. ej. 10; «sin» lo quita)
+        type: string
+        default: ''
+      usos_dia:
+        description: En tope-ia, usos de IA por persona al día (vacío, los que tenga; si no, 40)
         type: string
         default: ''
       dry_run:
@@ -54,8 +62,8 @@ jobs:
           missing=""
           if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ "$WHAT" != "traducir" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
           if [ "$WHAT" = "traducir" ] && [ "$DRY" != "true" ] && [ -z "$ANTHROPIC" ]; then missing="$missing ANTHROPIC_API_KEY"; fi
-          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
-          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ "$WHAT" != "tope-ia" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ "$WHAT" != "tope-ia" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
           # Región de la base de datos (para elegir la misma en Vercel: docs/PUESTA_EN_MARCHA.md §Velocidad). Solo el host, nunca la URL.
           host=$(printf '%s' "$DB" | sed -E 's#^[a-z]+://([^@]*@)?([^:/?]+).*#\2#')
@@ -107,14 +115,32 @@ jobs:
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
           PGOPTIONS='-c default_transaction_read_only=on' psql "$SUPABASE_DB_URL" -v slug="$TENANT" -v names="$NAMES" -f scripts/crm-check-names.sql
 
+      # Tope de IA de un espacio (docs/COSTES.md §Tope): lo mismo que Plataforma → Coste por empresa → Tope de IA.
+      - name: Tope de IA
+        if: ${{ inputs.what == 'tope-ia' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TENANT: ${{ inputs.tenant }}
+          TOPE: ${{ inputs.tope }}
+          USOS: ${{ inputs.usos_dia }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          TOPE="$(echo "$TOPE" | tr -d ' $' | tr 'A-Z' 'a-z')"
+          case "$TOPE" in sin|'') ;; *[!0-9.,]*) echo "::error::Tope no válido: un número de dólares (p. ej. 10) o «sin»"; exit 1;; esac
+          case "$USOS" in *[!0-9]*) echo "::error::Usos al día: un número entero"; exit 1;; esac
+          if [ -z "$TOPE" ] && [ -z "$USOS" ]; then echo "::error::Pon el tope (dólares al mes o «sin») o los usos al día"; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          psql "$SUPABASE_DB_URL" -v slug="$TENANT" -v usd="${TOPE:-keep}" -v per_day="$USOS" -v dry="$DRY" -f scripts/ai-limit.sql
+
       - uses: actions/setup-node@v5
-        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' && inputs.what != 'buscar-nombres' }}
+        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' && inputs.what != 'buscar-nombres' && inputs.what != 'tope-ia' }}
         with:
           node-version: 22
           cache: npm
 
       - name: Instalar dependencias
-        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' && inputs.what != 'buscar-nombres' }}
+        if: ${{ inputs.what != 'migraciones' && inputs.what != 'informe-crm' && inputs.what != 'buscar-nombres' && inputs.what != 'tope-ia' }}
         run: npm ci
 
       - name: Alta del espacio

@@ -81,6 +81,9 @@ En el detalle de cada empresa (**Ver detalle → Tope de IA**) el superadmin fij
 Cada empresa sale en el panel con su tope y, si tiene gasto máximo, cuánto lleva: «Cerca del tope» desde el 80 % y
 «Tope alcanzado» al llegar.
 
+Sin entrar en Plataforma: GitHub → Actions → «Producción» → `tope-ia`, con el espacio, `tope` (dólares al mes; `sin` lo
+quita) y, si se quiere, `usos_dia` (`scripts/ai-limit.sql`; con «Solo comprobar», enseña cómo está y cómo quedaría).
+
 Se guarda en `tenant_limits` (migración `20261228000000_ai_limits.sql`): solo lo cambia el superadmin
 (`platform_set_limits`); el servidor de cada espacio lo lee con lo gastado del mes (`ai_limits`). Si no se puede leer,
 se sigue con el de por defecto (mejor no dejar al equipo sin IA por un fallo de la base de datos).
