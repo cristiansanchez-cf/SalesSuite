@@ -2,6 +2,8 @@
 import { liteOf } from '~/lib/proposal/preset';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Builder from '~/components/admin/Builder.svelte';
+import { socialConfigured } from '~/lib/social/server';
+import { socialSources } from '~/lib/social/service';
 import Icon from '~/components/ui/Icon.astro';
 import Alert from '~/components/ui/Alert.astro';
 import { AdminError } from '~/lib/admin/service';
@@ -98,6 +100,8 @@ const am = analyticsMessages[locale];
 const opened = d.status === 'published' ? (await admin.analytics.statsFor([d.id]).catch(() => new Map())).get(d.id) : undefined;
 const crm = perms.useAccounts;
 const linked = crm && d.accountId ? await admin.accounts.get(d.accountId).then((x) => x.account).catch(() => null) : null;
+// Traer fotos y vídeos de su Instagram o TikTok (si la empresa los tiene en el CRM y la conexión está configurada).
+const social = linked && socialConfigured() ? socialSources(linked).map(({ platform, handle }) => ({ platform, handle })) : [];
 const mine = crm && !d.accountId && state.canEdit ? await admin.accounts.mine() : [];
 // Venta declarada (docs/COMMISSIONS.md): quien ganó la propuesta declara el importe; un admin lo confirma.
 const canDeclare = d.outcome === 'won' && d.authorId === admin.session.userId;
@@ -229,5 +233,5 @@ const origin = requestOrigin(Astro.request, Astro.url);
     const input = document.querySelector<HTMLInputElement>('[data-testid="rep-contact-value"]');
     sel?.addEventListener('change', () => { if (input) input.placeholder = (JSON.parse(sel.dataset.ph ?? '{}') as Record<string, string>)[sel.value] ?? ''; });
   </script>
-  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} />
 </AdminLayout>

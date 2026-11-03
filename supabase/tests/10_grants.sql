@@ -35,3 +35,5 @@ grant update (status, account_id, activity_id, detail) on public.inbound_email t
 revoke all on public.lead_consent_proof from authenticated, anon;
 revoke insert, update, delete on public.lead_purge_log from authenticated, anon;
 revoke insert, update, delete on public.privacy_request from authenticated, anon;
+-- Caché de perfiles de redes (20261223): el equipo lee, crea y cambia; nadie borra con sesión.
+revoke delete on public.social_profile_cache from authenticated, anon;

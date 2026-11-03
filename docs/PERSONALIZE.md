@@ -17,6 +17,30 @@ Idea de venta: con su logo, un generador de vídeo (Gemini, Runway…) hace en 5
 - Se guarda en `dossier.client_media` (`{logo, photos[], video}`), la propuesta pública lo devuelve (`media`) y llega a los módulos en `ctx.media`. Hoy lo usa la pantalla en vivo; cualquier módulo puede.
 - En demo no hay Storage: los archivos van a memoria (`/demo-media/…`) y se pierden al reiniciar.
 
+## Traer de sus redes (Instagram y TikTok)
+
+Si la empresa vinculada a la propuesta tiene su Instagram o su TikTok en el CRM, en **Fotos** y **Vídeo** sale «De su
+Instagram» / «De su TikTok». Pensado para el móvil: se abre a pantalla completa con sus 12 últimas publicaciones
+(miniaturas), con lo propuesto ya marcado; se toca para marcar o desmarcar y **Añadir a la propuesta**. Cada una se
+descarga, se sube a la carpeta de la propuesta y queda como foto o vídeo, igual que una subida a mano.
+
+- **Qué se propone:** tantas fotos como huecos queden (hasta 4) y un vídeo si no hay. Primero las fijadas, luego por
+  engagement (likes + comentarios; reproducciones en vídeo), a igualdad la más reciente. De un carrusel, la primera foto.
+- **API de medios** (InternalApps, `docs/API.md` de ese repo): `POST /api/media-list` y `POST /api/media-download` con
+  `X-API-Key: CONVERT_API_KEY` (Vercel; `MEDIA_API_URL` si cambia la dirección). Código: `src/lib/social/`.
+- **Sus reglas:** una petición cada vez (el editor las manda de una en una con 2,5 s entre descargas y el servidor las
+  pone en fila); un perfil no se vuelve a listar en una hora (`social_profile_cache`, migración
+  `20261223000000_social_media_cache.sql`); solo se descarga lo elegido. Los enlaces de descarga caducan en 1 hora: se
+  descargan en el momento y nunca van a la propuesta. El servidor solo descarga de `storage.googleapis.com`.
+- **Miniaturas:** pasan por `GET /admin/api/dossiers/:id/social?key=&thumb=n` (Instagram no deja enseñarlas desde otra
+  web), solo de las publicaciones listadas y de los servidores de imágenes de Instagram y TikTok.
+- **Límites de la propuesta:** fotos hasta 8 MB (PNG, JPG o WebP) y 8 en total; vídeo hasta 30 MB (MP4 o WebM). Lo
+  que no cabe se salta y se dice.
+- **Fallos:** nunca bloquean la propuesta. Perfil privado o inexistente, publicación no disponible, red limitando
+  («prueba en 5-10 minutos»), archivo grande o clave mal puesta: se explica y se sigue con el resto.
+- Sin `CONVERT_API_KEY` no sale el botón (en demo, unas publicaciones de ejemplo). `/api/health` → `socialMediaConfigured`.
+- Smoke: `scripts/smoke-social.cjs` (en móvil). Pruebas: `src/lib/social/media-api.test.ts`.
+
 ## Cómo se ve: presentación o hacia abajo
 
 En la misma tarjeta, **Cómo se ve**: «Presentación» (por defecto) o «Hacia abajo». Se guarda en `client_media.layout` (`'slides' | 'scroll'`, sin migración: va dentro del jsonb).

@@ -103,7 +103,7 @@ export function notifyContract(name: string, env: () => NotifyEnv) {
       const sent: Email[] = [];
       const mailer: Mailer = { async send(e) { sent.push(e); } };
       const later = new Date(Date.now() + 10 * 60_000);
-      const job = (now: Date, digest: 'skip' | 'force' = 'skip') => runNotificationJob(E.jobDb(), mailer, { now, fallbackOrigin: 'https://ventas.test', digest });
+      const job = (now: Date, digest: 'skip' | 'force' = 'skip') => runNotificationJob(E.jobDb(), mailer, { now, fallbackOrigin: 'https://ventas.test', digest, daily: 'skip' });
 
       expect((await job(new Date(), 'skip')).immediate).toBe(0);  // aún dentro del margen para agrupar
       expect((await job(later)).immediate).toBe(1);
@@ -127,7 +127,7 @@ export function notifyContract(name: string, env: () => NotifyEnv) {
       await admin.notifications.setEmailPref(false);
       await (await ctx(U.dj)).playbook.shareTip({ moduleId: MOD_EXP, kind: 'tip', title: 'Sin email', body: 'x' });
       const sent: Email[] = [];
-      const r = await runNotificationJob(E.jobDb(), { async send(e) { sent.push(e); } }, { now: new Date(Date.now() + 10 * 60_000), fallbackOrigin: 'https://x', digest: 'force' });
+      const r = await runNotificationJob(E.jobDb(), { async send(e) { sent.push(e); } }, { now: new Date(Date.now() + 10 * 60_000), fallbackOrigin: 'https://x', digest: 'force', daily: 'skip' });
       expect(sent).toHaveLength(0);
       expect(r.skipped).toBe(1);
       expect((await admin.notifications.feed()).open).toBe(1);

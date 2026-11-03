@@ -24,8 +24,9 @@
   }
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
   interface CouponLite { id: string; code: string; label: string }
-  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es' }:
-    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale } = $props();
+  interface SocialSource { platform: 'instagram' | 'tiktok'; handle: string }
+  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [] }:
+    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[] } = $props();
   // Los textos se importan aquí: las funciones (plurales) no viajan como props de una isla.
   const t = builderMessages[locale] ?? builderMessages.es;
   /** Los avisos de «antes de publicar» llegan del servidor en español: aquí, en el idioma de quien edita. */
@@ -111,6 +112,64 @@
     const st = await postMedia({ url }, 'DELETE');
     if (st) { s = st; previewKey++; }
   }
+
+  // ---------- Traer de sus redes (docs/PERSONALIZE.md §Traer de sus redes): sus publicaciones, elegir y añadir.
+  interface SocialPostView { i: number; url: string; type: 'image' | 'video' | 'carousel'; itemCount: number | null; pinned: boolean; caption: string | null; likes: number | null; comments: number | null; views: number | null; thumb: string | null }
+  interface SocialList { ok: true; key: string; platform: 'instagram' | 'tiktok'; username: string; followers: number | null; free: number; hasVideo: boolean; posts: SocialPostView[]; suggested: { photos: number[]; videos: number[] } }
+  let sheet = $state<null | { platform: 'instagram' | 'tiktok'; focus: 'photo' | 'video' }>(null);
+  let sList = $state<SocialList | null>(null);
+  let sError = $state<string | null>(null);
+  let sLoading = $state(false);
+  let sPick = $state<{ photos: number[]; videos: number[] }>({ photos: [], videos: [] });
+  let sProgress = $state<{ done: number; total: number } | null>(null);
+  let sReport = $state<string[]>([]);
+  const socialErr = (code: string) => t.social.errors[code as keyof typeof t.social.errors] ?? t.social.errors.default;
+  async function openSocial(platform: 'instagram' | 'tiktok', focus: 'photo' | 'video') {
+    sheet = { platform, focus }; sList = null; sError = null; sReport = []; sProgress = null; sLoading = true;
+    try {
+      const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'list', platform }) });
+      const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
+      if (!res.ok && out.error) sError = out.error;
+      else if (!out.ok) sError = socialErr(out.code);
+      else {
+        sList = out as SocialList;
+        // Lo propuesto, según lo que haya abierto (fotos o vídeo) y los huecos que quedan.
+        sPick = { photos: focus === 'video' ? [] : sList.suggested.photos, videos: sList.suggested.videos.slice(0, 1) };
+      }
+    } catch { sError = t.offline; } finally { sLoading = false; }
+  }
+  function togglePick(p: SocialPostView) {
+    if (!sList || sProgress) return;
+    if (p.type === 'video') sPick = { ...sPick, videos: sPick.videos.includes(p.i) ? [] : [p.i] };
+    else if (sPick.photos.includes(p.i)) sPick = { ...sPick, photos: sPick.photos.filter((x) => x !== p.i) };
+    else if (sPick.photos.length < sList.free) sPick = { ...sPick, photos: [...sPick.photos, p.i] };
+  }
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  /** De una en una y con 2,5 s entre medias: la API de medios no admite descargas en paralelo. */
+  async function importSocial() {
+    if (!sList) return;
+    const list = sList;
+    const jobs = [...sPick.photos.map((i) => ({ i, kind: 'photo' })), ...sPick.videos.map((i) => ({ i, kind: 'video' }))].map((j) => ({ ...j, url: list.posts.find((p) => p.i === j.i)?.url }));
+    sReport = []; sProgress = { done: 0, total: jobs.length };
+    let added = 0;
+    for (const [n, j] of jobs.entries()) {
+      if (n > 0) await wait(2500);
+      try {
+        const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'import', key: list.key, index: j.i, url: j.url, kind: j.kind }) });
+        const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
+        if (out.ok) { s = out.state; added++; previewKey++; }
+        else sReport = [...sReport, `${t.social.post(j.i + 1)}: ${out.error ?? socialErr(out.code)}`];
+        // Si la red está limitando, el resto fallaría igual.
+        if (!out.ok && ['LOGIN_REQUIRED', 'INVALID_API_KEY', 'NOT_CONFIGURED'].includes(out.code)) break;
+      } catch { sReport = [...sReport, `${t.social.post(j.i + 1)}: ${t.offline}`]; }
+      sProgress = { done: n + 1, total: jobs.length };
+    }
+    sProgress = null;
+    if (!sReport.length) { sheet = null; return; }
+    sReport = [t.social.added(added), ...sReport];
+    sPick = { photos: [], videos: [] };
+  }
+  const pickCount = $derived(sPick.photos.length + sPick.videos.length);
 
   let queue: Promise<unknown> = Promise.resolve();
   function run(op: BuilderOp): Promise<boolean> {
@@ -575,6 +634,11 @@
                   <label class="media-add media-add--sm">{uploading === 'photo' ? '…' : '＋'}<input type="file" accept="image/png,image/jpeg,image/webp" multiple class="sr-only" disabled={!!uploading} onchange={(e) => uploadMedia('photo', e.currentTarget.files)} data-testid="media-photo-input" /></label>
                 {/if}
               </div>
+              {#if (media.photos?.length ?? 0) < 8}
+                {#each social as src (src.platform)}
+                  <button type="button" class="social-from" onclick={() => openSocial(src.platform, 'photo')} data-testid="social-photos-{src.platform}">{t.social.from[src.platform]}</button>
+                {/each}
+              {/if}
             </div>
             <div class="media-tile" data-testid="media-video">
               <p class="media-tile__label">{t.media.video}</p>
@@ -582,6 +646,9 @@
                 <div class="media-thumb media-thumb--video"><video src={media.video} muted loop playsinline autoplay></video><button type="button" class="media-x" onclick={() => removeMedia(media.video!)} aria-label={t.media.remove}>✕</button></div>
               {:else}
                 <label class="media-add">{uploading === 'video' ? t.media.uploading : t.media.addVideo}<input type="file" accept="video/mp4,video/webm" class="sr-only" disabled={!!uploading} onchange={(e) => uploadMedia('video', e.currentTarget.files)} data-testid="media-video-input" /></label>
+                {#each social as src (src.platform)}
+                  <button type="button" class="social-from" onclick={() => openSocial(src.platform, 'video')} data-testid="social-video-{src.platform}">{t.social.from[src.platform]}</button>
+                {/each}
               {/if}
             </div>
           </div>
@@ -609,6 +676,56 @@
             {/if}
           </div>
         </section>
+        {#if sheet}
+          <div class="social-sheet" role="dialog" aria-modal="true" aria-label={t.social.title} data-testid="social-sheet">
+            <div class="social-sheet__panel">
+              <header class="social-sheet__head">
+                <div class="grid">
+                  <strong>{t.social.title}</strong>
+                  {#if sList}<span class="co-help">@{sList.username}{sList.followers != null ? ` · ${t.social.followers(sList.followers)}` : ''}</span>{/if}
+                </div>
+                <button type="button" class="co-btn co-btn--ghost co-btn--sm" onclick={() => (sheet = null)} disabled={!!sProgress} data-testid="social-close">{t.social.close}</button>
+              </header>
+              {#if social.length > 1}
+                <div class="co-chips px-4 pt-3">
+                  {#each social as src (src.platform)}
+                    <button type="button" class="co-chip" aria-pressed={sheet.platform === src.platform} disabled={!!sProgress} onclick={() => openSocial(src.platform, sheet!.focus)}>{t.social.net[src.platform]}</button>
+                  {/each}
+                </div>
+              {/if}
+              <div class="social-sheet__body">
+                {#if sLoading}<p class="co-help p-4">{t.social.loading}</p>{/if}
+                {#if sError}<p class="co-help p-4" data-testid="social-error">{sError}</p>{/if}
+                {#if sReport.length}
+                  <ul class="social-report" data-testid="social-report">{#each sReport as r}<li>{r}</li>{/each}</ul>
+                {/if}
+                {#if sList}
+                  <p class="co-help px-4 pt-2">{t.social.help(sList.free, sList.hasVideo)}</p>
+                  {#if !sList.posts.length}<p class="co-help p-4">{t.social.none}</p>{/if}
+                  <div class="social-grid">
+                    {#each sList.posts as p (p.i)}
+                      {@const on = p.type === 'video' ? sPick.videos.includes(p.i) : sPick.photos.includes(p.i)}
+                      {@const full = p.type !== 'video' && !on && sPick.photos.length >= sList.free}
+                      <button type="button" class="social-post" class:is-on={on} class:is-off={full} aria-pressed={on} disabled={!!sProgress}
+                        onclick={() => togglePick(p)} data-testid="social-post" data-type={p.type} data-on={on ? '1' : '0'}>
+                        {#if p.thumb}<img src={p.thumb} alt={p.caption ?? ''} loading="lazy" />{:else}<span class="social-post__ph">{t.social.types[p.type]}</span>{/if}
+                        <span class="social-post__badge">{p.type === 'video' ? '▶' : p.type === 'carousel' ? '❐' : ''}{p.pinned ? ' ★' : ''}</span>
+                        {#if on}<span class="social-post__check">✓</span>{/if}
+                        <span class="social-post__meta">{p.type === 'video' && p.views != null ? t.social.views(p.views) : p.likes != null ? `♥ ${p.likes}` : ''}</span>
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+              {#if sList}
+                <footer class="social-sheet__foot">
+                  <span class="co-help">{sProgress ? t.social.progress(sProgress.done, sProgress.total) : t.social.chosen(sPick.photos.length, sPick.videos.length)}</span>
+                  <button type="button" class="co-btn co-btn--primary" disabled={!pickCount || !!sProgress} onclick={importSocial} data-testid="social-add">{sProgress ? t.social.adding : t.social.add}</button>
+                </footer>
+              {/if}
+            </div>
+          </div>
+        {/if}
       {/if}
 
       <!-- módulos: arrastrar para ordenar o desde «Añadir» -->
@@ -1131,5 +1248,24 @@
   .media-thumb--logo { aspect-ratio: 16 / 9; background: var(--console-chip-bg); }
   .media-thumb--logo img { object-fit: contain; padding: .5rem; }
   .media-thumb--video { aspect-ratio: 16 / 9; }
+  .social-from { margin-top: .25rem; width: 100%; min-height: 2.5rem; border-radius: .75rem; border: 1px solid var(--console-card-border-hover); font-weight: 700; font-size: .85rem; }
+  .social-from:hover { border-color: var(--co-signal, #6d28d9); color: var(--co-signal, #6d28d9); }
+  .social-sheet { position: fixed; inset: 0; z-index: 80; display: grid; place-items: end center; background: rgba(0,0,0,.45); }
+  .social-sheet__panel { display: flex; flex-direction: column; width: 100%; max-width: 44rem; height: 100dvh; background: var(--console-surface, #fff); color: var(--co-ink, #111); }
+  @media (min-width: 640px) { .social-sheet { place-items: center; padding: 1.5rem; } .social-sheet__panel { height: auto; max-height: 90dvh; border-radius: 1.25rem; } }
+  .social-sheet__head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem; border-bottom: 1px solid var(--console-divider); }
+  .social-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 1rem; }
+  .social-sheet__foot { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--console-divider); background: var(--console-surface, #fff); }
+  .social-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; padding: .75rem 1rem 0; }
+  @media (min-width: 640px) { .social-grid { grid-template-columns: repeat(4, 1fr); } }
+  .social-post { position: relative; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; background: #111; border: 3px solid transparent; }
+  .social-post img { width: 100%; height: 100%; object-fit: cover; }
+  .social-post.is-on { border-color: var(--co-signal, #6d28d9); }
+  .social-post.is-off { opacity: .45; }
+  .social-post__ph { display: grid; place-items: center; height: 100%; color: #fff; font-size: .75rem; }
+  .social-post__badge { position: absolute; top: .3rem; left: .35rem; color: #fff; font-size: .8rem; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+  .social-post__check { position: absolute; top: .3rem; right: .3rem; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; background: var(--co-signal, #6d28d9); color: #fff; font-size: .8rem; font-weight: 800; }
+  .social-post__meta { position: absolute; bottom: .25rem; left: .35rem; color: #fff; font-size: .7rem; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+  .social-report { margin: .75rem 1rem 0; padding: .75rem 1rem; border-radius: .75rem; background: var(--console-chip-bg); font-size: .85rem; display: grid; gap: .25rem; }
   .media-x { position: absolute; top: .25rem; right: .25rem; width: 1.6rem; height: 1.6rem; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font-size: .75rem; }
 </style>
