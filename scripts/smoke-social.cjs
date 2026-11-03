@@ -48,12 +48,26 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await items.nth(1).getAttribute('data-on')) === '1' && (await items.nth(4).getAttribute('data-on')) === '0', 'un solo vídeo: elegir otro cambia el elegido');
   await items.nth(3).click(); // vuelve a marcarla para ver el aviso
   await p.click('[data-testid=social-add]');
-  await p.waitForFunction(() => /Añadidas/.test(document.querySelector('[data-testid=social-report]')?.textContent ?? ''), null, { timeout: 90_000 });
-  const report = await p.textContent('[data-testid=social-report]');
-  assert(/Añadidas 4/.test(report) && /no se puede usar/.test(report), `resumen: ${report.replace(/\s+/g, ' ')}`);
+  await p.waitForSelector('[data-testid=social-progress] [role=progressbar]');
+  assert(true, 'barra de progreso');
+  if (OUT) await p.screenshot({ path: `${OUT}/social-progress.png` });
+  // Se deja correr en segundo plano: la tarjeta enseña el progreso y, al acabar, el resumen.
   await p.click('[data-testid=social-close]');
+  await p.waitForSelector('[data-testid=social-bg] [role=progressbar]');
+  assert(!(await p.isVisible('[data-testid=social-sheet]')), 'en segundo plano, con la barra en la tarjeta');
+  await p.waitForSelector('[data-testid=social-notice]', { timeout: 90_000 });
+  const report = await p.textContent('[data-testid=social-notice]');
+  assert(/Añadidas 4/.test(report) && /no se puede usar/.test(report), `resumen: ${report.replace(/\s+/g, ' ')}`);
   const photos = await p.$$eval('[data-testid=media-photos] img', (xs) => xs.length);
   assert(photos === 3, `fotos en la propuesta (${photos})`);
+  // Una que no sale en las 12 últimas: se pega su enlace.
+  await p.click('[data-testid=social-photos-instagram]');
+  await p.waitForSelector('[data-testid=social-link]');
+  await p.fill('[data-testid=social-link]', 'https://www.instagram.com/p/ANTIGUA123/?igsh=x');
+  await p.click('[data-testid=social-link-add]');
+  await p.waitForSelector('[data-testid=social-sheet]', { state: 'detached', timeout: 60_000 });
+  const more = await p.$$eval('[data-testid=media-photos] img', (xs) => xs.length);
+  assert(more === 4, `pegando el enlace de una publicación antigua (${more} fotos)`);
   assert(await p.isVisible('[data-testid=media-video] video'), 'vídeo en la propuesta');
   assert(!(await p.isVisible('[data-testid=social-video-instagram]')), 'con vídeo ya puesto no se ofrece otro');
   if (OUT) await p.screenshot({ path: `${OUT}/social-done.png`, fullPage: true });

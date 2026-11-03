@@ -123,8 +123,22 @@
   let sPick = $state<{ photos: number[]; videos: number[] }>({ photos: [], videos: [] });
   let sProgress = $state<{ done: number; total: number } | null>(null);
   let sReport = $state<string[]>([]);
+  /** Al acabar con la ventana cerrada (en segundo plano): el resumen se queda en la tarjeta. */
+  let sNotice = $state<string[] | null>(null);
+  /** Lo que lleva: hechas, total, y si hay una en camino (la barra avanza a media publicación). */
+  const sPct = $derived(sProgress ? Math.round(((sProgress.done + (sProgress.done < sProgress.total ? 0.5 : 0)) / Math.max(1, sProgress.total)) * 100) : 0);
+  // Mientras trae, salir de la página lo cortaría: el navegador lo pregunta.
+  $effect(() => {
+    if (!sProgress) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  });
   const socialErr = (code: string) => t.social.errors[code as keyof typeof t.social.errors] ?? t.social.errors.default;
   async function openSocial(platform: 'instagram' | 'tiktok', focus: 'photo' | 'video') {
+    // Si está trayendo en segundo plano, se vuelve a la ventana tal cual (sin volver a pedir la lista).
+    if (sProgress) { sheet = { platform: sheet?.platform ?? platform, focus }; return; }
+    sNotice = null;
     sheet = { platform, focus }; sList = null; sError = null; sReport = []; sProgress = null; sLoading = true;
     try {
       const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'list', platform }) });
@@ -146,27 +160,39 @@
   }
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
   /** De una en una y con 2,5 s entre medias: la API de medios no admite descargas en paralelo. */
-  async function importSocial() {
+  let sLink = $state('');
+  type SocialJob = { i: number; kind: string; url?: string; link?: string };
+  /** Una publicación que no sale en las 12 últimas: se pega su enlace. */
+  function importLink() {
+    const link = sLink.trim();
+    if (!link || sProgress) return;
+    sLink = '';
+    return importSocial([{ i: -1, kind: 'auto', link }]);
+  }
+  async function importSocial(only?: SocialJob[]) {
     if (!sList) return;
     const list = sList;
-    const jobs = [...sPick.photos.map((i) => ({ i, kind: 'photo' })), ...sPick.videos.map((i) => ({ i, kind: 'video' }))].map((j) => ({ ...j, url: list.posts.find((p) => p.i === j.i)?.url }));
+    const jobs: SocialJob[] = only ?? [...sPick.photos.map((i) => ({ i, kind: 'photo' })), ...sPick.videos.map((i) => ({ i, kind: 'video' }))].map((j) => ({ ...j, url: list.posts.find((p) => p.i === j.i)?.url }));
     sReport = []; sProgress = { done: 0, total: jobs.length };
     let added = 0;
     for (const [n, j] of jobs.entries()) {
       if (n > 0) await wait(2500);
       try {
-        const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'import', key: list.key, index: j.i, url: j.url, kind: j.kind }) });
+        const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(j.link ? { step: 'import', link: j.link, kind: j.kind } : { step: 'import', key: list.key, index: j.i, url: j.url, kind: j.kind }) });
         const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
         if (out.ok) { s = out.state; added++; previewKey++; }
-        else sReport = [...sReport, `${t.social.post(j.i + 1)}: ${out.error ?? socialErr(out.code)}`];
+        else sReport = [...sReport, `${j.link ? t.social.pasted : t.social.post(j.i + 1)}: ${out.error ?? socialErr(out.code)}`];
         // Si la red está limitando, el resto fallaría igual.
         if (!out.ok && ['LOGIN_REQUIRED', 'INVALID_API_KEY', 'NOT_CONFIGURED'].includes(out.code)) break;
-      } catch { sReport = [...sReport, `${t.social.post(j.i + 1)}: ${t.offline}`]; }
+      } catch { sReport = [...sReport, `${j.link ? t.social.pasted : t.social.post(j.i + 1)}: ${t.offline}`]; }
       sProgress = { done: n + 1, total: jobs.length };
     }
     sProgress = null;
+    const summary = [t.social.added(added), ...sReport];
+    // Con la ventana cerrada, el resumen se queda en la tarjeta (con lo que falló, si algo falló).
+    if (!sheet) { sNotice = summary; sReport = []; sPick = { photos: [], videos: [] }; return; }
     if (!sReport.length) { sheet = null; return; }
-    sReport = [t.social.added(added), ...sReport];
+    sReport = summary;
     sPick = { photos: [], videos: [] };
   }
   const pickCount = $derived(sPick.photos.length + sPick.videos.length);
@@ -652,6 +678,21 @@
               {/if}
             </div>
           </div>
+          {#if sProgress && !sheet}
+            <div class="social-bg mt-3" data-testid="social-bg">
+              <div class="social-progress">
+                <span class="co-help">{t.social.progress(sProgress.done, sProgress.total)}</span>
+                <div class="social-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={sPct}><span style="width: {sPct}%"></span></div>
+              </div>
+              <button type="button" class="co-btn co-btn--ghost co-btn--sm" onclick={() => (sheet = { platform: social[0]?.platform ?? 'instagram', focus: 'photo' })}>{t.social.see}</button>
+            </div>
+          {/if}
+          {#if sNotice}
+            <div class="social-bg mt-3" data-testid="social-notice">
+              <ul class="grid gap-0.5 text-sm">{#each sNotice as line}<li>{line}</li>{/each}</ul>
+              <button type="button" class="media-x !static" onclick={() => (sNotice = null)} aria-label={t.social.close}>✕</button>
+            </div>
+          {/if}
           {#if socialHint}<p class="co-help mt-3" data-testid="social-hint">{t.social.hint(socialHint.name)} <a class="underline" href={`/admin/accounts/${socialHint.accountId}`}>{t.social.openAccount}</a></p>{/if}
           <p class="co-help mt-3">{t.media.where}</p>
           <div class="mt-5 grid gap-2 border-t border-[var(--console-divider)] pt-4">
@@ -685,7 +726,7 @@
                   <strong>{t.social.title}</strong>
                   {#if sList}<span class="co-help">@{sList.username}{sList.followers != null ? ` · ${t.social.followers(sList.followers)}` : ''}</span>{/if}
                 </div>
-                <button type="button" class="co-btn co-btn--ghost co-btn--sm" onclick={() => (sheet = null)} disabled={!!sProgress} data-testid="social-close">{t.social.close}</button>
+                <button type="button" class="co-btn co-btn--ghost co-btn--sm" onclick={() => (sheet = null)} data-testid="social-close">{sProgress ? t.social.background : t.social.close}</button>
               </header>
               {#if social.length > 1}
                 <div class="co-chips px-4 pt-3">
@@ -716,12 +757,26 @@
                       </button>
                     {/each}
                   </div>
+                  <form class="social-link" onsubmit={(e) => { e.preventDefault(); importLink(); }}>
+                    <label class="co-field text-sm">{t.social.linkLabel}
+                      <input class="co-input" type="url" inputmode="url" placeholder="https://www.instagram.com/p/…" bind:value={sLink} disabled={!!sProgress} data-testid="social-link" />
+                    </label>
+                    <button class="co-btn co-btn--ghost" disabled={!sLink.trim() || !!sProgress} data-testid="social-link-add">{t.social.linkAdd}</button>
+                    <p class="co-help">{t.social.linkHelp}</p>
+                  </form>
                 {/if}
               </div>
               {#if sList}
                 <footer class="social-sheet__foot">
-                  <span class="co-help">{sProgress ? t.social.progress(sProgress.done, sProgress.total) : t.social.chosen(sPick.photos.length, sPick.videos.length)}</span>
-                  <button type="button" class="co-btn co-btn--primary" disabled={!pickCount || !!sProgress} onclick={importSocial} data-testid="social-add">{sProgress ? t.social.adding : t.social.add}</button>
+                  {#if sProgress}
+                    <div class="social-progress" data-testid="social-progress">
+                      <span class="co-help">{t.social.progress(sProgress.done, sProgress.total)}</span>
+                      <div class="social-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={sPct}><span style="width: {sPct}%"></span></div>
+                    </div>
+                  {:else}
+                    <span class="co-help">{t.social.chosen(sPick.photos.length, sPick.videos.length)}</span>
+                  {/if}
+                  <button type="button" class="co-btn co-btn--primary" disabled={!pickCount || !!sProgress} onclick={() => importSocial()} data-testid="social-add">{sProgress ? t.social.adding : t.social.add}</button>
                 </footer>
               {/if}
             </div>
@@ -1267,6 +1322,15 @@
   .social-post__badge { position: absolute; top: .3rem; left: .35rem; color: #fff; font-size: .8rem; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
   .social-post__check { position: absolute; top: .3rem; right: .3rem; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; background: var(--co-signal, #6d28d9); color: #fff; font-size: .8rem; font-weight: 800; }
   .social-post__meta { position: absolute; bottom: .25rem; left: .35rem; color: #fff; font-size: .7rem; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+  .social-progress { display: grid; gap: .35rem; flex: 1; min-width: 0; }
+  .social-bar { height: .5rem; border-radius: 999px; background: var(--console-chip-bg, #eee); overflow: hidden; }
+  .social-bar span { display: block; height: 100%; border-radius: inherit; background: var(--co-signal, #6d28d9); transition: width .6s ease;
+    background-image: linear-gradient(90deg, transparent 0, rgba(255,255,255,.35) 50%, transparent 100%); background-size: 200% 100%; animation: social-shimmer 1.4s linear infinite; }
+  @keyframes social-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .social-bar span { animation: none; } }
+  .social-bg { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; border-radius: .9rem; background: var(--console-chip-bg); }
+  .social-link { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: .5rem; padding: 1rem 1rem 0; }
+  .social-link .co-help { grid-column: 1 / -1; }
   .social-report { margin: .75rem 1rem 0; padding: .75rem 1rem; border-radius: .75rem; background: var(--console-chip-bg); font-size: .85rem; display: grid; gap: .25rem; }
   .media-x { position: absolute; top: .25rem; right: .25rem; width: 1.6rem; height: 1.6rem; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font-size: .75rem; }
 </style>

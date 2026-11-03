@@ -48,6 +48,18 @@ function mimeOf(item: MediaItem, fetched: string | null): string | null {
   return t && t.startsWith(item.type === 'image' ? 'image/' : 'video/') ? t : null;
 }
 
+/** Enlace de una publicación suelta de Instagram o TikTok (no un perfil): normalizado, o null. */
+export function postLink(raw: unknown): string | null {
+  const v = String(raw ?? '').trim();
+  const ig = /^https?:\/\/(?:www\.|m\.)?instagram\.com\/(?:[\w.]+\/)?(p|reel|reels|tv)\/([A-Za-z0-9_-]{5,40})/i.exec(v);
+  if (ig) return `https://www.instagram.com/${ig[1].toLowerCase() === 'reels' ? 'reel' : ig[1].toLowerCase()}/${ig[2]}/`;
+  const tt = /^https?:\/\/(?:www\.|m\.)?tiktok\.com\/@([\w.]{1,40})\/(video|photo)\/(\d{5,30})/i.exec(v);
+  if (tt) return `https://www.tiktok.com/@${tt[1]}/${tt[2].toLowerCase()}/${tt[3]}`;
+  const short = /^https?:\/\/(vm|vt)\.tiktok\.com\/([A-Za-z0-9]{5,20})\/?/i.exec(v);
+  if (short) return `https://${short[1].toLowerCase()}.tiktok.com/${short[2]}/`;
+  return null;
+}
+
 /** Lo que ve el editor de cada publicación (sin enlaces caducables salvo la miniatura, que pasa por el servidor). */
 export interface PostView { i: number; type: SocialPost['type']; itemCount: number | null; pinned: boolean; takenAt: string | null; caption: string | null; likes: number | null; comments: number | null; views: number | null; url: string; thumb: string | null }
 
@@ -101,22 +113,34 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
   }
 
   /** Trae una publicación como foto o vídeo. Devuelve el estado del editor o el motivo por el que no se pudo. */
-  async function importPost(id: string, input: { key?: unknown; index?: unknown; url?: unknown; kind?: unknown }) {
-    const { sources } = await dossier(id);
-    const src = sources.find((x) => x.key === input.key);
-    if (!src) throw new AdminError(422, 'Datos no válidos');
-    const kind = input.kind === 'video' ? 'video' : 'photo';
-    const r = await listing(src.key, src.platform).catch((e) => { if (e instanceof MediaApiError) return e; throw e; });
-    if (r instanceof MediaApiError) return { ok: false as const, code: r.code };
-    // Por su enlace (si el listado se ha renovado, las posiciones pueden cambiar); si no, por su posición.
-    const post = r.posts.find((p) => p.url === input.url) ?? (Number.isInteger(Number(input.index)) ? r.posts[Number(input.index)] : undefined);
-    if (!post) return { ok: false as const, code: 'NOT_AVAILABLE' as MediaErrorCode };
+  async function importPost(id: string, input: { key?: unknown; index?: unknown; url?: unknown; link?: unknown; kind?: unknown }) {
+    const { st, sources } = await dossier(id);
+    let postUrl: string;
+    if (input.link !== undefined) {
+      // Una publicación pegada a mano (de las que no salen en las 12 últimas): solo enlaces de publicaciones sueltas.
+      const link = postLink(input.link);
+      if (!link) return { ok: false as const, code: 'INVALID_URL' as MediaErrorCode };
+      postUrl = link;
+    } else {
+      const src = sources.find((x) => x.key === input.key);
+      if (!src) throw new AdminError(422, 'Datos no válidos');
+      const r = await listing(src.key, src.platform).catch((e) => { if (e instanceof MediaApiError) return e; throw e; });
+      if (r instanceof MediaApiError) return { ok: false as const, code: r.code };
+      // Por su enlace (si el listado se ha renovado, las posiciones pueden cambiar); si no, por su posición.
+      const post = r.posts.find((p) => p.url === input.url) ?? (Number.isInteger(Number(input.index)) ? r.posts[Number(input.index)] : undefined);
+      if (!post) return { ok: false as const, code: 'NOT_AVAILABLE' as MediaErrorCode };
+      postUrl = post.url;
+    }
     if (!deps.api) return { ok: false as const, code: 'NOT_CONFIGURED' as MediaErrorCode };
     let items: MediaItem[];
-    try { items = await deps.api.download(post.url); } catch (e) {
+    try { items = await deps.api.download(postUrl); } catch (e) {
       if (e instanceof MediaApiError) return { ok: false as const, code: e.code };
       throw e;
     }
+    // «auto» (enlace pegado): un vídeo va como vídeo si aún no hay; si no, su foto.
+    const hasVideo = !!st.dossier.clientMedia?.video;
+    const kind: 'photo' | 'video' = input.kind === 'video' ? 'video' : input.kind === 'auto'
+      ? (items[0]?.type === 'video' && !hasVideo) || !items.some((x) => x.type === 'image') ? 'video' : 'photo' : 'photo';
     const max = kind === 'video' ? VIDEO_MAX : PHOTO_MAX;
     // Del carrusel, la primera foto (o el primer vídeo); lo que pase del tamaño de la propuesta no vale.
     const wanted = items.filter((x) => x.type === (kind === 'video' ? 'video' : 'image'));

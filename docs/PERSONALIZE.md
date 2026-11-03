@@ -24,6 +24,11 @@ Instagram» / «De su TikTok». Pensado para el móvil: se abre a pantalla compl
 (miniaturas), con lo propuesto ya marcado; se toca para marcar o desmarcar y **Añadir a la propuesta**. Cada una se
 descarga, se sube a la carpeta de la propuesta y queda como foto o vídeo, igual que una subida a mano.
 
+- **Mientras trae:** barra de progreso; «Seguir en segundo plano» cierra la ventana y la tarjeta enseña la barra y,
+  al acabar, el resumen (lo añadido y lo que falló). Salir de la página mientras trae lo pregunta el navegador.
+- **Las que no salen** (la API da las 12 últimas, sin paginar): «Pega el enlace de la publicación» (Instagram `/p/`,
+  `/reel/`, `/tv/`; TikTok `/@usuario/video|photo/…` o `vm.tiktok.com`). Si es un vídeo y aún no hay, va como vídeo; si
+  no, su foto.
 - **Qué se propone:** tantas fotos como huecos queden (hasta 4) y un vídeo si no hay. Primero las fijadas, luego por
   engagement (likes + comentarios; reproducciones en vídeo), a igualdad la más reciente. De un carrusel, la primera foto.
 - **API de medios** (InternalApps, `docs/API.md` de ese repo): `POST /api/media-list` y `POST /api/media-download` con

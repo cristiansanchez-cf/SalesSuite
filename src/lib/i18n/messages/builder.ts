@@ -167,7 +167,8 @@ const es = {
     none: 'No hay publicaciones que se puedan traer.', types: { image: 'Foto', video: 'Vídeo', carousel: 'Carrusel' },
     views: (n: number) => `▶ ${n.toLocaleString('es-ES')}`,
     chosen: (p: number, v: number) => `${p} ${p === 1 ? 'foto' : 'fotos'}${v ? ' y 1 vídeo' : ''}`,
-    progress: (d: number, n: number) => `Trayendo ${Math.min(d + 1, n)} de ${n}…`, add: 'Añadir a la propuesta', adding: 'Añadiendo…',
+    progress: (d: number, n: number) => `Trayendo ${Math.min(d + 1, n)} de ${n}…`, add: 'Añadir a la propuesta', adding: 'Añadiendo…', background: 'Seguir en segundo plano', see: 'Ver', pasted: 'El enlace pegado',
+    linkLabel: '¿No sale la que quieres? Pega el enlace de la publicación', linkAdd: 'Añadir', linkHelp: 'En Instagram o TikTok: ··· o Compartir → Copiar enlace. Si es un vídeo y aún no hay, va como vídeo; si no, su foto.',
     added: (n: number) => `Añadidas ${n}.`, post: (n: number) => `Publicación ${n}`,
     errors: {
       NO_PROFILE: 'Esta empresa no tiene Instagram ni TikTok en el CRM.', INVALID_URL: 'El enlace de la ficha no es un perfil válido: revísalo en el CRM.', INVALID_PROFILE: 'El enlace de la ficha no es un perfil válido: revísalo en el CRM.',
@@ -367,7 +368,8 @@ export const builderMessages = defineMessages({
       none: 'There are no posts that can be brought in.', types: { image: 'Photo', video: 'Video', carousel: 'Carousel' },
       views: (n) => `▶ ${n.toLocaleString('en-GB')}`,
       chosen: (p, v) => `${p} ${p === 1 ? 'photo' : 'photos'}${v ? ' and 1 video' : ''}`,
-      progress: (d, n) => `Bringing ${Math.min(d + 1, n)} of ${n}…`, add: 'Add to the proposal', adding: 'Adding…',
+      progress: (d, n) => `Bringing ${Math.min(d + 1, n)} of ${n}…`, add: 'Add to the proposal', adding: 'Adding…', background: 'Keep going in the background', see: 'View', pasted: 'The pasted link',
+      linkLabel: 'Not the one you want? Paste the post link', linkAdd: 'Add', linkHelp: 'On Instagram or TikTok: ··· or Share → Copy link. If it is a video and there is none yet, it goes as the video; otherwise, its photo.',
       added: (n) => `${n} added.`, post: (n) => `Post ${n}`,
       errors: {
         NO_PROFILE: 'This company has no Instagram or TikTok in the CRM.', INVALID_URL: 'The link on the record is not a valid profile: check it in the CRM.', INVALID_PROFILE: 'The link on the record is not a valid profile: check it in the CRM.',
@@ -564,7 +566,8 @@ export const builderMessages = defineMessages({
       none: 'Não há publicações que se possam trazer.', types: { image: 'Foto', video: 'Vídeo', carousel: 'Carrossel' },
       views: (n) => `▶ ${n.toLocaleString('pt-PT')}`,
       chosen: (p, v) => `${p} ${p === 1 ? 'foto' : 'fotos'}${v ? ' e 1 vídeo' : ''}`,
-      progress: (d, n) => `Trazendo ${Math.min(d + 1, n)} de ${n}…`, add: 'Adicionar à proposta', adding: 'Adicionando…',
+      progress: (d, n) => `Trazendo ${Math.min(d + 1, n)} de ${n}…`, add: 'Adicionar à proposta', adding: 'Adicionando…', background: 'Continuar em segundo plano', see: 'Ver', pasted: 'O link colado',
+      linkLabel: 'Não aparece a que quer? Cole o link da publicação', linkAdd: 'Adicionar', linkHelp: 'No Instagram ou TikTok: ··· ou Partilhar → Copiar link. Se for um vídeo e ainda não houver, vai como vídeo; se não, a foto.',
       added: (n) => `${n} adicionadas.`, post: (n) => `Publicação ${n}`,
       errors: {
         NO_PROFILE: 'Esta empresa não tem Instagram nem TikTok no CRM.', INVALID_URL: 'O link da ficha não é um perfil válido: revise no CRM.', INVALID_PROFILE: 'O link da ficha não é um perfil válido: revise no CRM.',
@@ -761,7 +764,8 @@ export const builderMessages = defineMessages({
       none: '가져올 수 있는 게시물이 없습니다.', types: { image: '사진', video: '영상', carousel: '캐러셀' },
       views: (n) => `▶ ${n.toLocaleString('ko-KR')}`,
       chosen: (p, v) => `사진 ${p}장${v ? ', 영상 1개' : ''}`,
-      progress: (d, n) => `${n}개 중 ${Math.min(d + 1, n)}번째 가져오는 중…`, add: '제안서에 추가', adding: '추가 중…',
+      progress: (d, n) => `${n}개 중 ${Math.min(d + 1, n)}번째 가져오는 중…`, add: '제안서에 추가', adding: '추가 중…', background: '백그라운드에서 계속', see: '보기', pasted: '붙여넣은 링크',
+      linkLabel: '원하는 게시물이 없나요? 게시물 링크를 붙여넣으세요', linkAdd: '추가', linkHelp: '인스타그램이나 틱톡에서 ··· 또는 공유 → 링크 복사. 영상이고 아직 영상이 없으면 영상으로, 아니면 사진으로 들어갑니다.',
       added: (n) => `${n}개 추가했습니다.`, post: (n) => `게시물 ${n}`,
       errors: {
         NO_PROFILE: '이 회사는 CRM에 인스타그램이나 틱톡이 없습니다.', INVALID_URL: '기록의 링크가 올바른 프로필이 아닙니다: CRM에서 확인하세요.', INVALID_PROFILE: '기록의 링크가 올바른 프로필이 아닙니다: CRM에서 확인하세요.',

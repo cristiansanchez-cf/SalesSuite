@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { fixtureMediaApi, httpMediaApi, MediaApiError, parseProfile, pickPosts, profileRef, rank, type SocialPost } from './media-api';
-import { socialSources } from './service';
+import { postLink, socialSources } from './service';
 import { fetchFile, THUMB_HOST } from './server';
 
 const post = (over: Partial<SocialPost>): SocialPost => ({ url: 'https://www.instagram.com/p/x/', shortcode: 'x', type: 'image', itemCount: 1, takenAt: '2026-10-01T00:00:00Z', pinned: false, caption: null, thumbnail: null, likes: 0, comments: 0, views: null, ...over });
@@ -93,5 +93,18 @@ describe('descarga del archivo', () => {
     expect(THUMB_HOST.test('https://p16-sign-va.tiktokcdn.com/obj/x.jpeg')).toBe(true);
     expect(THUMB_HOST.test('https://evil.test/cdninstagram.com/x.jpg')).toBe(false);
     expect(THUMB_HOST.test('http://scontent.cdninstagram.com/x.jpg')).toBe(false);
+  });
+});
+
+describe('enlace pegado', () => {
+  test('publicaciones sueltas de Instagram y TikTok; perfiles y otras webs no', () => {
+    expect(postLink('https://www.instagram.com/p/DQx1abcDEF/?igsh=xyz')).toBe('https://www.instagram.com/p/DQx1abcDEF/');
+    expect(postLink('https://instagram.com/reels/ABCDE123/')).toBe('https://www.instagram.com/reel/ABCDE123/');
+    expect(postLink('https://www.instagram.com/zafiro.zone/p/ABCDE123/')).toBe('https://www.instagram.com/p/ABCDE123/');
+    expect(postLink('https://www.tiktok.com/@sala.x/video/7412345678901234567?lang=es')).toBe('https://www.tiktok.com/@sala.x/video/7412345678901234567');
+    expect(postLink('https://vm.tiktok.com/ZMabc123/')).toBe('https://vm.tiktok.com/ZMabc123/');
+    expect(postLink('https://www.instagram.com/zafiro.zone/')).toBeNull();
+    expect(postLink('https://evil.test/p/ABCDE123/')).toBeNull();
+    expect(postLink('javascript:alert(1)')).toBeNull();
   });
 });
