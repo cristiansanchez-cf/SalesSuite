@@ -14,19 +14,28 @@ export interface SocialPost {
   url: string; shortcode: string | null; type: PostType; itemCount: number | null; takenAt: string | null; pinned: boolean | null;
   caption: string | null; thumbnail: string | null; likes: number | null; comments: number | null; views: number | null;
 }
-export interface SocialProfile { platform: SocialPlatform; username: string; fullName: string | null; followers: number | null; posts: SocialPost[] }
+export interface SocialProfile {
+  platform: SocialPlatform; username: string; fullName: string | null; followers: number | null; posts: SocialPost[];
+  /** La página siguiente (`next_cursor`); null: no hay más. */
+  nextCursor?: string | null;
+}
 export interface MediaItem { name: string; type: 'image' | 'video'; size: number | null; url: string }
 
 /** Los códigos de la API (y los nuestros: TIMEOUT, NOT_CONFIGURED). */
 export type MediaErrorCode =
   | 'INVALID_URL' | 'INVALID_PROFILE' | 'PROFILE_PRIVATE' | 'PROFILE_NOT_FOUND' | 'NOT_AVAILABLE' | 'NO_MEDIA' | 'LOGIN_REQUIRED'
-  | 'FILE_TOO_LARGE' | 'RATE_LIMITED' | 'INVALID_API_KEY' | 'DOWNLOAD_FAILED' | 'LIST_FAILED' | 'SERVER_ERROR' | 'TIMEOUT' | 'NOT_CONFIGURED';
+  | 'FILE_TOO_LARGE' | 'RATE_LIMITED' | 'INVALID_API_KEY' | 'DOWNLOAD_FAILED' | 'LIST_FAILED' | 'SERVER_ERROR' | 'TIMEOUT' | 'NOT_CONFIGURED'
+  | 'INVALID_CURSOR' | 'UPSTREAM_UNAVAILABLE'
+  // Nuestros, de Instagram bloqueando: pendiente (se reintenta una vez pasados 20 min), sin Instagram, o esperar entre perfiles.
+  | 'IG_PENDING' | 'IG_BLOCKED' | 'IG_WAIT';
 export class MediaApiError extends Error {
-  constructor(public code: MediaErrorCode, public status: number, public retryAfter: number | null = null) { super(code); }
+  /** `detail`: el mensaje de la API (p. ej. «Instagram está bloqueando consultas anónimas»). */
+  constructor(public code: MediaErrorCode, public status: number, public retryAfter: number | null = null, public detail: string | null = null) { super(code); }
 }
 
 export interface MediaApi {
-  list(profile: string, platform?: SocialPlatform | null, limit?: number): Promise<SocialProfile>;
+  /** Una página (12 como mucho). Sin `cursor`, la primera; con el `nextCursor` de la anterior, la siguiente. */
+  list(profile: string, platform?: SocialPlatform | null, limit?: number, cursor?: string | null): Promise<SocialProfile>;
   download(url: string): Promise<MediaItem[]>;
 }
 
@@ -45,7 +54,8 @@ export function parseProfile(raw: unknown): SocialProfile {
       likes: num(x.likes), comments: num(x.comments), views: num(x.views),
     }];
   });
-  return { platform: o.platform === 'tiktok' ? 'tiktok' : 'instagram', username: str(o.username, 100) ?? '', fullName: str(o.full_name, 200), followers: num(o.followers), posts };
+  return { platform: o.platform === 'tiktok' ? 'tiktok' : 'instagram', username: str(o.username, 100) ?? '', fullName: str(o.full_name, 200), followers: num(o.followers), posts,
+    nextCursor: str(o.next_cursor, 2000) };
 }
 export function parseItems(raw: unknown): MediaItem[] {
   const o = (raw ?? {}) as Record<string, unknown>;
@@ -75,19 +85,25 @@ export function httpMediaApi(o: { base: string; key: string; fetch?: typeof fetc
     const timer = setTimeout(() => ctl.abort(), o.timeoutMs ?? 60_000);
     try {
       const r = await f(`${o.base.replace(/\/$/, '')}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': o.key }, body: JSON.stringify(body), signal: ctl.signal });
-      const data = (await r.json().catch(() => ({}))) as { code?: string };
+      const data = (await r.json().catch(() => ({}))) as { code?: string; message?: string; error?: string };
       // Cada llamada que responde (también las de error) cuenta como consumo de la API de medios.
       await meterUnits(path === '/api/media-list' ? 'social.list' : 'social.download', 'media', 1);
       if (r.ok) return data;
-      const code = (typeof data.code === 'string' ? data.code : r.status >= 500 ? 'SERVER_ERROR' : 'INVALID_URL') as MediaErrorCode;
+      // 401/403 sin código: la clave (no se reintenta y se avisa a una persona).
+      const code = (typeof data.code === 'string' ? data.code : r.status === 401 || r.status === 403 ? 'INVALID_API_KEY' : r.status >= 500 ? 'SERVER_ERROR' : 'INVALID_URL') as MediaErrorCode;
       const ra = Number(r.headers.get('retry-after'));
-      throw new MediaApiError(code, r.status, Number.isFinite(ra) && ra > 0 ? ra : null);
+      const detail = typeof data.message === 'string' ? data.message.slice(0, 300) : typeof data.error === 'string' ? data.error.slice(0, 300) : null;
+      throw new MediaApiError(code, r.status, Number.isFinite(ra) && ra > 0 ? ra : null, detail);
     } catch (e) {
       if (e instanceof MediaApiError) throw e;
       throw new MediaApiError(ctl.signal.aborted ? 'TIMEOUT' : 'SERVER_ERROR', 0);
     } finally { clearTimeout(timer); }
   }
-  /** Reintentos de la API: RATE_LIMITED tras Retry-After (como mucho 20 s); 500 / *_FAILED una vez tras unos segundos. */
+  /**
+   * Reintentos de la API: RATE_LIMITED tras Retry-After (como mucho 20 s); 500 / *_FAILED una vez tras unos segundos.
+   * Sin reintento: LOGIN_REQUIRED (Instagram sin sesión o bloqueando), la clave (401/403), INVALID_CURSOR y
+   * UPSTREAM_UNAVAILABLE (TikTok caído un rato: pide esperar 60 s; lo reintenta el editor una vez, no el servidor).
+   */
   async function call(path: string, body: unknown): Promise<unknown> {
     try { return await once(path, body); } catch (e) {
       if (!(e instanceof MediaApiError)) throw e;
@@ -97,8 +113,8 @@ export function httpMediaApi(o: { base: string; key: string; fetch?: typeof fetc
     }
   }
   return {
-    list: (profile, platform, limit = 12) => serial(async () =>
-      parseProfile(await call('/api/media-list', { profile, ...(platform ? { platform } : {}), limit: Math.max(1, Math.min(12, limit)) }))),
+    list: (profile, platform, limit = 12, cursor = null) => serial(async () =>
+      parseProfile(await call('/api/media-list', { profile, ...(platform ? { platform } : {}), limit: Math.max(1, Math.min(12, limit)), ...(cursor ? { cursor } : {}) }))),
     download: (url) => serial(async () => {
       const wait = lastDownload + gap - Date.now();
       if (wait > 0) await sleep(wait);
@@ -156,12 +172,23 @@ export function fixtureMediaApi(): MediaApi {
     takenAt: new Date(Date.UTC(2026, 9, 30 - i)).toISOString(), pinned, caption: `Publicación de ejemplo ${i + 1}`, thumbnail: swatch(color), likes, comments, views,
   }));
   return {
-    async list(profile, platform) {
+    // Como la de verdad: TikTok pagina (3 páginas: la última, llena, trae cursor y la siguiente sale vacía); Instagram sin
+    // sesión solo da la primera (la segunda: LOGIN_REQUIRED); «bloqueado» en el usuario: Instagram bloqueando también la primera.
+    async list(profile, platform, _limit, cursor) {
       const ref = profileRef(profile, platform ?? 'instagram');
       if (!ref) throw new MediaApiError('INVALID_PROFILE', 400);
       const user = ref.key.split(':')[1];
+      const tiktok = ref.key.startsWith('tiktok');
       if (user.includes('privado')) throw new MediaApiError('PROFILE_PRIVATE', 403);
-      return { platform: ref.key.startsWith('tiktok') ? 'tiktok' : 'instagram', username: user, fullName: user, followers: 1234, posts: posts(user) };
+      if (!tiktok && user.includes('bloqueado')) throw new MediaApiError('LOGIN_REQUIRED', 422, null, 'Instagram está bloqueando consultas anónimas');
+      if (cursor && !tiktok) throw new MediaApiError('LOGIN_REQUIRED', 422, null, 'Instagram requiere sesión para la página 2');
+      const page = cursor ? Number(/^p(\d)-(.+)$/.exec(cursor)?.[1] ?? NaN) : 1;
+      if (cursor && (!Number.isInteger(page) || !cursor.endsWith(`-${user}`))) throw new MediaApiError('INVALID_CURSOR', 400);
+      const base = { platform: (tiktok ? 'tiktok' : 'instagram') as SocialPlatform, username: user, fullName: user, followers: 1234 };
+      if (page > 3) return { ...base, posts: [], nextCursor: null };
+      const ps = posts(user).map((x) => (page === 1 ? x : { ...x, url: x.url.replace('/p/DEMO', `/p/P${page}DEMO`), shortcode: `P${page}${x.shortcode}`, pinned: false,
+        takenAt: new Date(Date.UTC(2026, 9, 20 - page * 6)).toISOString(), caption: `${x.caption} (página ${page})` }));
+      return { ...base, posts: ps, nextCursor: tiktok ? `p${page + 1}-${user}` : null };
     },
     async download(url) {
       if (url.includes('DEMO3')) throw new MediaApiError('NOT_AVAILABLE', 404);

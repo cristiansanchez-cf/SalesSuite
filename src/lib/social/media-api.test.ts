@@ -62,6 +62,26 @@ describe('cliente de la API', () => {
     await expect(priv.list('x')).rejects.toMatchObject({ code: 'PROFILE_PRIVATE' });
     expect(m).toBe(1);
   }, 10_000);
+  test('páginas: manda el cursor; sin reintento si Instagram pide sesión, TikTok está caído o la clave no vale', async () => {
+    const bodies: unknown[] = [];
+    const paged = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async (_u, init) => { bodies.push(JSON.parse(String(init!.body))); return ok({ platform: 'tiktok', username: 'x', posts: [], next_cursor: 'c2' }); } });
+    expect((await paged.list('x', 'tiktok', 12, 'c1')).nextCursor).toBe('c2');
+    expect(bodies[0]).toEqual({ profile: 'x', platform: 'tiktok', limit: 12, cursor: 'c1' });
+    for (const [status, body, code] of [
+      [422, '{"code":"LOGIN_REQUIRED","message":"Instagram está bloqueando consultas anónimas"}', 'LOGIN_REQUIRED'],
+      [503, '{"code":"UPSTREAM_UNAVAILABLE"}', 'UPSTREAM_UNAVAILABLE'],
+      [400, '{"code":"INVALID_CURSOR"}', 'INVALID_CURSOR'],
+      [401, '{}', 'INVALID_API_KEY'],
+    ] as const) {
+      let n = 0;
+      const api = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => { n++; return new Response(body, { status, headers: { 'retry-after': '60' } }); } });
+      const e = await api.list('x', 'tiktok', 12, 'c').catch((x) => x);
+      expect(e).toBeInstanceOf(MediaApiError);
+      expect([e.code, n]).toEqual([code, 1]);
+      if (code === 'UPSTREAM_UNAVAILABLE') expect(e.retryAfter).toBe(60);
+      if (code === 'LOGIN_REQUIRED') expect(e.detail).toContain('bloqueando');
+    }
+  });
   test('descargas de una en una, nunca en paralelo', async () => {
     let active = 0, max = 0;
     const api = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => { active++; max = Math.max(max, active); await new Promise((r) => setTimeout(r, 20)); active--; return ok({ items: [{ name: 'a.jpg', type: 'image', size: 1, url: 'https://storage.googleapis.com/x' }] }); } });
@@ -70,7 +90,8 @@ describe('cliente de la API', () => {
     expect(out[0][0]).toMatchObject({ type: 'image', url: 'https://storage.googleapis.com/x' });
   });
   test('parseProfile tolera basura', () => {
-    expect(parseProfile(null)).toEqual({ platform: 'instagram', username: '', fullName: null, followers: null, posts: [] });
+    expect(parseProfile(null)).toEqual({ platform: 'instagram', username: '', fullName: null, followers: null, posts: [], nextCursor: null });
+    expect(parseProfile({ posts: [], next_cursor: 'abc' }).nextCursor).toBe('abc');
   });
   test('la demo: perfil privado y publicación no disponible', async () => {
     const api = fixtureMediaApi();

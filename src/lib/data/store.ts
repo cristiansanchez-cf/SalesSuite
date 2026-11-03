@@ -380,7 +380,7 @@ export function freshDemoDb(): DemoDb {
     account_rules: [],
     account: [
       demoAccount('00000000-0000-4000-8000-0000000ac001', 'Club Sol', Z.vlc, { owner_id: REP, claimed_until: ago(-20), last_touch_at: ago(10), last_touch_by: REP, notes: 'Tiene DJ residente los viernes.', fields: { 'tiene-pantalla': true, aforo: 450 },
-        instagram: 'https://www.instagram.com/clubsol/', next_step: 'Proponer una cita el jueves', next_step_at: ago(0), next_channel: 'whatsapp', next_contact_id: '00000000-0000-4000-8000-0000000cc501',
+        instagram: 'https://www.instagram.com/clubsol/', tiktok: 'https://www.tiktok.com/@clubsol', next_step: 'Proponer una cita el jueves', next_step_at: ago(0), next_channel: 'whatsapp', next_contact_id: '00000000-0000-4000-8000-0000000cc501',
         // Ubicación y horario (como si viniesen de Google) para la ruta del día.
         lat: 39.4699, lng: -0.3763, hours: DEMO_WEEK.map((d) => `${d}: 23:00–6:00`) }),
       demoAccount('00000000-0000-4000-8000-0000000ac002', 'Sala Marina', Z.vlc, { lat: 39.4590, lng: -0.3330,

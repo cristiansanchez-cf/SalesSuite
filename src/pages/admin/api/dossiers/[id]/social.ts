@@ -4,7 +4,8 @@ import { socialFor, THUMB_HOST } from '~/lib/social/server';
 
 /**
  * Traer de sus redes (docs/PERSONALIZE.md §Traer de sus redes).
- * POST {step: 'list', platform?} → sus publicaciones y las propuestas · POST {step: 'import', key, index, kind} → una
+ * POST {step: 'list', platform?} → sus publicaciones y las propuestas · POST {step: 'more', key} → la página siguiente ·
+ * POST {step: 'import', key, index, kind} → una
  * publicación como foto o vídeo (el editor las pide de una en una) · GET ?key=&thumb=<n> → la miniatura.
  */
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -24,6 +25,7 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
   try {
     const svc = socialFor(admin);
     if (body.step === 'import') return json(await svc.importPost(params.id!, body));
+    if (body.step === 'more') return json(await svc.more(params.id!, body));
     return json(await svc.list(params.id!, body));
   } catch (e) { return fail(e); }
 };

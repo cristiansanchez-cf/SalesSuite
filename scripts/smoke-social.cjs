@@ -71,6 +71,26 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(await p.isVisible('[data-testid=media-video] video'), 'vídeo en la propuesta');
   assert(!(await p.isVisible('[data-testid=social-video-instagram]')), 'con vídeo ya puesto no se ofrece otro');
   if (OUT) await p.screenshot({ path: `${OUT}/social-done.png`, fullPage: true });
+  // Instagram sin sesión: solo las 12 últimas (sin «Cargar más»). TikTok: página a página.
+  await p.click('[data-testid=social-photos-instagram]');
+  await p.waitForSelector('[data-testid=social-post]');
+  assert(!(await p.isVisible('[data-testid=social-more]')), 'Instagram: sin «Cargar más»');
+  await p.click('[data-testid=social-close]');
+  await p.click('[data-testid=social-photos-tiktok]');
+  await p.waitForSelector('[data-testid=social-post]');
+  const n1 = await p.locator('[data-testid=social-post]').count();
+  await p.click('[data-testid=social-more]');
+  await p.waitForFunction((n) => document.querySelectorAll('[data-testid=social-post]').length > n, n1);
+  const n2 = await p.locator('[data-testid=social-post]').count();
+  assert(n1 === 6 && n2 === 12, `TikTok: «Cargar más» añade la página siguiente (${n1} → ${n2})`);
+  // Hasta el final: la última página llena trae cursor y la siguiente sale vacía; entonces desaparece el botón.
+  for (let i = 0; i < 4 && (await p.isVisible('[data-testid=social-more]')); i++) {
+    await p.click('[data-testid=social-more]');
+    await p.waitForFunction(() => !document.querySelector('[data-testid=social-more]')?.hasAttribute('disabled'));
+  }
+  assert(!(await p.isVisible('[data-testid=social-more]')) && (await p.locator('[data-testid=social-post]').count()) === 18, 'sin más páginas, sin botón');
+  if (OUT) await p.screenshot({ path: `${OUT}/social-more.png` });
+  await p.click('[data-testid=social-close]');
   assert(errors.length === 0, `sin errores de JS (${errors.join(' | ')})`);
   await b.close();
 })();

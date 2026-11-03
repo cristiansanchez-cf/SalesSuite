@@ -115,10 +115,13 @@
 
   // ---------- Traer de sus redes (docs/PERSONALIZE.md §Traer de sus redes): sus publicaciones, elegir y añadir.
   interface SocialPostView { i: number; url: string; type: 'image' | 'video' | 'carousel'; itemCount: number | null; pinned: boolean; caption: string | null; likes: number | null; comments: number | null; views: number | null; thumb: string | null }
-  interface SocialList { ok: true; key: string; platform: 'instagram' | 'tiktok'; username: string; followers: number | null; free: number; hasVideo: boolean; posts: SocialPostView[]; suggested: { photos: number[]; videos: number[] } }
+  interface SocialList { ok: true; key: string; platform: 'instagram' | 'tiktok'; username: string; followers: number | null; free: number; hasVideo: boolean; posts: SocialPostView[]; suggested: { photos: number[]; videos: number[] }; more?: boolean }
   let sheet = $state<null | { platform: 'instagram' | 'tiktok'; focus: 'photo' | 'video' }>(null);
   let sList = $state<SocialList | null>(null);
   let sError = $state<string | null>(null);
+  // «Cargar más»: la página siguiente de sus publicaciones (una petición cada vez).
+  let sMoreBusy = $state(false);
+  let sMoreMsg = $state<string | null>(null);
   let sLoading = $state(false);
   let sPick = $state<{ photos: number[]; videos: number[] }>({ photos: [], videos: [] });
   let sProgress = $state<{ done: number; total: number } | null>(null);
@@ -139,12 +142,12 @@
     // Si está trayendo en segundo plano, se vuelve a la ventana tal cual (sin volver a pedir la lista).
     if (sProgress) { sheet = { platform: sheet?.platform ?? platform, focus }; return; }
     sNotice = null;
-    sheet = { platform, focus }; sList = null; sError = null; sReport = []; sProgress = null; sLoading = true;
+    sheet = { platform, focus }; sList = null; sError = null; sReport = []; sProgress = null; sLoading = true; sMoreMsg = null;
     try {
       const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'list', platform }) });
       const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
       if (!res.ok && out.error) sError = out.error;
-      else if (!out.ok) sError = socialErr(out.code);
+      else if (!out.ok) sError = socialErr(out.code) + (out.code === 'IG_PENDING' && out.retryAfter ? ` (${t.social.retryAt(new Date(Date.now() + out.retryAfter * 1000))})` : '');
       else {
         sList = out as SocialList;
         // Lo propuesto, según lo que haya abierto (fotos o vídeo) y los huecos que quedan.
@@ -159,6 +162,24 @@
     else if (sPick.photos.length < sList.free) sPick = { ...sPick, photos: [...sPick.photos, p.i] };
   }
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  /** La página siguiente. Si TikTok falla un momento, espera lo que pida (60 s) y lo reintenta una sola vez. */
+  async function loadMore(retried = false): Promise<void> {
+    const list = sList;
+    if (!list || (sMoreBusy && !retried)) return;
+    sMoreBusy = true; sMoreMsg = null;
+    let again = 0;
+    try {
+      const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'more', key: list.key }) });
+      const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
+      if (sList !== list) return;
+      if (out.ok) sList = { ...list, posts: [...list.posts, ...out.posts], more: out.more };
+      else if (!res.ok && out.error) sMoreMsg = out.error;
+      else if (out.code === 'UPSTREAM_UNAVAILABLE' && !retried) { again = Math.min(120, Math.max(5, out.retryAfter ?? 60)); sMoreMsg = `${socialErr(out.code)} ${t.social.retrying(again)}`; }
+      else { sMoreMsg = out.code === 'UPSTREAM_UNAVAILABLE' ? t.social.errors.STILL_DOWN : socialErr(out.code); sList = { ...list, more: !!out.more && out.code !== 'UPSTREAM_UNAVAILABLE' }; }
+    } catch { sMoreMsg = t.offline; }
+    if (again) { await wait(again * 1000); if (sList === list) return loadMore(true); }
+    sMoreBusy = false;
+  }
   /** De una en una y con 2,5 s entre medias: la API de medios no admite descargas en paralelo. */
   let sLink = $state('');
   type SocialJob = { i: number; kind: string; url?: string; link?: string };
@@ -757,6 +778,12 @@
                       </button>
                     {/each}
                   </div>
+                  {#if sList.more || sMoreMsg}
+                    <div class="social-more">
+                      {#if sMoreMsg}<p class="co-help" data-testid="social-more-msg">{sMoreMsg}</p>{/if}
+                      {#if sList.more}<button type="button" class="co-btn co-btn--ghost" disabled={sMoreBusy || !!sProgress} onclick={() => loadMore()} data-testid="social-more">{sMoreBusy ? t.social.loadingMore : t.social.more}</button>{/if}
+                    </div>
+                  {/if}
                   <form class="social-link" onsubmit={(e) => { e.preventDefault(); importLink(); }}>
                     <label class="co-field text-sm">{t.social.linkLabel}
                       <input class="co-input" type="url" inputmode="url" placeholder="https://www.instagram.com/p/…" bind:value={sLink} disabled={!!sProgress} data-testid="social-link" />
@@ -1304,6 +1331,7 @@
   .media-thumb--logo { aspect-ratio: 16 / 9; background: var(--console-chip-bg); }
   .media-thumb--logo img { object-fit: contain; padding: .5rem; }
   .media-thumb--video { aspect-ratio: 16 / 9; }
+  .social-more { display: grid; justify-items: center; gap: .5rem; padding: .25rem 1rem 1rem; text-align: center; }
   .social-from { margin-top: .25rem; width: 100%; min-height: 2.5rem; border-radius: .75rem; border: 1px solid var(--console-card-border-hover); font-weight: 700; font-size: .85rem; }
   .social-from:hover { border-color: var(--co-signal, #6d28d9); color: var(--co-signal, #6d28d9); }
   .social-sheet { position: fixed; inset: 0; z-index: 80; display: grid; place-items: end center; background: rgba(0,0,0,.45); }

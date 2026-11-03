@@ -26,9 +26,22 @@ descarga, se sube a la carpeta de la propuesta y queda como foto o vídeo, igual
 
 - **Mientras trae:** barra de progreso; «Seguir en segundo plano» cierra la ventana y la tarjeta enseña la barra y,
   al acabar, el resumen (lo añadido y lo que falló). Salir de la página mientras trae lo pregunta el navegador.
-- **Las que no salen** (la API da las 12 últimas, sin paginar): «Pega el enlace de la publicación» (Instagram `/p/`,
-  `/reel/`, `/tv/`; TikTok `/@usuario/video|photo/…` o `vm.tiktok.com`). Si es un vídeo y aún no hay, va como vídeo; si
-  no, su foto.
+- **Cargar más** (TikTok): debajo de las publicaciones, la página siguiente (12 más, `cursor` de `media-list`), una
+  petición cada vez. Se añaden a la misma caché de una hora (hasta 120 por perfil; migración
+  `20261229000000_social_pages.sql`), así que las posiciones no cambian. La última página llena trae cursor y la
+  siguiente sale vacía: ahí desaparece el botón. Si TikTok falla un momento (`503 UPSTREAM_UNAVAILABLE`), el editor
+  espera lo que pida (60 s) y lo reintenta una sola vez; si vuelve a fallar, se sigue con lo que hay. Un cursor que ya
+  no vale (`INVALID_CURSOR`) no se reintenta.
+- **Instagram, sin sesión, solo da la primera página** (las 12 últimas, con las fijadas): sin «Cargar más». La página 2
+  devuelve `LOGIN_REQUIRED`, que es lo esperado. Con una cuenta de Instagram con sesión en la API de medios, se activa
+  con `SOCIAL_INSTAGRAM_PAGES=1`.
+- **Instagram bloqueando** (`LOGIN_REQUIRED` también en la primera página): esa empresa queda «Instagram pendiente» y no
+  se vuelve a pedir hasta pasados 20 minutos; entonces se prueba una sola vez y, si sigue, «sigue sin Instagram» durante
+  6 horas (queda pegar el enlace o subir las fotos a mano). Además, como mucho un perfil de Instagram nuevo cada 2
+  minutos por espacio (lo pide la API). 429: se espera lo que diga `Retry-After`. 401/403 por la clave: no se reintenta
+  y se avisa (en el registro y en el editor).
+- **Las que no salen**: «Pega el enlace de la publicación» (Instagram `/p/`, `/reel/`, `/tv/`; TikTok
+  `/@usuario/video|photo/…` o `vm.tiktok.com`). Si es un vídeo y aún no hay, va como vídeo; si no, su foto.
 - **Qué se propone:** tantas fotos como huecos queden (hasta 4) y un vídeo si no hay. Primero las fijadas, luego por
   engagement (likes + comentarios; reproducciones en vídeo), a igualdad la más reciente. De un carrusel, la primera foto.
 - **API de medios** (InternalApps, `docs/API.md` de ese repo): `POST /api/media-list` y `POST /api/media-download` con

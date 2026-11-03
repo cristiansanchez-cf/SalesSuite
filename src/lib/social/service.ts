@@ -7,6 +7,7 @@
  * Un fallo no rompe nada: se devuelve el código y la propuesta sigue con lo que haya.
  */
 import type { AdminContext } from '../admin/auth';
+import { env } from '../env';
 import { AdminError } from '../admin/service';
 import { MediaApiError, pickPosts, profileRef, type MediaApi, type MediaErrorCode, type MediaItem, type SocialPlatform, type SocialPost, type SocialProfile } from './media-api';
 
@@ -14,6 +15,20 @@ export const CACHE_MS = 60 * 60_000;
 export const PHOTO_MAX = 8 * 1024 * 1024;
 export const VIDEO_MAX = 30 * 1024 * 1024;
 export const MAX_PHOTOS = 8;
+/** «Cargar más»: hasta 10 páginas (120 publicaciones) por perfil en la caché. */
+export const MAX_POSTS = 120;
+/** Instagram bloqueando: se vuelve a probar una sola vez pasados 20 minutos; si sigue, sin Instagram durante 6 horas. */
+export const IG_RETRY_MS = 20 * 60_000;
+export const IG_GIVE_UP_MS = 6 * 3_600_000;
+/** Instagram: como mucho un perfil nuevo cada 2 minutos (lo pide la API de medios). */
+export const IG_GAP_MS = 2 * 60_000;
+/** Sin sesión, Instagram solo da la primera página: «Cargar más» solo para TikTok (o con SOCIAL_INSTAGRAM_PAGES=1). */
+const igPages = () => env('SOCIAL_INSTAGRAM_PAGES') === '1';
+/** Lo que se guarda de cada perfil: sus páginas juntas, el cursor de la siguiente y si Instagram está bloqueando. */
+interface Cached extends SocialProfile { blocked?: { at: string; tries: number }; noMore?: boolean }
+const lastIg = new Map<string, number>();
+/** Para las pruebas. */
+export const resetIgPacing = () => lastIg.clear();
 
 export interface SocialCache {
   get(tenantId: string, key: string): Promise<{ result: SocialProfile; fetchedAt: string } | null>;
@@ -72,19 +87,51 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
     const account = st.dossier.accountId ? await admin.accounts.get(st.dossier.accountId).then((x) => x.account).catch(() => null) : null;
     return { st, sources: socialSources(account) };
   }
-  /** El listado (de la caché si tiene menos de una hora). */
-  async function listing(key: string, platform: SocialPlatform): Promise<SocialProfile> {
-    const hit = await deps.cache.get(s.tenantId, key).catch(() => null);
-    if (hit && now() - Date.parse(hit.fetchedAt) < CACHE_MS) return hit.result;
-    if (!deps.api) throw new MediaApiError('NOT_CONFIGURED', 503);
+  const profileUrl = (key: string, platform: SocialPlatform) => {
     const user = key.split(':')[1];
-    const profile = platform === 'tiktok' ? `https://www.tiktok.com/@${user}` : `https://www.instagram.com/${user}/`;
-    const r = await deps.api.list(profile, null, 12);
-    await deps.cache.put(s.tenantId, key, r).catch((e) => console.warn('[social] caché', e instanceof Error ? e.message : e));
-    return r;
+    return platform === 'tiktok' ? `https://www.tiktok.com/@${user}` : `https://www.instagram.com/${user}/`;
+  };
+  /** Los pies de foto, cortos: con varias páginas, la fila de la caché crece. */
+  const slim = (ps: SocialPost[]) => ps.map((p) => ({ ...p, caption: p.caption?.slice(0, 200) ?? null }));
+  /**
+   * La primera página (de la caché si tiene menos de una hora). Instagram bloqueando (LOGIN_REQUIRED en la primera
+   * página): queda pendiente y se vuelve a probar una sola vez pasados 20 minutos; si sigue, sin Instagram un rato.
+   */
+  async function listing(key: string, platform: SocialPlatform): Promise<Cached> {
+    const hit = await deps.cache.get(s.tenantId, key).catch(() => null);
+    const r = hit?.result as Cached | undefined;
+    const blocked = r?.blocked;
+    if (blocked) {
+      const since = now() - Date.parse(blocked.at);
+      if (blocked.tries >= 2 && since < IG_GIVE_UP_MS) throw new MediaApiError('IG_BLOCKED', 422);
+      if (blocked.tries < 2 && since < IG_RETRY_MS) throw new MediaApiError('IG_PENDING', 422, Math.ceil((IG_RETRY_MS - since) / 1000));
+    } else if (hit && r && now() - Date.parse(hit.fetchedAt) < CACHE_MS) return r;
+    if (!deps.api) throw new MediaApiError('NOT_CONFIGURED', 503);
+    if (platform === 'instagram') {
+      const last = lastIg.get(s.tenantId) ?? 0;
+      if (now() - last < IG_GAP_MS) throw new MediaApiError('IG_WAIT', 429, Math.ceil((IG_GAP_MS - (now() - last)) / 1000));
+      lastIg.set(s.tenantId, now());
+    }
+    let res: SocialProfile;
+    try { res = await deps.api.list(profileUrl(key, platform), null, 12); } catch (e) {
+      if (e instanceof MediaApiError && e.code === 'LOGIN_REQUIRED' && platform === 'instagram') {
+        const tries = blocked && now() - Date.parse(blocked.at) < IG_GIVE_UP_MS ? blocked.tries + 1 : 1;
+        const mark: Cached = { platform, username: key.split(':')[1], fullName: null, followers: null, posts: [], nextCursor: null, blocked: { at: new Date(now()).toISOString(), tries } };
+        await deps.cache.put(s.tenantId, key, mark).catch(() => undefined);
+        console.warn(`[social] Instagram bloqueando (${tries}.º intento)`, e.detail ?? '');
+        throw tries >= 2 ? new MediaApiError('IG_BLOCKED', 422) : new MediaApiError('IG_PENDING', 422, Math.ceil(IG_RETRY_MS / 1000));
+      }
+      throw e;
+    }
+    const fresh: Cached = { ...res, posts: slim(res.posts).slice(0, MAX_POSTS) };
+    await deps.cache.put(s.tenantId, key, fresh).catch((e) => console.warn('[social] caché', e instanceof Error ? e.message : e));
+    return fresh;
   }
+  const hasMore = (r: Cached) => !!r.nextCursor && !r.noMore && r.posts.length < MAX_POSTS && (r.platform === 'tiktok' || igPages());
   const thumbOf = (dossierId: string, key: string, p: SocialPost, i: number) =>
     !p.thumbnail ? null : p.thumbnail.startsWith('data:') ? p.thumbnail : `/admin/api/dossiers/${dossierId}/social?key=${encodeURIComponent(key)}&thumb=${i}`;
+  const viewOf = (dossierId: string, key: string, p: SocialPost, i: number): PostView => ({ i, type: p.type, itemCount: p.itemCount, pinned: !!p.pinned, takenAt: p.takenAt,
+    caption: p.caption?.slice(0, 160) ?? null, likes: p.likes, comments: p.comments, views: p.views, url: p.url, thumb: thumbOf(dossierId, key, p, i) });
 
   async function list(id: string, input: { platform?: unknown }) {
     const { st, sources } = await dossier(id);
@@ -99,17 +146,51 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
       return {
         ok: true as const, sources, platform: src.platform, key: src.key, username: r.username, fullName: r.fullName, followers: r.followers,
         free, hasVideo: !!media.video,
-        posts: r.posts.map((p, i): PostView => ({ i, type: p.type, itemCount: p.itemCount, pinned: !!p.pinned, takenAt: p.takenAt, caption: p.caption?.slice(0, 160) ?? null,
-          likes: p.likes, comments: p.comments, views: p.views, url: p.url, thumb: thumbOf(id, src.key, p, i) })),
+        posts: r.posts.map((p, i) => viewOf(id, src.key, p, i)),
         suggested: { photos: pick.photos.map(idx), videos: pick.videos.map(idx) },
+        more: hasMore(r),
       };
     } catch (e) {
       if (e instanceof MediaApiError) {
         if (e.code === 'INVALID_API_KEY' || e.code === 'NOT_CONFIGURED') console.error('[social] la clave de la API de medios no vale o falta (CONVERT_API_KEY)');
-        return { ok: false as const, code: e.code, sources, platform: src.platform };
+        return { ok: false as const, code: e.code, sources, platform: src.platform, retryAfter: e.retryAfter };
       }
       throw e;
     }
+  }
+
+  /**
+   * «Cargar más»: la página siguiente, que se añade a lo ya listado (las posiciones no cambian). Una petición cada vez.
+   * TikTok caído un rato (UPSTREAM_UNAVAILABLE): se dice cuánto esperar y el editor lo reintenta una vez.
+   */
+  async function more(id: string, input: { key?: unknown }) {
+    const { sources } = await dossier(id);
+    const src = sources.find((x) => x.key === input.key);
+    if (!src) throw new AdminError(422, 'Datos no válidos');
+    const hit = await deps.cache.get(s.tenantId, src.key).catch(() => null);
+    const r = hit?.result as Cached | undefined;
+    // Si la lista ha caducado (más de una hora), se vuelve a abrir.
+    if (!hit || !r || r.blocked || now() - Date.parse(hit.fetchedAt) >= CACHE_MS) return { ok: false as const, code: 'EXPIRED' as const, more: false };
+    if (!hasMore(r)) return { ok: true as const, posts: [] as PostView[], more: false };
+    if (!deps.api) return { ok: false as const, code: 'NOT_CONFIGURED' as MediaErrorCode, more: false };
+    let page: SocialProfile;
+    try { page = await deps.api.list(profileUrl(src.key, src.platform), null, 12, r.nextCursor); } catch (e) {
+      if (!(e instanceof MediaApiError)) throw e;
+      // Instagram sin sesión no da más; un cursor que ya no vale, tampoco: no se reintenta.
+      if (e.code === 'LOGIN_REQUIRED' || e.code === 'INVALID_CURSOR') {
+        const done: Cached = { ...r, noMore: true };
+        await deps.cache.put(s.tenantId, src.key, done).catch(() => undefined);
+        return { ok: false as const, code: e.code === 'LOGIN_REQUIRED' ? 'NO_MORE_PAGES' as const : e.code, more: false };
+      }
+      if (e.code === 'INVALID_API_KEY') console.error('[social] la clave de la API de medios no vale (CONVERT_API_KEY)');
+      const later = e.code === 'UPSTREAM_UNAVAILABLE' || e.code === 'RATE_LIMITED';
+      return { ok: false as const, code: e.code, more: later, retryAfter: later ? e.retryAfter ?? 60 : null };
+    }
+    const seen = new Set(r.posts.map((p) => p.url));
+    const add = slim(page.posts.filter((p) => !seen.has(p.url))).slice(0, MAX_POSTS - r.posts.length);
+    const merged: Cached = { ...r, posts: [...r.posts, ...add], nextCursor: page.nextCursor ?? null, noMore: !page.nextCursor || (!add.length && !page.posts.length) };
+    await deps.cache.put(s.tenantId, src.key, merged).catch((e) => console.warn('[social] caché', e instanceof Error ? e.message : e));
+    return { ok: true as const, posts: add.map((p, k) => viewOf(id, src.key, p, r.posts.length + k)), more: hasMore(merged) };
   }
 
   /** Trae una publicación como foto o vídeo. Devuelve el estado del editor o el motivo por el que no se pudo. */
@@ -169,6 +250,6 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
     return t && /^https:\/\//.test(t) ? t : null;
   }
 
-  return { list, importPost, thumb };
+  return { list, more, importPost, thumb };
 }
 export type SocialService = ReturnType<typeof createSocialService>;
