@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { demoDb } from '../data/store';
 import type { OrgDb } from './db';
 import { demoUsageRows } from '../usage/demo';
+import { demoLimits } from '../usage/demo';
 
 /**
  * Organigrama en demo: mismas reglas que la RLS de 20261026000000_org.sql (quién puede qué lo comprueba el servicio;
@@ -74,6 +75,11 @@ export function demoOrgDb(): OrgDb {
       else u.memberships.push({ tenant_id: tenantId, role: 'admin', invited_by: null, created_at: new Date().toISOString() });
     },
     async platformUsage(from, to) { return demoUsageRows(from, to); },
+    async platformLimits() { return new Map(demoLimits()); },
+    async setTenantLimits(tenantId, l) {
+      if (!db().tenant.some((t) => t.id === tenantId)) throw new Error('Espacio no encontrado');
+      demoLimits().set(tenantId, { ...l });
+    },
     async platformStorage() {
       // Demo: lo que ocuparían sus fotos y vídeos (unos 40 MB por propuesta con medios).
       return db().tenant.map((t) => ({ tenantId: t.id, objects: db().dossier.filter((x) => x.tenant_id === t.id).length * 6, bytes: db().dossier.filter((x) => x.tenant_id === t.id).length * 40 * 1024 ** 2 }));

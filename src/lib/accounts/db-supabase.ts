@@ -60,6 +60,12 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
   return {
     async listZones(t) { return (check(await sb.from('zone').select('*').eq('tenant_id', t)) ?? []).map(toZone); },
     async bumpUsage(t, kind, limit) { return !!check(await sb.rpc('bump_usage', { p_tenant: t, p_kind: kind, p_limit: limit })); },
+    async aiLimits(t) {
+      const r = await sb.rpc('ai_limits', { p_tenant: t });
+      if (r.error && /ai_limits|tenant_limits|usage_event|does not exist|schema cache/i.test(r.error.message)) return null;
+      const x = ((check(r) ?? []) as Array<Record<string, unknown>>)[0];
+      return x ? { aiPerUserDay: Number(x.ai_per_user_day), aiMonthUsd: x.ai_month_usd == null ? null : Number(x.ai_month_usd), monthUsd: Number(x.month_usd ?? 0) } : null;
+    },
     async clearZoneLocations(t) {
       return (check(await sb.from('zone').update({ lat: null, lng: null }).eq('tenant_id', t).not('lat', 'is', null).select('id')) ?? []).length;
     },

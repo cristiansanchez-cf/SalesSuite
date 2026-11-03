@@ -32,6 +32,7 @@ import { chargeRef, paymentUrl } from '../admin/payment';
 import { chargeable } from './charge';
 import { LINK_DAYS, type LinkWhen } from './types';
 import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo, PaymentRequest } from './types';
+import { DEFAULT_AI_PER_USER_DAY, overBudget, type AiLimitsNow } from '../usage/limits';
 
 const uuid = z.string().uuid();
 const opt = (n: number) => z.string().trim().max(n).transform((v) => v || null).nullable().optional();
@@ -1052,10 +1053,25 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   // Topes por persona y día (docs/SECURITY_REVIEW.md): Google y la IA cuestan dinero. Las herramientas en bloque del
   // admin (ordenar, limpiar, situar ciudades) no cuentan: son pocas veces y las lanza quien paga.
-  const LIMITS = { google: 300, ai: 40 } as const;
+  // La IA: lo que fije el superadmin para la empresa (40 si no ha fijado nada).
+  const LIMITS = { google: 300, ai: DEFAULT_AI_PER_USER_DAY } as const;
+  /**
+   * El tope de IA de la empresa (docs/COSTES.md §Tope): lo fija el superadmin. Si ya ha gastado lo del mes, no se gasta
+   * más. Si no se puede leer, se sigue (mejor no dejar al equipo sin IA por un fallo de la base de datos).
+   */
+  async function aiLimits() { return accounts.aiLimits ? accounts.aiLimits(t).catch((e) => { console.warn('[ai-limits]', e instanceof Error ? e.message : e); return null; }) : null; }
+  async function aiBudget(l?: AiLimitsNow | null) {
+    if (overBudget(l === undefined ? await aiLimits() : l)) throw new AdminError(409, 'Este espacio ha llegado a su tope de gasto en IA de este mes');
+  }
   async function quota(kind: keyof typeof LIMITS) {
+    let limit: number = LIMITS[kind];
+    if (kind === 'ai') {
+      const l = await aiLimits();
+      await aiBudget(l);
+      limit = l?.aiPerUserDay ?? limit;
+    }
     let ok = true;
-    try { ok = await accounts.bumpUsage(t, kind, LIMITS[kind]); } catch (e) { console.warn('[quota]', e instanceof Error ? e.message : e); }
+    try { ok = await accounts.bumpUsage(t, kind, limit); } catch (e) { console.warn('[quota]', e instanceof Error ? e.message : e); }
     if (!ok) throw new AdminError(409, 'Has llegado al tope de hoy; mañana puedes seguir');
   }
   const requirePlaces = () => { if (!places) throw new AdminError(503, 'Falta GOOGLE_MAPS_API_KEY en el servidor'); return places; };
@@ -1672,6 +1688,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function zonesClassify(raws: unknown) {
     requireImporter();
     if (!zoneAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    await aiBudget();
     const list = Array.isArray(raws) ? raws.filter((x): x is string => typeof x === 'string' && !!x.trim()).map((x) => x.slice(0, 200)).slice(0, ZONES_CHUNK) : [];
     if (!list.length) throw new AdminError(422, 'Datos no válidos');
     try { return await zoneAi.classify(list); } catch (e) { console.warn('[zones-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
@@ -1783,6 +1800,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function cleanupClassify(ids: unknown, ctx: CleanupContext & { sectors?: Record<string, string> }): Promise<CleanupSuggestion[]> {
     requireImporter();
     if (!cleanupAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    await aiBudget();
     const want = new Set(z.array(uuid).max(CLEANUP_CHUNK).parse(Array.isArray(ids) ? ids : []));
     if (!want.size) return [];
     const [accs, zones] = await Promise.all([allAccounts(), accounts.listZones(t)]);
@@ -1833,6 +1851,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function zonesReview(): Promise<ZoneFix[]> {
     requireImporter();
     if (!zoneFixAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    await aiBudget();
     const { zones, counts } = await zoneState();
     const lines = zoneRows(zones, counts).map((r) => `${r.id} | ${r.path} | ${r.kind} | ${r.direct}`);
     let raw: unknown;

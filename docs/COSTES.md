@@ -67,9 +67,23 @@ afinarlo.
 En demo sale un mes de ejemplo (la IA de pruebas no gasta). El segundo espacio gasta mucho más en IA: es el caso de «se
 pone como un loco a apuntar con IA».
 
-**Tope diario de IA.** Ya existe: 40 usos al día por espacio entre Apuntar (también desde WhatsApp) e Investigar
-(`LIMITS.ai` en `src/lib/crm/service.ts`). Con él, lo más que puede gastar un espacio en Investigar es unos 8 $ al día.
-Pero también frena a un equipo que trabaje mucho (ver el modelo).
+## Tope de IA por empresa
+
+En el detalle de cada empresa (**Ver detalle → Tope de IA**) el superadmin fija dos cosas:
+
+- **Usos de IA por persona al día** (Apuntar, también desde WhatsApp, e Investigar). Por defecto, 40 cada persona.
+  Al llegar: «Has llegado al tope de hoy; mañana puedes seguir».
+- **Gasto máximo al mes**, en dólares. Cuenta todo el gasto del mes (el mismo número del panel). Vacío: sin tope.
+  Al llegar, se para la IA que lanza el equipo (Apuntar, Investigar, Limpiar y ordenar o revisar zonas) hasta el mes
+  siguiente o hasta que se suba: «Este espacio ha llegado a su tope de gasto en IA de este mes». Lo automático (los
+  leads, el recordatorio de la mañana) sigue.
+
+Cada empresa sale en el panel con su tope y, si tiene gasto máximo, cuánto lleva: «Cerca del tope» desde el 80 % y
+«Tope alcanzado» al llegar.
+
+Se guarda en `tenant_limits` (migración `20261228000000_ai_limits.sql`): solo lo cambia el superadmin
+(`platform_set_limits`); el servidor de cada espacio lo lee con lo gastado del mes (`ai_limits`). Si no se puede leer,
+se sigue con el de por defecto (mejor no dejar al equipo sin IA por un fallo de la base de datos).
 
 ## Modelo: cuánto cuesta una empresa al mes
 
@@ -90,8 +104,8 @@ Lo que más pesa:
 2. **Plantillas de WhatsApp** (~0,02 $ cada una): los mensajes a leads y el recordatorio de la mañana.
 3. Apuntar es barato (Haiku, ~0,001 $ cada vez): 6.600 al mes son ~7 $.
 
-Con el tope diario de 40, la empresa normal (≈50 usos al día) y la intensa (≈324) no podrían trabajar así: se quedarían
-sin IA a media mañana.
+Usos de IA por persona y día: ~6 en la normal y ~27 en la intensa, por debajo del tope por defecto de 40. Para un
+equipo que apunte más, se le sube en su tope.
 
 ## Prueba de carga
 

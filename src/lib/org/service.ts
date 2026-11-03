@@ -13,6 +13,7 @@ import type { OrgDb } from './db';
 import type { Delegation } from './types';
 import { inTeam, isGlobal } from './scope';
 import { costReport, fixedCostsFromEnv, isMonth, monthRange, storagePerGbFromEnv } from '../usage/report';
+import { parseLimits } from '../usage/limits';
 
 export { inTeam, isGlobal };
 
@@ -98,9 +99,22 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
     if (!isMonth(month)) throw new AdminError(422, 'Mes no válido');
     const { from, to } = monthRange(month);
-    const [spaces, rows, storage] = await Promise.all([db.platformOverview(), db.platformUsage?.(from, to) ?? null, db.platformStorage?.().catch(() => null) ?? null]);
+    const [spaces, rows, storage, limits] = await Promise.all([db.platformOverview(), db.platformUsage?.(from, to) ?? null, db.platformStorage?.().catch(() => null) ?? null,
+      db.platformLimits?.().catch(() => null) ?? null]);
     const tenants = (spaces ?? []).map((x) => ({ id: x.id, slug: x.slug, name: x.name, members: x.members, domain: x.domain }));
-    return { ready: rows !== null, report: costReport({ rows: rows ?? [], storage: storage ?? [], tenants, month, now, fixed: fixedCostsFromEnv(), storagePerGb: storagePerGbFromEnv() }) };
+    return {
+      ready: rows !== null, limitsReady: limits !== null,
+      report: costReport({ rows: rows ?? [], storage: storage ?? [], tenants, month, now, fixed: fixedCostsFromEnv(), storagePerGb: storagePerGbFromEnv(), limits: limits ?? new Map() }),
+    };
+  }
+  /** Cambia el tope de IA de una empresa (docs/COSTES.md §Tope). */
+  async function setLimits(tenantId: string, input: { aiPerUserDay?: unknown; aiMonthUsd?: unknown }) {
+    if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
+    const l = parseLimits(input);
+    if (!l || !/^[0-9a-f-]{36}$/i.test(tenantId)) throw new AdminError(422, 'Tope no válido');
+    if (!db.setTenantLimits) throw new AdminError(503, 'Falta aplicar la migración del tope de IA');
+    try { await db.setTenantLimits(tenantId, l); } catch (e) { mapError(e); }
+    return l;
   }
 
   /**
@@ -143,7 +157,7 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     }
     return { id, slug, hostname, origin, invited, adminEmail: email || null };
   }
-  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, createSpace };
+  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, setLimits, createSpace };
 }
 
 export type OrgService = ReturnType<typeof createOrgService>;

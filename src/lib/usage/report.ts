@@ -4,6 +4,7 @@
  */
 import { env } from '../env';
 import type { UsageProvider } from './meter';
+import { DEFAULT_AI_PER_USER_DAY, type TenantLimits } from './limits';
 
 export interface UsageRow {
   tenantId: string | null; day: string; feature: string; provider: UsageProvider; model: string | null; userId: string | null; userName: string | null;
@@ -21,6 +22,8 @@ export interface UserCost { userId: string | null; name: string | null; events: 
 export interface TenantCost extends CostTenantInfo {
   variable: number; byGroup: Record<CostGroup, number>; byFeature: FeatureCost[]; byUser: UserCost[]; daily: number[];
   storageBytes: number; storageUsd: number; fixedShare: number; total: number; projected: number; perMember: number | null;
+  /** Su tope de IA (el de por defecto si no tiene) y cuánto lleva de su gasto del mes (0-1; null sin tope de gasto). */
+  limits: TenantLimits & { custom: boolean }; budgetUsed: number | null;
 }
 export interface CostReport {
   month: string; days: string[]; elapsedDays: number; current: boolean;
@@ -54,7 +57,7 @@ const dayOf = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/
 
 export function costReport(o: {
   rows: UsageRow[]; storage: StorageRow[]; tenants: CostTenantInfo[]; month: string; now: Date;
-  fixed?: Array<{ name: string; usd: number }>; storagePerGb?: number;
+  fixed?: Array<{ name: string; usd: number }>; storagePerGb?: number; limits?: Map<string, TenantLimits>;
 }): CostReport {
   const { days } = monthRange(o.month);
   const today = dayOf(o.now);
@@ -95,8 +98,11 @@ export function costReport(o: {
     const storageUsd = (storageBytes / 1024 ** 3) * perGb;
     const fixedShare = people > 0 ? (fixedTotal * Math.max(0, t.members)) / people : o.tenants.length ? fixedTotal / o.tenants.length : 0;
     const projected = project(variable) + storageUsd + fixedShare;
+    const own = o.limits?.get(t.id);
+    const limits = { aiPerUserDay: own?.aiPerUserDay ?? DEFAULT_AI_PER_USER_DAY, aiMonthUsd: own?.aiMonthUsd ?? null, custom: !!own };
     return {
-      ...t, variable, byGroup, daily, storageBytes, storageUsd, fixedShare,
+      ...t, variable, byGroup, daily, storageBytes, storageUsd, fixedShare, limits,
+      budgetUsed: limits.aiMonthUsd === null ? null : limits.aiMonthUsd > 0 ? variable / limits.aiMonthUsd : 1,
       byFeature: [...features.values()].map((f) => ({ ...f, perEvent: f.events ? f.cost / f.events : 0 })).sort((a, b) => b.cost - a.cost),
       byUser: [...users.values()].sort((a, b) => b.cost - a.cost),
       total: variable + storageUsd + fixedShare,

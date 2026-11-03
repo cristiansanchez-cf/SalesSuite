@@ -6,7 +6,8 @@
 import { demoDb } from '../data/store';
 import { demoUsage, type UsageEvent } from './meter';
 import { claudeCost } from './prices';
-import type { UsageRow } from './report';
+import { monthOf, monthRange, type UsageRow } from './report';
+import { DEFAULT_AI_PER_USER_DAY, type AiLimitsNow, type TenantLimits } from './limits';
 
 const dayOf = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 /** Pseudoaleatorio fijo (mismo resultado en cada arranque). */
@@ -79,4 +80,16 @@ export function demoUsageRows(from: Date, to: Date, now = new Date()): UsageRow[
     groups.set(k, g);
   }
   return [...groups.values()];
+}
+
+// ---- Demo: en memoria (y lo gastado, lo del panel de la demo).
+const KEY = Symbol.for('salessuite.tenantLimits');
+type G = typeof globalThis & { [KEY]?: Map<string, TenantLimits> };
+export const demoLimits = (): Map<string, TenantLimits> => ((globalThis as G)[KEY] ??= new Map());
+export function demoAiLimits(tenantId: string, now = new Date()): AiLimitsNow {
+  const l = demoLimits().get(tenantId) ?? { aiPerUserDay: DEFAULT_AI_PER_USER_DAY, aiMonthUsd: null };
+  const month = monthOf(now);
+  const { from, to } = monthRange(month);
+  const monthUsd = demoUsageRows(from, to, now).filter((r) => r.tenantId === tenantId && r.day.startsWith(month)).reduce((s, r) => s + r.costUsd, 0);
+  return { ...l, monthUsd };
 }

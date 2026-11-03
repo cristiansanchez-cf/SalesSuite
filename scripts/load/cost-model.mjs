@@ -30,7 +30,7 @@ export const PER_OP = {
   'social.download': { usd: 0, why: 'API de medios (CONVERT_API_KEY): sin precio (USAGE_PRICE_MEDIA_CALL)' },
 };
 const STORAGE_GB = 0.021;
-/** Tope de hoy por espacio entre Apuntar e Investigar (LIMITS.ai en src/lib/crm/service.ts). */
+/** Tope por defecto de usos de IA por persona y día entre Apuntar e Investigar (cambiable por empresa en Plataforma). */
 export const AI_CAP_DAY = 40;
 
 /** Lo que hace cada empresa tipo al mes (22 días laborables). */
@@ -64,8 +64,8 @@ export function monthly(profile, perOp = PER_OP) {
   const lines = Object.entries(ops).map(([k, n]) => ({ feature: k, times: Math.round(n), each: perOp[k]?.usd ?? 0, usd: n * (perOp[k]?.usd ?? 0) })).sort((a, b) => b.usd - a.usd);
   const storageGb = (profile.proposalsWithMedia * 40) / 1024;
   const variable = lines.reduce((s, l) => s + l.usd, 0) + storageGb * STORAGE_GB;
-  // Apuntar (también desde WhatsApp) e Investigar comparten el tope diario del espacio.
-  const capped = ((ops['crm.notes'] ?? 0) + (ops['crm.research'] ?? 0)) / profile.days;
+  // Apuntar (también desde WhatsApp) e Investigar comparten el tope diario de cada persona.
+  const capped = ((ops['crm.notes'] ?? 0) + (ops['crm.research'] ?? 0)) / profile.days / profile.people;
   return { lines, storageGb, variable, perPerson: variable / profile.people, aiPerDay: capped, overCap: capped > AI_CAP_DAY };
 }
 
@@ -88,7 +88,7 @@ function main() {
     for (const l of r.lines.filter((x) => x.times > 0)) out.push(`| ${l.feature} | ${l.times} | ${$(l.each)} | ${$(l.usd)} |`);
     out.push(`| Almacenamiento (${r.storageGb.toFixed(1)} GB) | | ${STORAGE_GB} $/GB | ${$(r.storageGb * STORAGE_GB)} |`);
     out.push('', `**Variable: ${$(r.variable)} al mes** (${$(r.perPerson)} por persona).${companies ? ` Con su parte de los fijos (${companies} empresas): **${$(r.variable + fixedTotal / companies)}**.` : ''}`, '');
-    if (r.overCap) out.push(`> ⚠️ Haría ${Math.round(r.aiPerDay)} usos de IA al día (Apuntar + Investigar) y el tope del espacio es ${AI_CAP_DAY}: con el tope de hoy no puede trabajar así.`, '');
+    out.push(`Usos de IA por persona y día (Apuntar + Investigar): ~${Math.round(r.aiPerDay)}${r.overCap ? ` ⚠️ más que el tope por defecto (${AI_CAP_DAY}): súbeselo en Plataforma → Coste por empresa` : ` (tope por defecto: ${AI_CAP_DAY})`}.`, '');
     out.push(`<!-- ${key} -->`, '');
   }
   out.push('## De dónde sale cada «por vez»', '');

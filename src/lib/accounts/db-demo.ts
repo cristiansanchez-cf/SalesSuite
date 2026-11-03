@@ -9,6 +9,7 @@ import { notifyRoles, resolveNotifications, userLabel } from '../notify/db-demo'
 import type { AccountInsert, AccountsDb } from './db';
 import { eligibility } from './rules';
 import { ACCOUNT_REF_KEYS, DEFAULT_RULES, DISCARD_REASONS, type Account, type AccountRef, type AccountRules, type Eligibility, type Sweep, type TouchKind, type Zone, type ZoneKind } from './types';
+import { demoAiLimits } from '../usage/demo';
 
 const db = () => demoDb();
 const now = () => new Date();
@@ -162,6 +163,10 @@ export function demoAccountsDb(actorId: string): AccountsDb {
   }
   return {
     async listZones(t) { return db().zone.filter((z) => z.tenant_id === t).map(toZone); },
+    async aiLimits(t) {
+      if (!roleOf(t, actorId) && !demoDb().users.find((u) => u.id === actorId)?.platform_admin) throw new Error('permission denied: No es del equipo');
+      return demoAiLimits(t);
+    },
     async bumpUsage(t, kind, limit) {
       if (!roleOf(t, actorId)) throw new Error('permission denied: No es del equipo');
       const day = new Date().toISOString().slice(0, 10);

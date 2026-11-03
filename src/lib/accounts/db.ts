@@ -2,6 +2,7 @@ import type { CrmField, FieldValues } from '../crm/fields';
 import type { Qualification, Weights } from '../crm/priority';
 import type { PlaceResult } from '../crm/places';
 import type { Account, AccountContact, AccountRef, AccountDecision, AccountRules, AccountStatus, AccountTouch, Eligibility, Zone, ZoneAssignment, ZoneKind, AccountMove, CrmFix, AccountKind, DiscardReason, Sweep, AccountFact, KindDef } from './types';
+import type { AiLimitsNow } from '../usage/limits';
 
 /** Lo que se guarda de Google al pulsar «Es este» (docs/CRM_DINAMICO.md §15). Lo opcional solo rellena huecos. */
 export interface GoogleData {
@@ -55,6 +56,8 @@ export interface AccountsDb {
   clearZoneLocations(tenantId: string): Promise<number>;
   /** Suma 1 al uso de hoy (RPC bump_usage) y dice si aún cabe en el tope (Google y la IA cuestan dinero). */
   bumpUsage(tenantId: string, kind: 'google' | 'ai', limit: number): Promise<boolean>;
+  /** El tope de IA del espacio y lo gastado este mes (RPC ai_limits; docs/COSTES.md §Tope). null si aún no está la migración. */
+  aiLimits?(tenantId: string): Promise<AiLimitsNow | null>;
   /** Alta de zonas en bloque (ciudades de una importación). */
   insertZones(tenantId: string, rows: Array<{ parentId: string | null; name: string; kind: ZoneKind; position: number }>): Promise<string[]>;
   /** Ruta de zonas (España › Comunidad › Provincia › Ciudad) que se crea si falta, para quien trabaja empresas (RPC zone_ensure, §44). Devuelve la última. */

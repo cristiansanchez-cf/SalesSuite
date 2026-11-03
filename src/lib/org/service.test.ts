@@ -145,6 +145,21 @@ describe('organigrama: quién lo monta y quién ve qué', () => {
     expect((await svc(session({ userId: SUPER, role: 'admin', superadmin: true })).platform()).map((t) => t.slug)).toEqual(expect.arrayContaining(['enjoy']));
   });
 
+  test('tope de IA: solo el superadmin lo cambia, y sale en el coste por empresa', async () => {
+    const ENJOY = '00000000-0000-4000-8000-000000000e01';
+    await rejects(svc(session({ userId: ADMIN, role: 'admin' })).setLimits(ENJOY, { aiPerUserDay: 999 }), 403);
+    const sup = svc(session({ userId: SUPER, role: 'admin', superadmin: true }));
+    await rejects(sup.setLimits(ENJOY, { aiPerUserDay: 0 }), 422);
+    await rejects(sup.setLimits('no-es-un-id', { aiPerUserDay: 10 }), 422);
+    expect(await sup.setLimits(ENJOY, { aiPerUserDay: '120', aiMonthUsd: '50' })).toEqual({ aiPerUserDay: 120, aiMonthUsd: 50 });
+    const { report } = await sup.costs(new Date().toISOString().slice(0, 7));
+    const enjoy = report.tenants.find((t) => t.id === ENJOY)!;
+    expect(enjoy.limits).toEqual({ aiPerUserDay: 120, aiMonthUsd: 50, custom: true });
+    expect(enjoy.budgetUsed).toBeCloseTo(enjoy.variable / 50, 6);
+    expect(report.tenants.find((t) => t.id !== ENJOY)!.limits).toMatchObject({ aiPerUserDay: 40, aiMonthUsd: null, custom: false });
+    (await import('../usage/demo')).demoLimits().clear();
+  });
+
   test('coste por empresa: solo el superadmin; en demo, un mes de ejemplo con más gasto en IA en el segundo espacio', async () => {
     await rejects(svc(session({ userId: ADMIN, role: 'admin' })).costs('2026-11'), 403);
     const sup = svc(session({ userId: SUPER, role: 'admin', superadmin: true }));

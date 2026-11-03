@@ -23,6 +23,16 @@ const login = async (p, who) => { await p.context().clearCookies(); await p.goto
   assert((await p.textContent('[data-testid=cost-features]')).includes('Investigar empresas'), 'el detalle dice en qué');
   assert((await p.$$('[data-testid=cost-users] tbody tr')).length > 0, 'y quién');
   assert(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'cabe en el móvil');
+  // El tope de IA de esta empresa: 120 usos al día por persona y un gasto máximo por debajo de lo gastado.
+  await p.fill('[data-testid=cost-limit-form] input[name=aiPerUserDay]', '120');
+  await p.fill('[data-testid=cost-limit-form] input[name=aiMonthUsd]', '0.5');
+  await Promise.all([p.waitForURL(/ok=limits/), p.click('[data-testid=cost-limit-save]')]);
+  assert(await p.isVisible('[data-testid=cost-limit-saved]'), 'tope guardado');
+  assert((await p.textContent('[data-testid=cost-limit]')).includes('120'), 'sale en su ficha de coste');
+  assert(await p.isVisible('[data-testid=cost-limit-reached]'), 'y avisa de que ya ha llegado al tope de gasto');
+  await p.fill('[data-testid=cost-limit-form] input[name=aiMonthUsd]', '');
+  await Promise.all([p.waitForURL(/ok=limits/), p.click('[data-testid=cost-limit-save]')]);
+  assert(!(await p.isVisible('[data-testid=cost-limit-reached]')), 'sin tope de gasto, no avisa');
   await p.click('[data-testid=costs-prev]');
   await p.waitForURL(/m=\d{4}-\d{2}/);
   assert(true, 'mes anterior');

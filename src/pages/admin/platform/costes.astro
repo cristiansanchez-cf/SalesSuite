@@ -9,6 +9,7 @@ import Icon from '~/components/ui/Icon.astro';
 import { i18n } from '~/lib/i18n';
 import { costsMessages } from '~/lib/i18n/messages/costs';
 import { appMode } from '~/lib/mode';
+import { formAction } from '~/lib/admin/forms';
 import { GROUPS, isMonth, monthOf, usd, type TenantCost } from '~/lib/usage/report';
 
 const { admin } = Astro.locals;
@@ -25,7 +26,17 @@ const qm = Astro.url.searchParams.get('m');
 const month = isMonth(qm) ? qm : monthOf(now);
 const shift = (k: number) => { const [y, mo] = month.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 1 + k, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
 const later = shift(1) <= monthOf(now);
-const { ready, report } = await admin.org.costs(month, now);
+// El tope de IA de una empresa (docs/COSTES.md §Tope).
+let limitError: string | null = null;
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const slug = String(fd.get('slug') ?? '');
+  const r = await formAction(async () => { await admin.org.setLimits(String(fd.get('tenantId') ?? ''), { aiPerUserDay: fd.get('aiPerUserDay'), aiMonthUsd: fd.get('aiMonthUsd') }); });
+  if (!r.error) return Astro.redirect(`/admin/platform/costes?m=${month}&t=${encodeURIComponent(slug)}&ok=limits`, 303);
+  limitError = r.error;
+}
+const { ready, limitsReady, report } = await admin.org.costs(month, now);
+const pct = (v: number) => Math.round(v * 100);
 const pick = Astro.url.searchParams.get('t');
 const one = pick ? report.tenants.find((t) => t.slug === pick) ?? null : null;
 const shown: TenantCost[] = one ? [one] : report.tenants;
@@ -87,8 +98,25 @@ const peak = (t: TenantCost) => Math.max(...t.daily, 0.000001);
           </div>
         )}
         <p class="co-meta m-0">{m.storageLine(gb(t.storageBytes), $(t.storageUsd))}{report.fixed.length > 0 && <> · {m.fixedLine($(t.fixedShare))}</>}</p>
+        <p class="co-meta m-0 flex flex-wrap items-center gap-2" data-testid="cost-limit" data-budget={t.budgetUsed ?? ''}>
+          <span><b>{m.limitTitle}:</b> {m.perDayShort(t.limits.aiPerUserDay)}{!t.limits.custom && ` (${m.byDefault})`} · {t.limits.aiMonthUsd === null ? m.noBudget : m.budget($(t.limits.aiMonthUsd), pct(t.budgetUsed ?? 0))}</span>
+          {t.budgetUsed !== null && t.budgetUsed >= 1 && <span class="co-badge co-badge--attention" data-testid="cost-limit-reached">{m.reached}</span>}
+          {t.budgetUsed !== null && t.budgetUsed >= 0.8 && t.budgetUsed < 1 && <span class="co-badge co-badge--soft" data-testid="cost-limit-near">{m.near}</span>}
+        </p>
         {one ? (
           <div class="grid gap-6 md:grid-cols-2">
+            <form method="post" class="grid gap-3 rounded-2xl bg-[var(--console-chip-bg)] p-4 md:col-span-2" data-testid="cost-limit-form">
+              <h3 class="co-entity m-0">{m.limitTitle}</h3>
+              {Astro.url.searchParams.get('ok') === 'limits' && <p class="co-alert co-alert--success m-0" role="status" data-testid="cost-limit-saved">{m.limitSaved}</p>}
+              {limitError && <p class="co-alert co-alert--rejection m-0" role="alert">{limitError}</p>}
+              {!limitsReady && <p class="co-alert co-alert--rejection m-0" role="alert">{m.limitsNotReady}</p>}
+              <input type="hidden" name="tenantId" value={t.id} /><input type="hidden" name="slug" value={t.slug} />
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="co-field">{m.perDay}<input class="co-input" type="number" name="aiPerUserDay" min="1" max="10000" step="1" required value={t.limits.aiPerUserDay} inputmode="numeric" /><span class="co-help">{m.perDayHelp}</span></label>
+                <label class="co-field">{m.monthUsd}<input class="co-input" type="number" name="aiMonthUsd" min="0" step="0.01" value={t.limits.aiMonthUsd ?? ''} inputmode="decimal" placeholder="—" /><span class="co-help">{m.monthUsdHelp}</span></label>
+              </div>
+              <div><button class="co-btn co-btn--primary" type="submit" data-testid="cost-limit-save">{m.saveLimit}</button></div>
+            </form>
             <section class="grid gap-2 min-w-0">
               <h3 class="co-entity">{m.byFeature}</h3>
               <ul class="grid p-0" data-testid="cost-features">{t.byFeature.map((f) => (

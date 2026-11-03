@@ -67,6 +67,14 @@ export function supabaseOrgDb(sb: SupabaseClient): OrgDb {
       if (r.error && /platform_storage|does not exist|schema cache/i.test(r.error.message)) return null;
       return ((check(r) ?? []) as Row[]).map((x) => ({ tenantId: x.tenant_id, objects: Number(x.objects), bytes: Number(x.bytes) }));
     },
+    async platformLimits() {
+      const r = await sb.rpc('platform_limits');
+      if (r.error && /platform_limits|tenant_limits|does not exist|schema cache/i.test(r.error.message)) return null;
+      return new Map(((check(r) ?? []) as Row[]).map((x) => [x.tenant_id as string, { aiPerUserDay: Number(x.ai_per_user_day), aiMonthUsd: x.ai_month_usd == null ? null : Number(x.ai_month_usd) }]));
+    },
+    async setTenantLimits(tenantId, l) {
+      check(await sb.rpc('platform_set_limits', { p_tenant: tenantId, p_per_user_day: l.aiPerUserDay, p_month_usd: l.aiMonthUsd }));
+    },
     async platformOverview() {
       const r = await sb.rpc('platform_overview');
       if (missing(r.error)) return null;

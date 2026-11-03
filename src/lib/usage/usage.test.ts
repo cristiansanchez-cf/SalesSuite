@@ -107,3 +107,38 @@ describe('el informe del mes', async () => {
     expect(usd(12.5, 'en-GB')).toBe('US$12.50');
   });
 });
+
+describe('el tope de IA de cada empresa', async () => {
+  const { parseLimits, overBudget } = await import('./limits');
+  const { demoLimits } = await import('./demo');
+  const { contextAs } = await import('../admin/auth');
+  const { publicRepository } = await import('../data');
+  const { resetDemoDb } = await import('../data/store');
+  const ENJOY = '00000000-0000-4000-8000-000000000e01';
+  const REP = '11111111-1111-4111-8111-111111111111';
+  const rep = async () => contextAs((await publicRepository().resolveTenantBySlug('enjoy'))!, REP);
+  beforeEach(() => { resetDemoDb(); demoLimits().clear(); process.env.AI_RESEARCH_FIXTURE = '1'; });
+  afterEach(() => { demoLimits().clear(); });
+
+  test('lo que se escribe en el formulario', () => {
+    expect(parseLimits({ aiPerUserDay: '120', aiMonthUsd: '' })).toEqual({ aiPerUserDay: 120, aiMonthUsd: null });
+    expect(parseLimits({ aiPerUserDay: '40', aiMonthUsd: '49,999' })).toEqual({ aiPerUserDay: 40, aiMonthUsd: 50 });
+    for (const bad of [{ aiPerUserDay: '0' }, { aiPerUserDay: '1.5' }, { aiPerUserDay: 'x' }, { aiPerUserDay: '10', aiMonthUsd: '-1' }]) expect(parseLimits(bad)).toBeNull();
+    expect(overBudget({ aiPerUserDay: 40, aiMonthUsd: 10, monthUsd: 10 })).toBe(true);
+    expect(overBudget({ aiPerUserDay: 40, aiMonthUsd: null, monthUsd: 999 })).toBe(false);
+  });
+
+  test('al llegar al gasto del mes, Apuntar se para; sin tope, sigue', async () => {
+    const admin = (await rep())!;
+    expect((await admin.crm.notesSplit('Club Sol: hablé con Marta', { seller: '' })).length).toBeGreaterThan(0);
+    demoLimits().set(ENJOY, { aiPerUserDay: 40, aiMonthUsd: 0 });
+    await expect(admin.crm.notesSplit('Club Sol: hablé con Marta', { seller: '' })).rejects.toMatchObject({ status: 409, message: expect.stringContaining('tope de gasto') });
+  });
+
+  test('los usos al día por persona salen del tope de la empresa', async () => {
+    demoLimits().set(ENJOY, { aiPerUserDay: 1, aiMonthUsd: null });
+    const admin = (await rep())!;
+    await admin.crm.notesSplit('Club Sol: hablé con Marta', { seller: '' });
+    await expect(admin.crm.notesSplit('Club Sol: otra vez', { seller: '' })).rejects.toMatchObject({ status: 409, message: expect.stringContaining('tope de hoy') });
+  });
+});
