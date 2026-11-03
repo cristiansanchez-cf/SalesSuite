@@ -102,6 +102,8 @@ const crm = perms.useAccounts;
 const linked = crm && d.accountId ? await admin.accounts.get(d.accountId).then((x) => x.account).catch(() => null) : null;
 // Traer fotos y vídeos de su Instagram o TikTok (si la empresa los tiene en el CRM y la conexión está configurada).
 const social = linked && socialConfigured() ? socialSources(linked).map(({ platform, handle }) => ({ platform, handle })) : [];
+// Vinculada a una empresa sin Instagram ni TikTok: la tarjeta lo dice, con el enlace a su ficha para añadirlo.
+const socialHint = linked && socialConfigured() && !social.length ? { accountId: linked.id, name: linked.name } : null;
 const mine = crm && !d.accountId && state.canEdit ? await admin.accounts.mine() : [];
 // Venta declarada (docs/COMMISSIONS.md): quien ganó la propuesta declara el importe; un admin lo confirma.
 const canDeclare = d.outcome === 'won' && d.authorId === admin.session.userId;
@@ -233,5 +235,5 @@ const origin = requestOrigin(Astro.request, Astro.url);
     const input = document.querySelector<HTMLInputElement>('[data-testid="rep-contact-value"]');
     sel?.addEventListener('change', () => { if (input) input.placeholder = (JSON.parse(sel.dataset.ph ?? '{}') as Record<string, string>)[sel.value] ?? ''; });
   </script>
-  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} />
 </AdminLayout>

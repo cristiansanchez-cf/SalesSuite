@@ -160,6 +160,7 @@ const es = {
   },
   social: {
     from: { instagram: 'De su Instagram', tiktok: 'De su TikTok' }, net: { instagram: 'Instagram', tiktok: 'TikTok' },
+    hint: (n: string) => `Para traer fotos y vídeos de sus redes, añade el Instagram o el TikTok de ${n} en su ficha.`, openAccount: 'Abrir su ficha',
     title: 'Sus publicaciones', close: 'Cerrar', loading: 'Mirando sus publicaciones…',
     followers: (n: number) => `${n.toLocaleString('es-ES')} seguidores`,
     help: (free: number, hasVideo: boolean) => `Toca las que quieras. Caben ${free} ${free === 1 ? 'foto' : 'fotos'} más${hasVideo ? '' : ' y un vídeo'}. Las marcadas son las fijadas y las que más gustan; de un carrusel se trae la primera foto.`,
@@ -359,6 +360,7 @@ export const builderMessages = defineMessages({
     },
     social: {
       from: { instagram: 'From their Instagram', tiktok: 'From their TikTok' }, net: { instagram: 'Instagram', tiktok: 'TikTok' },
+      hint: (n) => `To bring in photos and videos from their social media, add ${n}’s Instagram or TikTok on their record.`, openAccount: 'Open their record',
       title: 'Their posts', close: 'Close', loading: 'Looking at their posts…',
       followers: (n) => `${n.toLocaleString('en-GB')} followers`,
       help: (free, hasVideo) => `Tap the ones you want. ${free} more ${free === 1 ? 'photo fits' : 'photos fit'}${hasVideo ? '' : ' and one video'}. The marked ones are pinned or the most liked; from a carousel, the first photo is used.`,
@@ -555,6 +557,7 @@ export const builderMessages = defineMessages({
     },
     social: {
       from: { instagram: 'Do Instagram dele', tiktok: 'Do TikTok dele' }, net: { instagram: 'Instagram', tiktok: 'TikTok' },
+      hint: (n) => `Para trazer fotos e vídeos das redes, adicione o Instagram ou o TikTok de ${n} na ficha.`, openAccount: 'Abrir a ficha',
       title: 'As publicações dele', close: 'Fechar', loading: 'Olhando as publicações…',
       followers: (n) => `${n.toLocaleString('pt-PT')} seguidores`,
       help: (free, hasVideo) => `Toque nas que quiser. Cabem mais ${free} ${free === 1 ? 'foto' : 'fotos'}${hasVideo ? '' : ' e um vídeo'}. As marcadas são as fixadas e as que mais gostam; de um carrossel vem a primeira foto.`,
@@ -751,6 +754,7 @@ export const builderMessages = defineMessages({
     },
     social: {
       from: { instagram: '인스타그램에서', tiktok: '틱톡에서' }, net: { instagram: '인스타그램', tiktok: '틱톡' },
+      hint: (n) => `소셜 미디어의 사진과 영상을 가져오려면 ${n}의 기록에 인스타그램 또는 틱톡을 추가하세요.`, openAccount: '기록 열기',
       title: '게시물', close: '닫기', loading: '게시물을 불러오는 중…',
       followers: (n) => `팔로워 ${n.toLocaleString('ko-KR')}명`,
       help: (free, hasVideo) => `원하는 것을 누르세요. 사진 ${free}장 더${hasVideo ? '' : ', 영상 1개'} 넣을 수 있어요. 표시된 것은 고정 게시물과 반응이 좋은 게시물이며, 캐러셀은 첫 사진을 가져옵니다.`,

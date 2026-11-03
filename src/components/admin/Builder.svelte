@@ -25,8 +25,8 @@
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
   interface CouponLite { id: string; code: string; label: string }
   interface SocialSource { platform: 'instagram' | 'tiktok'; handle: string }
-  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [] }:
-    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[] } = $props();
+  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [], socialHint = null }:
+    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[]; socialHint?: { accountId: string; name: string } | null } = $props();
   // Los textos se importan aquí: las funciones (plurales) no viajan como props de una isla.
   const t = builderMessages[locale] ?? builderMessages.es;
   /** Los avisos de «antes de publicar» llegan del servidor en español: aquí, en el idioma de quien edita. */
@@ -652,6 +652,7 @@
               {/if}
             </div>
           </div>
+          {#if socialHint}<p class="co-help mt-3" data-testid="social-hint">{t.social.hint(socialHint.name)} <a class="underline" href={`/admin/accounts/${socialHint.accountId}`}>{t.social.openAccount}</a></p>{/if}
           <p class="co-help mt-3">{t.media.where}</p>
           <div class="mt-5 grid gap-2 border-t border-[var(--console-divider)] pt-4">
             <p class="media-tile__label">{t.media.layout}</p>
