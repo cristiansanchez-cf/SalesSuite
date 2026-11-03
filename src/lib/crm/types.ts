@@ -75,6 +75,11 @@ export interface ImportUndo {
   /** Papeles cambiados al sobrescribir (para dejarlos como estaban). */
   roles?: Array<{ contactId: string; accountId: string; role: string | null }>;
 }
+/** El cuerpo de la página de origen de una empresa, con su formato (Importar desde Notion, §48). */
+export interface AccountDoc {
+  accountId: string; sourceUrl: string | null; title: string | null; blocks: import('../notion/doc').DocBlock[]; chars: number; textHash: string | null;
+  importId: string | null; importedAt?: string;
+}
 export interface CrmImport {
   id: string; tenantId: string; createdBy: string | null; fileName: string; target: 'account' | 'contact';
   headers: string[]; rows: string[][]; mapping: ImportMapping; status: 'draft' | 'done' | 'undone'; stats: Partial<ImportStats>;

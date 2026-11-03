@@ -7,6 +7,10 @@ import type { Contact, CrmImport, ImportMapping, LinkWhen, PaymentRequest } from
 import type { Activity } from './followup';
 import { notifyRoles, userLabel } from '../notify/db-demo';
 
+/** Demo: el cuerpo importado de cada empresa (en memoria; se borra con la empresa al reiniciar). */
+const DOCS = Symbol.for('salessuite.demoAccountDocs');
+const demoDocs = (): Map<string, import('./types').AccountDoc> => ((globalThis as unknown as Record<symbol, Map<string, import('./types').AccountDoc>>)[DOCS] ??= new Map());
+
 const db = () => demoDb();
 const iso = () => new Date().toISOString();
 /** Dos interacciones en el mismo milisegundo no deben empatar (en Postgres, now() lleva microsegundos). */
@@ -184,13 +188,15 @@ export function demoCrmDb(actorId: string): CrmDb {
       if (p.status !== undefined) r.status = p.status;
       if (p.stats !== undefined) r.stats = p.stats as Record<string, unknown>;
       if (p.doneAt !== undefined) r.done_at = p.doneAt;
+      if (p.headers !== undefined) r.headers = p.headers;
+      if (p.rows !== undefined) r.rows = p.rows;
       return true;
     },
     async listActivities(t, accountIds, limit) {
       if (!isMember(t, actorId)) return [];
       return db().crm_activity.filter((a) => a.tenant_id === t && accountIds.includes(a.account_id))
         .sort((a, b) => b.happened_at.localeCompare(a.happened_at)).slice(0, limit)
-        .map((r) => ({ id: r.id, accountId: r.account_id, contactId: r.contact_id, userId: r.user_id, channel: r.channel as Activity['channel'], outcome: r.outcome as Activity['outcome'], note: r.note, happenedAt: r.happened_at }));
+        .map((r) => ({ id: r.id, accountId: r.account_id, contactId: r.contact_id, userId: r.user_id, channel: r.channel as Activity['channel'], outcome: r.outcome as Activity['outcome'], note: r.note, happenedAt: r.happened_at, ...(r.date_only ? { dateOnly: true } : {}) }));
     },
     async lastActivities(t, accountIds) {
       if (!isMember(t, actorId)) return [];
@@ -265,9 +271,24 @@ export function demoCrmDb(actorId: string): CrmDb {
       if (!isMember(t, actorId)) throw new Error('permission denied: crm_activity');
       if (!s.account.some((x) => x.id === a.accountId && x.tenant_id === t)) throw new Error('violates foreign key: crm_activity account');
       const row = { id: randomUUID(), tenant_id: t, account_id: a.accountId, contact_id: a.contactId, user_id: actorId, channel: a.channel, outcome: a.outcome,
-        note: a.note, happened_at: a.happenedAt ?? monotonic(), created_at: iso() };
+        note: a.note, happened_at: a.happenedAt ?? monotonic(), created_at: iso(), date_only: !!a.dateOnly, import_id: a.importId ?? null };
       s.crm_activity.push(row);
       return row.id;
+    },
+    async saveAccountDoc(t, d) {
+      if (!isMember(t, actorId)) throw new Error('permission denied: account_doc');
+      if (!db().account.some((x) => x.id === d.accountId && x.tenant_id === t)) throw new Error('violates foreign key: account_doc account');
+      demoDocs().set(d.accountId, { ...d, importedAt: iso() });
+    },
+    async getAccountDoc(t, accountId) {
+      const acc = db().account.find((x) => x.id === accountId && x.tenant_id === t);
+      return acc && isMember(t, actorId) ? demoDocs().get(accountId) ?? null : null;
+    },
+    async deleteActivitiesByImport(importId) {
+      const s = db();
+      const before = s.crm_activity.length;
+      s.crm_activity = s.crm_activity.filter((x) => x.import_id !== importId);
+      return before - s.crm_activity.length;
     },
     async findByEmail(t, emails, domains) {
       // = public.crm_find_by_email (security invoker: solo quien es del espacio).

@@ -112,7 +112,7 @@ export interface AccountRow {
 }
 export interface CrmActivityRow {
   id: string; tenant_id: string; account_id: string; contact_id: string | null; user_id: string | null; channel: string; outcome: string; note: string | null;
-  happened_at: string; created_at: string;
+  happened_at: string; created_at: string; date_only?: boolean; import_id?: string | null;
 }
 export interface CrmFieldRow {
   id: string; tenant_id: string; key: string; label: string; type: string; options: Array<{ key: string; label: string }>; grp: string | null;

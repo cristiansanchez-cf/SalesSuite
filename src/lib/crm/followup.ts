@@ -17,7 +17,9 @@ export const MAX_ACTORS = 3;
 /** Días entre intentos sin respuesta. */
 export const RETRY_DAYS = 2;
 
-export interface Activity { id: string; accountId: string; contactId: string | null; userId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt: string }
+export interface Activity { id: string; accountId: string; contactId: string | null; userId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt: string;
+  /** Importada de una bitácora en la que solo constaba el día (se enseña sin hora). */
+  dateOnly?: boolean }
 export interface Reachable { instagram?: string | null; linkedin?: string | null; phone?: string | null; email?: string | null }
 export interface Actor extends Reachable { id: string; name: string }
 

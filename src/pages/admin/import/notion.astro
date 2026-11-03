@@ -1,0 +1,215 @@
+---
+/**
+ * Importar desde Notion (docs/CRM_DINAMICO.md §48), solo el superadmin: leer la base, revisar fila a fila (si entra, su
+ * tipo, el nombre de la empresa y las personas), importar, verificar contra Notion y, si hace falta, deshacer.
+ * Cada paso es una petición corta a /admin/api/notion-import (las páginas se leen y se verifican de una en una).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { AdminError } from '~/lib/admin/service';
+import { env } from '~/lib/env';
+import { i18n } from '~/lib/i18n';
+import { notionImportMessages } from '~/lib/i18n/messages/notionImport';
+import { appMode } from '~/lib/mode';
+import { notionFor } from '~/lib/notion/server';
+import { cellFor, entryStats } from '~/lib/notion/plan';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+const { m, locale } = i18n(Astro, notionImportMessages);
+const id = Astro.url.searchParams.get('id');
+let view: Awaited<ReturnType<ReturnType<typeof notionFor>['view']>> | null = null;
+if (id) {
+  try { view = await notionFor(admin).view(id); } catch (e) {
+    if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404');
+    throw e;
+  }
+}
+const hasToken = !!env('NOTION_TOKEN');
+const demo = appMode() === 'demo';
+const rows = view?.data.rows ?? [];
+const choices = view?.data.choices ?? [];
+const included = choices.filter((c) => c.include).length;
+const titleOf = (i: number) => Object.values(rows[i].props).find((p) => p.type === 'title')?.text ?? '';
+const nameCount = new Map<string, number>();
+choices.forEach((c) => { if (c.include) nameCount.set(c.name.toLowerCase(), (nameCount.get(c.name.toLowerCase()) ?? 0) + 1); });
+const dupes = [...nameCount].filter(([, n]) => n > 1).map(([k]) => choices.find((c) => c.name.toLowerCase() === k)!.name);
+const summaryCols = view ? Object.entries(view.data.columns).filter(([, c]) => c.to === 'field' && c.type === 'select').map(([k]) => k) : [];
+const fmtDate = (iso: string | null) => (iso ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Madrid' }).format(new Date(iso)) : '');
+---
+<AdminLayout title={m.title}>
+  <div class="grid max-w-4xl gap-6 pb-10" data-testid="notion-import" data-id={id ?? ''} data-status={view?.imp.status ?? ''}>
+    <PageHeader eyebrow={m.eyebrow} title={m.title} lede={m.lede} />
+    <a class="co-meta -mt-4 inline-flex items-center gap-1" href="/admin/import"><Icon name="chevron-left" size={14} />{m.back}</a>
+    {!hasToken && !demo && <p class="co-alert co-alert--rejection m-0" role="alert">{m.noToken}</p>}
+    {demo && <p class="co-alert m-0">{m.demo}</p>}
+    <p class="co-alert co-alert--rejection m-0" role="alert" hidden data-msg-error></p>
+    <p class="co-alert co-alert--success m-0" role="status" hidden data-msg-ok></p>
+
+    {!view ? (
+      <form class="co-card grid gap-3" data-start>
+        <label class="co-field">{m.url}<input class="co-input" type="url" name="url" required placeholder="https://www.notion.so/…" data-testid="notion-url" /></label>
+        <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="notion-start" data-busy={m.starting}><Icon name="download" size={16} /><span>{m.start}</span></button>
+      </form>
+    ) : (
+      <>
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="co-badge co-badge--soft" data-testid="notion-status">{m.status[view.imp.status] ?? view.imp.status}</span>
+          <span class="co-meta"><b>{view.data.title}</b> · {m.rows(rows.length, included)}</span>
+          <span class="co-meta" data-progress aria-live="polite"></span>
+        </div>
+        {dupes.map((d) => <p class="co-alert co-alert--rejection m-0">{m.dupName(d)}</p>)}
+
+        <form class="grid gap-3" data-choices>
+          {rows.map((r, i) => {
+            const c = choices[i];
+            const st = entryStats(r.entries);
+            return (
+              <fieldset class="co-card grid gap-3 !p-5" data-row={i} data-read={r.blocks ? '1' : '0'} data-testid="notion-row" disabled={view!.imp.status !== 'draft'}>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <label class="flex items-center gap-2"><input type="checkbox" name="include" checked={c.include} data-testid="notion-include" /><b>{titleOf(i)}</b></label>
+                  <a class="co-meta inline-flex items-center gap-1" href={r.url} target="_blank" rel="noopener noreferrer">{m.open} <Icon name="external-link" size={12} /></a>
+                </div>
+                <p class="co-meta m-0">{summaryCols.map((k) => cellFor(r.props[k])).filter(Boolean).join(' · ')}</p>
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <label class="co-field">{m.kind}
+                    <select class="co-select" name="kind" data-testid="notion-kind">{view!.kinds.map((k) => <option value={k.key} selected={k.key === c.kind}>{k.label}</option>)}</select>
+                  </label>
+                  <label class="co-field">{m.name}<input class="co-input" name="name" value={c.name} maxlength="160" required /></label>
+                  <label class="co-field">{m.people}<input class="co-input" name="people" value={c.people.join(', ')} maxlength="800" /></label>
+                </div>
+                <p class="co-meta m-0" data-read-info>
+                  {r.readError ? m.readError(r.readError) : r.blocks ? `${m.chars(r.chars ?? 0)} · ${m.entries(st.exact, st.fromPrevious, st.approx)}` : '…'}
+                </p>
+                {(r.entries?.length ?? 0) > 0 && (
+                  <details>
+                    <summary class="co-meta cursor-pointer">{m.seeEntries(st.total)}</summary>
+                    <ul class="mt-2 grid gap-1 p-0 text-sm">{r.entries!.map((e) => (
+                      <li class="list-none" data-kind={e.kind}>
+                        <span class:list={['co-chip !text-xs', e.kind === 'approx' && 'opacity-60']}>{e.kind === 'exact' ? fmtDate(e.at) : m.approx}</span>
+                        {e.yearFromPrevious && <span class="co-badge co-badge--attention ml-1">{m.yearPrev}</span>}
+                        <span class="ml-2">{e.title.slice(0, 140)}</span>
+                      </li>
+                    ))}</ul>
+                  </details>
+                )}
+              </fieldset>
+            );
+          })}
+          {view.imp.status === 'draft' && (
+            <div class="flex flex-wrap gap-2">
+              <button class="co-btn co-btn--ghost" type="button" data-save data-testid="notion-save">{m.save}</button>
+              <button class="co-btn co-btn--primary" type="button" data-run data-testid="notion-run" data-busy={m.running}><Icon name="upload" size={16} /><span>{m.run(included)}</span></button>
+            </div>
+          )}
+        </form>
+
+        {view.imp.status === 'done' && (
+          <div class="co-card grid gap-3 !p-5">
+            <div class="flex flex-wrap gap-2">
+              <button class="co-btn co-btn--primary" type="button" data-verify data-testid="notion-verify"><Icon name="circle-check" size={16} />{m.verify}</button>
+              <button class="co-btn co-btn--ghost" type="button" data-undo data-testid="notion-undo">{m.undo}</button>
+            </div>
+            <div data-report data-testid="notion-report"></div>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</AdminLayout>
+
+<script is:inline define:vars={{ T: { reading: m.reading(1, 2), verifying: m.verifying(1, 2), saved: m.saved, error: m.error, undoConfirm: m.undoConfirm, undone: m.undone, verifyOk: m.verifyOk(999), verifyBad: m.verifyBad(999), skipped: m.skipped(999), done: m.done(991, 992, 993, 994), readAll: m.readAll(999) } }}>
+  const root = document.querySelector('[data-testid=notion-import]');
+  const id = root?.dataset.id;
+  const errBox = document.querySelector('[data-msg-error]'), okBox = document.querySelector('[data-msg-ok]');
+  const progress = document.querySelector('[data-progress]');
+  const show = (box, text) => { errBox.hidden = true; okBox.hidden = true; if (box && text) { box.textContent = text; box.hidden = false; } };
+  const fill = (tpl, ...n) => { let i = 0; return tpl.replace(/\d+/g, (x) => (['1', '2', '999', '991', '992', '993', '994'].includes(x) ? String(n[i++] ?? x) : x)); };
+  async function call(body) {
+    const r = await fetch('/admin/api/notion-import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(out.error || T.error);
+    return out;
+  }
+  const busy = (btn, on) => { if (!btn) return; btn.disabled = on; const s = btn.querySelector('span'); if (s) { if (on) { btn.dataset.label = s.textContent; s.textContent = btn.dataset.busy || s.textContent; } else if (btn.dataset.label) s.textContent = btn.dataset.label; } };
+
+  // 1. Empezar: leer la base.
+  document.querySelector('[data-start]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    busy(btn, true);
+    try { const out = await call({ step: 'start', url: new FormData(e.target).get('url') }); location.href = `/admin/import/notion?id=${out.id}`; }
+    catch (err) { show(errBox, err.message); busy(btn, false); }
+  });
+
+  // 2. Leer los cuerpos que faltan, de uno en uno.
+  async function readAll() {
+    const todo = [...document.querySelectorAll('[data-row][data-read="0"]')];
+    if (!todo.length || root.dataset.status !== 'draft') return;
+    const runBtn = document.querySelector('[data-run]');
+    if (runBtn) runBtn.disabled = true;
+    for (const [k, row] of todo.entries()) {
+      progress.textContent = fill(T.reading, k + 1, todo.length);
+      try { await call({ step: 'read', id, index: Number(row.dataset.row) }); } catch (err) { show(errBox, err.message); return; }
+    }
+    location.reload();
+  }
+  readAll();
+
+  // 3. Lo decidido en la vista previa.
+  const choices = () => [...document.querySelectorAll('[data-row]')].map((row) => ({
+    include: row.querySelector('[name=include]').checked, kind: row.querySelector('[name=kind]').value, name: row.querySelector('[name=name]').value,
+    people: row.querySelector('[name=people]').value.split(',').map((x) => x.trim()).filter(Boolean),
+  }));
+  document.querySelector('[data-save]')?.addEventListener('click', async () => {
+    try { await call({ step: 'choices', id, choices: choices() }); location.reload(); } catch (err) { show(errBox, err.message); }
+  });
+
+  // 4. Importar.
+  document.querySelector('[data-run]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    busy(btn, true);
+    try {
+      await call({ step: 'choices', id, choices: choices() });
+      const out = await call({ step: 'run', id });
+      sessionStorage.setItem(`notion-run-${id}`, JSON.stringify(out));
+      location.reload();
+    } catch (err) { show(errBox, err.message); busy(btn, false); }
+  });
+  try {
+    const last = JSON.parse(sessionStorage.getItem(`notion-run-${id}`) || 'null');
+    if (last) show(okBox, fill(T.done, last.accounts, last.people, last.docs, last.activities) + (last.skipped ? ` ${fill(T.skipped, last.skipped)}` : ''));
+  } catch { /* sin almacenamiento */ }
+
+  // 5. Verificar contra Notion, fila a fila.
+  document.querySelector('[data-verify]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget, report = document.querySelector('[data-report]');
+    btn.disabled = true;
+    const rows = [...document.querySelectorAll('[data-row]')].filter((r) => r.querySelector('[name=include]').checked);
+    const diffs = [];
+    for (const [k, row] of rows.entries()) {
+      progress.textContent = fill(T.verifying, k + 1, rows.length);
+      try {
+        const out = await call({ step: 'verify', id, index: Number(row.dataset.row) });
+        for (const d of out.diffs) diffs.push(`${row.querySelector('b').textContent}: ${d}`);
+      } catch (err) { diffs.push(`${row.querySelector('b').textContent}: ${err.message}`); }
+    }
+    progress.textContent = '';
+    report.replaceChildren();
+    const head = document.createElement('p');
+    head.className = diffs.length ? 'co-alert co-alert--rejection m-0' : 'co-alert co-alert--success m-0';
+    head.dataset.testid = diffs.length ? 'notion-verify-bad' : 'notion-verify-ok';
+    head.textContent = diffs.length ? fill(T.verifyBad, diffs.length) : fill(T.verifyOk, rows.length);
+    report.append(head);
+    if (diffs.length) { const ul = document.createElement('ul'); for (const d of diffs) { const li = document.createElement('li'); li.textContent = d; ul.append(li); } report.append(ul); }
+    btn.disabled = false;
+  });
+
+  // 6. Deshacer.
+  document.querySelector('[data-undo]')?.addEventListener('click', async () => {
+    if (!confirm(T.undoConfirm)) return;
+    try { await call({ step: 'undo', id }); sessionStorage.removeItem(`notion-run-${id}`); location.reload(); } catch (err) { show(errBox, err.message); }
+  });
+</script>

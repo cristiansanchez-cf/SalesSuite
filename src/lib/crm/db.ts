@@ -1,7 +1,7 @@
 /** Personas, sus empresas e importaciones (docs/CRM_DINAMICO.md). Una implementación por usuario: en Supabase decide la RLS. */
 import type { ActivitySummary } from './pipeline';
 import type { Activity, Channel, Outcome } from './followup';
-import type { AccountLink, LinkWhen, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport, PaymentRequest, PaymentRequestInsert } from './types';
+import type { AccountDoc, AccountLink, LinkWhen, Contact, ContactInsert, ContactLink, ContactPatch, CrmImport, PaymentRequest, PaymentRequestInsert } from './types';
 
 export interface EmailMatch { kind: 'contact' | 'account' | 'domain'; contactId: string | null; accountId: string | null; matched: string }
 export interface ContactFilter { ids?: string[]; tag?: string; q?: string; limit: number }
@@ -25,7 +25,7 @@ export interface CrmDb {
   createImport(tenantId: string, i: Pick<CrmImport, 'fileName' | 'target' | 'headers' | 'rows' | 'mapping'>): Promise<string>;
   getImport(id: string): Promise<CrmImport | null>;
   listImports(tenantId: string, limit: number): Promise<Array<Omit<CrmImport, 'rows'>>>;
-  updateImport(id: string, p: Partial<Pick<CrmImport, 'mapping' | 'status' | 'stats' | 'doneAt'>>): Promise<boolean>;
+  updateImport(id: string, p: Partial<Pick<CrmImport, 'mapping' | 'status' | 'stats' | 'doneAt' | 'headers' | 'rows'>>): Promise<boolean>;
   deleteContactsByImport(importId: string): Promise<number>;
   /** Interacciones de unas empresas, de la más reciente a la más antigua. */
   listActivities(tenantId: string, accountIds: string[], limit: number): Promise<Activity[]>;
@@ -33,7 +33,11 @@ export interface CrmDb {
   lastActivities(tenantId: string, accountIds: string[]): Promise<Array<{ accountId: string; outcome: Activity['outcome']; happenedAt: string }>>;
   /** Resumen de interacciones por empresa (tablero, §34): vista crm_activity_summary. */
   activitySummary(tenantId: string, accountIds: string[]): Promise<ActivitySummary[]>;
-  insertActivity(tenantId: string, a: { accountId: string; contactId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt?: string }): Promise<string>;
+  insertActivity(tenantId: string, a: { accountId: string; contactId: string | null; channel: Channel; outcome: Outcome; note: string | null; happenedAt?: string; dateOnly?: boolean; importId?: string | null }): Promise<string>;
+  /** El cuerpo de la página de origen de una empresa (Importar desde Notion, §48). */
+  saveAccountDoc?(tenantId: string, d: AccountDoc): Promise<void>;
+  getAccountDoc?(tenantId: string, accountId: string): Promise<AccountDoc | null>;
+  deleteActivitiesByImport?(importId: string): Promise<number>;
   deleteActivity(id: string): Promise<boolean>;
   /** Correos al CRM: la persona con ese email (y sus empresas), la empresa con ese email o la de ese dominio. */
   findByEmail(tenantId: string, emails: string[], domains: string[]): Promise<EmailMatch[]>;

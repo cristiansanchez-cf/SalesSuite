@@ -602,3 +602,25 @@ button[aria-busy='true'] { cursor: progress; opacity: 0.75; }
 .co-pulse-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--co-accent, currentColor); animation: co-pulse 1.2s ease-in-out infinite; flex: none; }
 @keyframes co-pulse { 0%, 100% { opacity: .35; transform: scale(.85); } 50% { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .co-pulse-dot { animation: none; opacity: .8; } }
+
+/* El cuerpo de una página importada de Notion (docs/CRM_DINAMICO.md §48): como se veía allí, con la tipografía de la consola. */
+.source-doc { display: grid; gap: .6rem; overflow-wrap: anywhere; }
+.source-doc h3 { font-size: 1.15rem; font-weight: 700; margin: .6rem 0 0; color: var(--co-ink); }
+.source-doc h4 { font-size: 1rem; font-weight: 700; margin: .5rem 0 0; color: var(--co-ink); }
+.source-doc h5 { font-size: .95rem; font-weight: 700; margin: .4rem 0 0; color: var(--co-ink); }
+.source-doc p { margin: 0; }
+.source-doc ul, .source-doc ol { margin: 0; padding-left: 1.25rem; display: grid; gap: .2rem; }
+.source-doc ul { list-style: disc; }
+.source-doc ol { list-style: decimal; }
+.source-doc ul.doc-todo { list-style: none; padding-left: 0; }
+.source-doc blockquote, .source-doc .doc-callout { margin: 0; padding: .5rem .75rem; border-left: 3px solid var(--console-card-border-hover); background: var(--console-chip-bg); border-radius: .5rem; }
+.source-doc .doc-toggle { border: 1px solid var(--console-divider); border-radius: .6rem; padding: .4rem .7rem; }
+.source-doc .doc-toggle > summary { cursor: pointer; font-weight: 600; }
+.source-doc .doc-toggle[open] > summary { margin-bottom: .4rem; }
+.source-doc .doc-table { overflow-x: auto; }
+.source-doc table { border-collapse: collapse; font-size: .9em; min-width: 100%; }
+.source-doc th, .source-doc td { border: 1px solid var(--console-divider); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+.source-doc th { background: var(--console-chip-bg); font-weight: 700; }
+.source-doc pre { overflow-x: auto; padding: .5rem; background: var(--console-chip-bg); border-radius: .5rem; }
+.source-doc hr { border: 0; border-top: 1px solid var(--console-divider); }
+.source-doc a { text-decoration: underline; }

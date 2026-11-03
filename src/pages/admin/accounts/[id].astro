@@ -47,6 +47,8 @@ import { PACKAGES, PRESALE } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { kindsMessages } from '~/lib/i18n/messages/kinds';
 import { CHANNELS, OUTCOMES } from '~/lib/crm/followup';
+import { notionImportMessages } from '~/lib/i18n/messages/notionImport';
+import { renderDoc } from '~/lib/notion/doc';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -58,6 +60,7 @@ const { m: msg, f: fmt, locale } = i18n(Astro, accountsMessages);
 const M = msg.detail;
 const ELIGIBILITY_LABEL = ELIGIBILITY_LABELS[locale];
 const C = crmMessages[locale].card;
+const DOC = notionImportMessages[locale].doc;
 const P = peopleMessages[locale];
 const F = followupMessages[locale];
 
@@ -156,12 +159,13 @@ try { data = await acc.get(id); } catch (e) {
 }
 const { account: a, touches, dossiers, canEdit, rules, crmFields } = data;
 // Todo lo que pinta la ficha, a la vez (cada servicio lee lo suyo; lo repetido sale de la caché de la petición).
-const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ, listsAll, chargeList, chargeOpts, coupons, pack] = await Promise.all([
+const [t, segments, members, co, tl, weights, coolingMap, aiR, kindDefs, work, googleQ, listsAll, chargeList, chargeOpts, coupons, pack, sourceDoc] = await Promise.all([
   acc.territory(), admin.playbook.segmentList(), perms.manageAccounts ? admin.tenantAdmin.listMembers().catch(() => []) : Promise.resolve([]), admin.crm.company(id), admin.crm.timeline(id),
   admin.crm.weights(), admin.crm.cooling([id]), admin.crm.aiResearch(id), acc.kinds(), admin.crm.workLinks(id),
   googleBox.q ? Promise.resolve(googleBox.q) : admin.crm.hasGoogle() ? admin.crm.googleQuery(id) : Promise.resolve(''),
   admin.crm.lists({ people: false }),
   admin.crm.charges(id), admin.crm.chargeOptions(), admin.commissions.coupons().catch(() => []), admin.crm.qualPack(),
+  admin.crm.accountDoc(id).catch(() => null),
 ]);
 // Sin cualificación en el espacio (§45): ni tarjeta de cualificación, ni nota, ni «Le encaja».
 const qual = pack !== null;
@@ -432,7 +436,7 @@ const STATE_ALERT = {
                   <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" value={tl.next?.at ? tl.next.at.slice(0, 10) : ''} /></label>
                   <label class="co-field">{F.follow.via}<select class="co-select" name="nextChannel"><option value=""></option>{CHANNELS.map((c) => <option value={c} selected={c === tl.next?.channel}>{F.channels[c]}</option>)}</select></label>
                   <label class="co-field">{F.follow.with}<select class="co-select" name="nextContactId"><option value="">{F.follow.company}</option>{tl.actors.map((x) => <option value={x.id} selected={x.id === tl.next?.contactId}>{x.name}</option>)}</select></label>
-                  <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="300" value={tl.next?.step ?? ''} placeholder={F.follow.whatPh} /></label>
+                  <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="1000" value={tl.next?.step ?? ''} placeholder={F.follow.whatPh} /></label>
                   <div class="flex flex-wrap items-center gap-3 sm:col-span-3">
                     <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="next-save">{F.follow.saveNext}</button>
                     {tl.next && <button class="co-meta underline" type="submit" name="action" value="next-clear" formnovalidate data-testid="next-clear">{F.follow.clear} {F.follow.next.toLowerCase()}</button>}
@@ -453,7 +457,7 @@ const STATE_ALERT = {
             <ol class="grid gap-2 p-0">
               {tl.items.slice(0, 30).map((x, i) => (
                 <li class="flex list-none items-start gap-3 text-sm" data-outcome={x.outcome} hidden={i >= 5 ? true : undefined} data-more-item={i >= 5 ? '' : undefined}>
-                  <span class="co-meta w-24 shrink-0">{fmt.relative(x.happenedAt)}</span>
+                  <span class="co-meta w-24 shrink-0" title={new Intl.DateTimeFormat(locale, x.dateOnly ? { dateStyle: 'long', timeZone: 'Europe/Madrid' } : { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Madrid' }).format(new Date(x.happenedAt))}>{fmt.relative(x.happenedAt)}</span>
                   <span class="min-w-0 flex-1">
                     <strong>{x.outcome === 'note' ? F.outcomes.note : `${F.channels[x.channel]} · ${F.outcomes[x.outcome]}`}</strong>
                     <span class="co-meta">{x.contactName ? ` · ${x.contactName}` : ''}{x.userName ? ` · ${x.userName}` : ''}</span>
@@ -470,6 +474,13 @@ const STATE_ALERT = {
           {tl.items.length > 5 && <button type="button" class="co-meta w-fit underline" data-more-show data-testid="interactions-more">{F.follow.more(Math.min(tl.items.length, 30))}</button>}
           <p class="co-help">{F.follow.rule}</p>
         </div>
+        {sourceDoc && sourceDoc.blocks.length > 0 && (
+          <details class="grid gap-2 border-t border-[var(--console-divider)] pt-3" data-testid="source-doc">
+            <summary class="cursor-pointer"><span class="text-eyebrow">{DOC.title}</span> <span class="co-meta">· {DOC.meta(sourceDoc.chars, sourceDoc.importedAt ? fmt.relative(sourceDoc.importedAt) : '')}</span></summary>
+            {sourceDoc.sourceUrl && /^https:\/\//.test(sourceDoc.sourceUrl) && <a class="co-meta inline-flex items-center gap-1" href={sourceDoc.sourceUrl} target="_blank" rel="noopener noreferrer">{DOC.open} <Icon name="external-link" size={12} /></a>}
+            <div class="source-doc co-body" set:html={renderDoc(sourceDoc.blocks)} />
+          </details>
+        )}
       </section>
 
 

@@ -33,6 +33,8 @@ try { draft = await admin.crm.importDraft(id); } catch (e) {
   throw e;
 }
 const { imp, profiles, fields, rowCount } = draft;
+// Las de Notion tienen su propia pantalla (docs/CRM_DINAMICO.md §48).
+if ((imp.mapping as { notion?: unknown }).notion) return Astro.redirect(`/admin/import/notion?id=${imp.id}`);
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {

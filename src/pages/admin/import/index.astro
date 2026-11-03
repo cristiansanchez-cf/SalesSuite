@@ -12,6 +12,7 @@ import { i18n } from '~/lib/i18n';
 import { peopleMessages } from '~/lib/i18n/messages/people';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import { zonesMessages } from '~/lib/i18n/messages/zones';
+import { notionImportMessages } from '~/lib/i18n/messages/notionImport';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -19,6 +20,7 @@ const perms = can(admin.session.role);
 if (!perms.importCrm) return Astro.rewrite('/admin/forbidden');
 const { m, f: fmt } = i18n(Astro, peopleMessages);
 const I = m.import;
+const NI = notionImportMessages[i18n(Astro, notionImportMessages).locale];
 const FX = followupMessages[i18n(Astro, followupMessages).locale].fix;
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
@@ -52,6 +54,12 @@ const igDone = Astro.url.searchParams.get('ig');
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
   {igDone && <div class="mb-4"><Alert kind="success" title={FX.igDone(Number(igDone) || 0)} /></div>}
 
+  {admin.session.superadmin && (
+    <a class="co-card mb-6 grid max-w-2xl gap-1 text-inherit !no-underline" href="/admin/import/notion" data-testid="notion-import-card">
+      <span class="co-row-title flex items-center gap-2"><Icon name="file-text" size={16} />{NI.title}</span>
+      <span class="co-meta">{NI.lede}</span>
+    </a>
+  )}
   <form method="post" enctype="multipart/form-data" class="co-card mb-6 grid max-w-2xl gap-4" data-testid="import-upload">
     <input type="hidden" name="action" value="upload" />
     <fieldset class="grid gap-2">

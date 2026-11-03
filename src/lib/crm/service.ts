@@ -31,7 +31,7 @@ import { slugKey } from './fields';
 import { chargeRef, paymentUrl } from '../admin/payment';
 import { chargeable } from './charge';
 import { LINK_DAYS, type LinkWhen } from './types';
-import type { Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo, PaymentRequest } from './types';
+import type { AccountDoc, Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo, PaymentRequest } from './types';
 import { DEFAULT_AI_PER_USER_DAY, overBudget, type AiLimitsNow } from '../usage/limits';
 
 const uuid = z.string().uuid();
@@ -91,7 +91,7 @@ export const nextStepSchema = z.object({
   at: z.string().max(40).optional().transform((v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v.length <= 10 ? `${v}T10:00:00` : v).toISOString() : null)),
   channel: z.enum(CHANNELS).nullable().optional().or(z.literal('').transform(() => null)),
   contactId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
-  step: opt(300),
+  step: opt(1000),
 });
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
@@ -505,6 +505,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const fs = await fields();
     return { imp: { ...imp, rows: [] as string[][] }, rowCount: imp.rows.length, profiles: profileColumns(imp.headers, imp.rows, imp.target, fs), fields: fs.filter((f) => !f.archivedAt && f.target === imp.target) };
   }
+  /** Cambia las filas de una importación que aún no se ha hecho (Importar desde Notion: las que se dejan fuera). */
+  async function importReplace(id: string, text: string) {
+    const imp = await loadImport(id);
+    if (imp.status !== 'draft') throw new AdminError(409, 'Esta importación ya se hizo');
+    const { headers, rows } = readCsv(text);
+    if (rows.length > MAX_ROWS) throw new AdminError(422, 'Máximo 5000 filas por importación');
+    try { await db.updateImport(id, { headers, rows }); } catch (e) { mapError(e); }
+  }
   async function importPreview(id: string, mapping?: ImportMapping): Promise<{ plan: ImportPlan; mapping: ImportMapping }> {
     const imp = await loadImport(id);
     if (imp.status !== 'draft') throw new AdminError(409, 'Esta importación ya se hizo');
@@ -764,6 +772,49 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
   }
+  // ---- Importar desde Notion (§48): lo que necesita la importación, además de lo de importar un CSV. Solo admin.
+  /** El cuerpo de la página de origen de una empresa (con su formato), si se importó. */
+  async function accountDoc(accountId: string): Promise<AccountDoc | null> {
+    requireUse();
+    return db.getAccountDoc ? db.getAccountDoc(t, accountId).catch(() => null) : null;
+  }
+  async function saveAccountDoc(d: AccountDoc) {
+    requireImporter();
+    if (!db.saveAccountDoc) throw new AdminError(503, 'Falta aplicar la migración de Importar desde Notion');
+    const a = await accounts.getAccount(d.accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    try { await db.saveAccountDoc(t, d); } catch (e) { mapError(e); }
+  }
+  /** Las empresas por su referencia externa (la URL de la página de Notion). */
+  async function accountsByRef(): Promise<Map<string, Account>> {
+    requireImporter();
+    return new Map((await allAccounts()).filter((a) => a.externalRef).map((a) => [a.externalRef!, a]));
+  }
+  /** Interacciones de una bitácora importada (todas «nota»: no cambian el tablero ni el seguimiento). */
+  async function importActivities(importId: string, rows: Array<{ accountId: string; channel: Channel; note: string; happenedAt: string; dateOnly: boolean }>) {
+    requireImporter();
+    let n = 0;
+    for (const r of rows) {
+      try { await db.insertActivity(t, { accountId: r.accountId, contactId: null, channel: r.channel, outcome: 'note', note: r.note.slice(0, 4000), happenedAt: r.happenedAt, dateOnly: r.dateOnly, importId }); n++; } catch (e) { mapError(e); }
+    }
+    return n;
+  }
+  async function undoImportActivities(importId: string) {
+    requireImporter();
+    return db.deleteActivitiesByImport ? db.deleteActivitiesByImport(importId) : 0;
+  }
+  /** Personas (del título de la fila) enlazadas a su empresa; se deshacen con la importación. */
+  async function importPeople(importId: string, rows: Array<{ accountId: string; name: string }>) {
+    requireImporter();
+    if (!rows.length) return 0;
+    let ids: string[];
+    try {
+      ids = await db.insertContacts(t, rows.map((r) => ({ name: r.name.slice(0, 160), email: null, phone: null, instagram: null, linkedin: null, city: null, notes: null, fields: {}, tags: [], ownerId: s.userId, importId })));
+      await db.saveLinks(t, ids.map((id, i) => ({ contactId: id, accountId: rows[i].accountId, role: null })));
+    } catch (e) { mapError(e); }
+    return ids!.length;
+  }
+
   async function deleteActivity(id: string) {
     requireUse();
     if (!(await db.deleteActivity(id))) throw new AdminError(403, 'Sin permiso para esta operación');
@@ -1988,7 +2039,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     setCompanyContact, timeline, logActivity, findByEmail, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
     company, moveToGroup, setTags, lists, names,
-    imports, importStart, importDraft, importPreview, importRun, importUndo,
+    imports, importStart, importDraft, importPreview, importRun, importUndo, importReplace,
+    accountDoc, saveAccountDoc, accountsByRef, importActivities, undoImportActivities, importPeople,
   };
 }
 export type CrmService = ReturnType<typeof createCrmService>;

@@ -1169,3 +1169,69 @@ Microsoft 365; Oquea, Google Workspace: tiene que valer para cualquier correo).
 - Pruebas: `src/lib/inbox/inbox.test.ts` (lectura de correos de Outlook y Gmail, firma, de punta a punta en memoria),
   SQL 79 (direcciones, lista y búsqueda con su RLS) y `scripts/smoke-inbox.cjs`.
 - Después: conectar Microsoft 365 (Graph) y Gmail directamente para no tener que reenviar; WhatsApp con el mismo motor.
+
+## 48. Importar desde Notion (hecho)
+
+Pedido de Cristian: pasar su CRM personal de Notion («Seguimiento de Clientes Cofundo») al espacio **Cofundo**, con el
+cuerpo de cada página tal cual y su bitácora como interacciones. Sirve para cualquier base de Notion y cualquier espacio.
+Solo el **superadmin**: Configurar → Importar → **Importar desde Notion** (`/admin/import/notion`).
+
+**Acceso (solo lectura).** Una integración interna de Notion con permiso solo de **leer contenido**, cuya clave va en
+Vercel como `NOTION_TOKEN`. Solo ve las bases que se comparten con ella (en Notion: ··· → Conexiones). El cliente
+(`src/lib/notion/client.ts`) solo hace GET y la consulta de la fuente de datos: nunca escribe en Notion. En demo y en las
+pruebas, una base inventada (`src/lib/notion/server.ts`).
+
+**Pasos** (cada uno, una petición corta a `/admin/api/notion-import`):
+1. **Leer la base**: sus columnas (con las opciones en su orden: las etapas del embudo, tal cual) y sus filas (sin las
+   archivadas). Se crea una importación en borrador (`crm_import`, la misma de los CSV).
+2. **Leer las páginas**, de una en una: bloques → documento normalizado (`src/lib/notion/doc.ts`: encabezados, listas,
+   tareas, desplegables, citas, avisos, código, tablas, enlaces), su texto, su **huella** (sha256) y sus entradas con fecha.
+3. **Revisar** cada fila: si entra, su tipo, el nombre de la empresa y las personas. Lo propuesto (`src/lib/notion/plan.ts`):
+   - **Empresa y personas, solo del título**: «Persona — Empresa» y «Persona / Empresa» → esa empresa y esa persona;
+     «Empresa (Ana · Luis)» → la empresa y ellos; un título que parece un nombre de persona → también como persona.
+   - **Tipo** con «Tipo» y «Origen» de Notion: Partner / Aliado → Alianza; Asesor → Asesor; Institucional → Ecosistema;
+     Cliente de Consultoría dev → Cliente de desarrollo; el resto de clientes → Startup.
+   - **Fuera**: los clientes de Enjoy u Oquea (se llevan en el CRM de cada startup).
+4. **Importar**:
+   - Se añaden los **tipos de Cofundo** que falten (Startup, que es el principal, Cliente de desarrollo, Inversor o
+     fondo, Alianza, Asesor e Institucional / ecosistema). Los inversores, alianzas y el ecosistema tienen ficha de
+     «organizador»: van en «Trabaja con» de las startups, como las promotoras en Enjoy (§32).
+   - Las empresas y sus campos salen con la importación de siempre: deduplica por la referencia
+     (`https://www.notion.so/<id>`) y se deshace entera. Columnas:
+     - el título → «Nombre en Notion»;
+     - Origen → «Vehículo»; Tipo → «Tipo (Notion)»; Canal → «Canal principal»;
+     - las selecciones, con sus valores tal cual;
+     - los textos, en texto largo;
+     - las fechas, en fecha;
+     - «Próximo paso» y su fecha → el próximo paso de la empresa (hasta 1.000 caracteres).
+   - Después, por cada empresa nueva:
+     - el tipo y el próximo paso;
+     - las personas del título;
+     - el cuerpo de la página (`account_doc`), que se ve en la ficha («Página de Notion»);
+     - las **interacciones** de la bitácora.
+5. **Verificar**: vuelve a leer cada página de Notion y compara campo a campo, el próximo paso, el nombre y el tipo, la
+   huella del cuerpo y sus bloques por tipo, y que estén todas las interacciones. Da la lista de diferencias.
+6. **Deshacer**: borra las empresas de la importación con sus personas, su cuerpo y sus interacciones.
+
+**La bitácora → interacciones** (`src/lib/notion/entries.ts`, sin inventar fechas). Las entradas son:
+- cada subtítulo de una sección «Bitácora» / «Historial» (o, si no tiene, cada viñeta de primer nivel);
+- y los títulos con fecha del resto de la página.
+
+Con fecha exacta («3 nov 2026», «2026-06-03», «16-jun-2026», «14/06/2026»), la entrada es una interacción:
+- **«nota»**: no cambia el tablero ni el seguimiento;
+- **canal** solo si el título lo dice: WhatsApp, email, llamada o reunión;
+- **solo el día** (`date_only`): se guarda a las 10:00 de Madrid y se enseña sin hora; con hora escrita, a esa hora;
+- con su texto en Markdown.
+
+Sin año («23 abr»), coge el de la entrada anterior de la misma lista, y se marca para revisarlo. Si no hay ninguna con
+año, o es un rango («10–13 oct»), aproximada («mediados de sept.», «~26 jun», «Antes de…») o sin fecha, se queda solo en
+el documento.
+
+Datos: migración `20261230000000_notion_import.sql`:
+- `account_doc` (lo lee el equipo del espacio y lo escribe el admin);
+- `crm_activity.date_only` e `import_id`;
+- próximo paso de 1.000 caracteres.
+
+Pruebas:
+- `src/lib/notion/notion.test.ts`: documento, HTML escapado, Markdown, fechas, entradas, plan y de punta a punta en demo;
+- `scripts/smoke-notion-import.cjs`.

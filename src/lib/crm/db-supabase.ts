@@ -23,6 +23,7 @@ const toImport = (r: Row): CrmImport => ({
 });
 const toActivity = (r: Row): Activity => ({
   id: r.id, accountId: r.account_id, contactId: r.contact_id, userId: r.user_id, channel: r.channel, outcome: r.outcome, note: r.note, happenedAt: r.happened_at,
+  ...(r.date_only ? { dateOnly: true } : {}),
 });
 const contactRow = (t: string, c: Partial<Contact>) => ({
   tenant_id: t, name: c.name, email: c.email ?? null, phone: c.phone ?? null, instagram: c.instagram ?? null, linkedin: c.linkedin ?? null, city: c.city ?? null,
@@ -130,6 +131,8 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       if (p.status !== undefined) patch.status = p.status;
       if (p.stats !== undefined) patch.stats = p.stats;
       if (p.doneAt !== undefined) patch.done_at = p.doneAt;
+      if (p.headers !== undefined) patch.headers = p.headers;
+      if (p.rows !== undefined) patch.rows = p.rows;
       return (check(await sb.from('crm_import').update(patch).eq('id', id).select('id')) ?? []).length > 0;
     },
     async listActivities(t, accountIds, limit) {
@@ -155,7 +158,22 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
     async insertActivity(t, a) {
       const row: Row = { tenant_id: t, account_id: a.accountId, contact_id: a.contactId, channel: a.channel, outcome: a.outcome, note: a.note };
       if (a.happenedAt) row.happened_at = a.happenedAt;
+      if (a.dateOnly) row.date_only = true;
+      if (a.importId) row.import_id = a.importId;
       return (check(await sb.from('crm_activity').insert(row).select('id').single()) as Row).id;
+    },
+    async saveAccountDoc(t, d) {
+      check(await sb.from('account_doc').upsert({ tenant_id: t, account_id: d.accountId, source_url: d.sourceUrl, title: d.title, blocks: d.blocks, chars: d.chars,
+        text_hash: d.textHash, import_id: d.importId, imported_at: new Date().toISOString() }, { onConflict: 'account_id' }));
+    },
+    async getAccountDoc(t, accountId) {
+      const r = await sb.from('account_doc').select('*').eq('tenant_id', t).eq('account_id', accountId).maybeSingle();
+      if (r.error && /account_doc|does not exist|schema cache/i.test(r.error.message)) return null;
+      const x = check(r) as Row | null;
+      return x ? { accountId: x.account_id, sourceUrl: x.source_url, title: x.title, blocks: x.blocks ?? [], chars: x.chars ?? 0, textHash: x.text_hash, importId: x.import_id, importedAt: x.imported_at } : null;
+    },
+    async deleteActivitiesByImport(importId) {
+      return ((check(await sb.from('crm_activity').delete().eq('import_id', importId).select('id')) ?? []) as Row[]).length;
     },
     async findByEmail(t, emails, domains) {
       const rows = (check(await sb.rpc('crm_find_by_email', { p_tenant: t, p_emails: emails, p_domains: domains })) ?? []) as Row[];

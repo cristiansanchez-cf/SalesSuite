@@ -45,3 +45,5 @@ revoke all on public.wa_reminder_log from authenticated, anon;
 revoke all on public.usage_event from authenticated, anon;
 -- Tope de IA por empresa (20261228): solo lo cambia el superadmin (platform_set_limits).
 revoke all on public.tenant_limits from authenticated, anon;
+-- Importar desde Notion (20261230): el cuerpo de la página, nadie sin sesión.
+revoke all on public.account_doc from anon;
