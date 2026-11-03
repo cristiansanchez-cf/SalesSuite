@@ -7,6 +7,7 @@ import type { Mailer } from './mailer';
 import { composeHref, dailyDue, dailyPlan, type DailyItem, type DailyOpen, type DailyPlan, type DailyReason } from './daily';
 import { formatters, isLocale, type Locale } from '../i18n/core';
 import { notifyMessages } from '../i18n/messages/notify';
+import { withUsageScope } from '../usage/meter';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const MANAGERS = new Set(['admin', 'lead']);
@@ -107,7 +108,7 @@ export async function runDailyDigest(db: NotifyJobDb, mailer: Mailer, o: { now: 
     const base = t?.hostname ? `https://${t.hostname}` : o.fallbackOrigin;
     const mail = dailyEmail({ plan, member: m, tenant: t, base, names, now: o.now });
     try {
-      await mailer.send({ to: m.email, subject: mail.subject, html: mail.html, text: mail.text, tag: 'daily' });
+      await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, () => mailer.send({ to: m.email, subject: mail.subject, html: mail.html, text: mail.text, tag: 'daily' }));
       await db.markDaily(m.userId, m.tenantId, day, true);
       r.sent++;
     } catch { r.failed++; }

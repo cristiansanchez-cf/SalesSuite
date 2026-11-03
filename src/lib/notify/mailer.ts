@@ -2,6 +2,7 @@
  * Envío de emails con Resend (https://resend.com/docs/api-reference/emails/send-email).
  * RESEND_API_KEY y RESEND_FROM viven solo en el servidor. En demo, los emails se guardan en memoria.
  */
+import { meterUnits } from '../usage/meter';
 export interface Email {
   to: string; subject: string; html: string; text: string; tag: string;
   /** Remitente de este envío (si no, RESEND_FROM). Leads: el de cada empresa, con su dominio verificado. */
@@ -22,6 +23,7 @@ export function resendMailer(apiKey: string, from: string, fetchImpl: typeof fet
           ...(e.replyTo ? { reply_to: e.replyTo } : {}), ...(e.headers ? { headers: e.headers } : {}) }),
       });
       if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
+      await meterUnits(`email.${e.tag.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 30) || 'otro'}`, 'email', 1);
       const out = (await res.json().catch(() => null)) as { id?: string } | null;
       return { id: out?.id ?? null };
     },

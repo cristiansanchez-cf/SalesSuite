@@ -5,6 +5,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { isText, skipKey } from './content';
+import { meterClaude } from '../usage/meter';
 
 export interface TextTranslator { translate(texts: string[], targetLocale: string): Promise<Map<string, string>> }
 
@@ -58,6 +59,7 @@ export function claudeTranslator(apiKey: string, ctx: { company: string; glossar
           system: systemPrompt(ctx.company, target, ctx.glossary, ctx.notes),
           messages: [{ role: 'user', content: JSON.stringify(part.map((t, k) => ({ i: k, t }))) }],
         } as Parameters<typeof client.beta.messages.create>[0]) as Anthropic.Beta.BetaMessage;
+        await meterClaude('i18n.translate', res.model || 'claude-opus-5-5', res.usage);
         if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') throw new Error(`traducción sin terminar (${res.stop_reason})`);
         const text = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
         for (const [k, v] of readTranslations(JSON.parse(text), part)) out.set(k, v);

@@ -9,6 +9,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { AI_BLOCKS, FORMATS, GOALS, parseData, type AiBlock, type AiData } from './ai-import';
+import { meterClaude } from '../usage/meter';
 
 export interface AgentFile { name: string; mediaType: 'application/pdf' | 'text/plain'; data: string /* base64 (PDF) o texto */ }
 export interface AgentInput {
@@ -162,6 +163,7 @@ export function claudeSetupAgent(apiKey: string, fetchImpl?: typeof fetch): Agen
           ],
           messages,
         });
+        await meterClaude('setup.agent', res.model || AGENT_MODEL, res.usage);
         if (res.stop_reason === 'refusal') return null;
         const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === SAVE_TOOL.name);
         if (call) return call.input;

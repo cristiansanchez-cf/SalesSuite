@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NOTES_MODEL } from '../crm/notes';
 import type { ReminderItem } from './flow';
+import { meterClaude } from '../usage/meter';
 
 export type Drafter = (item: ReminderItem, ctx: { seller: string; signer: string; locale: string }) => Promise<string | null>;
 
@@ -39,6 +40,7 @@ export function claudeDrafter(apiKey: string, fetchImpl?: typeof fetch): Drafter
       system: SYSTEM(ctx.locale),
       messages: [{ role: 'user', content: draftPrompt(item, ctx) }],
     });
+    await meterClaude('assistant.draft', res.model || NOTES_MODEL, res.usage);
     // Si se niega (o se corta), no hay propuesta: el recordatorio sale igual, sin ella.
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') return null;
     const text = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('').trim();

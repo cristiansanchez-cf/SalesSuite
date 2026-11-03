@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OrgDb } from './db';
 import type { Delegation, PlatformSetup, PlatformTenant } from './types';
+import type { UsageRow } from '../usage/report';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -52,6 +53,20 @@ export function supabaseOrgDb(sb: SupabaseClient): OrgDb {
       return check(await sb.rpc('platform_create_tenant', { p_slug: t.slug, p_name: t.name, p_locale: t.locale, p_hostname: t.hostname })) as string;
     },
     async addTenantAdmin(tenantId, userId) { check(await sb.rpc('platform_add_admin', { p_tenant: tenantId, p_user: userId })); },
+    async platformUsage(from, to) {
+      const r = await sb.rpc('platform_usage', { p_from: from.toISOString(), p_to: to.toISOString() });
+      if (r.error && /platform_usage|usage_event|does not exist|schema cache/i.test(r.error.message)) return null;
+      return ((check(r) ?? []) as Row[]).map((x): UsageRow => ({
+        tenantId: x.tenant_id ?? null, day: String(x.day), feature: x.feature, provider: x.provider, model: x.model ?? null, userId: x.user_id ?? null, userName: x.user_name ?? null,
+        events: Number(x.events), inputTokens: Number(x.input_tokens), outputTokens: Number(x.output_tokens), cacheReadTokens: Number(x.cache_read_tokens),
+        cacheWriteTokens: Number(x.cache_write_tokens), webSearches: Number(x.web_searches), units: Number(x.units), costUsd: Number(x.cost_usd),
+      }));
+    },
+    async platformStorage() {
+      const r = await sb.rpc('platform_storage');
+      if (r.error && /platform_storage|does not exist|schema cache/i.test(r.error.message)) return null;
+      return ((check(r) ?? []) as Row[]).map((x) => ({ tenantId: x.tenant_id, objects: Number(x.objects), bytes: Number(x.bytes) }));
+    },
     async platformOverview() {
       const r = await sb.rpc('platform_overview');
       if (missing(r.error)) return null;

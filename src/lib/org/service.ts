@@ -12,6 +12,7 @@ import type { AdminSession, MemberRecord } from '../admin/types';
 import type { OrgDb } from './db';
 import type { Delegation } from './types';
 import { inTeam, isGlobal } from './scope';
+import { costReport, fixedCostsFromEnv, isMonth, monthRange, storagePerGbFromEnv } from '../usage/report';
 
 export { inTeam, isGlobal };
 
@@ -92,6 +93,16 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     return (await db.platformOverview()) ?? [];
   }
 
+  /** Coste por empresa del mes «2026-11» (docs/COSTES.md). `ready: false` si aún no está la migración del consumo. */
+  async function costs(month: string, now = new Date()) {
+    if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
+    if (!isMonth(month)) throw new AdminError(422, 'Mes no válido');
+    const { from, to } = monthRange(month);
+    const [spaces, rows, storage] = await Promise.all([db.platformOverview(), db.platformUsage?.(from, to) ?? null, db.platformStorage?.().catch(() => null) ?? null]);
+    const tenants = (spaces ?? []).map((x) => ({ id: x.id, slug: x.slug, name: x.name, members: x.members, domain: x.domain }));
+    return { ready: rows !== null, report: costReport({ rows: rows ?? [], storage: storage ?? [], tenants, month, now, fixed: fixedCostsFromEnv(), storagePerGb: storagePerGbFromEnv() }) };
+  }
+
   /**
    * Alta de una empresa desde Plataforma (docs/ORG.md §Alta de una empresa): crea el espacio en `<dirección>.<base>`
    * (la base tiene el comodín en Vercel y en Supabase Auth, así que no hay que tocar nada más) y, si se da su email,
@@ -132,7 +143,7 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     }
     return { id, slug, hostname, origin, invited, adminEmail: email || null };
   }
-  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, createSpace };
+  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, createSpace };
 }
 
 export type OrgService = ReturnType<typeof createOrgService>;

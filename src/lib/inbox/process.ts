@@ -12,6 +12,7 @@ import type { AdminContext } from '../admin/auth';
 import type { LeadsDb } from '../leads/db';
 import type { InboxServerDb, InboundStatus } from './db';
 import { domainOf, isFreeDomain, noteOf, readEmail, tokenFrom, type Incoming } from './parse';
+import { withUsageScope } from '../usage/meter';
 
 /** Lo que manda Resend en el webhook (email.received): solo los datos de cabecera. */
 export interface ReceivedEvent { email_id: string; created_at: string; from: string; to: string[]; cc?: string[]; bcc?: string[]; received_for?: string[]; message_id: string; subject: string }
@@ -34,7 +35,10 @@ export async function processReceived(d: ProcessDeps, ev: ReceivedEvent): Promis
   const token = tokenFrom([...(ev.received_for ?? []), ...ev.to, ...(ev.cc ?? []), ...(ev.bcc ?? [])], d.inboxDomain);
   const addr = token ? await d.db.address(token) : null;
   if (!addr) return { status: 'unknown_address' };
-  const { tenantId, userId } = addr;
+  // Lo que cueste (la IA que lo apunta) es de su espacio y de quien lo reenvía (docs/COSTES.md).
+  return withUsageScope({ tenantId: addr.tenantId, userId: addr.userId }, () => processFor(d, ev, addr.tenantId, addr.userId));
+}
+async function processFor(d: ProcessDeps, ev: ReceivedEvent, tenantId: string, userId: string): Promise<ProcessResult> {
   const messageId = (ev.message_id || ev.email_id).slice(0, 500);
   if (await d.db.seen(tenantId, userId, messageId)) return { status: 'duplicate' };
 

@@ -10,6 +10,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Zone, ZoneKind } from '../accounts/types';
 import { norm } from './import';
+import { meterClaude } from '../usage/meter';
 
 /** Lo que la IA dice de un texto del campo «Ciudad». */
 export interface PlaceClass {
@@ -176,6 +177,7 @@ export function claudeZoneNames(apiKey: string, fetchImpl?: typeof fetch): ZoneN
         messages: [{ role: 'user', content: `Textos (uno por línea, JSON):\n${JSON.stringify(raws)}\n\nLlama a save_places con todos.` }],
       });
       const res = await stream.finalMessage();
+      await meterClaude('crm.places', res.model || PLACES_MODEL, res.usage);
       if (res.stop_reason === 'refusal') return [];
       const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === PLACES_TOOL.name);
       return call ? sanitizePlaces(call.input, raws) : [];
@@ -303,6 +305,7 @@ export function claudeZoneFixes(apiKey: string, fetchImpl?: typeof fetch): ZoneF
         messages: [{ role: 'user', content: `${lines.join('\n')}\n\nLlama a save_fixes.` }],
       });
       const res = await stream.finalMessage();
+      await meterClaude('crm.places-review', res.model || PLACES_MODEL, res.usage);
       if (res.stop_reason === 'refusal') return { fixes: [] };
       const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === FIXES_TOOL.name);
       return call?.input ?? { fixes: [] };

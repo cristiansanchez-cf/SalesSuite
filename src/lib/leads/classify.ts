@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { LeadType } from './contract';
 import type { EmailKind } from './normalize';
+import { meterClaude } from '../usage/meter';
 
 export const CATEGORIES = ['venue', 'dj', 'promoter', 'festival', 'event', 'wedding', 'partner', 'press', 'vendor', 'job', 'other'] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -97,6 +98,7 @@ export function claudeClassifier(apiKey: string, fetchImpl?: typeof fetch): Clas
         `Mensaje: <mensaje>${(i.message ?? '').slice(0, 2000)}</mensaje>`,
       ].filter(Boolean).join('\n') }],
     });
+    await meterClaude('leads.classify', res.model || CLASSIFY_MODEL, res.usage);
     const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
     const v = call?.input as { category?: string; confidence?: number; reason?: string } | undefined;
     if (!v || !CATEGORIES.includes(v.category as Category)) return null;

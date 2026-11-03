@@ -11,6 +11,7 @@ import type { Eta } from './schedule';
 import { autoreplyEmail, mediaFor, notifyEmail, waParams, waPreview } from './templates';
 import { STOP_STAGES, type Lead, type LeadMessage, type LeadSettings } from './types';
 import type { WhatsApp } from './whatsapp';
+import { withUsageScope } from '../usage/meter';
 
 export interface JobDeps {
   db: LeadsDb; mailer: Mailer | null; whatsapp: WhatsApp | null; now: Date; secret: string;
@@ -36,7 +37,8 @@ export async function processDue(d: JobDeps, opts: { leadId?: string; limit?: nu
   for (const m of due) {
     if (!(await d.db.claimMessage(m.id))) continue;
     try {
-      const outcome = await one(d, m, settingsCache);
+      // Lo que cueste (IA, correo, WhatsApp) es de su espacio (docs/COSTES.md).
+      const outcome = await withUsageScope({ tenantId: m.tenantId, userId: null }, () => one(d, m, settingsCache));
       r[outcome]++;
     } catch (e) {
       const attempts = m.attempts + 1;

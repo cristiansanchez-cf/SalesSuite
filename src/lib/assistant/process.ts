@@ -11,6 +11,7 @@ import type { Inbound, WhatsApp } from '../leads/whatsapp';
 import type { AssistantDb, Member } from './db';
 import { handle, type AssistantOps, type Incoming, type Reply } from './flow';
 import type { Transcriber } from './transcribe';
+import { withUsageScope } from '../usage/meter';
 
 export interface AssistantDeps {
   db: AssistantDb;
@@ -71,7 +72,11 @@ async function send(wa: WhatsApp, phoneId: string, to: string, r: Reply) {
 }
 
 export type AssistantResult = 'handled' | 'duplicate' | 'not_member';
-export async function processAssistant(d: AssistantDeps, phoneId: string, member: Member, m: Inbound): Promise<AssistantResult> {
+export function processAssistant(d: AssistantDeps, phoneId: string, member: Member, m: Inbound): Promise<AssistantResult> {
+  // Lo que cueste (audio, IA) es de su espacio y de quien escribe (docs/COSTES.md).
+  return withUsageScope({ tenantId: member.tenantId, userId: member.userId }, () => processInScope(d, phoneId, member, m));
+}
+async function processInScope(d: AssistantDeps, phoneId: string, member: Member, m: Inbound): Promise<AssistantResult> {
   const { tenantId, userId } = member;
   const first = await d.db.get(tenantId, userId);
   if (m.id && first.seen.includes(m.id)) return 'duplicate';

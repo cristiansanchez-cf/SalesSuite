@@ -4,6 +4,7 @@
  * número en los ajustes del espacio. Nada de IA conversando: los textos son fijos y firmados.
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { meterUnits } from '../usage/meter';
 
 // v25.0: vigente hasta julio de 2028 (la v21.0 deja de funcionar el 21/01/2027).
 const GRAPH = 'https://graph.facebook.com/v25.0';
@@ -26,6 +27,8 @@ export function cloudWhatsApp(token: string, fetchImpl: typeof fetch = fetch): W
     });
     const body = (await res.json().catch(() => null)) as { messages?: { id: string }[]; error?: { message?: string; code?: number } } | null;
     if (!res.ok) throw new Error(`WhatsApp ${res.status}: ${body?.error?.message ?? ''} (${body?.error?.code ?? ''})`.slice(0, 300));
+    // Las respuestas dentro de las 24 horas no se cobran: se apuntan (a 0) para ver el volumen.
+    await meterUnits('whatsapp.reply', 'meta', 1, { costUsd: 0 });
     return { id: body?.messages?.[0]?.id ?? null };
   };
   return {
@@ -54,6 +57,8 @@ export function cloudWhatsApp(token: string, fetchImpl: typeof fetch = fetch): W
       });
       const body = (await res.json().catch(() => null)) as { messages?: { id: string }[]; error?: { message?: string; code?: number } } | null;
       if (!res.ok) throw new Error(`WhatsApp ${res.status}: ${body?.error?.message ?? ''} (${body?.error?.code ?? ''})`.slice(0, 300));
+      // Nuestras plantillas son Utility (las de los leads y el recordatorio al equipo).
+      await meterUnits('whatsapp.template', 'meta', 1, { model: 'utility' });
       return { id: body?.messages?.[0]?.id ?? null };
     },
   };

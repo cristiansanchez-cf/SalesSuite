@@ -1,0 +1,122 @@
+---
+/**
+ * Coste por empresa (docs/COSTES.md): solo el superadmin. Lo que gasta cada espacio en el mes (IA, audios, WhatsApp,
+ * correos, redes), su previsión a fin de mes, lo que ocupa y su parte de los costes fijos. Con ?t=<espacio>, el detalle:
+ * en qué y quién.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { costsMessages } from '~/lib/i18n/messages/costs';
+import { appMode } from '~/lib/mode';
+import { GROUPS, isMonth, monthOf, usd, type TenantCost } from '~/lib/usage/report';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+const { m, locale } = i18n(Astro, costsMessages);
+const tag = locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES';
+const $ = (n: number) => usd(n, tag);
+const num = (n: number) => new Intl.NumberFormat(tag, { notation: n >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
+const gb = (b: number) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(1)} GB` : `${Math.round(b / 1024 ** 2)} MB`);
+
+const now = new Date();
+const qm = Astro.url.searchParams.get('m');
+const month = isMonth(qm) ? qm : monthOf(now);
+const shift = (k: number) => { const [y, mo] = month.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 1 + k, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
+const later = shift(1) <= monthOf(now);
+const { ready, report } = await admin.org.costs(month, now);
+const pick = Astro.url.searchParams.get('t');
+const one = pick ? report.tenants.find((t) => t.slug === pick) ?? null : null;
+const shown: TenantCost[] = one ? [one] : report.tenants;
+const top = report.tenants[0]?.variable ? report.tenants[0] : null;
+const monthName = new Intl.DateTimeFormat(tag, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${month}-15T00:00:00Z`));
+const href = (o: { m?: string; t?: string | null }) => `/admin/platform/costes?m=${o.m ?? month}${o.t ? `&t=${encodeURIComponent(o.t)}` : ''}`;
+const label = (f: string) => m.features[f] ?? f;
+const peak = (t: TenantCost) => Math.max(...t.daily, 0.000001);
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 pb-10" data-testid="costs">
+    <header class="grid gap-2">
+      <a class="co-meta inline-flex items-center gap-1" href="/admin/platform"><Icon name="chevron-left" size={14} />{m.back}</a>
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{one ? one.name : m.title}</h1>
+      <p class="co-lede !text-lg">{m.lede}</p>
+    </header>
+
+    <nav class="flex flex-wrap items-center gap-2" aria-label={monthName}>
+      <a class="co-btn co-btn--ghost co-btn--sm" href={href({ m: shift(-1), t: pick })} aria-label={m.prev} data-testid="costs-prev"><Icon name="chevron-left" size={16} /></a>
+      <span class="co-entity !text-xl first-letter:uppercase">{monthName}</span>
+      {later && <a class="co-btn co-btn--ghost co-btn--sm" href={href({ m: shift(1), t: pick })} aria-label={m.next}><Icon name="chevron-right" size={16} /></a>}
+      <span class="co-meta">· {report.current ? m.soFar(report.elapsedDays, report.days.length) : m.closed}</span>
+    </nav>
+
+    {!ready && <p class="co-alert co-alert--rejection m-0" role="alert" data-testid="costs-not-ready">{m.notReady}</p>}
+    {appMode() === 'demo' && <p class="co-alert m-0" data-testid="costs-demo">{m.demo}</p>}
+
+    {!one && (
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {[[report.totals.variable, m.variable, 'costs-variable'], [report.totals.projected, m.projected, 'costs-projected'], [report.totals.fixed, m.fixed, 'costs-fixed'], [report.totals.storage, m.storage, 'costs-storage']].map(([v, l, id]) => (
+          <div class="co-card grid !p-5" data-testid={id}><span class="co-figure text-3xl">{$(v as number)}</span><span class="co-meta">{l}</span></div>
+        ))}
+      </div>
+    )}
+    {!one && top && <p class="co-meta m-0" data-testid="costs-top">{m.top}: <b>{top.name}</b> · {$(top.variable)}</p>}
+    {!one && report.unassigned > 0 && <p class="co-meta m-0">{m.unassigned($(report.unassigned))}</p>}
+
+    <ul class="grid gap-3 p-0">{shown.map((t) => (
+      <li class="co-card grid list-none gap-4 !p-6" data-testid="cost-space" data-slug={t.slug} data-variable={t.variable.toFixed(6)}>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="grid gap-1 min-w-0">
+            <h2 class="co-entity !text-xl">{t.name}</h2>
+            <span class="co-meta">{m.members(t.members)}{t.perMember !== null && ` · ${$(t.perMember)} ${m.perMember}`}</span>
+          </div>
+          <div class="grid justify-items-end">
+            <span class="co-figure text-3xl">{$(t.variable)}</span>
+            {report.current && <span class="co-meta">{m.projected}: <b>{$(t.projected)}</b></span>}
+          </div>
+        </div>
+        <ul class="flex flex-wrap gap-1.5 p-0">{GROUPS.filter((g) => t.byGroup[g] > 0).map((g) => (
+          <li class="co-chip list-none !text-xs" data-group={g}>{m.groups[g]} · {$(t.byGroup[g])}</li>
+        ))}{!t.variable && <li class="co-meta list-none">{m.nothing}</li>}</ul>
+        {t.variable > 0 && (
+          <div class="grid gap-1" aria-label={m.byDay}>
+            <div class="flex h-12 items-end gap-[2px]">{t.daily.map((v, i) => (
+              <span class="flex-1 rounded-sm bg-[var(--co-signal)]" style={`height:${Math.max(v > 0 ? 4 : 1, Math.round((v / peak(t)) * 48))}px;opacity:${v > 0 ? 0.85 : 0.15}`} title={`${report.days[i]}: ${$(v)}`}></span>
+            ))}</div>
+          </div>
+        )}
+        <p class="co-meta m-0">{m.storageLine(gb(t.storageBytes), $(t.storageUsd))}{report.fixed.length > 0 && <> · {m.fixedLine($(t.fixedShare))}</>}</p>
+        {one ? (
+          <div class="grid gap-6 md:grid-cols-2">
+            <section class="grid gap-2 min-w-0">
+              <h3 class="co-entity">{m.byFeature}</h3>
+              <ul class="grid p-0" data-testid="cost-features">{t.byFeature.map((f) => (
+                <li class="grid list-none gap-0.5 border-t border-[var(--console-chip-bg)] py-2" data-feature={f.feature}>
+                  <span class="flex items-baseline justify-between gap-3"><span class="min-w-0">{label(f.feature)}</span><b class="whitespace-nowrap">{$(f.cost)}</b></span>
+                  <span class="co-meta !text-xs">{[`${num(f.events)} ${m.times.toLowerCase()}`, f.inputTokens + f.outputTokens > 0 ? `${num(f.inputTokens + f.outputTokens)} ${m.tokens.toLowerCase()}` : '', `${$(f.perEvent)} ${m.each.toLowerCase()}`].filter(Boolean).join(' · ')}</span>
+                </li>
+              ))}</ul>
+            </section>
+            <section class="grid gap-2 min-w-0">
+              <h3 class="co-entity">{m.byUser}</h3>
+              <table class="w-full text-sm [&_td]:py-1.5 [&_th]:pb-1.5 [&_th]:font-normal [&_th]:opacity-70 [&_tbody_tr]:border-t [&_tbody_tr]:border-[var(--console-chip-bg)]" data-testid="cost-users">
+                <thead><tr><th class="text-left">{m.person}</th><th class="text-right">{m.times}</th><th class="text-right">{m.cost}</th></tr></thead>
+                <tbody>{t.byUser.slice(0, 20).map((u) => (
+                  <tr><td>{u.name ?? m.nobody}</td><td class="text-right">{num(u.events)}</td><td class="text-right">{$(u.cost)}</td></tr>
+                ))}</tbody>
+              </table>
+            </section>
+          </div>
+        ) : (
+          <div><a class="co-btn co-btn--ghost co-btn--sm" href={href({ t: t.slug })} data-testid="cost-detail">{m.detail} <Icon name="chevron-right" size={14} /></a></div>
+        )}
+      </li>
+    ))}</ul>
+
+    <footer class="grid gap-1">
+      <p class="co-help m-0">{report.fixed.length ? `${m.fixedHelp} (${report.fixed.map((x) => `${x.name} ${$(x.usd)}`).join(' · ')})` : m.fixedNone}</p>
+      <p class="co-help m-0">{m.pricesHelp}</p>
+    </footer>
+  </div>
+</AdminLayout>

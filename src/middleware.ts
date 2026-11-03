@@ -13,6 +13,7 @@ import { serverTiming } from './lib/timing';
 import { isSetupPath, onboardedAt } from './lib/onboarding';
 import { withContentLocale } from './lib/i18n/content-db';
 import { can } from './lib/admin/permissions';
+import { withUsageScope } from './lib/usage/meter';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
 // y la sesión de consola exige membership en ese tenant.
@@ -120,7 +121,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   timing.mark('prep');
   // Los errores del servidor salen en el idioma de quien lee (src/lib/i18n/errors.ts).
-  const run = () => withContentLocale(contentScope, next);
+  // Lo que se gaste en esta petición (IA, envíos…) es de este espacio y de quien la hace (docs/COSTES.md).
+  const usage = { tenantId: context.locals.tenant?.id ?? null, userId: context.locals.admin?.session.userId ?? null };
+  const run = () => withUsageScope(usage, () => withContentLocale(contentScope, next));
   const res = context.locals.locale ? await withRequestLocale(context.locals.locale, run) : await run();
   timing.mark('page');
   // Cuánto tarda cada parte (DevTools → Network → Timing) y aviso en los registros si una página va lenta.

@@ -9,6 +9,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { QUAL_VALUES } from './priority';
 import type { QualPack } from './pack';
+import { meterClaude } from '../usage/meter';
 
 /** Criterios que la IA puede proponer (lo que se ve desde fuera). «Decide quien te atiende», la cobertura y «no pueden
  *  validar» solo los sabe el comercial en persona; «validate» además solo si lo dicen ellos. */
@@ -281,6 +282,7 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
           ],
           messages,
         });
+        await meterClaude('crm.research', res.model || RESEARCH_MODEL, res.usage);
         if (res.stop_reason === 'refusal') return null;
         const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === SAVE_TOOL.name);
         if (call) return call.input;

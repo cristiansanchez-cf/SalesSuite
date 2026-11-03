@@ -13,6 +13,7 @@ import { nameKey } from './prospect';
 import { PROFILES, type DiscardReason, type KindDef, type Profile } from '../accounts/types';
 import type { QualPack } from './pack';
 import { LINK_DAYS, type LinkDay, type LinkFreq } from './types';
+import { meterClaude } from '../usage/meter';
 
 export interface NoteItem {
   /** El sitio, tal como lo nombra quien habla («Ghecko»). */
@@ -401,6 +402,7 @@ export function claudeNotes(apiKey: string, fetchImpl?: typeof fetch): NotesApi 
         messages: [{ role: 'user', content: `Campos de la ficha que puedes rellenar:\n${fieldList || '(ninguno)'}\n\n<texto>\n${text}\n</texto>\n\nLlama a save_notes con lo de cada ${ctx.pack === null ? 'empresa' : 'sitio'}.` }],
       });
       const res = await stream.finalMessage();
+      await meterClaude('crm.notes', res.model || NOTES_MODEL, res.usage);
       if (res.stop_reason === 'refusal') return [];
       const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === NOTES_TOOL.name);
       return call ? sanitizeNotes(call.input, { qual: ctx.pack !== null }) : [];

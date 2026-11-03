@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BASE_KIND, DISCARD_REASONS, type AccountKind, type DiscardReason, type KindDef } from '../accounts/types';
 import type { QualPack } from './pack';
+import { meterClaude } from '../usage/meter';
 
 export interface CleanupInput {
   id: string; name: string; city: string | null; notes: string | null; website: string | null; instagram: string | null; email: string | null;
@@ -104,6 +105,7 @@ export function claudeCleanup(apiKey: string, fetchImpl?: typeof fetch): Cleanup
         messages: [{ role: 'user', content: `Registros (JSON):\n${JSON.stringify(items)}\n\nLlama a save_cleanup con todos.` }],
       });
       const res = await stream.finalMessage();
+      await meterClaude('crm.cleanup', res.model || CLEANUP_MODEL, res.usage);
       if (res.stop_reason === 'refusal') return [];
       const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use' && b.name === CLEANUP_TOOL.name);
       return call ? sanitizeCleanup(call.input, items, (ctx.kinds ?? []).map((k) => k.key).concat(BASE_KIND)) : [];

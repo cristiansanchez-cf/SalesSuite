@@ -12,6 +12,7 @@ import { runDailyDigest } from './daily-job';
 import { isLocale, type Locale } from '../i18n/core';
 import { notifyMessages } from '../i18n/messages/notify';
 import type { Notification, NotificationView } from './types';
+import { withUsageScope } from '../usage/meter';
 
 const MIN = 60_000;
 const DAY = 86_400_000;
@@ -68,7 +69,7 @@ export async function runNotificationJob(db: NotifyJobDb, mailer: Mailer, o: Job
       [{ heading: E.actionHeading, items: send }], origin(t, o.fallbackOrigin), E.immediateFooter, L,
     );
     try {
-      await mailer.send({ to: who.email, subject: send.length === 1 ? `${t?.name ?? 'Ventas'}: ${send[0].title}` : E.subjectMany(t?.name ?? 'Ventas', send.length), html, text, tag: 'immediate' });
+      await withUsageScope({ tenantId, userId }, () => mailer.send({ to: who.email, subject: send.length === 1 ? `${t?.name ?? 'Ventas'}: ${send[0].title}` : E.subjectMany(t?.name ?? 'Ventas', send.length), html, text, tag: 'immediate' }));
       await db.markEmailed(ns.map((n) => n.id), nowIso);
       r.immediate++;
     } catch { r.failed++; }
@@ -113,7 +114,7 @@ export async function runNotificationJob(db: NotifyJobDb, mailer: Mailer, o: Job
         [{ heading: E.pendingHeading, items: pending }, { heading: E.newsHeading, items: news }], origin(t, o.fallbackOrigin), E.digestFooter, L,
       );
       try {
-        await mailer.send({ to: who.email, subject: E.digestSubject(t?.name ?? 'Ventas', pending.length), html, text, tag: 'digest' });
+        await withUsageScope({ tenantId, userId }, () => mailer.send({ to: who.email, subject: E.digestSubject(t?.name ?? 'Ventas', pending.length), html, text, tag: 'digest' }));
         r.digests++;
       } catch { r.failed++; ok = false; }
     }

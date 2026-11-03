@@ -41,3 +41,5 @@ revoke delete on public.social_profile_cache from authenticated, anon;
 revoke all on public.wa_assistant_state from authenticated, anon;
 -- Recordatorios por WhatsApp (20261226): su registro solo lo escribe el servidor.
 revoke all on public.wa_reminder_log from authenticated, anon;
+-- Consumo por empresa (20261227): solo lo escribe el servidor y lo lee el superadmin (platform_usage).
+revoke all on public.usage_event from authenticated, anon;

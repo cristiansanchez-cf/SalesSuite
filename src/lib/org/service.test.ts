@@ -145,6 +145,18 @@ describe('organigrama: quién lo monta y quién ve qué', () => {
     expect((await svc(session({ userId: SUPER, role: 'admin', superadmin: true })).platform()).map((t) => t.slug)).toEqual(expect.arrayContaining(['enjoy']));
   });
 
+  test('coste por empresa: solo el superadmin; en demo, un mes de ejemplo con más gasto en IA en el segundo espacio', async () => {
+    await rejects(svc(session({ userId: ADMIN, role: 'admin' })).costs('2026-11'), 403);
+    const sup = svc(session({ userId: SUPER, role: 'admin', superadmin: true }));
+    await rejects(sup.costs('noviembre'), 422);
+    // El ejemplo son los últimos 40 días: el mes en curso.
+    const { ready, report } = await sup.costs(new Date().toISOString().slice(0, 7));
+    expect(ready).toBe(true);
+    expect(report.tenants.length).toBeGreaterThanOrEqual(2);
+    expect(report.tenants[0].variable).toBeGreaterThan(report.tenants[1].variable);
+    expect(report.tenants[0].byFeature.map((f) => f.feature)).toEqual(expect.arrayContaining(['crm.notes', 'crm.research']));
+  });
+
   test('delegación: nombre válido, sin repetir (409), y el gerente tiene que ser del equipo comercial de ESTE espacio', async () => {
     const admin = svc(session({ userId: ADMIN, role: 'admin' }));
     await rejects(admin.saveDelegation({ name: '' }), 422);

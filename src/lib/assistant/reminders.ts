@@ -13,6 +13,7 @@ import { msgLocale } from '../leads/templates';
 import { localClock } from '../notify/daily';
 import type { AssistantDb } from './db';
 import type { ReminderItem } from './flow';
+import { withUsageScope } from '../usage/meter';
 
 export const REMIND_FROM = 9;
 export const REMIND_TO = 12;
@@ -70,16 +71,20 @@ export async function runReminders(d: ReminderDeps): Promise<ReminderResult> {
     const to = toE164(m.phone, { locale: m.locale ?? 'es' });
     if (!s?.whatsappPhoneId || !template || !to) { r.skipped++; continue; }
     try {
-      const admin = await d.actAs(m.tenantId, m.userId);
-      if (!admin) { r.skipped++; continue; }
-      const items = await reminderItems(admin);
-      if (!items.length) { await d.db.mark(m.userId, m.tenantId, day, 0); r.empty++; continue; }
-      await d.wa.sendTemplate(s.whatsappPhoneId, to, template, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
-      // La conversación queda esperando su «sí» (o lo que diga).
-      const conv = await d.assistant.get(m.tenantId, m.userId);
-      await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items } }, conv.version);
-      await d.db.mark(m.userId, m.tenantId, day, items.length);
-      r.sent++;
+      // Lo que cueste (la plantilla de WhatsApp) es de su espacio (docs/COSTES.md).
+      const out = await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, async (): Promise<'sent' | 'empty' | 'skipped'> => {
+        const admin = await d.actAs(m.tenantId, m.userId);
+        if (!admin) return 'skipped';
+        const items = await reminderItems(admin);
+        if (!items.length) { await d.db.mark(m.userId, m.tenantId, day, 0); return 'empty'; }
+        await d.wa!.sendTemplate(s.whatsappPhoneId!, to, template, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
+        // La conversación queda esperando su «sí» (o lo que diga).
+        const conv = await d.assistant.get(m.tenantId, m.userId);
+        await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items } }, conv.version);
+        await d.db.mark(m.userId, m.tenantId, day, items.length);
+        return 'sent';
+      });
+      r[out]++;
     } catch (e) {
       console.error('[reminders]', e instanceof Error ? e.message : e);
       r.failed++;

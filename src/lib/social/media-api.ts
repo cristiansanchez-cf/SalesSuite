@@ -7,6 +7,7 @@
  * el mismo perfil dos veces en una hora (caché en social.ts); pedir solo lo que se va a usar.
  * La clave va en X-API-Key (CONVERT_API_KEY); nunca Origin ni Authorization, nunca en los registros.
  */
+import { meterUnits } from '../usage/meter';
 export type SocialPlatform = 'instagram' | 'tiktok';
 export type PostType = 'image' | 'video' | 'carousel';
 export interface SocialPost {
@@ -75,6 +76,8 @@ export function httpMediaApi(o: { base: string; key: string; fetch?: typeof fetc
     try {
       const r = await f(`${o.base.replace(/\/$/, '')}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': o.key }, body: JSON.stringify(body), signal: ctl.signal });
       const data = (await r.json().catch(() => ({}))) as { code?: string };
+      // Cada llamada que responde (también las de error) cuenta como consumo de la API de medios.
+      await meterUnits(path === '/api/media-list' ? 'social.list' : 'social.download', 'media', 1);
       if (r.ok) return data;
       const code = (typeof data.code === 'string' ? data.code : r.status >= 500 ? 'SERVER_ERROR' : 'INVALID_URL') as MediaErrorCode;
       const ra = Number(r.headers.get('retry-after'));

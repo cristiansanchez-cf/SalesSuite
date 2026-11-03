@@ -229,6 +229,7 @@ const EXACT: Record<string, T> = {
   'Solo un admin o el/la gerente configura la empresa': ['Only an admin or the manager sets up the company', 'Só um admin ou o/a gerente configura a empresa', '회사 설정은 관리자 또는 매니저만 할 수 있습니다'],
   'Solo los admins pueden gestionar el tenant': ['Only admins can manage the workspace', 'Só admins podem gerenciar o espaço', '워크스페이스는 관리자만 관리할 수 있습니다'],
   'Solo el superadmin': ['Superadmin only', 'Só o superadmin', '슈퍼관리자만 가능합니다'],
+  'Mes no válido': ['Invalid month', 'Mês inválido', '올바르지 않은 달입니다'],
   'Solo un admin del espacio': ['Workspace admins only', 'Só um admin do espaço', '워크스페이스 관리자만 가능합니다'],
   'Solo el líder (admin) configura las situaciones': ['Only the lead (admin) sets up situations', 'Só o líder (admin) configura as situações', '상황 설정은 리더(관리자)만 할 수 있습니다'],
   'Solo el autor o un admin puede editar este dossier': ['Only the author or an admin can edit this proposal', 'Só o autor ou um admin pode editar esta proposta', '이 제안서는 작성자 또는 관리자만 편집할 수 있습니다'],

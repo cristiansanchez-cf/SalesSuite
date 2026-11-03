@@ -5,6 +5,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { DEFAULT_TEXTS } from './templates';
 import type { LeadTemplates } from './types';
+import { meterClaude } from '../usage/meter';
 
 export const DRAFT_MODEL = 'claude-sonnet-5-5';
 export interface DraftInput { brand: string; signer: string; seller: string; clients: string[] }
@@ -40,6 +41,7 @@ export function claudeDrafter(apiKey: string, fetchImpl?: typeof fetch): Drafter
       tools: [TOOL as unknown as Anthropic.Tool], tool_choice: { type: 'tool', name: TOOL.name },
       messages: [{ role: 'user', content: `Qué vende ${i.brand}: ${i.seller || '(sin descripción)'}\nA quién: ${i.clients.join('; ') || '(sin sectores)'}\n\nTextos de partida (adáptalos a esta empresa, no los copies si no encajan):\n${JSON.stringify(DEFAULT_TEXTS, null, 1)}` }],
     });
+    await meterClaude('leads.texts', res.model || DRAFT_MODEL, res.usage);
     const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
     return (call?.input as LeadTemplates | undefined) ?? null;
   };

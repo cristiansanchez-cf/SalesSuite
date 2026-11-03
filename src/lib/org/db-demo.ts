@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { demoDb } from '../data/store';
 import type { OrgDb } from './db';
+import { demoUsageRows } from '../usage/demo';
 
 /**
  * Organigrama en demo: mismas reglas que la RLS de 20261026000000_org.sql (quién puede qué lo comprueba el servicio;
@@ -71,6 +72,11 @@ export function demoOrgDb(): OrgDb {
       const m = u.memberships.find((x) => x.tenant_id === tenantId);
       if (m) m.role = 'admin';
       else u.memberships.push({ tenant_id: tenantId, role: 'admin', invited_by: null, created_at: new Date().toISOString() });
+    },
+    async platformUsage(from, to) { return demoUsageRows(from, to); },
+    async platformStorage() {
+      // Demo: lo que ocuparían sus fotos y vídeos (unos 40 MB por propuesta con medios).
+      return db().tenant.map((t) => ({ tenantId: t.id, objects: db().dossier.filter((x) => x.tenant_id === t.id).length * 6, bytes: db().dossier.filter((x) => x.tenant_id === t.id).length * 40 * 1024 ** 2 }));
     },
     async platformOverview() {
       const d = db();

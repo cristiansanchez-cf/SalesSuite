@@ -13,6 +13,8 @@ import { setupSteps } from '~/lib/org/setup-status';
 import { SPACE_LOCALES } from '~/lib/org/service';
 import { i18n } from '~/lib/i18n';
 import { orgMessages } from '~/lib/i18n/messages/org';
+import { costsMessages } from '~/lib/i18n/messages/costs';
+import { monthOf, usd } from '~/lib/usage/report';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -40,6 +42,11 @@ if (Astro.request.method === 'POST') {
   }
 }
 const spaces = await admin.org.platform();
+// Lo que lleva gastado cada espacio este mes (docs/COSTES.md); si falla, la página sale igual sin ello.
+const { m: cm, locale } = i18n(Astro, costsMessages);
+const costs = await admin.org.costs(monthOf(new Date())).catch(() => null);
+const costOf = new Map((costs?.report.tenants ?? []).map((t) => [t.id, t]));
+const money$ = (n: number) => usd(n, locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES');
 const createdSlug = Astro.url.searchParams.get('ok') === 'created' ? Astro.url.searchParams.get('s') : null;
 const created = createdSlug ? spaces.find((x) => x.slug === createdSlug) ?? null : null;
 const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossiers: a.dossiers + x.dossiers, revenue: a.revenue + x.revenueCents }), { members: 0, dossiers: 0, revenue: 0 });
@@ -57,6 +64,12 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
       <div class="co-card grid !p-5"><span class="co-figure text-4xl">{total.members}</span><span class="co-meta">{m.members}</span></div>
       <div class="co-card grid !p-5"><span class="co-figure text-4xl">{f.money(total.revenue, 'EUR')}</span><span class="co-meta">{m.revenue}</span></div>
     </div>
+    {costs && (
+      <a class="co-card flex flex-wrap items-center justify-between gap-3 !p-5 no-underline" href="/admin/platform/costes" data-testid="platform-costs">
+        <span class="grid"><span class="co-entity !text-xl">{cm.title}</span><span class="co-meta">{cm.variable}: <b>{money$(costs.report.totals.variable)}</b> · {cm.projected}: <b>{money$(costs.report.totals.projected)}</b></span></span>
+        <span class="co-btn co-btn--ghost co-btn--sm">{cm.detail} <Icon name="chevron-right" size={14} /></span>
+      </a>
+    )}
 
     {created && (
       <div class="co-alert co-alert--success grid gap-2" role="status" data-testid="space-created">
@@ -96,7 +109,7 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
               <div class="grid rounded-xl bg-[var(--console-chip-bg)] p-2"><dt class="co-meta order-2 !text-xs">{l}</dt><dd class="co-figure text-2xl">{v}</dd></div>
             ))}
           </dl>
-          <p class="co-meta">{m.revenue}: <b>{f.money(x.revenueCents, 'EUR')}</b></p>
+          <p class="co-meta">{m.revenue}: <b>{f.money(x.revenueCents, 'EUR')}</b>{costOf.get(x.id) && <> · <a href={`/admin/platform/costes?t=${encodeURIComponent(x.slug)}`} data-testid="platform-space-cost">{cm.variable}: <b>{money$(costOf.get(x.id)!.variable)}</b></a></>}</p>
           {(() => {
             const steps = setupSteps(x.setup, x.published);
             const n = steps.filter((s) => s.done).length;
