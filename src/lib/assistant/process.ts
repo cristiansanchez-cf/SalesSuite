@@ -5,6 +5,8 @@
  */
 import type { AdminContext } from '../admin/auth';
 import { cleanupContext } from '../crm/research-context';
+import { env } from '../env';
+import { claudeDrafter, fixtureDrafter, type Drafter } from './draft';
 import type { Inbound, WhatsApp } from '../leads/whatsapp';
 import type { AssistantDb, Member } from './db';
 import { handle, type AssistantOps, type Incoming, type Reply } from './flow';
@@ -26,12 +28,40 @@ export async function teamMember(db: AssistantDb, tenantId: string, from: string
   return (await db.membersByPhone(d)).find((m) => m.tenantId === tenantId) ?? null;
 }
 
-export function opsFor(admin: AdminContext): AssistantOps {
+export function drafterFromEnv(): Drafter | null {
+  if (env('AI_RESEARCH_FIXTURE') === '1') return fixtureDrafter;
+  const k = env('ANTHROPIC_API_KEY');
+  return k ? claudeDrafter(k) : null;
+}
+/** Mañana a las 10:00 (como los próximos pasos de la regla). */
+const tomorrow = (now: Date) => { const d = new Date(now.getTime() + 86_400_000); return `${d.toISOString().slice(0, 10)}T10:00:00`; };
+
+export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; locale?: string; now?: Date } = {}): AssistantOps {
   let ctx: Awaited<ReturnType<typeof cleanupContext>> | null = null;
+  const context = async () => (ctx ??= await cleanupContext(admin).catch(() => ({ seller: '', clients: [], sectors: {} })));
+  const drafter = o.drafter === undefined ? drafterFromEnv() : o.drafter;
   return {
-    async split(text) { ctx ??= await cleanupContext(admin).catch(() => ({ seller: '', clients: [], sectors: {} })); return admin.crm.notesSplit(text, ctx); },
+    async split(text) { return admin.crm.notesSplit(text, await context()); },
     search: (q) => admin.crm.accountSearch(q),
     apply: (rows) => admin.crm.notesApply(rows),
+    async draft(item) {
+      if (!drafter) throw new Error('sin IA');
+      const c = await context();
+      const text = await drafter(item, { seller: c.seller, signer: admin.session.displayName || admin.session.email, locale: o.locale ?? 'es' });
+      if (!text) throw new Error('sin propuesta');
+      return text;
+    },
+    // «Hecho»: le ha escrito (por WhatsApp) y está esperando respuesta; la regla propone lo siguiente.
+    async done(accountId) {
+      const { account } = await admin.accounts.get(accountId);
+      const next = await admin.crm.logActivity(accountId, { channel: 'whatsapp', outcome: 'no_reply', note: 'Mensaje de seguimiento (recordatorio del asistente de WhatsApp)' });
+      return { name: account.name, nextAt: next?.at ? new Date(next.at).toISOString() : null };
+    },
+    async later(accountId) {
+      const { account } = await admin.accounts.get(accountId);
+      await admin.crm.setNextStep(accountId, { step: account.nextStep ?? undefined, at: tomorrow(o.now ?? new Date()), contactId: account.nextContactId ?? null, channel: account.nextChannel ?? null });
+      return { name: account.name };
+    },
   };
 }
 
@@ -59,7 +89,7 @@ export async function processAssistant(d: AssistantDeps, phoneId: string, member
   } else if (m.kind === 'other') incoming = { kind: 'other' };
   else incoming = { kind: 'text', text: m.text, forwarded: !!m.forwarded };
 
-  const ops = opsFor(admin);
+  const ops = opsFor(admin, { locale, now: d.now });
   // Varios reenviados llegan a la vez: si otro mensaje cambió el estado entre medias, se vuelve a leer (sin efectos aún).
   let conv = first;
   let r = await handle({ ops, now: d.now, locale }, incoming, conv.state);

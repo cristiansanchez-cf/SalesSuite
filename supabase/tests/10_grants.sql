@@ -39,3 +39,5 @@ revoke insert, update, delete on public.privacy_request from authenticated, anon
 revoke delete on public.social_profile_cache from authenticated, anon;
 -- Asistente de WhatsApp (20261224): su estado solo lo toca el servidor.
 revoke all on public.wa_assistant_state from authenticated, anon;
+-- Recordatorios por WhatsApp (20261226): su registro solo lo escribe el servidor.
+revoke all on public.wa_reminder_log from authenticated, anon;

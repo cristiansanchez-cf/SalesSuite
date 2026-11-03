@@ -2,7 +2,7 @@
  * Smoke del asistente de WhatsApp (docs/ASSISTANT.md), en demo: el admin pone el número de WhatsApp del espacio, el
  * comercial su teléfono en Mi cuenta; «Meta» entrega su mensaje (sin firma: solo en demo) → el asistente contesta con el
  * resumen → «Guardar» → la interacción sale en la ficha de Club Sol. Un desconocido no recibe nada.
- *   npm run build && npm run start:demo ; node scripts/smoke-assistant.cjs
+ *   npm run build && AI_RESEARCH_FIXTURE=1 npm run start:demo ; node scripts/smoke-assistant.cjs
  */
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
@@ -22,7 +22,9 @@ const deliver = (from, message) => fetch(`${BASE}/api/v1/whatsapp/webhook`, { me
   await p.waitForURL(/\/admin/);
   await p.goto(`${BASE}/admin/leads/ajustes#whatsapp`);
   await p.fill('input[name=waPhone]', PHONE_ID);
+  await p.fill('input[name=tpl_reminder_es]', 'equipo_recordatorio_es');
   await Promise.all([p.waitForURL(/ok=saved/), p.click('#whatsapp button[name=at]')]);
+  assert(await p.inputValue('input[name=tpl_reminder_es]') === 'equipo_recordatorio_es', 'la plantilla del recordatorio queda guardada');
   // El comercial: su teléfono (sin prefijo, como lo pone mucha gente).
   await ctx.clearCookies();
   await p.goto(`${BASE}/admin/login`);
@@ -32,6 +34,10 @@ const deliver = (from, message) => fetch(`${BASE}/api/v1/whatsapp/webhook`, { me
   await p.fill('[data-testid=phone]', '699 00 01 11');
   await p.click('form.co-card button[type=submit]');
   await p.waitForSelector('[data-testid=alert-success]');
+  // Y el recordatorio de la mañana por WhatsApp.
+  await p.check('[data-testid=wa-remind-pref]');
+  await Promise.all([p.waitForNavigation(), p.click('[data-testid=notify-pref] button[type=submit]')]);
+  assert(await p.isChecked('[data-testid=wa-remind-pref]'), 'el recordatorio queda activado en Mi cuenta');
 
   const r1 = await deliver('34699000111', { id: `a1-${run}`, type: 'text', text: { body: `Club Sol: hablé con Marta, quieren pantalla los viernes ${run}` } });
   assert(r1.ok && r1.assistant === 1 && r1.matched === 0, `va al asistente, no a los leads (${JSON.stringify(r1)})`);
@@ -41,5 +47,10 @@ const deliver = (from, message) => fetch(`${BASE}/api/v1/whatsapp/webhook`, { me
   assert(r2.assistant === 1, 'Guardar');
   await p.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
   assert((await p.textContent('main')).includes(`quieren pantalla los viernes ${run}`), 'la interacción está en la ficha de Club Sol');
+  const cron = await fetch(`${BASE}/api/cron/leads?reminders=force`).then((r) => r.json());
+  assert(typeof cron.reminders === 'number', `el cron pasa por los recordatorios (${JSON.stringify(cron)})`);
+  // Su «Sí, prepáralos» (el botón de la plantilla) llega al asistente.
+  const r3 = await deliver('34699000111', { id: `a3-${run}`, type: 'button', button: { payload: 'Sí, prepáralos', text: 'Sí, prepáralos' } });
+  assert(r3.assistant === 1, 'el botón de la plantilla va al asistente');
   await b.close();
 })();

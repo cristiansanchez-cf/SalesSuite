@@ -1,6 +1,8 @@
 /** Lo que dice el asistente de WhatsApp (docs/ASSISTANT.md), en el idioma de cada persona. WhatsApp: *negrita*. */
 import { defineMessages } from '../i18n/core';
 
+interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
+interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
 interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null }
 const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
@@ -30,6 +32,13 @@ const es = {
   aiDown: 'Ahora mismo no puedo leerlo bien. Prueba en un momento.',
   forwardedAsk: 'Recibido 📩 ¿De qué empresa es esta conversación? Escríbeme su nombre (si me reenvías más, los junto).',
   channels: { instagram: 'Instagram', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', phone: 'Llamada', email: 'Email', visit: 'Visita', meeting: 'Reunión', other: 'Otro' } as Record<string, string>,
+  why: (w: Why) => w.bucket === 'cooling' ? `Contestó hace ${w.cooling ?? 3} días y no le hemos vuelto a escribir.` : w.bucket === 'overdue' ? 'El seguimiento está vencido.' : 'Hoy toca el seguimiento.',
+  proposal: (p: Prop) => [`*${p.name}*${p.contact ? ` · ${p.contact}` : ''}`, p.why, p.step ? `Próximo paso: ${p.step}` : '', p.draft ? `\nPropuesta de mensaje:\n\n${p.draft}` : '\n(Ahora no puedo proponerte el mensaje.)'].filter(Boolean).join('\n'),
+  done: 'Hecho', tomorrow: 'Mañana',
+  doneOk: (n: string, at: string | null) => `✅ Apuntado: le has escrito a ${n}.${at ? ` Siguiente paso el ${new Date(at).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}.` : ''}`,
+  laterOk: (n: string) => `Vale, ${n} pasa a mañana.`,
+  failedOne: 'No he podido apuntarlo. Ábrelo en el CRM, porfa.',
+  remindLater: 'Vale. Lo tienes en «Hoy» cuando quieras.',
   outcomes: { no_reply: 'sin respuesta', replied: 'contestó', interested: 'interesado', not_interested: 'no interesado', meeting: 'cita conseguida', note: 'nota' } as Record<string, string>,
 };
 export type AssistantText = typeof es;
@@ -62,6 +71,13 @@ export const assistantMessages = defineMessages({
     aiDown: 'I cannot read it properly right now. Try again in a moment.',
     forwardedAsk: 'Got it 📩 Which company is this conversation with? Type its name (if you forward more, I will join them).',
     channels: { instagram: 'Instagram', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', phone: 'Call', email: 'Email', visit: 'Visit', meeting: 'Meeting', other: 'Other' },
+    why: (w) => w.bucket === 'cooling' ? `They replied ${w.cooling ?? 3} days ago and we have not written back.` : w.bucket === 'overdue' ? 'The follow-up is overdue.' : 'The follow-up is due today.',
+    proposal: (p) => [`*${p.name}*${p.contact ? ` · ${p.contact}` : ''}`, p.why, p.step ? `Next step: ${p.step}` : '', p.draft ? `\nSuggested message:\n\n${p.draft}` : '\n(I cannot suggest the message right now.)'].filter(Boolean).join('\n'),
+    done: 'Done', tomorrow: 'Tomorrow',
+    doneOk: (n, at) => `✅ Logged: you wrote to ${n}.${at ? ` Next step on ${new Date(at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric' })}.` : ''}`,
+    laterOk: (n) => `OK, ${n} moves to tomorrow.`,
+    failedOne: 'I could not log it. Please open it in the CRM.',
+    remindLater: 'OK. It is in “Today” whenever you want.',
     outcomes: { no_reply: 'no reply', replied: 'replied', interested: 'interested', not_interested: 'not interested', meeting: 'meeting booked', note: 'note' },
   },
   pt: {
@@ -90,6 +106,13 @@ export const assistantMessages = defineMessages({
     aiDown: 'Agora não consigo ler bem. Tenta daqui a um momento.',
     forwardedAsk: 'Recebido 📩 De que empresa é esta conversa? Escreve o nome (se reencaminhares mais, junto-as).',
     channels: { instagram: 'Instagram', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', phone: 'Chamada', email: 'Email', visit: 'Visita', meeting: 'Reunião', other: 'Outro' },
+    why: (w) => w.bucket === 'cooling' ? `Respondeu há ${w.cooling ?? 3} dias e ainda não voltámos a escrever.` : w.bucket === 'overdue' ? 'O seguimento está atrasado.' : 'Hoje toca o seguimento.',
+    proposal: (p) => [`*${p.name}*${p.contact ? ` · ${p.contact}` : ''}`, p.why, p.step ? `Próximo passo: ${p.step}` : '', p.draft ? `\nProposta de mensagem:\n\n${p.draft}` : '\n(Agora não consigo propor a mensagem.)'].filter(Boolean).join('\n'),
+    done: 'Feito', tomorrow: 'Amanhã',
+    doneOk: (n, at) => `✅ Registado: escreveste a ${n}.${at ? ` Próximo passo a ${new Date(at).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric' })}.` : ''}`,
+    laterOk: (n) => `Está bem, ${n} passa para amanhã.`,
+    failedOne: 'Não consegui registar. Abre no CRM, por favor.',
+    remindLater: 'Está bem. Tens tudo em «Hoje» quando quiseres.',
     outcomes: { no_reply: 'sem resposta', replied: 'respondeu', interested: 'interessado', not_interested: 'não interessado', meeting: 'reunião marcada', note: 'nota' },
   },
   ko: {
@@ -118,6 +141,13 @@ export const assistantMessages = defineMessages({
     aiDown: '지금은 제대로 읽을 수 없어요. 잠시 후 다시 시도해 주세요.',
     forwardedAsk: '받았어요 📩 어느 회사와의 대화인가요? 이름을 적어 주세요 (더 전달하면 함께 묶을게요).',
     channels: { instagram: '인스타그램', linkedin: '링크드인', whatsapp: 'WhatsApp', phone: '전화', email: '이메일', visit: '방문', meeting: '미팅', other: '기타' },
+    why: (w) => w.bucket === 'cooling' ? `${w.cooling ?? 3}일 전에 답장했는데 아직 다시 연락하지 않았어요.` : w.bucket === 'overdue' ? '후속 연락이 늦었어요.' : '오늘 후속 연락할 차례예요.',
+    proposal: (p) => [`*${p.name}*${p.contact ? ` · ${p.contact}` : ''}`, p.why, p.step ? `다음 단계: ${p.step}` : '', p.draft ? `\n메시지 제안:\n\n${p.draft}` : '\n(지금은 메시지를 제안할 수 없어요.)'].filter(Boolean).join('\n'),
+    done: '완료', tomorrow: '내일',
+    doneOk: (n, at) => `✅ 기록했어요: ${n}에 연락했어요.${at ? ` 다음 단계는 ${new Date(at).toLocaleDateString('ko-KR', { weekday: 'long', day: 'numeric' })}.` : ''}`,
+    laterOk: (n) => `네, ${n}은(는) 내일로 미룰게요.`,
+    failedOne: '기록하지 못했어요. CRM에서 열어 주세요.',
+    remindLater: '네. 언제든 «오늘»에서 볼 수 있어요.',
     outcomes: { no_reply: '답 없음', replied: '답장함', interested: '관심 있음', not_interested: '관심 없음', meeting: '미팅 잡음', note: '메모' },
   },
 });

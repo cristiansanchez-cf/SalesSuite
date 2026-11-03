@@ -66,7 +66,7 @@ const settingsSchema = z.object({
   whatsappEnabled: z.boolean(),
   /** WhatsApp 2: se apaga si Meta lo pasa a Marketing (el 1 sigue). */
   whatsappWa2: z.boolean().optional(),
-  whatsappTemplates: z.record(z.enum(['wa1', 'wa2']), z.record(z.enum(['es', 'en', 'fr']), z.string().trim().regex(/^[a-z0-9_]{1,512}$/))),
+  whatsappTemplates: z.record(z.enum(['wa1', 'wa2', 'reminder']), z.record(z.enum(['es', 'en', 'fr']), z.string().trim().regex(/^[a-z0-9_]{1,512}$/))),
   sendFromHour: z.number().int().min(0).max(23),
   sendToHour: z.number().int().min(1).max(24),
   holidays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(60),

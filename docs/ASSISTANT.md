@@ -38,8 +38,41 @@ mismo de los leads: Leads → Ajustes → WhatsApp) y el asistente lo apunta en 
 - Pruebas: `src/lib/assistant/assistant.test.ts` (la conversación y de punta a punta en demo) y
   `supabase/tests/82_wa_assistant.test.sql`.
 
+## Recordatorios de la mañana
+
+Cada mañana, entre las 9:00 y las 12:00 de su zona horaria, el asistente escribe a quien lo tenga activado en **Mi
+cuenta → Avisos** («Recordatorio por WhatsApp»; hace falta su móvil en Mi cuenta). Le cuenta lo de «Hoy» en sus empresas:
+
+- lo que **se enfría**: contestó y llevamos 3 días laborables sin hacer nada;
+- lo **vencido**;
+- lo que **toca hoy**.
+
+Son 5 como mucho. Si no tiene nada, no se le escribe. Solo se le escribe una vez al día (`wa_reminder_log`). Lo lanza el
+cron de `/api/cron/leads` cada 10 minutos (`?reminders=force` para probarlo).
+
+Para escribir primero, WhatsApp exige una **plantilla aprobada** (categoría *Utility*). Se apunta en Leads → Ajustes →
+WhatsApp → «Recordatorio al equipo». Sin plantilla, o sin número, no se manda nada y se vuelve a intentar en la siguiente
+pasada. Lo que hay que dar de alta en Meta (WhatsApp Manager → Plantillas):
+
+| Nombre | Idioma | Texto | Botones (respuesta rápida) |
+|---|---|---|---|
+| `equipo_recordatorio_es` | es | Hola {{1}}, hoy tienes {{2}} seguimientos pendientes en el CRM: {{3}}. ¿Te preparo una propuesta de mensaje para cada uno? | «Sí, prepáralos» · «Más tarde» |
+| `equipo_recordatorio_en` | en | Hi {{1}}, you have {{2}} follow-ups due in the CRM today: {{3}}. Shall I draft a message for each one? | «Yes, draft them» · «Later» |
+| `equipo_recordatorio_fr` | fr | Bonjour {{1}}, vous avez {{2}} relances à faire aujourd'hui dans le CRM : {{3}}. Je vous propose un message pour chacune ? | «Oui, prépare-les» · «Plus tard» |
+
+En cada variable, Meta pide un ejemplo: {{1}} el nombre de pila («Marta»), {{2}} el número de seguimientos («3») y {{3}}
+la lista de empresas («Club Sol, Sala Marina y 1 más»).
+
+Si contesta que sí (el botón o un «sí», «vale», «dale»), le llega **una propuesta de mensaje por empresa**. La escribe
+Claude Haiku con el último contacto, el próximo paso y los datos clave de la empresa (`src/lib/assistant/draft.ts`). Cada
+propuesta lleva dos botones:
+
+- **Hecho**: apunta en el CRM que le ha escrito por WhatsApp, y la regla propone el siguiente paso.
+- **Mañana**: el próximo paso pasa a mañana a las 10:00.
+
+Si dice «más tarde» o «no», no pasa nada: lo tiene en «Hoy». Si escribe otra cosa larga, se apunta como siempre. La
+pregunta espera su respuesta todo el día (14 horas).
+
 ## Pendiente
 
-- **Recordatorios a los 3 días por WhatsApp** con propuesta de mensaje: para escribir primero hace falta una plantilla
-  aprobada (Utility) del tipo «Hoy te toca escribir a {{1}}. ¿Te propongo un mensaje?».
 - Fotos y documentos (hoy: «De momento apunto texto y audios»).

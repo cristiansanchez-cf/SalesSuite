@@ -26,6 +26,11 @@ const readPhone = async () => (admin.mode === 'supabase' && admin.supabase
   ? ((await admin.supabase.from('users').select('phone').eq('id', admin.session.userId).maybeSingle()).data?.phone as string | null) ?? ''
   : demoDb().users.find((x) => x.id === admin.session.userId)?.phone ?? '');
 let phone = await readPhone();
+// Recordatorios por WhatsApp de la mañana (docs/ASSISTANT.md §Recordatorios).
+const readWaRemind = async () => (admin.mode === 'supabase' && admin.supabase
+  ? !!(await admin.supabase.from('users').select('wa_reminders').eq('id', admin.session.userId).maybeSingle()).data?.wa_reminders
+  : !!demoDb().users.find((x) => x.id === admin.session.userId)?.wa_reminders);
+let waRemind = await readWaRemind();
 
 const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null;
 let notifyOk = false;
@@ -51,6 +56,9 @@ if (form?.get('action') === 'locale') {
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
   await admin.notifications.setDailyPref({ daily: form.get('daily') === 'on', timezone: String(form.get('timezone') ?? '') });
+  waRemind = form.get('waRemind') === 'on';
+  if (admin.mode === 'supabase' && admin.supabase) await admin.supabase.from('users').update({ wa_reminders: waRemind }).eq('id', admin.session.userId);
+  else { const u = demoDb().users.find((x) => x.id === admin.session.userId); if (u) u.wa_reminders = waRemind; }
   notifyOk = true;
 } else if (form) {
   name = String(form.get('name') ?? '').trim().slice(0, 80);
@@ -129,6 +137,12 @@ const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
         <input type="checkbox" name="daily" checked={dailyPref.daily} data-testid="daily-pref" />
         <span>{m.account.dailyLabel}<span class="co-help block">{m.account.dailyHelp}</span></span>
       </label>
+      {admin.session.role !== 'partner' && (
+        <label class="co-check">
+          <input type="checkbox" name="waRemind" checked={waRemind} data-testid="wa-remind-pref" />
+          <span>{m.account.waRemindLabel}<span class="co-help block">{m.account.waRemindHelp}</span></span>
+        </label>
+      )}
       <label class="co-field">{m.account.timezone}
         <select class="co-select" name="timezone" data-testid="timezone">
           {TIMEZONES.map((tz) => <option value={tz} selected={tz === dailyPref.timezone}>{tzLabel(tz)} · {tz}</option>)}

@@ -18,6 +18,17 @@ export interface AssistantOps {
   split(text: string): Promise<Array<NoteItem & { candidates: Candidate[] }>>;
   search(q: string): Promise<Candidate[]>;
   apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>>;
+  /** Recordatorios: la propuesta de mensaje para una empresa (draft.ts). */
+  draft?(item: ReminderItem): Promise<string>;
+  /** «Hecho»: apunta que le escribió (y el CRM propone el siguiente paso). Devuelve cuándo toca lo siguiente. */
+  done?(accountId: string): Promise<{ name: string; nextAt: string | null }>;
+  /** «Mañana»: el próximo paso, a mañana. */
+  later?(accountId: string): Promise<{ name: string }>;
+}
+/** Una empresa del recordatorio de la mañana (lo de «Hoy»), con lo justo para proponer el mensaje. */
+export interface ReminderItem {
+  accountId: string; name: string; bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; contactName: string | null; step: string | null;
+  channel: string | null; last: { outcome: string; note: string | null; at: string } | null; facts: string[];
 }
 export type Incoming =
   | { kind: 'text'; text: string; forwarded?: boolean }
@@ -33,11 +44,14 @@ export type State =
   | { step: 'pick'; at: string; pending: Pending[]; i: number }
   | { step: 'confirm'; at: string; pending: Pending[] }
   | { step: 'forward'; at: string; texts: string[] }
-  | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[] };
+  | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[] }
+  | { step: 'reminder'; at: string; items: ReminderItem[] };
 
 /** Lo que queda a medias caduca a la media hora (luego se empieza de nuevo). */
 export const STATE_TTL_MS = 30 * 60_000;
 const MAX_FORWARDED = 30;
+/** El recordatorio de la mañana espera su respuesta todo el día. */
+export const REMINDER_TTL_MS = 14 * 3_600_000;
 const strong = (c: Candidate[]) => !!c[0] && !c[0].discarded && c[0].score >= 0.9 && (!c[1] || c[1].score < 0.85);
 // \b no entiende de tildes («sí»): fin de palabra = lo que sigue no es letra ni número.
 const END = '(?![\\p{L}\\p{N}])';
@@ -73,7 +87,8 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   const T: AssistantText = assistantMessages[(d.locale ?? 'es') as keyof typeof assistantMessages] ?? assistantMessages.es;
   const at = d.now.toISOString();
   const today = at.slice(0, 10);
-  const state: State = prev.step !== 'idle' && d.now.getTime() - Date.parse(prev.at) > STATE_TTL_MS ? { step: 'idle' } : prev;
+  const ttl = prev.step === 'reminder' ? REMINDER_TTL_MS : STATE_TTL_MS;
+  const state: State = prev.step !== 'idle' && d.now.getTime() - Date.parse(prev.at) > ttl ? { step: 'idle' } : prev;
   const idle: State = { step: 'idle' };
   const say = (text: string, buttons?: Reply['buttons']): Reply => ({ text, ...(buttons ? { buttons } : {}) });
 
@@ -123,6 +138,34 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return { state: { step: 'forward-pick', at, texts, query: q, candidates: c.slice(0, 5) }, replies: [say(opts.length ? T.whichOne(q, opts, q) : T.notFound(q))] };
   };
 
+  /** Una propuesta de mensaje por empresa, cada una con «Hecho» y «Mañana». */
+  const prepare = async (items: ReminderItem[]): Promise<FlowResult> => {
+    const replies: Reply[] = [];
+    for (const it of items) {
+      let draft: string | null = null;
+      try { draft = d.ops.draft ? await d.ops.draft(it) : null; } catch { draft = null; }
+      replies.push(say(T.proposal({ name: it.name, contact: it.contactName, why: T.why(it), step: it.step, draft }),
+        [{ id: `done:${it.accountId}`, title: T.done }, { id: `later:${it.accountId}`, title: T.tomorrow }]));
+    }
+    return { state: idle, replies };
+  };
+  // ---- Botones de los recordatorios (llevan la empresa: valen aunque haya pasado el rato).
+  if (msg.kind === 'button' && /^(done|later):[0-9a-f-]{36}$/i.test(msg.id)) {
+    const [what, id] = msg.id.split(':');
+    try {
+      if (what === 'done' && d.ops.done) { const r = await d.ops.done(id); return { state, replies: [say(T.doneOk(r.name, r.nextAt))] }; }
+      if (what === 'later' && d.ops.later) { const r = await d.ops.later(id); return { state, replies: [say(T.laterOk(r.name))] }; }
+    } catch { return { state, replies: [say(T.failedOne)] }; }
+  }
+  // La respuesta al recordatorio de la mañana (su botón de la plantilla o un «sí» / «más tarde»).
+  if (state.step === 'reminder' && (msg.kind === 'button' || msg.kind === 'text')) {
+    const said = (msg.kind === 'button' ? msg.id : msg.text).trim();
+    // Solo respuestas cortas: «Sí, hoy he hablado con Club Sol…» es algo nuevo que apuntar.
+    if (msg.kind === 'button' || short(said)) {
+      if (new RegExp(`^(s[ií]|prep[aá]ra(los|me)?|vale|ok|dale|venga|claro|yes|sure|sim|oui|네|좋아)${END}`, 'iu').test(said)) return prepare(state.items);
+      if (new RegExp(`^(m[aá]s tarde|luego|ahora no|later|not now|plus tard|mais tarde|depois|no|não|nao|나중에)${END}`, 'iu').test(said)) return { state: idle, replies: [say(T.remindLater)] };
+    }
+  }
   // ---- Botones
   if (msg.kind === 'button') {
     if (state.step === 'confirm' && msg.id === 'save') return save(state.pending);

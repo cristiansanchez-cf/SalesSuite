@@ -39,3 +39,14 @@ export async function assistantDeps(db: AssistantDb, wa: WhatsApp | null, now = 
     actAs: async (tenantId, userId) => { const t = await tenantById(tenantId); return t ? contextAs(t, userId) : null; },
   };
 }
+
+/** Los recordatorios de la mañana (los llama /api/cron/leads cada 10 minutos). */
+export async function reminderDeps(wa: WhatsApp | null, leadsSettings: (tenantId: string) => Promise<import('../leads/types').LeadSettings | null>, now = new Date()) {
+  const db = await assistantDb();
+  if (!db) return null;
+  const { demoReminderDb, supabaseReminderDb } = await import('./reminders-db');
+  const rdb = appMode() === 'demo' ? demoReminderDb()
+    : supabaseReminderDb(createClient(env('PUBLIC_SUPABASE_URL')!, env('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } }));
+  const base = await assistantDeps(db, wa, now);
+  return { db: rdb, assistant: db, wa, now, settings: leadsSettings, actAs: base.actAs };
+}

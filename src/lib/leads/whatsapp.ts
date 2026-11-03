@@ -100,8 +100,10 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
           ?? (m.interactive as { button_reply?: { title?: string } } | undefined)?.button_reply?.title ?? `[${String(m.type ?? 'mensaje')}]`;
         const type = String(m.type ?? '');
         const ctx = (m.context ?? {}) as { forwarded?: boolean; frequently_forwarded?: boolean };
-        const buttonId = (m.interactive as { button_reply?: { id?: string } } | undefined)?.button_reply?.id ?? null;
-        const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : type === 'interactive' && buttonId ? 'button' : type === 'button' ? 'text' : 'other';
+        // Botón de un mensaje interactivo (su id) o de respuesta rápida de una plantilla (su payload, que es su texto).
+        const tplButton = (m.button as { payload?: string; text?: string } | undefined);
+        const buttonId = (m.interactive as { button_reply?: { id?: string } } | undefined)?.button_reply?.id ?? (tplButton ? tplButton.payload || tplButton.text || null : null);
+        const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : (type === 'interactive' || type === 'button') && buttonId ? 'button' : 'other';
         inbound.push({ phoneId, from: `+${String(m.from ?? '').replace(/^\+/, '')}`, text: String(text).slice(0, kind === 'text' ? 12000 : 2000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
           kind, forwarded: !!(ctx.forwarded || ctx.frequently_forwarded), mediaId: (m.audio as { id?: string } | undefined)?.id ?? null, buttonId });
       }

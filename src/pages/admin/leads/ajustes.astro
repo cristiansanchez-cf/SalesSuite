@@ -105,7 +105,7 @@ if (Astro.request.method === 'POST') {
       enabled: cur?.enabled ?? false, brand: String(f.get('brand') ?? ''), allowedOrigins: lines(f.get('origins')),
       fromEmail: orNull(f.get('fromEmail')), fromName: orNull(f.get('fromName')), replyTo: orNull(f.get('replyTo')), signerName: orNull(f.get('signerName')),
       notifyEmails: lines(f.get('notify')), bookingUrl: orNull(f.get('bookingUrl')), videoUrl: orNull(f.get('videoUrl')),
-      whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappWa2: f.get('waWa2') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2') },
+      whatsappPhoneId: orNull(f.get('waPhone')), whatsappEnabled: f.get('waEnabled') === 'on', whatsappWa2: f.get('waWa2') === 'on', whatsappTemplates: { wa1: tpl('wa1'), wa2: tpl('wa2'), reminder: tpl('reminder') },
       sendFromHour: Number(f.get('fromHour') ?? 8), sendToHour: Number(f.get('toHour') ?? 22), holidays: lines(f.get('holidays')),
       // Vídeo y reserva por tipo e idioma: solo lo rellenado (vacío = el del tipo general o el general del espacio).
       media: Object.fromEntries(MEDIA_TYPES.map((ty) => [ty, Object.fromEntries(LOCS.map((l) => {
@@ -323,8 +323,8 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <label class="co-field">{S.waPhone}<input form="lead-settings" class="co-input" name="waPhone" value={s.whatsappPhoneId ?? ''} inputmode="numeric" pattern="[0-9]{5,30}" /></label>
     <p class="co-meta">{S.templates}</p>
     <div class="grid gap-2 sm:grid-cols-3">
-      {(['wa1', 'wa2'] as const).flatMap((step) => (['es', 'en', 'fr'] as const).map((loc) => (
-        <label class="co-field text-xs">{L.steps[step]} · {loc}<input form="lead-settings" class="co-input" name={`tpl_${step}_${loc}`} value={s.whatsappTemplates?.[step]?.[loc] ?? ''} pattern="[a-z0-9_]{1,512}" placeholder={`lead_${step}_${loc}`} /></label>
+      {(['wa1', 'wa2', 'reminder'] as const).flatMap((step) => (['es', 'en', 'fr'] as const).map((loc) => (
+        <label class="co-field text-xs">{L.steps[step]} · {loc}<input form="lead-settings" class="co-input" name={`tpl_${step}_${loc}`} value={s.whatsappTemplates?.[step]?.[loc] ?? ''} pattern="[a-z0-9_]{1,512}" placeholder={step === 'reminder' ? `equipo_recordatorio_${loc}` : `lead_${step}_${loc}`} /></label>
       )))}
     </div>
     <div class="flex flex-wrap gap-3">
