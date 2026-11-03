@@ -46,7 +46,7 @@ if (form?.get('action') === 'locale') {
   const v = String(form.get('value') ?? '');
   const bad = (CONTACT_CHANNELS as readonly string[]).includes(ch) ? contactError(ch, v) : null;
   const CM = builderMessages[locale].page.contact;
-  if (bad) contactMsg = { error: bad === 'phone' ? CM.errPhone : CM.errEmail };
+  if (bad) contactMsg = { error: bad === 'phone' ? CM.errPhone : bad === 'linkedin' ? CM.errLinkedin : CM.errEmail };
   else { await saveContact(admin, ch, v); contactMsg = { ok: CM.saved }; }
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');

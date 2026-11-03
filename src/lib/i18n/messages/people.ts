@@ -61,6 +61,7 @@ export const peopleMessages = defineMessages({
       valuesHelp: 'Junta variantes poniendo la misma opción (p. ej. «DJ/AV» y «DJ + AV» → «DJ + AV»).',
       order: 'Opciones, en orden', orderHelp: 'Una por línea: así salen en la ficha y en los filtros. Las etapas, de la primera a la última.',
       filled: (n: number, t: number) => `${n} de ${t} con dato`, empty: 'Vacía', list: 'Lista', listHelp: 'Todo lo importado llevará esta etiqueta (p. ej. fbd) y los campos nuevos solo saldrán en ella.',
+      overwrite: 'Sobrescribir lo que ya hay con lo del CSV', overwriteHelp: 'Sin marcar, en quien ya está en el CRM solo se rellenan los huecos. Marcado, lo del CSV va encima (teléfonos, emails, campos, cargo…); una celda vacía no borra nada. Se puede deshacer igual.', overwriteOn: 'Se sobrescribirá lo que ya hay con lo del CSV.',
       sector: 'Sector de las empresas nuevas', noSector: 'Sin sector', preview: 'Ver qué va a pasar', run: 'Importar ahora',
       runHelp: 'Puedes deshacerlo después desde Importar.', planTitle: 'Qué va a pasar', samples: 'Ejemplos',
       stat: {
@@ -141,6 +142,7 @@ export const peopleMessages = defineMessages({
       valuesHelp: 'Merge variants by giving them the same option (e.g. «DJ/AV» and «DJ + AV» → «DJ + AV»).',
       order: 'Options, in order', orderHelp: 'One per line: that’s how they show in the record and filters. Stages, first to last.',
       filled: (n: number, t: number) => `${n} of ${t} filled`, empty: 'Empty', list: 'List', listHelp: 'Everything imported gets this tag (e.g. fbd) and new fields only show in it.',
+      overwrite: 'Overwrite what is already there with the CSV', overwriteHelp: 'Unticked, records already in the CRM only get their gaps filled. Ticked, the CSV goes on top (phones, emails, fields, role…); an empty cell deletes nothing. It can be undone the same way.', overwriteOn: 'What is already there will be overwritten with the CSV.',
       sector: 'Sector of new companies', noSector: 'No sector', preview: 'See what will happen', run: 'Import now',
       runHelp: 'You can undo it later from Import.', planTitle: 'What will happen', samples: 'Examples',
       stat: {
@@ -221,6 +223,7 @@ export const peopleMessages = defineMessages({
       valuesHelp: 'Junte variantes pondo a mesma opção (p. ex. «DJ/AV» e «DJ + AV» → «DJ + AV»).',
       order: 'Opções, em ordem', orderHelp: 'Uma por linha: assim aparecem na ficha e nos filtros. As etapas, da primeira à última.',
       filled: (n: number, t: number) => `${n} de ${t} preenchidas`, empty: 'Vazia', list: 'Lista', listHelp: 'Tudo o que for importado leva esta etiqueta (p. ex. fbd) e os campos novos só aparecem nela.',
+      overwrite: 'Substituir o que já existe pelo CSV', overwriteHelp: 'Sem marcar, em quem já está no CRM só se preenchem os vazios. Marcado, o CSV vai por cima (telefones, emails, campos, cargo…); uma célula vazia não apaga nada. Pode desfazer igual.', overwriteOn: 'O que já existe será substituído pelo CSV.',
       sector: 'Setor das empresas novas', noSector: 'Sem setor', preview: 'Ver o que vai acontecer', run: 'Importar agora',
       runHelp: 'Pode desfazer depois em Importar.', planTitle: 'O que vai acontecer', samples: 'Exemplos',
       stat: {
@@ -301,6 +304,7 @@ export const peopleMessages = defineMessages({
       valuesHelp: '같은 옵션을 지정해 변형을 합치세요 (예: «DJ/AV», «DJ + AV» → «DJ + AV»).',
       order: '옵션 순서', orderHelp: '한 줄에 하나: 기록과 필터에 이 순서로 나옵니다. 단계는 처음부터 끝까지.',
       filled: (n: number, t: number) => `${t}개 중 ${n}개 입력됨`, empty: '비어 있음', list: '목록', listHelp: '가져온 모든 항목에 이 태그(예: fbd)가 붙고, 새 필드는 이 목록에서만 보입니다.',
+      overwrite: '이미 있는 내용을 CSV로 덮어쓰기', overwriteHelp: '선택하지 않으면 CRM에 이미 있는 기록은 빈 곳만 채웁니다. 선택하면 CSV 내용이 덮어씁니다(전화, 이메일, 필드, 직책…). 빈 칸은 아무것도 지우지 않습니다. 똑같이 되돌릴 수 있습니다.', overwriteOn: '이미 있는 내용을 CSV로 덮어씁니다.',
       sector: '새 회사의 업종', noSector: '업종 없음', preview: '결과 미리 보기', run: '지금 가져오기',
       runHelp: '나중에 가져오기 화면에서 되돌릴 수 있습니다.', planTitle: '결과 미리 보기', samples: '예시',
       stat: {

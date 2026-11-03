@@ -53,6 +53,11 @@ export interface ImportMapping {
   tag: string | null;
   /** Sector de las empresas que se crean (opcional). */
   segmentId: string | null;
+  /**
+   * Lo que ya existe: false (por defecto) solo rellena huecos; true pone lo del CSV encima de lo que había (lo vacío
+   * del CSV no borra nada). Se puede deshacer igual.
+   */
+  overwrite?: boolean;
 }
 export interface ImportStats {
   rows: number; duplicates: number; accountsCreated: number; accountsMerged: number; contactsCreated: number; contactsMerged: number;
@@ -63,10 +68,12 @@ export interface ImportStats {
 export interface ImportUndo {
   fieldIds: string[];
   zoneIds: string[];
-  accounts: Array<{ id: string; before: { fields: FieldValues; tags: string[]; notes: string | null; zoneId: string | null; parentId: string | null; contact?: Record<string, null> } }>;
+  accounts: Array<{ id: string; before: { fields: FieldValues; tags: string[]; notes: string | null; zoneId: string | null; parentId: string | null; contact?: Record<string, string | null> } }>;
   contacts: Array<{ id: string; before: Omit<ContactPatch, 'ownerId' | 'name'> }>;
   /** Vínculos nuevos entre una persona y una empresa que ya existían (los demás se van con lo importado). */
   links: Array<{ contactId: string; accountId: string }>;
+  /** Papeles cambiados al sobrescribir (para dejarlos como estaban). */
+  roles?: Array<{ contactId: string; accountId: string; role: string | null }>;
 }
 export interface CrmImport {
   id: string; tenantId: string; createdBy: string | null; fileName: string; target: 'account' | 'contact';

@@ -2,10 +2,10 @@ import type { Brand } from './brand';
 import { proposalText } from './i18n/messages/proposal';
 
 /** Canales con los que alguien puede dejar su contacto en sus propuestas (membership.contact_channel, por espacio). */
-export const CONTACT_CHANNELS = ['whatsapp', 'kakao', 'line', 'telegram', 'instagram', 'phone', 'email'] as const;
+export const CONTACT_CHANNELS = ['whatsapp', 'kakao', 'line', 'telegram', 'instagram', 'linkedin', 'phone', 'email'] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 /** Nombre del canal (igual en todos los idiomas: son marcas, salvo teléfono y email, que traduce quien lo pinta). */
-export const CHANNEL_NAME: Record<ContactChannel, string> = { whatsapp: 'WhatsApp', kakao: 'KakaoTalk', line: 'LINE', telegram: 'Telegram', instagram: 'Instagram', phone: 'Tel.', email: 'Email' };
+export const CHANNEL_NAME: Record<ContactChannel, string> = { whatsapp: 'WhatsApp', kakao: 'KakaoTalk', line: 'LINE', telegram: 'Telegram', instagram: 'Instagram', linkedin: 'LinkedIn', phone: 'Tel.', email: 'Email' };
 
 /** Contacto de quien hace la propuesta. */
 export interface RepContact { name: string; channel: ContactChannel; value: string }
@@ -35,6 +35,13 @@ export function repContactLink(c: RepContact, title: string, locale?: string | n
     case 'line': return /(^|\.)line\.me$/i.test(host(v) ?? '') ? { ...base, href: v, label: 'LINE', external: true } : { ...base, href: `https://line.me/ti/p/~${encodeURIComponent(handle(v))}`, label: `LINE: ${v}`, external: true };
     case 'telegram': return { ...base, href: `https://t.me/${encodeURIComponent(handle(v))}`, label: `@${handle(v)}`, external: true };
     case 'instagram': return { ...base, href: `https://ig.me/m/${encodeURIComponent(handle(v))}`, label: `@${handle(v)}`, external: true };
+    // Su perfil (o la página de su empresa): el enlace de LinkedIn tal cual, o el usuario de linkedin.com/in/<usuario>.
+    case 'linkedin': {
+      const h = host(v);
+      if (h) return /(^|\.)linkedin\.com$/i.test(h) ? { ...base, href: v.trim(), label: 'LinkedIn', external: true } : null;
+      const user = handle(v.replace(/^(www\.)?linkedin\.com\/(in|company)\//i, ''));
+      return /^[\w-]{2,100}$/.test(user) ? { ...base, href: `https://www.linkedin.com/in/${encodeURIComponent(user)}`, label: 'LinkedIn', external: true } : null;
+    }
     case 'phone': return digits(v).length >= 6 ? { ...base, href: `tel:${v.replace(/[^\d+]/g, '')}`, label: v, external: false } : null;
     case 'email': return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? { ...base, href: `mailto:${v}?subject=${encodeURIComponent(title)}`, label: v, external: false } : null;
   }

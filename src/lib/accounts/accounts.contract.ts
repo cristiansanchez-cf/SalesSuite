@@ -337,6 +337,29 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       expect(ps.find((x) => x.name === 'Bruno')!.companies.map((c) => `${c.name}:${c.role}`)).toEqual(['Luz y Ritmo:Owner']);
       expect(ps.find((x) => x.name === 'Bruno')!.fields).toMatchObject({ status: 'no-comenzado' });
 
+      // La misma persona con más datos y otro cargo y estado: sin «sobrescribir» solo rellena huecos; con él, lo del CSV
+      // va encima (y deshacer lo deja como estaba).
+      const again = 'Name,Empresa/Local,Rol,Ciudad,Email,Status\nBruno,Luz y Ritmo,Socio,Valencia,bruno@luz.test,Hablando\n';
+      const fill = await admin.crm.importStart('fbd-2.csv', again, 'contact');
+      const pf = await admin.crm.importPreview(fill);
+      await admin.crm.importPreview(fill, { ...pf.mapping, tag: 'fbd' });
+      expect(await admin.crm.importRun(fill)).toMatchObject({ contactsMerged: 1, contactsCreated: 0 });
+      let bruno = (await admin.crm.people({ tag: 'fbd' })).items.find((x) => x.name === 'Bruno')!;
+      expect(bruno).toMatchObject({ email: 'bruno@luz.test', fields: { status: 'no-comenzado' } });
+      expect(bruno.companies.map((c) => c.role)).toEqual(['Owner']);
+      const over = await admin.crm.importStart('fbd-3.csv', again.replace('bruno@luz.test', 'bruno@nuevo.test'), 'contact');
+      const po = await admin.crm.importPreview(over);
+      await admin.crm.importPreview(over, { ...po.mapping, tag: 'fbd', overwrite: true });
+      await admin.crm.importRun(over);
+      bruno = (await admin.crm.people({ tag: 'fbd' })).items.find((x) => x.name === 'Bruno')!;
+      expect(bruno).toMatchObject({ email: 'bruno@nuevo.test', fields: { status: 'hablando' } });
+      expect(bruno.companies.map((c) => c.role)).toEqual(['Socio']);
+      await admin.crm.importUndo(over);
+      bruno = (await admin.crm.people({ tag: 'fbd' })).items.find((x) => x.name === 'Bruno')!;
+      expect(bruno).toMatchObject({ email: 'bruno@luz.test', fields: { status: 'no-comenzado' } });
+      expect(bruno.companies.map((c) => c.role)).toEqual(['Owner']);
+      await admin.crm.importUndo(fill);
+
       // Deshacer: lo creado se va, lo fusionado vuelve a como estaba, los campos nuevos se archivan.
       expect(await admin.crm.importUndo(imp2)).toMatchObject({ people: 3, companies: 1 });
       expect((await admin.crm.people()).items).toHaveLength(0);

@@ -61,7 +61,7 @@ if (Astro.request.method === 'POST') {
             if (order.length) options[p.header] = order;
           }
         });
-        await admin.crm.importPreview(id, { columns, values, options, tag: str('tag') || null, segmentId: str('segmentId') || null });
+        await admin.crm.importPreview(id, { columns, values, options, tag: str('tag') || null, segmentId: str('segmentId') || null, overwrite: f.get('overwrite') === 'on' });
         to += '?preview=1#plan';
         break;
       }
@@ -122,6 +122,7 @@ const fieldDef = (key: string) => fields.find((x) => x.key === key) ?? plan?.new
           <label class="co-field">{I.sector}
             <select class="co-select" name="segmentId"><option value="">{I.noSector}</option>{segments.map((sg) => <option value={sg.id} selected={sg.id === mapping.segmentId}>{sg.name}</option>)}</select></label>
         )}
+        <label class="co-check sm:col-span-2"><input type="checkbox" name="overwrite" checked={!!mapping.overwrite} data-testid="import-overwrite" /> <span class="grid gap-0.5"><span class="font-semibold">{I.overwrite}</span><span class="co-help">{I.overwriteHelp}</span></span></label>
       </section>
 
       <ul class="grid gap-3 p-0">
@@ -182,6 +183,7 @@ const fieldDef = (key: string) => fields.find((x) => x.key === key) ?? plan?.new
     <section id="plan" class="co-card mt-6 grid gap-4" data-testid="import-plan">
       <h2 class="co-entity">{I.planTitle}</h2>
       <dl class="grid gap-3 sm:grid-cols-3">{stats(plan.stats).map((x) => <div class="co-inset !p-3" data-stat={x.k}><dt class="co-meta">{x.label}</dt><dd class="co-entity">{x.n}</dd></div>)}</dl>
+      {mapping.overwrite && <p class="co-meta" data-testid="import-overwrite-on"><Icon name="triangle-alert" size={14} /> {I.overwriteOn}</p>}
       {plan.stats.unknownOwners.length > 0 && <p class="co-meta" data-testid="import-unknown-owners"><Icon name="info" size={14} /> {I.unknownOwners}: {plan.stats.unknownOwners.join(', ')}</p>}
       {plan.junkCompanies.length > 0 && <p class="co-meta"><Icon name="info" size={14} /> {I.junk}: {plan.junkCompanies.slice(0, 40).join(', ')}{plan.junkCompanies.length > 40 ? '…' : ''}</p>}
       {plan.issues.length > 0 && (

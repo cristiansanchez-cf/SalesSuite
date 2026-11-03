@@ -51,7 +51,7 @@ if (Astro.request.method === 'POST') {
       // El contacto propio (vale para todas sus propuestas): canal y número/usuario/enlace.
       const ch = str('channel') as ContactChannel;
       const bad = (CONTACT_CHANNELS as readonly string[]).includes(ch) ? contactError(ch, str('value')) : null;
-      if (bad) throw new AdminError(400, bad === 'phone' ? t.page.contact.errPhone : t.page.contact.errEmail);
+      if (bad) throw new AdminError(400, bad === 'phone' ? t.page.contact.errPhone : bad === 'linkedin' ? t.page.contact.errLinkedin : t.page.contact.errEmail);
       // Lo suyo, o (admin) el de quien hizo la propuesta.
       const st = await admin.service.getState(id);
       await saveContact(admin, str('channel'), str('value'), st.dossier.authorId ?? admin.session.userId);

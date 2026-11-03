@@ -17,6 +17,11 @@ describe('contacto del comercial en la propuesta', () => {
     expect(repContactLink({ name: '', channel: 'kakao', value: 'diver_kim' }, 'P', 'ko')).toMatchObject({ href: null, label: 'KakaoTalk ID: diver_kim' });
     // Un enlace que no es de Kakao no se convierte en botón.
     expect(repContactLink({ name: '', channel: 'kakao', value: 'https://evil.example/x' }, 'P', 'ko')?.href).toBeNull();
+    // LinkedIn: el enlace de su perfil tal cual, o su usuario; un enlace de otra web, nada.
+    expect(repContactLink({ name: '', channel: 'linkedin', value: 'https://www.linkedin.com/in/laura-gomez/' }, 'P', 'es')).toMatchObject({ href: 'https://www.linkedin.com/in/laura-gomez/', cta: 'Escríbeme por LinkedIn', external: true });
+    expect(repContactLink({ name: '', channel: 'linkedin', value: 'linkedin.com/in/laura-gomez' }, 'P', 'es')?.href).toBe('https://www.linkedin.com/in/laura-gomez');
+    expect(repContactLink({ name: '', channel: 'linkedin', value: 'laura-gomez' }, 'P', 'en')).toMatchObject({ href: 'https://www.linkedin.com/in/laura-gomez', cta: 'Message me on LinkedIn' });
+    expect(repContactLink({ name: '', channel: 'linkedin', value: 'https://evil.example/in/x' }, 'P', 'es')).toBeNull();
   });
   it('en coreano no se ofrece el WhatsApp de la marca', () => {
     expect(contactLinks(brand, 'P', 'ko-KR').map((x) => x.kind)).toEqual(['email']);

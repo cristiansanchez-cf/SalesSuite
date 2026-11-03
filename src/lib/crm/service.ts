@@ -572,16 +572,18 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       for (const a of plan.accounts.filter((x) => x.existingId)) {
         const cur = accsNow.get(a.existingId!);
         if (!cur || !existing.has(cur.id)) continue;
-        const fieldsNext = { ...a.fields, ...cur.fields };
+        // Rellenar huecos (lo de siempre) o, con «sobrescribir», lo del CSV encima (lo vacío del CSV no borra nada).
+        const fieldsNext = m.overwrite ? { ...cur.fields, ...a.fields } : { ...a.fields, ...cur.fields };
         const tagsNext = tag && !cur.tags.includes(tag) ? [...cur.tags, tag] : cur.tags;
         const notesNext = a.notes && !(cur.notes ?? '').includes(a.notes) ? `${cur.notes ? `${cur.notes}\n` : ''}${a.notes}`.slice(0, 2000) : cur.notes;
         const zoneNext = cur.zoneId ?? zoneOf(a.city);
-        const parentNext = cur.parentId ?? (a.group ? accId.get(a.group) ?? null : null);
-        // Contacto: solo se rellenan huecos.
-        const contactNext = Object.fromEntries(Object.entries(a.contact ?? {}).filter(([k, v]) => v && !cur[k as keyof Account]));
+        const groupId = a.group ? accId.get(a.group) ?? null : null;
+        const parentNext = m.overwrite && groupId && groupId !== cur.id ? groupId : cur.parentId ?? groupId;
+        // Contacto: huecos o, con «sobrescribir», lo que cambie.
+        const contactNext = Object.fromEntries(Object.entries(a.contact ?? {}).filter(([k, v]) => v && (m.overwrite ? v !== cur[k as keyof Account] : !cur[k as keyof Account])));
         if (!Object.keys(contactNext).length && JSON.stringify([fieldsNext, tagsNext, notesNext, zoneNext, parentNext]) === JSON.stringify([cur.fields, cur.tags, cur.notes, cur.zoneId, cur.parentId])) continue;
         undo.accounts.push({ id: cur.id, before: { fields: cur.fields, tags: cur.tags, notes: cur.notes, zoneId: cur.zoneId, parentId: cur.parentId,
-          contact: Object.fromEntries(Object.keys(contactNext).map((k) => [k, null])) } });
+          contact: Object.fromEntries(Object.keys(contactNext).map((k) => [k, (cur[k as keyof Account] as string | null | undefined) ?? null])) } });
         await accounts.updateAccount(cur.id, { fields: fieldsNext, tags: tagsNext, notes: notesNext, zoneId: zoneNext, parentId: parentNext, contact: contactNext });
       }
 
@@ -597,17 +599,21 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         conId.set(c.ref, c.existingId!);
         const cur = before.get(c.existingId!);
         if (!cur) continue;
+        // Huecos, o con «sobrescribir» lo del CSV que traiga valor.
+        const pick = <T,>(had: T | null, csv: T | null) => (m.overwrite ? csv ?? had : had ?? csv);
         const patch: ContactPatch = {
-          email: cur.email ?? c.email, phone: cur.phone ?? c.phone, instagram: cur.instagram ?? c.instagram, linkedin: cur.linkedin ?? c.linkedin, city: cur.city ?? c.city,
+          email: pick(cur.email, c.email), phone: pick(cur.phone, c.phone), instagram: pick(cur.instagram, c.instagram), linkedin: pick(cur.linkedin, c.linkedin), city: pick(cur.city, c.city),
           notes: c.notes && !(cur.notes ?? '').includes(c.notes) ? `${cur.notes ? `${cur.notes}\n` : ''}${c.notes}`.slice(0, 4000) : cur.notes,
-          fields: { ...c.fields, ...cur.fields }, tags: tag && !cur.tags.includes(tag) ? [...cur.tags, tag] : cur.tags,
+          fields: m.overwrite ? { ...cur.fields, ...c.fields } : { ...c.fields, ...cur.fields }, tags: tag && !cur.tags.includes(tag) ? [...cur.tags, tag] : cur.tags,
         };
         undo.contacts.push({ id: cur.id, before: { email: cur.email, phone: cur.phone, instagram: cur.instagram, linkedin: cur.linkedin, city: cur.city, notes: cur.notes, fields: cur.fields, tags: cur.tags } });
         await db.updateContact(cur.id, patch);
       }
 
       // 5. Persona ↔ empresa, con su papel.
-      const oldLinks = new Set((await db.listLinks(t, { contactIds: merging.map((c) => c.existingId!) })).map((l) => `${l.contactId}|${l.accountId}`));
+      const before5 = await db.listLinks(t, { contactIds: merging.map((c) => c.existingId!) });
+      const oldLinks = new Set(before5.map((l) => `${l.contactId}|${l.accountId}`));
+      const oldRole = new Map(before5.map((l) => [`${l.contactId}|${l.accountId}`, l.role]));
       const links: ContactLink[] = [];
       for (const c of plan.contacts) for (const co of c.companies) {
         const contactId = conId.get(c.ref); const accountId = accId.get(co.ref);
@@ -615,7 +621,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         links.push({ contactId, accountId, role: co.role });
         if (c.existingId && existing.has(accountId) && !oldLinks.has(`${contactId}|${accountId}`)) undo.links.push({ contactId, accountId });
       }
-      await db.saveLinks(t, links.filter((l) => !oldLinks.has(`${l.contactId}|${l.accountId}`)));
+      // Con «sobrescribir», también el papel de quien ya estaba en esa empresa (si el CSV trae uno distinto).
+      const changedRoles = m.overwrite ? links.filter((l) => l.role && oldLinks.has(`${l.contactId}|${l.accountId}`) && oldRole.get(`${l.contactId}|${l.accountId}`) !== l.role) : [];
+      undo.roles = changedRoles.map((l) => ({ contactId: l.contactId, accountId: l.accountId, role: oldRole.get(`${l.contactId}|${l.accountId}`) ?? null }));
+      await db.saveLinks(t, [...links.filter((l) => !oldLinks.has(`${l.contactId}|${l.accountId}`)), ...changedRoles]);
     } catch (e) {
       // Todo o nada: lo que se llegó a crear se deshace y la importación vuelve a estar lista para reintentar.
       const why = e instanceof Error ? e.message.replace(/^\[supabase\]\s*/, '') : String(e);
@@ -636,6 +645,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const companies = await accounts.deleteAccountsByImport(id);
     for (const a of u.accounts) await accounts.updateAccount(a.id, a.before);
     for (const c of u.contacts) await db.updateContact(c.id, c.before);
+    if (u.roles?.length) await db.saveLinks(t, u.roles);
     // Los campos que creó la importación se quitan (sus valores se fueron con lo importado): reimportar los recrea igual.
     for (const f of u.fieldIds) await accounts.deleteField(f);
     if (u.zoneIds.length) {

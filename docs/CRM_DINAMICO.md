@@ -137,6 +137,10 @@ Un asistente de 4 pasos que sirve para cualquier espacio y cualquier CSV:
    La columna de estado de Notion → **etapa** (con su tabla de equivalencias).
 3. **Duplicados.** Por referencia externa (id de Notion o de Google Maps) o por nombre + ciudad normalizados. Para cada
    duplicado: *saltar*, *actualizar* o *crear igualmente*.
+   Lo que ya está (personas por email, LinkedIn o nombre + empresa; empresas por nombre + ciudad) se **completa**: solo
+   se rellenan los huecos y las notas se suman. Con **«Sobrescribir lo que ya hay con lo del CSV»** (`mapping.overwrite`),
+   lo del CSV va encima (contacto, campos, grupo y cargo en la empresa); una celda vacía no borra nada. Deshacer deja
+   los valores de antes (también los cargos: `undo.roles`).
 4. **Vista previa** de 10 filas tal y como quedarán, con los errores marcados («Aforo: "unos 300" no es un número» → se
    guarda en notas). **Importar** crea un lote (`import_batch`) que se puede **deshacer** entero.
 

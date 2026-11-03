@@ -31,9 +31,10 @@ export async function readContact(admin: Admin, userId: string): Promise<Contact
 export const toRep = (c: ContactSetting): RepContact | null => (c.channel && c.value.trim() ? { name: c.name, channel: c.channel, value: c.value.trim() } : null);
 
 /** null = válido. Número para WhatsApp y teléfono, email con @; usuario, ID o enlace para el resto. */
-export function contactError(channel: ContactChannel, value: string): 'phone' | 'email' | null {
+export function contactError(channel: ContactChannel, value: string): 'phone' | 'email' | 'linkedin' | null {
   const v = value.trim();
   if (!v) return null;
+  if (channel === 'linkedin' && !(/^https:\/\/([a-z0-9-]+\.)?linkedin\.com\//i.test(v) || /^(www\.)?linkedin\.com\/(in|company)\/[\w-]+/i.test(v) || /^@?[\w-]{2,100}$/.test(v))) return 'linkedin';
   if ((channel === 'whatsapp' || channel === 'phone') && !/^\+?[\d\s().-]{6,39}$/.test(v)) return 'phone';
   if (channel === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return 'email';
   return null;

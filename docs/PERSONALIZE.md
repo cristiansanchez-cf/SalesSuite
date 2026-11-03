@@ -97,6 +97,7 @@ Cada propuesta lleva como botón principal el contacto de **quien la hizo**, par
 | LINE | ID o enlace `line.me` | `line.me/ti/p/~<id>` |
 | Telegram | @usuario | `t.me/<usuario>` |
 | Instagram | @usuario | `ig.me/m/<usuario>` (mensaje directo) |
+| LinkedIn | Enlace de su perfil o usuario | Su perfil (`linkedin.com/in/<usuario>`); solo enlaces de linkedin.com (migración `20261225000000_contact_linkedin.sql`) |
 | Teléfono | Número con prefijo | `tel:` |
 | Email | Dirección | `mailto:` con el título de la propuesta |
 
