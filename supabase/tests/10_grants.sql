@@ -37,3 +37,5 @@ revoke insert, update, delete on public.lead_purge_log from authenticated, anon;
 revoke insert, update, delete on public.privacy_request from authenticated, anon;
 -- Caché de perfiles de redes (20261223): el equipo lee, crea y cambia; nadie borra con sesión.
 revoke delete on public.social_profile_cache from authenticated, anon;
+-- Asistente de WhatsApp (20261224): su estado solo lo toca el servidor.
+revoke all on public.wa_assistant_state from authenticated, anon;

@@ -1,0 +1,123 @@
+/** Lo que dice el asistente de WhatsApp (docs/ASSISTANT.md), en el idioma de cada persona. WhatsApp: *negrita*. */
+import { defineMessages } from '../i18n/core';
+
+interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null }
+const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+
+const es = {
+  help: 'Hola 👋 Soy el asistente de Cofundo. Cuéntame (por texto o audio) con quién has hablado y qué ha pasado, y lo apunto en su ficha. También puedes reenviarme los mensajes de un cliente. Nada se guarda sin que me digas «Guardar».',
+  willSave: 'Esto es lo que guardo:',
+  summary: (s: Sum) => [`*${s.name}*${s.isNew ? ' (nueva)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
+    s.keyFacts.length ? `Lo que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+    s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'})` : ''}` : ''].filter(Boolean).join('\n'),
+  save: 'Guardar', change: 'Cambiar',
+  whichOne: (venue: string, opts: string[], create: string) => opts.length
+    ? `¿Cuál es «${venue}»?\n${opts.join('\n')}\n0) Crear «${create}»\n\nResponde con el número (o escribe el nombre bien).`
+    : `No encuentro «${venue}» en el CRM. Responde 0 para crearla o escríbeme el nombre como está en la ficha.`,
+  notFound: (q: string) => `No encuentro «${q}» en el CRM. Responde 0 para crearla o escríbeme otro nombre.`,
+  discarded: 'descartada',
+  saved: (names: string[]) => `✅ Guardado en ${names.join(', ')}.`,
+  notSaved: (lines: string[]) => `No he podido guardar:\n${lines.join('\n')}`,
+  failed: 'no se pudo',
+  nothing: 'No he sacado nada que apuntar. Cuéntame con qué empresa has hablado y qué ha pasado.',
+  nothingLeft: 'Vale, no queda nada que guardar.',
+  changed: 'Vale, no guardo nada. Mándamelo otra vez con lo que cambie.',
+  cancelled: 'Cancelado. Cuando quieras, me cuentas.',
+  expired: 'Eso ya no está pendiente. Cuéntamelo otra vez y lo apunto.',
+  onlyText: 'De momento apunto texto y audios.',
+  noAudio: 'Aún no puedo escuchar audios: escríbemelo, porfa.',
+  heard: (t: string) => `🎙️ He entendido: «${clip(t, 800)}»`,
+  aiDown: 'Ahora mismo no puedo leerlo bien. Prueba en un momento.',
+  forwardedAsk: 'Recibido 📩 ¿De qué empresa es esta conversación? Escríbeme su nombre (si me reenvías más, los junto).',
+  channels: { instagram: 'Instagram', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', phone: 'Llamada', email: 'Email', visit: 'Visita', meeting: 'Reunión', other: 'Otro' } as Record<string, string>,
+  outcomes: { no_reply: 'sin respuesta', replied: 'contestó', interested: 'interesado', not_interested: 'no interesado', meeting: 'cita conseguida', note: 'nota' } as Record<string, string>,
+};
+export type AssistantText = typeof es;
+
+export const assistantMessages = defineMessages({
+  es,
+  en: {
+    help: 'Hi 👋 I am the Cofundo assistant. Tell me (by text or voice note) who you talked to and what happened, and I will log it on their record. You can also forward me a client’s messages. Nothing is saved until you say “Save”.',
+    willSave: 'This is what I will save:',
+    summary: (s) => [`*${s.name}*${s.isNew ? ' (new)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `“${clip(s.interaction)}”` : '',
+      s.keyFacts.length ? `What we know: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'})` : ''}` : ''].filter(Boolean).join('\n'),
+    save: 'Save', change: 'Change',
+    whichOne: (venue, opts, create) => opts.length
+      ? `Which one is “${venue}”?\n${opts.join('\n')}\n0) Create “${create}”\n\nReply with the number (or type the name properly).`
+      : `I cannot find “${venue}” in the CRM. Reply 0 to create it or type the name as it is on the record.`,
+    notFound: (q) => `I cannot find “${q}” in the CRM. Reply 0 to create it or type another name.`,
+    discarded: 'discarded',
+    saved: (names) => `✅ Saved on ${names.join(', ')}.`,
+    notSaved: (lines) => `I could not save:\n${lines.join('\n')}`,
+    failed: 'failed',
+    nothing: 'I did not get anything to log. Tell me which company you talked to and what happened.',
+    nothingLeft: 'OK, there is nothing left to save.',
+    changed: 'OK, I will not save anything. Send it again with the changes.',
+    cancelled: 'Cancelled. Tell me whenever you want.',
+    expired: 'That is no longer pending. Tell me again and I will log it.',
+    onlyText: 'For now I log text and voice notes.',
+    noAudio: 'I cannot listen to voice notes yet: please type it.',
+    heard: (t) => `🎙️ I understood: “${clip(t, 800)}”`,
+    aiDown: 'I cannot read it properly right now. Try again in a moment.',
+    forwardedAsk: 'Got it 📩 Which company is this conversation with? Type its name (if you forward more, I will join them).',
+    channels: { instagram: 'Instagram', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', phone: 'Call', email: 'Email', visit: 'Visit', meeting: 'Meeting', other: 'Other' },
+    outcomes: { no_reply: 'no reply', replied: 'replied', interested: 'interested', not_interested: 'not interested', meeting: 'meeting booked', note: 'note' },
+  },
+  pt: {
+    help: 'Olá 👋 Sou o assistente da Cofundo. Conta-me (por texto ou áudio) com quem falaste e o que aconteceu, e eu registo na ficha. Também podes reencaminhar-me as mensagens de um cliente. Nada se guarda sem dizeres «Guardar».',
+    willSave: 'Isto é o que vou guardar:',
+    summary: (s) => [`*${s.name}*${s.isNew ? ' (nova)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
+      s.keyFacts.length ? `O que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'})` : ''}` : ''].filter(Boolean).join('\n'),
+    save: 'Guardar', change: 'Mudar',
+    whichOne: (venue, opts, create) => opts.length
+      ? `Qual é «${venue}»?\n${opts.join('\n')}\n0) Criar «${create}»\n\nResponde com o número (ou escreve bem o nome).`
+      : `Não encontro «${venue}» no CRM. Responde 0 para a criar ou escreve o nome como está na ficha.`,
+    notFound: (q) => `Não encontro «${q}» no CRM. Responde 0 para a criar ou escreve outro nome.`,
+    discarded: 'descartada',
+    saved: (names) => `✅ Guardado em ${names.join(', ')}.`,
+    notSaved: (lines) => `Não consegui guardar:\n${lines.join('\n')}`,
+    failed: 'falhou',
+    nothing: 'Não tirei nada para registar. Conta-me com que empresa falaste e o que aconteceu.',
+    nothingLeft: 'Está bem, não fica nada por guardar.',
+    changed: 'Está bem, não guardo nada. Manda outra vez com o que muda.',
+    cancelled: 'Cancelado. Quando quiseres, conta-me.',
+    expired: 'Isso já não está pendente. Conta outra vez e eu registo.',
+    onlyText: 'Por agora registo texto e áudios.',
+    noAudio: 'Ainda não consigo ouvir áudios: escreve-mo, por favor.',
+    heard: (t) => `🎙️ Percebi: «${clip(t, 800)}»`,
+    aiDown: 'Agora não consigo ler bem. Tenta daqui a um momento.',
+    forwardedAsk: 'Recebido 📩 De que empresa é esta conversa? Escreve o nome (se reencaminhares mais, junto-as).',
+    channels: { instagram: 'Instagram', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', phone: 'Chamada', email: 'Email', visit: 'Visita', meeting: 'Reunião', other: 'Outro' },
+    outcomes: { no_reply: 'sem resposta', replied: 'respondeu', interested: 'interessado', not_interested: 'não interessado', meeting: 'reunião marcada', note: 'nota' },
+  },
+  ko: {
+    help: '안녕하세요 👋 Cofundo 어시스턴트입니다. 누구와 이야기했고 무슨 일이 있었는지 (글이나 음성으로) 알려주시면 기록에 남길게요. 고객의 메시지를 전달해도 됩니다. «저장»이라고 하기 전에는 아무것도 저장하지 않아요.',
+    willSave: '이렇게 저장할게요:',
+    summary: (s) => [`*${s.name}*${s.isNew ? ' (새 회사)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
+      s.keyFacts.length ? `알고 있는 것: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후)` : ''}` : ''].filter(Boolean).join('\n'),
+    save: '저장', change: '수정',
+    whichOne: (venue, opts, create) => opts.length
+      ? `«${venue}»은(는) 어느 곳인가요?\n${opts.join('\n')}\n0) «${create}» 새로 만들기\n\n번호로 답하거나 이름을 정확히 적어 주세요.`
+      : `CRM에서 «${venue}»을(를) 찾지 못했어요. 새로 만들려면 0, 아니면 기록에 있는 이름을 적어 주세요.`,
+    notFound: (q) => `CRM에서 «${q}»을(를) 찾지 못했어요. 새로 만들려면 0, 아니면 다른 이름을 적어 주세요.`,
+    discarded: '제외됨',
+    saved: (names) => `✅ ${names.join(', ')}에 저장했어요.`,
+    notSaved: (lines) => `저장하지 못했어요:\n${lines.join('\n')}`,
+    failed: '실패',
+    nothing: '기록할 내용을 찾지 못했어요. 어느 회사와 이야기했고 무슨 일이 있었는지 알려주세요.',
+    nothingLeft: '네, 저장할 것이 없어요.',
+    changed: '네, 저장하지 않을게요. 바뀐 내용으로 다시 보내 주세요.',
+    cancelled: '취소했어요. 언제든 알려주세요.',
+    expired: '이미 대기 중인 내용이 아니에요. 다시 알려주시면 기록할게요.',
+    onlyText: '지금은 글과 음성만 기록해요.',
+    noAudio: '아직 음성을 들을 수 없어요: 글로 적어 주세요.',
+    heard: (t) => `🎙️ 이렇게 이해했어요: «${clip(t, 800)}»`,
+    aiDown: '지금은 제대로 읽을 수 없어요. 잠시 후 다시 시도해 주세요.',
+    forwardedAsk: '받았어요 📩 어느 회사와의 대화인가요? 이름을 적어 주세요 (더 전달하면 함께 묶을게요).',
+    channels: { instagram: '인스타그램', linkedin: '링크드인', whatsapp: 'WhatsApp', phone: '전화', email: '이메일', visit: '방문', meeting: '미팅', other: '기타' },
+    outcomes: { no_reply: '답 없음', replied: '답장함', interested: '관심 있음', not_interested: '관심 없음', meeting: '미팅 잡음', note: '메모' },
+  },
+});

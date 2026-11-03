@@ -30,7 +30,7 @@ const es = {
   },
   account: {
     eyebrow: 'Tu perfil', title: 'Mi cuenta', welcome: 'Bienvenido/a.', welcomeLede: 'Dinos cómo te llamas. La contraseña es opcional: siempre puedes entrar con un código por email.',
-    name: 'Nombre', phone: 'Teléfono', phoneHelp: 'Opcional. Lo ven tus compañeros de zona para llamarte o escribirte por WhatsApp.',
+    name: 'Nombre', phone: 'Teléfono', phoneHelp: 'Opcional. Lo ven tus compañeros de zona para llamarte o escribirte por WhatsApp. Con él, el asistente de WhatsApp del espacio te reconoce (ponlo con prefijo: +34 …).',
     password: 'Contraseña', passwordHelp: 'Opcional, mínimo 10 caracteres', repeat: 'Repite la contraseña', save: 'Guardar',
     language: 'Idioma de la consola', languageHelp: 'Se guarda en tu cuenta: lo verás igual en cualquier dispositivo.', languageSaved: 'Idioma guardado.',
     notifyEyebrow: 'Avisos', notifyTitle: 'Emails', notifyLabel: 'Avisarme por email',
@@ -77,7 +77,7 @@ export const shellMessages = defineMessages({
     },
     account: {
       eyebrow: 'Your profile', title: 'My account', welcome: 'Welcome.', welcomeLede: 'Tell us your name. A password is optional: you can always sign in with a code by email.',
-      name: 'Name', phone: 'Phone', phoneHelp: 'Optional. Colleagues in your territory see it to call you or message you on WhatsApp.',
+      name: 'Name', phone: 'Phone', phoneHelp: 'Optional. Colleagues in your territory see it to call you or message you on WhatsApp. With it, the space’s WhatsApp assistant recognises you (include the country code: +34 …).',
       password: 'Password', passwordHelp: 'Optional, at least 10 characters', repeat: 'Repeat the password', save: 'Save',
       language: 'Console language', languageHelp: 'Saved to your account: you will see it on any device.', languageSaved: 'Language saved.',
       notifyEyebrow: 'Notifications', notifyTitle: 'Emails', notifyLabel: 'Email me',
@@ -121,7 +121,7 @@ export const shellMessages = defineMessages({
     },
     account: {
       eyebrow: 'Seu perfil', title: 'Minha conta', welcome: 'Boas-vindas.', welcomeLede: 'Diga-nos seu nome. A senha é opcional: você sempre pode entrar com um código por email.',
-      name: 'Nome', phone: 'Telefone', phoneHelp: 'Opcional. Seus colegas de região veem para ligar ou escrever pelo WhatsApp.',
+      name: 'Nome', phone: 'Telefone', phoneHelp: 'Opcional. Seus colegas de região veem para ligar ou escrever pelo WhatsApp. Com ele, o assistente de WhatsApp do espaço reconhece você (com o código do país: +55 …).',
       password: 'Senha', passwordHelp: 'Opcional, mínimo de 10 caracteres', repeat: 'Repita a senha', save: 'Salvar',
       language: 'Idioma do console', languageHelp: 'Fica salvo na sua conta: você verá o mesmo em qualquer dispositivo.', languageSaved: 'Idioma salvo.',
       notifyEyebrow: 'Avisos', notifyTitle: 'Emails', notifyLabel: 'Avisar-me por email',
@@ -165,7 +165,7 @@ export const shellMessages = defineMessages({
     },
     account: {
       eyebrow: '내 프로필', title: '내 계정', welcome: '환영합니다.', welcomeLede: '이름을 알려주세요. 비밀번호는 선택 사항이며, 언제든 이메일 코드로 로그인할 수 있습니다.',
-      name: '이름', phone: '전화번호', phoneHelp: '선택 사항. 같은 지역 동료가 전화나 WhatsApp으로 연락할 때 사용합니다.',
+      name: '이름', phone: '전화번호', phoneHelp: '선택 사항. 같은 지역 동료가 전화나 WhatsApp으로 연락할 때 사용합니다. 이 번호로 공간의 WhatsApp 어시스턴트가 나를 알아봅니다 (국가번호 포함: +82 …).',
       password: '비밀번호', passwordHelp: '선택 사항, 최소 10자', repeat: '비밀번호 확인', save: '저장',
       language: '콘솔 언어', languageHelp: '계정에 저장되어 어느 기기에서나 같은 언어로 표시됩니다.', languageSaved: '언어를 저장했습니다.',
       notifyEyebrow: '알림', notifyTitle: '이메일', notifyLabel: '이메일로 알림 받기',

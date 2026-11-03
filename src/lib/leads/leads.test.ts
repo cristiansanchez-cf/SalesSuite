@@ -403,12 +403,12 @@ describe('firma del email', () => {
   test('va donde está {firma_email}, maquetada en HTML y en texto; sin firma, nombre y marca', async () => {
     const { autoreplyEmail: ar } = await import('./templates');
     const base = { name: 'Laura', type: 'venue' as const, fields: { venue_name: 'Sala X' }, locale: 'es', signer: 'Cristian', brand: 'Enjoy the Club', channel: 'email' as const, eta: 'minutes' as const, bookingUrl: null, unsubscribeUrl: 'https://u' };
-    const sig = { name: 'Cristian Alberto Sánchez Salido', title: 'CEO AppXpert Solutions SL.', phone: '+34 727 743 567', email: 'cristian.sanchez@enjoytheclub.es', logoUrl: 'https://x.es/logo.png', legal: 'La información contenida en este mensaje es confidencial.' };
+    const sig = { name: 'Cristian Alberto Sánchez Salido', title: 'CEO AppXpert Solutions SL.', phone: '+34 699 000 111', email: 'cristian.sanchez@enjoytheclub.es', logoUrl: 'https://x.es/logo.png', legal: 'La información contenida en este mensaje es confidencial.' };
     const e = ar({ ...base, signature: sig });
     expect(e.text).toContain('Un saludo,\nCristian Alberto Sánchez Salido\nCEO AppXpert Solutions SL.');
     expect(e.text).not.toContain('\u0007');
     expect(e.html).toContain('<strong style="font-size:16px">Cristian Alberto Sánchez Salido</strong>');
-    expect(e.html).toContain('href="tel:+34727743567"');
+    expect(e.html).toContain('href="tel:+34699000111"');
     expect(e.html).toContain('<img src="https://x.es/logo.png"');
     expect(e.html).toContain('font-size:11px');
     expect(e.html.indexOf('Cristian Alberto')).toBeLessThan(e.html.indexOf('https://u'));
