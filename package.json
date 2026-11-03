@@ -22,7 +22,9 @@
     "start:demo": "DEMO_MODE=1 DEV_TENANT_SLUG=enjoy node ./dist/server/entry.mjs",
     "lint:copy": "node scripts/lint-copy.mjs",
     "export:sales": "tsx scripts/export-sales.ts",
-    "tenant:translate": "tsx scripts/content-translate.ts"
+    "tenant:translate": "tsx scripts/content-translate.ts",
+    "load": "node scripts/load/load-test.mjs",
+    "cost:model": "node scripts/load/cost-model.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

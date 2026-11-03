@@ -24,6 +24,8 @@ Se nombra desde GitHub → Actions → **Producción** → `superadmin`, con el 
 «Solo comprobar» desmarcado. Si aún no tiene usuario, se le crea la cuenta (sin email de invitación): entra desde `/admin/login` de cualquier espacio con su email y el código que le llega. Quitarlo: `ADMIN_EMAILS=… npx tsx scripts/superadmin.ts --remove`.
 Entra en cada espacio por su dominio (la Plataforma tiene un «Entrar» por espacio); dentro es admin aunque no sea miembro.
 
+**Coste por empresa** (Plataforma → Coste por empresa): lo que gasta cada espacio en IA, audios, WhatsApp, correos y redes, por función y por persona. Ver docs/COSTES.md.
+
 ## Alta de una empresa
 
 Paso a paso para el superadmin (una sola vez + cada empresa): [`ONBOARDING_TENANT.md`](ONBOARDING_TENANT.md). Aquí, qué
