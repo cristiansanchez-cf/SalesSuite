@@ -126,7 +126,7 @@ describe('textos', () => {
     expect(summary('wedding', { wedding_date: '2027-06-14' }, 'fr')).toBe('votre mariage du 14 juin 2027');
     const p = waParams('wa1', { name: 'Laura Gómez', type: 'venue', fields: { venue_name: 'Sala X' }, locale: 'es', bookingUrl: null, videoUrl: null });
     expect(p[0]).toBe('Laura');
-    expect(waPreview('wa1', 'es', 'Cristian', 'Enjoy the Club', p)).toContain('Hola Laura, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste desde la web sobre Sala X');
+    expect(waPreview('wa1', 'es', 'Cristian', 'Enjoy the Club', p)).toContain('Hola Laura, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste sobre Sala X');
     const e = autoreplyEmail({ name: 'Laura', type: 'venue', fields: { venue_name: 'Sala X' }, locale: 'en', signer: 'Cristian', brand: 'Enjoy', channel: 'whatsapp', eta: 'next_business_day', bookingUrl: 'https://cal.x/c', unsubscribeUrl: 'https://u' });
     expect(e.text).toContain("I'll message you on WhatsApp first thing tomorrow");
     expect(e.html).toContain('<a href="https://cal.x/c">');
@@ -418,5 +418,78 @@ describe('firma del email', () => {
     const { signatureSchema } = await import('./service');
     expect(signatureSchema.safeParse({ logoUrl: 'https://x.es/logo.svg' }).success).toBe(false);
     expect(signatureSchema.safeParse({ logoUrl: 'https://x.es/logo.png', name: 'C', email: '' }).success).toBe(true);
+  });
+});
+
+describe('desde la app (docs/LEADS.md §App)', () => {
+  let sent: Email[];
+  const mailer: Mailer = { async send(e) { sent.push(e); return { id: 'em_1' }; } };
+  const waSettings = () => ({ ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 'lead_hola_es' }, wa2: { es: 'lead_recordatorio_es' } } });
+  const deps = (over: Partial<IntakeDeps> = {}): IntakeDeps => ({
+    db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: demoLeadsStore().settings[0], now: new Date('2026-11-03T10:00:00Z'),
+    origin: null, ip: '5.6.7.8', secret: 's', baseUrl: 'https://enjoy.ventas.cofundo.io', whatsappReady: false, rand: () => 0.5, ...over,
+  });
+  // Lo que manda la app: sin Origin (nativa), con sesión, los datos ya rellenos y en un toque.
+  const app = (intent: string, fields: Record<string, string> = {}, over: Record<string, unknown> = {}) => v2({
+    contact: { name: 'Laura Gómez', email: 'laura@salax.es', phone: '+34 600 123 123' },
+    fields: { intent, venue_name: 'Sala X', city: 'Valencia', ...fields }, message: null,
+    consent: { marketing: false, whatsapp_notice_shown: true, whatsapp_text_version: '2026-11-05', legal_text_version: '2026-11-05', policy_url: 'https://enjoytheclub.es/es/politica-de-privacidad/', terms_accepted: true },
+    context: { locale: 'es', source: 'app', page_path: '/app/venues/new', cta: { id: `app-${intent}`, label: 'App' }, time_to_submit_ms: 900 },
+    ...over,
+  });
+  beforeEach(() => { resetDemoLeads(); sent = []; demoWhatsAppOutbox().length = 0; });
+
+  test('el contrato: intención conocida, origen «app»; una intención inventada es un 400', () => {
+    const ok = parseLead(app('trial_ended'));
+    expect(ok.ok && ok.lead).toMatchObject({ source: 'app', intent: 'trial_ended' });
+    const ko = parseLead(app('lo_que_sea'));
+    expect(ko).toMatchObject({ ok: false, errors: { 'fields.intent': 'invalid' } });
+    const web = parseLead(v2());
+    expect(web.ok && web.lead).toMatchObject({ source: 'web', intent: null });
+  });
+
+  test('alta de prueba: sin cuarentena por rapidez, sin email ni WhatsApp automáticos; solo el aviso, que lo dice', async () => {
+    const s = waSettings();
+    demoLeadsStore().settings = [s];
+    const r = await intake(deps({ settings: s, whatsappReady: true }), app('trial_signup'));
+    expect(r.status).toBe(201);
+    expect(demoLeadsStore().leads[0]).toMatchObject({ quarantined: false });
+    expect(demoLeadsStore().msgs.map((m) => m.step)).toEqual(['notify']);
+    await processDue({ db: demoLeadsDb(), mailer, whatsapp: demoWhatsApp, now: new Date('2026-11-03T10:00:05Z'), secret: 's' });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toContain('Alta de prueba en la app');
+    expect(sent[0].text).toContain('Escríbele tú');
+    expect(demoWhatsAppOutbox()).toHaveLength(0);
+  });
+
+  test('prueba terminada: email y WhatsApp automáticos con su resumen y su pregunta; el mismo lead que el alta', async () => {
+    const s = waSettings();
+    demoLeadsStore().settings = [s];
+    await intake(deps({ settings: s, whatsappReady: true }), app('trial_signup'));
+    const r = await intake(deps({ settings: s, whatsappReady: true, now: new Date('2026-11-17T10:00:00Z') }), app('trial_ended'));
+    expect(r.body).toMatchObject({ next: { channel: 'whatsapp', eta: 'minutes' } });
+    expect(demoLeadsStore().leads).toHaveLength(1);
+    await processDue({ db: demoLeadsDb(), mailer, whatsapp: demoWhatsApp, now: new Date('2026-11-17T10:03:00Z'), secret: 's' });
+    expect(demoWhatsAppOutbox()).toEqual([{ to: '+34600123123', template: 'lead_hola_es', locale: 'es', params: ['Laura', 'tu periodo de prueba de Sala X', '¿Te viene bien que lo hablemos hoy o mañana?'] }]);
+    expect(sent.find((e) => e.tag === 'lead-autoreply')!.text).toContain('tu periodo de prueba de Sala X');
+  });
+
+  test('otro local: resumen «un nuevo local» y su pregunta; el WhatsApp ya no dice «desde la web»', () => {
+    const p = waParams('wa1', { name: 'Laura Gómez', type: 'venue', fields: { intent: 'extra_venue', venue_name: 'Sala Norte', city: 'Logroño' }, locale: 'es', bookingUrl: null, videoUrl: null });
+    expect(p).toEqual(['Laura', 'un nuevo local: Sala Norte en Logroño', '¿Para cuándo quieres tener el nuevo local en marcha?']);
+    expect(summary('venue', { intent: 'trial_ended' }, 'en')).toBe('your free trial');
+    const text = waPreview('wa1', 'es', 'Cristian', 'Enjoy the Club', p);
+    expect(text).toContain('la solicitud que nos enviaste sobre un nuevo local');
+    expect(text).not.toContain('desde la web');
+  });
+
+  test('Apple «Ocultar mi email»: correo personal, no una empresa', () => {
+    expect(emailKind('abc123@privaterelay.appleid.com')).toBe('free_webmail');
+    expect(accountDomain('abc123@privaterelay.appleid.com')).toBeNull();
+  });
+
+  test('desde la web, enviar en menos de 2,5 s sigue siendo cuarentena', () => {
+    expect(spamReasons({ email: 'a@b.es', name: 'A', message: null, timeToSubmitMs: 900, recentByEmail: 0 })).toContain('too_fast');
+    expect(spamReasons({ email: 'a@b.es', name: 'A', message: null, timeToSubmitMs: 900, recentByEmail: 0, fromApp: true })).not.toContain('too_fast');
   });
 });

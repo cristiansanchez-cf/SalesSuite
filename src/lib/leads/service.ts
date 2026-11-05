@@ -24,7 +24,7 @@ export const LEAD_ERRORS = {
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
 const localeTexts = z.object({
   subject: z.string().trim().max(200).optional(), body: z.string().trim().max(4000).optional(), wa1: wa.optional(), wa2: wa.optional(),
-  questions: z.record(z.enum(['venue', 'dj', 'festival', 'wedding', 'general']), z.string().trim().max(300)).optional(),
+  questions: z.record(z.enum(['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue']), z.string().trim().max(300)).optional(),
 }).strict();
 const templatesSchema = z.record(z.enum(['es', 'en', 'fr']), localeTexts);
 const opt = (max: number) => z.string().trim().max(max).optional().transform((v) => v || undefined);

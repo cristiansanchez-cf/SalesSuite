@@ -49,6 +49,8 @@ const RISKY: Category[] = ['partner', 'press', 'job', 'vendor'];
 /** Solo reglas: al momento, en la entrada. Automático si el formulario es de un tipo con mensaje y no hay señales de otra cosa. */
 export function classifyRules(i: ClassifyInput): Classification {
   const expected = expectedCategory(i.type, i.fields);
+  // Alta de prueba desde la app: no pidió que le contactaran; nada automático, le escribe una persona.
+  if (i.fields.intent === 'trial_signup') return { category: 'venue', confidence: 0.9, reason: 'Alta de prueba en la app: escríbele tú', by: 'rules', auto: false, expected };
   const sig = signals(i);
   const risky = sig.find((c) => RISKY.includes(c));
   if (risky) return { category: risky, confidence: 0.8, reason: `Señales de ${risky} en lo que escribió`, by: 'rules', auto: false, expected };

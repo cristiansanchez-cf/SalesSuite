@@ -63,7 +63,7 @@ export type LeadMedia = Partial<Record<string, Partial<Record<'es' | 'en' | 'fr'
 
 export interface EmailSignature { name?: string; title?: string; phone?: string; address?: string; email?: string; website?: string; logoUrl?: string; legal?: string }
 
-export type QuestionKey = 'venue' | 'dj' | 'festival' | 'wedding' | 'general';
+export type QuestionKey = 'venue' | 'dj' | 'festival' | 'wedding' | 'general' | 'trial_ended' | 'extra_venue';
 export interface LocaleTexts { subject?: string; body?: string; wa1?: string; wa2?: string; questions?: Partial<Record<QuestionKey, string>> }
 export type LeadTemplates = Partial<Record<'es' | 'en' | 'fr', LocaleTexts>>;
 

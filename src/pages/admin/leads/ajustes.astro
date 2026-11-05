@@ -37,7 +37,7 @@ const lines = (v: FormDataEntryValue | null) => String(v ?? '').split(/[\n,]+/).
 const orNull = (v: FormDataEntryValue | null) => String(v ?? '').trim() || null;
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 const LOCS = ['es', 'en', 'fr'] as const;
-const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general'];
+const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
 type Domains = Awaited<ReturnType<typeof ownDomains>>;
 /** Lo obligatorio para activar: cómo sale el email (cuenta y dominio), quién recibe las respuestas y a quién avisar. */
 function readiness(st: LeadSettings, doms: Domains | null) {

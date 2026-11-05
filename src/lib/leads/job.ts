@@ -78,8 +78,10 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
       phone: lead.phoneRaw, phoneE164: lead.phoneE164, type: lead.type, fields: (sub?.fields ?? {}) as Record<string, string>,
       message: reply ? `Ha contestado por WhatsApp: «${m.payload.text ?? ''}»` : sub?.message ?? null, cta: ctx.cta?.label ?? ctx.cta?.id ?? null, page: ctx.page_url ?? null,
       source: sourceOf(lead), score: lead.score, band: lead.scoreDetail?.band ?? null, repeat: lead.submissions, quarantine: lead.quarantineReasons.filter(() => lead.quarantined),
-      next: reply ? 'Te toca a ti: la secuencia automática se ha parado.' : m.payload.next === 'whatsapp' ? (cls && !cls.auto ? 'La web le dijo que le escribirías por WhatsApp en unos minutos, pero no encaja con el mensaje automático: escríbele tú.' : 'WhatsApp automático (1-3 min) y email de confirmación') : 'Email de confirmación neutro o específico; contéstale tú',
-      test: false, classification: cls ? `${CAT_ES[cls.category]} · ${cls.auto ? 'mensaje automático' : 'revísalo tú'} (${cls.reason})` : null,
+      next: reply ? 'Te toca a ti: la secuencia automática se ha parado.'
+        : m.payload.intent === 'trial_signup' ? 'Alta de prueba en la app: no se le ha mandado nada automático (la app le da la bienvenida). Escríbele tú para ayudarle a empezar.'
+        : m.payload.next === 'whatsapp' ? (cls && !cls.auto ? 'La web le dijo que le escribirías por WhatsApp en unos minutos, pero no encaja con el mensaje automático: escríbele tú.' : 'WhatsApp automático (1-3 min) y email de confirmación') : 'Email de confirmación neutro o específico; contéstale tú',
+      test: false, intent: typeof m.payload.intent === 'string' ? m.payload.intent : null, classification: cls ? `${CAT_ES[cls.category]} · ${cls.auto ? 'mensaje automático' : 'revísalo tú'} (${cls.reason})` : null,
     });
     const sent = await mailer.send({ to: m.toAddr, subject: reply ? `💬 ${lead.name} ha contestado por WhatsApp` : e.subject, html: e.html, text: e.text, tag: 'lead-notify',
       from: s.fromEmail ? fromHeader(s) : undefined, replyTo: lead.email });
@@ -143,6 +145,8 @@ const CAT_ES: Record<Classification['category'], string> = { venue: 'Local', dj:
 async function classified(d: JobDeps, lead: Lead, s: LeadSettings): Promise<Classification | null> {
   const cur = (lead.facts.classification as Classification | undefined) ?? null;
   if (!cur || cur.by === 'ai' || !d.classifier) return cur;
+  // El alta de prueba de la app ya va sin automáticos: no hay nada que la IA pueda quitar (y no se le manda el lead).
+  if ((lead.facts.fields as Record<string, string> | undefined)?.intent === 'trial_signup' && !cur.auto) return cur;
   const sub = (await d.db.submissions(lead.id))[0];
   const ctx = (sub?.context ?? {}) as { cta?: { label?: string | null; id?: string | null }; page_path?: string };
   const input: ClassifyInput = { type: lead.type, fields: (lead.facts.fields as Record<string, string>) ?? {}, message: sub?.message ?? null, name: lead.name, email: lead.email,

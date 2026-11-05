@@ -93,7 +93,7 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   const recentByEmail = existing ? await db.countSubmissions(t, { leadId: existing.id }, new Date(d.now.getTime() - 3_600_000).toISOString()) : 0;
   let turnstile: 'ok' | 'failed' | 'absent' = 'absent';
   if (d.turnstile && i.turnstileToken) turnstile = (await d.turnstile(i.turnstileToken, d.ip).catch(() => true)) ? 'ok' : 'failed';
-  const reasons = spamReasons({ email: i.email, name: i.name, message: i.message, timeToSubmitMs: i.timeToSubmitMs, recentByEmail, turnstile });
+  const reasons = spamReasons({ email: i.email, name: i.name, message: i.message, timeToSubmitMs: i.timeToSubmitMs, recentByEmail, turnstile, fromApp: i.source === 'app' });
 
   const current = i.attribution.current;
   const first = i.attribution.first ?? current;
@@ -188,9 +188,11 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
       next = { channel: 'whatsapp', eta: first1.eta, at: first1.at.toISOString() };
     }
   }
-  // Respuesta automática por email: a todos (también con WhatsApp), una vez al día como mucho.
+  // Respuesta automática por email: a todos (también con WhatsApp), una vez al día como mucho. Salvo el alta de prueba
+  // desde la app: no ha pedido que le contacten (la app ya le da la bienvenida) y le escribe una persona.
   const recentReply = history.some((m) => m.step === 'autoreply' && m.status !== 'cancelled' && Date.parse(m.createdAt) > d.now.getTime() - 86_400_000);
-  if (live && !sup.email && d.settings.fromEmail && !recentReply) {
+  const signup = i.intent === 'trial_signup';
+  if (live && !signup && !sup.email && d.settings.fromEmail && !recentReply) {
     if (canAuto) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'autoreply', toAddr: lead.email, sendAt: nowIso, payload: { ...payload, channel: next.channel, eta: next.eta } });
     if (next.channel === 'email') next = { channel: 'email', eta: 'minutes' };
   }
@@ -199,7 +201,7 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   if (booking) next = { ...next, booking_url: booking };
   // Aviso a quien atiende: siempre que no sea prueba ni cuarentena (eso se revisa en la bandeja).
   if (!isTest && !lead.quarantined) {
-    for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'notify', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, band: score.band } });
+    for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'notify', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, band: score.band, ...(i.intent ? { intent: i.intent } : {}) } });
   }
   await db.enqueue(msgs);
 

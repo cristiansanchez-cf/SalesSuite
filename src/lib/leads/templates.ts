@@ -28,6 +28,15 @@ const where = (f: Record<string, string>, l: MsgLocale) => (f.city ? (l === 'es'
 /** Lo que pidió, en una frase corta que encaja tras «me has escrito por…» / «you asked about…». */
 export function summary(type: LeadType, f: Record<string, string>, loc: string): string {
   const l = msgLocale(loc);
+  // Desde la app (docs/LEADS.md §App): lo que pide no es «su local» sino su prueba o un local nuevo.
+  if (f.intent === 'trial_ended') {
+    const at = f.venue_name ? ({ es: ` de ${f.venue_name}`, en: ` for ${f.venue_name}`, fr: ` pour ${f.venue_name}` })[l] : '';
+    return ({ es: `tu periodo de prueba${at}`, en: `your free trial${at}`, fr: `ta période d'essai${at}` })[l];
+  }
+  if (f.intent === 'extra_venue') {
+    const which = f.venue_name ? `: ${f.venue_name}${where(f, l)}` : where(f, l);
+    return ({ es: `un nuevo local${which}`, en: `a new venue${which}`, fr: `un nouvel établissement${which}` })[l];
+  }
   const T: Record<MsgLocale, Record<LeadType, () => string>> = {
     es: {
       venue: () => (f.venue_name ? `${f.venue_name}${where(f, l)}` : `tu local${where(f, l)}`),
@@ -75,26 +84,29 @@ export const DEFAULT_TEXTS: Record<MsgLocale, Required<Omit<LocaleTexts, 'questi
   es: {
     subject: '{asunto}',
     body: 'Hola {nombre}:\n\nGracias por escribir. Me llega tu mensaje{sobre} y lo leo yo.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nY si quieres añadir algo, responde a este email.\n\nUn saludo,\n{firma_email}',
-    wa1: 'Hola {{1}}, soy {firma}, de {marca}. Te escribo por la solicitud que nos enviaste desde la web sobre {{2}}.\n\nPara poder responderte: {{3}}\n\nPuedes contestar a este mensaje.\n\n{firma}',
+    wa1: 'Hola {{1}}, soy {firma}, de {marca}. Te escribo por la solicitud que nos enviaste sobre {{2}}.\n\nPara poder responderte: {{3}}\n\nPuedes contestar a este mensaje.\n\n{firma}',
     wa2: 'Hola {{1}}, sigo con tu solicitud sobre {{2}}. Si prefieres que lo hablemos por teléfono, puedes elegir la hora aquí: {{3}}\n\nTambién puedes contestar a este mensaje.\n\n{firma}',
     questions: { venue: '¿Qué noches abrís y cuánta gente os suele venir?', dj: '¿En qué salas estás pinchando ahora?', festival: '¿Para qué fechas lo estáis planteando?',
-      wedding: '¿Tenéis ya el sitio de la celebración?', general: '¿Me cuentas un poco más de lo que tienes en mente?' },
+      wedding: '¿Tenéis ya el sitio de la celebración?', general: '¿Me cuentas un poco más de lo que tienes en mente?',
+      trial_ended: '¿Te viene bien que lo hablemos hoy o mañana?', extra_venue: '¿Para cuándo quieres tener el nuevo local en marcha?' },
   },
   en: {
     subject: '{asunto}',
     body: "Hi {nombre},\n\nThanks for getting in touch. I've got your message{sobre} and I'm reading it myself.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nAnd if you want to add anything, just reply to this email.\n\nBest,\n{firma_email}",
-    wa1: "Hi {{1}}, it's {firma} from {marca}. I'm writing about the request you sent us through the website about {{2}}.\n\nSo I can answer it: {{3}}\n\nYou can reply to this message.\n\n{firma}",
+    wa1: "Hi {{1}}, it's {firma} from {marca}. I'm writing about the request you sent us about {{2}}.\n\nSo I can answer it: {{3}}\n\nYou can reply to this message.\n\n{firma}",
     wa2: "Hi {{1}}, following up on your request about {{2}}. If you'd rather discuss it by phone, you can pick a time here: {{3}}\n\nYou can also reply to this message.\n\n{firma}",
     questions: { venue: 'Which nights are you open and how many people do you usually get?', dj: 'Which venues are you playing at right now?', festival: 'Which dates are you planning for?',
-      wedding: 'Do you already have the venue for the celebration?', general: 'Could you tell me a bit more about what you have in mind?' },
+      wedding: 'Do you already have the venue for the celebration?', general: 'Could you tell me a bit more about what you have in mind?',
+      trial_ended: 'Would today or tomorrow work for a quick chat?', extra_venue: 'When would you like the new venue up and running?' },
   },
   fr: {
     subject: '{asunto}',
     body: "Bonjour {nombre},\n\nMerci pour ton message{sobre}. Je le lis moi-même.\n\n{siguiente_paso}\n\n{video}\n\n{reserva}\n\nEt si tu veux ajouter quelque chose, réponds simplement à cet e-mail.\n\nÀ bientôt,\n{firma_email}",
-    wa1: "Bonjour {{1}}, c'est {firma}, de {marca}. Je t'écris au sujet de la demande que tu nous as envoyée depuis le site à propos de {{2}}.\n\nPour pouvoir te répondre : {{3}}\n\nTu peux répondre à ce message.\n\n{firma}",
+    wa1: "Bonjour {{1}}, c'est {firma}, de {marca}. Je t'écris au sujet de la demande que tu nous as envoyée à propos de {{2}}.\n\nPour pouvoir te répondre : {{3}}\n\nTu peux répondre à ce message.\n\n{firma}",
     wa2: "Bonjour {{1}}, je reviens vers toi au sujet de ta demande concernant {{2}}. Si tu préfères en parler par téléphone, tu peux choisir le créneau ici : {{3}}\n\nTu peux aussi répondre à ce message.\n\n{firma}",
     questions: { venue: 'Vous ouvrez quels soirs et combien de monde vient en général ?', dj: 'Dans quelles salles tu joues en ce moment ?', festival: 'Vous le prévoyez pour quelles dates ?',
-      wedding: 'Avez-vous déjà le lieu de la réception ?', general: "Tu peux m'en dire un peu plus sur ce que tu as en tête ?" },
+      wedding: 'Avez-vous déjà le lieu de la réception ?', general: "Tu peux m'en dire un peu plus sur ce que tu as en tête ?",
+      trial_ended: "Ça te va qu'on en parle aujourd'hui ou demain ?", extra_venue: 'Pour quand veux-tu que le nouvel établissement soit prêt ?' },
   },
 };
 /** El texto que toca: el de la empresa si lo ha escrito; si no, el de por defecto. */
@@ -107,8 +119,8 @@ export function fill(tpl: string, vars: Record<string, string>): string {
 /** Una pregunta sencilla que invite a contestar (mensaje 1). */
 export function question(type: LeadType, f: Record<string, string>, loc: string, custom?: LeadTemplates): string {
   const l = msgLocale(loc);
-  const raw = type === 'general' ? f.event_type ?? 'general' : type;
-  const key: QuestionKey = (['venue', 'dj', 'festival', 'wedding'] as string[]).includes(raw) ? (raw as QuestionKey) : 'general';
+  const raw = f.intent === 'trial_ended' || f.intent === 'extra_venue' ? f.intent : type === 'general' ? f.event_type ?? 'general' : type;
+  const key: QuestionKey = (['venue', 'dj', 'festival', 'wedding', 'trial_ended', 'extra_venue'] as string[]).includes(raw) ? (raw as QuestionKey) : 'general';
   return custom?.[l]?.questions?.[key]?.trim() || DEFAULT_TEXTS[l].questions[key];
 }
 
@@ -238,11 +250,15 @@ export interface NotifyData {
   score: number | null; band: string | null; repeat: number; quarantine: string[]; next: string; test: boolean;
   /** Qué parece (y si se le escribe solo o lo sigues tú). */
   classification?: string | null;
+  /** Lo que pidió desde la app (fields.intent), si viene de ahí. */
+  intent?: string | null;
 }
+const INTENT_ES: Record<string, string> = { trial_signup: 'Alta de prueba en la app', trial_ended: 'App: prueba terminada, quiere hablar', extra_venue: 'App: pide otro local' };
 const TYPE_ES: Record<LeadType, string> = { general: 'General', venue: 'Local', dj: 'DJ', festival: 'Festival', wedding: 'Boda', wedding_partner: 'Proveedor de bodas', custom_dev: 'Desarrollo a medida', waitlist: 'Lista de espera' };
 export function notifyEmail(d: NotifyData): { subject: string; text: string; html: string } {
   const flag = d.test ? '[PRUEBA] ' : d.quarantine.length ? '[Cuarentena] ' : d.band === 'hot' ? '🔥 ' : '';
-  const subject = `${flag}Lead ${d.brand}: ${d.name} · ${TYPE_ES[d.type]}${d.repeat > 1 ? ` (envío nº ${d.repeat})` : ''}`;
+  const what = (d.intent && INTENT_ES[d.intent]) || TYPE_ES[d.type];
+  const subject = `${flag}Lead ${d.brand}: ${d.name} · ${what}${d.repeat > 1 ? ` (envío nº ${d.repeat})` : ''}`;
   const rows: [string, string | null][] = [
     ['Nombre', d.name], ['Email', `${d.email} (${d.emailKind})`], ['Teléfono', d.phoneE164 ?? d.phone ?? null], ['Tipo', TYPE_ES[d.type]],
     ...Object.entries(d.fields).map(([k, v]) => [k, v] as [string, string]),

@@ -7,7 +7,7 @@ export type EmailKind = 'business' | 'free_webmail' | 'disposable' | 'role';
 
 const FREE = new Set([
   'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.es', 'hotmail.fr', 'outlook.com', 'outlook.es', 'outlook.fr', 'live.com', 'live.es', 'live.fr',
-  'msn.com', 'yahoo.com', 'yahoo.es', 'yahoo.fr', 'ymail.com', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'protonmail.com', 'proton.me', 'pm.me',
+  'privaterelay.appleid.com', 'msn.com', 'yahoo.com', 'yahoo.es', 'yahoo.fr', 'ymail.com', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'protonmail.com', 'proton.me', 'pm.me',
   'gmx.com', 'gmx.es', 'gmx.fr', 'gmx.net', 'gmx.de', 'yandex.com', 'mail.com', 'zoho.com', 'tutanota.com', 'orange.fr', 'free.fr', 'laposte.net',
   'sfr.fr', 'wanadoo.fr', 'neuf.fr', 'telefonica.net', 'movistar.es', 'terra.es', 'ono.com', 'web.de', 'libero.it', 'hey.com', 'fastmail.com',
 ]);
@@ -50,13 +50,15 @@ export function toE164(raw: string | null, opts: { country?: string | null; loca
 export interface SpamInput {
   email: string; name: string; message: string | null; timeToSubmitMs: number | null;
   recentByEmail: number; turnstile?: 'ok' | 'failed' | 'absent';
+  /** Desde la app de la empresa (usuario con sesión, datos ya rellenos): enviar en un toque no es de bot. */
+  fromApp?: boolean;
 }
 /**
  * Motivos para mandar a cuarentena. Nada se borra ni se contacta: lo revisa una persona. Sin motivos → entra normal.
  */
 export function spamReasons(i: SpamInput): string[] {
   const r: string[] = [];
-  if (i.timeToSubmitMs != null && i.timeToSubmitMs < 2500) r.push('too_fast');
+  if (!i.fromApp && i.timeToSubmitMs != null && i.timeToSubmitMs < 2500) r.push('too_fast');
   if (emailKind(i.email) === 'disposable') r.push('disposable_email');
   const links = (i.message ?? '').match(/https?:\/\/|www\.|\.(com|ru|cn|xyz|top)\b/gi)?.length ?? 0;
   if (links >= 3) r.push('many_links');

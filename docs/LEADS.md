@@ -88,6 +88,30 @@ curl -i -X POST https://enjoy.ventas.cofundo.io/api/v1/leads -H 'Content-Type: a
 }'
 ```
 
+## 1b. Desde la app de la empresa (App)
+Usuarios con sesión en la app de la empresa (en Enjoy: la app de admins y DJs). Mismo endpoint y mismo contrato v2, con
+dos añadidos: `context.source: "app"` y `fields.intent`.
+
+| `fields.intent` | Pantalla (Enjoy) | Qué hace el CRM |
+|---|---|---|
+| `trial_signup` | Alta del local en la prueba | **Nada automático** (ni email ni WhatsApp: la app ya da la bienvenida). Aviso a quien atiende: «Alta de prueba en la app · escríbele tú». Sin IA. |
+| `trial_ended` | «Talk to Enjoy» al acabar la prueba | Email y WhatsApp automáticos. `{{2}}` = «tu periodo de prueba de Sala X»; pregunta: «¿Te viene bien que lo hablemos hoy o mañana?» |
+| `extra_venue` | «Request another venue» | Email y WhatsApp automáticos. `{{2}}` = «un nuevo local: Sala Norte en Logroño»; pregunta: «¿Para cuándo quieres tener el nuevo local en marcha?» |
+
+Otra `intent` → `400 {errors:{'fields.intent':'invalid'}}`. Las preguntas se cambian en Ajustes → Mensajes
+(«App: prueba terminada», «App: otro local»).
+
+- **Sin `Origin`** (app nativa): se admite sin lista de orígenes. Se envía **desde el móvil**, no desde un servidor (el
+  límite de 8 envíos cada 10 minutos es por IP).
+- **Cuarentena:** con `source: "app"` no cuenta «demasiado rápido» (los datos vienen rellenos y se envía en un toque).
+  El resto (email desechable, nombre = email, 3 envíos del mismo email en una hora…) sigue igual.
+- **Mismo lead:** se junta por email. El alta, la prueba terminada y el otro local de la misma persona son actividades
+  de un solo lead.
+- **Apple «Ocultar mi email»** (`@privaterelay.appleid.com`): correo personal (no agrupa a nadie en una empresa). Para
+  que lleguen los emails, el dominio de envío tiene que estar registrado en Apple Developer → *Sign in with Apple for
+  Email Communication*.
+- **El WhatsApp 1** dice «la solicitud que nos enviaste sobre {{2}}» (sin «desde la web»): vale para la web y la app.
+
 ## 2. Entrada
 - **Antispam invisible → cuarentena** (no se borra ni se contacta ni se avisa; se revisa en la pestaña *Cuarentena*):
   `time_to_submit_ms < 2500`, email desechable, 3 enlaces o más en el mensaje, nombre = email o con enlace, 3 envíos o
@@ -276,7 +300,7 @@ Lo que diga la política de privacidad de cada espacio; se configura en **Leads 
 ## 8. Plantillas (para revisar y pedir la aprobación a Meta)
 Con la voz de quien firma (Ajustes → Firma) y en el idioma del lead (`es`, `en`, `fr`; otros → `en`). Son mensajes de
 servicio sobre lo que pidió, sin promoción: se piden a Meta en la categoría **Utilidad (Utility)** — responden a la
-solicitud que la persona envió desde la web, sin descuentos, ofertas, precios, vídeos ni lenguaje comercial. Variables:
+solicitud que la persona envió (desde la web o desde la app), sin descuentos, ofertas, precios, vídeos ni lenguaje comercial. Variables:
 `{{1}}` nombre, `{{2}}` lo que pidió (generado: «Sala X en Valencia», «vuestra boda del 14 de junio de 2027»…), `{{3}}`
 una pregunta según el tipo (mensaje 1) o el enlace de reserva (mensaje 2; sin enlace, el 2 no sale). Si Meta pasa la 2 a
 Marketing, se apaga en Ajustes → WhatsApp («Enviar el WhatsApp 2») y la 1 sigue saliendo. Fuente: `src/lib/leads/templates.ts` (si se cambian aquí, cambiarlas también
@@ -287,7 +311,7 @@ en Meta). Ajustes → Leads muestra la vista previa con los datos reales del esp
 **wa1 (plantilla para Meta)**
 
 ```
-Hola {{1}}, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste desde la web sobre {{2}}.
+Hola {{1}}, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste sobre {{2}}.
 
 Para poder responderte: {{3}}
 
@@ -299,7 +323,7 @@ Cristian
 Ejemplo (local «Sala X» en Valencia):
 
 ```
-Hola Laura, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste desde la web sobre Sala X en Valencia.
+Hola Laura, soy Cristian, de Enjoy the Club. Te escribo por la solicitud que nos enviaste sobre Sala X en Valencia.
 
 Para poder responderte: ¿Qué noches abrís y cuánta gente os suele venir?
 
@@ -375,7 +399,7 @@ Si no quieres que te escribamos más: https://enjoy.ventas.cofundo.io/api/v1/lea
 **wa1 (plantilla para Meta)**
 
 ```
-Hi {{1}}, it's Cristian from Enjoy the Club. I'm writing about the request you sent us through the website about {{2}}.
+Hi {{1}}, it's Cristian from Enjoy the Club. I'm writing about the request you sent us about {{2}}.
 
 So I can answer it: {{3}}
 
@@ -387,7 +411,7 @@ Cristian
 Example (venue “Sala X” in Valencia):
 
 ```
-Hi Laura, it's Cristian from Enjoy the Club. I'm writing about the request you sent us through the website about Sala X in Valencia.
+Hi Laura, it's Cristian from Enjoy the Club. I'm writing about the request you sent us about Sala X in Valencia.
 
 So I can answer it: Which nights are you open and how many people do you usually get?
 
@@ -463,7 +487,7 @@ If you'd rather not hear from us again: https://enjoy.ventas.cofundo.io/api/v1/l
 **wa1 (plantilla para Meta)**
 
 ```
-Bonjour {{1}}, c'est Cristian, de Enjoy the Club. Je t'écris au sujet de la demande que tu nous as envoyée depuis le site à propos de {{2}}.
+Bonjour {{1}}, c'est Cristian, de Enjoy the Club. Je t'écris au sujet de la demande que tu nous as envoyée à propos de {{2}}.
 
 Pour pouvoir te répondre : {{3}}
 
@@ -475,7 +499,7 @@ Cristian
 Exemple (établissement « Sala X » à Valencia) :
 
 ```
-Bonjour Laura, c'est Cristian, de Enjoy the Club. Je t'écris au sujet de la demande que tu nous as envoyée depuis le site à propos de Sala X à Valencia.
+Bonjour Laura, c'est Cristian, de Enjoy the Club. Je t'écris au sujet de la demande que tu nous as envoyée à propos de Sala X à Valencia.
 
 Pour pouvoir te répondre : Vous ouvrez quels soirs et combien de monde vient en général ?
 

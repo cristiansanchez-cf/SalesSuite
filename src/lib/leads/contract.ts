@@ -6,6 +6,13 @@ import { z } from 'zod';
 
 export const LEAD_TYPES = ['general', 'venue', 'dj', 'festival', 'wedding', 'wedding_partner', 'custom_dev', 'waitlist'] as const;
 export type LeadType = (typeof LEAD_TYPES)[number];
+/**
+ * Lo que pide un usuario desde la app de la empresa (no desde la web): `fields.intent` (docs/LEADS.md §App).
+ *   trial_signup — se acaba de dar de alta en la prueba: nada automático, le escribe una persona.
+ *   trial_ended  — se le acabó la prueba y quiere hablar · extra_venue — pide otro local: automático, con su pregunta.
+ */
+export const APP_INTENTS = ['trial_signup', 'trial_ended', 'extra_venue'] as const;
+export type AppIntent = (typeof APP_INTENTS)[number];
 export const HOW_HEARD = ['google', 'instagram', 'tiktok', 'linkedin', 'recommendation', 'event', 'press', 'other'] as const;
 const ATTR_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'gbraid', 'wbraid', 'fbclid', 'fbp', 'fbc', 'ttclid', 'msclkid', 'referrer', 'landing_page', 'at'] as const;
 export type AttributionKey = (typeof ATTR_KEYS)[number];
@@ -137,6 +144,8 @@ export interface LeadInput {
   page: { url: string | null; path: string | null; title: string | null };
   attribution: { current: Attribution | null; first: Attribution | null; last: Attribution | null };
   timeToSubmitMs: number | null;
+  source: 'app' | 'web';
+  intent: AppIntent | null;
   /** El contexto tal cual (sin la atribución, que va aparte). */
   context: Record<string, unknown>;
 }
@@ -167,6 +176,7 @@ export function parseLead(body: unknown): ParseResult {
   }
   if (d.fields.wedding_date && !/^\d{4}-\d{2}-\d{2}$/.test(d.fields.wedding_date)) errors['fields.wedding_date'] = 'invalid';
   if (d.fields.how_heard && !(HOW_HEARD as readonly string[]).includes(d.fields.how_heard)) errors['fields.how_heard'] = 'invalid';
+  if (d.fields.intent && !(APP_INTENTS as readonly string[]).includes(d.fields.intent)) errors['fields.intent'] = 'invalid';
   if (Object.keys(errors).length) return { ok: false, status: 400, errors };
 
   const ctx = d.context as Record<string, unknown> & typeof d.context;
@@ -212,6 +222,9 @@ export function parseLead(body: unknown): ParseResult {
       // Sin cookies aceptadas, la web solo manda «current»: hace de primer y último contacto.
       attribution: { current: att.current ?? null, first: att.first ?? null, last: att.last ?? null },
       timeToSubmitMs: ctx.time_to_submit_ms ?? null,
+      // Desde la app de la empresa (usuarios con sesión): context.source = "app".
+      source: ctx.source === 'app' ? 'app' : 'web',
+      intent: (d.fields.intent as AppIntent | undefined) ?? null,
       context: rest,
     },
   };
