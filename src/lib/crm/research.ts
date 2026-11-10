@@ -50,6 +50,8 @@ export interface ResearchInput {
   clients?: string[];
   /** País del espacio para la búsqueda web (ISO, «ES»); sin decirlo, España. null = sin país. */
   country?: string | null;
+  /** Idioma de quien investiga (es, en, pt, ko): el resumen y las notas se escriben en ese idioma. Sin decirlo, español. */
+  lang?: string | null;
 }
 export interface ResearchApi { research(input: ResearchInput): Promise<unknown> }
 
@@ -148,7 +150,13 @@ Reglas:
 - Grupo: comprueba si la empresa pertenece a un grupo (sociedad matriz, holding, o si es una marca de otra empresa). Busca su razón social (o su CIF) y mira su «quiénes somos», el aviso legal, prensa económica y registros mercantiles públicos. Si lo confirmas con una fuente, ponlo en group; si no, todo vacío. Es lo primero que necesita saber el comercial: con quién se decide.
 - No repitas lo que ya está en la ficha.
 - Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
-export const researchSystem = (pack?: QualPack | null) => (pack !== null ? SYSTEM : SYSTEM_GENERAL);
+const LANG_NAME: Record<string, string> = { es: 'español', en: 'inglés', pt: 'portugués', ko: 'coreano' };
+/** El sistema de la petición, con el idioma de quien investiga (el comercial coreano lee el resumen en coreano). */
+export const researchSystem = (pack?: QualPack | null, lang?: string | null) => {
+  const base = pack !== null ? SYSTEM : SYSTEM_GENERAL;
+  const name = LANG_NAME[(lang ?? 'es').slice(0, 2)] ?? 'español';
+  return name === 'español' ? base : base.replace('- Escribe en español,', `- Escribe en ${name} (lo lee un comercial que habla ${name}),`);
+};
 
 export function userPrompt(i: ResearchInput): string {
   const lines = [
@@ -274,7 +282,7 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
           output_config: { effort: 'medium' },
-          system: researchSystem(input.pack),
+          system: researchSystem(input.pack, input.lang),
           tools: [
             { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', ...(input.country !== null ? { country: input.country ?? 'ES' } : {}), ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
             { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 },

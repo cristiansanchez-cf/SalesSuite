@@ -179,6 +179,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     await g.click('[data-testid=quick-start] .co-chip:has-text("ocio")').catch(async () => g.click('[data-testid=quick-start] .co-chip >> nth=1'));
     await g.waitForSelector('[data-testid=preset]');
     assert(await g.isVisible('[data-testid=preset-mode-visual]'), 'dos modos: va sola / apoyo visual');
+    assert((await g.textContent('[data-testid=preset-ready]')).includes('Local con DJ residente'), 'combinación de serie, con cuándo usarla');
     await g.check('[data-testid=preset-q-dj]');
     await g.click('[data-testid=preset-apply]');
     await g.waitForTimeout(1500);
@@ -189,6 +190,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     await g.click('[data-testid=preset-save] button[type=submit]');
     await g.waitForSelector('[data-testid=preset-tpl]');
     assert((await g.textContent('[data-testid=preset-saved]')).includes('José María'), 'combinación guardada con nombre, lista para aplicar de golpe');
+    assert(!(await g.textContent('[data-testid=preset-ready]')).includes('José María'), 'las del equipo, aparte de las de serie');
+    await g.click('[data-testid=preset-ready] [data-testid=preset-tpl]');
+    await g.waitForTimeout(1500);
+    const ready = await g.$$eval('[data-testid=item]', (els) => els.map((e) => e.dataset.itemKey));
+    assert(ready.includes('tabs-experiencias'), `la de serie la monta de un clic: ${ready.join(' → ')}`);
     if (OUT) await g.screenshot({ path: `${OUT}/builder-preset.png`, fullPage: true });
     await g.close();
   }

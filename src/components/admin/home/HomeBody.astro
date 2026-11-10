@@ -134,7 +134,7 @@ const initials = (n: string) => n.split(/\s+/).map((x) => x[0]).slice(0, 2).join
                 {rest.map((d) => {
                   const late = !!d.nextStepAt && Date.parse(d.nextStepAt) < now.getTime();
                   return <li><a class:list={['co-row', late && 'co-row--attention']} href={`/admin/dossiers/${d.id}`}>
-                    <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.nextStepAt ? `${d.nextStep ?? m.common.nextStep} · ${when(d.nextStepAt)}` : m.home.noNextStep}</span></span>
+                    <span class="co-row__main"><span class="co-row-title" data-ugc>{d.title}</span><span class="co-meta">{d.nextStepAt ? `${d.nextStep ?? m.common.nextStep} · ${when(d.nextStepAt)}` : m.home.noNextStep}</span></span>
                     {late ? <span class="co-badge co-badge--attention">{m.home.overdue}</span> : <span class="co-row__chevron"><Icon name="chevron-right" /></span>}
                   </a></li>;
                 })}
@@ -158,7 +158,7 @@ const initials = (n: string) => n.split(/\s+/).map((x) => x[0]).slice(0, 2).join
             <h2 class="text-eyebrow">{m.home.teamOverdue} · {k.overdue.length}</h2>
             <ul class="co-rows">{k.overdue.slice(0, 8).map((d) => (
               <li><a class="co-row co-row--attention" href={`/admin/dossiers/${d.id}`}>
-                <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName} · {d.nextStep ?? m.common.nextStep} · {m.home.overdueSince(rel(d.nextStepAt))}</span></span>
+                <span class="co-row__main"><span class="co-row-title" data-ugc>{d.title}</span><span class="co-meta">{d.authorName} · {d.nextStep ?? m.common.nextStep} · {m.home.overdueSince(rel(d.nextStepAt))}</span></span>
                 <span class="co-row__chevron"><Icon name="chevron-right" /></span></a></li>))}
             </ul>
           </section>

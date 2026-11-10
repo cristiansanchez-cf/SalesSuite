@@ -16,6 +16,29 @@ La propuesta no es una demo del producto: cuenta lo que gana **quien paga**, en 
 
 Lo que eligió se guarda en `dossier.preset` (privado: la propuesta pública no lo devuelve).
 
+## Combinaciones de serie
+
+Además de las que guarda el equipo, cada espacio puede traer combinaciones **ya hechas** por sector en `tenant.json`
+(`market[].templates`): un nombre, una línea de **cuándo usarla**, el modo y las respuestas («elección:opción» o la
+clave de una pregunta). Salen arriba del panel, en «Empieza por una», como tarjetas; un clic monta la propuesta y
+luego se ajusta como siempre. Las del equipo siguen debajo, en «Combinaciones guardadas».
+
+```json
+"templates": [
+  { "name": "Clientes internacionales", "note": "Recibe o quiere recibir buceadores de otros países…",
+    "mode": "full", "answers": ["mercado:espana", "angulo:abrir-mercado", "fotos"] }
+]
+```
+
+- El alta las valida contra la receta (cada respuesta tiene que existir) y las sincroniza: las crea sin autor (solo un
+  admin las borra), actualiza las que ya están y quita las que ya no están en el JSON. Una del equipo con el mismo
+  nombre no se toca.
+- Se traducen como el resto del contenido (`content_i18n`, tipo `proposal_template`: nombre y nota) con la acción
+  «traducir»; las del equipo no se traducen.
+- Oquea: `scripts/apply-oquea-15.py` (centros de buceo: fidelización, clientes internacionales, cobro online, viajes
+  de club, centro con causa, Corea, Latinoamérica y primera reunión en persona) y `scripts/apply-oquea-16.py` (ONG: ángulo
+  «Conseguir voluntarios» o «Ganar visibilidad», y sus combinaciones).
+
 ## La receta (`segment.proposal`, desde `tenant.json` → `market[].proposal`)
 ```json
 {
@@ -58,6 +81,9 @@ Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como mód
 - **Fotos de ambiente** (`scripts/apply-fotos-ambiente.py`, después de todas): discoteca en locales y promotoras, festival de noche y de día en festivales, piscina en hoteles. Van como fotos del público en la pantalla y el móvil; no añaden diapositivas.
 - **Oquea · Centros de buceo:** receta de la guía de inicio (`scripts/apply-oquea-03.py`): completa (9) y apoyo visual
   (5); 4 preguntas (salidas diarias, equipo, montarlo, varios centros). Sin precio hasta su documento 04.
+- **Oquea · ONGs:** ángulo de una sola opción (`scripts/apply-oquea-16.py`): conseguir voluntarios (el mapa justo
+  después del evento y la lista como «con quién contar la próxima vez») o ganar visibilidad (el mapa y la insignia
+  primero). Tope de 7 (6 en apoyo visual).
 - Bodas: sin receta todavía (módulos recomendados como siempre).
 
 ## Desde la ficha

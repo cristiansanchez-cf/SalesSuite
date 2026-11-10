@@ -1754,7 +1754,89 @@
             "body": "Todo lo que has visto, sin coste. El día que Oquea le lleve un cliente nuevo, se queda un 10 % de lo generado (en España, por cerrar). A cambio pides tres cosas en voz alta: la firma, el QR en el barco y que quien da el briefing lo diga."
           }
         ]
-      }
+      },
+      "templates": [
+        {
+          "name": "Fidelización: que vuelvan",
+          "note": "No sabe quién bucea con él ni vuelve a escribirles. Su lista de buceadores, el logbook y el álbum. Hipótesis: pruébala y cuenta cómo va.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:que-vuelvan",
+            "no-guarda-datos",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Clientes internacionales",
+          "note": "Recibe o quiere recibir buceadores de otros países. La red internacional de centros y su perfil en el mapa. Validado en la feria de Brasil.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:abrir-mercado",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Cobro online",
+          "note": "Cobra solo en persona y le interesa cobrar online. Lo que viene primero para los fundadores: reserva y cobro. Lo han pedido 3 de los firmantes.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:cobro-online"
+          ]
+        },
+        {
+          "name": "Viajes de club",
+          "note": "Organiza viajes de buceo con sus clientes. La red como sitio donde encontrar adónde ir. Hipótesis: aún no se ha planteado a ningún centro.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:viaje-de-club",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Centro con causa (ONG y limpiezas)",
+          "note": "Colabora con una ONG o hace limpiezas. Sus eventos en Oquea, además de su lista de buceadores.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:que-vuelvan",
+            "ong",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Corea: turismo internacional",
+          "note": "Centro en Corea que quiere recibir buceadores de fuera: centro fundador de Oquea en Corea y la red internacional.",
+          "mode": "full",
+          "answers": [
+            "mercado:corea",
+            "angulo:abrir-mercado",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Latinoamérica: abrir mercado",
+          "note": "Centro en Latinoamérica que recibe o quiere recibir buceadores de otros países.",
+          "mode": "full",
+          "answers": [
+            "mercado:latam",
+            "angulo:abrir-mercado",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Primera reunión en persona",
+          "note": "Para enseñarla tú delante del centro: menos diapositivas y más pantallas. El ángulo, el de que vuelvan; cámbialo si sabes qué le mueve.",
+          "mode": "visual",
+          "answers": [
+            "mercado:espana",
+            "angulo:que-vuelvan"
+          ]
+        }
+      ]
     },
     {
       "key": "ong",
@@ -1996,8 +2078,140 @@
             "title": "El acuerdo",
             "body": "La ONG nos da acceso a sus centros, que usan Oquea en sus eventos. A cambio, todo gratis: la lista de quién ha participado en todos los centros, ser de las primeras en el remarketing y salir en el mapa para llegar a más gente."
           }
+        ],
+        "choices": [
+          {
+            "key": "angulo",
+            "label": "Ángulo: lo que le mueve (uno solo)",
+            "hint": "A las ONG las mueve conseguir voluntarios y que se conozca su trabajo. Elige lo que más le importa a esta.",
+            "default": "voluntarios",
+            "options": [
+              {
+                "key": "voluntarios",
+                "label": "Conseguir voluntarios",
+                "hint": "Quiere más gente en sus eventos (limpiezas, censos…) y volver a contar con quien ya vino.",
+                "rules": [
+                  {
+                    "patch": "ong-portada",
+                    "set": {
+                      "title": "{company}: que la gente se apunte a tus eventos",
+                      "highlight": "se apunte"
+                    }
+                  },
+                  {
+                    "patch": "ong-eventos",
+                    "set": {
+                      "lede": "Creas el evento en Oquea, como una limpieza, y lo abren tus centros de buceo a la vez. La gente se apunta desde el mapa en el centro más cercano, y cada centro ve quién va a venir."
+                    }
+                  },
+                  {
+                    "patch": "ong-participantes",
+                    "set": {
+                      "title": "Quien vino, para el próximo evento",
+                      "highlight": "para el próximo",
+                      "lede": "Tienes a todas las personas que han participado en tus eventos, en todos los centros: con quién contar la próxima vez."
+                    }
+                  },
+                  {
+                    "patch": "ong-participantes-v",
+                    "set": {
+                      "title": "Quien vino, para el próximo evento",
+                      "highlight": "para el próximo"
+                    }
+                  },
+                  {
+                    "remove": "ong-mapa"
+                  },
+                  {
+                    "add": "ong-mapa",
+                    "after": "ong-eventos"
+                  }
+                ]
+              },
+              {
+                "key": "visibilidad",
+                "label": "Ganar visibilidad",
+                "hint": "Quiere que se conozca su trabajo entre los buceadores y los centros.",
+                "rules": [
+                  {
+                    "patch": "ong-portada",
+                    "set": {
+                      "title": "{company}: tu ONG, a la vista de los buceadores",
+                      "highlight": "a la vista"
+                    }
+                  },
+                  {
+                    "patch": "ong-mapa",
+                    "set": {
+                      "title": "Tu ONG, en el mapa de los buceadores",
+                      "highlight": "en el mapa",
+                      "lede": "Tu ONG y tus eventos aparecen en el mapa de Oquea, junto a los centros y los puntos de inmersión: donde miran los buceadores cuando buscan dónde bucear."
+                    }
+                  },
+                  {
+                    "patch": "ong-mapa-v",
+                    "set": {
+                      "title": "Tu ONG, en el mapa de los buceadores",
+                      "highlight": "en el mapa"
+                    }
+                  },
+                  {
+                    "remove": "ong-mapa"
+                  },
+                  {
+                    "add": "ong-mapa",
+                    "after": "ong-portada"
+                  },
+                  {
+                    "remove": "ong-insignia"
+                  },
+                  {
+                    "add": "ong-insignia",
+                    "after": "ong-eventos"
+                  },
+                  {
+                    "replace": "ong-participantes-v",
+                    "with": "ong-mapa-v"
+                  },
+                  {
+                    "remove": "ong-mapa-v"
+                  },
+                  {
+                    "add": "ong-mapa-v",
+                    "after": "ong-portada"
+                  }
+                ]
+              }
+            ]
+          }
         ]
-      }
+      },
+      "templates": [
+        {
+          "name": "Conseguir voluntarios",
+          "mode": "full",
+          "answers": [
+            "angulo:voluntarios"
+          ],
+          "note": "Quiere más gente en sus eventos y volver a contar con quien ya vino: el evento en todos sus centros, el mapa para apuntarse y su lista."
+        },
+        {
+          "name": "Ganar visibilidad",
+          "mode": "full",
+          "answers": [
+            "angulo:visibilidad"
+          ],
+          "note": "Quiere que se conozca su trabajo: su ONG y sus eventos en el mapa de los buceadores, y la insignia en el perfil de quien participa."
+        },
+        {
+          "name": "Primera reunión en persona",
+          "mode": "visual",
+          "answers": [
+            "angulo:voluntarios"
+          ],
+          "note": "Para enseñarla tú en la reunión con la ONG: menos texto, más pantallas. Cambia el ángulo si lo que busca es visibilidad."
+        }
+      ]
     }
   ],
   "price_options": [],

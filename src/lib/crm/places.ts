@@ -47,6 +47,21 @@ export function placesLocale(tag: string | null | undefined): PlacesLocale {
 }
 const ES: PlacesLocale = { languageCode: 'es', regionCode: 'ES' };
 
+/** Región por idioma de quien busca, solo donde el idioma la dice sin dudas (el coreano, Corea). */
+const READER_REGION: Record<string, string> = { ko: 'KR' };
+/**
+ * El idioma y la región de las búsquedas para la persona que busca: el idioma, el del espacio (los nombres de ciudades
+ * y zonas los comparte el equipo y no se mezclan idiomas); la región, la de quien busca si su idioma la dice (un
+ * comercial coreano busca centros de Corea). Se leen en cada llamada (`reader` es el idioma de la petición en curso).
+ */
+export function readerPlacesLocale(tenantTag: string | null | undefined, reader: () => string): PlacesLocale {
+  const base = placesLocale(tenantTag);
+  return {
+    languageCode: base.languageCode,
+    get regionCode() { const l = reader().slice(0, 2); return l !== base.languageCode && READER_REGION[l] ? READER_REGION[l] : base.regionCode; },
+  };
+}
+
 export async function searchPlaces(query: string, apiKey: string, fetchImpl: typeof fetch = fetch, loc: PlacesLocale = ES): Promise<PlaceResult[]> {
   const res = await fetchImpl('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',

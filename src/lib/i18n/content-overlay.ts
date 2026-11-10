@@ -36,6 +36,9 @@ export function translateAdminDb(db: AdminDb): AdminDb {
       return overlayList('module_version', named, (i) => i.moduleVersionId,
         (i) => ({ props: i.defaultProps }), (i, x) => ({ ...i, defaultProps: x.props as Record<string, unknown> }));
     },
+    // Combinaciones de serie («Fidelización», «Clientes internacionales»…): nombre y cuándo usarla.
+    listProposalTemplates: async (t, segmentId) => overlayList('proposal_template', await db.listProposalTemplates(t, segmentId), (x) => x.id,
+      (x) => ({ name: x.name, note: x.note }), (x, v) => ({ ...x, name: v.name as string, note: (v.note as string | null) ?? x.note })),
     getTenant: async (id) => {
       const t = await db.getTenant(id);
       if (!t) return t;

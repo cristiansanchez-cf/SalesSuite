@@ -303,8 +303,9 @@ function full(sb: SupabaseClient): AdminDb {
     async listProposalTemplates(t, segmentId) {
       const res = await sb.from('proposal_template').select('*').eq('tenant_id', t).eq('segment_id', segmentId);
       if (res.error) return [];  // tabla aún sin migrar
-      return (res.data ?? []).map((r: Row) => ({ id: r.id, segmentId: r.segment_id, name: r.name, mode: r.mode, answers: r.answers ?? [], priceOptionId: r.price_option_id ?? null, createdBy: r.created_by ?? null, createdAt: r.created_at ?? null }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      return (res.data ?? []).map((r: Row) => ({ id: r.id, segmentId: r.segment_id, name: r.name, mode: r.mode, answers: r.answers ?? [], priceOptionId: r.price_option_id ?? null, createdBy: r.created_by ?? null, createdAt: r.created_at ?? null, note: r.note ?? null, position: r.position ?? 0 }))
+        // Las de serie primero, en su orden; después las del equipo, por nombre.
+        .sort((a, b) => (a.position || 1e9) - (b.position || 1e9) || a.name.localeCompare(b.name));
     },
     async insertProposalTemplate(t, r) {
       const row = checkOne(await sb.from('proposal_template').insert({ tenant_id: t, segment_id: r.segmentId, name: r.name, mode: r.mode, answers: r.answers, price_option_id: r.priceOptionId, created_by: r.createdBy }).select('id').single());

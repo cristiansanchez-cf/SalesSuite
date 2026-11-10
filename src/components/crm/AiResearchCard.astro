@@ -52,11 +52,11 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
 
   {r && (
     <>
-      {r.summary && <p class="co-body" data-testid="ai-summary">{r.summary}</p>}
+      {r.summary && <p class="co-body" data-testid="ai-summary" data-ugc>{r.summary}</p>}
       {r.look.length > 0 && (
         <div class="grid gap-1">
           <p class="text-eyebrow">{M.look}</p>
-          <ul class="m-0 grid gap-1 pl-5 text-sm">{r.look.map((x) => <li>{x}</li>)}</ul>
+          <ul class="m-0 grid gap-1 pl-5 text-sm">{r.look.map((x) => <li data-ugc>{x}</li>)}</ul>
         </div>
       )}
       {open.length > 0 ? (

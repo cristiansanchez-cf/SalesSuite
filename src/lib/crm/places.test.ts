@@ -4,7 +4,7 @@ import { demoAdminDb } from '../admin/db-demo';
 import { demoAccountsDb } from '../accounts/db-demo';
 import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
-import { parsePlaces, placesLocale, searchPlaces, type PlaceResult, type PlacesApi } from './places';
+import { parsePlaces, placesLocale, readerPlacesLocale, searchPlaces, type PlaceResult, type PlacesApi } from './places';
 import type { WebsiteApi } from './website';
 import { zoneForPlace } from './zones-normalize';
 import type { Zone } from '../accounts/types';
@@ -113,5 +113,17 @@ describe('Google en el idioma y el país del espacio (§45)', () => {
     expect(bodies[0]).toBe('{"textQuery":"Gecko Valencia","languageCode":"es","regionCode":"ES","maxResultCount":5}');
     expect(JSON.parse(bodies[1])).toMatchObject({ languageCode: 'ko', regionCode: 'KR' });
     expect(JSON.parse(bodies[2])).not.toHaveProperty('regionCode');
+  });
+});
+
+describe('región de quien busca', () => {
+  test('un comercial coreano busca desde Corea; el idioma sigue siendo el del espacio', () => {
+    let reader = 'ko';
+    const loc = readerPlacesLocale('es-ES', () => reader);
+    expect(loc).toMatchObject({ languageCode: 'es', regionCode: 'KR' });
+    reader = 'es';
+    expect(loc.regionCode).toBe('ES');
+    reader = 'en';
+    expect(loc.regionCode).toBe('ES');
   });
 });
