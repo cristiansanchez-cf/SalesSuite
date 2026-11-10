@@ -45,7 +45,12 @@ export function readTranslations(json: unknown, texts: string[]): Map<string, st
   return out;
 }
 
-export function claudeTranslator(apiKey: string, ctx: { company: string; glossary: string[]; notes?: string }, fetchImpl?: typeof fetch): TextTranslator {
+/**
+ * `model` y `system`: para otros textos que no son una propuesta (lo que escribe el equipo, src/lib/i18n/ugc.ts), con
+ * un modelo más barato y sus propias instrucciones. `use`: la etiqueta del gasto (docs/COSTES.md).
+ */
+export function claudeTranslator(apiKey: string, ctx: { company: string; glossary: string[]; notes?: string; model?: string; system?: (target: string) => string; use?: string }, fetchImpl?: typeof fetch): TextTranslator {
+  const model = ctx.model ?? 'claude-opus-5-5';
   const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1, ...(fetchImpl ? { fetch: fetchImpl } : {}) });
   return {
     async translate(texts, target) {
@@ -53,13 +58,13 @@ export function claudeTranslator(apiKey: string, ctx: { company: string; glossar
       for (let i = 0; i < texts.length; i += 120) {
         const part = texts.slice(i, i + 120);
         const res = await client.beta.messages.create({
-          model: 'claude-opus-5-5', max_tokens: 16000,
+          model, max_tokens: 16000,
           betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
           output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },
-          system: systemPrompt(ctx.company, target, ctx.glossary, ctx.notes),
+          system: ctx.system ? ctx.system(target) : systemPrompt(ctx.company, target, ctx.glossary, ctx.notes),
           messages: [{ role: 'user', content: JSON.stringify(part.map((t, k) => ({ i: k, t }))) }],
         } as Parameters<typeof client.beta.messages.create>[0]) as Anthropic.Beta.BetaMessage;
-        await meterClaude('i18n.translate', res.model || 'claude-opus-5-5', res.usage);
+        await meterClaude(ctx.use ?? 'i18n.translate', res.model || model, res.usage);
         if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') throw new Error(`traducción sin terminar (${res.stop_reason})`);
         const text = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
         for (const [k, v] of readTranslations(JSON.parse(text), part)) out.set(k, v);

@@ -306,7 +306,7 @@ const STATE_ALERT = {
         {co.people[0] && <p class="co-meta m-0 flex flex-wrap items-center gap-1" data-testid="summary-ask"><Icon name="user" size={14} />{PS.summary.askFor} <a class="font-semibold underline" href={`/admin/people/${co.people[0].id}`}>{co.people[0].name}</a>{co.people[0].role ? ` · ${co.people[0].role}` : ''}</p>}
         <a class="co-inset flex items-center gap-2 !p-3 text-inherit !no-underline" href="#follow" data-testid="summary-next">
           <Icon name="calendar" size={16} />
-          <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}{tl.next.step && ` · ${tl.next.step}`}</> : PS.summary.noNext}</span>
+          <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}{tl.next.step && <> · <span data-ugc>{tl.next.step}</span></>}</> : PS.summary.noNext}</span>
           <Icon name="chevron-right" size={14} />
         </a>
         <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
@@ -349,7 +349,7 @@ const STATE_ALERT = {
           const item = (x: (typeof a.facts)[number]) => (
             <li class="group flex list-none items-start gap-2 text-sm" data-testid="fact" data-kind={x.kind}>
               <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--co-ink-dim)]"></span>
-              <span class="min-w-0 flex-1">{x.text} {when(x)}</span>
+              <span class="min-w-0 flex-1"><span data-ugc>{x.text}</span> {when(x)}</span>
               {tools(x)}
             </li>
           );
@@ -359,7 +359,7 @@ const STATE_ALERT = {
                 <ul class="m-0 grid gap-2 p-0 sm:grid-cols-2" data-testid="facts-key">
                   {keyF.map((x) => (
                     <li class="group facts-key flex list-none items-start gap-2 rounded-2xl p-4" data-testid="fact" data-kind={x.kind} data-key="true">
-                      <span class="min-w-0 flex-1 text-base font-medium leading-snug">{x.text} <span class="block pt-1 text-xs font-normal">{when(x)}</span></span>
+                      <span class="min-w-0 flex-1 text-base font-medium leading-snug"><span data-ugc>{x.text}</span> <span class="block pt-1 text-xs font-normal">{when(x)}</span></span>
                       {tools(x)}
                     </li>
                   ))}
@@ -371,7 +371,7 @@ const STATE_ALERT = {
                   <ul class="m-0 grid gap-1 p-0">{fitF.map((x) => (
                     <li class="group flex list-none items-start gap-2 text-sm font-medium" data-testid="fact" data-kind={x.kind}>
                       <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--co-signal,#6a2bd9)]"></span>
-                      <span class="min-w-0 flex-1">{x.text} {when(x)}</span>
+                      <span class="min-w-0 flex-1"><span data-ugc>{x.text}</span> {when(x)}</span>
                       {tools(x)}
                     </li>
                   ))}</ul>
@@ -420,7 +420,7 @@ const STATE_ALERT = {
                 {tl.next.channel && ` · ${F.channels[tl.next.channel]}`}
                 {` · ${actorName(tl.next.contactId)}`}
               </p>
-              {tl.next.step && <p class="co-body">{tl.next.step}</p>}
+              {tl.next.step && <p class="co-body" data-ugc>{tl.next.step}</p>}
             </>
           ) : <p class="co-meta">{F.follow.noNext}</p>}
           {sug.reason !== 'closed' && (!tl.next || tl.next.channel !== sug.channel || tl.next.contactId !== sug.contactId) && (
@@ -461,7 +461,7 @@ const STATE_ALERT = {
                   <span class="min-w-0 flex-1">
                     <strong>{x.outcome === 'note' ? F.outcomes.note : `${F.channels[x.channel]} · ${F.outcomes[x.outcome]}`}</strong>
                     <span class="co-meta">{x.contactName ? ` · ${x.contactName}` : ''}{x.userName ? ` · ${x.userName}` : ''}</span>
-                    {x.note && <span class="co-body block whitespace-pre-line">{x.note}</span>}
+                    {x.note && <span class="co-body block whitespace-pre-line" data-ugc>{x.note}</span>}
                   </span>
                   {(x.userId === admin.session.userId || perms.manageAccounts) && (
                     <form method="post"><input type="hidden" name="action" value="activity-delete" /><input type="hidden" name="activityId" value={x.id} />
@@ -603,7 +603,7 @@ const STATE_ALERT = {
           {touches.map((x) => (
             <li class="flex list-none gap-3 text-sm">
               <span class="co-meta w-28 shrink-0">{fmt.relative(x.createdAt)}</span>
-              <span><strong>{TOUCH[x.kind]}{x.kind === 'assign' && x.note ? ` ${x.note}` : ''}</strong>{x.userName ? ` · ${x.userName}` : ''}{x.note && x.kind !== 'assign' ? <span class="co-body block">{x.note}</span> : null}</span>
+              <span><strong>{TOUCH[x.kind]}{x.kind === 'assign' && x.note ? ` ${x.note}` : ''}</strong>{x.userName ? ` · ${x.userName}` : ''}{x.note && x.kind !== 'assign' ? <span class="co-body block" data-ugc>{x.note}</span> : null}</span>
             </li>
           ))}
         </ol>

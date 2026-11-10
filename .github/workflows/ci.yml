@@ -107,6 +107,7 @@ jobs:
           node scripts/smoke-setup-ai.cjs
           node scripts/smoke-proposal-owners.cjs
           node scripts/smoke-rep-contact.cjs
+          node scripts/smoke-team-translate.cjs
           node scripts/smoke-board.cjs
           node scripts/smoke-charge.cjs
           node scripts/smoke-merge.cjs
