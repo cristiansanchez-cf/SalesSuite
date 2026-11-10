@@ -9,6 +9,7 @@ const es = {
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
   },
   role: { admin: 'Admin', lead: 'Gerente', rep: 'Comercial', partner: 'Colaborador' },
+  ugc: { translate: 'Traducir al español', working: 'Traduciendo…', original: 'Ver original', translated: 'Ver traducción', failed: 'No se ha podido traducir. Vuelve a intentarlo.', mark: 'Traducido. Original:' },
   async: { done: 'Hecho.', failed: 'No se ha podido. Vuelve a intentarlo.', close: 'Cerrar aviso', saving: 'Guardando…', saved: 'Guardado ✓' },
   bg: { running: 'Investigando con IA: {i} de {n}. Puedes seguir usando la app.', done: 'Investigación con IA: {ok} listas', skipped: ' · {s} ya estaban', failed: ' · {f} sin terminar', see: 'Ver' },
   shell: {
@@ -57,6 +58,7 @@ export const shellMessages = defineMessages({
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
     },
     role: { admin: 'Admin', lead: 'Manager', rep: 'Sales rep', partner: 'Partner' },
+    ugc: { translate: 'Translate to English', working: 'Translating…', original: 'Show original', translated: 'Show translation', failed: 'It couldn’t be translated. Try again.', mark: 'Translated. Original:' },
     async: { done: 'Done.', failed: 'It didn’t work. Try again.', close: 'Close notice', saving: 'Saving…', saved: 'Saved ✓' },
     bg: { running: 'Researching with AI: {i} of {n}. You can keep using the app.', done: 'AI research: {ok} ready', skipped: ' · {s} already done', failed: ' · {f} not finished', see: 'See' },
     shell: {
@@ -102,6 +104,7 @@ export const shellMessages = defineMessages({
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
     },
     role: { admin: 'Admin', lead: 'Gerente de vendas', rep: 'Vendedor(a)', partner: 'Parceiro(a)' },
+    ugc: { translate: 'Traduzir para português', working: 'Traduzindo…', original: 'Ver original', translated: 'Ver tradução', failed: 'Não foi possível traduzir. Tente de novo.', mark: 'Traduzido. Original:' },
     async: { done: 'Pronto.', failed: 'Não deu certo. Tente de novo.', close: 'Fechar aviso', saving: 'Salvando…', saved: 'Salvo ✓' },
     bg: { running: 'Pesquisando com IA: {i} de {n}. Pode continuar usando o app.', done: 'Pesquisa com IA: {ok} prontas', skipped: ' · {s} já estavam', failed: ' · {f} sem terminar', see: 'Ver' },
     shell: {
@@ -147,6 +150,7 @@ export const shellMessages = defineMessages({
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,
     },
     role: { admin: '관리자', lead: '영업 리더', rep: '영업 담당자', partner: '파트너' },
+    ugc: { translate: '한국어로 번역', working: '번역 중…', original: '원문 보기', translated: '번역 보기', failed: '번역하지 못했습니다. 다시 시도하세요.', mark: '번역됨. 원문:' },
     async: { done: '완료.', failed: '실패했습니다. 다시 시도하세요.', close: '알림 닫기', saving: '저장 중…', saved: '저장됨 ✓' },
     bg: { running: 'AI 조사 중: {n} 중 {i}. 앱을 계속 사용할 수 있습니다.', done: 'AI 조사: {ok}곳 완료', skipped: ' · {s}곳 이미 완료', failed: ' · {f}곳 미완료', see: '보기' },
     shell: {

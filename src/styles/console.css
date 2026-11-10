@@ -624,3 +624,14 @@ button[aria-busy='true'] { cursor: progress; opacity: 0.75; }
 .source-doc pre { overflow-x: auto; padding: .5rem; background: var(--console-chip-bg); border-radius: .5rem; }
 .source-doc hr { border: 0; border-top: 1px solid var(--console-divider); }
 .source-doc a { text-decoration: underline; }
+
+/* Traducir lo que escribe el equipo (docs/I18N.md §Lo que escribe el equipo): abajo a la izquierda («Apuntar» va a la derecha). */
+.co-ugc { position: fixed; left: 16px; bottom: 16px; z-index: 55; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border: 1px solid var(--console-card-border); border-radius: 999px; background: var(--console-surface); color: var(--co-ink); font-weight: 600; font-size: 0.875rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14); }
+.co-ugc[hidden] { display: none; }
+.co-ugc:hover { border-color: var(--console-card-border-hover); }
+.co-ugc:disabled { opacity: 0.7; }
+@media (min-width: 1024px) { .co-ugc { left: calc(var(--console-sidebar) + 16px); } }
+/* Lo traducido se distingue sin ruido: subrayado de puntos; el original, al pasar por encima. */
+.co-ugc-tr { text-decoration: underline dotted color-mix(in oklch, var(--co-ink) 30%, transparent); text-underline-offset: 3px; }

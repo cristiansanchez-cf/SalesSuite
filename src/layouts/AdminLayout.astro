@@ -142,6 +142,71 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
         document.querySelectorAll('details.co-popover[open]').forEach((p) => { if (!p.contains(t)) p.removeAttribute('open'); });
       });
     </script>
+    {shell && <button type="button" class="co-ugc" hidden data-ugc-ui data-lang={locale} data-t={JSON.stringify(m.ugc)} data-testid="ugc-translate"><Icon name="languages" size={16} /><span></span></button>}
+    <script>
+      // Traducir lo que escribe el equipo (docs/I18N.md §Lo que escribe el equipo): los textos marcados con data-ugc que
+      // están en otro idioma. Al abrir la página se traen los ya traducidos (sin IA); «Traducir» traduce lo que falta
+      // una vez y lo guarda para todos. «Ver original» / «Ver traducción» cambia entre los dos.
+      import { guessLang } from '../lib/i18n/guess-lang';
+      const ui = document.querySelector<HTMLButtonElement>('[data-ugc-ui]');
+      if (ui) {
+        const lang = (ui.dataset.lang ?? 'es').slice(0, 2);
+        const T = JSON.parse(ui.dataset.t ?? '{}') as Record<string, string>;
+        const label = ui.querySelector('span')!;
+        const known = new Map<string, string>();
+        let showing: 'tr' | 'orig' = 'tr';
+        let busy = false;
+        const els = () => [...document.querySelectorAll<HTMLElement>('[data-ugc]')];
+        const orig = (el: HTMLElement) => el.dataset.ugcOrig ?? (el.textContent ?? '').trim();
+        const foreign = (el: HTMLElement) => { const g = guessLang(orig(el)); return g !== null && g !== lang; };
+        const pending = () => [...new Set(els().filter(foreign).map(orig))].filter((o) => !known.has(o));
+        const apply = () => {
+          for (const el of els()) {
+            const o = orig(el);
+            const tr = known.get(o);
+            if (!tr) continue;
+            el.dataset.ugcOrig = o;
+            const want = showing === 'tr' ? tr : o;
+            if ((el.textContent ?? '').trim() !== want) el.textContent = want; // sin cambios, sin mutación (no hay bucle)
+            el.title = showing === 'tr' ? `${T.mark} ${o}` : '';
+            el.classList.toggle('co-ugc-tr', showing === 'tr');
+          }
+        };
+        const render = () => {
+          const left = pending().length;
+          const any = els().some((el) => known.has(orig(el)));
+          ui.hidden = !left && !any;
+          label.textContent = busy ? T.working : left ? `${T.translate} (${left})` : showing === 'tr' ? T.original : T.translated;
+          ui.disabled = busy;
+        };
+        const ask = async (texts: string[], translate: boolean) => {
+          const r = await fetch('/admin/api/translate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts, translate }) });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(j.error || T.failed);
+          for (const [k, v] of Object.entries((j.translations ?? {}) as Record<string, string>)) known.set(k, v);
+        };
+        let asked = new Set<string>();
+        const scan = async () => {
+          // Lo ya traducido, sin IA (una vez por texto).
+          const p = pending().filter((o) => !asked.has(o));
+          p.forEach((o) => asked.add(o));
+          if (p.length) await ask(p, false).catch(() => {});
+          apply();
+          render();
+        };
+        ui.addEventListener('click', async () => {
+          const p = pending();
+          if (!p.length) { showing = showing === 'tr' ? 'orig' : 'tr'; apply(); render(); return; }
+          busy = true; render();
+          try { await ask(p, true); showing = 'tr'; }
+          catch (e) { label.textContent = e instanceof Error ? e.message : T.failed; busy = false; ui.disabled = false; return; }
+          busy = false; apply(); render();
+        });
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(scan, 300); }).observe(document.body, { childList: true, subtree: true, characterData: true });
+        scan();
+      }
+    </script>
     {fab && <a href="/admin/accounts/apuntar" class="co-fab" aria-label={fabLabel} title={fabLabel} data-testid="notes-fab"><Icon name="sparkles" size={20} /><span>{fabLabel}</span></a>}
     <script is:inline>
       // Filtrar sin cambiar de página (docs/UX_REVIEW.md §Carga): un formulario GET con data-async-get="id1 id2" pide los

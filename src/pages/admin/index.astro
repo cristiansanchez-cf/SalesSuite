@@ -184,7 +184,7 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
                       <span class="flex items-start gap-4">
                         <span class:list={['inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold', d.status === 'published' ? 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]' : 'bg-[var(--console-chip-bg)]']} aria-hidden="true">{initial(d)}</span>
                         <span class="grid min-w-0 flex-1 gap-0.5">
-                          <span class="co-entity text-lg leading-snug">{d.title}</span>
+                          <span class="co-entity text-lg leading-snug" data-ugc>{d.title}</span>
                           <span class="co-meta truncate">{[d.prospectCompany, d.prospectName].filter(Boolean).join(' · ') || m.dossiers.noProspect}</span>
                         </span>
                         <span class={STATUS_CLASS[d.status]}>{STATUS_LABEL[d.status]}</span>
@@ -192,7 +192,7 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
                       {d.nextStepAt && (
                         <span class:list={['flex items-center gap-2 text-sm', late ? 'font-semibold text-[color:var(--console-attention,#b42318)]' : '']} title={d.nextStep ?? ''} data-testid="next-step-chip">
                           <Icon name="clock" size={14} />
-                          <span class="truncate">{late ? m.common.overdueFollowup : m.common.nextStep}: {when(d.nextStepAt)}{d.nextStep ? ` · ${d.nextStep}` : ''}</span>
+                          <span class="truncate">{late ? m.common.overdueFollowup : m.common.nextStep}: {when(d.nextStepAt)}{d.nextStep && <> · <span data-ugc>{d.nextStep}</span></>}</span>
                         </span>
                       )}
                       <span class="flex flex-wrap items-center gap-2">
