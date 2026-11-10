@@ -33,6 +33,8 @@ export const GET: APIRoute = async () => {
     inboundEmailConfigured: Boolean(env('INBOUND_EMAIL_DOMAIN') && env('RESEND_INBOUND_SECRET') && env('RESEND_API_KEY')),
     socialMediaConfigured: Boolean(env('CONVERT_API_KEY')),
     assistantAudioConfigured: Boolean(env('OPENAI_API_KEY')),
+    // El número del asistente para todas las empresas (docs/ASSISTANT.md §Un número para todas las empresas).
+    assistantNumberConfigured: Boolean(env('ASSISTANT_WHATSAPP_PHONE_ID')),
     version: env('APP_VERSION') ?? 'dev',
   };
   return Response.json(body, { status: body.status === 'ok' ? 200 : 503, headers: { 'cache-control': 'no-store' } });

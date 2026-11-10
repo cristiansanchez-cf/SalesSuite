@@ -31,3 +31,17 @@ reset role;
 reset request.jwt.claim.sub;
 delete from public.wa_assistant_state;
 delete from public.membership where user_id::text like '82828282-%';
+
+-- Migración 20261231: la empresa elegida en el número del asistente también es solo del servidor.
+insert into auth.users (id, email) values ('82828282-0000-4000-8000-000000000003', 'hub82@enjoy.test');
+insert into public.wa_assistant_session (user_id, tenant_id, chosen_at) values ('82828282-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000e01', now());
+set role authenticated;
+set request.jwt.claim.sub = '82828282-0000-4000-8000-000000000003';
+do $$ begin
+  perform 1 from public.wa_assistant_session;
+  raise exception 'ASSERT FAILED: la sesión del asistente no se lee con sesión';
+exception when insufficient_privilege then null; end $$;
+reset role;
+reset request.jwt.claim.sub;
+select pg_temp.assert((select tenant_id from public.wa_assistant_session where user_id = '82828282-0000-4000-8000-000000000003') = '00000000-0000-4000-8000-000000000e01', 'se guarda la empresa elegida');
+delete from public.wa_assistant_session where user_id = '82828282-0000-4000-8000-000000000003';

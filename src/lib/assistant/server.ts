@@ -11,6 +11,7 @@ import type { WhatsApp } from '../leads/whatsapp';
 import type { AssistantDb } from './db';
 import type { AssistantDeps } from './process';
 import { fixtureTranscriber, whisper } from './transcribe';
+import { hubConfig, hubWhatsApp } from './hub-config';
 
 export async function assistantDb(): Promise<AssistantDb | null> {
   if (appMode() === 'demo') return (await import('./db-demo')).demoAssistantDb();
@@ -48,5 +49,7 @@ export async function reminderDeps(wa: WhatsApp | null, leadsSettings: (tenantId
   const rdb = appMode() === 'demo' ? demoReminderDb()
     : supabaseReminderDb(createClient(env('PUBLIC_SUPABASE_URL')!, env('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } }));
   const base = await assistantDeps(db, wa, now);
-  return { db: rdb, assistant: db, wa, now, settings: leadsSettings, actAs: base.actAs };
+  // Con el número del asistente, el recordatorio sale de ese número (docs/ASSISTANT.md §Un número para todas las empresas).
+  const hub = hubConfig();
+  return { db: rdb, assistant: db, wa: hub ? hubWhatsApp(wa) : wa, now, settings: leadsSettings, actAs: base.actAs, hub };
 }

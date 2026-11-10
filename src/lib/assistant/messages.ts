@@ -39,6 +39,10 @@ const es = {
   laterOk: (n: string) => `Vale, ${n} pasa a mañana.`,
   failedOne: 'No he podido apuntarlo. Ábrelo en el CRM, porfa.',
   remindLater: 'Vale. Lo tienes en «Hoy» cuando quieras.',
+  hubAsk: (name: string, pending: boolean) => `Hola${name ? ` ${name}` : ''} 👋 ¿Para qué empresa trabajas hoy?${pending ? '\n\nDespués apunto lo que me has mandado.' : ''}`,
+  hubAskNumbered: (opts: string[]) => `${opts.map((o, i) => `${i + 1}) ${o}`).join('\n')}\n\nResponde con el número.`,
+  hubPickButton: 'Elegir empresa',
+  hubPicked: (company: string) => `Vale: hoy con *${company}*. Cuéntame con quién has hablado (por texto o audio). Para cambiar de empresa, escribe «empresa».`,
   outcomes: { no_reply: 'sin respuesta', replied: 'contestó', interested: 'interesado', not_interested: 'no interesado', meeting: 'cita conseguida', note: 'nota' } as Record<string, string>,
 };
 export type AssistantText = typeof es;
@@ -78,6 +82,10 @@ export const assistantMessages = defineMessages({
     laterOk: (n) => `OK, ${n} moves to tomorrow.`,
     failedOne: 'I could not log it. Please open it in the CRM.',
     remindLater: 'OK. It is in “Today” whenever you want.',
+    hubAsk: (name, pending) => `Hi${name ? ` ${name}` : ''} 👋 Which company are you working for today?${pending ? '\n\nI will log what you sent me right after.' : ''}`,
+    hubAskNumbered: (opts) => `${opts.map((o, i) => `${i + 1}) ${o}`).join('\n')}\n\nReply with the number.`,
+    hubPickButton: 'Choose company',
+    hubPicked: (company) => `OK: today with *${company}*. Tell me who you talked to (text or voice note). To switch company, type “company”.`,
     outcomes: { no_reply: 'no reply', replied: 'replied', interested: 'interested', not_interested: 'not interested', meeting: 'meeting booked', note: 'note' },
   },
   pt: {
@@ -113,6 +121,10 @@ export const assistantMessages = defineMessages({
     laterOk: (n) => `Está bem, ${n} passa para amanhã.`,
     failedOne: 'Não consegui registar. Abre no CRM, por favor.',
     remindLater: 'Está bem. Tens tudo em «Hoje» quando quiseres.',
+    hubAsk: (name, pending) => `Olá${name ? ` ${name}` : ''} 👋 Para que empresa trabalhas hoje?${pending ? '\n\nDepois registo o que me mandaste.' : ''}`,
+    hubAskNumbered: (opts) => `${opts.map((o, i) => `${i + 1}) ${o}`).join('\n')}\n\nResponde com o número.`,
+    hubPickButton: 'Escolher empresa',
+    hubPicked: (company) => `Está bem: hoje com *${company}*. Conta-me com quem falaste (por texto ou áudio). Para mudar de empresa, escreve «empresa».`,
     outcomes: { no_reply: 'sem resposta', replied: 'respondeu', interested: 'interessado', not_interested: 'não interessado', meeting: 'reunião marcada', note: 'nota' },
   },
   ko: {
@@ -148,6 +160,10 @@ export const assistantMessages = defineMessages({
     laterOk: (n) => `네, ${n}은(는) 내일로 미룰게요.`,
     failedOne: '기록하지 못했어요. CRM에서 열어 주세요.',
     remindLater: '네. 언제든 «오늘»에서 볼 수 있어요.',
+    hubAsk: (name, pending) => `안녕하세요${name ? ` ${name}님` : ''} 👋 오늘은 어느 회사 일을 하시나요?${pending ? '\n\n보내주신 내용은 그다음에 기록할게요.' : ''}`,
+    hubAskNumbered: (opts) => `${opts.map((o, i) => `${i + 1}) ${o}`).join('\n')}\n\n번호로 답해 주세요.`,
+    hubPickButton: '회사 선택',
+    hubPicked: (company) => `좋아요: 오늘은 *${company}*. 누구와 이야기했는지 알려주세요 (글이나 음성). 회사를 바꾸려면 «회사»라고 보내 주세요.`,
     outcomes: { no_reply: '답 없음', replied: '답장함', interested: '관심 있음', not_interested: '관심 없음', meeting: '미팅 잡음', note: '메모' },
   },
 });

@@ -4,6 +4,35 @@ Quien es del equipo escribe, manda un audio o reenvía mensajes de un cliente al
 mismo de los leads: Leads → Ajustes → WhatsApp) y el asistente lo apunta en la ficha de su empresa. Es «Apuntar con IA»
 (docs/CRM_DINAMICO.md §20) por WhatsApp: mismos permisos, misma separación por empresa y nada se guarda sin «Guardar».
 
+## Un número para todas las empresas
+
+El chat con uno mismo de WhatsApp no pasa por Meta, así que nadie puede escribirse a sí mismo para apuntar: hace falta
+otro número. Por eso el asistente tiene **su propio número** (`ASSISTANT_WHATSAPP_PHONE_ID`), uno para toda la
+plataforma, y cada persona del equipo le escribe desde su WhatsApp de trabajo (el de Mi cuenta). El número de cada
+empresa se queda para hablar con sus leads. Sin esa variable, todo sigue como antes (el asistente en el número de cada
+empresa).
+
+- **Una empresa:** va directo, como siempre.
+- **Varias** (`src/lib/assistant/hub.ts`): al empezar el día pregunta «¿Para qué empresa trabajas hoy?» con un botón por
+  empresa (o una lista si son más de tres; con más de diez, numeradas). Lo que mande antes de elegir se guarda (como
+  mucho 10 mensajes) y se apunta en cuanto elige. Vale el botón, el número o el nombre exacto.
+- **Hasta mañana:** la elección dura el día (en su zona horaria de Mi cuenta). **«empresa»** (o «cambiar de empresa»)
+  vuelve a preguntar cuando quiera.
+- **Recordatorio de la mañana:** sale de ese número con las plantillas `equipo_recordatorio_es/en/fr` (otros nombres
+  con `ASSISTANT_REMINDER_TEMPLATES=es=…,en=…,fr=…`), **uno al día por persona**: de la empresa con la que trabajó la
+  última vez si tiene algo; si no, de la primera que tenga. Esa empresa queda elegida para que su «sí» vaya a ella.
+- **Desconocidos:** lo que llega a ese número de alguien que no es del equipo no se contesta ni va a leads.
+- Estado en `wa_assistant_session` (migración `20261231000000_wa_assistant_hub.sql`, solo el servidor).
+
+**Ponerlo en marcha:**
+1. Un número que no esté en ningún WhatsApp (una línea nueva, virtual o un fijo que reciba la llamada de verificación).
+2. Meta → la app (la misma que el número de la empresa) → WhatsApp → *Add phone number*. Si está en otra cartera de
+   Meta con otro token, `ASSISTANT_WHATSAPP_TOKEN`; si está en otra app, también `ASSISTANT_WHATSAPP_APP_SECRET` y el
+   mismo webhook (`/api/v1/whatsapp/webhook`).
+3. Vercel: `ASSISTANT_WHATSAPP_PHONE_ID` = su *Phone number ID* → Redeploy. `/api/health` dice `assistantNumberConfigured`.
+4. Las plantillas del recordatorio en la cuenta de WhatsApp de ese número (tabla de abajo).
+5. Cada persona: su WhatsApp de trabajo en **Mi cuenta → Teléfono** y escribir «hola» al número del asistente.
+
 ## Quién es quién
 
 - **Del equipo:** el teléfono de **Mi cuenta** (`users.phone`) coincide con quien escribe y tiene membresía de admin,

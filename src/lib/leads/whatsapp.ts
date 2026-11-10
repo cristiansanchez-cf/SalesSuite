@@ -16,6 +16,8 @@ export interface WhatsApp {
   sendText?(phoneId: string, to: string, text: string): Promise<{ id: string | null }>;
   /** Texto con hasta 3 botones de respuesta. */
   sendButtons?(phoneId: string, to: string, text: string, buttons: Array<{ id: string; title: string }>): Promise<{ id: string | null }>;
+  /** Texto con una lista desplegable de hasta 10 opciones (cuando no caben en 3 botones). */
+  sendList?(phoneId: string, to: string, text: string, button: string, rows: Array<{ id: string; title: string }>): Promise<{ id: string | null }>;
   /** Un archivo recibido (audio): los bytes y su tipo. */
   media?(mediaId: string): Promise<{ bytes: Uint8Array; type: string }>;
 }
@@ -36,6 +38,10 @@ export function cloudWhatsApp(token: string, fetchImpl: typeof fetch = fetch): W
     sendButtons: (phoneId, to, text, buttons) => post(phoneId, {
       to: to.replace(/^\+/, ''), type: 'interactive',
       interactive: { type: 'button', body: { text: text.slice(0, 1024) }, action: { buttons: buttons.slice(0, 3).map((b) => ({ type: 'reply', reply: { id: b.id.slice(0, 256), title: b.title.slice(0, 20) } })) } },
+    }),
+    sendList: (phoneId, to, text, button, rows) => post(phoneId, {
+      to: to.replace(/^\+/, ''), type: 'interactive',
+      interactive: { type: 'list', body: { text: text.slice(0, 1024) }, action: { button: button.slice(0, 20), sections: [{ rows: rows.slice(0, 10).map((r) => ({ id: r.id.slice(0, 200), title: r.title.slice(0, 24) })) }] } },
     }),
     async media(mediaId) {
       const meta = await fetchImpl(`${GRAPH}/${encodeURIComponent(mediaId)}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -72,6 +78,7 @@ export const demoWhatsApp: WhatsApp = {
   async sendTemplate(_p, to, template, locale, params) { demoWhatsAppOutbox().push({ to, template, locale, params }); return { id: `demo-${Date.now()}` }; },
   async sendText(_p, to, text) { demoWhatsAppOutbox().push({ to, template: '', locale: '', params: [], text }); return { id: `demo-${Date.now()}` }; },
   async sendButtons(_p, to, text, buttons) { demoWhatsAppOutbox().push({ to, template: '', locale: '', params: [], text, buttons: buttons.map((b) => b.id) }); return { id: `demo-${Date.now()}` }; },
+  async sendList(_p, to, text, _b, rows) { demoWhatsAppOutbox().push({ to, template: '', locale: '', params: [], text, buttons: rows.map((r) => r.id) }); return { id: `demo-${Date.now()}` }; },
   async media() { return { bytes: new Uint8Array([1, 2, 3]), type: 'audio/ogg' }; },
 };
 
@@ -101,13 +108,14 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
       const v = ch.value ?? {};
       const phoneId = String((v.metadata as { phone_number_id?: string } | undefined)?.phone_number_id ?? '');
       for (const m of (v.messages as Record<string, unknown>[] | undefined) ?? []) {
+        const inter = m.interactive as { button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } } | undefined;
         const text = (m.text as { body?: string } | undefined)?.body ?? (m.button as { text?: string } | undefined)?.text
-          ?? (m.interactive as { button_reply?: { title?: string } } | undefined)?.button_reply?.title ?? `[${String(m.type ?? 'mensaje')}]`;
+          ?? inter?.button_reply?.title ?? inter?.list_reply?.title ?? `[${String(m.type ?? 'mensaje')}]`;
         const type = String(m.type ?? '');
         const ctx = (m.context ?? {}) as { forwarded?: boolean; frequently_forwarded?: boolean };
         // Botón de un mensaje interactivo (su id) o de respuesta rápida de una plantilla (su payload, que es su texto).
         const tplButton = (m.button as { payload?: string; text?: string } | undefined);
-        const buttonId = (m.interactive as { button_reply?: { id?: string } } | undefined)?.button_reply?.id ?? (tplButton ? tplButton.payload || tplButton.text || null : null);
+        const buttonId = inter?.button_reply?.id ?? inter?.list_reply?.id ?? (tplButton ? tplButton.payload || tplButton.text || null : null);
         const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : (type === 'interactive' || type === 'button') && buttonId ? 'button' : 'other';
         inbound.push({ phoneId, from: `+${String(m.from ?? '').replace(/^\+/, '')}`, text: String(text).slice(0, kind === 'text' ? 12000 : 2000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
           kind, forwarded: !!(ctx.forwarded || ctx.frequently_forwarded), mediaId: (m.audio as { id?: string } | undefined)?.id ?? null, buttonId });

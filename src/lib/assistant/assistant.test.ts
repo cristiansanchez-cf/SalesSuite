@@ -10,6 +10,8 @@ import { processAssistant, teamMember } from './process';
 import { fixtureTranscriber } from './transcribe';
 import { demoReminderDb, demoReminderLog } from './reminders-db';
 import { namesLine, runReminders } from './reminders';
+import { HUB_PICK, chosenToday, processHub } from './hub';
+import { hubConfig, parseTemplates } from './hub-config';
 
 const NOW = new Date('2026-11-03T10:00:00Z');
 const item = (venue: string, over: Partial<NoteItem> = {}): NoteItem => ({
@@ -268,5 +270,108 @@ describe('de punta a punta (demo)', () => {
     const acts = demoDb().crm_activity.filter((a) => a.account_id === sol.id);
     expect(acts.length).toBe(before + 1);
     expect(acts.some((a) => a.channel === 'whatsapp' && a.user_id === REP && /recordatorio/.test(a.note ?? ''))).toBe(true);
+  });
+});
+
+describe('un número para todas las empresas (docs/ASSISTANT.md)', () => {
+  const ENJOY = '00000000-0000-4000-8000-000000000e01';
+  const ALT = '00000000-0000-4000-8000-000000000a01';
+  const REP = '11111111-1111-4111-8111-111111111111';
+  const HUB = '999000111';
+  const sent: Array<{ text: string; buttons?: string[] }> = [];
+  const templates: unknown[][] = [];
+  const wa = {
+    async sendTemplate(...a: unknown[]) { templates.push(a); return { id: null }; },
+    async sendText(_p: string, _to: string, text: string) { sent.push({ text }); return { id: null }; },
+    async sendButtons(_p: string, _to: string, text: string, b: Array<{ id: string }>) { sent.push({ text, buttons: b.map((x) => x.id) }); return { id: null }; },
+    async media() { return { bytes: new Uint8Array([1]), type: 'audio/ogg' }; },
+  };
+  const actAs = async (t: string, u: string) => {
+    const slug = demoDb().tenant.find((x) => x.id === t)?.slug;
+    const tenant = slug ? await publicRepository().resolveTenantBySlug(slug) : null;
+    return tenant ? contextAs(tenant, u) : null;
+  };
+  const deps = (now = new Date('2026-11-03T09:00:00Z')) => ({ db: demoAssistantDb(), wa, transcribe: fixtureTranscriber, now, actAs });
+  const msg = (id: string, over: Partial<Inbound>): Inbound => ({ phoneId: HUB, from: '+34699000111', text: '', at: new Date(), id, kind: 'text', ...over });
+  const members = () => demoAssistantDb().membersByPhone('34699000111');
+  beforeEach(() => {
+    resetDemoDb(); resetDemoAssistant(); demoReminderLog().clear(); sent.length = 0; templates.length = 0;
+    process.env.AI_RESEARCH_FIXTURE = '1';
+    const rep = demoDb().users.find((u) => u.id === REP)!;
+    rep.phone = '699 00 01 11';
+    rep.memberships.push({ tenant_id: ALT, role: 'rep' });
+  });
+
+  test('la configuración: el número y las plantillas del recordatorio', () => {
+    process.env.ASSISTANT_WHATSAPP_PHONE_ID = HUB;
+    expect(hubConfig()).toEqual({ phoneId: HUB, templates: { es: 'equipo_recordatorio_es', en: 'equipo_recordatorio_en', fr: 'equipo_recordatorio_fr' } });
+    expect(parseTemplates('es=asistente_hoy_es, fr=asistente_fr, xx=nada, en=mal nombre').es).toBe('asistente_hoy_es');
+    delete process.env.ASSISTANT_WHATSAPP_PHONE_ID;
+    expect(hubConfig()).toBeNull();
+  });
+
+  test('en varias empresas: pregunta al empezar, guarda lo que mandó, y al elegir lo apunta en esa', async () => {
+    const ms = await members();
+    expect(new Set(ms.map((m) => m.tenantId))).toEqual(new Set([ENJOY, ALT]));
+    // «Hola»: solo la pregunta, con un botón por empresa.
+    expect(await processHub(deps(), HUB, ms, msg('h1', { text: 'Hola' }))).toBe('asked');
+    expect(sent[0].text).toContain('¿Para qué empresa trabajas hoy?');
+    expect(sent[0].buttons).toEqual(expect.arrayContaining([`${HUB_PICK}${ENJOY}`, `${HUB_PICK}${ALT}`]));
+    // Cuenta algo sin haber elegido: se guarda y no se repite la pregunta enseguida.
+    expect(await processHub(deps(), HUB, ms, msg('h2', { text: 'Club Sol: hablé con Marta, quieren pantalla los viernes' }))).toBe('asked');
+    expect(sent).toHaveLength(1);
+    // Elige Enjoy: le confirma y apunta lo pendiente en Enjoy (el resumen con Guardar / Cambiar).
+    expect(await processHub(deps(), HUB, ms, msg('h3', { kind: 'button', buttonId: `${HUB_PICK}${ENJOY}`, text: 'Enjoy the Club' }))).toBe('picked');
+    expect(sent[1].text).toContain('hoy con *Enjoy the Club*');
+    expect(sent[2].text).toContain('*Club Sol*');
+    expect(sent[2].buttons).toEqual(['save', 'change']);
+    // Lo siguiente del día va directo a Enjoy; «Guardar» lo guarda allí.
+    await processHub(deps(), HUB, ms, msg('h4', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
+    expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
+    const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
+    expect(demoDb().crm_activity.some((a) => a.account_id === sol.id && a.user_id === REP && /Marta/.test(a.note ?? ''))).toBe(true);
+  });
+
+  test('«empresa» vuelve a preguntar; con el número también se elige; al día siguiente pregunta otra vez', async () => {
+    const ms = await members();
+    await processHub(deps(), HUB, ms, msg('e1', { kind: 'button', buttonId: `${HUB_PICK}${ENJOY}`, text: 'Enjoy' }));
+    expect(await processHub(deps(), HUB, ms, msg('e2', { text: 'empresa' }))).toBe('asked');
+    expect(sent.at(-1)?.text).toContain('¿Para qué empresa trabajas hoy?');
+    // Por orden alfabético: «Enjoy the Club» es la 1 y la del re-tema la 2.
+    const names = await demoAssistantDb().tenantNames([ENJOY, ALT]);
+    const order = [ENJOY, ALT].sort((a, b) => names[a].localeCompare(names[b], 'es'));
+    expect(await processHub(deps(), HUB, ms, msg('e3', { text: '2' }))).toBe('picked');
+    expect((await demoAssistantDb().session(REP))?.tenantId).toBe(order[1]);
+    const s = await demoAssistantDb().session(REP);
+    expect(chosenToday(s, [ENJOY, ALT], new Date('2026-11-03T20:00:00Z'), 'Europe/Madrid')).toBe(true);
+    expect(chosenToday(s, [ENJOY, ALT], new Date('2026-11-04T08:00:00Z'), 'Europe/Madrid')).toBe(false);
+    expect(await processHub(deps(new Date('2026-11-04T08:00:00Z')), HUB, ms, msg('e4', { text: 'Club Sol: llamé a Marta' }))).toBe('asked');
+  });
+
+  test('en una sola empresa no pregunta; un número desconocido no pasa', async () => {
+    demoDb().users.find((u) => u.id === REP)!.memberships = [{ tenant_id: ENJOY, role: 'rep' }];
+    expect(await processHub(deps(), HUB, await members(), msg('s1', { text: 'Club Sol: hablé con Marta' }))).toBe('handled');
+    expect(sent[0].text).toContain('*Club Sol*');
+    expect(await processHub(deps(), HUB, [], msg('s2', { text: 'hola' }))).toBe('not_member');
+  });
+
+  test('el recordatorio sale del número del asistente, uno al día por persona, y deja elegida esa empresa', async () => {
+    demoDb().users.find((u) => u.id === REP)!.wa_reminders = true;
+    const morning = new Date('2026-11-03T09:30:00Z');
+    const hub = { phoneId: HUB, templates: { es: 'asistente_es', en: 'asistente_en', fr: 'asistente_fr' } };
+    const rdeps = (now: Date) => ({ db: demoReminderDb(), assistant: demoAssistantDb(), wa, now, settings: async () => null, actAs, hub });
+    const r = await runReminders(rdeps(morning));
+    expect(r.sent).toBe(1);
+    const [phoneId, , name] = templates[0] as [string, string, string];
+    expect([phoneId, name]).toEqual([HUB, 'asistente_es']);
+    expect((await runReminders(rdeps(new Date('2026-11-03T09:40:00Z')))).sent).toBe(0);
+    const s = await demoAssistantDb().session(REP);
+    expect(s?.tenantId).toBeTruthy();
+    expect(chosenToday(s, [ENJOY, ALT], morning, 'Europe/Madrid')).toBe(true);
+  });
+
+  test('el webhook entiende la elección de una lista', () => {
+    const { inbound } = parseWebhook({ entry: [{ changes: [{ value: { metadata: { phone_number_id: HUB }, messages: [{ from: '34699000111', id: 'l1', timestamp: '1', type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: `${HUB_PICK}${ALT}`, title: 'Otra' } } }] } }] }] });
+    expect(inbound[0]).toMatchObject({ kind: 'button', buttonId: `${HUB_PICK}${ALT}`, text: 'Otra' });
   });
 });

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { EMPTY, type AssistantDb } from './db';
+import { EMPTY, type AssistantDb, type HubSession } from './db';
 import type { State } from './flow';
 
 type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -29,6 +29,22 @@ export function supabaseAssistantDb(sb: SupabaseClient): AssistantDb {
     async userLocale(u) {
       const r = check(await sb.from('users').select('locale').eq('id', u).maybeSingle()) as Row | null;
       return r?.locale ?? null;
+    },
+    async userProfile(u) {
+      const r = check(await sb.from('users').select('display_name, locale, timezone').eq('id', u).maybeSingle()) as Row | null;
+      return { name: r?.display_name ?? null, locale: r?.locale ?? null, timezone: r?.timezone ?? 'Europe/Madrid' };
+    },
+    async tenantNames(ids) {
+      if (!ids.length) return {};
+      const rows = (check(await sb.from('tenant').select('id, name').in('id', ids)) ?? []) as Row[];
+      return Object.fromEntries(rows.map((r) => [r.id as string, r.name as string]));
+    },
+    async session(u) {
+      const r = check(await sb.from('wa_assistant_session').select('tenant_id, chosen_at, asked_at, pending').eq('user_id', u).maybeSingle()) as Row | null;
+      return r ? { tenantId: r.tenant_id ?? null, chosenAt: r.chosen_at ?? null, askedAt: r.asked_at ?? null, pending: (r.pending ?? []) as HubSession['pending'] } : null;
+    },
+    async saveSession(u, s) {
+      check(await sb.from('wa_assistant_session').upsert({ user_id: u, tenant_id: s.tenantId, chosen_at: s.chosenAt, asked_at: s.askedAt, pending: s.pending.slice(-10), updated_at: new Date().toISOString() }, { onConflict: 'user_id' }));
     },
   };
 }

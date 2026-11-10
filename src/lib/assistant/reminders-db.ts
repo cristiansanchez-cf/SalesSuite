@@ -24,6 +24,11 @@ export function supabaseReminderDb(sb: SupabaseClient): ReminderDb {
       const rows = (check(await sb.from('wa_reminder_log').select('user_id, tenant_id, day').in('day', days)) ?? []) as Row[];
       return new Set(rows.map((r) => `${r.user_id}|${r.tenant_id}|${r.day}`));
     },
+    async sentUsers(days) {
+      if (!days.length) return new Set();
+      const rows = (check(await sb.from('wa_reminder_log').select('user_id, day').in('day', days).gt('items', 0)) ?? []) as Row[];
+      return new Set(rows.map((r) => `${r.user_id}|${r.day}`));
+    },
     async mark(userId, tenantId, day, items) {
       check(await sb.from('wa_reminder_log').upsert({ user_id: userId, tenant_id: tenantId, day, items }, { onConflict: 'user_id,tenant_id,day', ignoreDuplicates: true }));
     },
@@ -40,6 +45,7 @@ export function demoReminderDb(): ReminderDb {
         .map((m): ReminderMember => ({ tenantId: m.tenant_id, userId: u.id, phone: u.phone!, name: u.display_name || null, locale: u.locale ?? null, timezone: u.timezone ?? 'Europe/Madrid' })));
     },
     async logged(days) { return new Set([...demoReminderLog().keys()].filter((k) => days.includes(k.split('|')[2]))); },
+    async sentUsers(days) { return new Set([...demoReminderLog()].filter(([k, n]) => n > 0 && days.includes(k.split('|')[2])).map(([k]) => { const [u, , day] = k.split('|'); return `${u}|${day}`; })); },
     async mark(userId, tenantId, day, items) { const k = `${userId}|${tenantId}|${day}`; if (!demoReminderLog().has(k)) demoReminderLog().set(k, items); },
   };
 }
