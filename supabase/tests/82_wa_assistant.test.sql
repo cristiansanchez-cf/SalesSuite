@@ -32,7 +32,7 @@ reset request.jwt.claim.sub;
 delete from public.wa_assistant_state;
 delete from public.membership where user_id::text like '82828282-%';
 
--- Migración 20261231: la empresa elegida en el número del asistente también es solo del servidor.
+-- Migración 20270102: la empresa elegida en el número del asistente también es solo del servidor.
 insert into auth.users (id, email) values ('82828282-0000-4000-8000-000000000003', 'hub82@enjoy.test');
 insert into public.wa_assistant_session (user_id, tenant_id, chosen_at) values ('82828282-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000e01', now());
 set role authenticated;

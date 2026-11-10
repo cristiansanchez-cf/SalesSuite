@@ -22,7 +22,7 @@ empresa).
   con `ASSISTANT_REMINDER_TEMPLATES=es=…,en=…,fr=…`), **uno al día por persona**: de la empresa con la que trabajó la
   última vez si tiene algo; si no, de la primera que tenga. Esa empresa queda elegida para que su «sí» vaya a ella.
 - **Desconocidos:** lo que llega a ese número de alguien que no es del equipo no se contesta ni va a leads.
-- Estado en `wa_assistant_session` (migración `20261231000000_wa_assistant_hub.sql`, solo el servidor).
+- Estado en `wa_assistant_session` (migración `20270102000000_wa_assistant_hub.sql`, solo el servidor).
 
 **Ponerlo en marcha:**
 1. Un número que no esté en ningún WhatsApp (una línea nueva, virtual o un fijo que reciba la llamada de verificación).
