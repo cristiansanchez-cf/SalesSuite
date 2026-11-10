@@ -5,7 +5,7 @@
  */
 import { createHash } from 'node:crypto';
 
-export type ContentKind = 'play' | 'segment' | 'persona' | 'facet' | 'module' | 'module_version' | 'segment_module' | 'tenant';
+export type ContentKind = 'play' | 'segment' | 'persona' | 'facet' | 'module' | 'module_version' | 'segment_module' | 'tenant' | 'proposal_template';
 
 /** Campos con texto de cada cosa (en la forma en que la ve la app). Lo demás (claves, iconos, enlaces…) no se traduce. */
 export const CONTENT_FIELDS: Record<ContentKind, string[]> = {
@@ -17,6 +17,7 @@ export const CONTENT_FIELDS: Record<ContentKind, string[]> = {
   module_version: ['props'],
   segment_module: ['fit'],
   tenant: ['tour'],
+  proposal_template: ['name', 'note'],
 };
 
 /** Claves cuyo valor nunca es texto para leer (identificadores, enlaces, medios, enums). */

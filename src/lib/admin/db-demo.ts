@@ -260,8 +260,8 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
     async segmentExists(t, id) { return db().segment.some((x) => x.tenant_id === t && x.id === id); },
     async listProposalTemplates(t, segmentId) {
       return (db().proposal_template ?? []).filter((x) => x.tenant_id === t && x.segment_id === segmentId)
-        .map((r) => ({ id: r.id, segmentId: r.segment_id, name: r.name, mode: r.mode, answers: [...r.answers], priceOptionId: r.price_option_id, createdBy: r.created_by, createdAt: r.created_at }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .map((r) => ({ id: r.id, segmentId: r.segment_id, name: r.name, mode: r.mode, answers: [...r.answers], priceOptionId: r.price_option_id, createdBy: r.created_by, createdAt: r.created_at, note: r.note ?? null, position: r.position ?? 0 }))
+        .sort((a, b) => (a.position || 1e9) - (b.position || 1e9) || a.name.localeCompare(b.name));
     },
     async insertProposalTemplate(t, r) {
       const list = (db().proposal_template ??= []);

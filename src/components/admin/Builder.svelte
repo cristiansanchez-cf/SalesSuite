@@ -818,11 +818,23 @@
         {#if recipe && editable}
           <div class="mb-4 grid gap-3 rounded-[var(--console-radius-control)] border-2 border-[color:var(--co-signal)] p-4" data-testid="preset">
             <div><p class="co-card-title">{t.preset.title}</p><p class="co-meta">{t.preset.lede}</p></div>
-            {#if s.templates?.length}
+            {#if s.templates?.some((x) => x.note)}
+              <div class="grid gap-1.5" data-testid="preset-ready">
+                <p class="text-sm font-semibold">{t.preset.ready} <span class="co-meta font-normal">· {t.preset.readyHint}</span></p>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  {#each s.templates.filter((x) => x.note) as tpl (tpl.id)}
+                    <button type="button" class="co-inset grid gap-0.5 text-left hover:!border-[color:var(--co-signal)]" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">
+                      <span class="font-semibold">{tpl.name}</span><span class="co-meta">{tpl.note}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            {#if s.templates?.some((x) => !x.note)}
               <div class="grid gap-1.5" data-testid="preset-saved">
                 <p class="text-sm font-semibold">{t.preset.saved} <span class="co-meta font-normal">· {t.preset.useSaved}</span></p>
                 <div class="flex flex-wrap gap-2">
-                  {#each s.templates as tpl (tpl.id)}
+                  {#each s.templates.filter((x) => !x.note) as tpl (tpl.id)}
                     <span class="inline-flex items-center gap-1">
                       <button type="button" class="co-chip" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">{tpl.name}</button>
                       {#if tpl.mine}<button type="button" class="text-xs text-muted" disabled={busy} onclick={() => run({ op: 'deleteTemplate', templateId: tpl.id })} aria-label={t.preset.remove(tpl.name)}>✕</button>{/if}

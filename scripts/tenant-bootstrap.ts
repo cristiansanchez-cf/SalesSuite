@@ -92,6 +92,14 @@ const tenantFile = z.object({
     notice: z.string().max(600).nullable().default(null),
     /** Propuesta del sector: bloques, modos y preguntas (docs/PROPOSAL_PRESETS.md). */
     proposal: z.unknown().nullable().default(null),
+    /**
+     * Combinaciones de serie (docs/PROPOSAL_PRESETS.md §Combinaciones de serie): un clic monta la propuesta para un
+     * caso típico («Fidelización», «Clientes internacionales»). `answers`: «elección:opción» o la clave de una pregunta.
+     */
+    templates: z.array(z.object({
+      name: z.string().trim().min(1).max(60), note: z.string().trim().max(240).optional(),
+      mode: z.enum(['full', 'visual']).default('full'), answers: z.array(z.string()).max(20).default([]),
+    }).strict()).max(12).default([]),
     modules: z.array(z.object({ module_key: z.string(), priority: z.number().int().min(1).max(3).default(2), fit: z.string().nullable().default(null) })).default([]),
     personas: z.array(z.object({
       key: z.string(), name: z.string(), role: z.string(), goals: z.string().nullable().default(null), pains: z.string().nullable().default(null),
@@ -302,6 +310,20 @@ function validate(t: TenantFile, assetKeys: string[]) {
         if (!rb.success) errors.push(...rb.error.issues.map((i) => `market.${sg.key}.proposal.blocks.${id}.props.${i.path.join('.')}: ${i.message}`));
       }
     }
+    if (sg.templates.length) {
+      const pr = proposalSchema.safeParse(sg.proposal);
+      if (!pr.success) errors.push(`market.${sg.key}.templates: el sector no tiene receta (proposal) válida`);
+      else {
+        const known = new Set([...pr.data.questions.map((q) => q.key), ...pr.data.choices.flatMap((c) => c.options.map((o) => `${c.key}:${o.key}`))]);
+        const names = new Set<string>();
+        for (const tp of sg.templates) {
+          if (names.has(tp.name.toLowerCase())) errors.push(`market.${sg.key}.templates: «${tp.name}» repetida`);
+          names.add(tp.name.toLowerCase());
+          for (const a of tp.answers) if (!known.has(a)) errors.push(`market.${sg.key}.templates.${tp.name}: la receta no tiene «${a}»`);
+          if (tp.mode === 'visual' && !pr.data.modes.visual) errors.push(`market.${sg.key}.templates.${tp.name}: la receta no tiene modo apoyo visual`);
+        }
+      }
+    }
     for (const p of sg.personas) {
       if (personaKeys.has(p.key)) errors.push(`market: actor duplicado ${p.key}`);
       personaKeys.add(p.key);
@@ -481,6 +503,18 @@ async function main() {
     const segId = mustOne(await sb.from('segment').upsert(segRow, { onConflict: 'tenant_id,key' }).select('id').single(), `sector ${sg.key}`).id as string;
     must(await sb.from('segment_module').delete().eq('segment_id', segId), `limpiar encajes ${sg.key}`);
     if (sg.modules.length) must(await sb.from('segment_module').insert(sg.modules.map((m) => ({ tenant_id: tenantId, segment_id: segId, module_id: moduleIds.get(m.module_key)!, priority: m.priority, fit: m.fit }))), `encajes ${sg.key}`);
+    // Combinaciones de serie: sin autor (solo un admin las borra). Las del equipo con el mismo nombre no se tocan.
+    const have = (must(await sb.from('proposal_template').select('id, name, created_by').eq('segment_id', segId), `combinaciones ${sg.key}`) ?? []) as Array<{ id: string; name: string; created_by: string | null }>;
+    for (const [j, tp] of sg.templates.entries()) {
+      const row = { note: tp.note ?? null, mode: tp.mode, answers: tp.answers, position: j + 1 };
+      const cur = have.find((x) => x.name.toLowerCase() === tp.name.toLowerCase());
+      if (cur?.created_by) { log(`  ${sg.key}: «${tp.name}» ya la guardó alguien del equipo, se deja la suya`); continue; }
+      if (cur) must(await sb.from('proposal_template').update(row).eq('id', cur.id), `combinación ${tp.name}`);
+      else must(await sb.from('proposal_template').insert({ tenant_id: tenantId, segment_id: segId, name: tp.name, created_by: null, ...row }), `combinación ${tp.name}`);
+    }
+    const gone = have.filter((x) => !x.created_by && !sg.templates.some((tp) => tp.name.toLowerCase() === x.name.toLowerCase()));
+    if (gone.length) must(await sb.from('proposal_template').delete().in('id', gone.map((x) => x.id)), `quitar combinaciones ${sg.key}`);
+    if (sg.templates.length || gone.length) log(`  ${sg.key}: ${sg.templates.length} combinaciones de serie${gone.length ? ` (${gone.length} quitadas)` : ''}`);
     for (const [j, p] of sg.personas.entries()) {
       const pRow = {
         tenant_id: tenantId, segment_id: segId, key: p.key, name: p.name, role: p.role, goals: p.goals, pains: p.pains, kpis: p.kpis,

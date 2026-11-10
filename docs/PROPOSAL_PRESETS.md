@@ -16,6 +16,28 @@ La propuesta no es una demo del producto: cuenta lo que gana **quien paga**, en 
 
 Lo que eligió se guarda en `dossier.preset` (privado: la propuesta pública no lo devuelve).
 
+## Combinaciones de serie
+
+Además de las que guarda el equipo, cada espacio puede traer combinaciones **ya hechas** por sector en `tenant.json`
+(`market[].templates`): un nombre, una línea de **cuándo usarla**, el modo y las respuestas («elección:opción» o la
+clave de una pregunta). Salen arriba del panel, en «Empieza por una», como tarjetas; un clic monta la propuesta y
+luego se ajusta como siempre. Las del equipo siguen debajo, en «Combinaciones guardadas».
+
+```json
+"templates": [
+  { "name": "Clientes internacionales", "note": "Recibe o quiere recibir buceadores de otros países…",
+    "mode": "full", "answers": ["mercado:espana", "angulo:abrir-mercado", "fotos"] }
+]
+```
+
+- El alta las valida contra la receta (cada respuesta tiene que existir) y las sincroniza: las crea sin autor (solo un
+  admin las borra), actualiza las que ya están y quita las que ya no están en el JSON. Una del equipo con el mismo
+  nombre no se toca.
+- Se traducen como el resto del contenido (`content_i18n`, tipo `proposal_template`: nombre y nota) con la acción
+  «traducir»; las del equipo no se traducen.
+- Oquea: `scripts/apply-oquea-15.py` (centros de buceo: fidelización, clientes internacionales, cobro online, viajes
+  de club, centro con causa, Corea, Latinoamérica y primera reunión en persona; ONG: para enviarla o para la reunión).
+
 ## La receta (`segment.proposal`, desde `tenant.json` → `market[].proposal`)
 ```json
 {
