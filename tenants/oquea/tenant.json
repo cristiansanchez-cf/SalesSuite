@@ -2078,20 +2078,138 @@
             "title": "El acuerdo",
             "body": "La ONG nos da acceso a sus centros, que usan Oquea en sus eventos. A cambio, todo gratis: la lista de quién ha participado en todos los centros, ser de las primeras en el remarketing y salir en el mapa para llegar a más gente."
           }
+        ],
+        "choices": [
+          {
+            "key": "angulo",
+            "label": "Ángulo: lo que le mueve (uno solo)",
+            "hint": "A las ONG las mueve conseguir voluntarios y que se conozca su trabajo. Elige lo que más le importa a esta.",
+            "default": "voluntarios",
+            "options": [
+              {
+                "key": "voluntarios",
+                "label": "Conseguir voluntarios",
+                "hint": "Quiere más gente en sus eventos (limpiezas, censos…) y volver a contar con quien ya vino.",
+                "rules": [
+                  {
+                    "patch": "ong-portada",
+                    "set": {
+                      "title": "{company}: que la gente se apunte a tus eventos",
+                      "highlight": "se apunte"
+                    }
+                  },
+                  {
+                    "patch": "ong-eventos",
+                    "set": {
+                      "lede": "Creas el evento en Oquea, como una limpieza, y lo abren tus centros de buceo a la vez. La gente se apunta desde el mapa en el centro más cercano, y cada centro ve quién va a venir."
+                    }
+                  },
+                  {
+                    "patch": "ong-participantes",
+                    "set": {
+                      "title": "Quien vino, para el próximo evento",
+                      "highlight": "para el próximo",
+                      "lede": "Tienes a todas las personas que han participado en tus eventos, en todos los centros: con quién contar la próxima vez."
+                    }
+                  },
+                  {
+                    "patch": "ong-participantes-v",
+                    "set": {
+                      "title": "Quien vino, para el próximo evento",
+                      "highlight": "para el próximo"
+                    }
+                  },
+                  {
+                    "remove": "ong-mapa"
+                  },
+                  {
+                    "add": "ong-mapa",
+                    "after": "ong-eventos"
+                  }
+                ]
+              },
+              {
+                "key": "visibilidad",
+                "label": "Ganar visibilidad",
+                "hint": "Quiere que se conozca su trabajo entre los buceadores y los centros.",
+                "rules": [
+                  {
+                    "patch": "ong-portada",
+                    "set": {
+                      "title": "{company}: tu ONG, a la vista de los buceadores",
+                      "highlight": "a la vista"
+                    }
+                  },
+                  {
+                    "patch": "ong-mapa",
+                    "set": {
+                      "title": "Tu ONG, en el mapa de los buceadores",
+                      "highlight": "en el mapa",
+                      "lede": "Tu ONG y tus eventos aparecen en el mapa de Oquea, junto a los centros y los puntos de inmersión: donde miran los buceadores cuando buscan dónde bucear."
+                    }
+                  },
+                  {
+                    "patch": "ong-mapa-v",
+                    "set": {
+                      "title": "Tu ONG, en el mapa de los buceadores",
+                      "highlight": "en el mapa"
+                    }
+                  },
+                  {
+                    "remove": "ong-mapa"
+                  },
+                  {
+                    "add": "ong-mapa",
+                    "after": "ong-portada"
+                  },
+                  {
+                    "remove": "ong-insignia"
+                  },
+                  {
+                    "add": "ong-insignia",
+                    "after": "ong-eventos"
+                  },
+                  {
+                    "replace": "ong-participantes-v",
+                    "with": "ong-mapa-v"
+                  },
+                  {
+                    "remove": "ong-mapa-v"
+                  },
+                  {
+                    "add": "ong-mapa-v",
+                    "after": "ong-portada"
+                  }
+                ]
+              }
+            ]
+          }
         ]
       },
       "templates": [
         {
-          "name": "Para enviarla (va sola)",
-          "note": "Se la mandas a la ONG y convence sin ti delante: eventos, participantes, insignia y mapa, con las condiciones.",
+          "name": "Conseguir voluntarios",
           "mode": "full",
-          "answers": []
+          "answers": [
+            "angulo:voluntarios"
+          ],
+          "note": "Quiere más gente en sus eventos y volver a contar con quien ya vino: el evento en todos sus centros, el mapa para apuntarse y su lista."
+        },
+        {
+          "name": "Ganar visibilidad",
+          "mode": "full",
+          "answers": [
+            "angulo:visibilidad"
+          ],
+          "note": "Quiere que se conozca su trabajo: su ONG y sus eventos en el mapa de los buceadores, y la insignia en el perfil de quien participa."
         },
         {
           "name": "Primera reunión en persona",
-          "note": "Para enseñarla tú en la reunión con la ONG: menos texto, más pantallas.",
           "mode": "visual",
-          "answers": []
+          "answers": [
+            "angulo:voluntarios"
+          ],
+          "note": "Para enseñarla tú en la reunión con la ONG: menos texto, más pantallas. Cambia el ángulo si lo que busca es visibilidad."
         }
       ]
     }
