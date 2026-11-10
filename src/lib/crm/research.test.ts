@@ -203,3 +203,12 @@ describe('investigar sin cualificación en el espacio (§45)', () => {
     expect(JSON.stringify(body.tools)).not.toContain('"qualification"');
   });
 });
+
+describe('idioma de quien investiga', () => {
+  test('el resumen, en el idioma del comercial (coreano); en español, el sistema de siempre', () => {
+    expect(researchSystem(null, 'ko')).toContain('Escribe en coreano');
+    expect(researchSystem(null, 'ko')).not.toContain('Escribe en español');
+    expect(researchSystem(null, 'es')).toBe(SYSTEM_GENERAL);
+    expect(researchSystem(undefined, null)).toBe(SYSTEM);
+  });
+});
