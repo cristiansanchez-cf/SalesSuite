@@ -46,6 +46,8 @@ async function collect(sb: SupabaseClient, tenantId: string, tour: unknown, loca
     ? [...new Set((must(await sb.from('dossier_item').select('module_version_id').in('dossier_id', dossiers.map((d) => d.id)), 'bloques') ?? []).map((i) => i.module_version_id as string))]
     : [];
   for (const v of versions) if (pinnedIds.includes(v.id) && latest.get(v.module_id)?.id !== v.id) latest.set(`${v.module_id}:${v.id}`, v);
+  // Combinaciones de serie (las del alta, sin autor): las del equipo las escribe cada uno en su idioma.
+  const templates = (await sb.from('proposal_template').select('id, name, note').eq('tenant_id', tenantId).is('created_by', null)).data ?? [];
   const item = (kind: ContentItem['kind'], ref: string, obj: Record<string, unknown>): ContentItem => ({ kind, ref, pairs: extractTexts(kind, obj) });
   return [
     ...plays.filter((p) => p.status !== 'archived').map((p) => item('play', p.id, p as unknown as Record<string, unknown>)),
@@ -55,6 +57,7 @@ async function collect(sb: SupabaseClient, tenantId: string, tour: unknown, loca
     ...facets.map((f) => item('facet', f.id, f as unknown as Record<string, unknown>)),
     ...modules.map((m) => item('module', m.id, m)),
     ...[...latest.values()].map((v) => item('module_version', v.id, { props: v.default_props })),
+    ...templates.map((x) => item('proposal_template', x.id, x)),
     item('tenant', tenantId, { tour }),
   ];
 }

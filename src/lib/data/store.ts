@@ -226,7 +226,7 @@ export interface DemoDb {
   coupon: CouponRow[];
   price_option: PriceOptionRow[];
   payment_request?: PaymentRequestRow[];
-  proposal_template?: Array<{ id: string; tenant_id: string; segment_id: string; name: string; mode: 'full' | 'visual'; answers: string[]; price_option_id: string | null; created_by: string | null; created_at: string }>;
+  proposal_template?: Array<{ id: string; tenant_id: string; segment_id: string; name: string; mode: 'full' | 'visual'; answers: string[]; price_option_id: string | null; created_by: string | null; created_at: string; note?: string | null; position?: number }>;
   member_conditions: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; agreed_at: string | null }>;
   dossier_view: DossierViewRow[];
   team_ip: TeamIpRow[];
@@ -342,6 +342,12 @@ export function freshDemoDb(): DemoDb {
   return {
     ...f,
     users: structuredClone(DEMO_USERS),
+    // Combinación de serie (la trae el alta desde tenant.json, docs/PROPOSAL_PRESETS.md §Combinaciones de serie).
+    proposal_template: [{
+      id: '00000000-0000-4000-8000-0000007e0001', tenant_id: ENJOY, segment_id: '00000000-0000-4000-8000-0000005e0002',
+      name: 'Local con DJ residente', note: 'Tiene DJ fijo: la propuesta suma su parte. Un clic la monta y luego la ajustas.',
+      mode: 'full', answers: ['dj'], price_option_id: null, created_by: null, created_at: ago(30), position: 1,
+    }],
     // Historia de ejemplo: una revisión reciente (aparece en "Novedades") y aportes del equipo.
     play_revision: expPitch ? [{
       id: '00000000-0000-4000-8000-0000009b0001', tenant_id: ENJOY, play_id: expPitch.id, version: 1,

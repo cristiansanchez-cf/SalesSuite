@@ -188,6 +188,8 @@ export interface BuilderItem extends ItemRecord {
 export interface ProposalTemplate {
   id: string; segmentId: string; name: string; mode: 'full' | 'visual'; answers: string[]; priceOptionId: string | null;
   createdBy: string | null; createdAt: string | null;
+  /** De serie (tenant.json): cuándo usarla, en una línea. Las guardadas por el equipo no la llevan. */
+  note?: string | null; position?: number;
 }
 
 export interface BuilderState {

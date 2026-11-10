@@ -1754,7 +1754,89 @@
             "body": "Todo lo que has visto, sin coste. El día que Oquea le lleve un cliente nuevo, se queda un 10 % de lo generado (en España, por cerrar). A cambio pides tres cosas en voz alta: la firma, el QR en el barco y que quien da el briefing lo diga."
           }
         ]
-      }
+      },
+      "templates": [
+        {
+          "name": "Fidelización: que vuelvan",
+          "note": "No sabe quién bucea con él ni vuelve a escribirles. Su lista de buceadores, el logbook y el álbum. Hipótesis: pruébala y cuenta cómo va.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:que-vuelvan",
+            "no-guarda-datos",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Clientes internacionales",
+          "note": "Recibe o quiere recibir buceadores de otros países. La red internacional de centros y su perfil en el mapa. Validado en la feria de Brasil.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:abrir-mercado",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Cobro online",
+          "note": "Cobra solo en persona y le interesa cobrar online. Lo que viene primero para los fundadores: reserva y cobro. Lo han pedido 3 de los firmantes.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:cobro-online"
+          ]
+        },
+        {
+          "name": "Viajes de club",
+          "note": "Organiza viajes de buceo con sus clientes. La red como sitio donde encontrar adónde ir. Hipótesis: aún no se ha planteado a ningún centro.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:viaje-de-club",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Centro con causa (ONG y limpiezas)",
+          "note": "Colabora con una ONG o hace limpiezas. Sus eventos en Oquea, además de su lista de buceadores.",
+          "mode": "full",
+          "answers": [
+            "mercado:espana",
+            "angulo:que-vuelvan",
+            "ong",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Corea: turismo internacional",
+          "note": "Centro en Corea que quiere recibir buceadores de fuera: centro fundador de Oquea en Corea y la red internacional.",
+          "mode": "full",
+          "answers": [
+            "mercado:corea",
+            "angulo:abrir-mercado",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Latinoamérica: abrir mercado",
+          "note": "Centro en Latinoamérica que recibe o quiere recibir buceadores de otros países.",
+          "mode": "full",
+          "answers": [
+            "mercado:latam",
+            "angulo:abrir-mercado",
+            "fotos"
+          ]
+        },
+        {
+          "name": "Primera reunión en persona",
+          "note": "Para enseñarla tú delante del centro: menos diapositivas y más pantallas. El ángulo, el de que vuelvan; cámbialo si sabes qué le mueve.",
+          "mode": "visual",
+          "answers": [
+            "mercado:espana",
+            "angulo:que-vuelvan"
+          ]
+        }
+      ]
     },
     {
       "key": "ong",
@@ -1997,7 +2079,21 @@
             "body": "La ONG nos da acceso a sus centros, que usan Oquea en sus eventos. A cambio, todo gratis: la lista de quién ha participado en todos los centros, ser de las primeras en el remarketing y salir en el mapa para llegar a más gente."
           }
         ]
-      }
+      },
+      "templates": [
+        {
+          "name": "Para enviarla (va sola)",
+          "note": "Se la mandas a la ONG y convence sin ti delante: eventos, participantes, insignia y mapa, con las condiciones.",
+          "mode": "full",
+          "answers": []
+        },
+        {
+          "name": "Primera reunión en persona",
+          "note": "Para enseñarla tú en la reunión con la ONG: menos texto, más pantallas.",
+          "mode": "visual",
+          "answers": []
+        }
+      ]
     }
   ],
   "price_options": [],
