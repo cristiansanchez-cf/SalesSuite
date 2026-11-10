@@ -426,24 +426,7 @@
             "variant": "ghost"
           }
         ],
-        "stats": [
-          {
-            "value": "+500",
-            "label": "eventos"
-          },
-          {
-            "value": "4,9★",
-            "label": "valoración media"
-          },
-          {
-            "value": "92%",
-            "label": "invitados participan"
-          },
-          {
-            "value": "24h",
-            "label": "puesta en marcha"
-          }
-        ]
+        "stats": []
       }
     },
     {
