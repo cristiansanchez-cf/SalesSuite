@@ -1115,6 +1115,12 @@ Enjoy, fijas en el código (`priority.ts`, `profiles.ts`). Ahora son un **paquet
   sin paquete, `venue` es una ficha de cliente neutra. «Trabaja con» en un cliente solo sale si el espacio tiene tipos
   de organizador o profesional.
 
+**Equipos de varios países** (Oquea, nov-2026): «Investigar» escribe el resumen en el idioma de quien lo lanza
+(`ResearchInput.lang`; con un comercial coreano, en coreano), y la región de las búsquedas (Google Maps y la búsqueda
+web) es la de quien busca si su idioma la dice sin dudas (`readerPlacesLocale`: coreano → Corea). El idioma de Google
+Maps sigue siendo el del espacio, para que los nombres de ciudades y zonas que comparte el equipo no se mezclen.
+«Apuntar» ya guardaba lo contado con las palabras de quien lo cuenta.
+
 Siguiente paso (#71): más paquetes (buceo, casting…) o uno editable por el admin, con la misma forma.
 
 Pruebas: SQL 73, `map.test.ts`, `notes.test.ts`, `research.test.ts`, `cleanup.test.ts` (caso sin paquete) y

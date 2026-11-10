@@ -36,7 +36,8 @@ luego se ajusta como siempre. Las del equipo siguen debajo, en «Combinaciones g
 - Se traducen como el resto del contenido (`content_i18n`, tipo `proposal_template`: nombre y nota) con la acción
   «traducir»; las del equipo no se traducen.
 - Oquea: `scripts/apply-oquea-15.py` (centros de buceo: fidelización, clientes internacionales, cobro online, viajes
-  de club, centro con causa, Corea, Latinoamérica y primera reunión en persona; ONG: para enviarla o para la reunión).
+  de club, centro con causa, Corea, Latinoamérica y primera reunión en persona) y `scripts/apply-oquea-16.py` (ONG: ángulo
+  «Conseguir voluntarios» o «Ganar visibilidad», y sus combinaciones).
 
 ## La receta (`segment.proposal`, desde `tenant.json` → `market[].proposal`)
 ```json
@@ -80,6 +81,9 @@ Portada, «lo que te pasa hoy» y caso real son **contexto**: no salen como mód
 - **Fotos de ambiente** (`scripts/apply-fotos-ambiente.py`, después de todas): discoteca en locales y promotoras, festival de noche y de día en festivales, piscina en hoteles. Van como fotos del público en la pantalla y el móvil; no añaden diapositivas.
 - **Oquea · Centros de buceo:** receta de la guía de inicio (`scripts/apply-oquea-03.py`): completa (9) y apoyo visual
   (5); 4 preguntas (salidas diarias, equipo, montarlo, varios centros). Sin precio hasta su documento 04.
+- **Oquea · ONGs:** ángulo de una sola opción (`scripts/apply-oquea-16.py`): conseguir voluntarios (el mapa justo
+  después del evento y la lista como «con quién contar la próxima vez») o ganar visibilidad (el mapa y la insignia
+  primero). Tope de 7 (6 en apoyo visual).
 - Bodas: sin receta todavía (módulos recomendados como siempre).
 
 ## Desde la ficha

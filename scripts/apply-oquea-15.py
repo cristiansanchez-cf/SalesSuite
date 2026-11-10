@@ -3,7 +3,7 @@
 Combinaciones de serie para los comerciales de Oquea (Cristian, 10-nov-2026: «configuraciones ya prehechas como en Enjoy:
 ¿interesada en fidelización? tal; ¿en clientes internacionales? tal»). Cada una monta la propuesta con un clic: el ángulo
 de la receta, las preguntas que suelen ir con él y el modo. La línea de debajo dice cuándo usarla, con lo que ya dice
-cada ángulo (validado o hipótesis). Idempotente.
+cada ángulo (validado o hipótesis). Las de ONG, con su ángulo, en apply-oquea-16. Idempotente.
 
     python3 scripts/apply-oquea-15.py
 """
@@ -40,14 +40,6 @@ TEMPLATES = {
         {'name': 'Primera reunión en persona', 'mode': 'visual',
          'note': 'Para enseñarla tú delante del centro: menos diapositivas y más pantallas. El ángulo, el de que vuelvan; cámbialo si sabes qué le mueve.',
          'answers': [ES, 'angulo:que-vuelvan']},
-    ],
-    'ong': [
-        {'name': 'Para enviarla (va sola)',
-         'note': 'Se la mandas a la ONG y convence sin ti delante: eventos, participantes, insignia y mapa, con las condiciones.',
-         'answers': []},
-        {'name': 'Primera reunión en persona', 'mode': 'visual',
-         'note': 'Para enseñarla tú en la reunión con la ONG: menos texto, más pantallas.',
-         'answers': []},
     ],
 }
 
