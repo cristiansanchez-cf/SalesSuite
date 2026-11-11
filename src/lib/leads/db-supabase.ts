@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { DuplicateKey, type LeadsDb } from './db';
+import { CONSOLE_TEST_PREFIX, DuplicateKey, type LeadsDb } from './db';
 import { suppressionKey } from './privacy';
 import { DEFAULT_RETENTION, type Lead, type LeadEvent, type LeadMessage, type LeadSettings, type Submission } from './types';
 
@@ -184,8 +184,10 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
       if (opts.q?.trim()) { const s = opts.q.trim().replace(/[%,()]/g, ' '); q = q.or(`name.ilike.%${s}%,email.ilike.%${s}%`); }
       return (check(await q) as Row[]).map(leadOf);
     },
-    async lastSubmission(tenantId) {
-      const r = check(await sb.from('lead_submission').select('received_at, is_test').eq('tenant_id', tenantId).order('received_at', { ascending: false }).limit(1).maybeSingle()) as Row | null;
+    async lastSubmission(tenantId, opts) {
+      let q = sb.from('lead_submission').select('received_at, is_test').eq('tenant_id', tenantId);
+      if (opts?.external) q = q.not('idempotency_key', 'like', `${CONSOLE_TEST_PREFIX}%`);
+      const r = check(await q.order('received_at', { ascending: false }).limit(1).maybeSingle()) as Row | null;
       return r ? { at: r.received_at, test: r.is_test } : null;
     },
     async counts(tenantId) {

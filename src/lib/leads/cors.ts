@@ -31,3 +31,22 @@ export function corsHeaders(origin: string | null, ok: boolean): Record<string, 
   }
   return h;
 }
+
+/**
+ * Lo que escribe la persona («enjoytheclub.es», «https://www.web.com/contacto») → el origen que se guarda
+ * («https://enjoytheclub.es»). Sin protocolo, https. Admite un * dentro de una parte (previews: «sitio--*.web.app»),
+ * nunca una parte entera («*.com»). null si no es una web.
+ */
+export function normalizeOrigin(input: string): string | null {
+  let v = input.trim().toLowerCase();
+  if (!v) return null;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//.test(v)) v = `https://${v}`;
+  const m = /^(https?):\/\/([a-z0-9*.-]+)(:\d{1,5})?([/?#].*)?$/.exec(v);
+  if (!m) return null;
+  const host = m[2];
+  const labels = host.split('.');
+  if (host !== 'localhost' && labels.length < 2) return null;
+  if (labels.some((l) => !l || l === '*' || l.startsWith('-') || l.endsWith('-'))) return null;
+  if (labels[labels.length - 1].includes('*')) return null;
+  return `${m[1]}://${host}${m[3] ?? ''}`;
+}

@@ -8,6 +8,7 @@ import type { AdminContext } from '../admin/auth';
 import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import { DuplicateKey, type LeadsDb } from './db';
+import { normalizeOrigin } from './cors';
 import { businessMinutes } from './schedule';
 import { RETENTION_LIMITS, sourceKey } from './privacy';
 import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type LeadTemplates, type Stage, type View } from './types';
@@ -19,6 +20,8 @@ export const LEAD_ERRORS = {
   brandTaken: 'Esa marca ya la usa otro espacio',
   waVars: 'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}',
   svgLogo: 'El logo tiene que ser PNG o JPG: Gmail no muestra SVG',
+  badOrigin: (v: string) => `«${v}» no es una dirección web (ejemplo: tuweb.com)`,
+  tooManyOrigins: 'Como mucho 20 webs',
 } as const;
 
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
@@ -199,6 +202,28 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     }
   }
 
+  /**
+   * Las webs desde las que se aceptan leads (Leads entrantes → Conecta tu web). Cada una se normaliza al origen; si el
+   * espacio aún no tiene ajustes, se crean con la marca `brand` (el slug del espacio) y lo demás por defecto.
+   */
+  async function saveOrigins(input: string[], brand: string) {
+    requireAdmin();
+    const out: string[] = [];
+    for (const raw of input) {
+      const o = normalizeOrigin(raw);
+      if (!o) throw new AdminError(422, LEAD_ERRORS.badOrigin(raw.trim().slice(0, 80)));
+      if (!out.includes(o)) out.push(o);
+    }
+    if (out.length > 20) throw new AdminError(422, LEAD_ERRORS.tooManyOrigins);
+    const prev = await db.settings(t);
+    if (prev) { await db.saveSettings({ ...prev, allowedOrigins: out }); return out; }
+    await saveSettings({
+      enabled: false, brand, allowedOrigins: out, fromEmail: null, fromName: null, replyTo: null, signerName: null, notifyEmails: [],
+      bookingUrl: null, videoUrl: null, whatsappPhoneId: null, whatsappEnabled: false, whatsappTemplates: {}, sendFromHour: 8, sendToHour: 22, holidays: [],
+    });
+    return out;
+  }
+
   /** Los textos de la empresa (vacío o igual que el de por defecto = el de por defecto). */
   async function saveTexts(input: unknown, aiContext?: string | null) {
     requireAdmin();
@@ -217,7 +242,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     if (prev.enabled === on) return;
     await db.saveSettings({ ...prev, enabled: on });
   }
-  async function lastSubmission() { requireManager(); return db.lastSubmission(t); }
+  async function lastSubmission(opts?: { external?: boolean }) { requireManager(); return db.lastSubmission(t, opts); }
 
   async function saveSignature(input: unknown) {
     requireAdmin();
@@ -251,7 +276,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, saveRetention, setEnabled, lastSubmission, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, saveRetention, setEnabled, lastSubmission, saveOrigins, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

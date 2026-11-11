@@ -8,8 +8,16 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import SetupCard from '~/components/ui/SetupCard.astro';
+import ConnectDialog from '~/components/admin/leads/ConnectDialog.astro';
+import { randomUUID } from 'node:crypto';
+import { requestOrigin } from '~/lib/http';
+import { CONSOLE_TEST_PREFIX } from '~/lib/leads/db';
+import { intake } from '~/lib/leads/intake';
+import { leadsRuntime } from '~/lib/leads/server';
+import { connectPrompt, connectSnippet } from '~/lib/leads/connect-guide';
 import { can } from '~/lib/admin/permissions';
 import { flash, formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
 import { env } from '~/lib/env';
 import { appMode } from '~/lib/mode';
 import { i18n } from '~/lib/i18n';
@@ -22,7 +30,7 @@ import { leadSetupSteps, readiness, requiredProgress, type StepKey } from '~/lib
 import type { LeadSettings } from '~/lib/leads/types';
 import type { IconName } from '~/lib/ui/icons';
 
-const { admin } = Astro.locals;
+const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
 const { m: L, locale } = i18n(Astro, leadsMessages);
@@ -33,9 +41,42 @@ const demo = appMode() === 'demo';
 const platformMail = !!(env('RESEND_API_KEY') && env('RESEND_FROM'));
 
 let error: string | null = null;
+let errorDetails: string[] = [];
+let errorPart = 2;
+const slug = tenant?.slug ?? 'empresa';
+let action = '';
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
-  if (f.get('action') === 'toggle') {
+  action = String(f.get('action') ?? '');
+  if (action === 'add-origin' || action === 'remove-origin') {
+    // Conecta tu web → Tus webs: se guarda al momento y se vuelve a la misma parte del paso.
+    const cur = (await svc.settings())?.allowedOrigins ?? [];
+    const o = String(f.get('origin') ?? '');
+    const next = action === 'add-origin' ? [...cur, o] : cur.filter((x) => x !== o);
+    const r = await formAction(async () => { await svc.saveOrigins(next, slug); });
+    if (!r.error) return Astro.redirect('/admin/leads/configurar?abrir=connect&p=2&ok=webs', 303);
+    error = r.error; errorDetails = r.details;
+  } else if (action === 'test-lead') {
+    // Un lead de prueba como los de la web, sin pasar por el navegador: se guarda en Pruebas y no se envía nada.
+    const r = await formAction(async () => {
+      const rt = await leadsRuntime();
+      if ('error' in rt || !tenant) throw new AdminError(503, T.connect.test.failed);
+      let st = await rt.db.settings(tenant.id);
+      if (!st) { await svc.saveOrigins([], slug); st = await rt.db.settings(tenant.id); }
+      if (!st) throw new AdminError(503, T.connect.test.failed);
+      const res = await intake({
+        db: rt.db, tenant: { id: tenant.id, name: tenant.name }, settings: st, now: new Date(), origin: null, ip: null, secret: rt.secret,
+        baseUrl: requestOrigin(Astro.request, Astro.url), whatsappReady: false, turnstile: null,
+      }, {
+        schema: 'enjoy.lead.v2', idempotency_key: `${CONSOLE_TEST_PREFIX}${randomUUID()}`, brand: st.brand, type: 'general', test: true,
+        contact: { name: 'Prueba de conexión', email: 'prueba-conexion@example.com' }, fields: { event_type: 'other' },
+        consent: { marketing: false }, context: { locale, form_version: 'console-test', time_to_submit_ms: 10_000 },
+      });
+      if (res.status >= 300) throw new AdminError(422, T.connect.test.failed, [JSON.stringify(res.body).slice(0, 200)]);
+    });
+    if (!r.error) return Astro.redirect('/admin/leads/configurar?abrir=connect&p=4&ok=test', 303);
+    error = r.error; errorDetails = r.details; errorPart = 4;
+  } else if (action === 'toggle') {
     const on = f.get('on') === '1';
     const cur = await svc.settings();
     const doms = cur?.resendKeyHint ? await ownDomains(admin) : null;
@@ -54,16 +95,16 @@ const s: LeadSettings = (await svc.settings()) ?? {
   sendFromHour: 8, sendToHour: 22, holidays: [],
 };
 const domains = s.resendKeyHint ? await ownDomains(admin).catch(() => null) : null;
-const last = await svc.lastSubmission().catch(() => null);
+const last = await svc.lastSubmission({ external: true }).catch(() => null);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
-const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused });
+const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 
 // De momento, cada tarjeta abre su sección de los ajustes.
 const META: Record<StepKey, { icon: IconName; href: string }> = {
-  connect: { icon: 'globe', href: '/admin/leads/ajustes#connection' },
+  connect: { icon: 'globe', href: '/admin/leads/configurar?abrir=connect' },
   email: { icon: 'mail', href: '/admin/leads/ajustes#email' },
   messages: { icon: 'message-square-text', href: '/admin/leads/ajustes#texts' },
   whatsapp: { icon: 'whatsapp', href: '/admin/leads/ajustes#whatsapp' },
@@ -80,6 +121,14 @@ const summary = (k: StepKey): string[] => {
     case 'privacy': return [T.done.privacy(retentionOf(s).leadMonths)];
   }
 };
+// El paso guiado de conectar: con qué parte se abre (sin empezar → qué ganas; a medias → pásaselo; hecho → tus webs).
+const connect = steps.find((x) => x.key === 'connect')!;
+const openParam = Astro.url.searchParams.get('abrir');
+const pParam = Number(Astro.url.searchParams.get('p'));
+const connectPart = pParam >= 1 && pParam <= 4 ? pParam : connect.status === 'todo' ? 1 : connect.status === 'partial' ? 3 : 2;
+const guideLocale = locale === 'es' ? 'es' : 'en';
+const endpoint = `${requestOrigin(Astro.request, Astro.url)}/api/v1/leads`;
+const brand = s.brand || slug;
 const main = steps.filter((x) => x.key !== 'extras' && x.key !== 'privacy');
 const extras = steps.filter((x) => x.key === 'extras' || x.key === 'privacy');
 const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -89,7 +138,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     <div class="grid gap-1 sm:justify-items-end" data-testid="leads-status">
       <div class="flex items-center gap-2">
         <span class={`co-badge ${s.enabled ? 'co-badge--signal' : 'co-badge--attention'}`} data-testid="leads-status-badge">{s.enabled ? S.live : S.paused}</span>
-        <form method="post">
+        <form method="post" action="/admin/leads/configurar">
           <input type="hidden" name="action" value="toggle" />
           <input type="hidden" name="on" value={s.enabled ? '0' : '1'} />
           <button class={`co-btn ${s.enabled ? 'co-btn--ghost' : 'co-btn--primary'}`} disabled={!s.enabled && !ready} data-testid="leads-toggle">{s.enabled ? S.pause : S.activate}</button>
@@ -98,8 +147,8 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
       <p class="co-meta max-w-[18rem] sm:text-right">{s.enabled ? S.liveHelp : ready ? S.pausedHelp : S.activateBlocked}</p>
     </div>
   </PageHeader>
-  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
-  {error && <div class="mb-4"><Alert kind="rejection" title={error} /></div>}
+  {okMsg && openParam !== 'connect' && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {error && action === 'toggle' && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
 
   <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
     <p class="co-meta font-semibold">{T.progress(progress.done, progress.total)}</p>
@@ -116,6 +165,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
         status={x.status} need={x.need} step={T.stepN(i + 1)}
         labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
         missing={x.missing.map((k) => T.miss[k])} summary={summary(x.key)} testid={`setup-card-${x.key}`}
+        dialog={x.key === 'connect' ? 'setup-connect' : undefined}
       />
     ))}
   </section>
@@ -136,4 +186,13 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     <a class="co-btn co-btn--ghost" href="/admin/leads/ajustes" data-testid="leads-all-settings">{T.allSettings}</a>
     <a class="co-btn co-btn--ghost" href="/admin/leads" data-testid="leads-go-inbox">{T.inbox}</a>
   </p>
+
+  <ConnectDialog
+    id="setup-connect" open={openParam === 'connect' || (!!error && action !== 'toggle')} part={error ? errorPart : connectPart}
+    origins={s.allowedOrigins} prompt={connectPrompt({ endpoint, brand, origins: s.allowedOrigins, locale: guideLocale })}
+    snippet={connectSnippet({ endpoint, brand })} received={last ? fmt.format(new Date(last.at)) : null}
+    testSent={Astro.url.searchParams.get('ok') === 'test'} T={T.connect}
+    notice={openParam === 'connect' && Astro.url.searchParams.get('ok') === 'webs' ? T.connect.ok.webs : null}
+    error={error && action !== 'toggle' ? { title: error, details: errorDetails } : null}
+  />
 </AdminLayout>

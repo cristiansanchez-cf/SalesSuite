@@ -1,6 +1,6 @@
 /** Leads en memoria (demo y pruebas). Mismo comportamiento que Supabase salvo la RLS (la consola filtra por espacio). */
 import { randomUUID } from 'node:crypto';
-import { DuplicateKey, type LeadsDb } from './db';
+import { CONSOLE_TEST_PREFIX, DuplicateKey, type LeadsDb } from './db';
 import { suppressionKey } from './privacy';
 import type { Lead, LeadEvent, LeadMessage, LeadSettings, Submission } from './types';
 
@@ -118,8 +118,8 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
         return !q || l.name.toLowerCase().includes(q) || l.email.includes(q);
       }).sort((a, b) => b.lastSubmissionAt.localeCompare(a.lastSubmissionAt)).slice(0, opts.limit ?? 200).map(clone);
     },
-    async lastSubmission(tenantId) {
-      const r = s.subs.filter((x) => x.tenantId === tenantId).sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))[0];
+    async lastSubmission(tenantId, opts) {
+      const r = s.subs.filter((x) => x.tenantId === tenantId && !(opts?.external && x.idempotencyKey.startsWith(CONSOLE_TEST_PREFIX))).sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))[0];
       return r ? { at: r.receivedAt, test: r.isTest } : null;
     },
     async counts(tenantId) {

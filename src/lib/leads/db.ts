@@ -1,6 +1,9 @@
 /** Acceso a datos de los leads. Supabase (service role en la entrada y el cron; sesión del usuario en la consola) o memoria (demo). */
 import type { Lead, LeadEvent, LeadMessage, LeadPatch, LeadSettings, MessagePatch, NewEvent, NewLead, NewMessage, NewSubmission, Submission, View } from './types';
 
+/** Las pruebas que se mandan desde la consola (Leads entrantes → Conecta tu web) llevan esta idempotency_key. */
+export const CONSOLE_TEST_PREFIX = 'console-test-';
+
 export class DuplicateKey extends Error {}
 
 export interface LeadsDb {
@@ -44,5 +47,6 @@ export interface LeadsDb {
   list(tenantId: string, view: View, opts?: { q?: string; limit?: number; anonymized?: boolean }): Promise<Lead[]>;
   counts(tenantId: string): Promise<{ inbox: number; quarantine: number }>;
   /** El último envío que llegó de la web (pruebas incluidas): para saber si la web ya está conectada. */
-  lastSubmission(tenantId: string): Promise<{ at: string; test: boolean } | null>;
+  /** El último envío recibido; `external`: sin contar las pruebas mandadas desde la consola (CONSOLE_TEST_PREFIX). */
+  lastSubmission(tenantId: string, opts?: { external?: boolean }): Promise<{ at: string; test: boolean } | null>;
 }

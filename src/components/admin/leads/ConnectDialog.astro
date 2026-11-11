@@ -1,0 +1,190 @@
+---
+/**
+ * Paso guiado «Conecta tu web o tu app» (docs/PLAN_AJUSTES.md, paso 2). Cuatro partes en un <dialog>:
+ *  1. Qué ganas (con una vista previa: formulario → email → CRM).
+ *  2. Tus webs: lista con «Añadir» y «Quitar» (se guardan al momento).
+ *  3. Pásaselo: el prompt para el desarrollador o el agente, o el código para pegar.
+ *  4. Pruébalo: un lead de prueba desde la consola y el estado del primero que llegue de la web o la app.
+ * Sin JS se ven las cuatro partes seguidas; con JS, una a una con Atrás/Siguiente.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import Alert from '~/components/ui/Alert.astro';
+import type { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
+
+interface Props {
+  id: string;
+  /** Abrir al cargar (después de guardar, o con ?abrir=connect). */
+  open: boolean;
+  /** Parte con la que se abre (1-4). */
+  part: number;
+  origins: string[];
+  prompt: string;
+  snippet: string;
+  /** Fecha del primer lead de la web o la app ya formateada, o null si aún no ha llegado. */
+  received: string | null;
+  /** Se acaba de mandar el lead de prueba. */
+  testSent: boolean;
+  T: (typeof leadsSetupMessages)['es']['connect'];
+  /** Lo que acaba de pasar al guardar: se enseña dentro del modal, no detrás. */
+  notice?: string | null;
+  error?: { title: string; details: string[] } | null;
+}
+const { id, open, part, origins, prompt, snippet, received, testSent, T, notice, error } = Astro.props;
+const parts = T.parts;
+---
+<dialog id={id} class="co-dialog co-dialog--wide" aria-labelledby={`${id}-title`} data-autoopen={open ? '1' : undefined} data-start={part} data-testid="connect-dialog">
+  <div class="co-dialog__body !gap-5">
+    <div class="flex items-start justify-between gap-3">
+      <h2 id={`${id}-title`} class="co-entity !text-xl">{T.title}</h2>
+      <button type="button" class="co-btn co-btn--ghost co-btn--icon co-btn--sm" data-dialog-close aria-label={T.close}><Icon name="x" size={16} /></button>
+    </div>
+    {(error || notice) && (
+      <div data-connect-alert>
+        {error ? <Alert kind="rejection" title={error.title} details={error.details} /> : <Alert kind="success" title={notice!} />}
+      </div>
+    )}
+    <ol class="co-steps" data-connect-steps>
+      {parts.map((p, i) => <li aria-current={i + 1 === part ? 'step' : undefined} data-step={i + 1} title={p}><span class="connect-step-label">{p}</span></li>)}
+    </ol>
+
+    {/* 1. Qué ganas */}
+    <section class="grid gap-4" data-part="1" data-testid="connect-part-1">
+      <div class="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]" aria-hidden="true">
+        <div class="co-inset grid gap-2 !p-4 text-sm">
+          <span class="co-meta">{T.mock.name}</span><span class="rounded-lg border border-[var(--console-card-border)] bg-[var(--console-surface)] px-3 py-1.5">Ana López</span>
+          <span class="co-meta">{T.mock.email}</span><span class="rounded-lg border border-[var(--console-card-border)] bg-[var(--console-surface)] px-3 py-1.5">ana@empresa.com</span>
+          <span class="co-btn co-btn--primary co-btn--sm w-fit">{T.mock.send}</span>
+        </div>
+        <span class="mx-auto inline-flex rotate-90 sm:rotate-0"><Icon name="chevron-right" size={20} /></span>
+        <div class="grid gap-2">
+          <div class="co-card connect-pop flex items-center gap-2 !p-3 text-sm"><Icon name="mail" size={16} />{T.mock.mail}</div>
+          <div class="co-card connect-pop connect-pop--2 flex items-center gap-2 !p-3 text-sm font-semibold"><Icon name="inbox" size={16} />{T.mock.lead}</div>
+        </div>
+      </div>
+      <ol class="grid list-decimal gap-1 pl-5">{T.why.map((w) => <li>{w}</li>)}</ol>
+    </section>
+
+    {/* 2. Tus webs */}
+    <section class="grid gap-3" data-part="2" data-testid="connect-part-2">
+      <p>{T.webs.lede}</p>
+      {origins.length
+        ? (
+          <ul class="grid gap-2" data-testid="connect-origins">
+            {origins.map((o) => (
+              <li class="co-inset flex items-center justify-between gap-2 !px-4 !py-2">
+                <span class="flex min-w-0 items-center gap-2 break-all"><Icon name="globe" size={16} />{o}</span>
+                <form method="post" action="/admin/leads/configurar" class="shrink-0">
+                  <input type="hidden" name="action" value="remove-origin" /><input type="hidden" name="origin" value={o} />
+                  <button class="co-btn co-btn--ghost co-btn--sm" aria-label={`${T.webs.remove} ${o}`}><Icon name="trash2" size={14} />{T.webs.remove}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )
+        : <p class="co-meta" data-testid="connect-origins-empty">{T.webs.empty}</p>}
+      <form method="post" action="/admin/leads/configurar" class="flex flex-wrap items-end gap-2" data-testid="connect-add-origin">
+        <input type="hidden" name="action" value="add-origin" />
+        <label class="co-field min-w-[14rem] flex-1">{T.webs.add}<input class="co-input" name="origin" required maxlength="200" placeholder={T.webs.placeholder} inputmode="url" autocomplete="off" spellcheck="false" /></label>
+        <button class="co-btn co-btn--primary"><Icon name="plus" size={16} />{T.webs.add}</button>
+      </form>
+      <p class="co-meta">{T.webs.app}</p>
+    </section>
+
+    {/* 3. Pásaselo */}
+    <section class="grid gap-3" data-part="3" data-testid="connect-part-3">
+      <p>{T.handoff.lede}</p>
+      <div class="co-segmented w-fit" role="tablist">
+        <button type="button" role="tab" aria-pressed="true" data-handoff="prompt">{T.handoff.tabPrompt}</button>
+        <button type="button" role="tab" aria-pressed="false" data-handoff="code">{T.handoff.tabCode}</button>
+      </div>
+      <div class="grid gap-2" data-handoff-panel="prompt">
+        <p class="co-meta">{T.handoff.promptHelp}</p>
+        <textarea class="co-textarea h-64 font-mono text-xs" readonly data-testid="connect-prompt">{prompt}</textarea>
+        <button type="button" class="co-btn co-btn--primary w-fit" data-copy data-copied={T.handoff.copied}><Icon name="copy" size={16} /><span>{T.handoff.copy}</span></button>
+      </div>
+      <div class="grid gap-2" data-handoff-panel="code">
+        <p class="co-meta">{T.handoff.codeHelp}</p>
+        <textarea class="co-textarea h-64 font-mono text-xs" readonly data-testid="connect-snippet">{snippet}</textarea>
+        <button type="button" class="co-btn co-btn--primary w-fit" data-copy data-copied={T.handoff.copied}><Icon name="copy" size={16} /><span>{T.handoff.copy}</span></button>
+      </div>
+    </section>
+
+    {/* 4. Pruébalo */}
+    <section class="grid gap-3" data-part="4" data-testid="connect-part-4">
+      <p>{T.test.lede}</p>
+      <form method="post" action="/admin/leads/configurar" class="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="action" value="test-lead" />
+        <button class="co-btn co-btn--ghost" data-testid="connect-test-lead"><Icon name="send" size={16} />{T.test.send}</button>
+        {testSent && <span class="flex items-center gap-1 text-sm" data-testid="connect-test-sent"><Icon name="circle-check" size={16} />{T.test.sent} <a class="underline" href="/admin/leads?ver=test">{T.test.seeTests}</a></span>}
+      </form>
+      <div class="co-inset flex flex-wrap items-center justify-between gap-2 !p-4" data-testid="connect-received" data-ok={received ? '1' : '0'}>
+        <span class="flex items-center gap-2">
+          <Icon name={received ? 'circle-check' : 'clock'} size={18} />{received ? T.test.received(received) : T.test.waiting}
+        </span>
+        {!received && <a class="co-btn co-btn--ghost co-btn--sm" href="?abrir=connect&p=4">{T.test.check}</a>}
+      </div>
+    </section>
+  </div>
+  <div class="co-dialog__foot" data-connect-nav hidden>
+    <button type="button" class="co-btn co-btn--ghost" data-go="-1">{T.back}</button>
+    <button type="button" class="co-btn co-btn--primary" data-go="1">{T.next}</button>
+    <button type="button" class="co-btn co-btn--primary" data-dialog-close data-last>{T.close}</button>
+  </div>
+</dialog>
+
+<style>
+  .connect-pop { animation: connect-pop 2.4s ease-in-out infinite; }
+  .connect-pop--2 { animation-delay: .4s; }
+  @keyframes connect-pop { 0%, 15% { opacity: 0; transform: translateY(6px); } 30%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .connect-pop { animation: none; } }
+  /* En el móvil, solo el nombre del paso en el que estás: los números caben en una línea. */
+  @media (max-width: 639px) { li:not([aria-current]) .connect-step-label { display: none; } }
+</style>
+
+<script>
+  // Una parte cada vez, con Atrás/Siguiente; las pestañas del prompt y el código; copiar al portapapeles.
+  for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[data-testid="connect-dialog"]')) {
+    const parts = [...d.querySelectorAll<HTMLElement>('[data-part]')];
+    const steps = [...d.querySelectorAll<HTMLElement>('[data-step]')];
+    const nav = d.querySelector<HTMLElement>('[data-connect-nav]')!;
+    let cur = Math.min(Math.max(Number(d.dataset.start) || 1, 1), parts.length);
+    const alert = d.querySelector<HTMLElement>('[data-connect-alert]');
+    const show = (n: number) => {
+      // Lo que acaba de pasar (guardado o error) es de la parte en la que estabas: al cambiar de parte, se quita.
+      if (alert && n !== cur) alert.hidden = true;
+      cur = Math.min(Math.max(n, 1), parts.length);
+      parts.forEach((p, i) => { p.hidden = i + 1 !== cur; });
+      steps.forEach((s, i) => { if (i + 1 === cur) s.setAttribute('aria-current', 'step'); else s.removeAttribute('aria-current'); });
+      nav.querySelector<HTMLElement>('[data-go="-1"]')!.hidden = cur === 1;
+      nav.querySelector<HTMLElement>('[data-go="1"]')!.hidden = cur === parts.length;
+      nav.querySelector<HTMLElement>('[data-last]')!.hidden = cur !== parts.length;
+    };
+    nav.hidden = false;
+    show(cur);
+    nav.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-go]');
+      if (b) show(cur + Number(b.dataset.go));
+    });
+    steps.forEach((s, i) => { s.style.cursor = 'pointer'; s.addEventListener('click', () => show(i + 1)); });
+
+    const tabs = [...d.querySelectorAll<HTMLButtonElement>('[data-handoff]')];
+    const panels = [...d.querySelectorAll<HTMLElement>('[data-handoff-panel]')];
+    const pick = (k: string) => {
+      tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.handoff === k)));
+      panels.forEach((p) => { p.hidden = p.dataset.handoffPanel !== k; });
+    };
+    tabs.forEach((t) => t.addEventListener('click', () => pick(t.dataset.handoff!)));
+    pick('prompt');
+
+    d.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+      const t = b.parentElement!.querySelector('textarea')!;
+      try { await navigator.clipboard.writeText(t.value); } catch { t.select(); }
+      const label = b.querySelector('span')!;
+      const before = label.textContent;
+      label.textContent = b.dataset.copied ?? before;
+      setTimeout(() => { label.textContent = before; }, 1600);
+    }));
+
+    if (d.dataset.autoopen && !d.open) d.showModal();
+  }
+</script>

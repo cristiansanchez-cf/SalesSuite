@@ -31,6 +31,34 @@ const es = {
     messages: 'Con tus textos y tu firma', whatsapp: 'Activado', extras: 'Con vídeo o enlace de reserva',
     privacy: (m: number) => `Leads: ${m} meses · se borra solo cada día`,
   },
+  connect: {
+    title: 'Conecta tu web o tu app', parts: ['Qué ganas', 'Tus webs', 'Pásaselo', 'Pruébalo'],
+    why: [
+      'Alguien rellena el formulario de tu web o de tu app.',
+      'En segundos le llega un email tuyo (y, si lo activas, un WhatsApp).',
+      'El lead aparece en tu CRM con de dónde viene, y te avisamos.',
+    ],
+    mock: { name: 'Nombre', email: 'Email', send: 'Enviar', lead: 'Nuevo lead · Ana López', mail: 'Email enviado en 4 s' },
+    webs: {
+      lede: 'Las direcciones desde las que tu formulario puede mandar leads. Si tu web se abre con y sin www, añade las dos.',
+      app: 'Si es una app del móvil, no hace falta añadir nada: llega sin web.',
+      add: 'Añadir web', placeholder: 'tuweb.com', remove: 'Quitar', empty: 'Todavía no hay ninguna web.',
+    },
+    handoff: {
+      lede: 'Con esto, quien hace tu web tiene todo lo que necesita.', tabPrompt: 'Mi desarrollador o mi agente de IA', tabCode: 'Código para pegar',
+      promptHelp: 'Cópialo y pégalo tal cual: vale para tu desarrollador o para un agente como ChatGPT, Claude o Cursor.',
+      codeHelp: 'Para quien sepa dónde pegarlo. Si tu web es de WordPress, Webflow o Wix, mejor pásale el prompt a quien te la hizo.',
+      copy: 'Copiar', copied: 'Copiado',
+    },
+    test: {
+      lede: 'Primero comprueba que tu CRM recibe; después, que llega uno desde tu web o tu app.', send: 'Mandar un lead de prueba desde aquí',
+      sent: 'Ha llegado: lo tienes en la bandeja, en Pruebas.', seeTests: 'Ver las pruebas',
+      waiting: 'Esperando el primer lead de tu web o tu app. Pide a quien la hace que mande uno con "test": true.',
+      received: (when: string) => `Ha llegado uno de tu web o tu app (${when}). Este paso está hecho.`, check: 'Comprobar otra vez', failed: 'No se pudo mandar la prueba.',
+    },
+    back: 'Atrás', next: 'Siguiente', close: 'Cerrar',
+    ok: { webs: 'Webs guardadas.', test: 'Lead de prueba recibido.' },
+  },
   allSettings: 'Ver todos los ajustes en una página', inbox: 'Ir a la bandeja',
 };
 
@@ -66,6 +94,34 @@ export const leadsSetupMessages = defineMessages({
       messages: 'With your texts and signature', whatsapp: 'On', extras: 'With a video or booking link',
       privacy: (m: number) => `Leads: ${m} months · deleted automatically every day`,
     },
+    connect: {
+      title: 'Connect your website or app', parts: ['What you get', 'Your websites', 'Hand it over', 'Test it'],
+      why: [
+        'Someone fills in the form on your website or app.',
+        'Within seconds they get an email from you (and a WhatsApp, if you turn it on).',
+        'The lead shows up in your CRM with where it came from, and we let you know.',
+      ],
+      mock: { name: 'Name', email: 'Email', send: 'Send', lead: 'New lead · Ana López', mail: 'Email sent in 4 s' },
+      webs: {
+        lede: 'The addresses your form can send leads from. If your site opens with and without www, add both.',
+        app: 'For a phone app you do not need to add anything: it arrives without a website.',
+        add: 'Add website', placeholder: 'yoursite.com', remove: 'Remove', empty: 'No websites yet.',
+      },
+      handoff: {
+        lede: 'With this, whoever builds your website has everything they need.', tabPrompt: 'My developer or my AI agent', tabCode: 'Code to paste',
+        promptHelp: 'Copy it and paste it as is: it works for your developer or for an agent like ChatGPT, Claude or Cursor.',
+        codeHelp: 'For someone who knows where to paste it. If your site runs on WordPress, Webflow or Wix, better hand the prompt to whoever built it.',
+        copy: 'Copy', copied: 'Copied',
+      },
+      test: {
+        lede: 'First check that your CRM receives; then that one arrives from your website or app.', send: 'Send a test lead from here',
+        sent: 'It arrived: you have it in the inbox, under Tests.', seeTests: 'See the tests',
+        waiting: 'Waiting for the first lead from your website or app. Ask whoever builds it to send one with "test": true.',
+        received: (when: string) => `One arrived from your website or app (${when}). This step is done.`, check: 'Check again', failed: 'The test could not be sent.',
+      },
+      back: 'Back', next: 'Next', close: 'Close',
+      ok: { webs: 'Websites saved.', test: 'Test lead received.' },
+    },
     allSettings: 'See all settings on one page', inbox: 'Go to the inbox',
   },
   pt: {
@@ -98,6 +154,34 @@ export const leadsSetupMessages = defineMessages({
       messages: 'Com os seus textos e assinatura', whatsapp: 'Ativado', extras: 'Com vídeo ou link de marcação',
       privacy: (m: number) => `Leads: ${m} meses · apaga-se sozinho todos os dias`,
     },
+    connect: {
+      title: 'Ligue o seu site ou a sua app', parts: ['O que ganha', 'Os seus sites', 'Passe a quem faz', 'Teste'],
+      why: [
+        'Alguém preenche o formulário do seu site ou da sua app.',
+        'Em segundos recebe um email seu (e, se ativar, um WhatsApp).',
+        'O lead aparece no seu CRM com a origem, e avisamos-lhe.',
+      ],
+      mock: { name: 'Nome', email: 'Email', send: 'Enviar', lead: 'Novo lead · Ana López', mail: 'Email enviado em 4 s' },
+      webs: {
+        lede: 'Os endereços de onde o seu formulário pode enviar leads. Se o site abre com e sem www, junte os dois.',
+        app: 'Se for uma app do telemóvel, não precisa de juntar nada: chega sem site.',
+        add: 'Juntar site', placeholder: 'oseusite.com', remove: 'Tirar', empty: 'Ainda não há nenhum site.',
+      },
+      handoff: {
+        lede: 'Com isto, quem faz o seu site tem tudo o que precisa.', tabPrompt: 'O meu programador ou o meu agente de IA', tabCode: 'Código para colar',
+        promptHelp: 'Copie e cole tal como está: serve para o seu programador ou para um agente como ChatGPT, Claude ou Cursor.',
+        codeHelp: 'Para quem saiba onde colar. Se o site é WordPress, Webflow ou Wix, é melhor passar o prompt a quem o fez.',
+        copy: 'Copiar', copied: 'Copiado',
+      },
+      test: {
+        lede: 'Primeiro confirme que o CRM recebe; depois, que chega um do seu site ou da sua app.', send: 'Enviar um lead de teste daqui',
+        sent: 'Chegou: está na caixa, em Testes.', seeTests: 'Ver os testes',
+        waiting: 'À espera do primeiro lead do seu site ou da sua app. Peça a quem o faz que envie um com "test": true.',
+        received: (when: string) => `Chegou um do seu site ou da sua app (${when}). Este passo está feito.`, check: 'Verificar outra vez', failed: 'Não foi possível enviar o teste.',
+      },
+      back: 'Voltar', next: 'Seguinte', close: 'Fechar',
+      ok: { webs: 'Sites guardados.', test: 'Lead de teste recebido.' },
+    },
     allSettings: 'Ver todas as configurações numa página', inbox: 'Ir para a caixa',
   },
   ko: {
@@ -129,6 +213,34 @@ export const leadsSetupMessages = defineMessages({
       email: (from: string) => `${from}에서 발송`, emailPlatform: '플랫폼 계정에서 발송',
       messages: '직접 쓴 문구와 서명 사용', whatsapp: '켜짐', extras: '영상 또는 예약 링크 있음',
       privacy: (m: number) => `리드: ${m}개월 · 매일 자동 삭제`,
+    },
+    connect: {
+      title: '웹사이트나 앱 연결', parts: ['얻는 것', '웹사이트', '전달하기', '테스트'],
+      why: [
+        '누군가 웹사이트나 앱의 양식을 작성합니다.',
+        '몇 초 안에 내 이메일을 받습니다 (켜면 WhatsApp도).',
+        '리드가 출처와 함께 CRM에 나타나고, 알림을 드립니다.',
+      ],
+      mock: { name: '이름', email: '이메일', send: '보내기', lead: '새 리드 · Ana López', mail: '4초 만에 이메일 발송' },
+      webs: {
+        lede: '양식이 리드를 보낼 수 있는 주소입니다. www가 있어도 없어도 열리면 둘 다 추가하세요.',
+        app: '휴대폰 앱이라면 추가할 필요가 없습니다. 웹사이트 없이 들어옵니다.',
+        add: '웹사이트 추가', placeholder: 'mysite.com', remove: '삭제', empty: '아직 웹사이트가 없습니다.',
+      },
+      handoff: {
+        lede: '이것만 있으면 웹사이트를 만드는 사람이 필요한 것을 모두 갖게 됩니다.', tabPrompt: '개발자 또는 AI 에이전트', tabCode: '붙여 넣을 코드',
+        promptHelp: '그대로 복사해 붙여 넣으세요. 개발자나 ChatGPT, Claude, Cursor 같은 에이전트에게 쓸 수 있습니다.',
+        codeHelp: '어디에 붙여 넣을지 아는 사람용입니다. WordPress, Webflow, Wix라면 만든 사람에게 프롬프트를 전달하세요.',
+        copy: '복사', copied: '복사됨',
+      },
+      test: {
+        lede: '먼저 CRM이 받는지 확인하고, 그다음 웹사이트나 앱에서 하나가 오는지 확인하세요.', send: '여기서 테스트 리드 보내기',
+        sent: '도착했습니다. 받은 리드의 테스트 탭에 있습니다.', seeTests: '테스트 보기',
+        waiting: '웹사이트나 앱의 첫 리드를 기다리는 중입니다. 만드는 사람에게 "test": true로 하나 보내 달라고 하세요.',
+        received: (when: string) => `웹사이트나 앱에서 하나가 도착했습니다 (${when}). 이 단계는 완료입니다.`, check: '다시 확인', failed: '테스트를 보내지 못했습니다.',
+      },
+      back: '뒤로', next: '다음', close: '닫기',
+      ok: { webs: '웹사이트를 저장했습니다.', test: '테스트 리드를 받았습니다.' },
     },
     allSettings: '모든 설정을 한 페이지에서 보기', inbox: '받은 리드로 가기',
   },

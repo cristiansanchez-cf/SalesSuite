@@ -25,6 +25,8 @@ interface Props {
   /** Resumen cuando está hecha. */
   summary?: string[];
   testid?: string;
+  /** Abre este <dialog> (el paso guiado); sin JS, se sigue `href`. */
+  dialog?: string;
 }
 const p = Astro.props;
 const done = p.status === 'done';
@@ -57,7 +59,7 @@ const statusIcon: IconName = done ? 'circle-check' : p.status === 'partial' ? 'c
       </div>
     )}
   </div>
-  <a class={`co-btn ${done ? 'co-btn--ghost' : 'co-btn--primary'} w-fit sm:justify-self-end`} href={p.href} data-testid="setup-card-cta">
+  <a class={`co-btn ${done ? 'co-btn--ghost' : 'co-btn--primary'} w-fit sm:justify-self-end`} href={p.href} data-dialog-open={p.dialog} data-testid="setup-card-cta">
     {p.labels.cta}<Icon name="chevron-right" size={16} />
   </a>
 </article>

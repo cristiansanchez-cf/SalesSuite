@@ -1,6 +1,6 @@
 # Plan: ajustes ordenados y tutoriales guiados
 
-Estado: propuesto el 11-nov-2026. Paso 1 hecho (`/admin/leads/configurar`, `SetupCard`, `lib/leads/setup-steps.ts`). Se hace por pasos; cada paso se puede usar en cuanto se sube.
+Estado: propuesto el 11-nov-2026. Pasos 1 y 2 hechos (`/admin/leads/configurar`, `SetupCard`, `lib/leads/setup-steps.ts`, `ConnectDialog`, `lib/leads/connect-guide.ts`). El paso «Conecta» queda hecho cuando llega un lead que no es la prueba de la consola (`CONSOLE_TEST_PREFIX`). Se hace por pasos; cada paso se puede usar en cuanto se sube.
 
 ## El problema
 
@@ -136,7 +136,7 @@ adelante, que cada empresa la ajuste con su design system.
 | # | Paso | Qué se ve al acabar |
 |---|---|---|
 | 1 ✅ | Mapa nuevo y tarjeta de configuración | Cada cosa en su sitio. «Leads entrantes» en Configurar con las tarjetas (de momento, abren lo de siempre). Sin «Ajustes» en la bandeja |
-| 2 | Conecta tu web o tu app | Lista de webs, prompt para el desarrollador o el agente, lead de prueba |
+| 2 ✅ | Conecta tu web o tu app | Lista de webs, prompt para el desarrollador o el agente, lead de prueba |
 | 3 | Email de respuesta | Tutorial de Resend con los DNS reales, obligatorios marcados, lo hecho plegado |
 | 4 | Tus mensajes y firma | Idioma a idioma, vista previa en vivo, firma pegada |
 | 5 | Asistente de WhatsApp y teléfono | Teléfono obligatorio, tarjeta en Mi cuenta, página del asistente con quién lo tiene |
