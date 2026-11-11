@@ -5,6 +5,11 @@
  * Sin JS se ven todas las partes seguidas. Dentro de una parte:
  *  - [data-tabs] con botones [data-tab="k"] y paneles [data-tab-panel="k"]: pestañas.
  *  - [data-copy]: copia `data-copy-value` o el <textarea> de su mismo bloque.
+ *  - form[data-autosave]: se guarda solo al pasar de parte o al cerrar, si se ha tocado (no hay «Guardar» suelto). El
+ *    valor de data-autosave es la acción si el formulario no lleva su <input name="action">. Va con `_to`: la parte a
+ *    la que se iba (0 = cerrar) y el servidor vuelve ahí; si hay un error, vuelve a la parte con el error dentro.
+ *    Antes de leerlo se lanza «autosave-prepare» en el formulario (para pasar a un campo lo que no lo es).
+ *    Con data-enter-next, Intro en un campo hace lo mismo que «Siguiente». Con data-autosave-dirty, cuenta como tocado.
  */
 import Icon from './Icon.astro';
 import Alert from './Alert.astro';
@@ -72,11 +77,75 @@ const bodies = await Promise.all(parts.map((_, i) => Astro.slots.render(`p${i + 
     };
     nav.hidden = false;
     show(cur);
+
+    // Autoguardado: lo tocado de la parte en la que estás se guarda al irte de ella.
+    const forms = [...d.querySelectorAll<HTMLFormElement>('form[data-autosave]')];
+    const read = (f: HTMLFormElement) => {
+      f.dispatchEvent(new CustomEvent('autosave-prepare'));
+      const fd = new FormData(f);
+      if (!fd.has('action') && f.dataset.autosave) fd.set('action', f.dataset.autosave);
+      return fd;
+    };
+    const snap = (f: HTMLFormElement) => new URLSearchParams([...read(f)].filter(([k]) => k !== '_to').map(([k, v]) => [k, String(v)])).toString()
+      + [...f.querySelectorAll<HTMLElement>('[contenteditable="true"]')].map((x) => x.innerHTML).join('');
+    const initial = new Map<HTMLFormElement, string>();
+    // data-autosave-dirty: lo que se ve aún no está guardado (una propuesta de la IA, o lo enviado con error).
+    const takeSnap = () => forms.forEach((f) => initial.set(f, f.hasAttribute('data-autosave-dirty') ? '\u0000' : snap(f)));
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', takeSnap); else setTimeout(takeSnap);
+    const dirtyIn = (n: number) => forms.filter((f) => f.closest('[data-part]') === parts[n - 1] && initial.has(f) && snap(f) !== initial.get(f));
+    let saving = false;
+    /** Ir a la parte `to` (0 = cerrar). Si hay algo sin guardar, se guarda antes; devuelve si se puede seguir sin más. */
+    const leave = async (to: number): Promise<boolean> => {
+      if (saving) return false;
+      const dirty = dirtyIn(cur);
+      if (!dirty.length) return true;
+      for (const f of dirty) {
+        if (f.checkValidity()) continue;
+        show(cur); f.reportValidity(); return false;
+      }
+      saving = true; d.setAttribute('aria-busy', 'true');
+      nav.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+      const submit = (f: HTMLFormElement, n: number) => {
+        let h = f.querySelector<HTMLInputElement>('input[name="_to"]');
+        if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.name = '_to'; f.append(h); }
+        h.value = String(n);
+        if (!f.querySelector('input[name="action"]') && f.dataset.autosave) {
+          const a = document.createElement('input'); a.type = 'hidden'; a.name = 'action'; a.value = f.dataset.autosave; f.append(a);
+        }
+        f.dispatchEvent(new CustomEvent('autosave-prepare'));
+        HTMLFormElement.prototype.submit.call(f);
+      };
+      // Todos menos el último, por detrás; el último se envía y la página vuelve a la parte a la que ibas.
+      for (const f of dirty.slice(0, -1)) {
+        // getAttribute: un <input name="action"> tapa form.action.
+        const res = await fetch(f.getAttribute('action') ?? location.href, { method: 'POST', body: read(f) }).catch(() => null);
+        if (!res || !res.redirected) { submit(f, cur); return false; }
+      }
+      submit(dirty[dirty.length - 1], to);
+      return false;
+    };
+    const go = async (n: number) => { const t = Math.min(Math.max(n, 1), parts.length); if (t === cur) return; if (await leave(t)) show(t); };
     nav.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-go]');
-      if (b) show(cur + Number(b.dataset.go));
+      if (b) void go(cur + Number(b.dataset.go));
     });
-    steps.forEach((s, i) => { s.style.cursor = 'pointer'; s.addEventListener('click', () => show(i + 1)); });
+    steps.forEach((s, i) => { s.style.cursor = 'pointer'; s.addEventListener('click', () => void go(i + 1)); });
+    // Cerrar (la X, «Cerrar», el fondo o Escape): si hay algo sin guardar, se guarda y se vuelve a la página.
+    d.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (!(t.closest('[data-dialog-close]') || t === d) || !dirtyIn(cur).length) return;
+      e.preventDefault(); e.stopPropagation();
+      void leave(0);
+    }, true);
+    d.addEventListener('cancel', (e) => { if (dirtyIn(cur).length) { e.preventDefault(); void leave(0); } });
+    for (const f of forms.filter((x) => x.hasAttribute('data-enter-next'))) {
+      f.addEventListener('keydown', (e) => {
+        const t = e.target as HTMLElement;
+        if (e.key !== 'Enter' || t.tagName !== 'INPUT' || (t as HTMLInputElement).type === 'checkbox') return;
+        e.preventDefault();
+        if (cur < parts.length) void go(cur + 1); else void leave(0);
+      });
+    }
 
     for (const group of d.querySelectorAll<HTMLElement>('[data-tabs]')) {
       const scope = group.closest('[data-part]') ?? d;

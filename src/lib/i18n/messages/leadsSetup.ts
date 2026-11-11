@@ -90,6 +90,7 @@ const es = {
     },
     sender: {
       lede: 'Lo que ve quien recibe el email y adónde llegan las respuestas.',
+      offDomain: (d: string) => `Tiene que ser una dirección de ${d}, por ejemplo hola@${d}. Si no, Resend no envía el email.`,
       fromEmail: 'Remitente', fromEmailHelp: (d: string | null) => (d ? `Una dirección de ${d}, por ejemplo hola@${d}.` : 'Una dirección de tu dominio verificado, por ejemplo hola@mail.tuempresa.com.'),
       fromName: 'Nombre del remitente', fromNameHelp: 'Por ejemplo: Ana · Tu empresa.',
       replyTo: 'Las respuestas llegan a', replyToHelp: 'Tu correo de siempre: cuando el lead conteste, le llega ahí.',
@@ -129,7 +130,7 @@ const es = {
       brand: 'Con tu marca', brandHelp: 'Tu logo arriba y tu color en la línea y en los enlaces.',
       logo: 'Logo', logoHelp: 'Un enlace https a un PNG o JPG (Gmail no enseña SVG). Sin logo, sale el nombre de tu empresa.', color: 'Color', save: 'Guardar diseño',
     },
-    ok: { design: 'Diseño guardado.', texts: 'Mensajes guardados.', reset: 'Vuelven nuestros textos.', ai: 'Propuesta de la IA: revísala y guarda si te convence.', sig: 'Firma guardada.', sigCleared: 'Firma pegada quitada.', signer: 'Guardado.' },
+    ok: { design: 'Diseño guardado.', texts: 'Mensajes guardados.', reset: 'Vuelven nuestros textos.', ai: 'Propuesta de la IA: revísala; se guarda al pulsar «Siguiente».', sig: 'Firma guardada.', sigCleared: 'Firma pegada quitada.', signer: 'Guardado.' },
   },
   whatsapp: {
     title: 'WhatsApp a los leads', parts: ['Qué es', 'En Meta', 'Conectar', 'Plantillas', 'Activar'],
@@ -277,6 +278,7 @@ export const leadsSetupMessages = defineMessages({
       },
       sender: {
         lede: 'What the recipient sees and where replies go.',
+        offDomain: (d: string) => `It has to be an address on ${d}, for example hello@${d}. Otherwise Resend will not send the email.`,
         fromEmail: 'Sender', fromEmailHelp: (d: string | null) => (d ? `An address on ${d}, for example hello@${d}.` : 'An address on your verified domain, for example hello@mail.yourcompany.com.'),
         fromName: 'Sender name', fromNameHelp: 'For example: Ana · Your company.',
         replyTo: 'Replies go to', replyToHelp: 'Your usual email: when the lead replies, it reaches you there.',
@@ -316,7 +318,7 @@ export const leadsSetupMessages = defineMessages({
         brand: 'With your brand', brandHelp: 'Your logo at the top and your colour on the line and the links.',
         logo: 'Logo', logoHelp: 'An https link to a PNG or JPG (Gmail does not show SVG). Without a logo, your company name is shown.', color: 'Colour', save: 'Save design',
       },
-      ok: { design: 'Design saved.', texts: 'Messages saved.', reset: 'Our texts are back.', ai: 'AI suggestion: review it and save if you like it.', sig: 'Signature saved.', sigCleared: 'Pasted signature removed.', signer: 'Saved.' },
+      ok: { design: 'Design saved.', texts: 'Messages saved.', reset: 'Our texts are back.', ai: 'AI suggestion: review it; it is saved when you press “Next”.', sig: 'Signature saved.', sigCleared: 'Pasted signature removed.', signer: 'Saved.' },
     },
     whatsapp: {
       title: 'WhatsApp to leads', parts: ['What it is', 'In Meta', 'Connect', 'Templates', 'Turn on'],
@@ -427,7 +429,7 @@ export const leadsSetupMessages = defineMessages({
         waiting: 'À espera do primeiro lead do seu site ou da sua app. Peça a quem o faz que envie um com "test": true.',
         received: (when: string) => `Chegou um do seu site ou da sua app (${when}). Este passo está feito.`, check: 'Verificar outra vez', failed: 'Não foi possível enviar o teste.',
       },
-      back: 'Voltar', next: 'Seguinte', close: 'Fechar',
+      back: 'Voltar', next: 'Próximo', close: 'Fechar',
       ok: { webs: 'Sites salvos.', test: 'Lead de teste recebido.' },
     },
     email: {
@@ -461,6 +463,7 @@ export const leadsSetupMessages = defineMessages({
       },
       sender: {
         lede: 'O que vê quem recebe o email e para onde vão as respostas.',
+        offDomain: (d: string) => `Tem que ser um endereço de ${d}, por exemplo ola@${d}. Se não, o Resend não envia o email.`,
         fromEmail: 'Remetente', fromEmailHelp: (d: string | null) => (d ? `Um endereço de ${d}, por exemplo ola@${d}.` : 'Um endereço do seu domínio verificado, por exemplo ola@mail.asuaempresa.com.'),
         fromName: 'Nome do remetente', fromNameHelp: 'Por exemplo: Ana · Sua empresa.',
         replyTo: 'As respostas chegam a', replyToHelp: 'Seu email de sempre: quando o lead responder, chega aí.',
@@ -468,7 +471,7 @@ export const leadsSetupMessages = defineMessages({
         platform: 'Com a conta da plataforma, o remetente é o nosso: define o nome e para onde vão as respostas.',
         required: 'Obrigatório', empty: 'Ainda não avisamos ninguém.',
       },
-      back: 'Voltar', next: 'Seguinte', close: 'Fechar',
+      back: 'Voltar', next: 'Próximo', close: 'Fechar',
       ok: { key: 'Conta Resend ligada.', keyCleared: 'Chave tirada: usa-se a conta da plataforma.', verify: 'Pedido: a Resend está verificando. Veja outra vez daqui a uns minutos.', sender: 'Salvo.' },
     },
     messages: {
@@ -494,13 +497,13 @@ export const leadsSetupMessages = defineMessages({
           : `Removemos ${n} imagens coladas do computador: num email não se veem. Se são seu logótipo, coloque-o no seu site e volte a colar a assinatura a partir de um email enviado.`),
         signer: 'Assina como', saveSigner: 'Salvar',
       },
-      back: 'Voltar', next: 'Seguinte', close: 'Fechar', copied: 'Copiado',
+      back: 'Voltar', next: 'Próximo', close: 'Fechar', copied: 'Copiado',
       design: {
         lede: 'Como fica o email que cada lead recebe.', plain: 'Pessoal', plainHelp: 'Como um email escrito à mão. Costuma chegar melhor na caixa principal.',
         brand: 'Com sua marca', brandHelp: 'Seu logo no topo e sua cor na linha e nos links.',
         logo: 'Logo', logoHelp: 'Um link https para um PNG ou JPG (o Gmail não mostra SVG). Sem logo, aparece o nome da sua empresa.', color: 'Cor', save: 'Salvar design',
       },
-      ok: { design: 'Design salvo.', texts: 'Mensagens salvas.', reset: 'Voltam os nossos textos.', ai: 'Proposta da IA: reveja e guarde se gostar.', sig: 'Assinatura guardada.', sigCleared: 'Assinatura colada tirada.', signer: 'Salvo.' },
+      ok: { design: 'Design salvo.', texts: 'Mensagens salvas.', reset: 'Voltam os nossos textos.', ai: 'Proposta da IA: revise; ela é salva quando você clicar em «Próximo».', sig: 'Assinatura guardada.', sigCleared: 'Assinatura colada tirada.', signer: 'Salvo.' },
     },
     whatsapp: {
       title: 'WhatsApp para os leads', parts: ['O que é', 'Na Meta', 'Conectar', 'Modelos', 'Ativar'],
@@ -551,7 +554,7 @@ export const leadsSetupMessages = defineMessages({
         hours: 'Horário de envio', from: 'De', to: 'Até', hoursHelp: 'Fora deste horário, o WhatsApp espera até o dia seguinte.',
         holidays: 'Feriados (nesse dia não se envia)', add: 'Adicionar', remove: 'Remover', none: 'Nenhum feriado.', save: 'Salvar',
       },
-      back: 'Voltar', next: 'Seguinte', close: 'Fechar',
+      back: 'Voltar', next: 'Próximo', close: 'Fechar',
       ok: { connected: 'Número conectado.', templates: 'Modelos salvos.', activate: 'Salvo.' },
     },
     allSettings: 'Ver todas as configurações numa página', inbox: 'Ir para a caixa',
@@ -645,6 +648,7 @@ export const leadsSetupMessages = defineMessages({
       },
       sender: {
         lede: '받는 사람에게 보이는 정보와 답장이 갈 곳입니다.',
+        offDomain: (d: string) => `${d}의 주소여야 합니다(예: hello@${d}). 그렇지 않으면 Resend가 이메일을 보내지 않습니다.`,
         fromEmail: '보내는 주소', fromEmailHelp: (d: string | null) => (d ? `${d}의 주소, 예: hello@${d}` : '인증된 도메인의 주소, 예: hello@mail.mycompany.com'),
         fromName: '보내는 사람 이름', fromNameHelp: '예: Ana · 회사 이름',
         replyTo: '답장 받을 주소', replyToHelp: '평소 쓰는 이메일입니다. 리드가 답장하면 여기로 옵니다.',
@@ -682,7 +686,7 @@ export const leadsSetupMessages = defineMessages({
         brand: '내 브랜드로', brandHelp: '위에 로고, 선과 링크에 내 색상.',
         logo: '로고', logoHelp: 'PNG나 JPG로 가는 https 링크 (Gmail은 SVG를 보여 주지 않습니다). 로고가 없으면 회사 이름이 나옵니다.', color: '색상', save: '디자인 저장',
       },
-      ok: { design: '디자인을 저장했습니다.', texts: '메시지를 저장했습니다.', reset: '기본 문구로 돌아갔습니다.', ai: 'AI 제안입니다. 확인하고 마음에 들면 저장하세요.', sig: '서명을 저장했습니다.', sigCleared: '붙여 넣은 서명을 삭제했습니다.', signer: '저장했습니다.' },
+      ok: { design: '디자인을 저장했습니다.', texts: '메시지를 저장했습니다.', reset: '기본 문구로 돌아갔습니다.', ai: 'AI 제안입니다. 확인한 뒤 「다음」을 누르면 저장됩니다.', sig: '서명을 저장했습니다.', sigCleared: '붙여 넣은 서명을 삭제했습니다.', signer: '저장했습니다.' },
     },
     whatsapp: {
       title: '리드에게 WhatsApp', parts: ['무엇인가요', 'Meta에서', '연결', '템플릿', '켜기'],

@@ -380,6 +380,12 @@ a.co-row:hover .co-row__chevron { transform: translateX(3px); }
 .co-input::placeholder, .co-textarea::placeholder { color: var(--co-ink-dim); }
 .co-input:focus, .co-select:focus, .co-textarea:focus { outline: none; border-color: var(--co-ink); box-shadow: 0 0 0 3px var(--console-focus-ring); }
 .co-input:disabled, .co-select:disabled, .co-textarea:disabled { background: var(--co-canvas); color: var(--co-ink-dim); }
+/* Campo con un error (aria-invalid) y su motivo debajo: borde y fondo de atención; el texto sigue en tinta. */
+.co-input[aria-invalid="true"] { border-color: var(--console-attention); background: var(--console-attention-bg); }
+.co-input[aria-invalid="true"]:focus { border-color: var(--console-attention); box-shadow: 0 0 0 3px color-mix(in oklch, var(--console-attention) 30%, transparent); }
+.co-field-error { display: flex; align-items: flex-start; gap: 6px; font-weight: 600; color: var(--co-ink); }
+.co-field-error svg { flex-shrink: 0; margin-top: 2px; color: var(--console-attention); }
+.co-field-error[hidden] { display: none; }
 .co-textarea { min-height: 96px; resize: vertical; }
 .co-check { display: flex; align-items: flex-start; gap: 10px; font-size: var(--console-fs-body); }
 .co-check input { margin-top: 3px; accent-color: var(--co-ink); width: 16px; height: 16px; }

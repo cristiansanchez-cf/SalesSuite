@@ -27,6 +27,8 @@ interface Props {
   /** Lo que se enseña en el editor: lo guardado, la propuesta de la IA o lo enviado con error. */
   custom: LeadTemplates;
   ctx: PreviewCtx;
+  /** Lo que se enseña en el editor aún no está guardado (propuesta de la IA o error al guardar): se guarda al seguir. */
+  unsaved?: boolean;
   /** Las preguntas por tipo que se enseñan (lead-kinds.ts): «General» y los tipos que le llegan. */
   qkeys: QuestionKey[];
   signature: EmailSignature | null;
@@ -39,7 +41,7 @@ interface Props {
   notice?: string | null;
   error?: { title: string; details: string[] } | null;
 }
-const { id, open, part, T, S, base, active, custom, ctx, qkeys, signature, signerName, dropped, style, brandDefaults, notice, error } = Astro.props;
+const { id, open, part, T, S, base, active, custom, ctx, unsaved, qkeys, signature, signerName, dropped, style, brandDefaults, notice, error } = Astro.props;
 const branded = style.mode === 'brand';
 const brandStyle: EmailStyle = { mode: 'brand', logoUrl: style.logoUrl ?? brandDefaults.logoUrl, color: style.color ?? brandDefaults.color };
 const look = { plain: previewFor(base, custom, { ...ctx, style: {} }).html, brand: previewFor(base, custom, { ...ctx, style: brandStyle }).html };
@@ -66,7 +68,7 @@ const pasted = !!sig.html;
   </Fragment>
 
   <Fragment slot="p2">
-    <form method="post" action={ACTION} class="grid gap-4" id={`${id}-texts`} data-msg-form data-ctx={JSON.stringify(ctx)} data-testid="messages-texts">
+    <form method="post" action={ACTION} class="grid gap-4" id={`${id}-texts`} data-msg-form data-autosave="save-texts" data-autosave-dirty={unsaved ? '' : undefined} data-enter-next data-ctx={JSON.stringify(ctx)} data-testid="messages-texts">
       <p class="co-meta">{T.langs.lede}</p>
       <div class="flex flex-wrap items-center gap-2">
         <div class="co-segmented w-fit" role="tablist" data-lang-tabs>
@@ -110,7 +112,6 @@ const pasted = !!sig.html;
       ))}
       <p class="co-meta" data-lang-removed hidden>{T.langs.removeHelp}</p>
       <div class="flex flex-wrap gap-2">
-        <button class="co-btn co-btn--primary" name="action" value="save-texts" data-testid="messages-save">{S.saveTexts}</button>
         <button class="co-btn co-btn--ghost" name="action" value="ai-draft" formnovalidate data-testid="messages-ai"><Icon name="sparkles" size={16} />{S.aiDraft}</button>
         <button class="co-btn co-btn--ghost" name="action" value="reset-texts" formnovalidate>{S.resetTexts}</button>
       </div>
@@ -119,10 +120,9 @@ const pasted = !!sig.html;
 
   <Fragment slot="p3">
     <p>{T.sig.lede}</p>
-    <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-testid="messages-signer">
+    <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-autosave data-enter-next data-testid="messages-signer">
       <input type="hidden" name="action" value="save-signer" />
       <label class="co-field min-w-[14rem] flex-1">{T.sig.signer}<input class="co-input" name="signerName" value={signerName} maxlength="80" /><span class="co-meta">{S.signerHelp}</span></label>
-      <button class="co-btn co-btn--ghost">{T.sig.saveSigner}</button>
     </form>
     {dropped > 0 && <p class="co-inset flex items-start gap-2 !p-3 text-sm" data-testid="messages-dropped"><Icon name="triangle-alert" size={16} />{T.sig.dropped(dropped)}</p>}
     {Object.keys(sig).length > 0 && (
@@ -136,14 +136,13 @@ const pasted = !!sig.html;
       <button type="button" data-tab="paste" aria-pressed="true">{T.sig.tabPaste}</button>
       <button type="button" data-tab="fields" aria-pressed="false">{T.sig.tabFields}</button>
     </div>
-    <form method="post" action={ACTION} class="grid gap-2" data-tab-panel="paste" data-sig-paste data-testid="messages-sig-paste">
+    <form method="post" action={ACTION} class="grid gap-2" data-tab-panel="paste" data-sig-paste data-autosave data-testid="messages-sig-paste">
       <input type="hidden" name="action" value="save-signature-paste" />
       <input type="hidden" name="html" value="" />
       <p class="co-meta">{T.sig.pasteHelp}</p>
       <div class="co-textarea min-h-[9rem] overflow-auto bg-white text-sm text-black" contenteditable="true" role="textbox" aria-multiline="true" aria-label={T.sig.pastePlaceholder} data-placeholder={T.sig.pastePlaceholder} data-sig-editor data-testid="messages-sig-editor"></div>
-      <button class="co-btn co-btn--primary w-fit">{T.sig.save}</button>
     </form>
-    <form method="post" action={ACTION} class="grid gap-3" data-tab-panel="fields" data-testid="messages-sig-fields">
+    <form method="post" action={ACTION} class="grid gap-3" data-tab-panel="fields" data-autosave data-enter-next data-testid="messages-sig-fields">
       <input type="hidden" name="action" value="save-signature-fields" />
       {pasted && <p class="co-meta">{T.sig.fieldsNote}</p>}
       <div class="grid gap-3 sm:grid-cols-2">
@@ -156,13 +155,12 @@ const pasted = !!sig.html;
         <label class="co-field">{S.sigLogo}<input class="co-input" type="url" name="sig_logoUrl" value={sig.logoUrl ?? ''} placeholder="https://…/logo.png" /><span class="co-meta">{S.sigLogoHelp}</span></label>
       </div>
       <label class="co-field">{S.sigLegal}<textarea class="co-textarea h-24" name="sig_legal" maxlength="2000">{sig.legal ?? ''}</textarea></label>
-      <button class="co-btn co-btn--primary w-fit">{S.saveSig}</button>
     </form>
   </Fragment>
 
   <Fragment slot="p4">
     <p>{T.design.lede}</p>
-    <form method="post" action={ACTION} class="grid gap-4" data-testid="messages-design">
+    <form method="post" action={ACTION} class="grid gap-4" data-autosave data-enter-next data-testid="messages-design">
       <input type="hidden" name="action" value="save-email-style" />
       <div class="grid gap-3 sm:grid-cols-2">
         {(['plain', 'brand'] as const).map((k) => (
@@ -179,7 +177,6 @@ const pasted = !!sig.html;
         <label class="co-field">{T.design.logo}<input class="co-input" type="url" name="logoUrl" value={style.logoUrl ?? brandDefaults.logoUrl} placeholder="https://…/logo.png" /><span class="co-meta">{T.design.logoHelp}</span></label>
         <label class="co-field">{T.design.color}<input class="co-input h-11 w-24 !p-1" type="color" name="color" value={style.color ?? brandDefaults.color} /></label>
       </div>
-      <button class="co-btn co-btn--primary w-fit" data-testid="messages-design-save">{T.design.save}</button>
     </form>
   </Fragment>
 </StepDialog>
@@ -246,9 +243,9 @@ const pasted = !!sig.html;
   // Firma pegada: lo que hay en el recuadro va al formulario (se limpia en el servidor).
   for (const form of document.querySelectorAll<HTMLFormElement>('form[data-sig-paste]')) {
     const ed = form.querySelector<HTMLElement>('[data-sig-editor]')!;
-    form.addEventListener('submit', (e) => {
-      if (!ed.textContent?.trim() && !ed.querySelector('img')) { e.preventDefault(); ed.focus(); return; }
-      (form.elements.namedItem('html') as HTMLInputElement).value = ed.innerHTML;
+    // Al pasar de parte o cerrar (StepDialog la guarda sola): lo pegado va al campo oculto.
+    form.addEventListener('autosave-prepare', () => {
+      (form.elements.namedItem('html') as HTMLInputElement).value = ed.textContent?.trim() || ed.querySelector('img') ? ed.innerHTML : '';
     });
   }
 </script>

@@ -279,14 +279,14 @@ export function autoreplyEmail(d: AutoreplyData): { subject: string; text: strin
   const unsub = d.unsubscribeUrl ? `—\n${P.unsub} ${d.unsubscribeUrl}` : '';
   const text = [body.replace(SIG, sig ? signatureText(sig) : ''), unsub].filter(Boolean).join('\n\n');
   const branded = d.style?.mode === 'brand' ? d.style : null;
-  // Con la marca, la baja va al pie en pequeño; sin ella, como hasta ahora, al final del texto.
+  // La baja, en el HTML, es un enlace corto y gris («Darme de baja»), no la dirección entera: al pie con la marca y, sin
+  // ella, debajo de la firma. En la versión en texto va la dirección (ahí no hay enlaces).
   const linkColor = branded ? (contrastOnWhite(safeColor(branded.color)) >= 3 ? safeColor(branded.color) : '#111111') : undefined;
-  let html = plainHtml([body, branded ? '' : unsub].filter(Boolean).join('\n\n'), linkColor);
+  const unsubLink = d.unsubscribeUrl ? `<a href="${esc(d.unsubscribeUrl)}" style="color:#888;text-decoration:underline">${esc(P.unsubLink)}</a>` : '';
+  let html = plainHtml(body, linkColor);
   if (sig) html = html.replace(/(<br>)?\u0007SIG\u0007/, `</p>${signatureHtml(sig)}<p style="margin:0">`).replace(/<p style="margin:0( 0 14px)?"><\/p>/g, '');
-  if (branded) {
-    const footer = d.unsubscribeUrl ? `${esc(P.unsub)} <a href="${esc(d.unsubscribeUrl)}" style="color:#888">${esc(P.unsubLink)}</a>` : '';
-    html = brandedHtml(html, branded, d.brand, footer);
-  }
+  if (branded) html = brandedHtml(html, branded, d.brand, unsubLink);
+  else if (unsubLink) html = html.replace(/<\/div>$/, `<p style="margin:28px 0 0;font-size:12px;line-height:1.5;color:#888">${unsubLink}</p></div>`);
   return { subject, text, html };
 }
 

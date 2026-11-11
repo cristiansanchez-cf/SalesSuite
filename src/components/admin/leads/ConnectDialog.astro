@@ -63,7 +63,7 @@ const ACTION = '/admin/leads/configurar';
         </ul>
       )
       : <p class="co-meta" data-testid="connect-origins-empty">{T.webs.empty}</p>}
-    <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-testid="connect-add-origin">
+    <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-autosave data-testid="connect-add-origin">
       <input type="hidden" name="action" value="add-origin" />
       <label class="co-field min-w-[14rem] flex-1">{T.webs.add}<input class="co-input" name="origin" required maxlength="200" placeholder={T.webs.placeholder} inputmode="url" autocomplete="off" spellcheck="false" /></label>
       <button class="co-btn co-btn--primary"><Icon name="plus" size={16} />{T.webs.add}</button>

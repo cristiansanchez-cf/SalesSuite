@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leadSetupSteps, readiness, requiredProgress } from './setup-steps';
+import { senderOffDomain, leadSetupSteps, readiness, requiredProgress } from './setup-steps';
 import type { LeadSettings } from './types';
 
 const base: LeadSettings = {
@@ -45,6 +45,14 @@ describe('pasos de los leads entrantes', () => {
     const own = { resendKeyHint: 're_…ab', fromEmail: 'hola@a.com', replyTo: 'hola@a.com', notifyEmails: ['yo@a.com'] };
     expect(run(own, { domains: null }).email).toMatchObject({ status: 'done', missing: [] });
     expect(run({ ...own, fromEmail: null }, { domains: null }).email.missing).toEqual(['resend', 'sender']);
+  });
+
+  it('remitente: tiene que ser de un dominio de su cuenta (o de un subdominio)', () => {
+    const doms = [{ name: 'pending.com', status: 'pending' }, { name: 'correo.cofundo.io', status: 'verified' }];
+    expect(senderOffDomain('hello@cofundo.io', doms)).toBe('correo.cofundo.io');
+    expect(senderOffDomain('hello@correo.cofundo.io', doms)).toBeNull();
+    expect(senderOffDomain('hello@x.pending.com', doms)).toBeNull();
+    expect(senderOffDomain('hello@gmail.com', null)).toBeNull();
   });
 
   it('email con el remitente fuera del dominio verificado: lo dice', () => {

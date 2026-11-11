@@ -9,10 +9,12 @@ const base = {
 };
 
 describe('emails con la marca', () => {
-  it('sin elegir nada, como siempre: texto y la baja al final', () => {
+  it('sin elegir nada: texto y, al final, «Darme de baja» como enlace (sin la dirección a la vista)', () => {
     const m = autoreplyEmail(base);
     expect(m.html).not.toContain('<table role="presentation" width="100%"');
-    expect(m.html).toContain('Si no quieres que te escribamos más:');
+    expect(m.html).toMatch(/<a href="https:\/\/enjoy\.ventas\.cofundo\.io\/api\/v1\/leads\/unsubscribe\?l=1&amp;t=x" style="color:#888;text-decoration:underline">Darme de baja<\/a><\/p><\/div>$/);
+    expect(m.html).not.toContain('>https://enjoy.ventas.cofundo.io/api/v1/leads/unsubscribe');
+    expect(m.text).toContain('Si no quieres que te escribamos más: https://enjoy.ventas.cofundo.io/api/v1/leads/unsubscribe');
   });
 
   it('con la marca: logo, línea del color, enlaces del color y la baja al pie', () => {

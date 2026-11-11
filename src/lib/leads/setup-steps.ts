@@ -40,6 +40,17 @@ export function readiness(st: LeadSettings, doms: Domain[] | null, o: { demo: bo
   return { resend, sender, notify, fromOffDomain, ready: resend && sender && notify };
 }
 
+/**
+ * El remitente tiene que ser de un dominio de su cuenta de Resend (si no, Resend no lo envía). Devuelve el dominio que
+ * toca (el verificado, si hay) cuando no lo es; null si vale o si no se ven los dominios.
+ */
+export function senderOffDomain(fromEmail: string | null | undefined, doms: Domain[] | null): string | null {
+  if (!doms?.length || !fromEmail?.includes('@')) return null;
+  const d = fromEmail.split('@')[1].trim().toLowerCase();
+  if (doms.some((x) => d === x.name || d.endsWith(`.${x.name}`))) return null;
+  return (doms.find((x) => x.status === 'verified') ?? doms[0]).name;
+}
+
 const statusOf = (done: boolean, started: boolean): StepStatus => (done ? 'done' : started ? 'partial' : 'todo');
 const hasMedia = (s: LeadSettings) => Object.values(s.media ?? {}).some((byLoc) => Object.values(byLoc ?? {}).some((x) => !!(x?.video || x?.booking)));
 

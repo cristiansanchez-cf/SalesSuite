@@ -79,7 +79,7 @@ const locales = [...new Set(guides.map((g) => g.locale))];
     <p>{T.connect.lede}</p>
     {check?.ok && <p class="co-inset flex items-start gap-2 !p-3 text-sm" data-testid="whatsapp-check-ok"><Icon name="circle-check" size={16} />{T.connect.ok(check.name ?? '—', check.number ?? '—')}</p>}
     {!check && phoneId && <p class="co-meta" data-testid="whatsapp-current">{T.connect.current(phoneId)}</p>}
-    <form method="post" action={ACTION} class="grid gap-3" data-testid="whatsapp-connect">
+    <form method="post" action={ACTION} class="grid gap-3" data-autosave data-testid="whatsapp-connect">
       <input type="hidden" name="action" value="whatsapp-connect" />
       <label class="co-field">{T.connect.phoneId}<input class="co-input" name="phoneId" value={phoneId ?? ''} required inputmode="numeric" pattern="[0-9 ]{5,40}" placeholder="1493985227120621" /></label>
       <label class="co-field">{T.connect.wabaId}<input class="co-input" name="wabaId" inputmode="numeric" pattern="[0-9 ]{5,40}" placeholder="1093861700287687" /><span class="co-meta">{T.connect.wabaHelp}</span></label>
@@ -90,7 +90,7 @@ const locales = [...new Set(guides.map((g) => g.locale))];
   <Fragment slot="p4">
     <p>{T.templates.lede}</p>
     <a class="co-btn co-btn--ghost co-btn--sm w-fit" href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener noreferrer"><Icon name="external-link" size={14} />{T.templates.open}</a>
-    <form method="post" action={ACTION} class="grid gap-4" data-testid="whatsapp-templates">
+    <form method="post" action={ACTION} class="grid gap-4" data-autosave data-enter-next data-testid="whatsapp-templates">
       <input type="hidden" name="action" value="whatsapp-templates" />
       {locales.length > 1 && (
         <div class="co-segmented w-fit" data-tabs>
@@ -129,13 +129,12 @@ const locales = [...new Set(guides.map((g) => g.locale))];
         </div>
       ))}
       <p class="co-meta">{T.templates.otherLangs}</p>
-      <button class="co-btn co-btn--primary w-fit" data-testid="whatsapp-templates-save">{T.templates.save}</button>
     </form>
   </Fragment>
 
   <Fragment slot="p5">
     <p>{T.activate.lede}</p>
-    <form method="post" action={ACTION} class="grid gap-3" data-testid="whatsapp-activate">
+    <form method="post" action={ACTION} class="grid gap-3" data-autosave data-testid="whatsapp-activate">
       <input type="hidden" name="action" value="whatsapp-activate" />
       <label class="co-check"><input type="checkbox" name="enabled" checked={enabled} data-testid="whatsapp-enabled" /> {T.activate.enabled}</label>
       <label class="co-check"><input type="checkbox" name="wa2" checked={wa2} /> <span>{T.activate.wa2}<span class="co-help block">{T.activate.wa2Help}</span></span></label>
@@ -147,7 +146,6 @@ const locales = [...new Set(guides.map((g) => g.locale))];
         </div>
         <span class="co-meta">{T.activate.hoursHelp}</span>
       </fieldset>
-      <button class="co-btn co-btn--primary w-fit" data-testid="whatsapp-activate-save">{T.activate.save}</button>
     </form>
     <div class="grid gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="whatsapp-holidays">
       <p class="font-semibold">{T.activate.holidays}</p>
@@ -163,7 +161,7 @@ const locales = [...new Set(guides.map((g) => g.locale))];
           </ul>
         )
         : <p class="co-meta">{T.activate.none}</p>}
-      <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2">
+      <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-autosave>
         <input type="hidden" name="action" value="holiday-add" />
         <input class="co-input w-44" type="date" name="day" required aria-label={T.activate.holidays} />
         <button class="co-btn co-btn--ghost"><Icon name="plus" size={16} />{T.activate.add}</button>
