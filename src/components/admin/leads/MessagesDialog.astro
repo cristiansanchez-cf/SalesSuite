@@ -27,6 +27,8 @@ interface Props {
   /** Lo que se enseña en el editor: lo guardado, la propuesta de la IA o lo enviado con error. */
   custom: LeadTemplates;
   ctx: PreviewCtx;
+  /** Las preguntas por tipo que se enseñan (lead-kinds.ts): «General» y los tipos que le llegan. */
+  qkeys: QuestionKey[];
   signature: EmailSignature | null;
   signerName: string;
   /** Imágenes quitadas de la firma pegada (para avisar). */
@@ -37,13 +39,12 @@ interface Props {
   notice?: string | null;
   error?: { title: string; details: string[] } | null;
 }
-const { id, open, part, T, S, base, active, custom, ctx, signature, signerName, dropped, style, brandDefaults, notice, error } = Astro.props;
+const { id, open, part, T, S, base, active, custom, ctx, qkeys, signature, signerName, dropped, style, brandDefaults, notice, error } = Astro.props;
 const branded = style.mode === 'brand';
 const brandStyle: EmailStyle = { mode: 'brand', logoUrl: style.logoUrl ?? brandDefaults.logoUrl, color: style.color ?? brandDefaults.color };
 const look = { plain: previewFor(base, custom, { ...ctx, style: {} }).html, brand: previewFor(base, custom, { ...ctx, style: brandStyle }).html };
 const ACTION = '/admin/leads/configurar';
 const LOCS: PreviewLocale[] = ['es', 'en', 'fr'];
-const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
 const textOf = (l: PreviewLocale, k: 'subject' | 'body' | 'wa1' | 'wa2') => custom[l]?.[k]?.trim() || DEFAULT_TEXTS[l][k];
 const qOf = (l: PreviewLocale, k: QuestionKey) => custom[l]?.questions?.[k]?.trim() || DEFAULT_TEXTS[l].questions[k];
 const pv = Object.fromEntries(LOCS.map((l) => [l, previewFor(l, custom, ctx)])) as Record<PreviewLocale, ReturnType<typeof previewFor>>;
@@ -84,7 +85,7 @@ const pasted = !!sig.html;
             <details class="co-inset !p-3">
               <summary class="cursor-pointer font-semibold">{S.questions}</summary>
               <div class="mt-3 grid gap-2">
-                {QKEYS.map((k) => <label class="co-field text-xs">{S.qKeys[k]}<input class="co-input" name={`t_${l}_q_${k}`} value={qOf(l, k)} maxlength="300" data-pv /></label>)}
+                {qkeys.map((k) => <label class="co-field text-xs">{S.qKeys[k]}<input class="co-input" name={`t_${l}_q_${k}`} value={qOf(l, k)} maxlength="300" data-pv /></label>)}
               </div>
             </details>
             <p class="co-meta">{S.textsHelp}</p>
@@ -93,7 +94,7 @@ const pasted = !!sig.html;
           </fieldset>
           <div class="grid min-w-0 content-start gap-3 [overflow-wrap:anywhere]" data-pv-out={l}>
             <p class="text-eyebrow">{T.preview}</p>
-            <p class="co-meta">{T.previewSample}</p>
+            <p class="co-meta">{ctx.sample?.type === 'general' ? T.previewSampleGeneral : T.previewSample}</p>
             <div class="rounded-xl border border-[var(--console-card-border)] bg-white !p-4 text-black">
               <p class="mb-2 text-sm font-semibold" data-pv-subject>{pv[l].subject}</p>
               <div class="text-sm" data-pv-html set:html={pv[l].html} />

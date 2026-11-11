@@ -41,6 +41,17 @@ describe('pasos de los leads entrantes', () => {
     expect(readiness({ ...base, ...own }, [{ name: 'a.com', status: 'verified' }], { demo: false, platformMail: false }).ready).toBe(true);
   });
 
+  it('email con una clave que solo envía (no se ven los dominios): vale con el remitente', () => {
+    const own = { resendKeyHint: 're_…ab', fromEmail: 'hola@a.com', replyTo: 'hola@a.com', notifyEmails: ['yo@a.com'] };
+    expect(run(own, { domains: null }).email).toMatchObject({ status: 'done', missing: [] });
+    expect(run({ ...own, fromEmail: null }, { domains: null }).email.missing).toEqual(['resend', 'sender']);
+  });
+
+  it('email con el remitente fuera del dominio verificado: lo dice', () => {
+    const own = { resendKeyHint: 're_…ab', fromEmail: 'hola@gmail.com', replyTo: 'hola@a.com', notifyEmails: ['yo@a.com'] };
+    expect(run(own, { domains: [{ name: 'a.com', status: 'verified' }] }).email).toMatchObject({ status: 'partial', missing: ['fromDomain'] });
+  });
+
   it('mensajes: a medias con solo la firma; hecho con textos y firma', () => {
     expect(run({ emailSignature: { name: 'Ana' } }).messages).toMatchObject({ status: 'partial', missing: ['texts'] });
     expect(run({ emailSignature: { name: 'Ana' }, templates: { es: { subject: 'Hola' } } as LeadSettings['templates'] }).messages.status).toBe('done');

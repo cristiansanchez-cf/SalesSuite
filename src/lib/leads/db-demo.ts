@@ -122,6 +122,10 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
       const r = s.subs.filter((x) => x.tenantId === tenantId && !(opts?.external && x.idempotencyKey.startsWith(CONSOLE_TEST_PREFIX))).sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))[0];
       return r ? { at: r.receivedAt, test: r.isTest } : null;
     },
+    async usedKinds(tenantId) {
+      const ls = s.subs.filter((x) => x.tenantId === tenantId);
+      return [...new Set(ls.flatMap((x) => [x.type, x.fields?.event_type, x.fields?.intent]).filter((v): v is string => !!v))];
+    },
     async counts(tenantId) {
       const ls = s.leads.filter((l) => l.tenantId === tenantId && !l.isTest && l.stage !== 'spam' && !l.anonymizedAt);
       return { inbox: ls.filter((l) => !l.validatedAt && !l.quarantined).length, quarantine: ls.filter((l) => l.quarantined).length };

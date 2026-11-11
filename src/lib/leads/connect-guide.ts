@@ -5,7 +5,11 @@
  */
 import { FIELDS, LEAD_TYPES } from './contract';
 
-export interface GuideInput { endpoint: string; brand: string; origins: string[]; locale: 'es' | 'en' }
+export interface GuideInput {
+  endpoint: string; brand: string; origins: string[]; locale: 'es' | 'en';
+  /** Los tipos que ya le llegan (lead-kinds.ts). Sin esto, salen todos los del contrato; con esto, «general» y los suyos. */
+  kinds?: readonly string[];
+}
 
 const example = (brand: string, locale: string) => ({
   schema: 'enjoy.lead.v2',
@@ -20,9 +24,10 @@ const example = (brand: string, locale: string) => ({
   context: { locale, page_url: 'https://<tu-web>/contacto', time_to_submit_ms: 12000 },
 });
 
-const typesList = () => LEAD_TYPES.map((t) => {
+const typesList = (kinds?: readonly string[]) => LEAD_TYPES.filter((t) => !kinds || t === 'general' || kinds.includes(t)).map((t) => {
   const f = FIELDS[t];
-  const fs = f.map((x) => `${x.key}${x.required ? '*' : ''}${x.values ? ` (${x.values.join(' | ')})` : ''}`).join(', ');
+  const vals = (v: readonly string[]) => (kinds ? v.filter((x) => x === 'other' || kinds.includes(x)) : v);
+  const fs = f.map((x) => `${x.key}${x.required ? '*' : ''}${x.values ? ` (${vals(x.values).join(' | ')})` : ''}`).join(', ');
   return `  - ${t}${fs ? `: ${fs}` : ''}`;
 }).join('\n');
 
@@ -45,7 +50,7 @@ Rules:
 - idempotency_key: a unique id per submission (crypto.randomUUID()); reuse the same one if you retry.
 - contact.name and contact.email are required. contact.phone with its country prefix if you have it (+34…).
 - type and fields: use the type that fits the form; * = required. If none fits, use "general" with fields.event_type "other".
-${typesList()}
+${typesList(g.kinds)}
 - message: the free text of the form, if there is one.
 - consent.marketing: true only if they ticked the marketing box. consent.policy_url: link to our privacy policy. consent.legal_text_version: the date of our legal text. If the form tells them we will write by WhatsApp, consent.whatsapp_notice_shown: true.
 - context.locale (es, en, fr…), context.page_url, context.time_to_submit_ms (ms from opening the form to sending it). If there are UTM parameters, put them in context.attribution.current (utm_source, utm_medium, utm_campaign…).
@@ -71,7 +76,7 @@ Reglas:
 - idempotency_key: un identificador único por envío (crypto.randomUUID()); el mismo si reintentas.
 - contact.name y contact.email son obligatorios. contact.phone con prefijo si lo tienes (+34…).
 - type y fields: el tipo que encaje con el formulario; * = obligatorio. Si no encaja ninguno, "general" con fields.event_type "other".
-${typesList()}
+${typesList(g.kinds)}
 - message: el texto libre del formulario, si lo hay.
 - consent.marketing: true solo si marcó la casilla de comunicaciones. consent.policy_url: el enlace a nuestra política de privacidad. consent.legal_text_version: la fecha de nuestro texto legal. Si el formulario avisa de que le escribiremos por WhatsApp, consent.whatsapp_notice_shown: true.
 - context.locale (es, en, fr…), context.page_url y context.time_to_submit_ms (milisegundos desde que abre el formulario hasta que lo envía). Si hay UTM, van en context.attribution.current (utm_source, utm_medium, utm_campaign…).

@@ -8,7 +8,7 @@ export type StepStatus = 'todo' | 'partial' | 'done';
 export type StepKey = 'connect' | 'email' | 'messages' | 'whatsapp' | 'extras' | 'privacy';
 export type StepNeed = 'required' | 'recommended' | 'optional';
 /** Lo que falta, por clave (los textos van en i18n). */
-export type Missing = 'lead' | 'resend' | 'sender' | 'notify' | 'texts' | 'signature' | 'waToken' | 'waPhone' | 'waTemplates' | 'waOn';
+export type Missing = 'lead' | 'resend' | 'fromDomain' | 'sender' | 'notify' | 'texts' | 'signature' | 'waToken' | 'waPhone' | 'waTemplates' | 'waOn';
 export interface SetupStep { key: StepKey; need: StepNeed; status: StepStatus; missing: Missing[] }
 
 export interface Domain { name: string; status: string }
@@ -29,10 +29,15 @@ export interface SetupInput {
 export function readiness(st: LeadSettings, doms: Domain[] | null, o: { demo: boolean; platformMail: boolean }) {
   const fromDomain = st.fromEmail?.split('@')[1]?.toLowerCase() ?? null;
   const covers = (d: Domain) => d.status === 'verified' && !!fromDomain && (fromDomain === d.name || fromDomain.endsWith(`.${d.name}`));
-  const resend = o.demo || (st.resendKeyHint ? !!doms && !!st.fromEmail && doms.some(covers) : o.platformMail);
+  // Con su propia cuenta: el remitente tiene que ser de un dominio verificado. Si la clave solo deja enviar (Resend la
+  // recomienda así), no se ven los dominios: entonces vale con que haya remitente; si no es del dominio, Resend lo rechaza
+  // y se ve en la ficha del lead.
+  const resend = o.demo || (st.resendKeyHint ? !!st.fromEmail && (doms === null || doms.some(covers)) : o.platformMail);
+  // El remitente no es de ningún dominio verificado, pero la cuenta sí tiene uno: falta cambiar el remitente.
+  const fromOffDomain = !o.demo && !!st.resendKeyHint && !!doms && !!st.fromEmail && !doms.some(covers) && doms.some((d) => d.status === 'verified');
   const sender = !!st.replyTo && (!st.resendKeyHint || !!st.fromEmail);
   const notify = st.notifyEmails.length > 0;
-  return { resend, sender, notify, ready: resend && sender && notify };
+  return { resend, sender, notify, fromOffDomain, ready: resend && sender && notify };
 }
 
 const statusOf = (done: boolean, started: boolean): StepStatus => (done ? 'done' : started ? 'partial' : 'todo');
@@ -48,7 +53,7 @@ export function leadSetupSteps(x: SetupInput): SetupStep[] {
   const waOn = waToken && !!s.whatsappPhoneId && s.whatsappEnabled;
 
   const connectMissing: Missing[] = x.received ? [] : ['lead'];
-  const emailMissing = (['resend', 'sender', 'notify'] as const).filter((k) => !r[k]);
+  const emailMissing: Missing[] = (['resend', 'sender', 'notify'] as const).filter((k) => !r[k]).map((k) => (k === 'resend' && r.fromOffDomain ? 'fromDomain' : k));
   const msgMissing: Missing[] = [...(ownTexts ? [] : ['texts' as const]), ...(sig ? [] : ['signature' as const])];
   const waMissing: Missing[] = [
     ...(waToken ? [] : ['waToken' as const]), ...(s.whatsappPhoneId ? [] : ['waPhone' as const]),

@@ -6,6 +6,7 @@
  *  - subscribeApp: conecta la app a la cuenta de WhatsApp para que lleguen los mensajes (lo que hicimos a mano con Enjoy).
  */
 import { waBody, waParams } from './templates';
+import type { SampleLead } from './lead-kinds';
 import type { LeadTemplates } from './types';
 import { META_LANG } from './whatsapp';
 
@@ -23,13 +24,13 @@ const REMINDER: Record<WaLocale, { body: string; buttons: string[]; examples: st
 };
 const SAMPLE = { name: 'Laura Gómez', type: 'venue' as const, fields: { venue_name: 'Sala Ejemplo', city: 'Valencia' } };
 
-export function templateGuide(step: WaStep, l: WaLocale, o: { signer: string; brand: string; custom?: LeadTemplates; booking?: string | null }): TemplateGuide {
+export function templateGuide(step: WaStep, l: WaLocale, o: { signer: string; brand: string; custom?: LeadTemplates; booking?: string | null; sample?: SampleLead }): TemplateGuide {
   const base = { step, locale: l, name: suggestedName(step, l), language: META_LANG[l] ?? 'en', category: 'Utility' as const };
   if (step === 'reminder') return { ...base, ...REMINDER[l] };
   return {
     ...base,
     body: waBody(step, l, o.signer, o.brand, o.custom),
-    examples: waParams(step, { ...SAMPLE, locale: l, bookingUrl: o.booking ?? 'https://cal.com/tu-empresa', videoUrl: null, custom: o.custom }),
+    examples: waParams(step, { ...(o.sample ?? SAMPLE), locale: l, bookingUrl: o.booking ?? 'https://cal.com/tu-empresa', videoUrl: null, custom: o.custom }),
     buttons: [],
   };
 }

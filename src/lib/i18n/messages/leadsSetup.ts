@@ -12,7 +12,7 @@ const es = {
   cta: { todo: 'Empezar', partial: 'Continuar', done: 'Editar' },
   missing: 'Te falta',
   miss: {
-    lead: 'que llegue el primer lead (vale uno de prueba)', resend: 'la cuenta de email (Resend) con tu dominio verificado',
+    lead: 'que llegue el primer lead (vale uno de prueba)', resend: 'la cuenta de email (Resend) con tu dominio verificado', fromDomain: 'que el remitente sea de tu dominio verificado en Resend',
     sender: 'el remitente y a quién se contesta', notify: 'a quién avisamos de cada lead', texts: 'tus textos (ahora van los nuestros)',
     signature: 'tu firma', waToken: 'que conectemos WhatsApp en la plataforma (lo hacemos nosotros)', waPhone: 'el número de WhatsApp de tu empresa',
     waTemplates: 'las plantillas aprobadas por Meta', waOn: 'activar el envío por WhatsApp',
@@ -112,7 +112,7 @@ const es = {
       lede: 'Escribe en los idiomas en los que te llegan leads. Los que no añadas usan nuestros textos.', add: 'Añadir idioma',
       remove: 'Quitar este idioma', removeHelp: 'Al guardar, este idioma vuelve a nuestros textos.', names: { es: 'Español', en: 'Inglés', fr: 'Francés' } as Record<string, string>,
     },
-    preview: 'Así se verá', previewSample: 'Con un lead de ejemplo: Laura, de la Sala Ejemplo en Valencia.',
+    preview: 'Así se verá', previewSample: 'Con un lead de ejemplo: Laura, de la Sala Ejemplo en Valencia.', previewSampleGeneral: 'Con un lead de ejemplo: Laura, que os escribe por un proyecto.',
     sig: {
       lede: 'Va al final de cada email.', tabPaste: 'Pegar mi firma', tabFields: 'Rellenarla a mano',
       pasteHelp: 'Abre un email tuyo en Gmail u Outlook, selecciona la firma, cópiala (Ctrl+C o ⌘C) y pégala aquí. Se pega con su formato, sus enlaces y su logo.',
@@ -199,7 +199,7 @@ export const leadsSetupMessages = defineMessages({
     cta: { todo: 'Start', partial: 'Continue', done: 'Edit' },
     missing: 'Still to do',
     miss: {
-      lead: 'receive the first lead (a test one counts)', resend: 'the email account (Resend) with your domain verified',
+      lead: 'receive the first lead (a test one counts)', resend: 'the email account (Resend) with your domain verified', fromDomain: 'a sender address on your domain verified in Resend',
       sender: 'the sender and who replies go to', notify: 'who we notify about each lead', texts: 'your own texts (ours are used for now)',
       signature: 'your signature', waToken: 'us connecting WhatsApp on the platform (we do it)', waPhone: 'your company’s WhatsApp number',
       waTemplates: 'the templates approved by Meta', waOn: 'turn on sending by WhatsApp',
@@ -299,7 +299,7 @@ export const leadsSetupMessages = defineMessages({
         lede: 'Write in the languages your leads come in. Languages you do not add use our texts.', add: 'Add language',
         remove: 'Remove this language', removeHelp: 'When you save, this language goes back to our texts.', names: { es: 'Spanish', en: 'English', fr: 'French' } as Record<string, string>,
       },
-      preview: 'How it will look', previewSample: 'With a sample lead: Laura, from Sala Ejemplo in Valencia.',
+      preview: 'How it will look', previewSample: 'With a sample lead: Laura, from Sala Ejemplo in Valencia.', previewSampleGeneral: 'With a sample lead: Laura, who writes to you about a project.',
       sig: {
         lede: 'It goes at the end of every email.', tabPaste: 'Paste my signature', tabFields: 'Fill it in by hand',
         pasteHelp: 'Open one of your emails in Gmail or Outlook, select the signature, copy it (Ctrl+C or ⌘C) and paste it here. It keeps its format, links and logo.',
@@ -383,7 +383,7 @@ export const leadsSetupMessages = defineMessages({
     cta: { todo: 'Começar', partial: 'Continuar', done: 'Editar' },
     missing: 'Falta',
     miss: {
-      lead: 'receber o primeiro lead (um de teste conta)', resend: 'a conta de email (Resend) com seu domínio verificado',
+      lead: 'receber o primeiro lead (um de teste conta)', resend: 'a conta de email (Resend) com seu domínio verificado', fromDomain: 'que o remetente seja do seu domínio verificado na Resend',
       sender: 'o remetente e para quem vão as respostas', notify: 'quem avisamos de cada lead', texts: 'seus textos (por enquanto vão os nossos)',
       signature: 'sua assinatura', waToken: 'ligarmos o WhatsApp na plataforma (fazemos nós)', waPhone: 'o número de WhatsApp da sua empresa',
       waTemplates: 'os modelos aprovados pela Meta', waOn: 'ativar o envio por WhatsApp',
@@ -483,7 +483,7 @@ export const leadsSetupMessages = defineMessages({
         lede: 'Escreva nos idiomas em que chegam leads. Os que não adicionar usam os nossos textos.', add: 'Adicionar idioma',
         remove: 'Remover este idioma', removeHelp: 'Ao guardar, este idioma volta aos nossos textos.', names: { es: 'Espanhol', en: 'Inglês', fr: 'Francês' } as Record<string, string>,
       },
-      preview: 'Como vai ficar', previewSample: 'Com um lead de exemplo: Laura, da Sala Ejemplo em Valência.',
+      preview: 'Como vai ficar', previewSample: 'Com um lead de exemplo: Laura, da Sala Ejemplo em Valência.', previewSampleGeneral: 'Com um lead de exemplo: Laura, que escreve para vocês sobre um projeto.',
       sig: {
         lede: 'Vai no fim de cada email.', tabPaste: 'Colar a minha assinatura', tabFields: 'Preencher à mão',
         pasteHelp: 'Abra um email seu no Gmail ou no Outlook, selecione a assinatura, copie (Ctrl+C ou ⌘C) e cole aqui. Fica com o formato, os links e o logótipo.',
@@ -567,7 +567,7 @@ export const leadsSetupMessages = defineMessages({
     cta: { todo: '시작', partial: '계속', done: '수정' },
     missing: '남은 일',
     miss: {
-      lead: '첫 리드 받기 (테스트 리드도 됩니다)', resend: '도메인이 인증된 이메일 계정 (Resend)',
+      lead: '첫 리드 받기 (테스트 리드도 됩니다)', resend: '도메인이 인증된 이메일 계정 (Resend)', fromDomain: 'Resend에서 인증된 도메인의 보내는 주소',
       sender: '보내는 사람과 답장 받을 주소', notify: '리드마다 알릴 사람', texts: '직접 쓴 문구 (지금은 기본 문구 사용)',
       signature: '서명', waToken: '플랫폼의 WhatsApp 연결 (저희가 합니다)', waPhone: '회사 WhatsApp 번호',
       waTemplates: 'Meta가 승인한 템플릿', waOn: 'WhatsApp 발송 켜기',
@@ -667,7 +667,7 @@ export const leadsSetupMessages = defineMessages({
         lede: '리드가 들어오는 언어로 쓰세요. 추가하지 않은 언어는 기본 문구를 씁니다.', add: '언어 추가',
         remove: '이 언어 삭제', removeHelp: '저장하면 이 언어는 기본 문구로 돌아갑니다.', names: { es: '스페인어', en: '영어', fr: '프랑스어' } as Record<string, string>,
       },
-      preview: '미리 보기', previewSample: '예시 리드: 발렌시아 Sala Ejemplo의 Laura.',
+      preview: '미리 보기', previewSample: '예시 리드: 발렌시아 Sala Ejemplo의 Laura.', previewSampleGeneral: '예시 리드: 프로젝트 문의를 보낸 Laura.',
       sig: {
         lede: '모든 이메일 끝에 들어갑니다.', tabPaste: '내 서명 붙여 넣기', tabFields: '직접 입력',
         pasteHelp: 'Gmail이나 Outlook에서 내 이메일을 열고 서명을 선택해 복사(Ctrl+C 또는 ⌘C)한 뒤 여기에 붙여 넣으세요. 서식, 링크, 로고가 그대로 들어갑니다.',

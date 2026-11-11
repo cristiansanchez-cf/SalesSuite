@@ -74,3 +74,19 @@ describe('guardar el remitente y los avisos', () => {
     await expect(svc.saveSender({ fromEmail: null, fromName: null, replyTo: null, notifyEmails: [] }, 'enjoy')).rejects.toThrow();
   });
 });
+
+describe('la firma pegada', () => {
+  beforeEach(() => resetDemoLeads());
+
+  it('pegarla no borra los campos a mano; si no queda nada que se vea, avisa y no guarda', async () => {
+    const svc = createLeadsService(demoLeadsDb(), admin(ENJOY));
+    await svc.saveSignature({ name: 'Ana Ruiz', phone: '+34 600 000 000' });
+    await svc.saveSignature({ html: '<p><b>Ana Ruiz</b> · Ventas</p>' });
+    let sig = (await svc.settings())?.emailSignature;
+    expect(sig).toMatchObject({ name: 'Ana Ruiz', phone: '+34 600 000 000' });
+    expect(sig?.html).toContain('Ana Ruiz');
+    await expect(svc.saveSignature({ html: '<script>x</script><style>p{}</style>' })).rejects.toThrow(/firma pegada/);
+    sig = (await svc.settings())?.emailSignature;
+    expect(sig?.html).toContain('Ana Ruiz');
+  });
+});

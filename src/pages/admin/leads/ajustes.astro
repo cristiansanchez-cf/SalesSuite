@@ -16,6 +16,7 @@ import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
 import { ownDomains, setResendKey } from '~/lib/leads/resend-key';
 import { flash } from '~/lib/admin/forms';
+import { sampleLead, shownKinds } from '~/lib/leads/lead-kinds';
 import { DEFAULT_TEXTS, MEDIA_TYPES, autoreplyEmail, mediaFor, waParams, waPreview } from '~/lib/leads/templates';
 import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
 import { cleanupContext } from '~/lib/crm/research-context';
@@ -117,6 +118,9 @@ const s = (await svc.settings()) ?? {
   sendFromHour: 8, sendToHour: 22, holidays: [],
 };
 const demo = appMode() === 'demo';
+// A cada empresa, solo «General» y los tipos de solicitud que le llegan o ya tiene personalizados (lead-kinds.ts).
+const kinds = await svc.usedKinds().catch(() => [] as string[]);
+const shown = shownKinds(kinds, s);
 const okMsg = flash(Astro.url, { saved: L.ok.saved, live: L.ok.live, paused: L.ok.paused, resendSaved: L.ok.resendSaved, resendCleared: L.ok.resendCleared, textsSaved: L.ok.textsSaved, textsReset: L.ok.textsReset, sigSaved: L.ok.sigSaved, retentionSaved: P.ok.saved, purged: P.ok.purged });
 // La firma: la guardada o, la primera vez, lo que ya se sabe (firma, responder a, web y logo de la marca si es PNG/JPG).
 const brandLogo = tenant?.brand?.logoUrl && /^https:/.test(tenant.brand.logoUrl) && !/\.svg(\?|$)/i.test(tenant.brand.logoUrl) ? tenant.brand.logoUrl : '';
@@ -156,7 +160,7 @@ const endpoint = `${requestOrigin(Astro.request, Astro.url)}/api/v1/leads`;
 // Vista previa con un lead de ejemplo.
 const brandName = tenant?.name ?? s.brand;
 const signer = s.signerName ?? brandName;
-const sample = { name: 'Laura Gómez', type: 'venue' as const, fields: { venue_name: 'Sala Ejemplo', city: 'Valencia' } };
+const sample = sampleLead(kinds);
 const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
   loc,
   wa1: waPreview('wa1', loc, signer, brandName, waParams('wa1', { ...sample, locale: loc, bookingUrl: s.bookingUrl, videoUrl: s.videoUrl, custom }), custom),
@@ -241,7 +245,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <div id="media" class="grid scroll-mt-6 gap-2" data-testid="leads-media">
       <h3 class="font-semibold">{S.media}</h3>
       <p class="co-meta">{S.mediaHelp}</p>
-      {MEDIA_TYPES.map((ty) => {
+      {shown.media.map((ty) => {
         const has = LOCS.some((l) => s.media?.[ty]?.[l]?.video || s.media?.[ty]?.[l]?.booking);
         return (
           <details class="co-inset !p-3" open={has || undefined} data-testid={`leads-media-${ty}`}>
@@ -294,7 +298,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
           <label class="co-field">{S.wa2}<textarea class="co-textarea h-32" name={`t_${l}_wa2`} maxlength="1024">{textOf(l, 'wa2')}</textarea></label>
           <p class="co-meta">{S.questions}</p>
           <div class="grid gap-2 sm:grid-cols-2">
-            {QKEYS.map((k) => <label class="co-field text-xs">{S.qKeys[k]}<input class="co-input" name={`t_${l}_q_${k}`} value={qOf(l, k)} maxlength="300" data-testid={`leads-texts-${l}-q-${k}`} /></label>)}
+            {shown.questions.map((k) => <label class="co-field text-xs">{S.qKeys[k]}<input class="co-input" name={`t_${l}_q_${k}`} value={qOf(l, k)} maxlength="300" data-testid={`leads-texts-${l}-q-${k}`} /></label>)}
           </div>
         </div>
       </details>

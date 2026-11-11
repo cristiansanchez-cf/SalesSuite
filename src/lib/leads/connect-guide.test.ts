@@ -27,6 +27,16 @@ describe('lo que se le pasa a quien hace la web', () => {
     expect(connectPrompt({ ...g, origins: [] })).toContain('todavía ninguna');
   });
 
+  it('a otra empresa solo le salen «general» y los tipos que ya le llegan', () => {
+    const p = connectPrompt({ ...g, kinds: [] });
+    expect(p).toContain('  - general: event_type* (other)');
+    expect(p).not.toMatch(/  - (venue|dj|festival|wedding|custom_dev)\b/);
+    const q = connectPrompt({ ...g, kinds: ['custom_dev', 'venue'] });
+    expect(q).toContain('event_type* (venue | other)');
+    expect(q).toContain('  - custom_dev:');
+    expect(q).not.toContain('  - festival');
+  });
+
   it('el código usa la dirección y la marca', () => {
     const s = connectSnippet(g);
     expect(s).toContain("fetch('https://acme.ventas.cofundo.io/api/v1/leads'");

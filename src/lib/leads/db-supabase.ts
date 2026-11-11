@@ -190,6 +190,12 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
       const r = check(await q.order('received_at', { ascending: false }).limit(1).maybeSingle()) as Row | null;
       return r ? { at: r.received_at, test: r.is_test } : null;
     },
+    async usedKinds(tenantId) {
+      // Los últimos 500 bastan para saber qué tipos usa (lo personalizado se enseña igual, aunque no salga aquí).
+      const rows = check(await sb.from('lead_submission').select('type, event_type:fields->>event_type, intent:fields->>intent').eq('tenant_id', tenantId)
+        .order('received_at', { ascending: false }).limit(500)) as { type: string; event_type: string | null; intent: string | null }[];
+      return [...new Set(rows.flatMap((r) => [r.type, r.event_type, r.intent]).filter((x): x is string => !!x))];
+    },
     async counts(tenantId) {
       const c = async (quar: boolean) => {
         let q = sb.from('lead').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_test', false).eq('quarantined', quar).neq('stage', 'spam').is('anonymized_at', null);

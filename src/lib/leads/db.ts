@@ -46,6 +46,8 @@ export interface LeadsDb {
   /** Sin los anonimizados, salvo `anonymized` (las métricas). */
   list(tenantId: string, view: View, opts?: { q?: string; limit?: number; anonymized?: boolean }): Promise<Lead[]>;
   counts(tenantId: string): Promise<{ inbox: number; quarantine: number }>;
+  /** Los tipos que le llegan (tipo, `event_type` y `intent` de sus últimos envíos): para no enseñar los de otra empresa. */
+  usedKinds(tenantId: string): Promise<string[]>;
   /** El último envío que llegó de la web (pruebas incluidas): para saber si la web ya está conectada. */
   /** El último envío recibido; `external`: sin contar las pruebas mandadas desde la consola (CONSOLE_TEST_PREFIX). */
   lastSubmission(tenantId: string, opts?: { external?: boolean }): Promise<{ at: string; test: boolean } | null>;

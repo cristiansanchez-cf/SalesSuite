@@ -18,7 +18,8 @@ import { previewFor } from '~/lib/leads/message-preview';
 import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
 import { cleanupContext } from '~/lib/crm/research-context';
 import { mediaFor, msgLocale, pickBrandColor, safeLogo } from '~/lib/leads/templates';
-import { SAMPLE_LEAD, type PreviewLocale } from '~/lib/leads/message-preview';
+import type { PreviewLocale } from '~/lib/leads/message-preview';
+import { sampleLead, shownKinds } from '~/lib/leads/lead-kinds';
 import { randomUUID } from 'node:crypto';
 import { requestOrigin } from '~/lib/http';
 import { CONSOLE_TEST_PREFIX } from '~/lib/leads/db';
@@ -211,6 +212,8 @@ const s: LeadSettings = (await svc.settings()) ?? {
 };
 const domains = s.resendKeyHint ? await ownDomains(admin).catch(() => null) : null;
 const last = await svc.lastSubmission({ external: true }).catch(() => null);
+// Los tipos de solicitud que le llegan: a cada empresa solo le salen «General» y los suyos (lead-kinds.ts).
+const kinds = await svc.usedKinds().catch(() => [] as string[]);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
@@ -260,9 +263,11 @@ const msgActive = [msgBase, ...MSG_LOCS.filter((l) => l !== msgBase && !!s.templ
 const msgPart = aiDrafted ? 2 : openParam === 'messages' && pParam >= 1 && pParam <= 4 ? pParam
   : msgStep.status === 'todo' ? 1 : msgStep.missing.includes('texts') ? 2 : msgStep.missing.includes('signature') ? 3 : 2;
 const brandName = tenant?.name ?? s.brand;
+const sample = sampleLead(kinds);
+const shown = shownKinds(kinds, s);
 const msgCtx = {
-  signer: s.signerName ?? brandName, brand: brandName, signature: s.emailSignature, style: s.emailStyle ?? {},
-  media: Object.fromEntries(MSG_LOCS.map((l) => { const m = mediaFor(s, SAMPLE_LEAD.type, SAMPLE_LEAD.fields, l); return [l, { booking: m.booking ?? null, video: m.video ?? null }]; })) as Record<PreviewLocale, { booking: string | null; video: string | null }>,
+  signer: s.signerName ?? brandName, brand: brandName, signature: s.emailSignature, style: s.emailStyle ?? {}, sample,
+  media: Object.fromEntries(MSG_LOCS.map((l) => { const m = mediaFor(s, sample.type, sample.fields, l); return [l, { booking: m.booking ?? null, video: m.video ?? null }]; })) as Record<PreviewLocale, { booking: string | null; video: string | null }>,
 };
 const dropped = Math.max(0, Math.min(99, Number(Astro.url.searchParams.get('caidas')) || 0));
 // Lo que se propone para «con tu marca»: el logo de la marca si es PNG/JPG por https y el color de la marca que se lee sobre blanco.
@@ -276,7 +281,7 @@ const hub = hubConfig();
 const waSteps: WaStep[] = hub ? ['wa1', 'wa2'] : ['wa1', 'wa2', 'reminder'];
 const waSaved = s.whatsappTemplates ?? {};
 const waLocales = [...new Set([...msgActive, ...MSG_LOCS.filter((l) => waSteps.some((st) => !!waSaved[st]?.[l]))])] as PreviewLocale[];
-const waGuides = waLocales.flatMap((l) => waSteps.map((st) => templateGuide(st, l, { signer: msgCtx.signer, brand: msgCtx.brand, custom: s.templates, booking: msgCtx.media[l].booking })));
+const waGuides = waLocales.flatMap((l) => waSteps.map((st) => templateGuide(st, l, { signer: msgCtx.signer, brand: msgCtx.brand, custom: s.templates, booking: msgCtx.media[l].booking, sample })));
 const waCheck: PhoneCheck | null = openParam === 'whatsapp' && pParam === 3 && s.whatsappPhoneId
   ? (demo ? { ok: true, number: '+34 600 00 00 00', name: tenant?.name ?? null, quality: 'GREEN' } : await checkPhone(s.whatsappPhoneId, env('WHATSAPP_TOKEN')).catch(() => null))
   : null;
@@ -340,7 +345,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
 
   <ConnectDialog
     id="setup-connect" open={openParam === 'connect' || errorIn === 'connect'} part={errorIn === 'connect' ? errorPart : connectPart}
-    origins={s.allowedOrigins} prompt={connectPrompt({ endpoint, brand, origins: s.allowedOrigins, locale: guideLocale })}
+    origins={s.allowedOrigins} prompt={connectPrompt({ endpoint, brand, origins: s.allowedOrigins, locale: guideLocale, kinds })}
     snippet={connectSnippet({ endpoint, brand })} received={last ? fmt.format(new Date(last.at)) : null}
     testSent={Astro.url.searchParams.get('ok') === 'test'} T={T.connect}
     notice={openParam === 'connect' && Astro.url.searchParams.get('ok') === 'webs' ? T.connect.ok.webs : null}
@@ -355,7 +360,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
   />
   <MessagesDialog
     id="setup-messages" open={openParam === 'messages' || errorIn === 'messages' || aiDrafted} part={errorIn === 'messages' ? errorPart : msgPart}
-    T={T.messages} S={S} base={msgBase} active={msgActive} custom={msgCustom} ctx={msgCtx}
+    T={T.messages} S={S} base={msgBase} active={msgActive} custom={msgCustom} ctx={msgCtx} qkeys={shown.questions}
     signature={s.emailSignature && Object.keys(s.emailSignature).length ? s.emailSignature : null} signerName={s.signerName ?? ''} dropped={dropped}
     style={s.emailStyle ?? {}} brandDefaults={{ logoUrl: brandLogo, color: brandColor.length === 4 ? `#${[...brandColor.slice(1)].map((c) => c + c).join('')}` : brandColor }}
     notice={aiDrafted ? T.messages.ok.ai : openParam === 'messages' ? okMsg : null}

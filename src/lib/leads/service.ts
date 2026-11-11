@@ -21,6 +21,7 @@ export const LEAD_ERRORS = {
   brandTaken: 'Esa marca ya la usa otro espacio',
   waVars: 'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}',
   svgLogo: 'El logo tiene que ser PNG o JPG: Gmail no muestra SVG',
+  emptySignature: 'No hemos podido leer la firma pegada. Prueba a copiarla otra vez o rellénala a mano',
   badOrigin: (v: string) => `«${v}» no es una dirección web (ejemplo: tuweb.com)`,
   tooManyOrigins: 'Como mucho 20 webs',
   badEmail: (v: string) => `«${v}» no es un email`,
@@ -114,6 +115,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
 
   async function list(view: View, q?: string) { requireManager(); return db.list(t, view, { q }); }
   async function counts() { requireManager(); return db.counts(t); }
+  async function usedKinds() { requireManager(); return db.usedKinds(t); }
 
   async function detail(id: string) {
     const lead = await own(id);
@@ -286,9 +288,13 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     if (!r.success) throw new AdminError(422, r.error.issues.some((i) => i.message === 'svg') ? LEAD_ERRORS.svgLogo : 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
     const prev = await db.settings(t);
     if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
-    const { html: pasted, ...fields } = r.data;
-    // Pegada: manda sobre los campos (se guardan igual, por si la quita). Vacía o sin nada que se vea: se quita.
+    const { html: pasted, ...sent } = r.data;
+    // Pegada: manda sobre los campos, que se quedan como estaban por si la quita. Si de lo pegado no queda nada que se
+    // vea, se avisa en vez de guardar una firma vacía.
     const cleanHtml = pasted !== undefined ? sanitizeSignatureHtml(pasted) : null;
+    if (cleanHtml && !cleanHtml.html && pasted?.trim()) throw new AdminError(422, LEAD_ERRORS.emptySignature);
+    const { html: _h, htmlText: _t, ...prevFields } = prev.emailSignature ?? {};
+    const fields = pasted !== undefined ? prevFields : sent;
     const keepHtml = cleanHtml ? (cleanHtml.html ? { html: cleanHtml.html, htmlText: signatureHtmlToText(cleanHtml.html) } : {})
       : prev.emailSignature?.html ? { html: prev.emailSignature.html, htmlText: prev.emailSignature.htmlText } : {};
     const clean = { ...Object.fromEntries(Object.entries(fields).filter(([, v]) => v)), ...keepHtml };
@@ -404,7 +410,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

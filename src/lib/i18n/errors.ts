@@ -13,6 +13,7 @@ const EXACT: Record<string, T> = {
   'La clave de Resend no es válida': ['That Resend key is not valid', 'A chave do Resend não é válida', 'Resend 키가 유효하지 않습니다'],
   'Falta LEADS_SECRET o CRON_SECRET en el servidor': ['LEADS_SECRET or CRON_SECRET is missing on the server', 'Falta LEADS_SECRET ou CRON_SECRET no servidor', '서버에 LEADS_SECRET 또는 CRON_SECRET이 없습니다'],
   'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}': ['Each WhatsApp message must include {{1}}, {{2}} and {{3}}', 'Cada mensagem de WhatsApp tem de levar {{1}}, {{2}} e {{3}}', '각 WhatsApp 메시지에는 {{1}}, {{2}}, {{3}}이 있어야 합니다'],
+  'No hemos podido leer la firma pegada. Prueba a copiarla otra vez o rellénala a mano': ['We could not read the pasted signature. Try copying it again or fill it in by hand', 'Não conseguimos ler a assinatura colada. Tente copiá-la de novo ou preencha à mão', '붙여넣은 서명을 읽지 못했습니다. 다시 복사하거나 직접 입력해 주세요'],
   'El logo tiene que ser PNG o JPG: Gmail no muestra SVG': ['The logo must be PNG or JPG: Gmail does not show SVG', 'O logo tem de ser PNG ou JPG: o Gmail não mostra SVG', '로고는 PNG 또는 JPG여야 합니다: Gmail은 SVG를 표시하지 않습니다'],
   'Lead no encontrado': ['Lead not found', 'Lead não encontrado', '리드를 찾을 수 없습니다'],
   'Leads sin configurar en este espacio': ['Leads are not set up in this space', 'Leads não configurados neste espaço', '이 공간에는 리드가 설정되지 않았습니다'],
