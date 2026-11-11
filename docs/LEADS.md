@@ -280,7 +280,8 @@ Lo que diga la política de privacidad de cada espacio; se configura en **Leads 
    En pruebas (pausado) solo entran los envíos de prueba. Se llega desde Leads web (bandeja) o desde Configurar → Empresa.
 6. **Dar la URL a la web** (`https://enjoy.ventas.cofundo.io/api/v1/leads`) y probar con `"test": true` o desde
    localhost; luego un envío real.
-7. **WhatsApp, cuando haya SIM:**
+7. **WhatsApp, cuando haya SIM** (en la consola: Configurar → Leads entrantes → WhatsApp a los leads, paso a paso; ahí se
+   comprueba el número contra Meta, se conectan los avisos con el id de la cuenta y salen las plantillas para copiar):
    - Meta Business verificado → WhatsApp Business Platform → añadir el número (recibe un SMS o llamada: por eso hace falta
      la SIM). Si ese número ya se usa en la app de WhatsApp Business, mirar la opción de usarlo a la vez en la app y en
      la API; si no, se contesta desde otra app o desde el CRM (pendiente).

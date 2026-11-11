@@ -1,0 +1,173 @@
+---
+/**
+ * Paso guiado «WhatsApp a los leads» (docs/PLAN_AJUSTES.md, paso 6). Cinco partes:
+ *  1. Qué es, qué hace falta y cómo le llega (vista previa del WhatsApp 1).
+ *  2. En Meta: los pasos que hicimos con Enjoy (verificar, app, número en coexistencia, pago, compartir la cuenta).
+ *  3. Conectar: el identificador del número (se comprueba contra Meta) y, si hace falta, conectar los avisos.
+ *  4. Plantillas: solo los idiomas que usa; nombre sugerido, idioma, categoría, texto y ejemplos para copiar en Meta,
+ *     y el nombre de la aprobada.
+ *  5. Activar: mandar o no, el WhatsApp 2, el horario y los festivos.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import StepDialog from '~/components/ui/StepDialog.astro';
+import type { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
+import type { PhoneCheck, TemplateGuide } from '~/lib/leads/whatsapp-guide';
+
+interface Props {
+  id: string;
+  open: boolean;
+  part: number;
+  T: (typeof leadsSetupMessages)['es']['whatsapp'];
+  langNames: Record<string, string>;
+  /** El WhatsApp 1 tal como le llega a un lead de ejemplo. */
+  preview: string;
+  platformReady: boolean;
+  partnerId: string | null;
+  phoneId: string | null;
+  /** Lo que dice Meta del número (solo si se ha comprobado ahora). */
+  check: PhoneCheck | null;
+  guides: TemplateGuide[];
+  saved: Record<string, Record<string, string>>;
+  enabled: boolean;
+  wa2: boolean;
+  fromHour: number;
+  toHour: number;
+  holidays: string[];
+  notice?: string | null;
+  error?: { title: string; details: string[] } | null;
+}
+const { id, open, part, T, langNames, preview, platformReady, partnerId, phoneId, check, guides, saved, enabled, wa2, fromHour, toHour, holidays, notice, error } = Astro.props;
+const ACTION = '/admin/leads/configurar';
+const locales = [...new Set(guides.map((g) => g.locale))];
+---
+<StepDialog id={id} title={T.title} parts={T.parts} open={open} part={part} notice={notice} error={error} testid="whatsapp"
+  labels={{ back: T.back, next: T.next, close: T.close, copied: T.templates.copied }}>
+  <Fragment slot="p1">
+    <div class="grid gap-4 sm:grid-cols-[1fr_16rem]">
+      <div class="grid content-start gap-3">
+        <ol class="grid list-decimal gap-1 pl-5">{T.why.map((w) => <li>{w}</li>)}</ol>
+        <p class="font-semibold">{T.needTitle}</p>
+        <ul class="grid gap-1">{T.need.map((n) => <li class="flex items-start gap-2 text-sm"><Icon name="circle-check" size={16} />{n}</li>)}</ul>
+        {!platformReady && <p class="co-inset flex items-start gap-2 !p-3 text-sm"><Icon name="info" size={16} />{T.connect.noToken}</p>}
+      </div>
+      <div class="grid content-start gap-2 rounded-xl bg-[#efeae2] p-3" aria-hidden="true">
+        <p class="text-xs font-semibold text-[#54656f]">{T.preview}</p>
+        <p class="whitespace-pre-wrap rounded-lg bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm" data-testid="whatsapp-preview">{preview}</p>
+      </div>
+    </div>
+  </Fragment>
+
+  <Fragment slot="p2">
+    <p>{T.meta.lede}</p>
+    <ol class="grid gap-2">
+      {T.meta.steps.map((x, i) => (
+        <li class="co-inset grid grid-cols-[2rem_1fr] gap-2 !p-3">
+          <span class="text-xl [font-family:var(--co-font-impact)] font-semibold text-[var(--co-signal)]">{String(i + 1).padStart(2, '0')}</span>
+          <span class="grid gap-1"><span class="font-semibold">{x.t}</span><span class="co-meta">{x.d}</span>
+            {i === T.meta.steps.length - 1 && <span class="text-sm font-semibold" data-testid="whatsapp-partner">{partnerId ? T.meta.partner(partnerId) : T.meta.partnerAsk}</span>}
+          </span>
+        </li>
+      ))}
+    </ol>
+    <div class="flex flex-wrap gap-2">
+      <a class="co-btn co-btn--ghost co-btn--sm" href="https://business.facebook.com/settings" target="_blank" rel="noopener noreferrer"><Icon name="external-link" size={14} />{T.meta.business}</a>
+      <a class="co-btn co-btn--ghost co-btn--sm" href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer"><Icon name="external-link" size={14} />{T.meta.dev}</a>
+    </div>
+  </Fragment>
+
+  <Fragment slot="p3">
+    <p>{T.connect.lede}</p>
+    {check?.ok && <p class="co-inset flex items-start gap-2 !p-3 text-sm" data-testid="whatsapp-check-ok"><Icon name="circle-check" size={16} />{T.connect.ok(check.name ?? '—', check.number ?? '—')}</p>}
+    {!check && phoneId && <p class="co-meta" data-testid="whatsapp-current">{T.connect.current(phoneId)}</p>}
+    <form method="post" action={ACTION} class="grid gap-3" data-testid="whatsapp-connect">
+      <input type="hidden" name="action" value="whatsapp-connect" />
+      <label class="co-field">{T.connect.phoneId}<input class="co-input" name="phoneId" value={phoneId ?? ''} required inputmode="numeric" pattern="[0-9 ]{5,40}" placeholder="1493985227120621" /></label>
+      <label class="co-field">{T.connect.wabaId}<input class="co-input" name="wabaId" inputmode="numeric" pattern="[0-9 ]{5,40}" placeholder="1093861700287687" /><span class="co-meta">{T.connect.wabaHelp}</span></label>
+      <button class="co-btn co-btn--primary w-fit" disabled={!platformReady}>{T.connect.check}</button>
+    </form>
+  </Fragment>
+
+  <Fragment slot="p4">
+    <p>{T.templates.lede}</p>
+    <a class="co-btn co-btn--ghost co-btn--sm w-fit" href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener noreferrer"><Icon name="external-link" size={14} />{T.templates.open}</a>
+    <form method="post" action={ACTION} class="grid gap-4" data-testid="whatsapp-templates">
+      <input type="hidden" name="action" value="whatsapp-templates" />
+      {locales.length > 1 && (
+        <div class="co-segmented w-fit" data-tabs>
+          {locales.map((l, i) => <button type="button" data-tab={l} aria-pressed={i === 0 ? 'true' : 'false'}>{langNames[l] ?? l}</button>)}
+        </div>
+      )}
+      {locales.map((l) => (
+        <div class="grid gap-3" data-tab-panel={l} data-testid={`whatsapp-templates-${l}`}>
+          {guides.filter((g) => g.locale === l).map((g) => (
+            <details class="co-inset !p-4" open={!saved[g.step]?.[l] || undefined} data-testid={`whatsapp-tpl-${g.step}-${l}`}>
+              <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 font-semibold">
+                <span>{T.templates.steps[g.step]}</span>
+                {saved[g.step]?.[l] ? <span class="co-badge co-badge--signal">{saved[g.step][l]}</span> : <span class="co-badge co-badge--soft">—</span>}
+              </summary>
+              <div class="mt-3 grid gap-2 text-sm">
+                <div class="grid gap-1 sm:grid-cols-[8rem_1fr_auto] sm:items-center">
+                  <span class="co-meta">{T.templates.name}</span><code>{g.name}</code>
+                  <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy data-copy-value={g.name}><Icon name="copy" size={14} /><span>{T.templates.copy}</span></button>
+                </div>
+                <div class="grid gap-1 sm:grid-cols-[8rem_1fr]"><span class="co-meta">{T.templates.category}</span><span>{T.templates.categoryValue}</span></div>
+                <div class="grid gap-1 sm:grid-cols-[8rem_1fr]"><span class="co-meta">{T.templates.language}</span><code>{g.language}</code></div>
+                <div class="grid gap-1">
+                  <span class="co-meta">{T.templates.body}</span>
+                  <textarea class="co-textarea h-32 text-sm" readonly>{g.body}</textarea>
+                  <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy><Icon name="copy" size={14} /><span>{T.templates.copy}</span></button>
+                </div>
+                <div class="grid gap-1">
+                  <span class="co-meta">{T.templates.examples}</span>
+                  <ul class="grid gap-0.5">{g.examples.map((x, i) => <li><code>{`{{${i + 1}}}`}</code> {x}</li>)}</ul>
+                </div>
+                {g.buttons.length > 0 && <div class="grid gap-1"><span class="co-meta">{T.templates.buttons}</span><span>{g.buttons.join(' · ')}</span></div>}
+                <label class="co-field">{T.templates.approved}<input class="co-input" name={`tpl_${g.step}_${l}`} value={saved[g.step]?.[l] ?? ''} placeholder={g.name} pattern="[a-zA-Z0-9_]{1,512}" /></label>
+              </div>
+            </details>
+          ))}
+        </div>
+      ))}
+      <p class="co-meta">{T.templates.otherLangs}</p>
+      <button class="co-btn co-btn--primary w-fit" data-testid="whatsapp-templates-save">{T.templates.save}</button>
+    </form>
+  </Fragment>
+
+  <Fragment slot="p5">
+    <p>{T.activate.lede}</p>
+    <form method="post" action={ACTION} class="grid gap-3" data-testid="whatsapp-activate">
+      <input type="hidden" name="action" value="whatsapp-activate" />
+      <label class="co-check"><input type="checkbox" name="enabled" checked={enabled} data-testid="whatsapp-enabled" /> {T.activate.enabled}</label>
+      <label class="co-check"><input type="checkbox" name="wa2" checked={wa2} /> <span>{T.activate.wa2}<span class="co-help block">{T.activate.wa2Help}</span></span></label>
+      <fieldset class="grid gap-2">
+        <legend class="co-field mb-1">{T.activate.hours}</legend>
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="co-field">{T.activate.from}<input class="co-input w-24" type="number" name="fromHour" min="0" max="23" value={fromHour} /></label>
+          <label class="co-field">{T.activate.to}<input class="co-input w-24" type="number" name="toHour" min="1" max="24" value={toHour} /></label>
+        </div>
+        <span class="co-meta">{T.activate.hoursHelp}</span>
+      </fieldset>
+      <button class="co-btn co-btn--primary w-fit" data-testid="whatsapp-activate-save">{T.activate.save}</button>
+    </form>
+    <div class="grid gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="whatsapp-holidays">
+      <p class="font-semibold">{T.activate.holidays}</p>
+      {holidays.length
+        ? (
+          <ul class="flex flex-wrap gap-2">
+            {holidays.map((d) => (
+              <li class="co-inset flex items-center gap-2 !px-3 !py-1 text-sm">{d}
+                <form method="post" action={ACTION}><input type="hidden" name="action" value="holiday-remove" /><input type="hidden" name="day" value={d} />
+                  <button class="co-btn co-btn--ghost co-btn--icon co-btn--sm" aria-label={`${T.activate.remove} ${d}`}><Icon name="x" size={12} /></button></form>
+              </li>
+            ))}
+          </ul>
+        )
+        : <p class="co-meta">{T.activate.none}</p>}
+      <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="action" value="holiday-add" />
+        <input class="co-input w-44" type="date" name="day" required aria-label={T.activate.holidays} />
+        <button class="co-btn co-btn--ghost"><Icon name="plus" size={16} />{T.activate.add}</button>
+      </form>
+    </div>
+  </Fragment>
+</StepDialog>

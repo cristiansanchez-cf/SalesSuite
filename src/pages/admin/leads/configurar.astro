@@ -2,7 +2,7 @@
 /**
  * Leads entrantes (docs/PLAN_AJUSTES.md): los pasos para que la web o la app manden leads y se les conteste, cada uno
  * como una tarjeta (sin empezar, a medias, hecho). Arriba, si entran leads reales o solo pruebas. Solo admin.
- * Las tarjetas con paso guiado abren su modal (conectar la web, el email, los mensajes); las demás llevan a su sección de los ajustes.
+ * Las tarjetas con paso guiado abren su modal (conectar la web, el email, los mensajes, WhatsApp); las demás llevan a su sección de los ajustes.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
@@ -11,6 +11,10 @@ import SetupCard from '~/components/ui/SetupCard.astro';
 import ConnectDialog from '~/components/admin/leads/ConnectDialog.astro';
 import EmailDialog from '~/components/admin/leads/EmailDialog.astro';
 import MessagesDialog from '~/components/admin/leads/MessagesDialog.astro';
+import WhatsAppDialog from '~/components/admin/leads/WhatsAppDialog.astro';
+import { checkPhone, subscribeApp, templateGuide, type PhoneCheck, type WaStep } from '~/lib/leads/whatsapp-guide';
+import { hubConfig } from '~/lib/assistant/hub-config';
+import { previewFor } from '~/lib/leads/message-preview';
 import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
 import { cleanupContext } from '~/lib/crm/research-context';
 import { mediaFor, msgLocale } from '~/lib/leads/templates';
@@ -50,7 +54,7 @@ let error: string | null = null;
 let errorDetails: string[] = [];
 let errorPart = 2;
 /** Qué modal enseña el error (el de la parte en la que estaba). */
-let errorIn: 'connect' | 'email' | 'messages' | null = null;
+let errorIn: 'connect' | 'email' | 'messages' | 'whatsapp' | null = null;
 /** Mensajes: la propuesta de la IA o lo enviado con error, para enseñarlo en el editor sin guardar. */
 let textsShown: LeadTemplates | null = null;
 let aiDrafted = false;
@@ -148,6 +152,41 @@ if (Astro.request.method === 'POST') {
       error = r.error; errorDetails = r.details; errorIn = 'messages'; errorPart = action.startsWith('save-sig') || action === 'clear-signature' || action === 'save-signer' ? 3 : 2;
       if (action === 'save-texts') textsShown = readTexts();
     }
+  } else if (['whatsapp-connect', 'whatsapp-templates', 'whatsapp-activate', 'holiday-add', 'holiday-remove'].includes(action)) {
+    // WhatsApp a los leads. El número se comprueba contra Meta antes de guardarlo (con nuestro token: si no llega, no
+    // han compartido la cuenta); con el id de la cuenta, se conectan los avisos de mensajes.
+    const W = T.whatsapp;
+    let to = 3, ok = 'connected';
+    const r = await formAction(async () => {
+      if (action === 'whatsapp-connect') {
+        const phoneId = String(f.get('phoneId') ?? '').replace(/\s/g, '');
+        const wabaId = String(f.get('wabaId') ?? '').replace(/\s/g, '');
+        if (!/^\d{5,30}$/.test(phoneId)) throw new AdminError(422, W.connect.noAccess);
+        const res: PhoneCheck = demo ? { ok: true, number: '+34 600 00 00 00', name: tenant?.name ?? null, quality: 'GREEN' } : await checkPhone(phoneId, env('WHATSAPP_TOKEN'));
+        if (!res.ok) throw new AdminError(422, res.error === 'no_token' ? W.connect.noToken : res.error === 'network' ? W.connect.network : W.connect.noAccess);
+        await svc.saveWhatsapp({ phoneId }, slug);
+        if (wabaId && !(demo || await subscribeApp(wabaId, env('WHATSAPP_TOKEN')))) throw new AdminError(422, W.connect.subscribeFailed);
+      } else if (action === 'whatsapp-templates') {
+        const templates: Record<string, Record<string, string>> = {};
+        for (const [k, v] of f.entries()) {
+          const m = /^tpl_(wa1|wa2|reminder)_(es|en|fr)$/.exec(k);
+          if (m) (templates[m[1]] ??= {})[m[2]] = String(v);
+        }
+        await svc.saveWhatsapp({ templates }, slug);
+        to = 4; ok = 'templates';
+      } else if (action === 'whatsapp-activate') {
+        await svc.saveWhatsapp({ enabled: f.get('enabled') === 'on', wa2: f.get('wa2') === 'on', fromHour: Number(f.get('fromHour')), toHour: Number(f.get('toHour')) }, slug);
+        to = 5; ok = 'activate';
+      } else {
+        const day = String(f.get('day') ?? '');
+        const cur = (await svc.settings())?.holidays ?? [];
+        await svc.saveWhatsapp({ holidays: action === 'holiday-add' ? [...cur, day] : cur.filter((x) => x !== day) }, slug);
+        to = 5; ok = 'activate';
+      }
+    });
+    if (!r.error) return Astro.redirect(`/admin/leads/configurar?abrir=whatsapp&p=${to}&ok=${ok}`, 303);
+    error = r.error; errorDetails = r.details; errorIn = 'whatsapp';
+    errorPart = action === 'whatsapp-connect' ? 3 : action === 'whatsapp-templates' ? 4 : 5;
   } else if (action === 'toggle') {
     const on = f.get('on') === '1';
     const cur = await svc.settings();
@@ -171,7 +210,7 @@ const last = await svc.lastSubmission({ external: true }).catch(() => null);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
-const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok });
+const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok, ...T.whatsapp.ok });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 
 // Las que tienen paso guiado abren su modal; las demás, su sección de los ajustes.
@@ -179,7 +218,7 @@ const META: Record<StepKey, { icon: IconName; href: string }> = {
   connect: { icon: 'globe', href: '/admin/leads/configurar?abrir=connect' },
   email: { icon: 'mail', href: '/admin/leads/configurar?abrir=email' },
   messages: { icon: 'message-square-text', href: '/admin/leads/configurar?abrir=messages' },
-  whatsapp: { icon: 'whatsapp', href: '/admin/leads/ajustes#whatsapp' },
+  whatsapp: { icon: 'whatsapp', href: '/admin/leads/configurar?abrir=whatsapp' },
   extras: { icon: 'link', href: '/admin/leads/ajustes#media' },
   privacy: { icon: 'shield-check', href: '/admin/leads/ajustes#privacy' },
 };
@@ -222,6 +261,18 @@ const msgCtx = {
   media: Object.fromEntries(MSG_LOCS.map((l) => { const m = mediaFor(s, SAMPLE_LEAD.type, SAMPLE_LEAD.fields, l); return [l, { booking: m.booking ?? null, video: m.video ?? null }]; })) as Record<PreviewLocale, { booking: string | null; video: string | null }>,
 };
 const dropped = Math.max(0, Math.min(99, Number(Astro.url.searchParams.get('caidas')) || 0));
+// WhatsApp: con qué parte se abre según lo que falte; las plantillas, de los idiomas que usa (y de los que ya tengan una).
+const waStep = steps.find((x) => x.key === 'whatsapp')!;
+const waPart = openParam === 'whatsapp' && pParam >= 1 && pParam <= 5 ? pParam
+  : waStep.status === 'todo' ? 1 : waStep.missing.includes('waPhone') ? 2 : waStep.missing.includes('waTemplates') ? 4 : 5;
+const hub = hubConfig();
+const waSteps: WaStep[] = hub ? ['wa1', 'wa2'] : ['wa1', 'wa2', 'reminder'];
+const waSaved = s.whatsappTemplates ?? {};
+const waLocales = [...new Set([...msgActive, ...MSG_LOCS.filter((l) => waSteps.some((st) => !!waSaved[st]?.[l]))])] as PreviewLocale[];
+const waGuides = waLocales.flatMap((l) => waSteps.map((st) => templateGuide(st, l, { signer: msgCtx.signer, brand: msgCtx.brand, custom: s.templates, booking: msgCtx.media[l].booking })));
+const waCheck: PhoneCheck | null = openParam === 'whatsapp' && pParam === 3 && s.whatsappPhoneId
+  ? (demo ? { ok: true, number: '+34 600 00 00 00', name: tenant?.name ?? null, quality: 'GREEN' } : await checkPhone(s.whatsappPhoneId, env('WHATSAPP_TOKEN')).catch(() => null))
+  : null;
 const main = steps.filter((x) => x.key !== 'extras' && x.key !== 'privacy');
 const extras = steps.filter((x) => x.key === 'extras' || x.key === 'privacy');
 const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -240,7 +291,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
       <p class="co-meta max-w-[18rem] sm:text-right">{s.enabled ? S.liveHelp : ready ? S.pausedHelp : S.activateBlocked}</p>
     </div>
   </PageHeader>
-  {okMsg && !['connect', 'email', 'messages'].includes(openParam ?? '') && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {okMsg && !['connect', 'email', 'messages', 'whatsapp'].includes(openParam ?? '') && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {error && !errorIn && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
 
   <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
@@ -258,7 +309,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
         status={x.status} need={x.need} step={T.stepN(i + 1)}
         labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
         missing={x.missing.map((k) => T.miss[k])} summary={summary(x.key)} testid={`setup-card-${x.key}`}
-        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : x.key === 'messages' ? 'setup-messages' : undefined}
+        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : x.key === 'messages' ? 'setup-messages' : x.key === 'whatsapp' ? 'setup-whatsapp' : undefined}
       />
     ))}
   </section>
@@ -301,5 +352,14 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     signature={s.emailSignature && Object.keys(s.emailSignature).length ? s.emailSignature : null} signerName={s.signerName ?? ''} dropped={dropped}
     notice={aiDrafted ? T.messages.ok.ai : openParam === 'messages' ? okMsg : null}
     error={error && errorIn === 'messages' ? { title: error, details: errorDetails } : null}
+  />
+  <WhatsAppDialog
+    id="setup-whatsapp" open={openParam === 'whatsapp' || errorIn === 'whatsapp'} part={errorIn === 'whatsapp' ? errorPart : waPart}
+    T={T.whatsapp} langNames={T.messages.langs.names} preview={previewFor(msgBase, s.templates ?? {}, msgCtx).wa1}
+    platformReady={demo || !!env('WHATSAPP_TOKEN')} partnerId={env('META_PARTNER_BUSINESS_ID')?.trim() || null}
+    phoneId={s.whatsappPhoneId} check={waCheck && waCheck.ok ? waCheck : null} guides={waGuides} saved={waSaved}
+    enabled={s.whatsappEnabled} wa2={s.whatsappWa2 !== false} fromHour={s.sendFromHour} toHour={s.sendToHour} holidays={s.holidays}
+    notice={openParam === 'whatsapp' ? okMsg : null}
+    error={error && errorIn === 'whatsapp' ? { title: error, details: errorDetails } : null}
   />
 </AdminLayout>

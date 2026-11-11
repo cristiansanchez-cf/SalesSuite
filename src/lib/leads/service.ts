@@ -26,6 +26,11 @@ export const LEAD_ERRORS = {
   badEmail: (v: string) => `«${v}» no es un email`,
   tooManyNotify: 'Como mucho 5 personas a las que avisar',
   fromNameLong: 'El nombre del remitente, como mucho 80 caracteres',
+  badPhoneId: 'El identificador del número son solo cifras (Meta → WhatsApp → API Setup → Phone number ID)',
+  badTemplate: (v: string) => `«${v}» no vale como nombre de plantilla: minúsculas, números y _ (ejemplo: lead_hola_es)`,
+  badHours: 'El horario: la hora de empezar tiene que ser antes que la de acabar',
+  badHoliday: (v: string) => `«${v}» no es una fecha (AAAA-MM-DD)`,
+  waNotReady: 'Para activarlo falta el número y la plantilla del primer WhatsApp en tu idioma',
 } as const;
 
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
@@ -299,6 +304,59 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.saveSettings({ ...prev, emailSignature: rest });
   }
 
+  /**
+   * WhatsApp a los leads (Leads entrantes → WhatsApp): el número de Meta, las plantillas aprobadas, si se manda (y el 2),
+   * el horario y los festivos. Lo demás de los ajustes no se toca. No se activa sin número ni plantilla del WhatsApp 1.
+   */
+  async function saveWhatsapp(input: {
+    phoneId?: string | null; enabled?: boolean; wa2?: boolean; templates?: Record<string, Record<string, string>>;
+    fromHour?: number; toHour?: number; holidays?: string[];
+  }, brand: string) {
+    requireAdmin();
+    let prev = await db.settings(t);
+    if (!prev) { await saveOrigins([], brand); prev = await db.settings(t); }
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    const next = { ...prev };
+    if (input.phoneId !== undefined) {
+      const v = (input.phoneId ?? '').replace(/\s/g, '');
+      if (v && !/^\d{5,30}$/.test(v)) throw new AdminError(422, LEAD_ERRORS.badPhoneId);
+      next.whatsappPhoneId = v || null;
+    }
+    if (input.templates) {
+      const out: Record<string, Record<string, string>> = { ...(prev.whatsappTemplates ?? {}) };
+      for (const [step, byLoc] of Object.entries(input.templates)) {
+        if (!['wa1', 'wa2', 'reminder'].includes(step)) continue;
+        const cur = { ...(out[step] ?? {}) };
+        for (const [l, raw] of Object.entries(byLoc)) {
+          if (!['es', 'en', 'fr'].includes(l)) continue;
+          const v = raw.trim().toLowerCase();
+          if (!v) { delete cur[l]; continue; }
+          if (!/^[a-z0-9_]{1,512}$/.test(v)) throw new AdminError(422, LEAD_ERRORS.badTemplate(raw.trim().slice(0, 60)));
+          cur[l] = v;
+        }
+        if (Object.keys(cur).length) out[step] = cur; else delete out[step];
+      }
+      next.whatsappTemplates = out;
+    }
+    if (input.fromHour !== undefined || input.toHour !== undefined) {
+      const from = input.fromHour ?? prev.sendFromHour, to = input.toHour ?? prev.sendToHour;
+      if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to > 24 || from >= to) throw new AdminError(422, LEAD_ERRORS.badHours);
+      next.sendFromHour = from; next.sendToHour = to;
+    }
+    if (input.holidays) {
+      const days = [...new Set(input.holidays.map((x) => x.trim()).filter(Boolean))];
+      const bad = days.find((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(`${d}T00:00:00Z`)));
+      if (bad) throw new AdminError(422, LEAD_ERRORS.badHoliday(bad.slice(0, 20)));
+      next.holidays = days.sort().slice(0, 60);
+    }
+    if (input.wa2 !== undefined) next.whatsappWa2 = input.wa2;
+    if (input.enabled !== undefined) {
+      if (input.enabled && (!next.whatsappPhoneId || !Object.values(next.whatsappTemplates?.wa1 ?? {}).some(Boolean))) throw new AdminError(422, LEAD_ERRORS.waNotReady);
+      next.whatsappEnabled = input.enabled;
+    }
+    await db.saveSettings(next);
+  }
+
   /** El nombre con el que se firman los mensajes ({firma}: «Soy Ana, de …»). Vacío = el de la empresa. */
   async function saveSignerName(name: string) {
     requireAdmin();
@@ -331,7 +389,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

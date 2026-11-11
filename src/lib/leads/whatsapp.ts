@@ -8,7 +8,9 @@ import { meterUnits } from '../usage/meter';
 
 // v25.0: vigente hasta julio de 2028 (la v21.0 deja de funcionar el 21/01/2027).
 const GRAPH = 'https://graph.facebook.com/v25.0';
-const LANG: Record<string, string> = { es: 'es_ES', en: 'en', fr: 'fr' };
+/** El código de idioma de las plantillas en Meta. */
+export const META_LANG: Record<string, string> = { es: 'es_ES', en: 'en', fr: 'fr' };
+const LANG = META_LANG;
 
 export interface WhatsApp {
   sendTemplate(phoneId: string, to: string, template: string, locale: string, params: string[]): Promise<{ id: string | null }>;
