@@ -1,6 +1,6 @@
 # Plan: ajustes ordenados y tutoriales guiados
 
-Estado: propuesto el 11-nov-2026. Pasos 1 a 4 hechos (`MessagesDialog` con vista previa en vivo, `lib/leads/message-preview.ts`; firma pegada limpiada en el servidor con `lib/leads/signature-html.ts`; `StepDialog` es el modal por pasos común; `EmailDialog` con los registros DNS de Resend, `lib/leads/resend-key.ts`; `/admin/leads/configurar`, `SetupCard`, `lib/leads/setup-steps.ts`, `ConnectDialog`, `lib/leads/connect-guide.ts`). El paso «Conecta» queda hecho cuando llega un lead que no es la prueba de la consola (`CONSOLE_TEST_PREFIX`). Se hace por pasos; cada paso se puede usar en cuanto se sube.
+Estado: propuesto el 11-nov-2026. Pasos 1 a 5 hechos (Configurar → Asistente en `/admin/asistente`, `lib/assistant/contact.ts`, teléfono obligatorio en Mi cuenta; `MessagesDialog` con vista previa en vivo, `lib/leads/message-preview.ts`; firma pegada limpiada en el servidor con `lib/leads/signature-html.ts`; `StepDialog` es el modal por pasos común; `EmailDialog` con los registros DNS de Resend, `lib/leads/resend-key.ts`; `/admin/leads/configurar`, `SetupCard`, `lib/leads/setup-steps.ts`, `ConnectDialog`, `lib/leads/connect-guide.ts`). El paso «Conecta» queda hecho cuando llega un lead que no es la prueba de la consola (`CONSOLE_TEST_PREFIX`). Se hace por pasos; cada paso se puede usar en cuanto se sube.
 
 ## El problema
 
@@ -139,7 +139,7 @@ adelante, que cada empresa la ajuste con su design system.
 | 2 ✅ | Conecta tu web o tu app | Lista de webs, prompt para el desarrollador o el agente, lead de prueba |
 | 3 ✅ | Email de respuesta | Tutorial de Resend con los DNS reales, obligatorios marcados, lo hecho plegado |
 | 4 ✅ | Tus mensajes y firma | Idioma a idioma, vista previa en vivo, firma pegada |
-| 5 | Asistente de WhatsApp y teléfono | Teléfono obligatorio, tarjeta en Mi cuenta, página del asistente con quién lo tiene |
+| 5 ✅ | Asistente de WhatsApp y teléfono | Teléfono obligatorio, tarjeta en Mi cuenta, página del asistente con quién lo tiene |
 | 6 | WhatsApp a los leads | El tutorial de Meta paso a paso y las plantillas sin cajas sobrantes |
 | 7 | Primeros pasos | Las listas de admin y comercial en Inicio |
 | 8 | Emails con la marca | Plantilla estándar con logo y color |

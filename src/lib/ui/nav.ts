@@ -53,6 +53,8 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
       { href: '/admin/leads/configurar', label: L.leadsSteps, testid: 'tab-leads-steps' }, { href: '/admin/leads/ajustes', label: L.leadsAll, testid: 'tab-leads-settings' },
       { href: '/admin/leads/privacidad', label: L.leadsRights, testid: 'tab-leads-rights' },
     ] }] : []),
+    // Asistente de WhatsApp (docs/PLAN_AJUSTES.md, paso 5): a qué número escribe el equipo y quién tiene el teléfono puesto.
+    ...(perms.manageTenant ? [{ href: '/admin/asistente', label: L.assistant, icon: 'whatsapp' as IconName, testid: 'nav-assistant', tabs: [] }] : []),
     { href: '/admin/playbook', label: L.playbook, icon: 'book-open', count: counts.pendingPlaybook || undefined, tabs: [] },
     ...(perms.manageTenant ? [{ href: '/admin/catalog', label: L.catalogPrices, icon: 'boxes' as IconName, testid: 'nav-catalog', tabs: [
       { href: '/admin/catalog', label: L.catalog }, { href: '/admin/prices', label: L.prices, testid: 'tab-prices' },

@@ -33,6 +33,12 @@ empresa).
 4. Las plantillas del recordatorio en la cuenta de WhatsApp de ese número (tabla de abajo).
 5. Cada persona: su WhatsApp de trabajo en **Mi cuenta → Teléfono** y escribir «hola» al número del asistente.
 
+**En la consola** (docs/PLAN_AJUSTES.md, paso 5): **Configurar → Asistente** enseña a qué número escribe el equipo
+(el común si está, si no el de la empresa; se pide a Meta, o `ASSISTANT_WHATSAPP_NUMBER`), quién tiene ya el teléfono
+puesto, un mensaje para pasar al equipo y cómo van los recordatorios. En **Mi cuenta**, el teléfono es obligatorio para
+quien vende (se guarda con prefijo, E.164) y la tarjeta «Tu asistente de WhatsApp» dice a qué número escribir, desde
+cuál, y avisa si alguien pone el número del propio asistente (un número no puede escribirse a sí mismo).
+
 ## Quién es quién
 
 - **Del equipo:** el teléfono de **Mi cuenta** (`users.phone`) coincide con quien escribe y tiene membresía de admin,

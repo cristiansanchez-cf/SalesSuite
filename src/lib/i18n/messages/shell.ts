@@ -3,7 +3,7 @@ import { defineMessages } from '../core';
 
 const es = {
   nav: {
-    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'CRM', companies: 'Empresas', board: 'Tablero', people: 'Personas', leads: 'Leads', leadsIn: 'Leads entrantes', leadsSteps: 'Pasos', leadsAll: 'Todos los ajustes', leadsRights: 'Derechos de las personas', emails: 'Correos', import: 'Importar', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
+    start: 'Empieza aquí', analytics: 'Analítica', home: 'Inicio', dossiers: 'Propuestas', myAccounts: 'Mis cuentas', accounts: 'CRM', companies: 'Empresas', board: 'Tablero', people: 'Personas', leads: 'Leads', assistant: 'Asistente', leadsIn: 'Leads entrantes', leadsSteps: 'Pasos', leadsAll: 'Todos los ajustes', leadsRights: 'Derechos de las personas', emails: 'Correos', import: 'Importar', compose: 'Preparar mensaje', wins: 'Qué ha funcionado',
     learn: 'Aprende', myCommissions: 'Mis comisiones', setup: 'Configuración guiada', playbook: 'Playbook y mercado', catalog: 'Catálogo',
     org: 'Organigrama', platform: 'Plataforma', team: 'Equipo', territory: 'Territorio', commissions: 'Comisiones', prices: 'Tarifas y pagos', brand: 'Marca', sell: 'Vender', configure: 'Configurar', company: 'Empresa', catalogPrices: 'Catálogo y precios', crmFields: 'Campos de las fichas', crmData: 'Datos del CRM', cleanup: 'Limpiar empresas', cities: 'Ordenar ciudades', sectionTabs: 'Apartados de la sección',
     modes: 'Modo', sections: 'Secciones', pendingReview: (n: number) => `${n} pendientes de revisar`, pending: (n: number) => `${n} pendientes`,
@@ -31,7 +31,7 @@ const es = {
   },
   account: {
     eyebrow: 'Tu perfil', title: 'Mi cuenta', welcome: 'Bienvenido/a.', welcomeLede: 'Dinos cómo te llamas. La contraseña es opcional: siempre puedes entrar con un código por email.',
-    name: 'Nombre', phone: 'Teléfono', phoneHelp: 'Opcional. Lo ven tus compañeros de zona para llamarte o escribirte por WhatsApp. Con él, el asistente de WhatsApp del espacio te reconoce (ponlo con prefijo: +34 …).',
+    name: 'Nombre', phone: 'Teléfono', phoneHelp: 'Obligatorio. Es tu móvil: con él te reconoce el asistente de WhatsApp y te ven tus compañeros de zona para llamarte o escribirte. Con prefijo: +34 …',
     password: 'Contraseña', passwordHelp: 'Opcional, mínimo 10 caracteres', repeat: 'Repite la contraseña', save: 'Guardar',
     language: 'Idioma de la consola', languageHelp: 'Se guarda en tu cuenta: lo verás igual en cualquier dispositivo.', languageSaved: 'Idioma guardado.',
     notifyEyebrow: 'Avisos', notifyTitle: 'Emails', notifyLabel: 'Avisarme por email',
@@ -40,7 +40,7 @@ const es = {
     notifyHelp: 'Solo cuando algo necesita tu acción (agrupado en un email) y, los lunes, un resumen de lo que sigue abierto. Lo informativo nunca llega suelto.',
     notifySave: 'Guardar preferencia', notifySaved: 'Preferencia guardada.', saved: 'Guardado', savedDemo: 'Guardado (en demo no hay contraseñas)',
     errShort: 'La contraseña debe tener al menos 10 caracteres', errMismatch: 'Las contraseñas no coinciden', errSame: 'La nueva contraseña debe ser distinta de la anterior',
-    errSave: 'No se pudo guardar', errPhone: 'Escribe el teléfono solo con números (puedes empezar por +34)',
+    errSave: 'No se pudo guardar', errPhoneRequired: 'Pon tu móvil: sin él, el asistente de WhatsApp no te reconoce', errPhone: 'Escribe el teléfono solo con números (puedes empezar por +34)',
   },
   ui: {
     failureTitle: 'Fallo inesperado de la aplicación.', failureBody: 'Es un error nuestro, no tuyo. Si se repite, pásanos el código',
@@ -52,7 +52,7 @@ export const shellMessages = defineMessages({
   es,
   en: {
     nav: {
-      start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'CRM', companies: 'Companies', board: 'Board', people: 'People', leads: 'Leads', leadsIn: 'Incoming leads', leadsSteps: 'Steps', leadsAll: 'All settings', leadsRights: 'People’s rights', emails: 'Emails', import: 'Import', compose: 'Write a message', wins: 'What worked',
+      start: 'Start here', analytics: 'Analytics', home: 'Home', dossiers: 'Proposals', myAccounts: 'My accounts', accounts: 'CRM', companies: 'Companies', board: 'Board', people: 'People', leads: 'Leads', assistant: 'Assistant', leadsIn: 'Incoming leads', leadsSteps: 'Steps', leadsAll: 'All settings', leadsRights: 'People’s rights', emails: 'Emails', import: 'Import', compose: 'Write a message', wins: 'What worked',
       learn: 'Learn', myCommissions: 'My commissions', setup: 'Guided setup', playbook: 'Playbook & market', catalog: 'Catalog',
       org: 'Org chart', platform: 'Platform', team: 'Team', territory: 'Territory', commissions: 'Commissions', prices: 'Pricing', brand: 'Brand', sell: 'Sell', configure: 'Configure', company: 'Company', catalogPrices: 'Catalog & pricing', crmFields: 'Record fields', crmData: 'CRM data', cleanup: 'Clean up companies', cities: 'Tidy up cities', sectionTabs: 'Section pages',
       modes: 'Mode', sections: 'Sections', pendingReview: (n) => `${n} waiting for review`, pending: (n) => `${n} pending`,
@@ -80,7 +80,7 @@ export const shellMessages = defineMessages({
     },
     account: {
       eyebrow: 'Your profile', title: 'My account', welcome: 'Welcome.', welcomeLede: 'Tell us your name. A password is optional: you can always sign in with a code by email.',
-      name: 'Name', phone: 'Phone', phoneHelp: 'Optional. Colleagues in your territory see it to call you or message you on WhatsApp. With it, the space’s WhatsApp assistant recognises you (include the country code: +34 …).',
+      name: 'Name', phone: 'Phone', phoneHelp: 'Required. Your mobile: the WhatsApp assistant recognises you by it, and colleagues in your territory see it to call or message you. With the country code: +34 …',
       password: 'Password', passwordHelp: 'Optional, at least 10 characters', repeat: 'Repeat the password', save: 'Save',
       language: 'Console language', languageHelp: 'Saved to your account: you will see it on any device.', languageSaved: 'Language saved.',
       notifyEyebrow: 'Notifications', notifyTitle: 'Emails', notifyLabel: 'Email me',
@@ -89,7 +89,7 @@ export const shellMessages = defineMessages({
       notifyHelp: 'Only when something needs your action (grouped in one email) and, on Mondays, a summary of what is still open. Informational updates never arrive on their own.',
       notifySave: 'Save preference', notifySaved: 'Preference saved.', saved: 'Saved', savedDemo: 'Saved (demo mode has no passwords)',
       errShort: 'The password must have at least 10 characters', errMismatch: 'The passwords do not match', errSame: 'The new password must be different from the old one',
-      errSave: 'Could not save', errPhone: 'Use only digits for the phone (you can start with +44)',
+      errSave: 'Could not save', errPhoneRequired: 'Add your mobile: without it, the WhatsApp assistant cannot recognise you', errPhone: 'Use only digits for the phone (you can start with +44)',
     },
     ui: {
       failureTitle: 'Unexpected application failure.', failureBody: 'This is our mistake, not yours. If it happens again, send us the code',
@@ -98,7 +98,7 @@ export const shellMessages = defineMessages({
   },
   pt: {
     nav: {
-      start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'CRM', companies: 'Empresas', board: 'Quadro', people: 'Pessoas', leads: 'Leads', leadsIn: 'Leads recebidos', leadsSteps: 'Passos', leadsAll: 'Todas as configurações', leadsRights: 'Direitos das pessoas', emails: 'Emails', import: 'Importar', compose: 'Preparar mensagem', wins: 'O que funcionou',
+      start: 'Comece aqui', analytics: 'Análise', home: 'Início', dossiers: 'Propostas', myAccounts: 'Minhas contas', accounts: 'CRM', companies: 'Empresas', board: 'Quadro', people: 'Pessoas', leads: 'Leads', assistant: 'Assistente', leadsIn: 'Leads recebidos', leadsSteps: 'Passos', leadsAll: 'Todas as configurações', leadsRights: 'Direitos das pessoas', emails: 'Emails', import: 'Importar', compose: 'Preparar mensagem', wins: 'O que funcionou',
       learn: 'Aprenda', myCommissions: 'Minhas comissões', setup: 'Configuração guiada', playbook: 'Playbook e mercado', catalog: 'Catálogo',
       org: 'Organograma', platform: 'Plataforma', team: 'Equipe', territory: 'Território', commissions: 'Comissões', prices: 'Tarifas', brand: 'Marca', sell: 'Vender', configure: 'Configurar', company: 'Empresa', catalogPrices: 'Catálogo e preços', crmFields: 'Campos das fichas', crmData: 'Dados do CRM', cleanup: 'Limpar empresas', cities: 'Organizar cidades', sectionTabs: 'Partes da seção',
       modes: 'Modo', sections: 'Seções', pendingReview: (n) => `${n} aguardando revisão`, pending: (n) => `${n} pendentes`,
@@ -126,7 +126,7 @@ export const shellMessages = defineMessages({
     },
     account: {
       eyebrow: 'Seu perfil', title: 'Minha conta', welcome: 'Boas-vindas.', welcomeLede: 'Diga-nos seu nome. A senha é opcional: você sempre pode entrar com um código por email.',
-      name: 'Nome', phone: 'Telefone', phoneHelp: 'Opcional. Seus colegas de região veem para ligar ou escrever pelo WhatsApp. Com ele, o assistente de WhatsApp do espaço reconhece você (com o código do país: +55 …).',
+      name: 'Nome', phone: 'Telefone', phoneHelp: 'Obrigatório. É o seu celular: o assistente de WhatsApp reconhece você por ele, e seus colegas de região o veem para ligar ou escrever. Com o código do país: +55 …',
       password: 'Senha', passwordHelp: 'Opcional, mínimo de 10 caracteres', repeat: 'Repita a senha', save: 'Salvar',
       language: 'Idioma do console', languageHelp: 'Fica salvo na sua conta: você verá o mesmo em qualquer dispositivo.', languageSaved: 'Idioma salvo.',
       notifyEyebrow: 'Avisos', notifyTitle: 'Emails', notifyLabel: 'Avisar-me por email',
@@ -135,7 +135,7 @@ export const shellMessages = defineMessages({
       notifyHelp: 'Só quando algo precisa da sua ação (agrupado em um email) e, às segundas, um resumo do que continua aberto. O informativo nunca chega solto.',
       notifySave: 'Salvar preferência', notifySaved: 'Preferência salva.', saved: 'Salvo', savedDemo: 'Salvo (no demo não há senhas)',
       errShort: 'A senha deve ter pelo menos 10 caracteres', errMismatch: 'As senhas não coincidem', errSame: 'A nova senha deve ser diferente da anterior',
-      errSave: 'Não foi possível salvar', errPhone: 'Escreva o telefone só com números (pode começar com +55)',
+      errSave: 'Não foi possível salvar', errPhoneRequired: 'Coloque seu celular: sem ele, o assistente de WhatsApp não reconhece você', errPhone: 'Escreva o telefone só com números (pode começar com +55)',
     },
     ui: {
       failureTitle: 'Falha inesperada da aplicação.', failureBody: 'O erro é nosso, não seu. Se repetir, envie-nos o código',
@@ -144,7 +144,7 @@ export const shellMessages = defineMessages({
   },
   ko: {
     nav: {
-      start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: 'CRM', companies: '회사', board: '보드', people: '사람', leads: '리드', leadsIn: '유입 리드', leadsSteps: '단계', leadsAll: '전체 설정', leadsRights: '개인 권리', emails: '이메일', import: '가져오기', compose: '메시지 작성', wins: '효과 있었던 것',
+      start: '여기서 시작', analytics: '분석', home: '홈', dossiers: '제안서', myAccounts: '내 계정', accounts: 'CRM', companies: '회사', board: '보드', people: '사람', leads: '리드', assistant: '어시스턴트', leadsIn: '유입 리드', leadsSteps: '단계', leadsAll: '전체 설정', leadsRights: '개인 권리', emails: '이메일', import: '가져오기', compose: '메시지 작성', wins: '효과 있었던 것',
       learn: '학습', myCommissions: '내 커미션', setup: '가이드 설정', playbook: '플레이북과 시장', catalog: '카탈로그',
       org: '조직도', platform: '플랫폼', team: '팀', territory: '담당 지역', commissions: '커미션', prices: '요금과 결제', brand: '브랜드', sell: '판매', configure: '설정', company: '회사', catalogPrices: '카탈로그와 가격', crmFields: '레코드 필드', crmData: 'CRM 데이터', cleanup: '회사 정리', cities: '도시 정리', sectionTabs: '섹션 페이지',
       modes: '모드', sections: '섹션', pendingReview: (n) => `검토 대기 ${n}건`, pending: (n) => `대기 ${n}건`,
@@ -172,7 +172,7 @@ export const shellMessages = defineMessages({
     },
     account: {
       eyebrow: '내 프로필', title: '내 계정', welcome: '환영합니다.', welcomeLede: '이름을 알려주세요. 비밀번호는 선택 사항이며, 언제든 이메일 코드로 로그인할 수 있습니다.',
-      name: '이름', phone: '전화번호', phoneHelp: '선택 사항. 같은 지역 동료가 전화나 WhatsApp으로 연락할 때 사용합니다. 이 번호로 공간의 WhatsApp 어시스턴트가 나를 알아봅니다 (국가번호 포함: +82 …).',
+      name: '이름', phone: '전화번호', phoneHelp: '필수. 내 휴대폰 번호입니다. WhatsApp 어시스턴트가 이 번호로 나를 알아보고, 같은 지역 동료가 전화나 메시지를 보낼 때 씁니다. 국가 번호 포함: +82 …',
       password: '비밀번호', passwordHelp: '선택 사항, 최소 10자', repeat: '비밀번호 확인', save: '저장',
       language: '콘솔 언어', languageHelp: '계정에 저장되어 어느 기기에서나 같은 언어로 표시됩니다.', languageSaved: '언어를 저장했습니다.',
       notifyEyebrow: '알림', notifyTitle: '이메일', notifyLabel: '이메일로 알림 받기',
@@ -181,7 +181,7 @@ export const shellMessages = defineMessages({
       notifyHelp: '처리가 필요할 때만(한 통으로 묶어서) 보내고, 월요일에는 아직 열려 있는 항목을 요약해 드립니다. 참고용 소식은 따로 보내지 않습니다.',
       notifySave: '설정 저장', notifySaved: '설정을 저장했습니다.', saved: '저장했습니다', savedDemo: '저장했습니다 (데모에는 비밀번호가 없습니다)',
       errShort: '비밀번호는 10자 이상이어야 합니다', errMismatch: '비밀번호가 일치하지 않습니다', errSame: '새 비밀번호는 이전 비밀번호와 달라야 합니다',
-      errSave: '저장하지 못했습니다', errPhone: '전화번호는 숫자로만 입력하세요 (+82로 시작할 수 있습니다)',
+      errSave: '저장하지 못했습니다', errPhoneRequired: '휴대폰 번호를 넣으세요. 없으면 WhatsApp 어시스턴트가 알아보지 못합니다', errPhone: '전화번호는 숫자로만 입력하세요 (+82로 시작할 수 있습니다)',
     },
     ui: {
       failureTitle: '예기치 않은 애플리케이션 오류입니다.', failureBody: '사용자의 잘못이 아닌 저희 쪽 오류입니다. 다시 발생하면 다음 코드를 보내주세요',

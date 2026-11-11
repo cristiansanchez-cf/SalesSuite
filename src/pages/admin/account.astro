@@ -9,6 +9,12 @@ import { TIMEZONES } from '~/lib/notify/service';
 import { builderMessages } from '~/lib/i18n/messages/builder';
 import { CONTACT_CHANNELS, CHANNEL_NAME, type ContactChannel } from '~/lib/contact';
 import { contactError, readContact, saveContact } from '~/lib/admin/rep-contact';
+import Icon from '~/components/ui/Icon.astro';
+import { toE164 } from '~/lib/leads/normalize';
+import { leadsRuntime } from '~/lib/leads/server';
+import { appMode } from '~/lib/mode';
+import { assistantContact, samePhone } from '~/lib/assistant/contact';
+import { assistantSetupMessages } from '~/lib/i18n/messages/assistantSetup';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -65,9 +71,14 @@ if (form?.get('action') === 'locale') {
   phone = String(form.get('phone') ?? '').trim().slice(0, 40);
   const password = showPassword ? String(form.get('password') ?? '') : '';
   const confirm = String(form.get('confirm') ?? '');
-  if (phone && !/^\+?[\d\s().-]{6,39}$/.test(phone)) error = m.account.errPhone;
+  // El móvil es obligatorio para quien vende (sin él, el asistente de WhatsApp no le reconoce); se guarda con prefijo.
+  const e164 = phone ? toE164(phone, { locale }) : null;
+  if (!phone && admin.session.role !== 'partner') error = m.account.errPhoneRequired;
+  else if (phone && (!/^\+?[\d\s().-]{6,39}$/.test(phone) || !e164)) error = m.account.errPhone;
   else if (password && password.length < 10) error = m.account.errShort;
   else if (password !== confirm) error = m.account.errMismatch;
+  if (!error && e164) phone = e164;
+  if (error) { /* se enseña arriba, con lo escrito */ }
   else if (admin.mode === 'supabase' && admin.supabase) {
     const sb = admin.supabase;
     const { error: e } = await sb.auth.updateUser({ ...(password ? { password } : {}), data: { name } });
@@ -89,6 +100,12 @@ const channelName = (c: ContactChannel) => (c === 'phone' ? C.phone : c === 'ema
 const emailOn = await admin.notifications.emailPref();
 const dailyPref = await admin.notifications.dailyPref();
 const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
+// Tu asistente de WhatsApp: a qué número escribir y desde cuál (el de arriba). Los ajustes se leen con service role.
+const A = i18n(Astro, assistantSetupMessages).m.card;
+const showAssistant = !setup && admin.session.role !== 'partner';
+const rt = showAssistant ? await leadsRuntime() : null;
+const leadSettings = rt && !('error' in rt) ? await rt.db.settings(admin.session.tenantId).catch(() => null) : null;
+const assistant = showAssistant ? await assistantContact(leadSettings, { demo: appMode() === 'demo' }) : null;
 ---
 <AdminLayout title={m.account.title}>
   <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
@@ -98,7 +115,7 @@ const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
     <label class="co-field">{m.account.name}<input class="co-input" name="name" value={name} maxlength="80" autocomplete="name" /></label>
     {admin.session.role !== 'partner' && (
       <label class="co-field">{m.account.phone} <span class="co-help">{m.account.phoneHelp}</span>
-        <input class="co-input" type="tel" name="phone" value={phone} maxlength="40" autocomplete="tel" placeholder="+34 600 000 000" data-testid="phone" /></label>
+        <input class="co-input" type="tel" name="phone" value={phone} maxlength="40" autocomplete="tel" placeholder="+34 600 000 000" required data-testid="phone" /></label>
     )}
     {showPassword && <>
       <label class="co-field">{m.account.password} <span class="co-help">{m.account.passwordHelp}</span>
@@ -108,6 +125,31 @@ const tzLabel = (tz: string) => tz.split('/').at(-1)!.replace(/_/g, ' ');
     </>}
     <button class="co-btn co-btn--primary w-fit" type="submit">{m.account.save}</button>
   </form>
+  {assistant && (
+    <section id="asistente" class="co-card mt-6 grid max-w-lg gap-3" data-testid="account-assistant" data-mode={assistant.mode}>
+      <div class="flex items-center gap-2"><Icon name="whatsapp" size={20} /><h2 class="co-entity">{A.title}</h2></div>
+      {assistant.mode === 'off'
+        ? <p class="co-meta">{A.off}</p>
+        : (
+          <>
+            <p class="co-meta">{A.lede}</p>
+            <div class="co-inset flex flex-wrap items-center justify-between gap-3 !p-4">
+              <div><p class="co-meta">{A.writeTo}</p><p class="text-2xl [font-family:var(--co-font-impact)] font-semibold" data-testid="account-assistant-number">{assistant.number ?? '—'}</p></div>
+              {assistant.waLink && <a class="co-btn co-btn--primary" href={assistant.waLink} target="_blank" rel="noopener noreferrer"><Icon name="whatsapp" size={16} />{A.open}</a>}
+            </div>
+            {!phone
+              ? <p class="flex items-start gap-2 text-sm" data-testid="account-assistant-nophone"><Icon name="triangle-alert" size={16} />{A.noPhone}</p>
+              : samePhone(phone, assistant.number)
+                ? <p class="co-inset flex items-start gap-2 !p-3 text-sm" data-testid="account-assistant-same"><Icon name="triangle-alert" size={16} />{A.same}</p>
+                : <p class="flex items-start gap-2 text-sm" data-testid="account-assistant-from"><Icon name="circle-check" size={16} />{A.from(phone)}</p>}
+            <div class="grid gap-1">
+              <p class="co-meta">{A.tipsTitle}</p>
+              <ul class="flex flex-wrap gap-2">{A.tips.map((t) => <li class="co-chip">{t}</li>)}</ul>
+            </div>
+          </>
+        )}
+    </section>
+  )}
   {!setup && (
     <form method="post" id="contacto" class="co-card mt-6 grid max-w-lg gap-4" data-testid="account-contact">
       <input type="hidden" name="action" value="contact" />
