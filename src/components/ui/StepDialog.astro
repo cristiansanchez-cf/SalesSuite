@@ -1,0 +1,107 @@
+---
+/**
+ * Modal por pasos (docs/PLAN_AJUSTES.md): un <dialog> con partes numeradas, Atrás/Siguiente y el aviso de lo que acaba de
+ * pasar (guardado o error) dentro, no detrás. Cada parte va en un slot «p1», «p2»…
+ * Sin JS se ven todas las partes seguidas. Dentro de una parte:
+ *  - [data-tabs] con botones [data-tab="k"] y paneles [data-tab-panel="k"]: pestañas.
+ *  - [data-copy]: copia `data-copy-value` o el <textarea> de su mismo bloque.
+ */
+import Icon from './Icon.astro';
+import Alert from './Alert.astro';
+
+interface Props {
+  id: string;
+  title: string;
+  parts: string[];
+  /** Abrir al cargar (después de guardar, o con ?abrir=…). */
+  open: boolean;
+  /** Parte con la que se abre (1…n). */
+  part: number;
+  notice?: string | null;
+  error?: { title: string; details: string[] } | null;
+  labels: { back: string; next: string; close: string; copied: string };
+  testid?: string;
+}
+const { id, title, parts, open, part, notice, error, labels, testid } = Astro.props;
+const bodies = await Promise.all(parts.map((_, i) => Astro.slots.render(`p${i + 1}`)));
+---
+<dialog id={id} class="co-dialog co-dialog--wide" aria-labelledby={`${id}-title`} data-step-dialog data-autoopen={open ? '1' : undefined} data-start={part} data-copied={labels.copied} data-testid={testid ? `${testid}-dialog` : undefined}>
+  <div class="co-dialog__body !gap-5">
+    <div class="flex items-start justify-between gap-3">
+      <h2 id={`${id}-title`} class="co-entity !text-xl">{title}</h2>
+      <button type="button" class="co-btn co-btn--ghost co-btn--icon co-btn--sm" data-dialog-close aria-label={labels.close}><Icon name="x" size={16} /></button>
+    </div>
+    {(error || notice) && (
+      <div data-step-alert>
+        {error ? <Alert kind="rejection" title={error.title} details={error.details} /> : <Alert kind="success" title={notice!} />}
+      </div>
+    )}
+    <ol class="co-steps">
+      {parts.map((p, i) => <li aria-current={i + 1 === part ? 'step' : undefined} data-step={i + 1} title={p}><span class="step-label">{p}</span></li>)}
+    </ol>
+    {bodies.map((html, i) => <section class="grid gap-3" data-part={i + 1} data-testid={testid ? `${testid}-part-${i + 1}` : undefined} set:html={html} />)}
+  </div>
+  <div class="co-dialog__foot" data-step-nav hidden>
+    <button type="button" class="co-btn co-btn--ghost" data-go="-1">{labels.back}</button>
+    <button type="button" class="co-btn co-btn--primary" data-go="1">{labels.next}</button>
+    <button type="button" class="co-btn co-btn--primary" data-dialog-close data-last>{labels.close}</button>
+  </div>
+</dialog>
+
+<style>
+  /* En el móvil, solo el nombre del paso en el que estás: los números caben en una línea. */
+  @media (max-width: 639px) { li:not([aria-current]) .step-label { display: none; } }
+</style>
+
+<script>
+  for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[data-step-dialog]')) {
+    const parts = [...d.querySelectorAll<HTMLElement>('[data-part]')];
+    const steps = [...d.querySelectorAll<HTMLElement>('[data-step]')];
+    const nav = d.querySelector<HTMLElement>('[data-step-nav]')!;
+    const alert = d.querySelector<HTMLElement>('[data-step-alert]');
+    let cur = Math.min(Math.max(Number(d.dataset.start) || 1, 1), parts.length);
+    const show = (n: number) => {
+      // Lo que acaba de pasar es de la parte en la que estabas: al cambiar de parte, se quita.
+      if (alert && n !== cur) alert.hidden = true;
+      cur = Math.min(Math.max(n, 1), parts.length);
+      parts.forEach((p, i) => { p.hidden = i + 1 !== cur; });
+      steps.forEach((s, i) => { if (i + 1 === cur) s.setAttribute('aria-current', 'step'); else s.removeAttribute('aria-current'); });
+      nav.querySelector<HTMLElement>('[data-go="-1"]')!.hidden = cur === 1;
+      nav.querySelector<HTMLElement>('[data-go="1"]')!.hidden = cur === parts.length;
+      nav.querySelector<HTMLElement>('[data-last]')!.hidden = cur !== parts.length;
+    };
+    nav.hidden = false;
+    show(cur);
+    nav.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-go]');
+      if (b) show(cur + Number(b.dataset.go));
+    });
+    steps.forEach((s, i) => { s.style.cursor = 'pointer'; s.addEventListener('click', () => show(i + 1)); });
+
+    for (const group of d.querySelectorAll<HTMLElement>('[data-tabs]')) {
+      const scope = group.closest('[data-part]') ?? d;
+      const tabs = [...group.querySelectorAll<HTMLButtonElement>('[data-tab]')];
+      const panels = [...scope.querySelectorAll<HTMLElement>('[data-tab-panel]')];
+      const pick = (k: string) => {
+        tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.tab === k)));
+        panels.forEach((p) => { p.hidden = p.dataset.tabPanel !== k; });
+      };
+      tabs.forEach((t) => t.addEventListener('click', () => pick(t.dataset.tab!)));
+      if (tabs[0]) pick(tabs[0].dataset.tab!);
+    }
+
+    d.addEventListener('click', async (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
+      if (!b) return;
+      const t = b.dataset.copyValue == null ? b.parentElement?.querySelector('textarea') : null;
+      const text = b.dataset.copyValue ?? t?.value ?? '';
+      try { await navigator.clipboard.writeText(text); } catch { t?.select(); }
+      const label = b.querySelector('span') ?? b;
+      const before = label.textContent;
+      label.textContent = d.dataset.copied ?? before;
+      setTimeout(() => { label.textContent = before; }, 1600);
+    });
+
+    if (d.dataset.autoopen && !d.open) d.showModal();
+  }
+</script>

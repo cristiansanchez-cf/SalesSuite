@@ -1,0 +1,166 @@
+---
+/**
+ * Paso guiado «Email de respuesta» (docs/PLAN_AJUSTES.md, paso 3). Cuatro partes:
+ *  1. Qué es (y que por ahora es con Resend).
+ *  2. Tu cuenta: el tutorial de Resend y la clave.
+ *  3. Tu dominio: los registros DNS que pide Resend, ya rellenos, con «Copiar» y «Comprobar ahora».
+ *  4. Quién firma: remitente, nombre, adónde llegan las respuestas y a quién avisamos (lista).
+ * Cada parte se guarda sola: si se deja a medias, la tarjeta dice qué falta.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import StepDialog from '~/components/ui/StepDialog.astro';
+import type { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
+import type { DomainDetail } from '~/lib/leads/resend-key';
+
+interface Props {
+  id: string;
+  open: boolean;
+  part: number;
+  T: (typeof leadsSetupMessages)['es']['email'];
+  /** Pista de su clave (re_…abcd) o null si no tiene cuenta propia. */
+  ownKey: string | null;
+  /** La plataforma tiene su cuenta de Resend. */
+  platform: boolean;
+  /** Dominios de su cuenta con sus registros; null si no se pueden ver (sin clave o sin permiso). */
+  domains: DomainDetail[] | null;
+  sender: { fromEmail: string | null; fromName: string | null; replyTo: string | null; notifyEmails: string[] };
+  notice?: string | null;
+  error?: { title: string; details: string[] } | null;
+}
+const { id, open, part, T, ownKey, platform, domains, sender, notice, error } = Astro.props;
+const ACTION = '/admin/leads/configurar';
+const verified = domains?.find((d) => d.status === 'verified')?.name ?? null;
+const badge = (st: string) => (st === 'verified' ? 'co-badge--signal' : /fail/.test(st) ? 'co-badge--attention' : 'co-badge--soft');
+---
+<StepDialog id={id} title={T.title} parts={T.parts} open={open} part={part} notice={notice} error={error} testid="email"
+  labels={{ back: T.back, next: T.next, close: T.close, copied: T.domain.copied }}>
+  <Fragment slot="p1">
+    <div class="co-inset flex items-center gap-4 !p-5">
+      <span class="co-row__lead" aria-hidden="true"><Icon name="mail" size={22} /></span>
+      <div class="grid gap-1">
+        <p class="text-2xl font-semibold tracking-tight">Resend</p>
+        <p class="co-meta">{T.resendOnly}</p>
+      </div>
+    </div>
+    <ol class="grid list-decimal gap-1 pl-5">{T.why.map((w) => <li>{w}</li>)}</ol>
+  </Fragment>
+
+  <Fragment slot="p2">
+    <p class="flex items-center gap-2 font-semibold" data-testid="email-account-status">
+      <Icon name={ownKey ? 'circle-check' : platform ? 'info' : 'circle-dashed'} size={18} />
+      {ownKey ? T.account.own(ownKey) : platform ? T.account.shared : T.account.none}
+    </p>
+    <p>{T.account.lede}</p>
+    <ol class="grid list-decimal gap-2 pl-5">{T.account.steps.map((x) => <li>{x}</li>)}</ol>
+    <a class="co-btn co-btn--ghost w-fit" href="https://resend.com/domains" target="_blank" rel="noopener noreferrer"><Icon name="external-link" size={16} />{T.account.open}</a>
+    <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" autocomplete="off" data-testid="email-key-form">
+      <input type="hidden" name="action" value="resend-key" />
+      <label class="co-field min-w-[16rem] flex-1">{T.account.key}<input class="co-input" type="password" name="resendKey" required autocomplete="off" spellcheck="false" placeholder="re_…" /></label>
+      <button class="co-btn co-btn--primary">{T.account.save}</button>
+    </form>
+    {ownKey && platform && (
+      <form method="post" action={ACTION}><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="resend-key-clear">{T.account.clear}</button></form>
+    )}
+  </Fragment>
+
+  <Fragment slot="p3">
+    {!ownKey
+      ? <p class="co-inset !p-4" data-testid="email-domain-empty">{platform ? T.domain.shared : T.domain.noKey}</p>
+      : domains === null
+        ? <p class="co-inset !p-4" data-testid="email-domain-empty">{T.domain.noAccess}</p>
+        : domains.length === 0
+          ? <p class="co-inset !p-4" data-testid="email-domain-empty">{T.domain.noDomains}</p>
+          : (
+            <>
+              <p>{T.domain.lede}</p>
+              {domains.map((d) => (
+                <div class="grid gap-3" data-testid="email-domain" data-status={d.status}>
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="flex items-center gap-2 font-semibold"><Icon name="globe" size={16} />{d.name}</p>
+                    <span class={`co-badge ${badge(d.status)}`}>{T.domain.status[d.status] ?? d.status}</span>
+                  </div>
+                  {d.status === 'verified'
+                    ? <p class="flex items-center gap-2 text-sm"><Icon name="circle-check" size={16} />{T.domain.ok(d.name)}</p>
+                    : (
+                      <>
+                        <ul class="grid gap-2">
+                          {d.records.map((r) => (
+                            <li class="co-inset grid gap-2 !p-3 text-sm" data-testid="email-dns-record">
+                              <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span class="font-semibold">{r.record} · {T.domain.type} {r.type}{r.priority != null && ` · ${T.domain.priority} ${r.priority}`}</span>
+                                <span class={`co-badge ${badge(r.status)}`}>{T.domain.status[r.status] ?? r.status}</span>
+                              </div>
+                              <div class="grid gap-1 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
+                                <span class="co-meta">{T.domain.name}</span>
+                                <code class="break-all">{r.name}</code>
+                                <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy data-copy-value={r.name}><Icon name="copy" size={14} /><span>{T.domain.copy}</span></button>
+                              </div>
+                              <div class="grid gap-1 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
+                                <span class="co-meta">{T.domain.value}</span>
+                                <code class="break-all">{r.value}</code>
+                                <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy data-copy-value={r.value}><Icon name="copy" size={14} /><span>{T.domain.copy}</span></button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <form method="post" action={ACTION} class="flex flex-wrap items-center gap-2">
+                          <input type="hidden" name="action" value="verify-domain" /><input type="hidden" name="domainId" value={d.id} />
+                          <button class="co-btn co-btn--primary" data-testid="email-verify"><Icon name="rotate-ccw" size={16} />{T.domain.verify}</button>
+                        </form>
+                        <p class="co-meta">{T.domain.verifyHelp}</p>
+                      </>
+                    )}
+                </div>
+              ))}
+            </>
+          )}
+  </Fragment>
+
+  <Fragment slot="p4">
+    <p>{T.sender.lede}</p>
+    {!ownKey && platform && <p class="co-meta">{T.sender.platform}</p>}
+    <form method="post" action={ACTION} class="grid gap-3" data-testid="email-sender-form">
+      <input type="hidden" name="action" value="save-sender" />
+      {ownKey && (
+        <label class="co-field">
+          <span class="flex items-center gap-2">{T.sender.fromEmail}<span class="co-badge co-badge--ink">{T.sender.required}</span></span>
+          <input class="co-input" type="email" name="fromEmail" value={sender.fromEmail ?? ''} required maxlength="200" placeholder={verified ? `hola@${verified}` : ''} />
+          <span class="co-meta">{T.sender.fromEmailHelp(verified)}</span>
+        </label>
+      )}
+      <label class="co-field">{T.sender.fromName}<input class="co-input" name="fromName" value={sender.fromName ?? ''} maxlength="80" /><span class="co-meta">{T.sender.fromNameHelp}</span></label>
+      <label class="co-field">
+        <span class="flex items-center gap-2">{T.sender.replyTo}<span class="co-badge co-badge--ink">{T.sender.required}</span></span>
+        <input class="co-input" type="email" name="replyTo" value={sender.replyTo ?? ''} required maxlength="200" />
+        <span class="co-meta">{T.sender.replyToHelp}</span>
+      </label>
+      <button class="co-btn co-btn--primary w-fit" data-testid="email-sender-save">{T.sender.save}</button>
+    </form>
+    <div class="grid gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="email-notify">
+      <p class="flex items-center gap-2 font-semibold">{T.sender.notify}<span class="co-badge co-badge--ink">{T.sender.required}</span></p>
+      <p class="co-meta">{T.sender.notifyHelp}</p>
+      {sender.notifyEmails.length
+        ? (
+          <ul class="grid gap-2">
+            {sender.notifyEmails.map((e) => (
+              <li class="co-inset flex items-center justify-between gap-2 !px-4 !py-2">
+                <span class="flex min-w-0 items-center gap-2 break-all"><Icon name="bell" size={16} />{e}</span>
+                <form method="post" action={ACTION} class="shrink-0">
+                  <input type="hidden" name="action" value="notify-remove" /><input type="hidden" name="email" value={e} />
+                  <button class="co-btn co-btn--ghost co-btn--sm" aria-label={`${T.sender.remove} ${e}`}><Icon name="trash2" size={14} />{T.sender.remove}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )
+        : <p class="co-meta">{T.sender.empty}</p>}
+      {sender.notifyEmails.length < 5 && (
+        <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-testid="email-notify-add">
+          <input type="hidden" name="action" value="notify-add" />
+          <label class="co-field min-w-[14rem] flex-1">{T.sender.add}<input class="co-input" type="email" name="email" required maxlength="200" /></label>
+          <button class="co-btn co-btn--primary"><Icon name="plus" size={16} />{T.sender.add}</button>
+        </form>
+      )}
+    </div>
+  </Fragment>
+</StepDialog>

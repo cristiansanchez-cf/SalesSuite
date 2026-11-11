@@ -2,13 +2,14 @@
 /**
  * Leads entrantes (docs/PLAN_AJUSTES.md): los pasos para que la web o la app manden leads y se les conteste, cada uno
  * como una tarjeta (sin empezar, a medias, hecho). Arriba, si entran leads reales o solo pruebas. Solo admin.
- * De momento cada tarjeta lleva a su sección de los ajustes; los pasos guiados llegan en los siguientes pasos del plan.
+ * Las tarjetas con paso guiado abren su modal (conectar la web, el email); las demás llevan a su sección de los ajustes.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
 import SetupCard from '~/components/ui/SetupCard.astro';
 import ConnectDialog from '~/components/admin/leads/ConnectDialog.astro';
+import EmailDialog from '~/components/admin/leads/EmailDialog.astro';
 import { randomUUID } from 'node:crypto';
 import { requestOrigin } from '~/lib/http';
 import { CONSOLE_TEST_PREFIX } from '~/lib/leads/db';
@@ -24,7 +25,7 @@ import { i18n } from '~/lib/i18n';
 import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
 import { leadsFor } from '~/lib/leads/service';
-import { ownDomains } from '~/lib/leads/resend-key';
+import { ownDomainDetails, ownDomains, setResendKey, verifyOwnDomain, type DomainDetail } from '~/lib/leads/resend-key';
 import { retentionOf } from '~/lib/leads/privacy';
 import { leadSetupSteps, readiness, requiredProgress, type StepKey } from '~/lib/leads/setup-steps';
 import type { LeadSettings } from '~/lib/leads/types';
@@ -43,6 +44,8 @@ const platformMail = !!(env('RESEND_API_KEY') && env('RESEND_FROM'));
 let error: string | null = null;
 let errorDetails: string[] = [];
 let errorPart = 2;
+/** Qué modal enseña el error (el de la parte en la que estaba). */
+let errorIn: 'connect' | 'email' | null = null;
 const slug = tenant?.slug ?? 'empresa';
 let action = '';
 if (Astro.request.method === 'POST') {
@@ -55,7 +58,7 @@ if (Astro.request.method === 'POST') {
     const next = action === 'add-origin' ? [...cur, o] : cur.filter((x) => x !== o);
     const r = await formAction(async () => { await svc.saveOrigins(next, slug); });
     if (!r.error) return Astro.redirect('/admin/leads/configurar?abrir=connect&p=2&ok=webs', 303);
-    error = r.error; errorDetails = r.details;
+    error = r.error; errorDetails = r.details; errorIn = 'connect';
   } else if (action === 'test-lead') {
     // Un lead de prueba como los de la web, sin pasar por el navegador: se guarda en Pruebas y no se envía nada.
     const r = await formAction(async () => {
@@ -75,7 +78,29 @@ if (Astro.request.method === 'POST') {
       if (res.status >= 300) throw new AdminError(422, T.connect.test.failed, [JSON.stringify(res.body).slice(0, 200)]);
     });
     if (!r.error) return Astro.redirect('/admin/leads/configurar?abrir=connect&p=4&ok=test', 303);
-    error = r.error; errorDetails = r.details; errorPart = 4;
+    error = r.error; errorDetails = r.details; errorPart = 4; errorIn = 'connect';
+  } else if (['resend-key', 'resend-key-clear', 'verify-domain', 'save-sender', 'notify-add', 'notify-remove'].includes(action)) {
+    // Email de respuesta: cada parte se guarda sola y se vuelve a ella.
+    const cur = await svc.settings();
+    const base = { fromEmail: cur?.fromEmail ?? null, fromName: cur?.fromName ?? null, replyTo: cur?.replyTo ?? null, notifyEmails: cur?.notifyEmails ?? [] };
+    let to = 2, ok = 'key';
+    const r = await formAction(async () => {
+      if (action === 'resend-key') { await setResendKey(admin, String(f.get('resendKey') ?? '')); to = 3; ok = 'key'; }
+      else if (action === 'resend-key-clear') { await setResendKey(admin, null); to = 2; ok = 'keyCleared'; }
+      else if (action === 'verify-domain') { await verifyOwnDomain(admin, String(f.get('domainId') ?? '')); to = 3; ok = 'verify'; }
+      else {
+        const email = String(f.get('email') ?? '');
+        const notify = action === 'notify-add' ? [...base.notifyEmails, email] : action === 'notify-remove' ? base.notifyEmails.filter((x) => x !== email) : base.notifyEmails;
+        const fields = action === 'save-sender'
+          ? { fromEmail: f.has('fromEmail') ? String(f.get('fromEmail') ?? '') : base.fromEmail, fromName: String(f.get('fromName') ?? ''), replyTo: String(f.get('replyTo') ?? '') }
+          : {};
+        await svc.saveSender({ ...base, ...fields, notifyEmails: notify }, slug);
+        to = 4; ok = 'sender';
+      }
+    });
+    if (!r.error) return Astro.redirect(`/admin/leads/configurar?abrir=email&p=${to}&ok=${ok}`, 303);
+    error = r.error; errorDetails = r.details; errorIn = 'email';
+    errorPart = action.startsWith('resend-key') ? 2 : action === 'verify-domain' ? 3 : 4;
   } else if (action === 'toggle') {
     const on = f.get('on') === '1';
     const cur = await svc.settings();
@@ -99,13 +124,13 @@ const last = await svc.lastSubmission({ external: true }).catch(() => null);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
-const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test });
+const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 
-// De momento, cada tarjeta abre su sección de los ajustes.
+// Las que tienen paso guiado abren su modal; las demás, su sección de los ajustes.
 const META: Record<StepKey, { icon: IconName; href: string }> = {
   connect: { icon: 'globe', href: '/admin/leads/configurar?abrir=connect' },
-  email: { icon: 'mail', href: '/admin/leads/ajustes#email' },
+  email: { icon: 'mail', href: '/admin/leads/configurar?abrir=email' },
   messages: { icon: 'message-square-text', href: '/admin/leads/ajustes#texts' },
   whatsapp: { icon: 'whatsapp', href: '/admin/leads/ajustes#whatsapp' },
   extras: { icon: 'link', href: '/admin/leads/ajustes#media' },
@@ -114,7 +139,7 @@ const META: Record<StepKey, { icon: IconName; href: string }> = {
 const summary = (k: StepKey): string[] => {
   switch (k) {
     case 'connect': return [last ? T.done.connect(fmt.format(new Date(last.at))) : '', s.allowedOrigins.length ? T.done.origins(s.allowedOrigins.length) : ''].filter(Boolean);
-    case 'email': return [s.fromEmail ? T.done.email(s.fromEmail) : T.done.emailPlatform];
+    case 'email': return [s.fromEmail ? T.done.email(s.fromEmail) : T.done.emailPlatform, s.notifyEmails.length ? T.done.notify(s.notifyEmails.length) : ''].filter(Boolean);
     case 'messages': return [T.done.messages];
     case 'whatsapp': return [T.done.whatsapp];
     case 'extras': return [T.done.extras];
@@ -129,6 +154,14 @@ const connectPart = pParam >= 1 && pParam <= 4 ? pParam : connect.status === 'to
 const guideLocale = locale === 'es' ? 'es' : 'en';
 const endpoint = `${requestOrigin(Astro.request, Astro.url)}/api/v1/leads`;
 const brand = s.brand || slug;
+// El email: con qué parte se abre según lo que falte, y los registros DNS (solo si hace falta verlos: son llamadas a Resend).
+const emailStep = steps.find((x) => x.key === 'email')!;
+const emailPart = openParam === 'email' && pParam >= 1 && pParam <= 4 ? pParam
+  : emailStep.status === 'todo' ? 1 : emailStep.missing.includes('resend') ? (s.resendKeyHint ? 3 : 2) : 4;
+const needDetails = demo || openParam === 'email' || emailStep.status !== 'done' || errorIn === 'email';
+const emailDomains: DomainDetail[] | null = !s.resendKeyHint ? null
+  : needDetails ? await ownDomainDetails(admin).catch(() => null)
+  : (domains?.map((d) => ({ id: d.id ?? '', name: d.name, status: d.status, records: [] })) ?? null);
 const main = steps.filter((x) => x.key !== 'extras' && x.key !== 'privacy');
 const extras = steps.filter((x) => x.key === 'extras' || x.key === 'privacy');
 const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -147,8 +180,8 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
       <p class="co-meta max-w-[18rem] sm:text-right">{s.enabled ? S.liveHelp : ready ? S.pausedHelp : S.activateBlocked}</p>
     </div>
   </PageHeader>
-  {okMsg && openParam !== 'connect' && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
-  {error && action === 'toggle' && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
+  {okMsg && openParam !== 'connect' && openParam !== 'email' && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {error && !errorIn && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
 
   <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
     <p class="co-meta font-semibold">{T.progress(progress.done, progress.total)}</p>
@@ -165,7 +198,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
         status={x.status} need={x.need} step={T.stepN(i + 1)}
         labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
         missing={x.missing.map((k) => T.miss[k])} summary={summary(x.key)} testid={`setup-card-${x.key}`}
-        dialog={x.key === 'connect' ? 'setup-connect' : undefined}
+        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : undefined}
       />
     ))}
   </section>
@@ -188,11 +221,18 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
   </p>
 
   <ConnectDialog
-    id="setup-connect" open={openParam === 'connect' || (!!error && action !== 'toggle')} part={error ? errorPart : connectPart}
+    id="setup-connect" open={openParam === 'connect' || errorIn === 'connect'} part={errorIn === 'connect' ? errorPart : connectPart}
     origins={s.allowedOrigins} prompt={connectPrompt({ endpoint, brand, origins: s.allowedOrigins, locale: guideLocale })}
     snippet={connectSnippet({ endpoint, brand })} received={last ? fmt.format(new Date(last.at)) : null}
     testSent={Astro.url.searchParams.get('ok') === 'test'} T={T.connect}
     notice={openParam === 'connect' && Astro.url.searchParams.get('ok') === 'webs' ? T.connect.ok.webs : null}
-    error={error && action !== 'toggle' ? { title: error, details: errorDetails } : null}
+    error={error && errorIn === 'connect' ? { title: error, details: errorDetails } : null}
+  />
+  <EmailDialog
+    id="setup-email" open={openParam === 'email' || errorIn === 'email'} part={errorIn === 'email' ? errorPart : emailPart} T={T.email}
+    ownKey={s.resendKeyHint ?? null} platform={platformMail} domains={emailDomains}
+    sender={{ fromEmail: s.fromEmail, fromName: s.fromName, replyTo: s.replyTo, notifyEmails: s.notifyEmails }}
+    notice={openParam === 'email' ? okMsg : null}
+    error={error && errorIn === 'email' ? { title: error, details: errorDetails } : null}
   />
 </AdminLayout>

@@ -22,6 +22,9 @@ export const LEAD_ERRORS = {
   svgLogo: 'El logo tiene que ser PNG o JPG: Gmail no muestra SVG',
   badOrigin: (v: string) => `«${v}» no es una dirección web (ejemplo: tuweb.com)`,
   tooManyOrigins: 'Como mucho 20 webs',
+  badEmail: (v: string) => `«${v}» no es un email`,
+  tooManyNotify: 'Como mucho 5 personas a las que avisar',
+  fromNameLong: 'El nombre del remitente, como mucho 80 caracteres',
 } as const;
 
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
@@ -224,6 +227,30 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return out;
   }
 
+  /**
+   * Quién firma el email y a quién se avisa (Leads entrantes → Email de respuesta): remitente, su nombre, a quién se
+   * contesta y a quién avisamos de cada lead. Lo demás de los ajustes no se toca.
+   */
+  async function saveSender(input: { fromEmail: string | null; fromName: string | null; replyTo: string | null; notifyEmails: string[] }, brand: string) {
+    requireAdmin();
+    const email = z.string().email().max(200);
+    const one = (v: string | null) => {
+      const x = (v ?? '').trim().toLowerCase();
+      if (!x) return null;
+      if (!email.safeParse(x).success) throw new AdminError(422, LEAD_ERRORS.badEmail(x.slice(0, 80)));
+      return x;
+    };
+    const notify = [...new Set(input.notifyEmails.map((x) => one(x)).filter((x): x is string => !!x))];
+    if (notify.length > 5) throw new AdminError(422, LEAD_ERRORS.tooManyNotify);
+    const fromName = (input.fromName ?? '').trim() || null;
+    if (fromName && fromName.length > 80) throw new AdminError(422, LEAD_ERRORS.fromNameLong);
+    const patch = { fromEmail: one(input.fromEmail), fromName, replyTo: one(input.replyTo), notifyEmails: notify };
+    let prev = await db.settings(t);
+    if (!prev) { await saveOrigins([], brand); prev = await db.settings(t); }
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    await db.saveSettings({ ...prev, ...patch });
+  }
+
   /** Los textos de la empresa (vacío o igual que el de por defecto = el de por defecto). */
   async function saveTexts(input: unknown, aiContext?: string | null) {
     requireAdmin();
@@ -276,7 +303,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, saveRetention, setEnabled, lastSubmission, saveOrigins, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 
