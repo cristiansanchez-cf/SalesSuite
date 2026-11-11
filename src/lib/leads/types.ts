@@ -61,7 +61,11 @@ export interface MediaLinks { video?: string; booking?: string }
 /** { venue: { es: { video, booking }, en: {…} }, … } */
 export type LeadMedia = Partial<Record<string, Partial<Record<'es' | 'en' | 'fr', MediaLinks>>>>;
 
-export interface EmailSignature { name?: string; title?: string; phone?: string; address?: string; email?: string; website?: string; logoUrl?: string; legal?: string }
+export interface EmailSignature {
+  name?: string; title?: string; phone?: string; address?: string; email?: string; website?: string; logoUrl?: string; legal?: string;
+  /** La firma pegada desde Gmail u Outlook, ya limpia (signature-html.ts), y su versión en texto. Si está, manda sobre los campos. */
+  html?: string; htmlText?: string;
+}
 
 export type QuestionKey = 'venue' | 'dj' | 'festival' | 'wedding' | 'general' | 'trial_ended' | 'extra_venue';
 export interface LocaleTexts { subject?: string; body?: string; wa1?: string; wa2?: string; questions?: Partial<Record<QuestionKey, string>> }

@@ -188,10 +188,13 @@ const SIG = '\u0007SIG\u0007';
 export const hasSignature = (s?: EmailSignature | null) => !!s && Object.values(s).some((v) => typeof v === 'string' && v.trim());
 /** La firma en texto (para la versión sin formato del email). */
 export function signatureText(s: EmailSignature): string {
+  if (s.html) return s.htmlText ?? '';
   return [s.name, s.title, s.phone, s.address, s.email, s.website, s.legal ? `\n${s.legal}` : ''].filter((x) => x && x.trim()).join('\n');
 }
 /** La firma maquetada: nombre y cargo en negrita, datos, logo y el texto legal en pequeño. Tablas e inline: va en Gmail y Outlook. */
 export function signatureHtml(s: EmailSignature): string {
+  // La pegada ya viene limpia (se limpia al guardarla).
+  if (s.html) return `<div style="margin:6px 0 14px">${s.html}</div>`;
   const tel = s.phone ? `<a href="tel:${esc(s.phone.replace(/[^\d+]/g, ''))}" style="color:#1a56db">${esc(s.phone)}</a>` : '';
   const mail = s.email ? `<a href="mailto:${esc(s.email)}" style="color:#1a56db">${esc(s.email)}</a>` : '';
   const web = s.website ? `<a href="${esc(s.website)}" style="color:#1a56db">${esc(s.website.replace(/^https?:\/\//, ''))}</a>` : '';

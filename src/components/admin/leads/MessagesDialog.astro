@@ -1,0 +1,223 @@
+---
+/**
+ * Paso guiado «Tus mensajes y tu firma» (docs/PLAN_AJUSTES.md, paso 4). Tres partes:
+ *  1. Qué se manda (email, WhatsApp 1 y 2) y que ya llevan textos nuestros.
+ *  2. Tus textos: solo los idiomas que usa (el del espacio y los que añada), con la vista previa al lado que se
+ *     actualiza mientras escribe. Proponer con IA y volver a los nuestros.
+ *  3. Tu firma: pegarla desde Gmail u Outlook (se limpia en el servidor) o rellenarla a mano, y con qué nombre firma.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import StepDialog from '~/components/ui/StepDialog.astro';
+import type { leadsMessages } from '~/lib/i18n/messages/leads';
+import type { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
+import { previewFor, type PreviewCtx, type PreviewLocale } from '~/lib/leads/message-preview';
+import { DEFAULT_TEXTS, signatureHtml } from '~/lib/leads/templates';
+import type { EmailSignature, LeadTemplates, QuestionKey } from '~/lib/leads/types';
+
+interface Props {
+  id: string;
+  open: boolean;
+  part: number;
+  T: (typeof leadsSetupMessages)['es']['messages'];
+  S: (typeof leadsMessages)['es']['set'];
+  /** Idioma del espacio (siempre activo) y los que tienen textos propios. */
+  base: PreviewLocale;
+  active: PreviewLocale[];
+  /** Lo que se enseña en el editor: lo guardado, la propuesta de la IA o lo enviado con error. */
+  custom: LeadTemplates;
+  ctx: PreviewCtx;
+  signature: EmailSignature | null;
+  signerName: string;
+  /** Imágenes quitadas de la firma pegada (para avisar). */
+  dropped: number;
+  notice?: string | null;
+  error?: { title: string; details: string[] } | null;
+}
+const { id, open, part, T, S, base, active, custom, ctx, signature, signerName, dropped, notice, error } = Astro.props;
+const ACTION = '/admin/leads/configurar';
+const LOCS: PreviewLocale[] = ['es', 'en', 'fr'];
+const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
+const textOf = (l: PreviewLocale, k: 'subject' | 'body' | 'wa1' | 'wa2') => custom[l]?.[k]?.trim() || DEFAULT_TEXTS[l][k];
+const qOf = (l: PreviewLocale, k: QuestionKey) => custom[l]?.questions?.[k]?.trim() || DEFAULT_TEXTS[l].questions[k];
+const pv = Object.fromEntries(LOCS.map((l) => [l, previewFor(l, custom, ctx)])) as Record<PreviewLocale, ReturnType<typeof previewFor>>;
+const sig = signature ?? {};
+const pasted = !!sig.html;
+---
+<StepDialog id={id} title={T.title} parts={T.parts} open={open} part={part} notice={notice} error={error} testid="messages"
+  labels={{ back: T.back, next: T.next, close: T.close, copied: T.copied }}>
+  <Fragment slot="p1">
+    <ul class="grid gap-2">
+      {T.what.map((w, i) => (
+        <li class="co-inset flex items-start gap-3 !p-4">
+          <span class="co-row__lead" aria-hidden="true"><Icon name={i === 0 ? 'mail' : i === 1 ? 'whatsapp' : 'clock'} size={18} /></span>
+          <span class="grid gap-0.5"><span class="font-semibold">{w.title}</span><span class="co-meta">{w.body}</span></span>
+        </li>
+      ))}
+    </ul>
+    <p>{T.defaults}</p>
+  </Fragment>
+
+  <Fragment slot="p2">
+    <form method="post" action={ACTION} class="grid gap-4" id={`${id}-texts`} data-msg-form data-ctx={JSON.stringify(ctx)} data-testid="messages-texts">
+      <p class="co-meta">{T.langs.lede}</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="co-segmented w-fit" role="tablist" data-lang-tabs>
+          {LOCS.map((l) => <button type="button" role="tab" data-lang-tab={l} aria-pressed={l === active[0] ? 'true' : 'false'} hidden={!active.includes(l)}>{T.langs.names[l]}</button>)}
+        </div>
+        {LOCS.map((l) => <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-lang-add={l} hidden={active.includes(l)} data-testid={`messages-add-${l}`}><Icon name="plus" size={14} />{T.langs.add}: {T.langs.names[l]}</button>)}
+      </div>
+
+      {LOCS.map((l) => (
+        <section class="grid gap-4 lg:grid-cols-2" data-lang-panel={l} hidden={!active.includes(l) || l !== active[0]} data-active={active.includes(l) ? '1' : '0'} data-testid={`messages-lang-${l}`}>
+          <fieldset class="grid min-w-0 content-start gap-3" disabled={!active.includes(l)}>
+            <label class="co-field">{S.subject}<input class="co-input" name={`t_${l}_subject`} value={textOf(l, 'subject')} maxlength="200" data-pv /></label>
+            <label class="co-field">{S.body}<textarea class="co-textarea h-56" name={`t_${l}_body`} maxlength="4000" data-pv>{textOf(l, 'body')}</textarea></label>
+            <label class="co-field">{S.wa1}<textarea class="co-textarea h-28" name={`t_${l}_wa1`} maxlength="1024" data-pv data-testid={`messages-${l}-wa1`}>{textOf(l, 'wa1')}</textarea></label>
+            <label class="co-field">{S.wa2}<textarea class="co-textarea h-28" name={`t_${l}_wa2`} maxlength="1024" data-pv>{textOf(l, 'wa2')}</textarea></label>
+            <details class="co-inset !p-3">
+              <summary class="cursor-pointer font-semibold">{S.questions}</summary>
+              <div class="mt-3 grid gap-2">
+                {QKEYS.map((k) => <label class="co-field text-xs">{S.qKeys[k]}<input class="co-input" name={`t_${l}_q_${k}`} value={qOf(l, k)} maxlength="300" data-pv /></label>)}
+              </div>
+            </details>
+            <p class="co-meta">{S.textsHelp}</p>
+            <p class="co-meta">{S.waNote}</p>
+            {l !== base && <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-lang-remove={l}><Icon name="trash2" size={14} />{T.langs.remove}</button>}
+          </fieldset>
+          <div class="grid min-w-0 content-start gap-3 [overflow-wrap:anywhere]" data-pv-out={l}>
+            <p class="text-eyebrow">{T.preview}</p>
+            <p class="co-meta">{T.previewSample}</p>
+            <div class="rounded-xl border border-[var(--console-card-border)] bg-white !p-4 text-black">
+              <p class="mb-2 text-sm font-semibold" data-pv-subject>{pv[l].subject}</p>
+              <div class="text-sm" data-pv-html set:html={pv[l].html} />
+            </div>
+            <div class="grid gap-2 rounded-xl bg-[#efeae2] p-3">
+              <p class="text-xs font-semibold text-[#54656f]">{S.wa1}</p>
+              <p class="max-w-[90%] whitespace-pre-wrap rounded-lg bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm" data-pv-wa1>{pv[l].wa1}</p>
+              <p class="text-xs font-semibold text-[#54656f]">{S.wa2}</p>
+              <p class="max-w-[90%] whitespace-pre-wrap rounded-lg bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm" data-pv-wa2>{pv[l].wa2}</p>
+            </div>
+          </div>
+        </section>
+      ))}
+      <p class="co-meta" data-lang-removed hidden>{T.langs.removeHelp}</p>
+      <div class="flex flex-wrap gap-2">
+        <button class="co-btn co-btn--primary" name="action" value="save-texts" data-testid="messages-save">{S.saveTexts}</button>
+        <button class="co-btn co-btn--ghost" name="action" value="ai-draft" formnovalidate data-testid="messages-ai"><Icon name="sparkles" size={16} />{S.aiDraft}</button>
+        <button class="co-btn co-btn--ghost" name="action" value="reset-texts" formnovalidate>{S.resetTexts}</button>
+      </div>
+    </form>
+  </Fragment>
+
+  <Fragment slot="p3">
+    <p>{T.sig.lede}</p>
+    <form method="post" action={ACTION} class="flex flex-wrap items-end gap-2" data-testid="messages-signer">
+      <input type="hidden" name="action" value="save-signer" />
+      <label class="co-field min-w-[14rem] flex-1">{T.sig.signer}<input class="co-input" name="signerName" value={signerName} maxlength="80" /><span class="co-meta">{S.signerHelp}</span></label>
+      <button class="co-btn co-btn--ghost">{T.sig.saveSigner}</button>
+    </form>
+    {dropped > 0 && <p class="co-inset flex items-start gap-2 !p-3 text-sm" data-testid="messages-dropped"><Icon name="triangle-alert" size={16} />{T.sig.dropped(dropped)}</p>}
+    {Object.keys(sig).length > 0 && (
+      <div class="grid gap-2" data-testid="messages-sig-current">
+        <p class="text-eyebrow">{T.sig.current}</p>
+        <div class="rounded-xl border border-[var(--console-card-border)] bg-white !p-4 text-sm text-black" set:html={signatureHtml(sig)} />
+        {pasted && <form method="post" action={ACTION}><button class="co-btn co-btn--ghost co-btn--sm" name="action" value="clear-signature">{T.sig.clear}</button></form>}
+      </div>
+    )}
+    <div class="co-segmented w-fit" data-tabs>
+      <button type="button" data-tab="paste" aria-pressed="true">{T.sig.tabPaste}</button>
+      <button type="button" data-tab="fields" aria-pressed="false">{T.sig.tabFields}</button>
+    </div>
+    <form method="post" action={ACTION} class="grid gap-2" data-tab-panel="paste" data-sig-paste data-testid="messages-sig-paste">
+      <input type="hidden" name="action" value="save-signature-paste" />
+      <input type="hidden" name="html" value="" />
+      <p class="co-meta">{T.sig.pasteHelp}</p>
+      <div class="co-textarea min-h-[9rem] overflow-auto bg-white text-sm text-black" contenteditable="true" role="textbox" aria-multiline="true" aria-label={T.sig.pastePlaceholder} data-placeholder={T.sig.pastePlaceholder} data-sig-editor data-testid="messages-sig-editor"></div>
+      <button class="co-btn co-btn--primary w-fit">{T.sig.save}</button>
+    </form>
+    <form method="post" action={ACTION} class="grid gap-3" data-tab-panel="fields" data-testid="messages-sig-fields">
+      <input type="hidden" name="action" value="save-signature-fields" />
+      {pasted && <p class="co-meta">{T.sig.fieldsNote}</p>}
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="co-field">{S.sigName}<input class="co-input" name="sig_name" value={sig.name ?? ''} maxlength="120" /></label>
+        <label class="co-field">{S.sigTitle}<input class="co-input" name="sig_title" value={sig.title ?? ''} maxlength="160" /></label>
+        <label class="co-field">{S.sigPhone}<input class="co-input" name="sig_phone" value={sig.phone ?? ''} maxlength="40" /></label>
+        <label class="co-field">{S.sigEmail}<input class="co-input" type="email" name="sig_email" value={sig.email ?? ''} maxlength="200" /></label>
+        <label class="co-field sm:col-span-2">{S.sigAddress}<input class="co-input" name="sig_address" value={sig.address ?? ''} maxlength="200" /></label>
+        <label class="co-field">{S.sigWebsite}<input class="co-input" type="url" name="sig_website" value={sig.website ?? ''} placeholder="https://" /></label>
+        <label class="co-field">{S.sigLogo}<input class="co-input" type="url" name="sig_logoUrl" value={sig.logoUrl ?? ''} placeholder="https://…/logo.png" /><span class="co-meta">{S.sigLogoHelp}</span></label>
+      </div>
+      <label class="co-field">{S.sigLegal}<textarea class="co-textarea h-24" name="sig_legal" maxlength="2000">{sig.legal ?? ''}</textarea></label>
+      <button class="co-btn co-btn--primary w-fit">{S.saveSig}</button>
+    </form>
+  </Fragment>
+</StepDialog>
+
+<style is:global>
+  [data-sig-editor]:empty::before { content: attr(data-placeholder); color: #888; }
+</style>
+
+<script>
+  import { previewFor, type PreviewCtx, type PreviewLocale } from '~/lib/leads/message-preview';
+  import type { LeadTemplates, QuestionKey } from '~/lib/leads/types';
+
+  const QK: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-msg-form]')) {
+    const ctx = JSON.parse(form.dataset.ctx ?? '{}') as PreviewCtx;
+    const tabs = [...form.querySelectorAll<HTMLButtonElement>('[data-lang-tab]')];
+    const panels = [...form.querySelectorAll<HTMLElement>('[data-lang-panel]')];
+    const val = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement | null)?.value ?? '';
+    const show = (l: string) => {
+      tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.langTab === l)));
+      panels.forEach((p) => { p.hidden = p.dataset.langPanel !== l; });
+    };
+    const render = (l: PreviewLocale) => {
+      const custom: LeadTemplates = { [l]: {
+        subject: val(`t_${l}_subject`), body: val(`t_${l}_body`), wa1: val(`t_${l}_wa1`), wa2: val(`t_${l}_wa2`),
+        questions: Object.fromEntries(QK.map((k) => [k, val(`t_${l}_q_${k}`)])),
+      } };
+      const pv = previewFor(l, custom, ctx);
+      const out = form.querySelector<HTMLElement>(`[data-pv-out="${l}"]`)!;
+      out.querySelector('[data-pv-subject]')!.textContent = pv.subject;
+      out.querySelector('[data-pv-html]')!.innerHTML = pv.html;
+      out.querySelector('[data-pv-wa1]')!.textContent = pv.wa1;
+      out.querySelector('[data-pv-wa2]')!.textContent = pv.wa2;
+    };
+    tabs.forEach((t) => t.addEventListener('click', () => show(t.dataset.langTab!)));
+    form.addEventListener('input', (e) => {
+      const p = (e.target as HTMLElement).closest<HTMLElement>('[data-lang-panel]');
+      if (p) render(p.dataset.langPanel as PreviewLocale);
+    });
+    // Añadir idioma: aparece su pestaña y sus campos (con nuestros textos para empezar).
+    form.querySelectorAll<HTMLButtonElement>('[data-lang-add]').forEach((b) => b.addEventListener('click', () => {
+      const l = b.dataset.langAdd!;
+      const p = form.querySelector<HTMLElement>(`[data-lang-panel="${l}"]`)!;
+      p.dataset.active = '1';
+      p.querySelector('fieldset')!.disabled = false;
+      form.querySelector<HTMLElement>(`[data-lang-tab="${l}"]`)!.hidden = false;
+      b.hidden = true;
+      show(l);
+    }));
+    // Quitar idioma: sus campos no se envían; al guardar, vuelve a nuestros textos.
+    form.querySelectorAll<HTMLButtonElement>('[data-lang-remove]').forEach((b) => b.addEventListener('click', () => {
+      const l = b.dataset.langRemove!;
+      const p = form.querySelector<HTMLElement>(`[data-lang-panel="${l}"]`)!;
+      p.dataset.active = '0';
+      p.querySelector('fieldset')!.disabled = true;
+      form.querySelector<HTMLElement>(`[data-lang-tab="${l}"]`)!.hidden = true;
+      form.querySelector<HTMLElement>(`[data-lang-add="${l}"]`)!.hidden = false;
+      form.querySelector<HTMLElement>('[data-lang-removed]')!.hidden = false;
+      const first = panels.find((x) => x.dataset.active === '1');
+      if (first) show(first.dataset.langPanel!);
+    }));
+  }
+
+  // Firma pegada: lo que hay en el recuadro va al formulario (se limpia en el servidor).
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-sig-paste]')) {
+    const ed = form.querySelector<HTMLElement>('[data-sig-editor]')!;
+    form.addEventListener('submit', (e) => {
+      if (!ed.textContent?.trim() && !ed.querySelector('img')) { e.preventDefault(); ed.focus(); return; }
+      (form.elements.namedItem('html') as HTMLInputElement).value = ed.innerHTML;
+    });
+  }
+</script>

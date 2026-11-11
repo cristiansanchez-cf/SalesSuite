@@ -2,7 +2,7 @@
 /**
  * Leads entrantes (docs/PLAN_AJUSTES.md): los pasos para que la web o la app manden leads y se les conteste, cada uno
  * como una tarjeta (sin empezar, a medias, hecho). Arriba, si entran leads reales o solo pruebas. Solo admin.
- * Las tarjetas con paso guiado abren su modal (conectar la web, el email); las demás llevan a su sección de los ajustes.
+ * Las tarjetas con paso guiado abren su modal (conectar la web, el email, los mensajes); las demás llevan a su sección de los ajustes.
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
@@ -10,6 +10,11 @@ import Alert from '~/components/ui/Alert.astro';
 import SetupCard from '~/components/ui/SetupCard.astro';
 import ConnectDialog from '~/components/admin/leads/ConnectDialog.astro';
 import EmailDialog from '~/components/admin/leads/EmailDialog.astro';
+import MessagesDialog from '~/components/admin/leads/MessagesDialog.astro';
+import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
+import { cleanupContext } from '~/lib/crm/research-context';
+import { mediaFor, msgLocale } from '~/lib/leads/templates';
+import { SAMPLE_LEAD, type PreviewLocale } from '~/lib/leads/message-preview';
 import { randomUUID } from 'node:crypto';
 import { requestOrigin } from '~/lib/http';
 import { CONSOLE_TEST_PREFIX } from '~/lib/leads/db';
@@ -28,7 +33,7 @@ import { leadsFor } from '~/lib/leads/service';
 import { ownDomainDetails, ownDomains, setResendKey, verifyOwnDomain, type DomainDetail } from '~/lib/leads/resend-key';
 import { retentionOf } from '~/lib/leads/privacy';
 import { leadSetupSteps, readiness, requiredProgress, type StepKey } from '~/lib/leads/setup-steps';
-import type { LeadSettings } from '~/lib/leads/types';
+import type { LeadSettings, LeadTemplates, QuestionKey } from '~/lib/leads/types';
 import type { IconName } from '~/lib/ui/icons';
 
 const { admin, tenant } = Astro.locals;
@@ -45,7 +50,12 @@ let error: string | null = null;
 let errorDetails: string[] = [];
 let errorPart = 2;
 /** Qué modal enseña el error (el de la parte en la que estaba). */
-let errorIn: 'connect' | 'email' | null = null;
+let errorIn: 'connect' | 'email' | 'messages' | null = null;
+/** Mensajes: la propuesta de la IA o lo enviado con error, para enseñarlo en el editor sin guardar. */
+let textsShown: LeadTemplates | null = null;
+let aiDrafted = false;
+const MSG_LOCS = ['es', 'en', 'fr'] as const;
+const MSG_Q: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
 const slug = tenant?.slug ?? 'empresa';
 let action = '';
 if (Astro.request.method === 'POST') {
@@ -101,6 +111,43 @@ if (Astro.request.method === 'POST') {
     if (!r.error) return Astro.redirect(`/admin/leads/configurar?abrir=email&p=${to}&ok=${ok}`, 303);
     error = r.error; errorDetails = r.details; errorIn = 'email';
     errorPart = action.startsWith('resend-key') ? 2 : action === 'verify-domain' ? 3 : 4;
+  } else if (['save-texts', 'reset-texts', 'ai-draft', 'save-signer', 'save-signature-paste', 'save-signature-fields', 'clear-signature'].includes(action)) {
+    // Tus mensajes y tu firma. Qué vende y a quién: lo usa la clasificación de cada lead (va con los textos).
+    const aiContext = async () => { const c = await cleanupContext(admin).catch(() => null); return c ? [c.seller, c.clients.length ? `Clientes: ${c.clients.join('; ')}` : ''].filter(Boolean).join('\n').slice(0, 4000) || null : null; };
+    // Solo los idiomas activos: los quitados no llegan (su fieldset va desactivado) y vuelven a nuestros textos.
+    const readTexts = (): LeadTemplates => Object.fromEntries(MSG_LOCS.filter((l) => f.has(`t_${l}_subject`)).map((l) => [l, {
+      subject: String(f.get(`t_${l}_subject`) ?? ''), body: String(f.get(`t_${l}_body`) ?? ''), wa1: String(f.get(`t_${l}_wa1`) ?? ''), wa2: String(f.get(`t_${l}_wa2`) ?? ''),
+      questions: Object.fromEntries(MSG_Q.map((k) => [k, String(f.get(`t_${l}_q_${k}`) ?? '')])),
+    }]));
+    let to = 2, ok = 'texts', extra = '';
+    const r = await formAction(async () => {
+      if (action === 'save-texts') { await svc.saveTexts(readTexts(), await aiContext()); }
+      else if (action === 'reset-texts') { await svc.saveTexts({}, await aiContext()); ok = 'reset'; }
+      else if (action === 'ai-draft') {
+        const drafter = env('AI_RESEARCH_FIXTURE') === '1' ? fixtureDrafter : env('ANTHROPIC_API_KEY') ? claudeDrafter(env('ANTHROPIC_API_KEY')!) : null;
+        if (!drafter) throw new AdminError(503, S.aiOff);
+        const c = await cleanupContext(admin).catch(() => ({ seller: '', clients: [] as string[] }));
+        const cur = await svc.settings();
+        const d = await drafter({ brand: tenant?.name ?? cur?.brand ?? '', signer: cur?.signerName ?? tenant?.name ?? '', seller: c.seller, clients: c.clients }).catch(() => null);
+        if (!d) throw new AdminError(503, S.aiOff);
+        textsShown = d; aiDrafted = true;
+      }
+      else if (action === 'save-signer') { await svc.saveSignerName(String(f.get('signerName') ?? '')); to = 3; ok = 'signer'; }
+      else if (action === 'save-signature-paste') {
+        const res = await svc.saveSignature({ html: String(f.get('html') ?? '') });
+        to = 3; ok = 'sig'; if (res.droppedImages) extra = `&caidas=${Math.min(res.droppedImages, 99)}`;
+      }
+      else if (action === 'save-signature-fields') {
+        await svc.saveSignature(Object.fromEntries(['name', 'title', 'phone', 'address', 'email', 'website', 'logoUrl', 'legal'].map((k) => [k, String(f.get(`sig_${k}`) ?? '')])));
+        to = 3; ok = 'sig';
+      }
+      else if (action === 'clear-signature') { await svc.clearPastedSignature(); to = 3; ok = 'sigCleared'; }
+    });
+    if (!r.error && !aiDrafted) return Astro.redirect(`/admin/leads/configurar?abrir=messages&p=${to}&ok=${ok}${extra}`, 303);
+    if (r.error) {
+      error = r.error; errorDetails = r.details; errorIn = 'messages'; errorPart = action.startsWith('save-sig') || action === 'clear-signature' || action === 'save-signer' ? 3 : 2;
+      if (action === 'save-texts') textsShown = readTexts();
+    }
   } else if (action === 'toggle') {
     const on = f.get('on') === '1';
     const cur = await svc.settings();
@@ -124,14 +171,14 @@ const last = await svc.lastSubmission({ external: true }).catch(() => null);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
-const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok });
+const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 
 // Las que tienen paso guiado abren su modal; las demás, su sección de los ajustes.
 const META: Record<StepKey, { icon: IconName; href: string }> = {
   connect: { icon: 'globe', href: '/admin/leads/configurar?abrir=connect' },
   email: { icon: 'mail', href: '/admin/leads/configurar?abrir=email' },
-  messages: { icon: 'message-square-text', href: '/admin/leads/ajustes#texts' },
+  messages: { icon: 'message-square-text', href: '/admin/leads/configurar?abrir=messages' },
   whatsapp: { icon: 'whatsapp', href: '/admin/leads/ajustes#whatsapp' },
   extras: { icon: 'link', href: '/admin/leads/ajustes#media' },
   privacy: { icon: 'shield-check', href: '/admin/leads/ajustes#privacy' },
@@ -162,6 +209,19 @@ const needDetails = demo || openParam === 'email' || emailStep.status !== 'done'
 const emailDomains: DomainDetail[] | null = !s.resendKeyHint ? null
   : needDetails ? await ownDomainDetails(admin).catch(() => null)
   : (domains?.map((d) => ({ id: d.id ?? '', name: d.name, status: d.status, records: [] })) ?? null);
+// Mensajes: el idioma del espacio siempre; los demás, si tienen textos propios (o se añaden en el modal).
+const msgStep = steps.find((x) => x.key === 'messages')!;
+const msgBase = msgLocale((tenant?.defaultLocale ?? locale).slice(0, 2).toLowerCase()) as PreviewLocale;
+const msgCustom: LeadTemplates = textsShown ?? s.templates ?? {};
+const msgActive = [msgBase, ...MSG_LOCS.filter((l) => l !== msgBase && !!s.templates?.[l] && Object.keys(s.templates[l] ?? {}).length > 0)] as PreviewLocale[];
+const msgPart = aiDrafted ? 2 : openParam === 'messages' && pParam >= 1 && pParam <= 3 ? pParam
+  : msgStep.status === 'todo' ? 1 : msgStep.missing.includes('texts') ? 2 : msgStep.missing.includes('signature') ? 3 : 2;
+const brandName = tenant?.name ?? s.brand;
+const msgCtx = {
+  signer: s.signerName ?? brandName, brand: brandName, signature: s.emailSignature,
+  media: Object.fromEntries(MSG_LOCS.map((l) => { const m = mediaFor(s, SAMPLE_LEAD.type, SAMPLE_LEAD.fields, l); return [l, { booking: m.booking ?? null, video: m.video ?? null }]; })) as Record<PreviewLocale, { booking: string | null; video: string | null }>,
+};
+const dropped = Math.max(0, Math.min(99, Number(Astro.url.searchParams.get('caidas')) || 0));
 const main = steps.filter((x) => x.key !== 'extras' && x.key !== 'privacy');
 const extras = steps.filter((x) => x.key === 'extras' || x.key === 'privacy');
 const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -180,7 +240,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
       <p class="co-meta max-w-[18rem] sm:text-right">{s.enabled ? S.liveHelp : ready ? S.pausedHelp : S.activateBlocked}</p>
     </div>
   </PageHeader>
-  {okMsg && openParam !== 'connect' && openParam !== 'email' && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {okMsg && !['connect', 'email', 'messages'].includes(openParam ?? '') && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {error && !errorIn && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
 
   <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
@@ -198,7 +258,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
         status={x.status} need={x.need} step={T.stepN(i + 1)}
         labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
         missing={x.missing.map((k) => T.miss[k])} summary={summary(x.key)} testid={`setup-card-${x.key}`}
-        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : undefined}
+        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : x.key === 'messages' ? 'setup-messages' : undefined}
       />
     ))}
   </section>
@@ -234,5 +294,12 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     sender={{ fromEmail: s.fromEmail, fromName: s.fromName, replyTo: s.replyTo, notifyEmails: s.notifyEmails }}
     notice={openParam === 'email' ? okMsg : null}
     error={error && errorIn === 'email' ? { title: error, details: errorDetails } : null}
+  />
+  <MessagesDialog
+    id="setup-messages" open={openParam === 'messages' || errorIn === 'messages' || aiDrafted} part={errorIn === 'messages' ? errorPart : msgPart}
+    T={T.messages} S={S} base={msgBase} active={msgActive} custom={msgCustom} ctx={msgCtx}
+    signature={s.emailSignature && Object.keys(s.emailSignature).length ? s.emailSignature : null} signerName={s.signerName ?? ''} dropped={dropped}
+    notice={aiDrafted ? T.messages.ok.ai : openParam === 'messages' ? okMsg : null}
+    error={error && errorIn === 'messages' ? { title: error, details: errorDetails } : null}
   />
 </AdminLayout>

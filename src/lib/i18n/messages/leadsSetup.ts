@@ -100,6 +100,32 @@ const es = {
     back: 'Atrás', next: 'Siguiente', close: 'Cerrar',
     ok: { key: 'Cuenta de Resend conectada.', keyCleared: 'Clave quitada: se usa la cuenta de la plataforma.', verify: 'Pedido: Resend lo está comprobando. Mira otra vez en unos minutos.', sender: 'Guardado.' },
   },
+  messages: {
+    title: 'Tus mensajes y tu firma', parts: ['Qué se manda', 'Tus textos', 'Tu firma'],
+    what: [
+      { title: 'Un email en segundos', body: 'Le confirma que lo has recibido y qué pasa ahora.' },
+      { title: 'WhatsApp 1, a los pocos minutos', body: 'Si activas WhatsApp: una pregunta según lo que pidió, para que te conteste.' },
+      { title: 'WhatsApp 2, si no contesta', body: 'Un recordatorio con tu enlace para reservar.' },
+    ],
+    defaults: 'Ya llevan textos nuestros. Cámbialos para que suenen a ti: lo que no toques sigue con los nuestros y mejora solo si los mejoramos.',
+    langs: {
+      lede: 'Escribe en los idiomas en los que te llegan leads. Los que no añadas usan nuestros textos.', add: 'Añadir idioma',
+      remove: 'Quitar este idioma', removeHelp: 'Al guardar, este idioma vuelve a nuestros textos.', names: { es: 'Español', en: 'Inglés', fr: 'Francés' } as Record<string, string>,
+    },
+    preview: 'Así se verá', previewSample: 'Con un lead de ejemplo: Laura, de la Sala Ejemplo en Valencia.',
+    sig: {
+      lede: 'Va al final de cada email.', tabPaste: 'Pegar mi firma', tabFields: 'Rellenarla a mano',
+      pasteHelp: 'Abre un email tuyo en Gmail u Outlook, selecciona la firma, cópiala (Ctrl+C o ⌘C) y pégala aquí. Se pega con su formato, sus enlaces y su logo.',
+      pastePlaceholder: 'Pega aquí tu firma', save: 'Guardar firma', clear: 'Quitar la firma pegada', current: 'Tu firma ahora',
+      fieldsNote: 'Si tienes una firma pegada, manda esa; estos campos se usan si la quitas.',
+      dropped: (n: number) => (n === 1
+        ? 'Hemos quitado 1 imagen pegada desde el ordenador: en un email no se ve. Si es tu logo, ponlo en tu web y vuelve a pegar la firma desde un email enviado.'
+        : `Hemos quitado ${n} imágenes pegadas desde el ordenador: en un email no se ven. Si son tu logo, ponlo en tu web y vuelve a pegar la firma desde un email enviado.`),
+      signer: 'Firmas como', saveSigner: 'Guardar',
+    },
+    back: 'Atrás', next: 'Siguiente', close: 'Cerrar', copied: 'Copiado',
+    ok: { texts: 'Mensajes guardados.', reset: 'Vuelven nuestros textos.', ai: 'Propuesta de la IA: revísala y guarda si te convence.', sig: 'Firma guardada.', sigCleared: 'Firma pegada quitada.', signer: 'Guardado.' },
+  },
   allSettings: 'Ver todos los ajustes en una página', inbox: 'Ir a la bandeja',
 };
 
@@ -204,6 +230,32 @@ export const leadsSetupMessages = defineMessages({
       back: 'Back', next: 'Next', close: 'Close',
       ok: { key: 'Resend account connected.', keyCleared: 'Key removed: the platform account is used.', verify: 'Requested: Resend is checking it. Look again in a few minutes.', sender: 'Saved.' },
     },
+    messages: {
+      title: 'Your messages and signature', parts: ['What gets sent', 'Your texts', 'Your signature'],
+      what: [
+        { title: 'An email within seconds', body: 'It confirms you got their request and what happens next.' },
+        { title: 'WhatsApp 1, a few minutes later', body: 'If you turn on WhatsApp: a question based on what they asked for, so they reply.' },
+        { title: 'WhatsApp 2, if they do not reply', body: 'A reminder with your booking link.' },
+      ],
+      defaults: 'They come with our texts. Change them so they sound like you: anything you leave stays with ours and improves when we improve them.',
+      langs: {
+        lede: 'Write in the languages your leads come in. Languages you do not add use our texts.', add: 'Add language',
+        remove: 'Remove this language', removeHelp: 'When you save, this language goes back to our texts.', names: { es: 'Spanish', en: 'English', fr: 'French' } as Record<string, string>,
+      },
+      preview: 'How it will look', previewSample: 'With a sample lead: Laura, from Sala Ejemplo in Valencia.',
+      sig: {
+        lede: 'It goes at the end of every email.', tabPaste: 'Paste my signature', tabFields: 'Fill it in by hand',
+        pasteHelp: 'Open one of your emails in Gmail or Outlook, select the signature, copy it (Ctrl+C or ⌘C) and paste it here. It keeps its format, links and logo.',
+        pastePlaceholder: 'Paste your signature here', save: 'Save signature', clear: 'Remove the pasted signature', current: 'Your signature now',
+        fieldsNote: 'If you have a pasted signature, that one is used; these fields are used if you remove it.',
+        dropped: (n: number) => (n === 1
+          ? 'We removed 1 image pasted from your computer: it does not show in an email. If it is your logo, put it on your website and paste the signature again from a sent email.'
+          : `We removed ${n} images pasted from your computer: they do not show in an email. If they are your logo, put it on your website and paste the signature again from a sent email.`),
+        signer: 'You sign as', saveSigner: 'Save',
+      },
+      back: 'Back', next: 'Next', close: 'Close', copied: 'Copied',
+      ok: { texts: 'Messages saved.', reset: 'Our texts are back.', ai: 'AI suggestion: review it and save if you like it.', sig: 'Signature saved.', sigCleared: 'Pasted signature removed.', signer: 'Saved.' },
+    },
     allSettings: 'See all settings on one page', inbox: 'Go to the inbox',
   },
   pt: {
@@ -305,6 +357,32 @@ export const leadsSetupMessages = defineMessages({
       back: 'Voltar', next: 'Seguinte', close: 'Fechar',
       ok: { key: 'Conta Resend ligada.', keyCleared: 'Chave tirada: usa-se a conta da plataforma.', verify: 'Pedido: a Resend está a verificar. Veja outra vez daqui a uns minutos.', sender: 'Guardado.' },
     },
+    messages: {
+      title: 'As suas mensagens e assinatura', parts: ['O que se envia', 'Os seus textos', 'A sua assinatura'],
+      what: [
+        { title: 'Um email em segundos', body: 'Confirma que recebeu o pedido e o que acontece a seguir.' },
+        { title: 'WhatsApp 1, poucos minutos depois', body: 'Se ativar o WhatsApp: uma pergunta conforme o que pediu, para responder.' },
+        { title: 'WhatsApp 2, se não responder', body: 'Um lembrete com o seu link de marcação.' },
+      ],
+      defaults: 'Já trazem textos nossos. Mude-os para soarem a si: o que não mexer fica com os nossos e melhora quando os melhorarmos.',
+      langs: {
+        lede: 'Escreva nos idiomas em que lhe chegam leads. Os que não juntar usam os nossos textos.', add: 'Juntar idioma',
+        remove: 'Tirar este idioma', removeHelp: 'Ao guardar, este idioma volta aos nossos textos.', names: { es: 'Espanhol', en: 'Inglês', fr: 'Francês' } as Record<string, string>,
+      },
+      preview: 'Como vai ficar', previewSample: 'Com um lead de exemplo: Laura, da Sala Ejemplo em Valência.',
+      sig: {
+        lede: 'Vai no fim de cada email.', tabPaste: 'Colar a minha assinatura', tabFields: 'Preencher à mão',
+        pasteHelp: 'Abra um email seu no Gmail ou no Outlook, selecione a assinatura, copie (Ctrl+C ou ⌘C) e cole aqui. Fica com o formato, os links e o logótipo.',
+        pastePlaceholder: 'Cole aqui a sua assinatura', save: 'Guardar assinatura', clear: 'Tirar a assinatura colada', current: 'A sua assinatura agora',
+        fieldsNote: 'Se tiver uma assinatura colada, usa-se essa; estes campos usam-se se a tirar.',
+        dropped: (n: number) => (n === 1
+          ? 'Tirámos 1 imagem colada do computador: num email não se vê. Se é o seu logótipo, ponha-o no seu site e volte a colar a assinatura a partir de um email enviado.'
+          : `Tirámos ${n} imagens coladas do computador: num email não se veem. Se são o seu logótipo, ponha-o no seu site e volte a colar a assinatura a partir de um email enviado.`),
+        signer: 'Assina como', saveSigner: 'Guardar',
+      },
+      back: 'Voltar', next: 'Seguinte', close: 'Fechar', copied: 'Copiado',
+      ok: { texts: 'Mensagens guardadas.', reset: 'Voltam os nossos textos.', ai: 'Proposta da IA: reveja e guarde se gostar.', sig: 'Assinatura guardada.', sigCleared: 'Assinatura colada tirada.', signer: 'Guardado.' },
+    },
     allSettings: 'Ver todas as configurações numa página', inbox: 'Ir para a caixa',
   },
   ko: {
@@ -405,6 +483,30 @@ export const leadsSetupMessages = defineMessages({
       },
       back: '뒤로', next: '다음', close: '닫기',
       ok: { key: 'Resend 계정을 연결했습니다.', keyCleared: '키를 삭제했습니다. 플랫폼 계정을 사용합니다.', verify: '요청했습니다. Resend가 확인 중입니다. 몇 분 뒤 다시 보세요.', sender: '저장했습니다.' },
+    },
+    messages: {
+      title: '메시지와 서명', parts: ['보내는 것', '문구', '서명'],
+      what: [
+        { title: '몇 초 안에 이메일', body: '요청을 받았다는 것과 다음에 무슨 일이 있는지 알려 줍니다.' },
+        { title: '몇 분 뒤 WhatsApp 1', body: 'WhatsApp을 켜면: 답장하도록 요청 내용에 맞는 질문을 보냅니다.' },
+        { title: '답이 없으면 WhatsApp 2', body: '예약 링크와 함께 알림을 보냅니다.' },
+      ],
+      defaults: '기본 문구가 들어 있습니다. 내 말투로 바꾸세요. 손대지 않은 부분은 기본 문구를 쓰고, 기본 문구가 좋아지면 함께 좋아집니다.',
+      langs: {
+        lede: '리드가 들어오는 언어로 쓰세요. 추가하지 않은 언어는 기본 문구를 씁니다.', add: '언어 추가',
+        remove: '이 언어 삭제', removeHelp: '저장하면 이 언어는 기본 문구로 돌아갑니다.', names: { es: '스페인어', en: '영어', fr: '프랑스어' } as Record<string, string>,
+      },
+      preview: '미리 보기', previewSample: '예시 리드: 발렌시아 Sala Ejemplo의 Laura.',
+      sig: {
+        lede: '모든 이메일 끝에 들어갑니다.', tabPaste: '내 서명 붙여 넣기', tabFields: '직접 입력',
+        pasteHelp: 'Gmail이나 Outlook에서 내 이메일을 열고 서명을 선택해 복사(Ctrl+C 또는 ⌘C)한 뒤 여기에 붙여 넣으세요. 서식, 링크, 로고가 그대로 들어갑니다.',
+        pastePlaceholder: '여기에 서명을 붙여 넣으세요', save: '서명 저장', clear: '붙여 넣은 서명 삭제', current: '현재 서명',
+        fieldsNote: '붙여 넣은 서명이 있으면 그것을 씁니다. 삭제하면 이 항목을 씁니다.',
+        dropped: (n: number) => `컴퓨터에서 붙여 넣은 이미지 ${n}개를 삭제했습니다. 이메일에서는 보이지 않습니다. 로고라면 웹사이트에 올린 뒤 보낸 이메일에서 서명을 다시 붙여 넣으세요.`,
+        signer: '서명 이름', saveSigner: '저장',
+      },
+      back: '뒤로', next: '다음', close: '닫기', copied: '복사됨',
+      ok: { texts: '메시지를 저장했습니다.', reset: '기본 문구로 돌아갔습니다.', ai: 'AI 제안입니다. 확인하고 마음에 들면 저장하세요.', sig: '서명을 저장했습니다.', sigCleared: '붙여 넣은 서명을 삭제했습니다.', signer: '저장했습니다.' },
     },
     allSettings: '모든 설정을 한 페이지에서 보기', inbox: '받은 리드로 가기',
   },

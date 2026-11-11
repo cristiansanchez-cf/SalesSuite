@@ -9,6 +9,7 @@ import { can } from '../admin/permissions';
 import { AdminError } from '../admin/service';
 import { DuplicateKey, type LeadsDb } from './db';
 import { normalizeOrigin } from './cors';
+import { sanitizeSignatureHtml, signatureHtmlToText } from './signature-html';
 import { businessMinutes } from './schedule';
 import { RETENTION_LIMITS, sourceKey } from './privacy';
 import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type LeadTemplates, type Stage, type View } from './types';
@@ -40,6 +41,8 @@ export const signatureSchema = z.object({
   // Gmail no enseña SVG: PNG o JPG, por https.
   logoUrl: z.string().trim().max(500).url().startsWith('https://').refine((u) => !/\.svg(\?|$)/i.test(u), 'svg').optional().or(z.literal('').transform(() => undefined)),
   legal: opt(2000),
+  /** La firma pegada (HTML del portapapeles): se limpia antes de guardarla. */
+  html: z.string().max(200_000).optional(),
 }).strict();
 
 /** Guarda solo lo que difiere de los textos por defecto (así, si mejoran los de por defecto, lo no tocado mejora solo). */
@@ -277,8 +280,33 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     if (!r.success) throw new AdminError(422, r.error.issues.some((i) => i.message === 'svg') ? LEAD_ERRORS.svgLogo : 'Datos no válidos', r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
     const prev = await db.settings(t);
     if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
-    const clean = Object.fromEntries(Object.entries(r.data).filter(([, v]) => v));
+    const { html: pasted, ...fields } = r.data;
+    // Pegada: manda sobre los campos (se guardan igual, por si la quita). Vacía o sin nada que se vea: se quita.
+    const cleanHtml = pasted !== undefined ? sanitizeSignatureHtml(pasted) : null;
+    const keepHtml = cleanHtml ? (cleanHtml.html ? { html: cleanHtml.html, htmlText: signatureHtmlToText(cleanHtml.html) } : {})
+      : prev.emailSignature?.html ? { html: prev.emailSignature.html, htmlText: prev.emailSignature.htmlText } : {};
+    const clean = { ...Object.fromEntries(Object.entries(fields).filter(([, v]) => v)), ...keepHtml };
     await db.saveSettings({ ...prev, emailSignature: clean });
+    return { droppedImages: cleanHtml?.droppedImages ?? 0 };
+  }
+
+  /** Quitar la firma pegada (vuelven a mandar los campos). */
+  async function clearPastedSignature() {
+    requireAdmin();
+    const prev = await db.settings(t);
+    if (!prev?.emailSignature) return;
+    const { html: _h, htmlText: _t, ...rest } = prev.emailSignature;
+    await db.saveSettings({ ...prev, emailSignature: rest });
+  }
+
+  /** El nombre con el que se firman los mensajes ({firma}: «Soy Ana, de …»). Vacío = el de la empresa. */
+  async function saveSignerName(name: string) {
+    requireAdmin();
+    const v = name.trim() || null;
+    if (v && v.length > 80) throw new AdminError(422, LEAD_ERRORS.fromNameLong);
+    const prev = await db.settings(t);
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    await db.saveSettings({ ...prev, signerName: v });
   }
 
   /** Plazos de conservación del espacio (lo que diga su política de privacidad). */
@@ -303,7 +331,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 
