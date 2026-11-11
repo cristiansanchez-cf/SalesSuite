@@ -290,6 +290,13 @@ Lo que diga la política de privacidad de cada espacio; se configura en **Leads 
    - Webhook: URL `https://enjoy.ventas.cofundo.io/api/v1/whatsapp/webhook`, token de verificación =
      `WHATSAPP_VERIFY_TOKEN`, suscribir `messages`. `WHATSAPP_APP_SECRET` = el App Secret de la app de Meta. Un solo
      webhook sirve para todas las empresas (el número dice de cuál es).
+   - **Conectar la app a la cuenta de WhatsApp** (no siempre lo hace Meta sola; con coexistencia, casi nunca): en el
+     Graph API Explorer, app de Meta, *User Token* con `whatsapp_business_management` y `whatsapp_business_messaging`,
+     `POST <id de la cuenta de WhatsApp>/subscribed_apps` → `{"success": true}`. El id es el «Messaging account ID» de
+     Use cases → WhatsApp → Production setup. Síntoma si falta: en Vercel (Request Logs, `webhook`) solo sale el `GET` de
+     la verificación y ningún `POST` al escribir al número.
+   - Para probar el asistente: escribir **desde otro móvil** al número de la empresa (el teléfono de Mi cuenta = ese otro
+     móvil). Un número escribiéndose a sí mismo no llega a Meta.
    - En Ajustes: el `phone_number_id`, los nombres de las plantillas y **Enviar por WhatsApp**.
    - Se llama a la Graph API v25.0 (`src/lib/leads/whatsapp.ts`; vigente hasta julio de 2028). Subirla antes de que caduque.
    - Categoría: el WhatsApp 1 responde a lo que pidió (servicio, *Utility*). El 2 es un recordatorio: si Meta lo pasa a
