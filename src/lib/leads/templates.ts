@@ -7,7 +7,7 @@
  */
 import type { LeadType } from './contract';
 import type { Eta } from './schedule';
-import type { EmailSignature, LeadMedia, LeadTemplates, LocaleTexts, QuestionKey } from './types';
+import type { EmailSignature, EmailStyle, LeadMedia, LeadTemplates, LocaleTexts, QuestionKey } from './types';
 
 export type MsgLocale = 'es' | 'en' | 'fr';
 export const msgLocale = (l: string): MsgLocale => (l === 'es' || l === 'fr' ? l : 'en');
@@ -167,11 +167,47 @@ export function waPreview(step: 'wa1' | 'wa2', locale: string, signer: string, b
 // ---------------------------------------------------------------- Email: respuesta automática
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-/** Aspecto de texto plano: párrafos y enlaces, sin plantilla gráfica. */
-function plainHtml(text: string): string {
-  const linked = (s: string) => esc(s).replace(/https:\/\/[^\s<]+/g, (u) => `<a href="${u}">${u}</a>`);
+/** Aspecto de texto plano: párrafos y enlaces, sin plantilla gráfica (con la marca, los enlaces van en su color). */
+function plainHtml(text: string, linkColor?: string): string {
+  const linked = (s: string) => esc(s).replace(/https:\/\/[^\s<]+/g, (u) => `<a href="${u}"${linkColor ? ` style="color:${linkColor}"` : ''}>${u}</a>`);
   return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#111;max-width:560px">${
     text.split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px">${linked(p).replace(/\n/g, '<br>')}</p>`).join('')}</div>`;
+}
+
+const FONT = '-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';
+/** El color y el logo, solo si son seguros para meterlos en el HTML (hex; https y no SVG, que Gmail no enseña). */
+export const safeColor = (c?: string | null) => (c && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) ? c : '#111111');
+/** Contraste de un color sobre blanco (WCAG). Los enlaces solo van del color de la marca si se leen (≥ 3). */
+export function contrastOnWhite(hex: string): number {
+  const h = safeColor(hex).slice(1);
+  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
+  const lin = (i: number) => { const c = parseInt(full.slice(i, i + 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const L = 0.2126 * lin(0) + 0.7152 * lin(2) + 0.0722 * lin(4);
+  return 1.05 / (L + 0.05);
+}
+/** De los colores de la marca, el primero que se lee sobre blanco (para proponerlo); si ninguno, el primero. */
+export const pickBrandColor = (candidates: (string | null | undefined)[]) => {
+  const ok = candidates.filter((c): c is string => !!c && safeColor(c) === c);
+  return ok.find((c) => contrastOnWhite(c) >= 3) ?? ok[0] ?? '#111111';
+};
+export const safeLogo = (u?: string | null) => (u && /^https:\/\/[^\s"'<>]+$/i.test(u) && !/\.svg(\?|$)/i.test(u) ? u : null);
+/**
+ * Con la marca (docs/PLAN_AJUSTES.md, paso 8): el logo arriba, una línea del color de la marca y el texto debajo; la baja,
+ * en pequeño al pie. Tablas y estilos en línea, para que se vea igual en Gmail y en Outlook.
+ */
+function brandedHtml(inner: string, style: EmailStyle, brand: string, footer: string): string {
+  const color = safeColor(style.color);
+  const logo = safeLogo(style.logoUrl);
+  const head = logo
+    ? `<img src="${esc(logo)}" alt="${esc(brand)}" height="36" style="display:block;height:36px;width:auto;border:0">`
+    : `<strong style="font-family:${FONT};font-size:18px;color:#111">${esc(brand)}</strong>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5"><tr><td align="center" style="padding:24px 12px">`
+    + `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px">`
+    + `<tr><td style="padding:24px 32px 18px">${head}</td></tr>`
+    + `<tr><td style="height:4px;line-height:4px;font-size:0;background:${color}">&nbsp;</td></tr>`
+    + `<tr><td style="padding:28px 32px 14px">${inner}</td></tr></table>`
+    + (footer ? `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%"><tr><td style="padding:14px 32px;font-family:${FONT};font-size:12px;line-height:1.5;color:#888">${footer}</td></tr></table>` : '')
+    + `</td></tr></table>`;
 }
 
 export interface AutoreplyData {
@@ -183,6 +219,8 @@ export interface AutoreplyData {
   specific?: boolean;
   custom?: LeadTemplates;
   signature?: EmailSignature;
+  /** Diseño: el de siempre o con la marca. */
+  style?: EmailStyle;
 }
 const SIG = '\u0007SIG\u0007';
 export const hasSignature = (s?: EmailSignature | null) => !!s && Object.values(s).some((v) => typeof v === 'string' && v.trim());
@@ -209,17 +247,17 @@ export function signatureHtml(s: EmailSignature): string {
 const PHRASES = {
   es: { about: (w: string) => ` sobre ${w}`, subject: (w: string | null) => (w ? `Sobre ${w}` : 'Gracias por escribir'),
     wa: (when: string) => `Te escribo por WhatsApp ${when} para que me cuentes un poco más.`, email: 'Te contesto yo personalmente a este mismo email, normalmente en el día.',
-    book: (u: string) => `Si prefieres hablarlo directamente, elige aquí la hora que te venga bien: ${u}`, unsub: 'Si no quieres que te escribamos más:',
+    book: (u: string) => `Si prefieres hablarlo directamente, elige aquí la hora que te venga bien: ${u}`, unsub: 'Si no quieres que te escribamos más:', unsubLink: 'Darme de baja',
     video: (u: string) => `Mientras, aquí tienes un vídeo corto para verlo en marcha: ${u}`,
     when: { minutes: 'en unos minutos', today: 'hoy a primera hora', next_business_day: 'mañana a primera hora' } },
   en: { about: (w: string) => ` about ${w}`, subject: (w: string | null) => (w ? `About ${w}` : 'Thanks for getting in touch'),
     wa: (when: string) => `I'll message you on WhatsApp ${when} so you can tell me a bit more.`, email: "I'll reply to this email personally, usually the same day.",
-    book: (u: string) => `If you'd rather talk it through, pick a time that suits you here: ${u}`, unsub: "If you'd rather not hear from us again:",
+    book: (u: string) => `If you'd rather talk it through, pick a time that suits you here: ${u}`, unsub: "If you'd rather not hear from us again:", unsubLink: 'Unsubscribe',
     video: (u: string) => `In the meantime, here's a short video to see it in action: ${u}`,
     when: { minutes: 'in a few minutes', today: 'first thing today', next_business_day: 'first thing tomorrow' } },
   fr: { about: (w: string) => ` à propos de ${w}`, subject: (w: string | null) => (w ? `À propos de ${w}` : 'Merci pour ton message'),
     wa: (when: string) => `Je t'écris sur WhatsApp ${when} pour que tu m'en dises un peu plus.`, email: 'Je te réponds personnellement à cet e-mail, en général dans la journée.',
-    book: (u: string) => `Si tu préfères en parler directement, choisis ici le créneau qui te convient : ${u}`, unsub: 'Si tu ne veux plus recevoir de messages de notre part :',
+    book: (u: string) => `Si tu préfères en parler directement, choisis ici le créneau qui te convient : ${u}`, unsub: 'Si tu ne veux plus recevoir de messages de notre part :', unsubLink: 'Me désabonner',
     video: (u: string) => `En attendant, voici une courte vidéo pour le voir en action : ${u}`,
     when: { minutes: "d'ici quelques minutes", today: "aujourd'hui en début de matinée", next_business_day: 'demain en début de matinée' } },
 } as const;
@@ -240,8 +278,15 @@ export function autoreplyEmail(d: AutoreplyData): { subject: string; text: strin
   if (sig && !body.includes(SIG)) body = `${body}\n\n${SIG}`;
   const unsub = d.unsubscribeUrl ? `—\n${P.unsub} ${d.unsubscribeUrl}` : '';
   const text = [body.replace(SIG, sig ? signatureText(sig) : ''), unsub].filter(Boolean).join('\n\n');
-  let html = plainHtml([body, unsub].filter(Boolean).join('\n\n'));
+  const branded = d.style?.mode === 'brand' ? d.style : null;
+  // Con la marca, la baja va al pie en pequeño; sin ella, como hasta ahora, al final del texto.
+  const linkColor = branded ? (contrastOnWhite(safeColor(branded.color)) >= 3 ? safeColor(branded.color) : '#111111') : undefined;
+  let html = plainHtml([body, branded ? '' : unsub].filter(Boolean).join('\n\n'), linkColor);
   if (sig) html = html.replace(/(<br>)?\u0007SIG\u0007/, `</p>${signatureHtml(sig)}<p style="margin:0">`).replace(/<p style="margin:0( 0 14px)?"><\/p>/g, '');
+  if (branded) {
+    const footer = d.unsubscribeUrl ? `${esc(P.unsub)} <a href="${esc(d.unsubscribeUrl)}" style="color:#888">${esc(P.unsubLink)}</a>` : '';
+    html = brandedHtml(html, branded, d.brand, footer);
+  }
   return { subject, text, html };
 }
 

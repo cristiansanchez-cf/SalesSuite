@@ -101,7 +101,7 @@ const es = {
     ok: { key: 'Cuenta de Resend conectada.', keyCleared: 'Clave quitada: se usa la cuenta de la plataforma.', verify: 'Pedido: Resend lo está comprobando. Mira otra vez en unos minutos.', sender: 'Guardado.' },
   },
   messages: {
-    title: 'Tus mensajes y tu firma', parts: ['Qué se manda', 'Tus textos', 'Tu firma'],
+    title: 'Tus mensajes y tu firma', parts: ['Qué se manda', 'Tus textos', 'Tu firma', 'Diseño'],
     what: [
       { title: 'Un email en segundos', body: 'Le confirma que lo has recibido y qué pasa ahora.' },
       { title: 'WhatsApp 1, a los pocos minutos', body: 'Si activas WhatsApp: una pregunta según lo que pidió, para que te conteste.' },
@@ -124,7 +124,12 @@ const es = {
       signer: 'Firmas como', saveSigner: 'Guardar',
     },
     back: 'Atrás', next: 'Siguiente', close: 'Cerrar', copied: 'Copiado',
-    ok: { texts: 'Mensajes guardados.', reset: 'Vuelven nuestros textos.', ai: 'Propuesta de la IA: revísala y guarda si te convence.', sig: 'Firma guardada.', sigCleared: 'Firma pegada quitada.', signer: 'Guardado.' },
+    design: {
+      lede: 'Cómo se ve el email que recibe cada lead.', plain: 'Personal', plainHelp: 'Como un email escrito a mano. Suele llegar mejor a la bandeja principal.',
+      brand: 'Con tu marca', brandHelp: 'Tu logo arriba y tu color en la línea y en los enlaces.',
+      logo: 'Logo', logoHelp: 'Un enlace https a un PNG o JPG (Gmail no enseña SVG). Sin logo, sale el nombre de tu empresa.', color: 'Color', save: 'Guardar diseño',
+    },
+    ok: { design: 'Diseño guardado.', texts: 'Mensajes guardados.', reset: 'Vuelven nuestros textos.', ai: 'Propuesta de la IA: revísala y guarda si te convence.', sig: 'Firma guardada.', sigCleared: 'Firma pegada quitada.', signer: 'Guardado.' },
   },
   whatsapp: {
     title: 'WhatsApp a los leads', parts: ['Qué es', 'En Meta', 'Conectar', 'Plantillas', 'Activar'],
@@ -283,7 +288,7 @@ export const leadsSetupMessages = defineMessages({
       ok: { key: 'Resend account connected.', keyCleared: 'Key removed: the platform account is used.', verify: 'Requested: Resend is checking it. Look again in a few minutes.', sender: 'Saved.' },
     },
     messages: {
-      title: 'Your messages and signature', parts: ['What gets sent', 'Your texts', 'Your signature'],
+      title: 'Your messages and signature', parts: ['What gets sent', 'Your texts', 'Your signature', 'Design'],
       what: [
         { title: 'An email within seconds', body: 'It confirms you got their request and what happens next.' },
         { title: 'WhatsApp 1, a few minutes later', body: 'If you turn on WhatsApp: a question based on what they asked for, so they reply.' },
@@ -306,7 +311,12 @@ export const leadsSetupMessages = defineMessages({
         signer: 'You sign as', saveSigner: 'Save',
       },
       back: 'Back', next: 'Next', close: 'Close', copied: 'Copied',
-      ok: { texts: 'Messages saved.', reset: 'Our texts are back.', ai: 'AI suggestion: review it and save if you like it.', sig: 'Signature saved.', sigCleared: 'Pasted signature removed.', signer: 'Saved.' },
+      design: {
+        lede: 'How the email each lead receives looks.', plain: 'Personal', plainHelp: 'Like an email written by hand. It usually lands better in the main inbox.',
+        brand: 'With your brand', brandHelp: 'Your logo at the top and your colour on the line and the links.',
+        logo: 'Logo', logoHelp: 'An https link to a PNG or JPG (Gmail does not show SVG). Without a logo, your company name is shown.', color: 'Colour', save: 'Save design',
+      },
+      ok: { design: 'Design saved.', texts: 'Messages saved.', reset: 'Our texts are back.', ai: 'AI suggestion: review it and save if you like it.', sig: 'Signature saved.', sigCleared: 'Pasted signature removed.', signer: 'Saved.' },
     },
     whatsapp: {
       title: 'WhatsApp to leads', parts: ['What it is', 'In Meta', 'Connect', 'Templates', 'Turn on'],
@@ -462,7 +472,7 @@ export const leadsSetupMessages = defineMessages({
       ok: { key: 'Conta Resend ligada.', keyCleared: 'Chave tirada: usa-se a conta da plataforma.', verify: 'Pedido: a Resend está verificando. Veja outra vez daqui a uns minutos.', sender: 'Salvo.' },
     },
     messages: {
-      title: 'Suas mensagens e assinatura', parts: ['O que se envia', 'Seus textos', 'Sua assinatura'],
+      title: 'Suas mensagens e assinatura', parts: ['O que se envia', 'Seus textos', 'Sua assinatura', 'Design'],
       what: [
         { title: 'Um email em segundos', body: 'Confirma que recebeu o pedido e o que acontece a seguir.' },
         { title: 'WhatsApp 1, poucos minutos depois', body: 'Se ativar o WhatsApp: uma pergunta conforme o que pediu, para responder.' },
@@ -485,7 +495,12 @@ export const leadsSetupMessages = defineMessages({
         signer: 'Assina como', saveSigner: 'Salvar',
       },
       back: 'Voltar', next: 'Seguinte', close: 'Fechar', copied: 'Copiado',
-      ok: { texts: 'Mensagens guardadas.', reset: 'Voltam os nossos textos.', ai: 'Proposta da IA: reveja e guarde se gostar.', sig: 'Assinatura guardada.', sigCleared: 'Assinatura colada tirada.', signer: 'Salvo.' },
+      design: {
+        lede: 'Como fica o email que cada lead recebe.', plain: 'Pessoal', plainHelp: 'Como um email escrito à mão. Costuma chegar melhor na caixa principal.',
+        brand: 'Com sua marca', brandHelp: 'Seu logo no topo e sua cor na linha e nos links.',
+        logo: 'Logo', logoHelp: 'Um link https para um PNG ou JPG (o Gmail não mostra SVG). Sem logo, aparece o nome da sua empresa.', color: 'Cor', save: 'Salvar design',
+      },
+      ok: { design: 'Design salvo.', texts: 'Mensagens salvas.', reset: 'Voltam os nossos textos.', ai: 'Proposta da IA: reveja e guarde se gostar.', sig: 'Assinatura guardada.', sigCleared: 'Assinatura colada tirada.', signer: 'Salvo.' },
     },
     whatsapp: {
       title: 'WhatsApp para os leads', parts: ['O que é', 'Na Meta', 'Conectar', 'Modelos', 'Ativar'],
@@ -641,7 +656,7 @@ export const leadsSetupMessages = defineMessages({
       ok: { key: 'Resend 계정을 연결했습니다.', keyCleared: '키를 삭제했습니다. 플랫폼 계정을 사용합니다.', verify: '요청했습니다. Resend가 확인 중입니다. 몇 분 뒤 다시 보세요.', sender: '저장했습니다.' },
     },
     messages: {
-      title: '메시지와 서명', parts: ['보내는 것', '문구', '서명'],
+      title: '메시지와 서명', parts: ['보내는 것', '문구', '서명', '디자인'],
       what: [
         { title: '몇 초 안에 이메일', body: '요청을 받았다는 것과 다음에 무슨 일이 있는지 알려 줍니다.' },
         { title: '몇 분 뒤 WhatsApp 1', body: 'WhatsApp을 켜면: 답장하도록 요청 내용에 맞는 질문을 보냅니다.' },
@@ -662,7 +677,12 @@ export const leadsSetupMessages = defineMessages({
         signer: '서명 이름', saveSigner: '저장',
       },
       back: '뒤로', next: '다음', close: '닫기', copied: '복사됨',
-      ok: { texts: '메시지를 저장했습니다.', reset: '기본 문구로 돌아갔습니다.', ai: 'AI 제안입니다. 확인하고 마음에 들면 저장하세요.', sig: '서명을 저장했습니다.', sigCleared: '붙여 넣은 서명을 삭제했습니다.', signer: '저장했습니다.' },
+      design: {
+        lede: '리드가 받는 이메일의 모양입니다.', plain: '개인용', plainHelp: '직접 쓴 이메일처럼 보입니다. 기본 받은편지함에 더 잘 도착합니다.',
+        brand: '내 브랜드로', brandHelp: '위에 로고, 선과 링크에 내 색상.',
+        logo: '로고', logoHelp: 'PNG나 JPG로 가는 https 링크 (Gmail은 SVG를 보여 주지 않습니다). 로고가 없으면 회사 이름이 나옵니다.', color: '색상', save: '디자인 저장',
+      },
+      ok: { design: '디자인을 저장했습니다.', texts: '메시지를 저장했습니다.', reset: '기본 문구로 돌아갔습니다.', ai: 'AI 제안입니다. 확인하고 마음에 들면 저장하세요.', sig: '서명을 저장했습니다.', sigCleared: '붙여 넣은 서명을 삭제했습니다.', signer: '저장했습니다.' },
     },
     whatsapp: {
       title: '리드에게 WhatsApp', parts: ['무엇인가요', 'Meta에서', '연결', '템플릿', '켜기'],

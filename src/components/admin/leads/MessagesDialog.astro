@@ -5,6 +5,7 @@
  *  2. Tus textos: solo los idiomas que usa (el del espacio y los que añada), con la vista previa al lado que se
  *     actualiza mientras escribe. Proponer con IA y volver a los nuestros.
  *  3. Tu firma: pegarla desde Gmail u Outlook (se limpia en el servidor) o rellenarla a mano, y con qué nombre firma.
+ *  4. Diseño: el email de siempre (personal) o con el logo y el color de la marca, con su vista previa.
  */
 import Icon from '~/components/ui/Icon.astro';
 import StepDialog from '~/components/ui/StepDialog.astro';
@@ -12,7 +13,7 @@ import type { leadsMessages } from '~/lib/i18n/messages/leads';
 import type { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
 import { previewFor, type PreviewCtx, type PreviewLocale } from '~/lib/leads/message-preview';
 import { DEFAULT_TEXTS, signatureHtml } from '~/lib/leads/templates';
-import type { EmailSignature, LeadTemplates, QuestionKey } from '~/lib/leads/types';
+import type { EmailSignature, EmailStyle, LeadTemplates, QuestionKey } from '~/lib/leads/types';
 
 interface Props {
   id: string;
@@ -30,10 +31,16 @@ interface Props {
   signerName: string;
   /** Imágenes quitadas de la firma pegada (para avisar). */
   dropped: number;
+  /** Diseño guardado y lo que se propone de la marca (logo PNG/JPG y color) si elige «con tu marca». */
+  style: EmailStyle;
+  brandDefaults: { logoUrl: string; color: string };
   notice?: string | null;
   error?: { title: string; details: string[] } | null;
 }
-const { id, open, part, T, S, base, active, custom, ctx, signature, signerName, dropped, notice, error } = Astro.props;
+const { id, open, part, T, S, base, active, custom, ctx, signature, signerName, dropped, style, brandDefaults, notice, error } = Astro.props;
+const branded = style.mode === 'brand';
+const brandStyle: EmailStyle = { mode: 'brand', logoUrl: style.logoUrl ?? brandDefaults.logoUrl, color: style.color ?? brandDefaults.color };
+const look = { plain: previewFor(base, custom, { ...ctx, style: {} }).html, brand: previewFor(base, custom, { ...ctx, style: brandStyle }).html };
 const ACTION = '/admin/leads/configurar';
 const LOCS: PreviewLocale[] = ['es', 'en', 'fr'];
 const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
@@ -149,6 +156,29 @@ const pasted = !!sig.html;
       </div>
       <label class="co-field">{S.sigLegal}<textarea class="co-textarea h-24" name="sig_legal" maxlength="2000">{sig.legal ?? ''}</textarea></label>
       <button class="co-btn co-btn--primary w-fit">{S.saveSig}</button>
+    </form>
+  </Fragment>
+
+  <Fragment slot="p4">
+    <p>{T.design.lede}</p>
+    <form method="post" action={ACTION} class="grid gap-4" data-testid="messages-design">
+      <input type="hidden" name="action" value="save-email-style" />
+      <div class="grid gap-3 sm:grid-cols-2">
+        {(['plain', 'brand'] as const).map((k) => (
+          <label class="co-inset grid cursor-pointer gap-2 !p-3 has-[:checked]:!border-[var(--co-signal)]">
+            <span class="flex items-center gap-2 font-semibold"><input type="radio" name="mode" value={k} checked={k === 'brand' ? branded : !branded} data-testid={`messages-design-${k}`} />{k === 'brand' ? T.design.brand : T.design.plain}</span>
+            <span class="co-meta">{k === 'brand' ? T.design.brandHelp : T.design.plainHelp}</span>
+            <span class="relative block h-56 overflow-hidden rounded-lg border border-[var(--console-card-border)] bg-white" aria-hidden="true">
+              <span class="absolute left-0 top-0 block w-[200%] origin-top-left scale-50 p-3 text-black" set:html={look[k]} />
+            </span>
+          </label>
+        ))}
+      </div>
+      <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <label class="co-field">{T.design.logo}<input class="co-input" type="url" name="logoUrl" value={style.logoUrl ?? brandDefaults.logoUrl} placeholder="https://…/logo.png" /><span class="co-meta">{T.design.logoHelp}</span></label>
+        <label class="co-field">{T.design.color}<input class="co-input h-11 w-24 !p-1" type="color" name="color" value={style.color ?? brandDefaults.color} /></label>
+      </div>
+      <button class="co-btn co-btn--primary w-fit" data-testid="messages-design-save">{T.design.save}</button>
     </form>
   </Fragment>
 </StepDialog>

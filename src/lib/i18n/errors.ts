@@ -19,6 +19,15 @@ const EXACT: Record<string, T> = {
   'Escribe un email válido': ['Enter a valid email', 'Escreve um email válido', '올바른 이메일을 입력하세요'],
   'Para suprimir, escribe el email otra vez tal cual': ['To erase, type the email again exactly', 'Para apagar, escreve o email outra vez tal e qual', '삭제하려면 이메일을 똑같이 다시 입력하세요'],
   'Indica el motivo para descartarlo': ['Say why you are discarding it', 'Indique o motivo para descartá-lo', '제외하는 이유를 입력하세요'],
+  // Leads entrantes: pasos guiados (docs/PLAN_AJUSTES.md)
+  'El logo tiene que ser un enlace https': ['The logo must be an https link', 'O logo tem de ser um link https', '로고는 https 링크여야 합니다'],
+  'El color, en hexadecimal (ejemplo: #ff27bb)': ['The colour, in hex (for example: #ff27bb)', 'A cor, em hexadecimal (exemplo: #ff27bb)', '색상은 16진수로 입력하세요 (예: #ff27bb)'],
+  'Como mucho 20 webs': ['20 websites at most', 'No máximo 20 sites', '웹사이트는 최대 20개입니다'],
+  'Como mucho 5 personas a las que avisar': ['5 people to notify at most', 'No máximo 5 pessoas para avisar', '알릴 사람은 최대 5명입니다'],
+  'El nombre del remitente, como mucho 80 caracteres': ['The sender name, 80 characters at most', 'O nome do remetente, no máximo 80 caracteres', '보내는 사람 이름은 최대 80자입니다'],
+  'El identificador del número son solo cifras (Meta → WhatsApp → API Setup → Phone number ID)': ['The number ID is digits only (Meta → WhatsApp → API Setup → Phone number ID)', 'O identificador do número são só números (Meta → WhatsApp → API Setup → Phone number ID)', '번호 ID는 숫자만 입력합니다 (Meta → WhatsApp → API Setup → Phone number ID)'],
+  'El horario: la hora de empezar tiene que ser antes que la de acabar': ['Sending hours: the start time must be before the end time', 'O horário: a hora de início tem de ser antes da de fim', '발송 시간: 시작 시간이 종료 시간보다 빨라야 합니다'],
+  'Para activarlo falta el número y la plantilla del primer WhatsApp en tu idioma': ['To turn it on you need the number and the first WhatsApp template in your language', 'Para ativar faltam o número e o modelo do primeiro WhatsApp no seu idioma', '켜려면 번호와 내 언어의 첫 WhatsApp 템플릿이 필요합니다'],
   'Esa marca ya la usa otro espacio': ['Another space already uses that brand', 'Outro espaço já usa essa marca', '다른 공간에서 이미 사용 중인 브랜드입니다'],
   // ------------------------------------------------------------ CRM: personas, grupos e importación
   'Persona no encontrada': ['Person not found', 'Pessoa não encontrada', '사람을 찾을 수 없습니다'],
@@ -312,6 +321,10 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => T][] = [
   [/^Mapeo no válido: (.+)$/s, (m) => [`Invalid mapping: ${m[1]}`, `Mapeamento inválido: ${m[1]}`, `유효하지 않은 매핑: ${m[1]}`]],
   [/^Faltan módulos en el catálogo: (.+)$/, (m) => [`Modules missing from the catalogue: ${m[1]}`, `Faltam módulos no catálogo: ${m[1]}`, `카탈로그에 없는 모듈: ${m[1]}`]],
   [/^El bloque «(.+)» no es válido$/, (m) => [`The block «${m[1]}» is not valid`, `O bloco «${m[1]}» não é válido`, `«${m[1]}» 블록이 유효하지 않습니다`]],
+  [/^«(.+)» no es una dirección web \(ejemplo: tuweb\.com\)$/, (m) => [`«${m[1]}» is not a web address (for example: yoursite.com)`, `«${m[1]}» não é um endereço web (exemplo: seusite.com)`, `«${m[1]}»은(는) 웹 주소가 아닙니다 (예: mysite.com)`]],
+  [/^«(.+)» no es un email$/, (m) => [`«${m[1]}» is not an email`, `«${m[1]}» não é um email`, `«${m[1]}»은(는) 이메일이 아닙니다`]],
+  [/^«(.+)» no vale como nombre de plantilla: minúsculas, números y _ \(ejemplo: lead_hola_es\)$/, (m) => [`«${m[1]}» is not a valid template name: lowercase, numbers and _ (for example: lead_hola_es)`, `«${m[1]}» não serve como nome de modelo: minúsculas, números e _ (exemplo: lead_hola_es)`, `«${m[1]}»은(는) 템플릿 이름으로 쓸 수 없습니다: 소문자, 숫자, _ (예: lead_hola_es)`]],
+  [/^«(.+)» no es una fecha \(AAAA-MM-DD\)$/, (m) => [`«${m[1]}» is not a date (YYYY-MM-DD)`, `«${m[1]}» não é uma data (AAAA-MM-DD)`, `«${m[1]}»은(는) 날짜가 아닙니다 (YYYY-MM-DD)`]],
   [/^Como mucho (\d+) fotos$/, (m) => [`${m[1]} photos at most`, `No máximo ${m[1]} fotos`, `사진은 최대 ${m[1]}장입니다`]],
   [/^Cambio de estado no permitido \((.+) → (.+)\)$/, (m) => [`Status change not allowed (${m[1]} → ${m[2]})`, `Mudança de estado não permitida (${m[1]} → ${m[2]})`, `허용되지 않는 상태 변경입니다 (${m[1]} → ${m[2]})`]],
 ];

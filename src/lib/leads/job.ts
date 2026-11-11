@@ -102,7 +102,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
     const e = autoreplyEmail({
       name: lead.name, type: lead.type, fields: ((lead.facts.fields as Record<string, string>) ?? {}), locale: lead.locale, signer: s.signerName ?? String(m.payload.brandName ?? ''),
       brand: String(m.payload.brandName ?? s.brand), channel: cls && !cls.auto ? 'email' : ((m.payload.channel as 'whatsapp' | 'email') ?? 'email'), eta: (m.payload.eta as Eta) ?? 'today',
-      bookingUrl: media.booking, videoUrl: media.video, unsubscribeUrl: unsub, specific, custom: s.templates, signature: s.emailSignature,
+      bookingUrl: media.booking, videoUrl: media.video, unsubscribeUrl: unsub, specific, custom: s.templates, signature: s.emailSignature, style: s.emailStyle,
     });
     const sent = await mailer.send({ to: lead.email, subject: e.subject, html: e.html, text: e.text, tag: 'lead-autoreply', from: fromHeader(s), replyTo: s.replyTo ?? undefined,
       headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } });

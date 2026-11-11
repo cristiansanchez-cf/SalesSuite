@@ -39,6 +39,8 @@ export interface LeadSettings {
   media?: LeadMedia;
   /** WhatsApp 2 (el recordatorio): se puede apagar si Meta lo pasa a Marketing; el 1 sigue. Por defecto, encendido. */
   whatsappWa2?: boolean;
+  /** Diseño del email de respuesta: el de siempre (texto) o con el logo y el color de la empresa. */
+  emailStyle?: EmailStyle;
   /** Plazos de conservación (docs/LEADS.md §Privacidad). */
   retention?: Retention;
   /** Último borrado automático (lo escribe el servidor). */
@@ -60,6 +62,9 @@ export const DEFAULT_RETENTION: Retention = { leadMonths: 24, spamMonths: 6, tes
 export interface MediaLinks { video?: string; booking?: string }
 /** { venue: { es: { video, booking }, en: {…} }, … } */
 export type LeadMedia = Partial<Record<string, Partial<Record<'es' | 'en' | 'fr', MediaLinks>>>>;
+
+/** Diseño del email: «plain» (como escrito a mano) o «brand» (logo arriba y el color en la línea y los enlaces). */
+export interface EmailStyle { mode?: 'plain' | 'brand'; logoUrl?: string; color?: string }
 
 export interface EmailSignature {
   name?: string; title?: string; phone?: string; address?: string; email?: string; website?: string; logoUrl?: string; legal?: string;

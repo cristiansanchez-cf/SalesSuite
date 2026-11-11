@@ -31,6 +31,7 @@ export const LEAD_ERRORS = {
   badHours: 'El horario: la hora de empezar tiene que ser antes que la de acabar',
   badHoliday: (v: string) => `«${v}» no es una fecha (AAAA-MM-DD)`,
   waNotReady: 'Para activarlo falta el número y la plantilla del primer WhatsApp en tu idioma',
+  badColor: 'El color, en hexadecimal (ejemplo: #ff27bb)',
 } as const;
 
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);
@@ -357,6 +358,20 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.saveSettings(next);
   }
 
+  /** Diseño del email (Tus mensajes → Diseño): el de siempre o con el logo (PNG/JPG por https) y el color de la marca. */
+  async function saveEmailStyle(input: { mode: string; logoUrl?: string | null; color?: string | null }) {
+    requireAdmin();
+    const prev = await db.settings(t);
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    if (input.mode !== 'brand') { await db.saveSettings({ ...prev, emailStyle: {} }); return; }
+    const logo = (input.logoUrl ?? '').trim();
+    if (logo && (!/^https:\/\/[^\s"'<>]+$/i.test(logo) || logo.length > 500)) throw new AdminError(422, 'El logo tiene que ser un enlace https');
+    if (logo && /\.svg(\?|$)/i.test(logo)) throw new AdminError(422, LEAD_ERRORS.svgLogo);
+    const color = (input.color ?? '').trim();
+    if (color && !/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)) throw new AdminError(422, LEAD_ERRORS.badColor);
+    await db.saveSettings({ ...prev, emailStyle: { mode: 'brand', ...(logo ? { logoUrl: logo } : {}), ...(color ? { color: color.toLowerCase() } : {}) } });
+  }
+
   /** El nombre con el que se firman los mensajes ({firma}: «Soy Ana, de …»). Vacío = el de la empresa. */
   async function saveSignerName(name: string) {
     requireAdmin();
@@ -389,7 +404,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, detail, setStage, markContacted, stopSequence, release, note, validate, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

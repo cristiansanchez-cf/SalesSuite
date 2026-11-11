@@ -17,7 +17,7 @@ import { hubConfig } from '~/lib/assistant/hub-config';
 import { previewFor } from '~/lib/leads/message-preview';
 import { claudeDrafter, fixtureDrafter } from '~/lib/leads/draft-texts';
 import { cleanupContext } from '~/lib/crm/research-context';
-import { mediaFor, msgLocale } from '~/lib/leads/templates';
+import { mediaFor, msgLocale, pickBrandColor, safeLogo } from '~/lib/leads/templates';
 import { SAMPLE_LEAD, type PreviewLocale } from '~/lib/leads/message-preview';
 import { randomUUID } from 'node:crypto';
 import { requestOrigin } from '~/lib/http';
@@ -115,7 +115,7 @@ if (Astro.request.method === 'POST') {
     if (!r.error) return Astro.redirect(`/admin/leads/configurar?abrir=email&p=${to}&ok=${ok}`, 303);
     error = r.error; errorDetails = r.details; errorIn = 'email';
     errorPart = action.startsWith('resend-key') ? 2 : action === 'verify-domain' ? 3 : 4;
-  } else if (['save-texts', 'reset-texts', 'ai-draft', 'save-signer', 'save-signature-paste', 'save-signature-fields', 'clear-signature'].includes(action)) {
+  } else if (['save-texts', 'reset-texts', 'ai-draft', 'save-signer', 'save-signature-paste', 'save-signature-fields', 'clear-signature', 'save-email-style'].includes(action)) {
     // Tus mensajes y tu firma. Qué vende y a quién: lo usa la clasificación de cada lead (va con los textos).
     const aiContext = async () => { const c = await cleanupContext(admin).catch(() => null); return c ? [c.seller, c.clients.length ? `Clientes: ${c.clients.join('; ')}` : ''].filter(Boolean).join('\n').slice(0, 4000) || null : null; };
     // Solo los idiomas activos: los quitados no llegan (su fieldset va desactivado) y vuelven a nuestros textos.
@@ -146,10 +146,14 @@ if (Astro.request.method === 'POST') {
         to = 3; ok = 'sig';
       }
       else if (action === 'clear-signature') { await svc.clearPastedSignature(); to = 3; ok = 'sigCleared'; }
+      else if (action === 'save-email-style') {
+        await svc.saveEmailStyle({ mode: String(f.get('mode') ?? 'plain'), logoUrl: String(f.get('logoUrl') ?? ''), color: String(f.get('color') ?? '') });
+        to = 4; ok = 'design';
+      }
     });
     if (!r.error && !aiDrafted) return Astro.redirect(`/admin/leads/configurar?abrir=messages&p=${to}&ok=${ok}${extra}`, 303);
     if (r.error) {
-      error = r.error; errorDetails = r.details; errorIn = 'messages'; errorPart = action.startsWith('save-sig') || action === 'clear-signature' || action === 'save-signer' ? 3 : 2;
+      error = r.error; errorDetails = r.details; errorIn = 'messages'; errorPart = action === 'save-email-style' ? 4 : action.startsWith('save-sig') || action === 'clear-signature' || action === 'save-signer' ? 3 : 2;
       if (action === 'save-texts') textsShown = readTexts();
     }
   } else if (['whatsapp-connect', 'whatsapp-templates', 'whatsapp-activate', 'holiday-add', 'holiday-remove'].includes(action)) {
@@ -253,14 +257,17 @@ const msgStep = steps.find((x) => x.key === 'messages')!;
 const msgBase = msgLocale((tenant?.defaultLocale ?? locale).slice(0, 2).toLowerCase()) as PreviewLocale;
 const msgCustom: LeadTemplates = textsShown ?? s.templates ?? {};
 const msgActive = [msgBase, ...MSG_LOCS.filter((l) => l !== msgBase && !!s.templates?.[l] && Object.keys(s.templates[l] ?? {}).length > 0)] as PreviewLocale[];
-const msgPart = aiDrafted ? 2 : openParam === 'messages' && pParam >= 1 && pParam <= 3 ? pParam
+const msgPart = aiDrafted ? 2 : openParam === 'messages' && pParam >= 1 && pParam <= 4 ? pParam
   : msgStep.status === 'todo' ? 1 : msgStep.missing.includes('texts') ? 2 : msgStep.missing.includes('signature') ? 3 : 2;
 const brandName = tenant?.name ?? s.brand;
 const msgCtx = {
-  signer: s.signerName ?? brandName, brand: brandName, signature: s.emailSignature,
+  signer: s.signerName ?? brandName, brand: brandName, signature: s.emailSignature, style: s.emailStyle ?? {},
   media: Object.fromEntries(MSG_LOCS.map((l) => { const m = mediaFor(s, SAMPLE_LEAD.type, SAMPLE_LEAD.fields, l); return [l, { booking: m.booking ?? null, video: m.video ?? null }]; })) as Record<PreviewLocale, { booking: string | null; video: string | null }>,
 };
 const dropped = Math.max(0, Math.min(99, Number(Astro.url.searchParams.get('caidas')) || 0));
+// Lo que se propone para «con tu marca»: el logo de la marca si es PNG/JPG por https y el color de la marca que se lee sobre blanco.
+const brandLogo = safeLogo(tenant?.brand?.logoUrl) ?? '';
+const brandColor = pickBrandColor([tenant?.themeTokens?.colors?.primary, tenant?.themeTokens?.colors?.accent]);
 // WhatsApp: con qué parte se abre según lo que falte; las plantillas, de los idiomas que usa (y de los que ya tengan una).
 const waStep = steps.find((x) => x.key === 'whatsapp')!;
 const waPart = openParam === 'whatsapp' && pParam >= 1 && pParam <= 5 ? pParam
@@ -350,6 +357,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     id="setup-messages" open={openParam === 'messages' || errorIn === 'messages' || aiDrafted} part={errorIn === 'messages' ? errorPart : msgPart}
     T={T.messages} S={S} base={msgBase} active={msgActive} custom={msgCustom} ctx={msgCtx}
     signature={s.emailSignature && Object.keys(s.emailSignature).length ? s.emailSignature : null} signerName={s.signerName ?? ''} dropped={dropped}
+    style={s.emailStyle ?? {}} brandDefaults={{ logoUrl: brandLogo, color: brandColor.length === 4 ? `#${[...brandColor.slice(1)].map((c) => c + c).join('')}` : brandColor }}
     notice={aiDrafted ? T.messages.ok.ai : openParam === 'messages' ? okMsg : null}
     error={error && errorIn === 'messages' ? { title: error, details: errorDetails } : null}
   />

@@ -3,13 +3,14 @@
  * primera vista y el navegador para actualizarla mientras se escribe.
  */
 import { autoreplyEmail, waParams, waPreview } from './templates';
-import type { EmailSignature, LeadTemplates } from './types';
+import type { EmailSignature, EmailStyle, LeadTemplates } from './types';
 
 export type PreviewLocale = 'es' | 'en' | 'fr';
 export interface PreviewCtx {
   signer: string;
   brand: string;
   signature?: EmailSignature;
+  style?: EmailStyle;
   /** Enlace de reserva y vídeo del lead de ejemplo, por idioma. */
   media: Record<PreviewLocale, { booking: string | null; video: string | null }>;
 }
@@ -18,7 +19,7 @@ export const SAMPLE_LEAD = { name: 'Laura Gómez', type: 'venue' as const, field
 export function previewFor(l: PreviewLocale, custom: LeadTemplates, ctx: PreviewCtx) {
   const m = ctx.media[l];
   const base = { ...SAMPLE_LEAD, locale: l, bookingUrl: m.booking, videoUrl: m.video, custom };
-  const mail = autoreplyEmail({ ...base, signer: ctx.signer, brand: ctx.brand, channel: 'whatsapp', eta: 'minutes', unsubscribeUrl: null, signature: ctx.signature });
+  const mail = autoreplyEmail({ ...base, signer: ctx.signer, brand: ctx.brand, channel: 'whatsapp', eta: 'minutes', unsubscribeUrl: null, signature: ctx.signature, style: ctx.style });
   return {
     subject: mail.subject,
     html: mail.html,

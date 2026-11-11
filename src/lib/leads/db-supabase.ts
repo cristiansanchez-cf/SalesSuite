@@ -20,7 +20,7 @@ const settingsOf = (r: Row): LeadSettings => ({
   whatsappPhoneId: r.whatsapp_phone_id, whatsappEnabled: r.whatsapp_enabled, whatsappTemplates: r.whatsapp_templates ?? {}, timezone: r.timezone,
   sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [], resendKeyHint: r.resend_key_hint ?? null,
   templates: r.templates ?? {}, aiContext: r.ai_context ?? null, emailSignature: r.email_signature ?? {}, media: r.media ?? {},
-  whatsappWa2: r.whatsapp_wa2_enabled ?? true, lastPurgeAt: r.last_purge_at ?? null,
+  whatsappWa2: r.whatsapp_wa2_enabled ?? true, lastPurgeAt: r.last_purge_at ?? null, emailStyle: r.email_style ?? undefined,
   retention: {
     leadMonths: r.retention_lead_months ?? DEFAULT_RETENTION.leadMonths, spamMonths: r.retention_spam_months ?? DEFAULT_RETENTION.spamMonths,
     testDays: r.retention_test_days ?? DEFAULT_RETENTION.testDays, proofYears: r.retention_proof_years ?? DEFAULT_RETENTION.proofYears,
@@ -75,7 +75,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
         whatsapp_phone_id: s.whatsappPhoneId, whatsapp_enabled: s.whatsappEnabled, whatsapp_templates: s.whatsappTemplates, timezone: s.timezone,
         send_from_hour: s.sendFromHour, send_to_hour: s.sendToHour, holidays: s.holidays,
         ...(s.templates !== undefined ? { templates: s.templates } : {}), ...(s.aiContext !== undefined ? { ai_context: s.aiContext } : {}), ...(s.emailSignature !== undefined ? { email_signature: s.emailSignature } : {}), ...(s.media !== undefined ? { media: s.media } : {}),
-        ...(s.whatsappWa2 !== undefined ? { whatsapp_wa2_enabled: s.whatsappWa2 } : {}),
+        ...(s.whatsappWa2 !== undefined ? { whatsapp_wa2_enabled: s.whatsappWa2 } : {}), ...(s.emailStyle !== undefined ? { email_style: s.emailStyle } : {}),
         ...(s.retention ? { retention_lead_months: s.retention.leadMonths, retention_spam_months: s.retention.spamMonths, retention_test_days: s.retention.testDays, retention_proof_years: s.retention.proofYears } : {}),
       }, { onConflict: 'tenant_id' }));
     },
