@@ -1,0 +1,100 @@
+---
+/**
+ * Primeros pasos en Inicio (docs/PLAN_AJUSTES.md, paso 7). Admin: empresa, marca, equipo, leads entrantes y asistente.
+ * Quien vende: su móvil, escribir al asistente y su primera propuesta. Se tacha solo, desaparece al acabar y se puede
+ * ocultar (se recuerda en este navegador). Va en un bloque aparte (server:defer): mira varias cosas.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { demoDb } from '~/lib/data/store';
+import { env } from '~/lib/env';
+import { i18n } from '~/lib/i18n';
+import { firstStepsMessages } from '~/lib/i18n/messages/firstSteps';
+import { appMode } from '~/lib/mode';
+import { adminSteps, progressOf, repSteps } from '~/lib/first-steps';
+import { leadsFor } from '~/lib/leads/service';
+import { leadsRuntime } from '~/lib/leads/server';
+import { ownDomains } from '~/lib/leads/resend-key';
+import { leadSetupSteps, requiredProgress } from '~/lib/leads/setup-steps';
+import { assistantContact } from '~/lib/assistant/contact';
+import { assistantDb } from '~/lib/assistant/server';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || admin.session.role === 'partner') return null;
+const { m: T } = i18n(Astro, firstStepsMessages);
+const demo = appMode() === 'demo';
+const isAdmin = can(admin.session.role).manageTenant;
+const rt = await leadsRuntime();
+const settings = 'error' in rt ? null : await rt.db.settings(admin.session.tenantId).catch(() => null);
+const contact = await assistantContact(settings, { demo }).catch(() => null);
+
+let steps: { key: string; done: boolean; href: string; external?: boolean; t: string; d: string }[] = [];
+if (isAdmin) {
+  const svc = await leadsFor(admin);
+  const [segments, members, last, domains] = await Promise.all([
+    admin.playbook.market().catch(() => []),
+    admin.tenantAdmin.listMembers().catch(() => []),
+    svc.lastSubmission({ external: true }).catch(() => null),
+    settings?.resendKeyHint ? ownDomains(admin).catch(() => null) : Promise.resolve(null),
+  ]);
+  const leadsReady = !!settings && (() => {
+    const p = requiredProgress(leadSetupSteps({ settings, domains, received: !!last, demo, platformMail: !!(env('RESEND_API_KEY') && env('RESEND_FROM')), platformWa: !!env('WHATSAPP_TOKEN') }));
+    return p.done === p.total;
+  })();
+  steps = adminSteps({ segments: segments.length, hasLogo: !!tenant?.brand?.logoUrl, members: members.length, leadsReady, assistantOn: !!contact && contact.mode !== 'off' })
+    .map((x) => ({ ...x, ...T.admin[x.key] }));
+} else {
+  const phone = admin.mode === 'supabase' && admin.supabase
+    ? ((await admin.supabase.from('users').select('phone').eq('id', admin.session.userId).maybeSingle()).data?.phone as string | null)
+    : demoDb().users.find((x) => x.id === admin.session.userId)?.phone ?? null;
+  const adb = await assistantDb().catch(() => null);
+  const talked = adb ? ((await adb.get(admin.session.tenantId, admin.session.userId).catch(() => null))?.version ?? 0) > 0 : false;
+  const dossiers = await admin.service.listDossiers().catch(() => []);
+  steps = repSteps({ hasPhone: !!phone, talkedToAssistant: talked, assistantLink: contact?.waLink ?? null, proposals: dossiers.filter((d) => d.authorId === admin.session.userId).length })
+    .map((x) => ({ ...x, ...T.rep[x.key] }));
+}
+const p = progressOf(steps);
+if (p.finished) return null;
+const next = steps.find((x) => !x.done)?.key;
+const hideKey = `ss_first_steps:${admin.session.tenantId}:${isAdmin ? 'admin' : 'rep'}`;
+---
+<section class="co-card grid gap-4 !p-6" data-testid="first-steps" data-kind={isAdmin ? 'admin' : 'rep'} data-hide-key={hideKey}>
+  <script is:inline define:vars={{ hideKey }}>
+    try { if (localStorage.getItem(hideKey) === '1') document.currentScript.parentElement.hidden = true; } catch {}
+  </script>
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="grid gap-1">
+      <p class="text-eyebrow">{T.title} · {T.progress(p.done, p.total)}</p>
+      <p class="co-meta">{isAdmin ? T.ledeAdmin : T.ledeRep}</p>
+    </div>
+    <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-first-steps-hide data-testid="first-steps-hide">{T.hide}</button>
+  </div>
+  <div class="h-1.5 overflow-hidden rounded-full bg-[var(--console-progress-track)]" role="progressbar" aria-valuemin={0} aria-valuemax={p.total} aria-valuenow={p.done}>
+    <span class="block h-full rounded-full bg-[var(--co-ink)]" style={`width:${Math.round((p.done / p.total) * 100)}%`}></span>
+  </div>
+  <ol class={`grid gap-2 p-0 ${steps.length > 3 ? 'sm:grid-cols-2 lg:grid-cols-5' : 'sm:grid-cols-3'}`}>
+    {steps.map((x, i) => (
+      <li class="list-none">
+        <a class:list={['co-inset grid h-full content-start gap-2 !p-4 transition-colors hover:border-[var(--co-ink)]', x.key === next && '!border-[var(--co-signal)]']}
+          href={x.href} data-testid={`first-step-${x.key}`} data-done={x.done ? '1' : '0'} {...(x.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+          <span class="flex items-center justify-between">
+            <span class="text-xl [font-family:var(--co-font-impact)] font-semibold">{String(i + 1).padStart(2, '0')}</span>
+            <Icon name={x.done ? 'circle-check' : 'circle-dashed'} size={18} />
+          </span>
+          <span class:list={['font-semibold', x.done && 'line-through opacity-60']}>{x.t}</span>
+          <span class="co-meta">{x.done ? T.done : x.d}</span>
+        </a>
+      </li>
+    ))}
+  </ol>
+  <script is:inline>
+    (function () {
+      var root = document.currentScript.closest('[data-hide-key]');
+      var b = root && root.querySelector('[data-first-steps-hide]');
+      if (b) b.addEventListener('click', function () {
+        root.hidden = true;
+        try { localStorage.setItem(root.dataset.hideKey, '1'); } catch (e) {}
+      });
+    })();
+  </script>
+</section>

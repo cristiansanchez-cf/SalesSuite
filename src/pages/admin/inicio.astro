@@ -7,6 +7,7 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import Shimmer from '~/components/ui/Shimmer.astro';
 import HomeBody from '~/components/admin/home/HomeBody.astro';
+import FirstSteps from '~/components/admin/home/FirstSteps.astro';
 import TodayCard from '~/components/crm/TodayCard.astro';
 import { can } from '~/lib/admin/permissions';
 import { i18n } from '~/lib/i18n';
@@ -37,6 +38,9 @@ const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[
         <a class="co-btn co-btn--primary" href="/admin#nuevo" data-testid="home-new">{m.home.newProposal} <span aria-hidden="true">→</span></a>
       </div>
     </header>
+
+    {/* Primeros pasos (docs/PLAN_AJUSTES.md, paso 7): mientras falte algo; sin hueco mientras carga. */}
+    <FirstSteps server:defer />
 
     {can(admin.session.role).useAccounts && (
       <TodayCard server:defer>
