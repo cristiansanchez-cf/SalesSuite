@@ -1,0 +1,63 @@
+---
+/**
+ * Tarjeta de configuración (docs/PLAN_AJUSTES.md): una cosa que se configura, con tres estados.
+ *  - todo:    qué es y qué ganas, y «Empezar».
+ *  - partial: lo que falta y «Continuar» (lo hecho queda guardado).
+ *  - done:    un resumen corto y «Editar».
+ * Lleva siempre si es obligatoria, recomendada u opcional.
+ */
+import Icon from './Icon.astro';
+import type { IconName } from '~/lib/ui/icons';
+
+interface Props {
+  icon: IconName;
+  title: string;
+  lede: string;
+  status: 'todo' | 'partial' | 'done';
+  need: 'required' | 'recommended' | 'optional';
+  href: string;
+  /** Textos: etiqueta de la necesidad, del estado y del botón. */
+  labels: { need: string; status: string; cta: string; missing?: string };
+  /** «Paso 1» (opcional). */
+  step?: string;
+  /** Lo que falta (a medias o sin empezar si es obligatoria). */
+  missing?: string[];
+  /** Resumen cuando está hecha. */
+  summary?: string[];
+  testid?: string;
+}
+const p = Astro.props;
+const done = p.status === 'done';
+const showMissing = !done && (p.missing?.length ?? 0) > 0 && (p.status === 'partial' || p.need === 'required');
+const statusIcon: IconName = done ? 'circle-check' : p.status === 'partial' ? 'clock' : 'circle-dashed';
+---
+<article
+  class="co-card grid gap-4 !p-6 sm:grid-cols-[auto_1fr_auto] sm:items-start"
+  data-testid={p.testid}
+  data-status={p.status}
+  data-need={p.need}
+>
+  <span class="co-row__lead hidden sm:inline-flex" aria-hidden="true"><Icon name={p.icon} size={20} /></span>
+  <div class="grid min-w-0 gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      {p.step && <span class="text-eyebrow">{p.step}</span>}
+      <span class={`co-badge ${p.need === 'required' ? 'co-badge--ink' : 'co-badge--soft'}`} data-testid="setup-card-need">{p.labels.need}</span>
+      <span class={`co-badge ${done ? 'co-badge--signal' : p.status === 'partial' ? 'co-badge--attention' : 'co-badge--soft'} inline-flex items-center gap-1`} data-testid="setup-card-status">
+        <Icon name={statusIcon} size={14} />{p.labels.status}
+      </span>
+    </div>
+    <h3 class="co-entity !text-lg">{p.title}</h3>
+    {done && p.summary?.length
+      ? <p class="co-meta" data-testid="setup-card-summary">{p.summary.join(' · ')}</p>
+      : <p class="co-body max-w-[60ch]">{p.lede}</p>}
+    {showMissing && (
+      <div class="co-meta" data-testid="setup-card-missing">
+        <span class="font-semibold">{p.labels.missing}:</span>
+        <ul class="mt-1 grid list-disc gap-0.5 pl-5">{p.missing!.map((m) => <li>{m}</li>)}</ul>
+      </div>
+    )}
+  </div>
+  <a class={`co-btn ${done ? 'co-btn--ghost' : 'co-btn--primary'} w-fit sm:justify-self-end`} href={p.href} data-testid="setup-card-cta">
+    {p.labels.cta}<Icon name="chevron-right" size={16} />
+  </a>
+</article>

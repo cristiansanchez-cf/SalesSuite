@@ -1,0 +1,139 @@
+---
+/**
+ * Leads entrantes (docs/PLAN_AJUSTES.md): los pasos para que la web o la app manden leads y se les conteste, cada uno
+ * como una tarjeta (sin empezar, a medias, hecho). Arriba, si entran leads reales o solo pruebas. Solo admin.
+ * De momento cada tarjeta lleva a su sección de los ajustes; los pasos guiados llegan en los siguientes pasos del plan.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import SetupCard from '~/components/ui/SetupCard.astro';
+import { can } from '~/lib/admin/permissions';
+import { flash, formAction } from '~/lib/admin/forms';
+import { env } from '~/lib/env';
+import { appMode } from '~/lib/mode';
+import { i18n } from '~/lib/i18n';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
+import { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
+import { leadsFor } from '~/lib/leads/service';
+import { ownDomains } from '~/lib/leads/resend-key';
+import { retentionOf } from '~/lib/leads/privacy';
+import { leadSetupSteps, readiness, requiredProgress, type StepKey } from '~/lib/leads/setup-steps';
+import type { LeadSettings } from '~/lib/leads/types';
+import type { IconName } from '~/lib/ui/icons';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
+const { m: L, locale } = i18n(Astro, leadsMessages);
+const { m: T } = i18n(Astro, leadsSetupMessages);
+const S = L.set;
+const svc = await leadsFor(admin);
+const demo = appMode() === 'demo';
+const platformMail = !!(env('RESEND_API_KEY') && env('RESEND_FROM'));
+
+let error: string | null = null;
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  if (f.get('action') === 'toggle') {
+    const on = f.get('on') === '1';
+    const cur = await svc.settings();
+    const doms = cur?.resendKeyHint ? await ownDomains(admin) : null;
+    if (on && (!cur || !readiness(cur, doms, { demo, platformMail }).ready)) error = S.activateBlocked;
+    else {
+      const r = await formAction(async () => { await svc.setEnabled(on); });
+      if (!r.error) return Astro.redirect(`/admin/leads/configurar?ok=${on ? 'live' : 'paused'}`, 303);
+      error = r.error;
+    }
+  }
+}
+
+const s: LeadSettings = (await svc.settings()) ?? {
+  tenantId: admin.session.tenantId, enabled: false, brand: '', allowedOrigins: [], fromEmail: null, fromName: null, replyTo: null, signerName: null,
+  notifyEmails: [admin.session.email], bookingUrl: null, videoUrl: null, whatsappPhoneId: null, whatsappEnabled: false, whatsappTemplates: {}, timezone: 'Europe/Madrid',
+  sendFromHour: 8, sendToHour: 22, holidays: [],
+};
+const domains = s.resendKeyHint ? await ownDomains(admin).catch(() => null) : null;
+const last = await svc.lastSubmission().catch(() => null);
+const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
+const ready = readiness(s, domains, { demo, platformMail }).ready;
+const progress = requiredProgress(steps);
+const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused });
+const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
+
+// De momento, cada tarjeta abre su sección de los ajustes.
+const META: Record<StepKey, { icon: IconName; href: string }> = {
+  connect: { icon: 'globe', href: '/admin/leads/ajustes#connection' },
+  email: { icon: 'mail', href: '/admin/leads/ajustes#email' },
+  messages: { icon: 'message-square-text', href: '/admin/leads/ajustes#texts' },
+  whatsapp: { icon: 'whatsapp', href: '/admin/leads/ajustes#whatsapp' },
+  extras: { icon: 'link', href: '/admin/leads/ajustes#media' },
+  privacy: { icon: 'shield-check', href: '/admin/leads/ajustes#privacy' },
+};
+const summary = (k: StepKey): string[] => {
+  switch (k) {
+    case 'connect': return [last ? T.done.connect(fmt.format(new Date(last.at))) : '', s.allowedOrigins.length ? T.done.origins(s.allowedOrigins.length) : ''].filter(Boolean);
+    case 'email': return [s.fromEmail ? T.done.email(s.fromEmail) : T.done.emailPlatform];
+    case 'messages': return [T.done.messages];
+    case 'whatsapp': return [T.done.whatsapp];
+    case 'extras': return [T.done.extras];
+    case 'privacy': return [T.done.privacy(retentionOf(s).leadMonths)];
+  }
+};
+const main = steps.filter((x) => x.key !== 'extras' && x.key !== 'privacy');
+const extras = steps.filter((x) => x.key === 'extras' || x.key === 'privacy');
+const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
+---
+<AdminLayout title={T.title}>
+  <PageHeader eyebrow={T.eyebrow} title={T.title} lede={T.lede}>
+    <div class="grid gap-1 sm:justify-items-end" data-testid="leads-status">
+      <div class="flex items-center gap-2">
+        <span class={`co-badge ${s.enabled ? 'co-badge--signal' : 'co-badge--attention'}`} data-testid="leads-status-badge">{s.enabled ? S.live : S.paused}</span>
+        <form method="post">
+          <input type="hidden" name="action" value="toggle" />
+          <input type="hidden" name="on" value={s.enabled ? '0' : '1'} />
+          <button class={`co-btn ${s.enabled ? 'co-btn--ghost' : 'co-btn--primary'}`} disabled={!s.enabled && !ready} data-testid="leads-toggle">{s.enabled ? S.pause : S.activate}</button>
+        </form>
+      </div>
+      <p class="co-meta max-w-[18rem] sm:text-right">{s.enabled ? S.liveHelp : ready ? S.pausedHelp : S.activateBlocked}</p>
+    </div>
+  </PageHeader>
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {error && <div class="mb-4"><Alert kind="rejection" title={error} /></div>}
+
+  <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
+    <p class="co-meta font-semibold">{T.progress(progress.done, progress.total)}</p>
+    <div class="h-1.5 overflow-hidden rounded-full bg-[var(--console-progress-track)]" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.done}>
+      <span class="block h-full rounded-full bg-[var(--co-ink)]" style={`width:${pct}%`}></span>
+    </div>
+  </section>
+
+  <section class="mb-8 grid max-w-3xl gap-3" data-testid="leads-setup-steps">
+    <h2 class="text-eyebrow">{T.stepsTitle}</h2>
+    {main.map((x, i) => (
+      <SetupCard
+        icon={META[x.key].icon} href={META[x.key].href} title={T.steps[x.key].title} lede={T.steps[x.key].lede}
+        status={x.status} need={x.need} step={T.stepN(i + 1)}
+        labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
+        missing={x.missing.map((k) => T.miss[k])} summary={summary(x.key)} testid={`setup-card-${x.key}`}
+      />
+    ))}
+  </section>
+
+  <section class="mb-8 grid max-w-3xl gap-3" data-testid="leads-setup-extras">
+    <div><h2 class="text-eyebrow">{T.extrasTitle}</h2><p class="co-meta mt-1">{T.extrasLede}</p></div>
+    {extras.map((x) => (
+      <SetupCard
+        icon={META[x.key].icon} href={META[x.key].href} title={T.steps[x.key].title} lede={T.steps[x.key].lede}
+        status={x.status} need={x.need}
+        labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
+        summary={summary(x.key)} testid={`setup-card-${x.key}`}
+      />
+    ))}
+  </section>
+
+  <p class="flex max-w-3xl flex-wrap gap-2">
+    <a class="co-btn co-btn--ghost" href="/admin/leads/ajustes" data-testid="leads-all-settings">{T.allSettings}</a>
+    <a class="co-btn co-btn--ghost" href="/admin/leads" data-testid="leads-go-inbox">{T.inbox}</a>
+  </p>
+</AdminLayout>

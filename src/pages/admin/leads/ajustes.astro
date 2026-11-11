@@ -24,6 +24,7 @@ import Icon from '~/components/ui/Icon.astro';
 import { privacyMessages } from '~/lib/i18n/messages/privacy';
 import { privacyFor } from '~/lib/leads/privacy-service';
 import { retentionOf } from '~/lib/leads/privacy';
+import { readiness as readinessOf } from '~/lib/leads/setup-steps';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -38,16 +39,7 @@ const orNull = (v: FormDataEntryValue | null) => String(v ?? '').trim() || null;
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 const LOCS = ['es', 'en', 'fr'] as const;
 const QKEYS: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
-type Domains = Awaited<ReturnType<typeof ownDomains>>;
-/** Lo obligatorio para activar: cómo sale el email (cuenta y dominio), quién recibe las respuestas y a quién avisar. */
-function readiness(st: LeadSettings, doms: Domains | null) {
-  const fromDomain = st.fromEmail?.split('@')[1]?.toLowerCase() ?? null;
-  const covers = (d: { name: string; status: string }) => d.status === 'verified' && !!fromDomain && (fromDomain === d.name || fromDomain.endsWith(`.${d.name}`));
-  const resend = appMode() === 'demo' || (st.resendKeyHint ? !!doms && !!st.fromEmail && doms.some(covers) : !!(env('RESEND_API_KEY') && env('RESEND_FROM')));
-  const sender = !!st.replyTo && (!st.resendKeyHint || !!st.fromEmail);
-  const notify = st.notifyEmails.length > 0;
-  return { resend, sender, notify, ready: resend && sender && notify };
-}
+const readiness = (st: LeadSettings, doms: Awaited<ReturnType<typeof ownDomains>> | null) => readinessOf(st, doms, { demo: appMode() === 'demo', platformMail: !!(env('RESEND_API_KEY') && env('RESEND_FROM')) });
 let draft: LeadTemplates | null = null;
 let posted: LeadTemplates | null = null;
 let postedSig: Record<string, string> | null = null;
@@ -174,7 +166,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
 }));
 ---
 <AdminLayout title={S.title}>
-  <PageHeader eyebrow={L.title} title={S.title} lede={S.lede} back={{ href: '/admin/leads', label: L.title }}>
+  <PageHeader eyebrow={L.title} title={S.title} lede={S.lede} back={{ href: '/admin/leads/configurar', label: L.flowTitle }}>
     {/* Lo más importante de la página: si entran leads reales o solo pruebas, y el botón para cambiarlo. */}
     <div class="grid gap-1 sm:justify-items-end" data-testid="leads-status">
       <div class="flex items-center gap-2">
@@ -246,7 +238,7 @@ const previews = (['es', 'en', 'fr'] as const).map((loc) => ({
     <label class="co-field">{S.notify}<textarea form="lead-settings" class="co-textarea h-20" name="notify">{s.notifyEmails.join('\n')}</textarea><span class="co-meta">{S.notifyHelp}</span></label>
     <label class="co-field">{S.booking}<input form="lead-settings" class="co-input" type="url" name="bookingUrl" value={s.bookingUrl ?? ''} placeholder="https://" /></label>
     <label class="co-field">{S.video}<input form="lead-settings" class="co-input" type="url" name="videoUrl" value={s.videoUrl ?? ''} placeholder="https://" /></label>
-    <div class="grid gap-2" data-testid="leads-media">
+    <div id="media" class="grid scroll-mt-6 gap-2" data-testid="leads-media">
       <h3 class="font-semibold">{S.media}</h3>
       <p class="co-meta">{S.mediaHelp}</p>
       {MEDIA_TYPES.map((ty) => {

@@ -46,9 +46,13 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
   const setup: Group[] = [
     { href: '/admin/setup', label: L.company, icon: 'building2', testid: 'nav-company', tabs: [
       { href: '/admin/setup', label: L.setup }, { href: '/admin/brand', label: L.brand, show: perms.manageTenant },
-      // Ajustes de los leads de la web: también desde Configurar, que es donde se busca lo que se configura.
-      { href: '/admin/leads/ajustes', label: L.leads, testid: 'tab-leads-settings', show: perms.manageTenant },
     ] },
+    // Leads entrantes (docs/PLAN_AJUSTES.md): los pasos para que la web o la app manden leads y se les conteste. La
+    // bandeja sigue en Vender → CRM; aquí solo se configura.
+    ...(perms.manageTenant ? [{ href: '/admin/leads/configurar', label: L.leadsIn, icon: 'inbox' as IconName, testid: 'nav-leads-in', tabs: [
+      { href: '/admin/leads/configurar', label: L.leadsSteps, testid: 'tab-leads-steps' }, { href: '/admin/leads/ajustes', label: L.leadsAll, testid: 'tab-leads-settings' },
+      { href: '/admin/leads/privacidad', label: L.leadsRights, testid: 'tab-leads-rights' },
+    ] }] : []),
     { href: '/admin/playbook', label: L.playbook, icon: 'book-open', count: counts.pendingPlaybook || undefined, tabs: [] },
     ...(perms.manageTenant ? [{ href: '/admin/catalog', label: L.catalogPrices, icon: 'boxes' as IconName, testid: 'nav-catalog', tabs: [
       { href: '/admin/catalog', label: L.catalog }, { href: '/admin/prices', label: L.prices, testid: 'tab-prices' },
