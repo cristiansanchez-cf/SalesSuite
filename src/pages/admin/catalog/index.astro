@@ -5,6 +5,7 @@ import { REGISTRY } from '~/modules/registry';
 import { i18n } from '~/lib/i18n';
 import { teamMessages } from '~/lib/i18n/messages/team';
 import { screenExamplesMessages } from '~/lib/i18n/messages/screenExamples';
+import { catalogAiMessages } from '~/lib/i18n/messages/catalogAi';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -12,6 +13,7 @@ if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
 const { m: { catalog: M }, f: fmt } = i18n(Astro, teamMessages);
 const { m: SX } = i18n(Astro, screenExamplesMessages);
+const { m: AI } = i18n(Astro, catalogAiMessages);
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -32,7 +34,7 @@ if (Astro.request.method === 'POST') {
   });
   if (!result.error) return Astro.redirect(to, 303);
 }
-const okMsg = flash(Astro.url, { published: M.okPublished, archived: M.okArchived, visibility: M.okVisibility });
+const okMsg = flash(Astro.url, { published: M.okPublished, archived: M.okArchived, visibility: M.okVisibility, kit: AI.done(Number(Astro.url.searchParams.get('n') ?? 0)) });
 const catalog = await t.listCatalog();
 const STATUS = { draft: [M.status.draft, 'co-badge'], published: [M.status.published, 'co-badge co-badge--ink'], archived: [M.status.archived, 'co-badge co-badge--soft'] } as const;
 const money = (n: number | null, c: string) => (n == null ? '—' : new Intl.NumberFormat(fmt.tag, { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(n));
@@ -46,6 +48,9 @@ const btn = 'co-btn co-btn--ghost co-btn--sm';
       <h1 class="co-page-title">{M.title}</h1>
       <p class="text-sm text-muted">{M.introA}<strong>{M.introStrong}</strong>{M.introB}</p>
       {okMsg && <p class="mt-4 co-alert co-alert--success" role="status">{okMsg}</p>}
+      <a href="/admin/catalog/ia" class="mt-4 co-card flex items-center justify-between gap-3 !py-3 no-underline hover:border-[color:var(--co-signal)]" data-testid="catalog-ai-link">
+        <span><b>{AI.cta}</b><span class="co-help block">{AI.ctaHelp}</span></span><span aria-hidden="true">→</span>
+      </a>
       {catalog.some((m) => m.blockType === 'live-screen') && (
         <a href="/admin/catalog/pantalla" class="mt-4 co-card flex items-center justify-between gap-3 !py-3 no-underline hover:border-[color:var(--co-signal)]" data-testid="screen-examples-link">
           <span><b>{SX.cta}</b><span class="co-help block">{SX.ctaHelp}</span></span><span aria-hidden="true">→</span>

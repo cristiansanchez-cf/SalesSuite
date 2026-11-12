@@ -5,13 +5,22 @@ import { AdminError } from '~/lib/admin/service';
 import { REGISTRY, isBlockType } from '~/modules/registry';
 import { i18n } from '~/lib/i18n';
 import { teamMessages } from '~/lib/i18n/messages/team';
+import { catalogAiMessages } from '~/lib/i18n/messages/catalogAi';
+import { catalogEditAi, changedTexts, MAX_INSTRUCTION } from '~/lib/catalog/ai-edit';
+import { env } from '~/lib/env';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
 const t = admin.tenantAdmin;
 const { m: { catalog: M } } = i18n(Astro, teamMessages);
-const versionId = Astro.params.versionId ?? '';
+const { m: AI } = i18n(Astro, catalogAiMessages);
+const editAi = catalogEditAi(env);
+// Tras un cambio con IA en una versión publicada, la página sigue en el borrador nuevo.
+let versionId = Astro.params.versionId ?? '';
+const aiDone: { summary: string; changes: Array<{ path: string; before: string; after: string }>; prev: string | null } = { summary: '', changes: [], prev: null };
+let undone = false;
+let instruction = '';
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 let draftJson: string | null = null;
@@ -19,10 +28,47 @@ let draftPrice: string | null = null;
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const action = String(f.get('action'));
-  draftJson = String(f.get('defaultProps') ?? '');
-  draftPrice = String(f.get('defaultPrice') ?? '');
+  if (f.has('defaultProps')) { draftJson = String(f.get('defaultProps') ?? ''); draftPrice = String(f.get('defaultPrice') ?? ''); }
   let ok = 'saved';
   result = await formAction(async () => {
+    if (action === 'ai') {
+      instruction = String(f.get('instruction') ?? '').trim();
+      if (!instruction) throw new AdminError(422, AI.askEmpty);
+      if (instruction.length > MAX_INSTRUCTION) throw new AdminError(422, AI.askTooLong(MAX_INSTRUCTION));
+      if (!editAi) throw new AdminError(503, AI.askNoAi);
+      const cat = await t.listCatalog();
+      const m0 = cat.find((x) => x.versions.some((y) => y.id === versionId));
+      const v0 = m0?.versions.find((y) => y.id === versionId);
+      if (!m0 || !v0 || v0.status === 'archived') throw new AdminError(404, 'Versión no encontrada');
+      await admin.crm.aiQuota();
+      let out;
+      try {
+        out = await editAi.edit({ blockType: m0.blockType, name: m0.name, props: v0.defaultProps as Record<string, unknown>, instruction, locale: Astro.locals.tenant?.defaultLocale ?? 'es-ES' });
+      } catch (e) { console.warn('[catalog-ai]', e instanceof Error ? e.message : e); throw new AdminError(503, AI.askDown); }
+      if (!out) throw new AdminError(422, AI.askFailed);
+      const changes = changedTexts(v0.defaultProps, out.props);
+      aiDone.summary = out.summary;
+      if (!changes.length && JSON.stringify(v0.defaultProps) === JSON.stringify(out.props)) { aiDone.summary = `${AI.askNoChange}: ${out.summary}`; ok = 'none'; return; }
+      // Siempre en un borrador: el que haya o uno nuevo desde esta versión.
+      const draftId = v0.status === 'draft' ? v0.id : await t.newDraft(m0.id, v0.id);
+      const draft = (await t.listCatalog()).flatMap((x) => x.versions).find((y) => y.id === draftId)!;
+      aiDone.prev = JSON.stringify(draft.defaultProps);
+      await t.saveDraft(draftId, { defaultProps: out.props, defaultPrice: draft.defaultPrice, currency: draft.currency });
+      aiDone.changes = changedTexts(draft.defaultProps, out.props).slice(0, 12);
+      versionId = draftId;
+      instruction = '';
+      ok = 'ai';
+      return;
+    }
+    if (action === 'undo') {
+      let prev: unknown;
+      try { prev = JSON.parse(String(f.get('prev') ?? '')); } catch { throw new AdminError(422, M.errJson); }
+      const cur = (await t.listCatalog()).flatMap((x) => x.versions).find((y) => y.id === versionId);
+      if (!cur) throw new AdminError(404, 'Versión no encontrada');
+      await t.saveDraft(versionId, { defaultProps: prev, defaultPrice: cur.defaultPrice, currency: cur.currency });
+      ok = 'undone';
+      return;
+    }
     if (action === 'save' || action === 'publish') {
       let props: unknown;
       try { props = JSON.parse(draftJson || '{}'); } catch { throw new AdminError(422, M.errJson); }
@@ -31,7 +77,8 @@ if (Astro.request.method === 'POST') {
       if (action === 'publish') { await t.publish(versionId); ok = 'published'; }
     }
   });
-  if (!result.error) return Astro.redirect(ok === 'published' ? '/admin/catalog?ok=published' : `/admin/catalog/${versionId}?ok=saved`, 303);
+  if (ok === 'undone') undone = true;
+  else if (!result.error && ok !== 'ai' && ok !== 'none') return Astro.redirect(ok === 'published' ? '/admin/catalog?ok=published' : `/admin/catalog/${versionId}?ok=saved`, 303);
 }
 
 const catalog = await t.listCatalog();
@@ -56,8 +103,36 @@ const field = 'co-input disabled:bg-surface';
     </div>
   )}
 
+  {(aiDone.summary || undone) && (
+    <div class="mt-3 co-alert co-alert--success grid gap-2" role="status" data-testid="ai-result">
+      <p class="font-semibold">{undone ? AI.undone : aiDone.changes.length ? `${AI.askDone}: ${aiDone.summary}` : aiDone.summary}</p>
+      {aiDone.changes.length > 0 && (
+        <details open><summary class="cursor-pointer text-sm">{AI.changed}</summary>
+          <ul class="mt-1 grid gap-1 text-sm">{aiDone.changes.map((c) => <li><code class="text-xs">{c.path}</code>: <s class="text-muted">{c.before}</s> → <b>{c.after}</b></li>)}</ul>
+        </details>
+      )}
+      {aiDone.prev && (
+        <form method="post" action={`/admin/catalog/${versionId}`}>
+          <input type="hidden" name="prev" value={aiDone.prev} />
+          <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="undo" type="submit" data-testid="ai-undo">{AI.undo}</button>
+        </form>
+      )}
+    </div>
+  )}
+  {v.status !== 'archived' && editAi && (
+    <form method="post" action={`/admin/catalog/${versionId}`} class="mt-4 co-card grid gap-2" data-testid="ai-ask">
+      <h2 class="co-card-title">{AI.askTitle}</h2>
+      <p class="co-help">{AI.askHelp} {!editable && AI.askPublished}</p>
+      <textarea class="co-input h-20" name="instruction" required maxlength={MAX_INSTRUCTION} placeholder={AI.askPlaceholder} data-testid="ai-instruction">{instruction}</textarea>
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="co-btn co-btn--primary co-btn--sm" name="action" value="ai" type="submit" data-testid="ai-ask-btn">{AI.askButton}</button>
+        <span class="co-meta">{AI.askQuota}</span>
+      </div>
+    </form>
+  )}
+
   <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
-    <form method="post" class="space-y-3 co-card">
+    <form method="post" action={`/admin/catalog/${versionId}`} class="space-y-3 co-card">
       <label class="block text-sm font-medium">{M.content}
         <textarea class={`${field} h-[26rem] font-mono text-xs`} name="defaultProps" spellcheck="false" disabled={!editable} data-testid="props">{draftJson ?? JSON.stringify(v.defaultProps, null, 2)}</textarea>
       </label>
@@ -82,3 +157,8 @@ const field = 'co-input disabled:bg-surface';
     </div>
   </div>
 </AdminLayout>
+
+<script define:vars={{ to: `/admin/catalog/${versionId}` }}>
+  // Tras pedir un cambio en una versión publicada, la página enseña el borrador nuevo: que la dirección lo diga.
+  if (location.pathname !== to) history.replaceState(null, '', to);
+</script>

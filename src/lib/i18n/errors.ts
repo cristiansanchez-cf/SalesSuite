@@ -91,6 +91,7 @@ const EXACT: Record<string, T> = {
   'Aporte no encontrado': ['Contribution not found', 'Contribuição não encontrada', '제안 내용을 찾을 수 없습니다'],
   'Zona o sector no encontrado': ['Zone or sector not found', 'Zona ou setor não encontrado', '구역 또는 업종을 찾을 수 없습니다'],
   'Versión no encontrada': ['Version not found', 'Versão não encontrada', '버전을 찾을 수 없습니다'],
+  'No encuentro el JSON: pega el bloque de código que te ha devuelto': ['I cannot find the JSON: paste the code block it gave you', 'Não encontro o JSON: cole o bloco de código que ela devolveu', 'JSON을 찾을 수 없어요. 돌려받은 코드 블록을 붙여 넣으세요'],
   'Tenant no encontrado': ['Workspace not found', 'Espaço não encontrado', '워크스페이스를 찾을 수 없습니다'],
   'Sector o módulo no encontrado': ['Sector or module not found', 'Setor ou módulo não encontrado', '업종 또는 모듈을 찾을 수 없습니다'],
   'Punto de partida no encontrado': ['Starting point not found', 'Ponto de partida não encontrado', '시작점을 찾을 수 없습니다'],
