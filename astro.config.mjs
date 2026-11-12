@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, passthroughImageService } from 'astro/config';
 import node from '@astrojs/node';
 import vercel from '@astrojs/vercel';
 import tailwind from '@astrojs/tailwind';
@@ -17,6 +17,8 @@ export default defineConfig({
   output: 'server',
   adapter: target === 'vercel' ? vercel() : node({ mode: 'standalone' }),
   integrations: [tailwind({ applyBaseStyles: false }), svelte()],
+  // No se usa astro:assets: sin optimizador (sharp fuera del camino de las peticiones; /_image se cierra en el middleware).
+  image: { service: passthroughImageService() },
   // CSRF propio en src/middleware.ts (isSameOriginWrite): checkOrigin de Astro compara con el host
   // interno del servidor, no con el dominio del tenant, y rechazaría los formularios en producción.
   security: { checkOrigin: false },

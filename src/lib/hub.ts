@@ -38,7 +38,7 @@ const HUB_PATHS = new Set(['/admin/login', '/admin/auth/confirm', '/admin/auth/c
 export function hubRoute(path: string): 'pass' | 'pick' {
   if (HUB_PATHS.has(path)) return 'pass';
   // Archivos (CSS, JS, iconos) y bloques que carga la página.
-  if (path.startsWith('/_astro/') || path.startsWith('/_image') || /\.[a-z0-9]{2,5}$/i.test(path)) return 'pass';
+  if (path.startsWith('/_astro/') || /\.[a-z0-9]{2,5}$/i.test(path)) return 'pass';
   return 'pick';
 }
 

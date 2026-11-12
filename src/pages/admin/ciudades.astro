@@ -262,9 +262,13 @@ const fixLabel = (x: ZoneFix) => {
   .zones-todo[data-done] .co-row-title { color: var(--co-ink-soft); font-weight: 500; }
 </style>
 
-<script define:vars={{ raws: o.raws, chunk: o.chunk, T: { analyzing: M.analyzing('{i}', '{n}'), stay: M.stay, failed: M.failed } }}>
+{/* Los nombres de las zonas son datos del CRM: van en un atributo (que Astro escapa), nunca dentro de un <script>
+    (define:vars solo neutraliza «</script>» en minúsculas: «</SCRIPT>» en un nombre cerraría el script). */}
+<div hidden data-zones-raws={JSON.stringify(o.raws)}></div>
+<script define:vars={{ chunk: o.chunk, T: { analyzing: M.analyzing('{i}', '{n}'), stay: M.stay, failed: M.failed } }}>
   // Analizar: los textos van a la IA por trozos (cada trozo es una petición corta) y, al acabar, a la vista previa.
   document.querySelector('[data-zones-analyze]')?.addEventListener('click', async (ev) => {
+    const raws = JSON.parse(document.querySelector('[data-zones-raws]')?.getAttribute('data-zones-raws') || '[]');
     const btn = ev.currentTarget;
     const status = document.querySelector('[data-zones-status]');
     const form = document.querySelector('[data-zones-preview]');

@@ -28,6 +28,9 @@ const MISCONFIGURED_HTML = `<!doctype html><html lang="es"><meta charset="utf-8"
 
 export const onRequest = defineMiddleware(async (context, next) => {
   if (context.url.pathname === '/api/health') return next();
+  // El optimizador de imágenes de Astro (/_image) no se usa (ninguna página usa astro:assets): cerrado, para no exponer
+  // sin sesión el procesado de imágenes (sharp/libvips) a quien llame con una dirección a mano.
+  if (context.url.pathname === '/_image' || context.url.pathname.startsWith('/_image/')) return new Response('Not found', { status: 404 });
   if (appMode() === 'misconfigured') {
     return new Response(MISCONFIGURED_HTML, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '300' } });
   }
