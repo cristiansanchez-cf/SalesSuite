@@ -130,7 +130,7 @@
   }
 
   // ---------- Traer de sus redes (docs/PERSONALIZE.md §Traer de sus redes): sus publicaciones, elegir y añadir.
-  interface SocialPostView { i: number; url: string; type: 'image' | 'video' | 'carousel'; itemCount: number | null; pinned: boolean; caption: string | null; likes: number | null; comments: number | null; views: number | null; thumb: string | null }
+  interface SocialPostView { i: number; url: string; type: 'image' | 'video' | 'carousel'; itemCount: number | null; pinned: boolean; takenAt?: string | null; caption: string | null; likes: number | null; comments: number | null; views: number | null; thumb: string | null }
   interface SocialList { ok: true; key: string; platform: 'instagram' | 'tiktok'; username: string; followers: number | null; free: number; hasVideo: boolean; posts: SocialPostView[]; suggested: { photos: number[]; videos: number[] }; more?: boolean }
   let sheet = $state<null | { platform: 'instagram' | 'tiktok'; focus: 'photo' | 'video' }>(null);
   let sList = $state<SocialList | null>(null);
@@ -184,6 +184,29 @@
     } catch { sError = t.offline; } finally { sLoading = false; }
     if (again) { await wait(again * 1000); if (sheet === mine) return openSocial(platform, focus, true); }
   }
+  // Ver de cerca antes de elegir: la foto en grande, su texto y sus números, y el enlace a la original (un vídeo se ve allí).
+  let sPeek = $state<number | null>(null);
+  $effect(() => { if (!sheet) sPeek = null; });
+  const peekPost = $derived(sList && sPeek != null ? sList.posts.find((x) => x.i === sPeek) ?? null : null);
+  const peekAt = $derived(sList && peekPost ? sList.posts.indexOf(peekPost) : -1);
+  const isPicked = (p: SocialPostView) => (p.type === 'video' ? sPick.videos.includes(p.i) : sPick.photos.includes(p.i));
+  const isFull = (p: SocialPostView) => !!sList && p.type !== 'video' && !isPicked(p) && sPick.photos.length >= sList.free;
+  function peekStep(d: number) {
+    if (!sList || peekAt < 0) return;
+    const n = sList.posts[peekAt + d];
+    if (n) sPeek = n.i;
+  }
+  function peekKeys(e: KeyboardEvent) {
+    if (sPeek == null) return;
+    if (e.key === 'Escape') { e.stopPropagation(); sPeek = null; }
+    else if (e.key === 'ArrowRight') peekStep(1);
+    else if (e.key === 'ArrowLeft') peekStep(-1);
+  }
+  const shortDate = (iso: string | null | undefined) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+  };
   function togglePick(p: SocialPostView) {
     if (!sList || sProgress) return;
     if (p.type === 'video') sPick = { ...sPick, videos: sPick.videos.includes(p.i) ? [] : [p.i] };
@@ -787,7 +810,7 @@
           {/if}
         </section>
         {#if sheet}
-          <div class="social-sheet" role="dialog" aria-modal="true" aria-label={t.social.title} data-testid="social-sheet">
+          <div class="social-sheet" role="dialog" aria-modal="true" aria-label={t.social.title} data-testid="social-sheet" tabindex="-1" onkeydown={peekKeys}>
             <div class="social-sheet__panel">
               <header class="social-sheet__head">
                 <div class="grid">
@@ -803,6 +826,41 @@
                   {/each}
                 </div>
               {/if}
+              <div class="social-sheet__main">
+              {#if peekPost && sList}
+                {@const p = peekPost}
+                {@const on = isPicked(p)}
+                {@const full = isFull(p)}
+                <div class="social-peek" data-testid="social-peek" data-i={p.i}>
+                  <div class="social-peek__bar">
+                    <button type="button" class="co-btn co-btn--ghost co-btn--sm" onclick={() => (sPeek = null)} data-testid="social-peek-back">← {t.social.peek.back}</button>
+                    <span class="co-help">{t.social.peek.of(peekAt + 1, sList.posts.length)}</span>
+                  </div>
+                  <div class="social-peek__media">
+                    {#if p.thumb}<img src={p.thumb} alt={p.caption ?? ''} />{:else}<span class="social-post__ph">{t.social.types[p.type]}</span>{/if}
+                    {#if p.type === 'video'}<span class="social-peek__play" aria-hidden="true">▶</span>{/if}
+                    <button type="button" class="social-peek__nav social-peek__nav--prev" disabled={peekAt <= 0} onclick={() => peekStep(-1)} aria-label={t.social.peek.prev} data-testid="social-peek-prev">‹</button>
+                    <button type="button" class="social-peek__nav social-peek__nav--next" disabled={peekAt >= sList.posts.length - 1} onclick={() => peekStep(1)} aria-label={t.social.peek.next} data-testid="social-peek-next">›</button>
+                  </div>
+                  <div class="social-peek__info">
+                    <p class="social-peek__stats">
+                      <span class="co-badge co-badge--soft">{t.social.types[p.type]}{p.pinned ? ' ★' : ''}</span>
+                      {#if p.likes != null}<span>{t.social.peek.likes(p.likes)}</span>{/if}
+                      {#if p.comments != null}<span>{t.social.peek.comments(p.comments)}</span>{/if}
+                      {#if p.views != null}<span>{t.social.views(p.views)}</span>{/if}
+                      {#if shortDate(p.takenAt)}<span class="co-help">{shortDate(p.takenAt)}</span>{/if}
+                    </p>
+                    {#if p.type === 'carousel' && p.itemCount}<p class="co-help">{t.social.peek.items(p.itemCount)}</p>{/if}
+                    {#if p.caption}<p class="social-peek__caption" data-testid="social-peek-caption">{p.caption}</p>{/if}
+                    {#if /^https:\/\//.test(p.url)}<a class="co-help underline" href={p.url} target="_blank" rel="noopener noreferrer" data-testid="social-peek-original">{p.type === 'video' ? t.social.peek.originalVideo(t.social.net[sList.platform]) : t.social.peek.original(t.social.net[sList.platform])}</a>{/if}
+                    {#if full}<p class="co-help" data-testid="social-peek-full">{t.social.peek.full(sPick.photos.length)}</p>{/if}
+                    {#if p.type === 'video' && !on && sPick.videos.length}<p class="co-help">{t.social.peek.swapVideo}</p>{/if}
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class={on ? 'co-btn co-btn--ghost' : 'co-btn co-btn--primary'} disabled={!!sProgress || full} onclick={() => togglePick(p)} data-testid="social-peek-pick">{on ? t.social.peek.unpick : t.social.peek.pick}</button>
+                    </div>
+                  </div>
+                </div>
+              {/if}
               <div class="social-sheet__body">
                 {#if sLoading}<p class="co-help p-4">{t.social.loading}</p>{/if}
                 {#if sError}<p class="co-help p-4" data-testid="social-error">{sError}</p>{/if}
@@ -814,15 +872,17 @@
                   {#if !sList.posts.length}<p class="co-help p-4">{t.social.none}</p>{/if}
                   <div class="social-grid">
                     {#each sList.posts as p (p.i)}
-                      {@const on = p.type === 'video' ? sPick.videos.includes(p.i) : sPick.photos.includes(p.i)}
-                      {@const full = p.type !== 'video' && !on && sPick.photos.length >= sList.free}
-                      <button type="button" class="social-post" class:is-on={on} class:is-off={full} aria-pressed={on} disabled={!!sProgress}
-                        onclick={() => togglePick(p)} data-testid="social-post" data-type={p.type} data-on={on ? '1' : '0'}>
-                        {#if p.thumb}<img src={p.thumb} alt={p.caption ?? ''} loading="lazy" />{:else}<span class="social-post__ph">{t.social.types[p.type]}</span>{/if}
-                        <span class="social-post__badge">{p.type === 'video' ? '▶' : p.type === 'carousel' ? '❐' : ''}{p.pinned ? ' ★' : ''}</span>
-                        {#if on}<span class="social-post__check">✓</span>{/if}
-                        <span class="social-post__meta">{p.type === 'video' && p.views != null ? t.social.views(p.views) : p.likes != null ? `♥ ${p.likes}` : ''}</span>
-                      </button>
+                      {@const on = isPicked(p)}
+                      {@const full = isFull(p)}
+                      <div class="social-post" class:is-on={on} class:is-off={full} data-testid="social-post" data-type={p.type} data-on={on ? '1' : '0'}>
+                        <button type="button" class="social-post__open" onclick={() => (sPeek = p.i)} aria-label={`${t.social.peek.open}: ${t.social.post(p.i + 1)}`} data-testid="social-peek-open">
+                          {#if p.thumb}<img src={p.thumb} alt={p.caption ?? ''} loading="lazy" />{:else}<span class="social-post__ph">{t.social.types[p.type]}</span>{/if}
+                          <span class="social-post__badge">{p.type === 'video' ? '▶' : p.type === 'carousel' ? '❐' : ''}{p.pinned ? ' ★' : ''}</span>
+                          <span class="social-post__meta">{p.type === 'video' && p.views != null ? t.social.views(p.views) : p.likes != null ? `♥ ${p.likes}` : ''}</span>
+                        </button>
+                        <button type="button" class="social-post__check" class:is-on={on} aria-pressed={on} disabled={!!sProgress || full}
+                          aria-label={on ? t.social.peek.unpick : t.social.peek.select} onclick={() => togglePick(p)} data-testid="social-pick">{on ? '✓' : ''}</button>
+                      </div>
                     {/each}
                   </div>
                   {#if sList.more || sMoreMsg}
@@ -839,6 +899,7 @@
                     <p class="co-help">{t.social.linkHelp}</p>
                   </form>
                 {/if}
+              </div>
               </div>
               {#if sList}
                 <footer class="social-sheet__foot">
@@ -1408,12 +1469,36 @@
   .social-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; padding: .75rem 1rem 0; }
   @media (min-width: 640px) { .social-grid { grid-template-columns: repeat(4, 1fr); } }
   .social-post { position: relative; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; background: #111; border: 3px solid transparent; }
+  .social-post__open { display: block; width: 100%; height: 100%; padding: 0; cursor: zoom-in; }
   .social-post img { width: 100%; height: 100%; object-fit: cover; }
+  .social-sheet__main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .social-sheet__main > .social-sheet__body { flex: 1; }
+  .social-peek { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; background: var(--console-surface, #fff); overflow-y: auto; }
+  .social-peek > * { flex-shrink: 0; }
+  .social-peek__bar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--console-divider); background: var(--console-surface, #fff); }
+  .social-peek__media { position: relative; display: grid; place-items: center; background: #111; min-height: 14rem; }
+  .social-peek__media img { display: block; max-width: 100%; max-height: min(60dvh, 34rem); object-fit: contain; }
+  .social-peek__play { position: absolute; display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 1.4rem; pointer-events: none; }
+  .social-peek__nav { position: absolute; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 999px; background: rgba(255,255,255,.92); color: #111; font-size: 1.6rem; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  .social-peek__nav:disabled { opacity: .3; }
+  .social-peek__nav--prev { left: .6rem; } .social-peek__nav--next { right: .6rem; }
+  .social-peek__info { display: grid; gap: .6rem; padding: 1rem; }
+  .social-peek__stats { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; font-size: .9rem; font-weight: 600; }
+  .social-peek__caption { white-space: pre-line; font-size: .9rem; line-height: 1.45; }
+  @media (min-width: 640px) {
+    .social-peek { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .social-peek__bar { grid-column: 1 / -1; }
+    .social-peek__media { min-height: 0; height: 100%; }
+    .social-peek__media img { max-height: 100%; }
+    .social-peek__info { align-content: start; overflow-y: auto; }
+  }
   .social-post.is-on { border-color: var(--co-signal, #6d28d9); }
   .social-post.is-off { opacity: .45; }
   .social-post__ph { display: grid; place-items: center; height: 100%; color: #fff; font-size: .75rem; }
   .social-post__badge { position: absolute; top: .3rem; left: .35rem; color: #fff; font-size: .8rem; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
-  .social-post__check { position: absolute; top: .3rem; right: .3rem; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; background: var(--co-signal, #6d28d9); color: #fff; font-size: .8rem; font-weight: 800; }
+  .social-post__check { position: absolute; top: .3rem; right: .3rem; display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 999px; border: 2px solid #fff; background: rgba(0,0,0,.35); color: #fff; font-size: .85rem; font-weight: 800; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .social-post__check.is-on { background: var(--co-signal, #6d28d9); border-color: var(--co-signal, #6d28d9); }
+  .social-post__check:disabled { opacity: .4; }
   .social-post__meta { position: absolute; bottom: .25rem; left: .35rem; color: #fff; font-size: .7rem; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
   .social-progress { display: grid; gap: .35rem; flex: 1; min-width: 0; }
   .social-bar { height: .5rem; border-radius: 999px; background: var(--console-chip-bg, #eee); overflow: hidden; }

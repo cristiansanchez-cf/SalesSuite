@@ -115,7 +115,7 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
   const thumbOf = (dossierId: string, key: string, p: SocialPost, i: number) =>
     !p.thumbnail ? null : p.thumbnail.startsWith('data:') ? p.thumbnail : `/admin/api/dossiers/${dossierId}/social?key=${encodeURIComponent(key)}&thumb=${i}`;
   const viewOf = (dossierId: string, key: string, p: SocialPost, i: number): PostView => ({ i, type: p.type, itemCount: p.itemCount, pinned: !!p.pinned, takenAt: p.takenAt,
-    caption: p.caption?.slice(0, 160) ?? null, likes: p.likes, comments: p.comments, views: p.views, url: p.url, thumb: thumbOf(dossierId, key, p, i) });
+    caption: p.caption?.slice(0, 600) ?? null, likes: p.likes, comments: p.comments, views: p.views, url: p.url, thumb: thumbOf(dossierId, key, p, i) });
 
   async function list(id: string, input: { platform?: unknown }) {
     const { st, sources } = await dossier(id);

@@ -42,11 +42,26 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   if (OUT) await p.screenshot({ path: `${OUT}/social-sheet.png` });
   // La de «no disponible» (la 4.ª) se quita y se elige el otro vídeo.
   const items = p.locator('[data-testid=social-post]');
-  await items.nth(3).click();
-  assert((await items.nth(3).getAttribute('data-on')) === '0', 'desmarcar');
-  await items.nth(1).click();
-  assert((await items.nth(1).getAttribute('data-on')) === '1' && (await items.nth(4).getAttribute('data-on')) === '0', 'un solo vídeo: elegir otro cambia el elegido');
-  await items.nth(3).click(); // vuelve a marcarla para ver el aviso
+  const pick = (n) => items.nth(n).locator('[data-testid=social-pick]').click();
+  // Ver de cerca antes de elegir: tocar la publicación la abre en grande (no la elige).
+  await items.nth(0).locator('[data-testid=social-peek-open]').click();
+  await p.waitForSelector('[data-testid=social-peek]');
+  assert((await items.nth(0).getAttribute('data-on')) === '1', 'tocar la publicación la abre de cerca sin cambiar la elección');
+  assert(await p.isVisible('[data-testid=social-peek-caption]') && (await p.getAttribute('[data-testid=social-peek-original]', 'href')).startsWith('https://'), 'de cerca: su texto y el enlace a la original');
+  assert(await p.isVisible('[data-testid=social-add]'), 'y se puede añadir sin salir');
+  await p.click('[data-testid=social-peek-next]');
+  assert((await p.getAttribute('[data-testid=social-peek]', 'data-i')) === '1', 'siguiente');
+  if (OUT) await p.screenshot({ path: `${OUT}/social-peek.png` });
+  await p.click('[data-testid=social-peek-pick]'); // el vídeo 2: cambia el elegido
+  assert((await items.nth(1).getAttribute('data-on')) === '1' && (await items.nth(4).getAttribute('data-on')) === '0', 'elegir desde la vista de cerca (un solo vídeo: cambia el elegido)');
+  await p.keyboard.press('Escape');
+  assert(!(await p.isVisible('[data-testid=social-peek]')) && await p.isVisible('[data-testid=social-sheet]'), 'Esc vuelve a todas');
+  await pick(3);
+  assert((await items.nth(3).getAttribute('data-on')) === '0', 'desmarcar con el círculo');
+  await pick(4);
+  assert((await items.nth(4).getAttribute('data-on')) === '1' && (await items.nth(1).getAttribute('data-on')) === '0', 'un solo vídeo: elegir otro cambia el elegido');
+  await pick(1);
+  await pick(3); // vuelve a marcarla para ver el aviso
   // Ya no hay pausa entre descargas (API oficial): se frena cada «traer» para poder ver la barra y el segundo plano.
   const slow = async (route) => {
     const body = route.request().postData() ?? '';
