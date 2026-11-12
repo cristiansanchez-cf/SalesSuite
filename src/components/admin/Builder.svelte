@@ -137,23 +137,36 @@
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   });
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const socialErr = (code: string) => t.social.errors[code as keyof typeof t.social.errors] ?? t.social.errors.default;
-  async function openSocial(platform: 'instagram' | 'tiktok', focus: 'photo' | 'video') {
+  /**
+   * Las publicaciones del perfil. Si la red nos limita (503/429) y pide esperar, se espera lo que diga (como mucho 2 min)
+   * y se reintenta una sola vez; si sigue, se sigue sin esa red. Nunca en bucle.
+   */
+  async function openSocial(platform: 'instagram' | 'tiktok', focus: 'photo' | 'video', retried = false): Promise<void> {
     // Si está trayendo en segundo plano, se vuelve a la ventana tal cual (sin volver a pedir la lista).
     if (sProgress) { sheet = { platform: sheet?.platform ?? platform, focus }; return; }
     sNotice = null;
-    sheet = { platform, focus }; sList = null; sError = null; sReport = []; sProgress = null; sLoading = true; sMoreMsg = null;
+    if (!retried) { sheet = { platform, focus }; sList = null; sError = null; sReport = []; sProgress = null; sMoreMsg = null; }
+    sLoading = true;
+    const mine = sheet;
+    let again = 0;
     try {
       const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 'list', platform }) });
       const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
+      if (sheet !== mine) return;
+      const limited = out.code === 'UPSTREAM_UNAVAILABLE' || out.code === 'RATE_LIMITED';
       if (!res.ok && out.error) sError = out.error;
-      else if (!out.ok) sError = socialErr(out.code) + (out.code === 'IG_PENDING' && out.retryAfter ? ` (${t.social.retryAt(new Date(Date.now() + out.retryAfter * 1000))})` : '');
+      else if (!out.ok && limited && !retried) { again = Math.min(120, Math.max(5, out.retryAfter ?? 60)); sError = `${socialErr(out.code)} ${t.social.retrying(again)}`; }
+      else if (!out.ok) sError = limited ? t.social.errors.STILL_DOWN : socialErr(out.code);
       else {
+        sError = null;
         sList = out as SocialList;
         // Lo propuesto, según lo que haya abierto (fotos o vídeo) y los huecos que quedan.
         sPick = { photos: focus === 'video' ? [] : sList.suggested.photos, videos: sList.suggested.videos.slice(0, 1) };
       }
     } catch { sError = t.offline; } finally { sLoading = false; }
+    if (again) { await wait(again * 1000); if (sheet === mine) return openSocial(platform, focus, true); }
   }
   function togglePick(p: SocialPostView) {
     if (!sList || sProgress) return;
@@ -161,8 +174,7 @@
     else if (sPick.photos.includes(p.i)) sPick = { ...sPick, photos: sPick.photos.filter((x) => x !== p.i) };
     else if (sPick.photos.length < sList.free) sPick = { ...sPick, photos: [...sPick.photos, p.i] };
   }
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  /** La página siguiente. Si TikTok falla un momento, espera lo que pida (60 s) y lo reintenta una sola vez. */
+  /** La página siguiente. Si la red nos limita un momento, espera lo que pida (como mucho 2 min) y lo reintenta una sola vez. */
   async function loadMore(retried = false): Promise<void> {
     const list = sList;
     if (!list || (sMoreBusy && !retried)) return;
@@ -174,13 +186,13 @@
       if (sList !== list) return;
       if (out.ok) sList = { ...list, posts: [...list.posts, ...out.posts], more: out.more };
       else if (!res.ok && out.error) sMoreMsg = out.error;
-      else if (out.code === 'UPSTREAM_UNAVAILABLE' && !retried) { again = Math.min(120, Math.max(5, out.retryAfter ?? 60)); sMoreMsg = `${socialErr(out.code)} ${t.social.retrying(again)}`; }
-      else { sMoreMsg = out.code === 'UPSTREAM_UNAVAILABLE' ? t.social.errors.STILL_DOWN : socialErr(out.code); sList = { ...list, more: !!out.more && out.code !== 'UPSTREAM_UNAVAILABLE' }; }
+      else if ((out.code === 'UPSTREAM_UNAVAILABLE' || out.code === 'RATE_LIMITED') && !retried) { again = Math.min(120, Math.max(5, out.retryAfter ?? 60)); sMoreMsg = `${socialErr(out.code)} ${t.social.retrying(again)}`; }
+      else { const limited = out.code === 'UPSTREAM_UNAVAILABLE' || out.code === 'RATE_LIMITED'; sMoreMsg = limited ? t.social.errors.STILL_DOWN : socialErr(out.code); sList = { ...list, more: !!out.more && !limited }; }
     } catch { sMoreMsg = t.offline; }
     if (again) { await wait(again * 1000); if (sList === list) return loadMore(true); }
     sMoreBusy = false;
   }
-  /** De una en una y con 2,5 s entre medias: la API de medios no admite descargas en paralelo. */
+  /** De una en una, esperando cada respuesta: la API de medios no admite descargas en paralelo. */
   let sLink = $state('');
   type SocialJob = { i: number; kind: string; url?: string; link?: string };
   /** Una publicación que no sale en las 12 últimas: se pega su enlace. */
@@ -197,14 +209,14 @@
     sReport = []; sProgress = { done: 0, total: jobs.length };
     let added = 0;
     for (const [n, j] of jobs.entries()) {
-      if (n > 0) await wait(2500);
       try {
         const res = await fetch(`${api}/social`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(j.link ? { step: 'import', link: j.link, kind: j.kind } : { step: 'import', key: list.key, index: j.i, url: j.url, kind: j.kind }) });
         const out = await res.json().catch(() => ({ ok: false, code: 'SERVER_ERROR' }));
         if (out.ok) { s = out.state; added++; previewKey++; }
         else sReport = [...sReport, `${j.link ? t.social.pasted : t.social.post(j.i + 1)}: ${out.error ?? socialErr(out.code)}`];
-        // Si la red está limitando, el resto fallaría igual.
-        if (!out.ok && ['LOGIN_REQUIRED', 'INVALID_API_KEY', 'NOT_CONFIGURED'].includes(out.code)) break;
+        // Si la red sigue limitando (el servidor ya ha esperado y reintentado una vez) o la clave falla, el resto fallaría
+        // igual: se sigue sin esa red. Una publicación restringida (LOGIN_REQUIRED) o no disponible no para las demás.
+        if (!out.ok && ['UPSTREAM_UNAVAILABLE', 'RATE_LIMITED', 'INVALID_API_KEY', 'NOT_CONFIGURED'].includes(out.code)) break;
       } catch { sReport = [...sReport, `${j.link ? t.social.pasted : t.social.post(j.i + 1)}: ${t.offline}`]; }
       sProgress = { done: n + 1, total: jobs.length };
     }

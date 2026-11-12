@@ -47,6 +47,13 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await items.nth(1).click();
   assert((await items.nth(1).getAttribute('data-on')) === '1' && (await items.nth(4).getAttribute('data-on')) === '0', 'un solo vídeo: elegir otro cambia el elegido');
   await items.nth(3).click(); // vuelve a marcarla para ver el aviso
+  // Ya no hay pausa entre descargas (API oficial): se frena cada «traer» para poder ver la barra y el segundo plano.
+  const slow = async (route) => {
+    const body = route.request().postData() ?? '';
+    if (body.includes('"step":"import"')) await new Promise((r) => setTimeout(r, 1500));
+    await route.continue();
+  };
+  await p.route('**/social', slow);
   await p.click('[data-testid=social-add]');
   await p.waitForSelector('[data-testid=social-progress] [role=progressbar]');
   assert(true, 'barra de progreso');
@@ -56,6 +63,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForSelector('[data-testid=social-bg] [role=progressbar]');
   assert(!(await p.isVisible('[data-testid=social-sheet]')), 'en segundo plano, con la barra en la tarjeta');
   await p.waitForSelector('[data-testid=social-notice]', { timeout: 90_000 });
+  await p.unroute('**/social', slow);
   const report = await p.textContent('[data-testid=social-notice]');
   assert(/Añadidas 4/.test(report) && /no se puede usar/.test(report), `resumen: ${report.replace(/\s+/g, ' ')}`);
   const photos = await p.$$eval('[data-testid=media-photos] img', (xs) => xs.length);
@@ -71,10 +79,13 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(await p.isVisible('[data-testid=media-video] video'), 'vídeo en la propuesta');
   assert(!(await p.isVisible('[data-testid=social-video-instagram]')), 'con vídeo ya puesto no se ofrece otro');
   if (OUT) await p.screenshot({ path: `${OUT}/social-done.png`, fullPage: true });
-  // Instagram sin sesión: solo las 12 últimas (sin «Cargar más»). TikTok: página a página.
+  // Instagram (API oficial de Meta, cuenta de empresa) y TikTok: página a página.
   await p.click('[data-testid=social-photos-instagram]');
   await p.waitForSelector('[data-testid=social-post]');
-  assert(!(await p.isVisible('[data-testid=social-more]')), 'Instagram: sin «Cargar más»');
+  const igBefore = await p.locator('[data-testid=social-post]').count();
+  await p.click('[data-testid=social-more]');
+  await p.waitForFunction((n) => document.querySelectorAll('[data-testid=social-post]').length > n, igBefore);
+  assert((await p.locator('[data-testid=social-post]').count()) === igBefore + 6, 'Instagram: «Cargar más» trae la página siguiente');
   await p.click('[data-testid=social-close]');
   await p.click('[data-testid=social-photos-tiktok]');
   await p.waitForSelector('[data-testid=social-post]');

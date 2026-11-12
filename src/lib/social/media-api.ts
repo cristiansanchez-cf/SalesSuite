@@ -3,8 +3,10 @@
  * Cliente de la API interna de medios (InternalApps, docs/API.md): `media-list` (las publicaciones de un perfil) y
  * `media-download` (los archivos de una publicación, con enlaces que caducan en 1 hora).
  *
- * Reglas de la API (si no, Instagram bloquea): una petición cada vez, nunca en paralelo; 2-3 s entre descargas; no listar
- * el mismo perfil dos veces en una hora (caché en social.ts); pedir solo lo que se va a usar.
+ * Instagram va por la API oficial de Meta: las cuentas de empresa o creador paginan entero; las personales dan como mucho la
+ * primera página (o LOGIN_REQUIRED). TikTok pagina hasta unas 600 publicaciones.
+ * Reglas de la API: una petición cada vez, nunca en paralelo, esperando la respuesta; nunca reintentar en bucle (un
+ * dossier sin una red es mejor que bloquear la herramienta para todos); pedir solo lo que se va a usar (caché de 1 hora).
  * La clave va en X-API-Key (CONVERT_API_KEY); nunca Origin ni Authorization, nunca en los registros.
  */
 import { meterUnits } from '../usage/meter';
@@ -25,9 +27,7 @@ export interface MediaItem { name: string; type: 'image' | 'video'; size: number
 export type MediaErrorCode =
   | 'INVALID_URL' | 'INVALID_PROFILE' | 'PROFILE_PRIVATE' | 'PROFILE_NOT_FOUND' | 'NOT_AVAILABLE' | 'NO_MEDIA' | 'LOGIN_REQUIRED'
   | 'FILE_TOO_LARGE' | 'RATE_LIMITED' | 'INVALID_API_KEY' | 'DOWNLOAD_FAILED' | 'LIST_FAILED' | 'SERVER_ERROR' | 'TIMEOUT' | 'NOT_CONFIGURED'
-  | 'INVALID_CURSOR' | 'UPSTREAM_UNAVAILABLE'
-  // Nuestros, de Instagram bloqueando: pendiente (se reintenta una vez pasados 20 min), sin Instagram, o esperar entre perfiles.
-  | 'IG_PENDING' | 'IG_BLOCKED' | 'IG_WAIT';
+  | 'INVALID_CURSOR' | 'UPSTREAM_UNAVAILABLE';
 export class MediaApiError extends Error {
   /** `detail`: el mensaje de la API (p. ej. «Instagram está bloqueando consultas anónimas»). */
   constructor(public code: MediaErrorCode, public status: number, public retryAfter: number | null = null, public detail: string | null = null) { super(code); }
@@ -79,7 +79,8 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
 
 export function httpMediaApi(o: { base: string; key: string; fetch?: typeof fetch; gapMs?: number; timeoutMs?: number }): MediaApi {
   const f = o.fetch ?? fetch;
-  const gap = o.gapMs ?? 2500;
+  // Entre descargas no hace falta esperar (basta con no ir en paralelo); `gapMs` queda por si la API lo vuelve a pedir.
+  const gap = o.gapMs ?? 0;
   async function once(path: string, body: unknown): Promise<unknown> {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), o.timeoutMs ?? 60_000);
@@ -100,15 +101,15 @@ export function httpMediaApi(o: { base: string; key: string; fetch?: typeof fetc
     } finally { clearTimeout(timer); }
   }
   /**
-   * Reintentos de la API: RATE_LIMITED tras Retry-After (como mucho 20 s); 500 / *_FAILED una vez tras unos segundos.
-   * Sin reintento: LOGIN_REQUIRED (Instagram sin sesión o bloqueando), la clave (401/403), INVALID_CURSOR y
-   * UPSTREAM_UNAVAILABLE (TikTok caído un rato: pide esperar 60 s; lo reintenta el editor una vez, no el servidor).
+   * Reintentos (una sola vez, nunca en bucle): RATE_LIMITED (429) y UPSTREAM_UNAVAILABLE (503, la red nos limita) tras lo
+   * que diga Retry-After, si son 20 s o menos; si piden más, lo reintenta el editor una vez. Sin reintento aquí:
+   * LOGIN_REQUIRED (cuenta personal o publicación restringida), privado o no disponible, la clave (401/403),
+   * INVALID_CURSOR y 500 (la API pide esperar unos minutos: lo vuelve a pedir la persona).
    */
   async function call(path: string, body: unknown): Promise<unknown> {
     try { return await once(path, body); } catch (e) {
       if (!(e instanceof MediaApiError)) throw e;
-      if (e.code === 'RATE_LIMITED' && (e.retryAfter ?? 5) <= 20) { await sleep((e.retryAfter ?? 5) * 1000); return once(path, body); }
-      if (['SERVER_ERROR', 'DOWNLOAD_FAILED', 'LIST_FAILED', 'TIMEOUT'].includes(e.code)) { await sleep(3000); return once(path, body); }
+      if ((e.code === 'RATE_LIMITED' || e.code === 'UPSTREAM_UNAVAILABLE') && (e.retryAfter ?? 5) <= 20) { await sleep((e.retryAfter ?? 5) * 1000); return once(path, body); }
       throw e;
     }
   }
@@ -172,23 +173,23 @@ export function fixtureMediaApi(): MediaApi {
     takenAt: new Date(Date.UTC(2026, 9, 30 - i)).toISOString(), pinned, caption: `Publicación de ejemplo ${i + 1}`, thumbnail: swatch(color), likes, comments, views,
   }));
   return {
-    // Como la de verdad: TikTok pagina (3 páginas: la última, llena, trae cursor y la siguiente sale vacía); Instagram sin
-    // sesión solo da la primera (la segunda: LOGIN_REQUIRED); «bloqueado» en el usuario: Instagram bloqueando también la primera.
+    // Como la de verdad: las dos redes paginan (3 páginas: la última, llena, trae cursor y la siguiente sale vacía).
+    // Instagram personal («personal» en el usuario): solo la primera (la segunda, LOGIN_REQUIRED); «restringido»: ni la primera.
     async list(profile, platform, _limit, cursor) {
       const ref = profileRef(profile, platform ?? 'instagram');
       if (!ref) throw new MediaApiError('INVALID_PROFILE', 400);
       const user = ref.key.split(':')[1];
       const tiktok = ref.key.startsWith('tiktok');
       if (user.includes('privado')) throw new MediaApiError('PROFILE_PRIVATE', 403);
-      if (!tiktok && user.includes('bloqueado')) throw new MediaApiError('LOGIN_REQUIRED', 422, null, 'Instagram está bloqueando consultas anónimas');
-      if (cursor && !tiktok) throw new MediaApiError('LOGIN_REQUIRED', 422, null, 'Instagram requiere sesión para la página 2');
+      if (!tiktok && user.includes('restringido')) throw new MediaApiError('LOGIN_REQUIRED', 422, null, 'Instagram pide sesión para este perfil');
+      if (cursor && !tiktok && user.includes('personal')) throw new MediaApiError('LOGIN_REQUIRED', 422, null, 'Instagram pide sesión para la página 2');
       const page = cursor ? Number(/^p(\d)-(.+)$/.exec(cursor)?.[1] ?? NaN) : 1;
       if (cursor && (!Number.isInteger(page) || !cursor.endsWith(`-${user}`))) throw new MediaApiError('INVALID_CURSOR', 400);
       const base = { platform: (tiktok ? 'tiktok' : 'instagram') as SocialPlatform, username: user, fullName: user, followers: 1234 };
       if (page > 3) return { ...base, posts: [], nextCursor: null };
       const ps = posts(user).map((x) => (page === 1 ? x : { ...x, url: x.url.replace('/p/DEMO', `/p/P${page}DEMO`), shortcode: `P${page}${x.shortcode}`, pinned: false,
         takenAt: new Date(Date.UTC(2026, 9, 20 - page * 6)).toISOString(), caption: `${x.caption} (página ${page})` }));
-      return { ...base, posts: ps, nextCursor: tiktok ? `p${page + 1}-${user}` : null };
+      return { ...base, posts: ps, nextCursor: `p${page + 1}-${user}` };
     },
     async download(url) {
       if (url.includes('DEMO3')) throw new MediaApiError('NOT_AVAILABLE', 404);

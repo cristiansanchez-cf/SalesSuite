@@ -52,17 +52,26 @@ describe('cliente de la API', () => {
     expect(r.posts).toHaveLength(1);
     expect(r.posts[0]).toMatchObject({ type: 'video', views: 9, pinned: false });
   });
-  test('errores con su código; 500 se reintenta una vez; perfil privado no', async () => {
+  test('errores con su código; la red limitando se reintenta una vez tras Retry-After; 500 y privado no', async () => {
     let n = 0;
-    const flaky = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => (++n === 1 ? new Response('{"code":"LIST_FAILED"}', { status: 500 }) : ok({ platform: 'tiktok', username: 'x', posts: [] })) });
-    await expect(flaky.list('x', 'tiktok')).resolves.toMatchObject({ platform: 'tiktok' });
+    const limited = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => (++n === 1 ? new Response('{"code":"UPSTREAM_UNAVAILABLE"}', { status: 503, headers: { 'retry-after': '1' } }) : ok({ platform: 'tiktok', username: 'x', posts: [] })) });
+    await expect(limited.list('x', 'tiktok')).resolves.toMatchObject({ platform: 'tiktok' });
     expect(n).toBe(2);
+    // Sigue limitando: una sola vez más, nunca en bucle.
+    let k = 0;
+    const down = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => { k++; return new Response('{"code":"UPSTREAM_UNAVAILABLE"}', { status: 503, headers: { 'retry-after': '1' } }); } });
+    await expect(down.list('x', 'tiktok')).rejects.toMatchObject({ code: 'UPSTREAM_UNAVAILABLE' });
+    expect(k).toBe(2);
+    let j = 0;
+    const broken = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => { j++; return new Response('{"code":"SERVER_ERROR"}', { status: 500 }); } });
+    await expect(broken.list('x', 'tiktok')).rejects.toMatchObject({ code: 'SERVER_ERROR' });
+    expect(j).toBe(1);
     let m = 0;
     const priv = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async () => { m++; return new Response('{"error":"privado","code":"PROFILE_PRIVATE"}', { status: 403 }); } });
     await expect(priv.list('x')).rejects.toMatchObject({ code: 'PROFILE_PRIVATE' });
     expect(m).toBe(1);
   }, 10_000);
-  test('páginas: manda el cursor; sin reintento si Instagram pide sesión, TikTok está caído o la clave no vale', async () => {
+  test('páginas: manda el cursor; sin reintento si Instagram pide sesión, la red pide esperar más de 20 s, el cursor no vale o la clave no vale', async () => {
     const bodies: unknown[] = [];
     const paged = httpMediaApi({ base: 'https://api.test', key: 'k', gapMs: 0, fetch: async (_u, init) => { bodies.push(JSON.parse(String(init!.body))); return ok({ platform: 'tiktok', username: 'x', posts: [], next_cursor: 'c2' }); } });
     expect((await paged.list('x', 'tiktok', 12, 'c1')).nextCursor).toBe('c2');

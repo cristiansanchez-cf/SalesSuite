@@ -3,7 +3,7 @@ import { contextAs } from '../admin/auth';
 import { publicRepository } from '../data';
 import { demoDb, resetDemoDb } from '../data/store';
 import { fixtureMediaApi, MediaApiError, type MediaApi, type SocialProfile } from './media-api';
-import { CACHE_MS, IG_GAP_MS, IG_RETRY_MS, createSocialService, resetIgPacing, type SocialCache } from './service';
+import { CACHE_MS, createSocialService, type SocialCache } from './service';
 
 const REP = '11111111-1111-4111-8111-111111111111';
 const SOL = '00000000-0000-4000-8000-0000000ac001';
@@ -39,7 +39,7 @@ async function setup(over: { api?: MediaApi; instagram?: string; tiktok?: string
 }
 
 describe('«Cargar más» en sus publicaciones', () => {
-  beforeEach(() => { resetDemoDb(); resetIgPacing(); });
+  beforeEach(() => { resetDemoDb(); });
 
   test('TikTok: página a página hasta que no hay más (la última llena trae cursor y la siguiente sale vacía)', async () => {
     const { svc, id, calls } = await setup();
@@ -67,12 +67,22 @@ describe('«Cargar más» en sus publicaciones', () => {
     expect(r.ok || r.code).toBeTruthy();
   });
 
-  test('Instagram sin sesión: solo la primera página (sin «Cargar más»)', async () => {
+  test('Instagram (cuenta de empresa, API oficial): también pagina', async () => {
     const { svc, id, calls } = await setup();
     const r = await svc.list(id, { platform: 'instagram' });
-    expect(r.ok && r.more).toBe(false);
-    expect(await svc.more(id, { key: 'instagram:clubsol' })).toMatchObject({ ok: true, more: false });
-    expect(calls).toHaveLength(1);
+    expect(r.ok && r.more).toBe(true);
+    const p2 = await svc.more(id, { key: 'instagram:clubsol' });
+    expect(p2.ok && p2.posts.map((p) => p.i)).toEqual([6, 7, 8, 9, 10, 11]);
+    expect(calls.map((c) => c.cursor)).toEqual([null, 'p2-clubsol']);
+  });
+
+  test('Instagram personal: la primera página y, al pedir más, se queda con lo que hay (sin reintentar)', async () => {
+    const { svc, id, calls } = await setup({ instagram: 'https://www.instagram.com/anapersonal/' });
+    const r = await svc.list(id, { platform: 'instagram' });
+    expect(r.ok && r.more).toBe(true);
+    expect(await svc.more(id, { key: 'instagram:anapersonal' })).toMatchObject({ ok: false, code: 'NO_MORE_PAGES', more: false });
+    expect(await svc.more(id, { key: 'instagram:anapersonal' })).toMatchObject({ ok: true, posts: [], more: false });
+    expect(calls).toHaveLength(2);
   });
 
   test('TikTok caído un rato: dice cuánto esperar y que se puede volver a pedir', async () => {
@@ -87,15 +97,20 @@ describe('«Cargar más» en sus publicaciones', () => {
     expect(await svc.more(id, { key: first.key })).toMatchObject({ ok: true, more: true });
   });
 
-  test('un cursor que ya no vale: no se reintenta', async () => {
+  test('un cursor que ya no vale: no se reintenta; al volver a abrir, se pide la primera página', async () => {
+    let bad = true;
     const base = fixtureMediaApi();
-    const api: MediaApi = { ...base, async list(p, pl, l, c) { if (c) throw new MediaApiError('INVALID_CURSOR', 400); return base.list(p, pl, l, c); } };
+    const api: MediaApi = { ...base, async list(p, pl, l, c) { if (c && bad) throw new MediaApiError('INVALID_CURSOR', 400); return base.list(p, pl, l, c); } };
     const { svc, id, calls } = await setup({ api });
     const first = await svc.list(id, { platform: 'tiktok' });
     if (!first.ok) throw new Error(first.code);
-    expect(await svc.more(id, { key: first.key })).toMatchObject({ ok: false, code: 'INVALID_CURSOR', more: false });
-    expect(await svc.more(id, { key: first.key })).toMatchObject({ ok: true, more: false });
+    expect(await svc.more(id, { key: first.key })).toMatchObject({ ok: false, code: 'EXPIRED', more: false });
+    expect(await svc.more(id, { key: first.key })).toMatchObject({ ok: false, code: 'EXPIRED' });
     expect(calls).toHaveLength(2);
+    bad = false;
+    const again = await svc.list(id, { platform: 'tiktok' });
+    expect(again.ok && again.posts).toHaveLength(6);
+    expect(calls.map((c) => c.cursor)).toEqual([null, 'p2-clubsol', null]);
   });
 
   test('pasada la hora, la lista caduca y hay que volver a abrirla', async () => {
@@ -107,33 +122,26 @@ describe('«Cargar más» en sus publicaciones', () => {
   });
 });
 
-describe('Instagram bloqueando', () => {
-  beforeEach(() => { resetDemoDb(); resetIgPacing(); });
+describe('Instagram pide sesión (cuenta personal o restringida)', () => {
+  beforeEach(() => { resetDemoDb(); });
 
-  test('pendiente; se vuelve a probar una sola vez pasados 20 minutos; si sigue, sin Instagram', async () => {
-    const { svc, id, calls, tick } = await setup({ instagram: 'https://www.instagram.com/salabloqueado/' });
-    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'IG_PENDING', retryAfter: IG_RETRY_MS / 1000 });
-    // Antes de los 20 minutos, ni se intenta.
-    tick(5 * 60_000);
-    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'IG_PENDING' });
+  test('no se reintenta: se sigue sin Instagram y no se vuelve a pedir en la hora; TikTok sigue', async () => {
+    const { svc, id, calls, tick } = await setup({ instagram: 'https://www.instagram.com/salarestringido/' });
+    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'LOGIN_REQUIRED' });
+    tick(10 * 60_000);
+    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'LOGIN_REQUIRED' });
     expect(calls).toHaveLength(1);
-    // Pasados, una vez más; sigue bloqueado: sin Instagram (y no se vuelve a intentar en horas).
-    tick(IG_RETRY_MS);
-    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'IG_BLOCKED' });
-    tick(IG_RETRY_MS * 3);
-    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'IG_BLOCKED' });
+    // Pasada la hora, se vuelve a mirar (puede haber pasado a cuenta de empresa).
+    tick(CACHE_MS);
+    await svc.list(id, { platform: 'instagram' });
     expect(calls).toHaveLength(2);
-    // TikTok sigue funcionando.
     expect((await svc.list(id, { platform: 'tiktok' })).ok).toBe(true);
   });
 
-  test('como mucho un perfil de Instagram cada dos minutos', async () => {
-    const { svc, id, tick } = await setup();
+  test('ya no hay que esperar entre perfiles de Instagram', async () => {
+    const { svc, id } = await setup();
     expect((await svc.list(id, { platform: 'instagram' })).ok).toBe(true);
-    // Otro perfil (otra empresa) enseguida: que espere.
     demoDb().account.find((a) => a.id === SOL)!.instagram = 'https://www.instagram.com/otrasala/';
-    expect(await svc.list(id, { platform: 'instagram' })).toMatchObject({ ok: false, code: 'IG_WAIT' });
-    tick(IG_GAP_MS);
     expect((await svc.list(id, { platform: 'instagram' })).ok).toBe(true);
   });
 });

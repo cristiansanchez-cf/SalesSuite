@@ -2,12 +2,12 @@
  * Traer fotos y vídeos de su Instagram o TikTok a la propuesta (docs/PERSONALIZE.md §Traer de sus redes).
  * 1) list: las publicaciones del perfil que tiene la empresa en el CRM (caché de 1 hora por perfil y espacio) y una
  *    selección propuesta (las fijadas y las de más engagement).
- * 2) import: una publicación cada vez (el navegador espera 2-3 s entre una y otra): se descarga del enlace temporal de la
- *    API, se sube a la carpeta de la propuesta y se añade como foto o vídeo, igual que una subida a mano.
+ * 2) import: una publicación cada vez (el navegador espera la respuesta antes de pedir la siguiente): se descarga del
+ *    enlace temporal de la API (caduca en 1 hora), se sube a la carpeta de la propuesta y se añade como foto o vídeo,
+ *    igual que una subida a mano.
  * Un fallo no rompe nada: se devuelve el código y la propuesta sigue con lo que haya.
  */
 import type { AdminContext } from '../admin/auth';
-import { env } from '../env';
 import { AdminError } from '../admin/service';
 import { MediaApiError, pickPosts, profileRef, type MediaApi, type MediaErrorCode, type MediaItem, type SocialPlatform, type SocialPost, type SocialProfile } from './media-api';
 
@@ -17,18 +17,12 @@ export const VIDEO_MAX = 30 * 1024 * 1024;
 export const MAX_PHOTOS = 8;
 /** «Cargar más»: hasta 10 páginas (120 publicaciones) por perfil en la caché. */
 export const MAX_POSTS = 120;
-/** Instagram bloqueando: se vuelve a probar una sola vez pasados 20 minutos; si sigue, sin Instagram durante 6 horas. */
-export const IG_RETRY_MS = 20 * 60_000;
-export const IG_GIVE_UP_MS = 6 * 3_600_000;
-/** Instagram: como mucho un perfil nuevo cada 2 minutos (lo pide la API de medios). */
-export const IG_GAP_MS = 2 * 60_000;
-/** Sin sesión, Instagram solo da la primera página: «Cargar más» solo para TikTok (o con SOCIAL_INSTAGRAM_PAGES=1). */
-const igPages = () => env('SOCIAL_INSTAGRAM_PAGES') === '1';
-/** Lo que se guarda de cada perfil: sus páginas juntas, el cursor de la siguiente y si Instagram está bloqueando. */
-interface Cached extends SocialProfile { blocked?: { at: string; tries: number }; noMore?: boolean }
-const lastIg = new Map<string, number>();
-/** Para las pruebas. */
-export const resetIgPacing = () => lastIg.clear();
+/**
+ * Lo que se guarda de cada perfil: sus páginas juntas y el cursor de la siguiente. `loginRequired`: Instagram pide sesión
+ * (cuenta personal o restringida): no se vuelve a pedir en la hora. `stale`: el cursor ya no vale; se vuelve a la primera.
+ * `blocked` es de antes (el Instagram sin API oficial): se ignora y se vuelve a pedir.
+ */
+interface Cached extends SocialProfile { loginRequired?: boolean; stale?: boolean; noMore?: boolean; blocked?: unknown }
 
 export interface SocialCache {
   get(tenantId: string, key: string): Promise<{ result: SocialProfile; fetchedAt: string } | null>;
@@ -94,32 +88,22 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
   /** Los pies de foto, cortos: con varias páginas, la fila de la caché crece. */
   const slim = (ps: SocialPost[]) => ps.map((p) => ({ ...p, caption: p.caption?.slice(0, 200) ?? null }));
   /**
-   * La primera página (de la caché si tiene menos de una hora). Instagram bloqueando (LOGIN_REQUIRED en la primera
-   * página): queda pendiente y se vuelve a probar una sola vez pasados 20 minutos; si sigue, sin Instagram un rato.
+   * La primera página (de la caché si tiene menos de una hora). LOGIN_REQUIRED (cuenta personal o restringida): no se
+   * reintenta; se guarda para no volver a pedirlo en la hora y se sigue sin esa red.
    */
   async function listing(key: string, platform: SocialPlatform): Promise<Cached> {
     const hit = await deps.cache.get(s.tenantId, key).catch(() => null);
     const r = hit?.result as Cached | undefined;
-    const blocked = r?.blocked;
-    if (blocked) {
-      const since = now() - Date.parse(blocked.at);
-      if (blocked.tries >= 2 && since < IG_GIVE_UP_MS) throw new MediaApiError('IG_BLOCKED', 422);
-      if (blocked.tries < 2 && since < IG_RETRY_MS) throw new MediaApiError('IG_PENDING', 422, Math.ceil((IG_RETRY_MS - since) / 1000));
-    } else if (hit && r && now() - Date.parse(hit.fetchedAt) < CACHE_MS) return r;
-    if (!deps.api) throw new MediaApiError('NOT_CONFIGURED', 503);
-    if (platform === 'instagram') {
-      const last = lastIg.get(s.tenantId) ?? 0;
-      if (now() - last < IG_GAP_MS) throw new MediaApiError('IG_WAIT', 429, Math.ceil((IG_GAP_MS - (now() - last)) / 1000));
-      lastIg.set(s.tenantId, now());
+    if (hit && r && !r.blocked && !r.stale && now() - Date.parse(hit.fetchedAt) < CACHE_MS) {
+      if (r.loginRequired) throw new MediaApiError('LOGIN_REQUIRED', 422);
+      return r;
     }
+    if (!deps.api) throw new MediaApiError('NOT_CONFIGURED', 503);
     let res: SocialProfile;
     try { res = await deps.api.list(profileUrl(key, platform), null, 12); } catch (e) {
-      if (e instanceof MediaApiError && e.code === 'LOGIN_REQUIRED' && platform === 'instagram') {
-        const tries = blocked && now() - Date.parse(blocked.at) < IG_GIVE_UP_MS ? blocked.tries + 1 : 1;
-        const mark: Cached = { platform, username: key.split(':')[1], fullName: null, followers: null, posts: [], nextCursor: null, blocked: { at: new Date(now()).toISOString(), tries } };
+      if (e instanceof MediaApiError && e.code === 'LOGIN_REQUIRED') {
+        const mark: Cached = { platform, username: key.split(':')[1], fullName: null, followers: null, posts: [], nextCursor: null, loginRequired: true };
         await deps.cache.put(s.tenantId, key, mark).catch(() => undefined);
-        console.warn(`[social] Instagram bloqueando (${tries}.º intento)`, e.detail ?? '');
-        throw tries >= 2 ? new MediaApiError('IG_BLOCKED', 422) : new MediaApiError('IG_PENDING', 422, Math.ceil(IG_RETRY_MS / 1000));
       }
       throw e;
     }
@@ -127,7 +111,7 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
     await deps.cache.put(s.tenantId, key, fresh).catch((e) => console.warn('[social] caché', e instanceof Error ? e.message : e));
     return fresh;
   }
-  const hasMore = (r: Cached) => !!r.nextCursor && !r.noMore && r.posts.length < MAX_POSTS && (r.platform === 'tiktok' || igPages());
+  const hasMore = (r: Cached) => !!r.nextCursor && !r.noMore && r.posts.length < MAX_POSTS;
   const thumbOf = (dossierId: string, key: string, p: SocialPost, i: number) =>
     !p.thumbnail ? null : p.thumbnail.startsWith('data:') ? p.thumbnail : `/admin/api/dossiers/${dossierId}/social?key=${encodeURIComponent(key)}&thumb=${i}`;
   const viewOf = (dossierId: string, key: string, p: SocialPost, i: number): PostView => ({ i, type: p.type, itemCount: p.itemCount, pinned: !!p.pinned, takenAt: p.takenAt,
@@ -161,7 +145,7 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
 
   /**
    * «Cargar más»: la página siguiente, que se añade a lo ya listado (las posiciones no cambian). Una petición cada vez.
-   * TikTok caído un rato (UPSTREAM_UNAVAILABLE): se dice cuánto esperar y el editor lo reintenta una vez.
+   * La red limitando (UPSTREAM_UNAVAILABLE, RATE_LIMITED): se dice cuánto esperar y el editor lo reintenta una vez.
    */
   async function more(id: string, input: { key?: unknown }) {
     const { sources } = await dossier(id);
@@ -170,17 +154,23 @@ export function createSocialService(admin: AdminContext, deps: SocialDeps) {
     const hit = await deps.cache.get(s.tenantId, src.key).catch(() => null);
     const r = hit?.result as Cached | undefined;
     // Si la lista ha caducado (más de una hora), se vuelve a abrir.
-    if (!hit || !r || r.blocked || now() - Date.parse(hit.fetchedAt) >= CACHE_MS) return { ok: false as const, code: 'EXPIRED' as const, more: false };
+    if (!hit || !r || r.blocked || r.stale || r.loginRequired || now() - Date.parse(hit.fetchedAt) >= CACHE_MS) return { ok: false as const, code: 'EXPIRED' as const, more: false };
     if (!hasMore(r)) return { ok: true as const, posts: [] as PostView[], more: false };
     if (!deps.api) return { ok: false as const, code: 'NOT_CONFIGURED' as MediaErrorCode, more: false };
     let page: SocialProfile;
     try { page = await deps.api.list(profileUrl(src.key, src.platform), null, 12, r.nextCursor); } catch (e) {
       if (!(e instanceof MediaApiError)) throw e;
-      // Instagram sin sesión no da más; un cursor que ya no vale, tampoco: no se reintenta.
-      if (e.code === 'LOGIN_REQUIRED' || e.code === 'INVALID_CURSOR') {
+      // Instagram personal: solo la primera página; no se reintenta y se queda con lo que hay.
+      if (e.code === 'LOGIN_REQUIRED') {
         const done: Cached = { ...r, noMore: true };
         await deps.cache.put(s.tenantId, src.key, done).catch(() => undefined);
-        return { ok: false as const, code: e.code === 'LOGIN_REQUIRED' ? 'NO_MORE_PAGES' as const : e.code, more: false };
+        return { ok: false as const, code: 'NO_MORE_PAGES' as const, more: false };
+      }
+      // Un cursor de otro perfil o caducado: se vuelve a pedir la primera página (al volver a abrir la lista).
+      if (e.code === 'INVALID_CURSOR') {
+        const stale: Cached = { ...r, stale: true };
+        await deps.cache.put(s.tenantId, src.key, stale).catch(() => undefined);
+        return { ok: false as const, code: 'EXPIRED' as const, more: false };
       }
       if (e.code === 'INVALID_API_KEY') console.error('[social] la clave de la API de medios no vale (CONVERT_API_KEY)');
       const later = e.code === 'UPSTREAM_UNAVAILABLE' || e.code === 'RATE_LIMITED';

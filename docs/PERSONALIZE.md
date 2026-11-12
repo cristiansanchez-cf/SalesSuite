@@ -26,28 +26,29 @@ descarga, se sube a la carpeta de la propuesta y queda como foto o vídeo, igual
 
 - **Mientras trae:** barra de progreso; «Seguir en segundo plano» cierra la ventana y la tarjeta enseña la barra y,
   al acabar, el resumen (lo añadido y lo que falló). Salir de la página mientras trae lo pregunta el navegador.
-- **Cargar más** (TikTok): debajo de las publicaciones, la página siguiente (12 más, `cursor` de `media-list`), una
-  petición cada vez. Se añaden a la misma caché de una hora (hasta 120 por perfil; migración
+- **Cargar más** (Instagram y TikTok): debajo de las publicaciones, la página siguiente (12 más, `cursor` de
+  `media-list`), una petición cada vez. Se añaden a la misma caché de una hora (hasta 120 por perfil; migración
   `20261229000000_social_pages.sql`), así que las posiciones no cambian. La última página llena trae cursor y la
-  siguiente sale vacía: ahí desaparece el botón. Si TikTok falla un momento (`503 UPSTREAM_UNAVAILABLE`), el editor
-  espera lo que pida (60 s) y lo reintenta una sola vez; si vuelve a fallar, se sigue con lo que hay. Un cursor que ya
-  no vale (`INVALID_CURSOR`) no se reintenta.
-- **Instagram, sin sesión, solo da la primera página** (las 12 últimas, con las fijadas): sin «Cargar más». La página 2
-  devuelve `LOGIN_REQUIRED`, que es lo esperado. Con una cuenta de Instagram con sesión en la API de medios, se activa
-  con `SOCIAL_INSTAGRAM_PAGES=1`.
-- **Instagram bloqueando** (`LOGIN_REQUIRED` también en la primera página): esa empresa queda «Instagram pendiente» y no
-  se vuelve a pedir hasta pasados 20 minutos; entonces se prueba una sola vez y, si sigue, «sigue sin Instagram» durante
-  6 horas (queda pegar el enlace o subir las fotos a mano). Además, como mucho un perfil de Instagram nuevo cada 2
-  minutos por espacio (lo pide la API). 429: se espera lo que diga `Retry-After`. 401/403 por la clave: no se reintenta
-  y se avisa (en el registro y en el editor).
+  siguiente sale vacía: ahí desaparece el botón. Un cursor que ya no vale (`INVALID_CURSOR`) no se reintenta: la lista
+  queda caducada y, al volver a abrirla, se pide la primera página.
+- **Instagram va por la API oficial de Meta** (desde noviembre de 2026): las cuentas de empresa o creador (casi todas
+  las marcas) paginan entero. Las **personales** dan como mucho la primera página: si al pedir más llega
+  `LOGIN_REQUIRED`, se queda con lo que hay («Es una cuenta personal…»); si llega ya en la primera, se sigue sin
+  Instagram (pegar el enlace o subir las fotos a mano) y no se vuelve a pedir en la hora. TikTok pagina hasta unas 600.
+- **La red limitando** (`503 UPSTREAM_UNAVAILABLE`, `429 RATE_LIMITED`): si `Retry-After` es de 20 s o menos, el
+  servidor espera y reintenta una vez; si pide más, el editor espera lo que diga (como mucho 2 minutos) y lo reintenta
+  una sola vez, al abrir la lista y en «Cargar más»; si sigue, se sigue sin esa red. Nunca en bucle: un dossier sin
+  Instagram o sin TikTok es mejor que bloquear la herramienta para todos. `500`: no se reintenta solo (la API pide
+  esperar unos minutos). 401/403 por la clave: no se reintenta y se avisa (en el registro y en el editor). Al traer
+  varias, una publicación restringida (`LOGIN_REQUIRED`) o no disponible se salta y se sigue con las demás.
 - **Las que no salen**: «Pega el enlace de la publicación» (Instagram `/p/`, `/reel/`, `/tv/`; TikTok
   `/@usuario/video|photo/…` o `vm.tiktok.com`). Si es un vídeo y aún no hay, va como vídeo; si no, su foto.
 - **Qué se propone:** tantas fotos como huecos queden (hasta 4) y un vídeo si no hay. Primero las fijadas, luego por
   engagement (likes + comentarios; reproducciones en vídeo), a igualdad la más reciente. De un carrusel, la primera foto.
 - **API de medios** (InternalApps, `docs/API.md` de ese repo): `POST /api/media-list` y `POST /api/media-download` con
   `X-API-Key: CONVERT_API_KEY` (Vercel; `MEDIA_API_URL` si cambia la dirección). Código: `src/lib/social/`.
-- **Sus reglas:** una petición cada vez (el editor las manda de una en una con 2,5 s entre descargas y el servidor las
-  pone en fila); un perfil no se vuelve a listar en una hora (`social_profile_cache`, migración
+- **Sus reglas:** una petición cada vez, esperando la respuesta (el editor las manda de una en una y el servidor las
+  pone en fila; ya no hace falta esperar entre descargas ni entre perfiles); un perfil no se vuelve a listar en una hora (`social_profile_cache`, migración
   `20261223000000_social_media_cache.sql`); solo se descarga lo elegido. Los enlaces de descarga caducan en 1 hora: se
   descargan en el momento y nunca van a la propuesta. El servidor solo descarga de `storage.googleapis.com`.
 - **Miniaturas:** pasan por `GET /admin/api/dossiers/:id/social?key=&thumb=n` (Instagram no deja enseñarlas desde otra
