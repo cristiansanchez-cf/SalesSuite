@@ -45,7 +45,7 @@ marca. Al pulsarlo se abre la página del sello en **sciscreen.com**, no en la w
 Reglas del design system que sigue (07-the-seal, 06-copy):
 - **Sello:** solo el dibujo «Vigente» (`assets/seal/sello-cream.svg` sobre papel; `sello-navy.svg` para fondo navy, con
   su `#030050` tal cual, D4). Entero, nunca recortado ni por debajo de 72 px de alto. Los otros estados no tienen dibujo
-  (C4): se cuentan con palabras. Un sello por página, nunca en envases, publicidad ni el pie de toda la web.
+  (C4): se cuentan con palabras. Junto a las afirmaciones (compacto), en una sección de ciencia (placa) o en la portada (tarjeta), y también en el pie de cada página verificada (kit del sello); nunca en páginas sin verificar, envases ni publicidad.
 - **Textos:** «marca» (no «cliente»), «afirmación», «evidencia», «dictamen», «verificador», «sello». Nunca «avalado»
   (art. 44 Ley 17/2011): el sello dice qué se comprobó y cuándo. Sin exclamaciones, sin emoji, sin «arriba/abajo».
 - **Fotos:** `img/foto-tarjeta.webp` (photo2), `img/foto-laboratorio.webp` (photo9) y `img/foto-producto.webp` (photo3),

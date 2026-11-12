@@ -245,11 +245,11 @@
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
-      "description": "El sello junto a las afirmaciones, dónde va y qué pasa cada año.",
+      "description": "El sello junto a las afirmaciones, dónde va (también en el pie de cada página verificada) y qué pasa cada año.",
       "props": {
         "eyebrow": "El sello",
-        "title": "Un sello por página, junto a lo que afirma",
-        "lede": "Quien lee tu página ve qué se comprobó y cuándo. El sello enlaza a su página de registro, con la dirección verificada tal cual.",
+        "title": "El sello, junto a lo que afirma",
+        "lede": "Quien lee tu página ve qué se revisó y cuándo. El sello abre su página en sciscreen.com, con la dirección verificada tal cual.",
         "seal": {
           "alt": "Sello de SciScreen: Verificado a día de hoy",
           "size": "tarjeta",
@@ -265,10 +265,11 @@
           ]
         },
         "rules": [
-          "En la página verificada, cerca de las afirmaciones que cubre",
-          "Un sello por página, nunca en el pie de toda la web",
+          "Junto a las afirmaciones que cubre: al lado del título del producto o del botón de compra (compacto)",
+          "En una sección del tipo «Lo que dice la ciencia» (placa) o en un bloque destacado de la portada (tarjeta)",
+          "También en el pie de cada página verificada; nunca en páginas que no se han verificado",
           "Ni en envases ni en publicidad",
-          "Enlaza a su página de registro, con la evidencia y la fecha del dictamen"
+          "Abre su página en sciscreen.com, con la evidencia y la fecha del dictamen"
         ],
         "states": [
           {
