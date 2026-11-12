@@ -17,21 +17,24 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const p = await (await b.newContext({ viewport: { width: 1440, height: 900 }, locale: 'es-ES' })).newPage();
   p.on('pageerror', (e) => errors.push(e.message));
 
-  // La propuesta: el sello sobre su web; el cursor lo pulsa y se abre el registro.
+  // La propuesta: «Simulación» sobre su web, el sello real a su tamaño; el cursor lo pulsa y se abre sciscreen.com.
   await p.goto(`${S}/d/demo-sciscreen-Vv7p#3`);
   await p.waitForSelector('[data-module=site-verify] .sv-shot');
-  assert((await p.textContent('.sv-bar em')).includes('valleverde.example'), 'su web, con su dirección en la barra');
-  await p.waitForFunction(() => document.querySelector('.sv-record')?.getAttribute('data-open') === '1', null, { timeout: 8000 });
-  assert(true, 'el cursor pulsa el sello y se abre el registro');
-  const rec = await p.textContent('.sv-record');
-  assert(/Vigente/.test(rec) && /Nivel de evidencia/i.test(rec) && /Respaldada/.test(rec) && /Valle Verde Naturales/.test(rec), 'el registro: estado, nivel de evidencia y afirmaciones');
-  const h = await p.$eval('.sv-seal img', (i) => i.getBoundingClientRect().height);
-  assert(h >= 72, `el sello, entero y de 72 px de alto o más (${Math.round(h)})`);
+  assert((await p.textContent('.sv-bar .sv-url-site')).includes('valleverde.example'), 'su web, con su dirección en la barra');
+  assert(await p.isVisible('.sv-tag') && (await p.textContent('.sv-tag')).trim() === 'Simulación', '«Simulación» sobre su web');
+  assert(/Verificado a día \d{1,2} \w{3} \d{4}/.test(await p.textContent('.sv-seal')), `el sello real, «Verificado a día» y la fecha (${(await p.textContent('.sv-seal')).trim()})`);
+  await p.waitForFunction(() => document.querySelector('.sv-ss')?.getAttribute('data-open') === '1', null, { timeout: 9000 });
+  assert(true, 'el cursor pulsa el sello y se abre la página del sello');
+  assert(/^sciscreen\.com\/es\/sello\/[a-z0-9]{16}$/.test((await p.textContent('.sv-bar .sv-url-seal')).trim()) && await p.isVisible('.sv-bar .sv-url-seal'), 'la barra pasa a sciscreen.com/es/sello/…');
+  const ss = await p.textContent('.sv-ss');
+  assert(/Valle Verde Naturales/.test(ss) && /Vigente/.test(ss) && /URL verificada/.test(ss) && /Vigente hasta/.test(ss) && /Reglamento \(UE\) 432\/2012/.test(ss), 'la página del sello: marca, estado, URL verificada, fechas y la evidencia de cada afirmación');
+  assert(!(await p.$('.sv-meter')) && !/Nivel de evidencia/i.test(ss), 'sin indicador global de nivel de evidencia');
+  assert(await p.isVisible('.sv-tag'), '«Simulación» también con la página del sello abierta');
   if (OUT) await p.screenshot({ path: `${OUT}/site-verify.png` });
-  await p.click('[data-sv-close]');
-  assert((await p.getAttribute('.sv-record', 'data-open')) === '0', 'se cierra');
+  await p.click('.sv-bar [data-sv-back]');
+  assert((await p.getAttribute('.sv-ss', 'data-open')) === '0' && (await p.textContent('.sv-bar .sv-url-site')).includes('valleverde'), '«←» vuelve a su web');
   await p.click('.sv-seal');
-  assert((await p.getAttribute('.sv-record', 'data-open')) === '1', 'y se abre pulsando el sello');
+  assert((await p.getAttribute('.sv-ss', 'data-open')) === '1', 'y se abre pulsando el sello');
 
   // El editor: «Su web» con la dirección de la ficha; una web que no se deja, el motivo; otra, la captura nueva.
   await p.goto(`${S}/admin/login`);

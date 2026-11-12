@@ -99,7 +99,7 @@ export const REGISTRY = {
   'site-verify': {
     label: 'Su web con el sello (verificación)',
     schema: siteVerifySchema,
-    example: { title: 'Así se vería en tu web', seal: { src: '/favicon.svg', alt: 'Sello' }, record: { claims: [{ text: 'Una afirmación de su página', verdict: 'Respaldada' }] } },
+    example: { title: 'Así se vería el sello en {company}', page: { claims: [{ text: 'Una afirmación de su página', evidence: 'Declaración autorizada · Reglamento (UE) 432/2012' }] } },
     load: () => import('./site-verify/Component.astro'),
   },
 } as const satisfies Record<string, {

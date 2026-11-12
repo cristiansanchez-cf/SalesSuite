@@ -5,6 +5,7 @@
  */
 import Section from '~/components/Section.astro';
 import Headline from '../Headline.astro';
+import SciSeal from '../SciSeal.astro';
 import { interpolate } from '../resolve';
 import type { ModuleBaseProps } from '../types';
 import type { SealShowcaseProps } from './schema';
@@ -36,11 +37,11 @@ const brand = ctx.prospectCompany || ctx.prospectName || '';
               <p class="ss-label">{page.label}</p>
               {brand && <p class="ss-brand">{brand}</p>}
               <ul class="ss-claims">{page.claims.map((c) => <li>{t(c)}</li>)}</ul>
-              <img class="ss-seal" src={seal.src} alt={seal.alt} loading="lazy" decoding="async" />
+              {seal.src ? <img class="ss-seal" src={seal.src} alt={seal.alt} loading="lazy" decoding="async" /> : <span class="ss-live"><SciSeal size={seal.size} ground={seal.ground} /></span>}
             </div>
           </figure>
         ) : (
-          <img class="ss-seal ss-seal--alone" src={seal.src} alt={seal.alt} loading="lazy" decoding="async" />
+          seal.src ? <img class="ss-seal ss-seal--alone" src={seal.src} alt={seal.alt} loading="lazy" decoding="async" /> : <span class="ss-live ss-live--alone"><SciSeal size={seal.size} ground={seal.ground} /></span>
         )}
       </div>
     </div>
@@ -80,6 +81,8 @@ const brand = ctx.prospectCompany || ctx.prospectName || '';
   /* El sello entero: nunca recortado, nunca por debajo de 72 px de alto (su tamaño mínimo legible). */
   .ss-seal { display: block; width: min(100%, 240px); height: auto; min-height: 72px; object-fit: contain; margin-top: .25rem; }
   .ss-seal--alone { width: min(100%, 320px); margin: 0 auto; }
+  .ss-live { display: block; margin-top: .25rem; line-height: 0; }
+  .ss-live--alone { display: grid; place-items: center; }
 
   .ss-states { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; counter-reset: ss; }
   @media (min-width: 700px) { .ss-states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

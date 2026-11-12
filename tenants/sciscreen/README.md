@@ -30,9 +30,17 @@ Fuera a propósito: las fotos con texto incrustado o marcas ajenas (photo1 con e
 | `portada` | hero-pitch | La marca y lo que cambia en su página |
 | `lo-que-te-pasa` | problem-solution | Hoy → con SciScreen (verificador, sello con registro, revisar y preparar) |
 | `como-funciona` | tabs-showcase | Tu página → evidencia → dictamen → el sello, con sus fotos y el sello |
-| `su-web` | site-verify | Su página de verdad (captura de Personalizar → Su web) con el sello encima; un cursor lo pulsa y se abre el registro (estado, nivel de evidencia, afirmaciones con su dictamen). **Prototipo** hasta que lleguen los diseños |
+| `su-web` | site-verify | Su página de verdad (captura de Personalizar → Su web) con el sello real encima (compacto, placa o tarjeta) y la etiqueta «Simulación»; un cursor lo pulsa, la barra pasa a sciscreen.com y se abre la página del sello: marca, estado, URL verificada, fechas y cada afirmación con su evidencia y sus estudios |
 | `el-sello` | seal-showcase | El sello en una página de ejemplo junto a sus afirmaciones, dónde va y los cuatro estados en palabras |
 | `pricing` | pricing-card | La suscripción anual; sin tarifas hasta que estén confirmadas («Según las páginas que verifiquemos») |
+
+**El sello, del kit del sello (12 nov 2026, `assets/seal/kit/`):** el que se instala de verdad, «Verificado a día [fecha]»,
+en tres tamaños (compacto, placa, tarjeta) y dos colores (azul para fondos claros, crema para oscuros). En las propuestas
+se pinta en HTML (`src/modules/SciSeal.astro`, con la fecha de hoy) y a su tamaño real sobre la captura (en una de 1440
+px: compacto 271 × 32, placa 189 × 60, tarjeta 159 × 162). El sello antiguo («Vigente · Evaluación válida»,
+`sello-cream.svg`) ya no se usa. Siempre «Simulación» sobre la web de una marca que aún no está verificada; el sello
+certifica que **las afirmaciones de esa página** se han revisado contra la literatura científica, nunca el producto ni la
+marca. Al pulsarlo se abre la página del sello en **sciscreen.com**, no en la web de la marca.
 
 Reglas del design system que sigue (07-the-seal, 06-copy):
 - **Sello:** solo el dibujo «Vigente» (`assets/seal/sello-cream.svg` sobre papel; `sello-navy.svg` para fondo navy, con

@@ -1,5 +1,5 @@
 {
-  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify, con la captura de Personalizar → Su web), el sello en su página y la inversión. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
+  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify: la captura de Personalizar → Su web, el sello real del kit y la página del sello en sciscreen.com), el sello en su página y la inversión. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
   "slug": "sciscreen",
   "name": "SciScreen",
   "default_locale": "es-ES",
@@ -172,77 +172,70 @@
     {
       "key": "su-web",
       "block_type": "site-verify",
-      "name": "Su web, verificada",
+      "name": "Su web con el sello",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
-      "description": "Su página de verdad (Personalizar → Su web) con el sello encima: se pulsa y se ve el registro, como lo verá quien la visite.",
+      "description": "Su página de verdad (Personalizar → Su web) con el sello real encima y la etiqueta «Simulación»: el cursor lo pulsa y se abre la página del sello en sciscreen.com, con cada afirmación, su evidencia y sus estudios.",
       "props": {
-        "eyebrow": "Tu página, verificada",
+        "eyebrow": "Tu página, con el sello",
         "title": "Así se vería el sello en {company}",
-        "lede": "Tu página tal cual, con el sello junto a lo que afirma. Quien la visita lo pulsa y ve qué se comprobó y cuándo.",
-        "seal": {
-          "src": "asset:seal/sello-cream.svg",
-          "alt": "Sello de SciScreen: Vigente, evaluación válida"
-        },
-        "sealAt": {
-          "x": 50,
-          "y": 74
-        },
+        "lede": "Tu página tal cual, con el sello junto a sus afirmaciones. Quien la visita lo pulsa y abre en sciscreen.com qué se revisó, contra qué estudios y hasta cuándo.",
+        "seals": [
+          {
+            "size": "compacto",
+            "ground": "claro",
+            "x": 4,
+            "y": 70
+          }
+        ],
+        "press": 0,
+        "simulation": "Simulación",
         "hint": "Pulsa el sello",
-        "replay": "Ver otra vez",
-        "record": {
-          "heading": "Registro de verificación",
+        "replay": "Volver a verlo",
+        "back": "Volver a su web",
+        "captions": {
+          "start": "Así se vería {company} con el sello de SciScreen.",
+          "seal": "El sello va junto a las afirmaciones y dice cuándo se revisaron.",
+          "click": "Quien duda, lo pulsa…",
+          "page": "…y abre en sciscreen.com qué se revisó, con qué estudios y hasta cuándo. Lo dice un tercero, no la marca."
+        },
+        "page": {
+          "path": "sciscreen.com/es/sello/",
           "status": "Vigente",
-          "statusNote": "Verificado a día {date}",
-          "level": {
-            "label": "Nivel de evidencia",
-            "value": "Alto",
-            "score": 4,
-            "of": 5
-          },
-          "claimsLabel": "Afirmaciones verificadas",
+          "reviewed": "Revisado el {date}",
+          "validUntil": "{nextYear}",
           "claims": [
             {
               "text": "La vitamina C contribuye al funcionamiento normal del sistema inmunitario.",
-              "verdict": "Respaldada",
-              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012"
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012",
+              "sources": [
+                {
+                  "title": "Reglamento (UE) n.º 432/2012, declaraciones de propiedades saludables permitidas",
+                  "ref": "Diario Oficial de la Unión Europea · 2012"
+                }
+              ]
             },
             {
-              "text": "Con ingredientes de cultivo ecológico.",
-              "verdict": "Respaldada",
-              "evidence": "Certificado ecológico vigente"
+              "text": "El zinc contribuye a la protección de las células frente al daño oxidativo.",
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012",
+              "sources": [
+                {
+                  "title": "Reglamento (UE) n.º 432/2012, declaraciones de propiedades saludables permitidas",
+                  "ref": "Diario Oficial de la Unión Europea · 2012"
+                }
+              ]
             }
-          ],
-          "facts": [
-            {
-              "label": "Dictamen",
-              "value": "SS-2026-0142"
-            },
-            {
-              "label": "Verificador",
-              "value": "Equipo científico de SciScreen"
-            },
-            {
-              "label": "Página",
-              "value": "Página de inicio"
-            },
-            {
-              "label": "Próxima revisión",
-              "value": "Dentro de 12 meses"
-            }
-          ],
-          "cta": "Ver el registro completo",
-          "close": "Cerrar"
+          ]
         },
         "fallback": {
           "address": "tumarca.com",
           "claims": [
             "La vitamina C contribuye al funcionamiento normal del sistema inmunitario.",
-            "Con ingredientes de cultivo ecológico."
+            "El zinc contribuye a la protección de las células frente al daño oxidativo."
           ]
         },
-        "note": "Las afirmaciones y el nivel de evidencia son de ejemplo: los de tu página salen de su dictamen."
+        "note": "Simulación: {company} aún no está verificada y estas afirmaciones son de ejemplo. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
       }
     },
     {
@@ -258,12 +251,13 @@
         "title": "Un sello por página, junto a lo que afirma",
         "lede": "Quien lee tu página ve qué se comprobó y cuándo. El sello enlaza a su página de registro, con la dirección verificada tal cual.",
         "seal": {
-          "src": "asset:seal/sello-cream.svg",
-          "alt": "Sello de SciScreen: Vigente, evaluación válida"
+          "alt": "Sello de SciScreen: Verificado a día de hoy",
+          "size": "tarjeta",
+          "ground": "claro"
         },
         "ground": "paper",
         "page": {
-          "label": "Ejemplo",
+          "label": "Simulación",
           "address": "tumarca.com/producto",
           "claims": [
             "La vitamina C contribuye al funcionamiento normal del sistema inmunitario.",

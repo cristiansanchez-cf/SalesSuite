@@ -1,0 +1,56 @@
+---
+/**
+ * El sello SciScreen como lo ve el consumidor en una web (kit del sello: sellos/html/sello.html), pintado en HTML para
+ * que se vea nítido a cualquier tamaño. Mismo marcado y mismas medidas que el que se instala; sin enlace (en una
+ * simulación no lleva a ningún sitio). Solo cambia la fecha («Verificado a día …», por defecto hoy).
+ *   size: compacto (píldora de 32 px) · placa (60 px) · tarjeta (unos 160 × 160)
+ *   ground: claro → sello azul (páginas claras) · oscuro → sello crema (páginas oscuras)
+ */
+import { ISO_PATHS, SHIELD_PATH, sealDate } from './sciscreen-seal';
+
+interface Props { size?: 'compacto' | 'placa' | 'tarjeta'; ground?: 'claro' | 'oscuro'; date?: string | null; word?: string; prefix?: string }
+const { size = 'compacto', ground = 'claro', date, word = 'Verificado', prefix = 'a día' } = Astro.props;
+const when = date || sealDate();
+const data = size === 'placa' ? 'plate' : size === 'tarjeta' ? 'card' : 'compact';
+---
+<span class="ss" data-size={data} data-theme={ground === 'oscuro' ? 'dark' : undefined} role="img" aria-label={`${word} ${prefix} ${when}`}>
+  <svg class="ss-iso" viewBox="0 0 116 114" fill="none" aria-hidden="true">{ISO_PATHS.map((d) => <path fill="currentColor" fill-rule="evenodd" d={d} />)}</svg>
+  {data === 'compact' && <span class="ss-sep"></span>}
+  <span class="ss-text">
+    <span class="ss-word">
+      <svg class="ss-icon" viewBox="0 0 24 25" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d={SHIELD_PATH} /></svg>
+      <span class="ss-label">{data === 'compact' ? `${word} ${prefix} ${when}` : word}</span>
+    </span>
+    {data !== 'compact' && <span class="ss-cap">{prefix} {when}</span>}
+  </span>
+</span>
+
+<style>
+  /* Copiado del sello real (loader /embed/v1/seal.js). No se cambian colores ni proporciones. */
+  .ss { --ss-ground: #000341; --ss-ink: #f6f2e6; display: inline-flex; flex-direction: row; align-items: center; box-sizing: border-box; background: var(--ss-ground); color: var(--ss-ink);
+    text-decoration: none; text-align: left; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; white-space: nowrap; line-height: normal;
+    letter-spacing: normal; word-spacing: normal; text-transform: none; text-indent: 0; text-shadow: none; font-style: normal; vertical-align: middle; }
+  .ss[data-theme='dark'] { --ss-ground: #f6f2e6; --ss-ink: #000341; }
+  .ss-iso, .ss-icon { display: block; flex: none; fill: none; }
+  .ss-sep { display: block; flex: none; width: 1px; height: 16px; background: currentColor; opacity: .35; }
+  .ss-text { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+  .ss-word { display: flex; align-items: center; gap: 6px; font-weight: 600; line-height: 1.2; }
+  .ss-label { display: inline; }
+  .ss-cap { display: block; font-weight: 500; line-height: 1.2; opacity: .8; }
+  .ss[data-size='card'] { flex-direction: column; text-align: center; }
+  .ss[data-size='card'] .ss-text { align-items: center; }
+  .ss[data-size='compact'] { gap: 8px; padding: 4px 12px 4px 6px; border-radius: 999px; }
+  .ss[data-size='compact'] .ss-iso { width: 24px; height: 24px; }
+  .ss[data-size='compact'] .ss-icon { width: 16px; height: 16px; }
+  .ss[data-size='compact'] .ss-word { font-size: 14px; }
+  .ss[data-size='plate'] { gap: 12px; padding: 10px 18px 10px 10px; border-radius: 14px; }
+  .ss[data-size='plate'] .ss-iso { width: 40px; height: 40px; }
+  .ss[data-size='plate'] .ss-icon { width: 16px; height: 16px; }
+  .ss[data-size='plate'] .ss-word { font-size: 15px; }
+  .ss[data-size='plate'] .ss-cap { font-size: 13px; }
+  .ss[data-size='card'] { gap: 10px; padding: 20px 24px; border-radius: 18px; }
+  .ss[data-size='card'] .ss-iso { width: 72px; height: 72px; }
+  .ss[data-size='card'] .ss-icon { width: 20px; height: 20px; }
+  .ss[data-size='card'] .ss-word { font-size: 18px; }
+  .ss[data-size='card'] .ss-cap { font-size: 13px; }
+</style>

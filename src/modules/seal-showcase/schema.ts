@@ -13,7 +13,8 @@ export const sealShowcaseSchema = z.object({
   eyebrow: z.string().max(60).optional(),
   title: z.string().min(1).max(120),
   lede: z.string().max(400).optional(),
-  seal: z.object({ src: url, alt: z.string().min(1).max(140) }),
+  /** Sin `src`: el sello real de SciScreen en HTML (SciSeal: tamaño y fondo; la fecha, la de hoy). */
+  seal: z.object({ src: url.optional(), alt: z.string().min(1).max(140), size: z.enum(['compacto', 'placa', 'tarjeta']).default('tarjeta'), ground: z.enum(['claro', 'oscuro']).default('claro') }),
   ground: z.enum(['paper', 'navy']).default('paper'),
   page: z.object({
     label: z.string().max(40).default('Ejemplo'),
