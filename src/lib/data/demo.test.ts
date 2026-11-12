@@ -57,3 +57,18 @@ describe('resolución de tenant', () => {
     expect((await resolveTenant(repo, 'demo-ventas.cofundo.io', { devTenantSlug: 'enjoy', demoAnyHost: true }))?.slug).toBe('enjoy');
   });
 });
+
+describe('combinaciones de serie de SciScreen en la demo', () => {
+  test('son las de tenants/sciscreen/tenant.json y montan propuesta', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { SCISCREEN_DEMO_TEMPLATES } = await import('./store');
+    const { planProposal, proposalSchema } = await import('../proposal/preset');
+    const sector = JSON.parse(readFileSync('tenants/sciscreen/tenant.json', 'utf8')).market[0];
+    expect(SCISCREEN_DEMO_TEMPLATES).toEqual(sector.templates);
+    const p = proposalSchema.parse(sector.proposal);
+    const fab = planProposal(p, 'full', ['tipo:fabricante']).map((b) => b.module);
+    expect(fab).toContain('en-sus-tiendas');
+    expect(fab).toContain('lo-que-te-pasa-fabricante');
+    expect(fab).not.toContain('su-web');
+  });
+});

@@ -235,6 +235,17 @@ export interface DemoDb {
 }
 
 const ENJOY = '00000000-0000-4000-8000-000000000e01';
+/** Las combinaciones de serie de SciScreen en la demo (las mismas que tenants/sciscreen/tenant.json; un test lo comprueba). */
+export const SCISCREEN_DEMO_TEMPLATES: Array<{ name: string; note: string; mode: 'full' | 'visual'; answers: string[] }> = [
+  { name: 'Marca con tienda online', note: 'Vende en su propia web: el sello, junto a las afirmaciones de su página. Captura antes su web en Personalizar → Su web.', mode: 'full', answers: ['tipo:marca'] },
+  { name: 'Fabricante que vende en tiendas', note: 'Laboratorio con marca propia que vende a farmacias y herbolarios: captura la ficha de su producto en una tienda que lo venda.', mode: 'full', answers: ['tipo:fabricante'] },
+  { name: 'Fabricante, primera reunión', note: 'Primera toma de contacto con un laboratorio: sin inversión, para abrir la conversación.', mode: 'full', answers: ['tipo:fabricante', 'sin-precio'] },
+  { name: 'Lo cuentas tú en la reunión', note: 'Apoyo visual: su página con el sello, la página del sello y la inversión. Tú pones el contexto.', mode: 'visual', answers: ['tipo:marca'] },
+];
+const sciscreenTemplates = (at: string) => SCISCREEN_DEMO_TEMPLATES.map((tp, i) => ({
+  id: `00000000-0000-4000-8000-0000007e5c0${i + 1}`, tenant_id: '00000000-0000-4000-8000-000000005c01',
+  segment_id: '00000000-0000-4000-8000-0000005c5e01', ...tp, price_option_id: null, created_by: null, created_at: at, position: i + 1,
+}));
 const ALT = '00000000-0000-4000-8000-000000000a01';
 
 /** Usuarios de demo (equivalen a los de supabase/tests/20_rls.test.sql). */
@@ -347,7 +358,9 @@ export function freshDemoDb(): DemoDb {
       id: '00000000-0000-4000-8000-0000007e0001', tenant_id: ENJOY, segment_id: '00000000-0000-4000-8000-0000005e0002',
       name: 'Local con DJ residente', note: 'Tiene DJ fijo: la propuesta suma su parte. Un clic la monta y luego la ajustas.',
       mode: 'full', answers: ['dj'], price_option_id: null, created_by: null, created_at: ago(30), position: 1,
-    }],
+    },
+    // SciScreen: las de serie de tenants/sciscreen/tenant.json (marca con web propia / fabricante que vende en tiendas).
+    ...sciscreenTemplates(ago(30))],
     // Historia de ejemplo: una revisión reciente (aparece en "Novedades") y aportes del equipo.
     play_revision: expPitch ? [{
       id: '00000000-0000-4000-8000-0000009b0001', tenant_id: ENJOY, play_id: expPitch.id, version: 1,

@@ -68,6 +68,23 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForFunction(() => document.querySelector('[data-testid=media-site-url]')?.textContent?.includes('otramarca'), null, { timeout: 20000 });
   assert(true, 'captura nueva, con su dirección');
 
+  // Combinaciones de serie de SciScreen: un clic monta la propuesta del fabricante (docs/PROPOSAL_PRESETS.md).
+  await p.goto(`${S}/admin`);
+  await p.click('[data-testid=new-dossier]');
+  await p.fill('[data-testid=create-form] [name=title]', 'SciScreen · fabricante E2E');
+  await p.click('[data-testid=create-form] button[type=submit]');
+  await p.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/);
+  await p.waitForTimeout(800);
+  await p.click('[data-testid=quick-start] .co-chip:has-text("Complementos")');
+  await p.waitForSelector('[data-testid=preset-ready] [data-testid=preset-tpl]');
+  const tpls = await p.textContent('[data-testid=preset-ready]');
+  assert(['Marca con tienda online', 'Fabricante que vende en tiendas', 'Fabricante, primera reunión', 'Lo cuentas tú en la reunión'].every((n) => tpls.includes(n)), 'las cuatro combinaciones de serie de SciScreen');
+  await p.click('[data-testid=preset-ready] [data-testid=preset-tpl]:has-text("Fabricante que vende en tiendas")');
+  await p.waitForSelector('[data-testid=item][data-item-key=en-sus-tiendas]', { timeout: 8000 });
+  const fab = await p.$$eval('[data-testid=item]', (els) => els.map((e) => e.dataset.itemKey));
+  assert(JSON.stringify(fab) === JSON.stringify(['portada', 'lo-que-te-pasa-fabricante', 'como-funciona', 'en-sus-tiendas', 'el-sello', 'pricing']), `fabricante, de un clic: ${fab.join(' → ')}`);
+  if (OUT) await p.screenshot({ path: `${OUT}/sciscreen-preset.png`, fullPage: true });
+
   assert(errors.length === 0, `sin errores de JS (${errors.join(' | ')})`);
   await b.close();
 })();

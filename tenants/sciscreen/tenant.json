@@ -415,5 +415,172 @@
         "smallPrint": "Un pago anual. Si no se renueva, el sello queda pendiente de renovación 30 días y después se retira."
       }
     }
+  ],
+  "market": [
+    {
+      "key": "salud-natural",
+      "name": "Complementos y salud natural",
+      "icon": "shield-check",
+      "image": null,
+      "description": "Marcas de complementos alimenticios, herbolario y salud natural que hacen afirmaciones sobre sus productos: las que venden en su web y los laboratorios con marca propia que venden en farmacias, herbolarios y tiendas online.",
+      "value_prop": "Lo que se afirma del producto, revisado contra la literatura científica por un tercero, con el sello junto a las afirmaciones y la prueba en sciscreen.com. El sello no certifica el producto ni la marca: certifica que las afirmaciones de esa página se han revisado.",
+      "icp": "- Marcas con tienda online o web de producto con afirmaciones de salud\n- Laboratorios con marca propia que venden a farmacias, herbolarios y tiendas online\n- Marcas que cuidan la normativa de publicidad y quieren diferenciarse",
+      "notice": "Siempre «Simulación» mientras no esté verificada. Nunca digas que el sello certifica el producto o la marca, ni «avalado»: certifica que las afirmaciones de esa página se han revisado contra la literatura científica.",
+      "proposal": {
+        "blocks": {
+          "portada": {
+            "module": "portada",
+            "props": {}
+          },
+          "problema": {
+            "module": "lo-que-te-pasa",
+            "props": {}
+          },
+          "problema-fab": {
+            "module": "lo-que-te-pasa-fabricante",
+            "props": {}
+          },
+          "como": {
+            "module": "como-funciona",
+            "props": {}
+          },
+          "web": {
+            "module": "su-web",
+            "props": {}
+          },
+          "tiendas": {
+            "module": "en-sus-tiendas",
+            "props": {}
+          },
+          "sello": {
+            "module": "el-sello",
+            "props": {}
+          },
+          "precio": {
+            "module": "pricing",
+            "props": {}
+          }
+        },
+        "modes": {
+          "full": [
+            "portada",
+            "problema",
+            "como",
+            "web",
+            "sello",
+            "precio"
+          ],
+          "visual": [
+            "web",
+            "sello",
+            "precio"
+          ]
+        },
+        "priority": [
+          "web",
+          "tiendas",
+          "sello",
+          "portada",
+          "problema",
+          "problema-fab",
+          "precio",
+          "como"
+        ],
+        "choices": [
+          {
+            "key": "tipo",
+            "label": "¿Dónde se vende su producto?",
+            "default": "marca",
+            "hint": "Antes de montarla, captura la página en Personalizar → Su web: su web o la ficha de su producto en una tienda.",
+            "options": [
+              {
+                "key": "marca",
+                "label": "En su propia web",
+                "hint": "Marca con tienda online o web de producto: el sello, junto a las afirmaciones de su página."
+              },
+              {
+                "key": "fabricante",
+                "label": "En farmacias, herbolarios y tiendas",
+                "hint": "Laboratorio o fabricante con marca propia que vende a establecimientos. Captura la ficha de su producto en una tienda que lo venda: el sello sale más grande y entra con animación.",
+                "rules": [
+                  {
+                    "replace": "problema",
+                    "with": "problema-fab"
+                  },
+                  {
+                    "replace": "web",
+                    "with": "tiendas"
+                  },
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Lo que se dice de tu producto, con la evidencia a la vista",
+                      "subtitle": "Tu producto se vende en farmacias, herbolarios y tiendas online. Un verificador revisa lo que sus páginas afirman de él contra la literatura científica y, si la evidencia lo sostiene, el sello lo dice en cualquiera de ellas."
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "key": "conoce",
+            "label": "¿Ya sabe cómo funciona SciScreen?",
+            "hint": "Quita «Cómo funciona».",
+            "rules": [
+              {
+                "remove": "como"
+              }
+            ]
+          },
+          {
+            "key": "sin-precio",
+            "label": "¿Es una primera toma de contacto, sin precio?",
+            "hint": "Quita la inversión: se habla de ella en la siguiente.",
+            "rules": [
+              {
+                "remove": "precio"
+              }
+            ]
+          }
+        ]
+      },
+      "templates": [
+        {
+          "name": "Marca con tienda online",
+          "note": "Vende en su propia web: el sello, junto a las afirmaciones de su página. Captura antes su web en Personalizar → Su web.",
+          "mode": "full",
+          "answers": [
+            "tipo:marca"
+          ]
+        },
+        {
+          "name": "Fabricante que vende en tiendas",
+          "note": "Laboratorio con marca propia que vende a farmacias y herbolarios: captura la ficha de su producto en una tienda que lo venda.",
+          "mode": "full",
+          "answers": [
+            "tipo:fabricante"
+          ]
+        },
+        {
+          "name": "Fabricante, primera reunión",
+          "note": "Primera toma de contacto con un laboratorio: sin inversión, para abrir la conversación.",
+          "mode": "full",
+          "answers": [
+            "tipo:fabricante",
+            "sin-precio"
+          ]
+        },
+        {
+          "name": "Lo cuentas tú en la reunión",
+          "note": "Apoyo visual: su página con el sello, la página del sello y la inversión. Tú pones el contexto.",
+          "mode": "visual",
+          "answers": [
+            "tipo:marca"
+          ]
+        }
+      ]
+    }
   ]
 }

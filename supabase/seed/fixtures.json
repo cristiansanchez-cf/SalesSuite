@@ -513,6 +513,24 @@
       "name": "Fabricante · Tu producto en sus tiendas",
       "description": "Para fabricantes que venden a través de otros: la ficha de su producto en la web de una tienda (Personalizar → Su web), con el sello más grande, que entra con animación para verse en cualquier web, y la página del sello en sciscreen.com.",
       "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0107",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "como-funciona",
+      "block_type": "tabs-showcase",
+      "name": "Cómo funciona",
+      "description": "Los cuatro pasos, de la página al sello.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0108",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "pricing",
+      "block_type": "pricing-card",
+      "name": "Inversión",
+      "description": "El precio de la propuesta (la tarifa se elige en la propuesta; se configuran en Precios).",
+      "is_catalog": true
     }
   ],
   "module_version": [
@@ -1250,6 +1268,90 @@
           ]
         },
         "note": "Simulación: {company} aún no está verificada, la tienda es de ejemplo y estas afirmaciones también. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c1007",
+      "module_id": "00000000-0000-4000-8000-0000005c0107",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Cómo funciona",
+        "title": "De tu página al sello, en cuatro pasos",
+        "autoAdvanceMs": 0,
+        "tabs": [
+          {
+            "label": "Tu página",
+            "title": "Nos cuentas qué publicas",
+            "body": "Nos pasas la página que quieres verificar. Cada página se revisa por separado y lleva su propio sello.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/foto-tarjeta.webp",
+              "alt": "Una mano sostiene una tarjeta transparente con el isotipo de SciScreen"
+            }
+          },
+          {
+            "label": "Evidencia",
+            "title": "Buscamos la evidencia",
+            "body": "Buscamos en bases de datos científicas los estudios que hay detrás de cada afirmación.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/foto-laboratorio.webp",
+              "alt": "Una persona mira por un microscopio en un laboratorio"
+            }
+          },
+          {
+            "label": "Dictamen",
+            "title": "Un verificador firma el dictamen",
+            "body": "Decide una persona, no una herramienta. El dictamen dice qué afirmaciones se sostienen y con qué nivel de evidencia.",
+            "bullets": [
+              "Lo que no se sostiene, te lo decimos antes de poner el sello",
+              "Sin dictamen firmado no hay sello"
+            ],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/foto-producto.webp",
+              "alt": "Una persona a punto de morder un bizcocho de avena con marcas de escaneo"
+            }
+          },
+          {
+            "label": "El sello",
+            "title": "El sello, en tu página",
+            "body": "Lo servimos nosotros: va en tu página como un pequeño script, no como una imagen. Enlaza a su página de registro, con las afirmaciones, la evidencia y la fecha del dictamen.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/seal/sello-cream.svg",
+              "alt": "Sello de SciScreen: Vigente, evaluación válida"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c1008",
+      "module_id": "00000000-0000-4000-8000-0000005c0108",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Inversión",
+        "title": "Propuesta para {company}",
+        "subtitle": "Una suscripción anual: el sello sigue vigente mientras la evidencia se sostenga y la suscripción esté al día.",
+        "features": [
+          "Revisión de cada afirmación por un verificador",
+          "Búsqueda en bases de datos científicas",
+          "Dictamen firmado con su nivel de evidencia",
+          "Sello en tu página y su página de registro"
+        ],
+        "noPriceLabel": "Según las páginas que verifiquemos",
+        "taxNote": "IVA no incluido",
+        "smallPrint": "Un pago anual. Si no se renueva, el sello queda pendiente de renovación 30 días y después se retira."
       }
     }
   ],
@@ -2359,6 +2461,143 @@
       "icon": "party-popper",
       "image": "/demo/enjoy/img/festivales.webp",
       "notice": "En locales sabemos lo que funciona porque lo hemos hecho muchas veces. Aquí no: en conciertos y festivales no hemos cerrado ninguna venta todavía. Todos dijeron que sí y todos se perdieron por no hacer seguimiento. Estos guiones son lo mejor que tenemos, pero cada conversación tiene que traer información de vuelta."
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c5e01",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "salud-natural",
+      "name": "Complementos y salud natural",
+      "description": "Marcas de complementos alimenticios, herbolario y salud natural que hacen afirmaciones sobre sus productos: las que venden en su web y los laboratorios con marca propia que venden en farmacias, herbolarios y tiendas online.",
+      "value_prop": "Lo que se afirma del producto, revisado contra la literatura científica por un tercero, con el sello junto a las afirmaciones y la prueba en sciscreen.com. El sello no certifica el producto ni la marca: certifica que las afirmaciones de esa página se han revisado.",
+      "icp": "- Marcas con tienda online o web de producto con afirmaciones de salud\n- Laboratorios con marca propia que venden a farmacias, herbolarios y tiendas online\n- Marcas que cuidan la normativa de publicidad y quieren diferenciarse",
+      "disqualifiers": null,
+      "buying_process": null,
+      "deal_size": null,
+      "sales_cycle": null,
+      "position": 1024,
+      "status": "official",
+      "icon": "shield-check",
+      "image": null,
+      "proposal": {
+        "blocks": {
+          "portada": {
+            "module": "portada",
+            "props": {}
+          },
+          "problema": {
+            "module": "lo-que-te-pasa",
+            "props": {}
+          },
+          "problema-fab": {
+            "module": "lo-que-te-pasa-fabricante",
+            "props": {}
+          },
+          "como": {
+            "module": "como-funciona",
+            "props": {}
+          },
+          "web": {
+            "module": "su-web",
+            "props": {}
+          },
+          "tiendas": {
+            "module": "en-sus-tiendas",
+            "props": {}
+          },
+          "sello": {
+            "module": "el-sello",
+            "props": {}
+          },
+          "precio": {
+            "module": "pricing",
+            "props": {}
+          }
+        },
+        "modes": {
+          "full": [
+            "portada",
+            "problema",
+            "como",
+            "web",
+            "sello",
+            "precio"
+          ],
+          "visual": [
+            "web",
+            "sello",
+            "precio"
+          ]
+        },
+        "priority": [
+          "web",
+          "tiendas",
+          "sello",
+          "portada",
+          "problema",
+          "problema-fab",
+          "precio",
+          "como"
+        ],
+        "choices": [
+          {
+            "key": "tipo",
+            "label": "¿Dónde se vende su producto?",
+            "default": "marca",
+            "hint": "Antes de montarla, captura la página en Personalizar → Su web: su web o la ficha de su producto en una tienda.",
+            "options": [
+              {
+                "key": "marca",
+                "label": "En su propia web",
+                "hint": "Marca con tienda online o web de producto: el sello, junto a las afirmaciones de su página."
+              },
+              {
+                "key": "fabricante",
+                "label": "En farmacias, herbolarios y tiendas",
+                "hint": "Laboratorio o fabricante con marca propia que vende a establecimientos. Captura la ficha de su producto en una tienda que lo venda: el sello sale más grande y entra con animación.",
+                "rules": [
+                  {
+                    "replace": "problema",
+                    "with": "problema-fab"
+                  },
+                  {
+                    "replace": "web",
+                    "with": "tiendas"
+                  },
+                  {
+                    "patch": "portada",
+                    "set": {
+                      "title": "Lo que se dice de tu producto, con la evidencia a la vista",
+                      "subtitle": "Tu producto se vende en farmacias, herbolarios y tiendas online. Un verificador revisa lo que sus páginas afirman de él contra la literatura científica y, si la evidencia lo sostiene, el sello lo dice en cualquiera de ellas."
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "key": "conoce",
+            "label": "¿Ya sabe cómo funciona SciScreen?",
+            "hint": "Quita «Cómo funciona».",
+            "rules": [
+              {
+                "remove": "como"
+              }
+            ]
+          },
+          {
+            "key": "sin-precio",
+            "label": "¿Es una primera toma de contacto, sin precio?",
+            "hint": "Quita la inversión: se habla de ella en la siguiente.",
+            "rules": [
+              {
+                "remove": "precio"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "persona": [
