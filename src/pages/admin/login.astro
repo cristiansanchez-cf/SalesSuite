@@ -12,13 +12,17 @@ import Alert from '~/components/ui/Alert.astro';
 import { BRAND } from '~/lib/site';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
+import { hubMessages } from '~/lib/i18n/messages/hub';
+import { hubUrl } from '~/lib/hub';
 
-const { tenant } = Astro.locals;
-if (!tenant) return Astro.rewrite('/404');
+const { tenant, hub } = Astro.locals;
+// En el acceso general (ventas.cofundo.io, docs/HUB.md) no hay espacio: al entrar, a elegir a cuál vas.
+if (!tenant && !hub) return Astro.rewrite('/404');
 
 const { m } = i18n(Astro, sellMessages);
+const H = i18n(Astro, hubMessages).m;
 const mode = authMode();
-const next = safeNext(Astro.url.searchParams.get('next'));
+const next = hub ? '/admin/elige' : safeNext(Astro.url.searchParams.get('next'));
 let error: string | null = Astro.url.searchParams.get('error') === 'link' ? m.login.errLink : null;
 let info: string | null = null;
 /** Paso 2 del acceso por código: email al que se envió. */
@@ -106,9 +110,9 @@ const roleName = m.login.roles;
     <p class="text-center"><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {BRAND.app}</span></p>
     <div class="co-card grid gap-4 !p-6">
       <div>
-        <p class="text-eyebrow mb-2">{tenant.name}</p>
+        <p class="text-eyebrow mb-2">{tenant?.name ?? H.eyebrow}</p>
         <h1 class="co-page-title">{m.login.heading}</h1>
-        <p class="co-lede mt-2">{m.login.lede}</p>
+        <p class="co-lede mt-2">{hub ? H.lede : m.login.lede}</p>
       </div>
       {error && <Alert kind="rejection" title={error} />}
       {info && <Alert kind="success" title={info} />}
@@ -133,6 +137,8 @@ const roleName = m.login.roles;
         </form>
       )}
     </div>
+
+    {!hub && <p class="co-meta text-center"><a class="co-anchor-link underline" href={`${hubUrl(origin)}/admin/login`} data-testid="hub-link">{H.manySpaces}</a></p>}
 
     {mode === 'demo' ? (
       <details class="co-card" open={!codeEmail}>

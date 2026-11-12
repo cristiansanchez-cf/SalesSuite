@@ -472,7 +472,8 @@ export function supabaseIdentity(url: string, serviceRoleKey: string, mailer: Ma
   async function spaceName(origin: string): Promise<string> {
     const host = new URL(origin).hostname;
     const { data } = await admin.from('domain').select('tenant:tenant_id(name)').eq('hostname', host).maybeSingle();
-    return ((data as { tenant?: { name?: string } } | null)?.tenant?.name) || host;
+    // Sin espacio (el acceso general, ventas.cofundo.io): «Cofundo Ventas».
+    return ((data as { tenant?: { name?: string } } | null)?.tenant?.name) || 'Cofundo Ventas';
   }
   const confirmLink = (origin: string, o: { hash: string; type: string }, next: string) =>
     `${origin}/admin/auth/confirm?type=${o.type}&token_hash=${encodeURIComponent(o.hash)}&next=${encodeURIComponent(next)}`;

@@ -14,6 +14,7 @@ import { isSetupPath, onboardedAt } from './lib/onboarding';
 import { withContentLocale } from './lib/i18n/content-db';
 import { can } from './lib/admin/permissions';
 import { withUsageScope } from './lib/usage/meter';
+import { hubRoute, isHubHost } from './lib/hub';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
 // y la sesión de consola exige membership en ese tenant.
@@ -37,6 +38,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const host = requestHost(context.request, context.url.host);
   if (!isSameOriginWrite(context.request, host)) {
     return new Response('Origen no permitido', { status: 403 });
+  }
+
+  // Acceso general (docs/HUB.md): ventas.cofundo.io no es de ningún espacio. Entrar, elegir espacio, ir y salir; lo demás
+  // lleva a elegir. Sin tenant ni consola: cada espacio abre su propia sesión al entrar.
+  if (isHubHost(host)) {
+    const hp = context.url.pathname.replace(/\/$/, '') || '/';
+    if (hubRoute(hp) === 'pick') return context.redirect('/admin/elige', 302);
+    context.locals.tenant = null;
+    context.locals.admin = null;
+    context.locals.hub = true;
+    context.locals.locale = resolveLocale({ user: null, cookie: context.cookies.get(LOCALE_COOKIE)?.value, tenant: undefined, accept: context.request.headers.get('accept-language') });
+    const res = await withRequestLocale(context.locals.locale, () => next());
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    res.headers.set('Referrer-Policy', 'no-referrer');
+    res.headers.set('Cache-Control', 'private, no-store');
+    res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    res.headers.set('X-Content-Type-Options', 'nosniff');
+    return res;
   }
 
   const timing = serverTiming();

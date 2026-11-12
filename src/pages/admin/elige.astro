@@ -1,0 +1,105 @@
+---
+/**
+ * Acceso general (docs/HUB.md): «¿Dónde quieres ir hoy?». Una tarjeta por empresa a la que tienes acceso; al tocarla,
+ * entras directo (enlace de un solo uso, /admin/ir). Con una sola empresa no hay nada que elegir: se entra directo.
+ * Solo en ventas.cofundo.io; dentro de un espacio, al panel.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { BRAND } from '~/lib/site';
+import { i18n } from '~/lib/i18n';
+import { hubMessages } from '~/lib/i18n/messages/hub';
+import { enterUrl, HUB_LAST_COOKIE, hubUser } from '~/lib/hub';
+import { requestOrigin } from '~/lib/http';
+
+if (!Astro.locals.hub) return Astro.redirect('/admin', 302);
+const user = await hubUser(Astro);
+if (!user) return Astro.redirect('/admin/login', 302);
+const { m } = i18n(Astro, hubMessages);
+
+// Una sola empresa: directo (salvo que venga de un fallo al entrar, para no dar vueltas).
+const failed = Astro.url.searchParams.get('error') === 'host';
+if (user.spaces.length === 1 && !failed) {
+  const url = await enterUrl(user, user.spaces[0], requestOrigin(Astro.request, Astro.url));
+  if (url) return Astro.redirect(url, 303);
+}
+const last = Astro.cookies.get(HUB_LAST_COOKIE)?.value ?? null;
+// La última elegida, primero; las demás, por nombre.
+const spaces = [...user.spaces].sort((a, b) => Number(b.id === last) - Number(a.id === last));
+const initials = (name: string) => name.split(/\s+/).map((w) => w.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '·';
+const firstName = (user.name ?? '').trim().split(/\s+/)[0] || null;
+---
+<AdminLayout title={m.title} bare>
+  <div class="mx-auto mt-4 grid w-full max-w-3xl gap-6 sm:mt-12" data-testid="hub-pick">
+    <p class="text-center"><span class="co-wordmark">{BRAND.wordmark}</span> <span class="co-sidebar__app">· {BRAND.app}</span></p>
+    <div class="grid gap-2">
+      {firstName && <p class="co-lede">{m.hello(firstName)}</p>}
+      <h1 class="co-page-title">{m.title}</h1>
+      <p class="co-body">{spaces.length ? m.pickLede : m.noSpaces}</p>
+    </div>
+
+    {failed && <p class="co-alert co-alert--info" role="alert">{m.noHost}</p>}
+
+    {spaces.length === 0 ? (
+      <div class="co-card grid gap-2 !p-6" data-testid="hub-empty">
+        <p class="co-body">{m.noSpacesHelp}</p>
+      </div>
+    ) : (
+      <>
+        {spaces.length > 6 && (
+          <label class="co-field">{m.search}<input class="co-input" type="search" data-hub-search autocomplete="off" /></label>
+        )}
+        <ul class="grid gap-3 sm:grid-cols-2" data-testid="hub-spaces">
+          {spaces.map((sp) => (
+            <li data-hub-item data-name={sp.name.toLowerCase()}>
+              <form method="post" action="/admin/ir" class="h-full">
+                <input type="hidden" name="tenant" value={sp.id} />
+                <button type="submit" class="co-card hub-card flex h-full w-full items-center gap-4 !p-5 text-left" data-testid="hub-space" data-space={sp.slug}>
+                  <span class="hub-logo" aria-hidden="true">
+                    {sp.logoUrl ? <img src={sp.logoUrl} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span>{initials(sp.name)}</span>}
+                  </span>
+                  <span class="grid min-w-0 flex-1 gap-1">
+                    <span class="co-row-title truncate">{sp.name}</span>
+                    <span class="flex flex-wrap items-center gap-2">
+                      <span class="co-badge co-badge--soft">{m.roles[sp.role] ?? sp.role}</span>
+                      {sp.id === last && <span class="co-badge co-badge--signal" data-testid="hub-last">{m.last}</span>}
+                    </span>
+                    {sp.host && <span class="co-meta truncate">{sp.host}</span>}
+                  </span>
+                  <Icon name="chevron-right" size={18} />
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--console-divider)] pt-4">
+      <p class="co-meta">{m.signedAs(user.email)}</p>
+      <form method="post" action="/admin/logout"><button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="hub-logout">{m.logout}</button></form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .hub-card { cursor: pointer; transition: border-color 120ms ease, transform 120ms ease; }
+  .hub-card:hover, .hub-card:focus-visible { border-color: var(--co-ink); }
+  .hub-card:active { transform: scale(0.99); }
+  .hub-logo { display: grid; place-items: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px; overflow: hidden;
+    background: var(--co-canvas); border: 1px solid var(--console-card-border); font-weight: 700; font-size: 1.05rem; color: var(--co-ink); }
+  .hub-logo img { width: 100%; height: 100%; object-fit: contain; padding: 6px; background: #fff; }
+</style>
+
+<script>
+  const q = document.querySelector<HTMLInputElement>('[data-hub-search]');
+  q?.addEventListener('input', () => {
+    const v = q.value.trim().toLowerCase();
+    document.querySelectorAll<HTMLElement>('[data-hub-item]').forEach((li) => { li.hidden = !!v && !(li.dataset.name ?? '').includes(v); });
+  });
+  // Al tocar una, se nota que va (el salto tarda un momento).
+  document.querySelectorAll<HTMLFormElement>('[data-hub-item] form').forEach((f) => f.addEventListener('submit', () => {
+    f.querySelector('button')?.setAttribute('aria-busy', 'true');
+    document.querySelectorAll<HTMLButtonElement>('[data-hub-item] button').forEach((b) => { b.disabled = true; });
+  }));
+</script>

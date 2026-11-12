@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import type { EmailOtpType } from '@supabase/supabase-js';
-import { authMode, safeNext, supabaseServerClient } from '~/lib/admin/auth';
+import { authMode, demoLogin, safeNext, supabaseServerClient } from '~/lib/admin/auth';
 
 const TYPES = new Set<EmailOtpType>(['invite', 'magiclink', 'recovery', 'email', 'signup', 'email_change']);
 
@@ -11,6 +11,11 @@ const TYPES = new Set<EmailOtpType>(['invite', 'magiclink', 'recovery', 'email',
  * Invitación y recuperación llevan a /admin/account para fijar la contraseña (la invitación sigue a /admin/start).
  */
 export const GET: APIRoute = async (ctx) => {
+  // Demo: el acceso general (docs/HUB.md) manda aquí a quien ya ha entrado allí, como el enlace de un solo uso de verdad.
+  if (authMode() === 'demo') {
+    const u = ctx.url.searchParams.get('demo_user');
+    return ctx.redirect(u && demoLogin(ctx, u) ? safeNext(ctx.url.searchParams.get('next')) : '/admin/login', 303);
+  }
   if (authMode() !== 'supabase') return ctx.redirect('/admin/login', 303);
   const q = ctx.url.searchParams;
   const sb = supabaseServerClient(ctx);
@@ -23,6 +28,8 @@ export const GET: APIRoute = async (ctx) => {
   else if (code) ok = !(await sb.auth.exchangeCodeForSession(code)).error;
 
   if (!ok) return ctx.redirect('/admin/login?error=link', 303);
+  // En el acceso general solo se elige espacio: la invitación y la contraseña se terminan dentro del espacio.
+  if (ctx.locals.hub) return ctx.redirect('/admin/elige', 303);
   // Invitación: tras fijar la contraseña, «Empieza aquí». Recuperación: vuelve al panel.
   if (type === 'invite') return ctx.redirect('/admin/account?setup=1', 303);
   if (type === 'recovery') return ctx.redirect('/admin/account?setup=recovery', 303);

@@ -14,6 +14,9 @@ de cada pieza: [`ORG.md`](ORG.md) §Alta de una empresa (qué crea y cómo está
 3. **Supabase → Authentication → URL Configuration → Redirect URLs:** añadir `https://*.ventas.cofundo.io/**`, para que
    las invitaciones y los códigos de acceso funcionen en cualquier espacio.
 
+4. **Acceso general** ([`HUB.md`](HUB.md)): añadir también `ventas.cofundo.io` (sin asterisco) en Vercel y
+   `https://ventas.cofundo.io/**` en las Redirect URLs de Supabase. Ahí entra todo el mundo y elige su empresa.
+
 Si los espacios cuelgan de otra base que no sea `ventas.cofundo.io`, se pone en `PLATFORM_DOMAIN` (Vercel) y se usa esa
 base en los pasos 2 y 3.
 
