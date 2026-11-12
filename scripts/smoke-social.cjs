@@ -52,6 +52,10 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=social-peek-next]');
   assert((await p.getAttribute('[data-testid=social-peek]', 'data-i')) === '1', 'siguiente');
   if (OUT) await p.screenshot({ path: `${OUT}/social-peek.png` });
+  // Un vídeo se reproduce aquí con el reproductor oficial de la red (sin descargarlo), al pulsar ▶.
+  await p.click('[data-testid=social-peek-play]');
+  const embed = await p.getAttribute('[data-testid=social-peek-embed]', 'src');
+  assert(/^https:\/\/www\.instagram\.com\/p\/[\w-]+\/embed$/.test(embed ?? ''), `▶ carga el reproductor de Instagram (${embed})`);
   await p.click('[data-testid=social-peek-pick]'); // el vídeo 2: cambia el elegido
   assert((await items.nth(1).getAttribute('data-on')) === '1' && (await items.nth(4).getAttribute('data-on')) === '0', 'elegir desde la vista de cerca (un solo vídeo: cambia el elegido)');
   await p.keyboard.press('Escape');

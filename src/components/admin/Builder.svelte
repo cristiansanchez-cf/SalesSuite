@@ -187,6 +187,17 @@
   // Ver de cerca antes de elegir: la foto en grande, su texto y sus números, y el enlace a la original (un vídeo se ve allí).
   let sPeek = $state<number | null>(null);
   $effect(() => { if (!sheet) sPeek = null; });
+  // Reproducir un vídeo sin descargarlo: el reproductor oficial de la red (embed), solo al pulsar ▶.
+  let sPlay = $state<number | null>(null);
+  $effect(() => { if (sPeek !== sPlay) sPlay = null; });
+  function embedOf(platform: 'instagram' | 'tiktok', url: string): string | null {
+    if (platform === 'instagram') {
+      const m = url.match(/^https:\/\/(?:www\.)?instagram\.com\/(?:[\w.]+\/)?(p|reels?|tv)\/([\w-]+)/);
+      return m ? `https://www.instagram.com/${m[1] === 'reels' ? 'reel' : m[1]}/${m[2]}/embed` : null;
+    }
+    const m = url.match(/^https:\/\/(?:www\.|m\.)?tiktok\.com\/.*\/video\/(\d+)/);
+    return m ? `https://www.tiktok.com/embed/v2/${m[1]}` : null;
+  }
   const peekPost = $derived(sList && sPeek != null ? sList.posts.find((x) => x.i === sPeek) ?? null : null);
   const peekAt = $derived(sList && peekPost ? sList.posts.indexOf(peekPost) : -1);
   const isPicked = (p: SocialPostView) => (p.type === 'video' ? sPick.videos.includes(p.i) : sPick.photos.includes(p.i));
@@ -831,14 +842,25 @@
                 {@const p = peekPost}
                 {@const on = isPicked(p)}
                 {@const full = isFull(p)}
+                {@const embed = p.type === 'video' ? embedOf(sList.platform, p.url) : null}
                 <div class="social-peek" data-testid="social-peek" data-i={p.i}>
                   <div class="social-peek__bar">
                     <button type="button" class="co-btn co-btn--ghost co-btn--sm" onclick={() => (sPeek = null)} data-testid="social-peek-back">← {t.social.peek.back}</button>
                     <span class="co-help">{t.social.peek.of(peekAt + 1, sList.posts.length)}</span>
                   </div>
-                  <div class="social-peek__media">
-                    {#if p.thumb}<img src={p.thumb} alt={p.caption ?? ''} />{:else}<span class="social-post__ph">{t.social.types[p.type]}</span>{/if}
-                    {#if p.type === 'video'}<span class="social-peek__play" aria-hidden="true">▶</span>{/if}
+                  <div class="social-peek__media" class:is-playing={sPlay === p.i && !!embed}>
+                    {#if sPlay === p.i && embed}
+                      <iframe class="social-peek__embed" src={embed} title={t.social.peek.play} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" data-testid="social-peek-embed"></iframe>
+                    {:else}
+                      {#if p.thumb}<img src={p.thumb} alt={p.caption ?? ''} />{:else}<span class="social-post__ph">{t.social.types[p.type]}</span>{/if}
+                      {#if p.type === 'video'}
+                        {#if embed}
+                          <button type="button" class="social-peek__play" onclick={() => (sPlay = p.i)} aria-label={t.social.peek.play} data-testid="social-peek-play">▶</button>
+                        {:else if /^https:\/\//.test(p.url)}
+                          <a class="social-peek__play" href={p.url} target="_blank" rel="noopener noreferrer" aria-label={t.social.peek.originalVideo(t.social.net[sList.platform])} data-testid="social-peek-play">▶</a>
+                        {/if}
+                      {/if}
+                    {/if}
                     <button type="button" class="social-peek__nav social-peek__nav--prev" disabled={peekAt <= 0} onclick={() => peekStep(-1)} aria-label={t.social.peek.prev} data-testid="social-peek-prev">‹</button>
                     <button type="button" class="social-peek__nav social-peek__nav--next" disabled={peekAt >= sList.posts.length - 1} onclick={() => peekStep(1)} aria-label={t.social.peek.next} data-testid="social-peek-next">›</button>
                   </div>
@@ -851,6 +873,7 @@
                       {#if shortDate(p.takenAt)}<span class="co-help">{shortDate(p.takenAt)}</span>{/if}
                     </p>
                     {#if p.type === 'carousel' && p.itemCount}<p class="co-help">{t.social.peek.items(p.itemCount)}</p>{/if}
+                    {#if sPlay === p.i && embed}<p class="co-help">{t.social.peek.playing(t.social.net[sList.platform])}</p>{/if}
                     {#if p.caption}<p class="social-peek__caption" data-testid="social-peek-caption">{p.caption}</p>{/if}
                     {#if /^https:\/\//.test(p.url)}<a class="co-help underline" href={p.url} target="_blank" rel="noopener noreferrer" data-testid="social-peek-original">{p.type === 'video' ? t.social.peek.originalVideo(t.social.net[sList.platform]) : t.social.peek.original(t.social.net[sList.platform])}</a>{/if}
                     {#if full}<p class="co-help" data-testid="social-peek-full">{t.social.peek.full(sPick.photos.length)}</p>{/if}
@@ -1478,7 +1501,12 @@
   .social-peek__bar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--console-divider); background: var(--console-surface, #fff); }
   .social-peek__media { position: relative; display: grid; place-items: center; background: #111; min-height: 14rem; }
   .social-peek__media img { display: block; max-width: 100%; max-height: min(60dvh, 34rem); object-fit: contain; }
-  .social-peek__play { position: absolute; display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 1.4rem; pointer-events: none; }
+  .social-peek__play { position: absolute; display: grid; place-items: center; width: 4.25rem; height: 4.25rem; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; font-size: 1.6rem; text-decoration: none; cursor: pointer; box-shadow: 0 0 0 3px rgba(255,255,255,.85); transition: transform 120ms ease, background 120ms ease; }
+  .social-peek__play:hover, .social-peek__play:focus-visible { transform: scale(1.08); background: rgba(0,0,0,.8); }
+  .social-peek__media.is-playing { background: #fff; padding: .5rem 0; }
+  .social-peek__media.is-playing { overflow-y: auto; align-items: start; }
+  .social-peek__media.is-playing .social-peek__nav { display: none; }
+  .social-peek__embed { display: block; width: min(100%, 26rem); height: min(72dvh, 44rem); border: 0; background: #fff; }
   .social-peek__nav { position: absolute; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 999px; background: rgba(255,255,255,.92); color: #111; font-size: 1.6rem; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
   .social-peek__nav:disabled { opacity: .3; }
   .social-peek__nav--prev { left: .6rem; } .social-peek__nav--next { right: .6rem; }
