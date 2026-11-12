@@ -36,6 +36,21 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('.sv-seal');
   assert((await p.getAttribute('.sv-ss', 'data-open')) === '1', 'y se abre pulsando el sello');
 
+  // Perfil fabricante: su producto en la web de una tienda, con el sello más grande (placa ×1,5), que entra con animación
+  // y foco para verse en una web cargada que no controla.
+  await p.goto(`${S}/d/demo-sciscreen-Tn4q#3`);
+  await p.waitForSelector('[data-module=site-verify] .sv-shot');
+  assert((await p.textContent('.sv-bar .sv-url-site')).includes('laboticaverde.example'), 'fabricante: la ficha de su producto en una tienda');
+  await p.waitForFunction(() => ['seal', 'move', 'press'].includes(document.querySelector('.sv-stage')?.getAttribute('data-step') ?? ''), null, { timeout: 5000 });
+  assert(true, 'fabricante: el sello entra y el foco lo señala');
+  await p.waitForTimeout(1000); // que aterrice: la caída empieza más grande
+  const k = await p.$eval('.sv-seal .ss', (e) => { const r = e.getBoundingClientRect(); const pg = document.querySelector('.sv-page').getBoundingClientRect(); return Math.round(r.width / pg.width * 1440); });
+  assert(k >= 270 && k <= 300, `fabricante: el sello más grande (placa ×1,5 ≈ 284 px de 1440: ${k})`);
+  assert(await p.$eval('.sv-pop', (e) => getComputedStyle(e).animationName.includes('sv-drop')), 'fabricante: el sello entra con animación');
+  assert(await p.$eval('.sv-dim', (e) => getComputedStyle(e).backgroundImage.includes('radial-gradient')), 'fabricante: foco sobre el sello');
+  await p.waitForFunction(() => document.querySelectorAll('.sv-ss[data-open="1"]').length === 1, null, { timeout: 9000 });
+  assert(/El magnesio contribuye/.test(await p.textContent('.sv-ss')), 'fabricante: se abre la página del sello con sus afirmaciones');
+
   // El editor: «Su web» con la dirección de la ficha; una web que no se deja, el motivo; otra, la captura nueva.
   await p.goto(`${S}/admin/login`);
   await p.click('[data-testid="demo-super@cofundo.test"]');

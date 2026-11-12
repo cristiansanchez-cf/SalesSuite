@@ -9,7 +9,9 @@ const url = z.string().refine((u) => /^(https:\/\/|\/)/.test(u), 'https o ruta a
  *
  * - Siempre lleva la etiqueta «Simulación» sobre su web: la marca aún no está verificada (no se puede quitar).
  * - `seals`: 1–3 sellos (compacto, placa o tarjeta; claro u oscuro según lo que haya debajo). `x`/`y`: su esquina de
- *   arriba a la izquierda, en % de la captura. Miden lo que medirían instalados en una página de 1440 px.
+ *   arriba a la izquierda, en % de la captura. Miden lo que medirían instalados en una página de 1440 px; `scale` lo
+ *   agranda (hasta ×3) para webs cargadas que no controla la marca (las tiendas que venden su producto).
+ * - Al entrar, el sello cae sobre la página y lo de alrededor se oscurece un momento (para que se vea en cualquier web).
  * - Textos: `{company}` es la empresa de la propuesta; `{date}`, hoy («12 de noviembre de 2026»); `{nextYear}`, dentro
  *   de un año. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica:
  *   nunca el producto ni la marca.
@@ -19,6 +21,7 @@ const sealSchema = z.object({
   ground: z.enum(['claro', 'oscuro']).default('claro'),
   x: z.number().min(0).max(100),
   y: z.number().min(0).max(100),
+  scale: z.number().min(1).max(3).default(1),
 });
 
 export const siteVerifySchema = z.object({

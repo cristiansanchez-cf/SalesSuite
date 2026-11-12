@@ -495,6 +495,24 @@
       "name": "El sello en su página",
       "description": "El sello junto a las afirmaciones, dónde va (también en el pie de cada página verificada) y qué pasa cada año.",
       "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0105",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "lo-que-te-pasa-fabricante",
+      "block_type": "problem-solution",
+      "name": "Fabricante · Lo que le pasa hoy",
+      "description": "Para laboratorios y fabricantes con marca propia que venden a farmacias, herbolarios y tiendas: hoy y con SciScreen.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0106",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "en-sus-tiendas",
+      "block_type": "site-verify",
+      "name": "Fabricante · Tu producto en sus tiendas",
+      "description": "Para fabricantes que venden a través de otros: la ficha de su producto en la web de una tienda (Personalizar → Su web), con el sello más grande, que entra con animación para verse en cualquier web, y la página del sello en sciscreen.com.",
+      "is_catalog": true
     }
   ],
   "module_version": [
@@ -1135,6 +1153,104 @@
         ],
         "note": "El sello no es un aval: dice qué se comprobó y cuándo."
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c1005",
+      "module_id": "00000000-0000-4000-8000-0000005c0105",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Hoy",
+        "title": "Lo que se dice de tu producto lo cuentan webs que no son tuyas",
+        "beforeLabel": "Hoy",
+        "afterLabel": "Con SciScreen",
+        "cards": [
+          {
+            "problem": "Tu producto se vende en farmacias, herbolarios y tiendas online, y cada una lo cuenta en su web, a su manera.",
+            "solution": "SciScreen revisa las afirmaciones de cada página contra la literatura científica y publica en sciscreen.com qué se revisó, con qué estudios y hasta cuándo."
+          },
+          {
+            "problem": "Quien compra en esas tiendas no puede saber qué afirmaciones sobre tu producto están respaldadas por estudios.",
+            "solution": "El sello, junto a esas afirmaciones, abre la prueba en sciscreen.com: lo dice un tercero, no la tienda ni la marca."
+          },
+          {
+            "problem": "Una afirmación que no se sostiene es un riesgo con la normativa de publicidad.",
+            "solution": "Te ayudamos a revisar lo que se publica de tu producto: lo que no se sostiene, te lo decimos antes de poner el sello."
+          }
+        ],
+        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c1006",
+      "module_id": "00000000-0000-4000-8000-0000005c0106",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Tu producto, en sus tiendas",
+        "title": "El sello junto a tu producto, en una tienda que lo vende",
+        "lede": "Cada farmacia, herbolario o tienda online enseña tu producto a su manera. El sello se ve en cualquiera y abre en sciscreen.com lo que se revisó.",
+        "seals": [
+          {
+            "size": "placa",
+            "ground": "claro",
+            "x": 44,
+            "y": 44,
+            "scale": 1.5
+          }
+        ],
+        "press": 0,
+        "simulation": "Simulación",
+        "hint": "Pulsa el sello",
+        "replay": "Volver a verlo",
+        "back": "Volver a la tienda",
+        "captions": {
+          "start": "Así se vería tu producto en una tienda que lo vende, con el sello de SciScreen.",
+          "seal": "Cada tienda tiene su web; el sello destaca en todas, junto a tu producto.",
+          "click": "Quien duda, lo pulsa…",
+          "page": "…y ve en sciscreen.com qué se revisó y con qué estudios: lo dice un tercero."
+        },
+        "page": {
+          "path": "sciscreen.com/es/sello/",
+          "status": "Vigente",
+          "reviewed": "Revisado el {date}",
+          "validUntil": "{nextYear}",
+          "claims": [
+            {
+              "text": "El magnesio contribuye a disminuir el cansancio y la fatiga.",
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012",
+              "sources": [
+                {
+                  "title": "Reglamento (UE) n.º 432/2012, declaraciones de propiedades saludables permitidas",
+                  "ref": "Diario Oficial de la Unión Europea · 2012"
+                }
+              ]
+            },
+            {
+              "text": "La vitamina B6 contribuye al funcionamiento normal del sistema nervioso.",
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012",
+              "sources": [
+                {
+                  "title": "Reglamento (UE) n.º 432/2012, declaraciones de propiedades saludables permitidas",
+                  "ref": "Diario Oficial de la Unión Europea · 2012"
+                }
+              ]
+            }
+          ]
+        },
+        "fallback": {
+          "address": "tienda.com/tu-producto",
+          "claims": [
+            "El magnesio contribuye a disminuir el cansancio y la fatiga.",
+            "La vitamina B6 contribuye al funcionamiento normal del sistema nervioso."
+          ]
+        },
+        "note": "Simulación: {company} aún no está verificada, la tienda es de ejemplo y estas afirmaciones también. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
+      }
     }
   ],
   "dossier": [
@@ -1253,6 +1369,26 @@
       "client_media": {
         "site": "/demo/web-ejemplo.jpg",
         "siteUrl": "https://valleverde.example/"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0d52",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "author_id": null,
+      "title": "SciScreen × Valle Verde Naturales · en tiendas",
+      "prospect_name": null,
+      "prospect_company": "Valle Verde Naturales",
+      "prospect_meta": {},
+      "status": "published",
+      "locale": "es-ES",
+      "price_mode": "none",
+      "total_price": null,
+      "currency": "EUR",
+      "theme_override": null,
+      "segment_id": null,
+      "client_media": {
+        "site": "/demo/web-tienda-ejemplo.jpg",
+        "siteUrl": "https://laboticaverde.example/magnesio-b6-valle-verde"
       }
     }
   ],
@@ -1393,6 +1529,55 @@
       "visible": true,
       "price_override": null,
       "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0d65",
+      "dossier_id": "00000000-0000-4000-8000-0000005c0d52",
+      "module_version_id": "00000000-0000-4000-8000-0000005c1001",
+      "position": 512,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {
+        "title": "Lo que se dice de tu producto, con la evidencia a la vista",
+        "subtitle": "Tu producto se vende en farmacias, herbolarios y tiendas online. Un verificador revisa lo que sus páginas afirman de él contra la literatura científica y, si la evidencia lo sostiene, el sello lo dice en cualquiera de ellas."
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0d66",
+      "dossier_id": "00000000-0000-4000-8000-0000005c0d52",
+      "module_version_id": "00000000-0000-4000-8000-0000005c1005",
+      "position": 1024,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0d67",
+      "dossier_id": "00000000-0000-4000-8000-0000005c0d52",
+      "module_version_id": "00000000-0000-4000-8000-0000005c1006",
+      "position": 1536,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {
+        "seals": [
+          {
+            "size": "placa",
+            "ground": "claro",
+            "x": 44.17,
+            "y": 43.56,
+            "scale": 1.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0d68",
+      "dossier_id": "00000000-0000-4000-8000-0000005c0d52",
+      "module_version_id": "00000000-0000-4000-8000-0000005c1004",
+      "position": 2048,
+      "visible": true,
+      "price_override": null,
+      "prop_overrides": {}
     }
   ],
   "share_link": [
@@ -1442,6 +1627,13 @@
       "id": "00000000-0000-4000-8000-0000005c0d71",
       "dossier_id": "00000000-0000-4000-8000-0000005c0d51",
       "token": "demo-sciscreen-Vv7p",
+      "is_active": true,
+      "expires_at": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0d72",
+      "dossier_id": "00000000-0000-4000-8000-0000005c0d52",
+      "token": "demo-sciscreen-Tn4q",
       "is_active": true,
       "expires_at": null
     }

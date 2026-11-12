@@ -59,10 +59,11 @@ const lock = 'M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0
               <ul class="sv-mock-claims">{(fallback?.claims ?? page.claims.map((c) => c.text)).map((c) => <li>{t(c)}</li>)}</ul>
             </div>
           )}
+          <span class="sv-dim" aria-hidden="true"></span>
           {seals.map((s, i) => (
-            <button type="button" class:list={['sv-seal', i === target && 'sv-seal--target']} style={`left:${s.x}%;top:${s.y}%;--d:${i * 250}ms`}
+            <button type="button" class:list={['sv-seal', i === target && 'sv-seal--target']} style={`left:${s.x}%;top:${s.y}%;--d:${i * 280}ms;--s:${s.scale}`}
               aria-expanded="false" aria-controls={pageId} aria-label={`${t(hint)}: ${sealUrl}`}>
-              <SciSeal size={s.size} ground={s.ground} date={sealDate(now)} />
+              <span class="sv-pop"><SciSeal size={s.size} ground={s.ground} date={sealDate(now)} /></span>
             </button>
           ))}
           <span class="sv-hint" aria-hidden="true">{t(hint)}</span>
@@ -167,24 +168,32 @@ const lock = 'M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0
   .sv-mock-claims li { padding: .7rem .9rem; border-radius: .9rem; background: rgb(var(--color-surface, 246 242 230)); line-height: 1.45; }
 
   /* Los sellos, del tamaño que tendrían instalados: --k = ancho de la captura / 1440 (client.ts). */
-  .sv-seal { position: absolute; padding: 0; margin: 0; border: 0; background: none; cursor: pointer; line-height: 0; transform-origin: 0 0;
-    transform: scale(var(--k, .7)); filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)); opacity: 0; transition: opacity .35s ease var(--d, 0ms); border-radius: 18px; }
-  .sv-stage:not([data-step='idle']) .sv-seal, .sv-stage.no-anim .sv-seal { opacity: 1; }
+  .sv-seal { position: absolute; z-index: 2; padding: 0; margin: 0; border: 0; background: none; cursor: pointer; line-height: 0; transform-origin: 0 0;
+    transform: scale(calc(var(--k, .7) * var(--s, 1))); filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)); border-radius: 18px; }
+  /* La entrada: cae sobre la página con un pequeño rebote (se repite con «Volver a verlo»). */
+  .sv-pop { display: inline-block; transform-origin: 50% 50%; }
+  .sv-stage[data-step='idle'] .sv-pop { opacity: 0; }
+  .sv-stage:not([data-step='idle']) .sv-pop { animation: sv-drop .75s cubic-bezier(.2, 1.3, .4, 1) var(--d, 0ms) both; }
+  @keyframes sv-drop { 0% { opacity: 0; transform: translateY(-28px) scale(1.55); } 55% { opacity: 1; transform: translateY(0) scale(.94); } 100% { opacity: 1; transform: none; } }
+  /* Foco: lo de alrededor se oscurece mientras el sello entra y el cursor va a pulsarlo. */
+  .sv-dim { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .5s ease;
+    background: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), transparent 0, transparent var(--fr, 120px), rgb(8 10 30 / .42) calc(var(--fr, 120px) + 90px)); }
+  .sv-stage[data-step='seal'] .sv-dim, .sv-stage[data-step='move'] .sv-dim, .sv-stage[data-step='press'] .sv-dim { opacity: 1; }
   .sv-seal:focus-visible { outline: 3px solid rgb(var(--color-primary, 34 70 178)); outline-offset: 3px; }
   .sv-stage[data-step='seal'] .sv-seal--target, .sv-stage[data-step='move'] .sv-seal--target { animation: sv-pulse 1.2s ease-in-out infinite; }
   .sv-stage[data-step='press'] .sv-seal--target { filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)) brightness(1.15); }
   @keyframes sv-pulse { 50% { filter: drop-shadow(0 0 0 rgb(34 70 178 / 0)) drop-shadow(0 0 12px rgb(34 70 178 / .55)); } }
 
-  .sv-hint { position: absolute; left: var(--hx, 50%); top: var(--hy, 80%); transform: translate(var(--hdx, 0), -50%); padding: .3rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600;
+  .sv-hint { position: absolute; z-index: 3; left: var(--hx, 50%); top: var(--hy, 80%); transform: translate(var(--hdx, 0), -50%); padding: .3rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600;
     background: rgb(var(--color-accent-contrast, 0 3 65)); color: rgb(var(--color-bg, 252 250 245)); white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
   .sv-stage[data-step='done']:not(.is-open) .sv-hint, .sv-stage.no-anim:not(.is-open) .sv-hint { opacity: .95; }
 
   /* El cursor: entra por la esquina, va al sello, se vuelve mano y pulsa. */
-  .sv-cursor { position: absolute; left: var(--cx, 105%); top: var(--cy, 92%); width: clamp(20px, 2.2vw, 30px); height: auto; fill: #111; stroke: #fff; stroke-width: 1.4; opacity: 0; pointer-events: none;
+  .sv-cursor { position: absolute; z-index: 4; left: var(--cx, 105%); top: var(--cy, 92%); width: clamp(20px, 2.2vw, 30px); height: auto; fill: #111; stroke: #fff; stroke-width: 1.4; opacity: 0; pointer-events: none;
     filter: drop-shadow(0 3px 6px rgb(0 0 0 / .35)); transform-origin: 4px 2px; transition: left 1.3s cubic-bezier(.55, 0, .2, 1), top 1.3s cubic-bezier(.55, 0, .2, 1), opacity .3s, transform .15s; }
   .sv-stage[data-step='move'] .sv-cursor, .sv-stage[data-step='press'] .sv-cursor { opacity: 1; }
   .sv-stage[data-step='press'] .sv-cursor { transform: scale(.82); }
-  .sv-click { position: absolute; left: var(--cx, 0); top: var(--cy, 0); width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 99px; border: 2px solid rgb(var(--color-primary, 34 70 178)); opacity: 0; pointer-events: none; }
+  .sv-click { position: absolute; z-index: 4; left: var(--cx, 0); top: var(--cy, 0); width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 99px; border: 2px solid rgb(var(--color-primary, 34 70 178)); opacity: 0; pointer-events: none; }
   .sv-stage[data-step='press'] .sv-click { animation: sv-ring .5s ease-out; }
   @keyframes sv-ring { from { opacity: .9; transform: scale(.4); } to { opacity: 0; transform: scale(1.5); } }
 
@@ -247,7 +256,7 @@ const lock = 'M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0
 
   @media (prefers-reduced-motion: reduce) {
     .sv-cursor, .sv-click { display: none; }
-    .sv-seal, .sv-ss, .sv-ss[data-open='1'], .sv-shot { transition: none; animation: none; }
+    .sv-seal, .sv-pop, .sv-stage:not([data-step='idle']) .sv-pop, .sv-ss, .sv-ss[data-open='1'], .sv-shot, .sv-dim { transition: none; animation: none; }
   }
 </style>
 

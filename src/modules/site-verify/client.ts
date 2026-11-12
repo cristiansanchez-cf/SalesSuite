@@ -42,6 +42,10 @@ export function init(root: HTMLElement) {
     page.style.setProperty('--hx', `${(right ? r.right + 10 : r.left - 10) - p.left}px`);
     page.style.setProperty('--hdx', right ? '0' : '-100%');
     page.style.setProperty('--hy', `${r.top - p.top + r.height / 2}px`);
+    // El foco, centrado en el sello y un poco más grande que él.
+    page.style.setProperty('--fx', `${r.left - p.left + r.width / 2}px`);
+    page.style.setProperty('--fy', `${r.top - p.top + r.height / 2}px`);
+    page.style.setProperty('--fr', `${Math.max(r.width, r.height) / 2 + 24}px`);
     return { x: r.left - p.left + r.width * 0.3, y: r.top - p.top + r.height * 0.55 };
   };
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => place()) : null;

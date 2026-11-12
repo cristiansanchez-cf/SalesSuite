@@ -31,6 +31,8 @@ Fuera a propósito: las fotos con texto incrustado o marcas ajenas (photo1 con e
 | `lo-que-te-pasa` | problem-solution | Hoy → con SciScreen (verificador, sello con registro, revisar y preparar) |
 | `como-funciona` | tabs-showcase | Tu página → evidencia → dictamen → el sello, con sus fotos y el sello |
 | `su-web` | site-verify | Su página de verdad (captura de Personalizar → Su web) con el sello real encima (compacto, placa o tarjeta) y la etiqueta «Simulación»; un cursor lo pulsa, la barra pasa a sciscreen.com y se abre la página del sello: marca, estado, URL verificada, fechas y cada afirmación con su evidencia y sus estudios |
+| `lo-que-te-pasa-fabricante` | problem-solution | **Perfil fabricante** (laboratorio con marca propia que vende a farmacias, herbolarios y tiendas): lo que se dice de su producto lo cuentan webs que no son suyas |
+| `en-sus-tiendas` | site-verify | **Perfil fabricante**: la ficha de su producto en la web de una tienda, con el sello más grande (placa ×1,5) que entra con animación y foco, para verse en webs cargadas que no controla |
 | `el-sello` | seal-showcase | El sello en una página de ejemplo junto a sus afirmaciones, dónde va y los cuatro estados en palabras |
 | `pricing` | pricing-card | La suscripción anual; sin tarifas hasta que estén confirmadas («Según las páginas que verifiquemos») |
 

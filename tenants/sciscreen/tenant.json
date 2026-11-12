@@ -1,5 +1,5 @@
 {
-  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify: la captura de Personalizar → Su web, el sello real del kit y la página del sello en sciscreen.com), el sello en su página y la inversión. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
+  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify: la captura de Personalizar → Su web, el sello real del kit y la página del sello en sciscreen.com), el sello en su página la inversión y, para fabricantes con marca propia que venden en tiendas, «Fabricante · Lo que le pasa hoy» y «Fabricante · Tu producto en sus tiendas». El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
   "slug": "sciscreen",
   "name": "SciScreen",
   "default_locale": "es-ES",
@@ -101,6 +101,36 @@
           {
             "problem": "Una afirmación que no se sostiene es un riesgo con la normativa de publicidad.",
             "solution": "Te ayudamos a revisar y preparar lo que publicas: lo que no se sostiene, te lo decimos antes de poner el sello."
+          }
+        ],
+        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+      }
+    },
+    {
+      "key": "lo-que-te-pasa-fabricante",
+      "block_type": "problem-solution",
+      "name": "Fabricante · Lo que le pasa hoy",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Para laboratorios y fabricantes con marca propia que venden a farmacias, herbolarios y tiendas: hoy y con SciScreen.",
+      "props": {
+        "eyebrow": "Hoy",
+        "title": "Lo que se dice de tu producto lo cuentan webs que no son tuyas",
+        "beforeLabel": "Hoy",
+        "afterLabel": "Con SciScreen",
+        "cards": [
+          {
+            "problem": "Tu producto se vende en farmacias, herbolarios y tiendas online, y cada una lo cuenta en su web, a su manera.",
+            "solution": "SciScreen revisa las afirmaciones de cada página contra la literatura científica y publica en sciscreen.com qué se revisó, con qué estudios y hasta cuándo."
+          },
+          {
+            "problem": "Quien compra en esas tiendas no puede saber qué afirmaciones sobre tu producto están respaldadas por estudios.",
+            "solution": "El sello, junto a esas afirmaciones, abre la prueba en sciscreen.com: lo dice un tercero, no la tienda ni la marca."
+          },
+          {
+            "problem": "Una afirmación que no se sostiene es un riesgo con la normativa de publicidad.",
+            "solution": "Te ayudamos a revisar lo que se publica de tu producto: lo que no se sostiene, te lo decimos antes de poner el sello."
           }
         ],
         "note": "El sello no es un aval: dice qué se comprobó y cuándo."
@@ -236,6 +266,76 @@
           ]
         },
         "note": "Simulación: {company} aún no está verificada y estas afirmaciones son de ejemplo. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
+      }
+    },
+    {
+      "key": "en-sus-tiendas",
+      "block_type": "site-verify",
+      "name": "Fabricante · Tu producto en sus tiendas",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Para fabricantes que venden a través de otros: la ficha de su producto en la web de una tienda (Personalizar → Su web), con el sello más grande, que entra con animación para verse en cualquier web, y la página del sello en sciscreen.com.",
+      "props": {
+        "eyebrow": "Tu producto, en sus tiendas",
+        "title": "El sello junto a tu producto, en una tienda que lo vende",
+        "lede": "Cada farmacia, herbolario o tienda online enseña tu producto a su manera. El sello se ve en cualquiera y abre en sciscreen.com lo que se revisó.",
+        "seals": [
+          {
+            "size": "placa",
+            "ground": "claro",
+            "x": 44,
+            "y": 44,
+            "scale": 1.5
+          }
+        ],
+        "press": 0,
+        "simulation": "Simulación",
+        "hint": "Pulsa el sello",
+        "replay": "Volver a verlo",
+        "back": "Volver a la tienda",
+        "captions": {
+          "start": "Así se vería tu producto en una tienda que lo vende, con el sello de SciScreen.",
+          "seal": "Cada tienda tiene su web; el sello destaca en todas, junto a tu producto.",
+          "click": "Quien duda, lo pulsa…",
+          "page": "…y ve en sciscreen.com qué se revisó y con qué estudios: lo dice un tercero."
+        },
+        "page": {
+          "path": "sciscreen.com/es/sello/",
+          "status": "Vigente",
+          "reviewed": "Revisado el {date}",
+          "validUntil": "{nextYear}",
+          "claims": [
+            {
+              "text": "El magnesio contribuye a disminuir el cansancio y la fatiga.",
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012",
+              "sources": [
+                {
+                  "title": "Reglamento (UE) n.º 432/2012, declaraciones de propiedades saludables permitidas",
+                  "ref": "Diario Oficial de la Unión Europea · 2012"
+                }
+              ]
+            },
+            {
+              "text": "La vitamina B6 contribuye al funcionamiento normal del sistema nervioso.",
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012",
+              "sources": [
+                {
+                  "title": "Reglamento (UE) n.º 432/2012, declaraciones de propiedades saludables permitidas",
+                  "ref": "Diario Oficial de la Unión Europea · 2012"
+                }
+              ]
+            }
+          ]
+        },
+        "fallback": {
+          "address": "tienda.com/tu-producto",
+          "claims": [
+            "El magnesio contribuye a disminuir el cansancio y la fatiga.",
+            "La vitamina B6 contribuye al funcionamiento normal del sistema nervioso."
+          ]
+        },
+        "note": "Simulación: {company} aún no está verificada, la tienda es de ejemplo y estas afirmaciones también. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
       }
     },
     {
