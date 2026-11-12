@@ -96,3 +96,17 @@ La pantalla real del local, interactiva, para enseñarla en la tablet: botonera 
   Las cifras son de ejemplo y lo dice en pantalla (`exampleLabel`).
 - `[data-module]` es un envoltorio: la presentación lo pone en columna flexible, así que la rejilla va dentro.
 - Variables CSS con prefijo propio (`--st-*`, `--ap*`, `--cp*`): `--p` a secas choca con otra del dossier.
+
+## Caso: `site-verify` (SciScreen, prototipo)
+
+- Su web de verdad (`ctx.media.site`, de Personalizar → Su web) en un navegador redondeado, con la dirección en la barra.
+  Sin captura, una página de ejemplo con su nombre y `fallback.claims`.
+- El sello encima, en `sealAt` (% de la página; por propuesta, en `prop_overrides`), entero y nunca por debajo de 72 px
+  de alto (160×76 → 152 px de ancho como mínimo).
+- Al verse la diapositiva (una vez), un cursor entra, pulsa el sello y se abre el **registro**: estado y fecha (`{date}`
+  es hoy), nivel de evidencia (barras + palabra, nunca solo color), afirmaciones con su dictamen y evidencia, y datos del
+  dictamen. Encima de su web en pantalla grande; debajo en el móvil. El sello también se pulsa a mano; «Ver otra vez»
+  repite la escena; sin animaciones (`prefers-reduced-motion`), el registro abierto.
+- En pantalla grande el ancho sale del alto de la ventana, para que la web, el sello y el registro quepan sin bajar.
+- Demo: espacio `sciscreen-demo` (`sciscreen.localhost`), propuesta `/d/demo-sciscreen-Vv7p#3` para una marca inventada.
+

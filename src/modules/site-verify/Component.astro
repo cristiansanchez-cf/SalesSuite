@@ -1,0 +1,184 @@
+---
+/**
+ * site-verify ← «Su web, verificada»: la captura de su web (Personalizar → Su web) en un navegador, con el sello encima.
+ * Un cursor lo pulsa al verse la diapositiva y se abre el registro como lo vería quien visita su página. El sello también
+ * se puede pulsar a mano. Sin captura, una página de ejemplo con su nombre. Solo tokens del tema.
+ */
+import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { SiteVerifyProps } from './schema';
+
+type Props = SiteVerifyProps & ModuleBaseProps;
+const { eyebrow, title, lede, seal, sealAt, hint, replay, record, fallback, note, ctx } = Astro.props;
+const today = (() => { try { return new Intl.DateTimeFormat(ctx.locale || 'es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()); } catch { return new Date().toISOString().slice(0, 10); } })();
+const t = (s: string) => interpolate(s, ctx).replaceAll('{date}', today);
+const brand = ctx.prospectCompany || ctx.prospectName || '';
+const shot = ctx.media?.site ?? null;
+const short = (u: string) => u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+const address = ctx.media?.siteUrl ? short(ctx.media.siteUrl) : t(fallback?.address ?? 'tumarca.com');
+const panelId = `sv-${ctx.itemId}`;
+---
+<div data-module="site-verify" class="site-verify">
+  <Section>
+    <div class="sv-head">
+      {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+      <h2 class="max-w-3xl font-display text-[clamp(1.9rem,4vw,3rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
+      {lede && <p class="mt-2 max-w-2xl text-lg text-muted">{t(lede)}</p>}
+    </div>
+
+    <div class="sv-stage" data-step="idle" style={`--sx:${sealAt.x}%;--sy:${sealAt.y}%`}>
+      <figure class="sv-browser">
+        <div class="sv-bar" aria-hidden="true"><span></span><span></span><span></span><em>{address}</em></div>
+        <div class="sv-page">
+          {shot ? (
+            <img class="sv-shot" src={shot} alt={brand ? `${brand}: ${address}` : address} loading="lazy" decoding="async" />
+          ) : (
+            <div class="sv-mock">
+              {brand && <p class="sv-mock-brand">{brand}</p>}
+              <ul class="sv-mock-claims">{(fallback?.claims ?? record.claims.map((c) => c.text)).map((c) => <li>{t(c)}</li>)}</ul>
+            </div>
+          )}
+          <button type="button" class="sv-seal" aria-expanded="false" aria-controls={panelId} aria-label={`${seal.alt}. ${t(hint)}`}>
+            <img src={seal.src} alt="" decoding="async" />
+            <span class="sv-ring" aria-hidden="true"></span>
+          </button>
+          <span class="sv-hint" aria-hidden="true">{t(hint)}</span>
+          <svg class="sv-cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2.5 19.5 13l-7.1 1.2 4 7.3-2.9 1.5-4-7.4L4 20.9Z" /></svg>
+        </div>
+      </figure>
+
+      <aside class="sv-record" id={panelId} data-open="0" aria-label={t(record.heading)}>
+        <div class="sv-rec-head">
+          <div class="grid gap-0.5">
+            <p class="sv-rec-kicker">{t(record.heading)}</p>
+            {brand && <p class="sv-rec-brand">{brand}</p>}
+            <p class="sv-rec-addr">{address}</p>
+          </div>
+          <button type="button" class="sv-close" data-sv-close aria-label={t(record.close)}>✕</button>
+        </div>
+        <p class="sv-status"><span class="sv-status-dot" aria-hidden="true"></span><strong>{t(record.status)}</strong><span>{t(record.statusNote)}</span></p>
+        {record.level && (
+          <div class="sv-level">
+            <div class="flex items-baseline justify-between gap-2"><span class="sv-label">{t(record.level.label)}</span><strong>{t(record.level.value)}</strong></div>
+            <div class="sv-meter" role="img" aria-label={`${t(record.level.label)}: ${t(record.level.value)} (${record.level.score}/${record.level.of})`}>
+              {Array.from({ length: record.level.of }, (_, i) => <span class:list={[i < record.level!.score && 'on']}></span>)}
+            </div>
+          </div>
+        )}
+        <p class="sv-label">{t(record.claimsLabel)}</p>
+        <ul class="sv-claims">
+          {record.claims.map((c) => (
+            <li>
+              <p class="sv-claim">{t(c.text)}</p>
+              <p class="sv-verdict"><span>{t(c.verdict)}</span>{c.evidence && <em>{t(c.evidence)}</em>}</p>
+            </li>
+          ))}
+        </ul>
+        {record.facts.length > 0 && (
+          <dl class="sv-facts">{record.facts.map((f) => <div><dt>{t(f.label)}</dt><dd>{t(f.value)}</dd></div>)}</dl>
+        )}
+        {record.cta && <p class="sv-cta">{t(record.cta)} <span aria-hidden="true">→</span></p>}
+      </aside>
+    </div>
+
+    <div class="sv-foot">
+      <button type="button" class="sv-replay" data-sv-replay>{t(replay)}</button>
+      {note && <p class="sv-note">{t(note)}</p>}
+    </div>
+  </Section>
+</div>
+
+<style>
+  .sv-head { margin-bottom: clamp(1rem, 2.5vw, 1.5rem); }
+  .sv-stage { position: relative; }
+  /* En pantalla grande, la web entera a la vista (con el sello y el registro) sin bajar: su ancho sale del alto. */
+  @media (min-width: 900px) {
+    .sv-head, .sv-stage, .sv-foot { width: min(100%, max(660px, calc((100svh - 380px) * 1.6))); margin-inline: auto; }
+  }
+
+  /* El navegador: la web del cliente, redondeada, con la sombra suave de las tarjetas del tema. */
+  .sv-browser { margin: 0; border-radius: var(--radius-card, 24px); overflow: hidden; background: rgb(var(--color-bg, 252 250 245));
+    border: 1px solid rgb(var(--color-border, 233 232 227)); box-shadow: 0 30px 60px -30px rgb(0 0 0 / .35), 0 8px 20px -12px rgb(0 0 0 / .2); }
+  .sv-bar { display: flex; align-items: center; gap: .4rem; padding: .7rem 1rem; background: rgb(var(--color-surface, 246 242 230)); border-bottom: 1px solid rgb(var(--color-border, 233 232 227)); }
+  .sv-bar span { width: .62rem; height: .62rem; border-radius: 99px; background: rgb(var(--color-border, 233 232 227)); }
+  .sv-bar em { margin-left: .8rem; flex: 1; max-width: 26rem; font-style: normal; font-size: .82rem; padding: .3rem .8rem; border-radius: 99px; background: rgb(var(--color-bg, 252 250 245));
+    color: rgb(var(--color-muted, 83 82 79)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sv-page { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #fff; }
+  .sv-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+  .sv-mock { position: absolute; inset: 0; padding: clamp(1.25rem, 4vw, 3rem); display: grid; align-content: start; gap: 1rem; background: rgb(var(--color-bg, 252 250 245)); }
+  .sv-mock-brand { margin: 0; font-family: var(--font-display, inherit); font-weight: 700; font-size: clamp(1.6rem, 4vw, 3rem); line-height: 1; }
+  .sv-mock-claims { margin: 0; padding: 0; list-style: none; display: grid; gap: .6rem; max-width: 34rem; }
+  .sv-mock-claims li { padding: .7rem .9rem; border-radius: .9rem; background: rgb(var(--color-surface, 246 242 230)); line-height: 1.45; }
+
+  /* El sello: entero y a buen tamaño (160×76: nunca por debajo de 72 px de alto, así que 152 px de ancho como mínimo). */
+  .sv-seal { position: absolute; left: var(--sx); top: var(--sy); transform: translate(-50%, -50%); width: clamp(152px, 16%, 220px); padding: 0; border: 0; background: none; cursor: pointer;
+    border-radius: 18px; filter: drop-shadow(0 10px 22px rgb(0 0 0 / .28)); transition: transform .18s ease; }
+  .sv-seal img { display: block; width: 100%; height: auto; min-height: 72px; object-fit: contain; }
+  .sv-seal:hover { transform: translate(-50%, -50%) scale(1.04); }
+  .sv-seal:focus-visible { outline: 3px solid rgb(var(--color-primary, 34 70 178)); outline-offset: 4px; }
+  .sv-ring { position: absolute; inset: -12%; border-radius: 999px; border: 2px solid rgb(var(--color-primary, 34 70 178)); opacity: 0; pointer-events: none; }
+  .sv-hint { position: absolute; left: var(--sx); top: calc(var(--sy) + clamp(48px, 7%, 72px)); transform: translateX(-50%); padding: .35rem .75rem; border-radius: 99px; font-size: .8rem; font-weight: 600;
+    background: rgb(var(--color-accent-contrast, 0 3 65)); color: rgb(var(--color-bg, 252 250 245)); white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .sv-stage[data-step='idle'] .sv-hint, .sv-stage[data-step='done']:not(.is-open) .sv-hint { opacity: .95; }
+
+  /* El cursor: entra desde la esquina, va al sello y lo pulsa. */
+  .sv-cursor { position: absolute; left: 92%; top: 96%; width: clamp(22px, 2.4vw, 32px); height: auto; fill: #111; stroke: #fff; stroke-width: 1.4; opacity: 0; pointer-events: none;
+    filter: drop-shadow(0 3px 6px rgb(0 0 0 / .35)); transform-origin: 4px 2px;
+    transition: left 1.3s cubic-bezier(.55, 0, .2, 1), top 1.3s cubic-bezier(.55, 0, .2, 1), opacity .35s, transform .15s; }
+  .sv-stage[data-step='move'] .sv-cursor, .sv-stage[data-step='click'] .sv-cursor { left: var(--sx); top: var(--sy); opacity: 1; }
+  .sv-stage[data-step='click'] .sv-cursor { transform: scale(.82); }
+  .sv-stage[data-step='click'] .sv-ring { animation: sv-ring .55s ease-out; }
+  .sv-stage[data-step='done'] .sv-cursor { left: var(--sx); top: var(--sy); opacity: 0; }
+  @keyframes sv-ring { from { opacity: .9; transform: scale(.85); } to { opacity: 0; transform: scale(1.35); } }
+
+  /* El registro: como lo ve quien visita su página. Encima de su web en pantalla grande; debajo en el móvil. */
+  .sv-record { margin-top: 1rem; padding: clamp(1rem, 2.2vw, 1.5rem); border-radius: var(--radius-card, 24px); background: rgb(var(--color-bg, 252 250 245));
+    border: 1px solid rgb(var(--color-border, 233 232 227)); box-shadow: 0 24px 50px -20px rgb(0 0 0 / .35); display: none; gap: .9rem; }
+  .sv-record[data-open='1'] { display: grid; animation: sv-in .35s ease-out; }
+  @media (min-width: 900px) {
+    .sv-record { position: absolute; margin: 0; right: 1.25rem; top: 3.6rem; bottom: 1.25rem; width: min(25rem, 42%); overflow: auto; display: grid; align-content: start;
+      opacity: 0; transform: translateX(14px); visibility: hidden; transition: opacity .3s ease, transform .3s ease, visibility 0s .3s; }
+    .sv-record[data-open='1'] { opacity: 1; transform: none; visibility: visible; transition: opacity .3s ease, transform .3s ease; animation: none; }
+  }
+  @keyframes sv-in { from { opacity: 0; transform: translateY(8px); } }
+  .sv-rec-head { display: grid; grid-template-columns: 1fr auto; gap: .8rem; align-items: start; }
+  .sv-rec-kicker { margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--color-primary, 34 70 178)); }
+  .sv-rec-brand { margin: 0; font-family: var(--font-display, inherit); font-weight: 700; font-size: 1.35rem; line-height: 1.1; }
+  .sv-rec-addr { margin: 0; font-size: .82rem; color: rgb(var(--color-muted, 83 82 79)); overflow-wrap: anywhere; }
+  .sv-close { align-self: start; width: 2rem; height: 2rem; border-radius: 99px; border: 1px solid rgb(var(--color-border, 233 232 227)); background: transparent; cursor: pointer; color: inherit; }
+  .sv-status { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .6rem; padding: .65rem .85rem; border-radius: 1rem; background: rgb(var(--color-accent, 225 245 255)); color: rgb(var(--color-accent-contrast, 0 3 65)); font-size: .92rem; }
+  .sv-status-dot { width: .6rem; height: .6rem; border-radius: 99px; background: currentColor; }
+  .sv-status span:last-child { opacity: .85; }
+  .sv-label { margin: 0; font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--color-muted, 83 82 79)); }
+  .sv-level { display: grid; gap: .45rem; }
+  .sv-meter { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .3rem; }
+  .sv-meter span { height: .5rem; border-radius: 99px; background: rgb(var(--color-border, 233 232 227)); }
+  .sv-meter span.on { background: rgb(var(--color-primary, 34 70 178)); }
+  .sv-claims { margin: 0; padding: 0; list-style: none; display: grid; gap: .6rem; }
+  .sv-claims li { padding: .75rem .85rem; border-radius: 1rem; background: rgb(var(--color-surface, 246 242 230)); display: grid; gap: .35rem; }
+  .sv-claim { margin: 0; line-height: 1.45; font-size: .95rem; }
+  .sv-verdict { margin: 0; display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: center; font-size: .8rem; }
+  .sv-verdict span { font-weight: 700; padding: .15rem .55rem; border-radius: 99px; border: 1px solid rgb(var(--color-primary, 34 70 178)); color: rgb(var(--color-primary, 34 70 178)); }
+  .sv-verdict em { font-style: normal; color: rgb(var(--color-muted, 83 82 79)); }
+  .sv-facts { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .sv-facts dt { font-size: .72rem; color: rgb(var(--color-muted, 83 82 79)); }
+  .sv-facts dd { margin: 0; font-size: .88rem; font-weight: 600; }
+  .sv-cta { margin: 0; font-weight: 700; color: rgb(var(--color-primary, 34 70 178)); }
+
+  .sv-foot { margin-top: 1.1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.5rem; }
+  .sv-replay { border: 1px solid rgb(var(--color-border, 233 232 227)); background: transparent; color: inherit; padding: .5rem 1rem; border-radius: var(--radius-button, 999px); font-weight: 600; cursor: pointer; }
+  .sv-note { margin: 0; padding-left: 1rem; border-left: 3px solid rgb(var(--color-primary, 34 70 178)); line-height: 1.5; max-width: 46rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sv-cursor { display: none; }
+    .sv-record, .sv-record[data-open='1'] { transition: none; animation: none; }
+  }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('site-verify', init);
+</script>

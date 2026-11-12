@@ -30,6 +30,7 @@ Fuera a propósito: las fotos con texto incrustado o marcas ajenas (photo1 con e
 | `portada` | hero-pitch | La marca y lo que cambia en su página |
 | `lo-que-te-pasa` | problem-solution | Hoy → con SciScreen (verificador, sello con registro, revisar y preparar) |
 | `como-funciona` | tabs-showcase | Tu página → evidencia → dictamen → el sello, con sus fotos y el sello |
+| `su-web` | site-verify | Su página de verdad (captura de Personalizar → Su web) con el sello encima; un cursor lo pulsa y se abre el registro (estado, nivel de evidencia, afirmaciones con su dictamen). **Prototipo** hasta que lleguen los diseños |
 | `el-sello` | seal-showcase | El sello en una página de ejemplo junto a sus afirmaciones, dónde va y los cuatro estados en palabras |
 | `pricing` | pricing-card | La suscripción anual; sin tarifas hasta que estén confirmadas («Según las páginas que verifiquemos») |
 

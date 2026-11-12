@@ -235,5 +235,5 @@ const origin = requestOrigin(Astro.request, Astro.url);
     const input = document.querySelector<HTMLInputElement>('[data-testid="rep-contact-value"]');
     sel?.addEventListener('change', () => { if (input) input.placeholder = (JSON.parse(sel.dataset.ph ?? '{}') as Record<string, string>)[sel.value] ?? ''; });
   </script>
-  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} />
+  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} website={linked?.website ?? null} />
 </AdminLayout>

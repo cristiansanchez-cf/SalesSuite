@@ -11,6 +11,7 @@ import { mediaStripSchema } from './media-strip/schema';
 import { appStepsSchema } from './app-steps/schema';
 import { centerConsoleSchema } from './center-console/schema';
 import { sealShowcaseSchema } from './seal-showcase/schema';
+import { siteVerifySchema } from './site-verify/schema';
 import { partsFor } from './phone-tour/steps';
 import type { ModuleContext } from './types';
 
@@ -94,6 +95,12 @@ export const REGISTRY = {
     schema: sealShowcaseSchema,
     example: { title: 'El sello, en tu página', seal: { src: '/favicon.svg', alt: 'Sello' }, rules: [] },
     load: () => import('./seal-showcase/Component.astro'),
+  },
+  'site-verify': {
+    label: 'Su web con el sello (verificación)',
+    schema: siteVerifySchema,
+    example: { title: 'Así se vería en tu web', seal: { src: '/favicon.svg', alt: 'Sello' }, record: { claims: [{ text: 'Una afirmación de su página', verdict: 'Respaldada' }] } },
+    load: () => import('./site-verify/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

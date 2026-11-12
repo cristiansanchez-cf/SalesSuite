@@ -78,6 +78,8 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
       <span class="thumb__chip">{p.client}</span>
       <b>{fill(p.title)}</b>
     </div>
+  ) : blockType === 'site-verify' ? (
+    <div class="thumb__site"><span class="thumb__site-bar"></span><img src={p.seal.src} alt="" loading="lazy" /></div>
   ) : blockType === 'seal-showcase' ? (
     <div class:list={['thumb__seal', p.ground === 'navy' && 'thumb__seal--navy']}><img src={p.seal.src} alt="" loading="lazy" /></div>
   ) : null}
@@ -87,6 +89,9 @@ const firstImg = p?.tabs?.find((t: { mock?: { kind: string } }) => t.mock?.kind 
   .thumb { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: var(--tn-dark, #0a0a0a); }
   .thumb__seal { position: absolute; right: 6%; top: 10%; width: 56%; max-width: 280px; padding: 18px; border-radius: 18px; background: #f6f2e6; transform: rotate(-2deg); }
   .thumb__seal--navy { background: #000341; }
+  .thumb__site { position: absolute; right: 5%; top: 9%; width: 62%; aspect-ratio: 16 / 10; border-radius: 14px; background: #fcfaf5; border: 1px solid rgba(255,255,255,.2); overflow: hidden; transform: rotate(-2deg); }
+  .thumb__site-bar { display: block; height: 14%; background: #f0ece0; }
+  .thumb__site img { position: absolute; left: 50%; top: 66%; width: 26%; transform: translate(-50%, -50%); filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
   .thumb__seal img { display: block; width: 100%; height: auto; }
   .thumb__media { position: absolute; right: 5%; top: 8%; display: flex; gap: 8px; width: 62%; }
   .thumb__media img { flex: 1; min-width: 0; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 12px; }

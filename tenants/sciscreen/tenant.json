@@ -1,5 +1,5 @@
 {
-  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, el sello en su página y la inversión. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
+  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify, con la captura de Personalizar → Su web), el sello en su página y la inversión. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
   "slug": "sciscreen",
   "name": "SciScreen",
   "default_locale": "es-ES",
@@ -167,6 +167,82 @@
             }
           }
         ]
+      }
+    },
+    {
+      "key": "su-web",
+      "block_type": "site-verify",
+      "name": "Su web, verificada",
+      "is_catalog": true,
+      "default_price": null,
+      "currency": "EUR",
+      "description": "Su página de verdad (Personalizar → Su web) con el sello encima: se pulsa y se ve el registro, como lo verá quien la visite.",
+      "props": {
+        "eyebrow": "Tu página, verificada",
+        "title": "Así se vería el sello en {company}",
+        "lede": "Tu página tal cual, con el sello junto a lo que afirma. Quien la visita lo pulsa y ve qué se comprobó y cuándo.",
+        "seal": {
+          "src": "asset:seal/sello-cream.svg",
+          "alt": "Sello de SciScreen: Vigente, evaluación válida"
+        },
+        "sealAt": {
+          "x": 50,
+          "y": 74
+        },
+        "hint": "Pulsa el sello",
+        "replay": "Ver otra vez",
+        "record": {
+          "heading": "Registro de verificación",
+          "status": "Vigente",
+          "statusNote": "Verificado a día {date}",
+          "level": {
+            "label": "Nivel de evidencia",
+            "value": "Alto",
+            "score": 4,
+            "of": 5
+          },
+          "claimsLabel": "Afirmaciones verificadas",
+          "claims": [
+            {
+              "text": "La vitamina C contribuye al funcionamiento normal del sistema inmunitario.",
+              "verdict": "Respaldada",
+              "evidence": "Declaración autorizada · Reglamento (UE) 432/2012"
+            },
+            {
+              "text": "Con ingredientes de cultivo ecológico.",
+              "verdict": "Respaldada",
+              "evidence": "Certificado ecológico vigente"
+            }
+          ],
+          "facts": [
+            {
+              "label": "Dictamen",
+              "value": "SS-2026-0142"
+            },
+            {
+              "label": "Verificador",
+              "value": "Equipo científico de SciScreen"
+            },
+            {
+              "label": "Página",
+              "value": "Página de inicio"
+            },
+            {
+              "label": "Próxima revisión",
+              "value": "Dentro de 12 meses"
+            }
+          ],
+          "cta": "Ver el registro completo",
+          "close": "Cerrar"
+        },
+        "fallback": {
+          "address": "tumarca.com",
+          "claims": [
+            "La vitamina C contribuye al funcionamiento normal del sistema inmunitario.",
+            "Con ingredientes de cultivo ecológico."
+          ]
+        },
+        "note": "Las afirmaciones y el nivel de evidencia son de ejemplo: los de tu página salen de su dictamen."
       }
     },
     {

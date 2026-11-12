@@ -8,15 +8,17 @@ import type { AdminDb, AssetStore } from './db';
 import { AdminError } from './service';
 import type { AdminSession, DossierRecord } from './types';
 import type { ClientMedia } from '../types';
+import { siteAddress } from '../site-shot';
 
-export const MEDIA_KINDS = ['logo', 'photo', 'video'] as const;
+export const MEDIA_KINDS = ['logo', 'photo', 'video', 'site'] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 const TYPES: Record<MediaKind, string[]> = {
   logo: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'],
   photo: ['image/png', 'image/jpeg', 'image/webp'],
   video: ['video/mp4', 'video/webm'],
+  site: ['image/png', 'image/jpeg', 'image/webp'],
 };
-const MAX: Record<MediaKind, number> = { logo: 5 * 1024 * 1024, photo: 8 * 1024 * 1024, video: 30 * 1024 * 1024 };
+const MAX: Record<MediaKind, number> = { logo: 5 * 1024 * 1024, photo: 8 * 1024 * 1024, video: 30 * 1024 * 1024, site: 8 * 1024 * 1024 };
 export const MAX_PHOTOS = 8;
 
 export function createMediaService(db: AdminDb, s: AdminSession, assets: AssetStore | undefined, canEdit: (d: DossierRecord) => boolean) {
@@ -43,7 +45,8 @@ export function createMediaService(db: AdminDb, s: AdminSession, assets: AssetSt
     return assets.signUpload(s.tenantId, `dossiers/${id}/${kind}-${Date.now().toString(36)}`, type);
   }
 
-  async function attach(id: string, input: { kind: unknown; url: unknown }) {
+  /** `address`: con la captura de su web, la dirección capturada (se normaliza; si no vale, no se guarda). */
+  async function attach(id: string, input: { kind: unknown; url: unknown; address?: unknown }) {
     const d = await editable(id);
     const kind = kindOf(input.kind);
     const url = String(input.url ?? '');
@@ -55,6 +58,7 @@ export function createMediaService(db: AdminDb, s: AdminSession, assets: AssetSt
     if (kind === 'logo') m.logo = url;
     if (kind === 'video') m.video = url;
     if (kind === 'photo') m.photos = [...(m.photos ?? []), url].slice(-MAX_PHOTOS);
+    if (kind === 'site') { m.site = url; m.siteUrl = siteAddress(input.address) ?? m.siteUrl ?? null; }
     await db.updateDossier(id, { clientMedia: m });
     return m;
   }
@@ -64,6 +68,7 @@ export function createMediaService(db: AdminDb, s: AdminSession, assets: AssetSt
     const m: ClientMedia = { ...(d.clientMedia ?? {}) };
     if (m.logo === url) m.logo = null;
     if (m.video === url) m.video = null;
+    if (m.site === url) m.site = null;
     m.photos = (m.photos ?? []).filter((x) => x !== url);
     await db.updateDossier(id, { clientMedia: m });
     return m;

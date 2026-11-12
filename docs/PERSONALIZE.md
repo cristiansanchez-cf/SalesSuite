@@ -17,6 +17,20 @@ Idea de venta: con su logo, un generador de vídeo (Gemini, Runway…) hace en 5
 - Se guarda en `dossier.client_media` (`{logo, photos[], video}`), la propuesta pública lo devuelve (`media`) y llega a los módulos en `ctx.media`. Hoy lo usa la pantalla en vivo; cualquier módulo puede.
 - En demo no hay Storage: los archivos van a memoria (`/demo-media/…`) y se pierden al reiniciar.
 
+## Su web (captura de su página)
+
+Para los módulos que enseñan la web del cliente (hoy `site-verify`, el sello de SciScreen encima de su página), en
+**Personalizar** sale **Su web**: la dirección viene de la ficha del CRM (se puede cambiar) y **Hacer captura** trae su
+página de inicio como se ve en un portátil (1440×900). Se sube a la carpeta de la propuesta y queda como `site` (con la
+dirección en `siteUrl`, que va en la barra del navegador). Si la web no se deja (bloquea robots, tarda demasiado, o se han
+hecho muchas hoy), lo dice y se puede **subir la captura a mano** (PNG, JPG o WebP, hasta 8 MB).
+
+- **Quién la hace:** un navegador externo, Microlink (`src/lib/site-shot/`). Sin clave, unas 50 capturas al día; con
+  `MICROLINK_API_KEY` (Vercel), las del plan. Solo recibe la dirección pública de la web. `SITE_SHOT=off` la apaga (queda
+  subirla a mano). El servidor solo descarga la imagen de su CDN (`*.microlink.io`), con tope de 8 MB.
+- **Demo:** sin red, una web de ejemplo (`public/demo/web-ejemplo.jpg`, la de una marca inventada).
+- **Pruebas:** `src/lib/site-shot/site-shot.test.ts` y `scripts/smoke-site.cjs`.
+
 ## Traer de sus redes (Instagram y TikTok)
 
 Si la empresa vinculada a la propuesta tiene su Instagram o su TikTok en el CRM, en **Fotos** y **Vídeo** sale «De su

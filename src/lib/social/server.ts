@@ -49,7 +49,7 @@ export async function fetchFile(url: string, max: number, f: typeof fetch = fetc
   return { bytes: out, type: r.headers.get('content-type') };
 }
 
-async function put(uploadUrl: string, headers: Record<string, string>, type: string, bytes: Uint8Array) {
+export async function put(uploadUrl: string, headers: Record<string, string>, type: string, bytes: Uint8Array) {
   if (uploadUrl.startsWith('/demo-media/')) {
     const { demoMediaPut } = await import('../admin/db-demo');
     if (!demoMediaPut(uploadUrl.slice('/demo-media/'.length), type, bytes)) throw new Error('demo-media');

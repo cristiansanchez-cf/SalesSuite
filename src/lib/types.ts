@@ -31,6 +31,8 @@ export interface RenderItem {
 /** Lo personalizado del cliente en una propuesta (docs/PERSONALIZE.md). */
 export interface ClientMedia {
   logo?: string | null; photos?: string[]; video?: string | null;
+  /** Captura de su web (docs/PERSONALIZE.md §Su web) y la dirección que se capturó (va en la barra del navegador). */
+  site?: string | null; siteUrl?: string | null;
   /** Lo que el cliente tiene (lo que no, no se enseña). Sin definir = todo. */
   features?: { songs?: boolean; photos?: boolean; messages?: boolean; album?: boolean };
   /** Estilo musical de los ejemplos (clave de MUSIC_STYLES). */

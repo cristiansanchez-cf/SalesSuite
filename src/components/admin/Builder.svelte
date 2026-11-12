@@ -25,8 +25,8 @@
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
   interface CouponLite { id: string; code: string; label: string }
   interface SocialSource { platform: 'instagram' | 'tiktok'; handle: string }
-  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [], socialHint = null }:
-    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[]; socialHint?: { accountId: string; name: string } | null } = $props();
+  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [], socialHint = null, website = null }:
+    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[]; socialHint?: { accountId: string; name: string } | null; website?: string | null } = $props();
   // Los textos se importan aquí: las funciones (plurales) no viajan como props de una isla.
   const t = builderMessages[locale] ?? builderMessages.es;
   /** Los avisos de «antes de publicar» llegan del servidor en español: aquí, en el idioma de quien edita. */
@@ -78,7 +78,7 @@
     if (!res.ok) { error = out.error ?? t.errStatus(res.status); return null; }
     return out;
   }
-  async function uploadMedia(kind: 'logo' | 'photo' | 'video', files: FileList | null) {
+  async function uploadMedia(kind: 'logo' | 'photo' | 'video' | 'site', files: FileList | null) {
     for (const file of Array.from(files ?? []).slice(0, kind === 'photo' ? 8 : 1)) {
       uploading = kind;
       try {
@@ -86,7 +86,7 @@
         if (!signed) break;
         const up = await fetch(signed.uploadUrl, { method: 'PUT', headers: { 'content-type': file.type, ...(signed.headers ?? {}) }, body: file });
         if (!up.ok) { error = t.media.uploadFail; break; }
-        const st = await postMedia({ step: 'attach', kind, url: signed.publicUrl });
+        const st = await postMedia({ step: 'attach', kind, url: signed.publicUrl, ...(kind === 'site' ? { address: siteInput } : {}) });
         if (!st) break;
         s = st; error = null; previewKey++;
       } catch { error = t.offline; break; } finally { uploading = null; }
@@ -96,6 +96,22 @@
   // Logo, fotos, vídeo y música del cliente: solo los usan la pantalla en vivo y el móvil del invitado (Enjoy). Un
   // espacio sin esos módulos (Oquea) no ve este panel.
   const usesClientMedia = $derived(s.catalog.some((c) => c.blockType === 'live-screen' || c.blockType === 'phone-tour'));
+  // Su web (captura de su página): la usan los módulos que la enseñan (site-verify, el sello de SciScreen encima).
+  const usesSite = $derived(s.catalog.some((c) => c.blockType === 'site-verify'));
+  // La dirección: la de la ficha del CRM; si ya hay captura, la capturada.
+  let siteInput = $state(initial.dossier.clientMedia?.siteUrl ?? website ?? '');
+  let shooting = $state(false);
+  let siteErr = $state<string | null>(null);
+  async function shootSite() {
+    if (shooting || !siteInput.trim()) return;
+    shooting = true; siteErr = null;
+    try {
+      const res = await fetch(`${api}/site`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: siteInput.trim() }) });
+      const out = await res.json().catch(() => ({ ok: false, code: 'FAILED' }));
+      if (out.ok) { s = out.state; previewKey++; }
+      else siteErr = out.error ?? t.media.siteErrors[out.code as keyof typeof t.media.siteErrors] ?? t.media.siteErrors.FAILED;
+    } catch { siteErr = t.offline; } finally { shooting = false; }
+  }
   async function setFeature(k: 'songs' | 'photos' | 'messages' | 'album') {
     const st = await postMedia({ step: 'options', features: { ...feat, [k]: !feat[k] } });
     if (st) { s = st; previewKey++; }
@@ -668,12 +684,30 @@
       </section>
 
       <!-- personalizar: lo que hace que el cliente diga «wow, es mi local» -->
-      {#if editable && usesClientMedia}
+      {#if editable && (usesClientMedia || usesSite)}
         <section class="{card} media-card" data-testid="personalize">
           <div class="flex items-start gap-3">
             <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]" aria-hidden="true">✦</span>
-            <div class="grid gap-0.5"><h2 class="co-card-title">{t.media.title(d.prospectCompany || t.media.client)}</h2><p class="co-help">{t.media.lede}</p></div>
+            <div class="grid gap-0.5"><h2 class="co-card-title">{t.media.title(d.prospectCompany || t.media.client)}</h2><p class="co-help">{usesClientMedia ? t.media.lede : t.media.siteOnlyLede}</p></div>
           </div>
+          {#if usesSite}
+            <div class="media-tile mt-4" data-testid="media-site">
+              <p class="media-tile__label">{t.media.site}</p>
+              {#if media.site}
+                <div class="site-thumb"><img src={media.site} alt="" /><button type="button" class="media-x" onclick={() => removeMedia(media.site!)} aria-label={t.media.remove}>✕</button></div>
+                {#if media.siteUrl}<p class="co-meta truncate" data-testid="media-site-url">{media.siteUrl.replace(/^https?:\/\//, '')}</p>{/if}
+              {:else}
+                <p class="co-help">{t.media.siteLede}</p>
+              {/if}
+              <form class="site-form" onsubmit={(e) => { e.preventDefault(); shootSite(); }}>
+                <input class="co-input" type="text" inputmode="url" bind:value={siteInput} placeholder="sumarca.com" aria-label={t.media.siteUrl} disabled={shooting} data-testid="media-site-input" />
+                <button type="submit" class="co-btn co-btn--primary co-btn--sm" disabled={shooting || !siteInput.trim()} data-testid="media-site-shoot">{shooting ? t.media.siteShooting : media.site ? t.media.siteRedo : t.media.siteShoot}</button>
+              </form>
+              <label class="site-upload">{uploading === 'site' ? t.media.uploading : t.media.siteUpload}<input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" disabled={!!uploading || shooting} onchange={(e) => uploadMedia('site', e.currentTarget.files)} data-testid="media-site-file" /></label>
+              {#if siteErr}<p class="co-help text-[color:var(--co-ink)]" role="alert" data-testid="media-site-error">{siteErr}</p>{/if}
+            </div>
+          {/if}
+          {#if usesClientMedia}
           <div class="mt-4 grid gap-3 sm:grid-cols-3">
             <div class="media-tile" data-testid="media-logo">
               <p class="media-tile__label">{t.media.logo}</p>
@@ -750,6 +784,7 @@
               </div>
             {/if}
           </div>
+          {/if}
         </section>
         {#if sheet}
           <div class="social-sheet" role="dialog" aria-modal="true" aria-label={t.social.title} data-testid="social-sheet">
@@ -1351,6 +1386,12 @@
   .media-add:hover { border-color: var(--co-signal, #6d28d9); color: var(--co-signal, #6d28d9); }
   .media-add--sm { min-height: 0; aspect-ratio: 1; font-size: 1.4rem; }
   .media-thumb { position: relative; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; background: #111; }
+  /* Su web: la captura en apaisado (como se ve en un portátil). */
+  .site-thumb { position: relative; aspect-ratio: 16 / 10; border-radius: .75rem; overflow: hidden; border: 1px solid var(--console-card-border); background: #fff; }
+  .site-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .site-form { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .site-form .co-input { flex: 1 1 12rem; min-width: 0; }
+  .site-upload { display: inline-block; margin-top: .4rem; font-size: .85rem; text-decoration: underline; cursor: pointer; color: var(--co-ink-dim); }
   .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
   .media-thumb--logo { aspect-ratio: 16 / 9; background: var(--console-chip-bg); }
   .media-thumb--logo img { object-fit: contain; padding: .5rem; }
