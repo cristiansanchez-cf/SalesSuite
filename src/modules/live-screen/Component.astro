@@ -36,7 +36,17 @@ function withVideo(list: Sc[]): Sc[] {
   if (at < 0) return [list[0], { scene: 'tp.idle', label: videoScene.label, says: videoScene.says, video: true }, ...list.slice(1)];
   return list.map((s, i) => (i !== at ? s : { ...s, scene: 'tp.idle', video: true, text: undefined, says: tp >= 0 && s.says ? s.says : videoScene.says }));
 }
-const scenes = withVideo(visible);
+/**
+ * Lo primero que ve después del reclamo (o de su vídeo con el QR, que dice «Sube tu foto») es el móvil escaneando y
+ * subiendo una foto: es lo que más importa (que su gente pone sus fotos en la pantalla). El resto, en su orden.
+ */
+function photoNext(list: Sc[]): Sc[] {
+  if (list.length < 3 || !/idle$/.test(list[0].scene)) return list;
+  const at = list.findIndex((s, i) => i > 0 && /\.(photo|full)$/.test(s.scene));
+  if (at <= 1) return list;
+  return [list[0], list[at], ...list.slice(1, at), ...list.slice(at + 1)];
+}
+const scenes = photoNext(withVideo(visible));
 // Fotos de una pantalla que ya no están en Personalizar (las quitó): fuera; sin ninguna, las del cliente.
 const own = new Set(media.photos ?? []);
 const uploaded = (u: string) => u.includes('/dossiers/') || u.includes('/demo-media/');

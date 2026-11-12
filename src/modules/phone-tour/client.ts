@@ -63,7 +63,8 @@ export function init(root: HTMLElement): () => void {
   }
 
   btns.forEach((b, i) => b.addEventListener('click', () => { auto = false; root.classList.remove('is-auto'); show(i); }));
-  const stopVis = onVisibility(root, (v) => { visible = v; if (v) show(idx); else clear(); });
+  // Al llegar, si va solo, desde el primer paso (nunca a medias); si la persona eligió uno, ese.
+  const stopVis = onVisibility(root, (v) => { visible = v; if (v) show(auto ? 0 : idx); else clear(); });
   show(0);
   return () => { clear(); stopVis(); };
 }

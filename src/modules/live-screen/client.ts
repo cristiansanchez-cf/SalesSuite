@@ -20,7 +20,7 @@ interface Config {
   autoplay: boolean;
   scenes: Scene[];
 }
-interface Screen { show(scene: string, data?: Record<string, unknown>): void; set(k: string, v: unknown): void; prime(): void; destroy(): void }
+interface Screen { show(scene: string, data?: Record<string, unknown>): void; set(k: string, v: unknown): void; prime(): void; pause(): void; rewind(): void; destroy(): void }
 
 /**
  * El iPhone en ahorro de batería no deja arrancar ningún vídeo solo. Con el primer toque en la página (un botón, la
@@ -98,8 +98,11 @@ function saidOf(sc: Scene, venue: string, photos: string[]): Record<string, unkn
   if (sc.scene.endsWith('idle')) return sc.text ? { title: sc.text } : {};
   return sc.text ? { dedication: sc.text } : {};
 }
-/** Cuánto se queda cada pantalla (ms): ni a toda prisa ni pesado. */
-const HOLD = { scene: 3800, idle: 3200, video: 5500 };
+/**
+ * Cuánto se queda cada pantalla (ms): ni a toda prisa ni pesado. Su vídeo, lo justo para reconocerlo («es nuestro
+ * vídeo, con el QR»): enseguida llega el móvil que escanea y sube su foto, que es lo que importa.
+ */
+const HOLD = { scene: 3800, idle: 3200, video: 3000 };
 const phoneKey = (scene: string): 'song' | 'photo' | 'message' => (/photo|full/.test(scene) ? 'photo' : /message/.test(scene) ? 'message' : 'song');
 
 export function init(root: HTMLElement): () => void {
@@ -237,18 +240,31 @@ export function init(root: HTMLElement): () => void {
   root.setAttribute('data-deck-step', '');
   root.addEventListener('deck:step', onDeckStep);
 
+  /**
+   * Al llegar, desde el principio: la primera pantalla (su vídeo desde el segundo 0) y el recorrido en marcha. Fuera de
+   * la vista, todo quieto (ni temporizadores ni vídeo): nada se reproduce en segundo plano para verlo luego a medias.
+   */
+  function arrive() {
+    if (!screen) return;
+    auto = cfg.autoplay && !reduced;
+    play?.setAttribute('aria-pressed', String(auto));
+    go(0, false);
+    screen.rewind();
+  }
+  function leave() { clear(); screen?.pause(); }
+
   let alive = true;
   loadEngine(cfg).then((EnjoyScreen) => {
     if (!alive) return;
     screen = EnjoyScreen(stage, { scene: cfg.scenes[0].scene });
     screens.add(screen); watchFirstTouch();
-    go(0, false);
+    if (visible) arrive(); else { go(0, false); screen.pause(); }
   });
-  const stopVis = onVisibility(root, (v) => {
+  // Cuenta desde que se ve la pantalla (no el título de encima): es cuando la persona llega a ella.
+  const stopVis = onVisibility(stage, (v) => {
     visible = v;
-    if (!screen) return;
-    if (v && auto) go(idx, false); else clear();
-  });
+    if (v) arrive(); else leave();
+  }, 0.5);
 
   return () => { alive = false; clear(); stopVis(); root.removeEventListener('deck:step', onDeckStep); if (screen) screens.delete(screen); screen?.destroy(); };
 }

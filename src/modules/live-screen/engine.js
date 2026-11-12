@@ -562,6 +562,15 @@
         if (p && p.then) p.then(back, function () { v._primed = false; }); else back();
         return api;
       },
+      /** Fuera de la vista: el vídeo en pausa (nada se reproduce en segundo plano). */
+      pause: function () { if (vid) vid.pause(); return api; },
+      /** Al llegar: su vídeo desde el principio (si la escena de ahora lo enseña). */
+      rewind: function () {
+        if (!vid) return api;
+        try { vid.currentTime = 0; } catch (e) { /* aún sin cargar: ya empieza en 0 */ }
+        if (o.mode === 'tp') playClip();
+        return api;
+      },
       /** Dispara el aviso de precio (el producto lo lanza solo al cambiar la tarifa). */
       price: function (text, kind) {
         o._price = { text: text, kind: kind || 'up' };

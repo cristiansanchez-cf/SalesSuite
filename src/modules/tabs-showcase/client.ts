@@ -14,6 +14,8 @@ export function init(root: HTMLElement): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let visible = false;
   let hovering = false;
+  /** Si la persona ha elegido una pestaña, se respeta; si no, al llegar empieza por la primera. */
+  let touched = false;
 
   const select = (n: number, focus = false) => {
     active = (n + tabs.length) % tabs.length;
@@ -40,11 +42,11 @@ export function init(root: HTMLElement): () => void {
 
   const onClick = (e: Event) => {
     const i = tabs.indexOf((e.currentTarget as HTMLButtonElement));
-    if (i >= 0) select(i);
+    if (i >= 0) { touched = true; select(i); }
   };
   const onKey = (e: KeyboardEvent) => {
     const map: Record<string, number> = { ArrowRight: active + 1, ArrowLeft: active - 1, Home: 0, End: tabs.length - 1 };
-    if (e.key in map) { e.preventDefault(); select(map[e.key], true); }
+    if (e.key in map) { e.preventDefault(); touched = true; select(map[e.key], true); }
   };
   // Pausa solo al apuntar a la barra de pestañas (la sección es full-width: pausar en toda ella
   // dejaría el auto-advance parado casi siempre) o con foco de teclado dentro del módulo.
@@ -62,7 +64,8 @@ export function init(root: HTMLElement): () => void {
   tablist.addEventListener('pointerleave', leave);
   root.addEventListener('focusin', focusIn);
   root.addEventListener('focusout', leave);
-  const stopVis = onVisibility(root, (v) => { visible = v; schedule(); });
+  // Al llegar (y si va sola y nadie ha tocado), desde la primera: nunca a medias.
+  const stopVis = onVisibility(root, (v) => { visible = v; if (v && every > 0 && !touched) select(0); else schedule(); });
 
   // Presentación: la flecha «siguiente» pasa antes por cada pestaña (y «anterior», hacia atrás).
   const onDeckStep = (e: Event) => {

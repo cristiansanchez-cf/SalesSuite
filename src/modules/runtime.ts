@@ -28,10 +28,19 @@ export function unmount(root: HTMLElement): void {
   MOUNTED.delete(root);
 }
 
-/** Ejecuta `cb(true|false)` cuando el root entra/sale de viewport (pausar animaciones fuera de pantalla). */
+/**
+ * Ejecuta `cb(true|false)` cuando el root se ve de verdad / deja de verse. «Se ve» = al menos `threshold` de él en
+ * pantalla, o (si es más alto que la pantalla) que ocupe ese tanto de ella. Así una animación empieza cuando la persona
+ * llega, no cuando asoma un píxel (con solo `isIntersecting`, arrancaba antes y se veía a medias). Solo avisa al cambiar.
+ */
 export function onVisibility(root: Element, cb: (visible: boolean) => void, threshold = 0.25): () => void {
   if (typeof IntersectionObserver === 'undefined') { cb(true); return () => {}; }
-  const io = new IntersectionObserver(([e]) => cb(e.isIntersecting), { threshold });
+  let last: boolean | null = null;
+  const io = new IntersectionObserver(([e]) => {
+    const fill = e.rootBounds && e.rootBounds.height > 0 ? e.intersectionRect.height / e.rootBounds.height : 0;
+    const v = e.isIntersecting && (e.intersectionRatio >= threshold || fill >= threshold);
+    if (v !== last) { last = v; cb(v); }
+  }, { threshold: [...new Set([0, 0.1, threshold, 0.5, 0.75, 1])].sort((a, b) => a - b) });
   io.observe(root);
   return () => io.disconnect();
 }

@@ -55,7 +55,8 @@ export function init(root: HTMLElement): () => void {
   ro?.observe(viewport);
   fit();
   show(0);
-  const stopVis = onVisibility(root, (v) => { visible = v; schedule(); });
+  // Al llegar (y si va sola y nadie ha tocado), desde la primera vista: nunca a medias.
+  const stopVis = onVisibility(root, (v) => { visible = v; if (v && every > 0 && !touched) show(0); else schedule(); });
 
   return () => {
     clearTimeout(timer);
