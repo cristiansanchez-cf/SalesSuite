@@ -4,8 +4,6 @@ import { BRAND } from '~/lib/site';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
 import { hubMessages } from '~/lib/i18n/messages/hub';
-import { hubUrl } from '~/lib/hub';
-import { requestOrigin } from '~/lib/http';
 Astro.response.status = 403;
 const email = Astro.locals.forbiddenEmail;
 const reason = Astro.locals.forbiddenReason;
@@ -26,7 +24,8 @@ const date = (iso: string) => f.date(iso, { day: 'numeric', month: 'long', year:
       )}
       <div class="flex flex-wrap gap-2">
         {Astro.locals.admin && <a class="co-btn co-btn--primary" href="/admin">{m.forbidden.home}</a>}
-        <a class="co-btn co-btn--ghost" href={`${hubUrl(requestOrigin(Astro.request, Astro.url))}/admin/elige`} data-testid="forbidden-hub">{H.otherSpace}</a>
+        {/* Al acceso general con la sesión ya abierta (sin volver a pedir el código). */}
+        <form method="post" action="/admin/a-elegir"><button class="co-btn co-btn--ghost" type="submit" data-testid="forbidden-hub">{H.otherSpace}</button></form>
         <form method="post" action="/admin/logout"><button class="co-btn co-btn--ghost" type="submit">{m.forbidden.switchAccount}</button></form>
       </div>
     </div>

@@ -53,7 +53,8 @@ if (Astro.request.method === 'POST') {
       // Un envío por email cada 45 s (en este servidor) para que nadie lo use para llenar el buzón de otro.
       const last = codeSentAt.get(email) ?? 0;
       let sent = false;
-      if (Date.now() - last < 45_000) { codeEmail = email; info = SENT; sent = true; }
+      // Dentro de la espera: no se manda otro, y se dice (no «enviado»): vale el último código que llegó.
+      if (Date.now() - last < 45_000) { codeEmail = email; info = m.login.errRateWait(Math.ceil((45_000 - (Date.now() - last)) / 1000)); sent = true; }
       else {
         try {
           sent = (await serviceIdentity()?.sendLoginCode?.(email, { origin, next })) ?? false;
@@ -89,12 +90,14 @@ if (Astro.request.method === 'POST') {
       if (e) ({ error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'magiclink' }));
       // Cuenta invitada que aún no había entrado: su código es de tipo «invite».
       if (e) ({ error: e } = await sb.auth.verifyOtp({ email, token: code, type: 'invite' }));
-      if (!e) return Astro.redirect(next, 303);
+      // Entró: el siguiente código para este email se manda ya (sin la espera de 45 s; si no, en otro espacio o en el acceso
+      // general diría «enviado» sin mandarlo y el código de antes ya está usado).
+      if (!e) { codeSentAt.delete(email); return Astro.redirect(next, 303); }
       error = m.login.errCode;
     }
   } else if (action === 'password' && mode === 'supabase') {
     const { error: e } = await supabaseServerClient(Astro).auth.signInWithPassword({ email, password: String(form.get('password') ?? '') });
-    if (!e) return Astro.redirect(next, 303);
+    if (!e) { codeSentAt.delete(email); return Astro.redirect(next, 303); }
     error = m.login.errPassword;
   } else if (action === 'reset' && mode === 'supabase') {
     await supabaseServerClient(Astro).auth.resetPasswordForEmail(email, { redirectTo: `${origin}/admin/auth/confirm?next=/admin/account` });

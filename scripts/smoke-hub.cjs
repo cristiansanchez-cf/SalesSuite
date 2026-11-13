@@ -55,6 +55,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await t.goto(`http://enjoy.localhost:${port}/admin/login`);
   assert((await t.getAttribute('[data-testid=hub-link]', 'href')) === `${HUB}/admin/login`, 'el login de un espacio enlaza al acceso general');
 
+  // Le quitaron el acceso a un espacio y entra por su dirección: «Sin acceso» → «Ver tus empresas» lleva al acceso general
+  // con la sesión ya abierta (sin volver a pedir el código) y, con una sola empresa, directo a ella.
+  const f = await page();
+  await f.goto(`http://sciscreen.localhost:${port}/admin/login`);
+  await f.click('[data-testid="demo-rep@enjoy.test"]');
+  await f.waitForLoadState('load');
+  await f.goto(`http://sciscreen.localhost:${port}/admin`);
+  assert(await f.isVisible('[data-testid=forbidden-hub]'), 'sin acceso al espacio: «Ver tus empresas»');
+  await f.click('[data-testid=forbidden-hub]');
+  await f.waitForURL(/enjoy\.localhost.*\/admin/, { timeout: 10000 }).catch(() => {});
+  assert(/enjoy\.localhost:\d+\/admin/.test(f.url()) && !/login/.test(f.url()), `«Ver tus empresas» sin volver a entrar (${f.url()})`);
+
   // Móvil: la pantalla de elegir sin desbordarse.
   const mob = await page({ width: 390, height: 844 });
   await mob.goto(`${HUB}/admin/login`);

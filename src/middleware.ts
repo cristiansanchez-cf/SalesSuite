@@ -20,7 +20,8 @@ import { hubRoute, isHubHost } from './lib/hub';
 // y la sesión de consola exige membership en ese tenant.
 
 /** Rutas de /admin accesibles sin sesión. */
-const ADMIN_PUBLIC = new Set(['/admin/login', '/admin/auth/callback', '/admin/auth/confirm', '/admin/forbidden']);
+// /admin/a-elegir: «Ver tus empresas» desde «Sin acceso» (comprueba la sesión él mismo; no hace falta ser miembro).
+const ADMIN_PUBLIC = new Set(['/admin/login', '/admin/auth/callback', '/admin/auth/confirm', '/admin/forbidden', '/admin/a-elegir']);
 
 const MISCONFIGURED_HTML = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="robots" content="noindex">
 <title>Configuración pendiente</title><body style="font-family:system-ui;max-width:36rem;margin:15vh auto;padding:0 1rem">
