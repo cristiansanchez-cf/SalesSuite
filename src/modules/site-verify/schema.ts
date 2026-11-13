@@ -34,6 +34,7 @@ export const siteVerifySchema = z.object({
   /** Siempre se enseña: la marca aún no está verificada. */
   simulation: z.string().min(1).max(30).default('Simulación'),
   hint: z.string().max(80).default('Pulsa el sello'),
+  /** Ya no se enseña: la escena se repite sola. Se acepta para las propuestas que lo traen. */
   replay: z.string().max(40).default('Volver a verlo'),
   back: z.string().max(40).default('Volver a su web'),
   /** Las frases que acompañan cada momento de la escena. */

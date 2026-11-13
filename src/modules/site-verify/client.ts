@@ -1,7 +1,9 @@
 /**
  * site-verify: la escena, una vez al verse la diapositiva. Aparece el sello (o los sellos) → el cursor va al que se
  * pulsa → lo pulsa → la barra pasa a sciscreen.com y se abre la página del sello → baja a las afirmaciones. Con una frase
- * en cada momento. El sello se pulsa también a mano; «←» vuelve a su web; «Volver a verlo» repite la escena.
+ * en cada momento. El sello se pulsa también a mano; «←» vuelve a su web.
+ * En bucle mientras se ve: al acabar, vuelve a empezar (sin botón); si se toca, espera a que se deje de tocar. Al irse, se para;
+ * al volver, empieza desde el principio.
  * Sin animaciones (prefers-reduced-motion): la página del sello, abierta.
  * Los sellos miden lo que medirían instalados: --k = ancho de la captura / 1440 (como poco 0,45, para que se lean).
  */
@@ -17,11 +19,12 @@ export function init(root: HTMLElement) {
   const claims = root.querySelector<HTMLElement>('[data-sv-claims]');
   const caption = root.querySelector<HTMLElement>('[data-sv-caption]');
   const backs = [...root.querySelectorAll<HTMLButtonElement>('[data-sv-back]')];
-  const replay = root.querySelector<HTMLButtonElement>('[data-sv-replay]');
   const lines = JSON.parse(stage.dataset.captions ?? '{}') as Record<'start' | 'seal' | 'click' | 'page', string>;
   const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   let timers: ReturnType<typeof setTimeout>[] = [];
-  let played = false;
+  const LOOP = 13500; // la escena dura ~8 s; unos segundos con la página del sello abierta y vuelve a empezar
+  const IDLE = 15000; // tras tocarla, lo que espera sin que se toque antes de volver a empezar
+  let visible = false;
   const clear = () => { timers.forEach(clearTimeout); timers = []; };
   const at = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)); };
   const step = (s: string) => { stage.dataset.step = s; };
@@ -75,19 +78,18 @@ export function init(root: HTMLElement) {
     at(5000, () => step('press'));
     at(5450, () => { step('done'); open(true); say(lines.page); });
     at(7600, showClaims);
+    at(LOOP, play);
   }
+  const later = () => { if (visible && !reduce) at(IDLE, play); };
 
-  const onSeal = () => { clear(); step('done'); open(true); say(lines.page); at(900, showClaims); };
-  const onBack = () => { clear(); open(false); step('done'); say(lines.seal); target.focus(); };
-  const onReplay = () => play();
+  const onSeal = () => { clear(); step('done'); open(true); say(lines.page); at(900, showClaims); later(); };
+  const onBack = () => { clear(); open(false); step('done'); say(lines.seal); target.focus(); later(); };
   seals.forEach((s) => s.addEventListener('click', onSeal));
   backs.forEach((b) => b.addEventListener('click', onBack));
-  replay?.addEventListener('click', onReplay);
-  const stop = onVisibility(root, (visible) => { if (visible && !played) { played = true; play(); } }, 0.35);
+  const stop = onVisibility(root, (v) => { visible = v; if (v) play(); else clear(); }, 0.35);
   return () => {
     clear(); stop(); ro?.disconnect();
     seals.forEach((s) => s.removeEventListener('click', onSeal));
     backs.forEach((b) => b.removeEventListener('click', onBack));
-    replay?.removeEventListener('click', onReplay);
   };
 }

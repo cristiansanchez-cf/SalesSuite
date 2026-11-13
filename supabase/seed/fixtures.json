@@ -1084,8 +1084,8 @@
           {
             "size": "compacto",
             "ground": "claro",
-            "x": 4,
-            "y": 70
+            "x": 44,
+            "y": 76
           }
         ],
         "press": 0,
@@ -1198,27 +1198,6 @@
       "default_price": null,
       "default_currency": "EUR",
       "default_props": {
-        "eyebrow": "Hoy",
-        "title": "Lo que se dice de tu producto lo cuentan webs que no son tuyas",
-        "beforeLabel": "Hoy",
-        "afterLabel": "Con SciScreen",
-        "cards": [
-          {
-            "problem": "Tu producto se vende en farmacias, herbolarios y tiendas online, y cada una lo cuenta en su web, a su manera.",
-            "solution": "Revisamos las afirmaciones de esas páginas: su evidencia, su calidad, el marco regulatorio y lo que entiende quien las lee."
-          },
-          {
-            "problem": "Quien compra en esas tiendas no puede saber qué afirmaciones sobre tu producto están respaldadas.",
-            "solution": "Si el informe es favorable, el sello junto a esas afirmaciones abre la prueba en sciscreen.com: lo dice un tercero, no la tienda ni la marca."
-          },
-          {
-            "problem": "Un estudio sobre un ingrediente no demuestra el efecto de tu fórmula comercial, y la web puede decir lo contrario.",
-            "solution": "El informe separa lo que permite afirmar la ciencia de lo que puede comunicarse, y te dice qué reformular o documentar."
-          }
-        ],
-        "note": "El sello no certifica el producto ni toda la web, ni es una autorización administrativa o un aval sanitario: dice qué se revisó, cuándo y con qué alcance."
-      },
-      "props": {
         "eyebrow": "Hoy",
         "title": "Lo que tu web afirma del producto, sin la prueba a la vista",
         "beforeLabel": "Hoy",
