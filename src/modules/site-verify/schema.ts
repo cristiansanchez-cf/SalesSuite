@@ -53,7 +53,7 @@ export const siteVerifySchema = z.object({
       brand: z.string().max(40).default('Marca'),
       seal: z.string().max(40).default('Sello'),
       url: z.string().max(40).default('URL verificada'),
-      date: z.string().max(40).default('Fecha del dictamen'),
+      date: z.string().max(40).default('Fecha del informe'),
       until: z.string().max(40).default('Vigente hasta'),
       claims: z.string().max(60).default('Afirmaciones publicadas'),
     }).default({}),
