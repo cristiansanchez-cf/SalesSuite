@@ -8,7 +8,7 @@ import { requestOrigin } from '~/lib/http';
  * se abre sesión allí con un enlace de un solo uso para tu propio email y se entra directo.
  */
 export const POST: APIRoute = async (ctx) => {
-  if (!ctx.locals.hub) return ctx.redirect('/admin', 303);
+  if (!ctx.locals.hub) return ctx.redirect('/admin/home', 303);
   const user = await hubUser(ctx);
   if (!user) return ctx.redirect('/admin/login', 303);
   const id = String((await ctx.request.formData()).get('tenant') ?? '');

@@ -287,5 +287,6 @@ export async function logout(ctx: RequestLike): Promise<void> {
 
 /** Solo rutas internas de la consola (evita open redirect). */
 export function safeNext(raw: string | null | undefined): string {
-  return raw && /^\/admin(\/[\w\-/.]*)?(\?[\w\-=&%.]*)?$/.test(raw) && !raw.includes('//') ? raw : '/admin';
+  // Sin destino, o «/admin» a secas (la entrada típica: el dominio del espacio): a su pantalla de inicio (/admin/home).
+  return raw && raw !== '/admin' && /^\/admin(\/[\w\-/.]*)?(\?[\w\-=&%.]*)?$/.test(raw) && !raw.includes('//') ? raw : '/admin/home';
 }

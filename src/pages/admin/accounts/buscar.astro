@@ -10,7 +10,9 @@ import Alert from '~/components/ui/Alert.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { can } from '~/lib/admin/permissions';
 import { formAction } from '~/lib/admin/forms';
-import { zonePath } from '~/lib/accounts/rules';
+import ZonePicker from '~/components/crm/ZonePicker.astro';
+import { isPlaceKey, pathForKey } from '~/lib/accounts/spain';
+import { AdminError } from '~/lib/admin/service';
 import { safeHref } from '~/lib/safe-href';
 import { i18n } from '~/lib/i18n';
 import { prospectMessages } from '~/lib/i18n/messages/prospect';
@@ -28,7 +30,14 @@ if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   let to = '';
   result = await formAction(async () => {
-    const id = await admin.crm.prospectSearch({ what: String(f.get('what') ?? ''), zoneId: String(f.get('zoneId') ?? ''), segmentId: String(f.get('segmentId') ?? '') });
+    // Dónde: cualquier ciudad (como «Nueva empresa», §44): una zona que ya hay, una del catálogo de España (es|…) o una de
+    // Google (g:…). Lo que aún no es zona se crea sola (País › Región › Ciudad): sin configurar nada antes.
+    const v = String(f.get('zoneId') ?? '');
+    if (!v) throw new AdminError(422, M.pickPlace);
+    const path = isPlaceKey(v) ? pathForKey(v) : null;
+    if (isPlaceKey(v) && !path) throw new AdminError(422, M.pickPlace);
+    const zoneId = path ? await admin.accounts.ensurePath(path) : await admin.crm.pickZone(v);
+    const id = await admin.crm.prospectSearch({ what: String(f.get('what') ?? ''), zoneId: zoneId ?? '', segmentId: String(f.get('segmentId') ?? '') });
     to = `/admin/accounts/buscar?id=${id}`;
   });
   if (!result.error && to) return Astro.redirect(to, 303);
@@ -36,7 +45,6 @@ if (Astro.request.method === 'POST') {
 
 const sweepId = Astro.url.searchParams.get('id') ?? '';
 const [t, segments, history, kindDefs] = await Promise.all([admin.accounts.territory(), admin.playbook.segmentList(), admin.crm.prospectList(), admin.accounts.kinds()]);
-const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 let open: Awaited<ReturnType<typeof admin.crm.prospectGet>> | null = null;
 if (sweepId) {
   try { open = await admin.crm.prospectGet(sweepId); } catch { return Astro.rewrite('/404'); }
@@ -61,14 +69,9 @@ const defaultZone = history[0]?.zoneId ?? (t.myZoneIds.length === 1 ? t.myZoneId
     <div class="grid gap-6">
       <form method="post" class="co-card grid max-w-3xl gap-4" data-testid="prospect-form" data-search-form>
         {!admin.crm.hasProspect() && <Alert kind="info" title={M.noGoogle} />}
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid items-start gap-3 sm:grid-cols-2">
           <label class="co-field">{M.what}<input class="co-input" name="what" required minlength="2" maxlength="80" placeholder={M.whatPh} value={lastQuery} list="prospect-whats" data-testid="prospect-what" /></label>
-          <label class="co-field">{M.where}
-            <select class="co-select" name="zoneId" required data-testid="prospect-zone">
-              <option value="">{M.anyZone}</option>
-              {zoneOptions.map((z) => <option value={z.id} selected={z.id === defaultZone}>{z.label}</option>)}
-            </select>
-          </label>
+          <ZonePicker zones={t.zones} value={defaultZone || null} testid="prospect-zone" label={M.where} help={M.whereHelp} ph={M.wherePh} />
         </div>
         <datalist id="prospect-whats">{[...new Set(history.map((w) => w.query))].slice(0, 30).map((w) => <option value={w} />)}</datalist>
         {segments.length > 0 && (

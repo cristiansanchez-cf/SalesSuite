@@ -19,9 +19,19 @@ import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
 import { can } from '~/lib/admin/permissions';
+import { HOME, HOME_COOKIE, homePath } from '~/lib/admin/home';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
+// La primera vez en esta sesión del navegador, escribiendo la dirección del espacio o desde un marcador (sin página de
+// origen): a su inicio, el CRM (lib/admin/home.ts). Desde el menú («Propuestas»), al recargar o ya dentro, se queda aquí.
+{
+  const h = Astro.request.headers;
+  if (Astro.request.method === 'GET' && !Astro.url.search && !Astro.cookies.get(HOME_COOKIE)?.value && !h.get('referer')
+    && (h.get('sec-fetch-site') ?? 'none') === 'none' && homePath(admin.session.role) !== '/admin') {
+    return Astro.redirect(HOME, 302);
+  }
+}
 const { service, session } = admin;
 const { m, f, locale } = i18n(Astro, sellMessages);
 const STATUS_LABEL = STATUS_LABELS[locale];

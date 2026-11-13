@@ -25,7 +25,7 @@ const roleLabel = (r: (typeof spaces)[number]['role']) => (r === 'superadmin' ? 
 const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 ---
 <div class="co-sidebar__head">
-  <a href="/admin" class="co-sidebar__brand" aria-label={`${BRAND.company} · ${BRAND.app}`}>
+  <a href="/admin/home" class="co-sidebar__brand" aria-label={`${BRAND.company} · ${BRAND.app}`}>
     <span class="co-wordmark">{BRAND.wordmark}</span><span class="co-sidebar__app">· {BRAND.app}</span>
   </a>
   <NotificationBell feed={feed} id={primary ? 'bell-panel' : 'bell-panel-drawer'} back={back} testid={primary ? 'bell' : undefined} />

@@ -12,7 +12,7 @@ import { hubMessages } from '~/lib/i18n/messages/hub';
 import { enterUrl, HUB_LAST_COOKIE, hubUser } from '~/lib/hub';
 import { requestOrigin } from '~/lib/http';
 
-if (!Astro.locals.hub) return Astro.redirect('/admin', 302);
+if (!Astro.locals.hub) return Astro.redirect('/admin/home', 302);
 const user = await hubUser(Astro);
 if (!user) return Astro.redirect('/admin/login', 302);
 const { m } = i18n(Astro, hubMessages);

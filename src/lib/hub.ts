@@ -72,13 +72,13 @@ export async function enterUrl(user: HubUser, space: Omit<Space, 'current'>, ori
   if (authMode() === 'demo') {
     const local = demoDb().domain.find((d) => d.tenant_id === space.id && d.hostname.endsWith('.localhost'))?.hostname;
     if (!local) return null;
-    return `${here.protocol}//${local}${here.port ? `:${here.port}` : ''}/admin/auth/confirm?demo_user=${encodeURIComponent(user.id)}&next=/admin`;
+    return `${here.protocol}//${local}${here.port ? `:${here.port}` : ''}/admin/auth/confirm?demo_user=${encodeURIComponent(user.id)}&next=/admin/home`;
   }
   if (!space.host) return null;
   const base = `https://${space.host}`;
   try {
     const hash = await serviceIdentity()?.oneTimeLogin?.(user.email);
-    if (hash) return `${base}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=/admin`;
+    if (hash) return `${base}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=/admin/home`;
   } catch (e) {
     console.warn('[hub] sin enlace de un solo uso, al login del espacio:', e instanceof Error ? e.message : e);
   }

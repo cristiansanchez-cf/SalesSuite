@@ -19,9 +19,16 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.goto(`${BASE}/admin/accounts?ver=all`);
   await Promise.all([p.waitForURL(/\/admin\/accounts\/buscar/), p.click('[data-testid=add-open]').then(() => p.click('[data-testid=prospect-open]'))]);
   await p.fill('[data-testid=prospect-what]', 'discotecas');
-  const vlc = await p.$$eval('[data-testid=prospect-zone] option', (os) => os.find((o) => /› Valencia$/.test(o.textContent.trim()))?.value);
-  assert(!!vlc, 'Valencia en el selector de zona');
-  await p.selectOption('[data-testid=prospect-zone]', vlc);
+  // Dónde: el buscador de ciudades (cualquiera, como «Nueva empresa»), no un desplegable de zonas configuradas.
+  const where = async (q) => {
+    if (await p.isVisible('[data-testid=prospect-zone] [data-zp-change]')) await p.click('[data-testid=prospect-zone] [data-zp-change]');
+    await p.fill('[data-testid=prospect-zone-q]', q);
+    const opt = p.locator('[data-testid=prospect-zone-list] button', { hasText: q }).first();
+    await opt.waitFor({ timeout: 5000 });
+    await opt.click();
+  };
+  await where('Valencia');
+  assert((await p.textContent('[data-testid=prospect-zone-chosen]')).includes('Valencia'), 'Valencia, desde el buscador de ciudades');
   await Promise.all([p.waitForURL(/buscar\?id=/), p.click('[data-testid=prospect-search]')]);
   const rows = async () => p.$$eval('[data-testid=prospect-row]', (xs) => xs.map((x) => ({ name: x.getAttribute('data-name'), state: x.getAttribute('data-state'), checked: x.querySelector('input').checked })));
   let r = await rows();
@@ -67,12 +74,19 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.goto(`${BASE}/admin/accounts/buscar`);
   assert((await p.$$('[data-testid=prospect-sweep]')).length >= 1, 'la búsqueda queda en el historial');
   await p.fill('[data-testid=prospect-what]', 'discotecas');
-  await p.selectOption('[data-testid=prospect-zone]', vlc);
+  await where('Valencia');
   await Promise.all([p.waitForURL(/buscar\?id=/), p.click('[data-testid=prospect-search]')]);
   r = await rows();
   assert(r.filter((x) => x.state === 'have').length === fresh && r.filter((x) => x.checked).length === 1, 'otra vez: lo importado sale como «Ya la tienes» y solo la que quité, marcada');
 
   // Un comercial también busca (y lo que importa es suyo).
+  // Una ciudad que aún no es zona del espacio: se busca igual y la zona se crea sola (sin configurar nada antes).
+  await p.goto(`${BASE}/admin/accounts/buscar`);
+  await p.fill('[data-testid=prospect-what]', 'discotecas');
+  await where('Bilbao');
+  await Promise.all([p.waitForURL(/buscar\?id=/), p.click('[data-testid=prospect-search]')]);
+  assert(/Bilbao/.test(await p.textContent('h1')), `una ciudad nueva, sin configurarla antes (${(await p.textContent('h1')).trim()})`);
+
   const rep = await (await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'es-ES' })).newPage();
   await rep.goto(`${BASE}/admin/login`);
   await rep.click('[data-testid="demo-rep@enjoy.test"]');

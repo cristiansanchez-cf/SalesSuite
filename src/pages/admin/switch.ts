@@ -13,18 +13,18 @@ export const POST: APIRoute = async ({ request, locals, cookies, redirect, url }
   if (!admin) return redirect('/admin/login', 303);
   const id = String((await request.formData()).get('tenant') ?? '');
   const target = (await mySpaces(admin)).find((x) => x.id === id);
-  if (!target || target.current) return redirect('/admin', 303);
+  if (!target || target.current) return redirect('/admin/home', 303);
 
   if (admin.mode === 'demo') {
     cookies.set(DEMO_TENANT_COOKIE, target.slug, { ...cookieBase(url), maxAge: 60 * 60 * 8 });
-    return redirect('/admin', 303);
+    return redirect('/admin/home', 303);
   }
   if (!target.host) return redirect('/admin?error=space', 303);
   const base = `https://${target.host}`;
   const identity = serviceIdentity();
   try {
     const hash = identity?.oneTimeLogin ? await identity.oneTimeLogin(admin.session.email) : null;
-    if (hash) return redirect(`${base}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=/admin`, 303);
+    if (hash) return redirect(`${base}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=/admin/home`, 303);
   } catch (e) {
     console.warn('[switch] sin enlace de un solo uso, al login del otro espacio:', e instanceof Error ? e.message : e);
   }
