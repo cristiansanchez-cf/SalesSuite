@@ -78,11 +78,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=quick-start] .co-chip:has-text("Complementos")');
   await p.waitForSelector('[data-testid=preset-ready] [data-testid=preset-tpl]');
   const tpls = await p.textContent('[data-testid=preset-ready]');
-  assert(['Marca con tienda online', 'Fabricante que vende en tiendas', 'Fabricante, primera reunión', 'Lo cuentas tú en la reunión'].every((n) => tpls.includes(n)), 'las cuatro combinaciones de serie de SciScreen');
+  assert(['Marca con tienda online', 'Marca, presentación completa', 'Fabricante que vende en tiendas', 'Fabricante, presentación completa', 'Fabricante, primera reunión', 'Lo cuentas tú en la reunión'].every((n) => tpls.includes(n)), 'las cuatro combinaciones de serie de SciScreen');
   await p.click('[data-testid=preset-ready] [data-testid=preset-tpl]:has-text("Fabricante que vende en tiendas")');
   await p.waitForSelector('[data-testid=item][data-item-key=en-sus-tiendas]', { timeout: 8000 });
   const fab = await p.$$eval('[data-testid=item]', (els) => els.map((e) => e.dataset.itemKey));
-  assert(JSON.stringify(fab) === JSON.stringify(['portada', 'lo-que-te-pasa-fabricante', 'como-funciona', 'en-sus-tiendas', 'el-sello', 'pricing']), `fabricante, de un clic: ${fab.join(' → ')}`);
+  assert(JSON.stringify(fab) === JSON.stringify(['portada', 'lo-que-te-pasa-fabricante', 'en-sus-tiendas', 'el-informe', 'el-sello', 'pricing']), `fabricante, de un clic: ${fab.join(' → ')}`);
   if (OUT) await p.screenshot({ path: `${OUT}/sciscreen-preset.png`, fullPage: true });
 
   assert(errors.length === 0, `sin errores de JS (${errors.join(' | ')})`);

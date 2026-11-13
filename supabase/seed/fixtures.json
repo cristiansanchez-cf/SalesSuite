@@ -519,8 +519,8 @@
       "tenant_id": "00000000-0000-4000-8000-000000005c01",
       "key": "como-funciona",
       "block_type": "tabs-showcase",
-      "name": "Cómo funciona",
-      "description": "Los cuatro pasos, de la página al sello.",
+      "name": "Cómo revisamos (método EQRC)",
+      "description": "Las cuatro preguntas de la metodología propia EQRC para cada afirmación: Evidencia, Calidad, Regulación y Comunicación.",
       "is_catalog": true
     },
     {
@@ -530,6 +530,24 @@
       "block_type": "pricing-card",
       "name": "Inversión",
       "description": "El precio de la propuesta (la tarifa se elige en la propuesta; se configuran en Precios).",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c0109",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "piramide",
+      "block_type": "tabs-showcase",
+      "name": "La pirámide de la evidencia",
+      "description": "Los cinco escalones de la pirámide de la evidencia y qué conclusión permite cada diseño de estudio.",
+      "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c010a",
+      "tenant_id": "00000000-0000-4000-8000-000000005c01",
+      "key": "el-informe",
+      "block_type": "tabs-showcase",
+      "name": "Qué recibe vuestro equipo",
+      "description": "El informe: conclusiones por afirmación (mantener, reformular, documentar), los tres resultados posibles y un ejemplo.",
       "is_catalog": true
     }
   ],
@@ -1016,7 +1034,7 @@
       "default_props": {
         "eyebrow": "Propuesta para {company}",
         "title": "Lo que tu página afirma, con la evidencia a la vista",
-        "subtitle": "Un verificador revisa cada afirmación de tu página con la literatura científica. Si la evidencia la sostiene, la página lleva el sello de SciScreen y cualquiera puede comprobar qué se revisó y cuándo.",
+        "subtitle": "Comprobamos qué respaldo tiene lo que publicas, si el mensaje se ajusta al marco aplicable y si la redacción transmite lo que la evidencia permite afirmar. Si el informe es favorable, el sello lo dice junto a esas afirmaciones.",
         "rotatingWords": [],
         "ctas": [],
         "stats": []
@@ -1036,19 +1054,19 @@
         "afterLabel": "Con SciScreen",
         "cards": [
           {
-            "problem": "Tu página dice que el producto ayuda a algo y nadie fuera de tu equipo ha comprobado si los estudios lo sostienen.",
-            "solution": "Un verificador revisa cada afirmación con la evidencia publicada y firma un dictamen con su nivel de evidencia."
+            "problem": "Tu página dice que el producto ayuda a algo y nadie fuera de tu equipo ha comprobado si los estudios lo sostienen tal como está escrito.",
+            "solution": "Revisamos cada afirmación: qué estudios hay, cuánta confianza merecen, qué permite la normativa y qué entiende el lector."
           },
           {
-            "problem": "Quien te compra no puede saber qué afirmaciones están respaldadas por estudios.",
-            "solution": "El sello enlaza a una página nuestra que dice qué se revisó, en qué página y en qué fecha."
+            "problem": "Quien te compra no puede saber qué afirmaciones están respaldadas.",
+            "solution": "Si el informe es favorable, el sello abre en sciscreen.com qué se revisó, cuándo y con qué alcance."
           },
           {
             "problem": "Una afirmación que no se sostiene es un riesgo con la normativa de publicidad.",
-            "solution": "Te ayudamos a revisar y preparar lo que publicas: lo que no se sostiene, te lo decimos antes de poner el sello."
+            "solution": "El informe te dice qué puede mantenerse, qué conviene reformular y qué necesita más documentación, antes de publicar."
           }
         ],
-        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+        "note": "El sello no certifica el producto ni toda la web, ni es una autorización administrativa o un aval sanitario: dice qué se revisó, cuándo y con qué alcance."
       }
     },
     {
@@ -1116,7 +1134,7 @@
             "El zinc contribuye a la protección de las células frente al daño oxidativo."
           ]
         },
-        "note": "Simulación: {company} aún no está verificada y estas afirmaciones son de ejemplo. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
+        "note": "Simulación: {company} aún no está verificada y estas afirmaciones son de ejemplo. El sello indica que las afirmaciones de esa página, en la versión revisada, tienen un informe favorable; no certifica el producto ni toda la web."
       }
     },
     {
@@ -1145,16 +1163,16 @@
           ]
         },
         "rules": [
-          "Junto a las afirmaciones que cubre: al lado del título del producto o del botón de compra (compacto)",
-          "En una sección del tipo «Lo que dice la ciencia» (placa) o en un bloque destacado de la portada (tarjeta)",
-          "También en el pie de cada página verificada; nunca en páginas que no se han verificado",
-          "Ni en envases ni en publicidad",
-          "Abre su página en sciscreen.com, con la evidencia y la fecha del dictamen"
+          "Solo con un informe favorable y cumpliendo las condiciones de uso",
+          "Limitado a los contenidos y a la versión revisados: si la página cambia, se vuelve a revisar",
+          "Junto a las afirmaciones (compacto), en una sección de ciencia (placa) o en la portada (tarjeta); y en el pie de cada página verificada",
+          "Nunca en páginas sin revisar, envases ni publicidad",
+          "Abre su página en sciscreen.com: qué se revisó, cuándo y con qué alcance"
         ],
         "states": [
           {
             "name": "Vigente",
-            "body": "La evidencia se sostiene y la suscripción está al día. Se lee «Verificado a día» y la fecha."
+            "body": "El informe es favorable para la versión revisada y la cuota está al día. Se lee «Verificado a día» y la fecha."
           },
           {
             "name": "Pendiente de renovación",
@@ -1166,10 +1184,10 @@
           },
           {
             "name": "Revocado",
-            "body": "Solo si una revisión científica concluye que la evidencia ya no se sostiene. Nunca por un pago."
+            "body": "Si una revisión concluye que la conclusión ya no es válida: cambió el contenido, la fórmula, la evidencia o la norma. Nunca por un pago."
           }
         ],
-        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+        "note": "El sello no certifica el producto ni toda la web, ni es una autorización administrativa o un aval sanitario: dice qué se revisó, cuándo y con qué alcance."
       }
     },
     {
@@ -1187,18 +1205,18 @@
         "cards": [
           {
             "problem": "Tu producto se vende en farmacias, herbolarios y tiendas online, y cada una lo cuenta en su web, a su manera.",
-            "solution": "SciScreen revisa las afirmaciones de cada página contra la literatura científica y publica en sciscreen.com qué se revisó, con qué estudios y hasta cuándo."
+            "solution": "Revisamos las afirmaciones de esas páginas: su evidencia, su calidad, el marco regulatorio y lo que entiende quien las lee."
           },
           {
-            "problem": "Quien compra en esas tiendas no puede saber qué afirmaciones sobre tu producto están respaldadas por estudios.",
-            "solution": "El sello, junto a esas afirmaciones, abre la prueba en sciscreen.com: lo dice un tercero, no la tienda ni la marca."
+            "problem": "Quien compra en esas tiendas no puede saber qué afirmaciones sobre tu producto están respaldadas.",
+            "solution": "Si el informe es favorable, el sello junto a esas afirmaciones abre la prueba en sciscreen.com: lo dice un tercero, no la tienda ni la marca."
           },
           {
-            "problem": "Una afirmación que no se sostiene es un riesgo con la normativa de publicidad.",
-            "solution": "Te ayudamos a revisar lo que se publica de tu producto: lo que no se sostiene, te lo decimos antes de poner el sello."
+            "problem": "Un estudio sobre un ingrediente no demuestra el efecto de tu fórmula comercial, y la web puede decir lo contrario.",
+            "solution": "El informe separa lo que permite afirmar la ciencia de lo que puede comunicarse, y te dice qué reformular o documentar."
           }
         ],
-        "note": "El sello no es un aval: dice qué se comprobó y cuándo."
+        "note": "El sello no certifica el producto ni toda la web, ni es una autorización administrativa o un aval sanitario: dice qué se revisó, cuándo y con qué alcance."
       }
     },
     {
@@ -1267,7 +1285,7 @@
             "La vitamina B6 contribuye al funcionamiento normal del sistema nervioso."
           ]
         },
-        "note": "Simulación: {company} aún no está verificada, la tienda es de ejemplo y estas afirmaciones también. El sello certifica que las afirmaciones de esa página se han revisado contra la literatura científica; no certifica el producto ni la marca."
+        "note": "Simulación: {company} aún no está verificada, la tienda es de ejemplo y estas afirmaciones también. El sello indica que las afirmaciones de esa página, en la versión revisada, tienen un informe favorable; no certifica el producto ni toda la web."
       }
     },
     {
@@ -1278,55 +1296,58 @@
       "default_price": null,
       "default_currency": "EUR",
       "default_props": {
-        "eyebrow": "Cómo funciona",
-        "title": "De tu página al sello, en cuatro pasos",
-        "autoAdvanceMs": 0,
+        "eyebrow": "Metodología propia EQRC",
+        "title": "Cuatro preguntas para cada afirmación",
+        "autoAdvanceMs": 5500,
         "tabs": [
           {
-            "label": "Tu página",
-            "title": "Nos cuentas qué publicas",
-            "body": "Nos pasas la página que quieres verificar. Cada página se revisa por separado y lleva su propio sello.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "/demo/sciscreen/img/foto-tarjeta.webp",
-              "alt": "Una mano sostiene una tarjeta transparente con el isotipo de SciScreen"
-            }
-          },
-          {
             "label": "Evidencia",
-            "title": "Buscamos la evidencia",
-            "body": "Buscamos en bases de datos científicas los estudios que hay detrás de cada afirmación.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "/demo/sciscreen/img/foto-laboratorio.webp",
-              "alt": "Una persona mira por un microscopio en un laboratorio"
-            }
-          },
-          {
-            "label": "Dictamen",
-            "title": "Un verificador firma el dictamen",
-            "body": "Decide una persona, no una herramienta. El dictamen dice qué afirmaciones se sostienen y con qué nivel de evidencia.",
+            "title": "¿Qué estudios responden a la pregunta?",
+            "body": "Separamos cada afirmación de la página y precisamos qué dice, de qué principio activo o producto, para quién y en qué condiciones. Después buscamos qué se estudió de verdad, con los resultados favorables y los que los contradicen.",
             "bullets": [
-              "Lo que no se sostiene, te lo decimos antes de poner el sello",
-              "Sin dictamen firmado no hay sello"
+              "Un estudio citado no siempre respalda todo lo que sugiere la página"
             ],
             "mock": {
               "kind": "image",
-              "src": "/demo/sciscreen/img/foto-producto.webp",
-              "alt": "Una persona a punto de morder un bizcocho de avena con marcas de escaneo"
+              "src": "/demo/sciscreen/img/metodo/eqrc-1.svg",
+              "alt": "Las cuatro preguntas del método EQRC, con Evidencia resaltada"
             }
           },
           {
-            "label": "El sello",
-            "title": "El sello, en tu página",
-            "body": "Lo servimos nosotros: va en tu página como un pequeño script, no como una imagen. Enlaza a su página de registro, con las afirmaciones, la evidencia y la fecha del dictamen.",
+            "label": "Calidad",
+            "title": "¿Cuánta confianza merecen los resultados?",
+            "body": "Valoramos el riesgo de sesgo, la precisión y la concordancia entre estudios, y si se aplican al principio activo o producto, a la dosis y a la población de la que habla la página. Comprobamos si alguna fuente se ha corregido o retractado.",
             "bullets": [],
             "mock": {
               "kind": "image",
-              "src": "/demo/sciscreen/seal/sello-cream.svg",
-              "alt": "Sello de SciScreen: Vigente, evaluación válida"
+              "src": "/demo/sciscreen/img/metodo/eqrc-2.svg",
+              "alt": "Las cuatro preguntas del método EQRC, con Calidad resaltada"
+            }
+          },
+          {
+            "label": "Regulación",
+            "title": "¿Puede comunicarse ese mensaje en ese contexto?",
+            "body": "Desde el inicio identificamos qué normas se aplican al producto, al mercado y al tipo de comunicación. Si hay una declaración autorizada, comprobamos en el Registro de la UE que se mantenga su significado y que se cumplan sus condiciones de uso.",
+            "bullets": [
+              "Un estudio favorable no sustituye una autorización exigible"
+            ],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/eqrc-3.svg",
+              "alt": "Las cuatro preguntas del método EQRC, con Regulación resaltada"
+            }
+          },
+          {
+            "label": "Comunicación",
+            "title": "¿Qué entiende el lector?",
+            "body": "Revisamos el titular, el texto y las imágenes: si convierten una asociación en una causa, atribuyen al producto lo estudiado en un ingrediente u omiten una condición que cambia el significado.",
+            "bullets": [
+              "Las cuatro preguntas no se compensan entre sí"
+            ],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/eqrc-4.svg",
+              "alt": "Las cuatro preguntas del método EQRC, con Comunicación resaltada"
             }
           }
         ]
@@ -1342,16 +1363,149 @@
       "default_props": {
         "eyebrow": "Inversión",
         "title": "Propuesta para {company}",
-        "subtitle": "Una suscripción anual: el sello sigue vigente mientras la evidencia se sostenga y la suscripción esté al día.",
+        "subtitle": "Una cuota anual: la revisión, el informe y hasta tres revisiones más en el año para comprobar que la conclusión sigue siendo válida.",
         "features": [
-          "Revisión de cada afirmación por un verificador",
-          "Búsqueda en bases de datos científicas",
-          "Dictamen firmado con su nivel de evidencia",
-          "Sello en tu página y su página de registro"
+          "Revisión de cada afirmación: evidencia, calidad, regulación y comunicación",
+          "Informe documentado: fuentes, conclusiones y recomendaciones de cambio",
+          "Hasta tres revisiones más durante el año",
+          "Si el informe es favorable, el sello y su página en sciscreen.com"
         ],
         "noPriceLabel": "Según las páginas que verifiquemos",
         "taxNote": "IVA no incluido",
-        "smallPrint": "Un pago anual. Si no se renueva, el sello queda pendiente de renovación 30 días y después se retira."
+        "smallPrint": "La cuota remunera la revisión y el informe; no garantiza el sello ni un resultado favorable. Si no se renueva, el sello queda pendiente 30 días y después se retira."
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c1009",
+      "module_id": "00000000-0000-4000-8000-0000005c0109",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "La pirámide de la evidencia",
+        "title": "Qué conclusión permite cada estudio",
+        "autoAdvanceMs": 5000,
+        "tabs": [
+          {
+            "label": "1. Exploratoria",
+            "title": "Indicios, no beneficios",
+            "body": "Los estudios de laboratorio, en animales o los casos clínicos pueden sugerir un mecanismo o una hipótesis. Por sí solos no demuestran un beneficio en personas.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/piramide-1.svg",
+              "alt": "Pirámide de la evidencia con el escalón 1, Exploratoria, resaltado"
+            }
+          },
+          {
+            "label": "2. Asociación",
+            "title": "Una relación, no una causa",
+            "body": "Los estudios transversales o de casos y controles detectan una relación entre dos factores. No demuestran que uno cause el otro.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/piramide-2.svg",
+              "alt": "Pirámide de la evidencia con el escalón 2, Asociación, resaltado"
+            }
+          },
+          {
+            "label": "3. Seguimiento",
+            "title": "Qué pasa con el tiempo",
+            "body": "Las cohortes observan si la exposición precede al resultado a lo largo del tiempo. Aun así, pueden influir otros factores.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/piramide-3.svg",
+              "alt": "Pirámide de la evidencia con el escalón 3, Seguimiento, resaltado"
+            }
+          },
+          {
+            "label": "4. Intervención",
+            "title": "Si la intervención produjo el efecto",
+            "body": "Los ensayos, sobre todo aleatorizados y con comparador, ayudan a evaluar si la intervención produjo el efecto en las condiciones estudiadas.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/piramide-4.svg",
+              "alt": "Pirámide de la evidencia con el escalón 4, Intervención, resaltado"
+            }
+          },
+          {
+            "label": "5. Síntesis",
+            "title": "Revisiones y metaanálisis",
+            "body": "Las revisiones sistemáticas reúnen y evalúan los estudios; un metaanálisis combina sus resultados. Estar en la cúspide no garantiza una conclusión sólida: no corrige los sesgos de lo que incluye.",
+            "bullets": [
+              "Un buen estudio puede no responder a la afirmación: otra dosis u otro efecto"
+            ],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/piramide-5.svg",
+              "alt": "Pirámide de la evidencia con el escalón 5, Síntesis, resaltado"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000005c100a",
+      "module_id": "00000000-0000-4000-8000-0000005c010a",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Qué recibe vuestro equipo",
+        "title": "Un informe documentado, afirmación por afirmación",
+        "autoAdvanceMs": 6000,
+        "tabs": [
+          {
+            "label": "El informe",
+            "title": "Mantener, reformular o aportar documentación",
+            "body": "Con el alcance y la versión revisados, las fuentes, la conclusión de cada afirmación y las recomendaciones de cambio. Si falta un dato, el informe dice cuál y por qué importa. La decisión final pasa por revisión humana.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/informe-conclusiones.svg",
+              "alt": "Informe de revisión con tres afirmaciones: mantener, reformular y aportar documentación"
+            }
+          },
+          {
+            "label": "El resultado",
+            "title": "Favorable, condicionado o no favorable",
+            "body": "Para la versión evaluada. Si hay una vía de mejora, indicamos qué corregir y qué habría que comprobar en la nueva versión.",
+            "bullets": [
+              "Un resultado condicionado no autoriza el uso del sello"
+            ],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/informe-resultados.svg",
+              "alt": "Los tres resultados posibles: favorable, favorable condicionado y no favorable"
+            }
+          },
+          {
+            "label": "Un ejemplo",
+            "title": "Un ingrediente no es la fórmula",
+            "body": "Una ficha afirma que «nuestro producto ha demostrado este beneficio», pero el estudio citado evalúa un ingrediente, no la fórmula comercial. El informe lo señala, explica qué permite concluir el estudio y qué redacción podría revisarse.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/informe-ejemplo.svg",
+              "alt": "Ejemplo: la ficha atribuye al producto lo que el estudio vio en un ingrediente"
+            }
+          },
+          {
+            "label": "Con vuestro equipo",
+            "title": "Una segunda lectura documentada",
+            "body": "Si ya tenéis Regulatory, I+D o Calidad, SciScreen no sustituye su trabajo: aporta una segunda lectura de lo que se publica, para comprobar que el mensaje refleja el respaldo que tenéis y volver a revisarlo cuando cambien las circunstancias.",
+            "bullets": [],
+            "mock": {
+              "kind": "image",
+              "src": "/demo/sciscreen/img/metodo/eqrc-1.svg",
+              "alt": "Las cuatro preguntas del método EQRC"
+            }
+          }
+        ]
       }
     }
   ],
@@ -2511,6 +2665,14 @@
           "precio": {
             "module": "pricing",
             "props": {}
+          },
+          "piramide": {
+            "module": "piramide",
+            "props": {}
+          },
+          "informe": {
+            "module": "el-informe",
+            "props": {}
           }
         },
         "modes": {
@@ -2518,12 +2680,15 @@
             "portada",
             "problema",
             "como",
+            "piramide",
             "web",
+            "informe",
             "sello",
             "precio"
           ],
           "visual": [
             "web",
+            "informe",
             "sello",
             "precio"
           ]
@@ -2535,8 +2700,10 @@
           "portada",
           "problema",
           "problema-fab",
+          "informe",
           "precio",
-          "como"
+          "como",
+          "piramide"
         ],
         "choices": [
           {
@@ -2573,19 +2740,35 @@
                 ]
               }
             ]
+          },
+          {
+            "key": "detalle",
+            "label": "¿Cuánto detalle?",
+            "default": "breve",
+            "hint": "Breve: lo que le pasa, su página con el sello, el informe, el sello y la inversión. Completa: añade el método (las cuatro preguntas EQRC) y la pirámide de la evidencia.",
+            "options": [
+              {
+                "key": "breve",
+                "label": "Breve (6 diapositivas)",
+                "hint": "Para que la lean solos o una primera toma de contacto.",
+                "rules": [
+                  {
+                    "remove": "como"
+                  },
+                  {
+                    "remove": "piramide"
+                  }
+                ]
+              },
+              {
+                "key": "completa",
+                "label": "Completa (8 diapositivas)",
+                "hint": "Para perfiles técnicos (Regulatory, I+D, Calidad) o quien pide saber cómo revisamos."
+              }
+            ]
           }
         ],
         "questions": [
-          {
-            "key": "conoce",
-            "label": "¿Ya sabe cómo funciona SciScreen?",
-            "hint": "Quita «Cómo funciona».",
-            "rules": [
-              {
-                "remove": "como"
-              }
-            ]
-          },
           {
             "key": "sin-precio",
             "label": "¿Es una primera toma de contacto, sin precio?",

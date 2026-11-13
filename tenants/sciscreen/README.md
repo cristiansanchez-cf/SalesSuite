@@ -30,9 +30,11 @@ Fuera a propósito: las fotos con texto incrustado o marcas ajenas (photo1 con e
 | `portada` | hero-pitch | La marca y lo que cambia en su página |
 | `lo-que-te-pasa` | problem-solution | Hoy → con SciScreen (verificador, sello con registro, revisar y preparar) |
 | `como-funciona` | tabs-showcase | Tu página → evidencia → dictamen → el sello, con sus fotos y el sello |
+| `piramide` | tabs-showcase | La pirámide de la evidencia: cinco escalones, qué conclusión permite cada diseño (ilustración que resalta el escalón) |
 | `su-web` | site-verify | Su página de verdad (captura de Personalizar → Su web) con el sello real encima (compacto, placa o tarjeta) y la etiqueta «Simulación»; un cursor lo pulsa, la barra pasa a sciscreen.com y se abre la página del sello: marca, estado, URL verificada, fechas y cada afirmación con su evidencia y sus estudios |
 | `lo-que-te-pasa-fabricante` | problem-solution | **Perfil fabricante** (laboratorio con marca propia que vende a farmacias, herbolarios y tiendas): lo que se dice de su producto lo cuentan webs que no son suyas |
 | `en-sus-tiendas` | site-verify | **Perfil fabricante**: la ficha de su producto en la web de una tienda, con el sello más grande (placa ×1,5) que entra con animación y foco, para verse en webs cargadas que no controla |
+| `el-informe` | tabs-showcase | Qué recibe vuestro equipo: informe por afirmación (mantener / reformular / documentar), resultado favorable / condicionado / no favorable, un ejemplo y la segunda lectura para Regulatory, I+D o Calidad |
 | `el-sello` | seal-showcase | El sello en una página de ejemplo junto a sus afirmaciones, dónde va y los cuatro estados en palabras |
 | `pricing` | pricing-card | La suscripción anual; sin tarifas hasta que estén confirmadas («Según las páginas que verifiquemos») |
 
@@ -59,3 +61,6 @@ min» para los botones, si se puede citar AERTeM y un caso real con permiso.
 ## Aplicar
 
 GitHub → Actions → **Producción** → `alta-espacio`, espacio `sciscreen`, primero con «Solo comprobar».
+
+
+Textos alineados con «Información para dossier cliente» (founder de SciScreen, nov 2026): método propio EQRC (`como-funciona`), pirámide de la evidencia, informe y sus tres resultados, el sello solo con informe favorable y limitado a la versión revisada, y hasta tres revisiones más incluidas en la cuota anual. Ilustraciones en `assets/img/metodo/` (generadas, paleta de la marca).
