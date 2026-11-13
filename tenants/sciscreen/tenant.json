@@ -147,56 +147,22 @@
       "props": {
         "eyebrow": "Metodología propia EQRC",
         "title": "Cuatro preguntas para cada afirmación",
-        "autoAdvanceMs": 5500,
+        "autoAdvanceMs": 0,
         "tabs": [
           {
-            "label": "Evidencia",
-            "title": "¿Qué estudios responden a la pregunta?",
-            "body": "Separamos cada afirmación de la página y precisamos qué dice, de qué principio activo o producto, para quién y en qué condiciones. Después buscamos qué se estudió de verdad, con los resultados favorables y los que los contradicen.",
+            "label": "EQRC",
+            "title": "Si una falla, la afirmación no pasa",
+            "body": "Las respondemos para cada afirmación de la página. No se compensan entre sí.",
             "bullets": [
-              "Un estudio citado no siempre respalda todo lo que sugiere la página"
+              "Evidencia: qué estudios hay, a favor y en contra",
+              "Calidad: sesgo, precisión, dosis y población",
+              "Regulación: qué permite la norma y el Registro de la UE",
+              "Comunicación: qué entiende el lector"
             ],
             "mock": {
               "kind": "image",
-              "src": "asset:img/metodo/eqrc-1.svg",
-              "alt": "Las cuatro preguntas del método EQRC, con Evidencia resaltada"
-            }
-          },
-          {
-            "label": "Calidad",
-            "title": "¿Cuánta confianza merecen los resultados?",
-            "body": "Valoramos el riesgo de sesgo, la precisión y la concordancia entre estudios, y si se aplican al principio activo o producto, a la dosis y a la población de la que habla la página. Comprobamos si alguna fuente se ha corregido o retractado.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/eqrc-2.svg",
-              "alt": "Las cuatro preguntas del método EQRC, con Calidad resaltada"
-            }
-          },
-          {
-            "label": "Regulación",
-            "title": "¿Puede comunicarse ese mensaje en ese contexto?",
-            "body": "Desde el inicio identificamos qué normas se aplican al producto, al mercado y al tipo de comunicación. Si hay una declaración autorizada, comprobamos en el Registro de la UE que se mantenga su significado y que se cumplan sus condiciones de uso.",
-            "bullets": [
-              "Un estudio favorable no sustituye una autorización exigible"
-            ],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/eqrc-3.svg",
-              "alt": "Las cuatro preguntas del método EQRC, con Regulación resaltada"
-            }
-          },
-          {
-            "label": "Comunicación",
-            "title": "¿Qué entiende el lector?",
-            "body": "Revisamos el titular, el texto y las imágenes: si convierten una asociación en una causa, atribuyen al producto lo estudiado en un ingrediente u omiten una condición que cambia el significado.",
-            "bullets": [
-              "Las cuatro preguntas no se compensan entre sí"
-            ],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/eqrc-4.svg",
-              "alt": "Las cuatro preguntas del método EQRC, con Comunicación resaltada"
+              "src": "asset:img/metodo/eqrc-0.svg",
+              "alt": "Las cuatro preguntas del método EQRC: Evidencia, Calidad, Regulación y Comunicación"
             }
           }
         ]
@@ -213,63 +179,21 @@
       "props": {
         "eyebrow": "La pirámide de la evidencia",
         "title": "Qué conclusión permite cada estudio",
-        "autoAdvanceMs": 5000,
+        "autoAdvanceMs": 0,
         "tabs": [
           {
-            "label": "1. Exploratoria",
-            "title": "Indicios, no beneficios",
-            "body": "Los estudios de laboratorio, en animales o los casos clínicos pueden sugerir un mecanismo o una hipótesis. Por sí solos no demuestran un beneficio en personas.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/piramide-1.svg",
-              "alt": "Pirámide de la evidencia con el escalón 1, Exploratoria, resaltado"
-            }
-          },
-          {
-            "label": "2. Asociación",
-            "title": "Una relación, no una causa",
-            "body": "Los estudios transversales o de casos y controles detectan una relación entre dos factores. No demuestran que uno cause el otro.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/piramide-2.svg",
-              "alt": "Pirámide de la evidencia con el escalón 2, Asociación, resaltado"
-            }
-          },
-          {
-            "label": "3. Seguimiento",
-            "title": "Qué pasa con el tiempo",
-            "body": "Las cohortes observan si la exposición precede al resultado a lo largo del tiempo. Aun así, pueden influir otros factores.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/piramide-3.svg",
-              "alt": "Pirámide de la evidencia con el escalón 3, Seguimiento, resaltado"
-            }
-          },
-          {
-            "label": "4. Intervención",
-            "title": "Si la intervención produjo el efecto",
-            "body": "Los ensayos, sobre todo aleatorizados y con comparador, ayudan a evaluar si la intervención produjo el efecto en las condiciones estudiadas.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/piramide-4.svg",
-              "alt": "Pirámide de la evidencia con el escalón 4, Intervención, resaltado"
-            }
-          },
-          {
-            "label": "5. Síntesis",
-            "title": "Revisiones y metaanálisis",
-            "body": "Las revisiones sistemáticas reúnen y evalúan los estudios; un metaanálisis combina sus resultados. Estar en la cúspide no garantiza una conclusión sólida: no corrige los sesgos de lo que incluye.",
+            "label": "Pirámide",
+            "title": "Cuanto más arriba, más sólido; pero no basta",
+            "body": "De los indicios de laboratorio (base) a las revisiones y metaanálisis (cúspide).",
             "bullets": [
-              "Un buen estudio puede no responder a la afirmación: otra dosis u otro efecto"
+              "Un metaanálisis no corrige los sesgos de lo que incluye",
+              "Un buen estudio puede no responder a la afirmación",
+              "Una asociación no es una causa"
             ],
             "mock": {
               "kind": "image",
-              "src": "asset:img/metodo/piramide-5.svg",
-              "alt": "Pirámide de la evidencia con el escalón 5, Síntesis, resaltado"
+              "src": "asset:img/metodo/piramide-0.svg",
+              "alt": "La pirámide de la evidencia: exploratoria, asociación, seguimiento, intervención y síntesis"
             }
           }
         ]
@@ -425,52 +349,22 @@
       "props": {
         "eyebrow": "Qué recibe vuestro equipo",
         "title": "Un informe documentado, afirmación por afirmación",
-        "autoAdvanceMs": 6000,
+        "autoAdvanceMs": 0,
         "tabs": [
           {
-            "label": "El informe",
+            "label": "Informe",
             "title": "Mantener, reformular o aportar documentación",
-            "body": "Con el alcance y la versión revisados, las fuentes, la conclusión de cada afirmación y las recomendaciones de cambio. Si falta un dato, el informe dice cuál y por qué importa. La decisión final pasa por revisión humana.",
-            "bullets": [],
+            "body": "Con alcance, versión, fuentes y fecha de cada conclusión. Revisión humana.",
+            "bullets": [
+              "Resultado: favorable, condicionado o no favorable",
+              "Un resultado condicionado no autoriza el sello",
+              "Un ingrediente estudiado no demuestra la fórmula",
+              "Segunda lectura para Regulatory, I+D o Calidad"
+            ],
             "mock": {
               "kind": "image",
               "src": "asset:img/metodo/informe-conclusiones.svg",
               "alt": "Informe de revisión con tres afirmaciones: mantener, reformular y aportar documentación"
-            }
-          },
-          {
-            "label": "El resultado",
-            "title": "Favorable, condicionado o no favorable",
-            "body": "Para la versión evaluada. Si hay una vía de mejora, indicamos qué corregir y qué habría que comprobar en la nueva versión.",
-            "bullets": [
-              "Un resultado condicionado no autoriza el uso del sello"
-            ],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/informe-resultados.svg",
-              "alt": "Los tres resultados posibles: favorable, favorable condicionado y no favorable"
-            }
-          },
-          {
-            "label": "Un ejemplo",
-            "title": "Un ingrediente no es la fórmula",
-            "body": "Una ficha afirma que «nuestro producto ha demostrado este beneficio», pero el estudio citado evalúa un ingrediente, no la fórmula comercial. El informe lo señala, explica qué permite concluir el estudio y qué redacción podría revisarse.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/informe-ejemplo.svg",
-              "alt": "Ejemplo: la ficha atribuye al producto lo que el estudio vio en un ingrediente"
-            }
-          },
-          {
-            "label": "Con vuestro equipo",
-            "title": "Una segunda lectura documentada",
-            "body": "Si ya tenéis Regulatory, I+D o Calidad, SciScreen no sustituye su trabajo: aporta una segunda lectura de lo que se publica, para comprobar que el mensaje refleja el respaldo que tenéis y volver a revisarlo cuando cambien las circunstancias.",
-            "bullets": [],
-            "mock": {
-              "kind": "image",
-              "src": "asset:img/metodo/eqrc-1.svg",
-              "alt": "Las cuatro preguntas del método EQRC"
             }
           }
         ]
