@@ -34,3 +34,14 @@ describe('editar textos de una diapositiva', () => {
     expect(o).toEqual({});
   });
 });
+
+describe('quitar un apartado', () => {
+  test('quita el elemento de la lista y deja los demás', async () => {
+    const { removeAt, elementPaths } = await import('./text-fields');
+    const p = { tabs: [{ label: 'A', bullets: ['x', 'y', 'z'] }, { label: 'B', bullets: [] }] };
+    expect(removeAt(p, ['tabs', 0]).tabs.map((t) => t.label)).toEqual(['B']);
+    expect(removeAt(p, ['tabs', 0, 'bullets', 1]).tabs[0].bullets).toEqual(['x', 'z']);
+    expect(p.tabs).toHaveLength(2);
+    expect(elementPaths(['tabs', 0, 'bullets', 2])).toEqual([['tabs', 0], ['tabs', 0, 'bullets', 2]]);
+  });
+});

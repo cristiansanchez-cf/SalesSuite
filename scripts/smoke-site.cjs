@@ -76,6 +76,19 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=texts-save]');
   await p.waitForSelector('[data-testid=texts-editor] [role=status]');
   assert((await p.textContent('[data-testid=item][data-item-key=lo-que-te-pasa]')).includes('Un título solo para Valle Verde'), '«Editar textos»: guardado en la propuesta');
+  // Quitar un apartado entero (una tarjeta): sale de la propuesta; siempre queda uno.
+  const cards = () => p.$$eval('[data-testid=texts-editor] [data-testid=text-group]', (g) => g.map((x) => x.dataset.path).filter((x) => /^cards\.\d+$/.test(x)));
+  const before = (await cards()).length;
+  const gone = await p.inputValue('[data-testid=texts-editor] [data-path="cards.1.problem"]');
+  await p.click('[data-testid=texts-editor] [data-testid=text-remove][data-path="cards.1"]');
+  assert((await cards()).length === before - 1, `«Quitar» un apartado (${before} → ${(await cards()).length})`);
+  await p.click('[data-testid=texts-save]');
+  await p.waitForFunction(() => !document.querySelector('[data-testid=builder][data-busy]'));
+  await p.waitForSelector('[data-testid=texts-editor] [role=status]');
+  const pub = await (await b.newContext()).newPage();
+  await pub.goto(`${S}/d/demo-sciscreen-Vv7p`);
+  assert(!(await pub.content()).includes(gone.slice(0, 40)), 'el apartado quitado ya no sale en la propuesta');
+  await pub.close();
 
   // Combinaciones de serie de SciScreen: un clic monta la propuesta del laboratorio, con el sello en su web (docs/PROPOSAL_PRESETS.md).
   await p.goto(`${S}/admin`);

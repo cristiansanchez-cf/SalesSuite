@@ -68,8 +68,9 @@ const LABELS: Record<string, string> = {
   ctas: 'Botón', cta: 'Botón', faqs: 'Pregunta', question: 'Pregunta', answer: 'Respuesta', features: 'Ventaja', plans: 'Plan',
   name: 'Nombre', quote: 'Cita', author: 'Autor', role: 'Cargo', evidence: 'Evidencia', ref: 'Referencia', status: 'Estado',
   reviewed: 'Revisado', validUntil: 'Vigente hasta', labels: 'Rótulos', page: 'Página del sello', simulation: 'Etiqueta de simulación',
-  back: 'Botón volver', fallback: 'Página de ejemplo', address: 'Dirección', start: 'Al empezar', seal: 'Al salir el sello',
-  click: 'Al pulsarlo', price: 'Precio', period: 'Periodo', includes: 'Incluye', excludes: 'No incluye', unit: 'Unidad',
+  back: 'Botón volver', fallback: 'Página de ejemplo', address: 'Dirección', start: 'Al empezar', seal: 'Sello',
+  click: 'Al pulsarlo', rules: 'Regla', states: 'Estado', alt: 'Texto alternativo', points: 'Punto', questions: 'Pregunta',
+  benefits: 'Ventaja', reasons: 'Motivo', options: 'Opción', rows: 'Fila', stats: 'Dato', value: 'Valor', tag: 'Etiqueta', price: 'Precio', period: 'Periodo', includes: 'Incluye', excludes: 'No incluye', unit: 'Unidad',
 };
 const human = (k: string) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
 
@@ -95,4 +96,25 @@ export function mergeProps(base: Record<string, unknown>, over: Record<string, u
     out[k] = plain(v) && plain(base[k]) ? mergeProps(base[k] as Record<string, unknown>, v) : v;
   }
   return out;
+}
+
+/** El valor en `path` (undefined si no está). */
+export function getAt(obj: unknown, path: TextPath): unknown {
+  let v: any = obj;
+  for (const seg of path) { if (v == null) return undefined; v = v[seg as any]; }
+  return v;
+}
+
+/** Copia de `obj` sin el elemento de la lista en `path` (un apartado, una tarjeta, un punto). */
+export function removeAt<T>(obj: T, path: TextPath): T {
+  const idx = path[path.length - 1];
+  const parent = path.slice(0, -1);
+  const list = getAt(obj, parent);
+  if (typeof idx !== 'number' || !Array.isArray(list)) return obj;
+  return setAt(obj, parent, list.filter((_, i) => i !== idx));
+}
+
+/** Los elementos de lista que contienen este texto, de fuera adentro: ['tabs',0,'bullets',2] → [tabs,0], [tabs,0,bullets,2]. */
+export function elementPaths(path: TextPath): TextPath[] {
+  return path.flatMap((seg, i) => (typeof seg === 'number' ? [path.slice(0, i + 1)] : []));
 }
