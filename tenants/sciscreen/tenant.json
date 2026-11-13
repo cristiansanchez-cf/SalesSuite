@@ -1,5 +1,5 @@
 {
-  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify: la captura de Personalizar → Su web, el sello real del kit y la página del sello en sciscreen.com), el sello en su página la inversión y, para fabricantes con marca propia que venden en tiendas, «Fabricante · Lo que le pasa hoy» y «Fabricante · Tu producto en sus tiendas». El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
+  "$comment": "La marca de SciScreen (su design system 1.0, 1 nov 2026) y su catálogo de propuestas: portada, lo que le pasa a la marca, cómo funciona, su web con el sello encima (site-verify: la captura de Personalizar → Su web, el sello real del kit y la página del sello en sciscreen.com), el sello en su página la inversión y, para laboratorios con marca propia, «Laboratorio · Lo que le pasa hoy». El sello va solo en la web de la marca: «Fabricante · Tu producto en sus tiendas» queda fuera del catálogo. El espacio se creó desde Plataforma; su CRM, sectores, jugadas y lo que hizo el agente de alta viven en la base de datos y este archivo no los toca (no hay market, playbook, crm ni tarifas: los precios se ponen en Precios cuando estén).",
   "slug": "sciscreen",
   "name": "SciScreen",
   "default_locale": "es-ES",
@@ -109,24 +109,24 @@
     {
       "key": "lo-que-te-pasa-fabricante",
       "block_type": "problem-solution",
-      "name": "Fabricante · Lo que le pasa hoy",
+      "name": "Laboratorio · Lo que le pasa hoy",
       "is_catalog": true,
       "default_price": null,
       "currency": "EUR",
-      "description": "Para laboratorios y fabricantes con marca propia que venden a farmacias, herbolarios y tiendas: hoy y con SciScreen.",
+      "description": "Para laboratorios y fabricantes con marca propia: lo que la web de su producto afirma, hoy y con SciScreen.",
       "props": {
         "eyebrow": "Hoy",
-        "title": "Lo que se dice de tu producto lo cuentan webs que no son tuyas",
+        "title": "Lo que tu web afirma del producto, sin la prueba a la vista",
         "beforeLabel": "Hoy",
         "afterLabel": "Con SciScreen",
         "cards": [
           {
-            "problem": "Tu producto se vende en farmacias, herbolarios y tiendas online, y cada una lo cuenta en su web, a su manera.",
-            "solution": "Revisamos las afirmaciones de esas páginas: su evidencia, su calidad, el marco regulatorio y lo que entiende quien las lee."
+            "problem": "La web de tu producto hace afirmaciones de salud, y quien la lee no sabe cuáles están respaldadas.",
+            "solution": "Revisamos cada afirmación de esa página: su evidencia, su calidad, el marco regulatorio y lo que entiende quien la lee."
           },
           {
-            "problem": "Quien compra en esas tiendas no puede saber qué afirmaciones sobre tu producto están respaldadas.",
-            "solution": "Si el informe es favorable, el sello junto a esas afirmaciones abre la prueba en sciscreen.com: lo dice un tercero, no la tienda ni la marca."
+            "problem": "Que la marca diga en su web que su producto funciona no convence: lo dice quien lo vende.",
+            "solution": "Si el informe es favorable, el sello junto a esas afirmaciones abre la prueba en sciscreen.com: lo dice un tercero, no la marca."
           },
           {
             "problem": "Un estudio sobre un ingrediente no demuestra el efecto de tu fórmula comercial, y la web puede decir lo contrario.",
@@ -272,10 +272,10 @@
       "key": "en-sus-tiendas",
       "block_type": "site-verify",
       "name": "Fabricante · Tu producto en sus tiendas",
-      "is_catalog": true,
+      "is_catalog": false,
       "default_price": null,
       "currency": "EUR",
-      "description": "Para fabricantes que venden a través de otros: la ficha de su producto en la web de una tienda (Personalizar → Su web), con el sello más grande, que entra con animación para verse en cualquier web, y la página del sello en sciscreen.com.",
+      "description": "Retirado del catálogo: el sello va solo en la web de la marca, no en las tiendas que venden su producto. Se conserva para las propuestas que ya lo usan.",
       "props": {
         "eyebrow": "Tu producto, en sus tiendas",
         "title": "El sello junto a tu producto, en una tienda que lo vende",
@@ -454,9 +454,9 @@
       "name": "Complementos y salud natural",
       "icon": "shield-check",
       "image": null,
-      "description": "Marcas de complementos alimenticios, herbolario y salud natural que hacen afirmaciones sobre sus productos: las que venden en su web y los laboratorios con marca propia que venden en farmacias, herbolarios y tiendas online.",
+      "description": "Marcas de complementos alimenticios, herbolario y salud natural que hacen afirmaciones sobre sus productos en su web: marcas con tienda online y laboratorios con marca propia.",
       "value_prop": "Lo que se afirma del producto, revisado contra la literatura científica por un tercero, con el sello junto a las afirmaciones y la prueba en sciscreen.com. El sello no certifica el producto ni la marca: certifica que las afirmaciones de esa página se han revisado.",
-      "icp": "- Marcas con tienda online o web de producto con afirmaciones de salud\n- Laboratorios con marca propia que venden a farmacias, herbolarios y tiendas online\n- Marcas que cuidan la normativa de publicidad y quieren diferenciarse",
+      "icp": "- Marcas con tienda online o web de producto con afirmaciones de salud\n- Laboratorios y fabricantes con marca propia y web de producto\n- Marcas que cuidan la normativa de publicidad y quieren diferenciarse",
       "notice": "Siempre «Simulación» mientras no esté verificada. Nunca digas que el sello certifica el producto o la marca, ni «avalado»: certifica que las afirmaciones de esa página se han revisado contra la literatura científica.",
       "proposal": {
         "blocks": {
@@ -478,10 +478,6 @@
           },
           "web": {
             "module": "su-web",
-            "props": {}
-          },
-          "tiendas": {
-            "module": "en-sus-tiendas",
             "props": {}
           },
           "sello": {
@@ -521,7 +517,6 @@
         },
         "priority": [
           "web",
-          "tiendas",
           "sello",
           "portada",
           "problema",
@@ -534,33 +529,29 @@
         "choices": [
           {
             "key": "tipo",
-            "label": "¿Dónde se vende su producto?",
+            "label": "¿Qué tipo de cliente es?",
             "default": "marca",
-            "hint": "Antes de montarla, captura la página en Personalizar → Su web: su web o la ficha de su producto en una tienda.",
+            "hint": "Antes de montarla, captura su web en Personalizar → Su web: la página donde irá el sello. El sello va solo en su web, no en las tiendas que venden su producto.",
             "options": [
               {
                 "key": "marca",
-                "label": "En su propia web",
+                "label": "Marca con tienda online",
                 "hint": "Marca con tienda online o web de producto: el sello, junto a las afirmaciones de su página."
               },
               {
                 "key": "fabricante",
-                "label": "En farmacias, herbolarios y tiendas",
-                "hint": "Laboratorio o fabricante con marca propia que vende a establecimientos. Captura la ficha de su producto en una tienda que lo venda: el sello sale más grande y entra con animación.",
+                "label": "Laboratorio o fabricante con marca propia",
+                "hint": "El sello, junto a las afirmaciones de la página de su producto en su propia web.",
                 "rules": [
                   {
                     "replace": "problema",
                     "with": "problema-fab"
                   },
                   {
-                    "replace": "web",
-                    "with": "tiendas"
-                  },
-                  {
                     "patch": "portada",
                     "set": {
                       "title": "Lo que se dice de tu producto, con la evidencia a la vista",
-                      "subtitle": "Tu producto se vende en farmacias, herbolarios y tiendas online. Revisamos lo que esas páginas afirman de él: su evidencia, el marco aplicable y lo que entiende quien las lee. Si el informe es favorable, el sello lo dice junto a esas afirmaciones."
+                      "subtitle": "Revisamos lo que la web de tu producto afirma de él: su evidencia, el marco aplicable y lo que entiende quien la lee. Si el informe es favorable, el sello lo dice junto a esas afirmaciones."
                     }
                   }
                 ]
@@ -626,15 +617,15 @@
           ]
         },
         {
-          "name": "Fabricante que vende en tiendas",
-          "note": "Laboratorio con marca propia que vende a farmacias y herbolarios: captura la ficha de su producto en una tienda que lo venda.",
+          "name": "Laboratorio con marca propia",
+          "note": "Laboratorio o fabricante con marca propia: el sello, en la página de su producto en su web. Captura antes su web en Personalizar → Su web.",
           "mode": "full",
           "answers": [
             "tipo:fabricante"
           ]
         },
         {
-          "name": "Fabricante, presentación completa",
+          "name": "Laboratorio, presentación completa",
           "note": "Para su equipo de Regulatory, I+D o Calidad: añade el método EQRC y la pirámide de la evidencia.",
           "mode": "full",
           "answers": [
@@ -643,7 +634,7 @@
           ]
         },
         {
-          "name": "Fabricante, primera reunión",
+          "name": "Laboratorio, primera reunión",
           "note": "Primera toma de contacto con un laboratorio: sin inversión, para abrir la conversación.",
           "mode": "full",
           "answers": [

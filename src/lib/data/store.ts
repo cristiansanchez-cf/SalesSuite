@@ -239,9 +239,9 @@ const ENJOY = '00000000-0000-4000-8000-000000000e01';
 export const SCISCREEN_DEMO_TEMPLATES: Array<{ name: string; note: string; mode: 'full' | 'visual'; answers: string[] }> = [
   { name: 'Marca con tienda online', note: 'Vende en su propia web: el sello, junto a las afirmaciones de su página. Captura antes su web en Personalizar → Su web.', mode: 'full', answers: ['tipo:marca'] },
   { name: 'Marca, presentación completa', note: 'Con el método EQRC y la pirámide de la evidencia, para quien quiere saber cómo revisamos.', mode: 'full', answers: ['tipo:marca', 'detalle:completa'] },
-  { name: 'Fabricante que vende en tiendas', note: 'Laboratorio con marca propia que vende a farmacias y herbolarios: captura la ficha de su producto en una tienda que lo venda.', mode: 'full', answers: ['tipo:fabricante'] },
-  { name: 'Fabricante, presentación completa', note: 'Para su equipo de Regulatory, I+D o Calidad: añade el método EQRC y la pirámide de la evidencia.', mode: 'full', answers: ['tipo:fabricante', 'detalle:completa'] },
-  { name: 'Fabricante, primera reunión', note: 'Primera toma de contacto con un laboratorio: sin inversión, para abrir la conversación.', mode: 'full', answers: ['tipo:fabricante', 'sin-precio'] },
+  { name: 'Laboratorio con marca propia', note: 'Laboratorio o fabricante con marca propia: el sello, en la página de su producto en su web. Captura antes su web en Personalizar → Su web.', mode: 'full', answers: ['tipo:fabricante'] },
+  { name: 'Laboratorio, presentación completa', note: 'Para su equipo de Regulatory, I+D o Calidad: añade el método EQRC y la pirámide de la evidencia.', mode: 'full', answers: ['tipo:fabricante', 'detalle:completa'] },
+  { name: 'Laboratorio, primera reunión', note: 'Primera toma de contacto con un laboratorio: sin inversión, para abrir la conversación.', mode: 'full', answers: ['tipo:fabricante', 'sin-precio'] },
   { name: 'Lo cuentas tú en la reunión', note: 'Apoyo visual: su página con el sello, la página del sello y la inversión. Tú pones el contexto.', mode: 'visual', answers: ['tipo:marca'] },
 ];
 const sciscreenTemplates = (at: string) => SCISCREEN_DEMO_TEMPLATES.map((tp, i) => ({
@@ -361,7 +361,7 @@ export function freshDemoDb(): DemoDb {
       name: 'Local con DJ residente', note: 'Tiene DJ fijo: la propuesta suma su parte. Un clic la monta y luego la ajustas.',
       mode: 'full', answers: ['dj'], price_option_id: null, created_by: null, created_at: ago(30), position: 1,
     },
-    // SciScreen: las de serie de tenants/sciscreen/tenant.json (marca con web propia / fabricante que vende en tiendas).
+    // SciScreen: las de serie de tenants/sciscreen/tenant.json (marca con tienda online / laboratorio con marca propia; el sello, siempre en su web).
     ...sciscreenTemplates(ago(30))],
     // Historia de ejemplo: una revisión reciente (aparece en "Novedades") y aportes del equipo.
     play_revision: expPitch ? [{

@@ -36,7 +36,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('.sv-seal');
   assert((await p.getAttribute('.sv-ss', 'data-open')) === '1', 'y se abre pulsando el sello');
 
-  // Perfil fabricante: su producto en la web de una tienda, con el sello más grande (placa ×1,5), que entra con animación
+  // El módulo en-sus-tiendas (ya fuera del catálogo: el sello va solo en la web de la marca) sigue funcionando para las propuestas que lo usan:
   // y foco para verse en una web cargada que no controla.
   await p.goto(`${S}/d/demo-sciscreen-Tn4q#3`);
   await p.waitForSelector('[data-module=site-verify] .sv-shot');
@@ -68,7 +68,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForFunction(() => document.querySelector('[data-testid=media-site-url]')?.textContent?.includes('otramarca'), null, { timeout: 20000 });
   assert(true, 'captura nueva, con su dirección');
 
-  // Combinaciones de serie de SciScreen: un clic monta la propuesta del fabricante (docs/PROPOSAL_PRESETS.md).
+  // Combinaciones de serie de SciScreen: un clic monta la propuesta del laboratorio, con el sello en su web (docs/PROPOSAL_PRESETS.md).
   await p.goto(`${S}/admin`);
   await p.click('[data-testid=new-dossier]');
   await p.fill('[data-testid=create-form] [name=title]', 'SciScreen · fabricante E2E');
@@ -78,11 +78,11 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=quick-start] .co-chip:has-text("Complementos")');
   await p.waitForSelector('[data-testid=preset-ready] [data-testid=preset-tpl]');
   const tpls = await p.textContent('[data-testid=preset-ready]');
-  assert(['Marca con tienda online', 'Marca, presentación completa', 'Fabricante que vende en tiendas', 'Fabricante, presentación completa', 'Fabricante, primera reunión', 'Lo cuentas tú en la reunión'].every((n) => tpls.includes(n)), 'las cuatro combinaciones de serie de SciScreen');
-  await p.click('[data-testid=preset-ready] [data-testid=preset-tpl]:has-text("Fabricante que vende en tiendas")');
-  await p.waitForSelector('[data-testid=item][data-item-key=en-sus-tiendas]', { timeout: 8000 });
+  assert(['Marca con tienda online', 'Marca, presentación completa', 'Laboratorio con marca propia', 'Laboratorio, presentación completa', 'Laboratorio, primera reunión', 'Lo cuentas tú en la reunión'].every((n) => tpls.includes(n)), 'las seis combinaciones de serie de SciScreen');
+  await p.click('[data-testid=preset-ready] [data-testid=preset-tpl]:has-text("Laboratorio con marca propia")');
+  await p.waitForSelector('[data-testid=item][data-item-key=lo-que-te-pasa-fabricante]', { timeout: 8000 });
   const fab = await p.$$eval('[data-testid=item]', (els) => els.map((e) => e.dataset.itemKey));
-  assert(JSON.stringify(fab) === JSON.stringify(['portada', 'lo-que-te-pasa-fabricante', 'en-sus-tiendas', 'el-informe', 'el-sello', 'pricing']), `fabricante, de un clic: ${fab.join(' → ')}`);
+  assert(JSON.stringify(fab) === JSON.stringify(['portada', 'lo-que-te-pasa-fabricante', 'su-web', 'el-informe', 'el-sello', 'pricing']), `laboratorio, de un clic: ${fab.join(' → ')}`);
   if (OUT) await p.screenshot({ path: `${OUT}/sciscreen-preset.png`, fullPage: true });
 
   assert(errors.length === 0, `sin errores de JS (${errors.join(' | ')})`);

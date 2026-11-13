@@ -67,8 +67,9 @@ describe('combinaciones de serie de SciScreen en la demo', () => {
     expect(SCISCREEN_DEMO_TEMPLATES).toEqual(sector.templates);
     const p = proposalSchema.parse(sector.proposal);
     const fab = planProposal(p, 'full', ['tipo:fabricante']).map((b) => b.module);
-    expect(fab).toContain('en-sus-tiendas');
+    // El sello va solo en la web de la marca: el laboratorio también, en su web (no en las tiendas que lo venden).
+    expect(fab).toContain('su-web');
     expect(fab).toContain('lo-que-te-pasa-fabricante');
-    expect(fab).not.toContain('su-web');
+    expect(fab).not.toContain('en-sus-tiendas');
   });
 });
