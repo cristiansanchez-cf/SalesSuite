@@ -16,6 +16,7 @@
   import { INTL_LOCALE, type Locale } from '~/lib/i18n/core';
   import { builderMessages } from '~/lib/i18n/messages/builder';
   import LiveScenes from './LiveScenes.svelte';
+  import TextsEditor from './TextsEditor.svelte';
 
   interface MarketLite {
     /** modules: ids de módulo recomendados para el sector, por prioridad. */
@@ -51,6 +52,9 @@
   let trackError = $state<string | null>(null);
   let trackCopied = $state(false);
   let openProps = $state<string | null>(null);
+  /** «Editar textos»: la diapositiva abierta (una a la vez). */
+  let openTexts = $state<string | null>(null);
+  const saveTexts = (item: BuilderItem, o: Record<string, unknown>) => run({ op: 'setProps', itemId: item.id, propOverrides: o });
   let propsDraft = $state('');
   let propsError = $state<string | null>(null);
   let linkExpiry = $state('');
@@ -1059,6 +1063,7 @@
                     {#if item.price}{!item.visible ? ' · ' : ''}{item.price.formatted}{/if}
                   </p>{/if}
                 </div>
+                <button class="co-btn co-btn--sm {openTexts === item.id ? 'co-btn--primary' : 'co-btn--quiet'}" onclick={() => (openTexts = openTexts === item.id ? null : item.id)} aria-expanded={openTexts === item.id} aria-label={t.texts.open(item.moduleName)} data-testid="edit-texts">✎ {t.texts.button}</button>
                 <button class={iconBtn} disabled={!editable || idx === 0} onclick={() => move(item, -1)} aria-label={t.modules.moveUp(item.moduleName)}>↑</button>
                 <button class={iconBtn} disabled={!editable || idx === list.length - 1} onclick={() => move(item, 1)} aria-label={t.modules.moveDown(item.moduleName)}>↓</button>
                 <button class={iconBtn} disabled={!editable} onclick={() => run({ op: 'setVisible', itemId: item.id, visible: !item.visible })} aria-label={item.visible ? t.modules.hide(item.moduleName) : t.modules.show(item.moduleName)} aria-pressed={!item.visible} data-testid="toggle-visible">{item.visible ? '👁' : '◌'}</button>
@@ -1096,6 +1101,9 @@
               {/if}
               {#if item.blockType === 'live-screen'}
                 <LiveScenes {item} photos={media.photos ?? []} hasVideo={!!media.video} {editable} t={t.scenes} onsave={(sc) => saveScenes(item, sc)} />
+              {/if}
+              {#if openTexts === item.id}
+                <TextsEditor {item} {editable} t={t.texts} onsave={(o) => saveTexts(item, o)} onclose={() => (openTexts = null)} />
               {/if}
               {#if openProps === item.id}
                 <div class="space-y-2 border-t border-line p-3 text-sm">

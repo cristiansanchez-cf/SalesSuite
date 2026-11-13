@@ -68,6 +68,15 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForFunction(() => document.querySelector('[data-testid=media-site-url]')?.textContent?.includes('otramarca'), null, { timeout: 20000 });
   assert(true, 'captura nueva, con su dirección');
 
+  // «Editar textos»: cada texto de la diapositiva en su campo, con su nombre, sin JSON; se guarda solo para esta propuesta.
+  await p.click('[data-testid=item][data-item-key=lo-que-te-pasa] [data-testid=edit-texts]');
+  await p.waitForSelector('[data-testid=texts-editor]');
+  assert(/Título/.test(await p.textContent('[data-testid=texts-editor]')) && (await p.$$('[data-testid=texts-editor] [data-testid=text-field]')).length >= 5, '«Editar textos»: los textos de la diapositiva, con su nombre');
+  await p.fill('[data-testid=texts-editor] [data-path="title"]', 'Un título solo para Valle Verde');
+  await p.click('[data-testid=texts-save]');
+  await p.waitForSelector('[data-testid=texts-editor] [role=status]');
+  assert((await p.textContent('[data-testid=item][data-item-key=lo-que-te-pasa]')).includes('Un título solo para Valle Verde'), '«Editar textos»: guardado en la propuesta');
+
   // Combinaciones de serie de SciScreen: un clic monta la propuesta del laboratorio, con el sello en su web (docs/PROPOSAL_PRESETS.md).
   await p.goto(`${S}/admin`);
   await p.click('[data-testid=new-dossier]');

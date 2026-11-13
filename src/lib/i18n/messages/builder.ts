@@ -122,6 +122,14 @@ const es = {
     all: (n: number) => `Añadir todo el catálogo (${n})`, add: 'Añadir', dragHint: 'Arrastra para ordenar, o arrastra desde «Añadir».',
   },
   cost: { perNight: 'Lo que cobra quien viene a hacer fotos (€ por noche)', nights: 'Noches al mes que lo trae', hours: 'Horas suyas editando cada domingo', help: 'Solo las cifras que te dio el cliente. Sin ninguna, esta diapositiva no sale.' },
+  texts: {
+    button: 'Editar textos', open: (name: string) => `Editar los textos de ${name}`,
+    help: 'Cambia lo que leerá el cliente en esta diapositiva. Solo para esta propuesta: el catálogo y las demás propuestas no cambian. Lo que no toques se queda como en el catálogo.',
+    company: '{company} se sustituye por el nombre del cliente.',
+    save: 'Guardar textos', cancel: 'Cerrar', reset: 'Volver al original', changed: 'cambiado', empty: 'Esta diapositiva no tiene textos que cambiar.',
+    saved: 'Guardado: ya sale en la vista previa y en su enlace.',
+    labels: {} as Record<string, string>,
+  },
   scenes: {
     title: 'Pantallas', help: 'Qué sale en la pantalla en vivo de esta propuesta, en orden. El texto sale en la pantalla; las fotos, de las que subes en Personaliza.',
     edit: 'Elegir pantallas', custom: 'Pantallas hechas para esta propuesta', reset: 'Volver a las del catálogo', save: 'Guardar pantallas', cancel: 'Cancelar',
@@ -335,6 +343,14 @@ export const builderMessages = defineMessages({
       all: (n) => `Add the whole catalog (${n})`, add: 'Add', dragHint: 'Drag to reorder, or drag in from «Add».',
     },
     cost: { perNight: 'What the photographer charges (€ per night)', nights: 'Nights a month', hours: 'Their hours editing each Sunday', help: 'Only figures the client gave you. With none, this slide is not shown.' },
+    texts: {
+      button: 'Edit text', open: (name) => `Edit the text of ${name}`,
+      help: 'Change what the client will read on this slide. Only for this proposal: the catalog and other proposals stay the same. Anything you leave untouched follows the catalog.',
+      company: '{company} is replaced with the client name.',
+      save: 'Save text', cancel: 'Close', reset: 'Back to original', changed: 'changed', empty: 'This slide has no text to change.',
+      saved: 'Saved: it already shows in the preview and on their link.',
+      labels: { eyebrow: 'Eyebrow', title: 'Title', subtitle: 'Subtitle', lede: 'Intro', body: 'Text', text: 'Text', description: 'Description', note: 'Footnote', label: 'Label', cards: 'Card', tabs: 'Section', bullets: 'Point', claims: 'Claim', problem: 'Problem', solution: 'Solution', ctas: 'Button', steps: 'Step', items: 'Item' },
+    },
     scenes: {
       title: 'Screens', help: 'What the live screen shows in this proposal, in order. The text appears on the screen; photos come from the ones you upload in Personalise.',
       edit: 'Choose screens', custom: 'Screens made for this proposal', reset: 'Back to the catalogue ones', save: 'Save screens', cancel: 'Cancel',
@@ -545,6 +561,14 @@ export const builderMessages = defineMessages({
       all: (n) => `Adicionar todo o catálogo (${n})`, add: 'Adicionar', dragHint: 'Arraste para ordenar, ou arraste de «Adicionar».',
     },
     cost: { perNight: 'Quanto cobra quem faz as fotos (€ por noite)', nights: 'Noites por mês', hours: 'Horas dele editando cada domingo', help: 'Só os números que o cliente deu. Sem nenhum, este slide não aparece.' },
+    texts: {
+      button: 'Editar textos', open: (name) => `Editar os textos de ${name}`,
+      help: 'Mude o que o cliente vai ler neste slide. Só para esta proposta: o catálogo e as outras propostas não mudam. O que você não mexer fica como no catálogo.',
+      company: '{company} é substituído pelo nome do cliente.',
+      save: 'Salvar textos', cancel: 'Fechar', reset: 'Voltar ao original', changed: 'alterado', empty: 'Este slide não tem textos para mudar.',
+      saved: 'Salvo: já aparece na prévia e no link dele.',
+      labels: { eyebrow: 'Sobretítulo', title: 'Título', subtitle: 'Subtítulo', lede: 'Introdução', body: 'Texto', text: 'Texto', description: 'Descrição', note: 'Nota de rodapé', label: 'Rótulo', cards: 'Cartão', tabs: 'Seção', bullets: 'Ponto', claims: 'Afirmação', problem: 'Problema', solution: 'Solução', ctas: 'Botão', steps: 'Passo', items: 'Item' },
+    },
     scenes: {
       title: 'Ecrãs', help: 'O que aparece no ecrã ao vivo desta proposta, por ordem. O texto sai no ecrã; as fotos, das que carrega em Personalizar.',
       edit: 'Escolher ecrãs', custom: 'Ecrãs feitos para esta proposta', reset: 'Voltar aos do catálogo', save: 'Guardar ecrãs', cancel: 'Cancelar',
@@ -755,6 +779,14 @@ export const builderMessages = defineMessages({
       all: (n) => `카탈로그 전체 추가 (${n})`, add: '추가', dragHint: '끌어서 순서를 바꾸거나 «추가»에서 끌어오세요.',
     },
     cost: { perNight: '사진 촬영 비용 (1박 €)', nights: '월 횟수', hours: '일요일마다 편집하는 시간', help: '고객이 알려준 숫자만 넣으세요. 없으면 이 슬라이드는 표시되지 않습니다.' },
+    texts: {
+      button: '문구 편집', open: (name) => `${name} 문구 편집`,
+      help: '이 슬라이드에서 고객이 읽을 문구를 바꿉니다. 이 제안서에만 적용되며 카탈로그와 다른 제안서는 바뀌지 않습니다. 손대지 않은 문구는 카탈로그를 따릅니다.',
+      company: '{company}는 고객 이름으로 바뀝니다.',
+      save: '문구 저장', cancel: '닫기', reset: '원래대로', changed: '변경됨', empty: '이 슬라이드에는 바꿀 문구가 없습니다.',
+      saved: '저장되었습니다. 미리보기와 고객 링크에 이미 반영되었습니다.',
+      labels: { eyebrow: '머리글', title: '제목', subtitle: '부제목', lede: '도입', body: '본문', text: '본문', description: '설명', note: '각주', label: '라벨', cards: '카드', tabs: '섹션', bullets: '항목', claims: '주장', problem: '문제', solution: '해결', ctas: '버튼', steps: '단계', items: '항목' },
+    },
     scenes: {
       title: '화면', help: '이 제안서의 라이브 화면에 나오는 것과 순서입니다. 텍스트는 화면에, 사진은 맞춤 설정에서 올린 것 중에서 고릅니다.',
       edit: '화면 고르기', custom: '이 제안서용 화면', reset: '카탈로그 화면으로 되돌리기', save: '화면 저장', cancel: '취소',
