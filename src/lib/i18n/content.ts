@@ -102,3 +102,29 @@ export function batchTexts(items: ContentItem[], maxChars = 6000): string[][] {
   if (cur.length) out.push(cur);
   return out;
 }
+
+/**
+ * La receta de un sector traducida → «frase original → traducción» (solo lo de `proposal/…`). Sirve para traducir los
+ * textos que la receta escribe en la propia propuesta (los «patch» de un ángulo), que no son del catálogo.
+ */
+export function phrasePairs(segment: { proposal?: unknown }, texts: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [path, tr] of Object.entries(texts)) {
+    if (!path.startsWith('proposal/') || typeof tr !== 'string' || !tr) continue;
+    let cur: unknown = segment.proposal;
+    for (const p of path.split('/').slice(1)) cur = cur && typeof cur === 'object' ? (cur as Record<string, unknown>)[p] : undefined;
+    if (typeof cur === 'string' && cur !== tr) out[cur] = tr;
+  }
+  return out;
+}
+
+/** Copia de `obj` con cada texto que esté en `phrases` (exacto) cambiado por su traducción. */
+export function applyPhrases<T>(obj: T, phrases: Record<string, string>): T {
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') return Object.prototype.hasOwnProperty.call(phrases, v) ? phrases[v] : v;
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, walk(x)]));
+    return v;
+  };
+  return walk(obj) as T;
+}

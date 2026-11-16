@@ -15,6 +15,11 @@ export interface PublicRepository {
    * (source_hash → ruta → texto). Vacío si el espacio no traduce al idioma de la propuesta o el enlace no vale.
    */
   getPublicContentI18n(token: string, tenantId: string): Promise<Record<string, Record<string, string>>>;
+  /**
+   * Frases de la receta del sector traducidas (original → traducción) que están en los cambios de esta propuesta (lo que
+   * escribe un ángulo, p. ej. el título de la portada). Vacío si no hay o el enlace no vale.
+   */
+  getPublicContentPhrases(token: string, tenantId: string): Promise<Record<string, string>>;
   /** Contacto de quien hizo la propuesta (docs/PERSONALIZE.md §Contacto del comercial); null si no lo ha puesto o el enlace no vale. */
   getPublicContact(token: string, tenantId: string): Promise<import('../contact').RepContact | null>;
   /** Registra (o amplía) una visita al enlace público. false = enlace no válido o límite superado. */

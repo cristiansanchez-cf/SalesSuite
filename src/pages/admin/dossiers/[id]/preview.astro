@@ -3,7 +3,7 @@
 import DossierView from '~/components/dossier/DossierView.astro';
 import { AdminError } from '~/lib/admin/service';
 import { STATUS_LABEL } from '~/lib/admin/format';
-import { moduleTranslations } from '~/lib/i18n/content-db';
+import { moduleTranslations, segmentPhrases, withoutContentLocale } from '~/lib/i18n/content-db';
 import { readContact, toRep } from '~/lib/admin/rep-contact';
 
 const { admin, tenant } = Astro.locals;
@@ -22,5 +22,9 @@ try {
 }
 // En otro idioma que el del espacio: como la verá el cliente, con los textos de los módulos traducidos.
 const translations = dossier.locale.slice(0, 2) !== tenant.defaultLocale.slice(0, 2) ? await moduleTranslations(admin.content, tenant.id, dossier.locale) : undefined;
+// Y lo que la receta escribió en la propuesta, con la receta traducida (las recetas, en su original para casar).
+const phrases = translations
+  ? await withoutContentLocale(() => admin.playbook.market()).then((segs) => segmentPhrases(admin.content, tenant.id, dossier.locale, segs as Array<{ id: string; proposal?: unknown }>)).catch(() => ({}))
+  : undefined;
 ---
-<DossierView tenant={tenant} dossier={dossier} banner={`Vista previa · ${STATUS_LABEL[status]}`} translations={translations} />
+<DossierView tenant={tenant} dossier={dossier} banner={`Vista previa · ${STATUS_LABEL[status]}`} translations={translations} phrases={phrases} />

@@ -53,3 +53,41 @@ describe('qué traducir', () => {
     expect(batchTexts(items, 12)).toEqual([['Abrir'], ['x'.repeat(10)]]);
   });
 });
+
+describe('frases de la receta en la propuesta (lo que escribe un ángulo)', () => {
+  const proposal = { choices: [{ key: 'angulo', options: [{ key: 'abrir', label: 'Abrir mercado', rules: [{ patch: 'portada', set: { title: '{company}, centro fundador' } }] }] }] };
+  const texts = { 'proposal/choices/0/options/0/label': '시장 열기', 'proposal/choices/0/options/0/rules/0/set/title': '{company}, 창립 센터' };
+
+  test('saca «original → traducción» de la receta traducida', async () => {
+    const { phrasePairs } = await import('./content');
+    expect(phrasePairs({ proposal }, texts)).toEqual({ 'Abrir mercado': '시장 열기', '{company}, centro fundador': '{company}, 창립 센터' });
+  });
+
+  test('cambia solo los textos que casan exactos; lo escrito a mano se queda', async () => {
+    const { applyPhrases } = await import('./content');
+    const ov = { title: '{company}, centro fundador', tip: { kind: 'info', text: 'Escrito a mano' }, cards: ['{company}, centro fundador'] };
+    expect(applyPhrases(ov, { '{company}, centro fundador': '{company}, 창립 센터' })).toEqual({ title: '{company}, 창립 센터', tip: { kind: 'info', text: 'Escrito a mano' }, cards: ['{company}, 창립 센터'] });
+  });
+
+  test('la propuesta pública (demo): solo las frases que están en sus cambios', async () => {
+    const { demoDb } = await import('../data/store');
+    const { demoRepository } = await import('../data/demo');
+    const db = demoDb() as any;
+    const OQ = '00000000-0000-4000-8000-000000000b01';
+    const seg = { id: '00000000-0000-4000-8000-0000000b5e99', tenant_id: OQ, key: 'prueba-frases', name: 'Prueba', proposal };
+    db.segment.push(seg);
+    (db.content_i18n ??= []).push({ tenant_id: OQ, locale: 'ko', kind: 'segment', ref: seg.id, texts, source_hash: 'x'.repeat(16), status: 'auto' });
+    const item = db.dossier_item.find((i: any) => i.dossier_id === '00000000-0000-4000-8000-0000000b0d51');
+    const before = item.prop_overrides;
+    item.prop_overrides = { ...(before ?? {}), title: '{company}, centro fundador' };
+    try {
+      const ph = await demoRepository().getPublicContentPhrases('demo-oquea-ko-5Rt8', OQ);
+      expect(ph).toEqual({ '{company}, centro fundador': '{company}, 창립 센터' }); // «Abrir mercado» no está en la propuesta
+      expect(await demoRepository().getPublicContentPhrases('no-existe-0000', OQ)).toEqual({});
+    } finally {
+      item.prop_overrides = before;
+      db.segment.splice(db.segment.indexOf(seg), 1);
+      db.content_i18n.pop();
+    }
+  });
+});

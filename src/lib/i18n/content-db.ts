@@ -4,7 +4,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { applyTexts, type ContentKind } from './content';
+import { applyTexts, phrasePairs, type ContentKind } from './content';
 import { demoDb } from '../data/store';
 
 export interface ContentTranslation { texts: Record<string, string>; status: 'auto' | 'reviewed'; sourceHash?: string }
@@ -49,6 +49,9 @@ export const emptyContentI18nDb: ContentI18nDb = { locales: async () => [], load
 interface Scope { tenantId: string; locale: string; db: ContentI18nDb; cache: Map<ContentKind, Promise<Map<string, ContentTranslation>>>; used: { auto: boolean; any: boolean } }
 const store = new AsyncLocalStorage<Scope>();
 
+/** Lo de dentro lee el original (sin traducción), aunque la petición tenga idioma de contenido. */
+export const withoutContentLocale = <R>(fn: () => R): R => store.exit(fn);
+
 export const withContentLocale = <R>(s: { tenantId: string; locale: string; db: ContentI18nDb } | null, fn: () => R): R =>
   s ? store.run({ ...s, cache: new Map(), used: { auto: false, any: false } }, fn) : fn();
 
@@ -83,4 +86,15 @@ export async function moduleTranslations(db: ContentI18nDb, tenantId: string, lo
   if (!(await db.locales(tenantId).catch((): string[] => [])).includes(lang)) return undefined;
   const map = await db.load(tenantId, lang, 'module_version').catch(() => new Map<string, ContentTranslation>());
   return Object.fromEntries([...map.values()].filter((t) => t.sourceHash).map((t) => [t.sourceHash!, t.texts]));
+}
+
+/**
+ * Frases de la receta traducidas (original → traducción) de todos los sectores del espacio, para una vista previa en
+ * otro idioma: los textos que la receta escribe en la propuesta (ver get_public_content_phrases, el de la pública).
+ */
+export async function segmentPhrases(db: ContentI18nDb, tenantId: string, locale: string, segments: Array<{ id: string; proposal?: unknown }>): Promise<Record<string, string>> {
+  const lang = locale.slice(0, 2);
+  if (!(await db.locales(tenantId).catch((): string[] => [])).includes(lang)) return {};
+  const map = await db.load(tenantId, lang, 'segment').catch(() => new Map<string, ContentTranslation>());
+  return Object.assign({}, ...segments.map((s) => (map.get(s.id) ? phrasePairs(s, map.get(s.id)!.texts) : {})));
 }

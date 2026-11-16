@@ -12,21 +12,26 @@ import { resolveTotal } from '~/lib/pricing';
 import type { PublicDossier, TenantContext } from '~/lib/types';
 import { REGISTRY } from '~/modules/registry';
 import { resolveItem } from '~/modules/resolve';
-import { applyTexts, extractTexts, sourceHash } from '~/lib/i18n/content';
+import { applyPhrases, applyTexts, extractTexts, sourceHash } from '~/lib/i18n/content';
 import { proposalText } from '~/lib/i18n/messages/proposal';
 
 /**
  * track: token del enlace público → mide la visita (docs/ANALYTICS.md). Las vistas previas internas no lo pasan.
  * translations: propuesta en otro idioma (docs/I18N.md §Contenido): huella de los textos del módulo → su traducción.
+ * phrases: frases de la receta traducidas (original → traducción) para los cambios propios que escribió la receta.
  */
-interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string; track?: string; translations?: Record<string, Record<string, string>> }
-const { tenant, dossier: raw, banner, track, translations } = Astro.props;
+interface Props { tenant: TenantContext; dossier: PublicDossier; banner?: string; track?: string; translations?: Record<string, Record<string, string>>; phrases?: Record<string, string> }
+const { tenant, dossier: raw, banner, track, translations, phrases } = Astro.props;
 // Cada módulo con sus textos en el idioma de la propuesta, si están traducidos (sus cambios propios no se tocan).
-const dossier: PublicDossier = translations && Object.keys(translations).length ? {
+// Los cambios propios que escribió la receta (el título de un ángulo…) van con la receta traducida; lo que escribió el
+// comercial a mano no casa con ninguna frase y se queda como está.
+const hasPhrases = !!phrases && Object.keys(phrases).length > 0;
+const dossier: PublicDossier = (translations && Object.keys(translations).length) || hasPhrases ? {
   ...raw,
   items: raw.items.map((it) => {
-    const tr = translations[sourceHash(extractTexts('module_version', { props: it.defaultProps }))];
-    return tr ? { ...it, defaultProps: applyTexts({ props: it.defaultProps }, tr).props } : it;
+    const tr = translations?.[sourceHash(extractTexts('module_version', { props: it.defaultProps }))];
+    const base = tr ? { ...it, defaultProps: applyTexts({ props: it.defaultProps }, tr).props } : it;
+    return hasPhrases && base.propOverrides ? { ...base, propOverrides: applyPhrases(base.propOverrides, phrases!) } : base;
   }),
 } : raw;
 

@@ -7,6 +7,7 @@ import { trackDemoView } from '../analytics/db-demo';
 import type { PublicRepository } from './index';
 import { toPublicDossier, toRepContact, toTenant, type PublicDossierRow } from './mappers';
 import { demoDb, type DemoDb } from './store';
+import { phrasePairs } from '../i18n/content';
 
 export function getPublicDossierFromRows(db: Pick<DemoDb, 'share_link' | 'dossier' | 'dossier_item' | 'module_version' | 'module'> & Partial<Pick<DemoDb, 'price_option'>>, token: string, tenantId: string, now = new Date()): PublicDossierRow | null {
   const link = db.share_link.find((l) => l.token === token);
@@ -59,6 +60,21 @@ export function demoRepository(): PublicRepository {
       const lang = row?.locale?.slice(0, 2);
       if (!row || !lang || !(db.tenant.find((t) => t.id === tenantId)?.content_locales ?? []).includes(lang)) return {};
       return Object.fromEntries((db.content_i18n ?? []).filter((c) => c.tenant_id === tenantId && c.locale === lang && c.kind === 'module_version').map((c) => [c.source_hash, c.texts]));
+    },
+    async getPublicContentPhrases(token, tenantId) {
+      const db = demoDb();
+      const row = getPublicDossierFromRows(db, token, tenantId);
+      const lang = row?.locale?.slice(0, 2);
+      if (!row || !lang || !(db.tenant.find((t) => t.id === tenantId)?.content_locales ?? []).includes(lang)) return {};
+      // Como get_public_content_phrases: solo las frases que ya están en los cambios de la propuesta.
+      const did = db.share_link.find((l) => l.token === token)?.dossier_id;
+      const ov = db.dossier_item.filter((i) => i.dossier_id === did).map((i) => JSON.stringify(i.prop_overrides ?? {})).join(' ');
+      const all: Record<string, string> = {};
+      for (const c of (db.content_i18n ?? []).filter((x) => x.tenant_id === tenantId && x.locale === lang && x.kind === 'segment')) {
+        const sg = db.segment.find((s) => s.id === c.ref);
+        if (sg) Object.assign(all, phrasePairs({ proposal: sg.proposal }, c.texts));
+      }
+      return Object.fromEntries(Object.entries(all).filter(([o]) => ov.includes(JSON.stringify(o))));
     },
     async getPublicContact(token, tenantId) {
       const db = demoDb();

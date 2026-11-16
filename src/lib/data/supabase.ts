@@ -42,6 +42,12 @@ export function supabaseRepository(): PublicRepository {
       if (error) return {};
       return (data ?? {}) as Record<string, Record<string, string>>;
     },
+    async getPublicContentPhrases(token, tenantId) {
+      const { data, error } = await client.rpc('get_public_content_phrases', { p_token: token, p_tenant_id: tenantId });
+      // Sin la migración 20270104: como antes (esos textos, en el original).
+      if (error) return {};
+      return (data ?? {}) as Record<string, string>;
+    },
     async getPublicContact(token, tenantId) {
       const { data, error } = await client.rpc('get_public_contact', { p_token: token, p_tenant_id: tenantId });
       // Sin la migración: la propuesta con el contacto de la marca.

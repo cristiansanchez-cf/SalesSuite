@@ -18,5 +18,7 @@ const dossier = { ...found, repContact: await publicRepository().getPublicContac
 const translations = dossier.locale.slice(0, 2) !== tenant.defaultLocale.slice(0, 2)
   ? await publicRepository().getPublicContentI18n(token, tenant.id).catch(() => ({}))
   : undefined;
+// Y lo que la receta del sector escribió en la propia propuesta (el título de un ángulo…), con la receta traducida.
+const phrases = translations ? await publicRepository().getPublicContentPhrases(token, tenant.id).catch(() => ({})) : undefined;
 ---
-<DossierView tenant={tenant} dossier={dossier} track={token} translations={translations} />
+<DossierView tenant={tenant} dossier={dossier} track={token} translations={translations} phrases={phrases} />
