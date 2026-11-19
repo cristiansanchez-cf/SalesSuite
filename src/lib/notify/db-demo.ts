@@ -144,6 +144,13 @@ export function demoNotifyJobDb(): NotifyJobDb {
         accountNextStepAt: (d.account_id ? db().account.find((a) => a.id === d.account_id)?.next_step_at : null) ?? null,
       }));
     },
+    async dailyMeetings(tenantIds, from, to) {
+      const s = db();
+      return s.account.filter((a) => tenantIds.includes(a.tenant_id) && a.next_channel === 'meeting' && a.next_step_at && a.next_step_at >= from && a.next_step_at < to).map((a) => ({
+        id: a.id, tenantId: a.tenant_id, ownerId: a.owner_id ?? null, name: a.name, nextStep: a.next_step ?? null, nextStepAt: a.next_step_at ?? null, nextChannel: a.next_channel ?? null,
+        contactName: (a.next_contact_id ? s.crm_contact.find((c) => c.id === a.next_contact_id)?.name : null) ?? null,
+      }));
+    },
     async dailyOpens(tenantIds, since) {
       return db().dossier_view.filter((v) => tenantIds.includes(v.tenant_id) && v.started_at >= since).map((v) => ({ dossierId: v.dossier_id, lastSeenAt: v.last_seen_at }));
     },

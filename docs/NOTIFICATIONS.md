@@ -66,6 +66,18 @@ Cada mañana, a cada persona y por cada espacio:
 - **Se desactiva** en *Mi cuenta → Avisos*. También deja de llegar si se desactivan los emails.
 - **Registro:** `daily_digest_log` (un envío por persona, espacio y día). Código: `src/lib/notify/daily.ts` (qué entra y cuándo) y `daily-job.ts` (email y envío).
 
+### Reuniones de hoy (correo importante)
+
+Criterio de Cristian: un recordatorio distinto del «para hoy», más importante, y que el correo lo diga. En la misma
+pasada de la mañana, si alguien tiene reuniones hoy le llega **un correo aparte**: asunto «🔴 Importante · Hoy reunión
+con X a las 17:00», banda roja «⚠ Importante», cada reunión con su hora grande, lo que tocaba y el botón a la ficha, y
+cabeceras de prioridad alta (`Importance: high`, `X-Priority: 1`) para que el cliente de correo lo marque.
+
+- **Qué es una reunión de hoy** (`meetingsToday` en lib/notify/daily.ts): las empresas suyas con el próximo paso por
+  «Reunión» hoy (su día local) y sus propuestas abiertas cuyo paso de hoy habla de reunión, cita, demo o quedada.
+- No se repiten en el resumen de «Para hoy». Se envía aunque no haya nada más; quien desactiva el resumen, tampoco lo
+  recibe. Etiqueta `meetings` en Resend.
+
 ### Cron
 
 `GET /api/cron/notifications` hace las tres cosas: avisos inmediatos, resumen diario y resumen semanal. El semanal solo sale los lunes (UTC); se puede forzar con `?digest=force` u omitir con `?digest=skip`. El diario respeta la hora local de cada persona; `?daily=force` lo envía ya (sin repetir en el mismo día) y `?daily=skip` lo omite.

@@ -42,6 +42,8 @@ export interface NotifyJobDb {
   dailyLogged(days: string[]): Promise<Set<string>>;
   dailyDossiers(tenantIds: string[]): Promise<import('./daily').DailyDossier[]>;
   /** Visitas a propuestas desde `since` (para «te han abierto la propuesta»). */
+  /** Empresas con el próximo paso entre `from` y `to` (para las reuniones de hoy). */
+  dailyMeetings(tenantIds: string[], from: string, to: string): Promise<import('./daily').DailyMeetingRow[]>;
   dailyOpens(tenantIds: string[], since: string): Promise<Array<{ dossierId: string; lastSeenAt: string }>>;
   markDaily(userId: string, tenantId: string, day: string, emailed: boolean): Promise<void>;
 }

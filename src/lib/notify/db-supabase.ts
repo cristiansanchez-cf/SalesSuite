@@ -119,6 +119,15 @@ export function supabaseNotifyJobDb(sb: SupabaseClient): NotifyJobDb {
         accountNextStepAt: ((r.account as { next_step_at?: string | null } | null)?.next_step_at) ?? null,
       }));
     },
+    async dailyMeetings(tenantIds, from, to) {
+      if (!tenantIds.length) return [];
+      const rows = check(await sb.from('account').select('id, tenant_id, owner_id, name, next_step, next_step_at, next_channel, contact:crm_contact!account_next_contact_fk(name)')
+        .in('tenant_id', tenantIds).eq('next_channel', 'meeting').gte('next_step_at', from).lt('next_step_at', to).limit(5000)) ?? [];
+      return rows.map((r: Row) => ({
+        id: r.id as string, tenantId: r.tenant_id as string, ownerId: (r.owner_id as string) ?? null, name: r.name as string, nextStep: (r.next_step as string) ?? null,
+        nextStepAt: (r.next_step_at as string) ?? null, nextChannel: (r.next_channel as string) ?? null, contactName: ((r.contact as { name?: string } | null)?.name) ?? null,
+      }));
+    },
     async dailyOpens(tenantIds, since) {
       if (!tenantIds.length) return [];
       return (check(await sb.from('dossier_view').select('dossier_id, last_seen_at').in('tenant_id', tenantIds).gte('started_at', since).limit(20000)) ?? [])

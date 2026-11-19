@@ -91,3 +91,24 @@ export function composeHref(d: DailyDossier, reason: DailyReason): string {
   const type = reason === 'opened' || reason === 'noNextStep' ? 'tras_reunion' : 'seguimiento';
   return `/admin/compose?dossier=${encodeURIComponent(d.id)}&type=${type}&go=1`;
 }
+
+/**
+ * Reuniones de hoy (criterio de Cristian: «otro recordatorio distinto del para hoy… más importante, que el correo diga
+ * que es importante»): las empresas con el próximo paso «Reunión» hoy y las propuestas cuyo paso de hoy es una reunión.
+ * Van en un correo aparte, marcado como importante, y no se repiten en «Para hoy».
+ */
+export interface DailyMeetingRow {
+  id: string; tenantId: string; ownerId: string | null; name: string; nextStep: string | null; nextStepAt: string | null; nextChannel: string | null; contactName: string | null;
+}
+export interface DailyMeeting { kind: 'account' | 'dossier'; id: string; name: string; step: string | null; at: string; contact: string | null }
+const MEETING = /(reuni[oó]n|reunirnos|\bcita\b|meeting|\bdemo\b|quedada|hemos quedado|reunião|미팅|회의)/iu;
+
+export function meetingsToday(userId: string, accounts: DailyMeetingRow[], dossiers: DailyDossier[], now: Date, timeZone: string): DailyMeeting[] {
+  const today = localClock(now, timeZone).day;
+  const isToday = (iso: string | null) => !!iso && localClock(new Date(iso), timeZone).day === today;
+  const fromAccounts = accounts.filter((a) => a.ownerId === userId && a.nextChannel === 'meeting' && isToday(a.nextStepAt))
+    .map((a): DailyMeeting => ({ kind: 'account', id: a.id, name: a.name, step: a.nextStep, at: a.nextStepAt!, contact: a.contactName }));
+  const fromDossiers = dossiers.filter((d) => d.authorId === userId && d.outcome === 'open' && d.status !== 'archived' && isToday(d.nextStepAt) && MEETING.test(d.nextStep ?? ''))
+    .map((d): DailyMeeting => ({ kind: 'dossier', id: d.id, name: d.company || d.title, step: d.nextStep, at: d.nextStepAt!, contact: null }));
+  return [...fromAccounts, ...fromDossiers].sort((a, b) => a.at.localeCompare(b.at));
+}

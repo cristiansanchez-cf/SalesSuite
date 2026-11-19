@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
-import { composeHref, dailyDue, dailyPlan, localClock, type DailyDossier } from './daily';
-import { dailyEmail, runDailyDigest } from './daily-job';
+import { composeHref, dailyDue, dailyPlan, localClock, meetingsToday, type DailyDossier } from './daily';
+import { dailyEmail, meetingsEmail, runDailyDigest } from './daily-job';
 import { demoNotifyJobDb } from './db-demo';
 import { demoDb, resetDemoDb } from '../data/store';
 import type { Email } from './mailer';
@@ -119,6 +119,39 @@ describe('envío (cron)', () => {
     s.users.find((u) => u.id === REP)!.daily_digest = false;
     await runDailyDigest(demoNotifyJobDb(), mailer, { now, fallbackOrigin: 'http://localhost' });
     expect(sent.filter((e) => e.to === 'rep@enjoy.test')).toHaveLength(0);
+  });
+
+  test('reuniones de hoy: correo aparte e importante, y no se repiten en «Para hoy»', async () => {
+    const s = demoDb();
+    for (const x of s.dossier) if (x.author_id === REP) { x.next_step_at = null; x.published_at = '2026-10-05T05:00:00Z'; }
+    const acc = s.account.find((a) => a.tenant_id === '00000000-0000-4000-8000-000000000e01')!;
+    Object.assign(acc, { owner_id: REP, next_channel: 'meeting', next_step: 'Enseñar la demo al dueño', next_step_at: '2026-10-05T15:00:00Z' });
+    const d = s.dossier.find((x) => x.author_id === REP)!;
+    Object.assign(d, { next_step: 'Reunión con el gerente', next_step_at: '2026-10-05T10:30:00Z', outcome: 'open', status: 'published' });
+    await runDailyDigest(demoNotifyJobDb(), mailer, { now, fallbackOrigin: 'http://localhost' });
+    const mine = sent.filter((e) => e.to === 'rep@enjoy.test');
+    const imp = mine.find((e) => e.tag === 'meetings')!;
+    expect(imp.subject).toBe('🔴 Importante · Hoy tienes 2 reuniones, la primera a las 12:30 (Enjoy the Club)');
+    expect(imp.headers).toMatchObject({ Importance: 'high' });
+    expect(imp.html).toContain('Importante');
+    expect(imp.text).toContain(`17:00 · ${acc.name}`);
+    // La propuesta de la reunión no vuelve a salir en el resumen.
+    const daily = mine.find((e) => e.tag === 'daily');
+    expect(daily?.text ?? '').not.toContain('Reunión con el gerente');
+  });
+
+  test('qué es una reunión de hoy', () => {
+    const rows = [
+      { id: 'a', tenantId: 't', ownerId: ME, name: 'Havana', nextStep: 'Demo', nextStepAt: '2026-10-05T15:00:00Z', nextChannel: 'meeting', contactName: 'José María' },
+      { id: 'b', tenantId: 't', ownerId: ME, name: 'Club Sol', nextStep: 'Llamar', nextStepAt: '2026-10-05T15:00:00Z', nextChannel: 'phone', contactName: null },
+      { id: 'c', tenantId: 't', ownerId: ME, name: 'Mañana', nextStep: null, nextStepAt: '2026-10-06T09:00:00Z', nextChannel: 'meeting', contactName: null },
+      { id: 'e', tenantId: 't', ownerId: 'otro', name: 'Ajena', nextStep: null, nextStepAt: '2026-10-05T09:00:00Z', nextChannel: 'meeting', contactName: null },
+    ];
+    const ms = meetingsToday(ME, rows, [d('p', { nextStep: 'Cita con el dueño', nextStepAt: '2026-10-05T08:00:00Z' }), d('q', { nextStep: 'Enviar precio', nextStepAt: '2026-10-05T08:00:00Z' })], now, 'Europe/Madrid');
+    expect(ms.map((x) => x.id)).toEqual(['p', 'a']);
+    const one = meetingsEmail({ meetings: ms.slice(1), member: { userId: ME, tenantId: 't', role: 'rep', email: 'x@y', name: 'Ana', locale: 'en', timezone: 'Europe/Madrid', daily: true }, tenant: undefined, base: 'https://x' });
+    expect(one.subject).toBe('🔴 Important · Meeting with Havana today at 17:00 (Ventas)');
+    expect(one.text).toContain('with José María');
   });
 
   test('fuera de hora no se envía salvo forzado', async () => {

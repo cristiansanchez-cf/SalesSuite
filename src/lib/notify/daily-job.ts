@@ -4,7 +4,7 @@
  */
 import type { DailyMember, NotifyJobDb, TenantInfo } from './db';
 import type { Mailer } from './mailer';
-import { composeHref, dailyDue, dailyPlan, type DailyItem, type DailyOpen, type DailyPlan, type DailyReason } from './daily';
+import { composeHref, dailyDue, dailyPlan, meetingsToday, type DailyItem, type DailyMeeting, type DailyOpen, type DailyPlan, type DailyReason } from './daily';
 import { formatters, isLocale, type Locale } from '../i18n/core';
 import { notifyMessages } from '../i18n/messages/notify';
 import { withUsageScope } from '../usage/meter';
@@ -75,6 +75,38 @@ ${teamLines.length ? `<h2 style="font-size:13px;letter-spacing:.08em;text-transf
   return { subject: n ? D.subject(tenantName, n) : D.subjectTeam(tenantName), html, text };
 }
 
+/** Las reuniones de hoy: correo aparte, marcado como importante (cabeceras de prioridad y banda roja). */
+export function meetingsEmail(p: { meetings: DailyMeeting[]; member: DailyMember; tenant: TenantInfo | undefined; base: string }): { subject: string; html: string; text: string; headers: Record<string, string> } {
+  const L: Locale = isLocale(p.member.locale ?? '') ? (p.member.locale as Locale) : 'es';
+  const M = notifyMessages[L];
+  const R = M.meetings;
+  const f = formatters(L);
+  const tenantName = p.tenant?.name ?? 'Ventas';
+  const time = (iso: string) => f.date(iso, { hour: '2-digit', minute: '2-digit', timeZone: p.member.timezone });
+  const href = (x: DailyMeeting) => `${p.base}/admin/${x.kind === 'account' ? 'accounts' : 'dossiers'}/${x.id}`;
+  const n = p.meetings.length;
+  const first = p.meetings[0]!;
+  const subject = `🔴 ${n === 1 ? R.subjectOne(tenantName, first.name, time(first.at)) : R.subjectMany(tenantName, n, time(first.at))}`;
+  const hello = M.email.hello(p.member.name ? p.member.name.split(' ')[0] : null);
+  const btn = 'display:inline-block;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;background:#b42318;color:#fff';
+  const html = `<!doctype html><html lang="${L}"><body style="margin:0;padding:24px;background:#faf9f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:2px solid #b42318">
+<div style="background:#b42318;color:#fff;padding:12px 32px;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">⚠ ${esc(R.badge)} · ${esc(tenantName)}</div>
+<div style="padding:28px 32px 32px">
+<h1 style="font-size:22px;margin:0 0 8px">${esc(R.title(n))}</h1><p style="margin:0 0 20px;line-height:1.5">${esc(`${hello} ${R.intro}`)}</p>
+${p.meetings.map((x) => `<div style="display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-top:1px solid #eee">
+<div style="min-width:64px;font-size:22px;font-weight:700;color:#b42318">${esc(time(x.at))}</div>
+<div><div style="font-weight:700;font-size:16px">${esc(x.name)}${x.contact ? ` <span style="font-weight:400;color:#555">· ${esc(R.with(x.contact))}</span>` : ''}</div>
+${x.step ? `<div style="color:#555;font-size:14px;margin:2px 0 10px">${esc(x.step)}</div>` : '<div style="height:10px"></div>'}
+<a href="${esc(href(x))}" style="${btn}">${esc(x.kind === 'account' ? R.open : R.openDossier)}</a></div></div>`).join('')}
+<p style="margin:24px 0 0;font-size:12px;color:#777">${esc(R.footer)} <a href="${esc(p.base)}/admin/account#avisos" style="color:#777">${esc(M.daily.account)}</a>.</p>
+</div></div></body></html>`;
+  const text = [`${R.badge.toUpperCase()} · ${tenantName}`, '', R.title(n), '', `${hello} ${R.intro}`, '',
+    ...p.meetings.map((x) => `- ${time(x.at)} · ${x.name}${x.contact ? ` (${R.with(x.contact)})` : ''}${x.step ? `: ${x.step}` : ''}\n  ${href(x)}`), '', R.footer].join('\n');
+  // Que el cliente de correo lo marque como importante (Outlook, Apple Mail, Thunderbird).
+  return { subject, html, text, headers: { 'X-Priority': '1 (Highest)', Importance: 'high', Priority: 'urgent' } };
+}
+
 export async function runDailyDigest(db: NotifyJobDb, mailer: Mailer, o: { now: Date; fallbackOrigin: string; force?: boolean }): Promise<DailyResult> {
   const r: DailyResult = { sent: 0, empty: 0, failed: 0 };
   const members = await db.dailyMembers();
@@ -90,8 +122,10 @@ export async function runDailyDigest(db: NotifyJobDb, mailer: Mailer, o: { now: 
   });
   if (!due.length) return r;
   const tenantIds = [...new Set(due.map((m) => m.tenantId))];
-  const [dossiers, visits, tenants] = await Promise.all([
+  const [dossiers, visits, tenants, meetingRows] = await Promise.all([
     db.dailyDossiers(tenantIds), db.dailyOpens(tenantIds, new Date(o.now.getTime() - 86_400_000).toISOString()), db.tenants(tenantIds),
+    // Hoy en cualquier zona horaria: de 14 h antes a 38 h después (luego cada uno, su día local).
+    db.dailyMeetings(tenantIds, new Date(o.now.getTime() - 14 * 3_600_000).toISOString(), new Date(o.now.getTime() + 38 * 3_600_000).toISOString()).catch(() => []),
   ]);
   const opens = new Map<string, DailyOpen>();
   for (const v of visits) {
@@ -102,13 +136,24 @@ export async function runDailyDigest(db: NotifyJobDb, mailer: Mailer, o: { now: 
   const names = new Map(members.map((m) => [m.userId, m.name || m.email.split('@')[0]]));
   for (const m of due) {
     const day = dailyDue(o.now, m.timezone, false).day;
-    const plan = dailyPlan({ userId: m.userId, manager: MANAGERS.has(m.role) }, dossiers.filter((d) => d.tenantId === m.tenantId), opens, o.now, m.timezone);
-    if (!plan.items.length && !plan.team) { await db.markDaily(m.userId, m.tenantId, day, false); r.empty++; continue; }
+    const mine = dossiers.filter((d) => d.tenantId === m.tenantId);
+    const meetings = meetingsToday(m.userId, meetingRows.filter((a) => a.tenantId === m.tenantId), mine, o.now, m.timezone);
+    const full = dailyPlan({ userId: m.userId, manager: MANAGERS.has(m.role) }, mine, opens, o.now, m.timezone);
+    // Las reuniones van en su correo importante: no se repiten en «Para hoy».
+    const inMeetings = new Set(meetings.filter((x) => x.kind === 'dossier').map((x) => x.id));
+    const plan = { ...full, items: full.items.filter((i) => !(i.reason === 'today' && inMeetings.has(i.dossier.id))) };
+    if (!plan.items.length && !plan.team && !meetings.length) { await db.markDaily(m.userId, m.tenantId, day, false); r.empty++; continue; }
     const t = tenantById.get(m.tenantId);
     const base = t?.hostname ? `https://${t.hostname}` : o.fallbackOrigin;
-    const mail = dailyEmail({ plan, member: m, tenant: t, base, names, now: o.now });
     try {
-      await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, () => mailer.send({ to: m.email, subject: mail.subject, html: mail.html, text: mail.text, tag: 'daily' }));
+      if (meetings.length) {
+        const imp = meetingsEmail({ meetings, member: m, tenant: t, base });
+        await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, () => mailer.send({ to: m.email, subject: imp.subject, html: imp.html, text: imp.text, tag: 'meetings', headers: imp.headers }));
+      }
+      if (plan.items.length || plan.team) {
+        const mail = dailyEmail({ plan, member: m, tenant: t, base, names, now: o.now });
+        await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, () => mailer.send({ to: m.email, subject: mail.subject, html: mail.html, text: mail.text, tag: 'daily' }));
+      }
       await db.markDaily(m.userId, m.tenantId, day, true);
       r.sent++;
     } catch { r.failed++; }
