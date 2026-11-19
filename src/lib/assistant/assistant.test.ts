@@ -494,6 +494,29 @@ describe('de punta a punta (demo)', () => {
     expect(sent.at(-1)!.text).toMatch(/✏️ Arreglado: \*Euforía\* · 📍 .*Murcia/);
   });
 
+  test('arreglar sin dos puntos, con la frase de Cristian (la ficha se llama «Euforía y está en Murcia»)', async () => {
+    const member = { tenantId: ENJOY, userId: REP };
+    const s = demoDb();
+    const base = s.account.find((a) => a.tenant_id === ENJOY)!;
+    const cases: Array<[string, string]> = [
+      ['Euforía y está en Murcia', 'Corrige el nombre de Euforía y está en Murcia. Se llama solo Euforía'],
+      ['Euforía está en Murcia en Madrid', 'corrige euforía está en murcia en madrid, se llama Euforía y está en Murcia'],
+      ['Sala Euforia Test', 'Cambia el nombre de Sala Euforia Test a Euforía'],
+    ];
+    for (const [i, [old, said]] of cases.entries()) {
+      const id = `00000000-0000-4000-8000-0000000ee91${i}`;
+      s.account = s.account.filter((a) => a.name !== 'Euforía');
+      s.account.push({ ...base, id, name: old, owner_id: REP, discarded_at: null, discard_reason: null, discard_note: null });
+      await processAssistant(deps(), '123', member, msg(`g${i}`, { text: said }));
+      expect(sent.at(-1)!.text, said).toContain('✏️ Arreglado: *Euforía*');
+      expect(s.account.find((a) => a.id === id)!.name).toBe('Euforía');
+      if (i < 2) expect(sent.at(-1)!.text).toMatch(/📍 .*Murcia/);
+    }
+    // Sin decir qué cambia: explica cómo (no lo apunta como algo nuevo).
+    await processAssistant(deps(), '123', member, msg('g9', { text: 'corrige Euforía' }));
+    expect(sent.at(-1)!.text).toContain('Para arreglar una ficha');
+  });
+
   test('una captura de la conversación → la lee → Guardar → la conversación literal queda en Club Sol', async () => {
     const member = { tenantId: ENJOY, userId: REP };
     const { fixtureScreenshotReader } = await import('./screenshot');

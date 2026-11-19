@@ -156,10 +156,33 @@ export function saidPlace(t: string): string | null {
   const ms = [...t.matchAll(/(?:^|[\s,;.])(no\s+)?(?:est[aá]|queda|es de|ubicad[oa])\s+en\s+([^,.;\n]{2,60})/giu)].filter((m) => !m[1]);
   return ms.length ? ms[ms.length - 1]![2]!.trim() : null;
 }
-/** «Corrige Euforía está en Murcia: se llama Euforía y está en Murcia» → la empresa (por su nombre de ahora) y el cambio. */
-export function fixCommand(t: string): { target: string; change: string } | null {
-  const m = /^\s*(?:corrige|corregir|arregla|arreglar|cambia|cambiar|edita|editar)\s+(?:la\s+ficha\s+de\s+|el\s+nombre\s+de\s+)?[«"']?(.{2,100}?)[»"']?\s*:\s*(.{3,})$/isu.exec(t);
-  return m ? { target: m[1]!.trim(), change: m[2]!.trim() } : null;
+/**
+ * Arreglar una ficha (criterio de Cristian: «corrige el nombre de Euforía y está en Murcia. Se llama solo Euforía»): la
+ * empresa (por su nombre de ahora, que puede llevar «está en…» si se guardó mal) y el cambio. Con o sin dos puntos.
+ */
+const FIX_VERB = /^\s*(?:corrige|corregir|corr[ií]gelo|arregla|arreglar|cambia|cambiar|edita|editar)\s+(?:(el\s+nombre|la\s+ficha|la\s+ubicaci[oó]n|la\s+ciudad|el\s+sitio)\s+(?:de|a|en)\s+)?/iu;
+const NAME_SAID = /[\s,.;:]+(?:se llama(?: solo)?|el nombre (?:correcto )?es|ponle de nombre|ll[aá]mal[ao]|es solo|solo es|deber[ií]a llamarse|tiene que llamarse)\s/iu;
+const PLACE_SAID = /[\s,.;:]+(?:que\s+)?(?:est[aá]|queda|es de|ubicad[oa])\s+en\s/iu;
+export const isFixRequest = (t: string) => FIX_VERB.test(t);
+export function fixCommand(t: string): { target: string; change: string; alt: string | null } | null {
+  const v = FIX_VERB.exec(t);
+  if (!v) return null;
+  const what = (v[1] ?? '').toLowerCase();
+  const body = t.slice(v[0].length).trim();
+  const clean = (x: string) => x.replace(/^[«"'\s]+|[»"'\s.,;:]+$/g, '').trim();
+  let target = '', change = '';
+  const colon = body.indexOf(':');
+  const nm = NAME_SAID.exec(body);
+  const rn = /^(.+?)\s+(?:a|por)\s+[«"']?([^»"'\n]{2,80})[»"']?\s*$/iu.exec(body);
+  if (colon > 0) { target = body.slice(0, colon); change = body.slice(colon + 1); }
+  else if (nm) { target = body.slice(0, nm.index); change = body.slice(nm.index); }
+  else if (what.startsWith('el nombre') && rn) { target = rn[1]!; change = `se llama ${rn[2]}`; }
+  else { const pl = PLACE_SAID.exec(body); if (!pl) return null; target = body.slice(0, pl.index); change = body.slice(pl.index); }
+  target = clean(target);
+  // Si el nombre de ahora lleva la ciudad pegada («Euforía y está en Murcia»), se prueba también sin ella.
+  const cut = PLACE_SAID.exec(target) ?? /\s+y\s+(?=est[aá]\s+en\s)/iu.exec(target);
+  const alt = cut ? clean(target.slice(0, cut.index).replace(/\s+y$/iu, '')) : null;
+  return target.length >= 2 && change.trim().length >= 3 ? { target, change: change.trim(), alt: alt && alt.length >= 2 ? alt : null } : null;
 }
 /** «Se llama solo X», «el nombre es X», «es solo X», «cámbiale el nombre a X». */
 export function saidName(t: string): string | null {
@@ -377,12 +400,21 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   // «Corrige X: se llama Y y está en Z»: cualquier empresa del CRM, por su nombre de ahora (aunque sea de hace días).
   const fix = d.ops.edit && ['idle', 'saved'].includes(state.step) ? fixCommand(text) : null;
   if (fix) {
-    const c = await d.ops.search(fix.target);
-    const hit = c.find((x) => normName(x.name) === normName(fix.target)) ?? (c[0] && c[0].score >= 0.8 && (!c[1] || c[1].score < c[0].score - 0.05) ? c[0] : null);
-    if (!hit) return withHeard({ state, replies: [say(c.length ? T.fixWhich(fix.target, c.slice(0, 5).map((x) => `${x.name}${x.zone ? ` · ${x.zone}` : ''}`)) : T.notFound(fix.target))] });
-    const r = await applyEdit({ id: hit.id, name: hit.name }, fix.change, state);
+    // Por su nombre de ahora; si no, sin la ciudad pegada. Si la ciudad iba en el nombre viejo, también se arregla.
+    const find = async (q: string) => {
+      const c = await d.ops.search(q);
+      return { c, hit: c.find((x) => normName(x.name) === normName(q)) ?? (c[0] && c[0].score >= 0.8 && (!c[1] || c[1].score < c[0].score - 0.05) ? c[0] : null) };
+    };
+    let f = await find(fix.target);
+    if (!f.hit && fix.alt) { const g = await find(fix.alt); if (g.hit || !f.c.length) f = g; }
+    if (!f.hit) return withHeard({ state, replies: [say(f.c.length ? T.fixWhich(fix.alt ?? fix.target, f.c.slice(0, 5).map((x) => `${x.name}${x.zone ? ` · ${x.zone}` : ''}`)) : T.notFound(fix.target))] });
+    const placeInName = saidPlace(fix.target);
+    const change = placeInName && !saidPlace(fix.change) ? `${fix.change}. Está en ${placeInName}` : fix.change;
+    const r = await applyEdit({ id: f.hit.id, name: f.hit.name }, change, state);
     if (r) return withHeard(r);
   }
+  // Pedía arreglar algo pero no se entiende qué: se explica cómo (antes lo apuntaba como algo nuevo).
+  if (d.ops.edit && ['idle', 'saved'].includes(state.step) && isFixRequest(text) && !fix) return withHeard({ state, replies: [say(T.fixHow)] });
   // Recién guardado: «se llama solo Euforía», «está en Murcia, no en Madrid» arreglan esa empresa.
   if (state.step === 'saved' && d.ops.edit && (saidName(text) || saidPlace(text))) {
     const target = state.saved.length === 1 ? state.saved[0]! : state.saved.find((x) => normName(text).includes(normName(x.name))) ?? null;
