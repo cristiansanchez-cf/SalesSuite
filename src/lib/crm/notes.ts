@@ -39,6 +39,8 @@ export interface NoteItem {
   nextDays: number | null;
   /** La hora del próximo paso (HH:MM), si la dice («el jueves a las 12»). */
   nextTime?: string | null;
+  /** Si cerró un acuerdo con el sitio (ya es cliente): las condiciones, con sus palabras (docs/CLIENTS.md). */
+  agreement?: string | null;
   /** Si por lo que cuenta habría que descartarla (§23): el motivo y por qué; se pregunta antes de hacerlo. */
   discard: DiscardReason | null;
   discardWhy: string | null;
@@ -86,7 +88,7 @@ export const NOTES_TOOL = {
         type: 'array',
         items: {
           type: 'object', additionalProperties: false,
-          required: ['venue', 'entity', 'works_at', 'people', 'contact', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'next_time', 'qualification', 'discard', 'discard_why'],
+          required: ['venue', 'entity', 'works_at', 'people', 'contact', 'interaction', 'key_facts', 'facts', 'fit', 'fields', 'channel', 'outcome', 'day', 'next_step', 'next_days', 'next_time', 'agreement', 'qualification', 'discard', 'discard_why'],
           properties: {
             venue: { ...S, description: 'Nombre del sitio tal como lo dice la persona (corrige solo mayúsculas).' },
             interaction: { ...SN, description: 'Lo que ha PASADO con ellos: que fue y cuándo, con quién habló, el mensaje que les mandó, qué contestaron. Corto, con sus palabras. Si estuvo allí solo mirando: «Visita: solo observar, sin hablar con nadie» (y la hora si la dice). null si no hubo contacto ni visita.' },
@@ -102,6 +104,7 @@ export const NOTES_TOOL = {
             day: { ...SN, description: 'AAAA-MM-DD si dice cuándo fue (p. ej. «el sábado»); null si no lo dice.' },
             next_step: { ...SN, description: 'Lo siguiente que dice que hay que hacer con ese sitio (p. ej. «mirar sus redes»); null si no lo dice.' },
             next_days: { type: ['integer', 'null'], description: 'En cuántos días, si lo dice o se deduce (cuenta desde hoy); null si no.' },
+            agreement: { ...SN, description: 'Solo si dice que HA CERRADO un trato o acuerdo con este sitio (ya es cliente: «he cerrado con…», «hemos llegado a un acuerdo», «firmado»): las condiciones acordadas, completas y con sus palabras (reparto, qué se comprometen a hacer, desde cuándo). null si no ha cerrado nada (interesado, negociando o propuesta enviada NO es cerrar).' },
             next_time: { ...SN, description: 'La hora del próximo paso en 24 h (HH:MM), solo si la dice: «a las 12» → "12:00", «a las 7 de la tarde» → "19:00", «a las 9 y media» → "09:30". null si no la dice (no inventes una).' },
             discard: { ...S, description: 'Si por lo que cuenta habría que descartar el sitio: no_fit (no encaja con lo que vendemos: p. ej. «esto no es para nosotros», «aquí no pinta nada»), not_interested (ellos han dicho que no les interesa), avoid (mejor no ir: trato malo, el dueño es un problema), closed (ha cerrado), partner (no es cliente pero puede ser una alianza: p. ej. un equipo de DJs y animación que se contrata para eventos, una tienda, un proveedor). Si no, cadena vacía "". Solo si lo dice claro: se le preguntará antes de descartar.' },
             discard_why: { ...S, description: 'Por qué, en pocas palabras y con las suyas (p. ej. «el dueño nos echó»). "" si discard es "".' },
@@ -305,6 +308,7 @@ export function sanitizeNotes(raw: unknown, o: { qual?: boolean } = {}): NoteIte
       nextStep: typeof r.next_step === 'string' && r.next_step.trim() ? r.next_step.trim().slice(0, 300) : null,
       nextDays: Number.isInteger(nd) && nd >= 0 && nd <= 365 ? nd : null,
       nextTime: Number.isInteger(nd) ? cleanTime(r.next_time) : null,
+      agreement: typeof r.agreement === 'string' && r.agreement.trim().length >= 3 ? r.agreement.trim().slice(0, 4000) : null,
       discard, discardWhy: discard && typeof r.discard_why === 'string' && r.discard_why.trim() ? line(r.discard_why, 300) : null,
       entity: (PROFILES as readonly string[]).includes(String(r.entity)) ? (r.entity as Profile) : null,
       worksAt: (Array.isArray(r.works_at) ? r.works_at : []).slice(0, 12).flatMap((w) => {
@@ -428,6 +432,7 @@ export const fixtureNotes = (): NotesApi => ({
       key_facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => /pantalla/i.test(x) && !/sin pantalla/i.test(x)),
       facts: m[2].split(/[,.;]\s*/).map((x) => x.trim()).filter((x) => x && !(/pantalla/i.test(x) && !/sin pantalla/i.test(x))),
       fit: /todos los servicios|encaj/i.test(m[2]) ? 'Todos los servicios' : null, fields: (/aforo (\d+)/i.exec(m[2]) ? [{ key: 'aforo', value: /aforo (\d+)/i.exec(m[2])![1] }] : []), channel: 'visit', outcome: 'note', day: null, next_step: /redes/i.test(m[2]) ? 'Mirar sus redes' : null, next_days: /redes/i.test(m[2]) ? 2 : null,
+      agreement: /acuerdo:\s*/i.test(m[2]) ? m[2].replace(/^.*?acuerdo:\s*/i, '').trim() : null,
       entity: /promotora/i.test(m[1] + m[2]) ? 'promoter' : /\bdj\b/i.test(m[1]) ? 'dj' : 'venue',
       works_at: [...m[2].matchAll(/(lunes|martes|miércoles|jueves|viernes|sábados?|domingos?) en ([A-ZÁÉÍÓÚ][\wáéíóúñ]*(?: [A-ZÁÉÍÓÚ][\wáéíóúñ]*)*)/g)].map((x) => ({
         place: x[2], what: /promotora|\bdj\b/i.test(m[1] + m[2]) ? 'venue' : /dj/i.test(x[2]) ? 'dj' : 'promoter', days: ({ lunes: 'mon', martes: 'tue', 'miércoles': 'wed', jueves: 'thu', viernes: 'fri', 'sábado': 'sat', 'sábados': 'sat', domingo: 'sun', domingos: 'sun' } as Record<string, string>)[x[1]] ?? '', freq: 'regular', role: '' })),

@@ -152,6 +152,17 @@ describe('la conversación', () => {
     expect((await run(ops, { kind: 'text', text: 'He estado hablando con Juan de Havana y quiere una demo' })).state.step).toBe('confirm');
     expect((await run(ops, { kind: 'text', text: 'He hablado con Juan: le interesa' })).state.step).toBe('confirm');
   });
+  test('«he cerrado Deep Delay: 70/30…» → el resumen enseña el acuerdo y al guardar dice que ya es cliente', async () => {
+    const { ops, applied } = fakeOps({
+      split: async () => [{ ...item('Deep Delay', { agreement: '70/30 para ellos si conseguimos marcas' }), candidates: [cand('d1', 'Deep Delay', 1)] }],
+      apply: async (rows) => { applied.push(rows); return [{ accountId: 'd1', name: 'Deep Delay', ok: true, agreement: 'active' as const }]; },
+    });
+    const a = await run(ops, { kind: 'text', text: 'He cerrado Deep Delay: 70/30 para ellos si conseguimos marcas' });
+    expect(a.replies[0].text).toContain('🤝 Cierre con acuerdo: 70/30');
+    const b = await run(ops, { kind: 'button', id: 'save' }, a.state);
+    expect(applied[0][0]).toMatchObject({ agreement: '70/30 para ellos si conseguimos marcas' });
+    expect(b.replies[0].text).toContain('Deep Delay ya es cliente');
+  });
   test('el audio se repite entero (no a los 55 segundos)', async () => {
     const { ops } = fakeOps();
     const long = 'palabra '.repeat(400).trim();

@@ -98,3 +98,9 @@ export interface PaymentRequestInsert {
   accountId: string; priceOptionId: string | null; couponId: string | null;
   label?: string; amount?: number; currency?: string; period?: PaymentRequest['period']; paymentLink?: string;
 }
+
+/** Acuerdo con un cliente (docs/CLIENTS.md): cada cambio es una versión; la activa es la vigente. */
+export interface Agreement {
+  id: string; accountId: string; terms: string; startsOn: string; checkinDays: number | null;
+  status: 'pending' | 'active' | 'replaced' | 'rejected'; createdBy: string | null; createdAt: string; decidedBy: string | null; decidedAt: string | null;
+}

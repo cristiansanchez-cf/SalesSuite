@@ -194,6 +194,19 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
     },
     async markPaymentPaid(_t, id) { return check(await sb.rpc('payment_request_mark_paid', { p_request: id })) as 'paid' | 'already' | 'missing'; },
     async markWon(_t, accountId) { check(await sb.rpc('account_mark_won', { p_account: accountId })); },
+    async listAgreements(t, accountIds) {
+      if (!accountIds.length) return [];
+      const rows = check(await sb.from('account_agreement').select('*').eq('tenant_id', t).in('account_id', accountIds.slice(0, 1000)).order('created_at', { ascending: false }).limit(5000)) ?? [];
+      return rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string, accountId: r.account_id as string, terms: r.terms as string, startsOn: r.starts_on as string, checkinDays: (r.checkin_days as number) ?? null,
+        status: r.status as 'active', createdBy: (r.created_by as string) ?? null, createdAt: r.created_at as string, decidedBy: (r.decided_by as string) ?? null, decidedAt: (r.decided_at as string) ?? null,
+      }));
+    },
+    async proposeAgreement(_t, accountId, a) {
+      const rows = check(await sb.rpc('agreement_propose', { p_account: accountId, p_terms: a.terms, p_starts: a.startsOn, p_checkin: a.checkinDays })) as Array<{ id: string; status: 'active' | 'pending' }>;
+      return rows[0]!;
+    },
+    async decideAgreement(_t, id, ok) { check(await sb.rpc('agreement_decide', { p_id: id, p_ok: ok })); },
     async cancelPaymentRequest(t, id) {
       return (check(await sb.from('payment_request').update({ status: 'cancelled' }).eq('tenant_id', t).eq('id', id).eq('status', 'sent').select('id')) ?? []).length > 0;
     },

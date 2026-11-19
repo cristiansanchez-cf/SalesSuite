@@ -3,7 +3,7 @@ import { defineMessages } from '../i18n/core';
 
 interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
 interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
-interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null }
+interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; agreement?: string | null }
 const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 const es = {
@@ -11,7 +11,8 @@ const es = {
   willSave: 'Esto es lo que guardo:',
   summary: (s: Sum) => [`*${s.name}*${s.isNew ? ' (nueva)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
     s.keyFacts.length ? `Lo que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
-    s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'}${s.nextTime ? `, a las ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
+    s.agreement ? `🤝 Cierre con acuerdo: ${clip(s.agreement, 400)}` : '',
+      s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'}${s.nextTime ? `, a las ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
   save: 'Guardar', change: 'Cambiar',
   whichOne: (venue: string, opts: string[], create: string) => opts.length
     ? `¿Cuál es «${venue}»?\n${opts.join('\n')}\n0) Crear «${create}»\n\nResponde con el número (o escribe el nombre bien).`
@@ -44,6 +45,8 @@ const es = {
   noteIt: 'apúntalo|apuntalo|nada|no hay|sin mensajes|así está bien',
   aiDown: 'Ahora mismo no puedo leerlo bien. Prueba en un momento.',
   pasteFirst: 'Solo me ha llegado un mensaje de la conversación 🤏 WhatsApp solo deja pegar todos si la caja está vacía. Pega primero los mensajes (solo eso, en un mensaje) y yo lo junto con lo que me acabas de contar.',
+  dealClosed: (n: string) => `🤝 ${n} ya es cliente (cerrada con acuerdo). Está en Clientes.`,
+  dealPending: (n: string) => `🤝 El acuerdo con ${n} queda pendiente: lo confirma un gerente o admin y entonces pasa a Clientes.`,
   tellMore: (who: string) => `Genial 👍 ¿Y qué ${who ? `te ha dicho ${who}` : 'te han dicho'}? Cuéntame de qué habéis hablado (por texto o audio) y lo apunto todo junto. Si no hay más, escribe «apúntalo».`,
   waitChat: 'Vale 👍 Pásame la conversación: pégala entera, reenvíame los mensajes o mándame capturas. Lo junto con esto. Si no hay mensajes que pasar, escribe «apúntalo».',
   joining: 'Recibido 📩 Lo junto con lo que me contaste. Cuando acabes, escribe «listo».',
@@ -72,6 +75,7 @@ export const assistantMessages = defineMessages({
     willSave: 'This is what I will save:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (new)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `“${clip(s.interaction)}”` : '',
       s.keyFacts.length ? `What we know: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      s.agreement ? `🤝 Closed with an agreement: ${clip(s.agreement, 400)}` : '',
       s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'}${s.nextTime ? `, at ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: 'Save', change: 'Change',
     whichOne: (venue, opts, create) => opts.length
@@ -105,6 +109,8 @@ export const assistantMessages = defineMessages({
     noteIt: 'note it|save it|nothing|none|that.?s it|apúntalo',
     aiDown: 'I cannot read it properly right now. Try again in a moment.',
     pasteFirst: 'Only one message of the conversation came through 🤏 WhatsApp only lets you paste them all when the box is empty. Paste the messages first (just that, in one message) and I will join them with what you just told me.',
+    dealClosed: (n) => `🤝 ${n} is now a client (closed with an agreement). It’s in Clients.`,
+    dealPending: (n) => `🤝 The agreement with ${n} is pending: a manager or admin confirms it and then it moves to Clients.`,
     tellMore: (who) => `Great 👍 And what did ${who || 'they'} say? Tell me what you talked about (text or audio) and I will note it all together. If there is nothing else, type «note it».`,
     waitChat: 'OK 👍 Send me the conversation: paste it whole, forward the messages or send screenshots. I will join it with this. If there are no messages, type «note it».',
     joining: 'Got it 📩 I will join it with what you told me. When you are done, type «done».',
@@ -129,6 +135,7 @@ export const assistantMessages = defineMessages({
     willSave: 'Isto é o que vou guardar:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (nova)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `O que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      s.agreement ? `🤝 Fechada com acordo: ${clip(s.agreement, 400)}` : '',
       s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'}${s.nextTime ? `, às ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: 'Guardar', change: 'Mudar',
     whichOne: (venue, opts, create) => opts.length
@@ -162,6 +169,8 @@ export const assistantMessages = defineMessages({
     noteIt: 'anota|aponta|nada|não há|sem mensagens',
     aiDown: 'Agora não consigo ler bem. Tenta daqui a um momento.',
     pasteFirst: 'Só me chegou uma mensagem da conversa 🤏 O WhatsApp só deixa colar todas se a caixa estiver vazia. Cola primeiro as mensagens (só isso, numa mensagem) e eu junto com o que me acabaste de contar.',
+    dealClosed: (n) => `🤝 ${n} já é cliente (fechada com acordo). Está em Clientes.`,
+    dealPending: (n) => `🤝 O acordo com ${n} fica pendente: um gerente ou admin confirma e depois passa a Clientes.`,
     tellMore: (who) => `Ótimo 👍 E o que ${who ? `te disse ${who}` : 'te disseram'}? Conta-me de que falaram (texto ou áudio) e anoto tudo junto. Se não houver mais, escreve «anota».`,
     waitChat: 'Ok 👍 Passa-me a conversa: cola-a inteira, reencaminha as mensagens ou manda capturas. Junto com isto. Se não houver mensagens, escreve «anota».',
     joining: 'Recebido 📩 Junto com o que me contaste. Quando acabares, escreve «pronto».',
@@ -186,6 +195,7 @@ export const assistantMessages = defineMessages({
     willSave: '이렇게 저장할게요:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (새 회사)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `알고 있는 것: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      s.agreement ? `🤝 계약으로 성사: ${clip(s.agreement, 400)}` : '',
       s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후${s.nextTime ? ` ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: '저장', change: '수정',
     whichOne: (venue, opts, create) => opts.length
@@ -219,6 +229,8 @@ export const assistantMessages = defineMessages({
     noteIt: '기록해|저장해|없어|없음',
     aiDown: '지금은 제대로 읽을 수 없어요. 잠시 후 다시 시도해 주세요.',
     pasteFirst: '대화 중 메시지 하나만 들어왔어요 🤏 WhatsApp은 입력창이 비어 있을 때만 전부 붙여넣을 수 있어요. 먼저 메시지만 한 번에 붙여넣어 주세요. 방금 말씀하신 내용과 합칠게요.',
+    dealClosed: (n) => `🤝 ${n}이(가) 이제 고객입니다(계약으로 성사). 고객에 있습니다.`,
+    dealPending: (n) => `🤝 ${n}와의 계약은 대기 중입니다. 매니저나 관리자가 확인하면 고객으로 옮겨집니다.`,
     tellMore: (who) => `좋아요 👍 ${who ? `${who}님이` : '상대가'} 뭐라고 했나요? 어떤 이야기를 했는지 알려 주세요(텍스트나 음성). 함께 기록할게요. 더 없으면 «기록해»라고 적어 주세요.`,
     waitChat: '좋아요 👍 대화를 보내 주세요: 전체를 붙여넣거나, 메시지를 전달하거나, 캡처를 보내 주세요. 이 내용과 합칠게요. 보낼 메시지가 없으면 «기록해»라고 적어 주세요.',
     joining: '받았어요 📩 말씀하신 내용과 합칠게요. 다 보내셨으면 «완료»라고 적어 주세요.',

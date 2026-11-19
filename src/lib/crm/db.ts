@@ -51,4 +51,9 @@ export interface CrmDb {
   markPaymentPaid(tenantId: string, id: string): Promise<'paid' | 'already' | 'missing'>;
   /** Ganada sin enlace (espacios sin Stripe; gerente o admin). */
   markWon(tenantId: string, accountId: string): Promise<void>;
+  /** Acuerdos (docs/CLIENTS.md): los de unas empresas (todas las versiones, lo nuevo primero). */
+  listAgreements?(tenantId: string, accountIds: string[]): Promise<import('./types').Agreement[]>;
+  /** Cerrar con acuerdo o cambiarlo: gerente/admin → activo; quien la lleva → pendiente de confirmar. */
+  proposeAgreement?(tenantId: string, accountId: string, a: { terms: string; startsOn: string | null; checkinDays: number | null }): Promise<{ id: string; status: 'active' | 'pending' }>;
+  decideAgreement?(tenantId: string, id: string, ok: boolean): Promise<void>;
 }

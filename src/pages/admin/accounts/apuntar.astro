@@ -4,6 +4,7 @@
  * empresa que más se parece (o una nueva), su nota, lo que se marca en la cualificación y el próximo paso → se revisa
  * y se guarda todo de una vez. La IA no guarda nada.
  */
+import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { pastedChat } from '~/lib/assistant/flow';
 import { assistantMessages } from '~/lib/assistant/messages';
 import AdminLayout from '~/layouts/AdminLayout.astro';
@@ -30,6 +31,7 @@ const PR = priorityMessages[locale];
 const PRF = profilesMessages[locale];
 const CK: Record<string, string> = M.contactKeys;
 const CLN = cleanupMessages[locale];
+const CLI = clientsMessages[locale];
 const CONVO = (assistantMessages[locale as keyof typeof assistantMessages] ?? assistantMessages.es).convo;
 const FU = followupMessages[locale];
 
@@ -69,6 +71,7 @@ if (Astro.request.method === 'POST') {
         fit: str(`fit-${i}`) || null, fields: fieldsChosen,
         channel: it.channel, outcome: it.outcome, day: it.day,
         qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days), nextTime: days === '' ? null : str(`time-${i}`) || null, tz,
+        agreement: f.get(`ag-on-${i}`) ? str(`ag-${i}`) || null : null,
         discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null,
         kind: str(`kind-${i}`) || undefined,
         worksAt: f.getAll(`wk-${i}`).map((x) => (it.worksAt ?? [])[Number(x)]).filter(Boolean),
@@ -237,6 +240,13 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
                   <label class="co-chip"><input type="checkbox" class="mr-1" name={`q-${i}`} value={`${k}:${v}`} checked data-testid="notes-qual" />{qualLabel(k, v)}</label>
                 ))}
               </div>
+            </fieldset>
+          )}
+          {it.agreement && (
+            <fieldset class="co-card grid gap-2 !p-3" data-testid="notes-agreement">
+              <legend class="co-field px-1"><label class="inline-flex items-center gap-2"><input type="checkbox" name={`ag-on-${i}`} value="1" checked class="h-4 w-4 accent-[var(--co-ink)]" />🤝 {CLI.close}</label></legend>
+              <span class="co-help">{CLI.closeHelp}</span>
+              <textarea class="co-textarea !min-h-[64px]" name={`ag-${i}`} maxlength="4000" aria-label={CLI.terms}>{it.agreement}</textarea>
             </fieldset>
           )}
           <div class="grid gap-3 sm:grid-cols-[1fr_10rem_7rem]">

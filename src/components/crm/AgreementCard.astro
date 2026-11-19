@@ -1,0 +1,84 @@
+---
+/**
+ * El acuerdo de una empresa en su ficha (docs/CLIENTS.md): el vigente y sus versiones, el pendiente de confirmar y
+ * «Cerrar con acuerdo» / «Cambiar el acuerdo». Formularios con action agreement / agreement-ok / agreement-no.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import type { Agreement } from '~/lib/crm/types';
+import { clientsMessages } from '~/lib/i18n/messages/clients';
+import type { Locale } from '~/lib/i18n/core';
+
+interface Props {
+  locale: Locale; agreements: Agreement[]; customer: boolean; canClose: boolean; canDecide: boolean; ownerName: string | null;
+  date: (iso: string) => string;
+}
+const { locale, agreements, customer, canClose, canDecide, ownerName, date } = Astro.props;
+const C = clientsMessages[locale];
+const active = agreements.find((g) => g.status === 'active') ?? null;
+const pending = agreements.find((g) => g.status === 'pending') ?? null;
+const old = agreements.filter((g) => g.status === 'replaced');
+const today = new Date().toISOString().slice(0, 10);
+const CHECKINS = [14, 30, 60, 90];
+const show = customer || active || pending || canClose;
+---
+{show && (
+  <section id="agreement" class="co-card grid gap-3" data-testid="agreement">
+    <div class="flex items-center gap-2"><Icon name="handshake" size={16} /><p class="text-eyebrow m-0">{C.card}</p></div>
+
+    {pending && (
+      <div class="grid gap-2 rounded-xl border border-[var(--console-attention)] bg-[var(--console-attention-bg)] p-3" data-testid="agreement-pending">
+        <strong>{C.pending}</strong>
+        <p class="co-body m-0 whitespace-pre-line" data-ugc>{pending.terms}</p>
+        <p class="co-meta m-0">{[C.sinceLine(date(pending.startsOn)), pending.checkinDays ? C.every(C.days(pending.checkinDays)) : null, ownerName ? C.pendingBy(ownerName) : null].filter(Boolean).join(' · ')}</p>
+        {canDecide && (
+          <div class="flex flex-wrap gap-2">
+            <form method="post"><input type="hidden" name="action" value="agreement-ok" /><input type="hidden" name="agreementId" value={pending.id} />
+              <button class="co-btn co-btn--primary co-btn--sm" data-testid="agreement-confirm">{C.confirm}</button></form>
+            <form method="post"><input type="hidden" name="action" value="agreement-no" /><input type="hidden" name="agreementId" value={pending.id} />
+              <button class="co-btn co-btn--quiet co-btn--sm" data-testid="agreement-reject">{C.reject}</button></form>
+          </div>
+        )}
+      </div>
+    )}
+
+    {active ? (
+      <div class="grid gap-1" data-testid="agreement-active">
+        <p class="co-meta m-0">{C.current}</p>
+        <p class="co-body m-0 whitespace-pre-line" data-ugc>{active.terms}</p>
+        <p class="co-meta m-0">{[C.sinceLine(date(active.startsOn)), active.checkinDays ? C.every(C.days(active.checkinDays)) : null].filter(Boolean).join(' · ')}</p>
+      </div>
+    ) : customer && !pending ? <p class="co-meta m-0">{C.noAgreement}</p> : null}
+
+    {old.length > 0 && (
+      <details class="co-meta" data-testid="agreement-history"><summary class="cursor-pointer">{C.history(old.length)}</summary>
+        <ul class="mt-2 grid gap-2 pl-0">
+          {old.map((g) => <li class="list-none"><span class="whitespace-pre-line" data-ugc>{g.terms}</span><br />{C.sinceLine(date(g.startsOn))}</li>)}
+        </ul>
+      </details>
+    )}
+
+    {canClose && (
+      <details class="grid gap-2" data-testid="agreement-form-wrap">
+        <summary class={`co-btn ${customer || active ? 'co-btn--ghost' : 'co-btn--primary'} co-btn--sm w-fit cursor-pointer list-none`} data-testid="agreement-open">
+          <Icon name="handshake" size={14} />{customer || active ? C.change : C.close}
+        </summary>
+        <form method="post" class="mt-2 grid gap-3" data-testid="agreement-form">
+          <input type="hidden" name="action" value="agreement" />
+          <p class="co-help m-0">{customer || active ? C.changeHelp : C.closeHelp}</p>
+          <label class="co-field">{C.terms}<textarea class="co-textarea" name="terms" required minlength="3" maxlength="4000" placeholder={C.termsPh} data-testid="agreement-terms">{active?.terms ?? ''}</textarea></label>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="co-field">{C.since}<input class="co-input" type="date" name="startsOn" value={today} /></label>
+            <label class="co-field">{C.checkin}
+              <select class="co-select" name="checkinDays" data-testid="agreement-checkin">
+                <option value="">{C.checkinNone}</option>
+                {CHECKINS.map((d) => <option value={d} selected={(active?.checkinDays ?? 30) === d}>{C.days(d)}</option>)}
+              </select>
+            </label>
+          </div>
+          <p class="co-help m-0">{C.checkinHelp}{!canDecide && ` ${C.proposeHelp}`}</p>
+          <button class="co-btn co-btn--primary w-fit" data-testid="agreement-save">{!canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
+        </form>
+      </details>
+    )}
+  </section>
+)}

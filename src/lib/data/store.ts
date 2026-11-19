@@ -232,6 +232,7 @@ export interface DemoDb {
   team_ip: TeamIpRow[];
   daily_digest_log: Array<{ user_id: string; tenant_id: string; day: string; emailed: boolean; sent_at: string }>;
   calendar_feed: Array<{ user_id: string; token: string }>;
+  account_agreement: Array<{ id: string; tenant_id: string; account_id: string; terms: string; starts_on: string; checkin_days: number | null; status: 'pending' | 'active' | 'replaced' | 'rejected'; created_by: string | null; created_at: string; decided_by: string | null; decided_at: string | null }>;
   member_conditions_history: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; plan: import('../commissions/types').ConditionsChange['plan']; changed_by: string | null; changed_at: string; seq: number }>;
 }
 
@@ -452,6 +453,7 @@ export function freshDemoDb(): DemoDb {
     team_ip: [],
     daily_digest_log: [],
     calendar_feed: [],
+    account_agreement: [],
     coupon: [
       { id: '00000000-0000-4000-8000-0000000cd001', tenant_id: ENJOY, code: 'LANZA30', label: '30 % de lanzamiento', kind: 'percent', value: 3000, max_uses: 20, valid_until: null, active: true, note: 'Para cerrar antes de fin de mes', created_at: ago(10) },
       { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },

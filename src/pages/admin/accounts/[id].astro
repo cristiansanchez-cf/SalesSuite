@@ -1,5 +1,7 @@
 ---
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
+import AgreementCard from '~/components/crm/AgreementCard.astro';
+import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { localDay, localTime } from '~/lib/crm/when';
 import ChatThread from '~/components/admin/ChatThread.astro';
 import { splitConvo } from '~/lib/crm/convo';
@@ -108,6 +110,14 @@ if (Astro.request.method === 'POST') {
       case 'charge-cancel': await admin.crm.chargeCancel(str('chargeId')); to += '?ok=chargeCancelled#charge'; break;
       case 'charge-paid': await admin.crm.chargeMarkPaid(str('chargeId')); to += '?ok=paid#charge'; break;
       case 'mark-won': await admin.crm.markWon(id); to += '?ok=paid#charge'; break;
+      // Clientes (docs/CLIENTS.md): cerrar con acuerdo o cambiarlo; confirmar o rechazar el propuesto.
+      case 'agreement': {
+        const was = (await acc.get(id)).account.status === 'customer';
+        const r = await admin.crm.closeWithAgreement(id, { terms: str('terms'), startsOn: str('startsOn'), checkinDays: str('checkinDays') });
+        to += `?ok=${r.status === 'pending' ? 'agProposed' : was ? 'agChanged' : 'agClosed'}#agreement`; break;
+      }
+      case 'agreement-ok': await admin.crm.decideAgreement(id, str('agreementId'), true); to += '?ok=agConfirmed#agreement'; break;
+      case 'agreement-no': await admin.crm.decideAgreement(id, str('agreementId'), false); to += '?ok=agRejected#agreement'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), time: str('nextTime') || null, tz: myTz, channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
       case 'fact-add': await admin.crm.factAdd(id, str('text'), str('kind') === 'fit' ? 'fit' : str('kind') === 'key' ? 'key' : 'fact'); to += '?ok=fact#facts'; break;
@@ -226,6 +236,7 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   noted: F.follow.ok.noted, next: F.follow.ok.next, cleared: F.follow.ok.cleared, removed: F.follow.ok.removed, companyContact: F.follow.ok.contact,
   owner: P.group.ok.owner, group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, work: KN.work.ok, workNew: KN.work.okNew, workRemoved: KN.work.removed, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
+  agClosed: clientsMessages[locale].ok.closed, agProposed: clientsMessages[locale].ok.proposed, agConfirmed: clientsMessages[locale].ok.confirmed, agRejected: clientsMessages[locale].ok.rejected, agChanged: clientsMessages[locale].ok.changed,
   charge: chargeMessages[locale].ok, chargeCancelled: chargeMessages[locale].okCancelled, paid: chargeMessages[locale].okPaid, merged: mergeMessages[locale].ok,
 });
 // Cobrar (§35): los tramos del tamaño según lo que es y quién generó cada enlace.
@@ -235,6 +246,7 @@ const sizeRangeOf = (q: typeof a.qualification): Record<string, string> => {
   const num = (n: number) => n.toLocaleString('es-ES');
   return Object.fromEntries(SIZES.map((k, i) => [k, PS.sizeRange(i ? num(lim[i - 1]) : '', i < 3 ? num(lim[i]) : '')]));
 };
+const agreementList = await admin.crm.agreements(id).catch(() => []);
 const chargeNames = new Map([...members.map((x) => [x.userId, x.displayName || x.email] as const), [admin.session.userId, admin.session.displayName || admin.session.email]]);
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
@@ -327,6 +339,9 @@ const STATE_ALERT = {
       {profile !== 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
+      <AgreementCard locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName}
+        canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
+        date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} />
       <section id="facts" class="co-card grid gap-3" data-testid="facts-card">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <h2 class="co-entity">{NT.factsTitle}</h2>

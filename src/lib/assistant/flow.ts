@@ -18,7 +18,7 @@ export interface AssistantOps {
   /** «Apuntar»: lo separa por empresa con sus candidatas. */
   split(text: string): Promise<Array<NoteItem & { candidates: Candidate[] }>>;
   search(q: string): Promise<Candidate[]>;
-  apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>>;
+  apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending' }>>;
   /** Recordatorios: la propuesta de mensaje para una empresa (draft.ts). */
   draft?(item: ReminderItem): Promise<string>;
   /** Dónde está una empresa nueva: un sitio conocido nombrado en el texto (places.ts). */
@@ -86,7 +86,7 @@ function rowOf(p: Pending) {
   return {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
-    nextDays: it.nextDays, nextTime: it.nextTime ?? null, discard: null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
+    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null, discard: null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
     // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
     ...(p.choice?.create && p.place ? { place: p.place.v } : {}),
   };
@@ -160,7 +160,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
   };
@@ -187,7 +187,9 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const r = await d.ops.apply(keep.map(rowOf));
     const ok = r.filter((x) => x.ok).map((x) => x.name);
     const bad = r.filter((x) => !x.ok).map((x) => `${x.name || '—'}: ${x.error ?? T.failed}`);
-    return { state: idle, replies: [say([ok.length ? T.saved(ok) : '', bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
+    // Cerradas con acuerdo: ya en Clientes, o pendientes de que un gerente lo confirme.
+    const deals = r.filter((x) => x.ok && x.agreement).map((x) => (x.agreement === 'active' ? T.dealClosed(x.name) : T.dealPending(x.name)));
+    return { state: idle, replies: [say([ok.length ? T.saved(ok) : '', ...deals, bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
   };
   /** Lo que cuenta, a «Apuntar». */
   const note = async (text: string, prev: Pending[] = [], literal?: string[]): Promise<FlowResult> => {

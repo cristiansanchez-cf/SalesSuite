@@ -9,6 +9,8 @@ const es = {
   contribution_pending: { title: (p: P) => `${p.author || 'Alguien del equipo'} propone ${p.type === 'change' ? 'una mejora' : 'un truco'} para el playbook` },
   partner_referred: { title: (p: P) => `${p.name || 'Un colaborador nuevo'} se ha unido, invitado por ${p.inviter || 'otro colaborador'}`, detail: 'Revisa sus módulos y asígnale cuentas.' },
   member_added: { title: (p: P, role: string) => `${p.inviter || 'Tu gerente'} ha añadido a ${p.name || 'alguien'} como ${role}` },
+  agreement_pending: { title: (p: P) => `${p.seller || 'Alguien'} propone cerrar ${p.account || 'una empresa'} con un acuerdo`, detail: 'Confírmalo para que pase a Clientes.' },
+  agreement_closed: { title: (p: P) => `${p.account || 'Una empresa'} ya es cliente (cerrada con acuerdo por ${p.seller || 'el equipo'})` },
   member_left: { title: (p: P) => `${p.name || 'Alguien'} ya no está en el equipo y tiene cosas a su nombre`, detail: (d: number, a: number) => `${d} ${d === 1 ? 'propuesta abierta' : 'propuestas abiertas'} y ${a} ${a === 1 ? 'empresa' : 'empresas'}. Decide a quién pasan.` },
   account_conflict: {
     title: (p: P, reason: string) => `${p.seller || 'Alguien'} ha ganado ${p.account ? `«${p.account}»` : 'una venta'}, pero ${reason}`,
@@ -75,6 +77,8 @@ export const notifyMessages = defineMessages({
     contribution_pending: { title: (p) => `${p.author || 'Someone on the team'} suggests ${p.type === 'change' ? 'an improvement' : 'a tip'} for the playbook` },
     partner_referred: { title: (p) => `${p.name || 'A new partner'} has joined, invited by ${p.inviter || 'another partner'}`, detail: 'Review their modules and assign them accounts.' },
     member_added: { title: (p, role) => `${p.inviter || 'Your manager'} added ${p.name || 'someone'} as ${role}` },
+    agreement_pending: { title: (p) => `${p.seller || 'Someone'} proposes closing ${p.account || 'a company'} with an agreement`, detail: 'Confirm it so it moves to Clients.' },
+    agreement_closed: { title: (p) => `${p.account || 'A company'} is now a client (closed with an agreement by ${p.seller || 'the team'})` },
     member_left: { title: (p) => `${p.name || 'Someone'} left the team with work in their name`, detail: (d, a) => `${d} open ${d === 1 ? 'proposal' : 'proposals'} and ${a} ${a === 1 ? 'company' : 'companies'}. Decide who gets them.` },
     account_conflict: {
       title: (p, reason) => `${p.seller || 'Someone'} won ${p.account ? `“${p.account}”` : 'a deal'}, but ${reason}`,
@@ -138,6 +142,8 @@ export const notifyMessages = defineMessages({
     contribution_pending: { title: (p) => `${p.author || 'Alguém da equipe'} propõe ${p.type === 'change' ? 'uma melhoria' : 'uma dica'} para o playbook` },
     partner_referred: { title: (p) => `${p.name || 'Um novo parceiro'} entrou, convidado por ${p.inviter || 'outro parceiro'}`, detail: 'Revise os módulos dele e atribua contas.' },
     member_added: { title: (p, role) => `${p.inviter || 'Seu gerente de vendas'} adicionou ${p.name || 'alguém'} como ${role}` },
+    agreement_pending: { title: (p) => `${p.seller || 'Alguém'} propõe fechar ${p.account || 'uma empresa'} com um acordo`, detail: 'Confirma para passar a Clientes.' },
+    agreement_closed: { title: (p) => `${p.account || 'Uma empresa'} já é cliente (fechada com acordo por ${p.seller || 'a equipa'})` },
     member_left: { title: (p) => `${p.name || 'Alguém'} saiu da equipa e tem coisas em seu nome`, detail: (d, a) => `${d} ${d === 1 ? 'proposta aberta' : 'propostas abertas'} e ${a} ${a === 1 ? 'empresa' : 'empresas'}. Decida para quem passam.` },
     account_conflict: {
       title: (p, reason) => `${p.seller || 'Alguém'} ganhou ${p.account ? `“${p.account}”` : 'uma venda'}, mas ${reason}`,
@@ -201,6 +207,8 @@ export const notifyMessages = defineMessages({
     contribution_pending: { title: (p) => `${p.author || '팀원'}님이 플레이북에 ${p.type === 'change' ? '개선안' : '팁'}을 제안했습니다` },
     partner_referred: { title: (p) => `${p.name || '새 파트너'}님이 ${p.inviter || '다른 파트너'}님의 초대로 합류했습니다`, detail: '모듈을 확인하고 계정을 배정하세요.' },
     member_added: { title: (p, role) => `${p.inviter || '영업 리더'}님이 ${p.name || '누군가'}님을 ${role}(으)로 추가했습니다` },
+    agreement_pending: { title: (p) => `${p.seller || '누군가'}님이 ${p.account || '업체'}를 계약으로 성사하자고 제안했습니다`, detail: '확인하면 고객으로 옮겨집니다.' },
+    agreement_closed: { title: (p) => `${p.account || '업체'}가 이제 고객입니다 (${p.seller || '팀'}님이 계약으로 성사)` },
     member_left: { title: (p) => `${p.name || '누군가'}님이 팀을 떠났고 이름으로 된 업무가 있습니다`, detail: (d, a) => `진행 중인 제안서 ${d}개, 업체 ${a}개. 누구에게 넘길지 정하세요.` },
     account_conflict: {
       title: (p, reason) => `${p.seller || '누군가'}님이 ${p.account ? `「${p.account}」` : '거래'}를 성사시켰지만 ${reason}`,

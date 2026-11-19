@@ -49,6 +49,18 @@ function paidEffects(t: string, accountId: string, seller: string | null, entity
       read_at: null, dismissed_at: null, emailed_at: null, resolved_at: null });
   }
 }
+/** = agreement_activate: la anterior, sustituida; la empresa, cliente; aviso informativo a admins y gerentes. */
+function agreementActivate(id: string, by: string) {
+  const s = db();
+  const g = s.account_agreement.find((x) => x.id === id)!;
+  for (const x of s.account_agreement) if (x.account_id === g.account_id && x.status === 'active' && x.id !== g.id) x.status = 'replaced';
+  Object.assign(g, { status: 'active', decided_by: by, decided_at: iso() });
+  const a = s.account.find((x) => x.id === g.account_id)!;
+  Object.assign(a, { status: 'customer', won_at: a.won_at ?? iso(), won_by: a.won_by ?? g.created_by, owner_id: a.owner_id ?? g.created_by, claimed_until: null, last_touch_at: iso(), last_touch_by: by });
+  s.account_touch.push({ id: randomUUID(), tenant_id: g.tenant_id, account_id: a.id, user_id: g.created_by ?? by, kind: 'won', note: g.terms.slice(0, 500), created_at: iso() });
+  for (const n of s.notification) if (n.kind === 'agreement_pending' && n.entity_key === g.id && !n.resolved_at) n.resolved_at = iso();
+  notifyRoles(g.tenant_id, ['admin', 'lead'], 'agreement_closed', 'info', g.id, { account: a.name, accountId: a.id, seller: userLabel(g.created_by) }, by);
+}
 /** = payment_request_paid (servidor: webhook de Stripe). */
 export function demoChargePaid(t: string, requestId: string, ref: string, refs: string[]): 'paid' | 'already' | 'missing' {
   const s = db();
@@ -254,6 +266,36 @@ export function demoCrmDb(actorId: string): CrmDb {
     async markPaymentPaid(t, id) {
       if (!isManager(t, actorId)) throw new Error('permission denied: Solo un gerente o admin lo marca pagado');
       return demoChargePaid(t, id, 'manual', []);
+    },
+    // Acuerdos (= migración 20270109: agreement_propose / agreement_decide / agreement_activate).
+    async listAgreements(t, accountIds) {
+      if (!isMember(t, actorId)) return [];
+      return db().account_agreement.filter((g) => g.tenant_id === t && accountIds.includes(g.account_id)).sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map((g) => ({ id: g.id, accountId: g.account_id, terms: g.terms, startsOn: g.starts_on, checkinDays: g.checkin_days, status: g.status, createdBy: g.created_by, createdAt: g.created_at, decidedBy: g.decided_by, decidedAt: g.decided_at }));
+    },
+    async proposeAgreement(t, accountId, a) {
+      const s = db();
+      const acc = s.account.find((x) => x.id === accountId && x.tenant_id === t);
+      if (!acc || !isMember(t, actorId)) throw new Error('permission denied: Cuenta no encontrada');
+      const mgr = isManager(t, actorId);
+      if (!mgr && acc.owner_id !== actorId) throw new Error('permission denied: Solo quien la lleva (o un gerente) cierra el acuerdo');
+      for (const g of s.account_agreement) if (g.account_id === accountId && g.status === 'pending') Object.assign(g, { status: 'rejected', decided_by: actorId, decided_at: iso() });
+      const g = { id: randomUUID(), tenant_id: t, account_id: accountId, terms: a.terms.trim(), starts_on: a.startsOn ?? iso().slice(0, 10), checkin_days: a.checkinDays,
+        status: 'pending' as const, created_by: actorId, created_at: monotonic(), decided_by: null, decided_at: null };
+      s.account_agreement.push(g);
+      if (mgr) { agreementActivate(g.id, actorId); return { id: g.id, status: 'active' as const }; }
+      notifyRoles(t, ['admin', 'lead'], 'agreement_pending', 'action', g.id, { account: acc.name, accountId: acc.id, seller: userLabel(actorId) }, actorId);
+      return { id: g.id, status: 'pending' as const };
+    },
+    async decideAgreement(t, id, ok) {
+      const g = db().account_agreement.find((x) => x.id === id && x.tenant_id === t);
+      if (!g || !isManager(t, actorId)) throw new Error('permission denied: Solo un gerente o admin confirma el acuerdo');
+      if (g.status !== 'pending') return;
+      if (ok) agreementActivate(g.id, actorId);
+      else {
+        Object.assign(g, { status: 'rejected', decided_by: actorId, decided_at: iso() });
+        for (const n of db().notification) if (n.kind === 'agreement_pending' && n.entity_key === g.id && !n.resolved_at) n.resolved_at = iso();
+      }
     },
     async markWon(t, accountId) {
       const a = db().account.find((x) => x.id === accountId && x.tenant_id === t);

@@ -33,7 +33,7 @@ import { slugKey } from './fields';
 import { chargeRef, paymentUrl } from '../admin/payment';
 import { chargeable } from './charge';
 import { LINK_DAYS, type LinkWhen } from './types';
-import type { AccountDoc, Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo, PaymentRequest } from './types';
+import type { Agreement, AccountDoc, Contact, ContactLink, ContactPatch, CrmImport, ImportMapping, ImportStats, ImportUndo, PaymentRequest } from './types';
 import { DEFAULT_AI_PER_USER_DAY, overBudget, type AiLimitsNow } from '../usage/limits';
 
 const uuid = z.string().uuid();
@@ -89,6 +89,8 @@ export const activitySchema = z.object({
   note: opt(4000),
   happenedAt: z.string().max(40).optional().transform((v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : undefined)),
 });
+/** El próximo paso que pone el contacto periódico con un cliente (docs/CLIENTS.md). */
+export const CHECKIN_STEP = 'Ver cómo va (cliente)';
 export const nextStepSchema = z.object({
   at: z.string().max(40).optional(),
   /** Hora (HH:MM) en la zona de quien lo apunta: con ella el calendario lo pone a esa hora (docs/CALENDAR.md). */
@@ -764,6 +766,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       return null;
     }
     if (v.outcome === 'note') return null;
+    // Cliente con contacto periódico: lo siguiente es «ver cómo va» dentro de N días (no la secuencia de captar).
+    if (a.status === 'customer' && db.listAgreements) {
+      const g = (await db.listAgreements(t, [accountId]).catch(() => [])).find((x) => x.status === 'active');
+      if (g?.checkinDays) {
+        await accounts.updateAccount(accountId, { next: { step: CHECKIN_STEP, at: dayIn(g.checkinDays), contactId: v.contactId ?? null, channel: null } }).catch(() => false);
+        return null;
+      }
+    }
     const [acts, actors, fresh] = await Promise.all([db.listActivities(t, [accountId], 200), actorsOf(accountId), accounts.getAccount(accountId)]);
     const sug = suggestNext({ activities: acts, actors, company: reachOf(fresh ?? a), now: new Date() });
     await accounts.updateAccount(accountId, { next: { step: null, at: sug.at?.toISOString() ?? null, contactId: sug.contactId, channel: sug.channel } }).catch(() => false);
@@ -1046,6 +1056,67 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (!perms.manageAccounts) throw new AdminError(403, 'Solo un gerente o admin lo marca pagado');
     try { if ((await db.markPaymentPaid(t, id)) === 'missing') throw new AdminError(404, 'Enlace no encontrado o ya no se puede anular'); } catch (e) { if (e instanceof AdminError) throw e; mapError(e); }
   }
+  // ---------------------------------------------------------------- clientes y acuerdos (docs/CLIENTS.md)
+  const agreementSchema = z.object({
+    terms: z.string().trim().min(3, 'Escribe qué habéis acordado').max(4000),
+    startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
+    checkinDays: z.coerce.number().int().min(7).max(365).nullable().optional().or(z.literal('').transform(() => null)),
+  });
+  async function agreements(accountId: string): Promise<Agreement[]> {
+    requireUse();
+    return db.listAgreements ? db.listAgreements(t, [accountId]).catch(() => []) : [];
+  }
+  /** El día dentro de N días, sin hora (10:00 UTC: el «todo el día» del calendario). */
+  const dayIn = (days: number) => new Date(`${localDay(new Date(Date.now() + days * 86_400_000))}T10:00:00Z`).toISOString();
+  /**
+   * Si es cliente con contacto periódico y no tiene un próximo paso por delante: «Ver cómo va» dentro de N días. Así
+   * entra en Hoy, en el resumen de la mañana y en el calendario sin hacer nada más.
+   */
+  async function checkinNext(accountId: string, days: number | null) {
+    if (!days) return;
+    const a = await accounts.getAccount(accountId);
+    if (!a || (a.nextStepAt && Date.parse(a.nextStepAt) > Date.now())) return;
+    await accounts.updateAccount(accountId, { next: { step: CHECKIN_STEP, at: dayIn(days), contactId: a.nextContactId ?? null, channel: null } }).catch(() => false);
+  }
+  /** Cerrar con acuerdo (o cambiarlo): gerente/admin lo deja activo; quien la lleva lo propone y un gerente confirma. */
+  async function closeWithAgreement(accountId: string, input: unknown): Promise<{ id: string; status: 'active' | 'pending' }> {
+    requireUse();
+    if (!db.proposeAgreement) throw new AdminError(503, 'Falta aplicar la migración de clientes');
+    const v = parse(agreementSchema, input);
+    let r!: { id: string; status: 'active' | 'pending' };
+    try { r = await db.proposeAgreement(t, accountId, { terms: v.terms, startsOn: v.startsOn ?? null, checkinDays: v.checkinDays ?? null }); } catch (e) { mapError(e); }
+    if (r.status === 'active') await checkinNext(accountId, v.checkinDays ?? null);
+    return r;
+  }
+  async function decideAgreement(accountId: string, id: string, ok: boolean) {
+    requireUse();
+    if (!perms.manageAccounts) throw new AdminError(403, 'Solo un gerente o admin confirma el acuerdo');
+    if (!db.decideAgreement || !db.listAgreements) throw new AdminError(503, 'Falta aplicar la migración de clientes');
+    try { await db.decideAgreement(t, id, ok); } catch (e) { mapError(e); }
+    const g = ok ? (await db.listAgreements(t, [accountId]).catch(() => [])).find((x) => x.id === id && x.status === 'active') : null;
+    if (g) await checkinNext(accountId, g.checkinDays);
+  }
+  /** Clientes: las empresas ganadas (por pago o acuerdo), con su acuerdo vigente. El comercial ve las suyas. */
+  async function clients(o: { all?: boolean } = {}) {
+    requireUse();
+    const rows = (await accounts.listAccounts(t, { status: 'customer', ownerId: o.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 })).filter((a) => a.tenantId === t);
+    const ids = rows.map((a) => a.id);
+    const [ags, last, team] = await Promise.all([
+      db.listAgreements && ids.length ? db.listAgreements(t, ids).catch(() => []) : Promise.resolve([]),
+      ids.length ? db.lastActivities(t, ids).catch(() => []) : Promise.resolve([]),
+      members().catch(() => new Map<string, MemberRecord>()),
+    ]);
+    const now = Date.now();
+    return rows.map((a) => {
+      const mine = ags.filter((g) => g.accountId === a.id);
+      const lastAt = last.find((x) => x.accountId === a.id)?.happenedAt ?? a.lastTouchAt ?? null;
+      return {
+        ...a, ownerName: a.ownerId ? label(team.get(a.ownerId)) : null, agreement: mine.find((g) => g.status === 'active') ?? null, pending: mine.find((g) => g.status === 'pending') ?? null, lastAt,
+        quietDays: lastAt ? Math.floor((now - Date.parse(lastAt)) / 86_400_000) : null, due: !!a.nextStepAt && Date.parse(a.nextStepAt) <= now,
+      };
+    }).sort((x, y) => Number(y.due) - Number(x.due) || (y.quietDays ?? 0) - (x.quietDays ?? 0) || x.name.localeCompare(y.name, 'es'));
+  }
+
   /** Ganada sin enlace de pago (espacios sin Stripe): gerente o admin. */
   async function markWon(accountId: string) {
     requireUse();
@@ -1495,6 +1566,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     nextStep: z.string().trim().max(300).nullable().optional().transform((v) => v || null),
     nextDays: z.number().int().min(0).max(365).nullable().optional(),
     nextTime: z.string().max(10).nullable().optional(),
+    /** Cerró con un acuerdo: las condiciones (docs/CLIENTS.md). */
+    agreement: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
     /** Zona horaria de quien apunta (para la hora del próximo paso). */
     tz: z.string().max(60).nullable().optional(),
     /** Descartar (si quien apunta dijo que sí a la propuesta de la IA, §23). */
@@ -1548,7 +1621,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function notesApply(input: unknown): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>> {
     requireUse();
     const rows = parse(noteApplySchema, input);
-    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string }> = [];
+    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending' }> = [];
     for (const r of rows) {
       let id = r.accountId ?? null;
       let name = r.create ?? '';
@@ -1613,7 +1686,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         const missing = Object.fromEntries(Object.entries(r.contact).filter(([k, v]) => v && fresh && !fresh[k as keyof Account]));
         if (Object.keys(missing).length) await setCompanyContact(id, missing).catch(() => undefined);
         if (r.people.length) await notePeople(id, r.people);
-        out.push({ accountId: id, name, ok: true });
+        // «He cerrado X: 70/30…» (docs/CLIENTS.md): cerrar con ese acuerdo (o proponerlo, si lo confirma un gerente).
+        let agreement: 'active' | 'pending' | undefined;
+        if (r.agreement) agreement = (await closeWithAgreement(id, { terms: r.agreement, checkinDays: 30 })).status;
+        out.push({ accountId: id, name, ok: true, ...(agreement ? { agreement } : {}) });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });
       }
@@ -2073,7 +2149,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

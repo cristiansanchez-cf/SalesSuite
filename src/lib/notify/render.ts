@@ -18,6 +18,8 @@ export const KINDS: Record<string, KindDef> = {
   contribution_pending: { icon: 'lightbulb', resolvesOnRead: false, href: () => '/admin/playbook?tab=inbox' },
   partner_referred: { icon: 'user-plus', resolvesOnRead: true, href: (n) => `/admin/team/partners/${n.entityKey}` },
   member_added: { icon: 'users', resolvesOnRead: true, href: () => '/admin/team' },
+  agreement_pending: { icon: 'handshake', resolvesOnRead: false, href: (n) => `/admin/accounts/${String(n.params.accountId ?? '')}#agreement` },
+  agreement_closed: { icon: 'handshake', resolvesOnRead: true, href: (n) => `/admin/accounts/${String(n.params.accountId ?? '')}#agreement` },
   member_left: { icon: 'users', resolvesOnRead: true, href: (n) => `/admin/team/repartir?de=${n.entityKey}` },
   account_conflict: { icon: 'shield-alert', resolvesOnRead: false, href: (n) => `/admin/dossiers/${n.entityKey}` },
   sale_to_confirm: { icon: 'wallet', resolvesOnRead: false, href: () => '/admin/commissions/team?tab=ingresos' },
@@ -41,6 +43,8 @@ function texts(n: Notification, locale: Locale): { title: string; detail: string
     case 'contribution_pending': return { title: m.contribution_pending.title(p), detail: p.title ? `«${p.title}»` : null };
     case 'partner_referred': return { title: m.partner_referred.title(p), detail: m.partner_referred.detail };
     case 'member_added': return { title: m.member_added.title(p, (m.role as Record<string, string>)[p.role] ?? p.role), detail: null };
+    case 'agreement_pending': return { title: m.agreement_pending.title(p), detail: m.agreement_pending.detail };
+    case 'agreement_closed': return { title: m.agreement_closed.title(p), detail: null };
     case 'member_left': return { title: m.member_left.title(p), detail: m.member_left.detail(Number(p.dossiers || 0), Number(p.accounts || 0)) };
     case 'account_conflict': return { title: m.account_conflict.title(p, (m.reason as Record<string, string>)[p.reason] ?? m.reason.other), detail: m.account_conflict.detail(p) };
     case 'sale_to_confirm': return { title: m.sale_to_confirm.title(p, money), detail: m.sale_to_confirm.detail };

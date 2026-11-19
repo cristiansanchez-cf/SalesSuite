@@ -1,0 +1,54 @@
+---
+/**
+ * Clientes (docs/CLIENTS.md): los que ya han cerrado, por pago o con acuerdo. Primero los que toca escribir (el próximo
+ * paso vencido) y los que llevan más tiempo sin hablar; con su acuerdo vigente y quién los lleva.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { i18n } from '~/lib/i18n';
+import { clientsMessages } from '~/lib/i18n/messages/clients';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: C, f: fmt } = i18n(Astro, clientsMessages);
+const all = perms.manageAccounts && Astro.url.searchParams.get('ver') !== 'mios';
+const list = await admin.crm.clients({ all });
+const date = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric' });
+const clip = (s: string, n = 220) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+---
+<AdminLayout title={C.title}>
+  <PageHeader eyebrow={C.count(list.length)} title={C.title} lede={C.lede}>
+    {perms.manageAccounts && (
+      <div class="co-tabs" role="tablist">
+        <a class="co-tab" href="/admin/clientes" aria-current={all ? 'page' : undefined}>{C.all}</a>
+        <a class="co-tab" href="/admin/clientes?ver=mios" aria-current={!all ? 'page' : undefined} data-testid="clients-mine">{C.mine}</a>
+      </div>
+    )}
+  </PageHeader>
+  {list.length === 0 ? <EmptyState kind="none" title={C.title} because={C.empty} /> : (
+    <ul class="co-rows" data-testid="clients">
+      {list.map((c) => (
+        <li>
+          <a class:list={['co-row items-start', c.due && 'co-row--attention']} href={`/admin/accounts/${c.id}#agreement`} data-testid="client-row" data-name={c.name}>
+            <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="handshake" size={16} /></span>
+            <span class="co-row__main min-w-0">
+              <span class="co-row-title">{c.name}</span>
+              {c.agreement && <span class="co-body block text-sm" data-ugc>{clip(c.agreement.terms)}</span>}
+              <span class="co-meta">{[c.wonAt ? C.clientSince(date(c.wonAt)) : null, c.quietDays == null ? C.never : C.quiet(c.quietDays), all && c.ownerName ? C.owner(c.ownerName) : null].filter(Boolean).join(' · ')}</span>
+              <span class="co-meta">{C.next}: {c.nextStepAt ? `${date(c.nextStepAt)}${c.nextStep ? ` · ${c.nextStep}` : ''}` : C.noNext}</span>
+            </span>
+            <span class="flex flex-col items-end gap-1">
+              {c.due && <span class="co-badge co-badge--attention" data-testid="client-due">{C.due}</span>}
+              {c.pending && <span class="co-badge" data-testid="client-pending">{C.pendingBadge}</span>}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+</AdminLayout>

@@ -37,6 +37,8 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
       { href: '/admin/leads', label: L.leads, testid: 'tab-leads', show: perms.manageAccounts },
       { href: '/admin/accounts/correos', label: L.emails, testid: 'tab-emails', show: !partner },
     ] }] : []),
+    // Clientes (docs/CLIENTS.md): los ya cerrados, para cuidarlos (acuerdo, contacto periódico).
+    ...(perms.useAccounts ? [{ href: '/admin/clientes', label: L.clients, icon: 'handshake' as IconName, testid: 'nav-clients', tabs: [] }] : []),
     { href: '/admin', label: partner ? L.myAccounts : L.dossiers, icon: (partner ? 'store' : 'file-text') as IconName, testid: 'nav-dossiers', tabs: [
       { href: '/admin', label: partner ? L.myAccounts : L.dossiers, exact: true }, { href: '/admin/dossiers', label: '', show: false }, { href: '/admin/analytics', label: L.analytics, testid: 'tab-analytics' },
     ] },

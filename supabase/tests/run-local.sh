@@ -77,4 +77,5 @@ run supabase/tests/86_public_content_phrases.test.sql
 run supabase/tests/87_assistant_phone_per_space.test.sql
 run supabase/tests/88_member_left_notice.test.sql
 run supabase/tests/89_calendar_feed.test.sql
+run supabase/tests/90_client_agreements.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"
