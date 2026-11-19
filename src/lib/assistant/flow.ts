@@ -104,7 +104,12 @@ export function pastedChat(text: string): string[] {
 /** «He hablado con X… ahora te paso los mensajes»: lo que viene después va con esto. */
 const ANNOUNCE = /(te (paso|mando|env[ií]o|pego|reenv[ií]o|adjunto)|ahora te|luego te|a continuaci[oó]n|i.?ll (send|forward|paste)|here (are|is)|vou (te )?(mandar|enviar|passar|colar)|já te (mando|passo))/iu;
 const CHAT_NOUN = /(mensaje|conversaci|chat|captura|pantallazo|whats|messages?|conversation|screenshots?|mensage|conversa)/iu;
-export const announcesChat = (t: string) => !pastedChat(t).length && ANNOUNCE.test(t) && CHAT_NOUN.test(t);
+// Solo un aviso corto, y al final («…ahora te paso los mensajes»): en un audio largo, «te paso» es parte de lo que cuenta.
+export const announcesChat = (t: string) => {
+  if (t.length > 300 || pastedChat(t).length) return false;
+  const tail = t.slice(-160);
+  return ANNOUNCE.test(tail) && CHAT_NOUN.test(tail);
+};
 /**
  * Pegó a medias: WhatsApp solo deja pegar todos los mensajes copiados si la caja está vacía; si antes escribió «he
  * hablado con X…», solo entra uno. Una sola línea de chat con texto propio delante → lo que contó, sin esa línea.
@@ -294,6 +299,8 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
 
   switch (state.step) {
     case 'context':
+      // «Apúntalo» / «nada»: no hay mensajes que pasar; se apunta lo que contó.
+      if (short(text) && new RegExp(`^(${T.noteIt})${END}`, 'iu').test(text)) return withHeard(await note(state.intro));
       // Lo siguiente (la conversación pegada, o más de lo que contó) va junto con lo de antes.
       return withHeard(await note(`${state.intro}\n\n${text}`));
     case 'confirm':

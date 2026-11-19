@@ -113,6 +113,16 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
   const admin = await d.actAs(tenantId, userId);
   if (!admin) return 'not_member';
   const locale = (await d.db.userLocale(userId).catch(() => null)) ?? 'es';
+  const T0 = assistantMessages[locale as keyof typeof assistantMessages] ?? assistantMessages.es;
+  // Respuesta inmediata (criterio de Cristian): «escribiendo…» nada más llegar, para que se sepa que está en ello y no
+  // escriba más mientras; y con audios o capturas, que tardan, un aviso antes de ponerse.
+  const typing = () => (m.id && d.wa?.typing ? d.wa.typing(phoneId, m.id).catch(() => undefined) : Promise.resolve());
+  await typing();
+  const slow = (m.kind === 'audio' && d.transcribe) || (m.kind === 'image' && d.screenshot);
+  if (slow && d.wa?.sendText && m.mediaId) {
+    await d.wa.sendText(phoneId, m.from, m.kind === 'audio' ? T0.listening : T0.reading).catch(() => undefined);
+    await typing();
+  }
   let incoming: Incoming;
   if (m.kind === 'button' && m.buttonId) incoming = { kind: 'button', id: m.buttonId };
   else if (m.kind === 'audio') {

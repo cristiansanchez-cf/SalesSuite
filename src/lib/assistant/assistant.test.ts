@@ -130,6 +130,19 @@ describe('la conversación', () => {
     await run(ops, { kind: 'button', id: 'save' }, b.state);
     expect((applied[0][0] as { interaction: string }).interaction).toContain('Conversación:\n[23/9/26, 14:04:38] Cristian: Buenas José María!\n[25/9/26, 11:49:41]');
   });
+  test('un audio largo que dice «te paso…» por el medio no se queda esperando; «apúntalo» apunta lo contado', async () => {
+    const { ops } = fakeOps();
+    const long = `He estado con José María de Havana. ${'Le he contado lo de las pantallas y las fotos. '.repeat(20)}Me dijo que te paso los mensajes luego, pero lo importante es que quiere una demo.`;
+    expect((await run(ops, { kind: 'audio', text: long })).state.step).toBe('confirm');
+    const a = await run(ops, { kind: 'text', text: 'He hablado con Havana, ahora te paso los mensajes' });
+    expect(a.replies[0].text).toContain('escribe «apúntalo»');
+    expect((await run(ops, { kind: 'text', text: 'apúntalo' }, a.state)).state.step).toBe('confirm');
+  });
+  test('el audio se repite entero (no a los 55 segundos)', async () => {
+    const { ops } = fakeOps();
+    const long = 'palabra '.repeat(400).trim();
+    expect((await run(ops, { kind: 'audio', text: long })).replies[0].text).toContain(long);
+  });
   test('«ahora te paso los mensajes»: espera y junta lo que llegue después (pegado, reenviado o captura)', async () => {
     const seen: string[] = [];
     const { ops, applied } = fakeOps({ split: async (t) => { seen.push(t); return [{ ...item('Havana'), candidates: [cand('h1', 'Havana', 1)] }]; } });
@@ -320,11 +333,13 @@ describe('de punta a punta (demo)', () => {
   const REP = '11111111-1111-4111-8111-111111111111';
   const sent: Array<{ text: string; buttons?: string[] }> = [];
   const templates: unknown[][] = [];
+  const typed: string[] = [];
   const wa = {
     async sendTemplate(...a: unknown[]) { templates.push(a); return { id: null }; },
     async sendText(_p: string, _to: string, text: string) { sent.push({ text }); return { id: null }; },
     async sendButtons(_p: string, _to: string, text: string, b: Array<{ id: string }>) { sent.push({ text, buttons: b.map((x) => x.id) }); return { id: null }; },
     async media() { return { bytes: new Uint8Array([1]), type: 'audio/ogg' }; },
+    async typing(_p: string, id: string) { typed.push(id); },
   };
   const deps = () => ({
     db: demoAssistantDb(), wa, transcribe: fixtureTranscriber, now: new Date(),
@@ -332,7 +347,7 @@ describe('de punta a punta (demo)', () => {
   });
   const msg = (id: string, over: Partial<Inbound>): Inbound => ({ phoneId: '123', from: '+34699000111', text: '', at: new Date(), id, kind: 'text', ...over });
   beforeEach(() => {
-    resetDemoDb(); resetDemoAssistant(); demoReminderLog().clear(); sent.length = 0; templates.length = 0;
+    resetDemoDb(); resetDemoAssistant(); demoReminderLog().clear(); sent.length = 0; templates.length = 0; typed.length = 0;
     process.env.AI_RESEARCH_FIXTURE = '1';
     demoDb().users.find((u) => u.id === REP)!.phone = '699 00 01 11';
   });
@@ -346,9 +361,12 @@ describe('de punta a punta (demo)', () => {
   test('un audio → lo entiende → Guardar → la interacción queda en Club Sol a su nombre', async () => {
     const member = { tenantId: ENJOY, userId: REP };
     expect(await processAssistant(deps(), '123', member, msg('w1', { kind: 'audio', mediaId: 'media-1' }))).toBe('handled');
-    expect(sent[0].text).toContain('He entendido');
+    // Nada más llegar: «escribiendo…» y, como es un audio, «Escuchando tu audio…» antes de ponerse.
+    expect(typed).toEqual(['w1', 'w1']);
+    expect(sent[0].text).toContain('Escuchando tu audio');
+    expect(sent[1].text).toContain('He entendido');
     // El audio de ejemplo no lleva «Sitio: …» (lo que separa la IA de pruebas): no saca nada y lo dice.
-    expect(sent[1].text).toContain('No he sacado nada');
+    expect(sent[2].text).toContain('No he sacado nada');
     sent.length = 0;
     await processAssistant(deps(), '123', member, msg('w2', { text: 'Club Sol: hablé con Marta, quieren pantalla los viernes' }));
     expect(sent[0].buttons).toEqual(['save', 'change']);
@@ -366,8 +384,9 @@ describe('de punta a punta (demo)', () => {
     const member = { tenantId: ENJOY, userId: REP };
     const { fixtureScreenshotReader } = await import('./screenshot');
     await processAssistant({ ...deps(), screenshot: fixtureScreenshotReader }, '123', member, msg('i1', { kind: 'image', mediaId: 'media-2', text: 'Club Sol' }));
-    expect(sent[0].text).toContain('📸 He leído 2 mensajes con Sala Marina');
-    expect(sent[1].buttons).toEqual(['save', 'change']);
+    expect(sent[0].text).toContain('Leyendo tu captura');
+    expect(sent[1].text).toContain('📸 He leído 2 mensajes con Sala Marina');
+    expect(sent[2].buttons).toEqual(['save', 'change']);
     await processAssistant(deps(), '123', member, msg('i2', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
     expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;

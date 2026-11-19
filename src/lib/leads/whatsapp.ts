@@ -20,6 +20,8 @@ export interface WhatsApp {
   sendButtons?(phoneId: string, to: string, text: string, buttons: Array<{ id: string; title: string }>): Promise<{ id: string | null }>;
   /** Texto con una lista desplegable de hasta 10 opciones (cuando no caben en 3 botones). */
   sendList?(phoneId: string, to: string, text: string, button: string, rows: Array<{ id: string; title: string }>): Promise<{ id: string | null }>;
+  /** Marca su mensaje como leído y enseña «escribiendo…» (hasta 25 s o hasta que respondamos). */
+  typing?(phoneId: string, messageId: string): Promise<void>;
   /** Un archivo recibido (audio): los bytes y su tipo. */
   media?(mediaId: string): Promise<{ bytes: Uint8Array; type: string }>;
 }
@@ -45,6 +47,13 @@ export function cloudWhatsApp(token: string, fetchImpl: typeof fetch = fetch): W
       to: to.replace(/^\+/, ''), type: 'interactive',
       interactive: { type: 'list', body: { text: text.slice(0, 1024) }, action: { button: button.slice(0, 20), sections: [{ rows: rows.slice(0, 10).map((r) => ({ id: r.id.slice(0, 200), title: r.title.slice(0, 24) })) }] } },
     }),
+    async typing(phoneId, messageId) {
+      // Sin coste ni registro: solo el aviso de que está pasando algo (docs/ASSISTANT.md §Respuesta inmediata).
+      await fetchImpl(`${GRAPH}/${encodeURIComponent(phoneId)}/messages`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: messageId, typing_indicator: { type: 'text' } }),
+      }).catch(() => null);
+    },
     async media(mediaId) {
       const meta = await fetchImpl(`${GRAPH}/${encodeURIComponent(mediaId)}`, { headers: { Authorization: `Bearer ${token}` } });
       const m = (await meta.json().catch(() => null)) as { url?: string; mime_type?: string; file_size?: number } | null;

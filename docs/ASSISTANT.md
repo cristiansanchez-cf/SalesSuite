@@ -75,6 +75,16 @@ cuál, y avisa si alguien pone el número del propio asistente (un número no pu
    clave: «escríbemelo».
 6. «cancelar» empieza de cero; lo que queda a medias caduca a la media hora. «hola» o «ayuda»: cómo se usa.
 
+### Respuesta inmediata
+
+Criterio de Cristian: tarda 5–6 s en contestar y, mientras, uno se pone nervioso y escribe más. Nada más llegar un
+mensaje se marca como leído y sale **«escribiendo…»** (Cloud API: `status: read` + `typing_indicator`, hasta 25 s o
+hasta que contestemos; sin coste). Con un **audio** o una **captura**, que tardan, antes de ponerse llega «🎧 Escuchando
+tu audio… dame unos segundos» (o «👀 Leyendo tu captura…») y vuelve el «escribiendo…».
+
+El eco «🎙️ He entendido: «…»» repite el audio entero (hasta 3.500 caracteres, ~4 min de habla); antes se cortaba a 800
+(~55 s) y parecía que no lo había entendido entero, aunque sí lo había transcrito todo.
+
 ### Conversación en varios mensajes
 
 Criterio de Cristian: al copiar mensajes de WhatsApp (lo ideal: salen con fecha y quién los dijo), WhatsApp solo deja
@@ -83,8 +93,10 @@ uno.
 
 - **Pegado a medias** (`halfPasted`): una sola línea con fecha de WhatsApp y texto propio delante → no apunta nada; guarda
   lo que contó y responde «Pega primero los mensajes (solo eso) y yo lo junto con lo que me acabas de contar».
-- **«Ahora te paso los mensajes»** (`announcesChat`): espera (estado `context`, media hora) y junta lo que llegue: la
-  conversación pegada, los reenviados (sin preguntar de qué empresa: ya lo dijo; se cierra con «listo») o capturas.
+- **«Ahora te paso los mensajes»** (`announcesChat`, solo en un mensaje corto y al final: en un audio largo «te paso»
+  es parte de lo que cuenta): espera (estado `context`, media hora) y junta lo que llegue: la
+  conversación pegada, los reenviados (sin preguntar de qué empresa: ya lo dijo; se cierra con «listo») o capturas. Si al
+  final no hay mensajes, «apúntalo» apunta lo que contó.
 - **Después del resumen**: si pega la conversación que faltaba, se añade a lo que contó (no es una corrección).
 - En todos los casos la conversación va literal en la interacción («Conversación:»); también desde «Apuntar con IA» en la
   web. En la ficha se pinta como un chat (lib/crm/convo.ts + components/admin/ChatThread.astro): el resumen arriba, los
