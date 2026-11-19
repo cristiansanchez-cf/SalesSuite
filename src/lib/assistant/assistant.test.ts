@@ -88,6 +88,32 @@ describe('la conversación', () => {
     await run(ops, { kind: 'text', text: 'ok' }, c.state);
     expect(applied[0][0]).toMatchObject({ accountId: null, create: 'Bar Nuevo' });
   });
+  test('captura de una conversación: la lee, busca la empresa por el nombre de arriba y guarda las frases tal cual', async () => {
+    const { ops, applied } = fakeOps({ search: async (q) => (/sol/i.test(q) ? [cand('a1', 'Club Sol', 1)] : []) });
+    const lines = ['Nosotros · 10:02: ¿Os paso la propuesta?', 'Cliente (Club Sol) · 10:15: Sí, pásamela'];
+    const a = await run(ops, { kind: 'image', lines, contact: 'Club Sol', caption: '', channel: 'whatsapp', ready: true });
+    expect(a.replies[0].text).toContain('📸 He leído 2 mensajes con Club Sol');
+    expect(a.replies[1].text).toContain('WhatsApp · contestó');
+    await run(ops, { kind: 'button', id: 'save' }, a.state);
+    expect(applied[0][0]).toMatchObject({ accountId: 'a1', channel: 'whatsapp', outcome: 'replied', interaction: lines.join('\n') });
+  });
+  test('captura: el pie de foto manda sobre el nombre de arriba; varias capturas se juntan; Instagram como canal', async () => {
+    const { ops, applied } = fakeOps({ search: async (q) => (/salamandra/i.test(q) ? [cand('s1', 'Grupo Salamandra', 1)] : []) });
+    const a = await run(ops, { kind: 'image', lines: ['Cliente (Marta): Hola'], contact: 'Marta', caption: '', channel: 'instagram', ready: true });
+    expect(a.replies.at(-1)!.text).toContain('No encuentro «Marta»');
+    const b = await run(ops, { kind: 'image', lines: ['Nosotros: ¿Os viene el jueves?'], contact: 'Marta', caption: '', channel: 'instagram', ready: true }, a.state);
+    expect(b.replies).toHaveLength(0);
+    const c = await run(ops, { kind: 'text', text: 'Salamandra' }, b.state);
+    await run(ops, { kind: 'text', text: 'sí' }, c.state);
+    expect(applied[0][0]).toMatchObject({ accountId: 's1', channel: 'instagram', interaction: 'Cliente (Marta): Hola\nNosotros: ¿Os viene el jueves?' });
+    const d = await run(ops, { kind: 'image', lines: ['Cliente: Vale'], contact: 'Marta', caption: 'Grupo Salamandra', channel: 'whatsapp', ready: true });
+    expect(d.replies[1].text).toContain('Grupo Salamandra');
+  });
+  test('captura que no es una conversación, o sin lector: lo dice', async () => {
+    const { ops } = fakeOps();
+    expect((await run(ops, { kind: 'image', lines: null, contact: '', caption: '', channel: 'other', ready: true })).replies[0].text).toContain('No veo una conversación');
+    expect((await run(ops, { kind: 'image', lines: null, contact: '', caption: '', channel: 'other', ready: false })).replies[0].text).toContain('Aún no puedo leer capturas');
+  });
   test('audio: dice lo que ha entendido; sin transcripción pide texto', async () => {
     const { ops } = fakeOps();
     const a = await run(ops, { kind: 'audio', text: 'He estado en Club Sol' });
@@ -181,9 +207,11 @@ describe('webhook de Meta: lo que necesita el asistente', () => {
       { from: '34699000111', id: 'm1', timestamp: '1762164000', type: 'text', text: { body: 'Hola' }, context: { forwarded: true } },
       { from: '34699000111', id: 'm2', timestamp: '1762164000', type: 'audio', audio: { id: 'media-1', mime_type: 'audio/ogg' } },
       { from: '34699000111', id: 'm3', timestamp: '1762164000', type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'save', title: 'Guardar' } } },
+      { from: '34699000111', id: 'm5', timestamp: '1762164000', type: 'image', image: { id: 'media-2', mime_type: 'image/jpeg', caption: 'Club Sol' } },
     ] } }] }] };
     const { inbound } = parseWebhook(body);
-    expect(inbound.map((m) => [m.kind, m.forwarded, m.mediaId, m.buttonId])).toEqual([['text', true, null, null], ['audio', false, 'media-1', null], ['button', false, null, 'save']]);
+    expect(inbound.map((m) => [m.kind, m.forwarded, m.mediaId, m.buttonId])).toEqual([['text', true, null, null], ['audio', false, 'media-1', null], ['button', false, null, 'save'], ['image', false, 'media-2', null]]);
+    expect(inbound[3].text).toBe('Club Sol');
   });
   test('el botón de una plantilla (el «Sí, prepáralos» del recordatorio)', () => {
     const body = { entry: [{ changes: [{ value: { metadata: { phone_number_id: '123' }, messages: [
@@ -237,6 +265,19 @@ describe('de punta a punta (demo)', () => {
     expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
     const act = demoDb().crm_activity.find((a) => a.account_id === sol.id && a.user_id === REP && /Marta/.test(a.note ?? ''));
+    expect(act).toBeTruthy();
+  });
+
+  test('una captura de la conversación → la lee → Guardar → la conversación literal queda en Club Sol', async () => {
+    const member = { tenantId: ENJOY, userId: REP };
+    const { fixtureScreenshotReader } = await import('./screenshot');
+    await processAssistant({ ...deps(), screenshot: fixtureScreenshotReader }, '123', member, msg('i1', { kind: 'image', mediaId: 'media-2', text: 'Club Sol' }));
+    expect(sent[0].text).toContain('📸 He leído 2 mensajes con Sala Marina');
+    expect(sent[1].buttons).toEqual(['save', 'change']);
+    await processAssistant(deps(), '123', member, msg('i2', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
+    expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
+    const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
+    const act = demoDb().crm_activity.find((a) => a.account_id === sol.id && /Nosotros · 10:02: Hola Marta/.test(a.note ?? '') && /Cliente \(Sala Marina\) · 10:15: Sí, pásamela/.test(a.note ?? ''));
     expect(act).toBeTruthy();
   });
 
@@ -373,5 +414,16 @@ describe('un número para todas las empresas (docs/ASSISTANT.md)', () => {
   test('el webhook entiende la elección de una lista', () => {
     const { inbound } = parseWebhook({ entry: [{ changes: [{ value: { metadata: { phone_number_id: HUB }, messages: [{ from: '34699000111', id: 'l1', timestamp: '1', type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: `${HUB_PICK}${ALT}`, title: 'Otra' } } }] } }] }] });
     expect(inbound[0]).toMatchObject({ kind: 'button', buttonId: `${HUB_PICK}${ALT}`, text: 'Otra' });
+  });
+});
+
+describe('lector de capturas', () => {
+  test('limpia lo que devuelve Claude y lo escribe con quién lo dijo', async () => {
+    const { cleanShot, shotText } = await import('./screenshot');
+    const s = cleanShot({ isChat: true, contact: 'Club Sol', channel: 'whatsapp', lines: [{ from: 'us', text: ' Hola ', time: '10:02' }, { from: 'x', text: 'Qué tal', time: '' }, { from: 'us', text: '', time: '' }] })!;
+    expect(s.lines).toHaveLength(2);
+    expect(shotText(s, { us: 'Nosotros', them: 'Cliente' })).toEqual(['Nosotros · 10:02: Hola', 'Cliente (Club Sol): Qué tal']);
+    expect(cleanShot({ isChat: true, lines: [] })!.isChat).toBe(false);
+    expect(cleanShot({ isChat: true, channel: 'fax', lines: [{ from: 'us', text: 'a' }] })!.channel).toBe('other');
   });
 });

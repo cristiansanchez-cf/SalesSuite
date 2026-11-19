@@ -34,6 +34,8 @@ export type Incoming =
   | { kind: 'text'; text: string; forwarded?: boolean }
   | { kind: 'button'; id: string }
   | { kind: 'audio'; text: string | null }
+  /** Captura de una conversación (screenshot.ts): sus líneas («Nosotros: …»), el nombre de arriba y el pie de foto. */
+  | { kind: 'image'; lines: string[] | null; contact: string; caption: string; channel: string; ready: boolean }
   | { kind: 'other' };
 export type Reply = { text: string; buttons?: Array<{ id: string; title: string }> };
 
@@ -43,8 +45,8 @@ export type State =
   | { step: 'idle' }
   | { step: 'pick'; at: string; pending: Pending[]; i: number }
   | { step: 'confirm'; at: string; pending: Pending[] }
-  | { step: 'forward'; at: string; texts: string[] }
-  | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[] }
+  | { step: 'forward'; at: string; texts: string[]; channel?: string }
+  | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
   | { step: 'reminder'; at: string; items: ReminderItem[] };
 
 /** Lo que queda a medias caduca a la media hora (luego se empieza de nuevo). */
@@ -73,9 +75,9 @@ function rowOf(p: Pending) {
   };
 }
 /** Un apunte hecho a mano (mensajes reenviados): solo la interacción. */
-function forwardedItem(name: string, texts: string[], today: string): NoteItem {
+function forwardedItem(name: string, texts: string[], today: string, channel = 'whatsapp'): NoteItem {
   return {
-    venue: name, interaction: texts.join('\n').slice(0, 4000), keyFacts: [], facts: [], fit: null, fields: {}, channel: 'whatsapp' as Channel, outcome: 'replied' as Outcome,
+    venue: name, interaction: texts.join('\n').slice(0, 4000), keyFacts: [], facts: [], fit: null, fields: {}, channel: (['instagram', 'email'].includes(channel) ? channel : 'whatsapp') as Channel, outcome: 'replied' as Outcome,
     day: today, qualification: {}, nextStep: null, nextDays: null, discard: null, discardWhy: null, entity: null, worksAt: [], people: [], contact: {},
   };
 }
@@ -130,12 +132,12 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return next(pending);
   };
   /** Los reenviados ya tienen empresa: al resumen. */
-  const forwardTo = (texts: string[], choice: Choice) => confirm([{ item: forwardedItem(choice.name, texts, today), candidates: [], choice }]);
-  const forwardSearch = async (texts: string[], q: string): Promise<FlowResult> => {
+  const forwardTo = (texts: string[], choice: Choice, channel?: string) => confirm([{ item: forwardedItem(choice.name, texts, today, channel), candidates: [], choice }]);
+  const forwardSearch = async (texts: string[], q: string, channel?: string): Promise<FlowResult> => {
     const c = await d.ops.search(q);
-    if (strong(c) || (c[0] && c[0].score >= 0.99)) return forwardTo(texts, { accountId: c[0].id, create: null, name: c[0].name });
+    if (strong(c) || (c[0] && c[0].score >= 0.99)) return forwardTo(texts, { accountId: c[0].id, create: null, name: c[0].name }, channel);
     const opts = c.slice(0, 5).map((x, n) => `${n + 1}) ${x.name}${x.zone ? ` · ${x.zone}` : ''}`);
-    return { state: { step: 'forward-pick', at, texts, query: q, candidates: c.slice(0, 5) }, replies: [say(opts.length ? T.whichOne(q, opts, q) : T.notFound(q))] };
+    return { state: { step: 'forward-pick', at, texts, query: q, candidates: c.slice(0, 5), channel }, replies: [say(opts.length ? T.whichOne(q, opts, q) : T.notFound(q))] };
   };
 
   /** Una propuesta de mensaje por empresa, cada una con «Hecho» y «Mañana». */
@@ -173,6 +175,19 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return { state, replies: [say(T.expired)] };
   }
   if (msg.kind === 'other') return { state, replies: [say(T.onlyText)] };
+  // ---- Captura de una conversación: como los reenviados, con la conversación literal (quién dijo qué).
+  if (msg.kind === 'image') {
+    if (!msg.ready) return { state, replies: [say(T.noShots)] };
+    if (!msg.lines?.length) return { state, replies: [say(T.notAChat)] };
+    // Otra captura de la misma conversación: se junta (sin contestar, como los reenviados).
+    if (state.step === 'forward' || state.step === 'forward-pick') {
+      return { state: { ...state, at, texts: [...state.texts, ...msg.lines].slice(-MAX_FORWARDED * 3) }, replies: [] };
+    }
+    const read = say(T.shotRead(msg.lines.length, msg.contact));
+    const q = msg.caption || msg.contact;
+    if (q) { const r = await forwardSearch(msg.lines, q.slice(0, 160), msg.channel); return { ...r, replies: [read, ...r.replies] }; }
+    return { state: { step: 'forward', at, texts: msg.lines, channel: msg.channel }, replies: [read, say(T.forwardedAsk)] };
+  }
   if (msg.kind === 'audio' && !msg.text) return { state, replies: [say(T.noAudio)] };
   const text = (msg.text ?? '').trim().slice(0, 12000);
   const heard = msg.kind === 'audio' ? [say(T.heard(text))] : [];
@@ -207,12 +222,12 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return withHeard(next(pending));
     }
     case 'forward':
-      return withHeard(await forwardSearch(state.texts, text));
+      return withHeard(await forwardSearch(state.texts, text, state.channel));
     case 'forward-pick': {
       const n = numberOf(text);
-      if (n === 0) return withHeard(forwardTo(state.texts, { accountId: null, create: state.query.slice(0, 160), name: state.query.slice(0, 160) }));
-      if (n != null && state.candidates[n - 1]) { const c = state.candidates[n - 1]; return withHeard(forwardTo(state.texts, { accountId: c.id, create: null, name: c.name })); }
-      return withHeard(await forwardSearch(state.texts, text));
+      if (n === 0) return withHeard(forwardTo(state.texts, { accountId: null, create: state.query.slice(0, 160), name: state.query.slice(0, 160) }, state.channel));
+      if (n != null && state.candidates[n - 1]) { const c = state.candidates[n - 1]; return withHeard(forwardTo(state.texts, { accountId: c.id, create: null, name: c.name }, state.channel)); }
+      return withHeard(await forwardSearch(state.texts, text, state.channel));
     }
   }
   return withHeard(await note(text));

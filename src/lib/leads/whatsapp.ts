@@ -96,7 +96,7 @@ export function validSignature(raw: string, header: string | null, appSecret: st
 export interface Inbound {
   phoneId: string; from: string; text: string; at: Date; id: string;
   /** Para el asistente: qué es (texto, audio, botón u otra cosa), si es reenviado, el audio y el botón pulsado. */
-  kind?: 'text' | 'audio' | 'button' | 'other'; forwarded?: boolean; mediaId?: string | null; buttonId?: string | null;
+  kind?: 'text' | 'audio' | 'button' | 'image' | 'other'; forwarded?: boolean; mediaId?: string | null; buttonId?: string | null;
 }
 export interface StatusUpdate { phoneId: string; id: string; status: string; error: string | null }
 
@@ -111,16 +111,17 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
       const phoneId = String((v.metadata as { phone_number_id?: string } | undefined)?.phone_number_id ?? '');
       for (const m of (v.messages as Record<string, unknown>[] | undefined) ?? []) {
         const inter = m.interactive as { button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } } | undefined;
-        const text = (m.text as { body?: string } | undefined)?.body ?? (m.button as { text?: string } | undefined)?.text
+        const image = m.image as { id?: string; caption?: string } | undefined;
+        const text = (m.text as { body?: string } | undefined)?.body ?? (m.button as { text?: string } | undefined)?.text ?? image?.caption
           ?? inter?.button_reply?.title ?? inter?.list_reply?.title ?? `[${String(m.type ?? 'mensaje')}]`;
         const type = String(m.type ?? '');
         const ctx = (m.context ?? {}) as { forwarded?: boolean; frequently_forwarded?: boolean };
         // Botón de un mensaje interactivo (su id) o de respuesta rápida de una plantilla (su payload, que es su texto).
         const tplButton = (m.button as { payload?: string; text?: string } | undefined);
         const buttonId = inter?.button_reply?.id ?? inter?.list_reply?.id ?? (tplButton ? tplButton.payload || tplButton.text || null : null);
-        const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : (type === 'interactive' || type === 'button') && buttonId ? 'button' : 'other';
+        const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : type === 'image' && image?.id ? 'image' : (type === 'interactive' || type === 'button') && buttonId ? 'button' : 'other';
         inbound.push({ phoneId, from: `+${String(m.from ?? '').replace(/^\+/, '')}`, text: String(text).slice(0, kind === 'text' ? 12000 : 2000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
-          kind, forwarded: !!(ctx.forwarded || ctx.frequently_forwarded), mediaId: (m.audio as { id?: string } | undefined)?.id ?? null, buttonId });
+          kind, forwarded: !!(ctx.forwarded || ctx.frequently_forwarded), mediaId: (m.audio as { id?: string } | undefined)?.id ?? image?.id ?? null, buttonId });
       }
       for (const st of (v.statuses as Record<string, unknown>[] | undefined) ?? []) {
         const err = (st.errors as { title?: string; message?: string }[] | undefined)?.[0];

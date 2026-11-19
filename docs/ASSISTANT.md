@@ -57,9 +57,17 @@ cuál, y avisa si alguien pone el número del propio asistente (un número no pu
    **Guardar** / **Cambiar** (o «sí» / «no»). «Cambiar» no guarda nada: se manda otra vez.
 3. **Reenviados**: los mensajes reenviados se juntan; a la primera pregunta de qué empresa es la conversación. Con el
    nombre, el resumen como «WhatsApp · contestó» con los textos juntos.
-4. **Audios**: Whisper (`OPENAI_API_KEY`, modelo `whisper-1`); responde «He entendido: «…»» y sigue como un texto. Sin
+4. **Capturas de pantalla** (`src/lib/assistant/screenshot.ts`): la captura de una conversación con un cliente (WhatsApp,
+   Instagram, email…). Claude (`NOTES_MODEL`, con la imagen) saca los mensajes **tal cual**, en orden, con quién dijo
+   cada uno, y el nombre que sale arriba. Se apunta como los reenviados: busca la empresa por el **pie de foto** si lo
+   hay, si no por ese nombre (si duda, pregunta), y guarda la interacción con la conversación literal
+   («Nosotros · 10:02: …» / «Cliente (Marta) · 10:15: …»), canal WhatsApp, Instagram o email. Varias capturas seguidas
+   se juntan. Así queda el registro de **cómo le hablamos**, para ver después qué funciona (criterio de Cristian). No
+   se guarda la imagen, solo el texto. Coste: `assistant.screenshot` en Costes. Sin `ANTHROPIC_API_KEY`: «Aún no puedo
+   leer capturas». Si no es una conversación: lo dice.
+5. **Audios**: Whisper (`OPENAI_API_KEY`, modelo `whisper-1`); responde «He entendido: «…»» y sigue como un texto. Sin
    clave: «escríbemelo».
-5. «cancelar» empieza de cero; lo que queda a medias caduca a la media hora. «hola» o «ayuda»: cómo se usa.
+6. «cancelar» empieza de cero; lo que queda a medias caduca a la media hora. «hola» o «ayuda»: cómo se usa.
 
 ## Técnica
 
@@ -110,4 +118,5 @@ pregunta espera su respuesta todo el día (14 horas).
 
 ## Pendiente
 
-- Fotos y documentos (hoy: «De momento apunto texto y audios»).
+- Documentos (PDF) y fotos que no son conversaciones.
+- Ver en «Qué ha funcionado» qué frases y aperturas acaban en cita o en venta (las conversaciones ya se guardan literales).

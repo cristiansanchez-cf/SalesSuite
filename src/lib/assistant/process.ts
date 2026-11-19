@@ -11,12 +11,16 @@ import type { Inbound, WhatsApp } from '../leads/whatsapp';
 import type { AssistantDb, Member } from './db';
 import { handle, type AssistantOps, type Incoming, type Reply } from './flow';
 import type { Transcriber } from './transcribe';
+import { shotText, type ScreenshotReader } from './screenshot';
+import { assistantMessages } from './messages';
 import { withUsageScope } from '../usage/meter';
 
 export interface AssistantDeps {
   db: AssistantDb;
   wa: WhatsApp | null;
   transcribe: Transcriber | null;
+  /** Lee capturas de conversaciones (Claude). */
+  screenshot?: ScreenshotReader | null;
   actAs: (tenantId: string, userId: string) => Promise<AdminContext | null>;
   now: Date;
 }
@@ -91,6 +95,17 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
       try { text = (await d.transcribe(await d.wa.media(m.mediaId), locale)) || null; } catch (e) { console.warn('[assistant] audio', e instanceof Error ? e.message : e); }
     }
     incoming = { kind: 'audio', text };
+  } else if (m.kind === 'image') {
+    // Captura de una conversación: la conversación literal (quién dijo qué) y el nombre de arriba.
+    let shot: Awaited<ReturnType<ScreenshotReader>> = null;
+    if (d.screenshot && m.mediaId && d.wa?.media) {
+      try { shot = await d.screenshot(await d.wa.media(m.mediaId)); } catch (e) { console.warn('[assistant] captura', e instanceof Error ? e.message : e); }
+    }
+    const T = assistantMessages[locale as keyof typeof assistantMessages] ?? assistantMessages.es;
+    const caption = m.text && !/^\[image\]$/.test(m.text) ? m.text.trim() : '';
+    incoming = shot?.isChat
+      ? { kind: 'image', lines: shotText(shot, { us: T.shotUs, them: T.shotThem }), contact: shot.contact, caption, channel: shot.channel, ready: !!d.screenshot }
+      : { kind: 'image', lines: null, contact: '', caption, channel: 'other', ready: !!d.screenshot };
   } else if (m.kind === 'other') incoming = { kind: 'other' };
   else incoming = { kind: 'text', text: m.text, forwarded: !!m.forwarded };
 
