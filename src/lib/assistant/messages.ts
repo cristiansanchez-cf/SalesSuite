@@ -3,7 +3,7 @@ import { defineMessages } from '../i18n/core';
 
 interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
 interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
-interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null }
+interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null }
 const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 const es = {
@@ -11,7 +11,7 @@ const es = {
   willSave: 'Esto es lo que guardo:',
   summary: (s: Sum) => [`*${s.name}*${s.isNew ? ' (nueva)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
     s.keyFacts.length ? `Lo que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
-    s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'})` : ''}` : ''].filter(Boolean).join('\n'),
+    s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'}${s.nextTime ? `, a las ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
   save: 'Guardar', change: 'Cambiar',
   whichOne: (venue: string, opts: string[], create: string) => opts.length
     ? `¿Cuál es «${venue}»?\n${opts.join('\n')}\n0) Crear «${create}»\n\nResponde con el número (o escribe el nombre bien).`
@@ -71,7 +71,7 @@ export const assistantMessages = defineMessages({
     willSave: 'This is what I will save:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (new)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `“${clip(s.interaction)}”` : '',
       s.keyFacts.length ? `What we know: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
-      s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'})` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'}${s.nextTime ? `, at ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: 'Save', change: 'Change',
     whichOne: (venue, opts, create) => opts.length
       ? `Which one is “${venue}”?\n${opts.join('\n')}\n0) Create “${create}”\n\nReply with the number (or type the name properly).`
@@ -127,7 +127,7 @@ export const assistantMessages = defineMessages({
     willSave: 'Isto é o que vou guardar:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (nova)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `O que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
-      s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'})` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'}${s.nextTime ? `, às ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: 'Guardar', change: 'Mudar',
     whichOne: (venue, opts, create) => opts.length
       ? `Qual é «${venue}»?\n${opts.join('\n')}\n0) Criar «${create}»\n\nResponde com o número (ou escreve bem o nome).`
@@ -183,7 +183,7 @@ export const assistantMessages = defineMessages({
     willSave: '이렇게 저장할게요:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (새 회사)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `알고 있는 것: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
-      s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후)` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후${s.nextTime ? ` ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: '저장', change: '수정',
     whichOne: (venue, opts, create) => opts.length
       ? `«${venue}»은(는) 어느 곳인가요?\n${opts.join('\n')}\n0) «${create}» 새로 만들기\n\n번호로 답하거나 이름을 정확히 적어 주세요.`

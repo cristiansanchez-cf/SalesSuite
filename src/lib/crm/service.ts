@@ -2,6 +2,7 @@
  * CRM, fase 2 (docs/CRM_DINAMICO.md): empresas con grupo, personas con su papel en cada empresa, alta rápida, listas e
  * importación con deshacer. Las reglas de acceso las aplica Postgres (RLS); aquí se valida, se traduce y se orquesta.
  */
+import { cleanTime, DEFAULT_TZ, localDay, zonedToUtc } from './when';
 import { z } from 'zod';
 import type { AdminDb } from '../admin/db';
 import { can } from '../admin/permissions';
@@ -89,10 +90,19 @@ export const activitySchema = z.object({
   happenedAt: z.string().max(40).optional().transform((v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : undefined)),
 });
 export const nextStepSchema = z.object({
-  at: z.string().max(40).optional().transform((v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v.length <= 10 ? `${v}T10:00:00` : v).toISOString() : null)),
+  at: z.string().max(40).optional(),
+  /** Hora (HH:MM) en la zona de quien lo apunta: con ella el calendario lo pone a esa hora (docs/CALENDAR.md). */
+  time: z.string().max(10).optional().or(z.null()),
+  tz: z.string().max(60).optional().or(z.null()),
   channel: z.enum(CHANNELS).nullable().optional().or(z.literal('').transform(() => null)),
   contactId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
   step: opt(1000),
+}).transform(({ time, tz, at: raw, ...rest }) => {
+  const v = raw && !Number.isNaN(Date.parse(raw)) ? raw : null;
+  const hhmm = cleanTime(time);
+  // Solo el día: las 10:00 UTC (el «sin hora», que el calendario pinta todo el día). Con hora: esa hora en su zona.
+  const at = !v ? null : v.length <= 10 ? (hhmm ? zonedToUtc(v, hhmm, tz || DEFAULT_TZ) : new Date(`${v}T10:00:00Z`)).toISOString() : new Date(v).toISOString();
+  return { ...rest, at };
 });
 
 function parse<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
@@ -1484,6 +1494,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     qualification: z.record(z.string(), z.string()).default({}),
     nextStep: z.string().trim().max(300).nullable().optional().transform((v) => v || null),
     nextDays: z.number().int().min(0).max(365).nullable().optional(),
+    nextTime: z.string().max(10).nullable().optional(),
+    /** Zona horaria de quien apunta (para la hora del próximo paso). */
+    tz: z.string().max(60).nullable().optional(),
     /** Descartar (si quien apunta dijo que sí a la propuesta de la IA, §23). */
     discard: z.enum(DISCARD_REASONS).nullable().optional(),
     /** Tipo de la empresa nueva (§24: promotora, DJ…) y dónde trabaja (enlaces con días y frecuencia). */
@@ -1546,8 +1559,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         const a = await accounts.getAccount(id);
         if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
         name = a.name;
-        const at = r.nextDays != null ? new Date(Date.now() + r.nextDays * 86_400_000).toISOString().slice(0, 10) : undefined;
-        const next = r.nextStep || at ? { step: r.nextStep ?? undefined, at } : undefined;
+        // El día en su zona (hoy + N días) y, si dijo la hora, a esa hora.
+        const tzNow = r.tz || DEFAULT_TZ;
+        const at = r.nextDays != null ? localDay(new Date(Date.now() + r.nextDays * 86_400_000), tzNow) : undefined;
+        const next = r.nextStep || at ? { step: r.nextStep ?? undefined, at, time: at ? r.nextTime ?? null : null, tz: tzNow } : undefined;
         if (r.interaction) await logActivity(id, { channel: r.channel, outcome: r.outcome, note: r.interaction, happenedAt: r.day ? `${r.day}T12:00:00` : undefined }, next);
         else if (next) await setNextStep(id, next);
         // Lo que sabemos (lo nuevo primero) y los campos de la ficha, en una sola escritura.

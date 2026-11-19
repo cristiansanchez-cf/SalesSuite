@@ -53,6 +53,8 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
     // La ciudad de las empresas nuevas (places.ts) → su zona, creándola si falta (como el buscador de ciudades del CRM).
     async apply(rows) {
       const out = [];
+      // La hora del próximo paso, en su zona horaria (la de su resumen de la mañana).
+      const tz = (await admin.notifications.dailyPref().catch(() => null))?.timezone ?? 'Europe/Madrid';
       for (const r of rows as Array<Record<string, unknown>>) {
         const { place, ...row } = r;
         let zoneId: string | null = null;
@@ -62,7 +64,7 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
             zoneId = path ? await admin.accounts.ensurePath(path) : await admin.crm.pickZone(place);
           } catch (e) { console.warn('[assistant] ciudad', e instanceof Error ? e.message : e); }
         }
-        out.push({ ...row, ...(zoneId ? { zoneId } : {}) });
+        out.push({ ...row, tz, ...(zoneId ? { zoneId } : {}) });
       }
       return admin.crm.notesApply(out);
     },

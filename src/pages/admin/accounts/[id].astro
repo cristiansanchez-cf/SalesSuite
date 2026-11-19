@@ -1,5 +1,6 @@
 ---
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
+import { localDay, localTime } from '~/lib/crm/when';
 import ChatThread from '~/components/admin/ChatThread.astro';
 import { splitConvo } from '~/lib/crm/convo';
 import { dossierFromAccount } from '~/lib/admin/from-account';
@@ -54,6 +55,8 @@ import { renderDoc } from '~/lib/notion/doc';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
+// Zona horaria de quien mira (la de su resumen de la mañana): la hora del próximo paso va en la suya.
+const myTz = (await admin.notifications.dailyPref().catch(() => null))?.timezone ?? 'Europe/Madrid';
 const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
@@ -77,7 +80,7 @@ if (Astro.request.method === 'POST') {
     switch (String(f.getAll('action').pop() ?? '')) {
       case 'contact': {
         // Apuntar una interacción (cuenta como contacto) y dejar el próximo paso: el que diga el comercial o el de la regla.
-        const custom = str('nextAt') || str('nextStep') ? { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') } : undefined;
+        const custom = str('nextAt') || str('nextStep') ? { at: str('nextAt'), time: str('nextTime') || null, tz: myTz, channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') } : undefined;
         // Cuándo fue: hoy, ahora; otro día, a mediodía de ese día (para que el historial quede en orden).
         const day = /^\d{4}-\d{2}-\d{2}$/.test(str('day')) && str('day') < new Date().toISOString().slice(0, 10) ? `${str('day')}T12:00:00` : undefined;
         await admin.crm.logActivity(id, { contactId: str('contactId'), channel: str('channel') || 'other', outcome: str('outcome') || 'note', note: str('note'), happenedAt: day }, custom);
@@ -105,7 +108,7 @@ if (Astro.request.method === 'POST') {
       case 'charge-cancel': await admin.crm.chargeCancel(str('chargeId')); to += '?ok=chargeCancelled#charge'; break;
       case 'charge-paid': await admin.crm.chargeMarkPaid(str('chargeId')); to += '?ok=paid#charge'; break;
       case 'mark-won': await admin.crm.markWon(id); to += '?ok=paid#charge'; break;
-      case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
+      case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), time: str('nextTime') || null, tz: myTz, channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
       case 'fact-add': await admin.crm.factAdd(id, str('text'), str('kind') === 'fit' ? 'fit' : str('kind') === 'key' ? 'key' : 'fact'); to += '?ok=fact#facts'; break;
       case 'fact-star': await admin.crm.factStar(id, str('factId')); to += '?ok=factStarred#facts'; break;
@@ -308,7 +311,7 @@ const STATE_ALERT = {
         {co.people[0] && <p class="co-meta m-0 flex flex-wrap items-center gap-1" data-testid="summary-ask"><Icon name="user" size={14} />{PS.summary.askFor} <a class="font-semibold underline" href={`/admin/people/${co.people[0].id}`}>{co.people[0].name}</a>{co.people[0].role ? ` · ${co.people[0].role}` : ''}</p>}
         <a class="co-inset flex items-center gap-2 !p-3 text-inherit !no-underline" href="#follow" data-testid="summary-next">
           <Icon name="calendar" size={16} />
-          <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}{tl.next.step && <> · <span data-ugc>{tl.next.step}</span></>}</> : PS.summary.noNext}</span>
+          <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short', timeZone: myTz })}{localTime(tl.next.at, myTz) && ` · ${localTime(tl.next.at, myTz)}`}{tl.next.step && <> · <span data-ugc>{tl.next.step}</span></>}</> : PS.summary.noNext}</span>
           <Icon name="chevron-right" size={14} />
         </a>
         <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
@@ -418,7 +421,7 @@ const STATE_ALERT = {
             <>
               <p class="co-row-title">
                 {tl.next.bucket && <span class="co-tag mr-2">{F.follow[tl.next.bucket]}</span>}
-                {nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short' })}
+                {nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short', timeZone: myTz })}{localTime(tl.next.at, myTz) && ` · ${localTime(tl.next.at, myTz)}`}
                 {tl.next.channel && ` · ${F.channels[tl.next.channel]}`}
                 {` · ${actorName(tl.next.contactId)}`}
               </p>
@@ -435,7 +438,8 @@ const STATE_ALERT = {
                 <summary class="co-btn co-btn--ghost co-btn--sm cursor-pointer list-none"><Icon name="calendar" size={14} />{tl.next ? F.follow.edit : F.follow.saveNext}</summary>
                 <form method="post" class="mt-3 grid gap-3 sm:grid-cols-3" data-testid="next-form">
                   <input type="hidden" name="action" value="next" />
-                  <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" value={tl.next?.at ? tl.next.at.slice(0, 10) : ''} /></label>
+                  <label class="co-field">{F.follow.when}<input class="co-input" type="date" name="nextAt" value={tl.next?.at ? localDay(new Date(tl.next.at), myTz) : ''} /></label>
+                  <label class="co-field">{F.follow.time}<input class="co-input" type="time" name="nextTime" value={localTime(tl.next?.at ?? null, myTz) ?? ''} data-testid="next-time" /></label>
                   <label class="co-field">{F.follow.via}<select class="co-select" name="nextChannel"><option value=""></option>{CHANNELS.map((c) => <option value={c} selected={c === tl.next?.channel}>{F.channels[c]}</option>)}</select></label>
                   <label class="co-field">{F.follow.with}<select class="co-select" name="nextContactId"><option value="">{F.follow.company}</option>{tl.actors.map((x) => <option value={x.id} selected={x.id === tl.next?.contactId}>{x.name}</option>)}</select></label>
                   <label class="co-field sm:col-span-3">{F.follow.what}<input class="co-input" name="nextStep" maxlength="1000" value={tl.next?.step ?? ''} placeholder={F.follow.whatPh} /></label>

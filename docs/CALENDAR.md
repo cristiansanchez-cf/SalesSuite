@@ -18,6 +18,11 @@ Google (no hay OAuth): funciona con Outlook (web y escritorio), Google Calendar 
 - **Hora** (`hasTime` en lib/calendar/ics.ts): el próximo paso del CRM es un día (se guarda a las 10:00 del servidor) →
   **todo el día**; con otra hora (propuestas, con fecha y hora) → **a esa hora** (30 min; las reuniones, 1 h y aviso 30
   min antes). Las 00:00 de su zona horaria también cuentan como «todo el día».
+- **La hora del próximo paso** (lib/crm/when.ts): en la ficha, «Cuándo» + «Hora (si la hay)»; en «Apuntar con IA» y en el
+  asistente, la IA saca la hora si la dices («el jueves a las 12» → `next_time: "12:00"`, con el día de la semana de hoy
+  en el prompt para contar bien). Se guarda en la zona horaria de quien apunta (la de su resumen de la mañana); sin
+  hora, el día a las 10:00 UTC, que el calendario pinta «todo el día». Antes del 20/11/2026 los próximos pasos solo
+  guardaban el día: los ya apuntados salen todo el día aunque se dijera la hora.
 - **Se actualiza solo**, pero no al instante: Outlook y Google vuelven a leerlo cada pocas horas (el .ics pide 1 h;
   cada calendario decide).
 - **Seguridad**: el enlace es la llave (48 caracteres aleatorios); solo lee y solo lo de su dueño, de los espacios en los

@@ -15,7 +15,7 @@ export const followupMessages = defineMessages({
       call: 'Llamar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Pega el enlace o el usuario (@empresa).', owner: 'Titular', legalName: 'Razón social', taxId: 'CIF', ownerHelp: 'Sale en el aviso legal o la política de privacidad de su web. Se rellena solo al mirar su web; solo el CIF de una sociedad, nunca el DNI de una persona.',
     },
     follow: {
-      title: 'Seguimiento', next: 'Próximo paso', noNext: 'Sin próximo paso.', when: 'Cuándo', with: 'Con quién', company: 'La empresa', via: 'Por dónde',
+      title: 'Seguimiento', next: 'Próximo paso', noNext: 'Sin próximo paso.', when: 'Cuándo', time: 'Hora (si la hay)', with: 'Con quién', company: 'La empresa', via: 'Por dónde',
       what: 'Qué hacer', whatPh: 'Proponer una cita el jueves…', log: 'Apuntar lo que ha pasado', logHelp: 'Al guardar, la app propone el siguiente paso con la regla de los 3 intentos.',
       result: 'Qué pasó', note: 'Nota', notePh: 'Lo que has visto o te han dicho…', save: 'Guardar', change: 'Cambiar el próximo paso', clear: 'Quitar',
       saveNext: 'Guardar próximo paso', history: (n: number) => `Interacciones · ${n}`, convoTitle: 'Conversación', convoAll: (n: number) => `Ver conversación entera · ${n} mensajes`, convoOlder: 'Cargar anteriores', convoUs: 'Nosotros', convoThem: 'Cliente', convoClose: 'Cerrar',  empty: 'Todavía no hay nada apuntado.', remove: 'Borrar',
@@ -46,7 +46,7 @@ export const followupMessages = defineMessages({
       call: 'Call', whatsapp: 'WhatsApp', mail: 'Email', open: 'Open', help: 'Paste the link or the handle (@empresa).', owner: 'Legal owner', legalName: 'Company name', taxId: 'Tax ID (CIF)', ownerHelp: 'It appears in the legal notice or privacy policy of their website. Filled in automatically when the website is checked; only a company’s tax ID, never a person’s ID.',
     },
     follow: {
-      title: 'Follow-up', next: 'Next step', noNext: 'No next step.', when: 'When', with: 'With whom', company: 'The company', via: 'Channel',
+      title: 'Follow-up', next: 'Next step', noNext: 'No next step.', when: 'When', time: 'Time (if any)', with: 'With whom', company: 'The company', via: 'Channel',
       what: 'What to do', whatPh: 'Propose a meeting on Thursday…', log: 'Log what happened', logHelp: 'When you save, the app proposes the next step using the 3-attempt rule.',
       result: 'What happened', note: 'Note', notePh: 'What you saw or were told…', save: 'Save', change: 'Change the next step', clear: 'Remove',
       saveNext: 'Save next step', history: (n: number) => `Interactions · ${n}`, convoTitle: 'Conversation', convoAll: (n: number) => `See the whole conversation · ${n} messages`, convoOlder: 'Load earlier', convoUs: 'Us', convoThem: 'Client', convoClose: 'Close',  empty: 'Nothing logged yet.', remove: 'Delete',
@@ -77,7 +77,7 @@ export const followupMessages = defineMessages({
       call: 'Ligar', whatsapp: 'WhatsApp', mail: 'Email', open: 'Abrir', help: 'Cole o link ou o usuário (@empresa).', owner: 'Titular', legalName: 'Razão social', taxId: 'NIF da empresa', ownerHelp: 'Aparece no aviso legal ou na política de privacidade do site. Preenche-se sozinho ao ver o site; só o número fiscal de uma sociedade, nunca o de uma pessoa.',
     },
     follow: {
-      title: 'Acompanhamento', next: 'Próximo passo', noNext: 'Sem próximo passo.', when: 'Quando', with: 'Com quem', company: 'A empresa', via: 'Por onde',
+      title: 'Acompanhamento', next: 'Próximo passo', noNext: 'Sem próximo passo.', when: 'Quando', time: 'Hora (se houver)', with: 'Com quem', company: 'A empresa', via: 'Por onde',
       what: 'O que fazer', whatPh: 'Propor uma reunião na quinta…', log: 'Anotar o que aconteceu', logHelp: 'Ao salvar, o app propõe o próximo passo com a regra das 3 tentativas.',
       result: 'O que aconteceu', note: 'Nota', notePh: 'O que você viu ou ouviu…', save: 'Salvar', change: 'Mudar o próximo passo', clear: 'Tirar',
       saveNext: 'Salvar próximo passo', history: (n: number) => `Interações · ${n}`, convoTitle: 'Conversa', convoAll: (n: number) => `Ver a conversa inteira · ${n} mensagens`, convoOlder: 'Carregar anteriores', convoUs: 'Nós', convoThem: 'Cliente', convoClose: 'Fechar',  empty: 'Ainda não há nada anotado.', remove: 'Apagar',
@@ -108,7 +108,7 @@ export const followupMessages = defineMessages({
       call: '전화', whatsapp: '왓츠앱', mail: '이메일', open: '열기', help: '링크나 아이디(@company)를 붙여넣으세요.', owner: '사업자', legalName: '법인명', taxId: '사업자 번호(CIF)', ownerHelp: '웹사이트의 법적 고지나 개인정보 처리방침에 나옵니다. 웹사이트를 확인할 때 자동으로 채워집니다. 회사 번호만, 개인 신분증 번호는 저장하지 않습니다.',
     },
     follow: {
-      title: '후속 조치', next: '다음 단계', noNext: '다음 단계 없음.', when: '언제', with: '누구와', company: '회사', via: '채널',
+      title: '후속 조치', next: '다음 단계', noNext: '다음 단계 없음.', when: '언제', time: '시간(있으면)', with: '누구와', company: '회사', via: '채널',
       what: '할 일', whatPh: '목요일 미팅 제안…', log: '있었던 일 기록', logHelp: '저장하면 3번 시도 규칙에 따라 다음 단계를 제안합니다.',
       result: '결과', note: '메모', notePh: '보거나 들은 것…', save: '저장', change: '다음 단계 바꾸기', clear: '지우기',
       saveNext: '다음 단계 저장', history: (n: number) => `연락 기록 · ${n}`, convoTitle: '대화', convoAll: (n: number) => `대화 전체 보기 · 메시지 ${n}개`, convoOlder: '이전 메시지 더 보기', convoUs: '우리', convoThem: '고객', convoClose: '닫기',  empty: '아직 기록이 없습니다.', remove: '삭제',

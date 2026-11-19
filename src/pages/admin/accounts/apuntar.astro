@@ -40,6 +40,8 @@ if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
   let to = '';
+  // La hora del próximo paso, en su zona (la de su resumen de la mañana).
+  const tz = (await admin.notifications.dailyPref().catch(() => null))?.timezone ?? 'Europe/Madrid';
   result = await formAction(async () => {
     if (str('action') === 'split') {
       box.text = str('text');
@@ -66,7 +68,7 @@ if (Astro.request.method === 'POST') {
         keyFacts: lines(`key-${i}`).slice(0, 5), facts: lines(`facts-${i}`).slice(0, 40),
         fit: str(`fit-${i}`) || null, fields: fieldsChosen,
         channel: it.channel, outcome: it.outcome, day: it.day,
-        qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days),
+        qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days), nextTime: days === '' ? null : str(`time-${i}`) || null, tz,
         discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null,
         kind: str(`kind-${i}`) || undefined,
         worksAt: f.getAll(`wk-${i}`).map((x) => (it.worksAt ?? [])[Number(x)]).filter(Boolean),
@@ -237,7 +239,7 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
               </div>
             </fieldset>
           )}
-          <div class="grid gap-3 sm:grid-cols-[1fr_10rem]">
+          <div class="grid gap-3 sm:grid-cols-[1fr_10rem_7rem]">
             <label class="co-field">{M.next}<input class="co-input" name={`next-${i}`} maxlength="300" value={it.nextStep ?? ''} data-testid="notes-next" /></label>
             <label class="co-field">&nbsp;
               <select class="co-select" name={`days-${i}`}>
@@ -246,6 +248,7 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
                 {it.nextDays != null && ![0, 1, 2, 3, 7, 14, 30].includes(it.nextDays) && <option value={it.nextDays} selected>{M.inDays(it.nextDays)}</option>}
               </select>
             </label>
+            <label class="co-field">&nbsp;<input class="co-input" type="time" name={`time-${i}`} value={it.nextTime ?? ''} aria-label={M.next} data-testid="notes-time" /></label>
           </div>
         </section>
       ))}

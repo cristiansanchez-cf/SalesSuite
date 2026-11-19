@@ -86,7 +86,7 @@ function rowOf(p: Pending) {
   return {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
-    nextDays: it.nextDays, discard: null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
+    nextDays: it.nextDays, nextTime: it.nextTime ?? null, discard: null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
     // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
     ...(p.choice?.create && p.place ? { place: p.place.v } : {}),
   };
@@ -148,7 +148,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
   };
