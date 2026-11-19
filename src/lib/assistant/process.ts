@@ -3,6 +3,7 @@
  * con sus permisos (como en Correos al CRM) y se le contesta por el mismo WhatsApp. Lo de los demás números sigue el
  * camino de los leads (inbound.ts).
  */
+import type { EditReader } from './edits';
 import type { AdminContext } from '../admin/auth';
 import { cleanupContext } from '../crm/research-context';
 import { env } from '../env';
@@ -23,6 +24,8 @@ export interface AssistantDeps {
   transcribe: Transcriber | null;
   /** Lee capturas de conversaciones (Claude). */
   screenshot?: ScreenshotReader | null;
+  /** Entiende los arreglos de fichas (edits.ts). */
+  edits?: EditReader | null;
   actAs: (tenantId: string, userId: string) => Promise<AdminContext | null>;
   now: Date;
 }
@@ -43,7 +46,7 @@ export function drafterFromEnv(): Drafter | null {
 /** Mañana a las 10:00 (como los próximos pasos de la regla). */
 const tomorrow = (now: Date) => { const d = new Date(now.getTime() + 86_400_000); return `${d.toISOString().slice(0, 10)}T10:00:00`; };
 
-export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; locale?: string; now?: Date } = {}): AssistantOps {
+export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; locale?: string; now?: Date; editor?: EditReader | null } = {}): AssistantOps {
   let ctx: Awaited<ReturnType<typeof cleanupContext>> | null = null;
   const context = async () => (ctx ??= await cleanupContext(admin).catch(() => ({ seller: '', clients: [], sectors: {} })));
   const drafter = o.drafter === undefined ? drafterFromEnv() : o.drafter;
@@ -69,17 +72,30 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
       return admin.crm.notesApply(out);
     },
     async edit(accountId, e) {
-      // Arreglar lo recién guardado: solo el nombre y/o la ciudad; lo demás se queda como está.
+      // Arreglar una ficha: solo lo que pide (nombre, ciudad, tipo, descartar o recuperar, con quién trabaja, una nota).
       const a = (await admin.accounts.get(accountId)).account;
-      let zoneId = a.zoneId;
-      if (e.place) {
-        const path = isPlaceKey(e.place.v) ? pathForKey(e.place.v) : null;
-        zoneId = path ? await admin.accounts.ensurePath(path) : await admin.crm.pickZone(e.place.v);
+      if (e.name || e.place) {
+        let zoneId = a.zoneId;
+        if (e.place) {
+          const path = isPlaceKey(e.place.v) ? pathForKey(e.place.v) : null;
+          zoneId = path ? await admin.accounts.ensurePath(path) : await admin.crm.pickZone(e.place.v);
+        }
+        await admin.accounts.update(accountId, { name: e.name ?? a.name, zoneId, segmentId: a.segmentId, address: a.address, externalRef: a.externalRef, notes: a.notes });
       }
-      await admin.accounts.update(accountId, { name: e.name ?? a.name, zoneId, segmentId: a.segmentId, address: a.address, externalRef: a.externalRef, notes: a.notes });
+      if (e.kind) await admin.crm.classifyAccount(accountId, { kind: e.kind });
+      if (e.discard) await admin.crm.classifyAccount(accountId, { reason: e.discard.reason, note: e.discard.note ?? null });
+      else if (e.restore) await admin.crm.classifyAccount(accountId, { reason: null });
+      if (e.linkTo) await admin.crm.workLinkAdd(accountId, e.linkTo.id ? { otherId: e.linkTo.id } : { name: e.linkTo.name });
+      if (e.note) await admin.crm.logActivity(accountId, { channel: 'other', outcome: 'note', note: e.note });
       const b = (await admin.accounts.get(accountId)).account;
       return { name: b.name, zone: b.zonePath ?? '' };
     },
+    // Sin lector de IA (sin clave): no hay «understand» y se usan las frases fijas («Corrige X: …»).
+    ...(o.editor ? { async understand(text: string) {
+      const kinds = (await admin.accounts.kinds().catch(() => [])).map((k) => ({ key: k.key, label: k.label }));
+      return o.editor!(text, { kinds, today: (o.now ?? new Date()).toISOString().slice(0, 10) });
+    } } : {}),
+    async kindLabel(key) { return (await admin.accounts.kinds().catch(() => [])).find((k) => k.key === key)?.label ?? key; },
     async placeIn(text) { return placeIn(text, (await admin.accounts.territory()).zones); },
     async places(q) {
       const zones = (await admin.accounts.territory()).zones;
@@ -159,7 +175,7 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
   } else if (m.kind === 'other') incoming = { kind: 'other' };
   else incoming = { kind: 'text', text: m.text, forwarded: !!m.forwarded };
 
-  const ops = opsFor(admin, { locale, now: d.now });
+  const ops = opsFor(admin, { locale, now: d.now, editor: d.edits ?? null });
   // Varios reenviados llegan a la vez: si otro mensaje cambió el estado entre medias, se vuelve a leer (sin efectos aún).
   let conv = first;
   let r = await handle({ ops, now: d.now, locale }, incoming, conv.state);

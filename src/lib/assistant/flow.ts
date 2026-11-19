@@ -12,7 +12,15 @@ import type { Channel, Outcome } from '../crm/followup';
 import type { NoteItem } from '../crm/notes';
 import { assistantMessages, type AssistantText } from './messages';
 import type { Place } from './places';
+import { EDIT_HINT, type EditAsk, type EditPlan } from './edits';
 
+/** Lo que se cambia de una ficha (por WhatsApp). */
+export interface EditChange {
+  name?: string; place?: Place; kind?: string; discard?: { reason: string; note: string | null }; restore?: boolean;
+  linkTo?: { id: string | null; name: string }; note?: string;
+}
+/** Un cambio ya con su empresa (y su sitio y su enlace resueltos), listo para enseñar y guardar. */
+interface EditItem { id: string; name: string; ask: EditAsk; place: Place | null; link: { id: string | null; name: string } | null; kindLabel: string | null }
 export interface Candidate { id: string; name: string; zone: string; score: number; discarded: boolean }
 export interface AssistantOps {
   /** «Apuntar»: lo separa por empresa con sus candidatas. */
@@ -28,7 +36,11 @@ export interface AssistantOps {
   /** «Hecho»: apunta que le escribió (y el CRM propone el siguiente paso). Devuelve cuándo toca lo siguiente. */
   done?(accountId: string): Promise<{ name: string; nextAt: string | null }>;
   /** Arreglar lo recién guardado (criterio de Cristian): el nombre y/o dónde está. Devuelve cómo ha quedado. */
-  edit?(accountId: string, e: { name?: string; place?: Place }): Promise<{ name: string; zone: string }>;
+  edit?(accountId: string, e: EditChange): Promise<{ name: string; zone: string }>;
+  /** Arreglar fichas con IA (edits.ts): qué empresas y qué cambios pide, con sus palabras. */
+  understand?(text: string): Promise<EditPlan | null>;
+  /** Nombre del tipo («Promotora») por su clave. */
+  kindLabel?(key: string): Promise<string>;
   /** «Mañana»: el próximo paso, a mañana. */
   later?(accountId: string): Promise<{ name: string }>;
 }
@@ -66,7 +78,11 @@ export type State =
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
   | { step: 'reminder'; at: string; items: ReminderItem[] }
   /** Recién guardado: «se llama solo X» o «está en Murcia, no en Madrid» arreglan eso mismo (media hora). */
-  | { step: 'saved'; at: string; saved: Array<{ id: string; name: string }> };
+  | { step: 'saved'; at: string; saved: Array<{ id: string; name: string }> }
+  /** Arreglar fichas: el resumen de cambios (Guardar / Cambiar) y, si una empresa tiene varias parecidas, cuál es. */
+  | { step: 'edit-confirm'; at: string; items: EditItem[]; source: string }
+  | { step: 'edit-pick'; at: string; items: EditItem[]; rest: EditAsk[]; ask: EditAsk; candidates: Candidate[]; source: string }
+  | { step: 'edit-amend'; at: string; source: string };
 
 /** Lo que queda a medias caduca a la media hora (luego se empieza de nuevo). */
 export const STATE_TTL_MS = 30 * 60_000;
@@ -297,6 +313,67 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return { state: { step: 'forward-pick', at, texts, query: q, candidates: c.slice(0, 5), channel }, replies: [say(opts.length ? T.whichOne(q, opts, q) : T.notFound(q))] };
   };
 
+  // ---- Arreglar fichas con IA: resolver cada empresa, enseñar el resumen y guardar al pulsar Guardar.
+  const editSummary = (items: EditItem[], source: string): FlowResult => {
+    const lines = items.map((x) => [`*${x.name}*`,
+      x.ask.rename ? `✏️ ${T.editName}: ${x.ask.rename}` : '', x.place ? `📍 ${x.place.label}` : x.ask.place ? `📍 ${x.ask.place} (${T.editPlaceUnknown})` : '',
+      x.ask.kind ? `🏷️ ${T.editKind}: ${x.kindLabel ?? x.ask.kind}` : '',
+      x.ask.discard ? `🚫 ${T.editDiscard}: ${T.discards[x.ask.discard] ?? x.ask.discard}${x.ask.discardWhy ? ` (${x.ask.discardWhy})` : ''}` : '',
+      x.ask.restore ? `♻️ ${T.editRestore}` : '', x.link ? `🔗 ${T.editLink(x.link.name, !x.link.id)}` : '', x.ask.note ? `📝 «${x.ask.note}»` : '',
+    ].filter(Boolean).join('\n'));
+    return { state: { step: 'edit-confirm', at, items, source }, replies: [say(`${T.editPlan}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
+  };
+  const pickOf = (c: Candidate[], q: string) => c.find((x) => normName(x.name) === normName(q)) ?? (c[0] && c[0].score >= 0.85 && (!c[1] || c[1].score < c[0].score - 0.05) ? c[0] : null);
+  const resolveEdit = async (ask: EditAsk, chosen: { id: string; name: string }): Promise<EditItem> => {
+    let place: Place | null = null;
+    if (ask.place) {
+      place = d.ops.placeIn ? await d.ops.placeIn(`en ${ask.place}`).catch(() => null) : null;
+      if (!place && d.ops.places) place = (await d.ops.places(ask.place).catch(() => []))[0] ?? null;
+    }
+    let link: EditItem['link'] = null;
+    if (ask.linkTo) { const c = await d.ops.search(ask.linkTo).catch(() => []); const h = pickOf(c, ask.linkTo); link = h ? { id: h.id, name: h.name } : { id: null, name: ask.linkTo }; }
+    const kindLabel = ask.kind && d.ops.kindLabel ? await d.ops.kindLabel(ask.kind).catch(() => null) : null;
+    return { id: chosen.id, name: chosen.name, ask, place, link, kindLabel };
+  };
+  /** Una a una: la que se reconoce, directa; si hay varias parecidas, se pregunta cuál (con número). */
+  const resolveEdits = async (asks: EditAsk[], items: EditItem[], source: string): Promise<FlowResult> => {
+    const notFound: string[] = [];
+    for (let i = 0; i < asks.length; i++) {
+      const ask = asks[i]!;
+      let c = await d.ops.search(ask.target).catch(() => [] as Candidate[]);
+      let hit = pickOf(c, ask.target);
+      // El nombre de ahora puede llevar la ciudad pegada («Euforía y está en Murcia»).
+      const alt = ask.target.replace(/\s+(?:y\s+)?(?:que\s+)?est[aá]\s+en\s+.*$/iu, '').trim();
+      if (!hit && alt && alt !== ask.target) { const c2 = await d.ops.search(alt).catch(() => [] as Candidate[]); hit = pickOf(c2, alt); if (!c.length) c = c2; }
+      if (hit) { items.push(await resolveEdit(ask, hit)); continue; }
+      if (!c.length) { notFound.push(ask.target); continue; }
+      const opts = c.slice(0, 5).map((x, n) => `${n + 1}) ${x.name}${x.zone ? ` · ${x.zone}` : ''}${x.discarded ? ` (${T.discarded})` : ''}`);
+      return { state: { step: 'edit-pick', at, items, rest: asks.slice(i + 1), ask, candidates: c.slice(0, 5), source }, replies: [say(T.editWhich(ask.target, opts))] };
+    }
+    if (!items.length) return { state: idle, replies: [say(notFound.length ? T.notFound(notFound.join(', ')) : T.nothing)] };
+    const r = editSummary(items, source);
+    return notFound.length ? { ...r, replies: [say(T.editSkipped(notFound)), ...r.replies] } : r;
+  };
+  const understand = async (text: string): Promise<FlowResult | null> => {
+    if (!d.ops.understand) return null;
+    const plan = await d.ops.understand(text).catch(() => null);
+    return plan?.isEdit ? resolveEdits(plan.edits, [], text) : null;
+  };
+  const saveEdits = async (items: EditItem[]): Promise<FlowResult> => {
+    const ok: string[] = [], bad: string[] = [];
+    for (const x of items) {
+      try {
+        const r = await d.ops.edit!(x.id, {
+          ...(x.ask.rename ? { name: x.ask.rename } : {}), ...(x.place ? { place: x.place } : {}), ...(x.ask.kind ? { kind: x.ask.kind } : {}),
+          ...(x.ask.discard ? { discard: { reason: x.ask.discard, note: x.ask.discardWhy } } : {}), ...(x.ask.restore ? { restore: true } : {}),
+          ...(x.link ? { linkTo: x.link } : {}), ...(x.ask.note ? { note: x.ask.note } : {}),
+        });
+        ok.push(`${r.name}${r.zone ? ` · 📍 ${r.zone}` : ''}`);
+      } catch (e) { bad.push(`${x.name}: ${e instanceof Error && e.message ? e.message : T.failed}`); }
+    }
+    return { state: idle, replies: [say([ok.length ? T.editDone(ok) : '', bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n'))] };
+  };
+
   /** Una propuesta de mensaje por empresa, cada una con «Hecho» y «Mañana». */
   const prepare = async (items: ReminderItem[]): Promise<FlowResult> => {
     const replies: Reply[] = [];
@@ -334,6 +411,8 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   // ---- Botones
   if (msg.kind === 'button') {
     if (state.step === 'confirm' && msg.id === 'save') return save(state.pending);
+    if (state.step === 'edit-confirm' && msg.id === 'save') return saveEdits(state.items);
+    if (state.step === 'edit-confirm' && msg.id === 'change') return { state: { step: 'edit-amend', at, source: state.source }, replies: [say(T.askChange)] };
     if (state.step === 'confirm' && msg.id === 'change') return change(state);
     return { state, replies: [say(T.expired)] };
   }
@@ -397,8 +476,13 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return { state: { step: 'saved', at, saved: [{ id: target.id, name: r.name }] }, replies: [say(T.edited(r.name, r.zone))] };
     } catch (e) { return { state: keep, replies: [say(e instanceof Error && e.message ? `${T.failedOne} (${e.message})` : T.failedOne)] }; }
   };
-  // «Corrige X: se llama Y y está en Z»: cualquier empresa del CRM, por su nombre de ahora (aunque sea de hace días).
-  const fix = d.ops.edit && ['idle', 'saved'].includes(state.step) ? fixCommand(text) : null;
+  // Arreglar fichas con IA (lo que diga, con sus palabras); si no es eso, sigue como siempre.
+  if (d.ops.edit && d.ops.understand && ['idle', 'saved'].includes(state.step) && EDIT_HINT.test(text)) {
+    const r = await understand(text);
+    if (r) return withHeard(r);
+  }
+  // Sin IA: «Corrige X: se llama Y y está en Z» (frases fijas).
+  const fix = d.ops.edit && !d.ops.understand && ['idle', 'saved'].includes(state.step) ? fixCommand(text) : null;
   if (fix) {
     // Por su nombre de ahora; si no, sin la ciudad pegada. Si la ciudad iba en el nombre viejo, también se arregla.
     const find = async (q: string) => {
@@ -415,6 +499,27 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   }
   // Pedía arreglar algo pero no se entiende qué: se explica cómo (antes lo apuntaba como algo nuevo).
   if (d.ops.edit && ['idle', 'saved'].includes(state.step) && isFixRequest(text) && !fix) return withHeard({ state, replies: [say(T.fixHow)] });
+  if (state.step === 'edit-confirm') {
+    if (isYes(text)) return saveEdits(state.items);
+    // Otra cosa: corrección sobre lo que pidió.
+    const r = await understand(`${state.source}\n\n${T.correction}: ${text}`);
+    if (r) return withHeard(r);
+  }
+  if (state.step === 'edit-amend') {
+    const r = await understand(`${state.source}\n\n${T.correction}: ${text}`);
+    if (r) return withHeard(r);
+  }
+  if (state.step === 'edit-pick') {
+    const n = numberOf(text);
+    const st = state;
+    const chosen = n != null ? st.candidates[n - 1] : st.candidates.find((x) => normName(x.name) === normName(text)) ?? null;
+    if (chosen) { const items = [...st.items, await resolveEdit(st.ask, chosen)]; return withHeard(await resolveEdits(st.rest, items, st.source)); }
+    if (short(text) && new RegExp(`^(salta(r)?|ninguna|no)${END}`, 'iu').test(text)) return withHeard(await resolveEdits(st.rest, [...st.items], st.source));
+    const c = await d.ops.search(text).catch(() => [] as Candidate[]);
+    const h = pickOf(c, text);
+    if (h) return withHeard(await resolveEdits(st.rest, [...st.items, await resolveEdit(st.ask, h)], st.source));
+    return withHeard({ state: { ...st, at, candidates: c.slice(0, 5).length ? c.slice(0, 5) : st.candidates }, replies: [say(T.editWhich(text, (c.length ? c : st.candidates).slice(0, 5).map((x, i) => `${i + 1}) ${x.name}${x.zone ? ` · ${x.zone}` : ''}`)))] });
+  }
   // Recién guardado: «se llama solo Euforía», «está en Murcia, no en Madrid» arreglan esa empresa.
   if (state.step === 'saved' && d.ops.edit && (saidName(text) || saidPlace(text))) {
     const target = state.saved.length === 1 ? state.saved[0]! : state.saved.find((x) => normName(text).includes(normName(x.name))) ?? null;

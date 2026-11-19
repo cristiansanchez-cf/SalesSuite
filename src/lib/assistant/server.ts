@@ -3,6 +3,7 @@
  * como la persona (contextAs). En demo, todo en memoria y un audio de ejemplo.
  */
 import { claudeScreenshotReader, fixtureScreenshotReader } from './screenshot';
+import { claudeEditReader, fixtureEditReader } from './edits';
 import { createClient } from '@supabase/supabase-js';
 import { contextAs } from '../admin/auth';
 import { publicRepository } from '../data';
@@ -39,6 +40,7 @@ export async function assistantDeps(db: AssistantDb, wa: WhatsApp | null, now = 
     db, wa, now,
     transcribe: key ? whisper(key) : appMode() === 'demo' ? fixtureTranscriber : null,
     screenshot: env('AI_RESEARCH_FIXTURE') === '1' ? fixtureScreenshotReader : env('ANTHROPIC_API_KEY') ? claudeScreenshotReader(env('ANTHROPIC_API_KEY')!) : null,
+    edits: env('AI_RESEARCH_FIXTURE') === '1' ? fixtureEditReader : env('ANTHROPIC_API_KEY') ? claudeEditReader(env('ANTHROPIC_API_KEY')!) : null,
     actAs: async (tenantId, userId) => { const t = await tenantById(tenantId); return t ? contextAs(t, userId) : null; },
   };
 }

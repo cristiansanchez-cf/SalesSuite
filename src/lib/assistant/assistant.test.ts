@@ -517,6 +517,34 @@ describe('de punta a punta (demo)', () => {
     expect(sent.at(-1)!.text).toContain('Para arreglar una ficha');
   });
 
+  test('arreglar fichas con IA: descartar La Facultad y Aula 212, Aula 212 es promotora y trabaja en La Facultad', async () => {
+    const member = { tenantId: ENJOY, userId: REP };
+    const { fixtureEditReader } = await import('./edits');
+    const s = demoDb();
+    const base = s.account.find((a) => a.tenant_id === ENJOY)!;
+    const FAC = '00000000-0000-4000-8000-0000000fa001', AULA = '00000000-0000-4000-8000-0000000fa002';
+    s.account.push({ ...base, id: FAC, name: 'La Facultad', kind: 'company', owner_id: REP, discarded_at: null, discard_reason: null, discard_note: null, parent_id: null });
+    s.account.push({ ...base, id: AULA, name: 'Aula 212', kind: 'company', owner_id: REP, discarded_at: null, discard_reason: null, discard_note: null, parent_id: null });
+    const dd = () => ({ ...deps(), edits: fixtureEditReader });
+    await processAssistant(dd(), '123', member, msg('h1', { text: 'Descarta La Facultad y Aula 212: no les interesa. Aula 212 es la promotora interna de La Facultad.' }));
+    const plan = sent.at(-1)!;
+    expect(plan.buttons).toEqual(['save', 'change']);
+    expect(plan.text).toContain('✏️ Esto es lo que cambio:');
+    expect(plan.text).toContain('*Aula 212*');
+    expect(plan.text).toContain('🏷️ Tipo: Promotora');
+    expect(plan.text).toContain('🔗 Trabaja con La Facultad');
+    expect(plan.text).toContain('🚫 Descartar: no les interesa');
+    // Nada cambia hasta Guardar.
+    expect(s.account.find((a) => a.id === AULA)!.kind).toBe('company');
+    await processAssistant(dd(), '123', member, msg('h2', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
+    expect(sent.at(-1)!.text).toContain('✅ Hecho');
+    const aula = s.account.find((a) => a.id === AULA)!, fac = s.account.find((a) => a.id === FAC)!;
+    expect(aula.kind).toBe('promotora');
+    expect(aula.discard_reason).toBe('not_interested');
+    expect(fac.discard_reason).toBe('not_interested');
+    expect(s.account_link.some((l) => [l.a_id, l.b_id].includes(AULA) && [l.a_id, l.b_id].includes(FAC))).toBe(true);
+  });
+
   test('una captura de la conversación → la lee → Guardar → la conversación literal queda en Club Sol', async () => {
     const member = { tenantId: ENJOY, userId: REP };
     const { fixtureScreenshotReader } = await import('./screenshot');

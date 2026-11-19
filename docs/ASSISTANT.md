@@ -92,6 +92,17 @@ ha hablado (`tooThin` en flow.ts: «he estado hablando / hablé / acabo de habla
 ni dos puntos) → «Genial 👍 ¿Y qué te ha dicho X?» y espera (estado `context`). Lo siguiente (texto o audio) se junta
 con eso y va al resumen. «Apúntalo» apunta lo que hay.
 
+### Arreglar fichas con IA
+
+Criterio de Cristian: «le ha costado un montón… he tenido que ponerlo exacto, palabra por palabra». Con frases fijas
+unas comillas distintas (“ ” del móvil) ya lo rompían. Ahora, si el mensaje suena a arreglar fichas (`EDIT_HINT`:
+corrige, cambia, descarta, «es una promotora», vincula, se llama, está en…), una IA pequeña (`edits.ts`, Haiku con
+salida JSON) entiende con sus palabras qué empresas y qué cambios: **nombre, ciudad, tipo, descartar o recuperar, con qué
+local trabaja** (una promotora interna o un DJ) y **una nota**. Si no es un arreglo (cuenta una visita), sigue como
+siempre. Cada empresa se busca por su nombre de ahora (también sin la ciudad pegada); si hay varias parecidas, pregunta
+cuál con número. Resumen «✏️ Esto es lo que cambio» con Guardar / Cambiar; nada cambia hasta Guardar. Sin clave de IA,
+quedan las frases fijas de abajo.
+
 ### Arreglar nombre y ciudad, y descartar (caso Euforía)
 
 - **Al preguntar cuál es**: «Euforía. Está en Murcia» → nombre «Euforía» y ciudad Murcia (`nameAndRest`, `saidPlace`);
