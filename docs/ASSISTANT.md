@@ -75,6 +75,19 @@ cuál, y avisa si alguien pone el número del propio asistente (un número no pu
    clave: «escríbemelo».
 6. «cancelar» empieza de cero; lo que queda a medias caduca a la media hora. «hola» o «ayuda»: cómo se usa.
 
+### Conversación en varios mensajes
+
+Criterio de Cristian: al copiar mensajes de WhatsApp (lo ideal: salen con fecha y quién los dijo), WhatsApp solo deja
+pegarlos todos si la caja está vacía. Si antes escribió «he estado hablando con X, mira lo que le he puesto:», solo entra
+uno.
+
+- **Pegado a medias** (`halfPasted`): una sola línea con fecha de WhatsApp y texto propio delante → no apunta nada; guarda
+  lo que contó y responde «Pega primero los mensajes (solo eso) y yo lo junto con lo que me acabas de contar».
+- **«Ahora te paso los mensajes»** (`announcesChat`): espera (estado `context`, media hora) y junta lo que llegue: la
+  conversación pegada, los reenviados (sin preguntar de qué empresa: ya lo dijo; se cierra con «listo») o capturas.
+- **Después del resumen**: si pega la conversación que faltaba, se añade a lo que contó (no es una corrección).
+- En todos los casos la conversación va literal en la interacción («Conversación:»).
+
 ## Técnica
 
 - Webhook `POST /api/v1/whatsapp/webhook`: separa lo del equipo y lo procesa en segundo plano (`waitUntil`) para

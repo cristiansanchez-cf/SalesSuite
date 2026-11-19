@@ -116,6 +116,52 @@ describe('la conversación', () => {
     const it = (applied[0][0] as { interaction: string }).interaction;
     expect(it).toContain('Conversación:\n[19/11/26, 10:21:09] Cristian Alberto Sanchez: Buenos días Vicente!!\nHa pasado bastante tiempo\n[19/11/26, 10:40:00] Vicente: perfecto, hablamos a las 17:00');
   });
+  test('pegada a medias (escribió antes y WhatsApp solo pegó un mensaje): pide pegar primero y lo junta', async () => {
+    const seen: string[] = [];
+    const { ops, applied } = fakeOps({ split: async (t) => { seen.push(t); return [{ ...item('Havana'), candidates: [cand('h1', 'Havana', 1)] }]; } });
+    const a = await run(ops, { kind: 'text', text: 'He estado hablando con José María de Havana, mira lo que le he puesto: [23/9/26, 14:04:38] Cristian: Buenas José María!' });
+    expect(a.state.step).toBe('context');
+    expect(a.replies[0].text).toContain('Pega primero los mensajes');
+    expect(seen).toEqual([]);   // no se apunta nada aún
+    const chat = '[23/9/26, 14:04:38] Cristian: Buenas José María!\n[25/9/26, 11:49:41] Jose Maria Havana: Buenas señor!\n[25/9/26, 11:49:56] Jose Maria Havana: si me quieres mandar y contar un poco';
+    const b = await run(ops, { kind: 'text', text: chat }, a.state);
+    expect(seen[0]).toContain('He estado hablando con José María de Havana');
+    expect(seen[0]).toContain('Jose Maria Havana: Buenas señor!');
+    await run(ops, { kind: 'button', id: 'save' }, b.state);
+    expect((applied[0][0] as { interaction: string }).interaction).toContain('Conversación:\n[23/9/26, 14:04:38] Cristian: Buenas José María!\n[25/9/26, 11:49:41]');
+  });
+  test('«ahora te paso los mensajes»: espera y junta lo que llegue después (pegado, reenviado o captura)', async () => {
+    const seen: string[] = [];
+    const { ops, applied } = fakeOps({ split: async (t) => { seen.push(t); return [{ ...item('Havana'), candidates: [cand('h1', 'Havana', 1)] }]; } });
+    const a = await run(ops, { kind: 'text', text: 'He estado hablando con José María de Havana, ahora te paso los mensajes' });
+    expect(a.state.step).toBe('context');
+    expect(a.replies[0].text).toContain('Pásame la conversación');
+    // Reenviados: se juntan sin preguntar de qué empresa (ya lo dijo) y al «listo» se apunta todo junto.
+    const b = await run(ops, { kind: 'text', text: 'Buenas señor!', forwarded: true }, a.state);
+    expect(b.replies[0].text).toContain('escribe «listo»');
+    const c = await run(ops, { kind: 'text', text: 'si me quieres mandar y contar un poco', forwarded: true }, b.state);
+    expect(c.replies).toEqual([]);
+    const d = await run(ops, { kind: 'text', text: 'listo' }, c.state);
+    expect(d.state.step).toBe('confirm');
+    expect(seen[0]).toBe('He estado hablando con José María de Havana, ahora te paso los mensajes');
+    await run(ops, { kind: 'button', id: 'save' }, d.state);
+    expect((applied[0][0] as { interaction: string }).interaction).toContain('Conversación:\nBuenas señor!\nsi me quieres mandar y contar un poco');
+    // Captura: igual.
+    const e = await run(ops, { kind: 'image', lines: ['Nosotros: hola', 'Ellos (Havana): buenas'], contact: 'Havana', caption: '', channel: 'whatsapp', ready: true }, a.state);
+    expect(e.state).toMatchObject({ step: 'forward', intro: expect.stringContaining('José María') });
+    // Pegado de una vez: directo.
+    const f = await run(ops, { kind: 'text', text: '[25/9/26, 11:49:41] Jose Maria Havana: Buenas señor!\n[25/9/26, 11:49:42] Jose Maria Havana: encantado' }, a.state);
+    expect(f.state.step).toBe('confirm');
+    expect(seen.at(-1)).toContain('ahora te paso los mensajes\n\n[25/9/26');
+  });
+  test('la conversación que faltaba, después del resumen: se añade, no es una corrección', async () => {
+    const seen: string[] = [];
+    const { ops } = fakeOps({ split: async (t) => { seen.push(t); return [{ ...item('Club Sol'), candidates: [cand('a1', 'Club Sol', 1)] }]; } });
+    const a = await run(ops, { kind: 'text', text: 'He estado en Club Sol con Marta' });
+    await run(ops, { kind: 'text', text: '[1/10/26, 10:00] Yo: hola\n[1/10/26, 10:05] Marta: hola!' }, a.state);
+    expect(seen[1]).not.toContain('Corrección');
+    expect(seen[1]).toContain('Marta: hola!');
+  });
   test('reenviados: se juntan, pregunta de quién son y van como «WhatsApp · contestó»', async () => {
     const { ops, applied } = fakeOps({ search: async (q) => (/sol/i.test(q) ? [cand('a1', 'Club Sol', 1)] : []) });
     const a = await run(ops, { kind: 'text', text: '¿Me pasas el precio?', forwarded: true });

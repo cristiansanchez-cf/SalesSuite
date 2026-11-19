@@ -57,7 +57,10 @@ export type State =
   | { step: 'amend'; at: string; source: string; pending: Pending[] }
   /** Empresa nueva sin ciudad: se pregunta dónde está. */
   | { step: 'place'; at: string; pending: Pending[]; i: number; options: Place[]; source?: string; forward?: { texts: string[]; channel?: string } }
-  | { step: 'forward'; at: string; texts: string[]; channel?: string }
+  /** intro: lo que contó antes de pasar los mensajes («he hablado con X, ahora te paso…»): se junta con ellos. */
+  | { step: 'forward'; at: string; texts: string[]; channel?: string; intro?: string }
+  /** Ha contado algo y va a pasar la conversación (o la pegó a medias): se espera y se junta. */
+  | { step: 'context'; at: string; intro: string }
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
   | { step: 'reminder'; at: string; items: ReminderItem[] };
 
@@ -97,6 +100,21 @@ export function pastedChat(text: string): string[] {
     if (CHAT_LINE.test(line)) { out.push(line.trim()); open = true; } else if (open && line.trim()) out[out.length - 1] += `\n${line.trim()}`; else open = false;
   }
   return out;
+}
+/** «He hablado con X… ahora te paso los mensajes»: lo que viene después va con esto. */
+const ANNOUNCE = /(te (paso|mando|env[ií]o|pego|reenv[ií]o|adjunto)|ahora te|luego te|a continuaci[oó]n|i.?ll (send|forward|paste)|here (are|is)|vou (te )?(mandar|enviar|passar|colar)|já te (mando|passo))/iu;
+const CHAT_NOUN = /(mensaje|conversaci|chat|captura|pantallazo|whats|messages?|conversation|screenshots?|mensage|conversa)/iu;
+export const announcesChat = (t: string) => !pastedChat(t).length && ANNOUNCE.test(t) && CHAT_NOUN.test(t);
+/**
+ * Pegó a medias: WhatsApp solo deja pegar todos los mensajes copiados si la caja está vacía; si antes escribió «he
+ * hablado con X…», solo entra uno. Una sola línea de chat con texto propio delante → lo que contó, sin esa línea.
+ */
+export function halfPasted(t: string): string | null {
+  // El mensaje pegado suele quedar en la misma línea que lo escrito («…mira lo que le he puesto: [23/9/26, 14:04] Yo: …»).
+  const hits = [...t.matchAll(/\[\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\]\s*[^:\n\]]{1,60}:/g)];
+  if (hits.length !== 1) return null;
+  const intro = t.slice(0, hits[0]!.index).trim();
+  return intro.split(/\s+/).filter(Boolean).length >= 3 ? intro : null;
 }
 const normName = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 /** Un apunte hecho a mano (mensajes reenviados): solo la interacción. */
@@ -155,12 +173,12 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return { state: idle, replies: [say([ok.length ? T.saved(ok) : '', bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
   };
   /** Lo que cuenta, a «Apuntar». */
-  const note = async (text: string, prev: Pending[] = []): Promise<FlowResult> => {
+  const note = async (text: string, prev: Pending[] = [], literal?: string[]): Promise<FlowResult> => {
     let items: Awaited<ReturnType<AssistantOps['split']>>;
     try { items = await d.ops.split(text); } catch { return { state: idle, replies: [say(T.aiDown)] }; }
     if (!items.length) return { state: idle, replies: [say(T.nothing)] };
     // La conversación pegada tal cual va literal en la interacción (para ver después cómo le hablamos y qué funciona).
-    const chat = pastedChat(text);
+    const chat = literal ?? pastedChat(text);
     if (chat.length && items.length === 1) {
       const it = items[0]!;
       items = [{ ...it, interaction: [it.interaction, `${T.convo}:\n${chat.join('\n')}`].filter(Boolean).join('\n\n').slice(0, 4000) }];
@@ -240,6 +258,8 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return { state: { ...state, at, texts: [...state.texts, ...msg.lines].slice(-MAX_FORWARDED * 3) }, replies: [] };
     }
     const read = say(T.shotRead(msg.lines.length, msg.contact));
+    // Ya contó de quién es: se junta con eso.
+    if (state.step === 'context') return { state: { step: 'forward', at, texts: msg.lines, channel: msg.channel, intro: state.intro }, replies: [read, say(T.joining)] };
     const q = msg.caption || msg.contact;
     if (q) { const r = await forwardSearch(msg.lines, q.slice(0, 160), msg.channel); return { ...r, replies: [read, ...r.replies] }; }
     return { state: { step: 'forward', at, texts: msg.lines, channel: msg.channel }, replies: [read, say(T.forwardedAsk)] };
@@ -255,15 +275,32 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (state.step === 'forward' || state.step === 'forward-pick') {
       return { state: { ...state, at, texts: [...state.texts, text].slice(-MAX_FORWARDED) }, replies: [] };
     }
+    if (state.step === 'context') return { state: { step: 'forward', at, texts: [text], intro: state.intro }, replies: [say(T.joining)] };
     return { state: { step: 'forward', at, texts: [text] }, replies: [say(T.forwardedAsk)] };
+  }
+  // Con lo que contó delante: los reenviados o las capturas, junto con eso, cuando dice «listo» (o cuenta algo más).
+  if (state.step === 'forward' && state.intro) {
+    const done = short(text) && new RegExp(`^(${T.doneWords})${END}`, 'iu').test(text);
+    const lit = state.texts.flatMap((x) => x.split('\n')).filter(Boolean);
+    return withHeard(await note([state.intro, done ? '' : text].filter(Boolean).join('\n\n'), [], lit));
+  }
+  // Pegó la conversación a medias: se guarda lo que contó y se le pide que pegue primero los mensajes.
+  if (['idle', 'confirm', 'context'].includes(state.step)) {
+    const intro = halfPasted(text);
+    if (intro) return withHeard({ state: { step: 'context', at, intro: state.step === 'context' ? `${state.intro}\n${intro}` : intro }, replies: [say(T.pasteFirst)] });
   }
   if (isCancel(text)) return { state: idle, replies: [say(T.cancelled)] };
   if (state.step === 'idle' && isHelp(text)) return { state, replies: [say(T.help)] };
 
   switch (state.step) {
+    case 'context':
+      // Lo siguiente (la conversación pegada, o más de lo que contó) va junto con lo de antes.
+      return withHeard(await note(`${state.intro}\n\n${text}`));
     case 'confirm':
       if (isYes(text)) return save(state.pending);
       if (isNo(text)) return change(state);
+      // La conversación que faltaba: se añade a lo que contó (no es una corrección).
+      if (state.source && pastedChat(text).length >= 2) return withHeard(await note(`${state.source}\n\n${text}`, state.pending));
       // Otra cosa, con lo anterior delante: es una corrección («la parada está en Almería»), no algo nuevo.
       if (state.source) return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending));
       break; // reenviados: se apunta como algo nuevo
@@ -301,5 +338,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return withHeard(await forwardSearch(state.texts, text, state.channel));
     }
   }
+  // «He hablado con X… ahora te paso los mensajes»: se espera la conversación para juntarla.
+  if (state.step === 'idle' && announcesChat(text)) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.waitChat)] });
   return withHeard(await note(text));
 }
