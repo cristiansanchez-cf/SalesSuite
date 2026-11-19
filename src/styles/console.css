@@ -602,6 +602,7 @@ button[aria-busy='true'] { cursor: progress; opacity: 0.75; }
 .co-swap[aria-busy='true'] { opacity: 0.55; }
 @keyframes co-toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes co-spin { to { transform: rotate(360deg); } }
+.co-spinner { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 999px; border: 2px solid currentColor; border-right-color: transparent; animation: co-spin 0.8s linear infinite; }
 @media (max-width: 640px) { .co-toasts { left: 16px; right: 16px; max-width: none; bottom: 84px; } }
 
 /* «Está pensando» (Apuntar): un punto que late junto a lo que va haciendo; quieto si se pide menos movimiento. */

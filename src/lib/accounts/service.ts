@@ -449,6 +449,15 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const [rows, t, members] = await Promise.all([db.listAccounts(s.tenantId, { ownerId: userId, limit: 20000 }), territory(), names()]);
     return rows.map((a) => view(a, t.zones, members)).sort((a, b) => a.name.localeCompare(b.name, 'es'));
   }
+  /** Asignar en bloque desde la lista del CRM (admin y gerentes): las marcadas, a quien diga, con la reserva desde hoy. */
+  async function assignMany(ids: string[], to: string): Promise<number> {
+    requireManager();
+    const team = await names();
+    if (!team.has(to) || team.get(to)!.role === 'partner') throw new AdminError(404, 'Esa persona no está en el equipo');
+    let n = 0;
+    for (const id of [...new Set(ids)].slice(0, 2000)) { await assign(id, to); n++; }
+    return n;
+  }
   /** Pasa empresas de una persona a otras (cada una a quien diga), con la reserva desde hoy. Solo admin. */
   async function handOver(from: string, moves: Array<{ id: string; to: string }>): Promise<number> {
     if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin traspasa empresas');
@@ -465,7 +474,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
 
   return {
-    ownerCounts, ownedBy, handOver,
+    ownerCounts, ownedBy, handOver, assignMany,
     territory, list, get, create, update, ensurePath, touch, releaseMany, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
     crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds,

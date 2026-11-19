@@ -78,6 +78,11 @@ if (Astro.request.method === 'POST') {
         .filter((a) => a.state === 'mine').map((a) => a.id) : [];
       const n = await acc.releaseMany([...f.getAll('ids').map(String), ...all]);
       to = `/admin/accounts?ok=released&n=${n}`;
+    } else if (f.getAll('action').includes('assign-many')) {
+      // Asignar en bloque (admin y gerentes): las marcadas, a quien elija.
+      const who = str('assignTo');
+      const n = await acc.assignMany(f.getAll('ids').map(String).filter(Boolean), who);
+      to = `/admin/accounts?ok=assigned&n=${n}&a=${encodeURIComponent(who)}`;
     } else if (str('action') === 'move-group') {
       const ids = f.getAll('ids').map(String).filter(Boolean);
       const r = await admin.crm.moveToGroup(ids, { groupName: str('groupName') });
@@ -155,7 +160,10 @@ const href = (p: Record<string, string>) => {
 saveFilters(Astro.cookies, 'co_f_list', new URL(href({}), Astro.url).searchParams, t.zones);
 const myZones = t.myZoneIds.map((z) => t.zones.find((x) => x.id === z)?.name).filter(Boolean).join(', ');
 const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
-const okMsg = flash(Astro.url, { moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
+const team = perms.manageAccounts ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner')
+  .map((x) => ({ id: x.userId, label: x.userId === admin.session.userId ? M.bulkAssignMe(x.displayName || x.email) : x.displayName || x.email }))
+  .sort((a, b) => Number(b.id === admin.session.userId) - Number(a.id === admin.session.userId) || a.label.localeCompare(b.label, locale)) : [];
+const okMsg = flash(Astro.url, { assigned: M.bulkAssigned(Number(Astro.url.searchParams.get('n')) || 0, team.find((x) => x.id === Astro.url.searchParams.get('a'))?.label.replace(/^.*\((.*)\)$/, '$1') ?? '—'), moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = ([['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]] as Array<[string, string]>).filter(([k]) => qual || k === 'enfria' || k === 'ia');
@@ -286,6 +294,22 @@ const panelOpen = nFilters > 0;
       ); })}
     </div>
   )}
+  <p class="co-meta mb-3 flex items-center gap-2" role="status" hidden data-search-status data-testid="search-status"><span class="co-spinner" aria-hidden="true"></span><span data-search-text></span></p>
+  <script define:vars={{ S: { all: M.searchingAll('§'), more: M.searchingMore('§') } }}>
+    // Mientras llega el resultado de todo el CRM, se dice que está buscando (criterio de Cristian: si no está entre las
+    // que se ven, parecía que no existía).
+    const st = document.querySelector('[data-search-status]');
+    const txt = st?.querySelector('[data-search-text]');
+    document.getElementById('acc-q')?.addEventListener('input', (e) => {
+      const q = e.target.value.trim();
+      if (!st || !txt) return;
+      st.hidden = !q;
+      if (!q) return;
+      const seen = [...document.querySelectorAll('#acc-results [data-testid=account]')].some((li) => !li.hidden);
+      txt.textContent = (seen ? S.more : S.all).replace('§', q);
+    });
+    document.addEventListener('co:swapped', () => { if (st) st.hidden = true; });
+  </script>
   <script>
     // Filtros al momento: cambiar un desplegable aplica; el texto, al pulsar Enter. «Filtros» abre y cierra el panel.
     document.querySelectorAll<HTMLFormElement>('form[data-autosubmit]').forEach((f) => {
@@ -357,6 +381,7 @@ const panelOpen = nFilters > 0;
     {admin.crm.hasAi() && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-ai data-testid="bulk-ai" title={AI.zone.max(AI_MAX)}><Icon name="sparkles" size={14} />{AI.zone.run}</button>}
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/accounts/unir" formmethod="get" formnovalidate hidden data-bulk-merge data-testid="bulk-merge"><Icon name="layers" size={14} />{MG.bulk}</button>
     {kindDefs.length > 1 && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-kind" data-testid="bulk-kind"><Icon name="tag" size={14} />{CL.changeKind}</button>}
+    {team.length > 0 && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-assign" data-testid="bulk-assign"><Icon name="users" size={14} />{M.bulkAssign}</button>}
     <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-release" data-testid="bulk-release"><Icon name="log-out" size={14} />{M.bulkRelease}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
     {kindDefs.length > 1 && (
@@ -369,6 +394,21 @@ const panelOpen = nFilters > 0;
         <div class="co-dialog__foot">
           <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
           <button class="co-btn co-btn--primary" type="submit" name="action" value="kind-many" formnovalidate data-testid="bulk-kind-confirm">{CL.changeKind}</button>
+        </div>
+      </dialog>
+    )}
+    {team.length > 0 && (
+      <dialog id="bulk-assign" class="co-dialog" aria-labelledby="bulk-assign-title">
+        <div class="co-dialog__body">
+          <h2 id="bulk-assign-title" class="co-entity">{M.bulkAssignTitle}</h2>
+          <p class="co-body">{M.bulkAssignBody}</p>
+          <label class="co-field">{M.bulkAssignTo}
+            <select class="co-select" name="assignTo" data-testid="bulk-assign-to">{team.map((x) => <option value={x.id}>{x.label}</option>)}</select>
+          </label>
+        </div>
+        <div class="co-dialog__foot">
+          <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+          <button class="co-btn co-btn--primary" type="submit" name="action" value="assign-many" formnovalidate data-testid="bulk-assign-confirm">{M.bulkAssign.replace('…', '')}</button>
         </div>
       </dialog>
     )}
@@ -416,10 +456,15 @@ const panelOpen = nFilters > 0;
       if (all) all.checked = n > 0 && n === boxes().length;
       bar.querySelector('[data-bulk-label]').textContent = label.replace('0', String(n));
     };
-    document.addEventListener('change', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('[data-bulk]')) sync(); });
+    // Delegado: tras buscar, la lista (y su «Seleccionar todas») se cambia por la nueva y un escuchador fijo se perdía.
+    document.addEventListener('change', (e) => {
+      if (!(e.target instanceof HTMLInputElement)) return;
+      // «Seleccionar todas»: marca o desmarca todas las filas que se ven (también si ya había alguna marcada).
+      if (e.target.matches('[data-bulk-all]')) { boxes().forEach((b) => { if (!b.closest('[hidden]')) b.checked = e.target.checked; }); sync(); }
+      else if (e.target.matches('[data-bulk]')) sync();
+    });
+    document.addEventListener('co:swapped', sync);
     bar.querySelector('[data-bulk-clear]').addEventListener('click', () => { boxes().forEach((b) => { b.checked = false; }); sync(); });
-    // «Seleccionar las que se ven»: marca o desmarca todas las filas de la página.
-    document.querySelector('[data-bulk-all]')?.addEventListener('change', (e) => { boxes().forEach((b) => { b.checked = e.target.checked; }); sync(); });
   </script>
   <script define:vars={{ max: AI_MAX, T: { bg: PR.bg } }}>
     // «Investigar zona»: las marcadas (hasta 20) se investigan en segundo plano (AdminLayout): se puede seguir usando la
