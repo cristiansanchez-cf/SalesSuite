@@ -15,6 +15,7 @@ import { leadsRuntime } from '~/lib/leads/server';
 import { appMode } from '~/lib/mode';
 import { assistantContact, samePhone } from '~/lib/assistant/contact';
 import { assistantSetupMessages } from '~/lib/i18n/messages/assistantSetup';
+import { formatPhone, myAssistantPhones, setMyAssistantPhone } from '~/lib/assistant/phones';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -41,6 +42,7 @@ let waRemind = await readWaRemind();
 const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null;
 let notifyOk = false;
 let contactMsg: { ok?: string; error?: string } = {};
+let phonesMsg: { ok?: string; error?: string } = {};
 let localeOk = false;
 if (form?.get('action') === 'locale') {
   const l = String(form.get('locale') ?? '');
@@ -59,6 +61,26 @@ if (form?.get('action') === 'locale') {
   const CM = builderMessages[locale].page.contact;
   if (bad) contactMsg = { error: bad === 'phone' ? CM.errPhone : bad === 'linkedin' ? CM.errLinkedin : CM.errEmail };
   else { await saveContact(admin, ch, v); contactMsg = { ok: CM.saved }; }
+} else if (form?.get('action') === 'password' && showPassword) {
+  // La contraseña, en su ventana (Establecer / Cambiar). Se marca has_password para saber qué botón enseñar.
+  const password = String(form.get('password') ?? '');
+  if (password.length < 10) error = m.account.errShort;
+  else if (password !== String(form.get('confirm') ?? '')) error = m.account.errMismatch;
+  else if (admin.mode === 'supabase' && admin.supabase) {
+    const { error: e } = await admin.supabase.auth.updateUser({ password, data: { has_password: true } });
+    if (e) error = e.message.includes('should be different') ? m.account.errSame : m.account.errSave;
+    else ok = m.account.passwordSaved;
+  } else ok = m.account.savedDemo;
+} else if (form?.get('action') === 'assistant-phones') {
+  // Desde qué móvil escribe al asistente en cada empresa (vacío = el de arriba). Con prefijo, como el de arriba.
+  for (const sp of await myAssistantPhones(admin)) {
+    const raw = String(form.get(`ap_${sp.tenantId}`) ?? '').trim().slice(0, 40);
+    const e164 = raw ? toE164(raw, { locale }) : null;
+    if (raw && (!/^\+?[\d\s().-]{6,39}$/.test(raw) || !e164)) { phonesMsg = { error: m.account.phonesErr(sp.name) }; break; }
+    await setMyAssistantPhone(admin, sp.tenantId, e164);
+  }
+  phonesMsg.error ??= undefined;
+  if (!phonesMsg.error) phonesMsg = { ok: m.account.phonesSaved };
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
   await admin.notifications.setDailyPref({ daily: form.get('daily') === 'on', timezone: String(form.get('timezone') ?? '') });
@@ -81,7 +103,7 @@ if (form?.get('action') === 'locale') {
   if (error) { /* se enseña arriba, con lo escrito */ }
   else if (admin.mode === 'supabase' && admin.supabase) {
     const sb = admin.supabase;
-    const { error: e } = await sb.auth.updateUser({ ...(password ? { password } : {}), data: { name } });
+    const { error: e } = await sb.auth.updateUser({ ...(password ? { password } : {}), data: { name, ...(password ? { has_password: true } : {}) } });
     if (e) error = e.message.includes('should be different') ? m.account.errSame : m.account.errSave;
     else {
       await sb.from('users').update({ display_name: name || null, phone: phone || null }).eq('id', admin.session.userId);
@@ -94,6 +116,10 @@ if (form?.get('action') === 'locale') {
     ok = password ? m.account.savedDemo : m.account.saved;
   }
 }
+// ¿Tiene contraseña? (la marca has_password la pone esta página al guardarla; sin marca, «Establecer»).
+const hasPassword = showPassword && admin.mode === 'supabase' && admin.supabase
+  ? !!(await admin.supabase.auth.getUser().catch(() => null))?.data?.user?.user_metadata?.has_password
+  : false;
 const C = builderMessages[locale].page.contact;
 const contact = await readContact(admin, admin.session.userId).catch(() => ({ channel: null, value: '', name: '' }));
 const channelName = (c: ContactChannel) => (c === 'phone' ? C.phone : c === 'email' ? C.email : CHANNEL_NAME[c]);
@@ -106,6 +132,8 @@ const showAssistant = !setup && admin.session.role !== 'partner';
 const rt = showAssistant ? await leadsRuntime() : null;
 const leadSettings = rt && !('error' in rt) ? await rt.db.settings(admin.session.tenantId).catch(() => null) : null;
 const assistant = showAssistant ? await assistantContact(leadSettings, { demo: appMode() === 'demo' }) : null;
+// Con más de una empresa: desde qué móvil escribe en cada una.
+const spacePhones = assistant && assistant.mode !== 'off' ? await myAssistantPhones(admin).catch(() => []) : [];
 ---
 <AdminLayout title={m.account.title}>
   <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
@@ -115,9 +143,9 @@ const assistant = showAssistant ? await assistantContact(leadSettings, { demo: a
     <label class="co-field">{m.account.name}<input class="co-input" name="name" value={name} maxlength="80" autocomplete="name" /></label>
     {admin.session.role !== 'partner' && (
       <label class="co-field">{m.account.phone} <span class="co-help">{m.account.phoneHelp}</span>
-        <input class="co-input" type="tel" name="phone" value={phone} maxlength="40" autocomplete="tel" placeholder="+34 600 000 000" required data-testid="phone" /></label>
+        <input class="co-input" type="tel" name="phone" value={formatPhone(phone)} maxlength="40" autocomplete="tel" inputmode="tel" placeholder="+34 600 000 000" required data-testid="phone" data-phone-format /></label>
     )}
-    {showPassword && <>
+    {showPassword && setup && <>
       <label class="co-field">{m.account.password} <span class="co-help">{m.account.passwordHelp}</span>
         <input class="co-input" type="password" name="password" minlength="10" autocomplete="new-password" />
       </label>
@@ -125,6 +153,28 @@ const assistant = showAssistant ? await assistantContact(leadSettings, { demo: a
     </>}
     <button class="co-btn co-btn--primary w-fit" type="submit">{m.account.save}</button>
   </form>
+  {showPassword && !setup && (
+    <section class="co-card mt-6 grid max-w-lg gap-3" data-testid="account-password">
+      <h2 class="co-entity">{m.account.password}</h2>
+      <p class="co-meta">{hasPassword ? m.account.passwordSet : m.account.passwordNone}</p>
+      <button type="button" class="co-btn co-btn--ghost w-fit" data-dialog-open="pw-dialog" data-testid="password-open">{hasPassword ? m.account.changePassword : m.account.setPassword}</button>
+      <dialog id="pw-dialog" class="co-dialog" aria-labelledby="pw-dialog-title">
+        <form method="post" class="grid gap-0">
+          <input type="hidden" name="action" value="password" />
+          <div class="co-dialog__body grid gap-4">
+            <h2 id="pw-dialog-title" class="co-entity">{hasPassword ? m.account.changePassword : m.account.setPassword}</h2>
+            <label class="co-field">{m.account.newPassword} <span class="co-help">{m.account.passwordHelp.replace(/^[^,]*,\s*/, '')}</span>
+              <input class="co-input" type="password" name="password" minlength="10" required autocomplete="new-password" data-testid="pw-new" /></label>
+            <label class="co-field">{m.account.repeat}<input class="co-input" type="password" name="confirm" minlength="10" required autocomplete="new-password" data-testid="pw-repeat" /></label>
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{m.account.cancel}</button>
+            <button type="submit" class="co-btn co-btn--primary" data-testid="pw-save">{m.account.save}</button>
+          </div>
+        </form>
+      </dialog>
+    </section>
+  )}
   {assistant && (
     <section id="asistente" class="co-card mt-6 grid max-w-lg gap-3" data-testid="account-assistant" data-mode={assistant.mode}>
       <div class="flex items-center gap-2"><Icon name="whatsapp" size={20} /><h2 class="co-entity">{A.title}</h2></div>
@@ -142,6 +192,20 @@ const assistant = showAssistant ? await assistantContact(leadSettings, { demo: a
               : samePhone(phone, assistant.number)
                 ? <p class="co-inset flex items-start gap-2 !p-3 text-sm" data-testid="account-assistant-same"><Icon name="triangle-alert" size={16} />{A.same}</p>
                 : <p class="flex items-start gap-2 text-sm" data-testid="account-assistant-from"><Icon name="circle-check" size={16} />{A.from(phone)}</p>}
+            {spacePhones.length > 1 && (
+              <form method="post" class="co-inset grid gap-3 !p-4" data-testid="account-space-phones">
+                <input type="hidden" name="action" value="assistant-phones" />
+                <div><p class="font-semibold">{m.account.phonesTitle}</p><p class="co-help">{m.account.phonesLede}</p></div>
+                {phonesMsg.ok && <Alert kind="success" title={phonesMsg.ok} />}
+                {phonesMsg.error && <Alert kind="rejection" title={phonesMsg.error} />}
+                {spacePhones.map((sp) => (
+                  <label class="grid gap-1 sm:grid-cols-[10rem_1fr] sm:items-center"><span class="text-sm font-semibold">{sp.name}</span>
+                    <input class="co-input" type="tel" inputmode="tel" name={`ap_${sp.tenantId}`} value={sp.phone ? formatPhone(sp.phone) : ''} maxlength="40"
+                      placeholder={phone ? m.account.phonesMain(formatPhone(phone)) : '+34 600 000 000'} data-phone-format data-testid="space-phone" data-space={sp.name} /></label>
+                ))}
+                <button class="co-btn co-btn--ghost w-fit" type="submit" data-testid="space-phones-save">{m.account.phonesSave}</button>
+              </form>
+            )}
             <div class="grid gap-1">
               <p class="co-meta">{A.tipsTitle}</p>
               <ul class="flex flex-wrap gap-2">{A.tips.map((t) => <li class="co-chip">{t}</li>)}</ul>
@@ -211,3 +275,15 @@ const assistant = showAssistant ? await assistantContact(leadSettings, { demo: a
     </form>
   )}
 </AdminLayout>
+
+<script>
+  // Teléfonos: «+34 694 904 149» mientras se escribe (de 3 en 3; el prefijo del país aparte), sin pensar en espacios.
+  import { formatPhone } from '~/lib/phone-format';
+  document.querySelectorAll<HTMLInputElement>('input[data-phone-format]').forEach((el) => {
+    el.addEventListener('input', () => {
+      const atEnd = el.selectionStart === el.value.length;
+      const next = formatPhone(el.value);
+      if (next !== el.value) { el.value = next; if (atEnd) el.setSelectionRange(next.length, next.length); }
+    });
+  });
+</script>

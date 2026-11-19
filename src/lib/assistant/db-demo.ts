@@ -14,11 +14,12 @@ export function demoAssistantDb(): AssistantDb {
   return {
     async membersByPhone(digits) {
       if (!/^\d{9,15}$/.test(digits)) return [];
-      return demoDb().users.flatMap((u) => {
-        const d = digitsOf(u.phone);
+      // Por empresa: su móvil para esa empresa (membership.assistant_phone) o, si no tiene, el de Mi cuenta.
+      return demoDb().users.flatMap((u) => u.memberships.filter((m) => ['admin', 'lead', 'rep'].includes(m.role)).flatMap((m) => {
+        const d = digitsOf(m.assistant_phone?.trim() || u.phone);
         if (d.length < 9 || !(d === digits || (digits.length > d.length && digits.endsWith(d)))) return [];
-        return u.memberships.filter((m) => ['admin', 'lead', 'rep'].includes(m.role)).map((m) => ({ tenantId: m.tenant_id, userId: u.id }));
-      });
+        return [{ tenantId: m.tenant_id, userId: u.id }];
+      }));
     },
     async get(t, u) { return structuredClone(store().get(`${t}|${u}`) ?? EMPTY); },
     async save(t, u, c, prev) {
