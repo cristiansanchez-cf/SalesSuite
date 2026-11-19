@@ -87,7 +87,7 @@ const empty = !h.dossiers.length && !h.accounts.length;
         </section>
       ))}
 
-      <div class="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[var(--console-line)] bg-[var(--console-bg)] py-3">
+      <div class="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[var(--console-divider)] bg-[var(--console-page-bg)] py-3">
         <button class="co-btn co-btn--primary" data-testid="handover-save" disabled>{M.save}</button>
         <span class="co-meta" data-summary data-none={M.summaryNone} data-tpl-one={M.summary(1)} data-tpl-many={M.summary(2)}>{M.summaryNone}</span>
       </div>

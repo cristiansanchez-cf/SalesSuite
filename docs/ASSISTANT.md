@@ -86,7 +86,9 @@ uno.
 - **«Ahora te paso los mensajes»** (`announcesChat`): espera (estado `context`, media hora) y junta lo que llegue: la
   conversación pegada, los reenviados (sin preguntar de qué empresa: ya lo dijo; se cierra con «listo») o capturas.
 - **Después del resumen**: si pega la conversación que faltaba, se añade a lo que contó (no es una corrección).
-- En todos los casos la conversación va literal en la interacción («Conversación:»).
+- En todos los casos la conversación va literal en la interacción («Conversación:»); también desde «Apuntar con IA» en la
+  web. En la ficha se pinta como un chat (lib/crm/convo.ts + components/admin/ChatThread.astro): el resumen arriba, los
+  3 últimos mensajes y «Ver conversación entera», un modal con lo último abajo y «Cargar anteriores» de 40 en 40.
 
 ## Técnica
 

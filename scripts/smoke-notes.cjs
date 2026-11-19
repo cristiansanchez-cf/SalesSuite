@@ -76,6 +76,25 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const one = await p.$$eval('[data-testid=notes-item]', (xs) => xs.map((x) => x.querySelector('select').selectedOptions[0].textContent));
   assert(one.length === 1 && one[0].startsWith('Club Sol'), `todo va a la elegida (${one})`);
 
+  // Conversación pegada de WhatsApp: literal en la interacción y, en la ficha, como un chat con «Ver conversación entera».
+  const msgs = Array.from({ length: 45 }, (_, i) => `[19/11/26, 10:${String(i).padStart(2, '0')}:00] ${i % 2 ? 'Vicente' : 'Comercial Enjoy'}: mensaje ${i + 1}`).join('\n');
+  await p.goto(`${BASE}/admin/accounts/apuntar?empresa=00000000-0000-4000-8000-0000000ac001`);
+  await p.fill('[data-testid=notes-text]', `Hoy le escribí al encargado:\n${msgs}`);
+  await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
+  assert((await p.inputValue('[data-testid=notes-interaction]')).includes('Conversación:\n[19/11/26, 10:00:00] Comercial Enjoy: mensaje 1'), 'la conversación pegada va literal');
+  await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
+  await p.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
+  const chat = p.locator('[data-testid=chat-preview]').first();
+  assert(await chat.isVisible(), 'ficha: la conversación como chat');
+  assert((await chat.locator('.co-chat__msg').count()) === 3 && (await chat.locator('.co-chat__msg--us').count()) >= 1, 'vista previa: los últimos 3, los nuestros a la derecha');
+  await chat.locator('[data-testid=chat-open]').click();
+  const dlg = p.locator('[data-testid=chat-dialog]').first();
+  assert((await dlg.locator('[data-chat-msg]:visible').count()) === 40, 'modal: los últimos 40');
+  await dlg.locator('[data-testid=chat-older]').click();
+  assert((await dlg.locator('[data-chat-msg]:visible').count()) === 45, 'cargar anteriores: todos');
+  await dlg.locator('[data-dialog-close]').click();
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+
   // Desde la ficha: «Apuntar aquí» abre Apuntar con esa empresa ya elegida (§23); y lo escrito no se pierde al salir.
   await p.goto(`${BASE}/admin/accounts/00000000-0000-4000-8000-0000000ac001`);
   await Promise.all([p.waitForURL(/apuntar\?empresa=/), p.click('[data-testid=summary-note]')]);

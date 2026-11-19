@@ -1,5 +1,7 @@
 ---
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
+import ChatThread from '~/components/admin/ChatThread.astro';
+import { splitConvo } from '~/lib/crm/convo';
 import { dossierFromAccount } from '~/lib/admin/from-account';
 import ZonePicker from '~/components/crm/ZonePicker.astro';
 import AdminLayout from '~/layouts/AdminLayout.astro';
@@ -461,7 +463,15 @@ const STATE_ALERT = {
                   <span class="min-w-0 flex-1">
                     <strong>{x.outcome === 'note' ? F.outcomes.note : `${F.channels[x.channel]} · ${F.outcomes[x.outcome]}`}</strong>
                     <span class="co-meta">{x.contactName ? ` · ${x.contactName}` : ''}{x.userName ? ` · ${x.userName}` : ''}</span>
-                    {x.note && <span class="co-body block whitespace-pre-line" data-ugc>{x.note}</span>}
+                    {(() => {
+                      // Conversación literal (asistente o pegada): el resumen arriba y los mensajes como un chat.
+                      const c = splitConvo(x.note, x.userName);
+                      if (!c) return x.note && <span class="co-body block whitespace-pre-line" data-ugc>{x.note}</span>;
+                      return <>
+                        {c.summary && <span class="co-body block whitespace-pre-line" data-ugc>{c.summary}</span>}
+                        <ChatThread id={x.id} bubbles={c.bubbles} labels={{ title: F.follow.convoTitle, all: F.follow.convoAll, older: F.follow.convoOlder, us: F.follow.convoUs, them: F.follow.convoThem, close: F.follow.convoClose }} />
+                      </>;
+                    })()}
                   </span>
                   {(x.userId === admin.session.userId || perms.manageAccounts) && (
                     <form method="post"><input type="hidden" name="action" value="activity-delete" /><input type="hidden" name="activityId" value={x.id} />

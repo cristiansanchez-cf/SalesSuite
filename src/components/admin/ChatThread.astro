@@ -1,0 +1,68 @@
+---
+/**
+ * Conversación literal de una interacción en burbujas (lib/crm/convo.ts): en la ficha, los últimos mensajes y «Ver
+ * conversación entera», que abre un modal con todo, abajo lo último y «Cargar anteriores» de 40 en 40.
+ */
+import type { Bubble } from '~/lib/crm/convo';
+interface Props {
+  id: string; bubbles: Bubble[];
+  labels: { title: string; all: (n: number) => string; older: string; us: string; them: string; close: string };
+}
+const { id, bubbles, labels: L } = Astro.props;
+const PAGE = 40;
+const preview = bubbles.slice(-3);
+const who = (b: Bubble) => b.who || (b.us ? L.us : L.them);
+---
+<div class="co-chat" data-testid="chat-preview">
+  {bubbles.length > preview.length && <p class="co-chat__more">… {bubbles.length - preview.length}</p>}
+  {preview.map((b) => (
+    <div class:list={['co-chat__msg', b.us && 'co-chat__msg--us']}>
+      <span class="co-chat__who">{who(b)}{b.time && <span> · {b.time}</span>}</span>
+      <span class="co-chat__text" data-ugc>{b.text}</span>
+    </div>
+  ))}
+  <button type="button" class="co-btn co-btn--ghost co-btn--sm mt-1 w-fit" data-dialog-open={`chat-${id}`} data-testid="chat-open">{L.all(bubbles.length)}</button>
+</div>
+<dialog id={`chat-${id}`} class="co-dialog co-chat-dialog" aria-label={L.title} data-chat-dialog data-testid="chat-dialog">
+  <div class="flex items-center justify-between gap-2 border-b border-[var(--console-divider)] pb-2">
+    <strong>{L.title} · {bubbles.length}</strong>
+    <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-close>{L.close}</button>
+  </div>
+  <div class="co-chat co-chat--full" data-chat-scroll>
+    {bubbles.length > PAGE && <button type="button" class="co-btn co-btn--quiet co-btn--sm mx-auto" data-chat-older data-page={PAGE} data-testid="chat-older">{L.older}</button>}
+    {bubbles.map((b, i) => (
+      <div class:list={['co-chat__msg', b.us && 'co-chat__msg--us']} hidden={i < bubbles.length - PAGE ? true : undefined} data-chat-msg>
+        <span class="co-chat__who">{who(b)}{b.time && <span> · {b.time}</span>}</span>
+        <span class="co-chat__text" data-ugc>{b.text}</span>
+      </div>
+    ))}
+  </div>
+</dialog>
+
+<script>
+  // Al abrir, abajo del todo (lo último); «Cargar anteriores» enseña 40 más sin moverte de donde estabas.
+  document.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const opener = t.closest<HTMLElement>('[data-dialog-open^="chat-"]');
+    if (opener) requestAnimationFrame(() => { const s = document.getElementById(opener.dataset.dialogOpen!)?.querySelector<HTMLElement>('[data-chat-scroll]'); if (s) s.scrollTop = s.scrollHeight; });
+    const older = t.closest<HTMLButtonElement>('[data-chat-older]');
+    if (!older) return;
+    const box = older.closest<HTMLElement>('[data-chat-scroll]')!;
+    const hidden = [...box.querySelectorAll<HTMLElement>('[data-chat-msg][hidden]')];
+    const before = box.scrollHeight;
+    hidden.slice(-Number(older.dataset.page || 40)).forEach((m) => { m.hidden = false; });
+    box.scrollTop += box.scrollHeight - before;
+    if (hidden.length <= Number(older.dataset.page || 40)) older.remove();
+  });
+</script>
+
+<style is:global>
+  .co-chat { display: grid; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 14px; background: var(--console-page-bg); }
+  .co-chat--full { max-height: min(70vh, 640px); overflow-y: auto; margin-top: 12px; }
+  .co-chat__more { margin: 0; text-align: center; font-size: 12px; color: var(--co-ink-dim); }
+  .co-chat__msg { justify-self: start; max-width: 85%; display: grid; gap: 2px; padding: 6px 10px; border-radius: 12px 12px 12px 4px; background: var(--console-surface); border: 1px solid var(--console-card-border); }
+  .co-chat__msg--us { justify-self: end; border-radius: 12px 12px 4px 12px; background: color-mix(in srgb, #25d366 18%, var(--console-surface)); }
+  .co-chat__who { font-size: 11px; font-weight: 600; color: var(--co-ink-dim); }
+  .co-chat__text { white-space: pre-line; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+  .co-chat-dialog { width: min(560px, calc(100vw - 32px)); padding: 16px; }
+</style>

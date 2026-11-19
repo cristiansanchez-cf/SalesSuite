@@ -4,6 +4,8 @@
  * empresa que más se parece (o una nueva), su nota, lo que se marca en la cualificación y el próximo paso → se revisa
  * y se guarda todo de una vez. La IA no guarda nada.
  */
+import { pastedChat } from '~/lib/assistant/flow';
+import { assistantMessages } from '~/lib/assistant/messages';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
@@ -28,6 +30,7 @@ const PR = priorityMessages[locale];
 const PRF = profilesMessages[locale];
 const CK: Record<string, string> = M.contactKeys;
 const CLN = cleanupMessages[locale];
+const CONVO = (assistantMessages[locale as keyof typeof assistantMessages] ?? assistantMessages.es).convo;
 const FU = followupMessages[locale];
 
 type Item = Awaited<ReturnType<typeof admin.crm.notesSplit>>[number];
@@ -41,6 +44,12 @@ if (Astro.request.method === 'POST') {
     if (str('action') === 'split') {
       box.text = str('text');
       box.items = await admin.crm.notesSplit(box.text, await cleanupContext(admin), str('accountId') || null);
+      // La conversación pegada (copiar de WhatsApp) va literal, como en el asistente: en la ficha sale como chat.
+      const chat = pastedChat(box.text);
+      if (chat.length >= 2 && box.items.length === 1) {
+        const it = box.items[0]!;
+        box.items = [{ ...it, interaction: [it.interaction, `${CONVO}:\n${chat.join('\n')}`].filter(Boolean).join('\n\n').slice(0, 4000) }];
+      }
       return;
     }
     // Guardar lo revisado: lo que dijo la IA (items) con lo que ha cambiado la persona en cada sitio.
