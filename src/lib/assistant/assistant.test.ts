@@ -138,6 +138,20 @@ describe('la conversación', () => {
     expect(a.replies[0].text).toContain('escribe «apúntalo»');
     expect((await run(ops, { kind: 'text', text: 'apúntalo' }, a.state)).state.step).toBe('confirm');
   });
+  test('con muy poco («he estado hablando con X») pregunta de qué y junta la respuesta', async () => {
+    const seen: string[] = [];
+    const { ops } = fakeOps({ split: async (t) => { seen.push(t); return [{ ...item('Havana'), candidates: [cand('h1', 'Havana', 1)] }]; } });
+    const a = await run(ops, { kind: 'text', text: 'Oye, he estado hablando con José María de Havana' });
+    expect(a.state.step).toBe('context');
+    expect(a.replies[0].text).toContain('¿Y qué te ha dicho José María de Havana?');
+    expect(seen).toEqual([]);
+    const b = await run(ops, { kind: 'audio', text: 'Que le encaja lo de las pantallas y quiere una demo el jueves' }, a.state);
+    expect(b.state.step).toBe('confirm');
+    expect(seen[0]).toBe('Oye, he estado hablando con José María de Havana\n\nQue le encaja lo de las pantallas y quiere una demo el jueves');
+    // Con algo de contenido, directo al resumen.
+    expect((await run(ops, { kind: 'text', text: 'He estado hablando con Juan de Havana y quiere una demo' })).state.step).toBe('confirm');
+    expect((await run(ops, { kind: 'text', text: 'He hablado con Juan: le interesa' })).state.step).toBe('confirm');
+  });
   test('el audio se repite entero (no a los 55 segundos)', async () => {
     const { ops } = fakeOps();
     const long = 'palabra '.repeat(400).trim();

@@ -85,6 +85,13 @@ tu audio… dame unos segundos» (o «👀 Leyendo tu captura…») y vuelve el 
 El eco «🎙️ He entendido: «…»» repite el audio entero (hasta 3.500 caracteres, ~4 min de habla); antes se cortaba a 800
 (~55 s) y parecía que no lo había entendido entero, aunque sí lo había transcrito todo.
 
+### Con muy poco, pregunta antes de guardar
+
+Criterio de Cristian: «he estado hablando con X» no es para guardar todavía. Un mensaje corto que solo dice con quién
+ha hablado (`tooThin` en flow.ts: «he estado hablando / hablé / acabo de hablar con …», sin «que», «dijo», «quiere», días
+ni dos puntos) → «Genial 👍 ¿Y qué te ha dicho X?» y espera (estado `context`). Lo siguiente (texto o audio) se junta
+con eso y va al resumen. «Apúntalo» apunta lo que hay.
+
 ### Conversación en varios mensajes
 
 Criterio de Cristian: al copiar mensajes de WhatsApp (lo ideal: salen con fecha y quién los dijo), WhatsApp solo deja

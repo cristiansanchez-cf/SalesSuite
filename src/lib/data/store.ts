@@ -422,7 +422,7 @@ export function freshDemoDb(): DemoDb {
     ],
     account_link: [],
     crm_import: [],
-    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }] }],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }, { key: 'marca', label: 'Marca', plural: 'Marcas', icon: 'star' }] }],
     crm_fix: [],
     crm_sweep: [],
     usage_counter: [],

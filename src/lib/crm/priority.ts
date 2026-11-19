@@ -43,7 +43,7 @@ export const SIZE_LIMITS: Record<SizeScale, [number, number, number]> = {
   venue: [150, 500, 1500], concert: [500, 2000, 10000], festival: [5000, 20000, 50000],
 };
 /** La escala de un sitio: si hace festivales, la de festivales; si conciertos, la de conciertos; si no, la de local. */
-export const sizeScaleOf = (fs: readonly string[]): SizeScale => (fs.includes('festival') ? 'festival' : fs.includes('concerts') ? 'concert' : 'venue');
+export const sizeScaleOf = (fs: readonly string[]): SizeScale => (fs.includes('festival') || fs.includes('stadium') ? 'festival' : fs.includes('concerts') ? 'concert' : 'venue');
 /** Un aforo en número → su tramo en esa escala. */
 export function sizeOfCapacity(n: number, scale: SizeScale): (typeof SIZES)[number] {
   const [a, b, c] = SIZE_LIMITS[scale];
@@ -54,9 +54,10 @@ export function sizeOfCapacity(n: number, scale: SizeScale): (typeof SIZES)[numb
  * cómo se mide la recurrencia (FORMAT_KIND): una promotora por eventos al año; un local por noches con fiesta.
  */
 // Una promotora no es un formato de local: tiene su propia ficha (§24, §30). Lo viejo marcado como «promoter» se ignora.
-export const FORMATS = ['club', 'pub', 'cocktail', 'rooftop', 'restaurant', 'hall', 'hotel', 'concerts', 'festival'] as const;
+// Estadio (criterio de Cristian): pocos (5–6 en España) y como un grupo: el propio estadio y las promotoras de sus eventos.
+export const FORMATS = ['club', 'pub', 'cocktail', 'rooftop', 'restaurant', 'hall', 'hotel', 'concerts', 'festival', 'stadium'] as const;
 export const FORMAT_KIND: Record<(typeof FORMATS)[number], LeadKind> = {
-  club: 'venue', pub: 'venue', cocktail: 'venue', rooftop: 'venue', restaurant: 'venue', hall: 'venue', hotel: 'venue', concerts: 'concert', festival: 'concert',
+  club: 'venue', pub: 'venue', cocktail: 'venue', rooftop: 'venue', restaurant: 'venue', hall: 'venue', hotel: 'venue', concerts: 'concert', festival: 'concert', stadium: 'concert',
 };
 export type Format = (typeof FORMATS)[number];
 /** Claves con varios valores a la vez (se marcan y desmarcan de una en una). */

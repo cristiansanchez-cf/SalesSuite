@@ -101,6 +101,18 @@ export function pastedChat(text: string): string[] {
   }
   return out;
 }
+/**
+ * Muy poco que apuntar (criterio de Cristian): «he estado hablando con Juan de Havana» sin decir de qué. Antes de
+ * guardar, se pregunta qué le ha dicho y se junta la respuesta. Devuelve con quién (para la pregunta) o null.
+ */
+const TALKED = /^(?:oye,?\s*|mira,?\s*|pues,?\s*)?(?:hoy\s+|ayer\s+|esta mañana\s+|esta tarde\s+)?(?:he\s+(?:estado\s+)?habla(?:do|ndo)|estuve\s+hablando|acabo\s+de\s+hablar|hablé|he\s+llamado\s+a|he\s+estado\s+con|i\s+(?:talked|spoke|have been talking)|falei|estive\s+a\s+falar)\s+(?:con|with|com)\s+([^,.;:!?\n]{2,60}?)\s*[.!¡]*$/iu;
+const SUBSTANCE = /\b(que|dijo|dice|me ha|nos ha|quiere|quieren|interes|precio|semana|mañana|jueves|viernes|lunes|martes|miércoles|sábado|domingo|cita|reunión|propuesta|said|wants|disse|quer)\b|[:;]/iu;
+export function tooThin(t: string): string | null {
+  const x = t.trim();
+  if (x.split(/\s+/).length > 14 || SUBSTANCE.test(x.replace(/^(?:oye|mira|pues),?\s*/iu, ''))) return null;
+  const m = TALKED.exec(x);
+  return m ? m[1]!.trim() : null;
+}
 /** «He hablado con X… ahora te paso los mensajes»: lo que viene después va con esto. */
 const ANNOUNCE = /(te (paso|mando|env[ií]o|pego|reenv[ií]o|adjunto)|ahora te|luego te|a continuaci[oó]n|i.?ll (send|forward|paste)|here (are|is)|vou (te )?(mandar|enviar|passar|colar)|já te (mando|passo))/iu;
 const CHAT_NOUN = /(mensaje|conversaci|chat|captura|pantallazo|whats|messages?|conversation|screenshots?|mensage|conversa)/iu;
@@ -344,6 +356,11 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       if (n != null && state.candidates[n - 1]) { const c = state.candidates[n - 1]; return withHeard(forwardTo(state.texts, { accountId: c.id, create: null, name: c.name }, state.channel)); }
       return withHeard(await forwardSearch(state.texts, text, state.channel));
     }
+  }
+  // Muy poco («he estado hablando con X»): se pregunta de qué antes de guardar nada.
+  if (state.step === 'idle' && !announcesChat(text)) {
+    const who = tooThin(text);
+    if (who != null) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.tellMore(who))] });
   }
   // «He hablado con X… ahora te paso los mensajes»: se espera la conversación para juntarla.
   if (state.step === 'idle' && announcesChat(text)) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.waitChat)] });

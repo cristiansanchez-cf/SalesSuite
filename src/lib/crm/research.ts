@@ -110,7 +110,7 @@ export const SAVE_TOOL = {
   },
 } as const;
 
-const KEY_HELP: Record<string, string> = { format: 'club discoteca, pub bar de copas, cocktail cóctel bar, rooftop rooftop o terraza, restaurant restaurante que acaba en fiesta, hall sala de conciertos, hotel hotel o beach club, promoter promotora, concerts conciertos o artista', party: '¿hay fiesta? core es su negocio, some algunas noches', dj: 'resident residente, guests invitados, both los dos, none sin DJ', promoters: 'si trabajan promotoras en el sitio', scale: 'cuántos locales tiene el dueño, no el tamaño', size: 'tamaño del local: aforo o metros' };
+const KEY_HELP: Record<string, string> = { format: 'club discoteca, pub bar de copas, cocktail cóctel bar, rooftop rooftop o terraza, restaurant restaurante que acaba en fiesta, hall sala de conciertos, hotel hotel o beach club, promoter promotora, concerts conciertos o artista, festival festival, stadium estadio', party: '¿hay fiesta? core es su negocio, some algunas noches', dj: 'resident residente, guests invitados, both los dos, none sin DJ', promoters: 'si trabajan promotoras en el sitio', scale: 'cuántos locales tiene el dueño, no el tamaño', size: 'tamaño del local: aforo o metros' };
 const VALUE_HELP = Object.entries(QUAL_VALUES).filter(([k]) => (AI_QUAL_KEYS as readonly string[]).includes(k))
   .map(([k, v]) => `- ${k}: ${v.join(' | ')}${KEY_HELP[k] ? ` (${KEY_HELP[k]})` : ''}`).join('\n');
 
