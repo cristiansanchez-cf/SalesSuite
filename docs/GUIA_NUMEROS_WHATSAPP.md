@@ -30,8 +30,10 @@ webhook: no hay que tocar nada técnico salvo una variable en Vercel.
 2. **Dónde está (comprobado el 19/11/2026, Meta en inglés):** business.facebook.com → abajo a la izquierda
    **Settings** (rueda) → cartera **enjoytheclubapp** → **Accounts → WhatsApp accounts**. Ahí salen los números (el
    +34 694… «Enjoy The Club» y el de pruebas «Test Number») con su estado, calidad y límite de mensajes. Para añadir
-   uno: el botón azul **+** de arriba a la derecha. (Desde la portada de Business Suite no se ve; tampoco hace falta
-   WhatsApp Manager.)
+   uno a la cuenta de Enjoy **no** se usa el botón azul **+ Add** (crea cuentas nuevas) ni «Linked WhatsApp accounts»
+   (enlaza cuentas distintas). El camino: en el número de Enjoy → **More ▾ → Messaging accounts** → los tres puntos de
+   «Enjoy The Club» → **View in WhatsApp Manager** → **Phone numbers → Add phone number**. (Desde la portada de
+   Business Suite no se ve.)
    - **Nombre visible:** Meta lo revisa y tiene que tener relación con la empresa de la cartera. Mientras sea la
      cartera de Enjoy, algo como «Enjoy the Club · Asistente» pasa sin problemas. (No lo ven los clientes: solo el equipo.)
    - Categoría: la que encaje (Servicios profesionales, por ejemplo).
