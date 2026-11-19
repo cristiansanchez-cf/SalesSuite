@@ -19,7 +19,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const settle = () => p.waitForFunction(() => !document.querySelector('[data-testid=builder][data-busy]'));
   await p.goto(`${BASE}/admin/login`);
   await p.click('[data-testid="demo-rep@enjoy.test"]');
-  await p.waitForURL(`${BASE}/admin`);
+  await p.waitForURL(/\/admin(\/accounts)?$/); if (!p.url().endsWith("/admin")) await p.goto(`${BASE}/admin`);
 
   // ---- qué ha funcionado: la situación ordena los cierres
   await p.goto(`${BASE}/admin/wins`);

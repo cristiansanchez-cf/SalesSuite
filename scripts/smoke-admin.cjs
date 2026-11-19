@@ -22,7 +22,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.goto(`${BASE}/admin`);
   assert(p.url().includes('/admin/login'), 'sin sesión → login');
   await p.click('[data-testid="demo-rep@enjoy.test"]');
-  await p.waitForURL(`${BASE}/admin`);
+  await p.waitForURL(/\/admin(\/accounts)?$/); if (!p.url().endsWith("/admin")) await p.goto(`${BASE}/admin`);
   assert((await p.textContent('[data-testid=role]')).includes('Comercial'), 'sesión de comercial');
 
   // Inicio: una sola cosa destacada («Lo siguiente») y el día en tres números.

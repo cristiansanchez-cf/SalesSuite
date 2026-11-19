@@ -131,6 +131,7 @@ export function demoNotifyJobDb(): NotifyJobDb {
       return db().dossier.filter((d) => tenantIds.includes(d.tenant_id) && (d.outcome ?? 'open') === 'open' && d.status !== 'archived').map((d) => ({
         id: d.id, tenantId: d.tenant_id, authorId: d.author_id, title: d.title, company: d.prospect_company, status: d.status, outcome: d.outcome ?? 'open',
         nextStep: d.next_step ?? null, nextStepAt: d.next_step_at ?? null, publishedAt: d.published_at ?? null,
+        accountNextStepAt: (d.account_id ? db().account.find((a) => a.id === d.account_id)?.next_step_at : null) ?? null,
       }));
     },
     async dailyOpens(tenantIds, since) {

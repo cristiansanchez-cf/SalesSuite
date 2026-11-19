@@ -131,7 +131,7 @@ const prio = new Map(items.map((a) => [a.id, priorityFor(a.qualification, profil
 const PRF = profilesMessages[locale];
 const critLabel = (k: string) => (R.criteria as Record<string, string>)[k] ?? (PRF.q as unknown as Record<string, [string, unknown]>)[k]?.[0] ?? PRF.style;
 const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
-const cooling = await admin.crm.cooling(cual === 'enfria' ? byState.map((a) => a.id) : byState.slice(0, shownMax).map((a) => a.id));
+const cooling = await admin.crm.cooling(cual === 'enfria' ? byState : byState.slice(0, shownMax));
 let shown = byState.filter((a) => {
   const p = prio.get(a.id)!;
   return cual === 'sin' ? !p.out && !p.qualified : cual === 'fuera' ? p.out : cual === 'enfria' ? cooling.has(a.id) : cual === 'ia' ? !!a.aiResearchAt : true;

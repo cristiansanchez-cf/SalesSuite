@@ -453,6 +453,18 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const rows = want.length <= 100 ? await accounts.listAccounts(t, { ids: want, limit: want.length }) : await accountIndex();
     return new Map(rows.filter((a) => want.includes(a.id)).map((a) => [a.id, a.name]));
   }
+  /** Próximo paso de unas empresas (las propuestas de una empresa ya aplazada no piden atención). */
+  async function nextSteps(ids: string[]): Promise<Map<string, string>> {
+    requireUse();
+    const want = [...new Set(ids.filter(Boolean))];
+    if (!want.length) return new Map();
+    const out = new Map<string, string>();
+    for (let i = 0; i < want.length; i += 100) {
+      const ids = want.slice(i, i + 100);
+      for (const a of await accounts.listAccounts(t, { ids, limit: ids.length })) if (a.nextStepAt) out.set(a.id, a.nextStepAt);
+    }
+    return out;
+  }
   /** Listas que existen en el espacio (para elegir vista o al importar). */
   async function lists(o: { people?: boolean } = {}): Promise<Array<{ tag: string; accounts: number; people: number }>> {
     requireUse();
@@ -829,7 +841,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const now = new Date();
     const all = await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 });
     // Lo que se enfría (contestó y llevamos 3 días laborables sin hacer nada) va primero, aunque no tenga próximo paso.
-    const cool = await cooling(all.map((a) => a.id));
+    const cool = await cooling(all);
     const mine = all.map((a) => ({ a, cooling: cool.get(a.id) ?? null, bucket: dueBucket(a.nextStepAt, now) }))
       .filter((x) => x.cooling !== null || (x.bucket && ['overdue', 'today', 'tomorrow'].includes(x.bucket)));
     const counts = { cooling: 0, overdue: 0, today: 0, tomorrow: 0 };
@@ -1060,11 +1072,19 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (key === 'format') delete q.kind;   // el formato sustituye al antiguo «Qué es»
     try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
   }
-  /** Días que lleva enfriándose cada empresa (solo las que se enfrían). */
-  async function cooling(accountIds: string[]): Promise<Map<string, number>> {
+  /**
+   * Días que lleva enfriándose cada empresa (solo las que se enfrían). Con un próximo paso con fecha no se enfría: ya
+   * hay plan (criterio de Cristian: Howl Crew, «hablamos en enero», salía «Se enfría»); ese día sale como «toca hoy».
+   * Se pasan las empresas (con su próximo paso) o solo sus ids (entonces se lee el próximo paso).
+   */
+  async function cooling(input: Array<string | { id: string; nextStepAt?: string | null }>): Promise<Map<string, number>> {
     requireUse();
+    const ids = input.map((x) => (typeof x === 'string' ? x : x.id));
+    const planned = new Set(input.flatMap((x) => (typeof x !== 'string' && x.nextStepAt ? [x.id] : [])));
+    const bare = input.filter((x): x is string => typeof x === 'string');
+    if (bare.length) for (const a of await accounts.listAccounts(t, { ids: bare, limit: bare.length }).catch(() => [])) if (a.nextStepAt) planned.add(a.id);
     // Solo la última interacción de verdad de cada una (una fila por empresa), no todas.
-    const last = accountIds.length ? await db.lastActivities(t, accountIds) : [];
+    const last = ids.length ? await db.lastActivities(t, ids.filter((id) => !planned.has(id))) : [];
     const now = new Date();
     const out = new Map<string, number>();
     for (const x of last) { const d = coolingDays([x], now); if (d !== null) out.set(x.accountId, d); }
@@ -2044,7 +2064,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     weights, saveWeights, qualify, cooling, qualPack,
     setCompanyContact, timeline, logActivity, findByEmail, setNextStep, deleteActivity, today, instagramToCompanies,
     people, person, similar, quickAdd, updatePerson, setPersonFields, deletePerson, setOwner, link, unlink,
-    company, moveToGroup, setTags, lists, names,
+    company, moveToGroup, setTags, lists, names, nextSteps,
     imports, importStart, importDraft, importPreview, importRun, importUndo, importReplace,
     accountDoc, saveAccountDoc, accountsByRef, importActivities, undoImportActivities, importPeople,
   };

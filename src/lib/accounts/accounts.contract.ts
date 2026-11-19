@@ -441,10 +441,14 @@ export function accountsContract(name: string, env: () => AccountsEnv) {
       await admin.crm.saveWeights({ recurrence: 40, decider: 25, screens: 15, dynamics: 10, scale: 10 });
       expect((await rep.crm.weights()).recurrence).toBe(40);
 
-      // Contestó hace una semana y no hemos hecho nada: se enfría y sale el primero en «Hoy».
+      // Contestó hace una semana y quedamos en hablar más adelante: tiene fecha, no se enfría (criterio de Cristian).
       const mia = await rep.crm.quickAdd({ name: 'Lucía', company: 'Club Frío' });
       await rep.crm.logActivity(mia.accountId!, { contactId: mia.id, channel: 'whatsapp', outcome: 'interested', happenedAt: new Date(Date.now() - 8 * 86_400_000).toISOString() },
         { at: new Date(Date.now() + 20 * 86_400_000).toISOString().slice(0, 10) });
+      expect((await rep.crm.cooling([mia.accountId!])).size).toBe(0);
+      expect((await rep.crm.today()).items.some((x) => x.name === 'Club Frío')).toBe(false);
+      // Sin fecha y sin hacer nada: se enfría y sale el primero en «Hoy».
+      await rep.crm.setNextStep(mia.accountId!, null);
       const hoy = await rep.crm.today();
       expect(hoy.items[0]).toMatchObject({ name: 'Club Frío', bucket: 'cooling' });
       expect(hoy.items[0].cooling).toBeGreaterThanOrEqual(3);

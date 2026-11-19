@@ -5,6 +5,8 @@
 export interface DailyDossier {
   id: string; tenantId: string; authorId: string | null; title: string; company: string | null;
   status: string; outcome: 'open' | 'won' | 'lost'; nextStep: string | null; nextStepAt: string | null; publishedAt: string | null;
+  /** El próximo paso de su empresa en el CRM (si está enlazada): «hablamos en enero» también la aparca. */
+  accountNextStepAt?: string | null;
 }
 /** Aperturas de las últimas 24 h por propuesta. */
 export interface DailyOpen { opens: number; lastAt: string }
@@ -46,11 +48,16 @@ export function dailyPlan(
   const t = now.getTime();
   const today = localClock(now, timeZone).day;
   const live = dossiers.filter((d) => d.outcome === 'open' && d.status !== 'archived');
+  const later = (x: string | null | undefined) => !!x && localClock(new Date(x), timeZone).day > today;
   const reasonOf = (d: DailyDossier): DailyReason | null => {
+    // La empresa ya tiene fecha más adelante («hablamos en enero»): manda sobre un paso viejo de la propuesta.
+    if (later(d.accountNextStepAt)) return null;
     if (d.nextStepAt && Date.parse(d.nextStepAt) < t) return 'overdue';
     if (d.nextStepAt && localClock(new Date(d.nextStepAt), timeZone).day === today) return 'today';
+    // Aparcada hasta una fecha (la suya o la de su empresa: «hablamos en enero»): nada hasta ese día, ni aunque la abran.
+    if (later(d.nextStepAt)) return null;
     if (opens.has(d.id)) return 'opened';
-    if (d.status === 'published' && !d.nextStepAt && d.publishedAt && t - Date.parse(d.publishedAt) > DAY) return 'noNextStep';
+    if (d.status === 'published' && !d.nextStepAt && !d.accountNextStepAt && d.publishedAt && t - Date.parse(d.publishedAt) > DAY) return 'noNextStep';
     return null;
   };
   const ORDER: DailyReason[] = ['overdue', 'today', 'opened', 'noNextStep'];
@@ -66,12 +73,12 @@ export function dailyPlan(
   let team: DailyPlan['team'] = null;
   if (member.manager) {
     const others = live.filter((d) => d.authorId && d.authorId !== member.userId);
-    const late = others.filter((d) => d.nextStepAt && Date.parse(d.nextStepAt) < t);
+    const late = others.filter((d) => d.nextStepAt && Date.parse(d.nextStepAt) < t && !later(d.accountNextStepAt));
     const by = new Map<string, number>();
     for (const d of late) by.set(d.authorId!, (by.get(d.authorId!) ?? 0) + 1);
     team = {
       overdue: late.length,
-      openedNoStep: others.filter((d) => opens.has(d.id) && !d.nextStepAt).length,
+      openedNoStep: others.filter((d) => opens.has(d.id) && !d.nextStepAt && !d.accountNextStepAt).length,
       people: [...by].map(([userId, overdue]) => ({ userId, overdue })).sort((a, b) => b.overdue - a.overdue).slice(0, 5),
     };
     if (!team.overdue && !team.openedNoStep) team = null;

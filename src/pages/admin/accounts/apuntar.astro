@@ -298,15 +298,22 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
 </script>
 
 <script>
-  // Borrador (§23): lo que llevas escrito no se pierde si sales a mirar una ficha y vuelves; se borra al guardar.
+  // Borrador (§23): lo que llevas escrito no se pierde si sales a mirar una ficha y vuelves; se borra al guardar. Solo
+  // en esta pestaña y durante un rato (criterio de Cristian: al entrar otra vez, la caja vacía, sin lo de la última vez).
   (() => {
     const ta = document.querySelector<HTMLTextAreaElement>('[data-testid=notes-text]');
-    const KEY = 'co-apuntar-borrador';
+    const KEY = 'co-apuntar-borrador', TTL = 2 * 3600_000;
     try {
+      localStorage.removeItem(KEY); // el de antes, que se quedaba para siempre
       if (!ta) return;
-      if (ta.dataset.draft === 'clear') { localStorage.removeItem(KEY); return; }
-      if (!ta.value) ta.value = localStorage.getItem(KEY) ?? '';
-      ta.addEventListener('input', () => { try { localStorage.setItem(KEY, ta.value); } catch { /* sin almacenamiento */ } });
+      if (ta.dataset.draft === 'clear') { sessionStorage.removeItem(KEY); return; }
+      const who = () => document.querySelector<HTMLInputElement>('[data-who-id]')?.value ?? '';
+      const saved = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as { text: string; at: number; who: string } | null;
+      if (!ta.value && saved && Date.now() - saved.at < TTL && saved.who === who()) ta.value = saved.text;
+      else if (saved) sessionStorage.removeItem(KEY);
+      ta.addEventListener('input', () => {
+        try { if (ta.value.trim()) sessionStorage.setItem(KEY, JSON.stringify({ text: ta.value, at: Date.now(), who: who() })); else sessionStorage.removeItem(KEY); } catch { /* sin almacenamiento */ }
+      });
     } catch { /* sin almacenamiento: no pasa nada */ }
   })();
 </script>

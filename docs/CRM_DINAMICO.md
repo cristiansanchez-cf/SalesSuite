@@ -322,7 +322,9 @@ Criterio cerrado con Cristian (9-oct-2026). Lógica en `src/lib/crm/priority.ts`
 - **Lo que no se sabe no es 0**: suma solo lo conocido y enseña «hasta N si se cualifica». El ranking ordena por la
   puntuación actual (no por el máximo). Filtro «Sin cualificar».
 - **Se enfría**: contestó o mostró interés y llevamos **3 días laborables** sin hacer nada → etiqueta roja y el primero
-  en «Hoy». No toca la puntuación (la urgencia es un orden, no una calidad).
+  en «Hoy». No toca la puntuación (la urgencia es un orden, no una calidad). **Con un próximo paso puesto no se enfría**
+  («hablamos en enero»): ya hay plan, y sale en «Hoy» cuando llega su fecha. Tampoco sus propuestas: ni en «Necesitan
+  atención» de Propuestas ni en el resumen de la mañana hasta ese día (lib/notify/daily.ts, `accountNextStepAt`).
 - **Un clic**: la cualificación son botones visibles en la ficha; pulsar lo marcado lo desmarca. Cualificar no reserva
   la empresa (RPC `account_qualify`: libre o mía, o un/a gerente).
 - Las personas heredan la prioridad de su mejor empresa (lista de Personas, «Por prioridad»).

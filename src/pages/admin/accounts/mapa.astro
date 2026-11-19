@@ -79,7 +79,7 @@ const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 // La nota según la ficha de su tipo (§24), como en la lista: local, promotora o DJ.
 const prioOf = (a: (typeof items)[number]) => !qual ? NO_PRIORITY : priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights);
 const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
-const cooling = await admin.crm.cooling(byState.map((a) => a.id));
+const cooling = await admin.crm.cooling(byState);
 const off = offList?.items ?? [];
 const shown = [...byState.filter((a) => matchesTemp(temperature(prioOf(a), cooling.get(a.id)), tempF)), ...off];
 

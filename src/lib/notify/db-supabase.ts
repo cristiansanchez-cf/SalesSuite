@@ -111,11 +111,12 @@ export function supabaseNotifyJobDb(sb: SupabaseClient): NotifyJobDb {
     },
     async dailyDossiers(tenantIds) {
       if (!tenantIds.length) return [];
-      const rows = check(await sb.from('dossier').select('id, tenant_id, author_id, title, prospect_company, status, outcome, next_step, next_step_at, published_at')
+      const rows = check(await sb.from('dossier').select('id, tenant_id, author_id, title, prospect_company, status, outcome, next_step, next_step_at, published_at, account:account_id(next_step_at)')
         .in('tenant_id', tenantIds).eq('outcome', 'open').neq('status', 'archived').limit(20000)) ?? [];
       return rows.map((r: Row) => ({
         id: r.id as string, tenantId: r.tenant_id as string, authorId: (r.author_id as string) ?? null, title: r.title as string, company: (r.prospect_company as string) ?? null,
         status: r.status as string, outcome: r.outcome as 'open', nextStep: (r.next_step as string) ?? null, nextStepAt: (r.next_step_at as string) ?? null, publishedAt: (r.published_at as string) ?? null,
+        accountNextStepAt: ((r.account as { next_step_at?: string | null } | null)?.next_step_at) ?? null,
       }));
     },
     async dailyOpens(tenantIds, since) {

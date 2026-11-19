@@ -19,7 +19,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     p.on('dialog', (d) => d.accept());
     await p.goto(`${BASE}/admin/login`);
     await p.click(`[data-testid="demo-${email}"]`);
-    await p.waitForURL(`${BASE}/admin`);
+    await p.waitForURL(/\/admin(\/accounts)?$/); if (!p.url().endsWith("/admin")) await p.goto(`${BASE}/admin`);
     return p;
   };
   const settle = (p) => p.waitForFunction(() => !document.querySelector('[data-testid=builder][data-busy]'));

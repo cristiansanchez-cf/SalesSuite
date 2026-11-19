@@ -43,6 +43,19 @@ describe('qué entra', () => {
     expect(plan.team).toBeNull();
   });
 
+  test('aplazada a una fecha (la suya o la de su empresa): nada hasta ese día, ni aunque la abran', () => {
+    const plan = dailyPlan({ userId: ME, manager: true }, [
+      d('enero', { nextStepAt: '2027-01-10T09:00:00Z' }),
+      d('empresa-enero', { accountNextStepAt: '2027-01-10T09:00:00Z' }),
+      d('vieja', { nextStepAt: '2026-10-01T09:00:00Z', accountNextStepAt: '2027-01-10T09:00:00Z' }), // la empresa manda
+      d('empresa-vencida', { accountNextStepAt: '2026-10-01T09:00:00Z' }),
+      d('otro', { authorId: 'ana', nextStepAt: '2026-10-01T09:00:00Z', accountNextStepAt: '2027-01-10T09:00:00Z' }),
+    ], new Map([['enero', { opens: 3, lastAt: '2026-10-05T05:00:00Z' }], ['empresa-enero', { opens: 1, lastAt: '2026-10-05T05:00:00Z' }]]), now, 'Europe/Madrid');
+    // La de la empresa con fecha pasada tampoco cuenta como «sin próximo paso» (ya lo tiene, aunque esté por hacer en el CRM).
+    expect(plan.items.map((i) => i.dossier.id)).toEqual([]);
+    expect(plan.team).toBeNull();
+  });
+
   test('sin próximo paso: como mucho 5', () => {
     const plan = dailyPlan({ userId: ME, manager: false }, Array.from({ length: 8 }, (_, i) => d(`s${i}`)), new Map(), now, 'Europe/Madrid');
     expect(plan.items).toHaveLength(5);

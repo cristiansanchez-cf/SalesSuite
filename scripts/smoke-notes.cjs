@@ -81,11 +81,16 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForURL(/apuntar\?empresa=/), p.click('[data-testid=summary-note]')]);
   assert((await p.textContent('[data-testid=notes-who-chosen]')).includes('Club Sol') && await p.isVisible('[data-testid=notes-who-chosen]'), 'Apuntar aquí: la empresa ya elegida');
   await p.fill('[data-testid=notes-text]', 'Borrador a medias');
+  const back = p.url();
   await p.goto(`${BASE}/admin/accounts`);
-  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  await p.goto(back);
   assert((await p.inputValue('[data-testid=notes-text]')) === 'Borrador a medias', 'el borrador sigue al volver');
+  // En otra empresa, o al entrar otra vez (otra pestaña), la caja vacía: nada de la última vez.
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  assert((await p.inputValue('[data-testid=notes-text]')) === '', 'otra empresa: sin el borrador');
+  { const p2 = await p.context().newPage(); await p2.goto(back); assert((await p2.inputValue('[data-testid=notes-text]')) === '', 'otra vez: sin lo antiguo'); await p2.close(); }
   await p.fill('[data-testid=notes-text]', '');
-  await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
+  await p.evaluate(() => sessionStorage.removeItem('co-apuntar-borrador'));
 
   // Promotoras (§24): Apuntar sabe que es una promotora, la crea con su ficha y la enlaza con la sala y el día.
   await p.goto(`${BASE}/admin/accounts/apuntar`);
@@ -96,7 +101,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
   await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("RONEO")')]);
   assert((await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'promoter' && (await p.textContent('[data-testid=work-line]')).includes('Viernes en Club Sol'), 'ficha de promotora, «Viernes en Club Sol»');
-  await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
+  await p.evaluate(() => sessionStorage.removeItem('co-apuntar-borrador'));
 
   // Personas (§38): las que nombra van a la empresa, con su Instagram en la persona (no en la ficha del sitio).
   await p.goto(`${BASE}/admin/accounts/apuntar`);
@@ -110,7 +115,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=account-people] a:has-text("Marco Curro")');
   await p.waitForURL(/\/admin\/people\//);
   assert((await p.content()).includes('marco_sabbia'), 'su Instagram, en su ficha de persona');
-  await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
+  await p.evaluate(() => sessionStorage.removeItem('co-apuntar-borrador'));
 
   // DJs (§40): su ficha de DJ, dónde pincha y sus canales (web y música) a su ficha.
   await p.goto(`${BASE}/admin/accounts/apuntar`);
@@ -124,7 +129,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForURL(/\/admin\/accounts\/[^/?#]+$/), p.click('[data-testid=notes-saved] a:has-text("DJ Marf Daniels")')]);
   assert((await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'dj', 'ficha de DJ');
   assert(await p.isVisible('[data-testid=account-summary] a[href="https://soundcloud.com/marf-daniels"]'), 'su música, en la ficha');
-  await p.evaluate(() => localStorage.removeItem('co-apuntar-borrador'));
+  await p.evaluate(() => sessionStorage.removeItem('co-apuntar-borrador'));
 
   // Proponer descartar (§23): por lo que cuentas, la IA pregunta; solo se descarta si dices que sí.
   await p.goto(`${BASE}/admin/accounts/apuntar`);

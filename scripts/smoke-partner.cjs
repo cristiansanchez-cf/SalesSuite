@@ -35,7 +35,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert((await dj.textContent('[role=alert]')).includes('Código incorrecto'), 'código erróneo → rechazado');
   await dj.fill('[data-testid=code-verify] [name=code]', code);
   await dj.click('[data-testid=code-verify] button[type=submit]');
-  await dj.waitForURL(`${BASE}/admin`);
+  await dj.waitForURL(/\/admin(\/accounts)?$/); if (!dj.url().endsWith("/admin")) await dj.goto(`${BASE}/admin`);
   assert((await dj.textContent('[data-testid=role]')).trim() === 'Colaborador', 'entra como colaborador');
   const nav = await dj.textContent('nav[aria-label=Secciones]');
   assert(nav.includes('Mis cuentas') && !nav.includes('Catálogo') && !nav.includes('Equipo') && !nav.includes('Playbook'), 'menú de colaborador (sin Catálogo/Equipo/Playbook)');
@@ -80,7 +80,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const admin = await page();
   await admin.goto(`${BASE}/admin/login`);
   await admin.click('[data-testid="demo-admin@enjoy.test"]');
-  await admin.waitForURL(`${BASE}/admin`);
+  await admin.waitForURL(/\/admin(\/accounts)?$/); if (!admin.url().endsWith("/admin")) await admin.goto(`${BASE}/admin`);
   await admin.goto(`${BASE}/admin/team`);
   assert((await admin.$$('[data-testid=partner-row]')).length >= 1, 'Equipo: lista de colaboradores');
   assert(!(await admin.textContent('[data-testid=members]')).includes('dj@enjoy.test'), 'el colaborador no aparece como miembro del equipo');

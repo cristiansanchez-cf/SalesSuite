@@ -114,13 +114,21 @@ const filterHref = (p: Record<string, string | null>) => {
   for (const [k, v] of Object.entries(p)) v == null ? u.searchParams.delete(k) : u.searchParams.set(k, v);
   return u.pathname + u.search;
 };
+// Si la empresa de la propuesta ya tiene un próximo paso (p. ej. «hablar en enero»), la propuesta no pide atención.
+const accountStep = crmPick && list.some((d) => d.accountId)
+  ? await admin.crm.nextSteps(list.flatMap((d) => (d.accountId ? [d.accountId] : []))).catch(() => new Map<string, string>())
+  : new Map<string, string>();
+const planned = (d: (typeof list)[number]) => {
+  const a = d.accountId ? accountStep.get(d.accountId) : undefined;
+  return (!!d.nextStepAt && !isOverdue(d.nextStepAt)) || (!!a && !isOverdue(a));
+};
 const filtered = !!(status || follow || q);
 const published = all.filter((d) => d.status === 'published').length;
 const groups = filtered
   ? [{ key: 'all', title: '', items: list }]
   : [
-      { key: 'attention', title: m.dossiers.groups.attention, items: list.filter((d) => d.status === 'published' && (isOverdue(d.nextStepAt) || !d.nextStepAt)) },
-      { key: 'sent', title: m.dossiers.groups.sent, items: list.filter((d) => d.status === 'published' && d.nextStepAt && !isOverdue(d.nextStepAt)) },
+      { key: 'attention', title: m.dossiers.groups.attention, items: list.filter((d) => d.status === 'published' && !planned(d)) },
+      { key: 'sent', title: m.dossiers.groups.sent, items: list.filter((d) => d.status === 'published' && planned(d)) },
       { key: 'drafts', title: m.dossiers.groups.drafts, items: list.filter((d) => d.status === 'draft') },
       { key: 'archived', title: m.dossiers.groups.archived, items: list.filter((d) => d.status === 'archived') },
     ].filter((g) => g.items.length);

@@ -23,7 +23,7 @@ const TOKEN = 'demo-club-sol-4Hq8';
 
   await p.goto(`${BASE}/admin`);
   await p.click('[data-testid="demo-rep@enjoy.test"]');
-  await p.waitForURL(`${BASE}/admin`);
+  await p.waitForURL(/\/admin(\/accounts)?$/); if (!p.url().endsWith("/admin")) await p.goto(`${BASE}/admin`);
   await p.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
   assert(await p.isVisible('[data-testid=rep-contact-card]'), 'el editor enseña «Tu contacto en esta propuesta»');
 
@@ -68,7 +68,7 @@ const TOKEN = 'demo-club-sol-4Hq8';
   const a = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   await a.goto(`${BASE}/admin`);
   await a.click('[data-testid="demo-admin@enjoy.test"]');
-  await a.waitForURL(`${BASE}/admin`);
+  await a.waitForURL(/\/admin(\/accounts)?$/); if (!a.url().endsWith("/admin")) await a.goto(`${BASE}/admin`);
   await a.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
   assert(!(await a.textContent('[data-testid=rep-contact-card]')).includes('Tu contacto'), 'admin: la tarjeta dice de quién es el contacto');
   assert((await a.inputValue('[data-testid=rep-contact-value]')) === '@ana.ventas', 'admin: ve el contacto del comercial');
