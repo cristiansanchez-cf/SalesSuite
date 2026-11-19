@@ -92,6 +92,20 @@ ha hablado (`tooThin` en flow.ts: «he estado hablando / hablé / acabo de habla
 ni dos puntos) → «Genial 👍 ¿Y qué te ha dicho X?» y espera (estado `context`). Lo siguiente (texto o audio) se junta
 con eso y va al resumen. «Apúntalo» apunta lo que hay.
 
+### Arreglar nombre y ciudad, y descartar (caso Euforía)
+
+- **Al preguntar cuál es**: «Euforía. Está en Murcia» → nombre «Euforía» y ciudad Murcia (`nameAndRest`, `saidPlace`);
+  «sí, crear Euforia» crea con ese nombre sin volver a buscar. Antes todo iba al nombre.
+- **Corrigiendo antes de guardar**: la ciudad que dices ahora manda sobre la de antes («no está en Madrid, está en
+  Murcia»: cuenta la que no se niega); «se llama solo X» cambia el nombre de la nueva.
+- **Recién guardado** (media hora, estado `saved`): «es solo Euforía», «está en Murcia, no en Madrid» arreglan esa
+  empresa (`ops.edit`: solo nombre y ciudad; lo demás se queda).
+- **Cualquier empresa, cuando sea**: «Corrige [nombre de ahora]: se llama X y está en Y» (`fixCommand`). Si hay varias
+  parecidas, las enseña y pide el nombre exacto. Quien la lleva (o un gerente) puede; si no, lo dice.
+- **Descartar**: lo que la IA propone descartar («no les interesa», «no encaja»…) sale en el resumen («🚫 Se descarta: …»)
+  y se descarta al pulsar Guardar, con su motivo: queda en «Descartadas» y en el tablero como perdida, para que nadie
+  vuelva a venderles lo mismo. Antes el asistente lo ignoraba.
+
 ### Conversación en varios mensajes
 
 Criterio de Cristian: al copiar mensajes de WhatsApp (lo ideal: salen con fecha y quién los dijo), WhatsApp solo deja

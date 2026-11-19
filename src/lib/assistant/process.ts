@@ -68,6 +68,18 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
       }
       return admin.crm.notesApply(out);
     },
+    async edit(accountId, e) {
+      // Arreglar lo recién guardado: solo el nombre y/o la ciudad; lo demás se queda como está.
+      const a = (await admin.accounts.get(accountId)).account;
+      let zoneId = a.zoneId;
+      if (e.place) {
+        const path = isPlaceKey(e.place.v) ? pathForKey(e.place.v) : null;
+        zoneId = path ? await admin.accounts.ensurePath(path) : await admin.crm.pickZone(e.place.v);
+      }
+      await admin.accounts.update(accountId, { name: e.name ?? a.name, zoneId, segmentId: a.segmentId, address: a.address, externalRef: a.externalRef, notes: a.notes });
+      const b = (await admin.accounts.get(accountId)).account;
+      return { name: b.name, zone: b.zonePath ?? '' };
+    },
     async placeIn(text) { return placeIn(text, (await admin.accounts.territory()).zones); },
     async places(q) {
       const zones = (await admin.accounts.territory()).zones;

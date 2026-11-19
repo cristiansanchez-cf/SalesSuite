@@ -163,6 +163,64 @@ describe('la conversación', () => {
     expect(applied[0][0]).toMatchObject({ agreement: '70/30 para ellos si conseguimos marcas' });
     expect(b.replies[0].text).toContain('Deep Delay ya es cliente');
   });
+  test('caso Euforía: nombre y ciudad por separado, la ciudad corregida manda, y se arregla después de guardar', async () => {
+    const MUR = { v: 'es|Región de Murcia|Murcia|Murcia', label: 'Región de Murcia › Murcia' }, MAD = { v: 'es|Comunidad de Madrid|Madrid|Madrid', label: 'Comunidad de Madrid › Madrid' };
+    const placeIn = async (t: string) => (/murcia/i.test(t) ? MUR : /madrid/i.test(t) ? MAD : null);
+    const edits: unknown[] = [];
+    const { ops, applied } = fakeOps({
+      split: async () => [{ ...item('Euforía'), candidates: [cand('x1', 'Euforia Club', 0.6)] }],
+      placeIn, places: async (q) => [(await placeIn(q)) ?? MUR],
+      apply: async (rows) => { applied.push(rows); return [{ accountId: 'new1', name: 'Euforía', ok: true }]; },
+      edit: async (id, e) => { edits.push({ id, ...e }); return { name: e.name ?? 'Euforía', zone: e.place?.label ?? '' }; },
+    });
+    // «¿Cuál es?» → «Euforía. Está en Murcia»: nombre Euforía y sitio Murcia (no «Euforía está en Murcia» de nombre).
+    const a = await run(ops, { kind: 'audio', text: 'Estaba hablando con José Carlos de Euforía, está en Madrid' });
+    expect(a.state.step).toBe('pick');
+    const b = await run(ops, { kind: 'text', text: 'Euforía. Está en Murcia' }, a.state);
+    const b2 = b.state.step === 'pick' ? await run(ops, { kind: 'text', text: 'sí, crear Euforía' }, b.state) : b;
+    expect(b2.state.step).toBe('confirm');
+    expect(b2.replies[0].text).toContain('*Euforía* (nueva)');
+    expect(b2.replies[0].text).toContain('📍 Región de Murcia › Murcia');
+    // Corregir antes de guardar: «no, está en Madrid» cambia el sitio.
+    const c = await run(ops, { kind: 'text', text: 'no está en Murcia, está en Madrid' }, b2.state);
+    expect(c.replies.at(-1)!.text).toContain('📍 Comunidad de Madrid › Madrid');
+    const d0 = await run(ops, { kind: 'text', text: 'perdona, está en Murcia' }, c.state);
+    expect(d0.replies.at(-1)!.text).toContain('📍 Región de Murcia › Murcia');
+    const d = await run(ops, { kind: 'button', id: 'save' }, d0.state);
+    expect(applied.at(-1)![0]).toMatchObject({ create: 'Euforía', place: MUR.v });
+    expect(d.state.step).toBe('saved');
+    // Después de guardar: «es solo Euforía» y «no está en Madrid, está en Murcia» arreglan esa empresa.
+    const e = await run(ops, { kind: 'text', text: 'Hay que cambiar el nombre. Es solo Euforía' }, d.state);
+    expect(edits.at(-1)).toEqual({ id: 'new1', name: 'Euforía' });
+    expect(e.replies[0].text).toContain('✏️ Arreglado: *Euforía*');
+    await run(ops, { kind: 'text', text: 'No está en Madrid, está en Murcia' }, e.state);
+    expect(edits.at(-1)).toEqual({ id: 'new1', place: MUR });
+  });
+  test('«no les interesa»: el resumen dice que se descartan y al guardar se descartan (dos sitios en un audio)', async () => {
+    const { ops, applied } = fakeOps({
+      split: async () => [
+        { ...item('Aula 212', { outcome: 'not_interested', discard: 'not_interested', discardWhy: 'no les interesa' }), candidates: [cand('a2', 'Aula 212', 1)] },
+        { ...item('Euforía', { outcome: 'not_interested', discard: 'not_interested', discardWhy: 'no les interesa' }), candidates: [cand('e2', 'Euforía', 1)] },
+      ],
+      apply: async (rows) => { applied.push(rows); return (rows as Array<{ accountId: string }>).map((r) => ({ accountId: r.accountId, name: r.accountId === 'a2' ? 'Aula 212' : 'Euforía', ok: true, discarded: true })); },
+    });
+    const a = await run(ops, { kind: 'audio', text: 'He hablado con Aula 212 y con Euforía y no les interesa, hay que descartarlos' });
+    expect(a.replies.at(-1)!.text).toContain('🚫 Se descarta: no les interesa');
+    const b = await run(ops, { kind: 'button', id: 'save' }, a.state);
+    expect((applied[0] as Array<{ discard: string }>).map((r) => r.discard)).toEqual(['not_interested', 'not_interested']);
+    expect(b.replies[0].text).toContain('🚫 Descartadas: Aula 212, Euforía');
+  });
+  test('nombre y resto', async () => {
+    const { nameAndRest, saidPlace, saidName } = await import('./flow');
+    expect(nameAndRest('Euforía. Está en Murcia')).toEqual({ create: false, name: 'Euforía', rest: 'Está en Murcia' });
+    expect(nameAndRest('Euforía está en Murcia')).toMatchObject({ name: 'Euforía', rest: 'está en Murcia' });
+    expect(nameAndRest('Sí, crear Euforia')).toEqual({ create: true, name: 'Euforia', rest: '' });
+    expect(saidPlace('no está en Madrid, está en Murcia')).toBe('Murcia');
+    expect(saidPlace('Está en Madrid')).toBe('Madrid');
+    expect(saidName('Hay que cambiar el nombre. Es solo Euforía')).toBe('Euforía');
+    expect(saidName('se llama Sala Euforia')).toBe('Sala Euforia');
+    expect(saidName('se llama Euforía y está en Murcia')).toBe('Euforía');
+  });
   test('el audio se repite entero (no a los 55 segundos)', async () => {
     const { ops } = fakeOps();
     const long = 'palabra '.repeat(400).trim();
@@ -403,6 +461,37 @@ describe('de punta a punta (demo)', () => {
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
     const act = demoDb().crm_activity.find((a) => a.account_id === sol.id && a.user_id === REP && /Marta/.test(a.note ?? ''));
     expect(act).toBeTruthy();
+  });
+
+  test('el comercial crea una empresa y la arregla por WhatsApp después de guardar (nombre y ciudad)', async () => {
+    const member = { tenantId: ENJOY, userId: REP };
+    await processAssistant(deps(), '123', member, msg('e1', { text: 'Euforia Nightclub Test: hablé con José Carlos, le interesa' }));
+    let last = sent.at(-1)!;
+    for (let i = 0; i < 4 && !last.buttons?.includes('save'); i++) {
+      const reply = /¿Cuál es|Responde 0/.test(last.text) ? '0' : /¿Dónde está/.test(last.text) ? 'Madrid' : '1';
+      await processAssistant(deps(), '123', member, msg(`e1-${i}`, { text: reply }));
+      last = sent.at(-1)!;
+    }
+    await processAssistant(deps(), '123', member, msg('e2', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
+    expect(sent.at(-1)!.text).toContain('Guardado');
+    const acc = () => demoDb().account.find((a) => a.tenant_id === ENJOY && /Euforia/.test(a.name))!;
+    expect(acc().name).toBe('Euforia Nightclub Test');
+    await processAssistant(deps(), '123', member, msg('e3', { text: 'Hay que cambiar el nombre. Es solo Euforia' }));
+    expect(sent.at(-1)!.text).toContain('✏️ Arreglado: *Euforia*');
+    expect(acc().name).toBe('Euforia');
+    await processAssistant(deps(), '123', member, msg('e4', { text: 'No está en Madrid, está en Murcia' }));
+    expect(sent.at(-1)!.text).toMatch(/✏️ Arreglado: \*Euforia\* · 📍 .*Murcia/);
+  });
+
+  test('«Corrige X: se llama Y y está en Z» arregla una empresa de hace días (por su nombre de ahora)', async () => {
+    const member = { tenantId: ENJOY, userId: REP };
+    const s = demoDb();
+    const base = s.account.find((a) => a.tenant_id === ENJOY)!;
+    s.account.push({ ...base, id: '00000000-0000-4000-8000-0000000ee901', name: 'Euforía está en Murcia en Madrid', owner_id: REP, discarded_at: null, discard_reason: null, discard_note: null });
+    await processAssistant(deps(), '123', member, msg('f1', { text: 'Corrige Euforía está en Murcia en Madrid: se llama Euforía y está en Murcia' }));
+    const acc = s.account.find((a) => a.id === '00000000-0000-4000-8000-0000000ee901')!;
+    expect(acc.name).toBe('Euforía');
+    expect(sent.at(-1)!.text).toMatch(/✏️ Arreglado: \*Euforía\* · 📍 .*Murcia/);
   });
 
   test('una captura de la conversación → la lee → Guardar → la conversación literal queda en Club Sol', async () => {

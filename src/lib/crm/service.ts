@@ -1621,7 +1621,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function notesApply(input: unknown): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>> {
     requireUse();
     const rows = parse(noteApplySchema, input);
-    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending' }> = [];
+    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending'; discarded?: boolean }> = [];
     for (const r of rows) {
       let id = r.accountId ?? null;
       let name = r.create ?? '';
@@ -1689,7 +1689,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         // «He cerrado X: 70/30…» (docs/CLIENTS.md): cerrar con ese acuerdo (o proponerlo, si lo confirma un gerente).
         let agreement: 'active' | 'pending' | undefined;
         if (r.agreement) agreement = (await closeWithAgreement(id, { terms: r.agreement, checkinDays: 30 })).status;
-        out.push({ accountId: id, name, ok: true, ...(agreement ? { agreement } : {}) });
+        out.push({ accountId: id, name, ok: true, ...(agreement ? { agreement } : {}), ...(r.discard ? { discarded: true } : {}) });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });
       }

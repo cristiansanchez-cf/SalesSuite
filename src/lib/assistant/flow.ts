@@ -18,7 +18,7 @@ export interface AssistantOps {
   /** «Apuntar»: lo separa por empresa con sus candidatas. */
   split(text: string): Promise<Array<NoteItem & { candidates: Candidate[] }>>;
   search(q: string): Promise<Candidate[]>;
-  apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending' }>>;
+  apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending'; discarded?: boolean }>>;
   /** Recordatorios: la propuesta de mensaje para una empresa (draft.ts). */
   draft?(item: ReminderItem): Promise<string>;
   /** Dónde está una empresa nueva: un sitio conocido nombrado en el texto (places.ts). */
@@ -27,6 +27,8 @@ export interface AssistantOps {
   places?(q: string): Promise<Place[]>;
   /** «Hecho»: apunta que le escribió (y el CRM propone el siguiente paso). Devuelve cuándo toca lo siguiente. */
   done?(accountId: string): Promise<{ name: string; nextAt: string | null }>;
+  /** Arreglar lo recién guardado (criterio de Cristian): el nombre y/o dónde está. Devuelve cómo ha quedado. */
+  edit?(accountId: string, e: { name?: string; place?: Place }): Promise<{ name: string; zone: string }>;
   /** «Mañana»: el próximo paso, a mañana. */
   later?(accountId: string): Promise<{ name: string }>;
 }
@@ -62,7 +64,9 @@ export type State =
   /** Ha contado algo y va a pasar la conversación (o la pegó a medias): se espera y se junta. */
   | { step: 'context'; at: string; intro: string }
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
-  | { step: 'reminder'; at: string; items: ReminderItem[] };
+  | { step: 'reminder'; at: string; items: ReminderItem[] }
+  /** Recién guardado: «se llama solo X» o «está en Murcia, no en Madrid» arreglan eso mismo (media hora). */
+  | { step: 'saved'; at: string; saved: Array<{ id: string; name: string }> };
 
 /** Lo que queda a medias caduca a la media hora (luego se empieza de nuevo). */
 export const STATE_TTL_MS = 30 * 60_000;
@@ -86,7 +90,9 @@ function rowOf(p: Pending) {
   return {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
-    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null, discard: null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
+    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null,
+    // Descartar (no les interesa, no encaja…): se ve en el resumen y se hace al pulsar Guardar; así nadie vuelve a venderles lo mismo.
+    discard: it.discard ?? null, discardNote: it.discard ? it.discardWhy ?? null : null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
     // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
     ...(p.choice?.create && p.place ? { place: p.place.v } : {}),
   };
@@ -133,6 +139,33 @@ export function halfPasted(t: string): string | null {
   const intro = t.slice(0, hits[0]!.index).trim();
   return intro.split(/\s+/).filter(Boolean).length >= 3 ? intro : null;
 }
+/**
+ * Lo que escribe al preguntarle cuál es («Euforía. Está en Murcia», «sí, crear Euforia»): el nombre por un lado y, si
+ * dice dónde está, el sitio por otro (antes todo iba al nombre: «Euforía está en Murcia»).
+ */
+export function nameAndRest(t: string): { create: boolean; name: string; rest: string } {
+  let x = t.trim().replace(/^s[ií][,.]?\s*/iu, '');
+  const create = /^(cr[eé]a(r|la|lo)?|nueva|nuevo)\b[,:]?\s*/iu.test(x);
+  x = x.replace(/^(cr[eé]a(r|la|lo)?|nueva|nuevo)\b[,:]?\s*/iu, '');
+  const cut = /\s*(?:[.,;]\s+|\s+(?:que\s+)?(?:est[aá]|queda|es de)\s+en\s+|\s+(?:est[aá])\s+)/iu.exec(x);
+  const name = (cut ? x.slice(0, cut.index) : x).replace(/^[«"']|[»"']$/g, '').trim();
+  return { create, name, rest: cut ? x.slice(cut.index).replace(/^[\s.,;]+/, '') : '' };
+}
+/** Dónde dice que está, quedándose con lo último que no niega («no está en Madrid, está en Murcia» → Murcia). */
+export function saidPlace(t: string): string | null {
+  const ms = [...t.matchAll(/(?:^|[\s,;.])(no\s+)?(?:est[aá]|queda|es de|ubicad[oa])\s+en\s+([^,.;\n]{2,60})/giu)].filter((m) => !m[1]);
+  return ms.length ? ms[ms.length - 1]![2]!.trim() : null;
+}
+/** «Corrige Euforía está en Murcia: se llama Euforía y está en Murcia» → la empresa (por su nombre de ahora) y el cambio. */
+export function fixCommand(t: string): { target: string; change: string } | null {
+  const m = /^\s*(?:corrige|corregir|arregla|arreglar|cambia|cambiar|edita|editar)\s+(?:la\s+ficha\s+de\s+|el\s+nombre\s+de\s+)?[«"']?(.{2,100}?)[»"']?\s*:\s*(.{3,})$/isu.exec(t);
+  return m ? { target: m[1]!.trim(), change: m[2]!.trim() } : null;
+}
+/** «Se llama solo X», «el nombre es X», «es solo X», «cámbiale el nombre a X». */
+export function saidName(t: string): string | null {
+  const m = /(?:se llama(?: solo)?|el nombre (?:correcto )?es|cambia(?:r|le)? el nombre (?:a|por)|ponle de nombre|ll[aá]mal[ao]|es solo|solo es)\s+[«"']?([^»"'.,;\n]{2,80}?)[»"']?\s*(?:[.,;]|\s+y\s+(?:no\s+)?(?:est|es|qued|ubic)|$)/iu.exec(t);
+  return m ? m[1]!.trim() : null;
+}
 const normName = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 /** Un apunte hecho a mano (mensajes reenviados): solo la interacción. */
 function forwardedItem(name: string, texts: string[], today: string, channel = 'whatsapp'): NoteItem {
@@ -161,6 +194,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
       interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null,
+      discard: p.item.discard ? `${T.discards[p.item.discard] ?? p.item.discard}${p.item.discardWhy ? ` (${p.item.discardWhy})` : ''}` : null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
   };
@@ -189,10 +223,13 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const bad = r.filter((x) => !x.ok).map((x) => `${x.name || '—'}: ${x.error ?? T.failed}`);
     // Cerradas con acuerdo: ya en Clientes, o pendientes de que un gerente lo confirme.
     const deals = r.filter((x) => x.ok && x.agreement).map((x) => (x.agreement === 'active' ? T.dealClosed(x.name) : T.dealPending(x.name)));
-    return { state: idle, replies: [say([ok.length ? T.saved(ok) : '', ...deals, bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
+    const out = r.filter((x) => x.ok && x.discarded).map((x) => x.name);
+    if (out.length) deals.push(T.discardedSaved(out));
+    const saved = r.filter((x) => x.ok && x.accountId).map((x) => ({ id: x.accountId!, name: x.name }));
+    return { state: saved.length && d.ops.edit ? { step: 'saved', at, saved } : idle, replies: [say([ok.length ? T.saved(ok) : '', ...deals, bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
   };
   /** Lo que cuenta, a «Apuntar». */
-  const note = async (text: string, prev: Pending[] = [], literal?: string[]): Promise<FlowResult> => {
+  const note = async (text: string, prev: Pending[] = [], literal?: string[], correction?: string): Promise<FlowResult> => {
     let items: Awaited<ReturnType<AssistantOps['split']>>;
     try { items = await d.ops.split(text); } catch { return { state: idle, replies: [say(T.aiDown)] }; }
     if (!items.length) return { state: idle, replies: [say(T.nothing)] };
@@ -205,11 +242,21 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const pending: Pending[] = [];
     for (const it of items) {
       // Al corregir: lo que ya había elegido para esa empresa (la misma u otra con el mismo nombre) se mantiene.
-      const was = prev.find((p) => p.choice && (normName(p.item.venue) === normName(it.venue) || normName(p.choice.name) === normName(it.venue)));
+      // Al corregir, lo que ya había elegido para esa empresa (por su nombre; si solo hay una, esa aunque cambie el nombre).
+      let was = prev.find((p) => p.choice && (normName(p.item.venue) === normName(it.venue) || normName(p.choice.name) === normName(it.venue)));
+      if (!was && prev.length === 1 && items.length === 1 && prev[0]!.choice) was = prev[0];
+      // Una empresa nueva a la que se le corrige el nombre («se llama solo Euforía»): se crea con el nombre bueno.
+      const renamed = correction ? saidName(correction) : null;
+      if (was?.choice && !was.choice.accountId && (renamed || normName(was.choice.name) !== normName(it.venue))) {
+        const nm = (renamed ?? it.venue).slice(0, 160);
+        was = { ...was, choice: { accountId: null, create: nm, name: nm } };
+      }
       const choice = was?.choice ?? (strong(it.candidates) ? { accountId: it.candidates[0].id, create: null, name: it.candidates[0].name } : null);
       // Dónde está (por si es nueva): lo que diga de ella; si solo hay una, todo lo que contó.
       const about = [it.venue, it.interaction, ...it.keyFacts, ...it.facts, items.length === 1 ? text : ''].filter(Boolean).join(' \n ');
-      const place = was?.place ?? (d.ops.placeIn ? await d.ops.placeIn(about).catch(() => null) : null);
+      // Al corregir, el sitio que diga ahora manda sobre el de antes («no, está en Murcia»).
+      const fixed = correction && d.ops.placeIn ? await d.ops.placeIn(saidPlace(correction) ?? correction).catch(() => null) : null;
+      const place = fixed ?? was?.place ?? (d.ops.placeIn ? await d.ops.placeIn(about).catch(() => null) : null);
       pending.push({ item: it, candidates: it.candidates, choice, place, noPlace: was?.noPlace });
     }
     return next(pending, { source: text });
@@ -311,6 +358,39 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   if (isCancel(text)) return { state: idle, replies: [say(T.cancelled)] };
   if (state.step === 'idle' && isHelp(text)) return { state, replies: [say(T.help)] };
 
+  /** Cambiar el nombre y/o la ciudad de una empresa (la que diga, o la recién guardada). */
+  const applyEdit = async (target: { id: string; name: string }, change: string, keep: State): Promise<FlowResult | null> => {
+    const newName = saidName(change);
+    const where = saidPlace(change);
+    if (!newName && !where) return null;
+    let place: Place | null = null;
+    if (where) {
+      place = d.ops.placeIn ? await d.ops.placeIn(`en ${where}`).catch(() => null) : null;
+      if (!place && d.ops.places) place = (await d.ops.places(where).catch(() => []))[0] ?? null;
+      if (!place && !newName) return { state: keep, replies: [say(T.placeNotFound(where))] };
+    }
+    try {
+      const r = await d.ops.edit!(target.id, { ...(newName ? { name: newName } : {}), ...(place ? { place } : {}) });
+      return { state: { step: 'saved', at, saved: [{ id: target.id, name: r.name }] }, replies: [say(T.edited(r.name, r.zone))] };
+    } catch (e) { return { state: keep, replies: [say(e instanceof Error && e.message ? `${T.failedOne} (${e.message})` : T.failedOne)] }; }
+  };
+  // «Corrige X: se llama Y y está en Z»: cualquier empresa del CRM, por su nombre de ahora (aunque sea de hace días).
+  const fix = d.ops.edit && ['idle', 'saved'].includes(state.step) ? fixCommand(text) : null;
+  if (fix) {
+    const c = await d.ops.search(fix.target);
+    const hit = c.find((x) => normName(x.name) === normName(fix.target)) ?? (c[0] && c[0].score >= 0.8 && (!c[1] || c[1].score < c[0].score - 0.05) ? c[0] : null);
+    if (!hit) return withHeard({ state, replies: [say(c.length ? T.fixWhich(fix.target, c.slice(0, 5).map((x) => `${x.name}${x.zone ? ` · ${x.zone}` : ''}`)) : T.notFound(fix.target))] });
+    const r = await applyEdit({ id: hit.id, name: hit.name }, fix.change, state);
+    if (r) return withHeard(r);
+  }
+  // Recién guardado: «se llama solo Euforía», «está en Murcia, no en Madrid» arreglan esa empresa.
+  if (state.step === 'saved' && d.ops.edit && (saidName(text) || saidPlace(text))) {
+    const target = state.saved.length === 1 ? state.saved[0]! : state.saved.find((x) => normName(text).includes(normName(x.name))) ?? null;
+    if (!target) return withHeard({ state, replies: [say(T.whichSaved(state.saved.map((x) => x.name)))] });
+    const r = await applyEdit(target, text, state);
+    if (r) return withHeard(r);
+  }
+
   switch (state.step) {
     case 'context':
       // «Apúntalo» / «nada»: no hay mensajes que pasar; se apunta lo que contó.
@@ -323,10 +403,10 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       // La conversación que faltaba: se añade a lo que contó (no es una corrección).
       if (state.source && pastedChat(text).length >= 2) return withHeard(await note(`${state.source}\n\n${text}`, state.pending));
       // Otra cosa, con lo anterior delante: es una corrección («la parada está en Almería»), no algo nuevo.
-      if (state.source) return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending));
+      if (state.source) return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending, undefined, text));
       break; // reenviados: se apunta como algo nuevo
     case 'amend':
-      return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending));
+      return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending, undefined, text));
     case 'place': {
       const pending = [...state.pending];
       const p = pending[state.i]!;
@@ -345,9 +425,14 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       if (n === 0) { pending[state.i] = { ...p, choice: { accountId: null, create: p.item.venue, name: p.item.venue } }; return withHeard(next(pending, { source: state.source })); }
       if (n != null && p.candidates[n - 1]) { const c = p.candidates[n - 1]; pending[state.i] = { ...p, choice: { accountId: c.id, create: null, name: c.name } }; return withHeard(next(pending, { source: state.source })); }
       if (short(text) && new RegExp(`^(salta(r)?|ninguna|no)${END}`, 'iu').test(text)) { pending[state.i] = { ...p, skip: true }; return withHeard(next(pending, { source: state.source })); }
-      // Un nombre: se busca otra vez.
-      const c = await d.ops.search(text);
-      pending[state.i] = { ...p, item: { ...p.item, venue: text.slice(0, 160) }, candidates: c.slice(0, 5), choice: strong(c) ? { accountId: c[0].id, create: null, name: c[0].name } : null };
+      // Un nombre (y quizá dónde está): «Euforía. Está en Murcia» → nombre «Euforía», sitio Murcia.
+      const { create, name, rest } = nameAndRest(text);
+      const where = rest && d.ops.placeIn ? await d.ops.placeIn(saidPlace(rest) ?? rest).catch(() => null) : null;
+      const venue = (name || p.item.venue).slice(0, 160);
+      // «Sí, crear Euforia»: se crea con ese nombre, sin volver a buscar.
+      if (create) { pending[state.i] = { ...p, item: { ...p.item, venue }, choice: { accountId: null, create: venue, name: venue }, ...(where ? { place: where } : {}) }; return withHeard(next(pending, { source: state.source })); }
+      const c = await d.ops.search(venue);
+      pending[state.i] = { ...p, item: { ...p.item, venue }, candidates: c.slice(0, 5), choice: strong(c) ? { accountId: c[0].id, create: null, name: c[0].name } : null, ...(where ? { place: where } : {}) };
       return withHeard(next(pending, { source: state.source }));
     }
     case 'forward':
