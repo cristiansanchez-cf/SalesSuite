@@ -42,6 +42,16 @@ describe('filtros recordados', () => {
     expect([r.q.get('zona'), r.restored, r.fresh]).toEqual([null, false, false]);
   });
 
+  test('solo dentro del CRM: sin rastro (vienes de otra sección o es otro día), se entra limpio', async () => {
+    const { isCrmPath } = await import('./remember');
+    const { cookies } = jar({ co_f_list: 'tipo=promotora&q=sala' });
+    const r = rememberedFilters(url(''), cookies, 'co_f_list', false);
+    expect([r.q.get('tipo'), r.q.get('q'), r.restored, r.fresh]).toEqual([null, null, false, true]);
+    expect(rememberedFilters(url(''), cookies, 'co_f_list', true).q.get('q')).toBe('sala'); // volver de la ficha
+    expect(['/admin/accounts', '/admin/accounts/abc', '/admin/people', '/admin/leads/x'].every(isCrmPath)).toBe(true);
+    expect(['/admin', '/admin/inicio', '/admin/dossiers/1', '/admin/accountsx'].some(isCrmPath)).toBe(false);
+  });
+
   test('cada pantalla tiene su galleta (la lista no pisa al mapa)', () => {
     const { cookies } = jar({ co_f_list: 'q=lista', co_f_map: 'q=mapa' });
     expect(rememberedFilters(url(''), cookies, 'co_f_map').q.get('q')).toBe('mapa');

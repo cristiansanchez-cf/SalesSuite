@@ -15,6 +15,7 @@ import { withContentLocale } from './lib/i18n/content-db';
 import { can } from './lib/admin/permissions';
 import { withUsageScope } from './lib/usage/meter';
 import { hubRoute, isHubHost } from './lib/hub';
+import { CRM_TRAIL, isCrmPath } from './lib/ui/remember';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
 // y la sesión de consola exige membership en ese tenant.
@@ -116,6 +117,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.cookies.set(ck, '1', once);
       if (!(await onboardedAt(admin0, 'setup').catch(() => 'x'))) return context.redirect(`/admin/setup/welcome?next=${encodeURIComponent(path)}`);
     }
+  }
+
+  // Rastro del CRM (src/lib/ui/remember.ts): los filtros de Empresas se recuperan solo si la página anterior era del CRM
+  // (entrar en una empresa y volver). Al ir a otra sección, o al día siguiente, se entra limpio. Solo cuentan las
+  // páginas (no las llamadas de la página ni sus bloques).
+  if (isAdmin && context.request.method === 'GET' && !isIsland && !path.startsWith('/admin/api/') && (context.request.headers.get('accept') ?? '').includes('text/html')) {
+    context.locals.crmTrail = context.cookies.get(CRM_TRAIL)?.value === '1';
+    if (isCrmPath(path)) context.cookies.set(CRM_TRAIL, '1', { path: '/admin', maxAge: 60 * 60 * 4, httpOnly: true, sameSite: 'lax', secure: context.url.protocol === 'https:' });
+    else if (context.locals.crmTrail) context.cookies.delete(CRM_TRAIL, { path: '/admin' });
   }
 
   // Idioma (docs/I18N.md): preferencia guardada → cookie → navegador → idioma del espacio → español.

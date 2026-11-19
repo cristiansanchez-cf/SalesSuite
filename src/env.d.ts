@@ -19,6 +19,8 @@ declare namespace App {
     forbiddenReason?: { kind: 'partner-expired'; expiresAt: string | null };
     /** Acceso general (ventas.cofundo.io, sin espacio): solo entrar y elegir espacio (src/lib/hub.ts). */
     hub?: boolean;
+    /** Venía del CRM (la página anterior era del CRM): sus filtros se recuperan (src/lib/ui/remember.ts). */
+    crmTrail?: boolean;
     /** Idioma de la consola para esta petición (docs/I18N.md). */
     locale?: import('./lib/i18n/core').Locale;
   }
