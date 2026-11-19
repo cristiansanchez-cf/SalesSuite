@@ -64,6 +64,37 @@ webhook: no hay que tocar nada técnico salvo una variable en Vercel.
    - Si no contesta: el teléfono de Mi cuenta no coincide con el que escribe, o no eres miembro del espacio.
    - Si escribe otra persona que no es del equipo, el agente no contesta (es a propósito).
 
+## 2b. Cómo se hizo de verdad (19/11/2026) y lo que costó encontrar
+
+Hecho con el número del agente **+34 711 22 04 21** (Phone number ID `1487834214405051`, cuenta «Asistente CRM»,
+`1829791881562801`). Lo que difiere de lo de arriba, por orden:
+
+1. **La cuenta de Enjoy solo admite un número** sin verificar la empresa («This WhatsApp account has reached its phone
+   number limit»; el número de prueba +1 555 no se puede borrar). Solución: una **cuenta de WhatsApp nueva en la misma
+   cartera** → Settings → Accounts → WhatsApp accounts → **+ Add → Create a new WhatsApp account** («Asistente CRM»,
+   nombre visible relacionado con Enjoy), número por SMS, sin instalar WhatsApp con él.
+2. **El token del CRM es del usuario del sistema «Employee»** (tiene la app **Enjoy CRM**), no de «internalapps-worker»
+   (ese es de otra app). A Employee hay que darle **las dos cosas** de la cuenta nueva, con Full access:
+   - **WhatsApp accounts → Asistente CRM**, y
+   - **Messaging accounts → Asistente CRM** ← la que faltaba. Sin ella, el CRM recibe los mensajes pero al contestar
+     Meta dice `(#10) Viewer cannot access the provided Paid Message Account …`. Se asigna desde **Settings → Accounts →
+     Messaging accounts → Asistente CRM → Assign people → Employee** (desde el usuario del sistema, «Manage» abre la
+     de WhatsApp, no esta).
+3. **Conectar la app a la cuenta nueva** (para que lleguen los mensajes): Graph API Explorer, app **Enjoy CRM**, User
+   Token con `whatsapp_business_management` y `whatsapp_business_messaging` (al generarlo, **incluir la cuenta
+   Asistente CRM** en el permiso; si no, «Object … does not exist»), `POST 1829791881562801/subscribed_apps` →
+   `{"success": true}`.
+4. **Vercel**: `ASSISTANT_WHATSAPP_PHONE_ID=1487834214405051`, `ASSISTANT_WHATSAPP_NUMBER=+34 711 22 04 21` y
+   `ASSISTANT_WHATSAPP_TOKEN` (token de Employee, app Enjoy CRM, sin caducidad; nunca en un chat) → Redeploy →
+   `/api/health` dice `assistantNumberConfigured: true`.
+5. **Para diagnosticar**: Vercel → Logs → buscar `webhook`. Sin POST: Meta no avisa (paso 3). POST con
+   `[assistant] responder WhatsApp 400 …`: permisos del token (paso 2).
+6. **Mi cuenta**: cada persona, su móvil; y si escribe desde móviles distintos según la empresa, en «Tu asistente de
+   WhatsApp → Desde qué móvil le escribes, por empresa» (p. ej. Enjoy con el 694 y el resto con el 644).
+
+Pendiente: las plantillas del recordatorio de la mañana (`equipo_recordatorio_es/en/fr`) **en la cuenta Asistente
+CRM** (las plantillas son de cada cuenta de WhatsApp; las de Enjoy no valen para el 711).
+
 ## 3. El espacio de Cofundo en el CRM (antes del número de clientes de Cofundo)
 
 Los clientes que escriban al número de Cofundo tienen que caer en un CRM de Cofundo, que hoy no existe.
@@ -119,8 +150,7 @@ No es urgente. Cuando quieras separar Cofundo de Enjoy del todo:
 
 ## 6. Lo que falta en la app (pídemelo cuando vuelvas a tener sesión)
 
-1. **Varios teléfonos por persona** en Mi cuenta, para que el agente te reconozca tanto si le escribes desde el móvil de
-   Enjoy como desde el de Cofundo. Hoy, uno.
+1. ~~Varios teléfonos por persona~~ **Hecho (19/11/2026)**: un móvil por empresa en Mi cuenta → Tu asistente de WhatsApp.
 2. **Complementar en vez de sustituir:** con el resumen delante, un audio o texto nuevo **se añade** a lo anterior (hoy
    «Cambiar» descarta y hay que mandarlo todo otra vez). Botones: **Guardar** · **Añadir algo** · **Cambiar**.
 3. **Token de Meta por espacio**, para el día que Cofundo tenga su propia cartera (§5).
