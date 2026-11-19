@@ -39,6 +39,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // API pública de ingresos: se autentica con clave (Bearer), no con cookies; el CSRF no aplica (docs/COMMISSIONS.md).
   if (context.url.pathname.startsWith('/api/v1/')) return next();
+  // Calendario (docs/CALENDAR.md): lo piden Outlook o Google sin sesión; el enlace secreto es la llave. Vale en cualquier
+  // dominio (es de la persona, no de un espacio) y solo lee.
+  if (context.url.pathname.startsWith('/cal/') && context.request.method === 'GET') return next();
 
   const host = requestHost(context.request, context.url.host);
   if (!isSameOriginWrite(context.request, host)) {

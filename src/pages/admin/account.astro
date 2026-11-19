@@ -16,6 +16,9 @@ import { appMode } from '~/lib/mode';
 import { assistantContact, samePhone } from '~/lib/assistant/contact';
 import { assistantSetupMessages } from '~/lib/i18n/messages/assistantSetup';
 import { formatPhone, myAssistantPhones, setMyAssistantPhone } from '~/lib/assistant/phones';
+import { dropCalendar, hasCalendar, myCalendarToken } from '~/lib/calendar/feed';
+import { calendarMessages } from '~/lib/i18n/messages/calendar';
+import { requestOrigin } from '~/lib/http';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -44,6 +47,7 @@ let notifyOk = false;
 let contactMsg: { ok?: string; error?: string } = {};
 let phonesMsg: { ok?: string; error?: string } = {};
 let localeOk = false;
+let calMsg: { ok?: string; error?: string } = {};
 if (form?.get('action') === 'locale') {
   const l = String(form.get('locale') ?? '');
   if (isLocale(l)) {
@@ -81,6 +85,12 @@ if (form?.get('action') === 'locale') {
   }
   phonesMsg.error ??= undefined;
   if (!phonesMsg.error) phonesMsg = { ok: m.account.phonesSaved };
+} else if (form?.get('action') === 'calendar') {
+  // Calendario (docs/CALENDAR.md): conectar (crea el enlace), cambiarlo o desconectar.
+  const CL = calendarMessages[locale];
+  const what = String(form.get('do') ?? 'connect');
+  if (what === 'drop') { await dropCalendar(admin); calMsg = { ok: CL.okDropped }; }
+  else calMsg = (await myCalendarToken(admin, what === 'rotate')) ? { ok: what === 'rotate' ? CL.okRotated : CL.okConnected } : { error: CL.missing };
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
   await admin.notifications.setDailyPref({ daily: form.get('daily') === 'on', timezone: String(form.get('timezone') ?? '') });
@@ -134,6 +144,9 @@ const leadSettings = rt && !('error' in rt) ? await rt.db.settings(admin.session
 const assistant = showAssistant ? await assistantContact(leadSettings, { demo: appMode() === 'demo' }) : null;
 // Con más de una empresa: desde qué móvil escribe en cada una.
 const spacePhones = assistant && assistant.mode !== 'off' ? await myAssistantPhones(admin).catch(() => []) : [];
+// Calendario: el enlace de suscripción (si ya lo conectó).
+const calToken = admin.session.role === 'partner' ? null : await hasCalendar(admin).catch(() => null);
+const calUrl = calToken ? `${requestOrigin(Astro.request, Astro.url)}/cal/${calToken}.ics` : null;
 ---
 <AdminLayout title={m.account.title}>
   <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
@@ -230,6 +243,42 @@ const spacePhones = assistant && assistant.mode !== 'off' ? await myAssistantPho
       <button class="co-btn co-btn--ghost w-fit" type="submit">{C.save}</button>
     </form>
   )}
+  {!setup && admin.session.role !== 'partner' && (() => {
+    const CL = calendarMessages[locale];
+    const feed = calUrl;
+    return (
+      <section id="calendario" class="co-card mt-6 grid max-w-lg gap-3" data-testid="account-calendar">
+        <div><p class="text-eyebrow mb-1">{CL.title}</p><h2 class="co-entity">{CL.title}</h2></div>
+        <p class="co-body m-0">{CL.lede}</p>
+        {calMsg.ok && <Alert kind="success" title={calMsg.ok} />}
+        {calMsg.error && <Alert kind="rejection" title={calMsg.error} />}
+        {!feed ? (
+          <form method="post"><input type="hidden" name="action" value="calendar" /><input type="hidden" name="do" value="connect" />
+            <button class="co-btn co-btn--primary w-fit" data-testid="calendar-connect"><Icon name="calendar" size={16} />{CL.connect}</button></form>
+        ) : (
+          <>
+            <p class="co-meta m-0">{CL.connected}</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <input class="co-input min-w-0 flex-1 font-mono text-xs" readonly value={feed} data-calendar-url data-testid="calendar-url" />
+              <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-calendar-copy data-copied={CL.copied}>{CL.copy}</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a class="co-btn co-btn--primary co-btn--sm" target="_blank" rel="noopener noreferrer" href={`https://outlook.office.com/calendar/0/addfromweb?url=${encodeURIComponent(feed)}&name=${encodeURIComponent(CL.calName)}`} data-testid="calendar-outlook">{CL.openOutlook}</a>
+              <a class="co-btn co-btn--ghost co-btn--sm" target="_blank" rel="noopener noreferrer" href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feed.replace(/^https?:/, 'webcal:'))}`} data-testid="calendar-google">{CL.openGoogle}</a>
+              <a class="co-btn co-btn--ghost co-btn--sm" href={feed.replace(/^https?:/, 'webcal:')}>{CL.openApple}</a>
+            </div>
+            <details class="co-meta"><summary class="cursor-pointer">{CL.stepsTitle}</summary>
+              <ul class="mt-2 grid gap-1 pl-4"><li>{CL.outlook}</li><li>{CL.google}</li></ul></details>
+            <p class="co-help m-0">{CL.refresh} {CL.secret}</p>
+            <div class="flex flex-wrap gap-2">
+              <form method="post"><input type="hidden" name="action" value="calendar" /><input type="hidden" name="do" value="rotate" /><button class="co-btn co-btn--quiet co-btn--sm" data-testid="calendar-rotate">{CL.rotate}</button></form>
+              <form method="post"><input type="hidden" name="action" value="calendar" /><input type="hidden" name="do" value="drop" /><button class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-testid="calendar-drop">{CL.disconnect}</button></form>
+            </div>
+          </>
+        )}
+      </section>
+    );
+  })()}
   {!setup && (
     <form method="post" id="avisos" class="co-card mt-6 grid max-w-lg gap-4" data-testid="notify-pref">
       <input type="hidden" name="action" value="notify" />
@@ -275,6 +324,14 @@ const spacePhones = assistant && assistant.mode !== 'off' ? await myAssistantPho
     </form>
   )}
 </AdminLayout>
+
+<script>
+  document.querySelector('[data-calendar-copy]')?.addEventListener('click', async (e) => {
+    const b = e.currentTarget as HTMLButtonElement;
+    const v = document.querySelector<HTMLInputElement>('[data-calendar-url]')?.value ?? '';
+    try { await navigator.clipboard.writeText(v); b.textContent = b.dataset.copied ?? 'OK'; } catch { document.querySelector<HTMLInputElement>('[data-calendar-url]')?.select(); }
+  });
+</script>
 
 <script>
   // Teléfonos: «+34 694 904 149» mientras se escribe (de 3 en 3; el prefijo del país aparte), sin pensar en espacios.
