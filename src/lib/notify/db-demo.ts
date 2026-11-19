@@ -51,6 +51,16 @@ export function demoEmitContribution(op: 'insert' | 'update' | 'delete', c: { id
   }
 }
 
+/** Espejo de notify_member_left (migración 20270106): sale con cosas a su nombre → aviso a los admins. */
+export function demoEmitMemberLeft(tenantId: string, userId: string, role: Role, except: string | null = null) {
+  if (role === 'partner') return;
+  const s = db();
+  const dossiers = s.dossier.filter((d) => d.tenant_id === tenantId && d.author_id === userId && d.outcome === 'open' && d.status !== 'archived').length;
+  const accounts = s.account.filter((a) => a.tenant_id === tenantId && a.owner_id === userId).length;
+  if (dossiers + accounts === 0) return;
+  notifyRoles(tenantId, ['admin'], 'member_left', 'action', userId, { name: userLabel(userId) ?? '', dossiers, accounts }, except);
+}
+
 export function demoEmitMembership(tenantId: string, userId: string, role: Role, invitedBy: string | null | undefined) {
   if (!invitedBy) return;
   const inviterRole = db().users.find((u) => u.id === invitedBy)?.memberships.find((m) => m.tenant_id === tenantId)?.role;

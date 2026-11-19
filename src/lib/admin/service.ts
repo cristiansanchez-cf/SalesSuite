@@ -549,7 +549,30 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
   }
 
   const media = createMediaService(db, s, opts.assets, canEdit);
-  return { getState, listDossiers, createDossier, createFromAccount, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
+  /**
+   * Traspaso (docs/ORG.md §Traspasar): las propuestas abiertas de alguien (también de quien ya no está en el equipo) pasan
+   * a otra persona. Solo admin. Las cerradas (ganadas o perdidas) se quedan con quien las hizo: cuentan en sus comisiones.
+   */
+  async function handOverDossiers(from: string, moves: Array<{ id: string; to: string }>): Promise<number> {
+    if (!can(s.role).manageTenant) throw new AdminError(403, 'Solo un admin traspasa propuestas');
+    const team = new Set((await db.listMembers(s.tenantId)).filter((m) => m.role !== 'partner').map((m) => m.userId));
+    const theirs = new Set((await db.listDossiers(s.tenantId)).filter((d) => d.authorId === from && d.outcome === 'open' && d.status !== 'archived').map((d) => d.id));
+    let n = 0;
+    for (const m of moves) {
+      if (m.to === from || !theirs.has(m.id)) continue;
+      if (!team.has(m.to)) throw new AdminError(404, 'Esa persona no está en el equipo');
+      if (await db.updateDossier(m.id, { authorId: m.to })) n++;
+    }
+    return n;
+  }
+
+  /** Nombres de personas (también de quien ya no está en el equipo), para el traspaso. Solo admin. */
+  async function userNames(ids: string[]): Promise<Map<string, string>> {
+    if (!can(s.role).manageTenant) throw new AdminError(403, 'Solo un admin');
+    return ids.length ? db.userNames([...new Set(ids)]) : new Map();
+  }
+
+  return { getState, listDossiers, handOverDossiers, userNames, createDossier, createFromAccount, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
 }
 
 export type AdminService = ReturnType<typeof createAdminService>;

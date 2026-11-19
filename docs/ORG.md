@@ -98,3 +98,21 @@ Pedido de Cristian (10-oct-2026): a un comercial no le deben salir arriba las pr
   (mismos módulos, textos, sector, receta y fotos), con él como autor, en el idioma que se elija. Ver docs/I18N.md.
 - La base de datos no cambia: la RLS sigue dejando leer al equipo (lo usan «Qué ha funcionado» y las cuentas). El
   recorte es de pantalla y del editor. Pruebas: contrato del servicio y `scripts/smoke-proposal-owners.cjs`.
+
+## Traspasar lo de alguien que se va
+
+Criterio de Cristian: «cuando un comercial se vaya, bien por su cuenta o le echemos… propuestas, empresas reservadas de
+esta persona, a quién van… un "a mí" y el desplegable con el resto del equipo, o mitad y mitad».
+
+- **Dónde**: Equipo → «Repartir lo suyo» en cada persona con cosas a su nombre, y la sección «Ya no están en el equipo,
+  pero tienen cosas a su nombre». Al quitar a alguien con cosas, se va directo a `/admin/team/repartir?de=<id>`.
+- **Qué se reparte**: sus propuestas **abiertas** (las ganadas o perdidas se quedan con quien las hizo: cuentan en sus
+  comisiones) y sus **empresas a su nombre** (la reserva empieza de cero para quien la recibe).
+- **Cómo**: cada fila con su desplegable («Se queda igual», «A mí», el resto del equipo). «Todo a mí» de un clic; «Todo
+  a…» con el desplegable; o marcar unas y «Las marcadas a…» (se desmarcan para marcar el siguiente grupo). Resumen en
+  vivo («3 → A mí, 2 → Ana») antes de guardar.
+- **Quién**: solo admin (`handOverDossiers` en lib/admin/service.ts, `handOver` en lib/accounts/service.ts; orquesta
+  lib/admin/handover.ts).
+- **Aviso**: al salir alguien del equipo con propuestas abiertas o empresas a su nombre, los admins (menos quien lo
+  quitó) reciben «X ya no está en el equipo y tiene cosas a su nombre», que lleva a repartir (trigger
+  `notify_member_left`, migración 20270106; test SQL 88).

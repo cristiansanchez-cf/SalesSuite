@@ -9,6 +9,7 @@ const es = {
   contribution_pending: { title: (p: P) => `${p.author || 'Alguien del equipo'} propone ${p.type === 'change' ? 'una mejora' : 'un truco'} para el playbook` },
   partner_referred: { title: (p: P) => `${p.name || 'Un colaborador nuevo'} se ha unido, invitado por ${p.inviter || 'otro colaborador'}`, detail: 'Revisa sus módulos y asígnale cuentas.' },
   member_added: { title: (p: P, role: string) => `${p.inviter || 'Tu gerente'} ha añadido a ${p.name || 'alguien'} como ${role}` },
+  member_left: { title: (p: P) => `${p.name || 'Alguien'} ya no está en el equipo y tiene cosas a su nombre`, detail: (d: number, a: number) => `${d} ${d === 1 ? 'propuesta abierta' : 'propuestas abiertas'} y ${a} ${a === 1 ? 'empresa' : 'empresas'}. Decide a quién pasan.` },
   account_conflict: {
     title: (p: P, reason: string) => `${p.seller || 'Alguien'} ha ganado ${p.account ? `«${p.account}»` : 'una venta'}, pero ${reason}`,
     detail: (p: P) => `Sin comisión hasta que decidas${p.holder && p.reason === 'claimed_by_other' ? ` · la trabajaba ${p.holder}` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,
@@ -63,6 +64,7 @@ export const notifyMessages = defineMessages({
     contribution_pending: { title: (p) => `${p.author || 'Someone on the team'} suggests ${p.type === 'change' ? 'an improvement' : 'a tip'} for the playbook` },
     partner_referred: { title: (p) => `${p.name || 'A new partner'} has joined, invited by ${p.inviter || 'another partner'}`, detail: 'Review their modules and assign them accounts.' },
     member_added: { title: (p, role) => `${p.inviter || 'Your manager'} added ${p.name || 'someone'} as ${role}` },
+    member_left: { title: (p) => `${p.name || 'Someone'} left the team with work in their name`, detail: (d, a) => `${d} open ${d === 1 ? 'proposal' : 'proposals'} and ${a} ${a === 1 ? 'company' : 'companies'}. Decide who gets them.` },
     account_conflict: {
       title: (p, reason) => `${p.seller || 'Someone'} won ${p.account ? `“${p.account}”` : 'a deal'}, but ${reason}`,
       detail: (p) => `No commission until you decide${p.holder && p.reason === 'claimed_by_other' ? ` · ${p.holder} was working it` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,
@@ -114,6 +116,7 @@ export const notifyMessages = defineMessages({
     contribution_pending: { title: (p) => `${p.author || 'Alguém da equipe'} propõe ${p.type === 'change' ? 'uma melhoria' : 'uma dica'} para o playbook` },
     partner_referred: { title: (p) => `${p.name || 'Um novo parceiro'} entrou, convidado por ${p.inviter || 'outro parceiro'}`, detail: 'Revise os módulos dele e atribua contas.' },
     member_added: { title: (p, role) => `${p.inviter || 'Seu gerente de vendas'} adicionou ${p.name || 'alguém'} como ${role}` },
+    member_left: { title: (p) => `${p.name || 'Alguém'} saiu da equipa e tem coisas em seu nome`, detail: (d, a) => `${d} ${d === 1 ? 'proposta aberta' : 'propostas abertas'} e ${a} ${a === 1 ? 'empresa' : 'empresas'}. Decida para quem passam.` },
     account_conflict: {
       title: (p, reason) => `${p.seller || 'Alguém'} ganhou ${p.account ? `“${p.account}”` : 'uma venda'}, mas ${reason}`,
       detail: (p) => `Sem comissão até você decidir${p.holder && p.reason === 'claimed_by_other' ? ` · ${p.holder} estava trabalhando nela` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,
@@ -165,6 +168,7 @@ export const notifyMessages = defineMessages({
     contribution_pending: { title: (p) => `${p.author || '팀원'}님이 플레이북에 ${p.type === 'change' ? '개선안' : '팁'}을 제안했습니다` },
     partner_referred: { title: (p) => `${p.name || '새 파트너'}님이 ${p.inviter || '다른 파트너'}님의 초대로 합류했습니다`, detail: '모듈을 확인하고 계정을 배정하세요.' },
     member_added: { title: (p, role) => `${p.inviter || '영업 리더'}님이 ${p.name || '누군가'}님을 ${role}(으)로 추가했습니다` },
+    member_left: { title: (p) => `${p.name || '누군가'}님이 팀을 떠났고 이름으로 된 업무가 있습니다`, detail: (d, a) => `진행 중인 제안서 ${d}개, 업체 ${a}개. 누구에게 넘길지 정하세요.` },
     account_conflict: {
       title: (p, reason) => `${p.seller || '누군가'}님이 ${p.account ? `「${p.account}」` : '거래'}를 성사시켰지만 ${reason}`,
       detail: (p) => `결정할 때까지 커미션 없음${p.holder && p.reason === 'claimed_by_other' ? ` · ${p.holder}님이 담당 중이었습니다` : ''}${p.blockedReason ? ` · ${p.blockedReason}` : ''}.`,

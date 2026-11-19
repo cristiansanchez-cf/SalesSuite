@@ -437,7 +437,35 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     if (!ok) throw new AdminError(404, 'Propuesta no encontrada');
   }
 
+  /** Traspaso (docs/ORG.md §Traspasar): cuántas empresas tiene a su nombre cada persona, esté o no en el equipo. */
+  async function ownerCounts(): Promise<Map<string, number>> {
+    requireManager();
+    const out = new Map<string, number>();
+    for (const a of await db.listAccounts(s.tenantId, { limit: 20000 })) if (a.ownerId) out.set(a.ownerId, (out.get(a.ownerId) ?? 0) + 1);
+    return out;
+  }
+  async function ownedBy(userId: string): Promise<AccountView[]> {
+    requireManager();
+    const [rows, t, members] = await Promise.all([db.listAccounts(s.tenantId, { ownerId: userId, limit: 20000 }), territory(), names()]);
+    return rows.map((a) => view(a, t.zones, members)).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }
+  /** Pasa empresas de una persona a otras (cada una a quien diga), con la reserva desde hoy. Solo admin. */
+  async function handOver(from: string, moves: Array<{ id: string; to: string }>): Promise<number> {
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin traspasa empresas');
+    const theirs = new Set((await db.listAccounts(s.tenantId, { ownerId: from, limit: 20000 })).map((a) => a.id));
+    const team = await names();
+    let n = 0;
+    for (const m of moves) {
+      if (m.to === from || !theirs.has(m.id)) continue;
+      if (!team.has(m.to) || team.get(m.to)!.role === 'partner') throw new AdminError(404, 'Esa persona no está en el equipo');
+      await assign(m.id, m.to);
+      n++;
+    }
+    return n;
+  }
+
   return {
+    ownerCounts, ownedBy, handOver,
     territory, list, get, create, update, ensurePath, touch, releaseMany, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
     crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds,

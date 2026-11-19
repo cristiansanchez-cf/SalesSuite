@@ -11,6 +11,8 @@ import EmptyState from '~/components/ui/EmptyState.astro';
 import { i18n } from '~/lib/i18n';
 import { teamMessages } from '~/lib/i18n/messages/team';
 import { shellMessages } from '~/lib/i18n/messages/shell';
+import { handoverMessages } from '~/lib/i18n/messages/handover';
+import { handoverPeople } from '~/lib/admin/handover';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -18,6 +20,7 @@ if (!can(admin.session.role).manageTeam) return Astro.rewrite('/admin/forbidden'
 const t = admin.tenantAdmin;
 const { m: { team: M }, f: fmt, locale } = i18n(Astro, teamMessages);
 const S = shellMessages[locale];
+const H = handoverMessages[locale];
 
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 if (Astro.request.method === 'POST') {
@@ -26,6 +29,7 @@ if (Astro.request.method === 'POST') {
   const userId = String(f.get('userId') ?? '');
   let ok = '';
   let partnerId = '';
+  let handoverTo = '';
   result = await formAction(async () => {
     if (action === 'invite-partner') {
       const r = await t.invitePartner({
@@ -38,13 +42,19 @@ if (Astro.request.method === 'POST') {
       const r = await t.invite({ email: f.get('email'), role: f.get('role') }, `${requestOrigin(Astro.request, Astro.url)}/admin/auth/confirm?next=/admin/account`);
       ok = r.invited ? 'invited' : 'added';
     } else if (action === 'role') { await t.setRole(userId, f.get('role')); ok = 'role'; }
-    else if (action === 'remove') { await t.removeMember(userId); ok = 'removed'; }
+    else if (action === 'remove') {
+      await t.removeMember(userId); ok = 'removed';
+      // Si tenía propuestas o empresas a su nombre, el admin las reparte justo después (docs/ORG.md §Traspasar).
+      const p = (await handoverPeople(admin)).find((x) => x.userId === userId);
+      if (p && (p.dossiers || p.accounts)) handoverTo = userId;
+    }
     else if (action === 'resend') {
       const partner = f.get('partner') === '1';
       await t.resendInvite(userId, `${requestOrigin(Astro.request, Astro.url)}/admin/auth/confirm?next=${partner ? '/admin' : '/admin/account'}`);
       ok = 'resent';
     }
   });
+  if (!result.error && handoverTo) return Astro.redirect(`/admin/team/repartir?de=${handoverTo}&removed=1`, 303);
   if (!result.error) return Astro.redirect(partnerId ? `/admin/team/partners/${partnerId}?ok=${ok}` : `/admin/team?ok=${ok}`, 303);
 }
 const okMsg = flash(Astro.url, {
@@ -52,10 +62,14 @@ const okMsg = flash(Astro.url, {
   added: M.okAdded,
   role: M.okRole,
   removed: M.okRemoved,
+  handover: H.ok(Number(Astro.url.searchParams.get('d') ?? 0), Number(Astro.url.searchParams.get('a') ?? 0)),
   resent: M.okResent,
 });
 const [members, partners, catalog, chart] = await Promise.all([t.listMembers(), t.listPartners(), t.listCatalog(), admin.org.chart().catch(() => null)]);
 // Delegación de cada persona (organigrama).
+const holders = await handoverPeople(admin).catch(() => []);
+const holds = new Map(holders.map((p) => [p.userId, p]));
+const former = holders.filter((p) => !p.member);
 const delegationOf = new Map((chart?.delegations ?? []).flatMap((d) => [...d.members, ...(d.manager ? [d.manager] : [])].map((x) => [x.userId, d.name] as const)));
 const modules = catalog.filter((m) => m.isCatalog && m.versions.some((v) => v.status === 'published'));
 const dateFmt = (iso: string) => fmt.date(iso);
@@ -95,6 +109,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
           {delegationOf.get(m.userId) && <span class="co-badge" data-testid="member-delegation"><Icon name="network" size={12} />{delegationOf.get(m.userId)}</span>}
           <span class:list={['co-badge', m.role !== 'rep' && 'co-badge--ink']}>{S.role[m.role]}</span>
           {perms.manageTenant && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open={`role-${m.userId}`}>{M.changeRole}</button>}
+          {holds.get(m.userId) && <a class="co-btn co-btn--ghost co-btn--sm" href={`/admin/team/repartir?de=${m.userId}`} title={H.holds(holds.get(m.userId)!.dossiers, holds.get(m.userId)!.accounts)} data-testid="member-handover"><Icon name="users" size={14} />{H.handOver}</a>}
           <button type="button" class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-dialog-open={`remove-${m.userId}`} data-testid="remove-open">{M.remove}</button>
           <ConfirmDialog id={`role-${m.userId}`} title={M.roleOf(m.displayName || m.email)} confirmLabel={M.saveRole}
             does={M.roleDoes}
@@ -111,7 +126,7 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
           </ConfirmDialog>
           <ConfirmDialog id={`remove-${m.userId}`} title={M.removeTitle(m.displayName || m.email)} confirmLabel={M.removeConfirm} danger testid="remove"
             does={M.removeDoes}
-            doesNot={M.removeDoesNot}>
+            doesNot={perms.manageTenant ? H.removeDoesNot : M.removeDoesNot}>
             <input type="hidden" name="action" value="remove" />
             <input type="hidden" name="userId" value={m.userId} />
           </ConfirmDialog>
@@ -119,6 +134,23 @@ const initials = (s: string) => s.split(/[\s@.]+/).filter(Boolean).slice(0, 2).m
       ))}
     </ul>
   </section>
+
+  {former.length > 0 && (
+    <section class="co-section" data-testid="handover-former">
+      <div class="co-section__head"><h2 class="text-eyebrow">{H.formerTitle}</h2><span class="co-meta">{H.formerHelp}</span></div>
+      <ul class="co-rows">
+        {former.map((p) => (
+          <li>
+            <a class="co-row co-row--attention" href={`/admin/team/repartir?de=${p.userId}`} data-testid="former-row">
+              <span class="co-anchor__avatar co-anchor__avatar--soft">{initials(p.name)}</span>
+              <span class="co-row__main"><span class="co-row-title">{p.name}</span><span class="co-meta">{H.holds(p.dossiers, p.accounts)}</span></span>
+              <span class="co-btn co-btn--primary co-btn--sm">{H.handOver}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 
   <section class="co-section" data-testid="partners">
     <div class="co-section__head">

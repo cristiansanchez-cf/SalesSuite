@@ -1,0 +1,128 @@
+---
+/**
+ * Repartir lo de alguien (docs/ORG.md §Traspasar): sus propuestas abiertas y sus empresas reservadas, cada una a quien
+ * diga el admin. «Todo a mí» de un clic, «Todo a…» con el desplegable del equipo, o marcar unas y pasarlas a otra persona.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { formAction } from '~/lib/admin/forms';
+import { handoverApply, handoverOf, movesFromForm } from '~/lib/admin/handover';
+import { i18n } from '~/lib/i18n';
+import { handoverMessages } from '~/lib/i18n/messages/handover';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).manageTenant) return Astro.rewrite('/admin/forbidden');
+const { m: M, f: fmt } = i18n(Astro, handoverMessages);
+const from = Astro.url.searchParams.get('de') ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(from)) return Astro.redirect('/admin/team', 303);
+
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  let done = { dossiers: 0, accounts: 0 };
+  const f = await Astro.request.formData();
+  result = await formAction(async () => { done = await handoverApply(admin, from, movesFromForm(f)); });
+  if (!result.error) {
+    const left = await handoverOf(admin, from);
+    const q = `ok=handover&d=${done.dossiers}&a=${done.accounts}`;
+    return Astro.redirect(left && (left.dossiers.length || left.accounts.length) ? `/admin/team/repartir?de=${from}&${q}` : `/admin/team?${q}`, 303);
+  }
+}
+const h = await handoverOf(admin, from);
+if (!h) return Astro.redirect('/admin/team', 303);
+const me = admin.session.userId;
+const okMsg = Astro.url.searchParams.get('ok') === 'handover'
+  ? M.ok(Number(Astro.url.searchParams.get('d') ?? 0), Number(Astro.url.searchParams.get('a') ?? 0))
+  : Astro.url.searchParams.get('removed') === '1' ? M.removed : null;
+const options = h.targets.map((t) => ({ v: t.userId, label: t.userId === me ? M.me(t.name) : t.name }));
+const empty = !h.dossiers.length && !h.accounts.length;
+---
+<AdminLayout title={M.title(h.person.name)}>
+  <PageHeader eyebrow={M.eyebrow} title={M.title(h.person.name)} lede={M.lede}>
+    <a class="co-btn co-btn--ghost" href="/admin/team"><Icon name="chevron-left" size={16} />{M.back}</a>
+  </PageHeader>
+  {!h.person.member && <p class="co-badge co-badge--attention mb-3 w-fit" data-testid="handover-gone">{M.gone}</p>}
+  {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
+
+  {empty ? <p class="co-meta" data-testid="handover-empty">{M.nothing}</p> : (
+    <form method="post" data-handover data-testid="handover">
+      <div class="co-card mb-4 flex flex-wrap items-center gap-2 !p-3" data-testid="handover-bulk">
+        <button type="button" class="co-btn co-btn--primary co-btn--sm" data-bulk-me={me} data-testid="handover-all-me"><Icon name="user" size={14} />{M.allToMe}</button>
+        <span class="co-meta mx-1">·</span>
+        <select class="co-select w-auto" data-bulk-target aria-label={M.allTo} data-testid="handover-target">
+          {options.map((o) => <option value={o.v}>{o.label}</option>)}
+        </select>
+        <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk="all" data-testid="handover-all-to">{M.allTo}</button>
+        <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk="checked" data-testid="handover-checked-to">{M.checkedTo}</button>
+      </div>
+
+      {[
+        { kind: 'd', title: M.dossiers(h.dossiers.length), rows: h.dossiers.map((d) => ({ id: d.id, name: d.title, meta: [d.prospectCompany, d.nextStepAt ? fmt.date(d.nextStepAt, { day: 'numeric', month: 'short' }) : M.noStep].filter(Boolean).join(' · '), href: `/admin/dossiers/${d.id}` })) },
+        { kind: 'a', title: M.accounts(h.accounts.length), rows: h.accounts.map((a) => ({ id: a.id, name: a.name, meta: a.zonePath, href: `/admin/accounts/${a.id}` })) },
+      ].filter((g) => g.rows.length).map((g) => (
+        <section class="co-section" data-testid={`handover-${g.kind === 'd' ? 'dossiers' : 'accounts'}`}>
+          <div class="co-section__head">
+            <h2 class="text-eyebrow">{g.title}</h2>
+            <label class="co-meta inline-flex items-center gap-1"><input type="checkbox" data-check-all={g.kind} />{M.checkAll}</label>
+          </div>
+          <ul class="co-rows">
+            {g.rows.map((r) => (
+              <li class="co-row flex-wrap" data-testid="handover-row">
+                <input type="checkbox" data-pick={g.kind} aria-label={r.name} />
+                <span class="co-row__main min-w-[12rem]">
+                  <a class="co-row-title underline-offset-2 hover:underline" href={r.href}>{r.name}</a>
+                  {r.meta && <span class="co-meta">{r.meta}</span>}
+                </span>
+                <select class="co-select w-auto" name={`${g.kind}:${r.id}`} data-move aria-label={r.name}>
+                  <option value="">{M.keep}</option>
+                  {options.map((o) => <option value={o.v}>{o.label}</option>)}
+                </select>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      <div class="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[var(--console-line)] bg-[var(--console-bg)] py-3">
+        <button class="co-btn co-btn--primary" data-testid="handover-save" disabled>{M.save}</button>
+        <span class="co-meta" data-summary data-none={M.summaryNone} data-tpl-one={M.summary(1)} data-tpl-many={M.summary(2)}>{M.summaryNone}</span>
+      </div>
+    </form>
+  )}
+</AdminLayout>
+
+<script>
+  (() => {
+    const form = document.querySelector<HTMLFormElement>('[data-handover]');
+    if (!form) return;
+    const moves = () => [...form.querySelectorAll<HTMLSelectElement>('[data-move]')];
+    const summary = form.querySelector<HTMLElement>('[data-summary]')!;
+    const save = form.querySelector<HTMLButtonElement>('[data-testid=handover-save]')!;
+    const refresh = () => {
+      const by = new Map<string, number>();
+      for (const s of moves()) if (s.value) { const l = s.selectedOptions[0]!.textContent!; by.set(l, (by.get(l) ?? 0) + 1); }
+      const n = [...by.values()].reduce((a, b) => a + b, 0);
+      save.disabled = n === 0;
+      // «Vas a pasar 7 cosas: 4 a mí, 3 a Ana».
+      summary.textContent = n === 0 ? summary.dataset.none! : `${(n === 1 ? summary.dataset.tplOne! : summary.dataset.tplMany!.replace('2', String(n))).replace(/\.$/, '')}: ${[...by].map(([l, k]) => `${k} → ${l}`).join(', ')}.`;
+    };
+    const setAll = (sel: HTMLSelectElement[], to: string) => { for (const s of sel) s.value = to; refresh(); };
+    form.querySelector<HTMLButtonElement>('[data-bulk-me]')?.addEventListener('click', (e) => setAll(moves(), (e.currentTarget as HTMLElement).dataset.bulkMe!));
+    const target = form.querySelector<HTMLSelectElement>('[data-bulk-target]')!;
+    form.querySelectorAll<HTMLButtonElement>('[data-bulk]').forEach((b) => b.addEventListener('click', () => {
+      const rows = b.dataset.bulk === 'all' ? moves() : moves().filter((s) => s.closest('li')!.querySelector<HTMLInputElement>('[data-pick]')!.checked);
+      setAll(rows, target.value);
+      // Lo marcado ya tiene destino: se desmarca para marcar el siguiente grupo («unas a uno y otras a otro»).
+      form.querySelectorAll<HTMLInputElement>('[data-pick], [data-check-all]').forEach((c) => { c.checked = false; });
+    }));
+    form.querySelectorAll<HTMLInputElement>('[data-check-all]').forEach((c) => c.addEventListener('change', () => {
+      form.querySelectorAll<HTMLInputElement>(`[data-pick="${c.dataset.checkAll}"]`).forEach((x) => { x.checked = c.checked; });
+    }));
+    form.addEventListener('change', (e) => { if ((e.target as HTMLElement).matches('[data-move]')) refresh(); });
+    refresh();
+  })();
+</script>

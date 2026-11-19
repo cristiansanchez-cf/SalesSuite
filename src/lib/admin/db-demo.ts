@@ -3,7 +3,7 @@ import { parseProposal } from '../proposal/preset';
 import { demoDb, type DemoDb, type DossierRow, type PartnerAccountRow, type PartnerProfileRow, type ShareLinkRow } from '../data/store';
 import type { AdminDb, AssetStore, Identity } from './db';
 import type { CatalogVersion, DossierRecord, ItemRecord, LinkRecord, ModuleRecord, ModuleVersionRecord, PartnerAccount, PartnerProfile } from './types';
-import { demoEmitMembership } from '../notify/db-demo';
+import { demoEmitMembership, demoEmitMemberLeft } from '../notify/db-demo';
 import { demoAccountsOnDossier } from '../accounts/db-demo';
 import { demoApplyCoupon, demoStripe } from '../commissions/db-demo';
 
@@ -321,7 +321,9 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       const u = db().users.find((x) => x.id === userId);
       if (!u) return false;
       const before = u.memberships.length;
+      const role = u.memberships.find((m) => m.tenant_id === tenantId)?.role;
       u.memberships = u.memberships.filter((m) => m.tenant_id !== tenantId);
+      if (role && u.memberships.length < before) demoEmitMemberLeft(tenantId, userId, role);
       // cascada membership → partner_profile → partner_account (dossier.partner_account_id → null)
       const s = db();
       const gone = new Set(s.partner_account.filter((a) => a.tenant_id === tenantId && a.user_id === userId).map((a) => a.id));
