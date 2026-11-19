@@ -11,6 +11,7 @@
 import type { Channel, Outcome } from '../crm/followup';
 import type { NoteItem } from '../crm/notes';
 import { assistantMessages, type AssistantText } from './messages';
+import type { Place } from './places';
 
 export interface Candidate { id: string; name: string; zone: string; score: number; discarded: boolean }
 export interface AssistantOps {
@@ -20,6 +21,10 @@ export interface AssistantOps {
   apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>>;
   /** Recordatorios: la propuesta de mensaje para una empresa (draft.ts). */
   draft?(item: ReminderItem): Promise<string>;
+  /** Dónde está una empresa nueva: un sitio conocido nombrado en el texto (places.ts). */
+  placeIn?(text: string): Promise<Place | null>;
+  /** Lo que escribe cuando se le pregunta la ciudad: sus zonas, el catálogo de España y Google. */
+  places?(q: string): Promise<Place[]>;
   /** «Hecho»: apunta que le escribió (y el CRM propone el siguiente paso). Devuelve cuándo toca lo siguiente. */
   done?(accountId: string): Promise<{ name: string; nextAt: string | null }>;
   /** «Mañana»: el próximo paso, a mañana. */
@@ -40,11 +45,18 @@ export type Incoming =
 export type Reply = { text: string; buttons?: Array<{ id: string; title: string }> };
 
 interface Choice { accountId: string | null; create: string | null; name: string }
-interface Pending { item: NoteItem; candidates: Candidate[]; choice: Choice | null; skip?: boolean }
+interface Pending { item: NoteItem; candidates: Candidate[]; choice: Choice | null; skip?: boolean;
+  /** Empresa nueva: dónde está (o «no sé»). */
+  place?: Place | null; noPlace?: boolean }
 export type State =
   | { step: 'idle' }
-  | { step: 'pick'; at: string; pending: Pending[]; i: number }
-  | { step: 'confirm'; at: string; pending: Pending[] }
+  | { step: 'pick'; at: string; pending: Pending[]; i: number; source?: string }
+  /** source: lo que contó (para corregir sin perderlo); forward: los reenviados o la captura (para elegir otra empresa). */
+  | { step: 'confirm'; at: string; pending: Pending[]; source?: string; forward?: { texts: string[]; channel?: string } }
+  /** «Cambiar»: espera la corrección, que se aplica sobre lo que ya contó. */
+  | { step: 'amend'; at: string; source: string; pending: Pending[] }
+  /** Empresa nueva sin ciudad: se pregunta dónde está. */
+  | { step: 'place'; at: string; pending: Pending[]; i: number; options: Place[]; source?: string; forward?: { texts: string[]; channel?: string } }
   | { step: 'forward'; at: string; texts: string[]; channel?: string }
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
   | { step: 'reminder'; at: string; items: ReminderItem[] };
@@ -72,8 +84,21 @@ function rowOf(p: Pending) {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
     nextDays: it.nextDays, discard: null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
+    // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
+    ...(p.choice?.create && p.place ? { place: p.place.v } : {}),
   };
 }
+/** Conversaciones pegadas tal cual («[19/11/26, 10:21:09] Cristian: …», el formato de WhatsApp al copiar): sus líneas. */
+const CHAT_LINE = /^\s*\[?\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\]?\s*[-–]?\s*[^:\n]{1,60}:\s?\S/;
+export function pastedChat(text: string): string[] {
+  const out: string[] = [];
+  let open = false;
+  for (const line of text.split('\n')) {
+    if (CHAT_LINE.test(line)) { out.push(line.trim()); open = true; } else if (open && line.trim()) out[out.length - 1] += `\n${line.trim()}`; else open = false;
+  }
+  return out;
+}
+const normName = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 /** Un apunte hecho a mano (mensajes reenviados): solo la interacción. */
 function forwardedItem(name: string, texts: string[], today: string, channel = 'whatsapp'): NoteItem {
   return {
@@ -95,24 +120,32 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   const say = (text: string, buttons?: Reply['buttons']): Reply => ({ text, ...(buttons ? { buttons } : {}) });
 
   /** El resumen de lo que se va a guardar, con sus botones. */
-  const confirm = (pending: Pending[]): FlowResult => {
+  const confirm = (pending: Pending[], from: { source?: string; forward?: { texts: string[]; channel?: string } } = {}): FlowResult => {
     const keep = pending.filter((p) => !p.skip && p.choice);
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
       interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays,
-    }));
-    return { state: { step: 'confirm', at, pending }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
+    }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
+    return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
   };
+  /** Empresa nueva sin ciudad: se pregunta (si se puede buscar). */
+  type From = { source?: string; forward?: { texts: string[]; channel?: string } };
+  const askPlace = (pending: Pending[], i: number, from: From = {}, options: Place[] = []): FlowResult => ({
+    state: { step: 'place', at, pending, i, options, ...from },
+    replies: [say(options.length ? T.whichPlace(pending[i]!.choice!.name, options.map((o, n) => `${n + 1}) ${o.label}`)) : T.askPlace(pending[i]!.choice!.name))],
+  });
   const askPick = (pending: Pending[], i: number): FlowResult => {
     const p = pending[i];
     const opts = p.candidates.slice(0, 5).map((c, n) => `${n + 1}) ${c.name}${c.zone ? ` · ${c.zone}` : ''}${c.discarded ? ` (${T.discarded})` : ''}`);
     return { state: { step: 'pick', at, pending, i }, replies: [say(T.whichOne(p.item.venue, opts, p.item.venue))] };
   };
-  /** Siguiente empresa por decidir, o el resumen si ya están todas. */
-  const next = (pending: Pending[]): FlowResult => {
+  /** Siguiente empresa por decidir, luego la ciudad de las nuevas, y el resumen si ya está todo. */
+  const next = (pending: Pending[], from: From = {}): FlowResult => {
     const i = pending.findIndex((p) => !p.choice && !p.skip);
-    return i < 0 ? confirm(pending) : askPick(pending, i);
+    if (i >= 0) { const r = askPick(pending, i); return { ...r, state: { ...(r.state as Extract<State, { step: 'pick' }>), source: from.source } }; }
+    const j = d.ops.places ? pending.findIndex((p) => !p.skip && p.choice && !p.choice.accountId && !p.place && !p.noPlace) : -1;
+    return j >= 0 ? askPlace(pending, j, from) : confirm(pending, from);
   };
   const save = async (pending: Pending[]): Promise<FlowResult> => {
     const keep = pending.filter((p) => !p.skip && p.choice);
@@ -122,17 +155,34 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return { state: idle, replies: [say([ok.length ? T.saved(ok) : '', bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
   };
   /** Lo que cuenta, a «Apuntar». */
-  const note = async (text: string): Promise<FlowResult> => {
+  const note = async (text: string, prev: Pending[] = []): Promise<FlowResult> => {
     let items: Awaited<ReturnType<AssistantOps['split']>>;
     try { items = await d.ops.split(text); } catch { return { state: idle, replies: [say(T.aiDown)] }; }
     if (!items.length) return { state: idle, replies: [say(T.nothing)] };
-    const pending: Pending[] = items.map((it) => ({
-      item: it, candidates: it.candidates, choice: strong(it.candidates) ? { accountId: it.candidates[0].id, create: null, name: it.candidates[0].name } : null,
-    }));
-    return next(pending);
+    // La conversación pegada tal cual va literal en la interacción (para ver después cómo le hablamos y qué funciona).
+    const chat = pastedChat(text);
+    if (chat.length && items.length === 1) {
+      const it = items[0]!;
+      items = [{ ...it, interaction: [it.interaction, `${T.convo}:\n${chat.join('\n')}`].filter(Boolean).join('\n\n').slice(0, 4000) }];
+    }
+    const pending: Pending[] = [];
+    for (const it of items) {
+      // Al corregir: lo que ya había elegido para esa empresa (la misma u otra con el mismo nombre) se mantiene.
+      const was = prev.find((p) => p.choice && (normName(p.item.venue) === normName(it.venue) || normName(p.choice.name) === normName(it.venue)));
+      const choice = was?.choice ?? (strong(it.candidates) ? { accountId: it.candidates[0].id, create: null, name: it.candidates[0].name } : null);
+      // Dónde está (por si es nueva): lo que diga de ella; si solo hay una, todo lo que contó.
+      const about = [it.venue, it.interaction, ...it.keyFacts, ...it.facts, items.length === 1 ? text : ''].filter(Boolean).join(' \n ');
+      const place = was?.place ?? (d.ops.placeIn ? await d.ops.placeIn(about).catch(() => null) : null);
+      pending.push({ item: it, candidates: it.candidates, choice, place, noPlace: was?.noPlace });
+    }
+    return next(pending, { source: text });
   };
   /** Los reenviados ya tienen empresa: al resumen. */
-  const forwardTo = (texts: string[], choice: Choice, channel?: string) => confirm([{ item: forwardedItem(choice.name, texts, today, channel), candidates: [], choice }]);
+  const forwardTo = (texts: string[], choice: Choice, channel?: string): FlowResult => {
+    const p: Pending = { item: forwardedItem(choice.name, texts, today, channel), candidates: [], choice };
+    if (!choice.accountId && d.ops.places) return askPlace([p], 0, { forward: { texts, channel } });
+    return confirm([p], { forward: { texts, channel } });
+  };
   const forwardSearch = async (texts: string[], q: string, channel?: string): Promise<FlowResult> => {
     const c = await d.ops.search(q);
     if (strong(c) || (c[0] && c[0].score >= 0.99)) return forwardTo(texts, { accountId: c[0].id, create: null, name: c[0].name }, channel);
@@ -168,10 +218,16 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       if (new RegExp(`^(m[aá]s tarde|luego|ahora no|later|not now|plus tard|mais tarde|depois|no|não|nao|나중에)${END}`, 'iu').test(said)) return { state: idle, replies: [say(T.remindLater)] };
     }
   }
+  /** «Cambiar»: se corrige sobre lo que ya contó (o se elige otra empresa para los reenviados), no se tira. */
+  const change = (st: Extract<State, { step: 'confirm' }>): FlowResult => {
+    if (st.source) return { state: { step: 'amend', at, source: st.source, pending: st.pending }, replies: [say(T.askChange)] };
+    if (st.forward) return { state: { step: 'forward', at, texts: st.forward.texts, channel: st.forward.channel }, replies: [say(T.askOtherCompany)] };
+    return { state: idle, replies: [say(T.changed)] };
+  };
   // ---- Botones
   if (msg.kind === 'button') {
     if (state.step === 'confirm' && msg.id === 'save') return save(state.pending);
-    if (state.step === 'confirm' && msg.id === 'change') return { state: idle, replies: [say(T.changed)] };
+    if (state.step === 'confirm' && msg.id === 'change') return change(state);
     return { state, replies: [say(T.expired)] };
   }
   if (msg.kind === 'other') return { state, replies: [say(T.onlyText)] };
@@ -207,19 +263,34 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   switch (state.step) {
     case 'confirm':
       if (isYes(text)) return save(state.pending);
-      if (isNo(text)) return { state: idle, replies: [say(T.changed)] };
-      break; // otra cosa: se apunta como algo nuevo (lo anterior se olvida)
+      if (isNo(text)) return change(state);
+      // Otra cosa, con lo anterior delante: es una corrección («la parada está en Almería»), no algo nuevo.
+      if (state.source) return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending));
+      break; // reenviados: se apunta como algo nuevo
+    case 'amend':
+      return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending));
+    case 'place': {
+      const pending = [...state.pending];
+      const p = pending[state.i]!;
+      const n = numberOf(text);
+      const done = (place: Place | null) => { pending[state.i] = { ...p, place, noPlace: !place }; return next(pending, { source: state.source, forward: state.forward }); };
+      if (n != null && state.options[n - 1]) return withHeard(done(state.options[n - 1]!));
+      if (short(text) && new RegExp(`^(no s[eé]|ninguna|saltar?|da igual|no)${END}`, 'iu').test(text)) return withHeard(done(null));
+      const found = d.ops.places ? await d.ops.places(text).catch(() => []) : [];
+      if (found.length === 1 || (found[0] && normName(found[0].label.split(' › ').at(-1)!) === normName(text))) return withHeard(done(found[0]!));
+      return withHeard(askPlace(pending, state.i, { source: state.source, forward: state.forward }, found.slice(0, 5)));
+    }
     case 'pick': {
       const n = numberOf(text);
       const p = state.pending[state.i];
       const pending = [...state.pending];
-      if (n === 0) { pending[state.i] = { ...p, choice: { accountId: null, create: p.item.venue, name: p.item.venue } }; return withHeard(next(pending)); }
-      if (n != null && p.candidates[n - 1]) { const c = p.candidates[n - 1]; pending[state.i] = { ...p, choice: { accountId: c.id, create: null, name: c.name } }; return withHeard(next(pending)); }
-      if (short(text) && new RegExp(`^(salta(r)?|ninguna|no)${END}`, 'iu').test(text)) { pending[state.i] = { ...p, skip: true }; return withHeard(next(pending)); }
+      if (n === 0) { pending[state.i] = { ...p, choice: { accountId: null, create: p.item.venue, name: p.item.venue } }; return withHeard(next(pending, { source: state.source })); }
+      if (n != null && p.candidates[n - 1]) { const c = p.candidates[n - 1]; pending[state.i] = { ...p, choice: { accountId: c.id, create: null, name: c.name } }; return withHeard(next(pending, { source: state.source })); }
+      if (short(text) && new RegExp(`^(salta(r)?|ninguna|no)${END}`, 'iu').test(text)) { pending[state.i] = { ...p, skip: true }; return withHeard(next(pending, { source: state.source })); }
       // Un nombre: se busca otra vez.
       const c = await d.ops.search(text);
       pending[state.i] = { ...p, item: { ...p.item, venue: text.slice(0, 160) }, candidates: c.slice(0, 5), choice: strong(c) ? { accountId: c[0].id, create: null, name: c[0].name } : null };
-      return withHeard(next(pending));
+      return withHeard(next(pending, { source: state.source }));
     }
     case 'forward':
       return withHeard(await forwardSearch(state.texts, text, state.channel));

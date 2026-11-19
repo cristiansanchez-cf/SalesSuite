@@ -1451,6 +1451,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   const noteApplySchema = z.array(z.object({
     accountId: uuid.nullable().optional().or(z.literal('').transform(() => null)),
     create: z.string().trim().max(160).nullable().optional().transform((v) => v || null),
+    /** Empresa nueva: su zona (ya resuelta; el asistente la saca de «La Parada en Almería»). */
+    zoneId: uuid.nullable().optional(),
     interaction: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
     keyFacts: z.array(z.string().trim().min(1).max(600)).max(5).default([]),
     facts: z.array(z.string().trim().min(1).max(600)).max(40).default([]),
@@ -1519,7 +1521,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       let name = r.create ?? '';
       try {
         const kindNew = r.kind && (await kinds()).some((k) => k.key === r.kind) ? r.kind : undefined;
-        if (!id && r.create) id = await accounts.insertAccount(t, { name: r.create, zoneId: null, segmentId: null, address: null, externalRef: null, notes: null, kind: kindNew });
+        if (!id && r.create) id = await accounts.insertAccount(t, { name: r.create, zoneId: r.zoneId ?? null, segmentId: null, address: null, externalRef: null, notes: null, kind: kindNew });
         if (!id) continue;
         const a = await accounts.getAccount(id);
         if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');

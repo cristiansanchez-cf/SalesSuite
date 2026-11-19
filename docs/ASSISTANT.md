@@ -54,7 +54,13 @@ cuál, y avisa si alguien pone el número del propio asistente (un número no pu
    - Si duda, pregunta: «¿Cuál es «Salamandra»? 1) Grupo Salamandra · Valencia 2) … 0) Crear «Salamandra»». Se
      contesta con el número, «0» para crearla, «saltar» para no apuntar esa, o el nombre bien escrito.
 2. **El resumen**: empresa, canal y resultado, lo que pasó, lo que sabemos y el próximo paso, con los botones
-   **Guardar** / **Cambiar** (o «sí» / «no»). «Cambiar» no guarda nada: se manda otra vez.
+   **Guardar** / **Cambiar** (o «sí» / «no»). «Cambiar» (o escribir otra cosa con el resumen delante) **corrige sobre lo
+   que contó**: se vuelve a separar lo de antes con la corrección encima, y la empresa elegida (o «crear») y su ciudad
+   se mantienen. En los reenviados y las capturas, «Cambiar» pregunta otra empresa.
+   - **Empresa nueva**: su ciudad sale de lo que contó («La Parada en Almería», `places.ts`: sus zonas y el catálogo de
+     España); si no hay, la pregunta (y busca también en Google). «no sé»: sin ciudad. Se crea la zona si falta.
+   - **Conversación pegada** («[19/11/26, 10:21:09] Cristian: …», lo que copia WhatsApp): va literal en la interacción,
+     tras el resumen, para guardar cómo le hablamos.
 3. **Reenviados**: los mensajes reenviados se juntan; a la primera pregunta de qué empresa es la conversación. Con el
    nombre, el resumen como «WhatsApp · contestó» con los textos juntos.
 4. **Capturas de pantalla** (`src/lib/assistant/screenshot.ts`): la captura de una conversación con un cliente (WhatsApp,

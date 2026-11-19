@@ -12,6 +12,8 @@ import type { AssistantDb, Member } from './db';
 import { handle, type AssistantOps, type Incoming, type Reply } from './flow';
 import type { Transcriber } from './transcribe';
 import { shotText, type ScreenshotReader } from './screenshot';
+import { placeIn, searchPlaces } from './places';
+import { isPlaceKey, pathForKey } from '../accounts/spain';
 import { assistantMessages } from './messages';
 import { withUsageScope } from '../usage/meter';
 
@@ -48,7 +50,31 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
   return {
     async split(text) { return admin.crm.notesSplit(text, await context()); },
     search: (q) => admin.crm.accountSearch(q),
-    apply: (rows) => admin.crm.notesApply(rows),
+    // La ciudad de las empresas nuevas (places.ts) → su zona, creándola si falta (como el buscador de ciudades del CRM).
+    async apply(rows) {
+      const out = [];
+      for (const r of rows as Array<Record<string, unknown>>) {
+        const { place, ...row } = r;
+        let zoneId: string | null = null;
+        if (typeof place === 'string' && place) {
+          try {
+            const path = isPlaceKey(place) ? pathForKey(place) : null;
+            zoneId = path ? await admin.accounts.ensurePath(path) : await admin.crm.pickZone(place);
+          } catch (e) { console.warn('[assistant] ciudad', e instanceof Error ? e.message : e); }
+        }
+        out.push({ ...row, ...(zoneId ? { zoneId } : {}) });
+      }
+      return admin.crm.notesApply(out);
+    },
+    async placeIn(text) { return placeIn(text, (await admin.accounts.territory()).zones); },
+    async places(q) {
+      const zones = (await admin.accounts.territory()).zones;
+      const own = searchPlaces(q, zones);
+      if (own.length) return own;
+      // Fuera del catálogo (otro país, un pueblo): Google, como el buscador de ciudades.
+      const g = await admin.crm.citySearch(q).catch(() => []);
+      return g.slice(0, 5).map((x) => ({ v: x.v, label: [x.n, x.p].filter(Boolean).join(' · ') }));
+    },
     async draft(item) {
       if (!drafter) throw new Error('sin IA');
       const c = await context();

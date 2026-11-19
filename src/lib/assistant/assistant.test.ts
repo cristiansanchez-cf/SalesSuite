@@ -59,14 +59,62 @@ describe('la conversación', () => {
     const c = await run(ops, { kind: 'text', text: '0' }, a.state);
     expect(c.replies[0].text).toContain('*Salamandra* (nueva)');
   });
-  test('«Cambiar» no guarda; «cancelar» vuelve a empezar; lo viejo caduca', async () => {
+  test('«Cambiar» no guarda (pregunta qué cambia); «cancelar» vuelve a empezar; lo viejo caduca', async () => {
     const { ops, applied } = fakeOps();
     const a = await run(ops, { kind: 'text', text: 'Club Sol: bien' });
-    expect((await run(ops, { kind: 'button', id: 'change' }, a.state)).replies[0].text).toContain('no guardo nada');
+    const ch = await run(ops, { kind: 'button', id: 'change' }, a.state);
+    expect(ch.replies[0].text).toContain('¿Qué cambio?');
+    expect(ch.state.step).toBe('amend');
     expect((await run(ops, { kind: 'text', text: 'cancelar' }, a.state)).state.step).toBe('idle');
     const late = await run(ops, { kind: 'button', id: 'save' }, a.state, new Date(NOW.getTime() + STATE_TTL_MS + 1000));
     expect(late.replies[0].text).toContain('ya no está pendiente');
     expect(applied).toHaveLength(0);
+  });
+  test('«Cambiar» corrige sobre lo que contó: no se pierde nada ni vuelve a preguntar la empresa (caso La Parada)', async () => {
+    const seen: string[] = [];
+    const parada = (t: string) => [{ ...item('La Parada', { interaction: /17:00/.test(t) ? 'Quedamos hoy a las 17:00' : 'Le escribí', outcome: /17:00/.test(t) ? 'meeting' : 'no_reply' }), candidates: [cand('p1', 'Paradox.night', 0.6)] }];
+    const { ops, applied } = fakeOps({
+      split: async (t) => { seen.push(t); return parada(t); },
+      search: async () => [cand('p1', 'Paradox.night', 0.6)],
+      placeIn: async (t) => (/almer[ií]a/i.test(t) ? { v: 'es|Andalucía|Almería', label: 'Andalucía › Almería' } : null),
+      places: async () => [],
+    });
+    const a = await run(ops, { kind: 'text', text: 'He hablado con Vicente, dueño de La Parada en Almería. Le escribí.' });
+    expect(a.replies[0].text).toContain('¿Cuál es «La Parada»?');
+    const b = await run(ops, { kind: 'text', text: '0' }, a.state);
+    expect(b.replies[0].text).toContain('📍 Andalucía › Almería'); // la ciudad, de lo que contó
+    const c = await run(ops, { kind: 'button', id: 'change' }, b.state);
+    const d = await run(ops, { kind: 'text', text: 'me ha contestado: hablamos hoy a las 17:00' }, c.state);
+    expect(seen[1]).toContain('He hablado con Vicente'); // lo de antes sigue
+    expect(seen[1]).toContain('hablamos hoy a las 17:00'); // con la corrección
+    expect(d.replies[0].text).toContain('cita conseguida');
+    expect(d.replies[0].text).not.toContain('¿Cuál es'); // «crear» se mantiene
+    await run(ops, { kind: 'button', id: 'save' }, d.state);
+    expect(applied[0][0]).toMatchObject({ accountId: null, create: 'La Parada', place: 'es|Andalucía|Almería', outcome: 'meeting' });
+  });
+  test('empresa nueva sin ciudad: la pregunta; «no sé» la deja sin ciudad', async () => {
+    const { ops, applied } = fakeOps({
+      split: async () => [{ ...item('Bar Nuevo'), candidates: [] }],
+      search: async () => [], placeIn: async () => null,
+      places: async (q) => (/roquetas/i.test(q) ? [{ v: 'es|Andalucía|Almería|Roquetas de Mar', label: 'Andalucía › Almería › Roquetas de Mar' }] : []),
+    });
+    const a = await run(ops, { kind: 'text', text: 'Bar Nuevo: bien' });
+    const b = await run(ops, { kind: 'text', text: '0' }, a.state);
+    expect(b.replies[0].text).toContain('¿Dónde está *Bar Nuevo*?');
+    const c = await run(ops, { kind: 'text', text: 'Roquetas' }, b.state);
+    expect(c.replies[0].text).toContain('📍 Andalucía › Almería › Roquetas de Mar');
+    await run(ops, { kind: 'text', text: 'sí' }, c.state);
+    expect(applied[0][0]).toMatchObject({ create: 'Bar Nuevo', place: 'es|Andalucía|Almería|Roquetas de Mar' });
+    const e = await run(ops, { kind: 'text', text: 'no sé' }, b.state);
+    expect(e.replies[0].text).not.toContain('📍');
+  });
+  test('la conversación pegada (formato de WhatsApp) se guarda literal en la interacción', async () => {
+    const { ops, applied } = fakeOps();
+    const text = 'Club Sol, le escribí:\n\n[19/11/26, 10:21:09] Cristian Alberto Sanchez: Buenos días Vicente!!\nHa pasado bastante tiempo\n[19/11/26, 10:40:00] Vicente: perfecto, hablamos a las 17:00';
+    const a = await run(ops, { kind: 'text', text });
+    await run(ops, { kind: 'button', id: 'save' }, a.state);
+    const it = (applied[0][0] as { interaction: string }).interaction;
+    expect(it).toContain('Conversación:\n[19/11/26, 10:21:09] Cristian Alberto Sanchez: Buenos días Vicente!!\nHa pasado bastante tiempo\n[19/11/26, 10:40:00] Vicente: perfecto, hablamos a las 17:00');
   });
   test('reenviados: se juntan, pregunta de quién son y van como «WhatsApp · contestó»', async () => {
     const { ops, applied } = fakeOps({ search: async (q) => (/sol/i.test(q) ? [cand('a1', 'Club Sol', 1)] : []) });
