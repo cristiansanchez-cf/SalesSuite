@@ -53,7 +53,7 @@ if (Astro.request.method === 'POST') {
   if (!result.error) return Astro.redirect(`/admin/prices${ok ? `?ok=${ok}` : ''}${ok.startsWith('pkg') ? '#paquetes' : ''}`, 303);
 }
 const PK = packagesMessages[locale];
-const okMsg = flash(Astro.url, { ...m.ok, pkg: PK.ok.saved, pkgOn: PK.ok.on, pkgOff: PK.ok.off });
+const okMsg = flash(Astro.url, { ...m.ok, pkg: PK.ok.saved, pkgOn: PK.ok.on, pkgOff: PK.ok.off, pkgAi: PK.ai.applied(Number(Astro.url.searchParams.get('n')) || 0) });
 const products = await admin.crm.products({ all: true }).catch(() => []);
 const [options, market, stripeSince] = await Promise.all([t.listPriceOptions(), admin.playbook.market().catch(() => []), t.stripeStatus().catch(() => null)]);
 // La URL que se da de alta en Stripe: la de este espacio (el dominio por el que entra el admin).

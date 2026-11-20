@@ -56,8 +56,21 @@ más típico (llevan Enjoy a las salas)».
   20270113. Smoke: `scripts/smoke-event.cjs`.
 - En la cualificación de promotoras, «Fiestas al mes» tiene también **Pocas al año** («hacen 5 fiestas al año»).
 
+## Con IA: cambiar el modelo de negocio
+
+Criterio de Cristian: «las startups iteran rápido y ponen productos nuevos… que sea fácil cambiarlo, quizá con un agente
+de IA». Tarifas → Paquetes → **Cambiar el modelo con IA** (`/admin/prices/ia`, solo admin):
+
+- Se cuenta qué cambia (o se pega un mensaje, una nota, una tabla). La IA (`src/lib/crm/packages-ai.ts`, Sonnet, una
+  llamada con la herramienta `save_plan`) propone solo lo que cambia: **nuevo**, **cambia** (con lo de antes → lo de
+  ahora: precios por tamaño, lo que incluye, gratis…) o **se desactiva**, cada uno con su porqué. No inventa precios: lo
+  que no dice, como estaba.
+- Se marcan los que se quieren y «Aplicar los marcados». La propuesta viaja en el formulario y el servidor la vuelve a
+  leer contra el catálogo de ahora (`readPlan`): claves que existen, sin repetir, sin «cambios» que no cambian nada.
+- Como todo sale del catálogo, cambia también en el cierre, las propuestas (las nuevas; las enviadas son una foto),
+  Aprende y la IA. Usa el tope diario de IA del espacio. Smoke: `scripts/smoke-model-ai.cjs`.
+
 ## Siguiente
 
 - Fidelización con su propia diapositiva visual (pases, sellos, el aviso «vuelve», las notificaciones): hacen falta
   capturas o imágenes reales.
-- Cambiar el modelo de negocio con IA: contarlo y que proponga los cambios (paquetes, propuestas, Aprende).

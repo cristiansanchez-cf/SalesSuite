@@ -10,6 +10,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
+import { claudeModelPlan, fixtureModelPlan, MAX_MODEL_TEXT, readPlan, type ModelPlan, type ModelPlanApi } from './packages-ai';
 import { catalogText, cleanPicks, describe, freeNotes, listPrice, pickStr, tierOf, type Product } from './packages';
 import { isOpen, TRIAL_STEP, trialEnd, trialEndFrom, trialReminderDay, type Trial } from './trial';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
@@ -137,7 +138,7 @@ export interface PersonView extends Contact {
 /** Para comparar un contacto escrito de varias formas («@marco_sabbia», «https://www.instagram.com/marco_sabbia/»). */
 const socialKey = (v: string) => v.toLowerCase().replace(/^https?:\/\/(www\.)?(instagram\.com|linkedin\.com\/in)\//, '').replace(/^@/, '').replace(/[\/\s]+$/g, '').replace(/[\s()-]/g, '');
 
-export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null; notes?: NotesApi | null; locale?: string } = {}) {
+export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb, s: AdminSession, opts: { places?: PlacesApi | null; routes?: RoutesApi | null; research?: ResearchApi | null; zoneNames?: ZoneNamesApi | null; zoneFixes?: ZoneFixesApi | null; website?: WebsiteApi; cleanup?: CleanupApi | null; notes?: NotesApi | null; modelPlan?: ModelPlanApi | null; locale?: string } = {}) {
   // Idioma y país del espacio para Google y la investigación (§45): «es-ES» → es / ES.
   // La región de las búsquedas, la de quien busca (un comercial coreano, Corea); el idioma, el del espacio.
   const loc = readerPlacesLocale(opts.locale, requestLocale);
@@ -154,6 +155,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     : env('ANTHROPIC_API_KEY') ? claudeZoneFixes(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureZoneFixes() : null;
   const cleanupAi = opts.cleanup !== undefined ? opts.cleanup
     : env('ANTHROPIC_API_KEY') ? claudeCleanup(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureCleanup() : null;
+  const modelAi = opts.modelPlan !== undefined ? opts.modelPlan
+    : env('ANTHROPIC_API_KEY') ? claudeModelPlan(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureModelPlan() : null;
   const notesAi = opts.notes !== undefined ? opts.notes
     : env('ANTHROPIC_API_KEY') ? claudeNotes(env('ANTHROPIC_API_KEY')!) : env('AI_RESEARCH_FIXTURE') === '1' ? fixtureNotes() : null;
   const perms = can(s.role);
@@ -1191,6 +1194,49 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (!cur) throw new AdminError(404, 'Paquete no encontrado');
     const { id: _id, ...rest } = cur;
     try { await db.saveProduct(t, { ...rest, active }, id); } catch (e) { mapError(e); }
+  }
+
+  /**
+   * Cambiar el modelo de negocio con IA (docs/PAQUETES.md §Con IA): lo cuenta el admin y la IA propone los cambios en
+   * los paquetes (crear, cambiar, desactivar). No se guarda nada aquí: se revisa y se aplica lo marcado (applyModelPlan).
+   */
+  async function planModel(text: string, ctx: { seller: string }): Promise<ModelPlan> {
+    requireUse();
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin cambia los paquetes');
+    if (!modelAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const clean = String(text ?? '').trim().slice(0, MAX_MODEL_TEXT);
+    if (clean.length < 10) throw new AdminError(422, 'Cuenta un poco más qué cambia');
+    await quota('ai');
+    let plan: ModelPlan | null = null;
+    try { plan = await modelAi.plan(clean, await products({ all: true }), ctx); } catch (e) {
+      console.warn('[model-plan]', aiReason(e));
+      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
+    }
+    if (!plan) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
+    return plan;
+  }
+  /** Aplicar los cambios marcados: se vuelven a comprobar contra el catálogo de ahora (lo que llega del formulario no se fía). */
+  async function applyModelPlan(raw: unknown): Promise<number> {
+    requireUse();
+    if (!perms.manageTenant || !db.saveProduct) throw new AdminError(403, 'Solo un admin cambia los paquetes');
+    const all = await products({ all: true });
+    const list = Array.isArray(raw) ? raw : [];
+    // A formato de la IA (snake) para pasar por la misma lectura con límites.
+    const plan = readPlan({ changes: list.map((c: Record<string, unknown>) => ({ ...c, price_small: (c.prices as Record<string, unknown> | undefined)?.small, price_medium: (c.prices as Record<string, unknown> | undefined)?.medium,
+      price_large: (c.prices as Record<string, unknown> | undefined)?.large, free_allowed: c.freeAllowed, free_note: c.freeNote })) }, all);
+    let n = 0;
+    for (const ch of plan.changes) {
+      const cur = ch.key ? all.find((p) => p.key === ch.key) : undefined;
+      if (ch.action === 'deactivate') { if (cur) { await setProductActive(cur.id, false); n++; } continue; }
+      const key = cur?.key ?? (slugKey(ch.name).slice(0, 40) || `paquete-${all.length + n + 1}`);
+      if (!cur && all.some((p) => p.key === key)) continue;
+      try {
+        await db.saveProduct(t, { key, name: ch.name, summary: ch.summary, includes: ch.includes, prices: ch.prices, currency: cur?.currency ?? all[0]?.currency ?? 'EUR', period: ch.period,
+          freeAllowed: ch.freeAllowed, freeNote: ch.freeAllowed ? ch.freeNote : null, position: cur?.position ?? all.length + n + 1, active: true }, cur?.id);
+        n++;
+      } catch (e) { mapError(e); }
+    }
+    return n;
   }
 
   // ---------------------------------------------------------------- en prueba (docs/CLIENTS.md §En prueba)
@@ -2343,7 +2389,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, planModel, applyModelPlan, hasModelAi: () => !!modelAi, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

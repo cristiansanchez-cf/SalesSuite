@@ -21,6 +21,12 @@ const fields = (p: Product | null) => ({
     <h2 class="co-page-title !text-3xl">{P.title}</h2>
     <p class="co-lede max-w-3xl">{P.lede}</p>
   </div>
+  {/* Cambiar el modelo de negocio con IA (docs/PAQUETES.md §Con IA): contarlo y revisar lo que propone. */}
+  <a href="/admin/prices/ia" class="co-card co-card--link !flex items-center gap-4 !p-5" data-testid="packages-ai">
+    <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]"><Icon name="sparkles" size={20} /></span>
+    <span class="grid min-w-0 flex-1 gap-0.5"><span class="co-entity">{P.ai.open}</span><span class="co-meta">{P.ai.openHelp}</span></span>
+    <Icon name="chevron-right" size={18} />
+  </a>
   {products.length === 0 && <p class="co-meta">{P.empty}</p>}
   <div class="grid gap-3 md:grid-cols-2">
     {[...products, null].map((p) => { const v = fields(p); return (

@@ -1,0 +1,101 @@
+---
+/**
+ * Cambiar el modelo de negocio con IA (docs/PAQUETES.md §Con IA). El admin cuenta qué cambia; la IA propone los cambios
+ * en los paquetes (nuevo, cambia, se desactiva), cada uno con lo que cambia y por qué; se marcan y se aplican. La
+ * propuesta viaja en el formulario y el servidor la vuelve a comprobar contra el catálogo de ahora antes de guardar.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import Alert from '~/components/ui/Alert.astro';
+import { formAction } from '~/lib/admin/forms';
+import { TIERS, type Product } from '~/lib/crm/packages';
+import { diffOf, type ModelPlan } from '~/lib/crm/packages-ai';
+import { i18n } from '~/lib/i18n';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role !== 'admin') return Astro.rewrite('/admin/forbidden');
+const { m: P, f, locale } = i18n(Astro, packagesMessages);
+const A = P.ai;
+
+let text = '';
+let plan: ModelPlan | null = null;
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  const str = (k: string) => String(fd.get(k) ?? '');
+  text = str('text');
+  if (str('action') === 'apply') {
+    let n = 0;
+    result = await formAction(async () => {
+      const all = JSON.parse(str('plan') || '[]') as unknown[];
+      const picked = new Set(fd.getAll('pick').map(Number));
+      n = await admin.crm.applyModelPlan(all.filter((_, i) => picked.has(i)));
+    });
+    if (!result.error) return Astro.redirect(`/admin/prices?ok=pkgAi&n=${n}#paquetes`, 303);
+  } else {
+    result = await formAction(async () => { plan = await admin.crm.planModel(text, { seller: await admin.playbook.sellerLine() }); });
+  }
+}
+const current = await admin.crm.products({ all: true }).catch(() => [] as Product[]);
+const money = (n: number | null, cur = current[0]?.currency ?? 'EUR') => (n == null ? '—' : f.money(Math.round(n * 100), cur));
+const FIELD: Record<string, string> = { name: P.name, summary: P.summary, includes: A.includes, period: P.period, free: A.free, active: P.activate };
+const changes = (plan as ModelPlan | null)?.changes ?? [];
+---
+<AdminLayout title={A.title}>
+  <div class="mx-auto grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-6 pb-10">
+    <header class="grid gap-2">
+      <a class="co-meta inline-flex w-fit items-center gap-1" href="/admin/prices#paquetes"><Icon name="chevron-left" size={14} />{A.back}</a>
+      <h1 class="co-page-title !text-4xl">{A.title}</h1>
+      <p class="co-lede">{A.lede}</p>
+    </header>
+    {!admin.crm.hasModelAi() && <Alert kind="info" title={A.noAi} />}
+    {result.error && <Alert kind="rejection" title={result.error} details={result.details} />}
+
+    <form method="post" class="co-card grid gap-3 !p-6" data-testid="model-ai-form">
+      <input type="hidden" name="action" value="plan" />
+      <textarea class="co-textarea" name="text" rows="6" minlength="10" maxlength="6000" required placeholder={A.ph} data-testid="model-ai-text">{text}</textarea>
+      <button class="co-btn co-btn--primary w-fit" disabled={!admin.crm.hasModelAi()} data-testid="model-ai-run"><Icon name="sparkles" size={16} />{A.run}</button>
+    </form>
+
+    {plan && (changes.length === 0 ? <p class="co-meta" data-testid="model-ai-nothing">{A.nothing}</p> : (
+      <form method="post" class="grid gap-3" data-testid="model-ai-plan">
+        <input type="hidden" name="action" value="apply" />
+        <input type="hidden" name="text" value={text} />
+        <input type="hidden" name="plan" value={JSON.stringify(changes)} />
+        <h2 class="co-entity">{A.proposal}</h2>
+        {(plan as ModelPlan).summary && <p class="co-body m-0">{(plan as ModelPlan).summary}</p>}
+        {changes.map((ch, i) => { const cur = ch.key ? current.find((p) => p.key === ch.key) : undefined; const d = diffOf(ch, cur); return (
+          <label class="co-card grid cursor-pointer gap-2 !p-5 has-[input:checked]:border-[var(--co-ink)]" data-testid="model-ai-change" data-action={ch.action}>
+            <span class="flex flex-wrap items-center gap-2">
+              <input type="checkbox" name="pick" value={i} checked class="h-4 w-4 accent-[var(--co-ink)]" />
+              <span class:list={['co-badge', ch.action === 'create' ? 'co-badge--ink' : ch.action === 'deactivate' ? 'co-badge--attention' : 'co-badge--soft']}>{A[ch.action]}</span>
+              <strong>{ch.name}</strong>
+              {cur && cur.name !== ch.name && <span class="co-meta">({cur.name})</span>}
+            </span>
+            {ch.action === 'create' && (
+              <span class="grid gap-1 text-sm">
+                {ch.summary && <span>{ch.summary}</span>}
+                {ch.includes.length > 0 && <span class="co-meta">{A.includes}: {ch.includes.join(' · ')}</span>}
+                <span>{TIERS.map((t) => `${P.tiersShort[t]} ${money(ch.prices[t])}`).join(' · ')}/{P.periods[ch.period]}{ch.freeAllowed ? ` · ${A.free}` : ''}</span>
+              </span>
+            )}
+            {ch.action === 'update' && cur && (
+              <ul class="m-0 grid gap-1 pl-5 text-sm">
+                {TIERS.filter((t) => d.includes(`price_${t}`)).map((t) => <li>{P.tiers[t]}: <s class="co-meta">{money(cur.prices[t])}</s> → <strong>{money(ch.prices[t])}</strong></li>)}
+                {d.filter((k) => !k.startsWith('price_')).map((k) => (
+                  <li>{FIELD[k] ?? k}: {k === 'includes' ? <>{ch.includes.filter((x) => !cur.includes.includes(x)).map((x) => <span class="mr-1 text-[color:var(--console-good,#15803d)]">+ {x}</span>)}{cur.includes.filter((x) => !ch.includes.includes(x)).map((x) => <s class="co-meta mr-1">{x}</s>)}</>
+                    : k === 'free' ? (ch.freeAllowed ? `${A.free}${ch.freeNote ? ` (${ch.freeNote})` : ''}` : '—')
+                    : k === 'name' ? ch.name : k === 'summary' ? ch.summary ?? '—' : k === 'period' ? P.periods[ch.period] : ''}</li>
+                ))}
+              </ul>
+            )}
+            {ch.why && <span class="co-meta text-sm">{A.why}: {ch.why}</span>}
+          </label>
+        ); })}
+        <button class="co-btn co-btn--primary w-fit" data-testid="model-ai-apply">{A.apply}</button>
+      </form>
+    ))}
+  </div>
+</AdminLayout>
