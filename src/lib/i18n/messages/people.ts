@@ -19,7 +19,7 @@ export const peopleMessages = defineMessages({
       notes: 'Notas', list: 'Lista', listHelp: 'Opcional, p. ej. fbd.', create: 'Añadir', optional: 'opcional', more: 'Más datos',
     },
     person: {
-      back: 'Personas', companies: 'Dónde está', noCompanies: 'Todavía no está en ninguna empresa.', addCompany: 'Añadir a una empresa',
+      back: 'Personas', companies: 'Dónde está', noCompanies: 'Todavía no está en ninguna empresa.', addCompany: 'Añadir a una empresa', addOther: 'Añadir a otra empresa', editRole: 'Editar', roleIn: (c: string) => `Su papel en ${c}`, saveRole: 'Guardar', noRole: 'Sin papel',
       link: 'Añadir', remove: 'Quitar', data: 'Datos', save: 'Guardar datos', lists: 'Listas', listsHelp: 'Separadas por comas, p. ej. fbd, vip.',
       saveLists: 'Guardar listas', owner: 'Quién la lleva', nobody: 'Nadie', assign: 'Asignar', manage: 'Gestionar', delete: 'Borrar persona',
       deleteTitle: (n: string) => `¿Borrar a ${n}?`, deleteDoes: 'Desaparece del directorio y de las empresas en las que está.',
@@ -100,7 +100,7 @@ export const peopleMessages = defineMessages({
       notes: 'Notes', list: 'List', listHelp: 'Optional, e.g. fbd.', create: 'Add', optional: 'optional', more: 'More details',
     },
     person: {
-      back: 'People', companies: 'Where they are', noCompanies: 'Not at any company yet.', addCompany: 'Add to a company',
+      back: 'People', companies: 'Where they are', noCompanies: 'Not at any company yet.', addCompany: 'Add to a company', addOther: 'Add to another company', editRole: 'Edit', roleIn: (c: string) => `Their role at ${c}`, saveRole: 'Save', noRole: 'No role',
       link: 'Add', remove: 'Remove', data: 'Details', save: 'Save details', lists: 'Lists', listsHelp: 'Comma-separated, e.g. fbd, vip.',
       saveLists: 'Save lists', owner: 'Who handles them', nobody: 'Nobody', assign: 'Assign', manage: 'Manage', delete: 'Delete person',
       deleteTitle: (n: string) => `Delete ${n}?`, deleteDoes: 'They disappear from the directory and from the companies they’re at.',
@@ -181,7 +181,7 @@ export const peopleMessages = defineMessages({
       notes: 'Notas', list: 'Lista', listHelp: 'Opcional, p. ex. fbd.', create: 'Adicionar', optional: 'opcional', more: 'Mais dados',
     },
     person: {
-      back: 'Pessoas', companies: 'Onde está', noCompanies: 'Ainda não está em nenhuma empresa.', addCompany: 'Adicionar a uma empresa',
+      back: 'Pessoas', companies: 'Onde está', noCompanies: 'Ainda não está em nenhuma empresa.', addCompany: 'Adicionar a uma empresa', addOther: 'Adicionar a outra empresa', editRole: 'Editar', roleIn: (c: string) => `O papel em ${c}`, saveRole: 'Guardar', noRole: 'Sem papel',
       link: 'Adicionar', remove: 'Tirar', data: 'Dados', save: 'Salvar dados', lists: 'Listas', listsHelp: 'Separadas por vírgulas, p. ex. fbd, vip.',
       saveLists: 'Salvar listas', owner: 'Quem cuida', nobody: 'Ninguém', assign: 'Atribuir', manage: 'Gerir', delete: 'Apagar pessoa',
       deleteTitle: (n: string) => `Apagar ${n}?`, deleteDoes: 'Some do diretório e das empresas em que está.',
@@ -262,7 +262,7 @@ export const peopleMessages = defineMessages({
       notes: '메모', list: '목록', listHelp: '선택, 예: fbd.', create: '추가', optional: '선택', more: '추가 정보',
     },
     person: {
-      back: '사람', companies: '소속', noCompanies: '아직 어느 회사에도 없습니다.', addCompany: '회사에 추가',
+      back: '사람', companies: '소속', noCompanies: '아직 어느 회사에도 없습니다.', addCompany: '회사에 추가', addOther: '다른 회사에 추가', editRole: '편집', roleIn: (c: string) => `${c}에서의 역할`, saveRole: '저장', noRole: '역할 없음',
       link: '추가', remove: '빼기', data: '정보', save: '정보 저장', lists: '목록', listsHelp: '쉼표로 구분, 예: fbd, vip.',
       saveLists: '목록 저장', owner: '담당자', nobody: '없음', assign: '배정', manage: '관리', delete: '사람 삭제',
       deleteTitle: (n: string) => `${n}을(를) 삭제할까요?`, deleteDoes: '디렉터리와 소속 회사에서 사라집니다.',

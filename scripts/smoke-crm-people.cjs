@@ -44,11 +44,21 @@ const CSV = 'Name,Empresa/Local,Rol,Ciudad,Status,Acción recomendada\n'
   // ---- la misma persona en otra empresa
   await rep.click('[data-testid=person][data-name="Bruno Smoke"] a');
   await rep.waitForURL(/\/admin\/people\/[^/?]+$/);
+  // Añadir a otra empresa: primero el botón (el formulario no se confunde con el papel de la que ya tiene).
+  assert(!(await rep.isVisible('[data-testid=person-link]')), 'añadir a otra empresa: detrás de un botón');
+  await rep.click('[data-testid=person-link-open]');
   await rep.fill('[data-testid=person-link] [name=company]', 'Club Sol');
   await rep.fill('[data-testid=person-link] [name=role]', 'DJ');
   await Promise.all([rep.waitForURL(/ok=linked/), rep.click('[data-testid=person-link] button')]);
   const comp = await rep.textContent('[data-testid=person-companies]');
   assert(comp.includes('Club Sol') && comp.includes('La Brecha Smoke'), 'una persona en dos empresas');
+  // Cambiar su papel en una empresa: «Editar» en esa empresa.
+  const brecha = rep.locator('[data-testid=person-companies] li[data-name="La Brecha Smoke"]');
+  await brecha.locator('[data-testid=person-role-edit]').click();
+  await brecha.locator('[data-testid=person-role-input]').fill('Socio fundador');
+  await Promise.all([rep.waitForURL(/ok=linked/), brecha.locator('[data-testid=person-role-save]').click()]);
+  assert((await rep.textContent('[data-testid=person-companies] li[data-name="La Brecha Smoke"]')).includes('Socio fundador'), 'papel cambiado en esa empresa');
+  assert((await rep.textContent('[data-testid=person-companies] li[data-name="Club Sol"]')).includes('DJ'), 'y en la otra sigue igual');
   if (OUT) await rep.screenshot({ path: `${OUT}/crm-person.png`, fullPage: true });
 
   // ---- la ficha de la empresa enseña a su gente y se mete en un grupo
