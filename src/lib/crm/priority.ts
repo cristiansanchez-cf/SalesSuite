@@ -83,7 +83,8 @@ export function setQual(q: Record<string, unknown>, key: string, value: unknown,
   if (next.length) q[key] = next; else delete q[key];
 }
 export const PARTY = ['core', 'some', 'none'] as const;
-export const DJ = ['resident', 'guests', 'both', 'none'] as const;
+// «Lista y DJ a veces» (criterio de Cristian): suele ir con lista y algunas noches trae DJ.
+export const DJ = ['resident', 'guests', 'both', 'sometimes', 'none'] as const;
 /**
  * Eliminatorios: sacan del ranking. «Sin pantalla y sin intención» ya no (criterio de Cristian, 11-oct-2026): sin
  * pantalla puede encajarle otro paquete (peticiones, fotos, fidelización); solo pierde los puntos de pantalla.
@@ -167,7 +168,8 @@ export type Package = (typeof PACKAGES)[number];
 export type Fit = 'yes' | 'maybe' | 'no' | null;
 export function fitOf(q: Qualification, kind: LeadKind | null): Record<Package, Fit> {
   const screen: Fit = q.screens === 'yes' ? 'yes' : q.screens === 'wants' ? 'maybe' : q.screens === 'no' ? 'no' : null;
-  const requests: Fit = q.dj && q.dj !== 'none' ? 'yes' : q.party === 'core' || q.party === 'some' ? 'maybe' : q.dj === 'none' && q.party === 'none' ? 'no' : null;
+  // Con DJ, peticiones de canciones sí; si el DJ es solo algunas noches, puede.
+  const requests: Fit = q.dj === 'sometimes' ? 'maybe' : q.dj && q.dj !== 'none' ? 'yes' : q.party === 'core' || q.party === 'some' ? 'maybe' : q.dj === 'none' && q.party === 'none' ? 'no' : null;
   const photos: Fit = q.dynamics === 'yes' ? 'yes' : q.dynamics === 'partly' ? 'maybe' : q.dynamics === 'no' ? 'no' : null;
   const loyalty: Fit = kind !== 'venue' ? null
     : q.nights === '2' || q.nights === '3' || q.nights === '4+' || q.party === 'core' ? 'yes' : q.nights === '1' ? 'maybe' : null;

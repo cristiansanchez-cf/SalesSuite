@@ -153,7 +153,7 @@ export const NOTES_TOOL = {
               properties: {
                 format: { ...S, description: 'Uno o VARIOS separados por coma si el sitio es varias cosas (p. ej. «hall,pub»: sala de conciertos que después del concierto sigue con DJ). club (discoteca) | pub (pub o bar de copas) | cocktail (cóctel bar) | rooftop (rooftop o terraza) | restaurant (restaurante que acaba en fiesta, cenas con DJ) | hall (sala de conciertos) | hotel (hotel o beach club) | concerts (ciclo de conciertos o artista) | festival (festival) | stadium (estadio: fútbol, multiusos…). Una promotora NO es un formato: va en «entity»' },
                 party: { ...S, description: '¿Hay fiesta? core (es su negocio) | some (algunas noches, p. ej. un restaurante que se pone de fiesta) | none' },
-                dj: { ...S, description: 'resident (DJ residente) | guests (DJs invitados) | both (residente e invitados) | none (sin DJ, ponen una lista)' },
+                dj: { ...S, description: 'resident (DJ residente) | guests (DJs invitados) | both (residente e invitados) | sometimes (lista y DJ solo algunas noches) | none (sin DJ, ponen una lista)' },
                 promoters: { ...S, description: 'yes si trabajan promotoras en el sitio (p. ej. «hacen fiestas ucranianas con una promotora»); no si dicen que no' },
                 nights: { ...S, description: 'Noches con fiesta o música alta por semana: 1 | 2 | 3 | 4+' },
                 events: { ...S, description: 'Eventos al año (promotora): 1-2 | 3-5 | 6-11 | 12+' },
