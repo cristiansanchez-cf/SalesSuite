@@ -24,7 +24,15 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(await p.waitForSelector('[data-testid=qual-dj-resident][aria-pressed=true]').then(() => true, () => false), 'en su ficha: DJ residente');
 
   // ---- Crear propuesta desde la ficha: ya sabe el sector y lo del DJ.
+  const accUrl = p.url().split('?')[0];
+  assert(!(await p.locator('[data-testid=account-proposals-open]').count()), 'sin propuestas: sin botón «Propuestas»');
   await Promise.all([p.waitForURL(/\/admin\/dossiers\/[0-9a-f-]{36}$/), p.click('[data-testid=account-dossier]')]);
+  const dossierUrl = p.url();
+  // Desde la ficha, a mano en la cabecera: «Propuestas · 1» → la lista → abre la propuesta.
+  await p.goto(accUrl);
+  assert((await p.textContent('[data-testid=account-proposals-open]')).includes('1'), 'cabecera: «Propuestas · 1»');
+  await p.click('[data-testid=account-proposals-open]');
+  await Promise.all([p.waitForURL(dossierUrl), p.click('[data-testid=account-proposal]')]);
   await p.waitForSelector('[data-testid=builder]');
   const sector = await p.$eval('[data-testid=segment]', (s) => s.selectedOptions[0]?.textContent?.trim() ?? '');
   assert(/ocio nocturno/i.test(sector), `su sector, sin elegirlo (${sector})`);

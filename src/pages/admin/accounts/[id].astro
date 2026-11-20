@@ -2,6 +2,7 @@
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
 import AgreementCard from '~/components/crm/AgreementCard.astro';
 import ClosingCard from '~/components/crm/ClosingCard.astro';
+import { analyticsMessages } from '~/lib/i18n/messages/analytics';
 import { packagesMessages } from '~/lib/i18n/messages/packages';
 import TrialCard from '~/components/crm/TrialCard.astro';
 import { isOpen, trialStatus } from '~/lib/crm/trial';
@@ -293,6 +294,13 @@ const trialDay = (d: string) => fmt.date(`${d}T12:00:00Z`, { day: 'numeric', mon
 const chargeNames = new Map([...members.map((x) => [x.userId, x.displayName || x.email] as const), [admin.session.userId, admin.session.displayName || admin.session.email]]);
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
+// Sus propuestas, a mano desde la cabecera (criterio de Cristian: «desde la ficha deberíamos ver rápidamente las
+// propuestas asociadas»): las más recientes primero, las archivadas al final; las enviadas, con sus aperturas.
+const propList = [...dossiers].sort((x, y) => Number(x.status === 'archived') - Number(y.status === 'archived') || y.updatedAt.localeCompare(x.updatedAt));
+const propOpens: Map<string, { opens: number }> = propList.some((d) => d.status === 'published')
+  ? await admin.analytics.statsFor(propList.filter((d) => d.status === 'published').map((d) => d.id)).catch(() => new Map())
+  : new Map();
+const AM = analyticsMessages[locale];
 const STATE_ALERT = {
   free: { kind: 'info' as const, title: M.freeTitle, body: M.freeBody(rules.claimDays) },
   mine: { kind: 'success' as const, title: M.mineTitle(day(a.claimedUntil)), body: M.mineBody },
@@ -305,6 +313,23 @@ const STATE_ALERT = {
 <AdminLayout title={a.name}>
   <div id="acc-head"><PageHeader eyebrow={a.zonePath || M.noZone} title={a.name} back={{ href: '/admin/accounts', label: M.back }}>
     <AccountState a={a} />
+    {propList.length > 0 && (
+      <details class="acc-props relative" data-testid="account-proposals">
+        <summary class="co-btn co-btn--ghost cursor-pointer list-none" data-testid="account-proposals-open"><Icon name="file-text" size={16} />{M.proposals(propList.length)}</summary>
+        <div class="co-card absolute right-0 z-30 mt-2 grid w-[min(26rem,calc(100vw-2rem))] gap-1 !p-2 shadow-xl" data-testid="account-proposals-list">
+          {propList.slice(0, 8).map((d) => { const o = propOpens.get(d.id)?.opens ?? 0; return (
+            <a href={`/admin/dossiers/${d.id}`} class="grid gap-1 rounded-xl px-3 py-2 hover:bg-[var(--console-chip-bg)]" data-testid="account-proposal">
+              <span class="flex items-start justify-between gap-2"><span class="co-row-title min-w-0 truncate" data-ugc>{d.title}</span><span class={`${STATUS_CLASS[d.status]} shrink-0`}>{msg.dossierStatus[d.status]}</span></span>
+              <span class="flex flex-wrap items-center gap-2 text-xs">
+                {d.status === 'published' && <span class={o ? 'co-badge co-badge--signal' : 'co-badge'}>{AM.badge(o)}</span>}
+                <span class="co-meta">{d.authorName ?? M.noAuthor} · {fmt.relative(d.updatedAt)}{d.outcome === 'won' ? ` · ${M.won}` : d.outcome === 'lost' ? ` · ${M.lost}` : ''}</span>
+              </span>
+            </a>
+          ); })}
+          {propList.length > 8 && <a href="#proposals" class="co-meta px-3 py-1 text-sm underline">{M.proposals(propList.length)}</a>}
+        </div>
+      </details>
+    )}
     {(a.state === 'free' || a.state === 'mine' || a.state === 'my_customer') && (
       <form method="post"><input type="hidden" name="action" value="dossier" />
         <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
@@ -680,12 +705,13 @@ const STATE_ALERT = {
         )}
       </section>
 
-      <section class="co-section">
+      <section class="co-section" id="proposals">
         <div class="co-section__head"><h2 class="text-eyebrow">{M.proposals(dossiers.length)}</h2></div>
         {dossiers.length === 0 ? <p class="co-meta">{M.noProposals}</p> : (
           <ul class="co-rows">{dossiers.map((d) => (
             <li><a class="co-row" href={`/admin/dossiers/${d.id}`}>
               <span class="co-row__main"><span class="co-row-title">{d.title}</span><span class="co-meta">{d.authorName ?? M.noAuthor} · {fmt.relative(d.updatedAt)}{d.outcome === 'won' ? ` · ${M.won}` : d.outcome === 'lost' ? ` · ${M.lost}` : ''}{d.accountEligibility && d.accountEligibility !== 'eligible' ? ` · ${ELIGIBILITY_LABEL[d.accountEligibility]}` : ''}</span></span>
+              {d.status === 'published' && <span class={(propOpens.get(d.id)?.opens ?? 0) ? 'co-badge co-badge--signal' : 'co-badge'}>{AM.badge(propOpens.get(d.id)?.opens ?? 0)}</span>}
               <span class={STATUS_CLASS[d.status]}>{msg.dossierStatus[d.status]}</span>
               <span class="co-row__chevron"><Icon name="chevron-right" /></span>
             </a></li>))}
@@ -974,10 +1000,21 @@ const STATE_ALERT = {
     document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => {
       if (!window.confirm(b.dataset.confirm!)) e.preventDefault();
     }));
-    // El menú de «Cambiar tipo» se cierra al pulsar fuera.
+    // Los menús de «Cambiar tipo» y de «Propuestas» se cierran al pulsar fuera o con Escape.
     document.addEventListener('click', (e) => {
-      document.querySelectorAll<HTMLDetailsElement>('details.kind-change[open]').forEach((d) => { if (!d.contains(e.target as Node)) d.open = false; });
+      document.querySelectorAll<HTMLDetailsElement>('details.kind-change[open], details.acc-props[open]').forEach((d) => { if (!d.contains(e.target as Node)) d.open = false; });
     });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.querySelectorAll<HTMLDetailsElement>('details.acc-props[open]').forEach((d) => { d.open = false; });
+    });
+    // La lista de propuestas, siempre dentro de la pantalla (en el móvil el botón puede quedar a la izquierda).
+    document.querySelectorAll<HTMLDetailsElement>('details.acc-props').forEach((d) => d.addEventListener('toggle', () => {
+      const panel = d.querySelector<HTMLElement>('[data-testid=account-proposals-list]');
+      if (!d.open || !panel) return;
+      panel.style.right = '0px';
+      const r = panel.getBoundingClientRect();
+      if (r.left < 16) panel.style.right = `${r.left - 16}px`;
+    }));
   </script>
 
   <script>
@@ -1030,4 +1067,6 @@ const STATE_ALERT = {
   .facts-key { background: var(--co-signal-soft, #ece6fc); color: var(--co-signal-ink, #2a1066); }
   .facts-key [data-testid=fact-star][aria-pressed=true] { color: var(--co-signal, #6a2bd9); }
   .outcome:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+  /* «Propuestas · N» abierto: el botón, marcado. */
+  .acc-props[open] > summary { background: var(--co-ink); color: var(--co-canvas); border-color: var(--co-ink); }
 </style>
