@@ -19,7 +19,8 @@ export const OFF_STYLES: readonly Style[] = ['techno', 'lineup'];
 export const PROMOTER_OPTIONS = {
   pdyn: { yes: 1, partly: 0.5, no: 0 },              // ¿hace dinámicas, juegos, concursos?
   pcontent: { yes: 1, partly: 0.5, no: 0 },          // ¿cuida el contenido y las redes?
-  pevents: { '1': 0.3, '2-3': 0.7, '4+': 1 },        // eventos al mes
+  // Eventos al mes; «few»: unas pocas al año (criterio de Cristian: «varias hacen a lo mejor 5 fiestas al año»).
+  pevents: { few: 0.1, '1': 0.3, '2-3': 0.7, '4+': 1 },
   pagent: { yes: 1, maybe: 0.5, no: 0 },             // ¿la veo llevando Enjoy a las salas?
 } as const;
 export const PROMOTER_WEIGHTS = { pdyn: 35, pstyle: 20, pevents: 20, pcontent: 15, pagent: 10 } as const;

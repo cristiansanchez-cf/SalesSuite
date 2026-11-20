@@ -68,8 +68,14 @@ const A = 'Mya Fusion', B = 'Mya Fusion Valencia';
 
   // ---- Tipo (§42): en la ficha, a un toque; en la lista, varias a la vez.
   const zafiro = await create('Zafiro Fusion');
+  // El tipo actual es una etiqueta; «Cambiar tipo» abre las demás y pide confirmación (no parece navegación).
+  assert(!(await p.isVisible('[data-testid=kind-switch-promotora]')), 'tipo: no son pestañas a la vista');
+  await p.click('[data-testid=kind-change]');
+  let asked = '';
+  p.once('dialog', (d) => { asked = d.message(); d.accept(); });
   await Promise.all([p.waitForURL(/ok=kind/), p.click('[data-testid=kind-switch-promotora]')]);
-  assert((await p.getAttribute('[data-testid=kind-switch-promotora]', 'aria-current')) === 'page' && (await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'promoter',
+  assert(asked.includes('Zafiro Fusion') && asked.includes('Promotora'), `pide confirmación: ${asked}`);
+  assert((await p.getAttribute('[data-testid=kind-switch]', 'data-kind')) === 'promotora' && (await p.getAttribute('[data-testid=qualification]', 'data-profile')) === 'promoter',
     'Zafiro: promotora, con su ficha de promotora');
   await create('DJ Uno Fusion'); await create('DJ Dos Fusion');
   await p.goto(`${BASE}/admin/accounts?ver=all&q=${encodeURIComponent('DJ')}`);

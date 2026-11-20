@@ -179,7 +179,7 @@ export const NOTES_TOOL = {
                 pstyle: { ...S, description: 'PROMOTORA o DJ: estilo, uno o varios separados por coma: international (fiestas de una comunidad: francesa, ucraniana…), erasmus, commercial, latin, pop (indie, revival), lgtb, tardeo, house (house, deep, tech house, afro house), techno (underground), lineup (cartel de DJs y punto). "" si no.' },
                 pdyn: { ...S, description: 'PROMOTORA: ¿hace dinámicas, juegos o concursos? yes | partly | no | "".' },
                 pcontent: { ...S, description: 'PROMOTORA: ¿cuida el contenido y las redes? yes | partly | no | "".' },
-                pevents: { ...S, description: 'PROMOTORA: fiestas al mes: 1 | 2-3 | 4+ | "".' },
+                pevents: { ...S, description: 'PROMOTORA: fiestas al mes: few (unas pocas al año, menos de una al mes: «hacen 5 fiestas al año») | 1 | 2-3 | 4+ | "".' },
                 pagent: { ...S, description: 'PROMOTORA: ¿la ve llevando Enjoy a sus salas? yes | maybe | no | "".' },
                 dres: { ...S, description: 'DJ: ¿residente en algún sitio que interese? yes | no | "".' },
                 dfollow: { ...S, description: 'DJ: seguidores: <1k | 1-10k | 10-50k | 50k+ | "".' },

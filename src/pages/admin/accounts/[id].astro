@@ -294,19 +294,26 @@ const STATE_ALERT = {
       <form method="post"><input type="hidden" name="action" value="dossier" />
         <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
     )}
-    {/* Qué es (§42): local/empresa, promotora o DJ, a un toque (cambia su ficha). */}
-    {kindDefs.length > 1 && (
-      <form method="post" slot="below" class="mt-3 flex flex-wrap items-center gap-2" data-testid="kind-switch">
-        <input type="hidden" name="action" value="kind" />
+    {/* Qué es (§42). Criterio de Cristian: con pestañas parecía navegación («quieres ir a Empresas y le cambias el tipo»):
+        el tipo actual como etiqueta, «Cambiar tipo» aparte y confirmación antes de cambiarlo. */}
+    {kindDefs.length > 1 && (() => { const cur = kindDefs.find((x) => x.key === a.kind) ?? kindDefs[0]; return (
+      <div slot="below" class="mt-3 flex flex-wrap items-center gap-2" data-testid="kind-switch" data-kind={cur.key}>
         <span class="co-meta text-sm">{CL.isA}:</span>
-        <div class="co-segmented w-fit !px-1">
-          {kindDefs.map((k) => (
-            <button type="submit" name="kind" value={k.key} class="!px-3" aria-current={(kindDefs.some((x) => x.key === a.kind) ? a.kind : kindDefs[0].key) === k.key ? 'page' : undefined}
-              disabled={!canQualify} data-testid={`kind-switch-${k.key}`}><Icon name={k.icon as IconName} size={14} />{k.label}</button>
-          ))}
-        </div>
-      </form>
-    )}
+        <span class="co-badge co-badge--soft inline-flex items-center gap-1" data-testid="kind-current"><Icon name={cur.icon as IconName} size={14} />{cur.label}</span>
+        {canQualify && (
+          <details class="kind-change relative">
+            <summary class="co-btn co-btn--quiet co-btn--sm cursor-pointer list-none" data-testid="kind-change">{CL.changeKind}</summary>
+            <form method="post" class="co-card absolute left-0 z-20 mt-1 grid min-w-[14rem] gap-1 !p-2 shadow-lg">
+              <input type="hidden" name="action" value="kind" />
+              {kindDefs.filter((k) => k.key !== cur.key).map((k) => (
+                <button type="submit" name="kind" value={k.key} class="co-btn co-btn--ghost co-btn--sm justify-start" data-confirm={`${CL.kindAsk(a.name, k.label)} ${CL.changeKindBody}`}
+                  data-testid={`kind-switch-${k.key}`}><Icon name={k.icon as IconName} size={14} />{k.label}</button>
+              ))}
+            </form>
+          </details>
+        )}
+      </div>
+    ); })()}
     {trialSt && (
       <a slot="below" href="#trial" class:list={['co-badge mt-3 w-fit no-underline', trialSt.tone === 'running' ? 'co-badge--ink' : 'co-badge--attention']} data-testid="trial-head">
         <Icon name="clock" size={12} />{TR.badge(trialSt.daysLeft)} · {TR.until(trialDay(openTrial!.endsOn))}
@@ -941,6 +948,17 @@ const STATE_ALERT = {
     document.querySelector('[data-follow-done]')?.addEventListener('click', (e) => { e.preventDefault(); dlg?.showModal(); note?.focus(); });
     document.querySelector('[data-log-open]')?.addEventListener('click', () => setTimeout(() => note?.focus(), 0));
     document.querySelector('[data-more-show]')?.addEventListener('click', (e) => { document.querySelectorAll<HTMLElement>('[data-more-item]').forEach((x) => { x.hidden = false; }); (e.currentTarget as HTMLElement).remove(); });
+  </script>
+
+  <script>
+    // Cambiar el tipo (y lo que lleve data-confirm): se confirma antes de enviar.
+    document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => {
+      if (!window.confirm(b.dataset.confirm!)) e.preventDefault();
+    }));
+    // El menú de «Cambiar tipo» se cierra al pulsar fuera.
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll<HTMLDetailsElement>('details.kind-change[open]').forEach((d) => { if (!d.contains(e.target as Node)) d.open = false; });
+    });
   </script>
 
   <script>

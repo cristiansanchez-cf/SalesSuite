@@ -19,7 +19,7 @@ export const profilesMessages = defineMessages({
     q: {
       pdyn: ['¿Hace dinámicas, juegos o concursos?', { yes: 'Sí', partly: 'A veces', no: 'No' }],
       pcontent: ['¿Cuida el contenido y las redes?', { yes: 'Sí', partly: 'A medias', no: 'No' }],
-      pevents: ['Fiestas al mes', { '1': '1', '2-3': '2–3', '4+': '4 o más' }],
+      pevents: ['Fiestas al mes', { few: 'Pocas al año', '1': '1', '2-3': '2–3', '4+': '4 o más' }],
       pagent: ['¿La ves llevando Enjoy a sus salas?', { yes: 'Sí', maybe: 'Puede', no: 'No' }],
       dres: ['¿Residente en algún sitio que nos interese?', { yes: 'Sí', no: 'No' }],
       dfollow: ['Seguidores', { '<1k': 'Menos de 1.000', '1-10k': '1.000–10.000', '10-50k': '10.000–50.000', '50k+': 'Más de 50.000' }],
@@ -46,7 +46,7 @@ export const profilesMessages = defineMessages({
     q: {
       pdyn: ['Do they run activities, games or contests?', { yes: 'Yes', partly: 'Sometimes', no: 'No' }],
       pcontent: ['Do they care for content and social media?', { yes: 'Yes', partly: 'Somewhat', no: 'No' }],
-      pevents: ['Parties per month', { '1': '1', '2-3': '2–3', '4+': '4 or more' }],
+      pevents: ['Parties per month', { few: 'A few a year', '1': '1', '2-3': '2–3', '4+': '4 or more' }],
       pagent: ['Can you see them bringing Enjoy to their venues?', { yes: 'Yes', maybe: 'Maybe', no: 'No' }],
       dres: ['Resident somewhere we care about?', { yes: 'Yes', no: 'No' }],
       dfollow: ['Followers', { '<1k': 'Under 1,000', '1-10k': '1,000–10,000', '10-50k': '10,000–50,000', '50k+': 'Over 50,000' }],
@@ -73,7 +73,7 @@ export const profilesMessages = defineMessages({
     q: {
       pdyn: ['Faz dinâmicas, jogos ou concursos?', { yes: 'Sim', partly: 'Às vezes', no: 'Não' }],
       pcontent: ['Cuida do conteúdo e das redes?', { yes: 'Sim', partly: 'Mais ou menos', no: 'Não' }],
-      pevents: ['Festas por mês', { '1': '1', '2-3': '2–3', '4+': '4 ou mais' }],
+      pevents: ['Festas por mês', { few: 'Poucas por ano', '1': '1', '2-3': '2–3', '4+': '4 ou mais' }],
       pagent: ['Você a vê levando a Enjoy às salas?', { yes: 'Sim', maybe: 'Talvez', no: 'Não' }],
       dres: ['Residente em algum lugar que nos interesse?', { yes: 'Sim', no: 'Não' }],
       dfollow: ['Seguidores', { '<1k': 'Menos de 1.000', '1-10k': '1.000–10.000', '10-50k': '10.000–50.000', '50k+': 'Mais de 50.000' }],
@@ -100,7 +100,7 @@ export const profilesMessages = defineMessages({
     q: {
       pdyn: ['이벤트·게임·콘테스트를 하나요?', { yes: '예', partly: '가끔', no: '아니요' }],
       pcontent: ['콘텐츠와 SNS를 관리하나요?', { yes: '예', partly: '어느 정도', no: '아니요' }],
-      pevents: ['월간 파티 수', { '1': '1', '2-3': '2–3', '4+': '4 이상' }],
+      pevents: ['월간 파티 수', { few: '1년에 몇 번', '1': '1', '2-3': '2–3', '4+': '4 이상' }],
       pagent: ['공연장에 Enjoy를 가져갈 것 같나요?', { yes: '예', maybe: '아마', no: '아니요' }],
       dres: ['관심 있는 곳의 레지던트인가요?', { yes: '예', no: '아니요' }],
       dfollow: ['팔로워', { '<1k': '1,000 미만', '1-10k': '1,000–10,000', '10-50k': '10,000–50,000', '50k+': '50,000 이상' }],
