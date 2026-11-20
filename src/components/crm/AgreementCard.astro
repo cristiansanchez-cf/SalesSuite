@@ -23,8 +23,13 @@ interface Props {
   formOnly?: boolean;
   /** Atajos de precio por evento (las tarifas por evento del espacio). */
   eventHints?: Array<{ label: string; amount: number; note: string | null }>;
+  /** Otra explicación encima del texto del acuerdo (locales: «por si acaso»). */
+  help?: string;
+  /** Prefijo de los data-testid cuando hay dos formularios en la misma tarjeta («plain» → plain-terms, plain-save). */
+  idPrefix?: string;
 }
-const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false, products = [], tier = 'medium', money = (n: number) => `${n} €`, formOnly = false, eventHints = [] } = Astro.props;
+const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false, products = [], tier = 'medium', money = (n: number) => `${n} €`, formOnly = false, eventHints = [], help, idPrefix = 'agreement' } = Astro.props;
+const tid = (x: string) => `${idPrefix}-${x}`;
 const mode = Astro.props.mode ?? (products.length ? 'packages' : 'plain');
 const C = clientsMessages[locale];
 const P = packagesMessages[locale];
@@ -45,7 +50,7 @@ const show = formOnly ? canClose : customer || active || pending || canClose;
 const inline = formOnly || (embedded && !customer && !active && !pending);
 ---
 {show && (
-  <section id="agreement" class:list={['grid gap-3', !embedded && 'co-card']} data-testid="agreement">
+  <section id={formOnly ? undefined : 'agreement'} class:list={['grid gap-3', !embedded && 'co-card']} data-testid={idPrefix}>
     {!embedded && <div class="flex items-center gap-2"><Icon name="handshake" size={16} /><p class="text-eyebrow m-0">{C.card}</p></div>}
 
     {!formOnly && pending && (
@@ -88,12 +93,12 @@ const inline = formOnly || (embedded && !customer && !active && !pending);
     )}
 
     {canClose && (
-      <details class="grid gap-2" data-testid="agreement-form-wrap" open={inline ? true : undefined}>
+      <details class="grid gap-2" data-testid={tid('form-wrap')} open={inline ? true : undefined}>
         {/* Dentro de «Cierre» y sin cerrar aún, el formulario ya está abierto: sin botón para abrirlo (un solo botón). */}
         <summary class:list={[`co-btn ${customer || active ? 'co-btn--ghost' : 'co-btn--primary'} co-btn--sm w-fit cursor-pointer list-none`, inline && '!hidden']} data-testid="agreement-open">
           <Icon name="handshake" size={14} />{isEvent ? P.eventTab : withPkgs ? (active || customer ? P.changeBtn : C.close) : active ? C.change : customer ? C.note : C.close}
         </summary>
-        <form method="post" class:list={['grid gap-3', !inline && 'mt-2']} data-testid="agreement-form">
+        <form method="post" class:list={['grid gap-3', !inline && 'mt-2']} data-testid={tid('form')}>
           <input type="hidden" name="action" value="agreement" />
           {isEvent ? (
             <div class="grid gap-3" data-event data-testid="agreement-event">
@@ -143,8 +148,8 @@ const inline = formOnly || (embedded && !customer && !active && !pending);
             </div>
           ) : (
             <>
-              <p class="co-help m-0">{customer || active ? C.changeHelp : products.length ? P.dealHelp : C.closeHelp}</p>
-              <label class="co-field">{C.terms}<textarea class="co-textarea" name="terms" required minlength="3" maxlength="4000" placeholder={C.termsPh} data-testid="agreement-terms">{active?.terms ?? ''}</textarea></label>
+              <p class="co-help m-0">{help ?? (customer || active ? C.changeHelp : products.length ? P.dealHelp : C.closeHelp)}</p>
+              <label class="co-field">{C.terms}<textarea class="co-textarea" name="terms" required minlength="3" maxlength="4000" placeholder={C.termsPh} data-testid={tid('terms')}>{formOnly ? '' : active?.terms ?? ''}</textarea></label>
             </>
           )}
           <div class="grid gap-3 sm:grid-cols-2">
@@ -157,7 +162,7 @@ const inline = formOnly || (embedded && !customer && !active && !pending);
             </label>
           </div>
           <p class="co-help m-0">{C.checkinHelp}{!canDecide && ` ${C.proposeHelp}`}</p>
-          <button class="co-btn co-btn--primary w-fit" data-testid={isEvent ? 'event-save' : 'agreement-save'}>{withPkgs || isEvent ? (!canDecide ? P.proposeBtn : customer || active ? C.saveChange : P.closeBtn) : !canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
+          <button class="co-btn co-btn--primary w-fit" data-testid={isEvent ? 'event-save' : tid('save')}>{withPkgs || isEvent ? (!canDecide ? P.proposeBtn : customer || active ? C.saveChange : P.closeBtn) : !canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
           {(withPkgs || isEvent) && !canDecide && <p class="co-help m-0">{P.proposeHelp}</p>}
         </form>
       </details>

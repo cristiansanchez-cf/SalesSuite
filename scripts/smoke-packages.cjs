@@ -30,6 +30,10 @@ const SOL = '00000000-0000-4000-8000-0000000ac001';
   await p.click('[data-testid=closing-link]');
   assert(await p.isVisible('[data-testid=closing-pay-dialog] [data-testid=charge]'), '«Generar enlace de pago» → modal');
   await p.keyboard.press('Escape');
+  // Locales: «Acuerdo» también (sin paquetes, por si acaso).
+  await p.click('label:has([data-testid=closing-plain])');
+  assert(await p.isVisible('[data-testid=plain-terms]') && !(await p.isVisible('[data-testid=agreement-pkgs]')), '«Acuerdo»: solo lo acordado, sin paquetes');
+  await p.click('label:has([data-testid=closing-deal])');
   await p.check('[data-testid=pkg-free-canciones]');
   await p.check('[data-testid=pkg-pantalla]');
   await p.check('[data-testid=pkg-album]');

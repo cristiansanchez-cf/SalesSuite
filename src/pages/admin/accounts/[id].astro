@@ -2,6 +2,7 @@
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
 import AgreementCard from '~/components/crm/AgreementCard.astro';
 import ClosingCard from '~/components/crm/ClosingCard.astro';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
 import TrialCard from '~/components/crm/TrialCard.astro';
 import { isOpen, trialStatus } from '~/lib/crm/trial';
 import { tierOf } from '~/lib/crm/packages';
@@ -576,6 +577,8 @@ const STATE_ALERT = {
         <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName} products={catalog} tier={tier} money={eur} mode={perEvent ? 'plain' : undefined}
         canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
         date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>
+        {catalog.length > 0 && !perEvent && a.status !== 'customer' && <div slot="plain"><AgreementCard embedded formOnly mode="plain" idPrefix="plain" help={packagesMessages[locale].plainHelp} locale={locale} agreements={agreementList} customer={false} ownerName={a.ownerName}
+          canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>}
         {!openTrial && canTrial && <div slot="trial"><TrialCard mode="start" locale={locale} customer={a.status === 'customer'} canEdit today={todayTz} date={trialDay} /></div>}
       </ClosingCard>
 

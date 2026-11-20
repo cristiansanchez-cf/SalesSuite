@@ -3,7 +3,7 @@
  * «Cierre» en la ficha (criterio de Cristian: «me lía lo de cerrar y cobrar… deberíamos unir todo el proceso»): una
  * sola tarjeta.
  *  · Con paquetes (docs/PAQUETES.md): «Cerrar» (qué paquetes y a qué precio: lo normal es que ya haya pagado o lo haga
- *    por transferencia) y «En prueba». El enlace de pago de Stripe es lo raro: un botón que lo abre en un modal.
+ *    por transferencia), «Acuerdo» (sin paquetes, por si acaso) y «En prueba». El enlace de pago de Stripe es lo raro: un botón que lo abre en un modal.
  *  · Sin paquetes: «Con pago» (enlace o «ya ha pagado»), «Sin pago (acuerdo)» y «En prueba».
  * Ya cliente: lo acordado (y cambiarlo), sus pagos y ponerla en prueba.
  */
@@ -60,13 +60,14 @@ const T = trialMessages[locale];
     </div>
   ) : packages ? (
     <div class="closing-tabs grid gap-4">
-      {trialTab && (
-        <div class="co-tabs w-fit" role="radiogroup">
-          <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked data-testid="closing-deal" />{P.closeTab}</label>
-          <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="trial" data-testid="closing-trial" />{T.tab}</label>
-        </div>
-      )}
+      {/* Locales: «Acuerdo» también, por si acaso (criterio de Cristian). */}
+      <div class="co-tabs w-fit" role="radiogroup">
+        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked data-testid="closing-deal" />{P.closeTab}</label>
+        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="plain" data-testid="closing-plain" />{P.dealTab}</label>
+        {trialTab && <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="trial" data-testid="closing-trial" />{T.tab}</label>}
+      </div>
       <div class="closing-panel" data-way="deal"><slot name="deal" /></div>
+      <div class="closing-panel" data-way="plain"><slot name="plain" /></div>
       {trialTab && <div class="closing-panel" data-way="trial"><slot name="trial" /></div>}
       {showPay && (
         <div class="flex flex-wrap items-center gap-2 border-t border-[var(--console-divider)] pt-3">
@@ -105,7 +106,8 @@ const T = trialMessages[locale];
   .closing-tabs:has(input[name='closing-way'][value='pay']:checked) .closing-panel:not([data-way='pay']),
   .closing-tabs:has(input[name='closing-way'][value='deal']:checked) .closing-panel:not([data-way='deal']),
   .closing-tabs:has(input[name='closing-way'][value='trial']:checked) .closing-panel:not([data-way='trial']),
-  .closing-tabs:has(input[name='closing-way'][value='event']:checked) .closing-panel:not([data-way='event']) { display: none; }
+  .closing-tabs:has(input[name='closing-way'][value='event']:checked) .closing-panel:not([data-way='event']),
+  .closing-tabs:has(input[name='closing-way'][value='plain']:checked) .closing-panel:not([data-way='plain']) { display: none; }
   .closing-tabs .co-tab:has(input:checked) { background: var(--console-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
 </style>
 <script>
