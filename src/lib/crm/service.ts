@@ -10,6 +10,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
+import { cleanPicks, describe, freeNotes, listPrice, pickStr, tierOf, type Product } from './packages';
 import { isOpen, TRIAL_STEP, trialEnd, trialEndFrom, trialReminderDay, type Trial } from './trial';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
@@ -1061,7 +1062,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
   // ---------------------------------------------------------------- clientes y acuerdos (docs/CLIENTS.md)
   const agreementSchema = z.object({
-    terms: z.string().trim().min(3, 'Escribe qué habéis acordado').max(4000),
+    terms: z.string().trim().max(4000).default(''),
+    /** Paquetes («clave» o «clave:free») y precio: el normal (list) o uno menor/otro (custom, al mes). */
+    packages: z.array(z.string().max(60)).max(15).optional(),
+    priceMode: z.enum(['list', 'custom']).optional(),
+    price: z.union([z.number(), z.string()]).nullable().optional(),
     startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
     checkinDays: z.coerce.number().int().min(7).max(365).nullable().optional().or(z.literal('').transform(() => null)),
   });
@@ -1086,8 +1091,29 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     if (!db.proposeAgreement) throw new AdminError(503, 'Falta aplicar la migración de clientes');
     const v = parse(agreementSchema, input);
+    // Paquetes: el precio normal sale de su tamaño; el que se pone, si es otro (descuento). Sin condiciones escritas,
+    // las condiciones son los paquetes (y lo que implica lo gratis).
+    const cat = v.packages?.length ? await products() : [];
+    const picks = cleanPicks(v.packages ?? [], cat);
+    let price: number | null = null, list: number | null = null;
+    if (picks.length) {
+      const a = await accounts.getAccount(accountId);
+      list = listPrice(picks, cat, tierOf((a?.qualification?.size as string | undefined) ?? null));
+      const raw = typeof v.price === 'string' ? v.price.replace(',', '.').trim() : v.price;
+      const custom = raw === '' || raw == null ? NaN : Number(raw);
+      if (v.priceMode === 'custom') {
+        if (!Number.isFinite(custom) || custom < 0 || custom > 1_000_000) throw new AdminError(422, 'Pon el precio al mes');
+        price = Math.round(custom * 100) / 100;
+      } else price = list;
+    }
+    // Lo que escribió y, debajo, los paquetes en texto (para el historial y la IA; en pantalla salen como etiquetas).
+    const terms = [v.terms, ...(picks.length ? [describe(picks, cat, { price, list }), ...freeNotes(picks, cat)] : [])].filter(Boolean).join('\n');
+    if (terms.length < 3) throw new AdminError(422, 'Elige los paquetes o escribe qué habéis acordado');
     let r!: { id: string; status: 'active' | 'pending' };
-    try { r = await db.proposeAgreement(t, accountId, { terms: v.terms, startsOn: v.startsOn ?? null, checkinDays: v.checkinDays ?? null }); } catch (e) { mapError(e); }
+    try {
+      r = await db.proposeAgreement(t, accountId, { terms, startsOn: v.startsOn ?? null, checkinDays: v.checkinDays ?? null,
+        ...(picks.length ? { packages: picks.map(pickStr), price, listPrice: list } : {}) });
+    } catch (e) { mapError(e); }
     if (r.status === 'active') await checkinNext(accountId, v.checkinDays ?? null);
     return r;
   }
@@ -1099,6 +1125,60 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const g = ok ? (await db.listAgreements(t, [accountId]).catch(() => [])).find((x) => x.id === id && x.status === 'active') : null;
     if (g) await checkinNext(accountId, g.checkinDays);
   }
+  // ---------------------------------------------------------------- paquetes (docs/PAQUETES.md)
+  /** El catálogo del espacio: los activos (o todos, para Tarifas). */
+  async function products(o: { all?: boolean } = {}): Promise<Product[]> {
+    requireUse();
+    if (!db.listProducts) return [];
+    const list = await db.listProducts(t).catch(() => [] as Product[]);
+    return o.all ? list : list.filter((p) => p.active);
+  }
+  const num = z.union([z.number(), z.string()]).optional().nullable().transform((x, ctx) => {
+    if (x == null || (typeof x === 'string' && !x.trim())) return null;
+    const n = Number(String(x).replace(',', '.'));
+    if (!Number.isFinite(n) || n < 0 || n > 100000) { ctx.addIssue({ code: 'custom', message: 'Precio no válido' }); return z.NEVER; }
+    return Math.round(n * 100) / 100;
+  });
+  const productSchema = z.object({
+    name: z.string().trim().min(1, 'Ponle nombre').max(60),
+    key: z.string().trim().max(40).optional(),
+    summary: z.string().trim().max(400).optional().transform((x) => x || null),
+    includes: z.string().max(4000).optional().transform((x) => (x ?? '').split(/\r?\n/).map((l) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean).slice(0, 15).map((l) => l.slice(0, 200))),
+    small: num, medium: num, large: num,
+    period: z.enum(['once', 'event', 'month', 'year']).default('month'),
+    freeAllowed: z.union([z.boolean(), z.string()]).optional().transform((x) => x === true || x === '1' || x === 'on'),
+    freeNote: z.string().trim().max(400).optional().transform((x) => x || null),
+    position: z.coerce.number().int().min(0).max(999).optional(),
+    active: z.union([z.boolean(), z.string()]).optional(),
+  });
+  /** Crear o cambiar un paquete (solo admin): nombre, qué incluye, precio por tamaño y si puede ir gratis. */
+  async function saveProduct(input: unknown, id?: string): Promise<string> {
+    requireUse();
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin cambia los paquetes');
+    if (!db.saveProduct) throw new AdminError(503, 'Falta aplicar la migración de paquetes');
+    const v = parse(productSchema, input);
+    const all = await products({ all: true });
+    const cur = id ? all.find((p) => p.id === id) : undefined;
+    if (id && !cur) throw new AdminError(404, 'Paquete no encontrado');
+    const key = cur?.key ?? (slugKey(v.key || v.name).slice(0, 40) || `paquete-${all.length + 1}`);
+    if (!cur && all.some((p) => p.key === key)) throw new AdminError(422, 'Ya hay un paquete con ese nombre');
+    try {
+      return await db.saveProduct(t, {
+        key, name: v.name, summary: v.summary, includes: v.includes, prices: { small: v.small, medium: v.medium, large: v.large }, currency: cur?.currency ?? 'EUR',
+        period: v.period, freeAllowed: v.freeAllowed, freeNote: v.freeAllowed ? v.freeNote : null, position: v.position ?? cur?.position ?? all.length + 1,
+        active: v.active === undefined ? cur?.active ?? true : v.active === true || v.active === '1',
+      }, cur?.id);
+    } catch (e) { mapError(e); }
+  }
+  async function setProductActive(id: string, active: boolean) {
+    requireUse();
+    if (!perms.manageTenant || !db.saveProduct) throw new AdminError(403, 'Solo un admin cambia los paquetes');
+    const cur = (await products({ all: true })).find((p) => p.id === id);
+    if (!cur) throw new AdminError(404, 'Paquete no encontrado');
+    const { id: _id, ...rest } = cur;
+    try { await db.saveProduct(t, { ...rest, active }, id); } catch (e) { mapError(e); }
+  }
+
   // ---------------------------------------------------------------- en prueba (docs/CLIENTS.md §En prueba)
   const trialSchema = z.object({
     preset: z.enum(['10d', '15d', '1m', '2m', 'custom']).default('custom'),
@@ -2238,7 +2318,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, trials, openTrials, startTrial, endTrial, inTrial, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

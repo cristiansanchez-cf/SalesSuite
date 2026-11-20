@@ -7,21 +7,34 @@ import Icon from '~/components/ui/Icon.astro';
 import type { Agreement } from '~/lib/crm/types';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
 import type { Locale } from '~/lib/i18n/core';
+import { cleanPicks, discountPct, extraTerms, freeNotes, type Product, type Tier } from '~/lib/crm/packages';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
 
 interface Props {
   locale: Locale; agreements: Agreement[]; customer: boolean; canClose: boolean; canDecide: boolean; ownerName: string | null;
   date: (iso: string) => string;
   /** Dentro de la tarjeta «Cierre»: sin marco ni título, y el formulario abierto si aún no es cliente. */
   embedded?: boolean;
+  /** Paquetes (docs/PAQUETES.md): con catálogo, se cierra eligiendo paquetes y precio (el normal sale de su tamaño). */
+  products?: Product[]; tier?: Tier; money?: (n: number) => string;
 }
-const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false } = Astro.props;
+const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false, products = [], tier = 'medium', money = (n: number) => `${n} €` } = Astro.props;
 const C = clientsMessages[locale];
+const P = packagesMessages[locale];
+const withPkgs = products.length > 0;
+/** Los paquetes de un acuerdo, en etiquetas, y su precio («50 € al mes · −33 %»). */
+const chips = (g: Agreement) => cleanPicks(g.packages, products.map((p) => ({ ...p, active: true }))).map((x) => `${products.find((p) => p.key === x.key)?.name ?? x.key}${x.free ? ` (${P.freeCheck})` : ''}`);
+const priceLine = (g: Agreement) => (g.price == null ? null : [g.price === 0 ? P.freeCheck : `${money(g.price)}/${P.periods.month}`, discountPct(g.price, g.listPrice) != null ? P.discount(discountPct(g.price, g.listPrice)!) : null].filter(Boolean).join(' · '));
+const preset = (agreements.find((g) => g.status === 'active') ?? null);
+const chosen = new Set(preset?.packages ?? []);
 const active = agreements.find((g) => g.status === 'active') ?? null;
 const pending = agreements.find((g) => g.status === 'pending') ?? null;
 const old = agreements.filter((g) => g.status === 'replaced');
 const today = new Date().toISOString().slice(0, 10);
 const CHECKINS = [14, 30, 60, 90];
 const show = customer || active || pending || canClose;
+/** Dentro de «Cierre» y sin cerrar aún: el formulario, directamente. */
+const inline = embedded && !customer && !active && !pending;
 ---
 {show && (
   <section id="agreement" class:list={['grid gap-3', !embedded && 'co-card']} data-testid="agreement">
@@ -46,7 +59,14 @@ const show = customer || active || pending || canClose;
     {active ? (
       <div class="grid gap-1" data-testid="agreement-active">
         <p class="co-meta m-0">{C.current}</p>
-        <p class="co-body m-0 whitespace-pre-line" data-ugc>{active.terms}</p>
+        {active.packages.length > 0 && (
+          <div class="flex flex-wrap items-center gap-1.5" data-testid="agreement-packages">
+            {chips(active).map((x) => <span class="co-badge co-badge--ink">{x}</span>)}
+            {priceLine(active) && <span class="co-entity ml-1 !text-base" data-testid="agreement-price">{priceLine(active)}</span>}
+          </div>
+        )}
+        {(() => { const t = active.packages.length ? extraTerms(active.terms, cleanPicks(active.packages, products.map((p) => ({ ...p, active: true }))), products, { price: active.price, list: active.listPrice }) : active.terms; return t && <p class="co-body m-0 whitespace-pre-line" data-ugc>{t}</p>; })()}
+        {active.packages.length > 0 && freeNotes(cleanPicks(active.packages, products.map((p) => ({ ...p, active: true }))), products).map((n) => <p class="co-meta m-0" data-testid="agreement-free">{n}</p>)}
         <p class="co-meta m-0">{[C.sinceLine(date(active.startsOn)), active.checkinDays ? C.every(C.days(active.checkinDays)) : null].filter(Boolean).join(' · ')}</p>
       </div>
     ) : customer && !pending ? <p class="co-meta m-0">{C.noAgreement}</p> : null}
@@ -60,14 +80,44 @@ const show = customer || active || pending || canClose;
     )}
 
     {canClose && (
-      <details class="grid gap-2" data-testid="agreement-form-wrap" open={embedded && !customer && !active && !pending ? true : undefined}>
-        <summary class={`co-btn ${customer || active ? 'co-btn--ghost' : 'co-btn--primary'} co-btn--sm w-fit cursor-pointer list-none`} data-testid="agreement-open">
-          <Icon name="handshake" size={14} />{active ? C.change : customer ? C.note : C.close}
+      <details class="grid gap-2" data-testid="agreement-form-wrap" open={inline ? true : undefined}>
+        {/* Dentro de «Cierre» y sin cerrar aún, el formulario ya está abierto: sin botón para abrirlo (un solo botón). */}
+        <summary class:list={[`co-btn ${customer || active ? 'co-btn--ghost' : 'co-btn--primary'} co-btn--sm w-fit cursor-pointer list-none`, inline && '!hidden']} data-testid="agreement-open">
+          <Icon name="handshake" size={14} />{withPkgs ? (active || customer ? P.changeBtn : C.close) : active ? C.change : customer ? C.note : C.close}
         </summary>
-        <form method="post" class="mt-2 grid gap-3" data-testid="agreement-form">
+        <form method="post" class:list={['grid gap-3', !inline && 'mt-2']} data-testid="agreement-form">
           <input type="hidden" name="action" value="agreement" />
-          <p class="co-help m-0">{customer || active ? C.changeHelp : C.closeHelp}</p>
-          <label class="co-field">{C.terms}<textarea class="co-textarea" name="terms" required minlength="3" maxlength="4000" placeholder={C.termsPh} data-testid="agreement-terms">{active?.terms ?? ''}</textarea></label>
+          {withPkgs ? (
+            <div class="grid gap-3" data-pkgs data-testid="agreement-pkgs">
+              <fieldset class="grid gap-2"><legend class="co-entity !text-base mb-1">{P.pick}</legend>
+                <span class="co-help">{P.pickHelp(P.tiers[tier].toLowerCase())}</span>
+                {products.map((p) => { const v = p.prices[tier]; const on = chosen.has(p.key) || chosen.has(`${p.key}:free`); return (
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[var(--console-divider)] px-3 py-2 has-[input[name=packages]:checked]:border-[var(--co-ink)]">
+                    <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                      <input type="checkbox" name="packages" value={p.key} checked={on} disabled={v == null} data-price={v ?? ''} class="h-4 w-4 accent-[var(--co-ink)]" data-testid={`pkg-${p.key}`} />
+                      <span class="grid min-w-0"><span class="font-semibold">{p.name}</span>{p.summary && <span class="co-meta truncate text-xs">{p.summary}</span>}</span>
+                    </label>
+                    <span class="co-meta text-sm">{v == null ? P.noPrice : `${money(v)}/${P.periods[p.period]}`}</span>
+                    {p.freeAllowed && <label class="flex items-center gap-1 text-sm" title={p.freeNote ?? undefined}><input type="checkbox" name="free" value={p.key} checked={chosen.has(`${p.key}:free`)} data-testid={`pkg-free-${p.key}`} />{P.freeCheck}</label>}
+                  </div>
+                ); })}
+              </fieldset>
+              <fieldset class="grid gap-2"><legend class="co-entity !text-base mb-1">{P.price}</legend>
+                <div class="flex flex-wrap items-center gap-2">
+                  <label class="co-chip relative cursor-pointer"><input type="radio" name="priceMode" value="list" checked={!(preset?.price != null && preset.price !== preset.listPrice)} />{P.normal('')}<strong data-list>—</strong></label>
+                  <label class="co-chip relative cursor-pointer"><input type="radio" name="priceMode" value="custom" checked={preset?.price != null && preset.price !== preset.listPrice} data-testid="price-custom" />{P.other}</label>
+                  <span class="pkg-custom flex items-center gap-1"><input class="co-input !w-24" name="price" inputmode="decimal" value={preset?.price != null && preset.price !== preset.listPrice ? String(preset.price) : ''} data-testid="price-input" /><span class="co-meta text-sm">{P.perMonth}</span></span>
+                  <span class="co-badge co-badge--attention" data-discount hidden />
+                </div>
+              </fieldset>
+              <label class="co-field">{P.notes}<textarea class="co-textarea !min-h-[56px]" name="terms" maxlength="4000" placeholder={P.notesPh} data-testid="agreement-terms"></textarea></label>
+            </div>
+          ) : (
+            <>
+              <p class="co-help m-0">{customer || active ? C.changeHelp : C.closeHelp}</p>
+              <label class="co-field">{C.terms}<textarea class="co-textarea" name="terms" required minlength="3" maxlength="4000" placeholder={C.termsPh} data-testid="agreement-terms">{active?.terms ?? ''}</textarea></label>
+            </>
+          )}
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="co-field">{C.since}<input class="co-input" type="date" name="startsOn" value={today} /></label>
             <label class="co-field">{C.checkin}
@@ -78,9 +128,39 @@ const show = customer || active || pending || canClose;
             </label>
           </div>
           <p class="co-help m-0">{C.checkinHelp}{!canDecide && ` ${C.proposeHelp}`}</p>
-          <button class="co-btn co-btn--primary w-fit" data-testid="agreement-save">{!canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
+          <button class="co-btn co-btn--primary w-fit" data-testid="agreement-save">{withPkgs ? (!canDecide ? P.proposeBtn : customer || active ? C.saveChange : P.closeBtn) : !canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
+          {withPkgs && <p class="co-help m-0">{canDecide ? P.closeHelp : P.proposeHelp}</p>}
         </form>
       </details>
     )}
   </section>
 )}
+
+<style>
+  /* «Otro precio»: el campo solo si está marcado. */
+  [data-pkgs]:not(:has(input[name='priceMode'][value='custom']:checked)) .pkg-custom { display: none; }
+</style>
+<script>
+  // El precio normal de lo marcado (lo gratis no suma) y el descuento del que se ponga.
+  document.querySelectorAll<HTMLElement>('[data-pkgs]').forEach((box) => {
+    const fmt = new Intl.NumberFormat(document.documentElement.lang || 'es', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+    const refresh = () => {
+      const free = new Set([...box.querySelectorAll<HTMLInputElement>('input[name=free]:checked')].map((x) => x.value));
+      const list = [...box.querySelectorAll<HTMLInputElement>('input[name=packages]:checked')].reduce((s, x) => s + (free.has(x.value) ? 0 : Number(x.dataset.price || 0)), 0);
+      box.querySelector('[data-list]')!.textContent = ` ${fmt.format(list)}`;
+      const custom = box.querySelector<HTMLInputElement>('input[name=priceMode][value=custom]')!.checked;
+      const price = Number((box.querySelector<HTMLInputElement>('input[name=price]')!.value || '').replace(',', '.'));
+      const tag = box.querySelector<HTMLElement>('[data-discount]')!;
+      const pct = custom && list > 0 && Number.isFinite(price) && price < list ? Math.round(((list - price) / list) * 100) : 0;
+      tag.hidden = !pct;
+      tag.textContent = pct ? `−${pct} %` : '';
+    };
+    // Marcar «gratis» marca también el paquete.
+    box.querySelectorAll<HTMLInputElement>('input[name=free]').forEach((f) => f.addEventListener('change', () => {
+      if (f.checked) { const p = box.querySelector<HTMLInputElement>(`input[name=packages][value="${f.value}"]`); if (p) p.checked = true; }
+    }));
+    box.addEventListener('input', refresh);
+    box.addEventListener('change', refresh);
+    refresh();
+  });
+</script>

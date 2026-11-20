@@ -1,0 +1,61 @@
+---
+/**
+ * Paquetes (docs/PAQUETES.md) en Configurar → Tarifas: cada paquete con lo que incluye y su precio por tamaño; editar
+ * en su sitio, desactivar y crear. Formularios con action pkg-save / pkg-toggle.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { TIERS, type Product } from '~/lib/crm/packages';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
+import type { Locale } from '~/lib/i18n/core';
+
+interface Props { locale: Locale; products: Product[]; money: (n: number, cur: string) => string }
+const { locale, products, money } = Astro.props;
+const P = packagesMessages[locale];
+const fields = (p: Product | null) => ({
+  name: p?.name ?? '', summary: p?.summary ?? '', includes: (p?.includes ?? []).join('\n'), freeAllowed: !!p?.freeAllowed, freeNote: p?.freeNote ?? '', period: p?.period ?? 'month',
+  prices: Object.fromEntries(TIERS.map((t) => [t, p?.prices[t] == null ? '' : String(p.prices[t])])) as Record<string, string>,
+});
+---
+<section class="grid gap-4" id="paquetes" data-testid="packages">
+  <div class="grid gap-1">
+    <h2 class="co-page-title !text-3xl">{P.title}</h2>
+    <p class="co-lede max-w-3xl">{P.lede}</p>
+  </div>
+  {products.length === 0 && <p class="co-meta">{P.empty}</p>}
+  <div class="grid gap-3 md:grid-cols-2">
+    {[...products, null].map((p) => { const v = fields(p); return (
+      <details class:list={['co-card grid gap-3 !p-5', p && !p.active && 'opacity-60']} data-testid={p ? 'package' : 'package-new'} data-key={p?.key}>
+        <summary class="flex cursor-pointer list-none flex-wrap items-start justify-between gap-2">
+          {p ? (
+            <span class="grid min-w-0 gap-1">
+              <span class="co-entity">{p.name}{!p.active && <span class="co-badge ml-2">{P.off}</span>}{p.freeAllowed && <span class="co-badge co-badge--soft ml-2">{P.free}</span>}</span>
+              {p.summary && <span class="co-meta">{p.summary}</span>}
+              <span class="flex flex-wrap gap-1.5 pt-1">{TIERS.filter((t) => p.prices[t] != null).map((t) => <span class="co-tag" data-testid="package-price">{P.tiersShort[t]} {money(p.prices[t]!, p.currency)}/{P.periods[p.period]}</span>)}</span>
+            </span>
+          ) : <span class="co-entity flex items-center gap-2"><Icon name="plus" size={16} />{P.newTitle}</span>}
+          {p && <span class="co-btn co-btn--ghost co-btn--sm">{P.edit}</span>}
+        </summary>
+        {p && p.includes.length > 0 && <ul class="co-body m-0 grid gap-1 pl-5 text-sm">{p.includes.map((x) => <li>{x}</li>)}</ul>}
+        <form method="post" class="grid gap-3 border-t border-[var(--console-divider)] pt-3">
+          <input type="hidden" name="action" value="pkg-save" />{p && <input type="hidden" name="id" value={p.id} />}
+          <label class="co-field">{P.name}<input class="co-input" name="name" required maxlength="60" value={v.name} data-testid="package-name" /></label>
+          <label class="co-field">{P.summary}<input class="co-input" name="summary" maxlength="400" value={v.summary} /></label>
+          <label class="co-field">{P.includes}<textarea class="co-textarea" name="includes" rows="4" maxlength="4000">{v.includes}</textarea></label>
+          <fieldset class="grid gap-2"><legend class="co-meta mb-1">{P.prices}</legend>
+            <div class="grid grid-cols-3 gap-2">
+              {TIERS.map((t) => <label class="co-field text-sm">{P.tiers[t]}<input class="co-input" name={t} inputmode="decimal" value={v.prices[t]} placeholder="—" data-testid={`package-${t}`} /></label>)}
+            </div>
+            <label class="co-field w-fit text-sm">{P.period}<select class="co-select w-auto" name="period">{(['month', 'year', 'event', 'once'] as const).map((k) => <option value={k} selected={v.period === k}>{P.periods[k]}</option>)}</select></label>
+          </fieldset>
+          <label class="flex items-center gap-2"><input type="checkbox" name="freeAllowed" value="1" checked={v.freeAllowed} />{P.freeAllowed}</label>
+          <label class="co-field">{P.freeNote}<input class="co-input" name="freeNote" maxlength="400" value={v.freeNote} placeholder={P.freeNotePh} /></label>
+          <button class="co-btn co-btn--primary w-fit" data-testid="package-save">{p ? P.save : P.create}</button>
+        </form>
+        {p && (
+          <form method="post"><input type="hidden" name="action" value="pkg-toggle" /><input type="hidden" name="id" value={p.id} /><input type="hidden" name="active" value={p.active ? '0' : '1'} />
+            <button class="co-btn co-btn--quiet co-btn--sm">{p.active ? P.deactivate : P.activate}</button></form>
+        )}
+      </details>
+    ); })}
+  </div>
+</section>

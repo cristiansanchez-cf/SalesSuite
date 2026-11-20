@@ -199,12 +199,28 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       const rows = check(await sb.from('account_agreement').select('*').eq('tenant_id', t).in('account_id', accountIds.slice(0, 1000)).order('created_at', { ascending: false }).limit(5000)) ?? [];
       return rows.map((r: Record<string, unknown>) => ({
         id: r.id as string, accountId: r.account_id as string, terms: r.terms as string, startsOn: r.starts_on as string, checkinDays: (r.checkin_days as number) ?? null,
+        packages: (r.packages as string[]) ?? [], price: r.price == null ? null : Number(r.price), listPrice: r.list_price == null ? null : Number(r.list_price),
         status: r.status as 'active', createdBy: (r.created_by as string) ?? null, createdAt: r.created_at as string, decidedBy: (r.decided_by as string) ?? null, decidedAt: (r.decided_at as string) ?? null,
       }));
     },
     async proposeAgreement(_t, accountId, a) {
-      const rows = check(await sb.rpc('agreement_propose', { p_account: accountId, p_terms: a.terms, p_starts: a.startsOn, p_checkin: a.checkinDays })) as Array<{ id: string; status: 'active' | 'pending' }>;
+      const rows = check(await sb.rpc('agreement_propose', { p_account: accountId, p_terms: a.terms, p_starts: a.startsOn, p_checkin: a.checkinDays,
+        ...(a.packages?.length ? { p_packages: a.packages, p_price: a.price ?? null, p_list_price: a.listPrice ?? null } : {}) })) as Array<{ id: string; status: 'active' | 'pending' }>;
       return rows[0]!;
+    },
+    async listProducts(t) {
+      const rows = check(await sb.from('product').select('*').eq('tenant_id', t).order('position').limit(100)) ?? [];
+      return rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string, key: r.key as string, name: r.name as string, summary: (r.summary as string) ?? null, includes: (r.includes as string[]) ?? [],
+        prices: { small: r.price_small == null ? null : Number(r.price_small), medium: r.price_medium == null ? null : Number(r.price_medium), large: r.price_large == null ? null : Number(r.price_large) },
+        currency: r.currency as string, period: r.period as 'month', freeAllowed: !!r.free_allowed, freeNote: (r.free_note as string) ?? null, position: Number(r.position ?? 0), active: !!r.active,
+      }));
+    },
+    async saveProduct(t, p, id) {
+      const row = { tenant_id: t, key: p.key, name: p.name, summary: p.summary, includes: p.includes, price_small: p.prices.small, price_medium: p.prices.medium, price_large: p.prices.large,
+        currency: p.currency, period: p.period, free_allowed: p.freeAllowed, free_note: p.freeNote, position: p.position, active: p.active, updated_at: new Date().toISOString() };
+      if (id) { check(await sb.from('product').update(row).eq('tenant_id', t).eq('id', id)); return id; }
+      return (check(await sb.from('product').insert(row).select('id').single()) as { id: string }).id;
     },
     async decideAgreement(_t, id, ok) { check(await sb.rpc('agreement_decide', { p_id: id, p_ok: ok })); },
     async listTrials(t, accountIds) {

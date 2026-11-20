@@ -1,11 +1,15 @@
 ---
 /**
  * «Cierre» en la ficha (criterio de Cristian: «me lía lo de cerrar y cobrar… deberíamos unir todo el proceso»): una
- * sola tarjeta. Antes de cerrar, dos caminos: con pago (enlace de Stripe o «ya ha pagado») o sin pago (acuerdo). Ya
- * cliente: lo acordado (y cambiarlo o apuntarlo si pagó sin acuerdo) y sus pagos.
+ * sola tarjeta.
+ *  · Con paquetes (docs/PAQUETES.md): «Cerrar» (qué paquetes y a qué precio: lo normal es que ya haya pagado o lo haga
+ *    por transferencia) y «En prueba». El enlace de pago de Stripe es lo raro: un botón que lo abre en un modal.
+ *  · Sin paquetes: «Con pago» (enlace o «ya ha pagado»), «Sin pago (acuerdo)» y «En prueba».
+ * Ya cliente: lo acordado (y cambiarlo), sus pagos y ponerla en prueba.
  */
 import Icon from '~/components/ui/Icon.astro';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
 import { trialMessages } from '~/lib/i18n/messages/trial';
 import type { Locale } from '~/lib/i18n/core';
 
@@ -13,15 +17,18 @@ interface Props {
   locale: Locale; customer: boolean; wonAt: string | null; startWith: 'pay' | 'deal'; showPay: boolean; date: (iso: string) => string;
   /** Tercer camino (docs/CLIENTS.md §En prueba): ponerla en prueba hasta una fecha. Sin prueba en marcha y con permiso. */
   trialTab?: boolean;
+  /** Con catálogo de paquetes: se cierra con paquetes y precio; el enlace de pago, en un modal. */
+  packages?: boolean;
 }
-const { locale, customer, wonAt, startWith, showPay, date, trialTab = false } = Astro.props;
+const { locale, customer, wonAt, startWith, showPay, date, trialTab = false, packages = false } = Astro.props;
 const C = clientsMessages[locale];
+const P = packagesMessages[locale];
 const T = trialMessages[locale];
 ---
 <section class="co-card grid gap-4" id="closing" data-testid="closing">
   <div>
     <h2 class="co-entity flex items-center gap-2"><Icon name="handshake" size={18} />{C.closing}</h2>
-    <p class="co-meta mt-1">{customer && wonAt ? C.clientNow(date(wonAt)) : C.closingLede}</p>
+    <p class="co-meta mt-1">{customer && wonAt ? C.clientNow(date(wonAt)) : packages ? P.closeHelp : C.closingLede}</p>
   </div>
   {customer ? (
     <>
@@ -30,6 +37,23 @@ const T = trialMessages[locale];
       {/* Ya cliente y en prueba por un trato (Tnsi: «2 meses de prueba por un trato que hemos hecho»). */}
       {trialTab && <details class="grid gap-2" data-testid="closing-trial-wrap"><summary class="co-meta cursor-pointer" data-testid="closing-trial">{T.start}</summary><slot name="trial" /></details>}
     </>
+  ) : packages ? (
+    <div class="closing-tabs grid gap-4">
+      {trialTab && (
+        <div class="co-tabs w-fit" role="radiogroup">
+          <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked data-testid="closing-deal" />{C.closing}</label>
+          <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="trial" data-testid="closing-trial" />{T.tab}</label>
+        </div>
+      )}
+      <div class="closing-panel" data-way="deal"><slot name="deal" /></div>
+      {trialTab && <div class="closing-panel" data-way="trial"><slot name="trial" /></div>}
+      {showPay && (
+        <div class="flex flex-wrap items-center gap-2 border-t border-[var(--console-divider)] pt-3">
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-open-pay data-testid="closing-link"><Icon name="link" size={14} />{P.link}</button>
+          <span class="co-meta text-xs">{P.linkHelp}</span>
+        </div>
+      )}
+    </div>
   ) : (
     <div class="closing-tabs grid gap-4">
       <div class="co-tabs w-fit" role="radiogroup">
@@ -42,6 +66,17 @@ const T = trialMessages[locale];
       {trialTab && <div class="closing-panel" data-way="trial"><slot name="trial" /></div>}
     </div>
   )}
+  {packages && !customer && showPay && (
+    <dialog class="co-card w-[min(92vw,40rem)] p-0 backdrop:bg-black/40" data-pay-dialog data-testid="closing-pay-dialog">
+      <div class="grid gap-3 p-5">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="co-entity m-0 flex items-center gap-2"><Icon name="link" size={16} />{P.link}</h3>
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-close-pay aria-label="×"><Icon name="x" size={16} /></button>
+        </div>
+        <slot name="pay" />
+      </div>
+    </dialog>
+  )}
 </section>
 
 <style>
@@ -51,3 +86,12 @@ const T = trialMessages[locale];
   .closing-tabs:has(input[name='closing-way'][value='trial']:checked) .closing-panel:not([data-way='trial']) { display: none; }
   .closing-tabs .co-tab:has(input:checked) { background: var(--console-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
 </style>
+<script>
+  // El enlace de pago, en un modal (lo raro); se abre solo si la página vuelve de generar uno.
+  const dlg = document.querySelector<HTMLDialogElement>('[data-pay-dialog]');
+  if (dlg) {
+    document.querySelector('[data-open-pay]')?.addEventListener('click', () => dlg.showModal());
+    dlg.querySelector('[data-close-pay]')?.addEventListener('click', () => dlg.close());
+    if (location.hash === '#charge') dlg.showModal();
+  }
+</script>

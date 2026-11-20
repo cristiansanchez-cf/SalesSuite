@@ -4,6 +4,7 @@ import AgreementCard from '~/components/crm/AgreementCard.astro';
 import ClosingCard from '~/components/crm/ClosingCard.astro';
 import TrialCard from '~/components/crm/TrialCard.astro';
 import { isOpen, trialStatus } from '~/lib/crm/trial';
+import { tierOf } from '~/lib/crm/packages';
 import { trialMessages } from '~/lib/i18n/messages/trial';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { localDay, localTime } from '~/lib/crm/when';
@@ -117,7 +118,11 @@ if (Astro.request.method === 'POST') {
       // Clientes (docs/CLIENTS.md): cerrar con acuerdo o cambiarlo; confirmar o rechazar el propuesto.
       case 'agreement': {
         const was = (await acc.get(id)).account.status === 'customer';
-        const r = await admin.crm.closeWithAgreement(id, { terms: str('terms'), startsOn: str('startsOn'), checkinDays: str('checkinDays') });
+        // Paquetes (docs/PAQUETES.md): los marcados, con «:free» los que van gratis; y el precio (normal u otro).
+        const free = new Set(f.getAll('free').map(String));
+        const packages = f.getAll('packages').map(String).map((k) => (free.has(k) ? `${k}:free` : k));
+        const r = await admin.crm.closeWithAgreement(id, { terms: str('terms'), startsOn: str('startsOn'), checkinDays: str('checkinDays'),
+          ...(packages.length ? { packages, priceMode: str('priceMode') === 'custom' ? 'custom' : 'list', price: str('price') } : {}) });
         to += `?ok=${r.status === 'pending' ? 'agProposed' : was ? 'agChanged' : 'agClosed'}#agreement`; break;
       }
       case 'agreement-ok': await admin.crm.decideAgreement(id, str('agreementId'), true); to += '?ok=agConfirmed#agreement'; break;
@@ -259,6 +264,10 @@ const sizeRangeOf = (q: typeof a.qualification): Record<string, string> => {
   return Object.fromEntries(SIZES.map((k, i) => [k, PS.sizeRange(i ? num(lim[i - 1]) : '', i < 3 ? num(lim[i]) : '')]));
 };
 const agreementList = await admin.crm.agreements(id).catch(() => []);
+// Paquetes (docs/PAQUETES.md): el catálogo y el tramo de precio por su tamaño.
+const catalog = await admin.crm.products().catch(() => []);
+const tier = tierOf((a.qualification?.size as string | undefined) ?? null);
+const eur = (n: number) => fmt.money(Math.round(n * 100), catalog[0]?.currency ?? 'EUR');
 // En prueba: la que sigue en marcha (si pagó o se cerró con acuerdo después de empezarla, ya no).
 const openTrial = (await admin.crm.trials(id).catch(() => [])).find((x) => isOpen(x, a.wonAt)) ?? null;
 const todayTz = localDay(new Date(), myTz);
@@ -539,13 +548,13 @@ const STATE_ALERT = {
 
 
       {/* Cierre (docs/CLIENTS.md): con pago (Cobrar, §35) o sin pago (acuerdo), en una sola tarjeta. */}
-      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial}
+      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial} packages={catalog.length > 0}
         startWith={agreementList.some((g) => g.status === 'pending') ? 'deal' : 'pay'} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })}>
         <div slot="pay"><ChargeCard embedded name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
           suggestedId={suggestTariff(chargeOpts, { size: (a.qualification?.size as string | undefined) ?? null, segmentId: a.segmentId })?.id ?? null}
           coupons={coupons} charges={chargeList} canCharge={perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId}
           canCustom={perms.manageTenant} canManage={perms.manageAccounts} won={!!a.wonAt} names={chargeNames} phone={a.phone ?? fallback?.phone ?? null} /></div>
-        <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName}
+        <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName} products={catalog} tier={tier} money={eur}
         canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
         date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>
         {!openTrial && canTrial && <div slot="trial"><TrialCard mode="start" locale={locale} customer={a.status === 'customer'} canEdit today={todayTz} date={trialDay} /></div>}

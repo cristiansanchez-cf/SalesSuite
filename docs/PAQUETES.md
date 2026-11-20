@@ -1,0 +1,35 @@
+# Paquetes
+
+Criterio de Cristian: Enjoy pasa a vender por paquetes; «hay que incluirlo en muchos sitios: presentaciones, cierres y
+pagos, Learn… y luego ver cómo hacer este proceso más fácil para otras empresas (startups que iteran rápido)».
+
+Enjoy: **Canciones** (puede ir gratis: las propinas son para Enjoy; con suscripción, para el local), **Mensajes y fotos
+en pantalla**, **Álbum** y **Fidelización**. 25 € al mes cada uno (pequeño y mediano), 50 € (grande); lo normal, 75–100 €.
+
+## Un catálogo, en todas partes
+
+- **Configurar → Tarifas → Paquetes** (admin): nombre, en una frase, qué incluye (una cosa por línea), precio por tamaño
+  (pequeño, mediano, grande; masivo paga como grande; vacío = no se ofrece a ese tamaño), cada cuánto, y si puede ir
+  gratis y en qué condiciones. Desactivar = deja de ofrecerse (lo ya cerrado no cambia).
+- **Cierre** (ficha): criterio de Cristian: «generar enlace no es tan usual; debería ser el input manual de que ha
+  pagado X paquetes, precio normal o menor (descuento)». Con catálogo, la tarjeta es:
+  - **Cerrar**: qué paquetes (y cuáles gratis), el precio **normal** (sale de su tamaño; si no lo tiene, mediano) u
+    **otro precio** (se ve el % de descuento), y algo más acordado. Un solo botón. Gerente o admin cierra; el comercial
+    propone y un gerente lo confirma (como el acuerdo).
+  - **En prueba** (docs/CLIENTS.md §En prueba).
+  - **Generar enlace de pago** (Stripe), en un modal: lo raro.
+  - Ya cliente: sus paquetes en etiquetas, el precio con el descuento, las condiciones de lo gratis y «Cambiar paquetes
+    o precio» (versión nueva; la anterior al historial).
+- **Clientes**: lo que tiene contratado y a qué precio, de un vistazo.
+- Espacios sin paquetes: todo como antes (Con pago / Sin pago / En prueba).
+
+Datos: `product` (migración 20270111; test SQL 92), `account_agreement.packages` («clave» o «clave:free»), `price`
+(al mes) y `list_price` (el normal en ese momento); `payment_request.packages`. Lógica pura en `src/lib/crm/packages.ts`.
+Las condiciones del acuerdo llevan lo escrito y, debajo, los paquetes en texto (para el historial y la IA).
+Smoke: `scripts/smoke-packages.cjs`.
+
+## Siguiente
+
+- La IA (WhatsApp, Apuntar, investigación) y Aprende con el catálogo; cerrar por WhatsApp con paquetes.
+- Propuestas y presentaciones con los paquetes (Fidelización aún no está).
+- Cambiar el modelo de negocio con IA: contarlo y que proponga los cambios (paquetes, propuestas, Aprende).

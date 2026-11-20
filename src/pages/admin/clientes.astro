@@ -13,6 +13,8 @@ import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { trialMessages } from '~/lib/i18n/messages/trial';
 import { trialStatus } from '~/lib/crm/trial';
 import { localDay } from '~/lib/crm/when';
+import { cleanPicks, discountPct, extraTerms } from '~/lib/crm/packages';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -25,6 +27,11 @@ const all = perms.manageAccounts && Astro.url.searchParams.get('ver') !== 'mios'
 const [allClients, trials] = await Promise.all([admin.crm.clients({ all }), admin.crm.inTrial({ all })]);
 const inTrial = new Set(trials.map((x) => x.id));
 const list = allClients.filter((c) => !inTrial.has(c.id));
+// Qué tiene contratado (docs/PAQUETES.md): sus paquetes y su precio, de un vistazo.
+const catalog = await admin.crm.products({ all: true }).catch(() => []);
+const PK = packagesMessages[locale];
+const pkgNames = (keys: string[]) => cleanPicks(keys, catalog.map((p) => ({ ...p, active: true }))).map((x) => `${catalog.find((p) => p.key === x.key)?.name ?? x.key}${x.free ? ` (${PK.freeCheck})` : ''}`);
+const eur = (n: number) => fmt.money(Math.round(n * 100), catalog[0]?.currency ?? 'EUR');
 const T = trialMessages[locale];
 const todayTz = localDay(new Date());
 const day = (d: string) => fmt.date(`${d}T12:00:00Z`, { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -69,7 +76,13 @@ const clip = (s: string, n = 220) => (s.length > n ? `${s.slice(0, n - 1)}…` :
             <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="handshake" size={16} /></span>
             <span class="co-row__main min-w-0">
               <span class="co-row-title">{c.name}</span>
-              {c.agreement && <span class="co-body block text-sm" data-ugc>{clip(c.agreement.terms)}</span>}
+              {c.agreement?.packages.length ? (
+                <span class="flex flex-wrap items-center gap-1 py-0.5" data-testid="client-packages">
+                  {pkgNames(c.agreement.packages).map((x) => <span class="co-badge co-badge--ink !py-0 text-[11px]">{x}</span>)}
+                  {c.agreement.price != null && <span class="co-meta text-sm font-semibold">{c.agreement.price === 0 ? PK.freeCheck : `${eur(c.agreement.price)}/${PK.periods.month}`}{discountPct(c.agreement.price, c.agreement.listPrice) != null && ` · ${PK.discount(discountPct(c.agreement.price, c.agreement.listPrice)!)}`}</span>}
+                </span>
+              ) : c.agreement && <span class="co-body block text-sm" data-ugc>{clip(c.agreement.terms)}</span>}
+              {c.agreement?.packages.length ? (() => { const t = extraTerms(c.agreement.terms, cleanPicks(c.agreement.packages, catalog.map((p) => ({ ...p, active: true }))), catalog, { price: c.agreement.price, list: c.agreement.listPrice }); return t && <span class="co-body block text-sm" data-ugc>{clip(t)}</span>; })() : null}
               <span class="co-meta">{[c.wonAt ? C.clientSince(date(c.wonAt)) : null, c.quietDays == null ? C.never : C.quiet(c.quietDays), all && c.ownerName ? C.owner(c.ownerName) : null].filter(Boolean).join(' · ')}</span>
               <span class="co-meta">{C.next}: {c.nextStepAt ? `${date(c.nextStepAt)}${c.nextStep ? ` · ${c.nextStep}` : ''}` : C.noNext}</span>
             </span>

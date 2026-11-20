@@ -12,6 +12,8 @@ import { pricesMessages } from '~/lib/i18n/messages/prices';
 import { STRIPE_EVENTS } from '~/lib/commissions/stripe';
 import { SIZES } from '~/lib/crm/priority';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
+import PackagesEditor from '~/components/crm/PackagesEditor.astro';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -26,7 +28,15 @@ if (Astro.request.method === 'POST') {
   const str = (k: string) => String(fd.get(k) ?? '');
   let ok = '';
   result = await formAction(async () => {
-    if (str('action') === 'create') {
+    // Paquetes (docs/PAQUETES.md).
+    if (str('action') === 'pkg-save') {
+      await admin.crm.saveProduct({ name: str('name'), summary: str('summary'), includes: str('includes'), small: str('small'), medium: str('medium'), large: str('large'),
+        period: str('period') || 'month', freeAllowed: str('freeAllowed') === '1', freeNote: str('freeNote') }, str('id') || undefined);
+      ok = 'pkg';
+    } else if (str('action') === 'pkg-toggle') {
+      await admin.crm.setProductActive(str('id'), str('active') === '1');
+      ok = str('active') === '1' ? 'pkgOn' : 'pkgOff';
+    } else if (str('action') === 'create') {
       await t.savePriceOption({ label: str('label'), amount: str('amount'), currency: str('currency'), period: str('period'), paymentLink: str('paymentLink'), segmentId: str('segmentId'), size: str('size') });
       ok = 'created';
     } else if (str('action') === 'stripe') {
@@ -40,9 +50,11 @@ if (Astro.request.method === 'POST') {
       ok = str('active') === '1' ? 'on' : 'off';
     }
   });
-  if (!result.error) return Astro.redirect(`/admin/prices${ok ? `?ok=${ok}` : ''}`, 303);
+  if (!result.error) return Astro.redirect(`/admin/prices${ok ? `?ok=${ok}` : ''}${ok.startsWith('pkg') ? '#paquetes' : ''}`, 303);
 }
-const okMsg = flash(Astro.url, m.ok);
+const PK = packagesMessages[locale];
+const okMsg = flash(Astro.url, { ...m.ok, pkg: PK.ok.saved, pkgOn: PK.ok.on, pkgOff: PK.ok.off });
+const products = await admin.crm.products({ all: true }).catch(() => []);
 const [options, market, stripeSince] = await Promise.all([t.listPriceOptions(), admin.playbook.market().catch(() => []), t.stripeStatus().catch(() => null)]);
 // La URL que se da de alta en Stripe: la de este espacio (el dominio por el que entra el admin).
 const hookUrl = `${Astro.url.origin}/api/v1/stripe/${admin.session.tenantId}`;
@@ -57,6 +69,8 @@ const sectorName = new Map(market.map((s) => [s.id, s.name]));
     </header>
     {okMsg && <p class="co-alert co-alert--success w-fit" role="status">{okMsg}</p>}
     {result.error && <Alert kind="rejection" title={result.error} details={result.details} />}
+
+    <PackagesEditor locale={locale} products={products} money={(n, cur) => f.money(Math.round(n * 100), cur)} />
 
     <div class="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <section class="grid content-start gap-3" data-testid="price-options">

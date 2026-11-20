@@ -232,8 +232,9 @@ export interface DemoDb {
   team_ip: TeamIpRow[];
   daily_digest_log: Array<{ user_id: string; tenant_id: string; day: string; emailed: boolean; sent_at: string }>;
   calendar_feed: Array<{ user_id: string; token: string }>;
+  product?: Array<{ id: string; tenant_id: string; key: string; name: string; summary: string | null; includes: string[]; price_small: number | null; price_medium: number | null; price_large: number | null; currency: string; period: 'once' | 'event' | 'month' | 'year'; free_allowed: boolean; free_note: string | null; position: number; active: boolean }>;
   account_trial?: Array<{ id: string; tenant_id: string; account_id: string; starts_on: string; ends_on: string; note: string | null; created_by: string | null; created_at: string; ended_at: string | null; ended_by: string | null; outcome: 'stays' | 'leaves' | null }>;
-  account_agreement: Array<{ id: string; tenant_id: string; account_id: string; terms: string; starts_on: string; checkin_days: number | null; status: 'pending' | 'active' | 'replaced' | 'rejected'; created_by: string | null; created_at: string; decided_by: string | null; decided_at: string | null }>;
+  account_agreement: Array<{ id: string; tenant_id: string; account_id: string; terms: string; starts_on: string; checkin_days: number | null; packages?: string[] | null; price?: number | null; list_price?: number | null; status: 'pending' | 'active' | 'replaced' | 'rejected'; created_by: string | null; created_at: string; decided_by: string | null; decided_at: string | null }>;
   member_conditions_history: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; plan: import('../commissions/types').ConditionsChange['plan']; changed_by: string | null; changed_at: string; seq: number }>;
 }
 
@@ -460,6 +461,13 @@ export function freshDemoDb(): DemoDb {
       { id: '00000000-0000-4000-8000-0000000cd002', tenant_id: ENJOY, code: 'MESGRATIS', label: 'Primer mes gratis', kind: 'free_months', value: 1, max_uses: null, valid_until: null, active: true, note: null, created_at: ago(10) },
     ],
     // Tarifas de ejemplo (docs/COMMISSIONS.md §Tarifas); los enlaces son de prueba de Stripe.
+    // Paquetes de Enjoy (= migración 20270111).
+    product: [
+      { key: 'canciones', name: 'Canciones', summary: 'El público pide canciones desde el móvil y deja propina.', includes: ['Peticiones de canciones desde el móvil', 'Propinas del público'], free_allowed: true, free_note: 'Gratis: las propinas son para Enjoy. Con suscripción, las propinas son para el local.' },
+      { key: 'pantalla', name: 'Mensajes y fotos en pantalla', summary: 'Mensajes y fotos del público en las pantallas del local.', includes: ['Software de pantallas', 'Mensajes y fotos del público en pantalla', 'Controlar las peticiones desde el móvil', 'Lanzar promociones en pantalla'] },
+      { key: 'album', name: 'Álbum', summary: 'Las fotos de la noche, para el local y para el público.', includes: ['Consentimiento para usarlas en redes sociales', 'Dinámicas independientes de la pantalla', 'Álbum después del evento para que el público descargue sus fotos'] },
+      { key: 'fidelizacion', name: 'Fidelización', summary: 'Pases con sellos y un RRPP virtual en el móvil de sus clientes.', includes: ['Pases con sellos que se validan en el local', 'Beneficios para el cliente', 'Aviso «vuelve» al pasar cerca del local', 'Hasta 3 notificaciones push al mes'] },
+    ].map((x, i) => ({ id: `00000000-0000-4000-8000-00000000f1${String(i).padStart(2, '0')}`, tenant_id: ENJOY, free_allowed: false, free_note: null as string | null, ...x, price_small: 25, price_medium: 25, price_large: 50, currency: 'EUR', period: 'month' as const, position: i + 1, active: true })),
     price_option: [
       { id: '00000000-0000-4000-8000-0000000f0001', tenant_id: ENJOY, label: 'Boda completa', amount: 700, currency: 'EUR', period: 'event', payment_link: 'https://buy.stripe.com/test_boda', segment_id: '00000000-0000-4000-8000-0000005e0001', position: 1, active: true, kind: 'Boda', is_default: true },
       { id: '00000000-0000-4000-8000-0000000f0002', tenant_id: ENJOY, label: 'Local mediano', amount: 249, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_mediano', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 2, active: true, kind: 'Local', is_default: true, size: 'medium' },

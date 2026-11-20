@@ -102,5 +102,7 @@ export interface PaymentRequestInsert {
 /** Acuerdo con un cliente (docs/CLIENTS.md): cada cambio es una versión; la activa es la vigente. */
 export interface Agreement {
   id: string; accountId: string; terms: string; startsOn: string; checkinDays: number | null;
+  /** Paquetes («clave» o «clave:free») y precio al mes: el acordado y el normal de ese momento (docs/PAQUETES.md). */
+  packages: string[]; price: number | null; listPrice: number | null;
   status: 'pending' | 'active' | 'replaced' | 'rejected'; createdBy: string | null; createdAt: string; decidedBy: string | null; decidedAt: string | null;
 }

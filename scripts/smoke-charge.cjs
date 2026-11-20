@@ -28,6 +28,9 @@ const NAME = 'Bar Cobro Smoke';
   await rep.fill('[data-testid=new-account-form] [name=name]', NAME);
   await Promise.all([rep.waitForURL(/ok=created/), rep.click('[data-testid=new-account-form] button[type=submit]')]);
   const page = rep.url().split('?')[0];
+  // Con paquetes (docs/PAQUETES.md) el enlace de Stripe va en un modal: se abre (tras generar, vuelve abierto con #charge).
+  const openPay = async (pg) => { if (await pg.isVisible('[data-testid=closing-link]') && !(await pg.isVisible('[data-testid=charge]'))) await pg.click('[data-testid=closing-link]'); };
+  await openPay(rep);
 
   // ---- tamaño (no se sabía) → la tarifa de su tamaño
   assert(await rep.isVisible('[data-testid=charge-size]'), 'sin tamaño: lo pregunta');
@@ -59,6 +62,7 @@ const NAME = 'Bar Cobro Smoke';
 
   // ---- anular
   await rep.goto(page);
+  await openPay(rep);
   await Promise.all([rep.waitForURL(/ok=chargeCancelled/), rep.locator('[data-testid=charge-item] [data-testid=charge-cancel]').first().click()]);
   assert(!(await rep.isVisible('[data-testid=charge-item]')), 'anulado: ya no sale');
   await rep.goto(`${BASE}/admin/accounts/tablero`);
@@ -67,6 +71,7 @@ const NAME = 'Bar Cobro Smoke';
   // ---- admin: precio a medida (con su enlace de Stripe)
   const adm = await login('admin');
   await adm.goto(page);
+  await openPay(adm);
   if (!(await adm.$eval('[data-testid=charge-wizard]', (d) => d.open))) await adm.click('[data-testid=charge-open]');
   await adm.click('[data-testid=charge-custom] summary');
   await adm.fill('[data-testid=charge-form] [name=customLabel]', 'Especial apertura');
@@ -87,6 +92,7 @@ const NAME = 'Bar Cobro Smoke';
   }
   const hook = await adm.evaluate(() => fetch('/admin/prices').then(() => location.origin));
   await rep.goto(page);
+  await openPay(rep);
   await Promise.all([rep.waitForURL(/ok=charge/), rep.click('[data-testid=charge-generate]')]);
   const payRef = new URL(await rep.locator('[data-testid=charge-item] [data-charge-url]').first().inputValue()).searchParams.get('client_reference_id');
   const ev = JSON.stringify({ id: 'evt_smoke', type: 'checkout.session.completed', data: { object: { id: 'cs_smoke_charge', client_reference_id: payRef, mode: 'payment',
@@ -105,6 +111,7 @@ const NAME = 'Bar Cobro Smoke';
   await rep.reload();
   assert(await rep.$eval('[data-testid=celebrate]', (e) => e.hidden).catch(() => true), 'una sola vez');
   await rep.goto(page);
+  await openPay(rep);
   assert(await rep.isVisible('[data-testid=charge-won]') && (await rep.textContent('[data-testid=charge-list]')).includes('Pagado'), 'la ficha: pagado, ya es cliente');
   await rep.goto(`${BASE}/admin/accounts/tablero`);
   assert((await rep.getAttribute(`[data-testid=board-card][data-name="${NAME}"]`, 'data-stage')) === 'won', 'tablero: «Cerrada»');
@@ -120,6 +127,7 @@ const NAME = 'Bar Cobro Smoke';
   await Promise.all([rep.waitForURL(/ok=created/), rep.click('[data-testid=new-account-form] button[type=submit]')]);
   assert(!(await rep.isVisible('[data-testid=charge-mark-won]')), 'el comercial no la da por ganada');
   await adm.goto(rep.url().split('?')[0]);
+  await openPay(adm);
   await Promise.all([adm.waitForURL(/ok=paid/), adm.click('[data-testid=charge-mark-won]')]);
   assert(await adm.isVisible('[data-testid=charge-won]'), 'a mano: ganada');
 

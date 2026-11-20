@@ -271,7 +271,7 @@ export function demoCrmDb(actorId: string): CrmDb {
     async listAgreements(t, accountIds) {
       if (!isMember(t, actorId)) return [];
       return db().account_agreement.filter((g) => g.tenant_id === t && accountIds.includes(g.account_id)).sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map((g) => ({ id: g.id, accountId: g.account_id, terms: g.terms, startsOn: g.starts_on, checkinDays: g.checkin_days, status: g.status, createdBy: g.created_by, createdAt: g.created_at, decidedBy: g.decided_by, decidedAt: g.decided_at }));
+        .map((g) => ({ id: g.id, accountId: g.account_id, terms: g.terms, startsOn: g.starts_on, checkinDays: g.checkin_days, packages: g.packages ?? [], price: g.price ?? null, listPrice: g.list_price ?? null, status: g.status, createdBy: g.created_by, createdAt: g.created_at, decidedBy: g.decided_by, decidedAt: g.decided_at }));
     },
     async proposeAgreement(t, accountId, a) {
       const s = db();
@@ -281,7 +281,8 @@ export function demoCrmDb(actorId: string): CrmDb {
       if (!mgr && acc.owner_id !== actorId) throw new Error('permission denied: Solo quien la lleva (o un gerente) cierra el acuerdo');
       for (const g of s.account_agreement) if (g.account_id === accountId && g.status === 'pending') Object.assign(g, { status: 'rejected', decided_by: actorId, decided_at: iso() });
       const g = { id: randomUUID(), tenant_id: t, account_id: accountId, terms: a.terms.trim(), starts_on: a.startsOn ?? iso().slice(0, 10), checkin_days: a.checkinDays,
-        status: 'pending' as const, created_by: actorId, created_at: monotonic(), decided_by: null, decided_at: null };
+        status: 'pending' as const, created_by: actorId, created_at: monotonic(), decided_by: null, decided_at: null,
+        packages: a.packages?.length ? a.packages : null, price: a.packages?.length ? a.price ?? null : null, list_price: a.packages?.length ? a.listPrice ?? null : null };
       s.account_agreement.push(g);
       if (mgr) { agreementActivate(g.id, actorId); return { id: g.id, status: 'active' as const }; }
       notifyRoles(t, ['admin', 'lead'], 'agreement_pending', 'action', g.id, { account: acc.name, accountId: acc.id, seller: userLabel(actorId) }, actorId);
@@ -296,6 +297,26 @@ export function demoCrmDb(actorId: string): CrmDb {
         Object.assign(g, { status: 'rejected', decided_by: actorId, decided_at: iso() });
         for (const n of db().notification) if (n.kind === 'agreement_pending' && n.entity_key === g.id && !n.resolved_at) n.resolved_at = iso();
       }
+    },
+    // Paquetes (= migración 20270111): lee el equipo; escribe el admin.
+    async listProducts(t) {
+      if (!isMember(t, actorId)) return [];
+      return (db().product ?? []).filter((x) => x.tenant_id === t).sort((a, b) => a.position - b.position).map((r) => ({
+        id: r.id, key: r.key, name: r.name, summary: r.summary, includes: [...r.includes], prices: { small: r.price_small, medium: r.price_medium, large: r.price_large },
+        currency: r.currency, period: r.period, freeAllowed: r.free_allowed, freeNote: r.free_note, position: r.position, active: r.active,
+      }));
+    },
+    async saveProduct(t, p, id) {
+      if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin');
+      const list = (db().product ??= []);
+      if (list.some((x) => x.tenant_id === t && x.key === p.key && x.id !== id)) throw new Error('duplicate key value: product key');
+      const row = { tenant_id: t, key: p.key, name: p.name, summary: p.summary, includes: p.includes, price_small: p.prices.small, price_medium: p.prices.medium, price_large: p.prices.large,
+        currency: p.currency, period: p.period, free_allowed: p.freeAllowed, free_note: p.freeNote, position: p.position, active: p.active };
+      const cur = id ? list.find((x) => x.id === id && x.tenant_id === t) : undefined;
+      if (cur) { Object.assign(cur, row); return cur.id; }
+      const nid = randomUUID();
+      list.push({ id: nid, ...row });
+      return nid;
     },
     // En prueba (= migración 20270110: trial_start / trial_end).
     async listTrials(t, accountIds) {
