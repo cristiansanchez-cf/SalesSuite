@@ -12,6 +12,17 @@ export interface Product {
   freeAllowed: boolean; freeNote: string | null; position: number; active: boolean;
 }
 
+/** Una fila de la tabla product (Supabase o demo) → Product. */
+export function productFromRow(r: Record<string, unknown>): Product {
+  const n = (v: unknown) => (v == null ? null : Number(v));
+  return {
+    id: String(r.id), key: String(r.key), name: String(r.name), summary: (r.summary as string | null) ?? null, includes: [...((r.includes as string[] | null) ?? [])],
+    prices: { small: n(r.price_small), medium: n(r.price_medium), large: n(r.price_large) },
+    currency: String(r.currency ?? 'EUR'), period: (r.period as Product['period']) ?? 'month', freeAllowed: !!r.free_allowed, freeNote: (r.free_note as string | null) ?? null,
+    position: Number(r.position ?? 0), active: !!r.active,
+  };
+}
+
 /** El tramo de precio por el tamaño del local (priority.ts SIZES): masivo paga como grande. Sin tamaño, mediano. */
 export function tierOf(size: string | null | undefined): Tier {
   return size === 'small' ? 'small' : size === 'large' || size === 'huge' ? 'large' : 'medium';

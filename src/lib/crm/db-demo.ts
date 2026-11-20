@@ -1,4 +1,5 @@
 /** Personas e importaciones en memoria (modo DEMO). Replica supabase/migrations/20261103000000_crm_people.sql (RLS y triggers). */
+import { productFromRow } from './packages';
 import { randomUUID } from 'node:crypto';
 import { checkFields } from '../accounts/db-demo';
 import { demoDb, demoRoleOf, type CrmContactRow, type CrmImportRow, type PaymentRequestRow } from '../data/store';
@@ -301,10 +302,7 @@ export function demoCrmDb(actorId: string): CrmDb {
     // Paquetes (= migración 20270111): lee el equipo; escribe el admin.
     async listProducts(t) {
       if (!isMember(t, actorId)) return [];
-      return (db().product ?? []).filter((x) => x.tenant_id === t).sort((a, b) => a.position - b.position).map((r) => ({
-        id: r.id, key: r.key, name: r.name, summary: r.summary, includes: [...r.includes], prices: { small: r.price_small, medium: r.price_medium, large: r.price_large },
-        currency: r.currency, period: r.period, freeAllowed: r.free_allowed, freeNote: r.free_note, position: r.position, active: r.active,
-      }));
+      return (db().product ?? []).filter((x) => x.tenant_id === t).sort((a, b) => a.position - b.position).map((r) => productFromRow(r));
     },
     async saveProduct(t, p, id) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin');

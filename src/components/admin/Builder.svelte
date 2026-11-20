@@ -15,6 +15,8 @@
   import { DEFAULT_STYLE, MUSIC_STYLES } from '~/modules/live-screen/music';
   import { INTL_LOCALE, type Locale } from '~/lib/i18n/core';
   import { builderMessages } from '~/lib/i18n/messages/builder';
+  import { packagesMessages } from '~/lib/i18n/messages/packages';
+  import { TIERS, type Tier } from '~/lib/crm/packages';
   import LiveScenes from './LiveScenes.svelte';
   import TextsEditor from './TextsEditor.svelte';
 
@@ -568,6 +570,23 @@
   }
   function preset(days: number) { saveNext(inDays(days)); }
   const overdue = $derived(!!d.nextStepAt && new Date(d.nextStepAt).getTime() < Date.now());
+
+  // Paquetes (docs/PAQUETES.md): elegir paquetes, tamaño y precio → diapositiva «Paquetes» (la monta el servidor).
+  const PK = packagesMessages[locale] ?? packagesMessages.es;
+  const pkgItem = $derived(s.items.find((i) => i.blockType === 'packages-offer') ?? null);
+  type Snap = { packages?: Array<{ key: string; free: boolean }>; tier?: Tier; total?: number | null; listTotal?: number | null };
+  const snap0 = (initial.items.find((i) => i.blockType === 'packages-offer')?.propOverrides ?? {}) as Snap;
+  let pkgSel = $state<Record<string, boolean>>(Object.fromEntries((snap0.packages ?? []).map((x) => [x.key, true])));
+  let pkgFree = $state<Record<string, boolean>>(Object.fromEntries((snap0.packages ?? []).filter((x) => x.free).map((x) => [x.key, true])));
+  let pkgTier = $state<Tier>(snap0.tier ?? 'medium');
+  let pkgCustom = $state(snap0.total != null && snap0.listTotal != null && snap0.total !== snap0.listTotal);
+  let pkgPrice = $state(pkgCustom && snap0.total != null ? String(snap0.total) : '');
+  const pkgKeys = $derived((s.products ?? []).filter((p) => pkgSel[p.key]).map((p) => p.key));
+  const pkgList = $derived((s.products ?? []).filter((p) => pkgSel[p.key] && !pkgFree[p.key]).reduce((sum, p) => sum + (p.prices[pkgTier] ?? 0), 0));
+  function applyPkgs() {
+    const price = Number(pkgPrice.replace(',', '.'));
+    run({ op: 'setPackages', packages: pkgKeys.map((k) => (pkgFree[k] ? `${k}:free` : k)), tier: pkgTier, priceMode: pkgCustom ? 'custom' : 'list', price: pkgCustom && Number.isFinite(price) ? price : null });
+  }
 
   const money = (n: number | null, cur: string) =>
     n == null ? '—' : new Intl.NumberFormat(d.locale, { style: 'currency', currency: cur, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n);
@@ -1265,6 +1284,42 @@
         </div>
         <p class="mt-2 text-xs text-muted">{t.prospect.tokensPre}<code>{'{company}'}</code>{t.prospect.tokensMid}<code>{'{prospect}'}</code>{t.prospect.tokensPost}</p>
       </details>
+
+ {#if (s.products?.length ?? 0) > 0 && !s.pricesLocked}
+        <details class={card} data-testid="builder-packages" open>
+          <summary class="flex cursor-pointer items-center justify-between gap-3">
+            <span class="co-card-title">{PK.title}</span>
+            {#if pkgItem}<strong class="text-sm" data-testid="bpkg-total">{money(((pkgItem.propOverrides as Snap).total ?? null), (s.products ?? [])[0]?.currency ?? 'EUR')}</strong>{/if}
+          </summary>
+          <div class="mt-3 grid gap-3">
+            <p class="co-help m-0">{PK.builderHelp}</p>
+            <div class="grid gap-1"><span class="co-meta text-xs">{PK.size}</span>
+              <div class="co-chips">{#each TIERS as tr (tr)}<button type="button" class="co-chip" aria-pressed={pkgTier === tr} disabled={!editable} onclick={() => (pkgTier = tr)}>{PK.tiers[tr]}</button>{/each}</div>
+            </div>
+            {#each s.products ?? [] as p (p.id)}
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[var(--console-divider)] px-3 py-2">
+                <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                  <input type="checkbox" bind:checked={pkgSel[p.key]} disabled={!editable || p.prices[pkgTier] == null} data-testid={`bpkg-${p.key}`} />
+                  <span class="font-semibold">{p.name}</span>
+                </label>
+                <span class="co-meta text-sm">{p.prices[pkgTier] == null ? PK.noPrice : money(p.prices[pkgTier], p.currency)}</span>
+                {#if p.freeAllowed}<label class="flex items-center gap-1 text-sm"><input type="checkbox" bind:checked={pkgFree[p.key]} disabled={!editable} onchange={() => { if (pkgFree[p.key]) pkgSel[p.key] = true; }} data-testid={`bpkg-free-${p.key}`} />{PK.freeCheck}</label>{/if}
+              </div>
+            {/each}
+            <p class="m-0 text-sm">{PK.normal(money(pkgList, (s.products ?? [])[0]?.currency ?? 'EUR'))}</p>
+            {#if s.customPrices}
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={pkgCustom} disabled={!editable} data-testid="bpkg-custom" />{PK.other}</label>
+                {#if pkgCustom}<input class="co-input !w-24" inputmode="decimal" bind:value={pkgPrice} disabled={!editable} data-testid="bpkg-price" /><span class="co-meta text-sm">{PK.perMonth}</span>{/if}
+              </div>
+            {/if}
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="co-btn co-btn--primary co-btn--sm" disabled={!editable || !pkgKeys.length} onclick={applyPkgs} data-testid="bpkg-apply">{pkgItem ? PK.update : PK.put}</button>
+              {#if pkgItem}<button type="button" class="co-btn co-btn--quiet co-btn--sm" disabled={!editable} onclick={() => run({ op: 'setPackages', packages: [], tier: pkgTier, priceMode: 'list', price: null })} data-testid="bpkg-remove">{PK.remove}</button>{/if}
+            </div>
+          </div>
+        </details>
+      {/if}
 
       <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount || !!d.priceOptionId}>
         <summary class="flex cursor-pointer items-center justify-between gap-3">

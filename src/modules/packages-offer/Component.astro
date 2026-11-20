@@ -1,0 +1,63 @@
+---
+/**
+ * packages-offer (docs/PAQUETES.md): cada paquete en su tarjeta (lo que incluye, su precio o «gratis» con sus
+ * condiciones) y el total al mes, con el descuento si lo hay. Solo tokens del tema: vale para cualquier espacio.
+ */
+import Section from '~/components/Section.astro';
+import Icon from '~/components/Icon.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { PackagesOfferProps } from './schema';
+
+type Props = PackagesOfferProps & ModuleBaseProps;
+const { eyebrow, title, subtitle, packages, currency, period, total, listTotal, taxNote, footnote, emptyLabel, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const money = (n: number) => new Intl.NumberFormat(ctx.locale || 'es-ES', { style: 'currency', currency, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n);
+const PER: Record<string, string> = { month: '/ mes', event: '/ evento', year: '/ año', once: '' };
+const pct = total != null && listTotal != null && listTotal > 0 && total < listTotal ? Math.round(((listTotal - total) / listTotal) * 100) : null;
+---
+<div data-module="packages-offer">
+  <Section>
+    <div class="mx-auto grid max-w-5xl gap-8">
+      <header class="grid gap-2 text-center">
+        {eyebrow && <p class="text-sm font-bold uppercase tracking-wider text-muted">{t(eyebrow)}</p>}
+        <h2 class="font-display text-3xl font-extrabold sm:text-4xl">{t(title)}</h2>
+        {subtitle && <p class="mx-auto max-w-2xl text-muted">{t(subtitle)}</p>}
+      </header>
+      {packages.length === 0 ? <p class="text-center text-muted">{emptyLabel}</p> : (
+        <>
+          <div class:list={['grid gap-4', packages.length > 1 && 'sm:grid-cols-2', packages.length === 3 && 'lg:grid-cols-3', packages.length >= 4 && 'lg:grid-cols-4']} data-testid="offer-packages">
+            {packages.map((p) => (
+              <article class="po-card flex flex-col gap-3 rounded-card border border-line bg-bg p-6 shadow-card" data-key={p.key}>
+                <div class="flex items-start justify-between gap-3">
+                  <h3 class="font-display text-xl font-extrabold">{p.name}</h3>
+                  {p.free
+                    ? <span class="rounded-pill bg-accent px-3 py-1 text-sm font-bold text-accent-contrast" data-testid="offer-free">Gratis</span>
+                    : p.price != null && <span class="whitespace-nowrap font-bold">{money(p.price)}<span class="text-sm font-normal text-muted"> {PER[period]}</span></span>}
+                </div>
+                {p.summary && <p class="text-muted">{p.summary}</p>}
+                {p.includes.length > 0 && (
+                  <ul class="grid gap-2 p-0">
+                    {p.includes.map((x) => <li class="flex list-none items-start gap-2"><span class="mt-0.5 rounded-pill bg-accent p-0.5 text-accent-contrast"><Icon name="check" size={12} /></span><span>{x}</span></li>)}
+                  </ul>
+                )}
+                {p.free && p.freeNote && <p class="mt-auto text-sm text-muted">{p.freeNote}</p>}
+              </article>
+            ))}
+          </div>
+          {total != null && (
+            <div class="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 rounded-card bg-primary p-6 text-primary-contrast" data-testid="offer-total">
+              <span class="text-lg opacity-90">Total</span>
+              {pct != null && <s class="text-xl opacity-60" data-testid="offer-before">{money(listTotal!)}</s>}
+              <span class="font-display text-4xl font-extrabold">{total === 0 ? 'Gratis' : money(total)}</span>
+              {total > 0 && <span class="opacity-80">{PER[period]}</span>}
+              {pct != null && <span class="rounded-pill bg-primary-contrast/15 px-3 py-1 text-sm font-semibold" data-testid="offer-discount">−{pct} %</span>}
+              {total > 0 && taxNote && <span class="w-full text-center text-sm opacity-75">{taxNote}</span>}
+            </div>
+          )}
+          {footnote && <p class="text-center font-semibold">{t(footnote)}</p>}
+        </>
+      )}
+    </div>
+  </Section>
+</div>

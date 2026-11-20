@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { productFromRow } from './packages';
 import type { CrmDb } from './db';
 import type { Contact, CrmImport, PaymentRequest } from './types';
 import type { Activity } from './followup';
@@ -210,11 +211,7 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
     },
     async listProducts(t) {
       const rows = check(await sb.from('product').select('*').eq('tenant_id', t).order('position').limit(100)) ?? [];
-      return rows.map((r: Record<string, unknown>) => ({
-        id: r.id as string, key: r.key as string, name: r.name as string, summary: (r.summary as string) ?? null, includes: (r.includes as string[]) ?? [],
-        prices: { small: r.price_small == null ? null : Number(r.price_small), medium: r.price_medium == null ? null : Number(r.price_medium), large: r.price_large == null ? null : Number(r.price_large) },
-        currency: r.currency as string, period: r.period as 'month', freeAllowed: !!r.free_allowed, freeNote: (r.free_note as string) ?? null, position: Number(r.position ?? 0), active: !!r.active,
-      }));
+      return rows.map((r: Record<string, unknown>) => productFromRow(r));
     },
     async saveProduct(t, p, id) {
       const row = { tenant_id: t, key: p.key, name: p.name, summary: p.summary, includes: p.includes, price_small: p.prices.small, price_medium: p.prices.medium, price_large: p.prices.large,

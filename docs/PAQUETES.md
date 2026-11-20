@@ -35,7 +35,15 @@ Smoke: `scripts/smoke-packages.cjs`.
 - **Aprende → Paquetes y precios**: una tabla de precios por tamaño y cada paquete con lo que incluye y lo gratis,
   sacado del catálogo (siempre al día).
 
+- **Propuestas**: en el editor, «Paquetes»: tamaño del local, qué paquetes (y cuáles gratis) y el precio (el normal;
+  otro, solo un admin, como el precio a medida) → «Poner en la propuesta» añade la diapositiva «Paquetes»
+  (`packages-offer`) antes del precio, con lo que incluye cada uno, lo gratis con sus condiciones y el total (con el
+  descuento si lo hay). Es una FOTO del catálogo (operación `setPackages`, la monta el servidor): lo enviado no cambia si
+  luego cambian los precios, y los precios no se tocan a mano (setProps conserva la foto). Módulo en el catálogo de Enjoy:
+  migración 20270112. Smoke: `scripts/smoke-proposal-packages.cjs`.
+
 ## Siguiente
 
-- Propuestas y presentaciones con los paquetes (Fidelización aún no está).
+- Fidelización con su propia diapositiva visual (pases, sellos, el aviso «vuelve», las notificaciones): hacen falta
+  capturas o imágenes reales.
 - Cambiar el modelo de negocio con IA: contarlo y que proponga los cambios (paquetes, propuestas, Aprende).

@@ -4,6 +4,7 @@
  * vuelve a aplicar (defensa en profundidad); aquí además se exige que el dossier sea
  * del tenant del Host aunque el usuario pertenezca a varios.
  */
+import { cleanPicks, listPrice } from '../crm/packages';
 import { applyTranslations, overrideTexts, type TextTranslator } from '../i18n/translate';
 import { isText } from '../i18n/content';
 import { resolveItemPrice, resolveTotal } from '../pricing';
@@ -48,6 +49,9 @@ export const toRenderItem = (i: ItemRecord): RenderItem => ({
   priceOverride: i.priceOverride,
   currency: i.currency,
 });
+
+/** Lo que pone setPackages en la diapositiva «Paquetes» (no se cambia a mano). */
+const PACKAGE_SNAP_KEYS = ['packages', 'currency', 'period', 'total', 'listTotal', 'tier'] as const;
 
 export function toPublicDossier(d: DossierRecord, items: ItemRecord[]): PublicDossier {
   return {
@@ -118,6 +122,19 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     return it;
   }
 
+  /** Inserta un módulo en la posición idx (al final si no se dice); devuelve el id del item. */
+  async function insertAt(id: string, moduleVersionId: string, index?: number): Promise<string> {
+    const list = await items(id);
+    const idx = Math.min(index ?? list.length, list.length);
+    let position = tryRank(() => rankBetween(list[idx - 1]?.position ?? null, list[idx]?.position ?? null));
+    if (mustRebalance(list.map((i) => i.position), position)) {
+      const pos = rebalance(list.length + 1);
+      await db.updateItemPositions(list.map((it, k) => ({ id: it.id, position: pos[k < idx ? k : k + 1] })));
+      position = pos[idx];
+    }
+    return db.insertItem({ dossierId: id, moduleVersionId, position });
+  }
+
   async function assertWrote(ok: boolean | unknown) {
     if (!ok) throw new AdminError(403, 'Sin permiso para esta operación');
   }
@@ -128,6 +145,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       items(id), db.listCatalog(s.tenantId), db.listLinks([id]), db.listContacts([id]), partnerAccountOf(d),
       isPartner ? Promise.resolve([]) : db.listPriceOptions(s.tenantId).catch(() => []),
     ]);
+    const products = isPartner || !db.listProducts ? [] : (await db.listProducts(s.tenantId).catch(() => [])).filter((p) => p.active);
     const templates = d.segmentId ? await db.listProposalTemplates(s.tenantId, d.segmentId).catch(() => []) : [];
     // Las del sector de la propuesta, primero.
     const priceOptions = options.filter((o) => o.active || o.id === d.priceOptionId)
@@ -174,6 +192,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       priceOptions,
       payment: payUrl && chosen ? { url: payUrl, label: chosen.label } : null,
       customPrices: !isPartner && !pricesFromOptions,
+      products,
       templates: templates.map((x) => ({ ...x, mine: x.createdBy === s.userId })),
     };
   }
@@ -353,15 +372,35 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       case 'addItem': {
         const catalog = await db.listCatalog(s.tenantId);
         if (!catalog.some((v) => v.versionId === op.moduleVersionId)) throw new AdminError(422, 'Ese módulo no está publicado en el catálogo');
+        await insertAt(id, op.moduleVersionId, op.index);
+        break;
+      }
+      // Paquetes (docs/PAQUETES.md): una foto del catálogo en la diapositiva «Paquetes» (antes del precio). El precio sale
+      // del catálogo por tamaño; otro precio, solo un admin (como el precio a medida).
+      case 'setPackages': {
+        if (isPartner) throw new AdminError(403, 'Sin permiso para esta operación');
+        const cat = (db.listProducts ? await db.listProducts(s.tenantId) : []).filter((p) => p.active);
+        const picks = cleanPicks(op.packages, cat);
         const list = await items(id);
-        const idx = Math.min(op.index ?? list.length, list.length);
-        let position = tryRank(() => rankBetween(list[idx - 1]?.position ?? null, list[idx]?.position ?? null));
-        if (mustRebalance(list.map((i) => i.position), position)) {
-          const pos = rebalance(list.length + 1);
-          await db.updateItemPositions(list.map((it, k) => ({ id: it.id, position: pos[k < idx ? k : k + 1] })));
-          position = pos[idx];
+        const cur = list.find((i) => i.blockType === 'packages-offer');
+        if (!picks.length) { if (cur) await assertWrote(await db.deleteItem(cur.id)); break; }
+        const listTotal = listPrice(picks, cat, op.tier);
+        if (listTotal == null) throw new AdminError(422, 'Algún paquete no tiene precio para ese tamaño');
+        if (op.priceMode === 'custom' && pricesFromOptions) throw new AdminError(403, 'El precio lo fija tu empresa: otro precio, solo un admin');
+        if (op.priceMode === 'custom' && op.price == null) throw new AdminError(422, 'Pon el precio al mes');
+        const first = cat.find((p) => picks.some((x) => x.key === p.key))!;
+        const snap = {
+          packages: picks.map((x) => { const p = cat.find((c) => c.key === x.key)!; return { key: p.key, name: p.name, summary: p.summary, includes: p.includes, price: x.free ? 0 : p.prices[op.tier], free: x.free, freeNote: x.free ? p.freeNote : null }; }),
+          currency: first.currency, period: first.period, total: op.priceMode === 'custom' ? op.price : listTotal, listTotal, tier: op.tier,
+        };
+        let itemId = cur?.id;
+        if (!itemId) {
+          const v = (await db.listCatalog(s.tenantId)).filter((x) => x.blockType === 'packages-offer').sort((a, b) => b.version - a.version)[0];
+          if (!v) throw new AdminError(422, 'Falta el módulo «Paquetes» en el catálogo');
+          const at = list.findIndex((i) => i.blockType === 'pricing-card');
+          itemId = await insertAt(id, v.versionId, at < 0 ? undefined : at);
         }
-        await db.insertItem({ dossierId: id, moduleVersionId: op.moduleVersionId, position });
+        await assertWrote(await db.updateItem(itemId, { propOverrides: { ...(cur?.propOverrides ?? {}), ...snap } }));
         break;
       }
       case 'move': {
@@ -394,6 +433,10 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       }
       case 'setProps': {
         const it = itemOf(await items(id), op.itemId);
+        // Los paquetes y sus precios solo los pone setPackages (del catálogo): aquí se cambian los textos.
+        if (it.blockType === 'packages-offer') {
+          for (const k of PACKAGE_SNAP_KEYS) { if (k in it.propOverrides) op.propOverrides[k] = it.propOverrides[k]; else delete op.propOverrides[k]; }
+        }
         if (JSON.stringify(op.propOverrides).length > MAX_OVERRIDES_BYTES) throw new AdminError(422, 'Personalización demasiado grande');
         const r = resolveItem(toRenderItem({ ...it, propOverrides: op.propOverrides }), toPublicDossier(d, []), null);
         if (!r.ok) throw new AdminError(422, 'Contenido inválido para este módulo', [r.reason]);

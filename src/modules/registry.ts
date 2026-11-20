@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { heroPitchSchema } from './hero-pitch/schema';
 import { tabsShowcaseSchema } from './tabs-showcase/schema';
 import { pricingCardSchema } from './pricing-card/schema';
+import { packagesOfferSchema } from './packages-offer/schema';
 import { liveScreenSchema } from './live-screen/schema';
 import { phoneTourSchema } from './phone-tour/schema';
 import { problemSolutionSchema } from './problem-solution/schema';
@@ -37,6 +38,12 @@ export const REGISTRY = {
     schema: pricingCardSchema,
     example: { title: 'Propuesta para {company}', features: ['Incluido'] },
     load: () => import('./pricing-card/Component.astro'),
+  },
+  'packages-offer': {
+    label: 'Paquetes (lo que se propone)',
+    schema: packagesOfferSchema,
+    example: { title: 'Lo que te proponemos para {company}', packages: [{ key: 'ejemplo', name: 'Paquete', includes: ['Incluido'], price: 25, free: false }], total: 25, listTotal: 25 },
+    load: () => import('./packages-offer/Component.astro'),
   },
   'live-screen': {
     label: 'Pantalla en vivo (interactiva)',

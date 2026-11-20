@@ -549,6 +549,15 @@
       "name": "Qué recibe vuestro equipo",
       "description": "El informe: conclusiones por afirmación (mantener, reformular, documentar), los tres resultados posibles y un ejemplo.",
       "is_catalog": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000e1b0",
+      "tenant_id": "00000000-0000-4000-8000-000000000e01",
+      "key": "paquetes",
+      "block_type": "packages-offer",
+      "name": "Paquetes",
+      "description": "Los paquetes que le propones, con lo que incluye cada uno y el total.",
+      "is_catalog": true
     }
   ],
   "module_version": [
@@ -1400,6 +1409,19 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000e1b01",
+      "module_id": "00000000-0000-4000-8000-00000000e1b0",
+      "version": 1,
+      "status": "published",
+      "default_price": null,
+      "default_currency": "EUR",
+      "default_props": {
+        "eyebrow": "Para {company}",
+        "title": "Lo que te proponemos",
+        "subtitle": "Elige lo que quieres en tu local. Lo normal: 3 o 4 paquetes."
       }
     }
   ],

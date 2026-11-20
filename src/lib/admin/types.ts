@@ -216,6 +216,8 @@ export interface BuilderState {
   payment: { url: string; label: string } | null;
   /** Solo admins escriben un precio a medida. */
   customPrices: boolean;
+  /** Paquetes del espacio (docs/PAQUETES.md), para ponerlos en la propuesta. */
+  products?: import('../crm/packages').Product[];
 }
 
 // ---------------------------------------------------------------- gestión del tenant (admins)

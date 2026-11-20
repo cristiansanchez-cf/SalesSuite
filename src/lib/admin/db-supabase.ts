@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { productFromRow } from '../crm/packages';
 import type { Mailer } from '../notify/mailer';
 import { inviteEmail, loginCodeEmail } from './access-email';
 import { parseProposal } from '../proposal/preset';
@@ -149,6 +150,11 @@ function full(sb: SupabaseClient): AdminDb {
       const { data, error } = await sb.from('price_option').select('*').eq('tenant_id', tenantId);
       if (error) { if (/price_option/.test(error.message)) return []; throw new Error(error.message); }
       return (data ?? []).map(toPriceOption).sort((a, b) => a.position - b.position || a.amount - b.amount);
+    },
+    async listProducts(tenantId) {
+      const { data, error } = await sb.from('product').select('*').eq('tenant_id', tenantId).order('position');
+      if (error) { if (/product/.test(error.message)) return []; throw new Error(error.message); }
+      return (data ?? []).map((r: Row) => productFromRow(r));
     },
     async stripeWebhookStatus(tenantId) {
       return (check(await sb.rpc('stripe_webhook_status', { p_tenant: tenantId })) as string | null) ?? null;

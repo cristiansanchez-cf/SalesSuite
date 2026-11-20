@@ -56,6 +56,9 @@ export const builderOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('setSituation'), situation: situationSchema }),
   z.object({ op: z.literal('setAccount'), accountId: id.nullable() }),
   z.object({ op: z.literal('setCoupon'), couponId: id.nullable() }),
+  /** Paquetes (docs/PAQUETES.md): los elegidos, el tamaño y el precio (el normal; otro, solo un admin). [] = quitarlos. */
+  z.object({ op: z.literal('setPackages'), packages: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{1,39}(:free)?$/)).max(15),
+    tier: z.enum(['small', 'medium', 'large']).default('medium'), priceMode: z.enum(['list', 'custom']).default('list'), price: money.nullable().default(null) }),
   /** Monta la propuesta con la receta del sector: rehace la lista de módulos (docs/PROPOSAL_PRESETS.md). */
   /** Combinaciones guardadas: guardar lo elegido con nombre, aplicarla de golpe (modo, respuestas y tarifa), borrarla. */
   z.object({ op: z.literal('saveTemplate'), name: z.string().trim().min(1, 'Ponle un nombre').max(60) }),

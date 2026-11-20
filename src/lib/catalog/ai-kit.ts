@@ -15,6 +15,7 @@ export const TYPE_GUIDE: Record<BlockType, { use: string; special?: boolean }> =
   'hero-pitch': { use: 'Portada: titular grande, subtítulo y, si se quiere, palabras que rotan, botones y cifras.' },
   'tabs-showcase': { use: 'Varias cosas que enseñar (servicios, funciones, momentos) en pestañas, cada una con su texto, ventajas y una imagen o maqueta que cambia al pulsar. Mejor UNA diapositiva con pestañas que varias capturas sueltas.' },
   'pricing-card': { use: 'La inversión: título, lo que incluye y una nota final. El precio sale de la tarifa que elija el comercial.' },
+  'packages-offer': { use: 'Los paquetes que se le proponen (lo que incluye cada uno, su precio y el total). Los paquetes los pone el comercial desde el editor con el catálogo: aquí solo el título y las notas.', special: true },
   'problem-solution': { use: '«Lo que te pasa hoy»: de 1 a 4 tarjetas «hoy → con nosotros», y una nota.' },
   'case-study': { use: 'Un caso real con nombre (solo con permiso por escrito del cliente), su cita y una foto.' },
   'cost-math': { use: '«Lo que ya te cuesta»: el comercial mete las cifras del cliente y la diapositiva hace la cuenta.' },

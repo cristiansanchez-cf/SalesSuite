@@ -73,6 +73,8 @@ export interface AdminDb {
   listCatalog(tenantId: string): Promise<CatalogVersion[]>;
   /** Tarifas (migración 20261022; sin ella, lista vacía). */
   listPriceOptions(tenantId: string): Promise<PriceOption[]>;
+  /** Paquetes del espacio (docs/PAQUETES.md), para ponerlos en una propuesta. */
+  listProducts?(tenantId: string): Promise<import('../crm/packages').Product[]>;
   savePriceOption(tenantId: string, row: Omit<PriceOption, 'id'>, id?: string): Promise<string>;
   /** Webhook de Stripe del espacio: desde cuándo está conectado (nunca el secreto) y guardarlo (null = desconectar). */
   stripeWebhookStatus(tenantId: string): Promise<string | null>;

@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { productFromRow } from '../crm/packages';
 import { parseProposal } from '../proposal/preset';
 import { demoDb, type DemoDb, type DossierRow, type PartnerAccountRow, type PartnerProfileRow, type ShareLinkRow } from '../data/store';
 import type { AdminDb, AssetStore, Identity } from './db';
@@ -181,6 +182,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
         .map((o) => ({ id: o.id, label: o.label, amount: o.amount, currency: o.currency, period: o.period, paymentLink: o.payment_link, segmentId: o.segment_id, position: o.position, active: o.active, kind: o.kind ?? null, isDefault: !!o.is_default, quoteOnly: !!o.quote_only, note: o.note ?? null, size: o.size ?? null }))
         .sort((a, b) => a.position - b.position || a.amount - b.amount);
     },
+    async listProducts(tenantId) { return (db().product ?? []).filter((x) => x.tenant_id === tenantId).sort((a, b) => a.position - b.position).map((r) => productFromRow(r)); },
     async stripeWebhookStatus(tenantId) { return demoStripe.secrets.get(tenantId)?.at ?? null; },
     async setStripeWebhookSecret(tenantId, secret) {
       if (secret) demoStripe.secrets.set(tenantId, { secret, at: new Date().toISOString() }); else demoStripe.secrets.delete(tenantId);
