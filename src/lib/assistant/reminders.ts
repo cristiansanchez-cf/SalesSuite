@@ -60,6 +60,67 @@ export function namesLine(names: string[], locale: string): string {
 }
 
 export interface ReminderResult { sent: number; empty: number; skipped: number; failed: number }
+/** Qué ha pasado con el recordatorio de una persona (para «Probarlo ahora» en Mi cuenta). */
+export type ReminderOutcome =
+  | { status: 'sent'; items: number } | { status: 'empty'; told: boolean }
+  | { status: 'no-number' } | { status: 'no-template' } | { status: 'no-phone' } | { status: 'skipped' }
+  | { status: 'failed'; error: string };
+
+/** El recordatorio de una persona en una empresa (lo usa el cron y «Probarlo ahora»). */
+export async function remindOne(d: ReminderDeps, m: ReminderMember, day: string, settings?: Map<string, LeadSettings | null>): Promise<ReminderOutcome> {
+  if (!d.wa) return { status: 'no-number' };
+  const locale = msgLocale(m.locale ?? 'es');
+  let phoneId: string | null;
+  let template: string | undefined;
+  let emptyTemplate: string | undefined;
+  if (d.hub) {
+    phoneId = d.hub.phoneId;
+    template = d.hub.templates[locale] ?? d.hub.templates.es;
+    emptyTemplate = d.hub.empty?.[locale] ?? d.hub.empty?.es;
+  } else {
+    const cache = settings ?? new Map<string, LeadSettings | null>();
+    if (!cache.has(m.tenantId)) cache.set(m.tenantId, await d.settings(m.tenantId).catch(() => null));
+    const s = cache.get(m.tenantId);
+    phoneId = s?.whatsappPhoneId ?? null;
+    template = s?.whatsappTemplates?.reminder?.[locale] ?? s?.whatsappTemplates?.reminder?.es;
+  }
+  // Sin número o sin plantilla aprobada no se puede escribir primero: se espera (sin apuntarlo como hecho).
+  // El de Mi cuenta puede estar sin prefijo («699 00 01 11»): WhatsApp lo quiere completo.
+  const to = toE164(m.phone, { locale: m.locale ?? 'es' });
+  if (!phoneId) return { status: 'no-number' };
+  if (!template) return { status: 'no-template' };
+  if (!to) return { status: 'no-phone' };
+  try {
+    // Lo que cueste (la plantilla de WhatsApp) es de su espacio (docs/COSTES.md).
+    return await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, async (): Promise<ReminderOutcome> => {
+      const admin = await d.actAs(m.tenantId, m.userId);
+      if (!admin) return { status: 'skipped' };
+      const items = await reminderItems(admin);
+      if (!items.length) {
+        // Nada pendiente: si hay plantilla para eso, se le dice («hoy no tienes nada pendiente»); si no, nada.
+        if (emptyTemplate) await d.wa!.sendTemplate(phoneId!, to, emptyTemplate, locale, [firstName(m.name) || '👋']);
+        await d.db.mark(m.userId, m.tenantId, day, 0);
+        return { status: 'empty', told: !!emptyTemplate };
+      }
+      await d.wa!.sendTemplate(phoneId!, to, template!, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
+      // La conversación queda esperando su «sí» (o lo que diga).
+      const conv = await d.assistant.get(m.tenantId, m.userId);
+      await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items } }, conv.version);
+      await d.db.mark(m.userId, m.tenantId, day, items.length);
+      if (d.hub) {
+        // Su «sí» va a esta empresa: queda elegida para hoy.
+        const prev = await d.assistant.session(m.userId).catch(() => null);
+        await d.assistant.saveSession(m.userId, { tenantId: m.tenantId, chosenAt: d.now.toISOString(), askedAt: null, pending: prev?.pending ?? [] });
+      }
+      return { status: 'sent', items: items.length };
+    });
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e);
+    console.error('[reminders]', error);
+    return { status: 'failed', error };
+  }
+}
+
 export async function runReminders(d: ReminderDeps): Promise<ReminderResult> {
   const r: ReminderResult = { sent: 0, empty: 0, skipped: 0, failed: 0 };
   if (!d.wa) return r;
@@ -80,47 +141,11 @@ export async function runReminders(d: ReminderDeps): Promise<ReminderResult> {
     const { day, hour } = localClock(d.now, m.timezone);
     if (hour < REMIND_FROM || hour >= REMIND_TO || logged.has(`${m.userId}|${m.tenantId}|${day}`)) continue;
     if (d.hub && userDay.has(`${m.userId}|${day}`)) continue;
-    const locale = msgLocale(m.locale ?? 'es');
-    let phoneId: string | null;
-    let template: string | undefined;
-    if (d.hub) {
-      phoneId = d.hub.phoneId;
-      template = d.hub.templates[locale] ?? d.hub.templates.es;
-    } else {
-      if (!settings.has(m.tenantId)) settings.set(m.tenantId, await d.settings(m.tenantId).catch(() => null));
-      const s = settings.get(m.tenantId);
-      phoneId = s?.whatsappPhoneId ?? null;
-      template = s?.whatsappTemplates?.reminder?.[locale] ?? s?.whatsappTemplates?.reminder?.es;
-    }
-    // Sin número o sin plantilla aprobada no se puede escribir primero: se espera (sin apuntarlo como hecho).
-    // El de Mi cuenta puede estar sin prefijo («699 00 01 11»): WhatsApp lo quiere completo.
-    const to = toE164(m.phone, { locale: m.locale ?? 'es' });
-    if (!phoneId || !template || !to) { r.skipped++; continue; }
-    try {
-      // Lo que cueste (la plantilla de WhatsApp) es de su espacio (docs/COSTES.md).
-      const out = await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, async (): Promise<'sent' | 'empty' | 'skipped'> => {
-        const admin = await d.actAs(m.tenantId, m.userId);
-        if (!admin) return 'skipped';
-        const items = await reminderItems(admin);
-        if (!items.length) { await d.db.mark(m.userId, m.tenantId, day, 0); return 'empty'; }
-        await d.wa!.sendTemplate(phoneId!, to, template!, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
-        // La conversación queda esperando su «sí» (o lo que diga).
-        const conv = await d.assistant.get(m.tenantId, m.userId);
-        await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items } }, conv.version);
-        await d.db.mark(m.userId, m.tenantId, day, items.length);
-        if (d.hub) {
-          // Su «sí» va a esta empresa: queda elegida para hoy.
-          const prev = await d.assistant.session(m.userId).catch(() => null);
-          await d.assistant.saveSession(m.userId, { tenantId: m.tenantId, chosenAt: d.now.toISOString(), askedAt: null, pending: prev?.pending ?? [] });
-          userDay.add(`${m.userId}|${day}`);
-        }
-        return 'sent';
-      });
-      r[out]++;
-    } catch (e) {
-      console.error('[reminders]', e instanceof Error ? e.message : e);
-      r.failed++;
-    }
+    const out = await remindOne(d, m, day, settings);
+    if (out.status === 'sent') { r.sent++; if (d.hub) userDay.add(`${m.userId}|${day}`); }
+    else if (out.status === 'empty') r.empty++;
+    else if (out.status === 'failed') r.failed++;
+    else r.skipped++;
   }
   return r;
 }

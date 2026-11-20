@@ -5,6 +5,7 @@
  *
  *   ASSISTANT_WHATSAPP_PHONE_ID      el phone_number_id del número del asistente en Meta
  *   ASSISTANT_REMINDER_TEMPLATES     opcional: «es=nombre,en=nombre,fr=nombre» (por defecto, equipo_recordatorio_<idioma>)
+ *   ASSISTANT_REMINDER_EMPTY_TEMPLATES opcional: «es=nombre,…» de la plantilla «hoy no tienes nada pendiente» (sin ella, esos días no se manda nada)
  *   ASSISTANT_WHATSAPP_TOKEN         opcional: si el número está en otra cartera de Meta con su propio token
  *   ASSISTANT_WHATSAPP_APP_SECRET    opcional: si el número está en otra app de Meta (para comprobar la firma)
  */
@@ -12,7 +13,7 @@ import { env } from '../env';
 import { cloudWhatsApp, type WhatsApp } from '../leads/whatsapp';
 
 export type HubLocale = 'es' | 'en' | 'fr';
-export interface HubConfig { phoneId: string; templates: Record<HubLocale, string> }
+export interface HubConfig { phoneId: string; templates: Record<HubLocale, string>; empty?: Partial<Record<HubLocale, string>> }
 
 export function parseTemplates(raw: string | undefined): Record<HubLocale, string> {
   const t: Record<HubLocale, string> = { es: 'equipo_recordatorio_es', en: 'equipo_recordatorio_en', fr: 'equipo_recordatorio_fr' };
@@ -23,10 +24,21 @@ export function parseTemplates(raw: string | undefined): Record<HubLocale, strin
   return t;
 }
 
+/** «es=nombre,en=nombre» → solo los que vengan (sin valores por defecto). */
+export function parseNamed(raw: string): Partial<Record<HubLocale, string>> {
+  const t: Partial<Record<HubLocale, string>> = {};
+  for (const part of raw.split(',')) {
+    const [k, v] = part.split('=').map((x) => x?.trim() ?? '');
+    if ((k === 'es' || k === 'en' || k === 'fr') && /^[a-z0-9_]{1,512}$/.test(v)) t[k] = v;
+  }
+  return t;
+}
+
 export function hubConfig(): HubConfig | null {
   const phoneId = env('ASSISTANT_WHATSAPP_PHONE_ID')?.trim();
   if (!phoneId || !/^\d{5,30}$/.test(phoneId)) return null;
-  return { phoneId, templates: parseTemplates(env('ASSISTANT_REMINDER_TEMPLATES')) };
+  const raw = env('ASSISTANT_REMINDER_EMPTY_TEMPLATES');
+  return { phoneId, templates: parseTemplates(env('ASSISTANT_REMINDER_TEMPLATES')), ...(raw ? { empty: parseNamed(raw) } : {}) };
 }
 
 /** El cliente de WhatsApp del número del asistente: con su token si lo tiene; si no, el de la plataforma. */

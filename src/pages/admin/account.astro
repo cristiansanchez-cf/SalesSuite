@@ -1,4 +1,6 @@
 ---
+import { testReminder } from '~/lib/assistant/server';
+import { remindTestMessages } from '~/lib/i18n/messages/remindTest';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { demoDb } from '~/lib/data/store';
 import PageHeader from '~/components/ui/PageHeader.astro';
@@ -48,6 +50,7 @@ let contactMsg: { ok?: string; error?: string } = {};
 let phonesMsg: { ok?: string; error?: string } = {};
 let localeOk = false;
 let calMsg: { ok?: string; error?: string } = {};
+let waTest: { ok?: string; info?: string; error?: string; hint?: string } | null = null;
 if (form?.get('action') === 'locale') {
   const l = String(form.get('locale') ?? '');
   if (isLocale(l)) {
@@ -85,6 +88,13 @@ if (form?.get('action') === 'locale') {
   }
   phonesMsg.error ??= undefined;
   if (!phonesMsg.error) phonesMsg = { ok: m.account.phonesSaved };
+} else if (form?.get('action') === 'wa-test') {
+  // «Probarlo ahora»: el recordatorio de la mañana ya, y qué ha pasado (docs/ASSISTANT.md §Recordatorios).
+  const RT = remindTestMessages[locale];
+  const o = await testReminder(admin).catch((e) => ({ status: 'failed' as const, error: e instanceof Error ? e.message : String(e) }));
+  waTest = o.status === 'sent' ? { ok: RT.sent(o.items) } : o.status === 'empty' ? { info: o.told ? RT.emptyTold : RT.empty }
+    : o.status === 'failed' ? { error: RT.failed(o.error), hint: RT.templateHint } : o.status === 'no-template' ? { error: RT.noTemplate, hint: RT.templateHint }
+    : { error: o.status === 'off' ? RT.off : o.status === 'no-number' ? RT.noNumber : o.status === 'no-phone' ? RT.noPhone : RT.skipped };
 } else if (form?.get('action') === 'calendar') {
   // Calendario (docs/CALENDAR.md): conectar (crea el enlace), cambiarlo o desconectar.
   const CL = calendarMessages[locale];
@@ -306,6 +316,21 @@ const calUrl = calToken ? `${requestOrigin(Astro.request, Astro.url)}/cal/${calT
       <button class="co-btn co-btn--ghost w-fit" type="submit">{m.account.notifySave}</button>
     </form>
   )}
+  {!setup && admin.session.role !== 'partner' && waRemind && (() => {
+    const RT = remindTestMessages[locale];
+    return (
+      <form method="post" class="co-card mt-3 grid max-w-lg gap-2" data-testid="wa-test">
+        <input type="hidden" name="action" value="wa-test" />
+        {waTest?.ok && <Alert kind="success" title={waTest.ok} />}
+        {waTest?.info && <Alert kind="info" title={waTest.info} />}
+        {waTest?.error && <Alert kind="rejection" title={waTest.error} details={waTest.hint ? [waTest.hint] : []} />}
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="co-btn co-btn--ghost co-btn--sm" data-testid="wa-test-run"><Icon name="whatsapp" size={14} />{RT.button}</button>
+          <span class="co-help">{RT.help}</span>
+        </div>
+      </form>
+    );
+  })()}
   {!setup && (
     <form method="post" id="idioma" class="co-card mt-6 grid max-w-lg gap-4" data-testid="locale-pref">
       <input type="hidden" name="action" value="locale" />

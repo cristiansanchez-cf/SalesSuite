@@ -592,6 +592,32 @@ describe('de punta a punta (demo)', () => {
   });
 });
 
+describe('«Probarlo ahora»: qué ha pasado con el recordatorio', () => {
+  const ENJOY = '00000000-0000-4000-8000-000000000e01';
+  const REP = '11111111-1111-4111-8111-111111111111';
+  beforeEach(() => { resetDemoDb(); resetDemoAssistant(); demoReminderLog().clear(); process.env.AI_RESEARCH_FIXTURE = '1'; demoDb().users.find((u) => u.id === REP)!.phone = '699 00 01 11'; });
+  test('sin nada en Hoy: nada (o el aviso «nada pendiente» si hay plantilla); Meta lo rechaza: se ve el motivo', async () => {
+    const { remindOne } = await import('./reminders');
+    const sentT: unknown[][] = [];
+    const ok = { async sendTemplate(...a: unknown[]) { sentT.push(a); return { id: null }; } };
+    const bad = { async sendTemplate() { throw new Error('WhatsApp 404: Template name does not exist in the translation (132001)'); } };
+    const actAs = async (t: string, u: string) => { const tenant = await publicRepository().resolveTenantBySlug('enjoy'); return tenant && t === ENJOY ? contextAs(tenant, u) : null; };
+    const m = { tenantId: ENJOY, userId: REP, phone: '699 00 01 11', name: 'Comercial Enjoy', locale: 'es', timezone: 'Europe/Madrid' };
+    for (const a of demoDb().account) a.next_step_at = null;
+    demoDb().crm_activity = [];
+    const hub = { phoneId: '999', templates: { es: 'equipo_recordatorio_es', en: 'x', fr: 'y' } };
+    const d = (wa: unknown, h: typeof hub & { empty?: Record<string, string> } = hub) => ({ db: demoReminderDb(), assistant: demoAssistantDb(), wa: wa as never, now: new Date(), settings: async () => null, actAs, hub: h });
+    expect(await remindOne(d(ok), m, '2026-11-20')).toEqual({ status: 'empty', told: false });
+    expect(sentT).toHaveLength(0);
+    expect(await remindOne(d(ok, { ...hub, empty: { es: 'equipo_sin_pendientes_es' } }), m, '2026-11-21')).toEqual({ status: 'empty', told: true });
+    expect(sentT[0]![2]).toBe('equipo_sin_pendientes_es');
+    demoDb().account.find((a) => a.tenant_id === ENJOY && a.owner_id === REP)!.next_step_at = new Date(Date.now() - 86_400_000).toISOString();
+    const r = await remindOne(d(bad), m, '2026-11-22');
+    expect(r).toMatchObject({ status: 'failed' });
+    expect((r as { error: string }).error).toContain('132001');
+  });
+});
+
 describe('un número para todas las empresas (docs/ASSISTANT.md)', () => {
   const ENJOY = '00000000-0000-4000-8000-000000000e01';
   const ALT = '00000000-0000-4000-8000-000000000a01';

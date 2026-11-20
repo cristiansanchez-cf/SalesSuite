@@ -134,6 +134,18 @@ uno.
   web. En la ficha se pinta como un chat (lib/crm/convo.ts + components/admin/ChatThread.astro): el resumen arriba, los
   3 últimos mensajes y «Ver conversación entera», un modal con lo último abajo y «Cargar anteriores» de 40 en 40.
 
+### Recordatorio de la mañana: por qué no llega
+
+- **«Probarlo ahora»** (Mi cuenta, debajo de los avisos, con el recordatorio activado): lo manda ya, sin esperar a las
+  9 ni mirar si ya salió hoy, y dice en pantalla qué ha pasado (`testReminder` → `remindOne`): enviado (con cuántos),
+  nada en «Hoy», sin activar o sin móvil, sin número del asistente en el servidor, sin plantilla, o el error tal cual de
+  Meta (p. ej. «Template name does not exist… (132001)»: falta crear o aprobar `equipo_recordatorio_es` en la cuenta de
+  WhatsApp «Asistente CRM»).
+- **Sin nada en «Hoy»** no se manda nada. Para decirle «hoy no tienes nada pendiente», una plantilla más (Utility, con
+  `{{1}}` = nombre) y `ASSISTANT_REMINDER_EMPTY_TEMPLATES="es=equipo_sin_pendientes_es"` en Vercel.
+- El cron lanza los recordatorios con el número del asistente aunque no esté el WhatsApp de los leads (`WHATSAPP_TOKEN`):
+  antes hacía falta ese token aunque el asistente tuviera el suyo.
+
 ## Técnica
 
 - Webhook `POST /api/v1/whatsapp/webhook`: separa lo del equipo y lo procesa en segundo plano (`waitUntil`) para

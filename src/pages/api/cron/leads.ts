@@ -7,6 +7,7 @@ import { purgeDue } from '~/lib/leads/privacy';
 import { runReminders } from '~/lib/assistant/reminders';
 import { reminderDeps } from '~/lib/assistant/server';
 import { leadsRuntime } from '~/lib/leads/server';
+import { hubConfig } from '~/lib/assistant/hub-config';
 
 /**
  * Cola de envíos de los leads (docs/LEADS.md §Envíos): cada minuto, con `Authorization: Bearer $CRON_SECRET`
@@ -30,7 +31,8 @@ export const GET: APIRoute = async ({ request }) => {
   try { purged = (await purgeDue(rt.privacy, rt.db, now, rt.secret)).length; } catch (e) { console.error('[leads] borrado diario', e instanceof Error ? e.message : e); }
   // Recordatorios por WhatsApp de la mañana (docs/ASSISTANT.md §Recordatorios): cada 10 minutos basta.
   let reminders = 0;
-  if (rt.whatsapp && (now.getUTCMinutes() % 10 === 0 || new URL(request.url).searchParams.get('reminders') === 'force')) {
+  // Con el número del asistente vale aunque no esté el WhatsApp de los leads (tiene su propio token).
+  if ((rt.whatsapp || hubConfig()) && (now.getUTCMinutes() % 10 === 0 || new URL(request.url).searchParams.get('reminders') === 'force')) {
     try {
       const deps = await reminderDeps(rt.whatsapp, (t) => rt.db.settings(t), now);
       if (deps) reminders = (await runReminders(deps)).sent;

@@ -57,3 +57,21 @@ export async function reminderDeps(wa: WhatsApp | null, leadsSettings: (tenantId
   const hub = hubConfig();
   return { db: rdb, assistant: db, wa: hub ? hubWhatsApp(wa) : wa, now, settings: leadsSettings, actAs: base.actAs, hub };
 }
+
+/**
+ * «Probarlo ahora» (Mi cuenta): el recordatorio de la mañana de esta persona, ya, sin esperar a las 9 ni mirar si ya
+ * se mandó hoy, y qué ha pasado (para ver por qué no llega sin mirar los registros del servidor).
+ */
+export async function testReminder(admin: import('../admin/auth').AdminContext, now = new Date()): Promise<import('./reminders').ReminderOutcome | { status: 'off' }> {
+  const { leadsRuntime } = await import('../leads/server');
+  const { remindOne } = await import('./reminders');
+  const { localClock } = await import('../notify/daily');
+  const rt = await leadsRuntime();
+  const wa = 'error' in rt ? null : rt.whatsapp;
+  const d = await reminderDeps(wa, (t) => ('error' in rt ? Promise.resolve(null) : rt.db.settings(t)), now);
+  if (!d || !d.wa) return { status: 'no-number' };
+  const mine = (await d.db.members()).filter((m) => m.userId === admin.session.userId);
+  if (!mine.length) return { status: 'off' };
+  const m = mine.find((x) => x.tenantId === admin.session.tenantId) ?? mine[0]!;
+  return remindOne(d, m, localClock(now, m.timezone).day);
+}
