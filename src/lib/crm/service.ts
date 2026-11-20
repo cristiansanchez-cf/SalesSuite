@@ -1099,7 +1099,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   /** Clientes: las empresas ganadas (por pago o acuerdo), con su acuerdo vigente. El comercial ve las suyas. */
   async function clients(o: { all?: boolean } = {}) {
     requireUse();
-    const rows = (await accounts.listAccounts(t, { status: 'customer', ownerId: o.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 })).filter((a) => a.tenantId === t);
+    // Las descartadas (dejó de ser cliente) salen de Clientes: van a «Descartadas» con su motivo.
+    const rows = (await accounts.listAccounts(t, { status: 'customer', ownerId: o.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 })).filter((a) => a.tenantId === t && !a.discardedAt);
     const ids = rows.map((a) => a.id);
     const [ags, last, team] = await Promise.all([
       db.listAgreements && ids.length ? db.listAgreements(t, ids).catch(() => []) : Promise.resolve([]),
@@ -1939,6 +1940,15 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const note = has('reason') ? v.note ?? null : a.discardNote;
     try { await accounts.classify(accountId, v.kind ?? null, reason, note); } catch (e) { mapError(e); }
   }
+  /** Descartar varias a la vez (lista): con su motivo y nota; las que no son suyas (sin permiso) se saltan. */
+  async function discardMany(ids: string[], reason: string, note: string | null) {
+    requireUse();
+    let n = 0;
+    for (const id of [...new Set(ids)].slice(0, 500)) {
+      try { await classifyAccount(id, { reason, note }); n++; } catch { /* la que no se puede, se salta */ }
+    }
+    return n;
+  }
   /** Cambiar el tipo de varias a la vez (lista, §42): solo el tipo; lo descartado sigue descartado. */
   async function setKindMany(ids: string[], kind: string) {
     requireUse();
@@ -2149,7 +2159,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

@@ -42,5 +42,16 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.selectOption('[data-testid=bulk-assign-to]', { label: 'Comercial Enjoy' });
   await Promise.all([p.waitForURL(/ok=assigned/), p.click('[data-testid=bulk-assign-confirm]')]);
   assert((await p.textContent('body')).includes('2 empresas asignadas a Comercial Enjoy'), 'asignadas en bloque');
+  // Descartar en bloque, con motivo: salen de la lista y van a «Descartadas».
+  await p.goto(`${BASE}/admin/accounts?ver=all`);
+  const before = await p.locator('[data-bulk]').count();
+  await p.locator('[data-bulk]').nth(0).check();
+  await p.click('[data-testid=bulk-discard]');
+  await p.click('label:has([data-testid=bulk-discard-reason-not_interested])');
+  await p.fill('[data-testid=bulk-discard-note]', 'Prueba: no les interesa');
+  await Promise.all([p.waitForURL(/ok=discarded/), p.click('[data-testid=bulk-discard-confirm]')]);
+  assert((await p.locator('[data-bulk]').count()) === before - 1, 'descartada en bloque: sale de la lista');
+  await p.goto(`${BASE}/admin/accounts?ver=all&tipo=descartadas`);
+  assert((await p.textContent('body')).includes('No les interesa'), 'en «Descartadas» con su motivo');
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

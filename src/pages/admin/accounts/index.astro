@@ -1,4 +1,5 @@
 ---
+import { DISCARD_REASONS } from '~/lib/accounts/types';
 import ZonePicker from '~/components/crm/ZonePicker.astro';
 import GroupPicker from '~/components/crm/GroupPicker.astro';
 /**
@@ -67,6 +68,10 @@ if (Astro.request.method === 'POST') {
           .catch((e) => console.warn('[alta] grupo', e instanceof Error ? e.message : e));
       }
       to = `/admin/accounts/${id}?ok=created`;
+    } else if (f.getAll('action').includes('discard-many')) {
+      // Descartar en bloque, con motivo y nota (va antes que «mover»: mismo formulario de la barra).
+      const n = await admin.crm.discardMany(f.getAll('ids').map(String), str('reason'), str('note') || null);
+      to = `/admin/accounts?ok=discarded&n=${n}`;
     } else if (f.getAll('action').includes('kind-many')) {
       // Cambiar tipo en bloque (§42): va antes que «mover» (mismo formulario de la barra).
       const n = await admin.crm.setKindMany(f.getAll('ids').map(String), str('newKind'));
@@ -163,7 +168,7 @@ const wa = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 const team = perms.manageAccounts ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner')
   .map((x) => ({ id: x.userId, label: x.userId === admin.session.userId ? M.bulkAssignMe(x.displayName || x.email) : x.displayName || x.email }))
   .sort((a, b) => Number(b.id === admin.session.userId) - Number(a.id === admin.session.userId) || a.label.localeCompare(b.label, locale)) : [];
-const okMsg = flash(Astro.url, { assigned: M.bulkAssigned(Number(Astro.url.searchParams.get('n')) || 0, team.find((x) => x.id === Astro.url.searchParams.get('a'))?.label.replace(/^.*\((.*)\)$/, '$1') ?? '—'), moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
+const okMsg = flash(Astro.url, { discarded: CL.discardedMany(Number(Astro.url.searchParams.get('n')) || 0), assigned: M.bulkAssigned(Number(Astro.url.searchParams.get('n')) || 0, team.find((x) => x.id === Astro.url.searchParams.get('a'))?.label.replace(/^.*\((.*)\)$/, '$1') ?? '—'), moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
 const QUALITY: Array<[string, string]> = ([['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]] as Array<[string, string]>).filter(([k]) => qual || k === 'enfria' || k === 'ia');
@@ -382,6 +387,7 @@ const panelOpen = nFilters > 0;
     <button type="submit" class="co-btn co-btn--ghost co-btn--sm" formaction="/admin/accounts/unir" formmethod="get" formnovalidate hidden data-bulk-merge data-testid="bulk-merge"><Icon name="layers" size={14} />{MG.bulk}</button>
     {kindDefs.length > 1 && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-kind" data-testid="bulk-kind"><Icon name="tag" size={14} />{CL.changeKind}</button>}
     {team.length > 0 && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-assign" data-testid="bulk-assign"><Icon name="users" size={14} />{M.bulkAssign}</button>}
+    <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-discard" data-testid="bulk-discard"><Icon name="archive" size={14} />{CL.discard}</button>
     <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-dialog-open="bulk-release" data-testid="bulk-release"><Icon name="log-out" size={14} />{M.bulkRelease}</button>
     <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-clear>{P.bulk.clear}</button>
     {kindDefs.length > 1 && (
@@ -412,6 +418,22 @@ const panelOpen = nFilters > 0;
         </div>
       </dialog>
     )}
+    <dialog id="bulk-discard" class="co-dialog" aria-labelledby="bulk-discard-title">
+      <div class="co-dialog__body">
+        <h2 id="bulk-discard-title" class="co-entity">{CL.discard}</h2>
+        <p class="co-body">{CL.discardBody}</p>
+        <fieldset class="grid gap-1.5"><legend class="co-field mb-1">{CL.reason}</legend>
+          <div class="flex flex-wrap gap-2">
+            {DISCARD_REASONS.map((r, i) => <label class="co-chip discard-reason"><input type="radio" class="sr-only" name="reason" value={r} checked={i === 0} data-testid={`bulk-discard-reason-${r}`} />{CL.reasons[r]}</label>)}
+          </div>
+        </fieldset>
+        <label class="co-field">{CL.note}<input class="co-input" name="note" maxlength="500" placeholder={CL.notePh} data-testid="bulk-discard-note" /></label>
+      </div>
+      <div class="co-dialog__foot">
+        <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{S.ui.cancel}</button>
+        <button class="co-btn co-btn--primary" type="submit" name="action" value="discard-many" formnovalidate data-testid="bulk-discard-confirm">{CL.discard}</button>
+      </div>
+    </dialog>
     <dialog id="bulk-release" class="co-dialog" aria-labelledby="bulk-release-title">
       <div class="co-dialog__body">
         <h2 id="bulk-release-title" class="co-entity">{M.bulkReleaseTitle}</h2>
@@ -506,3 +528,6 @@ const panelOpen = nFilters > 0;
     </form>
   </dialog>
 </AdminLayout>
+<style>
+  .discard-reason:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
+</style>

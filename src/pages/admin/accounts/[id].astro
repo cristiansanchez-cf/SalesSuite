@@ -330,7 +330,7 @@ const STATE_ALERT = {
           {([['facts', '#facts'], ['qual', '#qual'], ['follow', '#follow'], ['people', '#acc-people'], ['data', '#company-contact']] as const).filter(([k]) => qual || k !== 'qual').map(([k, h]) => (
             <a class="co-chip whitespace-nowrap !no-underline" href={h}>{k === 'qual' && isGroup ? PS.group.jump : PS.summary.jump[k]}</a>))}
         </nav>
-        {canQualify && !a.discardedAt && a.state !== 'customer' && a.state !== 'my_customer' && (
+        {canQualify && !a.discardedAt && (
           <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
         )}
       </section>
