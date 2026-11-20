@@ -75,7 +75,9 @@ jobs:
       - uses: supabase/setup-cli@v1
         if: ${{ inputs.what == 'migraciones' || inputs.what == 'las-dos' }}
         with:
-          version: latest
+          # Versión fija: con «latest» la acción pregunta a la API de GitHub y a veces falla por límite («rate limit
+          # exceeded») antes de empezar. 3.2.0 es la que aplicó las migraciones del 20 nov 2026.
+          version: 3.2.0
 
       - name: Migraciones (qué se aplicaría)
         if: ${{ (inputs.what == 'migraciones' || inputs.what == 'las-dos') && inputs.dry_run }}

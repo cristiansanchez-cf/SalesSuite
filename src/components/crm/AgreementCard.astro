@@ -129,7 +129,7 @@ const inline = embedded && !customer && !active && !pending;
           </div>
           <p class="co-help m-0">{C.checkinHelp}{!canDecide && ` ${C.proposeHelp}`}</p>
           <button class="co-btn co-btn--primary w-fit" data-testid="agreement-save">{withPkgs ? (!canDecide ? P.proposeBtn : customer || active ? C.saveChange : P.closeBtn) : !canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
-          {withPkgs && <p class="co-help m-0">{canDecide ? P.closeHelp : P.proposeHelp}</p>}
+          {withPkgs && !canDecide && <p class="co-help m-0">{P.proposeHelp}</p>}
         </form>
       </details>
     )}
