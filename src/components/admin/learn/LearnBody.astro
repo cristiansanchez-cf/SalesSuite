@@ -13,12 +13,13 @@ import { isBlockType } from '~/modules/registry';
 import { i18n } from '~/lib/i18n';
 import { playbookMessages } from '~/lib/i18n/messages/playbook';
 import { learnMessages } from '~/lib/i18n/messages/learn';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
 
 interface Props { ok?: string | null }
 const { admin } = Astro.locals;
 if (!admin) return null;
 const pb = admin.playbook;
-const [idx, market] = await Promise.all([pb.learnIndex(), pb.market()]);
+const [idx, market, pkgs] = await Promise.all([pb.learnIndex(), pb.market(), admin.crm.products().catch(() => [])]);
 const { m: pm, f, locale } = i18n(Astro, playbookMessages);
 const m = learnMessages[locale];
 const date = (iso: string) => f.date(iso, { day: 'numeric', month: 'short' });
@@ -128,6 +129,18 @@ const step = () => `0${++n}`;
           </span>
         </a>
       </section>
+    )}
+
+    {/* Paquetes y precios (docs/PAQUETES.md): lo que vendemos y cuánto cuesta, siempre al día con Tarifas. */}
+    {pkgs.length > 0 && (
+      <a href="/admin/learn/paquetes" class="co-card co-card--link !flex min-w-0 items-center gap-4 !p-5 sm:gap-5 sm:!p-6" data-testid="learn-packages">
+        <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]"><Icon name="wallet" size={22} /></span>
+        <span class="grid min-w-0 flex-1 gap-1">
+          <span class="co-entity">{packagesMessages[locale].learnTitle}</span>
+          <span class="co-meta truncate">{pkgs.map((p) => p.name).join(' · ')}</span>
+        </span>
+        <Icon name="chevron-right" size={18} />
+      </a>
     )}
 
     {idx.topics.length > 0 && (

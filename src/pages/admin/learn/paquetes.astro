@@ -1,0 +1,54 @@
+---
+/**
+ * Aprende → Paquetes y precios (docs/PAQUETES.md): lo que vendemos y cuánto cuesta, sacado del catálogo (Tarifas →
+ * Paquetes): siempre al día. Cada paquete con lo que incluye, su precio por tamaño y si puede ir gratis.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { TIERS } from '~/lib/crm/packages';
+import { i18n } from '~/lib/i18n';
+import { packagesMessages } from '~/lib/i18n/messages/packages';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const { m: P, f } = i18n(Astro, packagesMessages);
+const pkgs = await admin.crm.products().catch(() => []);
+if (!pkgs.length) return Astro.redirect('/admin/learn', 303);
+const money = (n: number, cur: string) => f.money(Math.round(n * 100), cur);
+const canEdit = admin.session.role === 'admin';
+---
+<AdminLayout title={P.learnTitle} wide>
+  <div class="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-8 pb-10">
+    <header class="grid gap-3">
+      <a class="co-meta inline-flex w-fit items-center gap-1" href="/admin/learn"><Icon name="chevron-left" size={14} />Aprende</a>
+      <h1 class="co-page-title !text-5xl">{P.learnTitle}</h1>
+      <p class="co-lede !text-lg">{P.learnLede}</p>
+      {canEdit && <a class="co-btn co-btn--ghost co-btn--sm w-fit" href="/admin/prices#paquetes">{P.edit}</a>}
+    </header>
+
+    <div class="overflow-x-auto" data-scroll-x>
+      <table class="w-full min-w-[28rem] text-left" data-testid="learn-price-table">
+        <thead><tr class="co-meta text-sm"><th class="py-2 pr-3 font-normal"></th>{TIERS.map((t) => <th class="py-2 pr-3 font-normal">{P.tiers[t]}</th>)}</tr></thead>
+        <tbody>
+          {pkgs.map((p) => (
+            <tr class="border-t border-[var(--console-divider)]">
+              <td class="py-2 pr-3 font-semibold">{p.name}</td>
+              {TIERS.map((t) => <td class="py-2 pr-3">{p.prices[t] == null ? '—' : `${money(p.prices[t]!, p.currency)}/${P.periods[p.period]}`}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2" data-testid="learn-packages-list">
+      {pkgs.map((p) => (
+        <article class="co-card grid content-start gap-3 !p-6" data-key={p.key}>
+          <h2 class="co-entity !text-2xl">{p.name}</h2>
+          {p.summary && <p class="co-lede m-0">{p.summary}</p>}
+          {p.includes.length > 0 && <ul class="m-0 grid gap-1.5 pl-5">{p.includes.map((x) => <li>{x}</li>)}</ul>}
+          {p.freeAllowed && <p class="m-0 rounded-xl bg-[color:var(--co-signal-soft)] p-3 text-sm"><strong>{P.learnFree}.</strong> {p.freeNote}</p>}
+        </article>
+      ))}
+    </div>
+  </div>
+</AdminLayout>

@@ -10,7 +10,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
-import { cleanPicks, describe, freeNotes, listPrice, pickStr, tierOf, type Product } from './packages';
+import { catalogText, cleanPicks, describe, freeNotes, listPrice, pickStr, tierOf, type Product } from './packages';
 import { isOpen, TRIAL_STEP, trialEnd, trialEndFrom, trialReminderDay, type Trial } from './trial';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
@@ -1657,10 +1657,17 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const accFields = (await fields()).filter((f) => f.target === 'account' && !f.archivedAt);
     const forAi = accFields.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options.map((o) => o.label) }));
     // Sin cualificación en el espacio (§45), la IA solo saca lo general y habla con los tipos del espacio.
-    const [pack, ks] = await Promise.all([qualPack(), kinds()]);
-    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, clients: ctx.clients ?? [], fields: forAi, pack, kinds: ks }); } catch (e) {
+    const [pack, ks, cat] = await Promise.all([qualPack(), kinds(), products()]);
+    try { items = await notesAi.split(clean, { today: new Date().toISOString().slice(0, 10), seller: ctx.seller, clients: ctx.clients ?? [], fields: forAi, pack, kinds: ks, ...(cat.length ? { products: catalogText(cat) } : {}) }); } catch (e) {
       console.warn('[notes]', aiReason(e));
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
+    }
+    // Paquetes al cerrar: solo los que existen (y gratis si se puede); en texto para el resumen («Canciones (gratis) + Álbum · 40 €/mes»).
+    for (const it of items) {
+      const picks = cleanPicks(it.agreementPackages ?? [], cat);
+      it.agreementPackages = it.agreement ? picks.map(pickStr) : [];
+      if (!it.agreement || !picks.length) it.agreementPrice = null;
+      it.agreementLabel = it.agreement && picks.length ? describe(picks, cat, { price: it.agreementPrice ?? null, list: null }) : null;
     }
     // Solo campos que existen y con un valor que su tipo acepta (se enseña como se verá en la ficha).
     for (const it of items) {
@@ -1721,6 +1728,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     nextTime: z.string().max(10).nullable().optional(),
     /** Cerró con un acuerdo: las condiciones (docs/CLIENTS.md). */
     agreement: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
+    /** Y con qué paquetes y a qué precio al mes (si lo dijo; si no, el normal). */
+    agreementPackages: z.array(z.string().max(60)).max(15).optional(),
+    agreementPrice: z.number().min(0).max(1_000_000).nullable().optional(),
     /** En prueba hasta ese día (docs/CLIENTS.md §En prueba). */
     trialUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
     /** Zona horaria de quien apunta (para la hora del próximo paso). */
@@ -1843,7 +1853,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         if (r.people.length) await notePeople(id, r.people);
         // «He cerrado X: 70/30…» (docs/CLIENTS.md): cerrar con ese acuerdo (o proponerlo, si lo confirma un gerente).
         let agreement: 'active' | 'pending' | undefined;
-        if (r.agreement) agreement = (await closeWithAgreement(id, { terms: r.agreement, checkinDays: 30 })).status;
+        if (r.agreement) agreement = (await closeWithAgreement(id, { terms: r.agreement, checkinDays: 30,
+          ...(r.agreementPackages?.length ? { packages: r.agreementPackages, priceMode: r.agreementPrice != null ? 'custom' : 'list', price: r.agreementPrice ?? null } : {}) })).status;
         // «Se van a pasar en prueba 2 meses»: en prueba hasta ese día (si no se puede, lo demás ya está guardado).
         let trial: string | undefined, trialError: string | undefined;
         if (r.trialUntil && !r.discard) {
@@ -1921,7 +1932,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
-        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, country: loc.regionCode ?? null, lang: requestLocale(), legalName: legal.legalName ?? null, taxId: legal.taxId ?? null });
+        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, products: await products().then((c) => (c.length ? catalogText(c) : null)).catch(() => null), country: loc.regionCode ?? null, lang: requestLocale(), legalName: legal.legalName ?? null, taxId: legal.taxId ?? null });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
     const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack, name: a.name, group: groupName });

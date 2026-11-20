@@ -74,6 +74,9 @@ if (Astro.request.method === 'POST') {
         channel: it.channel, outcome: it.outcome, day: it.day,
         qualification: q, nextStep: str(`next-${i}`) || null, nextDays: days === '' ? null : Number(days), nextTime: days === '' ? null : str(`time-${i}`) || null, tz,
         agreement: f.get(`ag-on-${i}`) ? str(`ag-${i}`) || null : null,
+        // Con qué paquetes y a qué precio (docs/PAQUETES.md), si lo dijo.
+        agreementPackages: f.get(`ag-on-${i}`) ? f.getAll(`agp-${i}`).map(String).filter(Boolean) : [],
+        agreementPrice: f.get(`ag-on-${i}`) && str(`agpr-${i}`) !== '' && Number.isFinite(Number(str(`agpr-${i}`))) ? Number(str(`agpr-${i}`)) : null,
         trialUntil: f.get(`tr-on-${i}`) ? str(`tr-${i}`) || null : null,
         discard: f.get(`disc-${i}`) ? str(`discr-${i}`) || null : null, discardNote: str(`discn-${i}`) || null,
         kind: str(`kind-${i}`) || undefined,
@@ -249,6 +252,9 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
             <fieldset class="co-card grid gap-2 !p-3" data-testid="notes-agreement">
               <legend class="co-field px-1"><label class="inline-flex items-center gap-2"><input type="checkbox" name={`ag-on-${i}`} value="1" checked class="h-4 w-4 accent-[var(--co-ink)]" />🤝 {CLI.close}</label></legend>
               <span class="co-help">{CLI.closeHelp}</span>
+              {it.agreementLabel && <span class="co-badge co-badge--ink w-fit" data-testid="notes-agreement-packages">{it.agreementLabel}</span>}
+              {(it.agreementPackages ?? []).map((k) => <input type="hidden" name={`agp-${i}`} value={k} />)}
+              {it.agreementPrice != null && <input type="hidden" name={`agpr-${i}`} value={String(it.agreementPrice)} />}
               <textarea class="co-textarea !min-h-[64px]" name={`ag-${i}`} maxlength="4000" aria-label={CLI.terms}>{it.agreement}</textarea>
             </fieldset>
           )}

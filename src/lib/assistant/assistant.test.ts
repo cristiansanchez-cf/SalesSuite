@@ -163,6 +163,16 @@ describe('la conversación', () => {
     expect(applied[0][0]).toMatchObject({ agreement: '70/30 para ellos si conseguimos marcas' });
     expect(b.replies[0].text).toContain('Deep Delay ya es cliente');
   });
+  test('«cerré 12 Torremolinos con canciones gratis y álbum a 25 €» → el resumen dice los paquetes y se guardan', async () => {
+    const { ops, applied } = fakeOps({
+      split: async () => [{ ...item('12 Torremolinos', { agreement: 'Canciones gratis y álbum a 25 €', agreementPackages: ['canciones:free', 'album'], agreementPrice: 25, agreementLabel: 'Canciones (gratis) + Álbum · 25 €/mes' }), candidates: [cand('t12', '12 Torremolinos', 1)] }],
+      apply: async (rows) => { applied.push(rows); return [{ accountId: 't12', name: '12 Torremolinos', ok: true, agreement: 'active' as const }]; },
+    });
+    const a = await run(ops, { kind: 'text', text: 'He cerrado 12 Torremolinos: canciones gratis y álbum a 25 €' });
+    expect(a.replies[0].text).toContain('🤝 Cierre con acuerdo: Canciones (gratis) + Álbum · 25 €/mes');
+    await run(ops, { kind: 'button', id: 'save' }, a.state);
+    expect(applied[0][0]).toMatchObject({ agreementPackages: ['canciones:free', 'album'], agreementPrice: 25 });
+  });
   test('«Tnsi se va a pasar en prueba 2 meses» → el resumen dice hasta cuándo y al guardar lo confirma', async () => {
     const { ops, applied } = fakeOps({
       split: async () => [{ ...item('Tnsi', { trialUntil: '2027-01-20' }), candidates: [cand('t1', 'Tnsi', 1)] }],

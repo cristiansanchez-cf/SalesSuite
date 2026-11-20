@@ -110,7 +110,7 @@ function rowOf(p: Pending) {
   return {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
-    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null, trialUntil: it.trialUntil ?? null,
+    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null, agreementPackages: it.agreementPackages ?? [], agreementPrice: it.agreementPrice ?? null, trialUntil: it.trialUntil ?? null,
     // Descartar (no les interesa, no encaja…): se ve en el resumen y se hace al pulsar Guardar; así nadie vuelve a venderles lo mismo.
     discard: it.discard ?? null, discardNote: it.discard ? it.discardWhy ?? null : null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
     // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
@@ -236,7 +236,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null, trialUntil: p.item.trialUntil ?? null,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ? [p.item.agreementLabel, p.item.agreement].filter(Boolean).join(' — ') : null, trialUntil: p.item.trialUntil ?? null,
       discard: p.item.discard ? `${T.discards[p.item.discard] ?? p.item.discard}${p.item.discardWhy ? ` (${p.item.discardWhy})` : ''}` : null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };

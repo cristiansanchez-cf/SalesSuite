@@ -28,8 +28,14 @@ Datos: `product` (migración 20270111; test SQL 92), `account_agreement.packages
 Las condiciones del acuerdo llevan lo escrito y, debajo, los paquetes en texto (para el historial y la IA).
 Smoke: `scripts/smoke-packages.cjs`.
 
+- **La IA con el catálogo**: Apuntar y WhatsApp («he cerrado 12 Torremolinos: canciones gratis y álbum a 25 €») sacan
+  `agreement_packages` (claves, «:free» si va gratis) y `agreement_price`; el resumen lo enseña («🤝 Cierre con acuerdo:
+  Canciones (gratis) + Álbum · 25 €/mes») y al guardar se cierra con esos paquetes (sin precio, el normal por tamaño).
+  Investigar con IA dice en el resumen qué paquetes le encajan y por qué.
+- **Aprende → Paquetes y precios**: una tabla de precios por tamaño y cada paquete con lo que incluye y lo gratis,
+  sacado del catálogo (siempre al día).
+
 ## Siguiente
 
-- La IA (WhatsApp, Apuntar, investigación) y Aprende con el catálogo; cerrar por WhatsApp con paquetes.
 - Propuestas y presentaciones con los paquetes (Fidelización aún no está).
 - Cambiar el modelo de negocio con IA: contarlo y que proponga los cambios (paquetes, propuestas, Aprende).

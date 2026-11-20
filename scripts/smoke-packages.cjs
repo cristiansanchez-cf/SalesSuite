@@ -47,5 +47,20 @@ const SOL = '00000000-0000-4000-8000-0000000ac001';
 
   await p.goto(`${BASE}/admin/clientes`);
   assert((await p.textContent('[data-testid=client-row][data-name="Club Sol"] [data-testid=client-packages]')).includes('en pantalla'), 'Clientes: lo que tiene contratado');
+  // «Apuntar con IA»: «acuerdo: canciones gratis y álbum a 25 €» → paquetes y precio para revisar; al guardar, cliente con ellos.
+  await p.goto(`${BASE}/admin/accounts/apuntar`);
+  await p.fill('[data-testid=notes-text]', 'Bar Paquetes: hablé con el dueño, acuerdo: canciones gratis y album a 25 € al mes');
+  await Promise.all([p.waitForSelector('[data-testid=notes-review]'), p.click('[data-testid=notes-run]')]);
+  const lbl = await p.textContent('[data-testid=notes-agreement-packages]').catch(() => '');
+  assert(lbl.includes('Canciones (gratis)') && lbl.includes('Álbum') && lbl.includes('25'), `Apuntar: paquetes y precio (${lbl.trim()})`);
+  await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=notes-save]')]);
+  await p.goto(`${BASE}/admin/clientes`);
+  assert((await p.textContent('[data-testid=client-row][data-name="Bar Paquetes"] [data-testid=client-packages]').catch(() => '')).includes('Álbum'), 'Apuntar: cliente con sus paquetes');
+
+  // Aprende: paquetes y precios, del catálogo (con el cambio de antes).
+  await p.goto(`${BASE}/admin/learn`);
+  await p.click('[data-testid=learn-packages]');
+  assert((await p.locator('[data-testid=learn-packages-list] article').count()) === 4, 'Aprende: los 4 paquetes');
+  assert((await p.textContent('[data-testid=learn-price-table]')).includes('35'), 'Aprende: con el precio al día');
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

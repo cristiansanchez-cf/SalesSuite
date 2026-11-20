@@ -48,6 +48,8 @@ export interface ResearchInput {
   taxId?: string | null;
   /** A quién vende el espacio (sus sectores con su cliente ideal), para cuando la empresa aún no tiene sector. */
   clients?: string[];
+  /** Lo que vende, por paquetes (docs/PAQUETES.md): para decir en el resumen cuáles le encajan y por qué. */
+  products?: string | null;
   /** País del espacio para la búsqueda web (ISO, «ES»); sin decirlo, España. null = sin país. */
   country?: string | null;
   /** Idioma de quien investiga (es, en, pt, ko): el resumen y las notas se escriben en ese idioma. Sin decirlo, español. */
@@ -168,6 +170,7 @@ export function userPrompt(i: ResearchInput): string {
     i.sector?.icp && `A quién vendemos en este sector: ${i.sector.icp}`,
     i.sector?.personas.length && `Con quién solemos hablar: ${i.sector.personas.join(', ')}`,
     `Qué vende el equipo: ${i.seller}`,
+    i.products && `Lo vendemos por paquetes (di en summary cuáles le encajan y por qué, con lo que hayas leído; sin inventar):\n${i.products}`,
     !i.sector && i.clients?.length && `A quién vende el equipo (la empresa aún no tiene sector; di en summary a cuál se parece, si a alguno): ${i.clients.join('; ')}`,
     Object.keys(i.known).length ? `Ya marcado en la ficha (no lo repitas): ${JSON.stringify(i.known)}` : null,
   ].filter(Boolean);
