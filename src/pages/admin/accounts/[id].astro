@@ -121,8 +121,9 @@ if (Astro.request.method === 'POST') {
         // Paquetes (docs/PAQUETES.md): los marcados, con «:free» los que van gratis; y el precio (normal u otro).
         const free = new Set(f.getAll('free').map(String));
         const packages = f.getAll('packages').map(String).map((k) => (free.has(k) ? `${k}:free` : k));
+        const pm = str('priceMode');
         const r = await admin.crm.closeWithAgreement(id, { terms: str('terms'), startsOn: str('startsOn'), checkinDays: str('checkinDays'),
-          ...(packages.length ? { packages, priceMode: str('priceMode') === 'custom' ? 'custom' : 'list', price: str('price') } : {}) });
+          ...(pm === 'event' ? { packages, priceMode: 'event', price: str('price') } : packages.length ? { packages, priceMode: pm === 'custom' ? 'custom' : 'list', price: str('price') } : {}) });
         to += `?ok=${r.status === 'pending' ? 'agProposed' : was ? 'agChanged' : 'agClosed'}#agreement`; break;
       }
       case 'agreement-ok': await admin.crm.decideAgreement(id, str('agreementId'), true); to += '?ok=agConfirmed#agreement'; break;
@@ -268,6 +269,10 @@ const agreementList = await admin.crm.agreements(id).catch(() => []);
 const catalog = await admin.crm.products().catch(() => []);
 const tier = tierOf((a.qualification?.size as string | undefined) ?? null);
 const eur = (n: number) => fmt.money(Math.round(n * 100), catalog[0]?.currency ?? 'EUR');
+// Promotoras y festivales (criterio de Cristian): no se cierran con paquetes al mes: «Acuerdo» (llevan Enjoy a sus
+// salas) o «Pago por evento» (festival ~500 €, promotora 50–150 €: las tarifas por evento, como atajos).
+const perEvent = catalog.length > 0 && (profile === 'promoter' || formatsOf(a.qualification).some((x) => x === 'festival' || x === 'stadium'));
+const eventHints = perEvent ? await admin.crm.eventPrices().catch(() => []) : [];
 // En prueba: la que sigue en marcha (si pagó o se cerró con acuerdo después de empezarla, ya no).
 const openTrial = (await admin.crm.trials(id).catch(() => [])).find((x) => isOpen(x, a.wonAt)) ?? null;
 const todayTz = localDay(new Date(), myTz);
@@ -557,13 +562,15 @@ const STATE_ALERT = {
 
 
       {/* Cierre (docs/CLIENTS.md): con pago (Cobrar, §35) o sin pago (acuerdo), en una sola tarjeta. */}
-      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial} packages={catalog.length > 0}
+      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial} packages={catalog.length > 0 && !perEvent} perEvent={perEvent}
         startWith={agreementList.some((g) => g.status === 'pending') ? 'deal' : 'pay'} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })}>
         <div slot="pay"><ChargeCard embedded name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
           suggestedId={suggestTariff(chargeOpts, { size: (a.qualification?.size as string | undefined) ?? null, segmentId: a.segmentId })?.id ?? null}
           coupons={coupons} charges={chargeList} canCharge={perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId}
           canCustom={perms.manageTenant} canManage={perms.manageAccounts} won={!!a.wonAt} names={chargeNames} phone={a.phone ?? fallback?.phone ?? null} /></div>
-        <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName} products={catalog} tier={tier} money={eur}
+        {perEvent && <div slot="event"><AgreementCard embedded formOnly mode="event" locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName} products={catalog} money={eur} eventHints={eventHints}
+          canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>}
+        <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName} products={catalog} tier={tier} money={eur} mode={perEvent ? 'plain' : undefined}
         canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
         date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>
         {!openTrial && canTrial && <div slot="trial"><TrialCard mode="start" locale={locale} customer={a.status === 'customer'} canEdit today={todayTz} date={trialDay} /></div>}

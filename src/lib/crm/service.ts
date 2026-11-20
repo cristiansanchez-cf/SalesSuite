@@ -1033,6 +1033,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   const withUrl = (r: PaymentRequest) => ({ ...r, url: paymentUrl(r.paymentLink, { ref: chargeRef(r.id), couponCode: r.couponCode }) });
   /** Tarifas que se cobran con un enlace (activas, no a medida, con enlace de Stripe), en el orden del admin. */
   async function chargeOptions() { requireUse(); return chargeable(await admin.listPriceOptions(t).catch(() => [])); }
+  /** Lo normal por evento (tarifas «por evento», con o sin enlace de pago): atajos de «Pago por evento». */
+  async function eventPrices() {
+    requireUse();
+    return (await admin.listPriceOptions(t).catch(() => [])).filter((o) => o.active && o.period === 'event' && !o.quoteOnly && o.amount > 0)
+      .map((o) => ({ label: o.label, amount: o.amount, note: o.note ?? null }));
+  }
   /** Los enlaces de pago de una empresa, lo último primero, con su enlace listo para copiar. */
   async function charges(accountId: string) {
     requireUse();
@@ -1065,7 +1071,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     terms: z.string().trim().max(4000).default(''),
     /** Paquetes («clave» o «clave:free») y precio: el normal (list) o uno menor/otro (custom, al mes). */
     packages: z.array(z.string().max(60)).max(15).optional(),
-    priceMode: z.enum(['list', 'custom']).optional(),
+    priceMode: z.enum(['list', 'custom', 'event']).optional(),
     price: z.union([z.number(), z.string()]).nullable().optional(),
     startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
     checkinDays: z.coerce.number().int().min(7).max(365).nullable().optional().or(z.literal('').transform(() => null)),
@@ -1096,7 +1102,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const cat = v.packages?.length ? await products() : [];
     const picks = cleanPicks(v.packages ?? [], cat);
     let price: number | null = null, list: number | null = null;
-    if (picks.length) {
+    // Pago por evento (promotoras y festivales): el precio de cada evento, sin «normal» (no sale del tamaño).
+    const perEvent = v.priceMode === 'event';
+    if (perEvent) {
+      const raw = typeof v.price === 'string' ? v.price.replace(',', '.').trim() : v.price;
+      const n = raw === '' || raw == null ? NaN : Number(raw);
+      if (!Number.isFinite(n) || n < 0 || n > 1_000_000) throw new AdminError(422, 'Pon el precio por evento');
+      price = Math.round(n * 100) / 100;
+    } else if (picks.length) {
       const a = await accounts.getAccount(accountId);
       list = listPrice(picks, cat, tierOf((a?.qualification?.size as string | undefined) ?? null));
       const raw = typeof v.price === 'string' ? v.price.replace(',', '.').trim() : v.price;
@@ -1107,12 +1120,13 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       } else price = list;
     }
     // Lo que escribió y, debajo, los paquetes en texto (para el historial y la IA; en pantalla salen como etiquetas).
-    const terms = [v.terms, ...(picks.length ? [describe(picks, cat, { price, list }), ...freeNotes(picks, cat)] : [])].filter(Boolean).join('\n');
+    const eventLine = perEvent ? `${picks.length ? describe(picks, cat, { price, list: null, period: 'event' }) : `${new Intl.NumberFormat('es-ES', { style: 'currency', currency: cat[0]?.currency ?? 'EUR', maximumFractionDigits: 2 }).format(price!)}/evento`}` : null;
+    const terms = [v.terms, ...(perEvent ? [eventLine!, ...freeNotes(picks, cat)] : picks.length ? [describe(picks, cat, { price, list }), ...freeNotes(picks, cat)] : [])].filter(Boolean).join('\n');
     if (terms.length < 3) throw new AdminError(422, 'Elige los paquetes o escribe qué habéis acordado');
     let r!: { id: string; status: 'active' | 'pending' };
     try {
       r = await db.proposeAgreement(t, accountId, { terms, startsOn: v.startsOn ?? null, checkinDays: v.checkinDays ?? null,
-        ...(picks.length ? { packages: picks.map(pickStr), price, listPrice: list } : {}) });
+        ...(perEvent ? { packages: picks.map(pickStr), price, listPrice: null, period: 'event' as const } : picks.length ? { packages: picks.map(pickStr), price, listPrice: list, period: 'month' as const } : {}) });
     } catch (e) { mapError(e); }
     if (r.status === 'active') await checkinNext(accountId, v.checkinDays ?? null);
     return r;
@@ -2329,7 +2343,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

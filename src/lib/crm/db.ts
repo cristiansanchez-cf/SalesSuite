@@ -54,7 +54,7 @@ export interface CrmDb {
   /** Acuerdos (docs/CLIENTS.md): los de unas empresas (todas las versiones, lo nuevo primero). */
   listAgreements?(tenantId: string, accountIds: string[]): Promise<import('./types').Agreement[]>;
   /** Cerrar con acuerdo o cambiarlo: gerente/admin → activo; quien la lleva → pendiente de confirmar. */
-  proposeAgreement?(tenantId: string, accountId: string, a: { terms: string; startsOn: string | null; checkinDays: number | null; packages?: string[] | null; price?: number | null; listPrice?: number | null }): Promise<{ id: string; status: 'active' | 'pending' }>;
+  proposeAgreement?(tenantId: string, accountId: string, a: { terms: string; startsOn: string | null; checkinDays: number | null; packages?: string[] | null; price?: number | null; listPrice?: number | null; period?: 'month' | 'event' | null }): Promise<{ id: string; status: 'active' | 'pending' }>;
   /** Paquetes (docs/PAQUETES.md): el catálogo del espacio (todos; los inactivos también, para Tarifas). */
   listProducts?(tenantId: string): Promise<import('./packages').Product[]>;
   /** Solo admin (RLS). */

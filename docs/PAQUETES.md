@@ -42,6 +42,20 @@ Smoke: `scripts/smoke-packages.cjs`.
   luego cambian los precios, y los precios no se tocan a mano (setProps conserva la foto). Módulo en el catálogo de Enjoy:
   migración 20270112. Smoke: `scripts/smoke-proposal-packages.cjs`.
 
+## Promotoras y festivales
+
+Criterio de Cristian: «en cierre para promotoras o festivales, cuando no es un acuerdo, es pago por evento: festivales
+suele ser 500 € por evento; promotoras, de 50 a 150 €» y «en promotoras no te permite cerrar con acuerdo, cuando es lo
+más típico (llevan Enjoy a las salas)».
+
+- Si la empresa es promotora (o su formato es festival o estadio), «Cierre» tiene **Acuerdo** (solo lo acordado, sin
+  paquetes al mes), **Pago por evento** (precio por evento con atajos de las tarifas «por evento» del espacio y,
+  opcional, qué paquetes incluye) y **En prueba**. El enlace de Stripe, igual: en un modal.
+- Enjoy: tarifas «Festival · por evento» (500 €) y «Promotora · por evento» (100 €, «de 50 a 150 €»), editables en
+  Tarifas. `account_agreement.price_period` guarda si el precio es al mes o por evento («120 €/evento»). Migración
+  20270113. Smoke: `scripts/smoke-event.cjs`.
+- En la cualificación de promotoras, «Fiestas al mes» tiene también **Pocas al año** («hacen 5 fiestas al año»).
+
 ## Siguiente
 
 - Fidelización con su propia diapositiva visual (pases, sellos, el aviso «vuelve», las notificaciones): hacen falta

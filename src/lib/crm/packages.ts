@@ -70,12 +70,12 @@ const PER: Record<string, string> = { month: '/mes', year: '/año', event: '/eve
  * En una línea, para el acuerdo y la IA: «Canciones (gratis) + Álbum · 25 €/mes (normal 50 €/mes, −50 %)».
  * Las condiciones de lo gratis van aparte (freeNotes).
  */
-export function describe(picks: Pick[], products: Product[], o: { price: number | null; list: number | null; locale?: string }): string {
+export function describe(picks: Pick[], products: Product[], o: { price: number | null; list: number | null; locale?: string; period?: Product['period'] }): string {
   const locale = o.locale ?? 'es-ES';
   const names = picks.map((p) => { const pr = products.find((x) => x.key === p.key); return pr ? `${pr.name}${p.free ? ' (gratis)' : ''}` : p.key; });
   const first = products.find((x) => picks.some((p) => p.key === x.key));
   const cur = first?.currency ?? 'EUR';
-  const per = PER[first?.period ?? 'month'] ?? '';
+  const per = PER[o.period ?? first?.period ?? 'month'] ?? '';
   const pct = discountPct(o.price, o.list);
   const price = o.price == null ? '' : o.price === 0 ? 'gratis' : `${money(o.price, cur, locale)}${per}`;
   const extra = pct != null && o.list != null ? ` (normal ${money(o.list, cur, locale)}${per}, −${pct} %)` : '';

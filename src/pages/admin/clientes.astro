@@ -79,7 +79,7 @@ const clip = (s: string, n = 220) => (s.length > n ? `${s.slice(0, n - 1)}…` :
               {c.agreement?.packages.length ? (
                 <span class="flex flex-wrap items-center gap-1 py-0.5" data-testid="client-packages">
                   {pkgNames(c.agreement.packages).map((x) => <span class="co-badge co-badge--ink !py-0 text-[11px]">{x}</span>)}
-                  {c.agreement.price != null && <span class="co-meta text-sm font-semibold">{c.agreement.price === 0 ? PK.freeCheck : `${eur(c.agreement.price)}/${PK.periods.month}`}{discountPct(c.agreement.price, c.agreement.listPrice) != null && ` · ${PK.discount(discountPct(c.agreement.price, c.agreement.listPrice)!)}`}</span>}
+                  {c.agreement.price != null && <span class="co-meta text-sm font-semibold">{c.agreement.price === 0 ? PK.freeCheck : `${eur(c.agreement.price)}/${PK.periods[c.agreement.pricePeriod ?? 'month']}`}{discountPct(c.agreement.price, c.agreement.listPrice) != null && ` · ${PK.discount(discountPct(c.agreement.price, c.agreement.listPrice)!)}`}</span>}
                 </span>
               ) : c.agreement && <span class="co-body block text-sm" data-ugc>{clip(c.agreement.terms)}</span>}
               {c.agreement?.packages.length ? (() => { const t = extraTerms(c.agreement.terms, cleanPicks(c.agreement.packages, catalog.map((p) => ({ ...p, active: true }))), catalog, { price: c.agreement.price, list: c.agreement.listPrice }); return t && <span class="co-body block text-sm" data-ugc>{clip(t)}</span>; })() : null}

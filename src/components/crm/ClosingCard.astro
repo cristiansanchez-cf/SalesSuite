@@ -19,8 +19,10 @@ interface Props {
   trialTab?: boolean;
   /** Con catálogo de paquetes: se cierra con paquetes y precio; el enlace de pago, en un modal. */
   packages?: boolean;
+  /** Promotoras y festivales: «Acuerdo» (lo típico: llevan el producto a sus salas) o «Pago por evento» (slot event). */
+  perEvent?: boolean;
 }
-const { locale, customer, wonAt, startWith, showPay, date, trialTab = false, packages = false } = Astro.props;
+const { locale, customer, wonAt, startWith, showPay, date, trialTab = false, packages = false, perEvent = false } = Astro.props;
 const C = clientsMessages[locale];
 const P = packagesMessages[locale];
 const T = trialMessages[locale];
@@ -37,6 +39,23 @@ const T = trialMessages[locale];
       {/* Ya cliente y en prueba por un trato (Tnsi: «2 meses de prueba por un trato que hemos hecho»). */}
       {trialTab && <details class="grid gap-2" data-testid="closing-trial-wrap"><summary class="co-meta cursor-pointer" data-testid="closing-trial">{T.start}</summary><slot name="trial" /></details>}
     </>
+  ) : perEvent ? (
+    <div class="closing-tabs grid gap-4">
+      <div class="co-tabs w-fit" role="radiogroup">
+        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked data-testid="closing-deal" />{P.dealTab}</label>
+        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="event" data-testid="closing-event" />{P.eventTab}</label>
+        {trialTab && <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="trial" data-testid="closing-trial" />{T.tab}</label>}
+      </div>
+      <div class="closing-panel" data-way="deal"><slot name="deal" /></div>
+      <div class="closing-panel" data-way="event"><slot name="event" /></div>
+      {trialTab && <div class="closing-panel" data-way="trial"><slot name="trial" /></div>}
+      {showPay && (
+        <div class="flex flex-wrap items-center gap-2 border-t border-[var(--console-divider)] pt-3">
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-open-pay data-testid="closing-link"><Icon name="link" size={14} />{P.link}</button>
+          <span class="co-meta text-xs">{P.linkHelp}</span>
+        </div>
+      )}
+    </div>
   ) : packages ? (
     <div class="closing-tabs grid gap-4">
       {trialTab && (
@@ -66,7 +85,7 @@ const T = trialMessages[locale];
       {trialTab && <div class="closing-panel" data-way="trial"><slot name="trial" /></div>}
     </div>
   )}
-  {packages && !customer && showPay && (
+  {(packages || perEvent) && !customer && showPay && (
     <dialog class="co-card w-[min(92vw,40rem)] p-0 backdrop:bg-black/40" data-pay-dialog data-testid="closing-pay-dialog">
       <div class="grid gap-3 p-5">
         <div class="flex items-center justify-between gap-2">
@@ -83,7 +102,8 @@ const T = trialMessages[locale];
   /* Sin JS: la pestaña marcada enseña su parte. */
   .closing-tabs:has(input[name='closing-way'][value='pay']:checked) .closing-panel:not([data-way='pay']),
   .closing-tabs:has(input[name='closing-way'][value='deal']:checked) .closing-panel:not([data-way='deal']),
-  .closing-tabs:has(input[name='closing-way'][value='trial']:checked) .closing-panel:not([data-way='trial']) { display: none; }
+  .closing-tabs:has(input[name='closing-way'][value='trial']:checked) .closing-panel:not([data-way='trial']),
+  .closing-tabs:has(input[name='closing-way'][value='event']:checked) .closing-panel:not([data-way='event']) { display: none; }
   .closing-tabs .co-tab:has(input:checked) { background: var(--console-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
 </style>
 <script>

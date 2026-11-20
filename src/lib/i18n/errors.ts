@@ -238,6 +238,7 @@ const EXACT: Record<string, T> = {
   'Algún paquete no tiene precio para ese tamaño': ['A package has no price for that size', 'Algum pacote não tem preço para esse tamanho', '그 규모의 가격이 없는 패키지가 있습니다'],
   'El precio lo fija tu empresa: otro precio, solo un admin': ['Your company sets the price: only an admin can set another one', 'O preço é fixado pela empresa: outro preço, só um admin', '가격은 회사가 정합니다: 다른 가격은 관리자만'],
   'Falta el módulo «Paquetes» en el catálogo': ['The «Packages» module is missing from the catalogue', 'Falta o módulo «Pacotes» no catálogo', '카탈로그에 «패키지» 모듈이 없습니다'],
+  'Pon el precio por evento': ['Enter the price per event', 'Indique o preço por evento', '이벤트당 가격을 입력하세요'],
   'Pon el precio al mes': ['Enter the monthly price', 'Indique o preço por mês', '월 가격을 입력하세요'],
   'Elige los paquetes o escribe qué habéis acordado': ['Choose the packages or write what you agreed', 'Escolha os pacotes ou escreva o que combinaram', '패키지를 고르거나 합의 내용을 쓰세요'],
   'Solo un admin cambia los paquetes': ['Only an admin can change packages', 'Só um admin muda os pacotes', '관리자만 패키지를 바꿀 수 있습니다'],

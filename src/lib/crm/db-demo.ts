@@ -272,7 +272,7 @@ export function demoCrmDb(actorId: string): CrmDb {
     async listAgreements(t, accountIds) {
       if (!isMember(t, actorId)) return [];
       return db().account_agreement.filter((g) => g.tenant_id === t && accountIds.includes(g.account_id)).sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map((g) => ({ id: g.id, accountId: g.account_id, terms: g.terms, startsOn: g.starts_on, checkinDays: g.checkin_days, packages: g.packages ?? [], price: g.price ?? null, listPrice: g.list_price ?? null, status: g.status, createdBy: g.created_by, createdAt: g.created_at, decidedBy: g.decided_by, decidedAt: g.decided_at }));
+        .map((g) => ({ id: g.id, accountId: g.account_id, terms: g.terms, startsOn: g.starts_on, checkinDays: g.checkin_days, packages: g.packages ?? [], price: g.price ?? null, listPrice: g.list_price ?? null, pricePeriod: g.price_period ?? null, status: g.status, createdBy: g.created_by, createdAt: g.created_at, decidedBy: g.decided_by, decidedAt: g.decided_at }));
     },
     async proposeAgreement(t, accountId, a) {
       const s = db();
@@ -283,7 +283,7 @@ export function demoCrmDb(actorId: string): CrmDb {
       for (const g of s.account_agreement) if (g.account_id === accountId && g.status === 'pending') Object.assign(g, { status: 'rejected', decided_by: actorId, decided_at: iso() });
       const g = { id: randomUUID(), tenant_id: t, account_id: accountId, terms: a.terms.trim(), starts_on: a.startsOn ?? iso().slice(0, 10), checkin_days: a.checkinDays,
         status: 'pending' as const, created_by: actorId, created_at: monotonic(), decided_by: null, decided_at: null,
-        packages: a.packages?.length ? a.packages : null, price: a.packages?.length ? a.price ?? null : null, list_price: a.packages?.length ? a.listPrice ?? null : null };
+        packages: a.packages?.length ? a.packages : null, price: a.price ?? null, list_price: a.listPrice ?? null, price_period: a.price != null ? a.period ?? 'month' : null };
       s.account_agreement.push(g);
       if (mgr) { agreementActivate(g.id, actorId); return { id: g.id, status: 'active' as const }; }
       notifyRoles(t, ['admin', 'lead'], 'agreement_pending', 'action', g.id, { account: acc.name, accountId: acc.id, seller: userLabel(actorId) }, actorId);

@@ -17,14 +17,22 @@ interface Props {
   embedded?: boolean;
   /** Paquetes (docs/PAQUETES.md): con catálogo, se cierra eligiendo paquetes y precio (el normal sale de su tamaño). */
   products?: Product[]; tier?: Tier; money?: (n: number) => string;
+  /** packages: paquetes al mes · event: pago por evento (promotoras y festivales) · plain: solo lo acordado. */
+  mode?: 'packages' | 'event' | 'plain';
+  /** Solo el formulario (la segunda pestaña de «Cierre»: lo vigente ya sale en la primera). */
+  formOnly?: boolean;
+  /** Atajos de precio por evento (las tarifas por evento del espacio). */
+  eventHints?: Array<{ label: string; amount: number; note: string | null }>;
 }
-const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false, products = [], tier = 'medium', money = (n: number) => `${n} €` } = Astro.props;
+const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false, products = [], tier = 'medium', money = (n: number) => `${n} €`, formOnly = false, eventHints = [] } = Astro.props;
+const mode = Astro.props.mode ?? (products.length ? 'packages' : 'plain');
 const C = clientsMessages[locale];
 const P = packagesMessages[locale];
-const withPkgs = products.length > 0;
+const withPkgs = mode === 'packages' && products.length > 0;
+const isEvent = mode === 'event';
 /** Los paquetes de un acuerdo, en etiquetas, y su precio («50 € al mes · −33 %»). */
 const chips = (g: Agreement) => cleanPicks(g.packages, products.map((p) => ({ ...p, active: true }))).map((x) => `${products.find((p) => p.key === x.key)?.name ?? x.key}${x.free ? ` (${P.freeCheck})` : ''}`);
-const priceLine = (g: Agreement) => (g.price == null ? null : [g.price === 0 ? P.freeCheck : `${money(g.price)}/${P.periods.month}`, discountPct(g.price, g.listPrice) != null ? P.discount(discountPct(g.price, g.listPrice)!) : null].filter(Boolean).join(' · '));
+const priceLine = (g: Agreement) => (g.price == null ? null : [g.price === 0 ? P.freeCheck : `${money(g.price)}/${P.periods[g.pricePeriod ?? 'month']}`, discountPct(g.price, g.listPrice) != null ? P.discount(discountPct(g.price, g.listPrice)!) : null].filter(Boolean).join(' · '));
 const preset = (agreements.find((g) => g.status === 'active') ?? null);
 const chosen = new Set(preset?.packages ?? []);
 const active = agreements.find((g) => g.status === 'active') ?? null;
@@ -32,15 +40,15 @@ const pending = agreements.find((g) => g.status === 'pending') ?? null;
 const old = agreements.filter((g) => g.status === 'replaced');
 const today = new Date().toISOString().slice(0, 10);
 const CHECKINS = [14, 30, 60, 90];
-const show = customer || active || pending || canClose;
+const show = formOnly ? canClose : customer || active || pending || canClose;
 /** Dentro de «Cierre» y sin cerrar aún: el formulario, directamente. */
-const inline = embedded && !customer && !active && !pending;
+const inline = formOnly || (embedded && !customer && !active && !pending);
 ---
 {show && (
   <section id="agreement" class:list={['grid gap-3', !embedded && 'co-card']} data-testid="agreement">
     {!embedded && <div class="flex items-center gap-2"><Icon name="handshake" size={16} /><p class="text-eyebrow m-0">{C.card}</p></div>}
 
-    {pending && (
+    {!formOnly && pending && (
       <div class="grid gap-2 rounded-xl border border-[var(--console-attention)] bg-[var(--console-attention-bg)] p-3" data-testid="agreement-pending">
         <strong>{C.pending}</strong>
         <p class="co-body m-0 whitespace-pre-line" data-ugc>{pending.terms}</p>
@@ -56,7 +64,7 @@ const inline = embedded && !customer && !active && !pending;
       </div>
     )}
 
-    {active ? (
+    {formOnly ? null : active ? (
       <div class="grid gap-1" data-testid="agreement-active">
         <p class="co-meta m-0">{C.current}</p>
         {active.packages.length > 0 && (
@@ -71,7 +79,7 @@ const inline = embedded && !customer && !active && !pending;
       </div>
     ) : customer && !pending ? <p class="co-meta m-0">{C.noAgreement}</p> : null}
 
-    {old.length > 0 && (
+    {!formOnly && old.length > 0 && (
       <details class="co-meta" data-testid="agreement-history"><summary class="cursor-pointer">{C.history(old.length)}</summary>
         <ul class="mt-2 grid gap-2 pl-0">
           {old.map((g) => <li class="list-none"><span class="whitespace-pre-line" data-ugc>{g.terms}</span><br />{C.sinceLine(date(g.startsOn))}</li>)}
@@ -83,11 +91,32 @@ const inline = embedded && !customer && !active && !pending;
       <details class="grid gap-2" data-testid="agreement-form-wrap" open={inline ? true : undefined}>
         {/* Dentro de «Cierre» y sin cerrar aún, el formulario ya está abierto: sin botón para abrirlo (un solo botón). */}
         <summary class:list={[`co-btn ${customer || active ? 'co-btn--ghost' : 'co-btn--primary'} co-btn--sm w-fit cursor-pointer list-none`, inline && '!hidden']} data-testid="agreement-open">
-          <Icon name="handshake" size={14} />{withPkgs ? (active || customer ? P.changeBtn : C.close) : active ? C.change : customer ? C.note : C.close}
+          <Icon name="handshake" size={14} />{isEvent ? P.eventTab : withPkgs ? (active || customer ? P.changeBtn : C.close) : active ? C.change : customer ? C.note : C.close}
         </summary>
         <form method="post" class:list={['grid gap-3', !inline && 'mt-2']} data-testid="agreement-form">
           <input type="hidden" name="action" value="agreement" />
-          {withPkgs ? (
+          {isEvent ? (
+            <div class="grid gap-3" data-event data-testid="agreement-event">
+              <input type="hidden" name="priceMode" value="event" />
+              <p class="co-help m-0">{P.eventHelp}</p>
+              <fieldset class="grid gap-2"><legend class="co-entity !text-base mb-1">{P.eventPrice}</legend>
+                {eventHints.length > 0 && (
+                  <div class="co-chips">
+                    {eventHints.map((h) => <button type="button" class="co-chip" data-fill={String(h.amount)} title={h.note ?? undefined} data-testid="event-hint">{h.label.replace(/\s*·\s*por evento$/i, '')} · {money(h.amount)}{h.note ? <span class="co-meta ml-1 text-xs">({h.note})</span> : null}</button>)}
+                  </div>
+                )}
+                <span class="flex items-center gap-2"><input class="co-input !w-28" name="price" inputmode="decimal" required data-testid="event-price" /><span class="co-meta text-sm">{P.perEvent}</span></span>
+              </fieldset>
+              {products.length > 0 && (
+                <fieldset class="grid gap-2"><legend class="co-meta mb-1">{P.eventIncludes}</legend>
+                  <div class="co-chips">
+                    {products.map((p) => <label class="co-chip relative cursor-pointer"><input type="checkbox" name="packages" value={p.key} data-testid={`event-pkg-${p.key}`} />{p.name}</label>)}
+                  </div>
+                </fieldset>
+              )}
+              <label class="co-field">{P.notes}<textarea class="co-textarea !min-h-[56px]" name="terms" maxlength="4000" placeholder={P.notesPh} data-testid="event-terms"></textarea></label>
+            </div>
+          ) : withPkgs ? (
             <div class="grid gap-3" data-pkgs data-testid="agreement-pkgs">
               <fieldset class="grid gap-2"><legend class="co-entity !text-base mb-1">{P.pick}</legend>
                 <span class="co-help">{P.pickHelp(P.tiers[tier].toLowerCase())}</span>
@@ -114,7 +143,7 @@ const inline = embedded && !customer && !active && !pending;
             </div>
           ) : (
             <>
-              <p class="co-help m-0">{customer || active ? C.changeHelp : C.closeHelp}</p>
+              <p class="co-help m-0">{customer || active ? C.changeHelp : products.length ? P.dealHelp : C.closeHelp}</p>
               <label class="co-field">{C.terms}<textarea class="co-textarea" name="terms" required minlength="3" maxlength="4000" placeholder={C.termsPh} data-testid="agreement-terms">{active?.terms ?? ''}</textarea></label>
             </>
           )}
@@ -128,8 +157,8 @@ const inline = embedded && !customer && !active && !pending;
             </label>
           </div>
           <p class="co-help m-0">{C.checkinHelp}{!canDecide && ` ${C.proposeHelp}`}</p>
-          <button class="co-btn co-btn--primary w-fit" data-testid="agreement-save">{withPkgs ? (!canDecide ? P.proposeBtn : customer || active ? C.saveChange : P.closeBtn) : !canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
-          {withPkgs && !canDecide && <p class="co-help m-0">{P.proposeHelp}</p>}
+          <button class="co-btn co-btn--primary w-fit" data-testid={isEvent ? 'event-save' : 'agreement-save'}>{withPkgs || isEvent ? (!canDecide ? P.proposeBtn : customer || active ? C.saveChange : P.closeBtn) : !canDecide ? C.propose : customer || active ? C.saveChange : C.save}</button>
+          {(withPkgs || isEvent) && !canDecide && <p class="co-help m-0">{P.proposeHelp}</p>}
         </form>
       </details>
     )}
@@ -141,6 +170,11 @@ const inline = embedded && !customer && !active && !pending;
   [data-pkgs]:not(:has(input[name='priceMode'][value='custom']:checked)) .pkg-custom { display: none; }
 </style>
 <script>
+  // Pago por evento: los atajos rellenan el precio.
+  document.querySelectorAll<HTMLButtonElement>('[data-event] [data-fill]').forEach((b) => b.addEventListener('click', () => {
+    const i = b.closest('[data-event]')!.querySelector<HTMLInputElement>('input[name=price]')!;
+    i.value = b.dataset.fill!; i.focus();
+  }));
   // El precio normal de lo marcado (lo gratis no suma) y el descuento del que se ponga.
   document.querySelectorAll<HTMLElement>('[data-pkgs]').forEach((box) => {
     const fmt = new Intl.NumberFormat(document.documentElement.lang || 'es', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });

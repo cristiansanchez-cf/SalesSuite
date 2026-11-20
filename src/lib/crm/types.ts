@@ -104,5 +104,7 @@ export interface Agreement {
   id: string; accountId: string; terms: string; startsOn: string; checkinDays: number | null;
   /** Paquetes («clave» o «clave:free») y precio al mes: el acordado y el normal de ese momento (docs/PAQUETES.md). */
   packages: string[]; price: number | null; listPrice: number | null;
+  /** Cada cuánto es el precio: al mes (paquetes) o por evento (promotoras y festivales). */
+  pricePeriod: 'month' | 'year' | 'event' | 'once' | null;
   status: 'pending' | 'active' | 'replaced' | 'rejected'; createdBy: string | null; createdAt: string; decidedBy: string | null; decidedAt: string | null;
 }

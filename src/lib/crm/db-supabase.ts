@@ -200,13 +200,13 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       const rows = check(await sb.from('account_agreement').select('*').eq('tenant_id', t).in('account_id', accountIds.slice(0, 1000)).order('created_at', { ascending: false }).limit(5000)) ?? [];
       return rows.map((r: Record<string, unknown>) => ({
         id: r.id as string, accountId: r.account_id as string, terms: r.terms as string, startsOn: r.starts_on as string, checkinDays: (r.checkin_days as number) ?? null,
-        packages: (r.packages as string[]) ?? [], price: r.price == null ? null : Number(r.price), listPrice: r.list_price == null ? null : Number(r.list_price),
+        packages: (r.packages as string[]) ?? [], price: r.price == null ? null : Number(r.price), listPrice: r.list_price == null ? null : Number(r.list_price), pricePeriod: (r.price_period as 'month') ?? null,
         status: r.status as 'active', createdBy: (r.created_by as string) ?? null, createdAt: r.created_at as string, decidedBy: (r.decided_by as string) ?? null, decidedAt: (r.decided_at as string) ?? null,
       }));
     },
     async proposeAgreement(_t, accountId, a) {
       const rows = check(await sb.rpc('agreement_propose', { p_account: accountId, p_terms: a.terms, p_starts: a.startsOn, p_checkin: a.checkinDays,
-        ...(a.packages?.length ? { p_packages: a.packages, p_price: a.price ?? null, p_list_price: a.listPrice ?? null } : {}) })) as Array<{ id: string; status: 'active' | 'pending' }>;
+        ...(a.packages?.length || a.price != null ? { p_packages: a.packages ?? [], p_price: a.price ?? null, p_list_price: a.listPrice ?? null, p_period: a.period ?? 'month' } : {}) })) as Array<{ id: string; status: 'active' | 'pending' }>;
       return rows[0]!;
     },
     async listProducts(t) {

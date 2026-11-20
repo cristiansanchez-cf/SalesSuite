@@ -234,7 +234,7 @@ export interface DemoDb {
   calendar_feed: Array<{ user_id: string; token: string }>;
   product?: Array<{ id: string; tenant_id: string; key: string; name: string; summary: string | null; includes: string[]; price_small: number | null; price_medium: number | null; price_large: number | null; currency: string; period: 'once' | 'event' | 'month' | 'year'; free_allowed: boolean; free_note: string | null; position: number; active: boolean }>;
   account_trial?: Array<{ id: string; tenant_id: string; account_id: string; starts_on: string; ends_on: string; note: string | null; created_by: string | null; created_at: string; ended_at: string | null; ended_by: string | null; outcome: 'stays' | 'leaves' | null }>;
-  account_agreement: Array<{ id: string; tenant_id: string; account_id: string; terms: string; starts_on: string; checkin_days: number | null; packages?: string[] | null; price?: number | null; list_price?: number | null; status: 'pending' | 'active' | 'replaced' | 'rejected'; created_by: string | null; created_at: string; decided_by: string | null; decided_at: string | null }>;
+  account_agreement: Array<{ id: string; tenant_id: string; account_id: string; terms: string; starts_on: string; checkin_days: number | null; packages?: string[] | null; price?: number | null; list_price?: number | null; price_period?: 'month' | 'year' | 'event' | 'once' | null; status: 'pending' | 'active' | 'replaced' | 'rejected'; created_by: string | null; created_at: string; decided_by: string | null; decided_at: string | null }>;
   member_conditions_history: Array<{ tenant_id: string; user_id: string; visible: boolean; note: string | null; plan: import('../commissions/types').ConditionsChange['plan']; changed_by: string | null; changed_at: string; seq: number }>;
 }
 
@@ -476,6 +476,9 @@ export function freshDemoDb(): DemoDb {
       { id: '00000000-0000-4000-8000-0000000f0004', tenant_id: ENJOY, label: 'Festival +20.000', amount: 0, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 4, active: true, kind: 'Festival', quote_only: true, note: 'A medida · no se cotiza sin prueba de carga' },
       // Por tamaño («Generar pago» marca la de su tamaño, docs/CRM_DINAMICO.md §35).
       { id: '00000000-0000-4000-8000-0000000f0005', tenant_id: ENJOY, label: 'Local pequeño', amount: 99, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_pequeno', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 5, active: true, kind: 'Local', size: 'small' },
+      // Por evento (= migración 20270113): atajos de «Pago por evento» en promotoras y festivales.
+      { id: '00000000-0000-4000-8000-0000000f0091', tenant_id: ENJOY, label: 'Festival · por evento', amount: 500, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 90, active: true, kind: 'Festival', note: 'Lo normal en un festival' },
+      { id: '00000000-0000-4000-8000-0000000f0092', tenant_id: ENJOY, label: 'Promotora · por evento', amount: 100, currency: 'EUR', period: 'event', payment_link: null, segment_id: null, position: 91, active: true, kind: 'Promotora', note: 'De 50 a 150 € por evento' },
       { id: '00000000-0000-4000-8000-0000000f0006', tenant_id: ENJOY, label: 'Local grande', amount: 499, currency: 'EUR', period: 'month', payment_link: 'https://buy.stripe.com/test_grande', segment_id: '00000000-0000-4000-8000-0000005e0002', position: 6, active: true, kind: 'Local', size: 'large' },
     ],
   };

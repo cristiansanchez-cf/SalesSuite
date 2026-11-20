@@ -26,6 +26,7 @@ export const packagesMessages = defineMessages({
     // Aprende
     learnTitle: 'Paquetes y precios', learnLede: 'Lo que vendemos y cuánto cuesta. Lo normal: 3 o 4 paquetes.',
     learnFree: 'Puede ir gratis',
+    dealTab: 'Acuerdo', eventTab: 'Pago por evento', eventPrice: 'Precio por evento', perEvent: '€ por evento', eventIncludes: 'Qué incluye (opcional)', eventHelp: 'Promotoras y festivales: lo que paga cada evento.', dealHelp: 'Lo más típico con promotoras: llevan Enjoy a sus salas. Escribe qué habéis acordado.',
     builderHelp: 'Salen en la propuesta como una diapositiva con lo que incluye cada uno y el total (antes del precio).', put: 'Poner en la propuesta', update: 'Actualizar paquetes', remove: 'Quitar', size: 'Tamaño del local',
   },
   en: {
@@ -50,6 +51,7 @@ export const packagesMessages = defineMessages({
     has: 'Has', changeBtn: 'Change packages or price',
     learnTitle: 'Packages and prices', learnLede: 'What we sell and how much it costs. Usually 3 or 4 packages.',
     learnFree: 'Can be free',
+    dealTab: 'Agreement', eventTab: 'Pay per event', eventPrice: 'Price per event', perEvent: '€ per event', eventIncludes: 'What it includes (optional)', eventHelp: 'Promoters and festivals: what each event pays.', dealHelp: 'Most common with promoters: they bring us to their venues. Write what you agreed.',
     builderHelp: 'They appear in the proposal as a slide with what each includes and the total (before the price).', put: 'Add to the proposal', update: 'Update packages', remove: 'Remove', size: 'Venue size',
   },
   pt: {
@@ -74,6 +76,7 @@ export const packagesMessages = defineMessages({
     has: 'Tem', changeBtn: 'Mudar pacotes ou preço',
     learnTitle: 'Pacotes e preços', learnLede: 'O que vendemos e quanto custa. O normal: 3 ou 4 pacotes.',
     learnFree: 'Pode ser grátis',
+    dealTab: 'Acordo', eventTab: 'Pagamento por evento', eventPrice: 'Preço por evento', perEvent: '€ por evento', eventIncludes: 'O que inclui (opcional)', eventHelp: 'Promotoras e festivais: o que paga cada evento.', dealHelp: 'O mais típico com promotoras: levam-nos às suas salas. Escreva o que combinaram.',
     builderHelp: 'Aparecem na proposta como um diapositivo com o que inclui cada um e o total (antes do preço).', put: 'Pôr na proposta', update: 'Atualizar pacotes', remove: 'Tirar', size: 'Tamanho do local',
   },
   ko: {
@@ -98,6 +101,7 @@ export const packagesMessages = defineMessages({
     has: '보유', changeBtn: '패키지나 가격 변경',
     learnTitle: '패키지와 가격', learnLede: '우리가 파는 것과 가격. 보통 3~4개 패키지.',
     learnFree: '무료 가능',
+    dealTab: '합의', eventTab: '이벤트당 결제', eventPrice: '이벤트당 가격', perEvent: '€ / 이벤트', eventIncludes: '포함 내용(선택)', eventHelp: '프로모터와 페스티벌: 이벤트마다 내는 금액.', dealHelp: '프로모터와 가장 흔한 경우: 자기 업장에 우리를 데려갑니다. 합의 내용을 쓰세요.',
     builderHelp: '제안서에 각 패키지 내용과 합계가 담긴 슬라이드로 나옵니다(가격 앞).', put: '제안서에 넣기', update: '패키지 업데이트', remove: '빼기', size: '업장 규모',
   },
 });
