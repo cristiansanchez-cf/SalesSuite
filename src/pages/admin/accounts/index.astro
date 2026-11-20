@@ -1,4 +1,7 @@
 ---
+import { isOpen, trialStatus, type Trial } from '~/lib/crm/trial';
+import { trialMessages } from '~/lib/i18n/messages/trial';
+import { localDay } from '~/lib/crm/when';
 import { DISCARD_REASONS } from '~/lib/accounts/types';
 import ZonePicker from '~/components/crm/ZonePicker.astro';
 import GroupPicker from '~/components/crm/GroupPicker.astro';
@@ -134,19 +137,27 @@ const accountLists = lists.filter((l) => l.accounts > 0);
 const stage = lista ? crm.find((x) => x.isStage) : undefined;
 // Prioridad (docs/CRM_DINAMICO.md §11): puntuación de cada empresa; ordenar por ella y filtrar sin cualificar / fuera / se enfrían.
 const orden = qual && q.get('orden') === 'prioridad' ? 'prioridad' : '';
-const cual = ((qual ? ['sin', 'fuera', 'enfria', 'ia'] : ['enfria', 'ia']).includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia';
+const cual = ((qual ? ['sin', 'fuera', 'enfria', 'ia', 'prueba'] : ['enfria', 'ia', 'prueba']).includes(q.get('cual') ?? '') ? q.get('cual') : '') as '' | 'sin' | 'fuera' | 'enfria' | 'ia' | 'prueba';
 const segKey = new Map(segments.map((sg) => [sg.id, sg.key]));
 // La nota según la ficha de su tipo (§24): local, promotora o DJ.
 const prio = new Map(items.map((a) => [a.id, priorityFor(a.qualification, profileOf(kindDefs, a.kind), segKey.get(a.segmentId ?? '') ?? null, weights)]));
 const PRF = profilesMessages[locale];
 const critLabel = (k: string) => (R.criteria as Record<string, string>)[k] ?? (PRF.q as unknown as Record<string, [string, unknown]>)[k]?.[0] ?? PRF.style;
 const byState = items.filter((a) => stateF === 'all' || a.state === stateF);
+// En prueba (docs/CLIENTS.md §En prueba): las que siguen probando, con su fecha de fin. Mientras prueban no «se enfrían»:
+// lo que importa es el día que acaba.
+const trialsOpen = await admin.crm.openTrials().catch(() => new Map<string, Trial>());
+const trialOf = (a: { id: string; wonAt: string | null }) => { const x = trialsOpen.get(a.id); return isOpen(x, a.wonAt) ? x : null; };
+const todayTz = localDay(new Date());
+const TR = trialMessages[locale];
 const cooling = await admin.crm.cooling(cual === 'enfria' ? byState : byState.slice(0, shownMax));
+for (const a of byState) if (trialOf(a)) cooling.delete(a.id);
 let shown = byState.filter((a) => {
   const p = prio.get(a.id)!;
-  return cual === 'sin' ? !p.out && !p.qualified : cual === 'fuera' ? p.out : cual === 'enfria' ? cooling.has(a.id) : cual === 'ia' ? !!a.aiResearchAt : true;
+  return cual === 'sin' ? !p.out && !p.qualified : cual === 'fuera' ? p.out : cual === 'enfria' ? cooling.has(a.id) : cual === 'ia' ? !!a.aiResearchAt : cual === 'prueba' ? !!trialOf(a) : true;
 });
 // Investigadas por IA: las últimas primero (para repasar sus propuestas).
+if (cual === 'prueba' && orden !== 'prioridad') shown = [...shown].sort((x, y) => trialOf(x)!.endsOn.localeCompare(trialOf(y)!.endsOn));
 if (cual === 'ia' && orden !== 'prioridad') shown = [...shown].sort((x, y) => String(y.aiResearchAt).localeCompare(String(x.aiResearchAt)));
 if (orden === 'prioridad') shown = [...shown].sort((x, y) => compareLeads(prio.get(x.id)!, prio.get(y.id)!) || x.name.localeCompare(y.name, 'es'));
 // El nombre del grupo solo de las que se van a ver (no de todas las de la zona).
@@ -171,7 +182,7 @@ const team = perms.manageAccounts ? (await admin.tenantAdmin.listMembers().catch
 const okMsg = flash(Astro.url, { discarded: CL.discardedMany(Number(Astro.url.searchParams.get('n')) || 0), assigned: M.bulkAssigned(Number(Astro.url.searchParams.get('n')) || 0, team.find((x) => x.id === Astro.url.searchParams.get('a'))?.label.replace(/^.*\((.*)\)$/, '$1') ?? '—'), moved: P.bulk.ok(Number(q.get('n')) || 0), released: M.bulkReleased(Number(Astro.url.searchParams.get('n')) || 0), pickTwo: MG.pickTwo, kinds: CL.kindChanged(Number(q.get('n')) || 0) });
 // Barra de filtros: ciudades (con su ruta si hay región), cualificación, y lo aplicado como chips quitables.
 const zoneOptions = t.zones.map((z) => ({ id: z.id, label: zonePath(t.zones, z.id) })).sort((a, b) => a.label.localeCompare(b.label, locale));
-const QUALITY: Array<[string, string]> = ([['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter]] as Array<[string, string]>).filter(([k]) => qual || k === 'enfria' || k === 'ia');
+const QUALITY: Array<[string, string]> = ([['sin', R.list.unqualified], ['enfria', R.list.cooling], ['fuera', R.list.out], ['ia', AI.zone.filter], ['prueba', TR.filter]] as Array<[string, string]>).filter(([k]) => qual || k === 'enfria' || k === 'ia' || k === 'prueba');
 const fieldLabel = (k: string, v: string) => { const fd = filterable.find((x) => x.key === k); const o = fd?.options.find((x) => x.key === v);
   return `${fd?.label.replace(/^¿|\?$/g, '') ?? k}: ${fd?.type === 'checkbox' ? (v === 'yes' ? crmMessages[locale].card.yes : crmMessages[locale].card.no) : o?.label ?? v}`; };
 const active = [
@@ -358,6 +369,7 @@ const panelOpen = nFilters > 0;
             </a>
             {(() => { const p = prio.get(a.id)!; const c = cooling.get(a.id); return (
               <span class="flex flex-wrap items-center justify-end gap-1.5" data-testid="account-priority" data-score={p.score} data-out={p.out ? 'true' : 'false'}>
+                {(() => { const tr = trialOf(a); if (!tr) return null; const st = trialStatus(tr, todayTz); return <span class:list={['co-badge !py-0 text-[11px]', st.tone === 'running' ? 'co-badge--ink' : 'co-badge--attention']} title={TR.until(fmt.date(`${tr.endsOn}T12:00:00Z`, { day: 'numeric', month: 'long', timeZone: 'UTC' }))} data-testid="trial-tag"><Icon name="clock" size={11} />{TR.badge(st.daysLeft)}</span>; })()}
                 {c !== undefined && <span class="co-tag co-tag--danger" title={R.coolingHelp}>{R.cooling(c)}</span>}
                 {a.aiResearchAt && <span class="co-tag" title={AI.at(fmt.relative(a.aiResearchAt))} data-testid="account-ai"><Icon name="sparkles" size={12} />{AI.zone.badge}</span>}
                 {!qual ? null : p.out ? <span class="co-tag" title={p.kills.map((k) => R.kills[k]).join(' · ')}>{R.outBy(R.kills[p.kills[0]])}</span>

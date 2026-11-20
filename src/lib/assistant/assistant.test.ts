@@ -163,6 +163,17 @@ describe('la conversación', () => {
     expect(applied[0][0]).toMatchObject({ agreement: '70/30 para ellos si conseguimos marcas' });
     expect(b.replies[0].text).toContain('Deep Delay ya es cliente');
   });
+  test('«Tnsi se va a pasar en prueba 2 meses» → el resumen dice hasta cuándo y al guardar lo confirma', async () => {
+    const { ops, applied } = fakeOps({
+      split: async () => [{ ...item('Tnsi', { trialUntil: '2027-01-20' }), candidates: [cand('t1', 'Tnsi', 1)] }],
+      apply: async (rows) => { applied.push(rows); return [{ accountId: 't1', name: 'Tnsi', ok: true, trial: '2027-01-20' }]; },
+    });
+    const a = await run(ops, { kind: 'text', text: 'Tnsi se va a pasar en prueba 2 meses por un trato que hemos hecho' });
+    expect(a.replies[0].text).toContain('⏳ En prueba hasta el 20 de enero');
+    const b = await run(ops, { kind: 'button', id: 'save' }, a.state);
+    expect(applied[0][0]).toMatchObject({ trialUntil: '2027-01-20' });
+    expect(b.replies[0].text).toContain('Tnsi está en prueba hasta el 20 de enero');
+  });
   test('caso Euforía: nombre y ciudad por separado, la ciudad corregida manda, y se arregla después de guardar', async () => {
     const MUR = { v: 'es|Región de Murcia|Murcia|Murcia', label: 'Región de Murcia › Murcia' }, MAD = { v: 'es|Comunidad de Madrid|Madrid|Madrid', label: 'Comunidad de Madrid › Madrid' };
     const placeIn = async (t: string) => (/murcia/i.test(t) ? MUR : /madrid/i.test(t) ? MAD : null);

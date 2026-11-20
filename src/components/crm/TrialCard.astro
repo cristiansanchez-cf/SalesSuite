@@ -1,0 +1,95 @@
+---
+/**
+ * En prueba (docs/CLIENTS.md §En prueba). Criterio de Cristian: «seria genial que saliera bien claro». Dos usos:
+ *  · mode="open": la prueba en marcha, arriba en la ficha: cuántos días quedan (en rojo los últimos o pasada), la barra,
+ *    lo acordado y qué hacer al acabar («Se queda» / «No sigue»).
+ *  · mode="start": el formulario para empezarla (10 o 15 días, 1 o 2 meses u otra fecha), dentro de «Cierre».
+ * Formularios con action trial-start / trial-end.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import { TRIAL_PRESETS, trialStatus, type Trial } from '~/lib/crm/trial';
+import { trialMessages } from '~/lib/i18n/messages/trial';
+import type { Locale } from '~/lib/i18n/core';
+
+interface Props {
+  locale: Locale; mode: 'open' | 'start'; trial?: Trial | null; customer: boolean; canEdit: boolean;
+  /** Hoy en la zona del equipo (YYYY-MM-DD). */
+  today: string;
+  date: (day: string) => string;
+}
+const { locale, mode, trial = null, customer, canEdit, today, date } = Astro.props;
+const T = trialMessages[locale];
+const st = trial ? trialStatus(trial, today) : null;
+const hot = st && st.tone !== 'running';
+const presets = [...TRIAL_PRESETS.map((p) => p.key), 'custom'] as const;
+---
+{mode === 'open' && trial && st ? (
+  <section class:list={['co-card grid gap-3 border-2', hot ? 'border-[var(--console-attention)] bg-[var(--console-attention-bg)]' : 'border-[var(--co-ink)]']} id="trial" data-testid="trial" data-tone={st.tone}>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="co-entity m-0 flex items-center gap-2"><Icon name="clock" size={18} />{T.title}</h2>
+      <span class:list={['co-badge', hot ? 'co-badge--attention' : 'co-badge--ink']} data-testid="trial-badge">{T.badge(st.daysLeft)}</span>
+    </div>
+    <div class="grid gap-1">
+      <div class="h-2 overflow-hidden rounded-full bg-[var(--console-divider)]" aria-hidden="true">
+        <div class:list={['h-full rounded-full', hot ? 'bg-[var(--console-attention)]' : 'bg-[var(--co-ink)]']} style={`width:${Math.round((st.elapsed / st.length) * 100)}%`} />
+      </div>
+      <p class="co-meta m-0">{T.range(date(trial.startsOn), date(trial.endsOn))} · {T.of(Math.min(st.length, st.elapsed + 1), st.length)}</p>
+    </div>
+    {trial.note && <p class="co-body m-0 whitespace-pre-line" data-ugc data-testid="trial-note">{trial.note}</p>}
+    {st.tone === 'over' && <p class="m-0 font-semibold">{T.over}</p>}
+
+    {canEdit && (
+      <div class="grid gap-2">
+        {!customer && <p class="co-help m-0">{T.closeBelow}</p>}
+        <div class="flex flex-wrap items-start gap-2">
+          {customer && (
+            <form method="post"><input type="hidden" name="action" value="trial-end" /><input type="hidden" name="trialId" value={trial.id} /><input type="hidden" name="outcome" value="stays" />
+              <button class="co-btn co-btn--primary co-btn--sm" data-testid="trial-stays"><Icon name="check" size={14} />{T.stays}</button></form>
+          )}
+          <details class="grid gap-2" data-testid="trial-leaves-wrap">
+            <summary class="co-btn co-btn--ghost co-btn--sm w-fit cursor-pointer list-none" data-testid="trial-leaves-open">{T.leaves}</summary>
+            <form method="post" class="mt-2 grid gap-2">
+              <input type="hidden" name="action" value="trial-end" /><input type="hidden" name="trialId" value={trial.id} /><input type="hidden" name="outcome" value="leaves" />
+              <label class="co-field">{T.leavesWhy}<input class="co-input" name="why" maxlength="300" /></label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="discard" value="1" checked data-testid="trial-discard" />{T.leavesDiscard}</label>
+              <button class="co-btn co-btn--quiet co-btn--sm w-fit" data-testid="trial-leaves">{T.leavesConfirm}</button>
+            </form>
+          </details>
+          <details class="grid gap-2">
+            <summary class="co-btn co-btn--ghost co-btn--sm w-fit cursor-pointer list-none" data-testid="trial-change">{T.change}</summary>
+            <form method="post" class="mt-2 grid gap-3">
+              <input type="hidden" name="action" value="trial-start" /><input type="hidden" name="preset" value="custom" />
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="co-field">{T.since}<input class="co-input" type="date" name="startsOn" value={trial.startsOn} required /></label>
+                <label class="co-field">{T.until2}<input class="co-input" type="date" name="endsOn" value={trial.endsOn} required data-testid="trial-change-ends" /></label>
+              </div>
+              <button class="co-btn co-btn--primary co-btn--sm w-fit" data-testid="trial-change-save">{T.save}</button>
+            </form>
+          </details>
+        </div>
+      </div>
+    )}
+  </section>
+) : mode === 'start' && canEdit ? (
+  <form method="post" class="trial-start grid gap-3" data-testid="trial-form">
+    <input type="hidden" name="action" value="trial-start" />
+    <p class="co-help m-0">{T.lede}</p>
+    <fieldset class="grid gap-2">
+      <legend class="co-meta mb-1">{T.howLong}</legend>
+      <div class="co-chips">
+        {presets.map((k) => <label class="co-chip relative cursor-pointer"><input type="radio" name="preset" value={k} checked={k === '1m'} data-testid={`trial-preset-${k}`} />{T.presets[k]}</label>)}
+      </div>
+    </fieldset>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="co-field">{T.since}<input class="co-input" type="date" name="startsOn" value={today} /></label>
+      <label class="co-field trial-custom">{T.until2}<input class="co-input" type="date" name="endsOn" min={today} data-testid="trial-ends" /></label>
+    </div>
+    <label class="co-field">{T.note}<textarea class="co-textarea" name="note" maxlength="2000" rows="2" placeholder={T.notePh} data-testid="trial-note-input"></textarea></label>
+    <button class="co-btn co-btn--primary w-fit" data-testid="trial-start"><Icon name="clock" size={14} />{T.start}</button>
+  </form>
+) : null}
+
+<style>
+  /* «Hasta» solo con «Otra fecha». */
+  .trial-start:not(:has(input[name='preset'][value='custom']:checked)) .trial-custom { display: none; }
+</style>

@@ -10,14 +10,24 @@ import Icon from '~/components/ui/Icon.astro';
 import { can } from '~/lib/admin/permissions';
 import { i18n } from '~/lib/i18n';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
+import { trialMessages } from '~/lib/i18n/messages/trial';
+import { trialStatus } from '~/lib/crm/trial';
+import { localDay } from '~/lib/crm/when';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
-const { m: C, f: fmt } = i18n(Astro, clientsMessages);
+const { m: C, f: fmt, locale } = i18n(Astro, clientsMessages);
 const all = perms.manageAccounts && Astro.url.searchParams.get('ver') !== 'mios';
-const list = await admin.crm.clients({ all });
+// En prueba arriba (docs/CLIENTS.md §En prueba): las que están probando, la que acaba antes primero. Las que ya son
+// clientes y siguen en prueba por un trato (Tnsi) salen aquí y no abajo, para no verlas dos veces.
+const [allClients, trials] = await Promise.all([admin.crm.clients({ all }), admin.crm.inTrial({ all })]);
+const inTrial = new Set(trials.map((x) => x.id));
+const list = allClients.filter((c) => !inTrial.has(c.id));
+const T = trialMessages[locale];
+const todayTz = localDay(new Date());
+const day = (d: string) => fmt.date(`${d}T12:00:00Z`, { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const date = (iso: string | null) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric' });
 const clip = (s: string, n = 220) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 ---
@@ -30,7 +40,28 @@ const clip = (s: string, n = 220) => (s.length > n ? `${s.slice(0, n - 1)}…` :
       </div>
     )}
   </PageHeader>
-  {list.length === 0 ? <EmptyState kind="none" title={C.title} because={C.empty} /> : (
+  {trials.length > 0 && (
+    <section class="co-section mb-6" data-testid="clients-trials">
+      <div class="co-section__head"><h2 class="text-eyebrow">{T.clientsTitle(trials.length)}</h2><p class="co-meta">{T.clientsLede}</p></div>
+      <ul class="co-rows">
+        {trials.map((c) => { const st = trialStatus(c.trial, todayTz); const hot = st.tone !== 'running'; return (
+          <li>
+            <a class:list={['co-row items-start', hot && 'co-row--attention']} href={`/admin/accounts/${c.id}#trial`} data-testid="trial-row" data-name={c.name} data-tone={st.tone}>
+              <span class="co-anchor__avatar co-anchor__avatar--soft"><Icon name="clock" size={16} /></span>
+              <span class="co-row__main min-w-0">
+                <span class="co-row-title">{c.name}</span>
+                {c.trial.note && <span class="co-body block text-sm" data-ugc>{clip(c.trial.note)}</span>}
+                <span class="co-meta">{[T.range(day(c.trial.startsOn), day(c.trial.endsOn)), all && c.ownerName ? C.owner(c.ownerName) : null].filter(Boolean).join(' · ')}</span>
+                <span class="mt-1 block h-1.5 max-w-xs overflow-hidden rounded-full bg-[var(--console-divider)]" aria-hidden="true"><span class:list={['block h-full rounded-full', hot ? 'bg-[var(--console-attention)]' : 'bg-[var(--co-ink)]']} style={`width:${Math.round((st.elapsed / st.length) * 100)}%`} /></span>
+              </span>
+              <span class:list={['co-badge', hot ? 'co-badge--attention' : 'co-badge--ink']}>{T.badge(st.daysLeft)}</span>
+            </a>
+          </li>
+        ); })}
+      </ul>
+    </section>
+  )}
+  {list.length === 0 ? (trials.length ? null : <EmptyState kind="none" title={C.title} because={C.empty} />) : (
     <ul class="co-rows" data-testid="clients">
       {list.map((c) => (
         <li>

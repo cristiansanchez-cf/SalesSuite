@@ -207,6 +207,18 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
       return rows[0]!;
     },
     async decideAgreement(_t, id, ok) { check(await sb.rpc('agreement_decide', { p_id: id, p_ok: ok })); },
+    async listTrials(t, accountIds) {
+      if (Array.isArray(accountIds) && !accountIds.length) return [];
+      let q = sb.from('account_trial').select('*').eq('tenant_id', t);
+      q = accountIds === 'open' ? q.is('ended_at', null) : q.in('account_id', accountIds.slice(0, 1000));
+      const rows = check(await q.order('created_at', { ascending: false }).limit(5000)) ?? [];
+      return rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string, accountId: r.account_id as string, startsOn: r.starts_on as string, endsOn: r.ends_on as string, note: (r.note as string) ?? null,
+        createdBy: (r.created_by as string) ?? null, createdAt: r.created_at as string, endedAt: (r.ended_at as string) ?? null, outcome: (r.outcome as 'stays') ?? null,
+      }));
+    },
+    async startTrial(_t, accountId, x) { return check(await sb.rpc('trial_start', { p_account: accountId, p_starts: x.startsOn, p_ends: x.endsOn, p_note: x.note })) as string; },
+    async endTrial(_t, id, outcome) { check(await sb.rpc('trial_end', { p_trial: id, p_outcome: outcome })); },
     async cancelPaymentRequest(t, id) {
       return (check(await sb.from('payment_request').update({ status: 'cancelled' }).eq('tenant_id', t).eq('id', id).eq('status', 'sent').select('id')) ?? []).length > 0;
     },

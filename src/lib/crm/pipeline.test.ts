@@ -15,6 +15,13 @@ describe('tablero: la columna la decide el historial (§34)', () => {
     expect(stageOf(x({ wonAt: '2026-10-10', closingAt: '2026-10-08' }))).toBe('won');
   });
 
+  test('en prueba: su propia columna, también si ya era cliente; descartada, perdida', () => {
+    expect(stageOf(x({ closingAt: '2026-10-08', trial: { startsOn: '2026-10-09' } }))).toBe('trial');
+    expect(stageOf(x({ wonAt: '2026-10-01', trial: { startsOn: '2026-10-09' } }))).toBe('trial');
+    expect(stageOf(x({ discardedAt: '2026-10-20', trial: { startsOn: '2026-10-09' } }))).toBe('lost');
+    expect(stageSince('trial', x({ trial: { startsOn: '2026-10-09' } }))).toBe('2026-10-09T00:00:00Z');
+  });
+
   test('perdida: descartada o lo último fue «no interesado»; ganada manda sobre todo', () => {
     expect(stageOf(x({ discardedAt: '2026-10-09', closingAt: '2026-10-01' }))).toBe('lost');
     expect(stageOf(x({ summary: sum({ real: 2, firstReplyAt: '2026-10-02', lastOutcome: 'not_interested' }) }))).toBe('lost');

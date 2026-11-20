@@ -2,6 +2,9 @@
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
 import AgreementCard from '~/components/crm/AgreementCard.astro';
 import ClosingCard from '~/components/crm/ClosingCard.astro';
+import TrialCard from '~/components/crm/TrialCard.astro';
+import { isOpen, trialStatus } from '~/lib/crm/trial';
+import { trialMessages } from '~/lib/i18n/messages/trial';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { localDay, localTime } from '~/lib/crm/when';
 import ChatThread from '~/components/admin/ChatThread.astro';
@@ -118,6 +121,13 @@ if (Astro.request.method === 'POST') {
         to += `?ok=${r.status === 'pending' ? 'agProposed' : was ? 'agChanged' : 'agClosed'}#agreement`; break;
       }
       case 'agreement-ok': await admin.crm.decideAgreement(id, str('agreementId'), true); to += '?ok=agConfirmed#agreement'; break;
+      // En prueba (docs/CLIENTS.md §En prueba): empezarla o cambiar fechas; acabarla («Se queda» / «No sigue»).
+      case 'trial-start': await admin.crm.startTrial(id, { preset: str('preset') || 'custom', startsOn: str('startsOn'), endsOn: str('endsOn'), note: str('note') }); to += '?ok=trialStart#trial'; break;
+      case 'trial-end': {
+        const out = str('outcome') === 'stays' ? 'stays' : 'leaves';
+        await admin.crm.endTrial(id, str('trialId'), out, { discard: str('discard') === '1', note: str('why') || null });
+        to += `?ok=${out === 'stays' ? 'trialStays' : 'trialLeaves'}`; break;
+      }
       case 'agreement-no': await admin.crm.decideAgreement(id, str('agreementId'), false); to += '?ok=agRejected#agreement'; break;
       case 'next': await admin.crm.setNextStep(id, { at: str('nextAt'), time: str('nextTime') || null, tz: myTz, channel: str('nextChannel'), contactId: str('nextContactId'), step: str('nextStep') }); to += '?ok=next'; break;
       case 'next-clear': await admin.crm.setNextStep(id, null); to += '?ok=cleared'; break;
@@ -238,6 +248,7 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
   owner: P.group.ok.owner, group: P.group.ok.group, tags: P.group.ok.tags, person: P.group.ok.person, unlinked: P.group.ok.unlinked,
   saved: M.okSaved, fields: C.okSaved, work: KN.work.ok, workNew: KN.work.okNew, workRemoved: KN.work.removed, assigned: M.okAssigned, blocked: M.okBlocked, unblocked: M.okUnblocked,
   agClosed: clientsMessages[locale].ok.closed, agProposed: clientsMessages[locale].ok.proposed, agConfirmed: clientsMessages[locale].ok.confirmed, agRejected: clientsMessages[locale].ok.rejected, agChanged: clientsMessages[locale].ok.changed,
+  trialStart: trialMessages[locale].ok.start, trialStays: trialMessages[locale].ok.stays, trialLeaves: trialMessages[locale].ok.leaves,
   charge: chargeMessages[locale].ok, chargeCancelled: chargeMessages[locale].okCancelled, paid: chargeMessages[locale].okPaid, merged: mergeMessages[locale].ok,
 });
 // Cobrar (§35): los tramos del tamaño según lo que es y quién generó cada enlace.
@@ -248,6 +259,13 @@ const sizeRangeOf = (q: typeof a.qualification): Record<string, string> => {
   return Object.fromEntries(SIZES.map((k, i) => [k, PS.sizeRange(i ? num(lim[i - 1]) : '', i < 3 ? num(lim[i]) : '')]));
 };
 const agreementList = await admin.crm.agreements(id).catch(() => []);
+// En prueba: la que sigue en marcha (si pagó o se cerró con acuerdo después de empezarla, ya no).
+const openTrial = (await admin.crm.trials(id).catch(() => [])).find((x) => isOpen(x, a.wonAt)) ?? null;
+const todayTz = localDay(new Date(), myTz);
+const trialSt = openTrial ? trialStatus(openTrial, todayTz) : null;
+const canTrial = a.state !== 'blocked' && (perms.manageAccounts || a.ownerId === admin.session.userId || a.state === 'free');
+const TR = trialMessages[locale];
+const trialDay = (d: string) => fmt.date(`${d}T12:00:00Z`, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 const chargeNames = new Map([...members.map((x) => [x.userId, x.displayName || x.email] as const), [admin.session.userId, admin.session.displayName || admin.session.email]]);
 const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
@@ -280,6 +298,11 @@ const STATE_ALERT = {
         </div>
       </form>
     )}
+    {trialSt && (
+      <a slot="below" href="#trial" class:list={['co-badge mt-3 w-fit no-underline', trialSt.tone === 'running' ? 'co-badge--ink' : 'co-badge--attention']} data-testid="trial-head">
+        <Icon name="clock" size={12} />{TR.badge(trialSt.daysLeft)} · {TR.until(trialDay(openTrial!.endsOn))}
+      </a>
+    )}
     {a.discardedAt && a.discardReason && (
       <p slot="below" class="co-tag co-tag--danger mt-3 w-fit" data-testid="discarded-banner">{CL.discarded(CL.reasons[a.discardReason])}{a.discardNote && <span class="font-normal"> — {a.discardNote}</span>}</p>
     )}
@@ -294,6 +317,9 @@ const STATE_ALERT = {
         <Icon name={STATE_ALERT.kind === 'rejection' ? 'triangle-alert' : STATE_ALERT.kind === 'success' ? 'circle-check' : 'info'} size={18} />
         <div class="min-w-0"><p class="font-semibold">{STATE_ALERT.title}</p><p>{STATE_ALERT.body}</p></div>
       </div>
+
+      {/* En prueba: arriba del todo, que se vea (criterio de Cristian: «que saliera bien claro»). */}
+      {openTrial && <TrialCard mode="open" locale={locale} trial={openTrial} customer={a.status === 'customer'} canEdit={canTrial} today={todayTz} date={trialDay} />}
 
       {/* Resumen (§22): lo que hace falta de un vistazo en la puerta del local; y saltos a cada parte (en el móvil la ficha es larga). */}
       <section id="account-summary" class="co-card grid gap-3 !p-4" data-testid="account-summary">
@@ -513,7 +539,7 @@ const STATE_ALERT = {
 
 
       {/* Cierre (docs/CLIENTS.md): con pago (Cobrar, §35) o sin pago (acuerdo), en una sola tarjeta. */}
-      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'}
+      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial}
         startWith={agreementList.some((g) => g.status === 'pending') ? 'deal' : 'pay'} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })}>
         <div slot="pay"><ChargeCard embedded name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
           suggestedId={suggestTariff(chargeOpts, { size: (a.qualification?.size as string | undefined) ?? null, segmentId: a.segmentId })?.id ?? null}
@@ -522,6 +548,7 @@ const STATE_ALERT = {
         <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName}
         canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
         date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>
+        {!openTrial && canTrial && <div slot="trial"><TrialCard mode="start" locale={locale} customer={a.status === 'customer'} canEdit today={todayTz} date={trialDay} /></div>}
       </ClosingCard>
 
       {/* Tres tarjetas (§26): el grupo, las personas y con quién trabaja; cada una con lo suyo. */}

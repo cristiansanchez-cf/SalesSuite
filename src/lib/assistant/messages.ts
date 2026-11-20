@@ -3,7 +3,9 @@ import { defineMessages } from '../i18n/core';
 
 interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
 interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
-interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; agreement?: string | null; discard?: string | null }
+interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; agreement?: string | null; trialUntil?: string | null; discard?: string | null }
+/** «20 de enero» (el día tal cual, sin zona). */
+const dayOf = (d: string, loc: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: 'UTC' });
 const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 const es = {
@@ -13,6 +15,7 @@ const es = {
     s.keyFacts.length ? `Lo que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
     s.discard ? `🚫 Se descarta: ${s.discard}` : '',
     s.agreement ? `🤝 Cierre con acuerdo: ${clip(s.agreement, 400)}` : '',
+    s.trialUntil ? `⏳ En prueba hasta el ${dayOf(s.trialUntil, 'es-ES')}` : '',
       s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'}${s.nextTime ? `, a las ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
   save: 'Guardar', change: 'Cambiar',
   whichOne: (venue: string, opts: string[], create: string) => opts.length
@@ -48,6 +51,8 @@ const es = {
   pasteFirst: 'Solo me ha llegado un mensaje de la conversación 🤏 WhatsApp solo deja pegar todos si la caja está vacía. Pega primero los mensajes (solo eso, en un mensaje) y yo lo junto con lo que me acabas de contar.',
   dealClosed: (n: string) => `🤝 ${n} ya es cliente (cerrada con acuerdo). Está en Clientes.`,
   dealPending: (n: string) => `🤝 El acuerdo con ${n} queda pendiente: lo confirma un gerente o admin y entonces pasa a Clientes.`,
+  trialFailed: (n: string, why: string) => `⚠️ No he podido poner ${n} en prueba: ${why}.`,
+  trialSaved: (n: string, d: string) => `⏳ ${n} está en prueba hasta el ${dayOf(d, 'es-ES')}. Te aviso unos días antes para ver si se queda.`,
   edited: (name: string, zone: string) => `✏️ Arreglado: *${name}*${zone ? ` · 📍 ${zone}` : ''}.`,
   whichSaved: (names: string[]) => `¿En cuál lo cambio? ${names.join(' · ')}. Escríbelo con su nombre.`,
   placeNotFound: (q: string) => `No encuentro «${q}». Escríbelo como «Ciudad, Provincia» (p. ej. «Murcia, Murcia»).`,
@@ -90,6 +95,7 @@ export const assistantMessages = defineMessages({
       s.keyFacts.length ? `What we know: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
       s.discard ? `🚫 To be discarded: ${s.discard}` : '',
     s.agreement ? `🤝 Closed with an agreement: ${clip(s.agreement, 400)}` : '',
+    s.trialUntil ? `⏳ On trial until ${dayOf(s.trialUntil, 'en-GB')}` : '',
       s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'}${s.nextTime ? `, at ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: 'Save', change: 'Change',
     whichOne: (venue, opts, create) => opts.length
@@ -125,6 +131,8 @@ export const assistantMessages = defineMessages({
     pasteFirst: 'Only one message of the conversation came through 🤏 WhatsApp only lets you paste them all when the box is empty. Paste the messages first (just that, in one message) and I will join them with what you just told me.',
     dealClosed: (n) => `🤝 ${n} is now a client (closed with an agreement). It’s in Clients.`,
     dealPending: (n) => `🤝 The agreement with ${n} is pending: a manager or admin confirms it and then it moves to Clients.`,
+    trialFailed: (n, why) => `⚠️ I couldn’t put ${n} on trial: ${why}.`,
+    trialSaved: (n, d) => `⏳ ${n} is on trial until ${dayOf(d, 'en-GB')}. I’ll remind you a few days before to see if they stay.`,
     edited: (name, zone) => `✏️ Fixed: *${name}*${zone ? ` · 📍 ${zone}` : ''}.`,
     whichSaved: (names) => `Which one should I change? ${names.join(' · ')}. Write it with its name.`,
     placeNotFound: (q) => `I can’t find «${q}». Write it as «City, Province».`,
@@ -163,6 +171,7 @@ export const assistantMessages = defineMessages({
       s.keyFacts.length ? `O que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
       s.discard ? `🚫 Descarta-se: ${s.discard}` : '',
     s.agreement ? `🤝 Fechada com acordo: ${clip(s.agreement, 400)}` : '',
+    s.trialUntil ? `⏳ Em teste até ${dayOf(s.trialUntil, 'pt-PT')}` : '',
       s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'}${s.nextTime ? `, às ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: 'Guardar', change: 'Mudar',
     whichOne: (venue, opts, create) => opts.length
@@ -198,6 +207,8 @@ export const assistantMessages = defineMessages({
     pasteFirst: 'Só me chegou uma mensagem da conversa 🤏 O WhatsApp só deixa colar todas se a caixa estiver vazia. Cola primeiro as mensagens (só isso, numa mensagem) e eu junto com o que me acabaste de contar.',
     dealClosed: (n) => `🤝 ${n} já é cliente (fechada com acordo). Está em Clientes.`,
     dealPending: (n) => `🤝 O acordo com ${n} fica pendente: um gerente ou admin confirma e depois passa a Clientes.`,
+    trialFailed: (n, why) => `⚠️ Não consegui pôr ${n} em teste: ${why}.`,
+    trialSaved: (n, d) => `⏳ ${n} está em teste até ${dayOf(d, 'pt-PT')}. Aviso uns dias antes para ver se fica.`,
     edited: (name, zone) => `✏️ Corrigido: *${name}*${zone ? ` · 📍 ${zone}` : ''}.`,
     whichSaved: (names) => `Em qual mudo? ${names.join(' · ')}. Escreve com o nome.`,
     placeNotFound: (q) => `Não encontro «${q}». Escreve como «Cidade, Província».`,
@@ -236,6 +247,7 @@ export const assistantMessages = defineMessages({
       s.keyFacts.length ? `알고 있는 것: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
       s.discard ? `🚫 제외: ${s.discard}` : '',
     s.agreement ? `🤝 계약으로 성사: ${clip(s.agreement, 400)}` : '',
+    s.trialUntil ? `⏳ ${dayOf(s.trialUntil, 'ko-KR')}까지 체험 중` : '',
       s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후${s.nextTime ? ` ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
     save: '저장', change: '수정',
     whichOne: (venue, opts, create) => opts.length
@@ -271,6 +283,8 @@ export const assistantMessages = defineMessages({
     pasteFirst: '대화 중 메시지 하나만 들어왔어요 🤏 WhatsApp은 입력창이 비어 있을 때만 전부 붙여넣을 수 있어요. 먼저 메시지만 한 번에 붙여넣어 주세요. 방금 말씀하신 내용과 합칠게요.',
     dealClosed: (n) => `🤝 ${n}이(가) 이제 고객입니다(계약으로 성사). 고객에 있습니다.`,
     dealPending: (n) => `🤝 ${n}와의 계약은 대기 중입니다. 매니저나 관리자가 확인하면 고객으로 옮겨집니다.`,
+    trialFailed: (n, why) => `⚠️ ${n}을(를) 체험 중으로 설정하지 못했습니다: ${why}.`,
+    trialSaved: (n, d) => `⏳ ${n}은(는) ${dayOf(d, 'ko-KR')}까지 체험 중입니다. 끝나기 며칠 전에 계속할지 알려 드릴게요.`,
     edited: (name, zone) => `✏️ 수정했어요: *${name}*${zone ? ` · 📍 ${zone}` : ''}.`,
     whichSaved: (names) => `어느 것을 바꿀까요? ${names.join(' · ')}. 이름과 함께 적어 주세요.`,
     placeNotFound: (q) => `«${q}»을(를) 찾을 수 없어요. «도시, 주» 형식으로 적어 주세요.`,

@@ -26,7 +26,7 @@ export interface AssistantOps {
   /** «Apuntar»: lo separa por empresa con sus candidatas. */
   split(text: string): Promise<Array<NoteItem & { candidates: Candidate[] }>>;
   search(q: string): Promise<Candidate[]>;
-  apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending'; discarded?: boolean }>>;
+  apply(rows: unknown[]): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending'; trial?: string; trialError?: string; discarded?: boolean }>>;
   /** Recordatorios: la propuesta de mensaje para una empresa (draft.ts). */
   draft?(item: ReminderItem): Promise<string>;
   /** Dónde está una empresa nueva: un sitio conocido nombrado en el texto (places.ts). */
@@ -106,7 +106,7 @@ function rowOf(p: Pending) {
   return {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
-    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null,
+    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null, trialUntil: it.trialUntil ?? null,
     // Descartar (no les interesa, no encaja…): se ve en el resumen y se hace al pulsar Guardar; así nadie vuelve a venderles lo mismo.
     discard: it.discard ?? null, discardNote: it.discard ? it.discardWhy ?? null : null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
     // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
@@ -232,7 +232,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null, trialUntil: p.item.trialUntil ?? null,
       discard: p.item.discard ? `${T.discards[p.item.discard] ?? p.item.discard}${p.item.discardWhy ? ` (${p.item.discardWhy})` : ''}` : null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
@@ -262,6 +262,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const bad = r.filter((x) => !x.ok).map((x) => `${x.name || '—'}: ${x.error ?? T.failed}`);
     // Cerradas con acuerdo: ya en Clientes, o pendientes de que un gerente lo confirme.
     const deals = r.filter((x) => x.ok && x.agreement).map((x) => (x.agreement === 'active' ? T.dealClosed(x.name) : T.dealPending(x.name)));
+    for (const x of r) if (x.ok && x.trial) deals.push(T.trialSaved(x.name, x.trial)); else if (x.ok && x.trialError) deals.push(T.trialFailed(x.name, x.trialError));
     const out = r.filter((x) => x.ok && x.discarded).map((x) => x.name);
     if (out.length) deals.push(T.discardedSaved(out));
     const saved = r.filter((x) => x.ok && x.accountId).map((x) => ({ id: x.accountId!, name: x.name }));

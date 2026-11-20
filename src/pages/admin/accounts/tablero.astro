@@ -4,6 +4,9 @@
  * historial (Seguimiento), no el comercial. Cada uno ve solo su tablero; admin y gerentes, el de todos con filtro.
  * Avisa de las atascadas (pasado el plazo de su tipo de cliente o muchas vueltas negociando); no cierra nada solo.
  */
+import { trialStatus } from '~/lib/crm/trial';
+import { trialMessages } from '~/lib/i18n/messages/trial';
+import { localDay } from '~/lib/crm/when';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Icon from '~/components/ui/Icon.astro';
@@ -31,6 +34,8 @@ const me = admin.session.userId;
 const MAX = 60;
 const ago = (d: number | null) => (d === null ? '' : d === 0 ? B.today : B.days(d));
 const fmtDate = (iso: string) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(iso));
+const TR = trialMessages[locale];
+const todayTz = localDay(new Date());
 ---
 <AdminLayout title={B.title}>
   <PageHeader eyebrow={B.eyebrow} title={B.title} lede={B.lede}><ViewToggle current="board" /></PageHeader>
@@ -69,6 +74,7 @@ const fmtDate = (iso: string) => new Intl.DateTimeFormat(locale, { day: 'numeric
                     {[!board.owner && perms.manageAccounts ? c.ownerName : '', ago(c.since), c.real ? B.touches(c.real) : '', c.lastOutcome ? OUT[c.lastOutcome] ?? '' : ''].filter(Boolean).join(' · ')}
                   </span>
                   {(c.nextStep || c.nextStepAt) && <span class="co-meta flex min-w-0 items-center gap-1 text-xs"><Icon name="clock" size={12} /><span class="truncate">{B.next}: {[c.nextStep, c.nextStepAt ? fmtDate(c.nextStepAt) : ''].filter(Boolean).join(' · ')}</span></span>}
+                  {c.trial && (() => { const st = trialStatus(c.trial, todayTz); return <span class:list={['co-badge w-fit !py-0 text-[11px]', st.tone === 'running' ? 'co-badge--ink' : 'co-badge--attention']} data-testid="board-trial"><Icon name="clock" size={11} />{TR.badge(st.daysLeft)}</span>; })()}
                   {(c.overdue || c.manyTouches) && (
                     <span class="flex flex-wrap gap-1">
                       {c.overdue && <span class="co-tag co-tag--danger" data-testid="board-overdue" title={c.big ? B.big : undefined}>{B.overdue(c.overdue, c.limit)}</span>}

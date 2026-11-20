@@ -5,11 +5,11 @@ export const boardMessages = defineMessages({
   es: {
     title: 'Tablero', eyebrow: 'CRM',
     lede: 'Dónde está cada empresa que llevas. La columna la decide lo que ha pasado (lo que apuntas en Seguimiento), no se mueve a mano.',
-    stages: { new: 'Sin empezar', researched: 'Investigada', contacted: 'Primer contacto', negotiating: 'Negociando', closing: 'Cierre', won: 'Cerrada', lost: 'Perdida' },
+    stages: { new: 'Sin empezar', researched: 'Investigada', contacted: 'Primer contacto', negotiating: 'Negociando', closing: 'Cierre', trial: 'En prueba', won: 'Cerrada', lost: 'Perdida' },
     help: {
       new: 'Asignada, sin investigar ni contactar.', researched: 'Ya sabes algo de ella, pero aún no le has escrito.',
       contacted: 'Le has escrito o llamado; aún no ha contestado.', negotiating: 'Ha contestado: hay conversación.',
-      closing: 'Tiene la propuesta o el enlace de pago, sin pagar.', won: 'Ha pagado.', lost: 'Descartada o «no interesado».',
+      closing: 'Tiene la propuesta o el enlace de pago, sin pagar.', trial: 'Probándolo hasta una fecha. En rojo, los últimos días o ya pasada.', won: 'Ha pagado.', lost: 'Descartada o «no interesado».',
     },
     rep: 'Comercial', everyone: 'Todos', mine: 'Solo las mías',
     count: (n: number) => (n === 1 ? '1 empresa' : `${n} empresas`),
@@ -25,11 +25,11 @@ export const boardMessages = defineMessages({
   en: {
     title: 'Board', eyebrow: 'CRM',
     lede: 'Where each of your companies stands. The column comes from what happened (what you log in Follow-up); it can’t be moved by hand.',
-    stages: { new: 'Not started', researched: 'Researched', contacted: 'First contact', negotiating: 'Negotiating', closing: 'Closing', won: 'Won', lost: 'Lost' },
+    stages: { new: 'Not started', researched: 'Researched', contacted: 'First contact', negotiating: 'Negotiating', closing: 'Closing', trial: 'On trial', won: 'Won', lost: 'Lost' },
     help: {
       new: 'Assigned, not researched or contacted yet.', researched: 'You know something about it but haven’t written yet.',
       contacted: 'You’ve written or called; no reply yet.', negotiating: 'They replied: there’s a conversation.',
-      closing: 'They have the proposal or payment link, not paid yet.', won: 'They paid.', lost: 'Discarded or «not interested».',
+      closing: 'They have the proposal or payment link, not paid yet.', trial: 'Trying it until a date. Red: last days or past it.', won: 'They paid.', lost: 'Discarded or «not interested».',
     },
     rep: 'Rep', everyone: 'Everyone', mine: 'Only mine',
     count: (n: number) => (n === 1 ? '1 company' : `${n} companies`),
@@ -45,11 +45,11 @@ export const boardMessages = defineMessages({
   pt: {
     title: 'Quadro', eyebrow: 'CRM',
     lede: 'Onde está cada empresa que você leva. A coluna vem do que aconteceu (o que você registra em Acompanhamento), não se move à mão.',
-    stages: { new: 'Não iniciada', researched: 'Pesquisada', contacted: 'Primeiro contato', negotiating: 'Negociando', closing: 'Fechamento', won: 'Fechada', lost: 'Perdida' },
+    stages: { new: 'Não iniciada', researched: 'Pesquisada', contacted: 'Primeiro contato', negotiating: 'Negociando', closing: 'Fechamento', trial: 'Em teste', won: 'Fechada', lost: 'Perdida' },
     help: {
       new: 'Atribuída, sem pesquisa nem contato.', researched: 'Você já sabe algo dela, mas ainda não escreveu.',
       contacted: 'Você escreveu ou ligou; ainda sem resposta.', negotiating: 'Respondeu: há conversa.',
-      closing: 'Tem a proposta ou o link de pagamento, sem pagar.', won: 'Pagou.', lost: 'Descartada ou «não interessado».',
+      closing: 'Tem a proposta ou o link de pagamento, sem pagar.', trial: 'A testar até uma data. A vermelho, os últimos dias ou já passada.', won: 'Pagou.', lost: 'Descartada ou «não interessado».',
     },
     rep: 'Vendedor', everyone: 'Todos', mine: 'Só as minhas',
     count: (n: number) => (n === 1 ? '1 empresa' : `${n} empresas`),
@@ -65,11 +65,11 @@ export const boardMessages = defineMessages({
   ko: {
     title: '보드', eyebrow: 'CRM',
     lede: '담당 회사가 어디까지 왔는지. 열은 일어난 일(후속 관리에 기록한 내용)로 정해지며 손으로 옮길 수 없습니다.',
-    stages: { new: '시작 전', researched: '조사됨', contacted: '첫 연락', negotiating: '협상 중', closing: '마무리', won: '성사', lost: '실패' },
+    stages: { new: '시작 전', researched: '조사됨', contacted: '첫 연락', negotiating: '협상 중', closing: '마무리', trial: '체험 중', won: '성사', lost: '실패' },
     help: {
       new: '배정됐지만 조사나 연락 전.', researched: '조금 알지만 아직 연락하지 않음.',
       contacted: '연락했지만 아직 답이 없음.', negotiating: '답이 와서 대화 중.',
-      closing: '제안서나 결제 링크를 받았지만 미결제.', won: '결제함.', lost: '제외됨 또는 «관심 없음».',
+      closing: '제안서나 결제 링크를 받았지만 미결제.', trial: '정해진 날짜까지 체험 중. 빨간색은 마지막 며칠 또는 기한 지남.', won: '결제함.', lost: '제외됨 또는 «관심 없음».',
     },
     rep: '영업 담당', everyone: '전체', mine: '내 것만',
     count: (n: number) => `회사 ${n}곳`,

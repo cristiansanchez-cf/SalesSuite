@@ -6,11 +6,17 @@
  */
 import Icon from '~/components/ui/Icon.astro';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
+import { trialMessages } from '~/lib/i18n/messages/trial';
 import type { Locale } from '~/lib/i18n/core';
 
-interface Props { locale: Locale; customer: boolean; wonAt: string | null; startWith: 'pay' | 'deal'; showPay: boolean; date: (iso: string) => string }
-const { locale, customer, wonAt, startWith, showPay, date } = Astro.props;
+interface Props {
+  locale: Locale; customer: boolean; wonAt: string | null; startWith: 'pay' | 'deal'; showPay: boolean; date: (iso: string) => string;
+  /** Tercer camino (docs/CLIENTS.md §En prueba): ponerla en prueba hasta una fecha. Sin prueba en marcha y con permiso. */
+  trialTab?: boolean;
+}
+const { locale, customer, wonAt, startWith, showPay, date, trialTab = false } = Astro.props;
 const C = clientsMessages[locale];
+const T = trialMessages[locale];
 ---
 <section class="co-card grid gap-4" id="closing" data-testid="closing">
   <div>
@@ -21,22 +27,27 @@ const C = clientsMessages[locale];
     <>
       <slot name="deal" />
       {showPay && <details class="grid gap-2" open data-testid="closing-payments"><summary class="co-meta cursor-pointer">{C.payments}</summary><slot name="pay" /></details>}
+      {/* Ya cliente y en prueba por un trato (Tnsi: «2 meses de prueba por un trato que hemos hecho»). */}
+      {trialTab && <details class="grid gap-2" data-testid="closing-trial-wrap"><summary class="co-meta cursor-pointer" data-testid="closing-trial">{T.start}</summary><slot name="trial" /></details>}
     </>
   ) : (
     <div class="closing-tabs grid gap-4">
       <div class="co-tabs w-fit" role="radiogroup">
         {showPay && <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="pay" checked={startWith === 'pay'} data-testid="closing-pay" />{C.withPay}</label>}
         <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked={startWith === 'deal' || !showPay} data-testid="closing-deal" />{C.noPay}</label>
+        {trialTab && <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="trial" data-testid="closing-trial" />{T.tab}</label>}
       </div>
       {showPay && <div class="closing-panel" data-way="pay"><slot name="pay" /></div>}
       <div class="closing-panel" data-way="deal"><slot name="deal" /></div>
+      {trialTab && <div class="closing-panel" data-way="trial"><slot name="trial" /></div>}
     </div>
   )}
 </section>
 
 <style>
   /* Sin JS: la pestaña marcada enseña su parte. */
-  .closing-tabs:has(input[value='pay']:checked) .closing-panel[data-way='deal'],
-  .closing-tabs:has(input[value='deal']:checked) .closing-panel[data-way='pay'] { display: none; }
+  .closing-tabs:has(input[name='closing-way'][value='pay']:checked) .closing-panel:not([data-way='pay']),
+  .closing-tabs:has(input[name='closing-way'][value='deal']:checked) .closing-panel:not([data-way='deal']),
+  .closing-tabs:has(input[name='closing-way'][value='trial']:checked) .closing-panel:not([data-way='trial']) { display: none; }
   .closing-tabs .co-tab:has(input:checked) { background: var(--console-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
 </style>

@@ -297,6 +297,42 @@ export function demoCrmDb(actorId: string): CrmDb {
         for (const n of db().notification) if (n.kind === 'agreement_pending' && n.entity_key === g.id && !n.resolved_at) n.resolved_at = iso();
       }
     },
+    // En prueba (= migración 20270110: trial_start / trial_end).
+    async listTrials(t, accountIds) {
+      if (!isMember(t, actorId)) return [];
+      return (db().account_trial ?? []).filter((x) => x.tenant_id === t && (accountIds === 'open' ? !x.ended_at : accountIds.includes(x.account_id)))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map((x) => ({ id: x.id, accountId: x.account_id, startsOn: x.starts_on, endsOn: x.ends_on, note: x.note, createdBy: x.created_by, createdAt: x.created_at, endedAt: x.ended_at, outcome: x.outcome }));
+    },
+    async startTrial(t, accountId, x) {
+      const s = db();
+      const acc = s.account.find((a) => a.id === accountId && a.tenant_id === t);
+      if (!acc || !isMember(t, actorId)) throw new Error('permission denied: Cuenta no encontrada');
+      const held = !!acc.owner_id && acc.owner_id !== actorId && !!acc.claimed_until && Date.parse(acc.claimed_until) > Date.now();
+      const free = !held && !(acc.status === 'customer' && acc.won_by !== actorId);
+      if (!isManager(t, actorId) && acc.owner_id !== actorId && !free) throw new Error('permission denied: Solo quien la lleva (o un gerente) la pone en prueba');
+      if (acc.status === 'blocked') throw new Error('check constraint: Está bloqueada');
+      const starts = x.startsOn ?? iso().slice(0, 10);
+      if (x.endsOn < starts || Date.parse(x.endsOn) > Date.parse(starts) + 366 * 86_400_000) throw new Error('check constraint: La prueba acaba entre el día que empieza y un año después');
+      const list = (s.account_trial ??= []);
+      let tr = list.find((r) => r.account_id === accountId && !r.ended_at);
+      const note = x.note?.trim() || null;
+      if (tr) Object.assign(tr, { starts_on: starts, ends_on: x.endsOn, note: note ?? tr.note });
+      else list.push(tr = { id: randomUUID(), tenant_id: t, account_id: accountId, starts_on: starts, ends_on: x.endsOn, note, created_by: actorId, created_at: monotonic(), ended_at: null, ended_by: null, outcome: null });
+      if (acc.status !== 'customer') {
+        const days = s.account_rules.find((r) => r.tenant_id === t)?.claim_days ?? 30;
+        const until = Date.parse(`${x.endsOn}T00:00:00Z`) + days * 86_400_000;
+        Object.assign(acc, { owner_id: acc.owner_id ?? actorId, claimed_until: new Date(Math.max(acc.claimed_until ? Date.parse(acc.claimed_until) : Date.now(), until)).toISOString(), last_touch_at: iso(), last_touch_by: actorId });
+      }
+      return tr.id;
+    },
+    async endTrial(t, id, outcome) {
+      const tr = (db().account_trial ?? []).find((x) => x.id === id && x.tenant_id === t);
+      const acc = tr && db().account.find((a) => a.id === tr.account_id);
+      if (!tr || !acc || (!isManager(t, actorId) && acc.owner_id !== actorId)) throw new Error('permission denied: Solo quien la lleva (o un gerente) acaba la prueba');
+      if (tr.ended_at) return;
+      Object.assign(tr, { ended_at: iso(), ended_by: actorId, outcome });
+    },
     async markWon(t, accountId) {
       const a = db().account.find((x) => x.id === accountId && x.tenant_id === t);
       if (!a || !isManager(t, actorId)) throw new Error('permission denied: Solo un gerente o admin la da por ganada');

@@ -10,6 +10,7 @@ import { AdminError } from '../admin/service';
 import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
+import { isOpen, TRIAL_STEP, trialEnd, trialEndFrom, trialReminderDay, type Trial } from './trial';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
 import type { CrmDb } from './db';
 import { parseValue, parseValues, type CrmField, type FieldValues } from './fields';
@@ -896,7 +897,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     ]);
     const mine = accs.filter((a) => !!a.ownerId);
     const ids = mine.map((a) => a.id);
-    const [summaries, pays] = await Promise.all([db.activitySummary(t, ids), db.listPaymentRequests(t, ids).catch(() => [])]);
+    const [summaries, pays, trialsOpen] = await Promise.all([db.activitySummary(t, ids), db.listPaymentRequests(t, ids).catch(() => []), openTrials()]);
     const sums = new Map(summaries.map((x) => [x.accountId, x]));
     // Cierre: lo primero entre la propuesta publicada para esa empresa y el enlace de pago enviado (§35), sin anular.
     const closing = new Map<string, string>();
@@ -906,9 +907,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const isGroup = new Set(mine.map((a) => a.parentId).filter(Boolean) as string[]);
     const now = new Date();
     const cards = mine.map((a) => {
+      const tr = isOpen(trialsOpen.get(a.id), a.wonAt) ? trialsOpen.get(a.id)! : null;
       const input: PipelineInput = {
         wonAt: a.wonAt, discardedAt: a.discardedAt, researched: Object.keys(a.qualification ?? {}).length > 0 || !!a.aiResearchAt,
         summary: sums.get(a.id) ?? null, closingAt: closing.get(a.id) ?? null,
+        trial: tr,
       };
       const stage = stageOf(input);
       const kd = ks.find((k) => k.key === a.kind) ?? ks[0];
@@ -919,7 +922,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       return {
         id: a.id, name: a.name, kind: a.kind, ownerId: a.ownerId!, ownerName: label(ms.get(a.ownerId!)) ?? '', stage,
         since: daysSince(stageSince(stage, input), now), real: sum?.real ?? 0, lastAt: sum?.lastAt ?? null, lastOutcome: sum?.lastOutcome ?? null,
-        nextStep: a.nextStep, nextStepAt: a.nextStepAt, big, limit, ...alertsOf(stage, input, limit, now),
+        nextStep: a.nextStep, nextStepAt: a.nextStepAt, big, limit, ...alertsOf(stage, input, limit, now), trial: tr,
       };
     });
     const order = (x: (typeof cards)[number]) => (x.overdue ?? 0) + (x.manyTouches ?? 0);
@@ -1096,23 +1099,92 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const g = ok ? (await db.listAgreements(t, [accountId]).catch(() => [])).find((x) => x.id === id && x.status === 'active') : null;
     if (g) await checkinNext(accountId, g.checkinDays);
   }
+  // ---------------------------------------------------------------- en prueba (docs/CLIENTS.md §En prueba)
+  const trialSchema = z.object({
+    preset: z.enum(['10d', '15d', '1m', '2m', 'custom']).default('custom'),
+    startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
+    endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
+    note: z.string().trim().max(2000).nullable().optional().transform((v) => v || null),
+  });
+  async function trials(accountId: string): Promise<Trial[]> {
+    requireUse();
+    return db.listTrials ? db.listTrials(t, [accountId]).catch(() => []) : [];
+  }
+  /** Las que siguen en prueba (sin acabar; las convertidas las descarta isOpen con won_at), por empresa. */
+  async function openTrials(): Promise<Map<string, Trial>> {
+    if (!db.listTrials) return new Map();
+    const rows = await db.listTrials(t, 'open').catch(() => [] as Trial[]);
+    return new Map(rows.map((x) => [x.accountId, x]));
+  }
+  /**
+   * Ponerla en prueba (o cambiar las fechas): 10 o 15 días, 1 o 2 meses, u otra fecha. Sigue reservada hasta que acabe y
+   * unos días antes sale «Acaba la prueba: ¿se queda?» en los próximos pasos (Hoy, el resumen y el calendario).
+   */
+  async function startTrial(accountId: string, input: unknown): Promise<string> {
+    requireUse();
+    if (!db.startTrial) throw new AdminError(503, 'Falta aplicar la migración de pruebas');
+    const v = parse(trialSchema, input);
+    const starts = v.startsOn ?? localDay(new Date());
+    const ends = v.preset === 'custom' ? v.endsOn : trialEnd(starts, v.preset);
+    if (!ends) throw new AdminError(422, 'Elige cuánto dura la prueba');
+    if (ends < starts || ends > trialEndFrom(starts, { days: 366 })) throw new AdminError(422, 'La prueba acaba entre el día que empieza y un año después');
+    let id!: string;
+    try { id = await db.startTrial(t, accountId, { startsOn: starts, endsOn: ends, note: v.note }); } catch (e) { mapError(e); }
+    await trialNext(accountId, { startsOn: starts, endsOn: ends });
+    return id;
+  }
+  /** El aviso de fin, salvo que ya tenga algo antes por hacer (se respeta lo que haya puesto). */
+  async function trialNext(accountId: string, tr: { startsOn: string; endsOn: string }) {
+    const a = await accounts.getAccount(accountId);
+    if (!a) return;
+    const at = `${trialReminderDay(tr)}T10:00:00.000Z`;
+    const ours = a.nextStep === TRIAL_STEP || a.nextStep === CHECKIN_STEP;
+    if (a.nextStepAt && Date.parse(a.nextStepAt) > Date.now() && Date.parse(a.nextStepAt) <= Date.parse(at) && !ours) return;
+    await accounts.updateAccount(accountId, { next: { step: TRIAL_STEP, at, contactId: a.nextContactId ?? null, channel: null } }).catch(() => false);
+  }
+  /** Acabarla: «Se queda» o «No sigue» (y, si quiere, descartarla con su motivo para que nadie vuelva a venderle). */
+  async function endTrial(accountId: string, id: string, outcome: 'stays' | 'leaves', o: { discard?: boolean; note?: string | null } = {}) {
+    requireUse();
+    if (!db.endTrial || !db.listTrials) throw new AdminError(503, 'Falta aplicar la migración de pruebas');
+    const tr = (await db.listTrials(t, [accountId]).catch(() => [] as Trial[])).find((x) => x.id === id);
+    if (!tr) throw new AdminError(404, 'Prueba no encontrada');
+    try { await db.endTrial(t, id, outcome); } catch (e) { mapError(e); }
+    // El aviso de fin ya no hace falta.
+    const a = await accounts.getAccount(accountId);
+    if (a?.nextStep === TRIAL_STEP) await accounts.updateAccount(accountId, { next: { step: null, at: null, contactId: null, channel: null } }).catch(() => false);
+    if (outcome === 'leaves' && o.discard) await classifyAccount(accountId, { reason: 'not_interested', note: o.note?.trim() || 'Probó y no siguió' });
+  }
+  /** Las que están en prueba (sean ya clientes o no), la que acaba antes primero. El comercial ve las suyas. */
+  async function inTrial(o: { all?: boolean } = {}) {
+    requireUse();
+    const open = await openTrials();
+    if (!open.size) return [];
+    const [rows, team] = await Promise.all([accounts.listAccounts(t, { ownerId: o.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 }), members().catch(() => new Map<string, MemberRecord>())]);
+    return rows.filter((a) => a.tenantId === t && !a.discardedAt && isOpen(open.get(a.id), a.wonAt))
+      .map((a) => ({ ...a, ownerName: a.ownerId ? label(team.get(a.ownerId)) : null, trial: open.get(a.id)! }))
+      .sort((x, y) => x.trial.endsOn.localeCompare(y.trial.endsOn) || x.name.localeCompare(y.name, 'es'));
+  }
+
   /** Clientes: las empresas ganadas (por pago o acuerdo), con su acuerdo vigente. El comercial ve las suyas. */
   async function clients(o: { all?: boolean } = {}) {
     requireUse();
     // Las descartadas (dejó de ser cliente) salen de Clientes: van a «Descartadas» con su motivo.
     const rows = (await accounts.listAccounts(t, { status: 'customer', ownerId: o.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 })).filter((a) => a.tenantId === t && !a.discardedAt);
     const ids = rows.map((a) => a.id);
-    const [ags, last, team] = await Promise.all([
+    const [ags, last, team, trialsOpen] = await Promise.all([
       db.listAgreements && ids.length ? db.listAgreements(t, ids).catch(() => []) : Promise.resolve([]),
       ids.length ? db.lastActivities(t, ids).catch(() => []) : Promise.resolve([]),
       members().catch(() => new Map<string, MemberRecord>()),
+      openTrials(),
     ]);
     const now = Date.now();
     return rows.map((a) => {
+      const tr = trialsOpen.get(a.id);
       const mine = ags.filter((g) => g.accountId === a.id);
       const lastAt = last.find((x) => x.accountId === a.id)?.happenedAt ?? a.lastTouchAt ?? null;
       return {
         ...a, ownerName: a.ownerId ? label(team.get(a.ownerId)) : null, agreement: mine.find((g) => g.status === 'active') ?? null, pending: mine.find((g) => g.status === 'pending') ?? null, lastAt,
+        trial: isOpen(tr, a.wonAt) ? tr : null,
         quietDays: lastAt ? Math.floor((now - Date.parse(lastAt)) / 86_400_000) : null, due: !!a.nextStepAt && Date.parse(a.nextStepAt) <= now,
       };
     }).sort((x, y) => Number(y.due) - Number(x.due) || (y.quietDays ?? 0) - (x.quietDays ?? 0) || x.name.localeCompare(y.name, 'es'));
@@ -1569,6 +1641,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     nextTime: z.string().max(10).nullable().optional(),
     /** Cerró con un acuerdo: las condiciones (docs/CLIENTS.md). */
     agreement: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
+    /** En prueba hasta ese día (docs/CLIENTS.md §En prueba). */
+    trialUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional().or(z.literal('').transform(() => null)),
     /** Zona horaria de quien apunta (para la hora del próximo paso). */
     tz: z.string().max(60).nullable().optional(),
     /** Descartar (si quien apunta dijo que sí a la propuesta de la IA, §23). */
@@ -1622,7 +1696,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function notesApply(input: unknown): Promise<Array<{ accountId: string | null; name: string; ok: boolean; error?: string }>> {
     requireUse();
     const rows = parse(noteApplySchema, input);
-    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending'; discarded?: boolean }> = [];
+    const out: Array<{ accountId: string | null; name: string; ok: boolean; error?: string; agreement?: 'active' | 'pending'; trial?: string; trialError?: string; discarded?: boolean }> = [];
     for (const r of rows) {
       let id = r.accountId ?? null;
       let name = r.create ?? '';
@@ -1690,7 +1764,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         // «He cerrado X: 70/30…» (docs/CLIENTS.md): cerrar con ese acuerdo (o proponerlo, si lo confirma un gerente).
         let agreement: 'active' | 'pending' | undefined;
         if (r.agreement) agreement = (await closeWithAgreement(id, { terms: r.agreement, checkinDays: 30 })).status;
-        out.push({ accountId: id, name, ok: true, ...(agreement ? { agreement } : {}), ...(r.discard ? { discarded: true } : {}) });
+        // «Se van a pasar en prueba 2 meses»: en prueba hasta ese día (si no se puede, lo demás ya está guardado).
+        let trial: string | undefined, trialError: string | undefined;
+        if (r.trialUntil && !r.discard) {
+          try { await startTrial(id, { preset: 'custom', endsOn: r.trialUntil }); trial = r.trialUntil; } catch (e) { trialError = e instanceof AdminError ? e.message : 'No se ha podido'; }
+        }
+        out.push({ accountId: id, name, ok: true, ...(agreement ? { agreement } : {}), ...(trial ? { trial } : {}), ...(trialError ? { trialError } : {}), ...(r.discard ? { discarded: true } : {}) });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });
       }
@@ -2159,7 +2238,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, trials, openTrials, startTrial, endTrial, inTrial, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

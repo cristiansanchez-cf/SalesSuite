@@ -56,4 +56,9 @@ export interface CrmDb {
   /** Cerrar con acuerdo o cambiarlo: gerente/admin → activo; quien la lleva → pendiente de confirmar. */
   proposeAgreement?(tenantId: string, accountId: string, a: { terms: string; startsOn: string | null; checkinDays: number | null }): Promise<{ id: string; status: 'active' | 'pending' }>;
   decideAgreement?(tenantId: string, id: string, ok: boolean): Promise<void>;
+  /** En prueba (docs/CLIENTS.md §En prueba): las de unas empresas, o todas las que siguen sin acabar si no se dan. */
+  listTrials?(tenantId: string, accountIds: string[] | 'open'): Promise<import('./trial').Trial[]>;
+  /** Empezarla o cambiar las fechas de la que está en marcha (quien la lleva o puede quedársela, o gerente/admin). */
+  startTrial?(tenantId: string, accountId: string, x: { startsOn: string | null; endsOn: string; note: string | null }): Promise<string>;
+  endTrial?(tenantId: string, id: string, outcome: 'stays' | 'leaves'): Promise<void>;
 }
