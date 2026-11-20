@@ -116,3 +116,19 @@ esta persona, a quién van… un "a mí" y el desplegable con el resto del equip
 - **Aviso**: al salir alguien del equipo con propuestas abiertas o empresas a su nombre, los admins (menos quien lo
   quitó) reciben «X ya no está en el equipo y tiene cosas a su nombre», que lleva a repartir (trigger
   `notify_member_left`, migración 20270106; test SQL 88).
+
+## Varias propuestas a la vez
+
+Criterio de Cristian: «una manera de seleccionar todos para cambiar responsable… y archivar u otras medidas».
+
+- **Dónde**: Propuestas → «Seleccionar». Aparecen las casillas y una barra abajo. En ese modo, pulsar una tarjeta la
+  marca (no la abre). Hay «Seleccionar todas», «Todas» en cada grupo (atención, enviadas, borradores, archivadas) y
+  «Quitar selección». «Cancelar» sale del modo selección.
+- **Qué se puede hacer**:
+  - **Cambiar responsable**: solo admin, como el traspaso. Las ganadas o perdidas se quedan con quien las hizo.
+  - **Archivar**.
+  - **Sacar del archivo**: vuelve a borrador.
+  - **Borrar**: con confirmación; las enviadas no se borran, hay que archivarlas.
+- **Permisos**: cada propuesta con los suyos de siempre. Las que no se pueden se saltan y se dice cuántas
+  («Hecho: 3 · 1 no se podía…»).
+- Código: `bulkDossiers` (lib/admin/service.ts) y `/admin` (pages/admin/index.astro). Smoke: `scripts/smoke-bulk-dossiers.cjs`.

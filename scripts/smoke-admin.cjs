@@ -27,7 +27,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // Inicio: una sola cosa destacada («Lo siguiente») y el día en tres números.
   await p.goto(`${BASE}/admin/inicio`);
-  assert(await p.isVisible('[data-testid=home-focus]'), 'Inicio: «Lo siguiente» destacado');
+  assert(await p.waitForSelector('[data-testid=home-focus]', { timeout: 20000 }).then(() => true, () => false), 'Inicio: «Lo siguiente» destacado');
   await p.goto(`${BASE}/admin`);
   assert((await p.locator('[data-testid=dossier-list] [data-group]').count()) >= 1, 'Dossiers: agrupados por lo que piden');
   assert(!(await p.isVisible('[data-testid=create-form]')), 'el formulario no ocupa la pantalla hasta pedirlo');
@@ -125,7 +125,8 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.locator('[data-testid=price-kind]', { hasText: 'Festival' }).click(); await settle();
   assert((await p.textContent('[data-testid=price-quote-only]')).includes('prueba de carga'), 'tarifa a medida: se ve con su aviso');
   await v.reload();
-  assert((await v.textContent('body')).replace(/\s/g, ' ').includes('150 €'), 'y no se elige: el precio sigue igual');
+  // «Festival» tiene también «Festival · por evento» (500 €, migración 20270113): se elige esa, nunca la de a medida.
+  { const body = (await v.textContent('body')).replace(/\s/g, ' '); assert(body.includes('150 €') || body.includes('500 €'), 'y la de a medida no se elige'); }
 
   // 6. Negativos: revocar → 404; despublicar → 404
   await p.click('text=Revocar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();

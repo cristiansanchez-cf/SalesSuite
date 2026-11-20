@@ -48,6 +48,21 @@ if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).
     if (!(e instanceof AdminError)) throw e;
     inviteMsg = e.message;
   }
+} else if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).get('action') === 'bulk') {
+  // Varias a la vez (cambiar responsable, archivar, sacar del archivo, borrar): vuelve a la misma lista con el resultado.
+  const form = await Astro.request.formData();
+  const back = String(form.get('back') ?? '/admin');
+  const to = new URL(back.startsWith('/admin') ? back : '/admin', Astro.url);
+  try {
+    const act = String(form.get('do') ?? '') as 'assign' | 'archive' | 'unarchive' | 'delete';
+    if (!['assign', 'archive', 'unarchive', 'delete'].includes(act)) throw new AdminError(422, 'Datos no válidos');
+    const r = await service.bulkDossiers(form.getAll('ids').map(String), act, String(form.get('to') ?? '') || undefined);
+    to.searchParams.set('bulk', `${r.done}.${r.skipped}`); to.searchParams.delete('bulkError');
+  } catch (e) {
+    if (!(e instanceof AdminError)) throw e;
+    to.searchParams.set('bulkError', e.message); to.searchParams.delete('bulk');
+  }
+  return Astro.redirect(to.pathname + to.search, 303);
 } else if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   errorAccount = String(form.get('partnerAccountId') ?? '') || null;
@@ -132,6 +147,13 @@ const groups = filtered
       { key: 'drafts', title: m.dossiers.groups.drafts, items: list.filter((d) => d.status === 'draft') },
       { key: 'archived', title: m.dossiers.groups.archived, items: list.filter((d) => d.status === 'archived') },
     ].filter((g) => g.items.length);
+// Varias a la vez: quién puede cambiar el responsable (admin) y a quién; el resultado de la última acción.
+const B = m.dossiers.bulk;
+const canAssign = can(session.role).manageTenant;
+const owners = canAssign ? members.filter((x) => x.role !== 'partner').map((x) => ({ id: x.userId, label: x.displayName || x.email })).sort((a, b) => a.label.localeCompare(b.label, locale)) : [];
+const bulkRes = (Astro.url.searchParams.get('bulk') ?? '').split('.').map(Number);
+const bulkError = Astro.url.searchParams.get('bulkError');
+const backUrl = (() => { const u = new URL(Astro.url); u.searchParams.delete('bulk'); u.searchParams.delete('bulkError'); return u.pathname + u.search; })();
 const initial = (d: { prospectCompany: string | null; title: string }) => (d.prospectCompany || d.title).trim().charAt(0).toUpperCase();
 ---
 <AdminLayout title={isPartner ? m.dossiers.partnerTitle : m.dossiers.title} wide>
@@ -144,6 +166,9 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
       </div>
       <button type="button" class="co-btn co-btn--primary" data-open-new data-testid="new-dossier">{m.home.newProposal} <span aria-hidden="true">→</span></button>
     </header>
+
+    {bulkRes.length === 2 && !Number.isNaN(bulkRes[0]) && <Alert kind="success" title={B.done(bulkRes[0]!, bulkRes[1]!)} />}
+    {bulkError && <Alert kind="rejection" title={bulkError} />}
 
     {myOverdue > 0 && !follow && (
       <a href="?follow=1" class="co-row co-row--attention" data-testid="overdue-banner">
@@ -173,6 +198,7 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
           <noscript><button class="co-btn co-btn--ghost co-btn--sm" type="submit">OK</button></noscript>
         </form>
       )}
+      {list.length > 0 && <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-start data-testid="bulk-start"><Icon name="check" size={14} />{B.select}</button>}
       <form method="get" class="relative" role="search">
         {status && <input type="hidden" name="status" value={status} />}
         {autor && <input type="hidden" name="autor" value={autor} />}
@@ -188,16 +214,24 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
         ? <EmptyState kind="filter" title={m.dossiers.emptyFiltered} clearHref="/admin" />
         : <EmptyState kind="create" title={m.dossiers.emptyTitle} detail={m.dossiers.emptyDetail} action={{ href: '#nuevo', label: m.dossiers.emptyAction }} />
     ) : (
-      <div class="grid grid-cols-[minmax(0,1fr)] gap-10" data-testid="dossier-list">
+      <div class="grid grid-cols-[minmax(0,1fr)] gap-10" data-testid="dossier-list" data-bulk-list>
         {groups.map((g) => (
           <section class="grid grid-cols-[minmax(0,1fr)] gap-4" data-group={g.key}>
-            {g.title && <h2 class="text-eyebrow">{g.title} · {g.items.length}</h2>}
+            {(g.title || groups.length > 1) && (
+              <div class="flex items-center gap-3">
+                {g.title && <h2 class="text-eyebrow">{g.title} · {g.items.length}</h2>}
+                <button type="button" class="co-btn co-btn--quiet co-btn--sm bulk-only" data-bulk-group={g.key} data-testid="bulk-group">{B.group}</button>
+              </div>
+            )}
             <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0 md:grid-cols-2">
               {g.items.map((d) => {
                 const late = isOverdue(d.nextStepAt);
                 const o = opens.get(d.id)?.opens ?? 0;
                 return (
-                  <li class="list-none">
+                  <li class="relative list-none">
+                    <label class="bulk-only bulk-check" title={B.pick(d.title)}>
+                      <input type="checkbox" name="ids" value={d.id} form="bulk-form" class="h-5 w-5 accent-[var(--co-ink)]" aria-label={B.pick(d.title)} data-bulk-id data-status={d.status} data-testid="bulk-check" />
+                    </label>
                     <a href={`/admin/dossiers/${d.id}`} class:list={['co-card co-card--link !grid h-full grid-cols-[minmax(0,1fr)] content-start gap-3 !p-5', late && 'dossier-card--late']}>
                       <span class="flex items-start gap-4">
                         <span class:list={['inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold', d.status === 'published' ? 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]' : 'bg-[var(--console-chip-bg)]']} aria-hidden="true">{initial(d)}</span>
@@ -225,6 +259,35 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
           </section>
         ))}
       </div>
+    )}
+
+    {list.length > 0 && (
+      <form method="post" id="bulk-form" class="bulk-bar co-card" hidden data-bulk-bar data-testid="bulk-bar">
+        <input type="hidden" name="action" value="bulk" />
+        <input type="hidden" name="back" value={backUrl} />
+        <div class="flex flex-wrap items-center gap-2">
+          <strong class="mr-1" data-bulk-count data-testid="bulk-count" data-one={B.n(1)} data-many={B.n(999)}>{B.n(0)}</strong>
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-all data-testid="bulk-all">{B.all}</button>
+          <button type="button" class="co-btn co-btn--quiet co-btn--sm" data-bulk-none>{B.none}</button>
+          <span class="flex-1"></span>
+          <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-bulk-cancel data-testid="bulk-cancel">{B.cancel}</button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2" data-bulk-actions>
+          {canAssign && (
+            <span class="flex flex-wrap items-center gap-2">
+              <label class="sr-only" for="bulk-to">{B.owner}</label>
+              <select id="bulk-to" name="to" class="co-select !h-9 w-auto" data-testid="bulk-owner">
+                <option value="">{B.owner}: {B.ownerPick}</option>
+                {owners.map((o) => <option value={o.id}>{o.label}</option>)}
+              </select>
+              <button class="co-btn co-btn--primary co-btn--sm" name="do" value="assign" data-needs-owner data-testid="bulk-assign"><Icon name="users" size={14} />{B.apply}</button>
+            </span>
+          )}
+          <button class="co-btn co-btn--ghost co-btn--sm" name="do" value="archive" data-testid="bulk-archive">{B.archive}</button>
+          <button class="co-btn co-btn--ghost co-btn--sm" name="do" value="unarchive" data-testid="bulk-unarchive">{B.unarchive}</button>
+          <button class="co-btn co-btn--ghost co-btn--sm !text-[color:var(--console-attention,#b42318)]" name="do" value="delete" data-confirm-delete={B.delConfirm(999)} data-testid="bulk-delete">{B.del}</button>
+        </div>
+      </form>
     )}
 
     <dialog class="new-dossier" data-new {...(error ? { 'data-open': '' } : {})}>
@@ -262,12 +325,69 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
 </AdminLayout>
 
 <style>
+  /* Varias a la vez: las casillas y lo de «Todas» solo al seleccionar; la barra, abajo y siempre a la vista. */
+  .bulk-only { display: none; }
+  [data-selecting] .bulk-only { display: inline-flex; }
+  .bulk-check { position: absolute; z-index: 2; left: 0.6rem; top: 0.6rem; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.6rem; background: var(--console-surface, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.15); cursor: pointer; }
+  [data-selecting] li:has([data-bulk-id]:checked) > a { outline: 2px solid var(--co-ink); outline-offset: -2px; }
+  .bulk-bar { position: fixed; z-index: 40; left: 50%; bottom: 1rem; transform: translateX(-50%); width: min(56rem, calc(100vw - 2rem)); display: grid; gap: 0.6rem; padding: 0.9rem 1rem !important; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .bulk-bar[hidden] { display: none; }
+  /* Al seleccionar: sitio abajo para que la barra no tape las últimas, y fuera los botones flotantes. */
+  [data-selecting] { padding-bottom: 9rem; }
+  :global(body:has([data-selecting]) .co-fab), :global(body:has([data-selecting]) [data-ugc-ui]) { display: none !important; }
   .dossier-card--late { border-color: var(--console-attention, #b42318); }
   .new-dossier { width: min(520px, 94vw); padding: 0; border: 0; border-radius: 1.25rem; background: var(--console-surface, #fff); color: inherit; }
   .new-dossier::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
 </style>
 
 <script>
+  // Varias a la vez: «Seleccionar» enseña las casillas y la barra; en modo selección, pulsar una tarjeta la marca (no
+  // la abre). Sin nada marcado, los botones de la barra no hacen nada.
+  {
+    const root = document.querySelector<HTMLElement>('[data-bulk-list]');
+    const bar = document.querySelector<HTMLFormElement>('[data-bulk-bar]');
+    if (root && bar) {
+      const boxes = () => [...document.querySelectorAll<HTMLInputElement>('[data-bulk-id]')];
+      const count = bar.querySelector<HTMLElement>('[data-bulk-count]')!;
+      const acts = bar.querySelectorAll<HTMLButtonElement>('[data-bulk-actions] button');
+      const owner = bar.querySelector<HTMLSelectElement>('[name=to]');
+      const refresh = () => {
+        const n = boxes().filter((b) => b.checked).length;
+        count.textContent = n === 1 ? count.dataset.one! : count.dataset.many!.replace('999', String(n));
+        acts.forEach((b) => { b.disabled = n === 0 || (b.hasAttribute('data-needs-owner') && !owner?.value); });
+      };
+      const on = (v: boolean) => {
+        root.toggleAttribute('data-selecting', v); bar.hidden = !v;
+        if (!v) boxes().forEach((b) => { b.checked = false; });
+        refresh();
+      };
+      document.querySelector('[data-bulk-start]')?.addEventListener('click', () => on(!root.hasAttribute('data-selecting')));
+      bar.querySelector('[data-bulk-cancel]')?.addEventListener('click', () => on(false));
+      bar.querySelector('[data-bulk-all]')?.addEventListener('click', () => { boxes().forEach((b) => { b.checked = true; }); refresh(); });
+      bar.querySelector('[data-bulk-none]')?.addEventListener('click', () => { boxes().forEach((b) => { b.checked = false; }); refresh(); });
+      root.querySelectorAll<HTMLButtonElement>('[data-bulk-group]').forEach((g) => g.addEventListener('click', () => {
+        const mine = [...(g.closest('section')?.querySelectorAll<HTMLInputElement>('[data-bulk-id]') ?? [])];
+        const all = mine.every((b) => b.checked);
+        mine.forEach((b) => { b.checked = !all; }); refresh();
+      }));
+      root.addEventListener('change', refresh);
+      owner?.addEventListener('change', refresh);
+      root.addEventListener('click', (e) => {
+        if (!root.hasAttribute('data-selecting')) return;
+        const a = (e.target as Element).closest('a');
+        const box = a?.parentElement?.querySelector<HTMLInputElement>('[data-bulk-id]');
+        if (!a || !box) return;
+        e.preventDefault(); box.checked = !box.checked; refresh();
+      });
+      bar.addEventListener('submit', (e) => {
+        const btn = (e as SubmitEvent).submitter as HTMLButtonElement | null;
+        const n = boxes().filter((b) => b.checked).length;
+        if (!n) { e.preventDefault(); return; }
+        if (btn?.dataset.confirmDelete && !confirm(btn.dataset.confirmDelete.replace('999', String(n)))) e.preventDefault();
+      });
+      refresh();
+    }
+  }
   const dlg = document.querySelector<HTMLDialogElement>('[data-new]');
   if (dlg) {
     const open = () => { if (!dlg.open) dlg.showModal(); };

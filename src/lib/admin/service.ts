@@ -609,13 +609,48 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     return n;
   }
 
+  /**
+   * Varias a la vez desde la lista (criterio de Cristian: «seleccionar todos para cambiar responsable… y archivar u
+   * otras medidas»). Cada una con sus permisos de siempre; las que no se pueden se saltan y se cuentan:
+   *  · assign: cambiar el responsable (solo admin, como el traspaso). Las cerradas (ganadas o perdidas) se quedan con
+   *    quien las hizo: cuentan en sus comisiones.
+   *  · archive / unarchive (vuelve a borrador) / delete (solo borradores y archivadas).
+   */
+  async function bulkDossiers(ids: string[], action: 'assign' | 'archive' | 'unarchive' | 'delete', to?: string): Promise<{ done: number; skipped: number }> {
+    const uniq = [...new Set(ids.map(String))].slice(0, 500);
+    if (!uniq.length) throw new AdminError(422, 'Elige al menos una propuesta');
+    if (action === 'assign') {
+      if (!can(s.role).manageTenant) throw new AdminError(403, 'Solo un admin cambia el responsable');
+      const team = new Set((await db.listMembers(s.tenantId)).filter((m) => m.role !== 'partner').map((m) => m.userId));
+      if (!to || !team.has(to)) throw new AdminError(404, 'Esa persona no está en el equipo');
+    }
+    let done = 0;
+    let skipped = 0;
+    for (const id of uniq) {
+      const d = await db.getDossier(id);
+      if (!d || d.tenantId !== s.tenantId) { skipped++; continue; }
+      const ok = action === 'assign' ? d.outcome === 'open' && d.authorId !== to
+        : !canEdit(d) ? false
+        : action === 'archive' ? d.status !== 'archived'
+        : action === 'unarchive' ? d.status === 'archived'
+        : d.status !== 'published';
+      if (!ok) { skipped++; continue; }
+      const wrote = action === 'assign' ? await db.updateDossier(id, { authorId: to! })
+        : action === 'archive' ? await db.updateDossier(id, { status: 'archived' })
+        : action === 'unarchive' ? await db.updateDossier(id, { status: 'draft' })
+        : await db.deleteDossier(id);
+      if (wrote) done++; else skipped++;
+    }
+    return { done, skipped };
+  }
+
   /** Nombres de personas (también de quien ya no está en el equipo), para el traspaso. Solo admin. */
   async function userNames(ids: string[]): Promise<Map<string, string>> {
     if (!can(s.role).manageTenant) throw new AdminError(403, 'Solo un admin');
     return ids.length ? db.userNames([...new Set(ids)]) : new Map();
   }
 
-  return { getState, listDossiers, handOverDossiers, userNames, createDossier, createFromAccount, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
+  return { getState, listDossiers, handOverDossiers, bulkDossiers, userNames, createDossier, createFromAccount, copyTo, deleteDossier, apply, previewDossier, canEdit, catalog, media };
 }
 
 export type AdminService = ReturnType<typeof createAdminService>;
