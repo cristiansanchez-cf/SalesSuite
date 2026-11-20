@@ -38,7 +38,6 @@ const NIGHT = /discoteca|\bDJs?\b|pantalla|promotora|aforo|ocio nocturno|Cualifi
   await rep.waitForURL(/\/admin\/accounts\/[^/?]+\?ok=created/);
   assert(await rep.isVisible('[data-testid=account-summary]'), 'ficha con resumen');
   for (const t of ['qualification', 'summary-score', 'summary-fit', 'group-locales', 'work-links']) assert((await rep.locator(`[data-testid=${t}]`).count()) === 0, `ficha: sin ${t}`);
-  assert((await rep.locator('[data-testid=summary-jump] a[href="#qual"]').count()) === 0, 'ficha: sin salto a Cualificación');
   const text = await visible(rep);
   assert(!NIGHT.test(text), `ficha: nada de la noche (${(NIGHT.exec(text) ?? [''])[0]})`);
   if (OUT) await rep.screenshot({ path: `${OUT}/white-label-account.png`, fullPage: true });

@@ -357,15 +357,17 @@ const STATE_ALERT = {
           {a.musicUrl && <a class="co-btn co-btn--ghost co-btn--sm" href={a.musicUrl} target="_blank" rel="noopener"><Icon name="speaker" size={14} />{PRF.contact.music}</a>}
         </div>
         {co.people[0] && <p class="co-meta m-0 flex flex-wrap items-center gap-1" data-testid="summary-ask"><Icon name="user" size={14} />{PS.summary.askFor} <a class="font-semibold underline" href={`/admin/people/${co.people[0].id}`}>{co.people[0].name}</a>{co.people[0].role ? ` · ${co.people[0].role}` : ''}</p>}
-        <a class="co-inset flex items-center gap-2 !p-3 text-inherit !no-underline" href="#follow" data-testid="summary-next">
-          <Icon name="calendar" size={16} />
-          <span class="min-w-0 flex-1"><span class="co-meta">{PS.summary.next}: </span>{tl.next ? <>{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short', timeZone: myTz })}{localTime(tl.next.at, myTz) && ` · ${localTime(tl.next.at, myTz)}`}{tl.next.step && <> · <span data-ugc>{tl.next.step}</span></>}</> : PS.summary.noNext}</span>
-          <Icon name="chevron-right" size={14} />
+        {/* El próximo paso, destacado en morado (criterio de Cristian); sin él, neutro. Sin la barra de saltos: no se usaba. */}
+        <a class:list={['flex items-center gap-3 rounded-2xl !p-3 text-inherit !no-underline', tl.next ? 'border border-[color:var(--co-signal)] bg-[color:var(--co-signal-soft)]' : 'co-inset']} href="#follow" data-testid="summary-next" data-on={tl.next ? '1' : '0'}>
+          <span class:list={['inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full', tl.next ? 'bg-[color:var(--co-signal)] text-white' : 'text-muted']}><Icon name="calendar" size={16} /></span>
+          <span class="min-w-0 flex-1">
+            <span class:list={['block text-xs font-semibold uppercase tracking-wide', tl.next ? 'text-[color:var(--co-signal)]' : 'co-meta']}>{PS.summary.next}</span>
+            {tl.next ? (
+              <span class="block"><strong class="text-[color:var(--co-signal-ink)]">{nextAt && fmt.date(tl.next.at, { weekday: 'short', day: 'numeric', month: 'short', timeZone: myTz })}{localTime(tl.next.at, myTz) && ` · ${localTime(tl.next.at, myTz)}`}</strong>{tl.next.step && <> · <span data-ugc>{tl.next.step}</span></>}</span>
+            ) : <span class="co-meta block">{PS.summary.noNext}</span>}
+          </span>
+          <Icon name="chevron-right" size={16} />
         </a>
-        <nav class="flex gap-2 overflow-x-auto" aria-label={PS.summary.title} data-scroll-x data-testid="summary-jump">
-          {([['facts', '#facts'], ['qual', '#qual'], ['follow', '#follow'], ['people', '#acc-people'], ['data', '#company-contact']] as const).filter(([k]) => qual || k !== 'qual').map(([k, h]) => (
-            <a class="co-chip whitespace-nowrap !no-underline" href={h}>{k === 'qual' && isGroup ? PS.group.jump : PS.summary.jump[k]}</a>))}
-        </nav>
         {canQualify && !a.discardedAt && (
           <button type="button" class="co-btn co-btn--quiet co-btn--sm w-fit justify-self-end" data-dialog-open="discard" data-testid="summary-discard"><Icon name="archive" size={14} />{CL.quickDiscard}</button>
         )}
