@@ -239,6 +239,32 @@ describe('la conversación', () => {
     await run(ops, { kind: 'text', text: 'No está en Madrid, está en Murcia' }, e.state);
     expect(edits.at(-1)).toEqual({ id: 'new1', place: MUR });
   });
+  test('tarjeta + «Jumanji» → elegir 1: un solo resumen (no dos)', async () => {
+    const nico = { name: 'Nico Jumanji', role: null, phone: '+34 617 29 55 85', email: null, instagram: null, linkedin: null, note: null };
+    const { ops } = fakeOps({ split: async () => [{ ...item('Jumanji', { people: [nico] }), candidates: [cand('j1', 'Jumanji Copas', 0.7), cand('d1', 'Dj Juanki Discomóvil', 0.5)] }] });
+    const a = await run(ops, { kind: 'contact', text: 'Contacto compartido: Nico Jumanji · Teléfono: +34 617 29 55 85' });
+    const b = await run(ops, { kind: 'text', text: 'es de jumanji' }, a.state);
+    expect(b.state.step).toBe('pick');
+    const c = await run(ops, { kind: 'text', text: '1' }, b.state);
+    expect(c.replies.filter((r) => r.text.startsWith('Esto es lo que guardo')).length).toBe(1);
+  });
+  test('caso Jumanji/Marquee: tras guardar, un audio largo sobre otra empresa con «se llama Aitor» es algo nuevo, no un arreglo', async () => {
+    const edits: unknown[] = [];
+    const seen: string[] = [];
+    const { ops } = fakeOps({
+      split: async (t) => { seen.push(t); return [{ ...item('Marquee Audiovisuales'), candidates: [] }]; },
+      edit: async (id, e) => { edits.push({ id, ...e }); return { name: e.name ?? 'x', zone: '' }; },
+    });
+    const saved = { step: 'saved' as const, at: new Date().toISOString(), saved: [{ id: 'j1', name: 'Jumanji Copas' }] };
+    const audio = 'A ver, Marquee Audiovisuales. Es una productora audiovisual que hace eventos corporativos, cumpleaños y bodas, y también eventos en locales de ocio nocturno. Germán es el socio mayoritario con el 90 %. El socio minoritario se llama Aitor. Ambos son DJs y tienen una red de unos 5 DJs. Nos conocimos en la feria de 2025, que fue nuestra primera prueba. Quiero retomar la membresía de unos 80 a 100 euros al mes.';
+    const r = await run(ops, { kind: 'audio', text: audio }, saved);
+    expect(edits).toEqual([]);
+    expect(seen.at(-1)).toContain('Marquee Audiovisuales');
+    expect(r.replies.map((x) => x.text).join('\n')).not.toContain('Arreglado');
+    // Una corrección corta sí arregla la recién guardada.
+    await run(ops, { kind: 'text', text: 'Se llama solo Jumanji' }, saved);
+    expect(edits.at(-1)).toEqual({ id: 'j1', name: 'Jumanji' });
+  });
   test('«no les interesa»: el resumen dice que se descartan y al guardar se descartan (dos sitios en un audio)', async () => {
     const { ops, applied } = fakeOps({
       split: async () => [

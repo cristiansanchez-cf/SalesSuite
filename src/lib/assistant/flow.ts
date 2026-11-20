@@ -88,6 +88,9 @@ export type State =
   | { step: 'edit-pick'; at: string; items: EditItem[]; rest: EditAsk[]; ask: EditAsk; candidates: Candidate[]; source: string }
   | { step: 'edit-amend'; at: string; source: string };
 
+/** Un arreglo rápido tras guardar es una frase corta; un relato (más de LONG_WORDS) nunca es un arreglo de fichas. */
+const QUICK_FIX_WORDS = 20;
+const LONG_WORDS = 60;
 /** Lo que queda a medias caduca a la media hora (luego se empieza de nuevo). */
 export const STATE_TTL_MS = 30 * 60_000;
 const MAX_FORWARDED = 30;
@@ -491,13 +494,17 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return { state: { step: 'saved', at, saved: [{ id: target.id, name: r.name }] }, replies: [say(T.edited(r.name, r.zone))] };
     } catch (e) { return { state: keep, replies: [say(e instanceof Error && e.message ? `${T.failedOne} (${e.message})` : T.failedOne)] }; }
   };
+  // Un relato largo (un audio contando una visita) es algo nuevo que apuntar, nunca un arreglo de fichas: «el socio
+  // minoritario se llama Aitor» dentro de un audio sobre Marquee renombró la empresa recién guardada (Jumanji Copas).
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const story = words > LONG_WORDS;
   // Arreglar fichas con IA (lo que diga, con sus palabras); si no es eso, sigue como siempre.
-  if (d.ops.edit && d.ops.understand && ['idle', 'saved'].includes(state.step) && EDIT_HINT.test(text)) {
+  if (!story && d.ops.edit && d.ops.understand && ['idle', 'saved'].includes(state.step) && EDIT_HINT.test(text)) {
     const r = await understand(text);
     if (r) return withHeard(r);
   }
   // Sin IA: «Corrige X: se llama Y y está en Z» (frases fijas).
-  const fix = d.ops.edit && !d.ops.understand && ['idle', 'saved'].includes(state.step) ? fixCommand(text) : null;
+  const fix = !story && d.ops.edit && !d.ops.understand && ['idle', 'saved'].includes(state.step) ? fixCommand(text) : null;
   if (fix) {
     // Por su nombre de ahora; si no, sin la ciudad pegada. Si la ciudad iba en el nombre viejo, también se arregla.
     const find = async (q: string) => {
@@ -513,7 +520,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (r) return withHeard(r);
   }
   // Pedía arreglar algo pero no se entiende qué: se explica cómo (antes lo apuntaba como algo nuevo).
-  if (d.ops.edit && ['idle', 'saved'].includes(state.step) && isFixRequest(text) && !fix) return withHeard({ state, replies: [say(T.fixHow)] });
+  if (!story && d.ops.edit && ['idle', 'saved'].includes(state.step) && isFixRequest(text) && !fix) return withHeard({ state, replies: [say(T.fixHow)] });
   if (state.step === 'edit-confirm') {
     if (isYes(text)) return saveEdits(state.items);
     // Otra cosa: corrección sobre lo que pidió.
@@ -535,8 +542,9 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (h) return withHeard(await resolveEdits(st.rest, [...st.items, await resolveEdit(st.ask, h)], st.source));
     return withHeard({ state: { ...st, at, candidates: c.slice(0, 5).length ? c.slice(0, 5) : st.candidates }, replies: [say(T.editWhich(text, (c.length ? c : st.candidates).slice(0, 5).map((x, i) => `${i + 1}) ${x.name}${x.zone ? ` · ${x.zone}` : ''}`)))] });
   }
-  // Recién guardado: «se llama solo Euforía», «está en Murcia, no en Madrid» arreglan esa empresa.
-  if (state.step === 'saved' && d.ops.edit && (saidName(text) || saidPlace(text))) {
+  // Recién guardado: «se llama solo Euforía», «está en Murcia, no en Madrid» arreglan esa empresa. Solo un mensaje
+  // corto (una corrección); si cuenta más, es algo nuevo.
+  if (state.step === 'saved' && words <= QUICK_FIX_WORDS && d.ops.edit && (saidName(text) || saidPlace(text))) {
     const target = state.saved.length === 1 ? state.saved[0]! : state.saved.find((x) => normName(text).includes(normName(x.name))) ?? null;
     if (!target) return withHeard({ state, replies: [say(T.whichSaved(state.saved.map((x) => x.name)))] });
     const r = await applyEdit(target, text, state);
