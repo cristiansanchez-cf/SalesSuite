@@ -42,4 +42,10 @@ Nunca una pantalla en blanco: primero la forma de lo que viene, luego el dato.
 - **Al navegar** (toda la consola, `AdminLayout`): barra de progreso arriba al hacer clic; si la página tarda más de 350 ms, la anterior se sustituye por el shimmer de una página (`<Shimmer variant="page">`). Los enlaces con `data-no-progress` no lo activan.
 - **Por bloques** (server islands de Astro): la cabecera sale al momento y el cuerpo con datos llega en una segunda petición, con su shimmer como `slot="fallback"`. Hoy: Inicio (`components/admin/home/HomeBody.astro`) y Aprende (`components/admin/learn/LearnBody.astro`). El middleware autentica `/_server-islands/*` como la consola (sin sesión: 401, no redirige). Ojo: dentro de un bloque, `Astro.url` es la URL del bloque, no la de la página; los parámetros que necesite se le pasan como props.
 - **Fotos**: `class="co-img"` + `loading="lazy"` + `decoding="async"`; el hueco brilla hasta que la foto llega.
+- **Al instante** (`data-optimistic` junto a `data-async`; hoy, la cualificación de la ficha). Criterio de Cristian: «que
+  clicar sea rápido y luego guarde en el background, y que no te deje salir si aún no ha guardado». El chip cambia al
+  pulsarlo (en las preguntas de una opción se desmarcan las demás; `data-multi`: varias a la vez, con ✓). Se guarda por
+  detrás y en orden, y la tarjeta dice «Guardando…» / «Guardado ✓» (`[data-save-status]`). Mientras quede algo, salir
+  de la página pide confirmación (`beforeunload`). Lo que calcula el servidor (la nota, las preguntas que cambian con el
+  formato) llega al acabar el último. Si falla: un aviso, y la tarjeta vuelve a lo guardado.
 - **Patrón para una página nueva**: cabecera (título, botones) en la página; todo lo que consulte la base de datos, en un componente con `server:defer` y `<Shimmer slot="fallback" variant="…" />` con la silueta que tendrá (`home`, `cards`, `rows`, `hero`, `page`).

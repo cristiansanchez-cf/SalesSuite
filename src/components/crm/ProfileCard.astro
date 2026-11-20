@@ -1,10 +1,12 @@
 ---
 /**
  * Cualificación de una promotora o de un DJ (docs/CRM_DINAMICO.md §24): sus preguntas, un clic cada una (pulsar lo
- * marcado lo desmarca), y su nota. Mismo formulario que la del local («qualify»), con sus propias claves.
+ * marcado lo desmarca), y su nota. Mismo formulario que la del local («qualify»), con sus propias claves. Al instante
+ * (criterio de Cristian: «que clicar sea rápido y luego guarde en el background»): data-optimistic en AdminLayout.
+ * Estilo: varios a la vez (✓) y «Añadir» uno propio.
  */
 import type { Priority } from '~/lib/crm/priority';
-import { CACHE_OF, DJ_OPTIONS, PROMOTER_OPTIONS, STYLES, offStyle } from '~/lib/crm/profiles';
+import { CACHE_OF, DJ_OPTIONS, PROMOTER_OPTIONS, STYLES, MAX_CUSTOM_STYLES, customStyles, offStyle } from '~/lib/crm/profiles';
 import { i18n } from '~/lib/i18n';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
@@ -16,6 +18,7 @@ const R = priorityMessages[locale];
 const styleKey = profile === 'promoter' ? 'pstyle' : 'dstyle';
 const keys = profile === 'promoter' ? (Object.keys(PROMOTER_OPTIONS) as Array<keyof typeof PROMOTER_OPTIONS>) : (Object.keys(DJ_OPTIONS) as Array<keyof typeof DJ_OPTIONS>);
 const styles = Array.isArray(q[styleKey]) ? (q[styleKey] as string[]) : q[styleKey] ? [String(q[styleKey])] : [];
+const mine = customStyles(q, styleKey);
 const part = (k: string) => p.parts.find((x) => x.key === k);
 const pts = (k: string) => { const x = part(k); return x ? (x.points === null ? `${R.unknown} / ${x.weight}` : `${Number.isInteger(x.points) ? x.points : x.points.toFixed(1).replace('.', ',')} / ${x.weight}`) : ''; };
 // Cada pregunta con sus opciones (fuera de la plantilla: los tipos genéricos no van dentro del HTML).
@@ -24,14 +27,14 @@ const cache = profile === 'dj' && typeof q.dfollow === 'string' && q.dfollow in 
 ---
 <section id="qual" class="co-card grid gap-4" data-testid="qualification" data-profile={profile} data-score={p.score} data-out={p.out ? 'true' : 'false'}>
   <div class="flex items-start justify-between gap-3">
-    <div class="grid min-w-0 gap-1"><h2 class="co-entity">{PM.title[profile]}</h2><p class="co-meta">{PM.lede[profile]}</p></div>
+    <div class="grid min-w-0 gap-1"><h2 class="co-entity flex flex-wrap items-baseline gap-2">{PM.title[profile]}<span class="co-meta text-xs font-normal" data-save-status data-testid="qual-status" aria-live="polite"></span></h2><p class="co-meta">{PM.lede[profile]}</p></div>
     <div class="grid max-w-[45%] shrink-0 justify-items-end gap-1 text-right">
       {p.out ? <span class="co-tag !bg-[var(--co-ink)] !text-[var(--co-canvas)]" data-testid="qual-out">{R.outBy(p.kills.map((k) => R.kills[k]).join(' · '))}</span>
         : <span class="co-figure text-4xl" data-testid="qual-score">{p.score}</span>}
       {!p.out && <span class="co-meta">{p.qualified ? R.qualified : `${R.unqualified} · ${R.upTo(p.max)}`}</span>}
     </div>
   </div>
-  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form" data-async="qual account-summary">
+  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form" data-async="qual account-summary" data-async-quiet data-optimistic>
     <input type="hidden" name="action" value="qualify" />
     <fieldset class="grid gap-3" disabled={!canEdit}>
       <div class="grid gap-1.5" data-criterion={styleKey}>
@@ -40,8 +43,15 @@ const cache = profile === 'dj' && typeof q.dfollow === 'string' && q.dfollow in 
           <span class="co-meta tabular-nums">{pts(styleKey)}</span>
         </div>
         <div class="flex flex-wrap gap-2">
-          {STYLES.map((s) => <button type="submit" name="set" value={`${styleKey}:${s}`} class="co-chip" aria-pressed={styles.includes(s) ? 'true' : 'false'} data-testid={`qual-${styleKey}-${s}`}>{PM.styles[s]}</button>)}
+          {STYLES.map((s) => <button type="submit" name="set" value={`${styleKey}:${s}`} class="co-chip qual-multi" data-multi aria-pressed={styles.includes(s) ? 'true' : 'false'} data-testid={`qual-${styleKey}-${s}`}>{PM.styles[s]}</button>)}
+          {mine.map((s) => <button type="submit" name="set" value={`${styleKey}:${s}`} class="co-chip qual-multi" data-multi aria-pressed="true" data-testid="qual-style-custom">{s}</button>)}
         </div>
+        {canEdit && mine.length < MAX_CUSTOM_STYLES && (
+          <div class="flex flex-wrap items-center gap-2" data-add-style>
+            <input class="co-input !h-9 !w-48" name="styleOther" maxlength="30" placeholder={PM.styleOtherPh} aria-label={PM.styleOther} data-add-input data-testid="qual-style-other" />
+            <button type="submit" name="set" value={`${styleKey}:+`} class="co-btn co-btn--ghost co-btn--sm" data-add-btn data-testid="qual-style-add">+ {PM.styleAdd}</button>
+          </div>
+        )}
         {offStyle(q, styleKey) && <p class="co-tag co-tag--danger m-0 w-fit" data-testid="qual-offstyle">{PM.offStyle}</p>}
       </div>
       {rows.map(({ k, label, opts }) => {
@@ -70,5 +80,7 @@ const cache = profile === 'dj' && typeof q.dfollow === 'string' && q.dfollow in 
 
 <style>
   [data-testid=qualification] .co-chip[aria-pressed=true] { background: var(--co-ink); color: var(--co-canvas); border-color: var(--co-ink); }
+  /* Varios a la vez: se ve como casillas (✓), no como opciones de una sola. */
+  [data-testid=qualification] .qual-multi[aria-pressed=true]::before { content: '✓ '; }
   [data-testid=qualification] .qual-kill[aria-pressed=true] { background: #b42318; border-color: #b42318; color: #fff; }
 </style>

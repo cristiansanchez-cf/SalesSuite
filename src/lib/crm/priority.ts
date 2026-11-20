@@ -6,7 +6,7 @@
  *  4. «Se enfría» (contestó y llevamos 3 días laborables sin hacer nada) es urgencia, no calidad: no toca la nota.
  * Una sola lógica, pura y probada, para la ficha, la lista y «Hoy».
  */
-import { PROFILE_MULTI, PROFILE_VALUES } from './profiles';
+import { PROFILE_MULTI, PROFILE_VALUES, isCustomStyle } from './profiles';
 
 export const CRITERIA = ['recurrence', 'decider', 'screens', 'dynamics', 'scale'] as const;
 export type Criterion = (typeof CRITERIA)[number];
@@ -64,7 +64,9 @@ export type Format = (typeof FORMATS)[number];
 export const MULTI_QUAL: readonly string[] = ['format', ...PROFILE_MULTI];
 /** Los valores de una clave de varios (lo viejo de uno solo también vale). */
 export const multiOf = (q: Record<string, unknown>, key: string): string[] =>
-  (Array.isArray(q[key]) ? (q[key] as unknown[]).map(String) : q[key] ? [String(q[key])] : []).filter((x) => QUAL_VALUES[key]?.includes(x));
+  (Array.isArray(q[key]) ? (q[key] as unknown[]).map(String) : q[key] ? [String(q[key])] : []).filter((x) => validQual(key, x));
+/** Un valor válido para una clave: los de la lista o, en estilo, uno propio (escrito a mano). */
+export const validQual = (key: string, v: string): boolean => !!QUAL_VALUES[key]?.includes(v) || (PROFILE_MULTI.includes(key) && isCustomStyle(v));
 export const formatsOf = (q: Qualification): Format[] =>
   (Array.isArray(q.format) ? q.format : q.format ? [q.format] : []).filter((x): x is Format => (FORMATS as readonly string[]).includes(x));
 /**

@@ -37,7 +37,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
 <section id="qual" class="co-card grid gap-4" data-testid="qualification" data-score={p.score} data-out={p.out ? 'true' : 'false'} data-qualified={p.qualified ? 'true' : 'false'}>
   <div class="flex items-start justify-between gap-3">
     <div class="grid min-w-0 gap-1">
-      <h2 class="co-entity">{R.title}</h2>
+      <h2 class="co-entity flex flex-wrap items-baseline gap-2">{R.title}<span class="co-meta text-xs font-normal" data-save-status data-testid="qual-status" aria-live="polite"></span></h2>
       <p class="co-meta">{R.lede}</p>
     </div>
     <div class="grid max-w-[45%] shrink-0 justify-items-end gap-1 text-right">
@@ -49,7 +49,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
     </div>
   </div>
 
-  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form" data-async="qual account-summary">
+  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form" data-async="qual account-summary" data-async-quiet data-optimistic>
     <input type="hidden" name="action" value="qualify" />
     <fieldset class="grid gap-3" disabled={!canEdit}>
       {/* Cómo es (no puntúa): el formato decide cómo se mide la recurrencia; lo demás prepara la visita y el encaje. */}
@@ -60,7 +60,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
             <span class="co-row-title">{r.label}{r.hint && <span class="co-meta font-normal"> · {r.hint}</span>}</span>
             <div class="flex flex-wrap gap-2">
               {r.options.map(([v, l]) => (
-                <button type="submit" name="set" value={`${r.field}:${v}`} class="co-chip" aria-pressed={(r.field === 'format' ? (formatsOf(q) as string[]).includes(v) : q[r.field] === v) ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{r.field === 'size' ? <span class="grid text-left leading-tight"><span>{l}</span><small class="co-meta !text-[11px]" data-testid={`qual-size-range-${v}`}>{sizeRange[v]}</small></span> : l}</button>
+                <button type="submit" name="set" value={`${r.field}:${v}`} class:list={['co-chip', r.field === 'format' && 'qual-multi']} data-multi={r.field === 'format' ? '' : undefined} aria-pressed={(r.field === 'format' ? (formatsOf(q) as string[]).includes(v) : q[r.field] === v) ? 'true' : 'false'} data-testid={`qual-${r.field}-${v}`}>{r.field === 'size' ? <span class="grid text-left leading-tight"><span>{l}</span><small class="co-meta !text-[11px]" data-testid={`qual-size-range-${v}`}>{sizeRange[v]}</small></span> : l}</button>
               ))}
             </div>
           </div>
@@ -105,6 +105,7 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).repla
 
 <style>
   [data-testid=qualification] .co-chip[aria-pressed=true] { background: var(--co-ink); color: var(--co-canvas); border-color: var(--co-ink); }
+  [data-testid=qualification] .qual-multi[aria-pressed=true]::before { content: '✓ '; }
   [data-testid=qualification] .fit-yes { background: #e7f6ec; color: #14532d; border-color: #b7e2c4; }
   [data-testid=qualification] .fit-maybe { background: #fff6e0; color: #6b4a00; border-color: #f0dca6; }
   [data-testid=qualification] .fit-no { opacity: .55; text-decoration: line-through; }

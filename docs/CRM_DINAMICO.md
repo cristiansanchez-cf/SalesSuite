@@ -712,7 +712,8 @@ reserva, historial, próximo paso, personas, «Trabaja con», propuestas); por e
 - **Promotora:** primero **«Dónde hace fiestas»**: cada sala con **días** (L–D, lo habitual; nunca es exacto),
   **frecuencia** (habitual · esporádico · alguna vez) y nota; arriba la frase «Viernes en Sala X · Sábados en Y». Su
   cualificación: estilo (varios: internacional, Erasmus/universitaria, comercial, latina/reggaetón, pop/indie/revival,
-  LGTBIQ+, tardeo, techno/underground, cartel de DJs), ¿dinámicas, juegos o concursos? (35), estilo (20; techno o
+  LGTBIQ+, tardeo, techno/underground, cartel de DJs, con ✓; y «Añadir» uno propio, p. ej. «Flamenco», que cuenta como
+  que encaja; hasta 6), ¿dinámicas, juegos o concursos? (35), estilo (20; techno o
   «cartel de DJs» solos no puntúan y avisan: se suelen descartar), fiestas al mes (20), ¿cuida el contenido? (15),
   ¿la ves llevando Enjoy a sus salas? (10). Le encaja: peticiones, pantalla y dinámicas, fotos y álbum (**no**
   fidelización). Contacto: Instagram, TikTok y WhatsApp (sin Facebook ni Google Maps); varias personas.

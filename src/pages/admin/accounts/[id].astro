@@ -106,7 +106,13 @@ if (Astro.request.method === 'POST') {
       case 'ai-run': await admin.crm.aiRun(id, await researchContext(admin, (await acc.get(id)).account.segmentId)); to += '?ok=ai#ai'; break;
       case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
       case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
-      case 'qualify': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#qual'; break;
+      case 'qualify': {
+        // «Añadir» un estilo propio: el botón manda «pstyle:+» y lo escrito va en styleOther.
+        const set = str('set');
+        if (set.endsWith(':+')) await admin.crm.qualify(id, `${set.slice(0, -1)}${str('styleOther')}`, { add: true });
+        else await admin.crm.qualify(id, set);
+        to += '?ok=qualified#qual'; break;
+      }
       case 'charge-size': await admin.crm.qualify(id, str('set')); to += '?ok=qualified#charge'; break;
       case 'charge': {
         const custom = str('customLink') ? { label: str('customLabel'), amount: str('customAmount').replace(',', '.'), paymentLink: str('customLink') } : null;

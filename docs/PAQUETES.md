@@ -16,6 +16,7 @@ en pantalla**, **Álbum** y **Fidelización**. 25 € al mes cada uno (pequeño 
   - **Cerrar**: qué paquetes (y cuáles gratis), el precio **normal** (sale de su tamaño; si no lo tiene, mediano) u
     **otro precio** (se ve el % de descuento), y algo más acordado. Un solo botón. Gerente o admin cierra; el comercial
     propone y un gerente lo confirma (como el acuerdo).
+  - **Acuerdo**: solo lo acordado, sin paquetes. Por si acaso (criterio de Cristian: «en locales normales también debería estar acuerdo posible»).
   - **En prueba** (docs/CLIENTS.md §En prueba).
   - **Generar enlace de pago** (Stripe), en un modal: lo raro.
   - Ya cliente: sus paquetes en etiquetas, el precio con el descuento, las condiciones de lo gratis y «Cambiar paquetes

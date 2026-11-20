@@ -288,23 +288,68 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
           clearTimeout(form._autosave);
           form._autosave = setTimeout(() => form.requestSubmit(), 120);
         });
+        // Al instante (data-optimistic; criterio de Cristian: «que clicar sea rápido y luego guarde en el background, y
+        // no te deje salir si aún no ha guardado»): el chip pulsado cambia ya (en los de una opción, se desmarcan los
+        // demás de su pregunta; data-multi: varios a la vez), se guarda por detrás en orden, la tarjeta dice «Guardando…»
+        // / «Guardado ✓» y, mientras quede algo por guardar, el navegador avisa antes de salir. Lo del servidor (la nota,
+        // las preguntas que cambian) se pone al acabar el último.
+        const pending = new Map();
+        const busyAny = () => [...pending.values()].some((n) => n > 0);
+        window.addEventListener('beforeunload', (e) => { if (busyAny()) { e.preventDefault(); e.returnValue = ''; } });
+        const liveForm = (key) => document.querySelector(`form[data-optimistic][data-async="${key}"]`);
+        const status = (key, state) => {
+          const f = liveForm(key); const st = f && (f.closest('section') || f).querySelector('[data-save-status]');
+          if (st) { st.textContent = state === 'saving' ? T.saving : state === 'saved' ? T.saved : ''; st.dataset.state = state; }
+        };
+        const flip = (form, btn) => {
+          const v = btn.value || ''; const field = v.slice(0, v.indexOf(':'));
+          if (!field) return;
+          const on = btn.getAttribute('aria-pressed') === 'true';
+          if (!btn.hasAttribute('data-multi')) form.querySelectorAll('button[name=set][aria-pressed]').forEach((b) => { if (b !== btn && b.value.startsWith(`${field}:`)) b.setAttribute('aria-pressed', 'false'); });
+          btn.setAttribute('aria-pressed', on ? 'false' : 'true');
+        };
+        // «Añadir» (p. ej. un estilo propio): el chip nuevo sale ya, marcado; Intro en el texto = «Añadir».
+        const addChip = (form, btn) => {
+          const box = btn.closest('[data-add-style]'); const input = box && box.querySelector('[data-add-input]');
+          const text = input ? input.value.replace(/\s+/g, ' ').trim() : '';
+          if (!text) return false;
+          const chips = box.previousElementSibling;
+          const proto = chips && chips.querySelector('button[data-multi]');
+          if (proto) { const c = proto.cloneNode(false); c.textContent = text; c.value = btn.value.replace(/\+$/, text); c.setAttribute('aria-pressed', 'true'); c.dataset.testid = 'qual-style-custom'; chips.append(c); }
+          return true;
+        };
+        document.addEventListener('keydown', (e) => {
+          const el = e.target;
+          if (e.key !== 'Enter' || !(el instanceof HTMLInputElement) || !el.hasAttribute('data-add-input')) return;
+          e.preventDefault();
+          el.closest('[data-add-style]')?.querySelector('[data-add-btn]')?.click();
+        });
         document.addEventListener('submit', async (e) => {
           const form = e.target;
           if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-async') || !window.fetch || !window.DOMParser) return;
           e.preventDefault();
+          const opt = form.hasAttribute('data-optimistic');
           const btn = e.submitter instanceof HTMLButtonElement ? e.submitter : form.querySelector('button[type=submit]');
           const body = new FormData(form);
           if (e.submitter && e.submitter.name) body.set(e.submitter.name, e.submitter.value);
+          const key = form.dataset.async || '';
+          if (opt && btn) {
+            if (btn.hasAttribute('data-add-btn')) { if (!addChip(form, btn)) return; const i = form.querySelector('[data-add-input]'); if (i) i.value = ''; }
+            else flip(form, btn);
+          }
           const label = btn && btn.querySelector('span');
           const before = label ? label.textContent : '';
-          if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); if (label && btn.dataset.busyLabel) label.textContent = btn.dataset.busyLabel; }
+          if (btn && !opt) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); if (label && btn.dataset.busyLabel) label.textContent = btn.dataset.busyLabel; }
+          if (opt) { pending.set(key, (pending.get(key) || 0) + 1); status(key, 'saving'); }
           const busy = form.dataset.asyncBusy ? toast(form.dataset.asyncBusy, 'busy') : null;
           // Varios clics seguidos sobre lo mismo (p. ej. cualificar): van en orden, uno tras otro.
-          const key = form.dataset.async || '';
           const prev = queue.get(key) || Promise.resolve();
           let release;
           queue.set(key, new Promise((r) => { release = r; }));
           await prev;
+          // Al instante: solo el último de la fila pone lo del servidor (si no, desharía los clics que aún van de camino).
+          const last = () => !opt || pending.get(key) === 1;
+          const swap = (doc) => { for (const id of key.split(/\s+/).filter(Boolean)) { const next = doc.getElementById(id); const cur = document.getElementById(id); if (next && cur) cur.replaceWith(document.importNode(next, true)); } };
           const restore = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.removeAttribute('aria-busy'); if (label) label.textContent = before; } };
           try {
             const url = new URL(form.getAttribute('action') || location.href, location.href); url.hash = '';
@@ -314,21 +359,27 @@ const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!
             // Hecho = el servidor redirige con ?ok= (y su aviso); si no redirige y trae un rechazo, es un error.
             const flashed = res.redirected && new URL(res.url).searchParams.has('ok');
             const err = flashed ? null : doc.querySelector('main [data-testid=alert-rejection], main [data-testid=alert-failure]');
-            if (err) { restore(); const st = form.querySelector('[data-autosave-status]'); if (st) st.textContent = ''; toast(err.textContent.replace(/\s+/g, ' ').trim(), 'error'); return; }
-            for (const id of (form.dataset.async || '').split(/\s+/).filter(Boolean)) {
-              const next = doc.getElementById(id); const cur = document.getElementById(id);
-              if (next && cur) cur.replaceWith(document.importNode(next, true));
+            if (err) {
+              restore(); const st = form.querySelector('[data-autosave-status]'); if (st) st.textContent = ''; toast(err.textContent.replace(/\s+/g, ' ').trim(), 'error');
+              // Al instante y no se ha guardado: se vuelve a lo que hay de verdad (la página del rechazo lo trae).
+              if (opt && last()) { swap(doc); document.dispatchEvent(new CustomEvent('co:swapped')); }
+              return;
             }
+            if (last()) swap(doc);
             restore();
             const ok = flashed ? doc.querySelector('main [data-testid=alert-success]') : null;
             // Autoguardado: sin aviso abajo; al lado, «Guardado ✓».
-            if (form.hasAttribute('data-autosave')) { const st = (document.getElementById(form.id) || form).querySelector('[data-autosave-status]'); if (st) { st.textContent = T.saved; st.dataset.state = 'saved'; } }
+            if (opt) { /* sin aviso abajo: la tarjeta dice «Guardado ✓» */ }
+            else if (form.hasAttribute('data-autosave')) { const st = (document.getElementById(form.id) || form).querySelector('[data-autosave-status]'); if (st) { st.textContent = T.saved; st.dataset.state = 'saved'; } }
             else if (ok || !form.hasAttribute('data-async-quiet')) toast(ok ? ok.textContent.replace(/\s+/g, ' ').trim() : form.dataset.asyncDone || T.done, 'ok');
             document.dispatchEvent(new CustomEvent('co:swapped'));
           } catch {
             restore(); toast(T.failed, 'error');
+            // Al instante y sin red: se vuelve a lo guardado (se pide la página otra vez); si tampoco, se recarga.
+            if (opt && last()) { try { const r = await fetch(location.href, { credentials: 'same-origin' }); swap(new DOMParser().parseFromString(await r.text(), 'text/html')); document.dispatchEvent(new CustomEvent('co:swapped')); } catch { pending.set(key, 0); location.reload(); } }
           } finally {
             if (busy) busy.remove();
+            if (opt) { const n = Math.max(0, (pending.get(key) || 1) - 1); pending.set(key, n); if (n === 0) status(key, 'saved'); }
             release();
             // Para las pruebas y quien quiera esperar: cuántas acciones en segundo plano han terminado.
             document.documentElement.dataset.asyncDone = String(Number(document.documentElement.dataset.asyncDone || 0) + 1);

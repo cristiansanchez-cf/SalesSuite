@@ -52,6 +52,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   // Tamaño del local: su propia fila, sin puntos; «Qué es» con la misma forma que el resto.
   await p.click('[data-testid=qual-size-large]');
   await p.waitForSelector('[data-testid=qual-size-large][aria-pressed=true]');
+  await p.waitForSelector('[data-testid=qual-status][data-state=saved]', { timeout: 60000 });
   assert(true, 'tamaño del local: grande');
   const kindBox = await p.locator('[data-criterion=format] [data-testid=qual-format-club]').boundingBox();
   const qualBox = await p.locator('[data-testid=qualification]').boundingBox();

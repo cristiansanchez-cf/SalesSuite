@@ -41,11 +41,27 @@ export const PROFILE_VALUES: Record<string, readonly string[]> = {
 };
 export const PROFILE_MULTI = ['pstyle', 'dstyle'];
 
+/**
+ * Estilos propios («añadir más», criterio de Cristian): lo que se escribe a mano (p. ej. «Flamenco»), de 2 a 30
+ * letras, sin signos raros. Cuentan como estilo que encaja (no son de los que se descartan). Hasta MAX_CUSTOM_STYLES.
+ */
+export const MAX_CUSTOM_STYLES = 6;
+export const cleanStyle = (raw: string): string => {
+  const t = String(raw ?? '').normalize('NFC').replace(/[^\p{L}\p{N} &'/+.-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 30).trim();
+  const k = t.toLowerCase();
+  return (STYLES as readonly string[]).includes(k) ? k : t;
+};
+export const isCustomStyle = (v: string): boolean => v.length >= 2 && v.length <= 30 && cleanStyle(v) === v && !(STYLES as readonly string[]).includes(v);
+export const isStyleValue = (v: string): boolean => (STYLES as readonly string[]).includes(v) || isCustomStyle(v);
+
 type Q = Record<string, unknown>;
-const list = (q: Q, k: string): Style[] => (Array.isArray(q[k]) ? (q[k] as string[]) : q[k] ? [String(q[k])] : []).filter((x): x is Style => (STYLES as readonly string[]).includes(x));
-/** Estilo: encaja si tiene alguno de los nuestros; 0 si solo tiene de los que se descartan. */
-const styleFraction = (s: Style[]): number | null => (!s.length ? null : s.some((x) => !OFF_STYLES.includes(x)) ? 1 : 0);
-export const offStyle = (q: Q, key: 'pstyle' | 'dstyle') => { const s = list(q, key); return s.length > 0 && s.every((x) => OFF_STYLES.includes(x)); };
+const list = (q: Q, k: string): string[] => (Array.isArray(q[k]) ? (q[k] as string[]) : q[k] ? [String(q[k])] : []).filter(isStyleValue);
+const isOff = (x: string) => (OFF_STYLES as readonly string[]).includes(x);
+/** Estilo: encaja si tiene alguno de los nuestros (o uno propio); 0 si solo tiene de los que se descartan. */
+const styleFraction = (s: string[]): number | null => (!s.length ? null : s.some((x) => !isOff(x)) ? 1 : 0);
+export const offStyle = (q: Q, key: 'pstyle' | 'dstyle') => { const s = list(q, key); return s.length > 0 && s.every(isOff); };
+/** Los estilos propios de una empresa (los que no son de la lista). */
+export const customStyles = (q: Q, key: 'pstyle' | 'dstyle'): string[] => list(q, key).filter(isCustomStyle);
 
 function score(parts: Array<{ key: string; weight: number; f: number | null }>): Pick<Priority, 'score' | 'max' | 'parts' | 'unknown' | 'qualified'> {
   const ps = parts.map((p) => ({ key: p.key, weight: p.weight, points: p.f === null ? null : Math.round(p.f * p.weight * 10) / 10 }));
@@ -60,7 +76,7 @@ const kills = (q: Q): Priority['kills'] => (['coverage', 'validate', 'debt'] as 
 /** Qué le encaja a una promotora: peticiones (fiesta con público que pide), pantalla y dinámicas, álbum (contenido). */
 export function promoterFit(q: Q): Record<'requests' | 'screen' | 'photos', Fit> {
   const s = list(q, 'pstyle');
-  const requests: Fit = !s.length ? null : s.some((x) => !OFF_STYLES.includes(x)) ? 'yes' : 'no';
+  const requests: Fit = !s.length ? null : s.some((x) => !isOff(x)) ? 'yes' : 'no';
   const screen: Fit = q.pdyn === 'yes' ? 'yes' : q.pdyn === 'partly' ? 'maybe' : q.pdyn === 'no' ? 'no' : null;
   const photos: Fit = q.pcontent === 'yes' ? 'yes' : q.pcontent === 'partly' ? 'maybe' : q.pcontent === 'no' ? 'no' : null;
   return { requests, screen, photos };
@@ -89,7 +105,7 @@ export function djPriority(q: Q): Priority {
     { key: 'dstyle', weight: DJ_WEIGHTS.dstyle, f: styleFraction(list(q, 'dstyle')) },
   ]);
   const s = list(q, 'dstyle');
-  const requests: Fit = q.dres === 'yes' ? 'yes' : !s.length ? null : s.some((x) => !OFF_STYLES.includes(x)) ? 'maybe' : 'no';
+  const requests: Fit = q.dres === 'yes' ? 'yes' : !s.length ? null : s.some((x) => !isOff(x)) ? 'maybe' : 'no';
   return { ...r, out: k.length > 0, kills: k, score: k.length ? 0 : r.score, max: k.length ? 0 : r.max, kind: null,
     fit: { screen: null, requests, photos: null, loyalty: null } };
 }

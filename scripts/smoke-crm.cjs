@@ -148,11 +148,23 @@ const place = async (pg, sel, label) => { const at = pg.url(); await Promise.all
   await rep.selectOption('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-freq]', 'regular');
   await Promise.all([rep.waitForURL(/ok=work/), rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-when-save]')]);
   assert((await rep.textContent('[data-testid=work-line]')).includes('Viernes en Club Sol'), 'arriba: «Viernes en Club Sol»');
-  await Promise.all([rep.waitForResponse((r) => r.request().method() === 'POST'), rep.click('[data-testid=qual-pstyle-international]')]);
-  await rep.waitForSelector('[data-testid=qual-pstyle-international][aria-pressed=true]');
-  await Promise.all([rep.waitForResponse((r) => r.request().method() === 'POST'), rep.click('[data-testid=qual-pdyn-yes]')]);
-  await rep.waitForSelector('[data-testid=qual-pdyn-yes][aria-pressed=true]');
+  // Al instante: varios clics seguidos sin esperar; el chip cambia ya y se guarda por detrás, en orden.
+  await rep.click('[data-testid=qual-pstyle-international]');
+  assert((await rep.getAttribute('[data-testid=qual-pstyle-international]', 'aria-pressed')) === 'true', 'clic: marcado al momento');
+  await rep.click('[data-testid=qual-pstyle-latin]');
+  await rep.click('[data-testid=qual-pdyn-yes]');
+  await rep.fill('[data-testid=qual-style-other]', 'Flamenco');
+  await rep.press('[data-testid=qual-style-other]', 'Enter');
+  assert((await rep.textContent('[data-testid=qual-status]')).includes('Guardando'), '«Guardando…» mientras va por detrás');
+  await rep.waitForSelector('[data-testid=qual-status][data-state=saved]', { timeout: 60000 });
+  await rep.reload();
+  assert((await rep.getAttribute('[data-testid=qual-pstyle-international]', 'aria-pressed')) === 'true' && (await rep.getAttribute('[data-testid=qual-pstyle-latin]', 'aria-pressed')) === 'true', 'estilo: varios a la vez (guardado)');
+  assert((await rep.textContent('[data-testid=qual-style-custom]')).includes('Flamenco'), 'estilo propio «Flamenco» añadido');
   assert((await rep.textContent('[data-testid=qual-score]')).trim() === '55', 'nota de promotora: dinámicas 35 + estilo 20');
+  // Quitar el propio: clic en su chip.
+  await rep.click('[data-testid=qual-style-custom]');
+  await rep.waitForSelector('[data-testid=qual-status][data-state=saved]', { timeout: 60000 });
+  assert(!(await rep.isVisible('[data-testid=qual-style-custom]')), 'estilo propio quitado');
   const fit = await rep.textContent('[data-testid=summary-fit]');
   assert(fit.includes('Peticiones de canciones') && fit.includes('Pantalla y dinámicas') && !fit.includes('Fidelización'), `le encaja (sin fidelización): ${fit.trim()}`);
   await Promise.all([rep.waitForURL(/ok=workRemoved/), rep.click('[data-testid=work-link][data-name="Club Sol"] [data-testid=work-remove]')]);

@@ -31,7 +31,8 @@ import type { AccountMove } from '../accounts/types';
 import { pathForParts, planPath, SPAIN_NAME } from '../accounts/spain';
 import { claudeResearch, fixtureResearch, readResearch, sanitizeResearch, type AiResearch, type ResearchApi, type ResearchInput } from './research';
 import { NO_PACK_QUAL, normalizePack, type QualPack } from './pack';
-import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, setQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
+import { MAX_CUSTOM_STYLES, PROFILE_MULTI, cleanStyle, customStyles, isCustomStyle } from './profiles';
+import { CRITERIA, MULTI_QUAL, QUAL_VALUES, coolingDays, formatsOf, multiOf, setQual, validQual, type Format, normalizeWeights, type Qualification, type Weights } from './priority';
 import { CHANNELS, OUTCOMES, dueBucket, suggestNext, type Activity, type Channel, type DueBucket, type NextStep } from './followup';
 import { slugKey } from './fields';
 import { chargeRef, paymentUrl } from '../admin/payment';
@@ -1405,17 +1406,21 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     try { await accounts.savePriorityWeights(t, w); } catch (e) { mapError(e); }
   }
   /** Un clic: «clave:valor» lo marca; pulsar lo ya marcado lo desmarca (vuelve a «no se sabe»). */
-  async function qualify(accountId: string, set: string) {
+  async function qualify(accountId: string, set: string, opts: { add?: boolean } = {}) {
     requireUse();
-    const [key, value] = set.split(':');
-    if (!key || !QUAL_VALUES[key] || !QUAL_VALUES[key].includes(value)) throw new AdminError(422, 'Datos no válidos');
+    const i = set.indexOf(':');
+    const key = i > 0 ? set.slice(0, i) : '';
+    // Estilo propio («añadir más»): lo escrito a mano, limpio; se añade (no se quita si ya estaba).
+    const value = opts.add && PROFILE_MULTI.includes(key) ? cleanStyle(set.slice(i + 1)) : set.slice(i + 1);
+    if (!key || !QUAL_VALUES[key] || !validQual(key, value)) throw new AdminError(422, 'Datos no válidos');
     // Sin cualificación en el espacio (§45), solo el tamaño (el de «Generar pago»).
     if (!(await qualPack()) && !NO_PACK_QUAL.includes(key)) throw new AdminError(422, 'Datos no válidos');
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     const q: Record<string, unknown> = { ...a.qualification };
     const v: unknown = value === 'true' ? true : value;
-    setQual(q, key, v, true);
+    if (isCustomStyle(value) && !multiOf(q, key).includes(value) && customStyles(q, key as 'pstyle' | 'dstyle').length >= MAX_CUSTOM_STYLES) throw new AdminError(422, 'Como mucho 6 estilos propios');
+    setQual(q, key, v, !opts.add);
     if (key === 'format') delete q.kind;   // el formato sustituye al antiguo «Qué es»
     try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
   }

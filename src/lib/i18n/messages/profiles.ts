@@ -13,7 +13,7 @@ export const profilesMessages = defineMessages({
     roles: { resident: 'Residente', guest: 'Invitado' }, role: 'Si es DJ', anyRole: '—', editWhen: 'Días y frecuencia', saveWhen: 'Guardar',
     title: { promoter: 'Cualificación de la promotora', dj: 'Cualificación del DJ' },
     lede: { promoter: 'Lo que importa: si monta dinámicas y contenido, su estilo y cuánto mueve.', dj: 'Lo que importa: si es residente donde nos interesa, su caché (seguidores) y si quiere darse a conocer.' },
-    style: 'Estilo', styleHint: 'Varios a la vez',
+    style: 'Estilo', styleHint: 'Varios a la vez', styleOther: 'Otro estilo', styleOtherPh: 'Otro estilo (p. ej. flamenco)', styleAdd: 'Añadir',
     styles: { international: 'Internacional (francesa, ucraniana…)', erasmus: 'Erasmus o universitaria', commercial: 'Comercial', latin: 'Latina o reggaetón', pop: 'Pop, indie o revival', lgtb: 'LGTBIQ+', tardeo: 'Tardeo', house: 'House (deep, tech, afro)', techno: 'Techno o underground', lineup: 'Cartel de DJs y punto' },
     offStyle: 'Por su estilo, se suele descartar.',
     q: {
@@ -40,7 +40,7 @@ export const profilesMessages = defineMessages({
     roles: { resident: 'Resident', guest: 'Guest' }, role: 'If a DJ', anyRole: '—', editWhen: 'Days and frequency', saveWhen: 'Save',
     title: { promoter: 'Promoter qualification', dj: 'DJ qualification' },
     lede: { promoter: 'What matters: whether they run activities and content, their style and how much they move.', dj: 'What matters: resident where we care, their fee level (followers) and whether they want exposure.' },
-    style: 'Style', styleHint: 'Several at once',
+    style: 'Style', styleHint: 'Several at once', styleOther: 'Another style', styleOtherPh: 'Another style (e.g. flamenco)', styleAdd: 'Add',
     styles: { international: 'International (French, Ukrainian…)', erasmus: 'Erasmus or university', commercial: 'Commercial', latin: 'Latin or reggaeton', pop: 'Pop, indie or revival', lgtb: 'LGBTQ+', tardeo: 'Afternoon parties', house: 'House (deep, tech, afro)', techno: 'Techno or underground', lineup: 'DJ line-up only' },
     offStyle: 'With this style, they’re usually discarded.',
     q: {
@@ -67,7 +67,7 @@ export const profilesMessages = defineMessages({
     roles: { resident: 'Residente', guest: 'Convidado' }, role: 'Se for DJ', anyRole: '—', editWhen: 'Dias e frequência', saveWhen: 'Salvar',
     title: { promoter: 'Qualificação da promotora', dj: 'Qualificação do DJ' },
     lede: { promoter: 'O que importa: se faz dinâmicas e conteúdo, o estilo e quanto movimenta.', dj: 'O que importa: residente onde nos interessa, o cachê (seguidores) e se quer se tornar conhecido.' },
-    style: 'Estilo', styleHint: 'Vários ao mesmo tempo',
+    style: 'Estilo', styleHint: 'Vários ao mesmo tempo', styleOther: 'Outro estilo', styleOtherPh: 'Outro estilo (ex.: flamenco)', styleAdd: 'Adicionar',
     styles: { international: 'Internacional (francesa, ucraniana…)', erasmus: 'Erasmus ou universitária', commercial: 'Comercial', latin: 'Latina ou reggaeton', pop: 'Pop, indie ou revival', lgtb: 'LGBTQIA+', tardeo: 'Festa de tarde', house: 'House (deep, tech, afro)', techno: 'Techno ou underground', lineup: 'Só line-up de DJs' },
     offStyle: 'Por este estilo, costuma ser descartada.',
     q: {
@@ -94,7 +94,7 @@ export const profilesMessages = defineMessages({
     roles: { resident: '레지던트', guest: '게스트' }, role: 'DJ인 경우', anyRole: '—', editWhen: '요일과 빈도', saveWhen: '저장',
     title: { promoter: '프로모터 평가', dj: 'DJ 평가' },
     lede: { promoter: '중요한 것: 이벤트·콘텐츠를 하는지, 스타일, 규모.', dj: '중요한 것: 관심 있는 곳의 레지던트인지, 출연료(팔로워), 알려지고 싶은지.' },
-    style: '스타일', styleHint: '여러 개 선택',
+    style: '스타일', styleHint: '여러 개 선택', styleOther: '다른 스타일', styleOtherPh: '다른 스타일 (예: 플라멩코)', styleAdd: '추가',
     styles: { international: '인터내셔널 (프랑스, 우크라이나…)', erasmus: '에라스무스·대학생', commercial: '커머셜', latin: '라틴·레게톤', pop: '팝·인디·레트로', lgtb: 'LGBTQ+', tardeo: '낮 파티', house: '하우스 (딥·테크·아프로)', techno: '테크노·언더그라운드', lineup: 'DJ 라인업 중심' },
     offStyle: '이 스타일은 보통 제외됩니다.',
     q: {

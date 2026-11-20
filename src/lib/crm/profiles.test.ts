@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { djPriority, offStyle, promoterFit, promoterPriority } from './profiles';
+import { cleanStyle, customStyles, djPriority, isCustomStyle, offStyle, promoterFit, promoterPriority } from './profiles';
 import { priorityFor } from './score';
-import { setQual } from './priority';
+import { setQual, validQual } from './priority';
 
 describe('fichas de promotora y DJ (§24)', () => {
   test('promotora de dinámicas e internacional: nota alta, le encajan peticiones, pantalla y álbum; sin fidelización', () => {
@@ -28,5 +28,29 @@ describe('fichas de promotora y DJ (§24)', () => {
     const q: Record<string, unknown> = {};
     setQual(q, 'pstyle', 'latin', true); setQual(q, 'pstyle', 'erasmus', true); expect(q.pstyle).toEqual(['latin', 'erasmus']);
     setQual(q, 'pstyle', 'latin', true); expect(q.pstyle).toEqual(['erasmus']);
+  });
+});
+
+describe('estilos propios («añadir más»)', () => {
+  test('se limpian; si es uno de la lista, su clave', () => {
+    expect(cleanStyle('  Flamenco  ')).toBe('Flamenco');
+    expect(cleanStyle('Rock: 80s <b>')).toBe('Rock 80s b');
+    expect(cleanStyle('Techno')).toBe('techno');
+    expect(isCustomStyle('Flamenco')).toBe(true);
+    expect(isCustomStyle('techno')).toBe(false);
+    expect(isCustomStyle('a')).toBe(false);
+    expect(isCustomStyle('x:y')).toBe(false);
+  });
+  test('se guardan en la lista de estilos y cuentan como que encaja', () => {
+    const q: Record<string, unknown> = { pstyle: ['techno'] };
+    expect(offStyle(q, 'pstyle')).toBe(true);
+    setQual(q, 'pstyle', 'Flamenco');
+    expect(q.pstyle).toEqual(['techno', 'Flamenco']);
+    expect(customStyles(q, 'pstyle')).toEqual(['Flamenco']);
+    expect(offStyle(q, 'pstyle')).toBe(false);
+    expect(validQual('pstyle', 'Flamenco')).toBe(true);
+    expect(validQual('pdyn', 'Flamenco')).toBe(false);
+    setQual(q, 'pstyle', 'Flamenco', true);
+    expect(q.pstyle).toEqual(['techno']);
   });
 });
