@@ -4,6 +4,7 @@
  * empresa que más se parece (o una nueva), su nota, lo que se marca en la cualificación y el próximo paso → se revisa
  * y se guarda todo de una vez. La IA no guarda nada.
  */
+import { qualLabeler } from '~/lib/crm/qual-labels';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { trialMessages } from '~/lib/i18n/messages/trial';
 import { pastedChat } from '~/lib/assistant/flow';
@@ -104,24 +105,8 @@ const pre = !items && /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('empres
 const fieldLabel = new Map(items ? (await admin.accounts.crmFields().catch(() => [])).map((x) => [x.key, x.label]) : []);
 const hasAi = admin.crm.hasNotes();
 
-/** «Pantallas: Sí», «Noches a la semana: 4 o más», «Sin cobertura móvil». */
-const qualLabel = (k: string, v: string): string => {
-  const o = PR.options as Record<string, Record<string, string>>;
-  if (k === 'kind') return `${PR.kind}: ${(PR.kinds as Record<string, string>)[v] ?? v}`;
-  if (k === 'format') return `${PR.format}: ${v.split(',').map((x) => (PR.formats as Record<string, string>)[x] ?? x).join(' + ')}`;
-  if (k === 'party') return `${PR.party.replace(/^¿|\?$/g, '')}: ${(PR.parties as Record<string, string>)[v] ?? v}`;
-  if (k === 'dj') return `${PR.dj}: ${(PR.djs as Record<string, string>)[v] ?? v}`;
-  if (k === 'promoters') return `${PR.promoters.replace(/^¿|\?$/g, '')}: ${v === 'yes' ? PR.promotersYes : PR.promotersNo}`;
-  if (k === 'screens') return `${PR.screensQ}: ${(PR.options.screens as Record<string, string>)[v] ?? v}`;
-  if (k in PRF.q) { const [l, o] = (PRF.q as unknown as Record<string, [string, Record<string, string>]>)[k]; return `${l.replace(/^¿|\?$/g, '')}: ${o[v] ?? v}`; }
-  if (k === 'pstyle' || k === 'dstyle') return `${PRF.style}: ${v.split(',').map((x) => (PRF.styles as Record<string, string>)[x] ?? x).join(', ')}`;
-  if (k === 'size') return `${PR.size}: ${(PR.sizes as Record<string, string>)[v] ?? v}`;
-  if (k === 'nights') return `${PR.hints.recurrence.venue}: ${o.nights[v] ?? v}`;
-  if (k === 'events') return `${PR.hints.recurrence.promoter}: ${o.events[v] ?? v}`;
-  if (k === 'recurring') return `${PR.hints.recurrence.concert} ${o.recurring[v] ?? v}`;
-  if (k in PR.kills && v === 'true') return (PR.kills as Record<string, string>)[k];
-  return `${(PR.criteria as Record<string, string>)[k] ?? k}: ${o[k]?.[v] ?? v}`;
-};
+/** «Pantallas: Sí», «Noches a la semana: 4 o más», «Sin cobertura móvil» (las mismas palabras que el asistente). */
+const qualLabel = qualLabeler(locale);
 // Tipos del espacio (§24): el de cada sitio nuevo sale de lo que dice la IA (promotora, DJ o local).
 const kindDefs = items ? await admin.accounts.kinds() : [];
 const kindFor = (e: string | null) => (e && e !== 'venue' ? kindDefs.find((k) => k.profile === e)?.key : undefined) ?? kindDefs[0]?.key;

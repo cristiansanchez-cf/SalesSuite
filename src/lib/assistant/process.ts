@@ -95,6 +95,9 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
       const kinds = (await admin.accounts.kinds().catch(() => [])).map((k) => ({ key: k.key, label: k.label }));
       return o.editor!(text, { kinds, today: (o.now ?? new Date()).toISOString().slice(0, 10) });
     } } : {}),
+    // Cualificar por WhatsApp: lo que falta y marcar lo que cuenta (docs/ASSISTANT.md §Cualificar).
+    async qualGaps(accountId) { return admin.crm.qualGaps(accountId); },
+    ...(admin.crm.hasNotes() ? { async qualifyFrom(accountId: string, text: string) { return admin.crm.qualifyFrom(accountId, text); } } : {}),
     async kindLabel(key) { return (await admin.accounts.kinds().catch(() => [])).find((k) => k.key === key)?.label ?? key; },
     async placeIn(text) { return placeIn(text, (await admin.accounts.territory()).zones); },
     async places(q) {

@@ -239,6 +239,34 @@ describe('la conversación', () => {
     await run(ops, { kind: 'text', text: 'No está en Madrid, está en Murcia' }, e.state);
     expect(edits.at(-1)).toEqual({ id: 'new1', place: MUR });
   });
+  test('cualificar: el resumen enseña lo que marca; tras guardar, lo que falta; la respuesta se marca; «cualifica X»', async () => {
+    const gaps = [{ field: 'screens', question: 'Pantallas', options: [{ v: 'yes', label: 'Sí' }, { v: 'want', label: 'No, pero quiere' }, { v: 'no', label: 'No y no quiere' }] },
+      { field: 'party', question: '¿Hay fiesta?', options: [{ v: 'core', label: 'Es su negocio' }, { v: 'some', label: 'Algunas noches' }, { v: 'no', label: 'No' }] }];
+    const told: string[] = [];
+    const { ops } = fakeOps({
+      split: async () => [{ ...item('Club Sol', { qualLabels: ['Tamaño: Mediano'] }), candidates: [cand('a1', 'Club Sol', 1)] }],
+      qualGaps: async () => ({ name: 'Club Sol', gaps }),
+      qualifyFrom: async (_id, t) => { told.push(t); return /pantallas/i.test(t) ? { name: 'Club Sol', marked: ['Pantallas: Sí'], gaps: gaps.slice(1) } : { name: 'Club Sol', marked: [], gaps }; },
+      search: async (q) => (/sol/i.test(q) ? [cand('a1', 'Club Sol', 1)] : []),
+    });
+    const a = await run(ops, { kind: 'text', text: 'He ido a Club Sol, es mediano y me han dicho que vuelva el jueves' });
+    expect(a.replies[0].text).toContain('📋 Cualificación: Tamaño: Mediano');
+    const b = await run(ops, { kind: 'button', id: 'save' }, a.state);
+    expect(b.replies[1].text).toContain('A *Club Sol* le faltan');
+    expect(b.replies[1].text).toContain('• ¿Hay fiesta? (Es su negocio / Algunas noches / No)');
+    const c = await run(ops, { kind: 'text', text: 'Tiene pantallas grandes' }, b.state);
+    expect(c.replies[0].text).toContain('📋 Marcado en *Club Sol*: Pantallas: Sí');
+    expect(c.replies[0].text).toContain('Aún faltan');
+    // «luego»: deja de preguntar.
+    const d0 = await run(ops, { kind: 'text', text: 'luego' }, c.state);
+    expect(d0.replies[0].text).toContain('cualifica Club Sol');
+    // «cualifica Club Sol» sin más: pregunta lo que falta; con lo que sabe: lo marca.
+    const e = await run(ops, { kind: 'text', text: 'cualifica Club Sol' });
+    expect(e.replies[0].text).toContain('le faltan');
+    const f = await run(ops, { kind: 'text', text: 'Cualifica Club Sol: tiene pantallas y hacen fiestas los viernes' });
+    expect(f.replies[0].text).toContain('Marcado en *Club Sol*');
+    expect(told.at(-1)).toBe('tiene pantallas y hacen fiestas los viernes');
+  });
   test('tarjeta + «Jumanji» → elegir 1: un solo resumen (no dos)', async () => {
     const nico = { name: 'Nico Jumanji', role: null, phone: '+34 617 29 55 85', email: null, instagram: null, linkedin: null, note: null };
     const { ops } = fakeOps({ split: async () => [{ ...item('Jumanji', { people: [nico] }), candidates: [cand('j1', 'Jumanji Copas', 0.7), cand('d1', 'Dj Juanki Discomóvil', 0.5)] }] });
@@ -526,7 +554,9 @@ describe('de punta a punta (demo)', () => {
     // Meta reintenta el mismo mensaje: no se repite.
     expect(await processAssistant(deps(), '123', member, msg('w2', { text: 'Club Sol: hablé con Marta' }))).toBe('duplicate');
     await processAssistant(deps(), '123', member, msg('w3', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
-    expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
+    expect(sent.map((x) => x.text)).toContain('✅ Guardado en Club Sol.');
+    // Y después, las preguntas de la cualificación que le faltan (para cualificarla en el momento).
+    expect(sent.at(-1)!.text).toContain('le faltan');
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
     const act = demoDb().crm_activity.find((a) => a.account_id === sol.id && a.user_id === REP && /Marta/.test(a.note ?? ''));
     expect(act).toBeTruthy();
@@ -542,7 +572,7 @@ describe('de punta a punta (demo)', () => {
       last = sent.at(-1)!;
     }
     await processAssistant(deps(), '123', member, msg('e2', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
-    expect(sent.at(-1)!.text).toContain('Guardado');
+    expect(sent.some((x) => x.text.includes('Guardado'))).toBe(true);
     const acc = () => demoDb().account.find((a) => a.tenant_id === ENJOY && /Euforia/.test(a.name))!;
     expect(acc().name).toBe('Euforia Nightclub Test');
     await processAssistant(deps(), '123', member, msg('e3', { text: 'Hay que cambiar el nombre. Es solo Euforia' }));
@@ -622,7 +652,7 @@ describe('de punta a punta (demo)', () => {
     expect(sent[1].text).toContain('📸 He leído 2 mensajes con Sala Marina');
     expect(sent[2].buttons).toEqual(['save', 'change']);
     await processAssistant(deps(), '123', member, msg('i2', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
-    expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
+    expect(sent.map((x) => x.text)).toContain('✅ Guardado en Club Sol.');
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
     const act = demoDb().crm_activity.find((a) => a.account_id === sol.id && /Nosotros · 10:02: Hola Marta/.test(a.note ?? '') && /Cliente \(Sala Marina\) · 10:15: Sí, pásamela/.test(a.note ?? ''));
     expect(act).toBeTruthy();
@@ -741,7 +771,7 @@ describe('un número para todas las empresas (docs/ASSISTANT.md)', () => {
     expect(sent[2].buttons).toEqual(['save', 'change']);
     // Lo siguiente del día va directo a Enjoy; «Guardar» lo guarda allí.
     await processHub(deps(), HUB, ms, msg('h4', { kind: 'button', buttonId: 'save', text: 'Guardar' }));
-    expect(sent.at(-1)?.text).toBe('✅ Guardado en Club Sol.');
+    expect(sent.map((x) => x.text)).toContain('✅ Guardado en Club Sol.');
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
     expect(demoDb().crm_activity.some((a) => a.account_id === sol.id && a.user_id === REP && /Marta/.test(a.note ?? ''))).toBe(true);
   });

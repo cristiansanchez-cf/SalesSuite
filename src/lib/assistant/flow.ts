@@ -13,6 +13,7 @@ import type { NoteItem } from '../crm/notes';
 import { assistantMessages, type AssistantText } from './messages';
 import type { Place } from './places';
 import { EDIT_HINT, type EditAsk, type EditPlan } from './edits';
+import type { QualQuestion } from '../crm/qual-labels';
 
 /** Lo que se cambia de una ficha (por WhatsApp). */
 export interface EditChange {
@@ -41,6 +42,9 @@ export interface AssistantOps {
   understand?(text: string): Promise<EditPlan | null>;
   /** Nombre del tipo («Promotora») por su clave. */
   kindLabel?(key: string): Promise<string>;
+  /** Cualificar por WhatsApp: las preguntas que le faltan y marcar lo que cuenta (con la IA de Apuntar). */
+  qualGaps?(accountId: string): Promise<{ name: string; gaps: QualQuestion[] }>;
+  qualifyFrom?(accountId: string, text: string): Promise<{ name: string; marked: string[]; gaps: QualQuestion[] }>;
   /** «Mañana»: el próximo paso, a mañana. */
   later?(accountId: string): Promise<{ name: string }>;
 }
@@ -82,7 +86,7 @@ export type State =
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
   | { step: 'reminder'; at: string; items: ReminderItem[] }
   /** Recién guardado: «se llama solo X» o «está en Murcia, no en Madrid» arreglan eso mismo (media hora). */
-  | { step: 'saved'; at: string; saved: Array<{ id: string; name: string }> }
+  | { step: 'saved'; at: string; saved: Array<{ id: string; name: string }>; ask?: { id: string; name: string } }
   /** Arreglar fichas: el resumen de cambios (Guardar / Cambiar) y, si una empresa tiene varias parecidas, cuál es. */
   | { step: 'edit-confirm'; at: string; items: EditItem[]; source: string }
   | { step: 'edit-pick'; at: string; items: EditItem[]; rest: EditAsk[]; ask: EditAsk; candidates: Candidate[]; source: string }
@@ -90,6 +94,8 @@ export type State =
 
 /** Un arreglo rápido tras guardar es una frase corta; un relato (más de LONG_WORDS) nunca es un arreglo de fichas. */
 const QUICK_FIX_WORDS = 20;
+/** Una pregunta de la cualificación en una línea: «• ¿Hay fiesta? (Es su negocio / Algunas noches / No)». */
+const qLine = (q: QualQuestion) => `• ${q.question}${q.options.length <= 5 ? ` (${q.options.map((o) => o.label).join(' / ')})` : ''}`;
 const LONG_WORDS = 60;
 /** Lo que queda a medias caduca a la media hora (luego se empieza de nuevo). */
 export const STATE_TTL_MS = 30 * 60_000;
@@ -239,7 +245,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ? [p.item.agreementLabel, p.item.agreement].filter(Boolean).join(' — ') : null, trialUntil: p.item.trialUntil ?? null,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, qual: p.item.qualLabels ?? [], people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ? [p.item.agreementLabel, p.item.agreement].filter(Boolean).join(' — ') : null, trialUntil: p.item.trialUntil ?? null,
       discard: p.item.discard ? `${T.discards[p.item.discard] ?? p.item.discard}${p.item.discardWhy ? ` (${p.item.discardWhy})` : ''}` : null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
@@ -273,7 +279,15 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const out = r.filter((x) => x.ok && x.discarded).map((x) => x.name);
     if (out.length) deals.push(T.discardedSaved(out));
     const saved = r.filter((x) => x.ok && x.accountId).map((x) => ({ id: x.accountId!, name: x.name }));
-    return { state: saved.length && d.ops.edit ? { step: 'saved', at, saved } : idle, replies: [say([ok.length ? T.saved(ok) : '', ...deals, bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)] };
+    const replies = [say([ok.length ? T.saved(ok) : '', ...deals, bad.length ? T.notSaved(bad) : ''].filter(Boolean).join('\n\n') || T.nothingLeft)];
+    // Una empresa (no descartada) con preguntas sin responder: se proponen, para cualificarla en el momento.
+    let ask: { id: string; name: string } | undefined;
+    const one = saved.length === 1 && !r.some((x) => x.discarded) ? saved[0]! : null;
+    if (one && d.ops.qualGaps && d.ops.qualifyFrom) {
+      const g = await d.ops.qualGaps(one.id).catch(() => null);
+      if (g?.gaps.length) { ask = one; replies.push(say(T.qualAsk(one.name, g.gaps.map(qLine)))); }
+    }
+    return { state: saved.length && (d.ops.edit || ask) ? { step: 'saved', at, saved, ...(ask ? { ask } : {}) } : idle, replies };
   };
   /** Lo que cuenta, a «Apuntar». */
   const note = async (text: string, prev: Pending[] = [], literal?: string[], correction?: string): Promise<FlowResult> => {
@@ -498,6 +512,34 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   // minoritario se llama Aitor» dentro de un audio sobre Marquee renombró la empresa recién guardada (Jumanji Copas).
   const words = text.split(/\s+/).filter(Boolean).length;
   const story = words > LONG_WORDS;
+  // Cualificar (docs/ASSISTANT.md §Cualificar): tras guardar, lo que cuente de esa empresa se marca («tiene pantallas,
+  // hacen 2 fiestas al mes»). Si no saca nada de su cualificación, sigue como siempre (puede ser algo nuevo).
+  // Una corrección corta («es solo Euforia», «está en Murcia», «corrige…») va antes: es arreglar, no cualificar.
+  const fixing = (words <= QUICK_FIX_WORDS && (!!saidName(text) || !!saidPlace(text))) || isFixRequest(text);
+  if (state.step === 'saved' && state.ask && d.ops.qualifyFrom && !story && !fixing) {
+    if (short(text) && new RegExp(`^(luego|m[aá]s tarde|ahora no|no|despu[eé]s|later|not now|depois|mais tarde|나중에)${END}`, 'iu').test(text)) {
+      return withHeard({ state: { step: 'saved', at, saved: state.saved }, replies: [say(T.qualLater(state.ask.name))] });
+    }
+    const q = await d.ops.qualifyFrom(state.ask.id, text).catch(() => null);
+    if (q?.marked.length) return withHeard({ state: { step: 'saved', at, saved: state.saved, ...(q.gaps.length ? { ask: state.ask } : {}) }, replies: [say(T.qualMarked(q.name, q.marked, q.gaps.map(qLine)))] });
+  }
+  // «Cualifica Marquee» (y lo que sepa): lo marca; sin más, pregunta lo que falta.
+  const qm = d.ops.qualifyFrom && d.ops.qualGaps && ['idle', 'saved'].includes(state.step) && !story
+    ? /^\s*cualif[ií]ca(?:r|me|la|lo)?\s+(?:a\s+)?([^:,.\n]+?)(?:\s*[:,.]\s*([\s\S]+?))?\s*$/iu.exec(text) : null;
+  if (qm) {
+    const who = qm[1]!.trim();
+    const c = await d.ops.search(who).catch(() => [] as Candidate[]);
+    const hit = pickOf(c, who);
+    if (!hit) return withHeard({ state, replies: [say(c.length ? T.fixWhich(who, c.slice(0, 5).map((x) => `${x.name}${x.zone ? ` · ${x.zone}` : ''}`)) : T.notFound(who))] });
+    const ask = { id: hit.id, name: hit.name };
+    if (qm[2]?.trim()) {
+      const q = await d.ops.qualifyFrom!(hit.id, qm[2]);
+      return withHeard({ state: { step: 'saved', at, saved: [ask], ...(q.gaps.length ? { ask } : {}) }, replies: [say(q.marked.length ? T.qualMarked(q.name, q.marked, q.gaps.map(qLine)) : T.qualNone(q.name))] });
+    }
+    const g = await d.ops.qualGaps!(hit.id);
+    if (!g.gaps.length) return withHeard({ state, replies: [say(T.qualDone(g.name))] });
+    return withHeard({ state: { step: 'saved', at, saved: [ask], ask }, replies: [say(T.qualAsk(g.name, g.gaps.map(qLine)))] });
+  }
   // Arreglar fichas con IA (lo que diga, con sus palabras); si no es eso, sigue como siempre.
   if (!story && d.ops.edit && d.ops.understand && ['idle', 'saved'].includes(state.step) && EDIT_HINT.test(text)) {
     const r = await understand(text);

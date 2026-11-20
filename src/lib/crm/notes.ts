@@ -45,6 +45,8 @@ export interface NoteItem {
   /** Al cerrar, qué paquetes («clave» o «clave:free») y a qué precio al mes, si lo dice (docs/PAQUETES.md). */
   agreementPackages?: string[];
   agreementPrice?: number | null;
+  /** La cualificación en palabras, para el resumen (lo pone el servicio). */
+  qualLabels?: string[];
   /** Los paquetes en texto, para el resumen (lo pone el servicio con el catálogo). */
   agreementLabel?: string | null;
   /** Si la deja en prueba (docs/CLIENTS.md §En prueba): el día que acaba (AAAA-MM-DD). */

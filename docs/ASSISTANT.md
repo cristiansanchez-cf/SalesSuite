@@ -117,6 +117,24 @@ quedan las frases fijas de abajo.
   y se descarta al pulsar Guardar, con su motivo: queda en «Descartadas» y en el tablero como perdida, para que nadie
   vuelva a venderles lo mismo. Antes el asistente lo ignoraba.
 
+### Cualificar
+
+Criterio de Cristian: «¿se puede cualificar desde WhatsApp? Decir oye, tiene pantallas, hace tal… o proponer: hay
+varias preguntas sin responder, me dices un poco y lo cualificamos».
+
+- **En el resumen**, lo que se va a marcar en la cualificación («📋 Cualificación: Tamaño: Mediano · Pantallas: Sí»),
+  sacado de lo que cuenta (la IA de Apuntar ya lo hacía; ahora se ve antes de guardar). Mismas palabras que la ficha
+  (`src/lib/crm/qual-labels.ts`, compartido con Apuntar).
+- **Tras guardar** una empresa, si le faltan preguntas importantes (las que más pesan de la ficha de su tipo: local,
+  promotora o DJ), las propone con sus opciones: «📋 A Club Sol le faltan: • ¿Hay fiesta? (Es su negocio / Algunas
+  noches / No)… ¿Me lo cuentas y lo marco?». Lo que conteste, con sus palabras, se marca («📋 Marcado en Club Sol:
+  Pantallas: Sí. Aún faltan: …»); «luego» deja de preguntar.
+- **«Cualifica X»** en cualquier momento: sin más, pregunta lo que falta; «cualifica X: tiene pantallas, hacen 2 fiestas
+  al mes» lo marca directamente.
+- Seguridad (caso Jumanji): solo se marca lo que la IA saca de ESA empresa; un relato largo nunca es una respuesta de
+  cualificación ni un arreglo de fichas, y una corrección corta («es solo Euforia», «está en Murcia») va antes.
+  Servicio: `qualGaps` y `qualifyFrom` (crm).
+
 ### Contactos compartidos
 
 Criterio de Cristian: «le pases un contacto y le digas este es Jorge, es el encargado del 12 Torremolinos, y cree a la

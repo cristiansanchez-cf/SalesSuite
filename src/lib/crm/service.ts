@@ -11,6 +11,7 @@ import type { AdminSession, MemberRecord } from '../admin/types';
 import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
 import { claudeModelPlan, fixtureModelPlan, MAX_MODEL_TEXT, readPlan, type ModelPlan, type ModelPlanApi } from './packages-ai';
+import { qualLabeler, qualQuestions, type QualQuestion } from './qual-labels';
 import { catalogText, cleanPicks, describe, freeNotes, listPrice, pickStr, tierOf, type Product } from './packages';
 import { isOpen, TRIAL_STEP, trialEnd, trialEndFrom, trialReminderDay, type Trial } from './trial';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
@@ -1196,6 +1197,58 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     try { await db.saveProduct(t, { ...rest, active }, id); } catch (e) { mapError(e); }
   }
 
+  /** Marca en la cualificación lo que llega («clave → valor»; las de varios, «club,hall»), sin quitar lo que tenía. */
+  async function markQual(id: string, current: Qualification | Record<string, unknown>, raw: Record<string, string>): Promise<Array<[string, string]>> {
+    const q: Record<string, unknown> = { ...current };
+    const marked: Array<[string, string]> = [];
+    for (const [k, val] of Object.entries(raw)) {
+      // Las de varios llegan juntas («club,hall»): se suman a lo que ya tenía.
+      let set = false;
+      for (const v of MULTI_QUAL.includes(k) ? String(val).split(',').map((x) => x.trim()) : [String(val)]) {
+        if (!QUAL_VALUES[k]?.includes(v)) continue;
+        setQual(q, k, v === 'true' ? true : v); set = true; marked.push([k, v]);
+      }
+      // Solo si de verdad se ha puesto el formato (no porque cambiara otra pregunta antes).
+      if (k === 'format' && set) delete q.kind;
+    }
+    if (marked.length) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
+    return marked;
+  }
+  /**
+   * Cualificar por WhatsApp (docs/ASSISTANT.md §Cualificar): las preguntas que le faltan a una empresa (las que más
+   * pesan, de la ficha de su tipo), con sus opciones.
+   */
+  async function qualGaps(accountId: string, max = 4): Promise<{ name: string; gaps: QualQuestion[] }> {
+    requireUse();
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    if (!(await qualPack())) return { name: a.name, gaps: [] };
+    return { name: a.name, gaps: qualQuestions(profileOf(await kinds(), a.kind), a.qualification ?? {}, requestLocale(), max) };
+  }
+  /**
+   * «Tiene pantallas, hacen 2 fiestas al mes…»: la IA de Apuntar saca la cualificación de lo que cuenta de ESA empresa
+   * y se marca (sin quitar nada). Si lo que cuenta es de otra empresa (o no dice nada de la cualificación), no se marca.
+   */
+  async function qualifyFrom(accountId: string, text: string): Promise<{ name: string; marked: string[]; gaps: QualQuestion[] }> {
+    requireUse();
+    if (!notesAi) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
+    const a = await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+    const pack = await qualPack();
+    if (!pack) return { name: a.name, marked: [], gaps: [] };
+    await quota('ai');
+    let items: NoteItem[] = [];
+    try { items = await notesAi.split(`${a.name}: ${String(text ?? '').slice(0, 4000)}`, { today: new Date().toISOString().slice(0, 10), seller: '', pack, kinds: await kinds() }); } catch (e) {
+      throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
+    }
+    const norm = (x: string) => x.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    const mine = items.length === 1 && (norm(items[0]!.venue).includes(norm(a.name)) || norm(a.name).includes(norm(items[0]!.venue))) ? items[0]! : null;
+    const marked = mine ? await markQual(a.id, a.qualification ?? {}, mine.qualification) : [];
+    const ql = qualLabeler(requestLocale());
+    const fresh = await accounts.getAccount(a.id);
+    return { name: a.name, marked: marked.map(([k, v]) => ql(k, v)), gaps: qualQuestions(profileOf(await kinds(), a.kind), fresh?.qualification ?? {}, requestLocale()) };
+  }
+
   /**
    * Cambiar el modelo de negocio con IA (docs/PAQUETES.md §Con IA): lo cuenta el admin y la IA propone los cambios en
    * los paquetes (crear, cambiar, desactivar). No se guarda nada aquí: se revisa y se aplica lo marcado (applyModelPlan).
@@ -1722,6 +1775,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       console.warn('[notes]', aiReason(e));
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
+    // La cualificación en palabras, para el resumen del asistente («📋 Pantallas: Sí · Fiestas al mes: 2–3»).
+    const ql = qualLabeler(requestLocale());
+    for (const it of items) {
+      it.qualLabels = pack ? Object.entries(it.qualification).filter(([k, raw]) => String(raw).split(',').some((x) => QUAL_VALUES[k]?.includes(x.trim()))).map(([k, raw]) => ql(k, String(raw))) : [];
+    }
     // Paquetes al cerrar: solo los que existen (y gratis si se puede); en texto para el resumen («Canciones (gratis) + Álbum · 40 €/mes»).
     for (const it of items) {
       const picks = cleanPicks(it.agreementPackages ?? [], cat);
@@ -1880,21 +1938,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
           try { ok = await accounts.updateAccount(id, patch); } catch (e) { mapError(e); }
           if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
         }
-        const q: Record<string, unknown> = { ...a.qualification };
-        let changed = false;
         // Sin cualificación en el espacio (§45), no se marca nada aunque llegue.
-        for (const [k, raw] of Object.entries((await qualPack()) ? r.qualification : {})) {
-          // Las de varios llegan juntas («club,hall»): se suman a lo que ya tenía.
-          let set = false;
-          for (const v of MULTI_QUAL.includes(k) ? raw.split(',').map((x) => x.trim()) : [raw]) {
-            if (!QUAL_VALUES[k]?.includes(v)) continue;
-            setQual(q, k, v === 'true' ? true : v); set = true;
-          }
-          // Solo si de verdad se ha puesto el formato (no porque cambiara otra pregunta antes).
-          if (k === 'format' && set) delete q.kind;
-          changed ||= set;
-        }
-        if (changed) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
+        if (await qualPack()) await markQual(id, a.qualification, r.qualification);
         if (r.discard) await classifyAccount(id, { reason: r.discard, note: r.discardNote });
         // Dónde trabaja (§24): cada sitio por su nombre (el que ya existe o uno nuevo), con sus días y frecuencia.
         if (r.worksAt.length) {
@@ -2389,7 +2434,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, planModel, applyModelPlan, hasModelAi: () => !!modelAi, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, planModel, applyModelPlan, qualGaps, qualifyFrom, hasModelAi: () => !!modelAi, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

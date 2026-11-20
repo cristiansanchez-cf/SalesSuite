@@ -3,7 +3,7 @@ import { defineMessages } from '../i18n/core';
 
 interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
 interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
-interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; people?: string[]; agreement?: string | null; trialUntil?: string | null; discard?: string | null }
+interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; people?: string[]; qual?: string[]; agreement?: string | null; trialUntil?: string | null; discard?: string | null }
 /** «20 de enero» (el día tal cual, sin zona). */
 const dayOf = (d: string, loc: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: 'UTC' });
 const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -14,6 +14,7 @@ const es = {
   summary: (s: Sum) => [`*${s.name}*${s.isNew ? ' (nueva)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
     s.keyFacts.length ? `Lo que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
     ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
+    s.qual?.length ? `📋 Cualificación: ${s.qual.join(' · ')}` : '',
     s.discard ? `🚫 Se descarta: ${s.discard}` : '',
     s.agreement ? `🤝 Cierre con acuerdo: ${clip(s.agreement, 400)}` : '',
     s.trialUntil ? `⏳ En prueba hasta el ${dayOf(s.trialUntil, 'es-ES')}` : '',
@@ -52,6 +53,11 @@ const es = {
   pasteFirst: 'Solo me ha llegado un mensaje de la conversación 🤏 WhatsApp solo deja pegar todos si la caja está vacía. Pega primero los mensajes (solo eso, en un mensaje) y yo lo junto con lo que me acabas de contar.',
   dealClosed: (n: string) => `🤝 ${n} ya es cliente (cerrada con acuerdo). Está en Clientes.`,
   dealPending: (n: string) => `🤝 El acuerdo con ${n} queda pendiente: lo confirma un gerente o admin y entonces pasa a Clientes.`,
+  qualAsk: (n: string, qs: string[]) => `📋 A *${n}* le faltan estas preguntas de la cualificación:\n${qs.join('\n')}\n\n¿Me lo cuentas y lo marco? Con tus palabras (o «luego»).`,
+  qualMarked: (n: string, done: string[], left: string[]) => `📋 Marcado en *${n}*: ${done.join(' · ')}.${left.length ? `\n\nAún faltan:\n${left.join('\n')}` : ' Ya tiene lo importante.'}`,
+  qualNone: (n: string) => `No he sacado nada de la cualificación de *${n}* de eso. Dímelo así: «tiene pantallas, hacen 2 fiestas al mes, el que decide es el dueño».`,
+  qualDone: (n: string) => `*${n}* ya tiene respondidas las preguntas importantes de la cualificación.`,
+  qualLater: (n: string) => `Vale. Cuando quieras: «cualifica ${n}».`,
   cardAsk: (who: string) => `📇 Tengo el contacto${who ? ` de *${who}*` : ''}. ¿Quién es y de qué empresa? Por ejemplo: «es el encargado del 12 Torremolinos». Lo guardo en su ficha con su cargo y su número.`,
   trialFailed: (n: string, why: string) => `⚠️ No he podido poner ${n} en prueba: ${why}.`,
   trialSaved: (n: string, d: string) => `⏳ ${n} está en prueba hasta el ${dayOf(d, 'es-ES')}. Te aviso unos días antes para ver si se queda.`,
@@ -96,6 +102,7 @@ export const assistantMessages = defineMessages({
     summary: (s) => [`*${s.name}*${s.isNew ? ' (new)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `“${clip(s.interaction)}”` : '',
       s.keyFacts.length ? `What we know: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
       ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
+      s.qual?.length ? `📋 Qualification: ${s.qual.join(' · ')}` : '',
       s.discard ? `🚫 To be discarded: ${s.discard}` : '',
     s.agreement ? `🤝 Closed with an agreement: ${clip(s.agreement, 400)}` : '',
     s.trialUntil ? `⏳ On trial until ${dayOf(s.trialUntil, 'en-GB')}` : '',
@@ -134,6 +141,11 @@ export const assistantMessages = defineMessages({
     pasteFirst: 'Only one message of the conversation came through 🤏 WhatsApp only lets you paste them all when the box is empty. Paste the messages first (just that, in one message) and I will join them with what you just told me.',
     dealClosed: (n) => `🤝 ${n} is now a client (closed with an agreement). It’s in Clients.`,
     dealPending: (n) => `🤝 The agreement with ${n} is pending: a manager or admin confirms it and then it moves to Clients.`,
+    qualAsk: (n, qs) => `📋 *${n}* is missing these qualification questions:\n${qs.join('\n')}\n\nTell me and I'll tick them? In your own words (or «later»).`,
+    qualMarked: (n, done, left) => `📋 Ticked on *${n}*: ${done.join(' · ')}.${left.length ? `\n\nStill missing:\n${left.join('\n')}` : ' It has the important ones now.'}`,
+    qualNone: (n) => `I couldn't get anything about *${n}*'s qualification from that. Try: «they have screens, 2 parties a month, the owner decides».`,
+    qualDone: (n) => `*${n}* already has the important qualification questions answered.`,
+    qualLater: (n) => `OK. Whenever you want: «qualify ${n}».`,
     cardAsk: (who) => `📇 Got the contact${who ? ` for *${who}*` : ''}. Who is it and which company? For example: «the manager at 12 Torremolinos». I’ll save them on its record with their role and number.`,
     trialFailed: (n, why) => `⚠️ I couldn’t put ${n} on trial: ${why}.`,
     trialSaved: (n, d) => `⏳ ${n} is on trial until ${dayOf(d, 'en-GB')}. I’ll remind you a few days before to see if they stay.`,
@@ -174,6 +186,7 @@ export const assistantMessages = defineMessages({
     summary: (s) => [`*${s.name}*${s.isNew ? ' (nova)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `O que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
       ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
+      s.qual?.length ? `📋 Qualificação: ${s.qual.join(' · ')}` : '',
       s.discard ? `🚫 Descarta-se: ${s.discard}` : '',
     s.agreement ? `🤝 Fechada com acordo: ${clip(s.agreement, 400)}` : '',
     s.trialUntil ? `⏳ Em teste até ${dayOf(s.trialUntil, 'pt-PT')}` : '',
@@ -212,6 +225,11 @@ export const assistantMessages = defineMessages({
     pasteFirst: 'Só me chegou uma mensagem da conversa 🤏 O WhatsApp só deixa colar todas se a caixa estiver vazia. Cola primeiro as mensagens (só isso, numa mensagem) e eu junto com o que me acabaste de contar.',
     dealClosed: (n) => `🤝 ${n} já é cliente (fechada com acordo). Está em Clientes.`,
     dealPending: (n) => `🤝 O acordo com ${n} fica pendente: um gerente ou admin confirma e depois passa a Clientes.`,
+    qualAsk: (n, qs) => `📋 A *${n}* faltam estas perguntas da qualificação:\n${qs.join('\n')}\n\nConta-me e eu marco? Com as suas palavras (ou «depois»).`,
+    qualMarked: (n, done, left) => `📋 Marcado em *${n}*: ${done.join(' · ')}.${left.length ? `\n\nAinda faltam:\n${left.join('\n')}` : ' Já tem o importante.'}`,
+    qualNone: (n) => `Não tirei nada da qualificação de *${n}* disso. Diga assim: «tem ecrãs, fazem 2 festas por mês, quem decide é o dono».`,
+    qualDone: (n) => `*${n}* já tem respondidas as perguntas importantes da qualificação.`,
+    qualLater: (n) => `Está bem. Quando quiser: «cualifica ${n}».`,
     cardAsk: (who) => `📇 Tenho o contacto${who ? ` de *${who}*` : ''}. Quem é e de que empresa? Por exemplo: «é o gerente do 12 Torremolinos». Guardo na ficha com o cargo e o número.`,
     trialFailed: (n, why) => `⚠️ Não consegui pôr ${n} em teste: ${why}.`,
     trialSaved: (n, d) => `⏳ ${n} está em teste até ${dayOf(d, 'pt-PT')}. Aviso uns dias antes para ver se fica.`,
@@ -252,6 +270,7 @@ export const assistantMessages = defineMessages({
     summary: (s) => [`*${s.name}*${s.isNew ? ' (새 회사)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `알고 있는 것: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
       ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
+      s.qual?.length ? `📋 자격: ${s.qual.join(' · ')}` : '',
       s.discard ? `🚫 제외: ${s.discard}` : '',
     s.agreement ? `🤝 계약으로 성사: ${clip(s.agreement, 400)}` : '',
     s.trialUntil ? `⏳ ${dayOf(s.trialUntil, 'ko-KR')}까지 체험 중` : '',
@@ -290,6 +309,11 @@ export const assistantMessages = defineMessages({
     pasteFirst: '대화 중 메시지 하나만 들어왔어요 🤏 WhatsApp은 입력창이 비어 있을 때만 전부 붙여넣을 수 있어요. 먼저 메시지만 한 번에 붙여넣어 주세요. 방금 말씀하신 내용과 합칠게요.',
     dealClosed: (n) => `🤝 ${n}이(가) 이제 고객입니다(계약으로 성사). 고객에 있습니다.`,
     dealPending: (n) => `🤝 ${n}와의 계약은 대기 중입니다. 매니저나 관리자가 확인하면 고객으로 옮겨집니다.`,
+    qualAsk: (n, qs) => `📋 *${n}*에 아직 답하지 않은 자격 질문:\n${qs.join('\n')}\n\n말해 주시면 표시할까요? 편하게 말해 주세요(또는 «나중에»).`,
+    qualMarked: (n, done, left) => `📋 *${n}*에 표시했습니다: ${done.join(' · ')}.${left.length ? `\n\n아직 남은 것:\n${left.join('\n')}` : ' 중요한 것은 다 있습니다.'}`,
+    qualNone: (n) => `그 내용에서 *${n}*의 자격 정보를 찾지 못했습니다. 예: «스크린이 있고, 한 달에 파티 2번, 결정은 사장님».`,
+    qualDone: (n) => `*${n}*은(는) 중요한 자격 질문에 이미 답이 있습니다.`,
+    qualLater: (n) => `좋아요. 원할 때: «cualifica ${n}».`,
     cardAsk: (who) => `📇 ${who ? `*${who}*님의 ` : ''}연락처를 받았습니다. 누구이고 어느 업체인가요? 예: «12 Torremolinos의 매니저». 직책과 번호와 함께 업체 기록에 저장합니다.`,
     trialFailed: (n, why) => `⚠️ ${n}을(를) 체험 중으로 설정하지 못했습니다: ${why}.`,
     trialSaved: (n, d) => `⏳ ${n}은(는) ${dayOf(d, 'ko-KR')}까지 체험 중입니다. 끝나기 며칠 전에 계속할지 알려 드릴게요.`,
