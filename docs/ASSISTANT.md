@@ -117,6 +117,25 @@ quedan las frases fijas de abajo.
   y se descarta al pulsar Guardar, con su motivo: queda en «Descartadas» y en el tablero como perdida, para que nadie
   vuelva a venderles lo mismo. Antes el asistente lo ignoraba.
 
+### Contactos compartidos
+
+Criterio de Cristian: «le pases un contacto y le digas este es Jorge, es el encargado del 12 Torremolinos, y cree a la
+persona, le ponga encargado, apunte su número y lo vincule… para todos los casos de documentar contactos».
+
+- La tarjeta de contacto de WhatsApp (`type: contacts`) llega como texto (`contactCard` en lib/leads/whatsapp.ts:
+  «Contacto compartido: Jorge Pérez · Teléfono: … · Email: … · Cargo: …»).
+- **Primero la tarjeta**: «📇 Tengo el contacto de Jorge Pérez. ¿Quién es y de qué empresa?» (estado `card`, varias
+  tarjetas se juntan); lo siguiente que diga va junto con la tarjeta a «Apuntar».
+- **Primero lo cuenta**: si ya está el resumen (o esperando los mensajes), la tarjeta se junta con lo que contó.
+- La IA pone la persona en `people` con su nombre, teléfono, email y el cargo que diga; el resumen la enseña («👤 Jorge
+  Pérez · Encargado · +34…») y al «Guardar» se crea (o se completa si ya existía, sin pisar nada) y se vincula a la
+  empresa con ese cargo (`notePeople`).
+
+### En prueba
+
+«Tnsi se va a pasar en prueba 2 meses» → `trial_until`; el resumen dice «⏳ En prueba hasta el…» y al guardar la pone en
+prueba (docs/CLIENTS.md §En prueba). Si no se puede (p. ej. bloqueada), lo dice.
+
 ### Conversación en varios mensajes
 
 Criterio de Cristian: al copiar mensajes de WhatsApp (lo ideal: salen con fecha y quién los dijo), WhatsApp solo deja

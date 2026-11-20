@@ -55,6 +55,8 @@ export type Incoming =
   | { kind: 'audio'; text: string | null }
   /** Captura de una conversación (screenshot.ts): sus líneas («Nosotros: …»), el nombre de arriba y el pie de foto. */
   | { kind: 'image'; lines: string[] | null; contact: string; caption: string; channel: string; ready: boolean }
+  /** Tarjeta de contacto compartida, en texto («Contacto compartido: Jorge · Teléfono: …»). */
+  | { kind: 'contact'; text: string }
   | { kind: 'other' };
 export type Reply = { text: string; buttons?: Array<{ id: string; title: string }> };
 
@@ -75,6 +77,8 @@ export type State =
   | { step: 'forward'; at: string; texts: string[]; channel?: string; intro?: string }
   /** Ha contado algo y va a pasar la conversación (o la pegó a medias): se espera y se junta. */
   | { step: 'context'; at: string; intro: string }
+  /** Ha compartido una tarjeta de contacto: se espera quién es y de qué empresa («el encargado del 12 Torremolinos»). */
+  | { step: 'card'; at: string; card: string }
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
   | { step: 'reminder'; at: string; items: ReminderItem[] }
   /** Recién guardado: «se llama solo X» o «está en Murcia, no en Madrid» arreglan eso mismo (media hora). */
@@ -232,7 +236,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null, trialUntil: p.item.trialUntil ?? null,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ?? null, trialUntil: p.item.trialUntil ?? null,
       discard: p.item.discard ? `${T.discards[p.item.discard] ?? p.item.discard}${p.item.discardWhy ? ` (${p.item.discardWhy})` : ''}` : null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
@@ -418,6 +422,16 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     return { state, replies: [say(T.expired)] };
   }
   if (msg.kind === 'other') return { state, replies: [say(T.onlyText)] };
+  // ---- Tarjeta de contacto («este es Jorge, el encargado del 12 Torremolinos»): la persona, con su cargo y su número,
+  // en su empresa. Con lo que ya contó delante se junta; si no, se pregunta quién es y de dónde.
+  if (msg.kind === 'contact') {
+    const card = msg.text.trim().slice(0, 2000);
+    if (state.step === 'context') return await note(`${state.intro}\n\n${card}`);
+    if (state.step === 'confirm' && state.source) return await note(`${state.source}\n\n${card}`, state.pending);
+    if (state.step === 'card') return { state: { ...state, at, card: `${state.card}\n${card}` }, replies: [] };
+    const who = /Contacto compartido:\s*([^·\n]+)/.exec(card)?.[1]?.trim() ?? '';
+    return { state: { step: 'card', at, card }, replies: [say(T.cardAsk(who))] };
+  }
   // ---- Captura de una conversación: como los reenviados, con la conversación literal (quién dijo qué).
   if (msg.kind === 'image') {
     if (!msg.ready) return { state, replies: [say(T.noShots)] };
@@ -530,6 +544,8 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   }
 
   switch (state.step) {
+    case 'card':
+      return withHeard(await note(`${state.card}\n\n${text}`));
     case 'context':
       // «Apúntalo» / «nada»: no hay mensajes que pasar; se apunta lo que contó.
       if (short(text) && new RegExp(`^(${T.noteIt})${END}`, 'iu').test(text)) return withHeard(await note(state.intro));

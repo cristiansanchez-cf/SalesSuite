@@ -172,7 +172,8 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
     incoming = shot?.isChat
       ? { kind: 'image', lines: shotText(shot, { us: T.shotUs, them: T.shotThem }), contact: shot.contact, caption, channel: shot.channel, ready: !!d.screenshot }
       : { kind: 'image', lines: null, contact: '', caption, channel: 'other', ready: !!d.screenshot };
-  } else if (m.kind === 'other') incoming = { kind: 'other' };
+  } else if (m.kind === 'contact') incoming = { kind: 'contact', text: m.text };
+  else if (m.kind === 'other') incoming = { kind: 'other' };
   else incoming = { kind: 'text', text: m.text, forwarded: !!m.forwarded };
 
   const ops = opsFor(admin, { locale, now: d.now, editor: d.edits ?? null });

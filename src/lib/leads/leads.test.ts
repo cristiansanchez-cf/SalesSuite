@@ -270,6 +270,15 @@ describe('entrada y cola (memoria)', () => {
     expect(validSignature(raw, sig, 'otro')).toBe(false);
     expect(parseWebhook(JSON.parse(raw)).inbound[0]).toMatchObject({ phoneId: '123', from: '+34600123123', text: 'Hola' });
   });
+  test('webhook de Meta: tarjeta de contacto compartida → texto para el asistente', () => {
+    const body = { entry: [{ changes: [{ value: { metadata: { phone_number_id: '123' }, messages: [{ from: '34600123123', id: 'm2', timestamp: '1762164000', type: 'contacts',
+      contacts: [{ name: { formatted_name: 'Jorge Pérez', first_name: 'Jorge' }, phones: [{ phone: '+34 611 22 33 44', wa_id: '34611223344', type: 'CELL' }], emails: [{ email: 'jorge@ejemplo.test' }], org: { title: 'Encargado' } }] }] } }] }] };
+    const m = parseWebhook(body).inbound[0]!;
+    expect(m.kind).toBe('contact');
+    expect(m.text).toBe('Contacto compartido: Jorge Pérez · Teléfono: +34 611 22 33 44 · Email: jorge@ejemplo.test · Cargo: Encargado');
+    // Sin nada útil: otra cosa.
+    expect(parseWebhook({ entry: [{ changes: [{ value: { messages: [{ from: '1', id: 'm3', type: 'contacts', contacts: [{}] }] } }] }] }).inbound[0]!.kind).toBe('other');
+  });
 });
 
 describe('Resend por empresa', () => {

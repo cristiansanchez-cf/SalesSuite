@@ -19,6 +19,6 @@ export interface AssistantDb {
   saveSession(userId: string, s: HubSession): Promise<void>;
 }
 /** Lo mínimo de un mensaje para apuntarlo después de elegir empresa. */
-export interface PendingMsg { id: string; kind: 'text' | 'audio' | 'button' | 'image' | 'other'; text: string; forwarded?: boolean; mediaId?: string | null; buttonId?: string | null; at: string }
+export interface PendingMsg { id: string; kind: 'text' | 'audio' | 'button' | 'image' | 'contact' | 'other'; text: string; forwarded?: boolean; mediaId?: string | null; buttonId?: string | null; at: string }
 export interface HubSession { tenantId: string | null; chosenAt: string | null; askedAt: string | null; pending: PendingMsg[] }
 export const EMPTY: Conversation = { state: { step: 'idle' }, seen: [], version: 0 };

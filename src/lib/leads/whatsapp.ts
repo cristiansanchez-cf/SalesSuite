@@ -105,8 +105,26 @@ export function validSignature(raw: string, header: string | null, appSecret: st
 export interface Inbound {
   phoneId: string; from: string; text: string; at: Date; id: string;
   /** Para el asistente: qué es (texto, audio, botón u otra cosa), si es reenviado, el audio y el botón pulsado. */
-  kind?: 'text' | 'audio' | 'button' | 'image' | 'other'; forwarded?: boolean; mediaId?: string | null; buttonId?: string | null;
+  kind?: 'text' | 'audio' | 'button' | 'image' | 'contact' | 'other'; forwarded?: boolean; mediaId?: string | null; buttonId?: string | null;
 }
+/**
+ * La tarjeta de contacto que se comparte en WhatsApp, en texto para la IA: «Contacto compartido: Jorge Pérez · Teléfono:
+ * +34 600… · Email: … · Empresa: … · Cargo: …» (una línea por contacto). Vacío si no trae nada útil.
+ */
+export function contactCard(raw: unknown): string {
+  const list = Array.isArray(raw) ? raw.slice(0, 5) : [];
+  return list.map((c) => {
+    const x = (c ?? {}) as { name?: { formatted_name?: string; first_name?: string; last_name?: string }; phones?: Array<{ phone?: string; wa_id?: string }>; emails?: Array<{ email?: string }>; org?: { company?: string; title?: string } };
+    const clean = (v: unknown, n = 120) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, n) : '');
+    const name = clean(x.name?.formatted_name) || [clean(x.name?.first_name), clean(x.name?.last_name)].filter(Boolean).join(' ');
+    const phones = (x.phones ?? []).map((p) => clean(p.phone, 40) || (p.wa_id ? `+${clean(p.wa_id, 20)}` : '')).filter(Boolean).slice(0, 3);
+    const emails = (x.emails ?? []).map((e) => clean(e.email, 120)).filter(Boolean).slice(0, 2);
+    const parts = [name, phones.length ? `Teléfono: ${phones.join(', ')}` : '', emails.length ? `Email: ${emails.join(', ')}` : '',
+      clean(x.org?.company) ? `Empresa: ${clean(x.org?.company)}` : '', clean(x.org?.title) ? `Cargo: ${clean(x.org?.title)}` : ''].filter(Boolean);
+    return name || phones.length ? `Contacto compartido: ${parts.join(' · ')}` : '';
+  }).filter(Boolean).join('\n');
+}
+
 export interface StatusUpdate { phoneId: string; id: string; status: string; error: string | null }
 
 /** Lo que interesa del webhook: mensajes recibidos (para parar la secuencia) y fallos de entrega. */
@@ -128,8 +146,10 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
         // Botón de un mensaje interactivo (su id) o de respuesta rápida de una plantilla (su payload, que es su texto).
         const tplButton = (m.button as { payload?: string; text?: string } | undefined);
         const buttonId = inter?.button_reply?.id ?? inter?.list_reply?.id ?? (tplButton ? tplButton.payload || tplButton.text || null : null);
-        const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : type === 'image' && image?.id ? 'image' : (type === 'interactive' || type === 'button') && buttonId ? 'button' : 'other';
-        inbound.push({ phoneId, from: `+${String(m.from ?? '').replace(/^\+/, '')}`, text: String(text).slice(0, kind === 'text' ? 12000 : 2000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
+        // Tarjeta de contacto compartida (para el asistente: «este es Jorge, el encargado de…»).
+        const card = type === 'contacts' ? contactCard(m.contacts) : '';
+        const kind = type === 'text' ? 'text' : type === 'audio' ? 'audio' : type === 'image' && image?.id ? 'image' : (type === 'interactive' || type === 'button') && buttonId ? 'button' : card ? 'contact' : 'other';
+        inbound.push({ phoneId, from: `+${String(m.from ?? '').replace(/^\+/, '')}`, text: (card || String(text)).slice(0, kind === 'text' ? 12000 : 2000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
           kind, forwarded: !!(ctx.forwarded || ctx.frequently_forwarded), mediaId: (m.audio as { id?: string } | undefined)?.id ?? image?.id ?? null, buttonId });
       }
       for (const st of (v.statuses as Record<string, unknown>[] | undefined) ?? []) {

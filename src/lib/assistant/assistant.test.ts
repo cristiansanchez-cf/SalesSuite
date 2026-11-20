@@ -174,6 +174,28 @@ describe('la conversación', () => {
     expect(applied[0][0]).toMatchObject({ trialUntil: '2027-01-20' });
     expect(b.replies[0].text).toContain('Tnsi está en prueba hasta el 20 de enero');
   });
+  test('tarjeta de contacto + «es el encargado del 12 Torremolinos» → la persona, con cargo y número, en su empresa', async () => {
+    const seen: string[] = [];
+    const jorge = { name: 'Jorge Pérez', role: 'Encargado', phone: '+34 611 22 33 44', email: null, instagram: null, linkedin: null, note: null };
+    const { ops, applied } = fakeOps({
+      split: async (t) => { seen.push(t); return [{ ...item('12 Torremolinos', { people: [jorge] }), candidates: [cand('t12', '12 Torremolinos', 1)] }]; },
+    });
+    const card = 'Contacto compartido: Jorge Pérez · Teléfono: +34 611 22 33 44';
+    const a = await run(ops, { kind: 'contact', text: card });
+    expect(a.state.step).toBe('card');
+    expect(a.replies[0].text).toContain('Jorge Pérez');
+    const b = await run(ops, { kind: 'text', text: 'es el encargado del 12 torremolinos' }, a.state);
+    expect(seen[0]).toBe(`${card}\n\nes el encargado del 12 torremolinos`);
+    expect(b.replies[0].text).toContain('👤 Jorge Pérez · Encargado · +34 611 22 33 44');
+    await run(ops, { kind: 'button', id: 'save' }, b.state);
+    expect(applied[0][0]).toMatchObject({ accountId: 't12', people: [jorge] });
+    // Al revés: primero lo cuenta y luego pasa la tarjeta → se junta con lo que contó.
+    seen.length = 0;
+    const c = await run(ops, { kind: 'text', text: 'Este es Jorge, el encargado del 12 Torremolinos, le he escrito para la demo' });
+    await run(ops, { kind: 'contact', text: card }, c.state);
+    expect(seen.at(-1)).toContain(card);
+    expect(seen.at(-1)).toContain('Este es Jorge');
+  });
   test('caso Euforía: nombre y ciudad por separado, la ciudad corregida manda, y se arregla después de guardar', async () => {
     const MUR = { v: 'es|Región de Murcia|Murcia|Murcia', label: 'Región de Murcia › Murcia' }, MAD = { v: 'es|Comunidad de Madrid|Madrid|Madrid', label: 'Comunidad de Madrid › Madrid' };
     const placeIn = async (t: string) => (/murcia/i.test(t) ? MUR : /madrid/i.test(t) ? MAD : null);
