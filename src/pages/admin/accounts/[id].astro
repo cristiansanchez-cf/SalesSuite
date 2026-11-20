@@ -1,6 +1,7 @@
 ---
 /** Ficha de una cuenta (docs/ACCOUNTS.md): quién la trabaja, qué se ha hecho, y actuar en un clic. */
 import AgreementCard from '~/components/crm/AgreementCard.astro';
+import ClosingCard from '~/components/crm/ClosingCard.astro';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { localDay, localTime } from '~/lib/crm/when';
 import ChatThread from '~/components/admin/ChatThread.astro';
@@ -339,9 +340,7 @@ const STATE_ALERT = {
       {profile !== 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
-      <AgreementCard locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName}
-        canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
-        date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} />
+
       <section id="facts" class="co-card grid gap-3" data-testid="facts-card">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <h2 class="co-entity">{NT.factsTitle}</h2>
@@ -513,13 +512,17 @@ const STATE_ALERT = {
       </section>
 
 
-      {/* Cobrar (§35): la tarifa de su tamaño, cupón y el enlace de pago. */}
-      {a.state !== 'blocked' && (
-        <ChargeCard name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
+      {/* Cierre (docs/CLIENTS.md): con pago (Cobrar, §35) o sin pago (acuerdo), en una sola tarjeta. */}
+      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'}
+        startWith={agreementList.some((g) => g.status === 'pending') ? 'deal' : 'pay'} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })}>
+        <div slot="pay"><ChargeCard embedded name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
           suggestedId={suggestTariff(chargeOpts, { size: (a.qualification?.size as string | undefined) ?? null, segmentId: a.segmentId })?.id ?? null}
           coupons={coupons} charges={chargeList} canCharge={perms.manageAccounts || !a.ownerId || a.ownerId === admin.session.userId}
-          canCustom={perms.manageTenant} canManage={perms.manageAccounts} won={!!a.wonAt} names={chargeNames} phone={a.phone ?? fallback?.phone ?? null} />
-      )}
+          canCustom={perms.manageTenant} canManage={perms.manageAccounts} won={!!a.wonAt} names={chargeNames} phone={a.phone ?? fallback?.phone ?? null} /></div>
+        <div slot="deal"><AgreementCard embedded locale={locale} agreements={agreementList} customer={a.status === 'customer'} ownerName={a.ownerName}
+        canClose={perms.manageAccounts || a.ownerId === admin.session.userId} canDecide={perms.manageAccounts}
+        date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })} /></div>
+      </ClosingCard>
 
       {/* Tres tarjetas (§26): el grupo, las personas y con quién trabaja; cada una con lo suyo. */}
       <section class="co-card grid gap-4" id="acc-group" data-testid="account-group" hidden={profile !== 'venue'}>

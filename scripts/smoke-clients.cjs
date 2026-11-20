@@ -22,7 +22,10 @@ async function login(b, email) {
   const rep = await login(b, 'rep@enjoy.test');
   assert(await rep.isVisible('[data-testid=nav-clients]'), 'menú: Clientes');
   await rep.goto(`${BASE}/admin/accounts/${SOL}`);
-  await rep.click('[data-testid=agreement-open]');
+  // Una sola tarjeta «Cierre»: con pago o sin pago (acuerdo); el acuerdo, en su pestaña y ya abierto.
+  assert(await rep.isVisible('[data-testid=closing]') && await rep.isVisible('[data-testid=charge]'), 'Cierre: empieza en «Con pago»');
+  await rep.click('label:has([data-testid=closing-deal])');
+  assert(!(await rep.isVisible('[data-testid=charge]')), 'pestaña «Sin pago»: solo el acuerdo');
   await rep.fill('[data-testid=agreement-terms]', '70/30 para ellos si conseguimos marcas. Nos avisan antes de cada festival.');
   assert((await rep.textContent('[data-testid=agreement-save]')).includes('Proponer'), 'el comercial propone (no cierra solo)');
   await Promise.all([rep.waitForURL(/ok=agProposed/), rep.click('[data-testid=agreement-save]')]);

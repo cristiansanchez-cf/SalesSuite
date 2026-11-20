@@ -19,8 +19,10 @@ interface Props {
   charges: Array<PaymentRequest & { url: string | null }>; canCharge: boolean; canCustom: boolean; names: Map<string, string>; phone: string | null;
   /** Gerente o admin: marcar pagado a mano o darla por ganada sin enlace (§36). */
   canManage: boolean; won: boolean;
+  /** Dentro de la tarjeta «Cierre» (ClosingCard): sin su propio marco ni título. */
+  embedded?: boolean;
 }
-const { name, size, sizeRange, options, suggestedId, coupons, charges, canCharge, canCustom, names, phone, canManage, won } = Astro.props;
+const { name, size, sizeRange, options, suggestedId, coupons, charges, canCharge, canCustom, names, phone, canManage, won, embedded = false } = Astro.props;
 const { m: C, f: fmt, locale } = i18n(Astro, chargeMessages);
 const PER = pricesMessages[locale].periods;
 const R = priorityMessages[locale];
@@ -30,11 +32,13 @@ const kinds = [...new Set(options.map((o) => o.kind ?? ''))];
 const wa = (url: string) => (phone ? `https://wa.me/${phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(C.message(name, url))}` : `https://wa.me/?text=${encodeURIComponent(C.message(name, url))}`);
 const open = charges.filter((x) => x.status !== 'cancelled');
 ---
-<section id="charge" class="co-card grid gap-4" data-testid="charge">
-  <div>
-    <h2 class="co-entity flex items-center gap-2"><Icon name="wallet" size={18} />{C.title}</h2>
-    <p class="co-meta mt-1">{C.lede}</p>
-  </div>
+<section id="charge" class:list={['grid gap-4', !embedded && 'co-card']} data-testid="charge">
+  {!embedded && (
+    <div>
+      <h2 class="co-entity flex items-center gap-2"><Icon name="wallet" size={18} />{C.title}</h2>
+      <p class="co-meta mt-1">{C.lede}</p>
+    </div>
+  )}
 
   {open.length > 0 && (
     <ul class="co-rows m-0 p-0" data-testid="charge-list">

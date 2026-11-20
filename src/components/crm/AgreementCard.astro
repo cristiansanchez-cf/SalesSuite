@@ -11,8 +11,10 @@ import type { Locale } from '~/lib/i18n/core';
 interface Props {
   locale: Locale; agreements: Agreement[]; customer: boolean; canClose: boolean; canDecide: boolean; ownerName: string | null;
   date: (iso: string) => string;
+  /** Dentro de la tarjeta «Cierre»: sin marco ni título, y el formulario abierto si aún no es cliente. */
+  embedded?: boolean;
 }
-const { locale, agreements, customer, canClose, canDecide, ownerName, date } = Astro.props;
+const { locale, agreements, customer, canClose, canDecide, ownerName, date, embedded = false } = Astro.props;
 const C = clientsMessages[locale];
 const active = agreements.find((g) => g.status === 'active') ?? null;
 const pending = agreements.find((g) => g.status === 'pending') ?? null;
@@ -22,8 +24,8 @@ const CHECKINS = [14, 30, 60, 90];
 const show = customer || active || pending || canClose;
 ---
 {show && (
-  <section id="agreement" class="co-card grid gap-3" data-testid="agreement">
-    <div class="flex items-center gap-2"><Icon name="handshake" size={16} /><p class="text-eyebrow m-0">{C.card}</p></div>
+  <section id="agreement" class:list={['grid gap-3', !embedded && 'co-card']} data-testid="agreement">
+    {!embedded && <div class="flex items-center gap-2"><Icon name="handshake" size={16} /><p class="text-eyebrow m-0">{C.card}</p></div>}
 
     {pending && (
       <div class="grid gap-2 rounded-xl border border-[var(--console-attention)] bg-[var(--console-attention-bg)] p-3" data-testid="agreement-pending">
@@ -58,9 +60,9 @@ const show = customer || active || pending || canClose;
     )}
 
     {canClose && (
-      <details class="grid gap-2" data-testid="agreement-form-wrap">
+      <details class="grid gap-2" data-testid="agreement-form-wrap" open={embedded && !customer && !active && !pending ? true : undefined}>
         <summary class={`co-btn ${customer || active ? 'co-btn--ghost' : 'co-btn--primary'} co-btn--sm w-fit cursor-pointer list-none`} data-testid="agreement-open">
-          <Icon name="handshake" size={14} />{customer || active ? C.change : C.close}
+          <Icon name="handshake" size={14} />{active ? C.change : customer ? C.note : C.close}
         </summary>
         <form method="post" class="mt-2 grid gap-3" data-testid="agreement-form">
           <input type="hidden" name="action" value="agreement" />
