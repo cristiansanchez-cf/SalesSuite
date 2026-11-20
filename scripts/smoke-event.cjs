@@ -48,5 +48,10 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await Promise.all([p.waitForURL(/ok=agClosed/), p.click('[data-testid=event-save]')]);
   assert((await p.textContent('[data-testid=agreement-price]')).includes('/evento'), `precio por evento: ${(await p.textContent('[data-testid=agreement-price]')).trim()}`);
   assert((await p.textContent('[data-testid=agreement-packages]')).includes('Álbum'), 'con lo que incluye');
+  // Un festival (formato «Festival»): empieza directamente en «Pago por evento», con los atajos a la vista.
+  await create('Festival Smoke');
+  await p.click('[data-testid=qual-format-festival]'); await p.waitForTimeout(800); await p.reload();
+  assert(await p.isChecked('[data-testid=closing-event]'), 'festival: empieza en «Pago por evento»');
+  assert(await p.isVisible('[data-testid=event-hint]'), 'festival: con los precios a la vista');
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

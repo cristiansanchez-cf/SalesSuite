@@ -21,8 +21,10 @@ interface Props {
   packages?: boolean;
   /** Promotoras y festivales: «Acuerdo» (lo típico: llevan el producto a sus salas) o «Pago por evento» (slot event). */
   perEvent?: boolean;
+  /** Con qué pestaña empieza (promotoras y festivales): festivales, «Pago por evento»; promotoras, «Acuerdo». */
+  eventFirst?: boolean;
 }
-const { locale, customer, wonAt, startWith, showPay, date, trialTab = false, packages = false, perEvent = false } = Astro.props;
+const { locale, customer, wonAt, startWith, showPay, date, trialTab = false, packages = false, perEvent = false, eventFirst = false } = Astro.props;
 const C = clientsMessages[locale];
 const P = packagesMessages[locale];
 const T = trialMessages[locale];
@@ -30,7 +32,7 @@ const T = trialMessages[locale];
 <section class="co-card grid gap-4" id="closing" data-testid="closing">
   <div>
     <h2 class="co-entity flex items-center gap-2"><Icon name="handshake" size={18} />{C.closing}</h2>
-    <p class="co-meta mt-1">{customer && wonAt ? C.clientNow(date(wonAt)) : packages ? P.closeHelp : C.closingLede}</p>
+    <p class="co-meta mt-1">{customer && wonAt ? C.clientNow(date(wonAt)) : perEvent ? P.eventLede : packages ? P.closeHelp : C.closingLede}</p>
   </div>
   {customer ? (
     <>
@@ -42,8 +44,8 @@ const T = trialMessages[locale];
   ) : perEvent ? (
     <div class="closing-tabs grid gap-4">
       <div class="co-tabs w-fit" role="radiogroup">
-        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked data-testid="closing-deal" />{P.dealTab}</label>
-        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="event" data-testid="closing-event" />{P.eventTab}</label>
+        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="deal" checked={!eventFirst} data-testid="closing-deal" />{P.dealTab}</label>
+        <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="event" checked={eventFirst} data-testid="closing-event" />{P.eventTab}</label>
         {trialTab && <label class="co-tab cursor-pointer"><input type="radio" class="sr-only" name="closing-way" value="trial" data-testid="closing-trial" />{T.tab}</label>}
       </div>
       <div class="closing-panel" data-way="deal"><slot name="deal" /></div>

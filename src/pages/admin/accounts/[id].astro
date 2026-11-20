@@ -271,7 +271,10 @@ const tier = tierOf((a.qualification?.size as string | undefined) ?? null);
 const eur = (n: number) => fmt.money(Math.round(n * 100), catalog[0]?.currency ?? 'EUR');
 // Promotoras y festivales (criterio de Cristian): no se cierran con paquetes al mes: «Acuerdo» (llevan Enjoy a sus
 // salas) o «Pago por evento» (festival ~500 €, promotora 50–150 €: las tarifas por evento, como atajos).
-const perEvent = catalog.length > 0 && (profile === 'promoter' || formatsOf(a.qualification).some((x) => x === 'festival' || x === 'stadium'));
+// Festival: su formato (festival o estadio) o su sector («Festivales…»). Los festivales empiezan en «Pago por evento».
+const segName = segments.find((sg) => sg.id === a.segmentId);
+const isFestival = formatsOf(a.qualification).some((x) => x === 'festival' || x === 'stadium') || /festival|estadio|stadium/i.test(`${segName?.key ?? ''} ${segName?.name ?? ''}`);
+const perEvent = catalog.length > 0 && (profile === 'promoter' || isFestival);
 const eventHints = perEvent ? await admin.crm.eventPrices().catch(() => []) : [];
 // En prueba: la que sigue en marcha (si pagó o se cerró con acuerdo después de empezarla, ya no).
 const openTrial = (await admin.crm.trials(id).catch(() => [])).find((x) => isOpen(x, a.wonAt)) ?? null;
@@ -562,7 +565,7 @@ const STATE_ALERT = {
 
 
       {/* Cierre (docs/CLIENTS.md): con pago (Cobrar, §35) o sin pago (acuerdo), en una sola tarjeta. */}
-      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial} packages={catalog.length > 0 && !perEvent} perEvent={perEvent}
+      <ClosingCard locale={locale} customer={a.status === 'customer'} wonAt={a.wonAt} showPay={a.state !== 'blocked'} trialTab={!openTrial && canTrial} packages={catalog.length > 0 && !perEvent} perEvent={perEvent} eventFirst={isFestival && profile !== 'promoter'}
         startWith={agreementList.some((g) => g.status === 'pending') ? 'deal' : 'pay'} date={(iso) => fmt.date(iso, { day: 'numeric', month: 'long', year: 'numeric' })}>
         <div slot="pay"><ChargeCard embedded name={a.name} size={(a.qualification?.size as string | undefined) ?? null} sizeRange={sizeRangeOf(a.qualification)} options={chargeOpts}
           suggestedId={suggestTariff(chargeOpts, { size: (a.qualification?.size as string | undefined) ?? null, segmentId: a.segmentId })?.id ?? null}
