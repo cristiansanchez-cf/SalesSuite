@@ -117,6 +117,7 @@ Las herramientas de una en una no gastan la IA del espacio: entiende la IA de la
 
 ## Pendiente
 
-- Probarlo con claude.ai y ChatGPT de verdad, en producción, y ajustar el texto de los pasos a lo que se vea.
+- claude.ai ya funciona en producción (Oquea, 23/11/2026, con las opciones que vienen por defecto: CIMD). Falta
+  probar ChatGPT y ajustar el texto de sus pasos a lo que se vea.
 - Tope de peticiones por clave (hoy solo cuenta el tope de IA en `preparar_apunte`).
 - Tope de registros dinámicos (hoy cualquiera puede registrar un cliente; sin autorizar no consigue nada).
