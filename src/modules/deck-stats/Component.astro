@@ -1,0 +1,39 @@
+---
+/** deck-stats ← cifras grandes (mercado, tracción, la ronda) y, si hay, un reparto en barras. Solo tokens del tema. */
+import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { DeckStatsProps } from './schema';
+
+type Props = DeckStatsProps & ModuleBaseProps;
+const { eyebrow, title, lede, stats, breakdownTitle, breakdown, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="deck-stats">
+  <Section>
+    {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
+    {lede && <p class="mt-3 max-w-2xl text-lg text-muted">{t(lede)}</p>}
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {stats.map((s) => (
+        <div class="rounded-2xl border border-line bg-surface p-5">
+          <p class="m-0 font-display text-[clamp(2.2rem,5vw,3.4rem)] font-extrabold leading-none text-primary">{t(s.value)}</p>
+          <p class="m-0 mt-2 font-bold">{t(s.label)}</p>
+          {s.note && <p class="m-0 mt-1 text-sm text-muted">{t(s.note)}</p>}
+        </div>
+      ))}
+    </div>
+    {breakdown && breakdown.length > 0 && (
+      <div class="mt-8 grid max-w-3xl gap-3">
+        {breakdownTitle && <p class="m-0 text-sm font-bold uppercase tracking-wider text-muted">{t(breakdownTitle)}</p>}
+        {breakdown.map((b) => (
+          <div class="grid gap-1">
+            <div class="flex justify-between gap-3 text-sm font-bold"><span>{t(b.label)}</span><span>{b.percent}%</span></div>
+            <div class="h-2.5 overflow-hidden rounded-full bg-surface"><div class="h-full rounded-full bg-primary" style={`width:${Math.max(0, Math.min(100, b.percent))}%`}></div></div>
+          </div>
+        ))}
+      </div>
+    )}
+  </Section>
+</div>

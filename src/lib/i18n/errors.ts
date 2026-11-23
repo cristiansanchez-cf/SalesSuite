@@ -33,6 +33,8 @@ const EXACT: Record<string, T> = {
   // ------------------------------------------------------------ CRM: personas, grupos e importación
   'Persona no encontrada': ['Person not found', 'Pessoa não encontrada', '사람을 찾을 수 없습니다'],
   'Importación no encontrada': ['Import not found', 'Importação não encontrada', '가져오기를 찾을 수 없습니다'],
+  'Falta aplicar la migración de los decks': ['The decks migration has not been applied yet', 'Falta aplicar a migração dos decks', '덱 마이그레이션이 아직 적용되지 않았습니다'],
+  'Un deck no tiene resultado de venta': ['A deck has no sale outcome', 'Um deck não tem resultado de venda', '덱에는 판매 결과가 없습니다'],
   // Importar con tu IA (docs/IMPORTAR_IA.md)
   'Esta importación no es de la IA': ['This import is not an AI import', 'Esta importação não é da IA', '이 가져오기는 AI 가져오기가 아닙니다'],
   'Esta importación ya se aplicó': ['This import has already been applied', 'Esta importação já foi aplicada', '이 가져오기는 이미 적용되었습니다'],

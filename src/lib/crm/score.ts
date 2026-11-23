@@ -15,6 +15,7 @@ export const NO_PRIORITY: Priority = Object.freeze({ out: false, kills: [], scor
 const NO_FIT = { screen: null, requests: null, photos: null, loyalty: null } as const;
 /** Buceo (§47) con la forma de siempre: la lista, el mapa, la ruta y personas la ordenan igual. */
 export function divePriority(raw: object | null | undefined, profile: Profile): Priority {
+  if (profile === 'investor') return NO_PRIORITY;
   const q = (raw ?? {}) as Record<string, unknown>;
   if (profile === 'dj') {
     const s = instructorScore(q);
@@ -27,6 +28,8 @@ export function divePriority(raw: object | null | undefined, profile: Profile): 
 
 export function priorityFor(q: object | null | undefined, profile: Profile, segmentKey: string | null | undefined, weights?: Weights, pack?: QualPack | null): Priority {
   const v = (q ?? {}) as Record<string, unknown>;
+  // Un inversor (docs/DECKS.md) no se cualifica como cliente: sin nota.
+  if (profile === 'investor') return NO_PRIORITY;
   if (pack === 'diving') return divePriority(v, profile);
   return profile === 'promoter' ? promoterPriority(v) : profile === 'dj' ? djPriority(v) : priorityOf(v, segmentKey, weights);
 }

@@ -1,0 +1,22 @@
+---
+/** deck-cover ← portada del deck de inversión. Solo tokens del tema. */
+import Section from '~/components/Section.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { DeckCoverProps } from './schema';
+
+type Props = DeckCoverProps & ModuleBaseProps;
+const { eyebrow, title, tagline, round, contact, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="deck-cover">
+  <Section>
+    <div class="grid min-h-[60vh] content-center gap-6">
+      {eyebrow && <p class="text-sm font-bold uppercase tracking-[0.18em] text-primary">{t(eyebrow)}</p>}
+      <h1 class="max-w-4xl font-display text-[clamp(3rem,9vw,6.5rem)] font-extrabold leading-[0.95] tracking-tight">{t(title)}</h1>
+      <p class="max-w-2xl text-[clamp(1.2rem,2.4vw,1.7rem)] leading-snug text-muted">{t(tagline)}</p>
+      {round && <p class="w-fit rounded-full border border-line px-4 py-1.5 text-sm font-bold">{t(round)}</p>}
+      {contact && <p class="text-sm text-muted">{t(contact)}</p>}
+    </div>
+  </Section>
+</div>

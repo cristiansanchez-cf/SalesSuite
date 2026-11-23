@@ -15,7 +15,8 @@ export type TouchKind = 'created' | 'contact' | 'dossier' | 'won' | 'lost' | 'cl
 export type AccountKind = string;
 export const BASE_KIND = 'company';
 /** Qué ficha tiene cada tipo (§24): un local, una promotora o un DJ; cada uno con sus preguntas y su nota. */
-export const PROFILES = ['venue', 'promoter', 'dj'] as const;
+// 'investor' (docs/DECKS.md): fondos y business angels; sin cualificación de venta ni «Trabaja con».
+export const PROFILES = ['venue', 'promoter', 'dj', 'investor'] as const;
 export type Profile = (typeof PROFILES)[number];
 export interface KindDef {
   key: string; label: string; plural: string; icon: string; profile?: Profile;

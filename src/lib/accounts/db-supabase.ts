@@ -234,6 +234,11 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       const r = check(await sb.from('crm_settings').select('priority_weights').eq('tenant_id', t).maybeSingle()) as Row | null;
       return r?.priority_weights ?? null;
     },
+    async getFeatures(t) {
+      // Sin la tabla aún (migración 20270121) o sin fila: nada activado.
+      const r = await sb.from('tenant_feature').select('decks').eq('tenant_id', t).maybeSingle();
+      return { decks: !r.error && !!(r.data as Row | null)?.decks };
+    },
     async getQualPack(t) {
       const r = check(await sb.from('crm_settings').select('qualification').eq('tenant_id', t).maybeSingle()) as Row | null;
       return r?.qualification ?? null;

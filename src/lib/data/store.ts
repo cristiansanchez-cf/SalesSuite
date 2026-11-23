@@ -3,6 +3,7 @@
  * es MUTABLE: lo que se edita en /admin se ve en /d/<token>. Se pierde al reiniciar el proceso.
  * Vive en globalThis para sobrevivir al HMR de `astro dev`.
  */
+import { deckStarter } from '../decks/starter';
 import { accountByCompany } from '../accounts/company-key';
 import fixtures from '../../../supabase/seed/fixtures.json';
 
@@ -19,6 +20,8 @@ export interface ModuleVersionRow {
   default_props: Record<string, unknown>; default_price: number | null; default_currency: string;
 }
 export interface DossierRow {
+  /** Propuesta o deck de inversión (docs/DECKS.md). */
+  kind?: 'proposal' | 'deck';
   id: string; tenant_id: string; author_id: string | null; title: string;
   prospect_name: string | null; prospect_company: string | null; prospect_meta: Record<string, unknown>;
   status: DossierStatus; locale: string; price_mode: PriceModeRow; total_price: number | null; currency: string;
@@ -217,6 +220,8 @@ export interface DemoDb {
   account_link: AccountLinkRow[];
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
+  /** Secciones que activa el superadmin (docs/DECKS.md). */
+  tenant_feature?: Array<{ tenant_id: string; decks: boolean }>;
   crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[]; qualification?: string | null; research?: Record<string, unknown> }>;
   /** Topes de uso por persona y día (Google, IA). */
   usage_counter: Array<{ tenant_id: string; user_id: string; kind: string; day: string; n: number }>;
@@ -366,6 +371,12 @@ export function freshDemoDb(): DemoDb {
   f.win_story.forEach((w, i) => { w.created_at ??= ago(40 - i * 6); w.updated_at ??= w.created_at; });
   const REP = DEMO_USERS[0].id;
   demoAnalyticsDossiers(f, REP, ago);
+  // Decks de inversión (docs/DECKS.md): Enjoy tiene la sección activada; sus bloques de partida, en el catálogo.
+  deckStarter(f.tenant.find((t) => t.id === ENJOY)?.name ?? 'Enjoy').forEach((b, i) => {
+    const mid = `00000000-0000-4000-8000-0000000dec${String(i + 1).padStart(2, '0')}`;
+    f.module.push({ id: mid, tenant_id: ENJOY, key: b.key, block_type: b.blockType, name: b.name, description: 'Bloque de deck de inversión: edítalo con lo vuestro.', is_catalog: true });
+    f.module_version.push({ id: `00000000-0000-4000-8000-0000000dfc${String(i + 1).padStart(2, '0')}`, module_id: mid, version: 1, status: 'published', default_props: b.props, default_price: null, default_currency: 'EUR' });
+  });
   const pricePlay = f.play.find((p) => p.key === 'empresa-obj-precio');
   const expPitch = f.play.find((p) => p.key === 'exp-pitch');
   return {
@@ -437,7 +448,8 @@ export function freshDemoDb(): DemoDb {
     ],
     account_link: [],
     crm_import: [],
-    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }, { key: 'marca', label: 'Marca', plural: 'Marcas', icon: 'star' }] },
+    tenant_feature: [{ tenant_id: ENJOY, decks: true }],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }, { key: 'marca', label: 'Marca', plural: 'Marcas', icon: 'star' }, { key: 'inversor', label: 'Inversor', plural: 'Inversores', icon: 'briefcase', profile: 'investor' }] },
       // Con DEMO_DIVING=1, el espacio de prueba («re-tema») es como Oquea: cualificación de buceo y sus tres tipos (§47).
       ...(process.env.DEMO_DIVING === '1' ? [{ tenant_id: ALT, priority_weights: {}, qualification: 'diving', kinds: [
         { key: 'company', label: 'Centro u operador', plural: 'Centros y operadores', icon: 'anchor', profile: 'venue' },

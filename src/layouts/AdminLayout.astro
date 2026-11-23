@@ -37,9 +37,10 @@ const width = Astro.props.width ?? (wide ? 'workspace' : 'content');
 const { tenant, admin } = Astro.locals;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const { m, locale } = i18n(Astro, shellMessages);
-const [pending, feed] = await Promise.all([
+const [pending, feed, feats] = await Promise.all([
   admin ? admin.playbook.pendingCount() : 0,
   admin && !bare ? admin.notifications.feed({ limit: 8, locale }) : { items: [], open: 0 },
+  admin && !bare ? admin.accounts.features() : { decks: false },
 ]);
 // «X ha pagado» sin ver todavía: se celebra (una vez por aviso, §36).
 const party = feed.items.find((n) => n.kind === 'payment_paid' && !n.readAt && !n.dismissedAt);
@@ -56,7 +57,7 @@ const brandCss = `.console{${brandVars(tenant?.themeTokens ?? {})}}\n${themeToCs
 // Botón flotante «Apuntar» (docs/CRM_DINAMICO.md §20): en toda la consola para quien trabaja el CRM, menos en la propia página.
 const fab = shell && can(admin!.session.role).useAccounts && path !== '/admin/accounts/apuntar';
 const fabLabel = notesMessages[locale].open;
-const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!.session.superadmin }, m.nav) : [];
+const tabs = shell ? sectionTabs(admin!.session.role, path, { superadmin: admin!.session.superadmin, decks: feats.decks }, m.nav) : [];
 ---
 <!doctype html>
 <html lang={locale} class="console">

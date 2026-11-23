@@ -112,6 +112,9 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
 
   /** Tipos de cliente del espacio (§21): el principal primero. */
   async function kinds(): Promise<KindDef[]> { return normalizeKinds(await db.getKinds(s.tenantId).catch(() => null)); }
+  /** Lo que el superadmin activa en este espacio (docs/DECKS.md). Una vez por petición. */
+  let featuresMemo: Promise<{ decks: boolean }> | null = null;
+  function features(): Promise<{ decks: boolean }> { return (featuresMemo ??= db.getFeatures(s.tenantId).catch(() => ({ decks: false }))); }
   /**
    * Guardar los tipos (admin): renombrar, añadir y quitar (el principal no se quita). Las empresas de un tipo que se
    * quita pasan al principal (no se pierde nada).
@@ -477,7 +480,7 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     ownerCounts, ownedBy, handOver, assignMany,
     territory, list, get, create, update, ensurePath, touch, releaseMany, block, unblock, assign, remove, colleagues,
     saveZone, deleteZone, setAssignments, saveRules, importCsv, conflicts, decide,
-    crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds,
+    crmFields, saveField, archiveField, moveField, setFields, kinds, saveKinds, features,
     preview: (accountId: string) => db.preview(accountId).catch(mapError),
     mine: async () => (perms.useAccounts ? (await list({ scope: 'mine' })).items : []),
     get rulesFor() { return db.getRules(s.tenantId); },
@@ -495,6 +498,6 @@ export const emptyAccountsDb: AccountsDb = {
   async updateAccount() { return false; }, async deleteAccount() { return false; }, async touch() { return 'eligible'; }, async listTouches() { return []; },
   async preview() { return 'eligible'; }, async decide() { return false; },
   async listFields() { return []; }, async saveField() { throw new Error('sin cuentas'); }, async archiveField() { return false; }, async deleteField() { return false; },
-  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async saveAiResearch() { throw new Error('sin cuentas'); }, async moveAccounts() { return 0; }, async saveFix() { throw new Error('sin cuentas'); }, async listFixes() { return []; }, async markFixUndone() { return false; }, async getKinds() { return null; }, async saveKinds() {}, async saveSweep() { throw new Error('sin cuentas'); }, async listSweeps() { return []; }, async getSweep() { return null; }, async markSwept() { return false; }, async getAiResearch() { return null; }, async getPriorityWeights() { return null; }, async savePriorityWeights() {}, async getQualPack() { return null; }, async getResearchFocus() { return null; }, async saveResearchFocus() {},
+  async qualify() { throw new Error('sin cuentas'); }, async research() { throw new Error('sin cuentas'); }, async saveAiResearch() { throw new Error('sin cuentas'); }, async moveAccounts() { return 0; }, async saveFix() { throw new Error('sin cuentas'); }, async listFixes() { return []; }, async markFixUndone() { return false; }, async getKinds() { return null; }, async saveKinds() {}, async saveSweep() { throw new Error('sin cuentas'); }, async listSweeps() { return []; }, async getSweep() { return null; }, async markSwept() { return false; }, async getAiResearch() { return null; }, async getPriorityWeights() { return null; }, async savePriorityWeights() {}, async getQualPack() { return null; }, async getFeatures() { return { decks: false }; }, async getResearchFocus() { return null; }, async saveResearchFocus() {},
 };
 export type { ZoneAssignment };

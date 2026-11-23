@@ -522,6 +522,7 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       row.kinds = JSON.parse(JSON.stringify(kinds));
     },
     async getQualPack(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.qualification ?? null; },
+    async getFeatures(t) { return { decks: !!db().tenant_feature?.find((x) => x.tenant_id === t)?.decks }; },
     async getResearchFocus(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.research ?? null; },
     async saveResearchFocus(t, v) {
       const s = db();

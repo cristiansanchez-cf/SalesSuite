@@ -80,6 +80,13 @@ export function demoOrgDb(): OrgDb {
       if (!db().tenant.some((t) => t.id === tenantId)) throw new Error('Espacio no encontrado');
       demoLimits().set(tenantId, { ...l });
     },
+    async platformFeatures() { return new Map((db().tenant_feature ?? []).map((x) => [x.tenant_id, { decks: x.decks }])); },
+    async setTenantFeature(tenantId, f) {
+      if (!db().tenant.some((t) => t.id === tenantId)) throw new Error('Espacio no encontrado');
+      const list = (db().tenant_feature ??= []);
+      const row = list.find((x) => x.tenant_id === tenantId);
+      if (row) row.decks = f.decks; else list.push({ tenant_id: tenantId, decks: f.decks });
+    },
     async platformStorage() {
       // Demo: lo que ocuparían sus fotos y vídeos (unos 40 MB por propuesta con medios).
       return db().tenant.map((t) => ({ tenantId: t.id, objects: db().dossier.filter((x) => x.tenant_id === t.id).length * 6, bytes: db().dossier.filter((x) => x.tenant_id === t.id).length * 40 * 1024 ** 2 }));

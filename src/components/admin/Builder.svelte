@@ -68,6 +68,8 @@
   let list = $state<Array<BuilderItem & { cat?: true }>>(snapshot());
 
   const d = $derived(s.dossier);
+  // Deck de inversión (docs/DECKS.md): se edita igual, sin sector, actores, precio ni resultado de venta.
+  const deck = $derived(d.kind === 'deck');
   const editable = $derived(s.canEdit);
   const api = `/admin/api/dossiers/${initial.dossier.id}`;
   const STATUS_CLASS = { draft: 'co-badge', published: 'co-badge co-badge--ink', archived: 'co-badge co-badge--soft' } as const;
@@ -1177,6 +1179,7 @@
             {#if nextDirty && nextText}<button class="co-btn co-btn--primary co-btn--sm ml-auto" onclick={() => saveNext()} data-testid="followup-save">{t.followup.save}</button>{/if}
           </div>
         {/if}
+        {#if !deck}
         <a class="mt-3 co-btn co-btn--ghost co-btn--sm" href="/admin/compose?dossier={d.id}&type=seguimiento">{t.followup.compose}</a>
         <div class="mt-4 border-t border-[var(--console-divider)] pt-4">
         <div class="grid gap-2">
@@ -1196,10 +1199,12 @@
           {/if}
         </div>
       </div>
+        {/if}
       </section>
 
 
       <!-- cuenta y actores -->
+      {#if !deck}
       <section class={card} data-testid="account">
         <div class="mb-3 flex flex-wrap items-center gap-2">
           <h2 class="flex-1 co-card-title">{t.account.title}</h2>
@@ -1266,6 +1271,8 @@
         {/if}
       </section>
 
+      {/if}
+
       <!-- datos del cliente y precio: a mano, pero sin ocupar la pantalla -->
       <details class={card} data-testid="client-data">
         <summary class="cursor-pointer co-card-title">{t.clientData}</summary>
@@ -1285,7 +1292,7 @@
         <p class="mt-2 text-xs text-muted">{t.prospect.tokensPre}<code>{'{company}'}</code>{t.prospect.tokensMid}<code>{'{prospect}'}</code>{t.prospect.tokensPost}</p>
       </details>
 
- {#if (s.products?.length ?? 0) > 0 && !s.pricesLocked}
+ {#if !deck && (s.products?.length ?? 0) > 0 && !s.pricesLocked}
         <details class={card} data-testid="builder-packages" open>
           <summary class="flex cursor-pointer items-center justify-between gap-3">
             <span class="co-card-title">{PK.title}</span>
@@ -1321,6 +1328,7 @@
         </details>
       {/if}
 
+      {#if !deck}
       <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount || !!d.priceOptionId}>
         <summary class="flex cursor-pointer items-center justify-between gap-3">
           <span class="co-card-title">{t.price.title}</span>
@@ -1406,6 +1414,7 @@
         {/if}
         </div>
       </details>
+      {/if}
 
       <details class="px-1">
         <summary class="cursor-pointer text-sm text-muted">{t.moreActions}</summary>

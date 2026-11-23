@@ -1,0 +1,15 @@
+---
+/** Analítica de los decks de inversión (docs/DECKS.md): la misma que la de las propuestas, solo con los decks. */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import AnalyticsOverview from '~/components/admin/AnalyticsOverview.astro';
+import { i18n } from '~/lib/i18n';
+import { decksMessages } from '~/lib/i18n/messages/decks';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (admin.session.role === 'partner' || !(await admin.accounts.features()).decks) return Astro.redirect('/admin', 302);
+const { m } = i18n(Astro, decksMessages);
+---
+<AdminLayout title={`${m.title} · ${m.analytics}`}>
+  <AnalyticsOverview admin={admin} kind="deck" eyebrow={m.title} title={m.analytics} lede={m.analyticsLede} />
+</AdminLayout>

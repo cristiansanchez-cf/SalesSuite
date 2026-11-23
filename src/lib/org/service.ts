@@ -117,6 +117,18 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     return l;
   }
 
+  /** Secciones por espacio (docs/DECKS.md): qué espacios tienen Decks, y activarla o quitarla. Solo el superadmin. */
+  async function features() {
+    if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
+    return (await db.platformFeatures?.().catch(() => null)) ?? new Map<string, { decks: boolean }>();
+  }
+  async function setFeature(tenantId: string, decks: boolean) {
+    if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
+    if (!/^[0-9a-f-]{36}$/i.test(tenantId)) throw new AdminError(422, 'Datos no válidos');
+    if (!db.setTenantFeature) throw new AdminError(503, 'Falta aplicar la migración de los decks');
+    try { await db.setTenantFeature(tenantId, { decks }); } catch (e) { mapError(e); }
+  }
+
   /**
    * Alta de una empresa desde Plataforma (docs/ORG.md §Alta de una empresa): crea el espacio en `<dirección>.<base>`
    * (la base tiene el comodín en Vercel y en Supabase Auth, así que no hay que tocar nada más) y, si se da su email,
@@ -157,7 +169,7 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     }
     return { id, slug, hostname, origin, invited, adminEmail: email || null };
   }
-  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, setLimits, createSpace };
+  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, setLimits, features, setFeature, createSpace };
 }
 
 export type OrgService = ReturnType<typeof createOrgService>;

@@ -121,6 +121,8 @@ export interface AccountsDb {
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Cualificación del espacio (§45): el paquete guardado tal cual (`crm_settings.qualification`), o null. */
   getQualPack(tenantId: string): Promise<unknown>;
+  /** Secciones que activa el superadmin (docs/DECKS.md): de momento, Decks. */
+  getFeatures(tenantId: string): Promise<{ decks: boolean }>;
   /** Investigación con IA: qué mirar (`crm_settings.research`), tal cual; lo valida src/lib/crm/research-focus.ts. */
   getResearchFocus(tenantId: string): Promise<unknown>;
   saveResearchFocus(tenantId: string, v: Record<string, unknown>): Promise<void>;

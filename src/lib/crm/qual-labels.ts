@@ -74,6 +74,7 @@ export interface QualQuestion { field: string; question: string; options: Array<
  * no tienen respuesta. Como mucho `max`.
  */
 export function qualQuestions(profile: Profile, q: Qualification | Record<string, unknown>, locale: Locale, max = 4, pack?: QualPack | null): QualQuestion[] {
+  if (profile === 'investor') return [];   // un inversor no se cualifica como cliente (docs/DECKS.md)
   if (pack === 'diving') return diveQuestions(profile, (q ?? {}) as Record<string, unknown>, locale, max);
   const PR = priorityMessages[locale] ?? priorityMessages.es;
   const PRF = profilesMessages[locale] ?? profilesMessages.es;

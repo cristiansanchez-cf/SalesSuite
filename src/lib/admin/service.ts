@@ -53,6 +53,15 @@ export const toRenderItem = (i: ItemRecord): RenderItem => ({
 /** Lo que pone setPackages en la diapositiva «Paquetes» (no se cambia a mano). */
 const PACKAGE_SNAP_KEYS = ['packages', 'currency', 'period', 'total', 'listTotal', 'tier'] as const;
 
+/** Un bloque de deck de inversión (docs/DECKS.md): los de tipo deck-*. */
+export const isDeckBlock = (blockType: string) => blockType.startsWith('deck-');
+/** El orden de un deck nuevo: el de siempre (portada, problema… ronda); lo demás, por nombre, al final. */
+const DECK_ORDER = ['deck-portada', 'deck-problema', 'deck-solucion', 'deck-mercado', 'deck-traccion', 'deck-modelo', 'deck-competencia', 'deck-equipo', 'deck-ronda'];
+export function deckBlocks(latest: Map<string, CatalogVersion>): CatalogVersion[] {
+  const rank = (c: CatalogVersion) => { const i = DECK_ORDER.indexOf(c.moduleKey); return i < 0 ? DECK_ORDER.length : i; };
+  return [...latest.values()].filter((c) => isDeckBlock(c.blockType)).sort((a, b) => rank(a) - rank(b) || a.moduleName.localeCompare(b.moduleName, 'es'));
+}
+
 export function toPublicDossier(d: DossierRecord, items: ItemRecord[]): PublicDossier {
   return {
     id: d.id,
@@ -152,7 +161,8 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       .sort((a, b) => Number(b.segmentId === d.segmentId && !!d.segmentId) - Number(a.segmentId === d.segmentId && !!d.segmentId) || a.position - b.position);
     const chosen = d.priceOptionId ? options.find((o) => o.id === d.priceOptionId) : undefined;
     const payUrl = chosen?.paymentLink ? paymentUrl(chosen.paymentLink, { dossierId: d.id, couponCode: d.discount?.code ?? null }) : null;
-    const latest = latestByModule(catalog);
+    // Los bloques del catálogo según lo que es: los de inversión (deck-*) solo en los decks, y al revés.
+    const latest = latestByModule(catalog.filter((c) => isDeckBlock(c.blockType) === (d.kind === 'deck')));
     const pub = toPublicDossier(d, list);
     const total = resolveTotal(pub);
 
@@ -197,8 +207,11 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     };
   }
 
-  async function listDossiers(): Promise<DossierSummary[]> {
-    const ds = (await db.listDossiers(s.tenantId)).filter((d) => !s.team || !d.authorId || inTeam(s, d.authorId));
+  /** Las propuestas (por defecto) o los decks de inversión (docs/DECKS.md): nunca se mezclan. */
+  /** Por defecto, las propuestas; `kind: 'deck'`, los decks de inversión (docs/DECKS.md); `'all'`, todo. */
+  async function listDossiers(opts: { kind?: 'proposal' | 'deck' | 'all' } = {}): Promise<DossierSummary[]> {
+    const kind = opts.kind ?? 'proposal';
+    const ds = (await db.listDossiers(s.tenantId)).filter((d) => (kind === 'all' || (d.kind ?? 'proposal') === kind) && (!s.team || !d.authorId || inTeam(s, d.authorId)));
     const ids = ds.map((d) => d.id);
     const [its, links, names] = await Promise.all([
       ids.length ? db.listItems(ids) : Promise.resolve([]),
@@ -236,7 +249,15 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
       currency: tpl?.currency ?? 'EUR',
       partnerAccountId: account?.id ?? null,
       accountId: input.accountId ?? null,
+      ...((input.kind ?? tpl?.kind) === 'deck' ? { kind: 'deck' as const } : {}),
     });
+    // Un deck (docs/DECKS.md) nace con los bloques de inversión del espacio, en su orden.
+    if (input.kind === 'deck' && !tpl) {
+      const blocks = deckBlocks(latestByModule(await db.listCatalog(s.tenantId)));
+      const pos = rebalance(blocks.length);
+      for (const [k, b] of blocks.entries()) await db.insertItem({ dossierId: d.id, moduleVersionId: b.versionId, position: pos[k], visible: true, priceOverride: null, propOverrides: {} });
+      return d.id;
+    }
     const segmentId = account?.segmentId ?? tpl?.segmentId;
     if (segmentId) await db.updateDossier(d.id, { segmentId });
     if (tpl?.priceOptionId) await db.updateDossier(d.id, { priceOptionId: tpl.priceOptionId });
@@ -474,6 +495,8 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
         break;
       }
       case 'setOutcome': {
+        // Un deck no se «gana» como una venta (ganarlo convertiría al inversor en cliente).
+        if (d.kind === 'deck' && op.outcome !== 'open') throw new AdminError(422, 'Un deck no tiene resultado de venta');
         await assertWrote(await db.updateDossier(id, {
           outcome: op.outcome, outcomeNote: op.note ?? null, outcomeAt: op.outcome === 'open' ? null : now().toISOString(),
         }));
@@ -587,8 +610,9 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
   }
 
   /** Lo que se vende: la última versión publicada de cada módulo (al colaborador, solo los suyos y sin tarifa). */
-  async function catalog(): Promise<CatalogVersion[]> {
-    return [...latestByModule(await db.listCatalog(s.tenantId)).values()].sort((a, b) => a.moduleName.localeCompare(b.moduleName, 'es'));
+  async function catalog(opts: { kind?: 'proposal' | 'deck' } = {}): Promise<CatalogVersion[]> {
+    const deck = opts.kind === 'deck';
+    return [...latestByModule((await db.listCatalog(s.tenantId)).filter((c) => isDeckBlock(c.blockType) === deck)).values()].sort((a, b) => a.moduleName.localeCompare(b.moduleName, 'es'));
   }
 
   const media = createMediaService(db, s, opts.assets, canEdit);

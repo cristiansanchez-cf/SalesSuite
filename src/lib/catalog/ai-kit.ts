@@ -26,6 +26,11 @@ export const TYPE_GUIDE: Record<BlockType, { use: string; special?: boolean }> =
   'center-console': { use: 'Consola de escritorio interactiva del producto.', special: true },
   'seal-showcase': { use: 'El sello en la página del cliente, con sus reglas de uso.', special: true },
   'site-verify': { use: 'La web del cliente con el sello encima: el cursor lo pulsa y se abre la página del sello.', special: true },
+  // Decks de inversión (docs/DECKS.md): solo para los decks, no para las propuestas de venta.
+  'deck-cover': { use: 'Deck de inversión: portada (quiénes sois en una frase y la ronda).', special: true },
+  'deck-slide': { use: 'Deck de inversión: una diapositiva con titular y de 1 a 6 puntos.', special: true },
+  'deck-stats': { use: 'Deck de inversión: cifras grandes (mercado, tracción, la ronda) y un reparto en barras.', special: true },
+  'deck-team': { use: 'Deck de inversión: el equipo.', special: true },
 };
 
 export interface KitModule { key: string; blockType: string; name: string; description: string | null; props: unknown }

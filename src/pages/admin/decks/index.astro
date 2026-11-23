@@ -1,0 +1,158 @@
+---
+/**
+ * Decks de inversión (docs/DECKS.md): sección temporal para los espacios que son startups (la activa el superadmin en
+ * Plataforma). Un deck es una propuesta con los bloques de inversión: se edita igual, se comparte por enlace y tiene su
+ * analítica. Cada deck es para un inversor del CRM (tipo «Inversor»); si no está, se crea al hacer el deck.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import EmptyState from '~/components/ui/EmptyState.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { AdminError } from '~/lib/admin/service';
+import { relativeTime, STATUS_CLASS } from '~/lib/admin/format';
+import { can } from '~/lib/admin/permissions';
+import { i18n } from '~/lib/i18n';
+import { localizeError } from '~/lib/i18n/errors';
+import { decksMessages } from '~/lib/i18n/messages/decks';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const { session, service } = admin;
+if (session.role === 'partner' || !(await admin.accounts.features()).decks) return Astro.redirect('/admin', 302);
+const { m, locale } = i18n(Astro, decksMessages);
+const crm = can(session.role).useAccounts;
+const investorKind = crm ? (await admin.accounts.kinds().catch(() => [])).find((k) => k.profile === 'investor') ?? null : null;
+
+let error: string | null = null;
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const name = String(form.get('investor') ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  const title = String(form.get('title') ?? '').trim().slice(0, 140) || (name ? m.titlePlaceholder(name) : '');
+  let accountId = String(form.get('accountId') ?? '').trim();
+  try {
+    if (!name) throw new AdminError(422, m.investorPlaceholder);
+    // Elegido del CRM o, si no está, se da de alta como inversor (sin zona: no hace falta para un fondo).
+    if (!accountId && crm) accountId = await admin.accounts.create({ name, kind: investorKind?.key });
+    const id = await service.createDossier({ title, prospectCompany: name, kind: 'deck', ...(accountId && crm ? { accountId } : {}) });
+    return Astro.redirect(`/admin/dossiers/${id}`, 303);
+  } catch (e) {
+    if (!(e instanceof AdminError)) throw e;
+    error = localizeError(e.message, locale);
+  }
+}
+
+const decks = await service.listDossiers({ kind: 'deck' });
+const published = decks.filter((d) => d.status === 'published');
+const opens = published.length ? await admin.analytics.statsFor(published.map((d) => d.id)).catch(() => new Map()) : new Map();
+const order = { published: 0, draft: 1, archived: 2 } as Record<string, number>;
+decks.sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+const initial = (d: { prospectCompany: string | null; title: string }) => (d.prospectCompany || d.title).trim().charAt(0).toUpperCase();
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 pb-10" data-testid="decks-page">
+    <PageHeader eyebrow={m.eyebrow} title={m.title} lede={m.lede}>
+      <button type="button" class="co-btn co-btn--primary" data-open-new data-testid="new-deck">{m.newDeck} <span aria-hidden="true">→</span></button>
+    </PageHeader>
+
+    {decks.length === 0 ? (
+      <EmptyState kind="create" title={m.empty} action={{ href: '#nuevo', label: m.newDeck }} />
+    ) : (
+      <ul class="grid grid-cols-[minmax(0,1fr)] gap-3 p-0 md:grid-cols-2" data-testid="deck-list">
+        {decks.map((d) => {
+          const o = opens.get(d.id);
+          return (
+            <li class="list-none">
+              <a href={`/admin/dossiers/${d.id}`} class="co-card co-card--link !grid h-full grid-cols-[minmax(0,1fr)] content-start gap-3 !p-5" data-testid="deck" data-status={d.status}>
+                <span class="flex items-start gap-4">
+                  <span class:list={['inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold', d.status === 'published' ? 'bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]' : 'bg-[var(--console-chip-bg)]']} aria-hidden="true">{initial(d)}</span>
+                  <span class="grid min-w-0 flex-1 gap-0.5">
+                    <span class="co-entity text-lg leading-snug" data-ugc>{d.title}</span>
+                    <span class="co-meta truncate" data-ugc>{d.prospectCompany || '—'}</span>
+                  </span>
+                  <span class={STATUS_CLASS[d.status]}>{m.status[d.status] ?? d.status}</span>
+                </span>
+                <span class="flex flex-wrap items-center gap-2">
+                  {d.status === 'published' && <span class={o?.opens ? 'co-badge co-badge--signal' : 'co-badge'} data-testid="deck-opens">{o?.opens ? m.opens(o.opens) : m.never}</span>}
+                  {o?.lastAt && <span class="co-meta">{relativeTime(o.lastAt, undefined, locale)}</span>}
+                  <span class="co-meta">{m.blocks(d.itemCount)} · {relativeTime(d.updatedAt, undefined, locale)}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+
+    <dialog class="new-deck" data-new {...(error ? { 'data-open': '' } : {})}>
+      <form method="post" id="nuevo" class="grid gap-4 p-7" data-testid="deck-create-form">
+        <div class="flex items-start justify-between gap-3">
+          <h2 class="co-page-title !text-3xl">{m.dialogTitle}</h2>
+          <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-close-new>{m.cancel}</button>
+        </div>
+        {error && <Alert kind="rejection" title={error} />}
+        <div class="co-field relative">
+          <label for="deck-investor">{m.investor}</label>
+          <input id="deck-investor" class="co-input" name="investor" required maxlength="120" autocomplete="off" placeholder={m.investorPlaceholder}
+            data-investor data-testid="deck-investor" {...(crm ? { 'data-search': '1', 'data-kind': investorKind?.key ?? '' } : {})} />
+          <input type="hidden" name="accountId" value="" data-account-id />
+          {crm && <span class="co-help">{m.investorHelp}</span>}
+          <ul class="m-0 grid max-h-64 gap-1 overflow-y-auto p-0" hidden data-investor-list data-testid="deck-investor-list"></ul>
+        </div>
+        <label class="co-field">{m.titleLabel}<input class="co-input" name="title" maxlength="140" data-title data-template={m.titlePlaceholder('{c}')} data-testid="deck-title" /></label>
+        <button class="co-btn co-btn--primary co-btn--block" type="submit" data-testid="deck-create">{m.create} <span aria-hidden="true">→</span></button>
+      </form>
+    </dialog>
+  </div>
+</AdminLayout>
+
+<style>
+  .new-deck { width: min(520px, 94vw); padding: 0; border: 0; border-radius: 1.25rem; background: var(--console-surface, #fff); color: inherit; }
+  .new-deck::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+</style>
+
+<script>
+  const dlg = document.querySelector<HTMLDialogElement>('[data-new]');
+  if (dlg) {
+    const open = () => { if (!dlg.open) dlg.showModal(); };
+    document.querySelectorAll('[data-open-new]').forEach((b) => b.addEventListener('click', open));
+    document.querySelectorAll('a[href="#nuevo"]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); open(); }));
+    dlg.querySelector('[data-close-new]')?.addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+    if (location.hash === '#nuevo' || dlg.hasAttribute('data-open')) open();
+    const input = dlg.querySelector<HTMLInputElement>('[data-investor]')!;
+    const title = dlg.querySelector<HTMLInputElement>('[data-title]')!;
+    const accountId = dlg.querySelector<HTMLInputElement>('[data-account-id]')!;
+    const list = dlg.querySelector<HTMLUListElement>('[data-investor-list]')!;
+    let touched = false;
+    title.addEventListener('input', () => { touched = true; });
+    const setTitle = () => { if (!touched) title.value = input.value.trim() ? (title.dataset.template ?? '{c}').replace('{c}', input.value.trim()) : ''; };
+    input.addEventListener('input', setTitle);
+    // Buscar el inversor en el CRM (los de tipo «Inversor»); si no se elige ninguno, se crea con el nombre escrito.
+    if (input.dataset.search) {
+      let timer = 0; let seq = 0;
+      input.addEventListener('input', () => {
+        accountId.value = '';
+        window.clearTimeout(timer);
+        const q = input.value.trim();
+        if (q.length < 2) { list.hidden = true; return; }
+        const my = ++seq;
+        timer = window.setTimeout(async () => {
+          let items: Array<{ id: string; name: string; zone: string; discarded: boolean }> = [];
+          const kind = input.dataset.kind ? `&kind=${encodeURIComponent(input.dataset.kind)}` : '';
+          try { const r = await fetch(`/admin/api/crm/account-search?q=${encodeURIComponent(q)}${kind}`, { credentials: 'same-origin' }); if (r.ok) items = (await r.json()).items ?? []; } catch { /* sin red: se crea con el nombre */ }
+          if (my !== seq) return;
+          list.replaceChildren(...items.filter((x) => !x.discarded).slice(0, 6).map((x) => {
+            const li = document.createElement('li'); li.className = 'list-none';
+            const b = document.createElement('button'); b.type = 'button'; b.className = 'co-action w-full text-left'; b.dataset.testid = 'deck-investor-option';
+            const t = document.createElement('span'); t.className = 'co-action__label'; t.textContent = x.name;
+            b.append(t);
+            b.addEventListener('click', () => { accountId.value = x.id; input.value = x.name; list.hidden = true; setTitle(); });
+            li.append(b); return li;
+          }));
+          list.hidden = !list.children.length;
+        }, 250);
+      });
+    }
+  }
+</script>

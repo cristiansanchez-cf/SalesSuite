@@ -12,6 +12,7 @@ import { demoApplyCoupon, demoStripe } from '../commissions/db-demo';
 export const newToken = () => randomBytes(24).toString('base64url');
 
 const toDossier = (r: DossierRow): DossierRecord => ({
+  kind: r.kind === 'deck' ? 'deck' : 'proposal',
   id: r.id, tenantId: r.tenant_id, authorId: r.author_id, title: r.title,
   prospectName: r.prospect_name, prospectCompany: r.prospect_company, status: r.status, locale: r.locale,
   priceMode: r.price_mode, totalPrice: r.total_price, currency: r.currency,
@@ -82,7 +83,7 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
         prospect_name: n.prospectName, prospect_company: n.prospectCompany, prospect_meta: {},
         status: 'draft', locale: n.locale, price_mode: n.priceMode, total_price: n.totalPrice, currency: n.currency,
         theme_override: null, published_at: null, created_at: now, updated_at: now, partner_account_id: n.partnerAccountId ?? null,
-        account_id: n.accountId ?? null, view_mode: 'test',
+        account_id: n.accountId ?? null, view_mode: 'test', kind: n.kind === 'deck' ? 'deck' : 'proposal',
       };
       // = trigger dossier_a0_auto_link: sin empresa elegida, la de ese nombre si hay una sola.
       if (!row.account_id && !row.partner_account_id) row.account_id = accountByCompany(db().account.filter((a) => a.tenant_id === n.tenantId), row.prospect_company)?.id ?? null;

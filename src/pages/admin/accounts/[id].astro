@@ -50,6 +50,7 @@ import { mergeMessages } from '~/lib/i18n/messages/merge';
 import { SIZE_LIMITS, SIZES, formatsOf, sizeScaleOf } from '~/lib/crm/priority';
 import DiveCard from '~/components/crm/DiveCard.astro';
 import { divingMessages } from '~/lib/i18n/messages/diving';
+import { decksMessages } from '~/lib/i18n/messages/decks';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
 import GroupLocalesCard from '~/components/crm/GroupLocalesCard.astro';
 import AiResearchCard from '~/components/crm/AiResearchCard.astro';
@@ -187,6 +188,12 @@ if (Astro.request.method === 'POST') {
       case 'unblock': await acc.unblock(id); to += '?ok=unblocked'; break;
       case 'delete': await acc.remove(id); to = '/admin/accounts'; break;
       case 'dossier': {
+        // Un inversor (con la sección Decks activada): su deck de inversión (docs/DECKS.md).
+        const [{ account: x }, ks, feats] = await Promise.all([acc.get(id), acc.kinds(), acc.features()]);
+        if (feats.decks && profileOf(ks, x.kind) === 'investor') {
+          to = `/admin/dossiers/${await admin.service.createDossier({ title: decksMessages[locale].titlePlaceholder(x.name), prospectCompany: x.name, accountId: id, kind: 'deck' })}`;
+          break;
+        }
         // La propuesta nace con lo que ya sabe su ficha: sector, receta con sus respuestas, estilo y con quién hablar.
         to = `/admin/dossiers/${await dossierFromAccount(admin, id)}`;
         break;
@@ -303,6 +310,8 @@ const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
 // Sus propuestas, a mano desde la cabecera (criterio de Cristian: «desde la ficha deberíamos ver rápidamente las
 // propuestas asociadas»): las más recientes primero, las archivadas al final; las enviadas, con sus aperturas.
+// Un inversor (sección Decks activada, docs/DECKS.md): sus decks en vez de propuestas.
+const deckMode = profile === 'investor' && (await acc.features()).decks;
 const propList = [...dossiers].sort((x, y) => Number(x.status === 'archived') - Number(y.status === 'archived') || (y.updatedAt ?? '').localeCompare(x.updatedAt ?? ''));
 const propOpens: Map<string, { opens: number }> = propList.some((d) => d.status === 'published')
   ? await admin.analytics.statsFor(propList.filter((d) => d.status === 'published').map((d) => d.id)).catch(() => new Map())
@@ -322,7 +331,7 @@ const STATE_ALERT = {
     <AccountState a={a} />
     {propList.length > 0 && (
       <details class="acc-props relative" data-testid="account-proposals">
-        <summary class="co-btn co-btn--ghost cursor-pointer list-none" data-testid="account-proposals-open"><Icon name="file-text" size={16} />{M.proposals(propList.length)}</summary>
+        <summary class="co-btn co-btn--ghost cursor-pointer list-none" data-testid="account-proposals-open"><Icon name={deckMode ? 'presentation' : 'file-text'} size={16} />{deckMode ? decksMessages[locale].accountTitle(propList.length) : M.proposals(propList.length)}</summary>
         <div class="co-card absolute right-0 z-30 mt-2 grid w-[min(26rem,calc(100vw-2rem))] gap-1 !p-2 shadow-xl" data-testid="account-proposals-list">
           {propList.slice(0, 8).map((d) => { const o = propOpens.get(d.id)?.opens ?? 0; return (
             <a href={`/admin/dossiers/${d.id}`} class="grid gap-1 rounded-xl px-3 py-2 hover:bg-[var(--console-chip-bg)]" data-testid="account-proposal">
@@ -339,7 +348,7 @@ const STATE_ALERT = {
     )}
     {(a.state === 'free' || a.state === 'mine' || a.state === 'my_customer') && (
       <form method="post"><input type="hidden" name="action" value="dossier" />
-        <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{M.createProposal} <span aria-hidden="true">→</span></button></form>
+        <button class="co-btn co-btn--primary" type="submit" data-testid="account-dossier">{deckMode ? decksMessages[locale].newForAccount : M.createProposal} <span aria-hidden="true">→</span></button></form>
     )}
     {/* Qué es (§42). Criterio de Cristian: con pestañas parecía navegación («quieres ir a Empresas y le cambias el tipo»):
         el tipo actual como etiqueta, «Cambiar tipo» aparte y confirmación antes de cambiarlo. */}
@@ -386,12 +395,12 @@ const STATE_ALERT = {
 
       {/* Resumen (§22): lo que hace falta de un vistazo en la puerta del local; y saltos a cada parte (en el móvil la ficha es larga). */}
       <section id="account-summary" class="co-card grid gap-3 !p-4" data-testid="account-summary">
-        {dive && !isGroup && a.state !== 'customer' && <div class="flex flex-wrap items-baseline gap-2" data-testid="summary-dive">
+        {dive && !isGroup && a.state !== 'customer' && profile !== 'investor' && <div class="flex flex-wrap items-baseline gap-2" data-testid="summary-dive">
           {prio.out ? <span class="co-tag co-tag--danger">{DV.levels.out}</span>
             : <><span class="co-figure text-3xl" data-testid="summary-score">{prio.score}</span><span class="co-meta">/ 100{!prio.qualified && ` · ${PS.unqualified}`}</span>
               {prio.level && <span class="co-tag" data-testid="summary-level" data-level={prio.level}>{DV.levels[prio.level]}</span>}</>}
         </div>}
-        {qual && !dive && <div class="grid gap-2">
+        {qual && !dive && profile !== 'investor' && <div class="grid gap-2">
           {isGroup ? (
             <span class="inline-flex items-baseline gap-1" data-testid="summary-group">{groupBest
               ? <><span class="co-figure text-3xl">{groupBest.p.score}</span><span class="co-meta">/ 100 · {PS.group.score}: {groupBest.name}</span></>
@@ -433,7 +442,7 @@ const STATE_ALERT = {
       </section>
 
       {/* Promotora o DJ (§24): lo primero es dónde trabaja, con qué días y frecuencia. */}
-      {profile !== 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card pack={pack} />}
+      {profile !== 'venue' && profile !== 'investor' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card pack={pack} />}
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
 
@@ -515,7 +524,7 @@ const STATE_ALERT = {
 
       {profile === 'venue' && a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} focus={await admin.crm.researchFocus()} hasWebsite={!!a.website} isAdmin={perms.manageTenant} />}
 
-      {!qual ? null : dive ? (a.state !== 'customer' && <DiveCard q={a.qualification as Record<string, unknown>} profile={profile} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />)
+      {!qual || profile === 'investor' ? null : dive ? (a.state !== 'customer' && <DiveCard q={a.qualification as Record<string, unknown>} profile={profile} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />)
         : isGroup ? <GroupLocalesCard locales={groupLocals} /> : a.state !== 'customer' && (profile === 'venue'
         ? <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />
         : <ProfileCard profile={profile} q={a.qualification as Record<string, unknown>} p={prio} canEdit={canQualify} />)}
@@ -719,7 +728,7 @@ const STATE_ALERT = {
       </section>
 
       <section class="co-section" id="proposals">
-        <div class="co-section__head"><h2 class="text-eyebrow">{M.proposals(dossiers.length)}</h2></div>
+        <div class="co-section__head"><h2 class="text-eyebrow">{deckMode ? decksMessages[locale].accountTitle(dossiers.length) : M.proposals(dossiers.length)}</h2></div>
         {dossiers.length === 0 ? <p class="co-meta">{M.noProposals}</p> : (
           <ul class="co-rows">{dossiers.map((d) => (
             <li><a class="co-row" href={`/admin/dossiers/${d.id}`}>

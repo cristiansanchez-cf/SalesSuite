@@ -4,6 +4,8 @@ import type {
 import type { DossierPatch } from './ops';
 
 export interface NewDossier {
+  /** Propuesta (lo de siempre) o deck de inversión (docs/DECKS.md). */
+  kind?: 'proposal' | 'deck';
   tenantId: string;
   authorId: string;
   title: string;

@@ -20,7 +20,7 @@ const openOf = (ds: DossierSummary[], userId?: string) =>
 export async function handoverPeople(admin: Admin): Promise<HandoverPerson[]> {
   if (!can(admin.session.role).manageTenant) return [];
   const [ds, owners, members] = await Promise.all([
-    admin.service.listDossiers(), admin.accounts.ownerCounts().catch(() => new Map<string, number>()), admin.tenantAdmin.listMembers(),
+    admin.service.listDossiers({ kind: 'all' }), admin.accounts.ownerCounts().catch(() => new Map<string, number>()), admin.tenantAdmin.listMembers(),
   ]);
   const byAuthor = new Map<string, number>();
   for (const d of openOf(ds)) byAuthor.set(d.authorId!, (byAuthor.get(d.authorId!) ?? 0) + 1);
@@ -35,7 +35,7 @@ export async function handoverPeople(admin: Admin): Promise<HandoverPerson[]> {
 
 export async function handoverOf(admin: Admin, userId: string): Promise<Handover | null> {
   if (!can(admin.session.role).manageTenant) return null;
-  const [ds, accounts, members] = await Promise.all([admin.service.listDossiers(), admin.accounts.ownedBy(userId), admin.tenantAdmin.listMembers()]);
+  const [ds, accounts, members] = await Promise.all([admin.service.listDossiers({ kind: 'all' }), admin.accounts.ownedBy(userId), admin.tenantAdmin.listMembers()]);
   const dossiers = openOf(ds, userId);
   const member = members.find((m) => m.userId === userId);
   const name = member ? member.displayName || member.email : (await admin.service.userNames([userId]).catch(() => new Map<string, string>())).get(userId) ?? dossiers[0]?.authorName ?? '—';

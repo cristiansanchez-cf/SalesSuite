@@ -58,6 +58,8 @@ export interface AdminSession {
 }
 
 export interface DossierRecord {
+  /** Propuesta o deck de inversión (docs/DECKS.md); lo viejo, propuesta. */
+  kind?: 'proposal' | 'deck';
   /** Logo, fotos y vídeo del cliente (migración 20261024). */
   clientMedia?: import('../types').ClientMedia;
   /** Lo que eligió el comercial al montar la propuesta del sector (modo y respuestas). Privado. */

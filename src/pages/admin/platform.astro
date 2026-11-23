@@ -3,6 +3,7 @@
  * Plataforma (docs/ORG.md): solo el superadmin. Todos los espacios con sus cifras y un «Entrar» a cada uno
  * (por su dominio; dentro, el superadmin es admin aunque no sea miembro).
  */
+import { decksMessages } from '~/lib/i18n/messages/decks';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { formAction } from '~/lib/admin/forms';
@@ -19,7 +20,7 @@ import { monthOf, usd } from '~/lib/usage/report';
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
-const { m: { platform: m }, f } = i18n(Astro, orgMessages);
+const { m: { platform: m }, f, locale: locale0 } = i18n(Astro, orgMessages);
 const here = new URL(requestOrigin(Astro.request, Astro.url));
 const local = /^(localhost|127\.|.*\.localhost$)/.test(here.hostname);
 const hrefOf = (domain: string | null, path = '/admin') => (domain ? (local ? `http://${domain}${here.port ? `:${here.port}` : ''}${path}` : `https://${domain}${path}`) : null);
@@ -29,6 +30,11 @@ let result: { error: string | null; details: string[] } = { error: null, details
 let draft: Record<string, string> = {};
 if (Astro.request.method === 'POST') {
   const fd = await Astro.request.formData();
+  // Secciones por espacio (docs/DECKS.md): activar o quitar Decks.
+  if (fd.get('do') === 'decks') {
+    result = await formAction(() => admin.org.setFeature(String(fd.get('tenant') ?? ''), fd.get('on') === '1'));
+    if (!result.error) return Astro.redirect('/admin/platform#space-' + String(fd.get('slug') ?? ''), 303);
+  }
   draft = Object.fromEntries(['name', 'slug', 'locale', 'adminEmail'].map((k) => [k, String(fd.get(k) ?? '')]));
   let done: { slug: string; invited: boolean; adminEmail: string | null } | null = null;
   result = await formAction(async () => {
@@ -42,6 +48,8 @@ if (Astro.request.method === 'POST') {
   }
 }
 const spaces = await admin.org.platform();
+const feats = await admin.org.features().catch(() => new Map<string, { decks: boolean }>());
+const DK = decksMessages[locale0];
 // Lo que lleva gastado cada espacio este mes (docs/COSTES.md); si falla, la página sale igual sin ello.
 const { m: cm, locale } = i18n(Astro, costsMessages);
 const costs = await admin.org.costs(monthOf(new Date())).catch(() => null);
@@ -95,7 +103,7 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
       const href = hrefOf(x.domain);
       const here = x.id === tenant?.id;
       return (
-        <li class="co-card grid list-none gap-4 !p-6" data-testid="platform-space" data-slug={x.slug}>
+        <li class="co-card grid list-none gap-4 !p-6" data-testid="platform-space" data-slug={x.slug} id={`space-${x.slug}`}>
           <div class="flex items-start justify-between gap-3">
             <div class="grid gap-1 min-w-0">
               <h2 class="co-entity !text-xl">{x.name}</h2>
@@ -109,6 +117,13 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
               <div class="grid rounded-xl bg-[var(--console-chip-bg)] p-2"><dt class="co-meta order-2 !text-xs">{l}</dt><dd class="co-figure text-2xl">{v}</dd></div>
             ))}
           </dl>
+          {(() => { const on = !!feats.get(x.id)?.decks; return (
+            <form method="post" class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--console-chip-bg)] px-3 py-2" data-testid="platform-decks" data-on={on ? '1' : '0'}>
+              <input type="hidden" name="do" value="decks" /><input type="hidden" name="tenant" value={x.id} /><input type="hidden" name="slug" value={x.slug} /><input type="hidden" name="on" value={on ? '0' : '1'} />
+              <span class="text-sm"><b>{DK.platform.label}</b> · <span class="co-meta">{on ? DK.platform.on : DK.platform.off}</span></span>
+              <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="platform-decks-toggle">{on ? DK.platform.turnOff : DK.platform.turnOn}</button>
+            </form>
+          ); })()}
           <p class="co-meta">{m.revenue}: <b>{f.money(x.revenueCents, 'EUR')}</b>{costOf.get(x.id) && <> · <a href={`/admin/platform/costes?t=${encodeURIComponent(x.slug)}`} data-testid="platform-space-cost">{cm.variable}: <b>{money$(costOf.get(x.id)!.variable)}</b></a></>}</p>
           {(() => {
             const steps = setupSteps(x.setup, x.published);

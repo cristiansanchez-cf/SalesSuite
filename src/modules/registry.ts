@@ -14,6 +14,10 @@ import { centerConsoleSchema } from './center-console/schema';
 import { sealShowcaseSchema } from './seal-showcase/schema';
 import { siteVerifySchema } from './site-verify/schema';
 import { partsFor } from './phone-tour/steps';
+import { deckCoverSchema } from './deck-cover/schema';
+import { deckSlideSchema } from './deck-slide/schema';
+import { deckStatsSchema } from './deck-stats/schema';
+import { deckTeamSchema } from './deck-team/schema';
 import type { ModuleContext } from './types';
 
 /**
@@ -108,6 +112,31 @@ export const REGISTRY = {
     schema: siteVerifySchema,
     example: { title: 'Así se vería el sello en {company}', page: { claims: [{ text: 'Una afirmación de su página', evidence: 'Declaración autorizada · Reglamento (UE) 432/2012' }] } },
     load: () => import('./site-verify/Component.astro'),
+  },
+  // Decks de inversión (docs/DECKS.md): sus bloques son solo de los decks (module.purpose = 'deck').
+  'deck-cover': {
+    label: 'Deck: portada',
+    schema: deckCoverSchema,
+    example: { eyebrow: 'Para {company}', title: 'Tu empresa', tagline: 'Qué hacéis y para quién, en una frase.', round: 'Ronda pre-semilla · 2027' },
+    load: () => import('./deck-cover/Component.astro'),
+  },
+  'deck-slide': {
+    label: 'Deck: diapositiva con puntos',
+    schema: deckSlideSchema,
+    example: { title: 'El problema', bullets: ['Lo que le pasa a tu cliente hoy', 'Por qué importa'] },
+    load: () => import('./deck-slide/Component.astro'),
+  },
+  'deck-stats': {
+    label: 'Deck: cifras (mercado, tracción, ronda)',
+    schema: deckStatsSchema,
+    example: { title: 'Mercado', stats: [{ value: '1.000 M€', label: 'TAM' }], breakdownTitle: 'Uso de los fondos', breakdown: [{ label: 'Producto', percent: 50 }] },
+    load: () => import('./deck-stats/Component.astro'),
+  },
+  'deck-team': {
+    label: 'Deck: equipo',
+    schema: deckTeamSchema,
+    example: { title: 'El equipo', people: [{ name: 'Nombre Apellido', role: 'CEO', bio: 'Por qué tú' }] },
+    load: () => import('./deck-team/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

@@ -75,6 +75,14 @@ export function supabaseOrgDb(sb: SupabaseClient): OrgDb {
     async setTenantLimits(tenantId, l) {
       check(await sb.rpc('platform_set_limits', { p_tenant: tenantId, p_per_user_day: l.aiPerUserDay, p_month_usd: l.aiMonthUsd }));
     },
+    async platformFeatures() {
+      const r = await sb.from('tenant_feature').select('tenant_id, decks');
+      if (r.error) return null;   // sin la migración 20270121
+      return new Map(((r.data ?? []) as Row[]).map((x) => [x.tenant_id as string, { decks: !!x.decks }]));
+    },
+    async setTenantFeature(tenantId, f) {
+      check(await sb.rpc('platform_set_feature', { p_tenant: tenantId, p_decks: f.decks }));
+    },
     async platformOverview() {
       const r = await sb.rpc('platform_overview');
       if (missing(r.error)) return null;

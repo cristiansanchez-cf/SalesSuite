@@ -18,7 +18,7 @@ export type NavMode = 'sell' | 'setup';
  */
 interface Group { href: string; label: string; icon: IconName; testid?: string; count?: number; tabs: Array<{ href: string; label: string; testid?: string; exact?: boolean; show?: boolean }> }
 
-function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boolean }, L: typeof shellMessages.es.nav): { sell: Group[]; setup: Group[] } {
+function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boolean; decks?: boolean }, L: typeof shellMessages.es.nav): { sell: Group[]; setup: Group[] } {
   const perms = can(role);
   const partner = role === 'partner';
   const sell: Group[] = [
@@ -42,6 +42,10 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
     { href: '/admin', label: partner ? L.myAccounts : L.dossiers, icon: (partner ? 'store' : 'file-text') as IconName, testid: 'nav-dossiers', tabs: [
       { href: '/admin', label: partner ? L.myAccounts : L.dossiers, exact: true }, { href: '/admin/dossiers', label: '', show: false }, { href: '/admin/analytics', label: L.analytics, testid: 'tab-analytics' },
     ] },
+    // Decks de inversión (docs/DECKS.md): solo en los espacios donde el superadmin la ha activado (startups).
+    ...(counts.decks && !partner ? [{ href: '/admin/decks', label: L.decks, icon: 'presentation' as IconName, testid: 'nav-decks', tabs: [
+      { href: '/admin/decks', label: L.decks, exact: true }, { href: '/admin/decks/analitica', label: L.analytics, testid: 'tab-decks-analytics' },
+    ] }] : []),
     { href: '/admin/learn', label: L.learn, icon: 'graduation-cap', testid: 'nav-learn', tabs: [{ href: '/admin/learn', label: L.learn }, { href: '/admin/wins', label: L.wins, testid: 'tab-wins' }] },
     { href: '/admin/commissions', label: L.myCommissions, icon: 'wallet', testid: 'nav-my-commissions', tabs: [{ href: '/admin/commissions', label: L.myCommissions, exact: true }] },
   ];
@@ -89,7 +93,7 @@ function groupOf(gs: Group[], path: string): Group | null {
   return best?.g ?? null;
 }
 
-export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number; superadmin?: boolean } = {}, L = shellMessages.es.nav) {
+export function navFor(role: Role, path: string, counts: { pendingPlaybook?: number; superadmin?: boolean; decks?: boolean } = {}, L = shellMessages.es.nav) {
   const perms = can(role);
   const { sell, setup } = groups(role, counts, L);
   const inSetup = perms.configure && !!groupOf(setup, path);
@@ -110,7 +114,7 @@ export function navFor(role: Role, path: string, counts: { pendingPlaybook?: num
 }
 
 /** Pestañas de la sección actual (si tiene más de una visible). Las pinta el layout arriba de la página. */
-export function sectionTabs(role: Role, path: string, counts: { superadmin?: boolean } = {}, L = shellMessages.es.nav) {
+export function sectionTabs(role: Role, path: string, counts: { superadmin?: boolean; decks?: boolean } = {}, L = shellMessages.es.nav) {
   const { sell, setup } = groups(role, counts, L);
   const perms = can(role);
   const g = (perms.configure ? groupOf(setup, path) : null) ?? groupOf(sell, path);

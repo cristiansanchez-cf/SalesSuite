@@ -17,7 +17,7 @@ const DOSSIER_COLS = 'id, tenant_id, author_id, title, prospect_name, prospect_c
  * Columnas de migraciones recientes (view_mode: 20261021; price_option_id: 20261022). Hasta aplicarlas se lee y se
  * escribe sin ellas: los despliegues de Vercel van antes que las migraciones.
  */
-const optionalCols = new Set(['view_mode', 'price_option_id', 'client_media', 'preset']);
+const optionalCols = new Set(['view_mode', 'price_option_id', 'client_media', 'preset', 'kind']);
 const dossierCols = () => [DOSSIER_COLS, ...optionalCols].join(', ');
 const hasCol = (c: string) => optionalCols.has(c);
 async function tolerant<R extends { error: any }>(q: (cols: string) => PromiseLike<R>): Promise<R> {
@@ -44,6 +44,7 @@ const toDossier = (r: Row): DossierRecord => ({
   partnerAccountId: r.partner_account_id ?? null,
   situation: r.situation ?? {},
   accountId: r.account_id ?? null,
+  kind: r.kind === 'deck' ? 'deck' : 'proposal',
   accountEligibility: r.account_eligibility ?? null,
   accountDecision: r.account_decision ?? null,
   accountDecidedAt: r.account_decided_at ?? null,
@@ -189,6 +190,8 @@ function full(sb: SupabaseClient): AdminDb {
         partner_account_id: n.partnerAccountId ?? null, account_id: n.accountId ?? null,
         // Toda propuesta nueva empieza en modo prueba: tus aperturas no cuentan hasta que la pasas a real.
         ...(hasCol('view_mode') ? { view_mode: 'test' } : {}),
+        // Deck de inversión (docs/DECKS.md): solo si la columna ya está (migración 20270121).
+        ...(n.kind === 'deck' && hasCol('kind') ? { kind: 'deck' } : {}),
       }).select(c).single()));
       return toDossier(r);
     },

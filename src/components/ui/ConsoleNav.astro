@@ -16,7 +16,8 @@ import { mySpaces } from '~/lib/admin/spaces';
 interface Props { admin: AdminContext; tenantName: string; path: string; pending: number; primary?: boolean; feed: NotificationFeed; back: string }
 const { admin, tenantName, path, pending, primary = false, feed, back } = Astro.props;
 const { m, locale } = i18n(Astro, shellMessages);
-const nav = navFor(admin.session.role, path, { pendingPlaybook: pending, superadmin: admin.session.superadmin }, m.nav);
+const { decks } = await admin.accounts.features();
+const nav = navFor(admin.session.role, path, { pendingPlaybook: pending, superadmin: admin.session.superadmin, decks }, m.nav);
 
 const name = admin.session.displayName || admin.session.email;
 // Espacios a los que tiene acceso (docs/ORG.md §Cambiar de espacio): con más de uno, la tarjeta del espacio es un menú.

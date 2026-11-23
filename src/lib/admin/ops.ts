@@ -82,6 +82,8 @@ export const createDossierSchema = z.object({
   partnerAccountId: id.optional(),
   /** Cuenta del CRM (docs/ACCOUNTS.md): vincularla cuenta como contacto. */
   accountId: id.optional(),
+  /** Deck de inversión (docs/DECKS.md) en vez de propuesta. */
+  kind: z.enum(['proposal', 'deck']).optional(),
 });
 export type CreateDossierInput = z.infer<typeof createDossierSchema>;
 

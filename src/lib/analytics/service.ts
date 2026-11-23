@@ -14,14 +14,14 @@ const real = (vs: DossierVisit[]) => vs.filter((v) => !v.internal);
 export function createAnalyticsService(db: AnalyticsDb, admin: AdminService, s: AdminSession) {
   return {
     /** `mine`: las mías; `authorId`: las de un comercial (para el admin). */
-    async overview(opts: { mine?: boolean; authorId?: string } = {}) {
-      const ds = (await admin.listDossiers()).filter((d) => (!opts.mine || d.authorId === s.userId) && (!opts.authorId || d.authorId === opts.authorId));
+    async overview(opts: { mine?: boolean; authorId?: string; kind?: 'proposal' | 'deck' } = {}) {
+      const ds = (await admin.listDossiers({ kind: opts.kind })).filter((d) => (!opts.mine || d.authorId === s.userId) && (!opts.authorId || d.authorId === opts.authorId));
       const visits = await db.listVisits(s.tenantId, ds.filter((d) => d.status === 'published').map((d) => d.id));
       return overviewOf(ds, real(visits));
     },
     /** Resumen por dossier (para la lista y la cabecera del editor). Solo ids que la persona ve. */
     async statsFor(ids: string[]) {
-      const visible = new Set((await admin.listDossiers()).map((d) => d.id));
+      const visible = new Set((await admin.listDossiers({ kind: 'all' })).map((d) => d.id));
       const ok = ids.filter((id) => visible.has(id));
       const visits = real(await db.listVisits(s.tenantId, ok));
       return new Map(ok.map((id) => [id, statsOf(visits.filter((v) => v.dossierId === id))]));

@@ -23,6 +23,9 @@ export interface OrgDb {
   /** Tope de IA de cada espacio (solo superadmin; docs/COSTES.md §Tope). Los que no tienen, no salen. */
   platformLimits?(): Promise<Map<string, TenantLimits> | null>;
   setTenantLimits?(tenantId: string, l: TenantLimits): Promise<void>;
+  /** Secciones por espacio (docs/DECKS.md): qué espacios tienen Decks, y cambiarlo. */
+  platformFeatures?(): Promise<Map<string, { decks: boolean }> | null>;
+  setTenantFeature?(tenantId: string, f: { decks: boolean }): Promise<void>;
   /** Alta de un espacio (solo superadmin; la base de datos lo comprueba). Devuelve su id. */
   createTenant(t: { slug: string; name: string; locale: string; hostname: string }): Promise<string>;
   /** Hace admin de un espacio a un usuario (solo superadmin). */

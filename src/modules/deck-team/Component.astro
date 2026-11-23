@@ -1,0 +1,30 @@
+---
+/** deck-team ← el equipo: nombre, papel, una línea de por qué y foto opcional. Solo tokens del tema. */
+import Section from '~/components/Section.astro';
+import Headline from '../Headline.astro';
+import { interpolate } from '../resolve';
+import type { ModuleBaseProps } from '../types';
+import type { DeckTeamProps } from './schema';
+
+type Props = DeckTeamProps & ModuleBaseProps;
+const { eyebrow, title, lede, people, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
+---
+<div data-module="deck-team">
+  <Section tone="surface">
+    {eyebrow && <p class="mb-3 text-sm font-bold uppercase tracking-wider text-primary">{t(eyebrow)}</p>}
+    <h2 class="max-w-3xl font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight"><Headline text={t(title)} /></h2>
+    {lede && <p class="mt-3 max-w-2xl text-lg text-muted">{t(lede)}</p>}
+    <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {people.map((p) => (
+        <div class="grid content-start gap-3">
+          {p.photo
+            ? <img src={p.photo} alt={p.name} class="aspect-square w-full rounded-2xl object-cover" loading="lazy" />
+            : <div class="grid aspect-square w-full place-items-center rounded-2xl bg-bg font-display text-4xl font-extrabold text-primary">{initials(p.name)}</div>}
+          <div><p class="m-0 font-bold">{p.name}</p><p class="m-0 text-sm text-primary">{t(p.role)}</p>{p.bio && <p class="m-0 mt-1 text-sm text-muted">{t(p.bio)}</p>}</div>
+        </div>
+      ))}
+    </div>
+  </Section>
+</div>
