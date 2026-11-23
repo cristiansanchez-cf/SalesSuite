@@ -1,0 +1,92 @@
+---
+/**
+ * Revisar una importación con la IA (docs/IMPORTAR_IA.md): qué ha mandado (empresa a empresa, con sus avisos y el texto
+ * del que sale), cuáles ya estaban en el CRM, «Aplicar» (una persona, aquí; nunca la IA) y «Deshacer».
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { AdminError } from '~/lib/admin/service';
+import { i18n } from '~/lib/i18n';
+import { aiImportMessages } from '~/lib/i18n/messages/aiImport';
+import { createAiImport } from '~/lib/crm/ai-import-service';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).importCrm) return Astro.rewrite('/admin/forbidden');
+const { m: M, f } = i18n(Astro, aiImportMessages);
+const svc = createAiImport(admin);
+const id = Astro.params.id ?? '';
+let msg: { ok?: string; error?: string } = {};
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  try {
+    if (String(form.get('do')) === 'apply') {
+      const r = await svc.apply(id);
+      msg = { ok: M.applied({ created: r.stats.accountsCreated, merged: r.stats.accountsMerged, people: r.people, activities: r.activities }) };
+    } else if (String(form.get('do')) === 'undo') { await svc.undo(id); msg = { ok: M.undone }; }
+  } catch (e) { if (!(e instanceof AdminError)) throw e; msg = { error: e.message }; }
+}
+let view: Awaited<ReturnType<typeof svc.view>>;
+try { view = await svc.view(id); } catch (e) { if (e instanceof AdminError && e.status === 404) return Astro.rewrite('/404'); throw e; }
+const kinds = await admin.accounts.kinds();
+const kindLabel = (k: string | null) => (k ? kinds.find((x) => x.key === k)?.label ?? k : kinds[0]?.label ?? '');
+const state = view.imp.status === 'done' ? 'done' : view.imp.status === 'undone' ? 'undone' : view.data.finishedAt ? 'ready' : 'open';
+const SHOWN = 300;
+const rows = view.data.rows.slice(0, SHOWN);
+---
+<AdminLayout title={`${M.title} · ${view.data.label}`}>
+  <div class="grid max-w-5xl gap-5 pb-10" data-testid="ai-import-review" data-state={state}>
+    <PageHeader eyebrow={M.title} title={view.data.label} lede={M.summary(view.total)} />
+    <a class="co-meta -mt-3 inline-flex items-center gap-1" href="/admin/import/ia"><Icon name="chevron-left" size={14} />{M.title}</a>
+    {msg.ok && <Alert kind="success" title={msg.ok} />}
+    {msg.error && <Alert kind="rejection" title={msg.error} />}
+
+    <div class="co-card flex flex-wrap items-center justify-between gap-3 !p-4">
+      <span class="flex flex-wrap items-center gap-2"><span class="co-badge co-badge--soft" data-testid="ai-import-state">{M.status[state]}</span><span class="co-meta">{f.relative(view.imp.createdAt)}</span></span>
+      {view.imp.status === 'draft' && (
+        <form method="post" class="flex flex-wrap items-center gap-3">
+          <input type="hidden" name="do" value="apply" />
+          <span class="co-meta max-w-md text-sm">{state === 'open' ? M.notFinished : M.applyHelp}</span>
+          <button class="co-btn co-btn--primary" type="submit" data-testid="ai-import-apply" disabled={!view.data.rows.length}><Icon name="check" size={16} />{M.apply}</button>
+        </form>
+      )}
+      {view.imp.status === 'done' && (
+        <form method="post">
+          <input type="hidden" name="do" value="undo" />
+          <button class="co-btn co-btn--ghost" type="submit" data-confirm={M.undoConfirm} data-testid="ai-import-undo"><Icon name="rotate-ccw" size={16} />{M.undo}</button>
+        </form>
+      )}
+    </div>
+
+    <div class="co-card overflow-x-auto !p-0">
+      <table class="co-table w-full text-sm [&_td]:border-t [&_td]:border-[var(--co-rule)] [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3" data-testid="ai-import-rows">
+        <thead><tr><th class="text-left">{M.cols.name}</th><th class="text-left">{M.cols.kind}</th><th class="text-left">{M.cols.city}</th><th class="text-left">{M.cols.status}</th><th class="text-left">{M.cols.warnings}</th></tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr data-testid="ai-import-row" data-ref={r.ref} data-existing={view.dupes.has(r.ref) ? 'true' : 'false'}>
+              <td class="align-top">
+                <span class="co-row-title">{r.name}</span>
+                <details class="mt-1"><summary class="co-meta cursor-pointer text-xs">{M.source}</summary>
+                  <p class="co-meta m-0 mt-1 whitespace-pre-wrap text-xs" data-testid="ai-import-source">{r.source || M.noSource}</p>
+                  {r.facts.length > 0 && <ul class="m-0 mt-1 pl-4 text-xs">{r.facts.map((x) => <li>{x}</li>)}</ul>}
+                </details>
+              </td>
+              <td class="align-top">{kindLabel(r.kind)}</td>
+              <td class="align-top">{r.city ?? '—'}</td>
+              <td class="align-top">{view.dupes.has(r.ref) ? <span class="co-tag">{M.exists(view.dupes.get(r.ref)!)}</span> : <span class="co-tag">{M.isNew}</span>}</td>
+              <td class="align-top">{r.problems.length ? <ul class="m-0 pl-4 text-xs" data-testid="ai-import-warnings">{r.problems.map((p) => <li>{p}</li>)}</ul> : <span class="co-meta">—</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {view.data.rows.length > SHOWN && <p class="co-meta m-0 p-3">{M.more(view.data.rows.length - SHOWN)}</p>}
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
+</script>

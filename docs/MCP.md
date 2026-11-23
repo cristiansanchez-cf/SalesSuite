@@ -95,6 +95,7 @@ Lo aprendido del Cerebro (AIBrains `docs/fase-2-auth.md`) se aplica igual:
 | `crear_empresa` | Con su ciudad y tipo. Si ya existe una con ese nombre, la devuelve y no duplica. |
 | `anadir_persona` | Y la vincula a una empresa con su papel. |
 | `preparar_apunte` → `guardar_apunte` | Como el asistente de WhatsApp: lo que cuenta con sus palabras → qué se guardaría en cada empresa (con candidatas) → guardar tras confirmar. Usa la IA del espacio (su tope diario). |
+| `importacion_empezar` → `importacion_enviar` → `importacion_estado` → `importacion_terminar` | Pasar al CRM, por tandas, lo que la persona tiene en otro sitio (docs/IMPORTAR_IA.md). Nada entra hasta que alguien lo revisa y lo aplica en la app. |
 
 Las herramientas de una en una no gastan la IA del espacio: entiende la IA de la persona y la app guarda.
 

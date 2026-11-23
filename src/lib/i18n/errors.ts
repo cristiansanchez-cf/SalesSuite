@@ -33,6 +33,14 @@ const EXACT: Record<string, T> = {
   // ------------------------------------------------------------ CRM: personas, grupos e importación
   'Persona no encontrada': ['Person not found', 'Pessoa não encontrada', '사람을 찾을 수 없습니다'],
   'Importación no encontrada': ['Import not found', 'Importação não encontrada', '가져오기를 찾을 수 없습니다'],
+  // Importar con tu IA (docs/IMPORTAR_IA.md)
+  'Esta importación no es de la IA': ['This import is not an AI import', 'Esta importação não é da IA', '이 가져오기는 AI 가져오기가 아닙니다'],
+  'Esta importación ya se aplicó': ['This import has already been applied', 'Esta importação já foi aplicada', '이 가져오기는 이미 적용되었습니다'],
+  'La tanda está vacía': ['The batch is empty', 'O lote está vazio', '묶음이 비어 있습니다'],
+  'Como mucho 25 empresas por tanda': ['25 companies per batch at most', 'No máximo 25 empresas por lote', '묶음당 회사는 최대 25개입니다'],
+  'Como mucho 2000 empresas por importación: termina esta y abre otra': ['2,000 companies per import at most: finish this one and start another', 'No máximo 2000 empresas por importação: termina esta e abre outra', '가져오기당 회사는 최대 2,000개입니다: 이번 것을 마치고 새로 시작하세요'],
+  'No hay empresas: manda al menos una tanda': ['No companies: send at least one batch', 'Não há empresas: envia pelo menos um lote', '회사가 없습니다: 묶음을 하나 이상 보내세요'],
+  'No hay empresas que importar': ['No companies to import', 'Não há empresas para importar', '가져올 회사가 없습니다'],
   'Una empresa no puede ser su propio grupo': ['A company cannot be its own group', 'Uma empresa não pode ser o seu próprio grupo', '회사는 자기 자신의 그룹이 될 수 없습니다'],
   'Ese grupo ya está dentro de otro grupo': ['That group is already inside another group', 'Esse grupo já está dentro de outro grupo', '그 그룹은 이미 다른 그룹에 속해 있습니다'],
   'Esta empresa ya es grupo de otras': ['This company is already a group for others', 'Esta empresa já é grupo de outras', '이 회사는 이미 다른 회사들의 그룹입니다'],

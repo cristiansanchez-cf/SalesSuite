@@ -3,6 +3,7 @@
  * Inicio (docs/UX_REVIEW.md #2). La cabecera sale al momento; el resto (lo siguiente, tu día, el equipo, quién mira)
  * llega en un bloque aparte con su shimmer (docs/UX_REVIEW.md §Carga).
  */
+import { aiImportMessages } from '~/lib/i18n/messages/aiImport';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import Shimmer from '~/components/ui/Shimmer.astro';
@@ -23,7 +24,8 @@ if (admin.session.role === 'admin' && Astro.cookies.get('ss_ready')?.value !== a
   Astro.cookies.set('ss_ready', admin.session.tenantId, { path: '/admin', maxAge: 86_400, httpOnly: true, sameSite: 'lax', secure: Astro.url.protocol === 'https:' });
 }
 const manager = can(admin.session.role).manageTeam;
-const { m } = i18n(Astro, sellMessages);
+const { m, locale } = i18n(Astro, sellMessages);
+const AI = aiImportMessages[locale];
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
 ---
 <AdminLayout title={m.home.title} wide>
@@ -46,6 +48,14 @@ const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[
       <TodayCard server:defer>
         <Shimmer slot="fallback" variant="rows" count={2} />
       </TodayCard>
+    )}
+
+    {/* Importar con tu IA (docs/IMPORTAR_IA.md): para quien puede importar. */}
+    {can(admin.session.role).importCrm && (
+      <a class="co-card flex flex-wrap items-center justify-between gap-3 text-inherit !no-underline" href="/admin/import/ia" data-testid="home-ai-import">
+        <span class="grid gap-1"><span class="co-row-title flex items-center gap-2"><Icon name="sparkles" size={16} />{AI.home.title}</span><span class="co-meta">{AI.home.text}</span></span>
+        <span class="co-btn co-btn--ghost co-btn--sm">{AI.home.cta} <span aria-hidden="true">→</span></span>
+      </a>
     )}
 
     <HomeBody server:defer>

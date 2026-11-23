@@ -1,0 +1,56 @@
+---
+/**
+ * Importar con tu IA (docs/IMPORTAR_IA.md): cómo hacerlo (conectar la IA, pegarle el mensaje, revisar y aplicar aquí) y
+ * las importaciones de este espacio. Solo quien puede importar (admin), como la importación por CSV.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { can } from '~/lib/admin/permissions';
+import { i18n } from '~/lib/i18n';
+import { aiImportMessages } from '~/lib/i18n/messages/aiImport';
+import { createAiImport } from '~/lib/crm/ai-import-service';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+if (!can(admin.session.role).importCrm) return Astro.rewrite('/admin/forbidden');
+const { m: M, f } = i18n(Astro, aiImportMessages);
+const list = await createAiImport(admin).list().catch(() => []);
+const prompt = M.prompt(tenant.name);
+const stateOf = (x: (typeof list)[number]) => (x.status === 'done' ? 'done' : x.status === 'undone' ? 'undone' : (x.mapping as { ai?: { finishedAt?: string | null } }).ai?.finishedAt ? 'ready' : 'open');
+const countOf = (x: (typeof list)[number]) => (x.mapping as { ai?: { rows?: unknown[] } }).ai?.rows?.length ?? 0;
+---
+<AdminLayout title={M.title}>
+  <div class="grid max-w-3xl gap-6 pb-10" data-testid="ai-import">
+    <PageHeader eyebrow={M.eyebrow} title={M.title} lede={M.lede} />
+    <a class="co-meta -mt-4 inline-flex items-center gap-1" href="/admin/import"><Icon name="chevron-left" size={14} />{M.back}</a>
+
+    <ol class="co-card m-0 grid gap-4 !pl-10" data-testid="ai-import-steps">
+      <li class="grid gap-2"><span>{M.steps[0]}</span><a class="co-btn co-btn--ghost co-btn--sm w-fit" href="/admin/ia"><Icon name="link" size={14} />{M.connect}</a></li>
+      <li class="grid gap-2"><span>{M.steps[1]}</span>
+        <span class="co-row-title">{M.promptLabel}</span>
+        <textarea class="co-input min-h-48 font-mono text-xs" readonly data-testid="ai-import-prompt">{prompt}</textarea>
+        <button type="button" class="co-btn co-btn--primary co-btn--sm w-fit" data-copy={prompt} data-copied={M.copied}>{M.copy}</button>
+      </li>
+      <li>{M.steps[2]}</li>
+    </ol>
+
+    <section class="grid gap-3" data-testid="ai-import-list">
+      <h2 class="co-entity">{M.list}</h2>
+      {list.length === 0 ? <p class="co-meta m-0">{M.empty}</p> : list.map((x) => (
+        <a class="co-card flex flex-wrap items-center justify-between gap-2 !p-4 text-inherit !no-underline" href={`/admin/import/ia/${x.id}`} data-testid="ai-import-item" data-state={stateOf(x)}>
+          <span class="grid"><span class="co-row-title">{x.fileName.replace(/^IA · /, '')}</span><span class="co-meta">{M.rows(countOf(x))} · {f.relative(x.createdAt)}</span></span>
+          <span class="co-badge co-badge--soft">{M.status[stateOf(x)]}</span>
+        </a>
+      ))}
+    </section>
+  </div>
+</AdminLayout>
+
+<script>
+  document.addEventListener('click', async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
+    if (!b) return;
+    try { await navigator.clipboard.writeText(b.dataset.copy ?? ''); const t = b.textContent; b.textContent = b.dataset.copied ?? t; setTimeout(() => { b.textContent = t; }, 1500); } catch { /* sin portapapeles */ }
+  });
+</script>

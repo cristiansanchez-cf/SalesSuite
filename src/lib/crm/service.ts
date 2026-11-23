@@ -849,13 +849,13 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     return db.deleteActivitiesByImport ? db.deleteActivitiesByImport(importId) : 0;
   }
   /** Personas (del título de la fila) enlazadas a su empresa; se deshacen con la importación. */
-  async function importPeople(importId: string, rows: Array<{ accountId: string; name: string }>) {
+  async function importPeople(importId: string, rows: Array<{ accountId: string; name: string; role?: string | null; phone?: string | null; email?: string | null }>) {
     requireImporter();
     if (!rows.length) return 0;
     let ids: string[];
     try {
-      ids = await db.insertContacts(t, rows.map((r) => ({ name: r.name.slice(0, 160), email: null, phone: null, instagram: null, linkedin: null, city: null, notes: null, fields: {}, tags: [], ownerId: s.userId, importId })));
-      await db.saveLinks(t, ids.map((id, i) => ({ contactId: id, accountId: rows[i].accountId, role: null })));
+      ids = await db.insertContacts(t, rows.map((r) => ({ name: r.name.slice(0, 160), email: r.email ?? null, phone: r.phone ?? null, instagram: null, linkedin: null, city: null, notes: null, fields: {}, tags: [], ownerId: s.userId, importId })));
+      await db.saveLinks(t, ids.map((id, i) => ({ contactId: id, accountId: rows[i].accountId, role: rows[i].role?.slice(0, 80) ?? null })));
     } catch (e) { mapError(e); }
     return ids!.length;
   }

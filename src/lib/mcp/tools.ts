@@ -21,6 +21,7 @@ import { opsFor } from '../assistant/process';
 import { isPlaceKey, pathForKey } from '../accounts/spain';
 import type { NoteItem } from '../crm/notes';
 import type { Locale } from '../i18n/core';
+import { createAiImport } from '../crm/ai-import-service';
 
 export const MCP_NAME = 'cofundo-ventas';
 export const MCP_VERSION = '1.0.0';
@@ -46,7 +47,8 @@ export const INSTRUCTIONS = (space: string) => `Eres el asistente del CRM de ven
 - Para contar una conversación o una visita con tus palabras, usa preparar_apunte y, cuando la persona confirme la empresa y lo que se guarda, guardar_apunte (lo mismo que el asistente de WhatsApp).
 - Para cambios concretos, usa las herramientas una a una: registrar_contacto, proximo_paso, cualificar (primero preguntas_cualificacion), anotar_dato, anadir_persona.
 - Fechas en AAAA-MM-DD; horas en HH:MM (en la zona horaria de la persona).
-- Antes de guardar algo que la persona no haya pedido claramente, pregúntale.`;
+- Antes de guardar algo que la persona no haya pedido claramente, pregúntale.
+- Para pasar al CRM muchas empresas que la persona tiene en otro sitio, usa importacion_empezar (por tandas; ella lo revisa y lo aplica en el CRM).`;
 
 /**
  * El servidor con sus herramientas. `ctx` monta el contexto de la persona (se llama solo al usar una herramienta).
@@ -259,6 +261,54 @@ export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: 
     }
     const r = await ops.apply(rows);
     return { guardados: r.map((x) => ({ empresa: x.name, id: x.accountId, ok: x.ok, error: x.error, acuerdo: x.agreement, prueba: x.trial, descartada: x.discarded })) };
+  }));
+
+  // ---------------------------------------------------------------- Importar con tu IA (docs/IMPORTAR_IA.md)
+  // Por tandas a un área de espera: nada entra en el CRM hasta que una persona lo revisa y pulsa «Aplicar» en la app.
+  const imp = (admin: AdminContext) => createAiImport(admin);
+  const s = (n: number) => z.string().max(n).optional();
+  const empresa = z.object({
+    ref: s(120).describe('Tu referencia de esta empresa (su id o su nombre en el sitio de origen). Si la reenvías con la misma, se actualiza (no se duplica).'),
+    nombre: s(160).describe('Nombre de la empresa, tal cual (obligatorio; sin él, esa fila no entra).'),
+    tipo: s(60).describe('Clave o nombre de uno de los tipos del esquema. Si no lo sabes, no lo pongas.'),
+    ciudad: s(120), direccion: s(300), telefono: s(40), email: s(200), web: s(300), instagram: s(300), linkedin: s(300),
+    personas: z.array(z.object({ nombre: z.string().max(160), papel: s(80), telefono: s(40), email: s(200) })).max(20).optional(),
+    datos: z.array(z.string().max(600)).max(40).optional().describe('Lo que se sabe de la empresa, con sus palabras (no resumas ni opines).'),
+    interacciones: z.array(z.object({ fecha: s(10).describe('AAAA-MM-DD. Solo si la sabes: sin fecha, va como dato.'), canal: s(20), nota: z.string().max(4000) })).max(100).optional(),
+    proximo_paso: z.object({ que: z.string().max(300), fecha: s(10) }).optional(),
+    cualificacion: z.record(z.string().max(60), z.string().max(200)).optional().describe('campo → valor, solo de las del esquema y solo si está claro.'),
+    texto_origen: s(6000).describe('El texto original del que sacas esta empresa, tal cual (sin resumir): para revisar que no se ha inventado nada.'),
+  });
+  server.registerTool('importacion_empezar', {
+    title: 'Importar: empezar',
+    description: 'Empieza a pasar al CRM empresas que la persona tiene en otro sitio (otra IA, notas, documentos). Devuelve el id de la importación y el esquema del CRM (tipos, preguntas de cualificación con sus valores, canales). Nada se guarda en el CRM hasta que la persona lo revise y lo aplique en la app.',
+    inputSchema: { nombre: z.string().max(80).optional().describe('Un nombre para reconocerla («Mis clientes de 2025»).') },
+  }, run(async (admin, a: { nombre?: string }) => {
+    const r = await imp(admin).start({ label: a.nombre });
+    return { importacion_id: r.id, esquema: r.schema,
+      reglas: ['Manda las empresas por tandas de hasta 25 con importacion_enviar.', 'No inventes ni resumas: copia los datos y pon en texto_origen el texto del que salen.',
+        'Interacciones solo con fecha exacta (AAAA-MM-DD) y pasada; si no la sabes, ponlo en datos.', 'Lee la respuesta de cada tanda: corrige lo que tenga avisos y reenvíalo con la misma ref.',
+        'Si se corta, importacion_estado te dice lo que ya está.', 'Al acabar, importacion_terminar y dile a la persona que lo revise y lo aplique en el CRM.'] };
+  }));
+  server.registerTool('importacion_enviar', {
+    title: 'Importar: enviar una tanda',
+    description: 'Manda una tanda de hasta 25 empresas a la importación (área de espera, no al CRM). Responde fila a fila: nueva, ya_existe (con cuál del CRM; al aplicar se completa sin pisar nada) o se_junta, con avisos de lo que no se ha guardado y por qué.',
+    inputSchema: { importacion_id: z.string().uuid(), empresas: z.array(empresa).min(1).max(25) },
+    annotations: { idempotentHint: true },
+  }, run(async (admin, a: { importacion_id: string; empresas: unknown[] }) => imp(admin).send(a.importacion_id, a.empresas)));
+  server.registerTool('importacion_estado', {
+    title: 'Importar: estado',
+    description: 'Cuántas empresas lleva la importación, cuáles tienen avisos y sus referencias (para retomar si se ha cortado).',
+    inputSchema: { importacion_id: z.string().uuid() },
+    annotations: { readOnlyHint: true },
+  }, run(async (admin, a: { importacion_id: string }) => imp(admin).status(a.importacion_id)));
+  server.registerTool('importacion_terminar', {
+    title: 'Importar: terminar',
+    description: 'Deja la importación lista para revisar. No aplica nada: la persona la revisa y la aplica en el CRM (con un enlace).',
+    inputSchema: { importacion_id: z.string().uuid() },
+  }, run(async (admin, a: { importacion_id: string }) => {
+    const r = await imp(admin).finish(a.importacion_id);
+    return { ...r, mensaje: `Lista para revisar: ${r.total} empresas. Ábrela en el CRM (${r.review}) para revisarla y aplicarla.` };
   }));
 
   return server;
