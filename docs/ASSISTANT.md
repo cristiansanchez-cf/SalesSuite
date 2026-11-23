@@ -204,6 +204,9 @@ cuenta → Avisos** («Recordatorio por WhatsApp»; hace falta su móvil en Mi c
 - lo **vencido**;
 - lo que **toca hoy**.
 
+Mira los espacios donde es del equipo y, si es superadmin (entra en cualquiera sin ser miembro), también los
+espacios donde lleva empresas. «Probarlo ahora» prueba el espacio en el que está; si ahí no le llega, lo dice.
+
 Son 5 como mucho. Si no tiene nada, no se le escribe. Solo se le escribe una vez al día (`wa_reminder_log`). Lo lanza el
 cron de `/api/cron/leads` cada 10 minutos (`?reminders=force` para probarlo).
 

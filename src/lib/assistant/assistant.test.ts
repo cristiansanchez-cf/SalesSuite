@@ -830,3 +830,15 @@ describe('lector de capturas', () => {
     expect(cleanShot({ isChat: true, channel: 'fax', lines: [{ from: 'us', text: 'a' }] })!.channel).toBe('other');
   });
 });
+
+describe('Recordatorios: espacios de cada persona', () => {
+  test('del equipo, y el superadmin también donde lleva empresas (sin repetir)', async () => {
+    const { reminderSpaces } = await import('./reminders-db');
+    const r = reminderSpaces(
+      [{ user_id: 'u1', tenant_id: 'cofundo' }, { user_id: 'u2', tenant_id: 'enjoy' }],
+      [{ owner_id: 'u1', tenant_id: 'oquea' }, { owner_id: 'u1', tenant_id: 'oquea' }, { owner_id: 'u1', tenant_id: 'cofundo' }, { owner_id: 'u2', tenant_id: 'oquea' }],
+      new Set(['u1']),
+    );
+    expect(r).toEqual([{ userId: 'u1', tenantId: 'cofundo' }, { userId: 'u2', tenantId: 'enjoy' }, { userId: 'u1', tenantId: 'oquea' }]);
+  });
+});

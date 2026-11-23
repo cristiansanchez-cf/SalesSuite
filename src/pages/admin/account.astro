@@ -96,6 +96,7 @@ if (form?.get('action') === 'locale') {
   const o = await testReminder(admin).catch((e) => ({ status: 'failed' as const, error: e instanceof Error ? e.message : String(e) }));
   waTest = o.status === 'sent' ? { ok: RT.sent(o.items) } : o.status === 'empty' ? { info: o.told ? RT.emptyTold : RT.empty }
     : o.status === 'failed' ? { error: RT.failed(o.error), hint: RT.templateHint } : o.status === 'no-template' ? { error: RT.noTemplate, hint: RT.templateHint }
+    : o.status === 'not-here' ? { info: RT.notHere }
     : { error: o.status === 'off' ? RT.off : o.status === 'no-number' ? RT.noNumber : o.status === 'no-phone' ? RT.noPhone : RT.skipped };
 } else if (form?.get('action') === 'calendar') {
   // Calendario (docs/CALENDAR.md): conectar (crea el enlace), cambiarlo o desconectar.

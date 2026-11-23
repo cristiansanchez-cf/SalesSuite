@@ -62,7 +62,7 @@ export async function reminderDeps(wa: WhatsApp | null, leadsSettings: (tenantId
  * «Probarlo ahora» (Mi cuenta): el recordatorio de la mañana de esta persona, ya, sin esperar a las 9 ni mirar si ya
  * se mandó hoy, y qué ha pasado (para ver por qué no llega sin mirar los registros del servidor).
  */
-export async function testReminder(admin: import('../admin/auth').AdminContext, now = new Date()): Promise<import('./reminders').ReminderOutcome | { status: 'off' }> {
+export async function testReminder(admin: import('../admin/auth').AdminContext, now = new Date()): Promise<import('./reminders').ReminderOutcome | { status: 'off' } | { status: 'not-here' }> {
   const { leadsRuntime } = await import('../leads/server');
   const { remindOne } = await import('./reminders');
   const { localClock } = await import('../notify/daily');
@@ -72,6 +72,8 @@ export async function testReminder(admin: import('../admin/auth').AdminContext, 
   if (!d || !d.wa) return { status: 'no-number' };
   const mine = (await d.db.members()).filter((m) => m.userId === admin.session.userId);
   if (!mine.length) return { status: 'off' };
-  const m = mine.find((x) => x.tenantId === admin.session.tenantId) ?? mine[0]!;
+  // El de este espacio: si aquí no le llega (no es del equipo ni lleva empresas), se dice, en vez de probar otro.
+  const m = mine.find((x) => x.tenantId === admin.session.tenantId);
+  if (!m) return { status: 'not-here' };
   return remindOne(d, m, localClock(now, m.timezone).day);
 }

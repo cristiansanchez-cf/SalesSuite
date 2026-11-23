@@ -7,16 +7,33 @@ type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-exp
 const check = <T>(r: { data: T; error: { message: string } | null }): T => { if (r.error) throw new Error(`[supabase] ${r.error.message}`); return r.data; };
 const TEAM = ['admin', 'lead', 'rep'];
 
+/**
+ * Los espacios de cada persona: donde es del equipo y, si es superadmin (entra en cualquiera sin ser miembro), también
+ * donde lleva empresas. Así le llega lo de Oquea aunque no esté dada de alta allí (docs/ASSISTANT.md §Recordatorios).
+ */
+export function reminderSpaces(memberships: Array<{ user_id: string; tenant_id: string }>, owned: Array<{ owner_id: string; tenant_id: string }>, superadmins: Set<string>): Array<{ userId: string; tenantId: string }> {
+  const seen = new Set<string>(), out: Array<{ userId: string; tenantId: string }> = [];
+  const add = (userId: string, tenantId: string) => { const k = `${userId}|${tenantId}`; if (!seen.has(k)) { seen.add(k); out.push({ userId, tenantId }); } };
+  for (const m of memberships) add(m.user_id, m.tenant_id);
+  for (const a of owned) if (superadmins.has(a.owner_id)) add(a.owner_id, a.tenant_id);
+  return out;
+}
+
 export function supabaseReminderDb(sb: SupabaseClient): ReminderDb {
   return {
     async members() {
       const users = (check(await sb.from('users').select('id, display_name, phone, locale, timezone').eq('wa_reminders', true).not('phone', 'is', null).limit(5000)) ?? []) as Row[];
       if (!users.length) return [];
       const byId = new Map(users.map((u) => [u.id as string, u]));
-      const ms = (check(await sb.from('membership').select('user_id, tenant_id, role').in('user_id', [...byId.keys()]).in('role', TEAM)) ?? []) as Row[];
-      return ms.map((m): ReminderMember => {
-        const u = byId.get(m.user_id)!;
-        return { tenantId: m.tenant_id, userId: m.user_id, phone: u.phone, name: u.display_name ?? null, locale: u.locale ?? null, timezone: u.timezone ?? 'Europe/Madrid' };
+      const ids = [...byId.keys()];
+      const ms = (check(await sb.from('membership').select('user_id, tenant_id, role').in('user_id', ids).in('role', TEAM)) ?? []) as Row[];
+      // Superadmins: también los espacios donde llevan empresas (sin ser miembros). Si no hay organigrama, nada.
+      const sa = await sb.from('platform_admin').select('user_id').in('user_id', ids);
+      const supers = new Set(((sa.error ? [] : sa.data) ?? []).map((r: Row) => r.user_id as string));
+      const owned = supers.size ? ((check(await sb.from('account').select('owner_id, tenant_id').in('owner_id', [...supers]).limit(5000)) ?? []) as Row[]) : [];
+      return reminderSpaces(ms as never, owned as never, supers).map(({ userId, tenantId }): ReminderMember => {
+        const u = byId.get(userId)!;
+        return { tenantId, userId, phone: u.phone, name: u.display_name ?? null, locale: u.locale ?? null, timezone: u.timezone ?? 'Europe/Madrid' };
       });
     },
     async logged(days) {
