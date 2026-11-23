@@ -61,31 +61,41 @@ const rows = view.data.rows.slice(0, SHOWN);
       )}
     </div>
 
-    <div class="co-card overflow-x-auto !p-0">
-      <table class="co-table w-full text-sm [&_td]:border-t [&_td]:border-[var(--co-rule)] [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3" data-testid="ai-import-rows">
-        <thead><tr><th class="text-left">{M.cols.name}</th><th class="text-left">{M.cols.kind}</th><th class="text-left">{M.cols.city}</th><th class="text-left">{M.cols.status}</th><th class="text-left">{M.cols.warnings}</th></tr></thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr data-testid="ai-import-row" data-ref={r.ref} data-existing={view.dupes.has(r.ref) ? 'true' : 'false'}>
-              <td class="align-top">
-                <span class="co-row-title">{r.name}</span>
-                <details class="mt-1"><summary class="co-meta cursor-pointer text-xs">{M.source}</summary>
-                  <p class="co-meta m-0 mt-1 whitespace-pre-wrap text-xs" data-testid="ai-import-source">{r.source || M.noSource}</p>
-                  {r.facts.length > 0 && <ul class="m-0 mt-1 pl-4 text-xs">{r.facts.map((x) => <li>{x}</li>)}</ul>}
-                </details>
-              </td>
-              <td class="align-top">{kindLabel(r.kind)}</td>
-              <td class="align-top">{r.city ?? '—'}</td>
-              <td class="align-top">{view.dupes.has(r.ref) ? <span class="co-tag">{M.exists(view.dupes.get(r.ref)!)}</span> : <span class="co-tag">{M.isNew}</span>}</td>
-              <td class="align-top">{r.problems.length ? <ul class="m-0 pl-4 text-xs" data-testid="ai-import-warnings">{r.problems.map((p) => <li>{p}</li>)}</ul> : <span class="co-meta">—</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {view.data.rows.length > SHOWN && <p class="co-meta m-0 p-3">{M.more(view.data.rows.length - SHOWN)}</p>}
-    </div>
+    {/* Empresa a empresa: lo que la IA ha mandado (una tarjeta por fila: se lee también en el móvil). */}
+    <ul class="co-card m-0 grid list-none divide-y divide-[var(--co-rule)] !p-0" data-testid="ai-import-rows">
+      {rows.map((r) => { const ex = view.dupes.get(r.ref); return (
+        <li class="grid gap-2 px-5 py-4" data-testid="ai-import-row" data-ref={r.ref} data-existing={ex ? 'true' : 'false'}>
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="grid min-w-0 gap-0.5">
+              <span class="co-row-title">{r.name}</span>
+              <span class="co-meta text-sm">{[kindLabel(r.kind), r.city, r.people.length ? M.people(r.people.length) : '', r.interactions.length ? M.interactions(r.interactions.length) : ''].filter(Boolean).join(' · ')}</span>
+            </div>
+            <span class:list={['co-tag shrink-0', ex ? 'ai-exists' : 'ai-new']}>{ex ? M.exists(ex) : M.isNew}</span>
+          </div>
+          {r.problems.length > 0 && (
+            <ul class="ai-warn m-0 grid list-none gap-1 rounded-lg px-3 py-2 text-sm" data-testid="ai-import-warnings">
+              {r.problems.map((x) => <li class="flex gap-2"><span class="mt-0.5 shrink-0"><Icon name="triangle-alert" size={14} /></span>{x}</li>)}
+            </ul>
+          )}
+          <details>
+            <summary class="co-meta cursor-pointer text-sm">{M.source}</summary>
+            <div class="mt-2 grid gap-2 rounded-lg bg-[var(--console-chip-bg)] p-3 text-sm">
+              <p class="m-0 whitespace-pre-wrap" data-testid="ai-import-source">{r.source || M.noSource}</p>
+              {r.facts.length > 0 && <ul class="m-0 grid gap-1 pl-4">{r.facts.map((x) => <li>{x}</li>)}</ul>}
+            </div>
+          </details>
+        </li>
+      ); })}
+      {view.data.rows.length > SHOWN && <li class="co-meta px-5 py-3">{M.more(view.data.rows.length - SHOWN)}</li>}
+    </ul>
   </div>
 </AdminLayout>
+
+<style>
+  .ai-new { background: #e7f6ec; color: #14532d; border-color: #b7e2c4; }
+  .ai-exists { background: #e8f0fe; color: #1e3a8a; border-color: #c7d7fb; }
+  .ai-warn { background: #fff6e0; color: #6b4a00; }
+</style>
 
 <script>
   document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
