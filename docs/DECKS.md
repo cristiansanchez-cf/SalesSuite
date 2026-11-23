@@ -21,10 +21,14 @@ colores y fuentes del espacio. En los textos, `*así*` sale en el color principa
 - `deck-cover` portada · `deck-slide` titular, cita y puntos numerados · `deck-stats` cifras (tarjetas con etiqueta, una
   resaltada), cifras pequeñas numeradas, tarjetas, reparto en barras o donut y frases destacadas · `deck-team` personas
   (una resaltada, nota al pie) · `deck-timeline` hitos en el tiempo · `deck-math` la cuenta grande, ventanas de salida,
-  tabla de escenarios · `deck-contact` cierre · `deck-cases` acuerdos cerrados con foto.
+  tabla de escenarios · `deck-contact` cierre · `deck-cases` acuerdos cerrados con foto · `deck-cycle` el ciclo del
+  producto (pasos clicables que resaltan pilares con su estado: disponible, en construcción, roadmap) · `deck-funnel` embudo
+  de mercado (fuente al pasar el ratón) · `deck-matrix` tabla de competencia (✓ ✗ ~ ◐, «ver solo lo nuestro») ·
+  `deck-calc` calculadora (comisión por tipo de reserva, o % de un ticket).
 - Piezas comunes en `src/modules/deck/` (texto con acento, cifras que cuentan, CSS y animación).
-- Bloques de partida en el catálogo de cada espacio: `src/lib/decks/starter.ts` (migraciones 20270121 y 20270123).
-  `deck-casos` no sale en un deck nuevo: se añade a mano.
+- Bloques de partida en el catálogo de cada espacio: `src/lib/decks/starter.ts` (migraciones 20270121, 20270123 y
+  20270124). Los extra (`deck-casos`, `deck-ciclo`, `deck-embudo`, `deck-competencia-tabla`, `deck-calculadora`) no salen
+  en un deck nuevo: se añaden a mano o pegando el contenido.
 - Un `null` en lo personalizado de un bloque de deck quita ese campo del catálogo (p. ej. la pastilla de la ronda).
 
 ## Pegar el contenido (editor del deck)

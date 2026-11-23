@@ -3,7 +3,7 @@
  * 20270121000000_decks.sql en los espacios con la sección activada; aquí, para la demo. Cada espacio los edita en su
  * catálogo con lo suyo (cifras, equipo, ronda): los «—» son huecos a rellenar, no datos.
  */
-export interface DeckStarter { key: string; blockType: 'deck-cover' | 'deck-slide' | 'deck-stats' | 'deck-team' | 'deck-timeline' | 'deck-math' | 'deck-contact' | 'deck-cases'; name: string; props: Record<string, unknown> }
+export interface DeckStarter { key: string; blockType: 'deck-cover' | 'deck-slide' | 'deck-stats' | 'deck-team' | 'deck-timeline' | 'deck-math' | 'deck-contact' | 'deck-cases' | 'deck-cycle' | 'deck-funnel' | 'deck-matrix' | 'deck-calc'; name: string; props: Record<string, unknown> }
 
 export const deckStarter = (tenantName: string): DeckStarter[] => [
   { key: 'deck-portada', blockType: 'deck-cover', name: 'Deck · Portada', props: { eyebrow: 'Para {company}', title: tenantName, tagline: 'Qué hacéis y para quién, en una frase.', round: 'Ronda pre-semilla · 2027' } },
@@ -22,5 +22,9 @@ export const deckStarter = (tenantName: string): DeckStarter[] => [
 
 /** Bloques que se pueden añadir a un deck pero no salen en uno nuevo (p. ej. los acuerdos cerrados, con fotos). */
 export const deckExtras = (): DeckStarter[] => [
+  { key: 'deck-ciclo', blockType: 'deck-cycle', name: 'Deck · El ciclo del producto', props: { eyebrow: 'La solución', title: 'Una plataforma. *Todo el ciclo.*', steps: [{ label: 'Descubrir', pillars: [1] }, { label: 'Reservar', pillars: [2] }, { label: 'Repetir', pillars: [3] }], pillars: [{ title: 'Pilar uno', text: 'Qué hace.', state: 'available' }, { title: 'Pilar dos', text: 'Qué hace.', state: 'building' }, { title: 'Pilar tres', text: 'Qué hace.', state: 'roadmap' }] } },
+  { key: 'deck-embudo', blockType: 'deck-funnel', name: 'Deck · Embudo de mercado', props: { eyebrow: 'Mercado', title: 'El tamaño de la oportunidad', levels: [{ value: '—', label: 'Mercado total' }, { value: '—', label: 'Al que llegamos' }, { value: '—', label: 'Lo que queremos en 3 años' }] } },
+  { key: 'deck-competencia-tabla', blockType: 'deck-matrix', name: 'Deck · Tabla de competencia', props: { eyebrow: 'Competencia', title: 'Un mercado de *soluciones parciales*', columns: ['Nosotros', 'Competidor'], rows: [{ label: 'Funcionalidad', cells: ['yes', 'no'] }] } },
+  { key: 'deck-calculadora', blockType: 'deck-calc', name: 'Deck · Calculadora', props: { eyebrow: 'Haz la cuenta', title: 'Lo que obtienes con *tu ticket*', kind: 'stake', postMoney: 1000000 } },
   { key: 'deck-casos', blockType: 'deck-cases', name: 'Deck · Acuerdos cerrados', props: { eyebrow: 'Tres acuerdos', title: 'Lo que *hemos cerrado.*', items: [{ status: 'Cerrado', title: 'Nombre del acuerdo', meta: 'Cuándo · dónde', text: 'Qué es y por qué importa.' }] } },
 ];

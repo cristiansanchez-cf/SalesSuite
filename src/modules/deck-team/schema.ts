@@ -17,5 +17,9 @@ export const deckTeamSchema = z.object({
     photo: z.string().url().startsWith('https://').optional(),
   })).min(1).max(8),
   note: z.string().max(300).optional(),
+  /** Cifras del equipo (p. ej. 2 fundadores · 4 desarrolladores) y líneas extra (advisors, lo que se incorpora). */
+  stats: z.array(z.object({ value: z.string().min(1).max(12), label: z.string().min(1).max(60) })).max(6).optional(),
+  statsTitle: z.string().max(80).optional(),
+  lines: z.array(z.string().min(1).max(300)).max(5).optional(),
 });
 export type DeckTeamProps = z.infer<typeof deckTeamSchema>;

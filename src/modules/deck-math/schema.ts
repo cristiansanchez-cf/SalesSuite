@@ -13,11 +13,11 @@ export const deckMathSchema = z.object({
     ops: z.array(z.string().max(2)).max(2).optional(),
   }).optional(),
   cardsTitle: z.string().max(120).optional(),
-  cards: z.array(z.object({ tag: z.string().max(40).optional(), title: z.string().min(1).max(80), text: z.string().max(400).optional() })).max(3).optional(),
+  cards: z.array(z.object({ tag: z.string().max(60).optional(), title: z.string().min(1).max(80), text: z.string().max(480).optional() })).max(3).optional(),
   table: z.object({
     columns: z.array(z.string().max(30)).min(2).max(5),
-    rows: z.array(z.array(z.string().max(40)).min(2).max(5)).min(1).max(6),
+    rows: z.array(z.array(z.string().max(90)).min(2).max(5)).min(1).max(6),
   }).optional(),
-  callout: z.object({ text: z.string().min(1).max(200), big: z.string().max(24).optional(), after: z.string().max(80).optional(), note: z.string().max(160).optional() }).optional(),
+  callout: z.object({ text: z.string().min(1).max(320), big: z.string().max(24).optional(), after: z.string().max(80).optional(), note: z.string().max(160).optional() }).optional(),
 });
 export type DeckMathProps = z.infer<typeof deckMathSchema>;

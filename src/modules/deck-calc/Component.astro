@@ -1,0 +1,64 @@
+---
+/** deck-calc ← calculadora de ejemplo: comisión por tipo de reserva y clientes al mes, o el % de un ticket de inversión. */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
+import type { DeckCalcProps } from './schema';
+
+type Props = DeckCalcProps & ModuleBaseProps;
+const { eyebrow, title, lede, kind, options = [], rateMin = 10, rateMax = 20, qtyLabel, qtyDefault = 10, postMoney, ticketDefault = 25000, ticketLabel, resultLabel, currency = 'EUR', disclaimer, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const loc = String(ctx?.locale ?? 'es-ES');
+const en = !loc.startsWith('es');
+const L = en
+  ? { type: 'Booking type', qty: 'Customers per month', month: 'For the platform, per month', year: 'Per year', ticket: 'Your ticket', stake: 'Your stake', note: 'Illustrative example' }
+  : { type: 'Tipo de reserva', qty: 'Clientes al mes', month: 'Para la plataforma, al mes', year: 'Al año', ticket: 'Tu ticket', stake: 'Tu participación', note: 'Ejemplo ilustrativo' };
+---
+<div data-module="deck-calc" class="relative overflow-hidden" data-kind={kind} data-rmin={rateMin} data-rmax={rateMax} data-post={postMoney ?? ''} data-cur={currency} data-loc={loc}>
+  <Section>
+    {eyebrow && <p class="deck-eyebrow deck-in">{t(eyebrow)}</p>}
+    <h2 class="deck-title deck-in max-w-5xl !text-[clamp(1.9rem,min(4.2vw,7vh),3.4rem)]" style="--d:80ms"><Rich text={t(title)} /></h2>
+    {lede && <p class="deck-lede deck-in" style="--d:140ms"><Rich text={t(lede)} /></p>}
+    <div class="deck-card deck-card--line deck-in mt-[clamp(1.25rem,4vh,2.5rem)] grid gap-6 lg:grid-cols-[1.2fr_1fr]" style="--d:220ms" data-testid="deck-calc">
+      {kind === 'commission' ? (
+        <div class="grid content-start gap-5">
+          <fieldset class="m-0 grid gap-2 border-0 p-0">
+            <legend class="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-muted">{L.type}</legend>
+            <div class="flex flex-wrap gap-2">
+              {options.map((o, i) => <label class="calc-opt"><input type="radio" name="calc-opt" value={o.price} checked={i === 0} class="sr-only" data-opt /><span>{t(o.label)}</span></label>)}
+            </div>
+          </fieldset>
+          <label class="grid gap-2"><span class="text-xs font-bold uppercase tracking-[0.2em] text-muted">{qtyLabel ? t(qtyLabel) : L.qty} · <strong class="text-text" data-qty-out>{qtyDefault}</strong></span>
+            <input type="range" min="1" max="100" value={qtyDefault} class="calc-range" data-qty /></label>
+        </div>
+      ) : (
+        <label class="grid content-start gap-2"><span class="text-xs font-bold uppercase tracking-[0.2em] text-muted">{ticketLabel ? t(ticketLabel) : L.ticket}</span>
+          <input type="number" min="0" step="1000" value={ticketDefault} class="calc-input" inputmode="numeric" data-ticket data-testid="calc-ticket" /></label>
+      )}
+      <div class="grid content-center gap-1 rounded-2xl bg-primary/10 p-5">
+        <span class="text-xs font-bold uppercase tracking-[0.2em] text-muted">{resultLabel ? t(resultLabel) : kind === 'commission' ? L.month : L.stake}</span>
+        <span class="deck-figure tone-primary !text-[clamp(2rem,4vw,3.2rem)]" data-out data-testid="calc-out">—</span>
+        {kind === 'commission' && <span class="text-sm text-muted">{L.year}: <strong class="text-text" data-out-year>—</strong></span>}
+      </div>
+    </div>
+    <p class="deck-in mt-3 text-xs text-muted" style="--d:300ms">{disclaimer ? t(disclaimer) : kind === 'commission' ? `${L.note} · ${rateMin}–${rateMax}%` : L.note}</p>
+  </Section>
+</div>
+
+<style>
+  .calc-opt span { display: inline-flex; border: 1px solid rgb(var(--color-text) / .2); border-radius: 999px; padding: .45rem 1rem; font-weight: 700; cursor: pointer; transition: background .2s, border-color .2s; }
+  .calc-opt input:checked + span { background: rgb(var(--color-primary)); border-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-contrast, 255 255 255)); }
+  .calc-opt input:focus-visible + span { outline: 2px solid rgb(var(--color-accent)); outline-offset: 2px; }
+  .calc-range { accent-color: rgb(var(--color-primary)); width: 100%; }
+  .calc-input { max-width: 16rem; font-size: 1.6rem; font-weight: 800; padding: .6rem 1rem; border-radius: 14px; border: 1px solid rgb(var(--color-text) / .25); background: rgb(var(--color-bg) / .6); color: rgb(var(--color-text)); font-family: var(--font-display); }
+  .calc-input:focus { outline: 2px solid rgb(var(--color-primary)); outline-offset: 2px; }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('deck-calc', init);
+</script>

@@ -9,8 +9,8 @@ export const deckTimelineSchema = z.object({
   title: z.string().min(1).max(140),
   quote: z.string().max(600).optional(),
   steps: z.array(z.object({
-    when: z.string().min(1).max(40), value: z.string().min(1).max(24), label: z.string().max(80).optional(),
-    money: z.string().max(60).optional(), note: z.string().max(120).optional(), highlight: z.boolean().optional(),
+    when: z.string().min(1).max(60), value: z.string().min(1).max(24), label: z.string().max(80).optional(),
+    money: z.string().max(60).optional(), note: z.string().max(200).optional(), highlight: z.boolean().optional(),
   })).min(1).max(5),
   callout: z.object({ tag: z.string().max(30).optional(), text: z.string().min(1).max(400) }).optional(),
 });

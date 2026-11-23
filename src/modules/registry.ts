@@ -22,6 +22,10 @@ import { deckTimelineSchema } from './deck-timeline/schema';
 import { deckMathSchema } from './deck-math/schema';
 import { deckContactSchema } from './deck-contact/schema';
 import { deckCasesSchema } from './deck-cases/schema';
+import { deckCycleSchema } from './deck-cycle/schema';
+import { deckFunnelSchema } from './deck-funnel/schema';
+import { deckMatrixSchema } from './deck-matrix/schema';
+import { deckCalcSchema } from './deck-calc/schema';
 import type { ModuleContext } from './types';
 
 /**
@@ -165,6 +169,30 @@ export const REGISTRY = {
     schema: deckCasesSchema,
     example: { title: 'Lo que *hemos cerrado.*', items: [{ status: 'Cerrado', title: 'Nombre del acuerdo', text: 'Qué es y por qué importa.' }] },
     load: () => import('./deck-cases/Component.astro'),
+  },
+  'deck-cycle': {
+    label: 'Deck: el ciclo del producto (clicable, con el estado de cada pilar)',
+    schema: deckCycleSchema,
+    example: { title: 'Una plataforma. *Todo el ciclo.*', steps: [{ label: 'Descubrir', pillars: [1] }, { label: 'Reservar', pillars: [2] }], pillars: [{ title: 'Marketplace', state: 'available' }, { title: 'Reservas', state: 'building' }] },
+    load: () => import('./deck-cycle/Component.astro'),
+  },
+  'deck-funnel': {
+    label: 'Deck: embudo de mercado',
+    schema: deckFunnelSchema,
+    example: { title: 'El mercado', levels: [{ value: '10.000', label: 'Total' }, { value: '800', label: 'Accesible' }] },
+    load: () => import('./deck-funnel/Component.astro'),
+  },
+  'deck-matrix': {
+    label: 'Deck: tabla de competencia',
+    schema: deckMatrixSchema,
+    example: { title: 'Competencia', columns: ['Nosotros', 'Otro'], rows: [{ label: 'Reservas online', cells: ['yes', 'partial'] }] },
+    load: () => import('./deck-matrix/Component.astro'),
+  },
+  'deck-calc': {
+    label: 'Deck: calculadora (comisión o participación)',
+    schema: deckCalcSchema,
+    example: { title: 'Haz la cuenta', kind: 'stake', postMoney: 1000000 },
+    load: () => import('./deck-calc/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

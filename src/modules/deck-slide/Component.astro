@@ -9,7 +9,7 @@ import type { ModuleBaseProps } from "../types";
 import type { DeckSlideProps } from './schema';
 
 type Props = DeckSlideProps & ModuleBaseProps;
-const { eyebrow, title, lede, bullets = [], note, ctx } = Astro.props;
+const { eyebrow, title, lede, bullets = [], note, callout, ctx } = Astro.props;
 const t = (s: string) => interpolate(s, ctx);
 ---
 <div data-module="deck-slide" class="relative overflow-hidden">
@@ -28,6 +28,7 @@ const t = (s: string) => interpolate(s, ctx);
       </ol>
     )}
     {note && <p class="deck-in mt-6 text-sm text-muted" style={`--d:${300 + bullets.length * 90}ms`}><Rich text={t(note)} /></p>}
+    {callout && <p class="deck-callout deck-in m-0 mt-4" style={`--d:${360 + bullets.length * 90}ms`}><Rich text={t(callout)} /></p>}
   </Section>
 </div>
 

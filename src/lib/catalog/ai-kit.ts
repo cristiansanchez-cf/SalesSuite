@@ -35,6 +35,10 @@ export const TYPE_GUIDE: Record<BlockType, { use: string; special?: boolean }> =
   'deck-math': { use: 'Deck de inversión: por qué entrar ahora (una cuenta grande, ventanas de salida, tabla de escenarios).', special: true },
   'deck-contact': { use: 'Deck de inversión: cierre, quién firma y cómo contactar.', special: true },
   'deck-cases': { use: 'Deck de inversión: acuerdos cerrados, uno por fila, con foto.', special: true },
+  'deck-cycle': { use: 'Deck de inversión: el ciclo del producto, pasos clicables que resaltan pilares con su estado (disponible, en construcción, roadmap).', special: true },
+  'deck-funnel': { use: 'Deck de inversión: embudo de mercado (de lo total a lo accesible), con la fuente de cada cifra.', special: true },
+  'deck-matrix': { use: 'Deck de inversión: tabla de competencia con ✓ ✗ ~ ◐ y «ver solo lo nuestro».', special: true },
+  'deck-calc': { use: 'Deck de inversión: calculadora de ejemplo (comisión por tipo de reserva, o % de un ticket).', special: true },
 };
 
 export interface KitModule { key: string; blockType: string; name: string; description: string | null; props: unknown }

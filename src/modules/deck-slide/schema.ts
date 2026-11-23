@@ -10,5 +10,7 @@ export const deckSlideSchema = z.object({
   lede: z.string().max(480).optional(),
   bullets: z.array(z.string().min(1).max(220)).max(6).default([]),
   note: z.string().max(300).optional(),
+  /** Franja destacada al final (p. ej. «70–80% de los centros operan con WhatsApp + Excel»). */
+  callout: z.string().max(400).optional(),
 });
 export type DeckSlideProps = z.infer<typeof deckSlideSchema>;

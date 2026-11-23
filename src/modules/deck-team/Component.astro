@@ -9,7 +9,7 @@ import type { ModuleBaseProps } from "../types";
 import type { DeckTeamProps } from './schema';
 
 type Props = DeckTeamProps & ModuleBaseProps;
-const { eyebrow, title, lede, people, note, ctx } = Astro.props;
+const { eyebrow, title, lede, people, note, stats, statsTitle, lines, ctx } = Astro.props;
 const t = (s: string) => interpolate(s, ctx);
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join('');
 const cols = people.length >= 4 && people.length % 3 !== 0 ? 'md:grid-cols-2' : people.length >= 3 ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2';
@@ -34,6 +34,17 @@ const cols = people.length >= 4 && people.length % 3 !== 0 ? 'md:grid-cols-2' : 
         </div>
       ))}
     </div>
+    {(stats?.length || lines?.length) && (
+      <div class="deck-card deck-in mt-4 grid gap-4 lg:grid-cols-[auto_1fr] lg:items-center" style={`--d:${300 + people.length * 90}ms`} data-testid="deck-team-stats">
+        {stats && stats.length > 0 && (
+          <div class="grid gap-2">
+            {statsTitle && <p class="m-0 text-xs font-bold uppercase tracking-[0.2em] text-muted">{t(statsTitle)}</p>}
+            <div class="flex flex-wrap gap-x-8 gap-y-3">{stats.map((x) => <span class="grid"><span class="deck-figure tone-accent !text-[clamp(1.8rem,3vw,2.6rem)]"><Count value={t(x.value)} /></span><span class="text-sm text-muted">{t(x.label)}</span></span>)}</div>
+          </div>
+        )}
+        {lines && lines.length > 0 && <ul class="m-0 grid list-none gap-2 p-0 text-sm text-muted">{lines.map((x) => <li><Rich text={t(x)} /></li>)}</ul>}
+      </div>
+    )}
     {note && <p class="deck-callout deck-in m-0 mt-4 flex items-center gap-4 !border-l-accent" style={`--d:${300 + people.length * 90}ms`}><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/60 text-accent">★</span><span><Rich text={t(note)} /></span></p>}
   </Section>
 </div>

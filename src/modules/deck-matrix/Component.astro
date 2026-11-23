@@ -1,0 +1,66 @@
+---
+/** deck-matrix ← tabla de competencia: la columna propia resaltada, fila resaltada al pasar y «ver solo lo nuestro». */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
+import type { DeckMatrixProps } from './schema';
+
+type Props = DeckMatrixProps & ModuleBaseProps;
+const { eyebrow, title, lede, columns, rows, legend, onlyUsLabel, conclusion, points, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const MARK: Record<string, { c: string; cls: string }> = { yes: { c: '✓', cls: 'mx-yes' }, no: { c: '✗', cls: 'mx-no' }, partial: { c: '~', cls: 'mx-part' }, building: { c: '', cls: 'mx-build' }, na: { c: '—', cls: 'mx-no' } };
+const en = !String(ctx?.locale ?? 'es').startsWith('es');
+---
+<div data-module="deck-matrix" class="relative overflow-hidden">
+  <Section>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        {eyebrow && <p class="deck-eyebrow deck-in">{t(eyebrow)}</p>}
+        <h2 class="deck-title deck-in max-w-4xl !text-[clamp(1.9rem,min(4.2vw,7vh),3.4rem)]" style="--d:80ms"><Rich text={t(title)} /></h2>
+        {lede && <p class="deck-lede deck-in" style="--d:140ms"><Rich text={t(lede)} /></p>}
+      </div>
+      <button type="button" class="deck-tag deck-tag--primary deck-in cursor-pointer" style="--d:200ms" aria-pressed="false" data-only-us data-testid="matrix-only-us">{onlyUsLabel ? t(onlyUsLabel) : en ? `Show only ${columns[0]}` : `Ver solo lo que ofrece ${columns[0]}`}</button>
+    </div>
+    <div class="deck-card deck-in mt-6 overflow-x-auto !p-3" style="--d:260ms">
+      <table class="mx-table w-full border-collapse text-sm" data-testid="deck-matrix">
+        <thead><tr><th></th>{columns.map((c, i) => <th class:list={['px-2 pb-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.12em]', i === 0 ? 'mx-us text-primary' : 'text-muted']} data-col={i}>{t(c)}</th>)}</tr></thead>
+        <tbody>{rows.map((r) => (
+          <tr class="mx-row border-t border-line">
+            <th class="py-2.5 pr-3 text-left font-bold" scope="row">{t(r.label)}</th>
+            {columns.map((_, i) => { const v = r.cells[i] ?? ''; const m = MARK[v]; return <td class:list={['px-2 py-2.5 text-center', i === 0 && 'mx-us', m?.cls, !m && 'text-xs text-muted']} data-col={i}>{v === 'building' ? <span class="mx-half" aria-label="◐"></span> : m ? m.c : t(v)}</td>; })}
+          </tr>
+        ))}</tbody>
+      </table>
+      {legend && <p class="m-0 mt-2 px-2 text-xs text-muted">{t(legend).split('◐').map((part, i) => <>{i > 0 && <span class="mx-half !h-2.5 !w-2.5" aria-label="◐"></span>}{part}</>)}</p>}
+    </div>
+    {(conclusion || points) && (
+      <div class:list={['mt-4 grid gap-4', conclusion && points && 'lg:grid-cols-[1.4fr_1fr]']}>
+        {conclusion && <p class="deck-callout deck-in m-0" style="--d:360ms"><Rich text={t(conclusion)} /></p>}
+        {points && <ol class="deck-in m-0 grid list-none gap-2 p-0" style="--d:420ms">{points.map((x, i) => <li class="flex items-start gap-3"><span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-contrast">{i + 1}</span><span class="font-bold leading-snug"><Rich text={t(x)} /></span></li>)}</ol>}
+      </div>
+    )}
+  </Section>
+</div>
+
+<style>
+  .mx-table .mx-us { background: rgb(var(--color-primary) / .12); }
+  .mx-table thead .mx-us { border-radius: 12px 12px 0 0; }
+  .mx-yes { color: rgb(var(--color-accent)); font-weight: 800; font-size: 1.05rem; }
+  .mx-no { color: rgb(var(--color-muted) / .6); }
+  .mx-part { color: rgb(var(--color-text)); font-weight: 700; }
+  .mx-build { color: rgb(var(--color-primary)); font-weight: 700; }
+  .mx-half { display: inline-block; width: .85rem; height: .85rem; border-radius: 999px; border: 2px solid rgb(var(--color-primary)); background: linear-gradient(90deg, rgb(var(--color-primary)) 50%, transparent 50%); vertical-align: middle; }
+  .mx-row { transition: background .2s; }
+  .mx-row:hover { background: rgb(var(--color-text) / .05); }
+  .mx-table td, .mx-table th { transition: opacity .3s; }
+  [data-only-us-on] .mx-table [data-col]:not([data-col='0']) { opacity: .15; }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('deck-matrix', init);
+</script>

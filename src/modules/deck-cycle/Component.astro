@@ -1,0 +1,73 @@
+---
+/** deck-cycle ← el ciclo clicable: cada paso resalta sus pilares (con su estado) y enseña su pantalla si la tiene. */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
+import type { DeckCycleProps } from './schema';
+
+type Props = DeckCycleProps & ModuleBaseProps;
+const { eyebrow, title, lede, steps, pillars = [], stateLabels, note, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const en = !String(ctx?.locale ?? 'es').startsWith('es');
+const LABEL = { available: stateLabels?.available ?? (en ? 'Available' : 'Disponible'), building: stateLabels?.building ?? (en ? 'In progress' : 'En construcción'), roadmap: stateLabels?.roadmap ?? 'Roadmap' };
+const hasImages = steps.some((s) => s.image);
+---
+<div data-module="deck-cycle" class="relative overflow-hidden">
+  <Section>
+    {eyebrow && <p class="deck-eyebrow deck-in">{t(eyebrow)}</p>}
+    <h2 class="deck-title deck-in max-w-5xl" style="--d:80ms"><Rich text={t(title)} /></h2>
+    {lede && <p class="deck-lede deck-in" style="--d:140ms"><Rich text={t(lede)} /></p>}
+    <ol class="cy-steps deck-in m-0 mt-[clamp(1.25rem,4vh,2.5rem)] flex list-none flex-wrap items-center gap-2 p-0" style="--d:200ms" role="tablist">
+      {steps.map((s, i) => (
+        <li class="flex items-center gap-2">
+          <button type="button" class="cy-step" role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-step={i} data-pillars={s.pillars.join(',')} data-testid="cycle-step">{t(s.label)}</button>
+          {i < steps.length - 1 && <span class="cy-arrow" aria-hidden="true">→</span>}
+        </li>
+      ))}
+    </ol>
+    <div class:list={['mt-6 grid gap-6', hasImages && 'lg:grid-cols-[1fr_18rem]']}>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {pillars.map((p, i) => (
+          <div class="deck-card deck-in cy-pillar grid content-start gap-2" style={`--d:${280 + i * 80}ms`} data-pillar={i + 1} data-testid="cycle-pillar">
+            <div class="flex items-start justify-between gap-3">
+              <span class="font-display text-sm font-bold tracking-[0.2em] text-primary">{String(i + 1).padStart(2, '0')}</span>
+              {p.state && <span class:list={['deck-tag !text-[0.6rem]', p.state === 'available' ? 'deck-tag--accent' : p.state === 'building' ? 'deck-tag--primary' : '']} data-state={p.state}>{LABEL[p.state]}</span>}
+            </div>
+            <p class="m-0 font-display text-lg font-extrabold leading-tight">{t(p.title)}</p>
+            {p.text && <p class="m-0 text-sm text-muted"><Rich text={t(p.text)} /></p>}
+          </div>
+        ))}
+      </div>
+      {hasImages && (
+        <div class="deck-in cy-phone mx-auto w-full max-w-[18rem]" style="--d:300ms">
+          {steps.map((s, i) => (
+            <figure class="cy-shot m-0" data-shot={i} hidden={i !== 0}>
+              {s.image ? <img src={s.image} alt={t(s.label)} class="w-full rounded-[2rem] border border-line object-cover shadow-2xl" loading="lazy" /> : <div class="grid aspect-[9/19] place-content-center rounded-[2rem] border border-dashed border-line text-sm text-muted">Roadmap</div>}
+              {s.caption && <figcaption class="mt-2 text-center text-sm text-muted">{t(s.caption)}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      )}
+    </div>
+    {note && <p class="deck-in mt-6 text-xs font-bold uppercase tracking-[0.22em] text-muted" style="--d:700ms">{t(note)}</p>}
+  </Section>
+</div>
+
+<style>
+  .cy-step { border: 1px solid rgb(var(--color-text) / 0.2); border-radius: 999px; padding: 0.45rem 1rem; font-weight: 700; background: transparent; color: rgb(var(--color-text)); cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+  .cy-step:hover { border-color: rgb(var(--color-primary)); }
+  .cy-step[aria-selected='true'] { background: rgb(var(--color-primary)); border-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-contrast, 255 255 255)); }
+  .cy-arrow { color: rgb(var(--color-primary)); font-size: .9rem; }
+  .cy-pillar { transition: border-color .3s, opacity .3s, transform .3s; }
+  [data-picking] .cy-pillar { opacity: .45; }
+  [data-picking] .cy-pillar.is-on { opacity: 1; border-color: rgb(var(--color-primary) / .7); transform: translateY(-2px); }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from './client';
+  mountAll('deck-cycle', init);
+</script>

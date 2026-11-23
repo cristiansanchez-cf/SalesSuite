@@ -22,7 +22,7 @@ const total = parts.reduce((n, b) => n + b.percent, 0) || 100;
 let acc = 0;
 const arcs = parts.map((b, i) => { const a = { from: acc / total, len: b.percent / total, color: COLORS[i % COLORS.length] }; acc += b.percent; return a; });
 const pct = (n: number) => `${String(n).replace('.', ',')}%`;
-const cols = stats.length >= 4 ? 'lg:grid-cols-4' : stats.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
+const cols = stats.length % 3 === 0 ? 'lg:grid-cols-3' : stats.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-2';
 ---
 <div data-module="deck-stats" class="relative overflow-hidden">
   <Section>
