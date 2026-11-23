@@ -10,7 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { QUAL_VALUES } from './priority';
 import type { QualPack } from './pack';
 import { meterClaude } from '../usage/meter';
-import { auditText, readAudit, type WebAudit } from './web-audit';
+import { auditText, readAudit, seoProblems, type WebAudit } from './web-audit';
 
 /** Criterios que la IA puede proponer (lo que se ve desde fuera). «Decide quien te atiende», la cobertura y «no pueden
  *  validar» solo los sabe el comercial en persona; «validate» además solo si lo dicen ellos. */
@@ -355,7 +355,8 @@ export const fixtureResearch = (): ResearchApi => ({
     const w = i.webAudit;
     const checks = (i.focus ?? '').split('\n').map((x) => x.replace(/^[-•*\s]+/, '').trim()).filter(Boolean).slice(0, 6).map((point) => {
       const legal = /cookies|privacidad|legal|normativa/i.test(point);
-      const verdict = !w || !w.ok ? 'unknown' : legal ? (w.legal.privacy && w.legal.cookies && w.cookieBanner !== false ? 'ok' : 'problem') : /antigua|web/i.test(point) ? (w.mobile && w.https ? 'ok' : 'problem') : 'unknown';
+      const verdict = !w || !w.ok ? 'unknown' : legal ? (w.legal.privacy && w.legal.cookies && w.cookieBanner !== false ? 'ok' : 'problem')
+        : /seo/i.test(point) ? (seoProblems(w).length ? 'problem' : 'ok') : /antigua|web/i.test(point) ? (w.mobile && w.https ? 'ok' : 'problem') : 'unknown';
       return { point: point.slice(0, 60), verdict, detail: verdict === 'unknown' ? 'Ejemplo de prueba: no se ha comprobado.' : verdict === 'problem' ? 'Ejemplo de prueba: según la revisión de su web, falta.' : 'Ejemplo de prueba: en orden.', source: '' };
     });
     // Sin cualificación en el espacio (§45): lo general, sin nada de la noche.

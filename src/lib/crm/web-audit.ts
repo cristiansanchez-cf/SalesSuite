@@ -24,6 +24,12 @@ export interface WebAudit {
   cookieBanner: boolean | null;
   /** Analítica y píxeles que carga («Google Analytics», «Meta Pixel»…). */
   trackers: string[];
+  /**
+   * SEO básico de la portada (criterio de Cristian: «ver si el SEO está mal… lo básico para saber que necesitan ayuda»):
+   * título, descripción, un H1, idioma, vista previa para redes (Open Graph), imágenes sin texto alternativo y si pide
+   * no salir en buscadores. Opcional: lo guardado antes de tenerlo no lo trae.
+   */
+  seo?: { title: string | null; description: boolean; h1: number; lang: boolean; og: boolean; images: number; noAlt: number; noindex: boolean };
 }
 
 export const unreachable = (url: string): WebAudit => ({ url, ok: false, https: url.startsWith('https:'), mobile: false, year: null, platform: null, old: [], legal: { notice: false, privacy: false, cookies: false, terms: false }, cookieBanner: null, trackers: [] });
@@ -75,7 +81,20 @@ export function auditHtml(html: string, url: URL, now = new Date()): WebAudit {
   };
   const builtIn = platform && /^(Wix|Squarespace|Shopify|Webflow|Framer)/i.test(platform);
   const cookieBanner = CMP.test(html) || COOKIE_TEXT.test(plain) ? true : builtIn ? null : false;
+  const imgs = [...html.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
+  const titleText = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1];
+  const seo = {
+    title: titleText ? text(titleText).trim().slice(0, 120) || null : null,
+    description: !!(meta('description') && (attr(meta('description')!, 'content') ?? '').trim().length >= 30),
+    h1: (html.match(/<h1\b/gi) ?? []).length,
+    lang: /<html\b[^>]*\blang\s*=\s*["'][a-z]{2}/i.test(html),
+    og: !!(meta('og:title') || meta('og:image')),
+    images: imgs.length,
+    noAlt: imgs.filter((t) => !(attr(t, 'alt') ?? '').trim()).length,
+    noindex: /noindex/i.test(attr(meta('robots') ?? '', 'content') ?? ''),
+  };
   return {
+    seo,
     url: url.toString(), ok: true, https: url.protocol === 'https:', mobile: !!meta('viewport'),
     year: years.length ? Math.max(...years) : null, platform, old, legal, cookieBanner,
     trackers: TRACKERS.filter(([re]) => re.test(html)).map(([, n]) => n),
@@ -96,6 +115,26 @@ export function auditProblems(a: WebAudit, now = new Date()): string[] {
   if (!a.legal.cookies) p.push('cookies');
   if (a.cookieBanner === false) p.push('banner');
   if (a.cookieBanner === false && a.trackers.length) p.push('trackersNoConsent');
+  for (const k of seoProblems(a)) p.push(k);
+  return p;
+}
+
+/**
+ * Lo que falla del SEO básico: sin título o con uno que no dice nada (menos de 10 letras o más de 70), sin descripción,
+ * sin H1, sin idioma, sin vista previa para redes, la mitad o más de las imágenes sin texto alternativo, o pide no salir
+ * en buscadores.
+ */
+export function seoProblems(a: WebAudit): string[] {
+  const s = a.seo;
+  if (!a.ok || !s) return [];
+  const p: string[] = [];
+  if (!s.title || s.title.length < 10 || s.title.length > 70) p.push('seoTitle');
+  if (!s.description) p.push('seoDescription');
+  if (s.h1 === 0) p.push('seoH1');
+  if (!s.lang) p.push('seoLang');
+  if (!s.og) p.push('seoOg');
+  if (s.images >= 2 && s.noAlt * 2 >= s.images) p.push('seoAlt');
+  if (s.noindex) p.push('seoNoindex');
   return p;
 }
 
@@ -110,6 +149,7 @@ export function auditText(a: WebAudit): string {
     `Enlaces en la portada → aviso legal: ${yn(a.legal.notice)}, privacidad: ${yn(a.legal.privacy)}, cookies: ${yn(a.legal.cookies)}, términos: ${yn(a.legal.terms)}`,
     `Banner o gestor de cookies: ${a.cookieBanner === null ? 'no se puede saber (lo pone la plataforma)' : yn(a.cookieBanner)}`,
     `Analítica y píxeles: ${a.trackers.join(', ') || 'ninguno visible'}`,
+    ...(a.seo ? [`SEO básico → título: ${a.seo.title ? `«${a.seo.title}»` : 'no tiene'}, meta descripción: ${yn(a.seo.description)}, H1: ${a.seo.h1}, idioma declarado: ${yn(a.seo.lang)}, vista previa para redes (Open Graph): ${yn(a.seo.og)}, imágenes sin texto alternativo: ${a.seo.noAlt} de ${a.seo.images}, pide no salir en buscadores (noindex): ${yn(a.seo.noindex)}`] : []),
   ].join('\n');
 }
 
@@ -122,5 +162,9 @@ export function readAudit(v: unknown): WebAudit | null {
     platform: typeof a.platform === 'string' ? a.platform.slice(0, 40) : null, old: Array.isArray(a.old) ? a.old.filter((x) => typeof x === 'string').slice(0, 8) : [],
     legal: { notice: !!a.legal.notice, privacy: !!a.legal.privacy, cookies: !!a.legal.cookies, terms: !!a.legal.terms },
     cookieBanner: typeof a.cookieBanner === 'boolean' ? a.cookieBanner : null, trackers: Array.isArray(a.trackers) ? a.trackers.filter((x) => typeof x === 'string').slice(0, 8) : [],
+    ...(a.seo && typeof a.seo === 'object' ? { seo: {
+      title: typeof a.seo.title === 'string' ? a.seo.title.slice(0, 120) : null, description: !!a.seo.description, h1: Number(a.seo.h1) || 0, lang: !!a.seo.lang, og: !!a.seo.og,
+      images: Number(a.seo.images) || 0, noAlt: Number(a.seo.noAlt) || 0, noindex: !!a.seo.noindex,
+    } } : {}),
   };
 }

@@ -390,7 +390,7 @@ así poder ofrecerles páginas web».
 
 - **Lo de siempre** (admin): Configurar → Campos del CRM → **Investigación con IA**.
   - Qué se quiere saber de cada empresa (un punto por línea), con atajos: Web antigua; Aviso legal, privacidad y
-    cookies; Redes sociales; Reseñas; Publicidad.
+    cookies; SEO; Redes sociales; Reseñas; Publicidad.
   - **Revisar su web**: los atajos de la web lo marcan solos.
   - Se guarda en `crm_settings.research` (migración 20270115; `src/lib/crm/research-focus.ts`).
 - **En la ficha**, junto a «Investigar con IA»: «Qué mirar», ya escrito con lo de siempre. Se puede cambiar solo para
@@ -405,11 +405,19 @@ así poder ofrecerles páginas web».
   - Si se ve un banner o gestor de cookies. En Wix, Squarespace, Shopify, Webflow y Framer «no se puede saber»: lo
     pone la plataforma.
   - Qué analítica y píxeles carga, y si los carga sin banner.
+  - **SEO básico** (criterio de Cristian: «ver si el SEO está mal… lo básico para saber que necesitan ayuda»):
+    - título de la página (sin él, o con menos de 10 letras o más de 70, mal);
+    - descripción para Google, un H1, idioma declarado y vista previa para redes (Open Graph);
+    - imágenes sin texto alternativo (la mitad o más, mal);
+    - si pide no salir en buscadores (noindex).
+    Atajo «SEO».
 - **En la ficha**, «Su web» con ✓ / ✗ / ? por cosa y «N cosas a mejorar». Si no se pudo abrir: «puede estar caída»;
   sin web: «No tiene web conocida». Las dos son oportunidad para quien vende webs.
 - **La IA** recibe lo comprobado como hecho fiable y contesta **cada punto** en `checks`: En orden, A mejorar o Sin
   comprobar, con lo que ha visto y su fuente. Se ve en «Lo que queríais saber». Lo no comprobado no se supone.
 - Pruebas: `web-audit.test.ts` y `research.test.ts` (§ qué mirar). Smoke: `scripts/smoke-research-focus.cjs`.
+- **Oquea** lo tiene activado (migración 20270116): web antigua, aviso legal/privacidad/cookies y SEO, con «Revisar su
+  web». Solo si su admin no había puesto nada.
 
 ## 14. Ordenar ciudades (hecho)
 

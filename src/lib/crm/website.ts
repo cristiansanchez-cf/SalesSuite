@@ -240,7 +240,8 @@ export function fixtureWebsite(): WebsiteApi {
     async audit(raw) {
       if (!/^https:\/\/[a-z0-9]+\.test\//.test(raw)) return unreachable(raw.slice(0, 300));
       return { url: raw.replace(/^https:/, 'http:'), ok: true, https: false, mobile: false, year: 2016, platform: 'WordPress 4.9.8', old: ['jQuery 1.12.4'],
-        legal: { notice: true, privacy: false, cookies: false, terms: false }, cookieBanner: false, trackers: ['Google Analytics'] };
+        legal: { notice: true, privacy: false, cookies: false, terms: false }, cookieBanner: false, trackers: ['Google Analytics'],
+        seo: { title: 'Inicio', description: false, h1: 0, lang: false, og: false, images: 12, noAlt: 9, noindex: false } };
     },
   };
 }

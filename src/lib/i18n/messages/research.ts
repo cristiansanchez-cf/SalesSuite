@@ -26,8 +26,9 @@ export const researchMessages = defineMessages({
         socials: '¿Cuida sus redes sociales? (cuándo publicó por última vez, cuántos seguidores)',
         reviews: '¿Qué dicen sus reseñas de Google? (nota y lo que más se repite)',
         ads: '¿Hace publicidad online? (anuncios de Google o de Meta)',
+        seo: '¿Tiene el SEO básico bien? (título, descripción para Google, encabezados, si se deja encontrar)',
       },
-      presetLabels: { webOld: 'Web antigua', webLegal: 'Aviso legal, privacidad y cookies', socials: 'Redes sociales', reviews: 'Reseñas', ads: 'Publicidad' },
+      presetLabels: { webOld: 'Web antigua', webLegal: 'Aviso legal, privacidad y cookies', socials: 'Redes sociales', reviews: 'Reseñas', ads: 'Publicidad', seo: 'SEO' },
     },
     checks: 'Lo que queríais saber', verdict: { ok: 'En orden', problem: 'A mejorar', unknown: 'Sin comprobar' },
     web: {
@@ -35,6 +36,7 @@ export const researchMessages = defineMessages({
       https: 'Candado (HTTPS)', mobile: 'Hecha para el móvil', year: (y: number) => `Año del copyright: ${y}`, noYear: 'No pone año de copyright',
       platform: (p: string) => `Hecha con ${p}`, old: (x: string) => `Señales de web antigua: ${x}`, notice: 'Aviso legal', privacy: 'Política de privacidad',
       cookies: 'Política de cookies', terms: 'Términos y condiciones', banner: 'Banner de cookies', bannerUnknown: 'Banner de cookies: lo pone su plataforma (no se puede comprobar)',
+      seo: 'SEO básico', seoTitle: (t: string) => `Título: «${t}»`, seoNoTitle: 'Sin título de página', seoDescription: 'Descripción para Google (meta description)', seoH1: 'Un titular principal (H1)', seoLang: 'Idioma declarado', seoOg: 'Vista previa al compartir en redes', seoAlt: (n: number, t: number) => `${n} de ${t} imágenes sin texto alternativo`, seoAltOk: 'Imágenes con texto alternativo', seoNoindex: 'Pide no salir en Google (noindex)',
       trackers: (x: string) => `Analítica y píxeles: ${x}`, trackersNoConsent: 'Carga analítica o píxeles sin banner de cookies', checked: 'Comprobado por la app al abrir su portada.',
     },
     settings: {
@@ -67,8 +69,9 @@ export const researchMessages = defineMessages({
         socials: 'Do they look after their social media? (last post, followers)',
         reviews: 'What do their Google reviews say? (rating and what comes up most)',
         ads: 'Do they advertise online? (Google or Meta ads)',
+        seo: 'Is their basic SEO right? (title, description for Google, headings, can they be found)',
       },
-      presetLabels: { webOld: 'Old website', webLegal: 'Legal notice, privacy and cookies', socials: 'Social media', reviews: 'Reviews', ads: 'Advertising' },
+      presetLabels: { webOld: 'Old website', webLegal: 'Legal notice, privacy and cookies', socials: 'Social media', reviews: 'Reviews', ads: 'Advertising', seo: 'SEO' },
     },
     checks: 'What you wanted to know', verdict: { ok: 'Fine', problem: 'To improve', unknown: 'Not checked' },
     web: {
@@ -76,6 +79,7 @@ export const researchMessages = defineMessages({
       https: 'Padlock (HTTPS)', mobile: 'Built for mobile', year: (y: number) => `Copyright year: ${y}`, noYear: 'No copyright year',
       platform: (p: string) => `Built with ${p}`, old: (x: string) => `Signs of an old website: ${x}`, notice: 'Legal notice', privacy: 'Privacy policy',
       cookies: 'Cookie policy', terms: 'Terms and conditions', banner: 'Cookie banner', bannerUnknown: 'Cookie banner: provided by their platform (cannot be checked)',
+      seo: 'Basic SEO', seoTitle: (t: string) => `Title: “${t}”`, seoNoTitle: 'No page title', seoDescription: 'Description for Google (meta description)', seoH1: 'One main heading (H1)', seoLang: 'Language declared', seoOg: 'Preview when shared on social media', seoAlt: (n: number, t: number) => `${n} of ${t} images without alt text`, seoAltOk: 'Images with alt text', seoNoindex: 'Asks not to appear on Google (noindex)',
       trackers: (x: string) => `Analytics and pixels: ${x}`, trackersNoConsent: 'Loads analytics or pixels without a cookie banner', checked: 'Checked by the app when opening their home page.',
     },
     settings: {
@@ -108,8 +112,9 @@ export const researchMessages = defineMessages({
         socials: 'Cuida das redes sociais? (última publicação, seguidores)',
         reviews: 'O que dizem as avaliações do Google? (nota e o que mais se repete)',
         ads: 'Faz publicidade online? (anúncios do Google ou da Meta)',
+        seo: 'O SEO básico está certo? (título, descrição para o Google, títulos, se dá para encontrar)',
       },
-      presetLabels: { webOld: 'Site antigo', webLegal: 'Aviso legal, privacidade e cookies', socials: 'Redes sociais', reviews: 'Avaliações', ads: 'Publicidade' },
+      presetLabels: { webOld: 'Site antigo', webLegal: 'Aviso legal, privacidade e cookies', socials: 'Redes sociais', reviews: 'Avaliações', ads: 'Publicidade', seo: 'SEO' },
     },
     checks: 'O que vocês queriam saber', verdict: { ok: 'Em ordem', problem: 'A melhorar', unknown: 'Sem verificar' },
     web: {
@@ -117,6 +122,7 @@ export const researchMessages = defineMessages({
       https: 'Cadeado (HTTPS)', mobile: 'Feito para celular', year: (y: number) => `Ano do copyright: ${y}`, noYear: 'Sem ano de copyright',
       platform: (p: string) => `Feito com ${p}`, old: (x: string) => `Sinais de site antigo: ${x}`, notice: 'Aviso legal', privacy: 'Política de privacidade',
       cookies: 'Política de cookies', terms: 'Termos e condições', banner: 'Banner de cookies', bannerUnknown: 'Banner de cookies: vem da plataforma (não dá para verificar)',
+      seo: 'SEO básico', seoTitle: (t: string) => `Título: «${t}»`, seoNoTitle: 'Sem título de página', seoDescription: 'Descrição para o Google (meta description)', seoH1: 'Um título principal (H1)', seoLang: 'Idioma declarado', seoOg: 'Prévia ao compartilhar nas redes', seoAlt: (n: number, t: number) => `${n} de ${t} imagens sem texto alternativo`, seoAltOk: 'Imagens com texto alternativo', seoNoindex: 'Pede para não aparecer no Google (noindex)',
       trackers: (x: string) => `Analytics e pixels: ${x}`, trackersNoConsent: 'Carrega analytics ou pixels sem banner de cookies', checked: 'Verificado pelo app ao abrir a página inicial.',
     },
     settings: {
@@ -149,8 +155,9 @@ export const researchMessages = defineMessages({
         socials: 'SNS를 관리하나요? (마지막 게시물, 팔로워)',
         reviews: 'Google 리뷰는 어떤가요? (평점과 자주 나오는 내용)',
         ads: '온라인 광고를 하나요? (Google 또는 Meta 광고)',
+        seo: '기본 SEO는 괜찮나요? (제목, Google용 설명, 제목 구조, 검색 노출)',
       },
-      presetLabels: { webOld: '오래된 웹사이트', webLegal: '법적 고지·개인정보·쿠키', socials: 'SNS', reviews: '리뷰', ads: '광고' },
+      presetLabels: { webOld: '오래된 웹사이트', webLegal: '법적 고지·개인정보·쿠키', socials: 'SNS', reviews: '리뷰', ads: '광고', seo: 'SEO' },
     },
     checks: '알고 싶었던 것', verdict: { ok: '양호', problem: '개선 필요', unknown: '확인 안 됨' },
     web: {
@@ -158,6 +165,7 @@ export const researchMessages = defineMessages({
       https: '보안 연결(HTTPS)', mobile: '모바일 대응', year: (y: number) => `저작권 연도: ${y}`, noYear: '저작권 연도 없음',
       platform: (p: string) => `${p}로 제작`, old: (x: string) => `오래된 웹사이트 징후: ${x}`, notice: '법적 고지', privacy: '개인정보 처리방침',
       cookies: '쿠키 정책', terms: '이용 약관', banner: '쿠키 배너', bannerUnknown: '쿠키 배너: 플랫폼이 제공(확인 불가)',
+      seo: '기본 SEO', seoTitle: (t: string) => `제목: 「${t}」`, seoNoTitle: '페이지 제목 없음', seoDescription: 'Google용 설명(meta description)', seoH1: '주요 제목 하나(H1)', seoLang: '언어 선언', seoOg: 'SNS 공유 미리보기', seoAlt: (n: number, t: number) => `이미지 ${t}개 중 ${n}개 대체 텍스트 없음`, seoAltOk: '이미지 대체 텍스트 있음', seoNoindex: 'Google에 표시하지 않도록 요청(noindex)',
       trackers: (x: string) => `분석 도구·픽셀: ${x}`, trackersNoConsent: '쿠키 배너 없이 분석 도구나 픽셀을 불러옴', checked: '앱이 첫 페이지를 열어 확인했습니다.',
     },
     settings: {

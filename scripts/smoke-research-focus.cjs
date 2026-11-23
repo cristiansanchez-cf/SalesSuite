@@ -47,6 +47,8 @@ const bg = async (pg, click) => { const n = Number(await pg.evaluate(() => docum
   const rows = await p.$$eval('[data-testid=ai-web-row]', (xs) => xs.map((x) => `${x.getAttribute('data-ok')} ${x.textContent.trim()}`));
   assert(rows.some((r) => r.startsWith('false') && r.includes('HTTPS')) && rows.some((r) => r.startsWith('false') && r.includes('privacidad')) && rows.some((r) => r.startsWith('true') && r.includes('Aviso legal')), `✓/✗ por cosa (${rows.length} filas)`);
   assert(/\d+ cosas a mejorar/.test(await p.textContent('[data-testid=ai-web-problems]')), 'cuántas cosas a mejorar');
+  const seo = await p.textContent('[data-testid=ai-web-seo]');
+  assert(seo.includes('Título: «Inicio»') && seo.includes('9 de 12 imágenes sin texto alternativo'), 'SEO básico, con ✓/✗');
   const checks = await p.$$eval('[data-testid=ai-check]', (xs) => xs.map((x) => x.getAttribute('data-verdict')));
   assert(checks.length === 2 && checks.every((v) => v === 'problem'), `«Lo que queríais saber»: cada punto (${checks})`);
 

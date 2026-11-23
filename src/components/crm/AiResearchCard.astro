@@ -61,6 +61,14 @@ const webRows: Array<[boolean | null, string]> = audit && audit.ok ? [
   [audit.cookieBanner, audit.cookieBanner === null ? W.bannerUnknown : W.banner],
   ...(audit.trackers.length ? [[probs.includes('trackersNoConsent') ? false : true, probs.includes('trackersNoConsent') ? W.trackersNoConsent : W.trackers(audit.trackers.join(', '))] as [boolean, string]] : []),
 ] : [];
+// SEO básico (lo que se ve en el código de la portada).
+const sp = audit?.ok ? audit.seo : undefined;
+const seoRows: Array<[boolean, string]> = sp ? [
+  [!!sp.title && sp.title.length >= 10 && sp.title.length <= 70, sp.title ? W.seoTitle(sp.title) : W.seoNoTitle],
+  [sp.description, W.seoDescription], [sp.h1 > 0, W.seoH1], [sp.lang, W.seoLang], [sp.og, W.seoOg],
+  ...(sp.images > 0 ? [[!(sp.images >= 2 && sp.noAlt * 2 >= sp.images), sp.noAlt ? W.seoAlt(sp.noAlt, sp.images) : W.seoAltOk] as [boolean, string]] : []),
+  ...(sp.noindex ? [[false, W.seoNoindex] as [boolean, string]] : []),
+] : [];
 const VERDICT_CLASS = { ok: 'co-badge co-badge--soft', problem: 'co-badge co-badge--attention', unknown: 'co-badge' } as const;
 const preview = focus.focus.split('\n')[0]?.slice(0, 70) ?? '';
 ---
@@ -91,6 +99,19 @@ const preview = focus.focus.split('\n')[0]?.slice(0, 70) ?? '';
                   </li>
                 ))}
               </ul>
+              {seoRows.length > 0 && (
+                <>
+                  <p class="co-meta m-0 mt-1 text-xs font-semibold uppercase tracking-wide">{W.seo}</p>
+                  <ul class="m-0 grid gap-1 p-0 text-sm sm:grid-cols-2" data-testid="ai-web-seo">
+                    {seoRows.map(([ok, txt]) => (
+                      <li class="flex list-none items-start gap-2" data-testid="ai-web-row" data-ok={String(ok)}>
+                        <span aria-hidden="true" class:list={['w-4 shrink-0 font-bold', ok ? 'text-[color:var(--console-good,#15803d)]' : 'text-[color:var(--console-attention,#b42318)]']}>{ok ? '✓' : '✗'}</span>
+                        <span class="min-w-0 break-words" data-ugc>{txt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               <p class="co-meta m-0 text-xs"><a href={safeHref(audit.url)} target="_blank" rel="noopener nofollow">{host(audit.url)}</a> · {W.checked}</p>
             </>
           )}
