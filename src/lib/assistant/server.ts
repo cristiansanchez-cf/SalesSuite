@@ -23,7 +23,7 @@ export async function assistantDb(): Promise<AssistantDb | null> {
   return supabaseAssistantDb(createClient(env('PUBLIC_SUPABASE_URL')!, key, { auth: { persistSession: false, autoRefreshToken: false } }));
 }
 
-async function tenantById(id: string) {
+export async function tenantById(id: string) {
   if (appMode() === 'demo') {
     const { demoDb } = await import('../data/store');
     const slug = demoDb().tenant.find((t) => t.id === id)?.slug;
