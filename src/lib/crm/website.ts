@@ -54,7 +54,7 @@ export type WebGet = (url: URL, signal: AbortSignal) => Promise<WebResponse>;
  * GET con Node que comprueba la dirección AL CONECTAR (el `lookup` de la conexión rechaza las internas): así no vale
  * engañar al servidor cambiando el DNS entre la comprobación y la conexión (DNS rebinding).
  */
-export function nodeGet(check: (ips: string[]) => boolean = (ips) => ips.length > 0 && !ips.some(privateIp)): WebGet {
+export function nodeGet(check: (ips: string[]) => boolean = (ips) => ips.length > 0 && !ips.some(privateIp), want: { accept: string; type: RegExp } = { accept: 'text/html', type: /html/i }): WebGet {
   return async (url, signal) => {
     const [mod, dns] = await Promise.all([url.protocol === 'https:' ? import('node:https') : import('node:http'), import('node:dns')]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,11 +64,11 @@ export function nodeGet(check: (ips: string[]) => boolean = (ips) => ips.length 
       return opts?.all ? cb(null, addrs) : cb(null, addrs[0].address, addrs[0].family);
     });
     return new Promise<WebResponse>((resolve, reject) => {
-      const req = mod.request(url, { method: 'GET', lookup, signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; CofundoVentas/1.0)', accept: 'text/html' } }, (res) => {
+      const req = mod.request(url, { method: 'GET', lookup, signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; CofundoVentas/1.0)', accept: want.accept } }, (res) => {
         const status = res.statusCode ?? 0;
         const type = String(res.headers['content-type'] ?? '');
         const location = typeof res.headers.location === 'string' ? res.headers.location : null;
-        if (status >= 300 && status < 400 || !/html/i.test(type || 'text/html')) { res.destroy(); return resolve({ status, location, type, body: '' }); }
+        if (status >= 300 && status < 400 || !want.type.test(type || want.accept)) { res.destroy(); return resolve({ status, location, type, body: '' }); }
         let body = '';
         res.setEncoding('utf8');
         res.on('data', (c: string) => { body += c; if (body.length > 800_000) res.destroy(); });

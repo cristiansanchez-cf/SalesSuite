@@ -14,8 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
   try { meta = (await request.json()) as Record<string, unknown>; } catch { return oauthError('invalid_client_metadata', 'El cuerpo debe ser JSON'); }
   const uris = Array.isArray(meta?.redirect_uris) ? (meta.redirect_uris as unknown[]).filter((x): x is string => typeof x === 'string') : [];
   if (!uris.length || uris.length > 10 || !uris.every(validRedirect)) return oauthError('invalid_redirect_uri', 'redirect_uris: https, http en localhost o el esquema de una app');
-  const method = meta.token_endpoint_auth_method;
-  if (method !== undefined && method !== 'none') return oauthError('invalid_client_metadata', 'Solo clientes públicos (token_endpoint_auth_method: none) con PKCE');
+  // Pida el método que pida, se le registra como público (none): no damos secretos y el PKCE es la protección.
   const c = await registerClient(clientName(meta.client_name, uris), uris);
   return json({
     client_id: c.clientId, client_id_issued_at: Math.floor(Date.now() / 1000), client_name: c.name, redirect_uris: c.redirectUris,

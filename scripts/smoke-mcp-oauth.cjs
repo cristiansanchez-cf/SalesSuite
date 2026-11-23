@@ -30,12 +30,15 @@ const rpc = (token) => fetch(`${BASE}/api/mcp`, { method: 'POST', headers: { 'co
   assert(prm.resource === `${BASE}/api/mcp` && prm.authorization_servers?.[0] === BASE, 'recurso protegido: la misma URL y su servidor de autorización');
   const as = await (await fetch(`${prm.authorization_servers[0]}/.well-known/oauth-authorization-server`)).json();
   assert(as.code_challenge_methods_supported?.includes('S256') && as.registration_endpoint && as.token_endpoint && as.authorization_endpoint, 'servidor de autorización: PKCE S256, registro, token');
+  assert(as.client_id_metadata_document_supported === true, 'servidor de autorización: acepta CIMD (lo que claude.ai usa por defecto)');
 
   // 2. Registro dinámico.
   const bad = await fetch(as.registration_endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Malo', redirect_uris: ['http://evil.example/cb'] }) });
   assert(bad.status === 400, 'registro: http fuera de localhost, no');
   const reg = await (await fetch(as.registration_endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Claude', redirect_uris: ['http://127.0.0.1/callback', 'https://claude.ai/api/mcp/auth_callback'], token_endpoint_auth_method: 'none' }) })).json();
   assert(!!reg.client_id, 'registro dinámico: client_id');
+  const regSecret = await fetch(as.registration_endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Con secreto', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], token_endpoint_auth_method: 'client_secret_post' }) });
+  assert(regSecret.status === 201 && (await regSecret.json()).token_endpoint_auth_method === 'none', 'registro: pida el método que pida, queda como público (none)');
 
   // 3. «Autorizar» (sin sesión: login y vuelve).
   const verifier = crypto.randomBytes(32).toString('base64url');
@@ -56,6 +59,8 @@ const rpc = (token) => fetch(`${BASE}/api/mcp`, { method: 'POST', headers: { 'co
   // Una vuelta no registrada: se queda (no redirige).
   await p.goto(authUrl('https://evil.example/cb'));
   assert(!(await p.locator('[data-testid=oauth-consent]').count()) && p.url().startsWith(BASE), 'vuelta no registrada: no se va a ningún sitio');
+  await p.goto(authUrl('https://claude.ai/api/mcp/auth_callback').replace(`client_id=${reg.client_id}`, `client_id=${encodeURIComponent('https://ficha-que-no-existe.invalid/cliente')}`));
+  assert(!(await p.locator('[data-testid=oauth-consent]').count()) && p.url().startsWith(BASE), 'CIMD que no se puede leer: se queda, sin error');
 
   // 4. Token (form-urlencoded).
   const wrong = await fetch(as.token_endpoint, form({ grant_type: 'authorization_code', code, client_id: reg.client_id, redirect_uri: redirect, code_verifier: crypto.randomBytes(32).toString('base64url') }));

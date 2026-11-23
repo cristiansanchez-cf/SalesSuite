@@ -46,3 +46,15 @@ reset role;
 update public.mcp_token set token_hash = repeat('7', 64), refresh_hash = repeat('8', 64) where token_hash = repeat('e', 64);
 select pg_temp.assert((select count(*) = 1 from public.mcp_token where refresh_hash = repeat('8', 64)), 'el servidor rota');
 select pg_temp.assert((select count(*) = 0 from public.oauth_client), 'oauth_client: vacía y sin acceso para nadie más');
+
+-- CIMD (migración 20270119): el client_id también puede ser la URL https de la ficha del cliente; nada más raro.
+insert into public.oauth_client (client_id, name, redirect_uris) values ('https://claude.ai/oauth/mcp-oauth-client-metadata', 'Claude', '{https://claude.ai/api/mcp/auth_callback}');
+insert into public.oauth_client (client_id, name, redirect_uris) values ('clienteDinamico_1234', 'Cursor', '{cursor://anysphere.cursor-mcp/oauth/callback}');
+do $$ begin
+  insert into public.oauth_client (client_id, name, redirect_uris) values ('http://claude.ai/x', 'X', '{https://x.test/cb}');
+  raise exception 'ASSERT FAILED: client_id http';
+exception when check_violation then null; end $$;
+do $$ begin
+  insert into public.oauth_client (client_id, name, redirect_uris) values ('https://x.test/' || repeat('a', 200), 'X', '{https://x.test/cb}');
+  raise exception 'ASSERT FAILED: client_id demasiado largo';
+exception when check_violation then null; end $$;

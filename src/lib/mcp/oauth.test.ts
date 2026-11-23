@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, test } from 'vitest';
-import { authorizationServer, clientName, pkceOk, protectedResource, redirectMatches, validRedirect, wwwAuthenticate } from './oauth';
+import { authorizationServer, clientName, getClient, isCimdId, parseCimd, pkceOk, protectedResource, redirectMatches, setCimdGet, validRedirect, wwwAuthenticate } from './oauth';
 
 describe('OAuth del MCP: reglas', () => {
   test('PKCE S256', () => {
@@ -39,5 +39,42 @@ describe('OAuth del MCP: reglas', () => {
     expect(protectedResource('https://enjoy.cofundo.io')).toMatchObject({ resource: 'https://enjoy.cofundo.io/api/mcp', authorization_servers: ['https://enjoy.cofundo.io'] });
     expect(authorizationServer('https://x.io')).toMatchObject({ issuer: 'https://x.io', code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none'] });
     expect(wwwAuthenticate('https://x.io')).toBe('Bearer resource_metadata="https://x.io/.well-known/oauth-protected-resource/api/mcp", scope="crm offline_access"');
+  });
+});
+
+describe('OAuth del MCP: CIMD (la identidad publicada de Claude)', () => {
+  const ID = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+  const DOC = { client_id: ID, client_name: 'Claude', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], token_endpoint_auth_method: 'none' };
+  test('qué client_id es una URL de ficha', () => {
+    expect(isCimdId(ID)).toBe(true);
+    expect(isCimdId('http://claude.ai/oauth/x')).toBe(false);
+    expect(isCimdId('https://claude.ai/')).toBe(false);
+    expect(isCimdId('https://claude.ai/a#b')).toBe(false);
+    expect(isCimdId('https://127.0.0.1/x')).toBe(false);
+    expect(isCimdId('https://localhost/x')).toBe(false);
+    expect(isCimdId('https://u:p@claude.ai/x')).toBe(false);
+    expect(isCimdId('https://claude.ai/a/../b')).toBe(false);
+    expect(isCimdId('https://claude.ai/' + 'a'.repeat(200))).toBe(false);
+    expect(isCimdId('abcdefghijklmnop1234')).toBe(false);
+  });
+  test('la ficha tiene que ser de ella misma y traer vueltas válidas', () => {
+    expect(parseCimd(ID, DOC)).toEqual({ clientId: ID, name: 'Claude', redirectUris: DOC.redirect_uris });
+    expect(parseCimd(ID, { ...DOC, client_id: 'https://evil.test/x' })).toBeNull();
+    expect(parseCimd(ID, { ...DOC, redirect_uris: ['javascript:alert(1)'] })).toBeNull();
+    expect(parseCimd(ID, { ...DOC, redirect_uris: [] })).toBeNull();
+    expect(parseCimd(ID, [DOC])).toBeNull();
+    expect(parseCimd(ID, null)).toBeNull();
+  });
+  test('getClient lee la ficha (y la guarda); si luego no se puede leer, vale la guardada', async () => {
+    process.env.DEMO_MODE = '1';
+    let calls = 0;
+    setCimdGet(async (url) => { calls++; return { status: 200, location: null, type: 'application/json', body: JSON.stringify({ ...DOC, client_id: url.href }) }; });
+    expect(await getClient(ID)).toEqual({ clientId: ID, name: 'Claude', redirectUris: DOC.redirect_uris });
+    await getClient(ID);
+    expect(calls).toBe(1);   // la segunda, de la caché
+    setCimdGet(async () => { throw new Error('caída'); });
+    expect((await getClient(ID))?.name).toBe('Claude');
+    setCimdGet(async () => ({ status: 404, location: null, type: 'text/html', body: '' }));
+    expect(await getClient('https://otra.example.com/ficha')).toBeNull();
   });
 });

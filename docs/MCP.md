@@ -43,9 +43,21 @@ Lo aprendido del Cerebro (AIBrains `docs/fase-2-auth.md`) se aplica igual:
   - `/.well-known/oauth-protected-resource[/api/mcp]` (RFC 9728): `resource` es igual, carácter a carácter, a la URL que
     se pega.
   - `/.well-known/oauth-authorization-server` (y `openid-configuration`, RFC 8414).
-  - Los sirve el middleware (`src/lib/mcp/well-known.ts`).
+  - Los sirve una ruta de verdad, `src/pages/.well-known/[...doc].ts` (lo que dicen: `src/lib/mcp/well-known.ts`). En
+    Vercel, una dirección sin ruta sale con 404 aunque el middleware conteste. Así falló el primer «Agregar conector»
+    en claude.ai: «No se pudo registrar con el servicio de inicio de sesión».
+- **CIMD** (Client ID Metadata Documents), lo que claude.ai usa por defecto («Usar la identidad publicada de Claude»):
+  - No se registra: su `client_id` es la URL https de su ficha (nombre y vueltas). El servidor lo anuncia con
+    `client_id_metadata_document_supported: true`.
+  - La ficha se lee al usarla, con el mismo cuidado que la web de una empresa: solo direcciones públicas (comprobado
+    al conectar), 5 s, JSON, como mucho 64 KB. Tiene que decir que es ella misma (`client_id` igual a su URL) y traer
+    vueltas válidas.
+  - Se guarda en `oauth_client`, con caché de 10 minutos. Si luego no se puede leer, vale la guardada: un fallo suyo no
+    corta un refresco.
+  - Migración 20270119: el `client_id` puede ser también una URL https (como mucho 200 caracteres).
 - **Registro dinámico** `/oauth/register` (RFC 7591):
-  - Solo clientes públicos (sin secreto): el PKCE S256 es obligatorio.
+  - Solo clientes públicos (sin secreto): el PKCE S256 es obligatorio. Pida el método que pida, se le registra como
+    `none`.
   - Vueltas permitidas: https, http solo en localhost/127.0.0.1, o el esquema propio de una app (`cursor://…`). Nunca
     `javascript:`, `data:`, `file:`…
 - **Autorizar** `/admin/oauth/authorize`:
@@ -65,8 +77,8 @@ Lo aprendido del Cerebro (AIBrains `docs/fase-2-auth.md`) se aplica igual:
   - La persona solo puede revocar.
   - El servidor puede rotar (el guard deja cambiar token y refresco solo fuera de los roles `authenticated`/`anon`).
 - Pruebas:
-  - `src/lib/mcp/oauth.test.ts`: PKCE, vueltas, coincidencia y metadatos.
-  - Test SQL 94: la persona no rota; el servidor sí.
+  - `src/lib/mcp/oauth.test.ts`: PKCE, vueltas, coincidencia, metadatos y CIMD.
+  - Test SQL 94: la persona no rota; el servidor sí; `client_id` de CIMD sí, http o demasiado largo no.
   - `scripts/smoke-mcp-oauth.cjs`: el flujo entero, como claude.ai, y lo que no debe pasar.
 
 ## Qué puede hacer (herramientas)

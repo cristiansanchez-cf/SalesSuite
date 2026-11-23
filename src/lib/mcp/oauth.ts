@@ -16,6 +16,7 @@ import { demoDb } from '../data/store';
 import { env } from '../env';
 import { appMode } from '../mode';
 import { hashToken, newToken } from './tokens';
+import { nodeGet, safeUrl, type WebGet } from '../crm/website';
 
 export const SCOPES = ['crm', 'offline_access'] as const;
 export const ACCESS_TTL_S = 8 * 3600;
@@ -42,6 +43,8 @@ export function authorizationServer(origin: string) {
     token_endpoint_auth_methods_supported: ['none'],
     revocation_endpoint_auth_methods_supported: ['none'],
     scopes_supported: [...SCOPES],
+    // CIMD: el client_id puede ser la URL de su ficha (lo que claude.ai usa por defecto, «la identidad publicada»).
+    client_id_metadata_document_supported: true,
   };
 }
 export const wwwAuthenticate = (origin: string, error?: string) =>
@@ -86,6 +89,56 @@ export function clientName(raw: unknown, redirects: string[]): string {
   try { return new URL(redirects[0]!).hostname || 'App'; } catch { return 'App'; }
 }
 
+// ---------------------------------------------------------------- CIMD (Client ID Metadata Documents)
+// claude.ai no se registra: su client_id es una URL https con su ficha (nombre y vueltas). Se lee al usarla (con
+// cuidado: solo webs públicas, 5 s, JSON) y se guarda en oauth_client (el código la referencia).
+
+/** ¿Un client_id de CIMD? https, con ruta, sin fragmento ni credenciales, ya normalizada y como mucho 200 caracteres. */
+export function isCimdId(id: string): boolean {
+  if (id.length > 200 || !id.startsWith('https://')) return false;
+  const u = safeUrl(id);
+  return !!u && u.protocol === 'https:' && u.href === id && u.pathname.length > 1 && !u.hash && !/\/\.\.?(\/|$)/.test(u.pathname);
+}
+/** La ficha → el cliente. Tiene que decir que es ella misma (client_id igual a su URL) y traer vueltas válidas. */
+export function parseCimd(id: string, doc: unknown): OAuthClient | null {
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return null;
+  const d = doc as Record<string, unknown>;
+  if (d.client_id !== id) return null;
+  const uris = Array.isArray(d.redirect_uris) ? d.redirect_uris.filter((x): x is string => typeof x === 'string') : [];
+  if (!uris.length || uris.length > 10 || !uris.every(validRedirect)) return null;
+  return { clientId: id, name: clientName(d.client_name, uris), redirectUris: uris };
+}
+let cimdGet: WebGet = nodeGet(undefined, { accept: 'application/json', type: /json/i });
+const cimdCache = new Map<string, { c: OAuthClient; at: number }>();
+/** Pruebas: otra forma de leer la ficha. */
+export function setCimdGet(g: WebGet) { cimdGet = g; cimdCache.clear(); }
+async function readCimd(id: string): Promise<OAuthClient | null> {
+  const hit = cimdCache.get(id);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.c;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const r = await cimdGet(new URL(id), ctl.signal);
+    if (r.status !== 200 || !r.body || r.body.length > 65_536) return null;
+    const c = parseCimd(id, JSON.parse(r.body));
+    if (!c) return null;
+    cimdCache.set(id, { c, at: Date.now() });
+    await saveClient(c);
+    return c;
+  } catch { return null; } finally { clearTimeout(t); }
+}
+async function saveClient(c: OAuthClient) {
+  const db = sb();
+  const row = { client_id: c.clientId, name: c.name, redirect_uris: c.redirectUris };
+  if (!db) {
+    const d = demoDb().oauth_client, i = d.findIndex((x) => x.client_id === c.clientId);
+    if (i >= 0) Object.assign(d[i]!, row); else d.push({ ...row, created_at: new Date().toISOString(), last_used_at: null });
+    return;
+  }
+  const { error } = await db.from('oauth_client').upsert(row, { onConflict: 'client_id' });
+  if (error) throw new Error(error.message);
+}
+
 // ---------------------------------------------------------------- almacén (service role; en demo, en memoria)
 
 export interface OAuthClient { clientId: string; name: string; redirectUris: string[] }
@@ -109,7 +162,9 @@ export async function registerClient(name: string, redirectUris: string[]): Prom
 }
 
 export async function getClient(clientId: string): Promise<OAuthClient | null> {
-  if (!/^[A-Za-z0-9_-]{16,64}$/.test(clientId)) return null;
+  // CIMD: la ficha de ahora; si no se puede leer, la última guardada (para no cortar un refresco por un fallo suyo).
+  if (isCimdId(clientId)) { const c = await readCimd(clientId); if (c) return c; }
+  else if (!/^[A-Za-z0-9_-]{16,64}$/.test(clientId)) return null;
   const db = sb();
   if (!db) { const c = demoDb().oauth_client.find((x) => x.client_id === clientId); return c ? { clientId: c.client_id, name: c.name, redirectUris: c.redirect_uris } : null; }
   const { data } = await db.from('oauth_client').select('client_id, name, redirect_uris').eq('client_id', clientId).maybeSingle();

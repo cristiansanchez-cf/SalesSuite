@@ -1,5 +1,6 @@
 /**
- * Metadatos OAuth públicos (docs/MCP.md §OAuth), servidos por el middleware (Astro no enruta carpetas con punto):
+ * Metadatos OAuth públicos (docs/MCP.md §OAuth). Los sirve la ruta src/pages/.well-known/[...doc].ts (en Vercel una
+ * dirección sin ruta sale con 404 aunque conteste el middleware) y, antes, el middleware:
  *  · /.well-known/oauth-protected-resource[/api/mcp] (RFC 9728): dónde autenticarse para usar /api/mcp.
  *  · /.well-known/oauth-authorization-server[/…] (RFC 8414) y /.well-known/openid-configuration: el servidor de
  *    autorización (esta misma app). Algunos clientes prueban una u otra ruta: todas dicen lo mismo.
