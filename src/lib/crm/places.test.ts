@@ -6,6 +6,7 @@ import { demoCrmDb } from './db-demo';
 import { createCrmService } from './service';
 import { parsePlaces, placesLocale, readerPlacesLocale, searchPlaces, type PlaceResult, type PlacesApi } from './places';
 import type { WebsiteApi } from './website';
+import { unreachable } from './web-audit';
 import { zoneForPlace } from './zones-normalize';
 import type { Zone } from '../accounts/types';
 
@@ -40,7 +41,7 @@ describe('Google Places', () => {
     const club = d.account.find((a) => a.name === 'Club Sol')!;
     Object.assign(club, { zone_id: null, phone: null, email: null, instagram: 'https://www.instagram.com/a_mano/' });
     const vlc = d.zone.find((z) => z.tenant_id === ENJOY && z.name === 'Valencia')!;
-    const web: WebsiteApi = { async scan() { return { instagram: 'https://www.instagram.com/de_la_web/', facebook: 'https://www.facebook.com/clubsol', linkedin: null, email: 'hola@clubsol.es' }; } };
+    const web: WebsiteApi = { async scan() { return { instagram: 'https://www.instagram.com/de_la_web/', facebook: 'https://www.facebook.com/clubsol', linkedin: null, email: 'hola@clubsol.es' }; }, audit: async (u) => unreachable(u) };
     const s = createCrmService(demoCrmDb(REP), demoAccountsDb(REP), demoAdminDb(), { userId: REP, email: 'rep@enjoy.test', displayName: null, tenantId: ENJOY, role: 'rep' } as never,
       { places: fake([place({ rating: 4.46, reviews: 312, photo: 'places/p1/photos/foto1', place: { city: 'València', province: 'Valencia', region: 'Comunitat Valenciana', country: 'España' } })]), website: web });
     const r = await s.googleApply(club.id, 'p1');
@@ -56,7 +57,7 @@ describe('Google Places', () => {
     Object.assign(club, { zone_id: null, phone: null, website: null, email: null, instagram: null });
     const vlc = d.zone.find((z) => z.tenant_id === ENJOY && z.name === 'Valencia')!;
     const mad = d.zone.find((z) => z.tenant_id === ENJOY && z.name === 'Madrid')!;
-    const web: WebsiteApi = { async scan(u) { return { instagram: u.includes('bien') ? null : 'https://www.instagram.com/mal/', facebook: null, linkedin: null, email: null }; } };
+    const web: WebsiteApi = { async scan(u) { return { instagram: u.includes('bien') ? null : 'https://www.instagram.com/mal/', facebook: null, linkedin: null, email: null }; }, audit: async (u) => unreachable(u) };
     const s = createCrmService(demoCrmDb(REP), demoAccountsDb(REP), demoAdminDb(), { userId: REP, email: 'rep@enjoy.test', displayName: null, tenantId: ENJOY, role: 'rep' } as never,
       { places: fake([
         place({ placeId: 'mal', phone: '+34 900 000 001', website: 'https://mal.es', place: { city: 'Valencia', province: 'Valencia', region: null, country: 'España' } }),

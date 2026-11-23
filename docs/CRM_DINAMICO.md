@@ -381,6 +381,36 @@ que **propone**; el comercial decide.
 - Migración `20261107000000_crm_ai_research.sql` (`account.ai_research`, RPC `account_ai_research`); pruebas
   `research.test.ts`, contrato de cuentas, `supabase/tests/51_crm_ai_research.test.sql`, `scripts/smoke-ai-research.cjs`.
 
+### Qué mirar (configurable)
+
+Criterio de Cristian: «va a haber empresas que necesiten info de la empresa viendo si la web está cuidada o no… que sea
+un parámetro configurable: que cuando le das a "Investigación con IA" puedas personalizar qué quieres que mire. En el
+caso de Oquea quieren ver si la página web es antigua, si cumple con la normativa de términos, privacidad, cookies… y
+así poder ofrecerles páginas web».
+
+- **Lo de siempre** (admin): Configurar → Campos del CRM → **Investigación con IA**.
+  - Qué se quiere saber de cada empresa (un punto por línea), con atajos: Web antigua; Aviso legal, privacidad y
+    cookies; Redes sociales; Reseñas; Publicidad.
+  - **Revisar su web**: los atajos de la web lo marcan solos.
+  - Se guarda en `crm_settings.research` (migración 20270115; `src/lib/crm/research-focus.ts`).
+- **En la ficha**, junto a «Investigar con IA»: «Qué mirar», ya escrito con lo de siempre. Se puede cambiar solo para
+  esa vez. La investigación en tanda (varias empresas) usa lo de siempre.
+- **Revisar su web** (`src/lib/crm/web-audit.ts`, sin IA ni coste): la app abre su portada con las protecciones de
+  `website.ts` (solo webs públicas, 3 redirecciones, 800 KB, 10 s) y mira:
+  - HTTPS y si está hecha para el móvil (viewport).
+  - El año del copyright (con 3 años o más, «antigua»).
+  - Con qué está hecha y señales de web antigua: jQuery 1.x, WordPress < 5, Flash, frames, `<font>`/`<center>`,
+    HTML 4/XHTML 1.0, código para Internet Explorer.
+  - Enlaces a aviso legal, privacidad, cookies y términos.
+  - Si se ve un banner o gestor de cookies. En Wix, Squarespace, Shopify, Webflow y Framer «no se puede saber»: lo
+    pone la plataforma.
+  - Qué analítica y píxeles carga, y si los carga sin banner.
+- **En la ficha**, «Su web» con ✓ / ✗ / ? por cosa y «N cosas a mejorar». Si no se pudo abrir: «puede estar caída»;
+  sin web: «No tiene web conocida». Las dos son oportunidad para quien vende webs.
+- **La IA** recibe lo comprobado como hecho fiable y contesta **cada punto** en `checks`: En orden, A mejorar o Sin
+  comprobar, con lo que ha visto y su fuente. Se ve en «Lo que queríais saber». Lo no comprobado no se supone.
+- Pruebas: `web-audit.test.ts` y `research.test.ts` (§ qué mirar). Smoke: `scripts/smoke-research-focus.cjs`.
+
 ## 14. Ordenar ciudades (hecho)
 
 El campo «Ciudad» del Notion mezclaba ciudades, notas («Barcelona, creo que están en Valencia»), varias ciudades

@@ -121,6 +121,9 @@ export interface AccountsDb {
   savePriorityWeights(tenantId: string, w: Weights): Promise<void>;
   /** Cualificación del espacio (§45): el paquete guardado tal cual (`crm_settings.qualification`), o null. */
   getQualPack(tenantId: string): Promise<unknown>;
+  /** Investigación con IA: qué mirar (`crm_settings.research`), tal cual; lo valida src/lib/crm/research-focus.ts. */
+  getResearchFocus(tenantId: string): Promise<unknown>;
+  saveResearchFocus(tenantId: string, v: Record<string, unknown>): Promise<void>;
   /** Solo al deshacer una importación (los campos que creó, ya sin valores). */
   deleteField(id: string): Promise<boolean>;
 }

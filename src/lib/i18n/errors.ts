@@ -241,6 +241,7 @@ const EXACT: Record<string, T> = {
   'Pon el precio por evento': ['Enter the price per event', 'Indique o preço por evento', '이벤트당 가격을 입력하세요'],
   'Elige al menos una propuesta': ['Pick at least one proposal', 'Escolha pelo menos uma proposta', '제안서를 하나 이상 고르세요'],
   'Solo un admin cambia el responsable': ['Only an admin can change the owner', 'Só um admin muda o responsável', '담당자는 관리자만 바꿀 수 있습니다'],
+  'Solo un admin cambia qué mira la investigación': ['Only an admin can change what the research looks at', 'Só um admin muda o que a pesquisa analisa', '조사 항목은 관리자만 바꿀 수 있습니다'],
   'Como mucho 6 estilos propios': ['At most 6 custom styles', 'No máximo 6 estilos próprios', '직접 추가한 스타일은 최대 6개입니다'],
   'Cuenta un poco más qué cambia': ['Tell a bit more about what changes', 'Conte um pouco mais o que muda', '무엇이 바뀌는지 조금 더 말해 주세요'],
   'Pon el precio al mes': ['Enter the monthly price', 'Indique o preço por mês', '월 가격을 입력하세요'],

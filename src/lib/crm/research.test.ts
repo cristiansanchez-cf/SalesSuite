@@ -212,3 +212,51 @@ describe('idioma de quien investiga', () => {
     expect(researchSystem(undefined, null)).toBe(SYSTEM);
   });
 });
+
+describe('qué mirar (docs/CRM_DINAMICO.md §13)', () => {
+  beforeEach(() => { resetDemoDb(); });
+  const ADMIN = '22222222-2222-4222-8222-222222222222';
+  const OLD_WEB = { url: 'http://salamarina.es/', ok: true, https: false, mobile: false, year: 2016, platform: 'WordPress 4.9.8', old: ['jQuery 1.12.4'],
+    legal: { notice: true, privacy: false, cookies: false, terms: false }, cookieBanner: false, trackers: ['Google Analytics'] };
+  const web = { async scan() { return { instagram: null, facebook: null, linkedin: null, email: null }; }, async audit() { return OLD_WEB; } };
+  const as = (user: string, role: string, api: ResearchApi | null) => createCrmService(demoCrmDb(user), demoAccountsDb(user), demoAdminDb(), { userId: user, email: 'x@enjoy.test', displayName: null, tenantId: ENJOY, role } as never, { places: null, routes: null, research: api, website: web });
+  const marina = () => demoDb().account.find((a) => a.name === 'Sala Marina')!;
+
+  test('cada punto contestado, solo si se pidió; veredictos y fuentes limpios', () => {
+    const raw = { summary: 'x', look: [], checks: [{ point: 'Cookies', verdict: 'problem', detail: 'No tiene banner.', source: '' }, { point: 'Web antigua', verdict: 'rara', detail: 'd', source: 'https://salamarina.es/' }, { point: '', verdict: 'ok', detail: '', source: '' }] };
+    expect(sanitizeResearch(raw, ctx).checks).toBeUndefined();
+    const r = sanitizeResearch(raw, { ...ctx, focus: '¿Cookies?\n¿Web antigua?', web: OLD_WEB });
+    expect(r.checks).toEqual([
+      { point: 'Cookies', verdict: 'problem', detail: 'No tiene banner.', source: null },
+      { point: 'Web antigua', verdict: 'unknown', detail: 'd', source: 'https://salamarina.es/' },
+    ]);
+    expect(r.web).toEqual(OLD_WEB);
+  });
+  test('la petición lleva lo que quiere saber el equipo y lo comprobado en su web', () => {
+    const p = userPrompt({ name: 'Sala Marina', city: null, address: null, website: 'salamarina.es', instagram: null, sector: null, seller: 'Webs', known: {}, focus: '¿Su web parece antigua?', webAudit: OLD_WEB });
+    expect(p).toContain('Lo que el equipo quiere saber');
+    expect(p).toContain('¿Su web parece antigua?');
+    expect(p).toContain('privacidad: no');
+    expect(userPrompt({ name: 'X', city: null, address: null, website: null, instagram: null, sector: null, seller: 'Webs', known: {}, webAudit: null })).toContain('No tiene web conocida');
+    expect(SAVE_TOOL.input_schema.required).toContain('checks');
+  });
+  test('lo de siempre lo cambia el admin; investigar lo usa, o lo de esta vez', async () => {
+    await expect(as(REP, 'rep', null).saveResearchFocus({ focus: 'x', web: true })).rejects.toMatchObject({ status: 403 });
+    await as(ADMIN, 'admin', null).saveResearchFocus({ focus: '¿Su web parece antigua?\n¿Tiene política de cookies?', web: 'on' });
+    expect(await as(REP, 'rep', null).researchFocus()).toEqual({ focus: '¿Su web parece antigua?\n¿Tiene política de cookies?', web: true });
+    marina().website = 'https://salamarina.es';
+    let seen: Record<string, unknown> = {};
+    const api: ResearchApi = { async research(i) { seen = i as never; return fixtureResearch().research(i); } };
+    const r = await as(REP, 'rep', api).aiRun(marina().id, { sector: null, seller: 'Webs' });
+    expect(seen.focus).toContain('antigua');
+    expect(seen.webAudit).toEqual(OLD_WEB);
+    expect(r.web).toEqual(OLD_WEB);
+    expect(r.checks?.map((c) => [c.point.slice(0, 12), c.verdict])).toEqual([['¿Su web pare', 'problem'], ['¿Tiene polít', 'problem']]);
+    // Esta vez, otra cosa y sin revisar la web.
+    demoDb().account.find((a) => a.id === marina().id)!.ai_research_at = null;
+    const r2 = await as(REP, 'rep', api).aiRun(marina().id, { sector: null, seller: 'Webs' }, { focus: '¿Qué dicen sus reseñas?', web: false });
+    expect(seen.webAudit).toBeUndefined();
+    expect(r2.web).toBeUndefined();
+    expect(r2.checks).toEqual([{ point: '¿Qué dicen sus reseñas?', verdict: 'unknown', detail: 'Ejemplo de prueba: no se ha comprobado.', source: null }]);
+  });
+});

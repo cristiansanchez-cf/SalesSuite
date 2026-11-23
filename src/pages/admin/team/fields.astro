@@ -22,6 +22,8 @@ import { shellMessages } from '~/lib/i18n/messages/shell';
 import { kindsMessages } from '~/lib/i18n/messages/kinds';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, KIND_ICONS, PROFILES } from '~/lib/accounts/types';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
+import { researchMessages } from '~/lib/i18n/messages/research';
+import { FOCUS_PRESETS, WEB_PRESETS } from '~/lib/crm/research-focus';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -36,8 +38,12 @@ const de = Astro.url.searchParams.get('de');
 const target = de === 'persona' ? 'contact' : 'account';
 const weightsTab = de === 'prioridad';
 const kindsTab = de === 'tipos';
+// Investigación con IA: qué mira (docs/CRM_DINAMICO.md §13 «Qué mirar»).
+const researchTab = de === 'investigar';
+const otherTab = weightsTab || kindsTab || researchTab;
 const K = kindsMessages[locale];
 const PRF = profilesMessages[locale];
+const RS = researchMessages[locale];
 const R = priorityMessages[locale];
 const ICON: Record<FieldType, IconName> = {
   text: 'pencil', long_text: 'file-text', number: 'gauge', money: 'wallet', checkbox: 'circle-check', select: 'list-checks',
@@ -67,6 +73,7 @@ if (Astro.request.method === 'POST') {
         ok = 'kinds';
         break;
       }
+      case 'research': await admin.crm.saveResearchFocus({ focus: str('focus'), web: f.has('web') }); ok = 'research'; break;
       case 'create': await acc.saveField(input()); ok = 'saved'; break;
       case 'save': await acc.saveField(input(), str('id')); ok = 'saved'; break;
       case 'up': await acc.moveField(str('id'), -1); break;
@@ -75,14 +82,15 @@ if (Astro.request.method === 'POST') {
       case 'restore': await acc.archiveField(str('id'), false); ok = 'restored'; break;
     }
   });
-  const back = new URLSearchParams({ ...(target === 'contact' ? { de: 'persona' } : {}), ...(ok === 'weights' ? { de: 'prioridad' } : {}), ...(ok === 'kinds' ? { de: 'tipos' } : {}), ...(ok ? { ok } : {}) });
+  const back = new URLSearchParams({ ...(target === 'contact' ? { de: 'persona' } : {}), ...(ok === 'weights' ? { de: 'prioridad' } : {}), ...(ok === 'kinds' ? { de: 'tipos' } : {}), ...(ok === 'research' ? { de: 'investigar' } : {}), ...(ok ? { ok } : {}) });
   if (!result.error) return Astro.redirect(`/admin/team/fields${back.size ? `?${back}` : ''}`, 303);
 }
 const [weights, pack] = await Promise.all([admin.crm.weights(), admin.crm.qualPack()]);
 // Los pesos son de la cualificación (§45): sin ella en el espacio, no hay pestaña de prioridad.
 const showWeights = weightsTab && pack !== null;
 const kindDefs = await acc.kinds();
-const okMsg = flash(Astro.url, { kinds: K.ok, weights: R.weights.ok, saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
+const rf = researchTab ? await admin.crm.researchFocus() : null;
+const okMsg = flash(Astro.url, { research: RS.settings.ok, kinds: K.ok, weights: R.weights.ok, saved: E.okSaved, archived: E.okArchived, restored: E.okRestored });
 const [all, segments] = await Promise.all([acc.crmFields({ archived: true }), admin.playbook.market()]);
 const active = all.filter((x) => !x.archivedAt && x.target === target);
 const archived = all.filter((x) => x.archivedAt && x.target === target);
@@ -92,17 +100,33 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
 ---
 <AdminLayout title={E.title}>
   <PageHeader eyebrow={E.eyebrow} title={E.title} lede={E.lede}>
-    {!weightsTab && !kindsTab && <button type="button" class="co-btn co-btn--primary" data-dialog-open="field-new" data-testid="field-add"><Icon name="plus" size={16} />{E.add}</button>}
+    {!otherTab && <button type="button" class="co-btn co-btn--primary" data-dialog-open="field-new" data-testid="field-add"><Icon name="plus" size={16} />{E.add}</button>}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 
   <nav class="co-tabs mb-4" aria-label={PF.target} data-scroll-x>
-    <a class="co-tab" href="/admin/team/fields" aria-current={target === 'account' && !weightsTab && !kindsTab ? 'page' : undefined} data-testid="fields-companies">{PF.companies} · {count('account')}</a>
-    <a class="co-tab" href="/admin/team/fields?de=persona" aria-current={target === 'contact' && !weightsTab ? 'page' : undefined} data-testid="fields-people">{PF.people} · {count('contact')}</a>
+    <a class="co-tab" href="/admin/team/fields" aria-current={target === 'account' && !otherTab ? 'page' : undefined} data-testid="fields-companies">{PF.companies} · {count('account')}</a>
+    <a class="co-tab" href="/admin/team/fields?de=persona" aria-current={target === 'contact' && !otherTab ? 'page' : undefined} data-testid="fields-people">{PF.people} · {count('contact')}</a>
     {pack && <a class="co-tab" href="/admin/team/fields?de=prioridad" aria-current={weightsTab ? 'page' : undefined} data-testid="fields-priority">{R.weights.tab}</a>}
     <a class="co-tab" href="/admin/team/fields?de=tipos" aria-current={kindsTab ? 'page' : undefined} data-testid="fields-kinds">{K.tab} · {kindDefs.length}</a>
+    <a class="co-tab" href="/admin/team/fields?de=investigar" aria-current={researchTab ? 'page' : undefined} data-testid="fields-research">{RS.settings.tab}</a>
   </nav>
+  {researchTab && rf && (
+    <form method="post" class="co-card grid max-w-3xl gap-4" data-testid="research-form">
+      <input type="hidden" name="action" value="research" />
+      <div><h2 class="co-entity">{RS.settings.title}</h2><p class="co-meta mt-1">{RS.settings.lede}</p></div>
+      <label class="co-field">{RS.ask.label}
+        <textarea class="co-textarea !min-h-[140px]" name="focus" maxlength="1500" placeholder={RS.ask.ph} data-ai-focus data-testid="research-focus">{rf.focus}</textarea>
+      </label>
+      <div class="flex flex-wrap items-center gap-1.5 text-sm">
+        <span class="co-meta">{RS.ask.add}</span>
+        {FOCUS_PRESETS.map((k) => <button type="button" class="co-chip" data-ai-preset={RS.ask.presets[k]} data-web={WEB_PRESETS.includes(k) ? '1' : undefined} data-testid={`research-preset-${k}`}>+ {RS.ask.presetLabels[k]}</button>)}
+      </div>
+      <label class="flex items-start gap-2"><input type="checkbox" name="web" checked={rf.web} class="mt-1 h-4 w-4 accent-[var(--co-ink)]" data-ai-web data-testid="research-web" /><span>{RS.ask.web}</span></label>
+      <button class="co-btn co-btn--primary w-fit" type="submit" data-testid="research-save">{RS.settings.save}</button>
+    </form>
+  )}
   {kindsTab && (
     <form method="post" class="co-card grid max-w-4xl gap-4" data-testid="kinds-form">
       <input type="hidden" name="action" value="kinds" />
@@ -147,7 +171,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
       </script>
     </form>
   )}
-  {weightsTab || kindsTab ? null : active.length === 0
+  {otherTab ? null : active.length === 0
     ? <EmptyState kind="create" title={E.emptyTitle} detail={E.emptyDetail} action={{ dialog: 'field-new', label: E.add }} />
     : <ul class="co-rows" data-testid="fields">
         {active.map((x, i) => (
@@ -178,7 +202,7 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
         ))}
       </ul>}
 
-  {!weightsTab && !kindsTab && archived.length > 0 && (
+  {!otherTab && archived.length > 0 && (
     <details class="mt-8" data-testid="fields-archived">
       <summary class="text-eyebrow cursor-pointer">{E.archived(archived.length)}</summary>
       <p class="co-help mt-2">{E.archivedHelp}</p>
@@ -275,3 +299,15 @@ const optionsText = (x: CrmField) => x.options.map((o) => o.label).join('\n');
 <style>
   .seg:has(input:checked) { background: var(--co-ink, #0a0a0a); color: var(--co-canvas, #fff); border-color: var(--co-ink, #0a0a0a); }
 </style>
+
+<script>
+  // Atajos de «qué mirar»: añaden su línea (sin repetirla); los de la web marcan también «Revisar su web».
+  document.querySelectorAll<HTMLButtonElement>('[data-ai-preset]').forEach((b) => b.addEventListener('click', () => {
+    const form = b.closest('form');
+    const ta = form?.querySelector<HTMLTextAreaElement>('[data-ai-focus]');
+    if (!ta) return;
+    const line = b.dataset.aiPreset!;
+    if (!ta.value.split('\n').some((l) => l.trim() === line)) ta.value = `${ta.value.trim()}${ta.value.trim() ? '\n' : ''}${line}`;
+    if (b.dataset.web) { const w = form?.querySelector<HTMLInputElement>('[data-ai-web]'); if (w) w.checked = true; }
+  }));
+</script>

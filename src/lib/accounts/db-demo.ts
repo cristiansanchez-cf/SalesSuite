@@ -522,6 +522,12 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       row.kinds = JSON.parse(JSON.stringify(kinds));
     },
     async getQualPack(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.qualification ?? null; },
+    async getResearchFocus(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.research ?? null; },
+    async saveResearchFocus(t, v) {
+      const s = db();
+      const prev = s.crm_settings.find((x) => x.tenant_id === t);
+      s.crm_settings = [...s.crm_settings.filter((x) => x.tenant_id !== t), { priority_weights: {}, ...prev, tenant_id: t, research: { ...v } }];
+    },
     async getPriorityWeights(t) { return db().crm_settings.find((x) => x.tenant_id === t)?.priority_weights ?? null; },
     async savePriorityWeights(t, w) {
       if (roleOf(t, actorId) !== 'admin') throw new Error('permission denied: Solo un admin del espacio');

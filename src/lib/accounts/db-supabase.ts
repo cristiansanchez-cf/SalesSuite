@@ -238,6 +238,13 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
       const r = check(await sb.from('crm_settings').select('qualification').eq('tenant_id', t).maybeSingle()) as Row | null;
       return r?.qualification ?? null;
     },
+    async getResearchFocus(t) {
+      const r = check(await sb.from('crm_settings').select('research').eq('tenant_id', t).maybeSingle()) as Row | null;
+      return r?.research ?? null;
+    },
+    async saveResearchFocus(t, v) {
+      check(await sb.from('crm_settings').upsert({ tenant_id: t, research: v, updated_at: new Date().toISOString() }));
+    },
     async savePriorityWeights(t, w) {
       check(await sb.from('crm_settings').upsert({ tenant_id: t, priority_weights: w, updated_at: new Date().toISOString() }));
     },

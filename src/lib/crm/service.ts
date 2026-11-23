@@ -22,6 +22,8 @@ import { env } from '../env';
 import { fixturePlaces, googlePlaces, PHOTO_NAME, readerPlacesLocale, type PlaceResult, type PlacesApi } from './places';
 import { requestLocale } from '../i18n/request';
 import { cleanTaxId, fixtureWebsite, realWebsite, type Socials, type WebsiteApi } from './website';
+import { unreachable, type WebAudit } from './web-audit';
+import { cleanFocus, readFocus, type ResearchFocus } from './research-focus';
 import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
 import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizePeople, NOTE_CONTACT_KEYS, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
@@ -2016,8 +2018,23 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     return readResearch(await accounts.getAiResearch(accountId).catch(() => null));
   }
-  /** Investiga con IA y guarda las propuestas (pendientes). `ctx`: el sector y lo que vende el equipo (del playbook). */
-  async function aiRun(accountId: string, ctx: { sector: ResearchInput['sector']; seller: string; clients?: string[] }) {
+  /** Qué mirar al investigar (docs/CRM_DINAMICO.md §13 «Qué mirar»): lo de siempre del espacio. Lo lee el equipo. */
+  async function researchFocus(): Promise<ResearchFocus> {
+    return readFocus(await accounts.getResearchFocus(t).catch(() => null));
+  }
+  /** Cambiar lo de siempre: solo admin. */
+  async function saveResearchFocus(raw: unknown): Promise<ResearchFocus> {
+    requireUse();
+    if (!perms.manageTenant) throw new AdminError(403, 'Solo un admin cambia qué mira la investigación');
+    const v = readFocus(raw);
+    try { await accounts.saveResearchFocus(t, { focus: v.focus, web: v.web }); } catch (e) { mapError(e); }
+    return v;
+  }
+  /**
+   * Investiga con IA y guarda las propuestas (pendientes). `ctx`: el sector y lo que vende el equipo (del playbook).
+   * `ask`: qué mirar esta vez (sin decirlo, lo de siempre del espacio).
+   */
+  async function aiRun(accountId: string, ctx: { sector: ResearchInput['sector']; seller: string; clients?: string[] }, ask: { focus?: string; web?: boolean } = {}) {
     requireUse();
     if (!ai) throw new AdminError(503, 'Falta ANTHROPIC_API_KEY en el servidor');
     const a = await accounts.getAccount(accountId);
@@ -2036,16 +2053,21 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       legal = { legalName: a.legalName || socials?.legalName || null, taxId: a.taxId || (socials?.taxId && !PERSONAL_ID.test(socials.taxId) ? socials.taxId : null) };
     }
     const groupName = a.parentId ? (await accounts.getAccount(a.parentId))?.name ?? null : null;
+    // Qué mirar: lo de esta vez o lo de siempre. Con «revisar su web», la app la abre antes (gratis, sin IA).
+    const base = await researchFocus();
+    const focus = ask.focus !== undefined ? cleanFocus(ask.focus) : base.focus;
+    const webOn = ask.web ?? base.web;
+    const webAudit: WebAudit | null | undefined = !webOn ? undefined : a.website ? await site.audit(a.website).catch(() => unreachable(a.website!)) : null;
     // Sin cualificación en el espacio (§45), la IA no propone criterios: solo contacto y personas.
     const pack = await qualPack();
     const known = pack ? Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined)) : {};
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
-        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, products: await products().then((c) => (c.length ? catalogText(c) : null)).catch(() => null), country: loc.regionCode ?? null, lang: requestLocale(), legalName: legal.legalName ?? null, taxId: legal.taxId ?? null });
+        sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, products: await products().then((c) => (c.length ? catalogText(c) : null)).catch(() => null), country: loc.regionCode ?? null, lang: requestLocale(), legalName: legal.legalName ?? null, taxId: legal.taxId ?? null, focus: focus || null, webAudit });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
-    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack, name: a.name, group: groupName });
+    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack, name: a.name, group: groupName, focus: focus || null, ...(webAudit !== undefined ? { web: webAudit } : {}) });
     try { await accounts.saveAiResearch(accountId, r); } catch (e) { mapError(e); }
     return r;
   }
@@ -2439,7 +2461,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     aiResearch, aiRun, aiDecide, hasAi: () => !!ai,
     /** El tope de IA (por persona y día, y el gasto del mes del espacio) para la IA de fuera del CRM (catálogo). */
     aiQuota: () => quota('ai'),
-    board, mergePreview, merge, citySearch, pickZone, legalScan, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, planModel, applyModelPlan, qualGaps, qualifyFrom, hasModelAi: () => !!modelAi, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
+    board, mergePreview, merge, citySearch, pickZone, legalScan, researchFocus, saveResearchFocus, setKindMany, discardMany, groupLocales, chargeOptions, charges, charge, chargeCancel, chargeMarkPaid, markWon, agreements, closeWithAgreement, decideAgreement, clients, eventPrices, trials, openTrials, startTrial, endTrial, inTrial, products, saveProduct, setProductActive, planModel, applyModelPlan, qualGaps, qualifyFrom, hasModelAi: () => !!modelAi, zonesOverview, zonesClassify, zonesPlan, zonesApply, zonesUndo, zonesCleanup, zonesTree, zonesReview, zonesFix, zonesLocate, zonesUnlocate, classifyAccount, cleanupOverview, cleanupClassify, cleanupApply, cleanupUndo, hasZoneFixAi: () => !!zoneFixAi,
     routePlan, googleCandidates, googleQuery, googleApply, googleClear, googlePhoto, hasGoogle: () => !!places,
     prospectSearch, prospectList, prospectGet, prospectImport, prospectLink, notesSplit, notesApply, accountSearch, factAdd, factStar, factRemove, workLinks, workLinkAdd, workLinkRemove, hasNotes: () => !!notesAi, hasProspect: () => !!places?.area,
     weights, saveWeights, qualify, cooling, qualPack,

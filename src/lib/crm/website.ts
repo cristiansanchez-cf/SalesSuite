@@ -8,7 +8,12 @@ export interface Socials {
   /** Titular (§25): la razón social y el CIF que publica su aviso legal (o la portada). */
   legalName?: string | null; taxId?: string | null;
 }
-export interface WebsiteApi { scan(url: string): Promise<Socials> }
+export interface WebsiteApi {
+  scan(url: string): Promise<Socials>;
+  /** Revisar su web (src/lib/crm/web-audit.ts): la portada, sin IA. Si no se puede abrir, `ok: false`. */
+  audit(url: string): Promise<WebAudit>;
+}
+import { auditHtml, unreachable, type WebAudit } from './web-audit';
 const NONE: Socials = { instagram: null, facebook: null, linkedin: null, email: null };
 
 /** Solo webs públicas: https/http, con nombre (no IP), sin puertos raros ni nombres internos. */
@@ -207,6 +212,16 @@ export function realWebsite(get: WebGet = nodeGet(), lookup: Lookup = dnsLookup)
         return out;
       } catch { return NONE; } finally { clearTimeout(timer); }
     },
+    async audit(raw) {
+      const start = safeUrl(raw) ?? safeUrl(`https://${raw.replace(/^\/+/, '')}`);
+      if (!start) return unreachable(raw.slice(0, 300));
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 10_000);
+      try {
+        const home = await page(start, ctl.signal);
+        return home ? auditHtml(home.body, home.url) : unreachable(start.toString());
+      } catch { return unreachable(start.toString()); } finally { clearTimeout(timer); }
+    },
   };
 }
 
@@ -220,6 +235,12 @@ export function fixtureWebsite(): WebsiteApi {
       const owner = slug.startsWith('cosmic') ? 'cosmic' : slug;
       return { instagram: `https://www.instagram.com/${slug}/`, facebook: `https://www.facebook.com/${slug}`, linkedin: null, email: `hola@${slug}.test`,
         legalName: `${owner[0].toUpperCase()}${owner.slice(1)} Ocio, S.L.`, taxId: fixtureCif(owner) };
+    },
+    // Una web antigua de ejemplo: lo que vería Oquea para ofrecer una nueva (sin abrir nada de verdad).
+    async audit(raw) {
+      if (!/^https:\/\/[a-z0-9]+\.test\//.test(raw)) return unreachable(raw.slice(0, 300));
+      return { url: raw.replace(/^https:/, 'http:'), ok: true, https: false, mobile: false, year: 2016, platform: 'WordPress 4.9.8', old: ['jQuery 1.12.4'],
+        legal: { notice: true, privacy: false, cookies: false, terms: false }, cookieBanner: false, trackers: ['Google Analytics'] };
     },
   };
 }

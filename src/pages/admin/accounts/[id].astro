@@ -104,7 +104,9 @@ if (Astro.request.method === 'POST') {
         break;
       }
       case 'google-clear': await admin.crm.googleClear(id); to += '?ok=googleCleared#company-contact'; break;
-      case 'ai-run': await admin.crm.aiRun(id, await researchContext(admin, (await acc.get(id)).account.segmentId)); to += '?ok=ai#ai'; break;
+      // Qué mirar esta vez (docs/CRM_DINAMICO.md §13): si el formulario lo trae, lo de esta vez; si no, lo de siempre.
+      case 'ai-run': await admin.crm.aiRun(id, await researchContext(admin, (await acc.get(id)).account.segmentId),
+        f.has('askForm') ? { focus: str('focus'), web: f.has('web') } : {}); to += '?ok=ai#ai'; break;
       case 'ai-accept': await admin.crm.aiDecide(id, str('sid'), true); to += '?ok=aiAccept#ai'; break;
       case 'ai-dismiss': await admin.crm.aiDecide(id, str('sid'), false); to += '?ok=aiDismiss#ai'; break;
       case 'qualify': {
@@ -296,7 +298,7 @@ const notMsg = okKey.startsWith('not-') ? NOT(okKey.slice(4)) : null;
 const TOUCH: Record<TouchKind, string> = M.touch;
 // Sus propuestas, a mano desde la cabecera (criterio de Cristian: «desde la ficha deberíamos ver rápidamente las
 // propuestas asociadas»): las más recientes primero, las archivadas al final; las enviadas, con sus aperturas.
-const propList = [...dossiers].sort((x, y) => Number(x.status === 'archived') - Number(y.status === 'archived') || y.updatedAt.localeCompare(x.updatedAt));
+const propList = [...dossiers].sort((x, y) => Number(x.status === 'archived') - Number(y.status === 'archived') || (y.updatedAt ?? '').localeCompare(x.updatedAt ?? ''));
 const propOpens: Map<string, { opens: number }> = propList.some((d) => d.status === 'published')
   ? await admin.analytics.statsFor(propList.filter((d) => d.status === 'published').map((d) => d.id)).catch(() => new Map())
   : new Map();
@@ -501,7 +503,7 @@ const STATE_ALERT = {
         )}
       </section>
 
-      {profile === 'venue' && a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} />}
+      {profile === 'venue' && a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} focus={await admin.crm.researchFocus()} hasWebsite={!!a.website} isAdmin={perms.manageTenant} />}
 
       {!qual ? null : isGroup ? <GroupLocalesCard locales={groupLocals} /> : a.state !== 'customer' && (profile === 'venue'
         ? <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />

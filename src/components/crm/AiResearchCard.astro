@@ -10,9 +10,15 @@ import { researchMessages } from '~/lib/i18n/messages/research';
 import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import type { AiResearch, Suggestion } from '~/lib/crm/research';
+import { auditProblems } from '~/lib/crm/web-audit';
+import { FOCUS_PRESETS, WEB_PRESETS, type ResearchFocus } from '~/lib/crm/research-focus';
 
-interface Props { research: AiResearch | null; canEdit: boolean; hasAi: boolean }
-const { research: r, canEdit, hasAi } = Astro.props;
+interface Props {
+  research: AiResearch | null; canEdit: boolean; hasAi: boolean;
+  /** Qué mirar (docs/CRM_DINAMICO.md §13): lo de siempre del espacio; se puede cambiar para esta vez. */
+  focus?: ResearchFocus; hasWebsite?: boolean; isAdmin?: boolean;
+}
+const { research: r, canEdit, hasAi, focus = { focus: '', web: false }, hasWebsite = false, isAdmin = false } = Astro.props;
 const { m: M, f: fmt, locale } = i18n(Astro, researchMessages);
 const R = priorityMessages[locale];
 const F = followupMessages[locale];
@@ -41,6 +47,22 @@ const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./,
 const open = r?.suggestions.filter((x) => x.status === 'open') ?? [];
 const accepted = r?.suggestions.filter((x) => x.status === 'accepted').length ?? 0;
 const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length ?? 0;
+const A = M.ask;
+const W = M.web;
+// Su web, revisada por la app: cada cosa con ✓ (bien), ✗ (a mejorar) o «?» (no se puede saber).
+const audit = r?.web;
+const probs = audit ? auditProblems(audit) : [];
+const webRows: Array<[boolean | null, string]> = audit && audit.ok ? [
+  [audit.https, W.https], [audit.mobile, W.mobile],
+  [audit.year == null ? null : !probs.includes('year'), audit.year == null ? W.noYear : W.year(audit.year)],
+  ...(audit.platform ? [[audit.old.length ? false : true, W.platform(audit.platform)] as [boolean, string]] : []),
+  ...(audit.old.length ? [[false, W.old(audit.old.join(', '))] as [boolean, string]] : []),
+  [audit.legal.notice, W.notice], [audit.legal.privacy, W.privacy], [audit.legal.cookies, W.cookies], [audit.legal.terms ? true : null, W.terms],
+  [audit.cookieBanner, audit.cookieBanner === null ? W.bannerUnknown : W.banner],
+  ...(audit.trackers.length ? [[probs.includes('trackersNoConsent') ? false : true, probs.includes('trackersNoConsent') ? W.trackersNoConsent : W.trackers(audit.trackers.join(', '))] as [boolean, string]] : []),
+] : [];
+const VERDICT_CLASS = { ok: 'co-badge co-badge--soft', problem: 'co-badge co-badge--attention', unknown: 'co-badge' } as const;
+const preview = focus.focus.split('\n')[0]?.slice(0, 70) ?? '';
 ---
 <section id="ai" class="co-card grid gap-4" data-testid="ai-research">
   <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -53,6 +75,40 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
   {r && (
     <>
       {r.summary && <p class="co-body" data-testid="ai-summary" data-ugc>{r.summary}</p>}
+      {r.web !== undefined && (
+        <div class="co-inset grid gap-2 !p-4" data-testid="ai-web">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="text-eyebrow m-0">{W.title}</p>
+            {audit && audit.ok && <span class:list={['co-badge', probs.length ? 'co-badge--attention' : 'co-badge--soft']} data-testid="ai-web-problems">{W.problems(probs.length)}</span>}
+          </div>
+          {!audit ? <p class="co-body m-0">{W.none}</p> : !audit.ok ? <p class="co-body m-0" data-testid="ai-web-down">{W.unreachable}</p> : (
+            <>
+              <ul class="m-0 grid gap-1 p-0 text-sm sm:grid-cols-2">
+                {webRows.map(([ok, txt]) => (
+                  <li class="flex list-none items-start gap-2" data-testid="ai-web-row" data-ok={ok === null ? 'unknown' : String(ok)}>
+                    <span aria-hidden="true" class:list={['w-4 shrink-0 font-bold', ok === true ? 'text-[color:var(--console-good,#15803d)]' : ok === false ? 'text-[color:var(--console-attention,#b42318)]' : 'co-meta']}>{ok === true ? '✓' : ok === false ? '✗' : '?'}</span>
+                    <span>{txt}</span>
+                  </li>
+                ))}
+              </ul>
+              <p class="co-meta m-0 text-xs"><a href={safeHref(audit.url)} target="_blank" rel="noopener nofollow">{host(audit.url)}</a> · {W.checked}</p>
+            </>
+          )}
+        </div>
+      )}
+      {r.checks && r.checks.length > 0 && (
+        <div class="grid gap-2" data-testid="ai-checks">
+          <p class="text-eyebrow m-0">{M.checks}</p>
+          <ul class="m-0 grid gap-2 p-0">
+            {r.checks.map((c) => (
+              <li class="grid list-none gap-0.5" data-testid="ai-check" data-verdict={c.verdict}>
+                <span class="flex flex-wrap items-center gap-2"><span class={VERDICT_CLASS[c.verdict]}>{M.verdict[c.verdict]}</span><strong data-ugc>{c.point}</strong></span>
+                {(c.detail || c.source) && <span class="co-meta text-sm"><span data-ugc>{c.detail}</span>{c.source && <> · <a href={safeHref(c.source)} target="_blank" rel="noopener nofollow">{host(c.source)}</a></>}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {r.look.length > 0 && (
         <div class="grid gap-1">
           <p class="text-eyebrow">{M.look}</p>
@@ -90,11 +146,42 @@ const dismissed = r?.suggestions.filter((x) => x.status === 'dismissed').length 
   )}
 
   {canEdit && (hasAi ? (
-    <form method="post" action="#ai" data-async="ai" data-async-busy={M.background}>
+    <form method="post" action="#ai" class="grid gap-2" data-async="ai" data-async-busy={M.background} data-testid="ai-run-form">
       <input type="hidden" name="action" value="ai-run" />
+      <input type="hidden" name="askForm" value="1" />
+      {/* Qué mirar esta vez: viene con lo de siempre del espacio (Configurar → Campos del CRM → Investigación con IA). */}
+      <details class="ai-ask grid gap-2" data-testid="ai-ask">
+        <summary class="co-meta cursor-pointer text-sm">{A.title}: <span class="text-[color:var(--co-ink)]">{preview || A.nothing}{focus.web ? ` · ${W.title}` : ''}</span></summary>
+        <div class="mt-2 grid gap-2">
+          <label class="co-field text-sm">{A.label}
+            <textarea class="co-textarea !min-h-[84px] text-sm" name="focus" maxlength="1500" placeholder={A.ph} data-ai-focus data-testid="ai-focus">{focus.focus}</textarea>
+          </label>
+          <div class="flex flex-wrap items-center gap-1.5 text-xs">
+            <span class="co-meta">{A.add}</span>
+            {FOCUS_PRESETS.map((k) => <button type="button" class="co-chip !py-0.5 !text-xs" data-ai-preset={A.presets[k]} data-web={WEB_PRESETS.includes(k) ? '1' : undefined} data-testid={`ai-preset-${k}`}>+ {A.presetLabels[k]}</button>)}
+          </div>
+          <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="web" checked={focus.web} class="mt-0.5 h-4 w-4 accent-[var(--co-ink)]" data-ai-web data-testid="ai-web-check" /><span>{A.web}{!hasWebsite && <span class="co-meta block text-xs">{A.noWeb}</span>}</span></label>
+          <p class="co-help m-0">{A.thisTime}{isAdmin && <> <a href="/admin/team/fields?de=investigar">{A.change}</a></>}</p>
+        </div>
+      </details>
       <button class:list={['co-btn co-btn--sm w-fit', r ? 'co-btn--ghost' : 'co-btn--primary']} type="submit" data-testid="ai-run" data-busy-label={M.running}>
         <Icon name="sparkles" size={14} /><span>{r ? M.rerun : M.run}</span>
       </button>
     </form>
   ) : !r && <p class="co-help">{M.noKey}</p>)}
 </section>
+
+<script>
+  // Atajos de «qué mirar»: añaden su línea (sin repetirla); los de la web marcan también «Revisar su web».
+  document.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('[data-ai-preset]');
+    if (!b) return;
+    const box = b.closest('form, [data-focus-box]');
+    const ta = box?.querySelector<HTMLTextAreaElement>('[data-ai-focus]');
+    if (!ta) return;
+    const line = b.dataset.aiPreset!;
+    if (!ta.value.split('\n').some((l) => l.trim() === line)) ta.value = `${ta.value.trim()}${ta.value.trim() ? '\n' : ''}${line}`;
+    if (b.dataset.web) { const w = box?.querySelector<HTMLInputElement>('[data-ai-web]'); if (w) w.checked = true; }
+    ta.focus();
+  });
+</script>

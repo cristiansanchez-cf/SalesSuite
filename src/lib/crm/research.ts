@@ -10,6 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { QUAL_VALUES } from './priority';
 import type { QualPack } from './pack';
 import { meterClaude } from '../usage/meter';
+import { auditText, readAudit, type WebAudit } from './web-audit';
 
 /** Criterios que la IA puede proponer (lo que se ve desde fuera). «Decide quien te atiende», la cobertura y «no pueden
  *  validar» solo los sabe el comercial en persona; «validate» además solo si lo dicen ellos. */
@@ -25,8 +26,16 @@ export type Suggestion =
   /** El grupo al que pertenece (sociedad matriz, holding o marca de otra empresa): aceptarla la mete en ese grupo. */
   | { id: string; kind: 'group'; name: string; relation: string | null; evidence: string; source: string; status: SuggestionStatus };
 
+/** Un punto de «qué mirar» contestado: ok (bien), problem (falta o está mal: una oportunidad) o unknown (sin comprobar). */
+export interface ResearchCheck { point: string; verdict: 'ok' | 'problem' | 'unknown'; detail: string; source: string | null }
+
 export interface AiResearch {
   at: string;
+  /** Lo que se pidió mirar esta vez (docs/CRM_DINAMICO.md §13 «Qué mirar»), y cada punto contestado. */
+  focus?: string | null;
+  checks?: ResearchCheck[];
+  /** La revisión de su web que hizo la app (sin IA), si se pidió. */
+  web?: WebAudit | null;
   /** En dos líneas: qué es y por qué podría encajar (o no). */
   summary: string;
   /** Lo que la IA no puede ver y conviene mirar a mano. */
@@ -54,6 +63,10 @@ export interface ResearchInput {
   country?: string | null;
   /** Idioma de quien investiga (es, en, pt, ko): el resumen y las notas se escriben en ese idioma. Sin decirlo, español. */
   lang?: string | null;
+  /** Qué quiere saber el equipo de esta empresa (lo de siempre del espacio o lo de esta vez): un punto por línea. */
+  focus?: string | null;
+  /** Se pidió revisar su web: lo que comprobó la app (null = no tiene web conocida). Sin pedirlo, undefined. */
+  webAudit?: WebAudit | null;
 }
 export interface ResearchApi { research(input: ResearchInput): Promise<unknown> }
 
@@ -67,7 +80,7 @@ export const SAVE_TOOL = {
   strict: true,
   input_schema: {
     type: 'object', additionalProperties: false,
-    required: ['summary', 'look', 'qualification', 'contact', 'people', 'group', 'sources'],
+    required: ['summary', 'look', 'qualification', 'contact', 'people', 'group', 'checks', 'sources'],
     properties: {
       summary: { ...str, description: 'Dos frases: qué es la empresa y por qué podría encajar o no. Sin inventar.' },
       look: { type: 'array', items: str, description: 'Lo que no se puede saber desde fuera y el comercial debería mirar (máximo 4).' },
@@ -105,6 +118,18 @@ export const SAVE_TOOL = {
           evidence: str, source: str,
         },
       },
+      checks: {
+        type: 'array', description: 'Un elemento por cada punto de «Lo que el equipo quiere saber» (en el mismo orden). Vacía si no te piden nada.',
+        items: {
+          type: 'object', additionalProperties: false, required: ['point', 'verdict', 'detail', 'source'],
+          properties: {
+            point: { ...str, description: 'El punto, corto («Política de cookies», «Web antigua»…).' },
+            verdict: { type: 'string', enum: ['ok', 'problem', 'unknown'], description: 'ok: está bien. problem: falta o está mal (una oportunidad para el equipo). unknown: no lo has podido comprobar.' },
+            detail: { ...str, description: 'Qué has visto, en una frase.' },
+            source: { ...str, description: 'URL donde lo has visto, o "" si viene de lo que comprobó la app en su web.' },
+          },
+        },
+      },
       sources: {
         type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'url'], properties: { title: str, url: str } },
       },
@@ -130,6 +155,7 @@ ${VALUE_HELP}
   screens = si tiene pantallas en sala (yes) o no. dynamics = si hace dinámicas con el público o cuida sus redes (yes / partly / no).
   scale = un local (single), 2–3 locales (few), grupo o varias salas (group). debt = true solo si hay noticia de cierre, concurso o deudas.
 - Grupo: comprueba si la empresa pertenece a un grupo (sociedad matriz, holding, o si es una marca de otra empresa). Busca su razón social (o su CIF) y mira su «quiénes somos», el aviso legal, prensa económica y registros mercantiles públicos. Si lo confirmas con una fuente, ponlo en group; si no, todo vacío. Es lo primero que necesita saber el comercial: con quién se decide.
+- Si el equipo te dice qué quiere saber de la empresa, contesta cada punto en checks: ok, problem (falta o está mal: es una oportunidad para el equipo) o unknown (no lo has podido comprobar; no lo supongas). Lo que la app ha comprobado en su web es fiable: úsalo sin buscarlo otra vez. Menciona en summary lo más importante.
 - No repitas lo que ya está marcado en la ficha.
 - Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
 
@@ -150,6 +176,7 @@ Reglas:
 - Es otra empresa con el mismo nombre si la ciudad o la actividad no cuadran: entonces no la uses.
 - Solo datos de contacto de la empresa (teléfono, email genérico, perfiles de la empresa). De las personas, solo nombre, papel y perfil profesional o público si lo publican ellas.
 - Grupo: comprueba si la empresa pertenece a un grupo (sociedad matriz, holding, o si es una marca de otra empresa). Busca su razón social (o su CIF) y mira su «quiénes somos», el aviso legal, prensa económica y registros mercantiles públicos. Si lo confirmas con una fuente, ponlo en group; si no, todo vacío. Es lo primero que necesita saber el comercial: con quién se decide.
+- Si el equipo te dice qué quiere saber de la empresa, contesta cada punto en checks: ok, problem (falta o está mal: es una oportunidad para el equipo) o unknown (no lo has podido comprobar; no lo supongas). Lo que la app ha comprobado en su web es fiable: úsalo sin buscarlo otra vez. Menciona en summary lo más importante.
 - No repitas lo que ya está en la ficha.
 - Escribe en español, corto y claro. Si no encuentras nada útil, dilo en summary y deja las listas vacías.`;
 const LANG_NAME: Record<string, string> = { es: 'español', en: 'inglés', pt: 'portugués', ko: 'coreano' };
@@ -173,6 +200,8 @@ export function userPrompt(i: ResearchInput): string {
     i.products && `Lo vendemos por paquetes (di en summary cuáles le encajan y por qué, con lo que hayas leído; sin inventar):\n${i.products}`,
     !i.sector && i.clients?.length && `A quién vende el equipo (la empresa aún no tiene sector; di en summary a cuál se parece, si a alguno): ${i.clients.join('; ')}`,
     Object.keys(i.known).length ? `Ya marcado en la ficha (no lo repitas): ${JSON.stringify(i.known)}` : null,
+    i.focus && `Lo que el equipo quiere saber de esta empresa (contesta cada punto en checks):\n${i.focus}`,
+    i.webAudit !== undefined && (i.webAudit ? `Lo que la app ha comprobado al abrir su web (fiable):\n${auditText(i.webAudit)}` : 'No tiene web conocida (si la encuentras, ponla en contact).'),
   ].filter(Boolean);
   return `${lines.join('\n')}\n\nInvestiga y llama a save_research con lo que encuentres.`;
 }
@@ -200,7 +229,7 @@ function contactValue(key: AiContactKey, v: string): string | null {
  * Lo que devuelve la IA → lo que se enseña. Descarta lo que no tiene fuente, valores fuera de lo permitido, lo que ya
  * está marcado o ya está en la ficha, y duplicados.
  */
-export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unknown>; contact: Partial<Record<AiContactKey, string | null>>; people: string[]; now: Date; qual?: boolean; name?: string; group?: string | null }): AiResearch {
+export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unknown>; contact: Partial<Record<AiContactKey, string | null>>; people: string[]; now: Date; qual?: boolean; name?: string; group?: string | null; focus?: string | null; web?: WebAudit | null }): AiResearch {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const r: any = raw && typeof raw === 'object' ? raw : {};
   const list = (v: unknown): any[] => (Array.isArray(v) ? v : []);
@@ -243,8 +272,15 @@ export function sanitizeResearch(raw: unknown, ctx: { known: Record<string, unkn
     .filter((x): x is { title: string; url: string } => !!x.url);
   // Las fuentes de las propuestas también cuentan (aunque no las haya listado).
   for (const sg of out) if (!sources.some((x) => x.url === sg.source)) sources.push({ title: new URL(sg.source).hostname, url: sg.source });
+  // Qué mirar: solo si se pidió; cada punto con su veredicto (lo que no es ok/problem, «sin comprobar»).
+  const checks: ResearchCheck[] = !ctx.focus ? [] : list(r.checks).map((c) => ({
+    point: clip(c?.point, 160), verdict: (['ok', 'problem', 'unknown'].includes(c?.verdict) ? c.verdict : 'unknown') as ResearchCheck['verdict'],
+    detail: clip(c?.detail, MAX.evidence), source: sourceUrl(c?.source),
+  })).filter((c) => c.point).slice(0, 10);
   return {
     at: ctx.now.toISOString(),
+    ...(ctx.focus ? { focus: ctx.focus, checks } : {}),
+    ...(ctx.web !== undefined ? { web: ctx.web } : {}),
     summary: clip(r.summary, MAX.summary),
     look: list(r.look).map((x) => clip(x, 200)).filter(Boolean).slice(0, MAX.look),
     suggestions: out.slice(0, MAX.sugg),
@@ -261,7 +297,8 @@ export function readResearch(v: unknown): AiResearch | null {
   const LINK = new Set(['website', 'instagram', 'linkedin', 'facebook']);
   const suggestions = r.suggestions.filter((sg) => sg && sourceUrl(sg.source) && (sg.kind !== 'contact' || !LINK.has(sg.key) || sourceUrl(sg.value)));
   const sources = Array.isArray(r.sources) ? r.sources.filter((x) => x && sourceUrl(x.url)) : [];
-  return { ...r, suggestions, sources };
+  const checks = Array.isArray(r.checks) ? r.checks.filter((c) => c && typeof c.point === 'string').map((c) => ({ ...c, source: c.source && sourceUrl(c.source) ? c.source : null })) : undefined;
+  return { ...r, suggestions, sources, ...(checks ? { checks } : {}), ...(r.web !== undefined ? { web: readAudit(r.web) } : {}) };
 }
 
 // ---------------------------------------------------------------- Claude (web search + web fetch)
@@ -314,6 +351,13 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
 export const fixtureResearch = (): ResearchApi => ({
   async research(i) {
     const src = `https://example.com/${encodeURIComponent(i.name.toLowerCase().replace(/\s+/g, '-'))}`;
+    // Qué mirar: un punto por línea, contestado con lo que comprobó la app de su web (si la revisó).
+    const w = i.webAudit;
+    const checks = (i.focus ?? '').split('\n').map((x) => x.replace(/^[-•*\s]+/, '').trim()).filter(Boolean).slice(0, 6).map((point) => {
+      const legal = /cookies|privacidad|legal|normativa/i.test(point);
+      const verdict = !w || !w.ok ? 'unknown' : legal ? (w.legal.privacy && w.legal.cookies && w.cookieBanner !== false ? 'ok' : 'problem') : /antigua|web/i.test(point) ? (w.mobile && w.https ? 'ok' : 'problem') : 'unknown';
+      return { point: point.slice(0, 60), verdict, detail: verdict === 'unknown' ? 'Ejemplo de prueba: no se ha comprobado.' : verdict === 'problem' ? 'Ejemplo de prueba: según la revisión de su web, falta.' : 'Ejemplo de prueba: en orden.', source: '' };
+    });
     // Sin cualificación en el espacio (§45): lo general, sin nada de la noche.
     if (i.pack === null) return {
       summary: `Ejemplo de prueba (sin IA): ${i.name}, con web y contacto públicos.`,
@@ -321,6 +365,7 @@ export const fixtureResearch = (): ResearchApi => ({
       contact: [{ key: 'email', value: 'hola@ejemplo.test', evidence: 'Email en el pie de su web.', source: src }],
       people: [{ name: 'Laura Gil', role: 'Gerente', instagram: null, linkedin: null, evidence: 'La entrevistan como gerente.', source: `${src}/prensa` }],
       group: { name: 'Grupo Ejemplo', relation: 'marca de', evidence: `${i.name} es una marca de Grupo Ejemplo, S.L.${i.legalName ? ` (${i.legalName})` : ''}.`, source: `${src}/aviso-legal` },
+      checks,
       sources: [{ title: 'Web de la empresa', url: src }],
     };
     return {
@@ -337,6 +382,7 @@ export const fixtureResearch = (): ResearchApi => ({
         { key: 'website', value: 'ejemplo.test', evidence: 'Sin fuente.', source: 'no-es-una-url' },
       ],
       people: [{ name: 'Laura Gil', role: 'Gerente', instagram: null, linkedin: null, evidence: 'La entrevistan como gerente.', source: `${src}/prensa` }],
+      checks,
       sources: [{ title: 'Web del local', url: src }],
     };
   },
