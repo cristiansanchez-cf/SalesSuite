@@ -3,7 +3,7 @@
  * es MUTABLE: lo que se edita en /admin se ve en /d/<token>. Se pierde al reiniciar el proceso.
  * Vive en globalThis para sobrevivir al HMR de `astro dev`.
  */
-import { deckStarter } from '../decks/starter';
+import { deckExtras, deckStarter } from '../decks/starter';
 import { accountByCompany } from '../accounts/company-key';
 import fixtures from '../../../supabase/seed/fixtures.json';
 
@@ -372,7 +372,7 @@ export function freshDemoDb(): DemoDb {
   const REP = DEMO_USERS[0].id;
   demoAnalyticsDossiers(f, REP, ago);
   // Decks de inversión (docs/DECKS.md): Enjoy tiene la sección activada; sus bloques de partida, en el catálogo.
-  deckStarter(f.tenant.find((t) => t.id === ENJOY)?.name ?? 'Enjoy').forEach((b, i) => {
+  [...deckStarter(f.tenant.find((t) => t.id === ENJOY)?.name ?? 'Enjoy'), ...deckExtras()].forEach((b, i) => {
     const mid = `00000000-0000-4000-8000-0000000dec${String(i + 1).padStart(2, '0')}`;
     f.module.push({ id: mid, tenant_id: ENJOY, key: b.key, block_type: b.blockType, name: b.name, description: 'Bloque de deck de inversión: edítalo con lo vuestro.', is_catalog: true });
     f.module_version.push({ id: `00000000-0000-4000-8000-0000000dfc${String(i + 1).padStart(2, '0')}`, module_id: mid, version: 1, status: 'published', default_props: b.props, default_price: null, default_currency: 'EUR' });

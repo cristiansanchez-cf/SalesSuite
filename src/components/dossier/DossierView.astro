@@ -52,8 +52,12 @@ const blocks = await Promise.all(
   }),
 );
 // Cómo se ve: presentación (diapositivas en horizontal, por defecto) o todo hacia abajo. El destinatario puede cambiarlo (?ver=).
+// En el móvil, siempre hacia abajo (criterio de Cristian: «en móvil vertical la gente está habituada a hacer scroll»), en
+// propuestas y decks, sin opción de presentación. /d/ no se cachea (middleware), así que depende de cada petición.
+const ua = Astro.request.headers.get('user-agent') ?? '';
+const phone = Astro.request.headers.get('sec-ch-ua-mobile') === '?1' || /Mobi|iPhone|iPod|Android.+Mobile|Windows Phone/i.test(ua);
 const asked = Astro.url.searchParams.get('ver');
-const layout: 'slides' | 'scroll' = asked === 'scroll' || asked === 'slides' ? asked : (dossier.media?.layout ?? 'slides');
+const layout: 'slides' | 'scroll' = phone ? 'scroll' : asked === 'scroll' || asked === 'slides' ? asked : (dossier.media?.layout ?? 'slides');
 const slides = blocks.flatMap((b) => {
   if (!b) return [];
   const parts = layout === 'slides' && b.parts ? b.parts(b.props as Record<string, unknown>, b.ctx) : [];
@@ -116,7 +120,7 @@ const og = {
         ))}
       </main>
       <DossierFooter tenant={tenant} title={dossier.title} prospect={prospect} locale={dossier.locale} repContact={dossier.repContact} />
-      <a class="deck__switch deck__switch--float" href={verUrl('slides')} data-testid="layout-slides">{pt.slides}</a>
+      {!phone && <a class="deck__switch deck__switch--float" href={verUrl('slides')} data-testid="layout-slides">{pt.slides}</a>}
     </>
   )}
   {track && (
@@ -196,6 +200,14 @@ const og = {
   .deck .tabs-showcase__panel img { max-height: max(14rem, calc(var(--deck-h, 100dvh) - 22rem)); }
   .deck .tabs-showcase__panel { margin-top: 1.25rem; }
   .deck .pt-layout { align-items: center; }
+  /* Un móvil que el servidor no ha reconocido (estrecho y en vertical): las diapositivas, una debajo de otra. */
+  @media (max-width: 640px) and (orientation: portrait) {
+    .deck { height: auto; overflow: visible; display: block; }
+    .deck__track { display: block; overflow: visible; scroll-snap-type: none; }
+    .deck__slide { height: auto; overflow: visible; }
+    .deck__slide:not(.is-current) .deck__inner { opacity: 1; }
+    .deck__arrow, .deck__bar { display: none; }
+  }
   @media (max-width: 640px) {
     .deck__arrow { top: auto; bottom: .35rem; translate: none; width: 2.6rem; height: 2.6rem; font-size: 1.6rem; }
     .deck__bar { gap: .6rem; padding: .45rem .8rem; } .deck__dots { display: none; }
@@ -207,7 +219,8 @@ const og = {
   <script>
     const deck = document.querySelector<HTMLElement>('[data-deck]');
     const track = deck?.querySelector<HTMLElement>('[data-track]');
-    if (deck && track) {
+    // Estrecho y en vertical, el CSS las pone una debajo de otra: sin pasar páginas.
+    if (deck && track && !matchMedia('(max-width: 640px) and (orientation: portrait)').matches) {
       const slides = Array.from(track.querySelectorAll<HTMLElement>('.deck__slide'));
       const dots = Array.from(deck.querySelectorAll<HTMLButtonElement>('[data-dot]'));
       const prev = deck.querySelector<HTMLButtonElement>('[data-prev]');

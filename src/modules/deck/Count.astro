@@ -1,0 +1,8 @@
+---
+/** Una cifra que cuenta hasta su valor al verse (deck/client.ts). Sin cifra, el texto tal cual. */
+import { countOf, formatCount } from './ui';
+interface Props { value: string }
+const v = Astro.props.value;
+const c = countOf(v);
+---
+{c ? <span data-deck-count={c.target} data-dec={c.decimals} data-group={c.group} data-decsep={c.dec} data-prefix={c.prefix} data-suffix={c.suffix} aria-label={v}>{c.prefix}{formatCount(c.target, c)}{c.suffix}</span> : v}

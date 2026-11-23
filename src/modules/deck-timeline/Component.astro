@@ -1,0 +1,49 @@
+---
+/** deck-timeline ← la oportunidad: una cita y los hitos en fila (con flechas), uno resaltado; cifras que cuentan. */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
+import type { DeckTimelineProps } from './schema';
+
+type Props = DeckTimelineProps & ModuleBaseProps;
+const { eyebrow, title, quote, steps, callout, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const cols = steps.length >= 4 ? 'lg:grid-cols-4' : steps.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
+---
+<div data-module="deck-timeline" class="relative overflow-hidden">
+  <div class="deck-glow" aria-hidden="true"></div>
+  <Section class="relative">
+    {eyebrow && <p class="deck-eyebrow deck-in">{t(eyebrow)}</p>}
+    <h2 class="deck-title deck-in max-w-5xl" style="--d:80ms"><Rich text={t(title)} /></h2>
+    {quote && <blockquote class="deck-in m-0 mt-8 max-w-6xl border-l-[3px] border-primary pl-6 text-[clamp(1rem,min(1.6vw,2.6vh),1.35rem)] leading-snug text-text/90" style="--d:180ms"><Rich text={t(quote)} /></blockquote>}
+    <ol class:list={['m-0 mt-[clamp(1.25rem,4vh,2.5rem)] grid list-none gap-4 p-0 sm:grid-cols-2', cols]}>
+      {steps.map((s, i) => (
+        <li class:list={['deck-card deck-in tl-step grid content-start gap-2', s.highlight && 'tl-step--hi deck-card--line']} style={`--d:${260 + i * 140}ms`} data-testid="deck-step">
+          <p class:list={['m-0 text-xs font-bold uppercase tracking-[0.2em]', s.highlight ? 'tone-accent' : 'tone-muted']}>{t(s.when)}</p>
+          <p class:list={['deck-figure', s.highlight && 'tone-accent']}><Count value={t(s.value)} /></p>
+          {s.label && <p class="m-0 font-bold text-muted">{t(s.label)}</p>}
+          {s.money && <p class:list={['m-0 mt-2 font-display text-xl font-extrabold', s.highlight ? 'tone-accent' : 'tone-primary']}>{t(s.money)}</p>}
+          {s.note && <p class="m-0 text-sm text-muted">{t(s.note)}</p>}
+        </li>
+      ))}
+    </ol>
+    {callout && <p class="deck-callout deck-in m-0 mt-6 flex flex-wrap items-center gap-4" style={`--d:${400 + steps.length * 140}ms`}>{callout.tag && <span class="deck-tag deck-tag--primary">{t(callout.tag)}</span>}<span><Rich text={t(callout.text)} /></span></p>}
+  </Section>
+</div>
+
+<style>
+  .tl-step--hi { border-color: rgb(var(--color-accent) / 0.55); }
+  @media (min-width: 1024px) {
+    .tl-step:not(:last-child)::after { content: '→'; position: absolute; right: -0.85rem; top: 50%; translate: 0 -50%; color: rgb(var(--color-primary)); font-size: 0.9rem; z-index: 1; }
+    .tl-step { overflow: visible; }
+  }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from '../deck/client';
+  mountAll('deck-timeline', init);
+</script>

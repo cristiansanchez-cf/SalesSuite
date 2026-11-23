@@ -1,0 +1,38 @@
+/* Bloques de deck (docs/DECKS.md): solo tokens del tema del espacio. Aparecen en escalera al verse (client.ts). */
+/* Más ancho que una propuesta: las cifras de un deck van en filas de cuatro. */
+[data-module^="deck-"] { --container-max: 92rem; --space-section: clamp(1.75rem, 5vh, 3.5rem); }
+/* En pantalla ancha, sitio a los lados para las flechas del deck. */
+@media (min-width: 900px) { [data-module^="deck-"] { --container-max: min(92rem, calc(100vw - 10rem)); } }
+.deck-in {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity var(--duration-base, 320ms) var(--ease-out, ease-out) var(--d, 0ms),
+    transform calc(var(--duration-base, 320ms) * 1.6) var(--ease-out, ease-out) var(--d, 0ms);
+}
+[data-revealed] .deck-in { opacity: 1; transform: none; }
+.deck-eyebrow { margin: 0 0 0.9rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgb(var(--color-primary)); }
+.deck-eyebrow--accent { color: rgb(var(--color-accent)); }
+.deck-title { margin: 0; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; line-height: 0.98; font-size: clamp(2rem, min(4.8vw, 8vh), 4.2rem); }
+.deck-lede { margin: 1rem 0 0; max-width: 52rem; font-size: clamp(1.05rem, 1.6vw, 1.3rem); color: rgb(var(--color-muted)); }
+.deck-card {
+  position: relative; overflow: hidden; border: 1px solid rgb(var(--color-border, var(--color-line, 42 36 48)));
+  border-radius: var(--radius-card, 24px); padding: clamp(1.1rem, 2.4vh, 1.6rem); container-type: inline-size;
+  background: linear-gradient(160deg, rgb(var(--color-surface) / 0.95), rgb(var(--color-bg) / 0.6));
+}
+.deck-card--line::before {
+  content: ''; position: absolute; inset: 0 1.2rem auto; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--color-accent)), rgb(var(--color-primary)), transparent);
+  transform: scaleX(0); transition: transform 900ms var(--ease-out, ease-out) calc(var(--d, 0ms) + 200ms);
+}
+[data-revealed] .deck-card--line::before { transform: scaleX(1); }
+.deck-card--featured { border-color: rgb(var(--color-primary) / 0.6); background: linear-gradient(160deg, rgb(var(--color-primary) / 0.16), rgb(var(--color-bg) / 0.7)); }
+.deck-tag { display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid rgb(var(--color-text) / 0.18); border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(var(--color-muted)); }
+.deck-tag--primary { border-color: rgb(var(--color-primary) / 0.55); color: rgb(var(--color-primary)); }
+.deck-tag--accent { border-color: rgb(var(--color-accent) / 0.55); color: rgb(var(--color-accent)); }
+.deck-figure { margin: 0; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.04em; line-height: 0.95; font-size: clamp(1.9rem, 16cqi, 4.2rem); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.deck-callout { border: 1px solid rgb(var(--color-text) / 0.1); border-left: 3px solid rgb(var(--color-primary)); border-radius: 14px; padding: clamp(0.8rem, 1.8vh, 1.1rem) 1.4rem; background: rgb(var(--color-surface) / 0.7); font-size: clamp(0.95rem, min(1.3vw, 2.2vh), 1.15rem); color: rgb(var(--color-muted)); }
+.deck-glow { position: absolute; inset: -20% -15% auto auto; width: 65vmax; height: 65vmax; pointer-events: none;
+  background: radial-gradient(closest-side, rgb(var(--color-primary) / 0.2), transparent 70%); filter: blur(30px); }
+.tone-primary { color: rgb(var(--color-primary)); }
+.tone-accent { color: rgb(var(--color-accent)); }
+.tone-muted { color: rgb(var(--color-muted)); }
+@media (prefers-reduced-motion: reduce) { .deck-in { opacity: 1; transform: none; transition: none; } .deck-card--line::before { transform: none; } }

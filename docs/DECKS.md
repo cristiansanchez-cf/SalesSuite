@@ -16,8 +16,25 @@ otros bloques: se monta igual (editor de propuestas), se comparte por enlace `/d
 - Desde la ficha de un inversor: «Crear deck» y la lista de sus decks.
 
 ## Los bloques
-- Tipos `deck-cover` (portada), `deck-slide` (título + puntos), `deck-stats` (cifras y reparto en %) y `deck-team`.
-- Cada espacio tiene 9 bloques de partida en su catálogo (`deck-portada` … `deck-ronda`, ver `src/lib/decks/starter.ts`).
+Animados como las propuestas (aparecen en escalera, las cifras cuentan, las barras y el donut se llenan) y solo con los
+colores y fuentes del espacio. En los textos, `*así*` sale en el color principal y `**así**` en negrita.
+- `deck-cover` portada · `deck-slide` titular, cita y puntos numerados · `deck-stats` cifras (tarjetas con etiqueta, una
+  resaltada), cifras pequeñas numeradas, tarjetas, reparto en barras o donut y frases destacadas · `deck-team` personas
+  (una resaltada, nota al pie) · `deck-timeline` hitos en el tiempo · `deck-math` la cuenta grande, ventanas de salida,
+  tabla de escenarios · `deck-contact` cierre · `deck-cases` acuerdos cerrados con foto.
+- Piezas comunes en `src/modules/deck/` (texto con acento, cifras que cuentan, CSS y animación).
+- Bloques de partida en el catálogo de cada espacio: `src/lib/decks/starter.ts` (migraciones 20270121 y 20270123).
+  `deck-casos` no sale en un deck nuevo: se añade a mano.
+- Un `null` en lo personalizado de un bloque de deck quita ese campo del catálogo (p. ej. la pastilla de la ronda).
+
+## Por MCP
+`decks`, `deck_ver`, `deck_crear` y `deck_bloque` (editar el bloque entero, añadir, quitar, mover, ocultar, mostrar): la
+IA de la persona monta o corrige un deck; cada bloque se valida con su esquema y lo que no vale se explica campo a campo.
+Así se montan los decks con contenido de la empresa sin que ese contenido pase por el repositorio.
+
+## En el móvil
+Decks y propuestas, siempre hacia abajo (sin presentación horizontal ni botón para cambiarla). El servidor lo decide por
+el navegador; si no lo reconoce, en pantalla estrecha y vertical el CSS pone las diapositivas una debajo de otra.
   Los «—» son **huecos**: se rellenan con cifras reales en el Catálogo (vale para todos los decks) o en cada deck.
 - Un deck nuevo nace con todos, en orden. `{company}` se cambia por el nombre del inversor.
 - En el editor de un deck no hay sector, actores, precio ni resultado de venta (un deck no se «gana»: convertiría al

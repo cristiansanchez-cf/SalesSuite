@@ -6,12 +6,16 @@ import type { ModuleContext } from './types';
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
-/** Merge profundo para objetos; arrays y escalares del override reemplazan. */
-export function deepMerge(base: Record<string, unknown>, over: Record<string, unknown>): Record<string, unknown> {
+/**
+ * Merge profundo para objetos; arrays y escalares del override reemplazan. Con `nullClears` (los bloques de deck), un
+ * `null` en el override quita el campo del catálogo (así un deck puede no llevar, p. ej., la pastilla de la ronda).
+ */
+export function deepMerge(base: Record<string, unknown>, over: Record<string, unknown>, nullClears = false): Record<string, unknown> {
   const out: Record<string, unknown> = { ...base };
   for (const [k, v] of Object.entries(over)) {
     if (v === undefined) continue;
-    out[k] = isPlainObject(v) && isPlainObject(base[k]) ? deepMerge(base[k] as Record<string, unknown>, v) : v;
+    if (v === null && nullClears) { delete out[k]; continue; }
+    out[k] = isPlainObject(v) && isPlainObject(base[k]) ? deepMerge(base[k] as Record<string, unknown>, v, nullClears) : v;
   }
   return out;
 }
@@ -23,7 +27,7 @@ export type ResolvedItem =
 /** default_props ⊕ prop_overrides, validado contra schema.ts, + contexto/precio. */
 export function resolveItem(item: RenderItem, dossier: PublicDossier, total: ResolvedPrice | null): ResolvedItem {
   if (!isBlockType(item.blockType)) return { ok: false, item, reason: `block_type desconocido: ${item.blockType}` };
-  const merged = deepMerge(item.defaultProps ?? {}, item.propOverrides ?? {});
+  const merged = deepMerge(item.defaultProps ?? {}, item.propOverrides ?? {}, item.blockType.startsWith('deck-'));
   const parsed = REGISTRY[item.blockType].schema.safeParse(merged);
   if (!parsed.success) {
     return { ok: false, item, reason: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };

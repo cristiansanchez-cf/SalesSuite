@@ -1,22 +1,33 @@
 ---
-/** deck-cover ← portada del deck de inversión. Solo tokens del tema. */
-import Section from '~/components/Section.astro';
-import { interpolate } from '../resolve';
-import type { ModuleBaseProps } from '../types';
+/** deck-cover ← portada: antetítulo, titular grande con *acento*, una frase, la ronda y el pie. Animada al verse. */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
 import type { DeckCoverProps } from './schema';
 
 type Props = DeckCoverProps & ModuleBaseProps;
-const { eyebrow, title, tagline, round, contact, ctx } = Astro.props;
+const { eyebrow, title, tagline, round, badge, contact, ctx } = Astro.props;
 const t = (s: string) => interpolate(s, ctx);
 ---
-<div data-module="deck-cover">
-  <Section>
-    <div class="grid min-h-[60vh] content-center gap-6">
-      {eyebrow && <p class="text-sm font-bold uppercase tracking-[0.18em] text-primary">{t(eyebrow)}</p>}
-      <h1 class="max-w-4xl font-display text-[clamp(3rem,9vw,6.5rem)] font-extrabold leading-[0.95] tracking-tight">{t(title)}</h1>
-      <p class="max-w-2xl text-[clamp(1.2rem,2.4vw,1.7rem)] leading-snug text-muted">{t(tagline)}</p>
-      {round && <p class="w-fit rounded-full border border-line px-4 py-1.5 text-sm font-bold">{t(round)}</p>}
-      {contact && <p class="text-sm text-muted">{t(contact)}</p>}
+<div data-module="deck-cover" class="relative overflow-hidden">
+  <div class="deck-glow" aria-hidden="true"></div>
+  <Section class="relative">
+    <div class="grid min-h-[min(70vh,44rem)] content-center gap-0">
+      {badge && <span class="deck-tag deck-in absolute right-[max(1rem,4vw)] top-8" style="--d:0ms">{t(badge)}</span>}
+      {eyebrow && <p class="deck-eyebrow deck-eyebrow--accent deck-in" style="--d:60ms">{t(eyebrow)}</p>}
+      <h1 class="deck-title deck-in !text-[clamp(3rem,9vw,7.5rem)]" style="--d:140ms"><Rich text={t(title)} /></h1>
+      <p class="deck-lede deck-in max-w-xl" style="--d:240ms"><Rich text={t(tagline)} /></p>
+      {round && <p class="deck-in mt-8" style="--d:320ms"><span class="deck-tag deck-tag--primary">{t(round)}</span></p>}
+      {contact && <p class="deck-in mt-12 flex items-center gap-2 text-sm text-muted" style="--d:400ms"><span class="inline-block h-1.5 w-1.5 rounded-full bg-primary"></span>{t(contact)}</p>}
     </div>
   </Section>
 </div>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from '../deck/client';
+  mountAll('deck-cover', init);
+</script>

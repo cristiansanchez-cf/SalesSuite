@@ -36,6 +36,8 @@ describe('resolveItem', () => {
 describe('helpers', () => {
   test('deepMerge: objetos se fusionan, arrays se reemplazan', () => {
     expect(deepMerge({ a: { x: 1, y: 2 }, l: [1, 2] }, { a: { y: 3 }, l: [9] })).toEqual({ a: { x: 1, y: 3 }, l: [9] });
+    expect(deepMerge({ a: 1, b: 2 }, { b: null })).toEqual({ a: 1, b: null });
+    expect(deepMerge({ a: 1, b: 2 }, { b: null }, true)).toEqual({ a: 1 });
   });
   test('interpolate', () => {
     expect(interpolate('Para {company} ({prospect})', { prospectName: 'Laura', prospectCompany: 'Sala X' })).toBe('Para Sala X (Laura)');

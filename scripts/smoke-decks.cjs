@@ -50,6 +50,12 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   assert(pub.toLowerCase().includes(`para ${investor}`.toLowerCase()) && /Lo que levantamos/i.test(pub), 'el enlace público: portada «Para <inversor>» y la ronda');
   if (OUT) await guest.screenshot({ path: `${OUT}/deck-public.png` });
   await guest.close();
+  // En el móvil, siempre hacia abajo: sin diapositivas ni botón de «presentación» (también con ?ver=slides).
+  const phone = await (await b.newContext({ ...require(process.env.PLAYWRIGHT_MODULE || 'playwright').devices['iPhone 13'] })).newPage();
+  await phone.goto(`${link.startsWith('http') ? link : `${BASE}${link}`}?ver=slides`);
+  assert((await phone.locator('.deck__slide').count()) === 0 && !(await phone.isVisible('[data-testid=layout-slides]')), 'móvil: todo hacia abajo, sin presentación');
+  assert(/Lo que levantamos/i.test(await phone.evaluate(() => document.body.innerText)), 'móvil: el contenido entero');
+  await phone.close();
 
   // Decks y su analítica sí; Propuestas no.
   await p.goto(`${BASE}/admin/decks`);
@@ -60,6 +66,33 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.goto(`${BASE}/admin/decks/analitica`);
   assert(await p.isVisible('[data-testid=analytics-kpis]') && Number(await p.textContent('[data-testid=kpi-published]')) >= 1, 'analítica de decks: al menos uno publicado');
   assert(await p.isVisible('[data-testid=tab-decks-analytics]'), 'pestañas Decks · Analítica');
+
+  // Por MCP (la IA de la persona): ver los decks, editar un bloque entero y que lo que no vale se explique.
+  {
+    const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+    const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
+    await p.goto(`${BASE}/admin/ia?ia=key`);
+    await p.fill('[data-testid=mcp-name]', 'Decks smoke');
+    await Promise.all([p.waitForLoadState('load'), p.click('[data-testid=mcp-create]')]);
+    const key = await p.inputValue('[data-testid=mcp-key]');
+    const client = new Client({ name: 'smoke-decks', version: '1.0.0' });
+    await client.connect(new StreamableHTTPClientTransport(new URL(`${BASE}/api/mcp`), { requestInit: { headers: { authorization: `Bearer ${key}` } } }));
+    const call = async (name, args = {}) => { const r = await client.callTool({ name, arguments: args }); const t = r.content?.[0]?.text ?? ''; return r.isError ? { error: t } : JSON.parse(t); };
+    const list = await call('decks');
+    const mine = list.find((d) => d.inversor === investor);
+    assert(!!mine, 'MCP: decks lista el deck');
+    const d = await call('deck_ver', { deck_id: mine.id });
+    const cover = d.bloques.find((x) => x.clave === 'deck-portada');
+    assert(cover && d.se_pueden_anadir.some((x) => x.clave === 'deck-casos'), 'MCP: deck_ver con sus bloques y lo que se puede añadir');
+    const e1 = await call('deck_bloque', { deck_id: mine.id, accion: 'editar', bloque_id: cover.bloque_id, props: { title: 'Documento de *inversión.*', tagline: 'Para quienes ya conocen el proyecto.' } });
+    const c2 = e1.bloques.find((x) => x.clave === 'deck-portada');
+    assert(c2.props.title === 'Documento de *inversión.*' && !('round' in c2.props), 'MCP: editar deja el bloque entero (lo del catálogo que no se manda, fuera)');
+    const bad = await call('deck_bloque', { deck_id: mine.id, accion: 'editar', bloque_id: cover.bloque_id, props: { tagline: 'sin título' } });
+    assert(bad.error && /title/.test(bad.error), `MCP: lo que no vale se explica (${(bad.error ?? '').slice(0, 80)})`);
+    const add = await call('deck_bloque', { deck_id: mine.id, accion: 'anadir', clave: 'deck-casos', posicion: 1 });
+    assert(add.bloques[1]?.clave === 'deck-casos', 'MCP: añadir un bloque en su sitio');
+    await client.close();
+  }
 
   // La ficha del inversor: tipo Inversor, sus decks y «Crear deck».
   await p.goto(`${BASE}/admin/accounts?ver=all&tipo=inversor&q=${encodeURIComponent(investor)}`);

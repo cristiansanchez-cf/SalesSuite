@@ -18,6 +18,10 @@ import { deckCoverSchema } from './deck-cover/schema';
 import { deckSlideSchema } from './deck-slide/schema';
 import { deckStatsSchema } from './deck-stats/schema';
 import { deckTeamSchema } from './deck-team/schema';
+import { deckTimelineSchema } from './deck-timeline/schema';
+import { deckMathSchema } from './deck-math/schema';
+import { deckContactSchema } from './deck-contact/schema';
+import { deckCasesSchema } from './deck-cases/schema';
 import type { ModuleContext } from './types';
 
 /**
@@ -137,6 +141,30 @@ export const REGISTRY = {
     schema: deckTeamSchema,
     example: { title: 'El equipo', people: [{ name: 'Nombre Apellido', role: 'CEO', bio: 'Por qué tú' }] },
     load: () => import('./deck-team/Component.astro'),
+  },
+  'deck-timeline': {
+    label: 'Deck: la oportunidad (hitos en el tiempo)',
+    schema: deckTimelineSchema,
+    example: { title: 'El modelo funciona. *La ronda acelera.*', steps: [{ when: 'Hoy', value: '20', label: 'clientes' }, { when: 'Final de año', value: '50', label: 'clientes', highlight: true }] },
+    load: () => import('./deck-timeline/Component.astro'),
+  },
+  'deck-math': {
+    label: 'Deck: por qué entrar ahora (cuenta, salidas, escenarios)',
+    schema: deckMathSchema,
+    example: { title: 'Por qué entrar *ahora.*', equation: { terms: [{ label: 'Inviertes', value: '50.000€' }, { label: 'Te devuelven', value: '25.000€', tone: 'accent' }, { label: 'Riesgo real', value: '25.000€', tone: 'primary' }] } },
+    load: () => import('./deck-math/Component.astro'),
+  },
+  'deck-contact': {
+    label: 'Deck: cierre y contacto',
+    schema: deckContactSchema,
+    example: { title: '¿Quieres *entrar?*', people: [{ role: 'CEO', name: 'Nombre Apellido', contact: 'hola@tuempresa.com' }] },
+    load: () => import('./deck-contact/Component.astro'),
+  },
+  'deck-cases': {
+    label: 'Deck: acuerdos cerrados (con foto)',
+    schema: deckCasesSchema,
+    example: { title: 'Lo que *hemos cerrado.*', items: [{ status: 'Cerrado', title: 'Nombre del acuerdo', text: 'Qué es y por qué importa.' }] },
+    load: () => import('./deck-cases/Component.astro'),
   },
 } as const satisfies Record<string, {
   label: string;

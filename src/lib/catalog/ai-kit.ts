@@ -29,8 +29,12 @@ export const TYPE_GUIDE: Record<BlockType, { use: string; special?: boolean }> =
   // Decks de inversión (docs/DECKS.md): solo para los decks, no para las propuestas de venta.
   'deck-cover': { use: 'Deck de inversión: portada (quiénes sois en una frase y la ronda).', special: true },
   'deck-slide': { use: 'Deck de inversión: una diapositiva con titular y de 1 a 6 puntos.', special: true },
-  'deck-stats': { use: 'Deck de inversión: cifras grandes (mercado, tracción, la ronda) y un reparto en barras.', special: true },
-  'deck-team': { use: 'Deck de inversión: el equipo.', special: true },
+  'deck-stats': { use: 'Deck de inversión: cifras que cuentan (la ronda, la tracción, el mercado), cifras pequeñas, tarjetas y un reparto en barras o donut.', special: true },
+  'deck-team': { use: 'Deck de inversión: personas en tarjetas (el equipo o quién está en la ronda), una resaltada.', special: true },
+  'deck-timeline': { use: 'Deck de inversión: la oportunidad, una cita y hitos en el tiempo con su cifra (uno resaltado).', special: true },
+  'deck-math': { use: 'Deck de inversión: por qué entrar ahora (una cuenta grande, ventanas de salida, tabla de escenarios).', special: true },
+  'deck-contact': { use: 'Deck de inversión: cierre, quién firma y cómo contactar.', special: true },
+  'deck-cases': { use: 'Deck de inversión: acuerdos cerrados, uno por fila, con foto.', special: true },
 };
 
 export interface KitModule { key: string; blockType: string; name: string; description: string | null; props: unknown }

@@ -1,0 +1,69 @@
+---
+/** deck-contact ← el cierre: la pregunta grande, quién firma, cómo contactar y los datos clave al pie. */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
+import type { DeckContactProps } from './schema';
+
+type Props = DeckContactProps & ModuleBaseProps;
+const { eyebrow, title, lede, people, rows, brand, facts, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+const href = (v: string) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? `mailto:${v}` : /^\+?[\d\s]{7,}$/.test(v) ? `tel:${v.replace(/\s+/g, '')}` : /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v) ? `https://${v}` : null);
+---
+<div data-module="deck-contact" class="relative overflow-hidden">
+  <div class="contact-wash" aria-hidden="true"></div>
+  <Section class="relative">
+    <div class="grid min-h-[min(70vh,44rem)] content-center justify-items-center gap-0 text-center">
+      {eyebrow && <p class="deck-eyebrow deck-in">{t(eyebrow)}</p>}
+      <h2 class="deck-title deck-in !text-[clamp(3rem,9vw,7rem)]" style="--d:100ms"><Rich text={t(title)} /></h2>
+      {lede && <p class="deck-lede deck-in max-w-3xl" style="--d:200ms"><Rich text={t(lede)} /></p>}
+      {people && people.length > 0 && (
+        <div class="deck-card deck-in mt-[clamp(1.25rem,4vh,2.5rem)] grid w-full max-w-4xl gap-6 !p-6 sm:grid-flow-col sm:auto-cols-fr" style="--d:300ms">
+          {people.map((p) => {
+            const h = p.contact ? href(p.contact) : null;
+            return (
+              <div class="grid gap-1">
+                {p.role && <span class="text-xs font-bold uppercase tracking-[0.2em] text-muted">{t(p.role)}</span>}
+                <span class="font-display text-xl font-extrabold">{t(p.name)}</span>
+                {p.contact && (h ? <a class="text-sm text-primary underline-offset-4 hover:underline" href={h}>{t(p.contact)}</a> : <span class="text-sm text-muted">{t(p.contact)}</span>)}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {rows && rows.length > 0 && (
+        <div class="mt-6 grid w-full max-w-xl gap-2 text-left">
+          {rows.map((r, i) => {
+            const h = href(r.value);
+            return (
+              <p class="deck-card deck-in m-0 grid grid-cols-[7rem_1fr] items-center !rounded-2xl !border-l-[3px] !border-l-primary !p-4" style={`--d:${380 + i * 80}ms`}>
+                <span class="text-xs font-bold uppercase tracking-[0.2em] text-primary">{t(r.label)}</span>
+                {h ? <a class="font-bold" href={h}>{t(r.value)}</a> : <span class="font-bold">{t(r.value)}</span>}
+              </p>
+            );
+          })}
+        </div>
+      )}
+      {brand && <p class="deck-in mt-8 text-xs font-bold uppercase tracking-[0.3em] text-muted" style="--d:600ms">{t(brand)}</p>}
+    </div>
+    {facts && facts.length > 0 && (
+      <p class="deck-in m-0 mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 border-t border-line pt-5 text-sm text-muted" style="--d:700ms">
+        {facts.map((f, i) => <span class="flex items-center gap-2">{i === 0 && <span class="inline-block h-1.5 w-1.5 rounded-full bg-primary"></span>}<Rich text={t(f)} /></span>)}
+      </p>
+    )}
+  </Section>
+</div>
+
+<style>
+  .contact-wash { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(60% 70% at 15% 20%, rgb(var(--color-primary) / 0.28), transparent 70%), radial-gradient(50% 60% at 90% 90%, rgb(var(--color-accent) / 0.1), transparent 70%); }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from '../deck/client';
+  mountAll('deck-contact', init);
+</script>

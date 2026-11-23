@@ -1,0 +1,7 @@
+---
+/** Texto de deck con *acento* y **negrita** (ver ui.ts). `text` ya viene interpolado. */
+import { rich } from './ui';
+interface Props { text: string }
+const segs = rich(Astro.props.text);
+---
+{segs.map((s) => (s.accent ? <span class="text-primary">{s.text}</span> : s.bold ? <strong class="font-bold text-text">{s.text}</strong> : s.text))}

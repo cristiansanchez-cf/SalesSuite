@@ -66,6 +66,14 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await f.click('[data-testid=forbidden-hub]');
   await f.waitForURL(/enjoy\.localhost.*\/admin/, { timeout: 10000 }).catch(() => {});
   assert(/enjoy\.localhost:\d+\/admin/.test(f.url()) && !/login/.test(f.url()), `«Ver tus empresas» sin volver a entrar (${f.url()})`);
+  // «Cambiar de cuenta» desde «Sin acceso»: cierra la sesión y lleva al login (antes volvía a «Sin acceso»).
+  const g = await page();
+  await g.goto(`http://sciscreen.localhost:${port}/admin/login`);
+  await g.click('[data-testid="demo-rep@enjoy.test"]');
+  await g.waitForLoadState('load');
+  await g.goto(`http://sciscreen.localhost:${port}/admin`);
+  await Promise.all([g.waitForURL(/\/admin\/login/, { timeout: 10000 }).catch(() => {}), g.click('form[action="/admin/logout"] button')]);
+  assert(/\/admin\/login/.test(g.url()), `«Cambiar de cuenta» lleva al login (${g.url()})`);
 
   // Móvil: la pantalla de elegir sin desbordarse.
   const mob = await page({ width: 390, height: 844 });

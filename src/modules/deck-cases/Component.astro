@@ -1,0 +1,53 @@
+---
+/** deck-cases ← lo cerrado: una fila por acuerdo, con su estado, etiqueta, dónde y cuándo, texto, nombres y foto. */
+import "../deck/deck.css";
+import Section from "~/components/Section.astro";
+import Rich from "../deck/Rich.astro";
+import Count from "../deck/Count.astro";
+import { interpolate } from "../resolve";
+import type { ModuleBaseProps } from "../types";
+import type { DeckCasesProps } from './schema';
+
+type Props = DeckCasesProps & ModuleBaseProps;
+const { eyebrow, title, items, ctx } = Astro.props;
+const t = (s: string) => interpolate(s, ctx);
+---
+<div data-module="deck-cases" class="relative overflow-hidden">
+  <Section>
+    {eyebrow && <p class="deck-eyebrow deck-eyebrow--accent deck-in">{t(eyebrow)}</p>}
+    <h2 class="deck-title deck-in !text-[clamp(2rem,4.6vw,3.6rem)]" style="--d:80ms"><Rich text={t(title)} /></h2>
+    <div class="mt-8 grid gap-4">
+      {items.map((c, i) => (
+        <article class:list={['deck-card deck-in grid overflow-hidden !p-0', c.image && 'md:grid-cols-[1.1fr_1fr]', i === 0 && 'deck-card--featured']} style={`--d:${200 + i * 140}ms`} data-testid="deck-case">
+          <div class="grid content-center gap-3 p-7">
+            <p class="m-0 flex flex-wrap items-center gap-2">
+              {c.status && <span class="deck-tag deck-tag--primary">{t(c.status)}</span>}
+              {c.tag && <span class="deck-tag deck-tag--accent">{t(c.tag)}</span>}
+              {c.meta && <span class="text-xs text-muted">{t(c.meta)}</span>}
+            </p>
+            <p class="m-0 flex flex-wrap items-baseline gap-x-4 font-display text-[clamp(1.8rem,3.4vw,2.8rem)] font-extrabold leading-none">{t(c.title)}{c.highlight && <span class="text-xl tone-accent">{t(c.highlight)}</span>}</p>
+            {c.text && <p class="m-0 text-muted"><Rich text={t(c.text)} /></p>}
+            {c.names && c.names.length > 0 && (
+              <p class="m-0 mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+                {c.namesLabel && <span class="text-xs font-bold uppercase tracking-[0.2em] text-muted">{t(c.namesLabel)}</span>}
+                {c.names.map((n) => <span class="font-bold tone-accent">{t(n)}</span>)}
+              </p>
+            )}
+          </div>
+          {c.image && <div class="case-img min-h-[12rem]"><img src={c.image} alt="" class="h-full w-full object-cover" loading="lazy" /></div>}
+        </article>
+      ))}
+    </div>
+  </Section>
+</div>
+
+<style>
+  .case-img img { transform: scale(1.08); transition: transform 1600ms var(--ease-out, ease-out); }
+  [data-revealed] .case-img img { transform: none; }
+</style>
+
+<script>
+  import { mountAll } from '../runtime';
+  import { init } from '../deck/client';
+  mountAll('deck-cases', init);
+</script>

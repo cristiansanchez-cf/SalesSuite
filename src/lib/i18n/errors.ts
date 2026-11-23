@@ -34,6 +34,13 @@ const EXACT: Record<string, T> = {
   'Persona no encontrada': ['Person not found', 'Pessoa não encontrada', '사람을 찾을 수 없습니다'],
   'Importación no encontrada': ['Import not found', 'Importação não encontrada', '가져오기를 찾을 수 없습니다'],
   'Falta aplicar la migración de los decks': ['The decks migration has not been applied yet', 'Falta aplicar a migração dos decks', '덱 마이그레이션이 아직 적용되지 않았습니다'],
+  'Este espacio no tiene la sección Decks': ['This space does not have the Decks section', 'Este espaço não tem a secção Decks', '이 공간에는 덱 섹션이 없습니다'],
+  'Ese id no es de un deck': ['That id is not a deck', 'Esse id não é de um deck', '그 id는 덱이 아닙니다'],
+  'Ese bloque no está en el deck (mira deck_ver)': ['That block is not in the deck (see deck_ver)', 'Esse bloco não está no deck (vê deck_ver)', '그 블록은 덱에 없습니다(deck_ver 참고)'],
+  'Contenido inválido para este bloque': ['Invalid content for this block', 'Conteúdo inválido para este bloco', '이 블록에 맞지 않는 내용입니다'],
+  'Faltan las props': ['The props are missing', 'Faltam as props', 'props가 없습니다'],
+  'Esa clave no es un bloque de deck del catálogo (mira se_pueden_anadir en deck_ver)': ['That key is not a deck block in the catalog (see se_pueden_anadir in deck_ver)', 'Essa chave não é um bloco de deck do catálogo (vê se_pueden_anadir em deck_ver)', '그 키는 카탈로그의 덱 블록이 아닙니다(deck_ver의 se_pueden_anadir 참고)'],
+  'Falta la posicion': ['The position is missing', 'Falta a posição', '위치가 없습니다'],
   'Un deck no tiene resultado de venta': ['A deck has no sale outcome', 'Um deck não tem resultado de venda', '덱에는 판매 결과가 없습니다'],
   // Importar con tu IA (docs/IMPORTAR_IA.md)
   'Esta importación no es de la IA': ['This import is not an AI import', 'Esta importação não é da IA', '이 가져오기는 AI 가져오기가 아닙니다'],

@@ -56,10 +56,12 @@ const PACKAGE_SNAP_KEYS = ['packages', 'currency', 'period', 'total', 'listTotal
 /** Un bloque de deck de inversión (docs/DECKS.md): los de tipo deck-*. */
 export const isDeckBlock = (blockType: string) => blockType.startsWith('deck-');
 /** El orden de un deck nuevo: el de siempre (portada, problema… ronda); lo demás, por nombre, al final. */
-const DECK_ORDER = ['deck-portada', 'deck-problema', 'deck-solucion', 'deck-mercado', 'deck-traccion', 'deck-modelo', 'deck-competencia', 'deck-equipo', 'deck-ronda'];
+const DECK_ORDER = ['deck-portada', 'deck-problema', 'deck-solucion', 'deck-mercado', 'deck-traccion', 'deck-oportunidad', 'deck-modelo', 'deck-competencia', 'deck-equipo', 'deck-ronda', 'deck-ventajas', 'deck-contacto'];
+/** Se añaden a mano a un deck, no salen en uno nuevo (lib/decks/starter.ts → deckExtras). */
+const DECK_EXTRAS = new Set(['deck-casos']);
 export function deckBlocks(latest: Map<string, CatalogVersion>): CatalogVersion[] {
   const rank = (c: CatalogVersion) => { const i = DECK_ORDER.indexOf(c.moduleKey); return i < 0 ? DECK_ORDER.length : i; };
-  return [...latest.values()].filter((c) => isDeckBlock(c.blockType)).sort((a, b) => rank(a) - rank(b) || a.moduleName.localeCompare(b.moduleName, 'es'));
+  return [...latest.values()].filter((c) => isDeckBlock(c.blockType) && !DECK_EXTRAS.has(c.moduleKey)).sort((a, b) => rank(a) - rank(b) || a.moduleName.localeCompare(b.moduleName, 'es'));
 }
 
 export function toPublicDossier(d: DossierRecord, items: ItemRecord[]): PublicDossier {
