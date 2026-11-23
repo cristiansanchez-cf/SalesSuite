@@ -3,6 +3,7 @@
  * es MUTABLE: lo que se edita en /admin se ve en /d/<token>. Se pierde al reiniciar el proceso.
  * Vive en globalThis para sobrevivir al HMR de `astro dev`.
  */
+import { accountByCompany } from '../accounts/company-key';
 import fixtures from '../../../supabase/seed/fixtures.json';
 
 export type Role = 'admin' | 'lead' | 'rep' | 'partner';
@@ -209,7 +210,7 @@ export interface DemoDb {
   account_link: AccountLinkRow[];
   crm_import: CrmImportRow[];
   crm_activity: CrmActivityRow[];
-  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[]; qualification?: string | null }>;
+  crm_settings: Array<{ tenant_id: string; priority_weights: Record<string, number>; kinds?: unknown[]; qualification?: string | null; research?: Record<string, unknown> }>;
   /** Topes de uso por persona y día (Google, IA). */
   usage_counter: Array<{ tenant_id: string; user_id: string; kind: string; day: string; n: number }>;
   crm_fix: Array<{ id: string; tenant_id: string; kind: 'zones' | 'classify'; summary: Record<string, unknown>; undo: Record<string, unknown>; created_by: string | null; created_at: string; undone_at: string | null }>;
@@ -489,7 +490,16 @@ type G = typeof globalThis & { [KEY]?: DemoDb };
 
 export function demoDb(): DemoDb {
   const g = globalThis as G;
-  return (g[KEY] ??= freshDemoDb());
+  return (g[KEY] ??= linkByName(freshDemoDb()));
+}
+
+/** = migración 20270114: las propuestas sin empresa elegida, a la de ese nombre si hay una sola (sin efectos). */
+function linkByName(d: DemoDb): DemoDb {
+  for (const x of d.dossier) {
+    if (x.account_id || x.partner_account_id) continue;
+    x.account_id = accountByCompany(d.account.filter((a) => a.tenant_id === x.tenant_id), x.prospect_company)?.id ?? null;
+  }
+  return d;
 }
 
 /**
@@ -504,6 +514,6 @@ export function demoRoleOf(tenantId: string, userId: string | null | undefined):
 /** Solo tests. */
 export function resetDemoDb(): DemoDb {
   const g = globalThis as G;
-  g[KEY] = freshDemoDb();
+  g[KEY] = linkByName(freshDemoDb());
   return g[KEY];
 }

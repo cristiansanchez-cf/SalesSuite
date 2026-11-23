@@ -1,3 +1,4 @@
+import { accountByCompany } from '../accounts/company-key';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { productFromRow } from '../crm/packages';
 import { parseProposal } from '../proposal/preset';
@@ -83,6 +84,8 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
         theme_override: null, published_at: null, created_at: now, updated_at: now, partner_account_id: n.partnerAccountId ?? null,
         account_id: n.accountId ?? null, view_mode: 'test',
       };
+      // = trigger dossier_a0_auto_link: sin empresa elegida, la de ese nombre si hay una sola.
+      if (!row.account_id && !row.partner_account_id) row.account_id = accountByCompany(db().account.filter((a) => a.tenant_id === n.tenantId), row.prospect_company)?.id ?? null;
       demoAccountsOnDossier(null, row);
       db().dossier.push(row);
       return toDossier(row);
@@ -116,6 +119,10 @@ export function demoAdminDb(getDb: () => DemoDb = demoDb): AdminDb {
       if (p.preset !== undefined) d.preset = p.preset;
       if (p.couponId !== undefined) demoApplyCoupon(d, p.couponId);  // = trigger dossier_coupon_apply
       demoAccountsOnDossier(prev, d);
+      // = trigger dossier_a0_auto_link al cambiar el nombre: se vincula sin más (sin contacto ni reserva).
+      if (p.prospectCompany !== undefined && p.prospectCompany !== prev.prospect_company && !d.account_id && !d.partner_account_id) {
+        d.account_id = accountByCompany(db().account.filter((a) => a.tenant_id === d.tenant_id), d.prospect_company)?.id ?? null;
+      }
       d.updated_at = new Date().toISOString();
       return toDossier(d);
     },

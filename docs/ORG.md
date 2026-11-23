@@ -132,3 +132,19 @@ Criterio de Cristian: «una manera de seleccionar todos para cambiar responsable
 - **Permisos**: cada propuesta con los suyos de siempre. Las que no se pueden se saltan y se dice cuántas
   («Hecho: 3 · 1 no se podía…»).
 - Código: `bulkDossiers` (lib/admin/service.ts) y `/admin` (pages/admin/index.astro). Smoke: `scripts/smoke-bulk-dossiers.cjs`.
+
+## Propuestas vinculadas a su empresa
+
+Criterio de Cristian: «desde la ficha deberíamos ver rápidamente las propuestas asociadas… que se vinculen solas por el
+nombre, con un identificador en el background».
+
+- **En la ficha**: arriba, «Propuestas · N» abre la lista con el estado, las aperturas, quién la lleva y cuándo se tocó.
+  Cada fila abre la propuesta. Más abajo sigue la lista completa (`#proposals`).
+- **Solas por el nombre** (migración 20270114, trigger `dossier_a0_auto_link`; test SQL 93): una propuesta sin empresa
+  elegida se vincula (`account_id`) a la empresa del espacio con ese nombre, si hay **una sola**. El nombre se compara
+  sin mayúsculas, tildes, signos ni «S.L.»/«S.A.» (`public.company_key`, igual que `companyKey` en
+  src/lib/accounts/company-key.ts).
+  - Al crearla cuenta como elegirla del CRM: contacto y reserva si está libre.
+  - Al cambiar el nombre de la empresa en una sin vincular, se vincula sin más.
+  - Con dos empresas con ese nombre, no adivina.
+  - Las que ya había se vincularon una vez, sin contacto ni reserva.
