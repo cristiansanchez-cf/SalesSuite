@@ -21,8 +21,6 @@ import { formatPhone, myAssistantPhones, setMyAssistantPhone } from '~/lib/assis
 import { dropCalendar, hasCalendar, myCalendarToken } from '~/lib/calendar/feed';
 import { calendarMessages } from '~/lib/i18n/messages/calendar';
 import { mcpMessages } from '~/lib/i18n/messages/mcp';
-import { createToken, myTokens, revokeToken } from '~/lib/mcp/tokens';
-import { AdminError } from '~/lib/admin/service';
 import { requestOrigin } from '~/lib/http';
 
 const { admin } = Astro.locals;
@@ -53,9 +51,7 @@ let contactMsg: { ok?: string; error?: string } = {};
 let phonesMsg: { ok?: string; error?: string } = {};
 let localeOk = false;
 let calMsg: { ok?: string; error?: string } = {};
-// Conecta tu IA (docs/MCP.md): la clave nueva se enseña solo en esta respuesta (nunca en la URL ni guardada en claro).
-let mcpMsg: { ok?: string; error?: string } = {};
-let mcpKey: string | null = null;
+
 let waTest: { ok?: string; info?: string; error?: string; hint?: string } | null = null;
 if (form?.get('action') === 'locale') {
   const l = String(form.get('locale') ?? '');
@@ -107,12 +103,6 @@ if (form?.get('action') === 'locale') {
   const what = String(form.get('do') ?? 'connect');
   if (what === 'drop') { await dropCalendar(admin); calMsg = { ok: CL.okDropped }; }
   else calMsg = (await myCalendarToken(admin, what === 'rotate')) ? { ok: what === 'rotate' ? CL.okRotated : CL.okConnected } : { error: CL.missing };
-} else if (form?.get('action') === 'mcp') {
-  const MC = mcpMessages[locale];
-  try {
-    if (String(form.get('do')) === 'revoke') { await revokeToken(admin, String(form.get('id') ?? '')); mcpMsg = { ok: MC.okRevoked }; }
-    else { mcpKey = (await createToken(admin, String(form.get('name') ?? ''))).token; mcpMsg = { ok: MC.okCreated }; }
-  } catch (e) { if (!(e instanceof AdminError)) throw e; mcpMsg = { error: e.message }; }
 } else if (form?.get('action') === 'notify') {
   await admin.notifications.setEmailPref(form.get('notifyEmail') === 'on');
   await admin.notifications.setDailyPref({ daily: form.get('daily') === 'on', timezone: String(form.get('timezone') ?? '') });
@@ -169,8 +159,7 @@ const spacePhones = assistant && assistant.mode !== 'off' ? await myAssistantPho
 // Calendario: el enlace de suscripción (si ya lo conectó).
 const calToken = admin.session.role === 'partner' ? null : await hasCalendar(admin).catch(() => null);
 const calUrl = calToken ? `${requestOrigin(Astro.request, Astro.url)}/cal/${calToken}.ics` : null;
-const mcpUrl = `${requestOrigin(Astro.request, Astro.url)}/api/mcp`;
-const mcpList = setup ? [] : await myTokens(admin).catch(() => []);
+
 ---
 <AdminLayout title={m.account.title}>
   <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
@@ -303,62 +292,14 @@ const mcpList = setup ? [] : await myTokens(admin).catch(() => []);
       </section>
     );
   })()}
-  {!setup && (() => {
-    const MC = mcpMessages[locale];
-    const key = mcpKey ?? 'ss_mcp_…';
-    const code = `claude mcp add --transport http cofundo-ventas ${mcpUrl} --header "Authorization: Bearer ${key}"`;
-    const json = JSON.stringify({ mcpServers: { 'cofundo-ventas': { url: mcpUrl, headers: { Authorization: `Bearer ${key}` } } } }, null, 2);
-    const desktop = JSON.stringify({ mcpServers: { 'cofundo-ventas': { command: 'npx', args: ['-y', 'mcp-remote', mcpUrl, '--header', `Authorization: Bearer ${key}`] } } }, null, 2);
+  {!setup && admin.session.role !== 'partner' && (() => {
+    const MP = mcpMessages[locale].page;
     return (
-      <section id="ia" class="co-card mt-6 grid max-w-2xl gap-3" data-testid="account-mcp">
-        <div><p class="text-eyebrow mb-1">{MC.eyebrow}</p><h2 class="co-entity">{MC.title}</h2></div>
-        <p class="co-body m-0">{MC.lede}</p>
-        {mcpMsg.ok && <Alert kind="success" title={mcpMsg.ok} />}
-        {mcpMsg.error && <Alert kind="rejection" title={mcpMsg.error} />}
-        <label class="co-field">{MC.url}
-          <span class="flex flex-wrap items-center gap-2"><input class="co-input min-w-0 flex-1 font-mono text-xs" readonly value={mcpUrl} data-testid="mcp-url" /><button type="button" class="co-btn co-btn--ghost co-btn--sm" data-copy={mcpUrl} data-copied={MC.copied}>{MC.copy}</button></span>
-        </label>
-        {mcpKey && (
-          <div class="grid gap-2 rounded-xl border border-[var(--co-ink)] p-3" data-testid="mcp-new">
-            <strong>{MC.newKey}</strong>
-            <span class="flex flex-wrap items-center gap-2"><input class="co-input min-w-0 flex-1 font-mono text-xs" readonly value={mcpKey} data-testid="mcp-key" /><button type="button" class="co-btn co-btn--primary co-btn--sm" data-copy={mcpKey} data-copied={MC.copied}>{MC.copy}</button></span>
-          </div>
-        )}
-        <form method="post" class="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="action" value="mcp" /><input type="hidden" name="do" value="create" />
-          <label class="co-field min-w-0 flex-1">{MC.name}<input class="co-input" name="name" maxlength="80" placeholder={MC.namePh} data-testid="mcp-name" /></label>
-          <button class="co-btn co-btn--primary" data-testid="mcp-create">{MC.create}</button>
-        </form>
-        <details class="grid gap-2" open={!!mcpKey}>
-          <summary class="co-meta cursor-pointer">{MC.how}</summary>
-          <p class="co-meta m-0 mt-2 text-sm">{MC.claudeCode}</p>
-          <pre class="co-inset m-0 overflow-x-auto whitespace-pre-wrap break-all !p-3 text-xs" data-testid="mcp-snippet-code">{code}</pre>
-          <p class="co-meta m-0 text-sm">{MC.cursor}</p>
-          <pre class="co-inset m-0 overflow-x-auto !p-3 text-xs">{json}</pre>
-          <p class="co-meta m-0 text-sm">{MC.claudeDesktop}</p>
-          <pre class="co-inset m-0 overflow-x-auto !p-3 text-xs">{desktop}</pre>
-          <p class="co-help m-0">{MC.oauthSoon}</p>
-        </details>
-        {mcpList.length > 0 && (
-          <div class="grid gap-1">
-            <p class="text-eyebrow m-0">{MC.list}</p>
-            <ul class="m-0 grid gap-1 p-0">
-              {mcpList.map((t) => (
-                <li class="flex list-none flex-wrap items-center gap-2 border-t border-[var(--console-divider)] py-2 text-sm" data-testid="mcp-token" data-revoked={t.revoked ? 'true' : 'false'}>
-                  <strong>{t.name}</strong><code class="co-meta text-xs">{t.prefix}…</code>
-                  <span class="co-meta text-xs">{t.lastUsedAt ? MC.lastUsed(new Date(t.lastUsedAt).toLocaleDateString(locale)) : MC.never}</span>
-                  <span class="flex-1"></span>
-                  {t.revoked ? <span class="co-badge">{MC.revoked}</span> : (
-                    <form method="post"><input type="hidden" name="action" value="mcp" /><input type="hidden" name="do" value="revoke" /><input type="hidden" name="id" value={t.id} />
-                      <button class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-confirm={MC.revokeConfirm} data-testid="mcp-revoke">{MC.revoke}</button></form>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <p class="co-help m-0">{MC.secret}</p>
-      </section>
+      <a href="/admin/ia" id="ia" class="co-card co-card--link mt-6 flex max-w-lg items-center gap-3" data-testid="account-mcp">
+        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]"><Icon name="sparkles" size={18} /></span>
+        <span class="grid min-w-0 flex-1"><strong>{MP.link}</strong><span class="co-meta text-sm">{MP.linkHelp}</span></span>
+        <Icon name="chevron-right" />
+      </a>
     );
   })()}
   {!setup && (
@@ -423,11 +364,6 @@ const mcpList = setup ? [] : await myTokens(admin).catch(() => []);
 </AdminLayout>
 
 <script>
-  // Copiar (Conecta tu IA).
-  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(b.dataset.copy ?? ''); b.textContent = b.dataset.copied ?? 'OK'; } catch { /* sin portapapeles: se selecciona a mano */ }
-  }));
-  document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
   document.querySelector('[data-calendar-copy]')?.addEventListener('click', async (e) => {
     const b = e.currentTarget as HTMLButtonElement;
     const v = document.querySelector<HTMLInputElement>('[data-calendar-url]')?.value ?? '';

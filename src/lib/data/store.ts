@@ -147,7 +147,10 @@ export interface PayoutRow { id: string; tenant_id: string; user_id: string; per
 export interface McpTokenRow {
   id: string; tenant_id: string; user_id: string; name: string; token_hash: string; prefix: string; client_id: string | null;
   created_at: string; last_used_at: string | null; expires_at: string | null; revoked_at: string | null;
+  refresh_hash?: string | null; refresh_expires_at?: string | null;
 }
+export interface OAuthClientRow { client_id: string; name: string; redirect_uris: string[]; created_at: string; last_used_at: string | null }
+export interface OAuthCodeRow { code_hash: string; client_id: string; tenant_id: string; user_id: string; redirect_uri: string; code_challenge: string; scope: string | null; expires_at: string; used_at: string | null }
 export interface ApiKeyRow { id: string; tenant_id: string; name: string; key_hash: string; prefix: string; created_by: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }
 export interface CouponRow {
   id: string; tenant_id: string; code: string; label: string; kind: 'percent' | 'fixed' | 'free_months'; value: number; max_uses: number | null;
@@ -229,6 +232,8 @@ export interface DemoDb {
   api_key: ApiKeyRow[];
   /** Conecta tu IA (docs/MCP.md): claves personales del servidor MCP (solo el hash). */
   mcp_token: McpTokenRow[];
+  oauth_client: OAuthClientRow[];
+  oauth_code: OAuthCodeRow[];
   connector: ConnectorRow[];
   coupon: CouponRow[];
   price_option: PriceOptionRow[];
@@ -456,6 +461,8 @@ export function freshDemoDb(): DemoDb {
     payout: [],
     api_key: [],
     mcp_token: [],
+    oauth_client: [],
+    oauth_code: [],
     connector: [],
     member_conditions: [],
     member_conditions_history: [],

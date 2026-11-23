@@ -1,0 +1,78 @@
+---
+/**
+ * «Autorizar» de OAuth (docs/MCP.md §OAuth): la IA (claude.ai, ChatGPT, Claude Code…) manda aquí a la persona; sin
+ * sesión, el middleware la lleva al login y vuelve. Se enseña qué app pide qué y adónde se vuelve; al autorizar, un
+ * código de un solo uso (10 min, con el reto PKCE) en la dirección de vuelta registrada. Nunca se redirige a una
+ * dirección que no esté registrada para ese cliente. Sin marcos (que no se pueda incrustar para engañar al clic).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import Alert from '~/components/ui/Alert.astro';
+import { i18n } from '~/lib/i18n';
+import { mcpMessages } from '~/lib/i18n/messages/mcp';
+import { requestOrigin } from '~/lib/http';
+import { createCode, getClient, redirectMatches } from '~/lib/mcp/oauth';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+const { m: M } = i18n(Astro, mcpMessages);
+const C = M.consent;
+Astro.response.headers.set('x-frame-options', 'DENY');
+Astro.response.headers.set('content-security-policy', "frame-ancestors 'none'");
+Astro.response.headers.set('cache-control', 'no-store');
+
+const src = Astro.request.method === 'POST' ? new URLSearchParams(await Astro.request.text()) : Astro.url.searchParams;
+const p = (k: string) => (src.get(k) ?? '').slice(0, 2000);
+const params = { client_id: p('client_id'), redirect_uri: p('redirect_uri'), code_challenge: p('code_challenge'), code_challenge_method: p('code_challenge_method'), state: p('state'), scope: p('scope'), response_type: p('response_type') };
+const client = await getClient(params.client_id);
+// Sin cliente o con una vuelta no registrada: se queda aquí (no se redirige a ningún sitio que no conozcamos).
+const okClient = !!client && !!params.redirect_uri && redirectMatches(client.redirectUris, params.redirect_uri);
+const back = (q: Record<string, string>) => {
+  const u = new URL(params.redirect_uri);
+  for (const [k, v] of Object.entries(q)) u.searchParams.set(k, v);
+  if (params.state) u.searchParams.set('state', params.state);
+  u.searchParams.set('iss', requestOrigin(Astro.request, Astro.url));
+  return u.toString();
+};
+if (okClient) {
+  if (params.response_type !== 'code') return Astro.redirect(back({ error: 'unsupported_response_type' }), 303);
+  if (params.code_challenge_method !== 'S256' || !/^[A-Za-z0-9_-]{43,128}$/.test(params.code_challenge)) return Astro.redirect(back({ error: 'invalid_request', error_description: 'PKCE S256 obligatorio' }), 303);
+}
+const partner = admin.session.role === 'partner';
+if (okClient && Astro.request.method === 'POST') {
+  if (src.get('decision') !== 'approve' || partner) return Astro.redirect(back({ error: 'access_denied' }), 303);
+  const code = await createCode({ clientId: client!.clientId, tenantId: admin.session.tenantId, userId: admin.session.userId, redirectUri: params.redirect_uri, challenge: params.code_challenge, scope: params.scope || null });
+  return Astro.redirect(back({ code }), 303);
+}
+const host = (() => { try { const u = new URL(params.redirect_uri); return u.protocol.startsWith('http') ? u.host : u.protocol.replace(':', ''); } catch { return ''; } })();
+const who = admin.session.displayName || admin.session.email;
+---
+<AdminLayout title={client ? C.title(client.name) : C.bad} bare>
+  <div class="mx-auto grid min-h-[70vh] max-w-md place-content-center gap-4 px-4 py-10">
+    {!okClient ? <Alert kind="rejection" title={C.bad} /> : (
+      <form method="post" class="co-card grid gap-5 !p-7" data-testid="oauth-consent">
+        {Object.entries(params).map(([k, v]) => <input type="hidden" name={k} value={v} />)}
+        <div class="flex items-center gap-3">
+          <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--co-signal-soft)] text-[color:var(--co-signal)]"><Icon name="sparkles" size={22} /></span>
+          <span class="text-2xl" aria-hidden="true">→</span>
+          <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--console-chip-bg)] font-bold">{tenant.name.charAt(0)}</span>
+        </div>
+        <div class="grid gap-1">
+          <h1 class="co-page-title !text-3xl" data-testid="oauth-title" data-ugc>{C.title(client!.name)}</h1>
+          <p class="co-body m-0">{C.as(who, tenant.name)}</p>
+        </div>
+        {partner ? <Alert kind="info" title={C.partner} /> : (
+          <div class="grid gap-2">
+            <p class="text-eyebrow m-0">{C.can}</p>
+            <ul class="m-0 grid gap-1.5 p-0">{C.items.map((x) => <li class="flex list-none items-start gap-2 text-sm"><Icon name="check" size={16} />{x}</li>)}</ul>
+          </div>
+        )}
+        <p class="co-meta m-0 text-xs" data-testid="oauth-back">{C.back(host)}</p>
+        <div class="flex flex-wrap gap-2">
+          {!partner && <button class="co-btn co-btn--primary" name="decision" value="approve" data-testid="oauth-approve">{C.approve}</button>}
+          <button class="co-btn co-btn--ghost" name="decision" value="deny" data-testid="oauth-deny">{C.deny}</button>
+        </div>
+      </form>
+    )}
+  </div>
+</AdminLayout>

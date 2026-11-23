@@ -1,11 +1,12 @@
 import { LOCALE_COOKIE } from './lib/i18n';
 import { resolveLocale } from './lib/i18n/core';
 import { withRequestLocale } from './lib/i18n/request';
+import { wellKnown } from './lib/mcp/well-known';
 import { defineMiddleware } from 'astro:middleware';
 import { authenticate, DEMO_TENANT_COOKIE } from './lib/admin/auth';
 import { publicRepository } from './lib/data';
 import { env } from './lib/env';
-import { isSameOriginWrite, requestHost } from './lib/http';
+import { isSameOriginWrite, requestHost, requestOrigin } from './lib/http';
 import { appMode } from './lib/mode';
 import { resolveTenant } from './lib/tenant';
 import { noteTeamNetwork } from './lib/analytics/internal';
@@ -39,8 +40,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // API pública de ingresos: se autentica con clave (Bearer), no con cookies; el CSRF no aplica (docs/COMMISSIONS.md).
   if (context.url.pathname.startsWith('/api/v1/')) return next();
-  // Servidor MCP (docs/MCP.md): clave personal (Bearer), sin cookies; y sus metadatos públicos de OAuth.
-  if (context.url.pathname === '/api/mcp' || context.url.pathname.startsWith('/.well-known/oauth-')) return next();
+  // Servidor MCP (docs/MCP.md): clave o token OAuth (Bearer), sin cookies; sus puntos OAuth y sus metadatos públicos.
+  if (context.url.pathname === '/api/mcp' || context.url.pathname.startsWith('/oauth/')) return next();
+  {
+    const wk = wellKnown(context.url.pathname, requestOrigin(context.request, context.url));
+    if (wk) return wk;
+  }
   // Calendario (docs/CALENDAR.md): lo piden Outlook o Google sin sesión; el enlace secreto es la llave. Vale en cualquier
   // dominio (es de la persona, no de un espacio) y solo lee.
   if (context.url.pathname.startsWith('/cal/') && context.request.method === 'GET') return next();

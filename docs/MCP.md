@@ -8,15 +8,66 @@ La IA puede ser Claude (Claude Code, Claude Desktop, claude.ai), ChatGPT, Cursor
 
 ## Cómo se conecta
 
-- **Mi cuenta → Conecta tu IA** (`/admin/account#ia`).
-  - La dirección del servidor: `https://<dominio del espacio>/api/mcp`.
-  - **Crear clave**: se le pone un nombre («Claude del portátil»).
-  - La clave (`ss_mcp_…`) se enseña **una vez**, con las instrucciones ya rellenas para Claude Code, Cursor/VS Code
-    (`mcp.json`) y Claude Desktop (`mcp-remote`).
-  - La lista muestra cuándo se usó cada clave y permite **Revocar** (deja de valer al momento). Como mucho 10 activas.
-- **Fase 2 (pendiente)**: OAuth, para añadirlo en claude.ai y ChatGPT con un clic entrando con la cuenta. El servidor ya
-  responde 401 con `WWW-Authenticate: Bearer resource_metadata=…/.well-known/oauth-protected-resource`, como pide el
-  protocolo.
+**Mi cuenta → Conecta tu IA** lleva a `/admin/ia`. El diseño copia el tutorial de conexión del Cerebro (repositorio
+AIBrains, `docs/tutorial-conectar.md`):
+
+- **La dirección entera**, con su `https://` (`https://<dominio del espacio>/api/mcp`), y **el nombre ya puesto**
+  («<Espacio> CRM»): no hay que inventarse nada. Las dos cosas con «Copiar».
+- **Una pestaña por IA**:
+  - **Claude** (recomendado): sus pasos, y cómo se ve la ventana «Agregar conector personalizado» con los dos campos ya
+    rellenos (una emulación, no una captura: no envejece y se lee en el móvil). Dice qué NO tocar: las opciones de
+    autenticación ya vienen detectadas.
+  - **ChatGPT**: el modo desarrollador y la misma dirección.
+  - **Claude Code**: `claude mcp add --transport http …` y después `/mcp` para entrar.
+  - **Cursor y VS Code**: el `mcp.json` con la dirección; entra con la cuenta la primera vez.
+  - **Con clave**: para herramientas que no saben entrar con una cuenta. La clave (`ss_mcp_…`) se enseña una vez, con
+    las instrucciones ya rellenas.
+- Cómo será la pantalla de «Autorizar».
+- **Pruébalo**: «¿Qué me toca hoy?». Se acaba probándolo, no en «ya está conectado».
+- **Tus conexiones**: las de cuenta («Claude · Con tu cuenta») y las de clave, cuándo se usaron y «Revocar» (deja de
+  valer al momento). Como mucho 10 activas.
+
+## OAuth (conectar con la cuenta)
+
+Servidor de autorización propio, en la misma app. El Cerebro usa el de Supabase, pero aquí no sirve tal cual:
+
+- Hay que activarlo en el panel de Supabase.
+- Sus tokens son de la persona y no de un espacio.
+- No saldrían en «Tus conexiones» para revocarlos.
+
+Lo aprendido del Cerebro (AIBrains `docs/fase-2-auth.md`) se aplica igual:
+
+- **Descubrimiento**:
+  - Sin token, `/api/mcp` responde 401 con `WWW-Authenticate: Bearer resource_metadata=".../.well-known/oauth-protected-resource/api/mcp"`.
+    Claude solo lo mira en un 401.
+  - `/.well-known/oauth-protected-resource[/api/mcp]` (RFC 9728): `resource` es igual, carácter a carácter, a la URL que
+    se pega.
+  - `/.well-known/oauth-authorization-server` (y `openid-configuration`, RFC 8414).
+  - Los sirve el middleware (`src/lib/mcp/well-known.ts`).
+- **Registro dinámico** `/oauth/register` (RFC 7591):
+  - Solo clientes públicos (sin secreto): el PKCE S256 es obligatorio.
+  - Vueltas permitidas: https, http solo en localhost/127.0.0.1, o el esquema propio de una app (`cursor://…`). Nunca
+    `javascript:`, `data:`, `file:`…
+- **Autorizar** `/admin/oauth/authorize`:
+  - Sin sesión, al login y de vuelta (`safeNext` acepta `+` y `~` de la consulta).
+  - Enseña qué app pide qué, como quién, en qué espacio y adónde vuelve.
+  - Nunca redirige a una vuelta no registrada para ese cliente. En loopback el puerto no cuenta: Claude Code usa uno
+    distinto cada vez.
+  - Sin marcos (`frame-ancestors 'none'`).
+  - Al autorizar: código de un solo uso, 10 minutos, solo su hash, con el reto PKCE. Vuelve con `code`, `state` e `iss`.
+- **Token** `/oauth/token`:
+  - Acepta form-urlencoded y JSON.
+  - Código + verificador → token (8 h) y refresco (90 días). El código se marca usado antes de dar nada.
+  - Refresco con rotación: los dos nuevos, y el refresco viejo deja de valer.
+  - Revocar: `/oauth/revoke` (RFC 7009) o «Revocar» en la página.
+- **Tablas**: `oauth_client`, `oauth_code` y, en `mcp_token`, `refresh_hash` y `refresh_expires_at` (migración
+  20270118). Sin políticas: solo el servidor.
+  - La persona solo puede revocar.
+  - El servidor puede rotar (el guard deja cambiar token y refresco solo fuera de los roles `authenticated`/`anon`).
+- Pruebas:
+  - `src/lib/mcp/oauth.test.ts`: PKCE, vueltas, coincidencia y metadatos.
+  - Test SQL 94: la persona no rota; el servidor sí.
+  - `scripts/smoke-mcp-oauth.cjs`: el flujo entero, como claude.ai, y lo que no debe pasar.
 
 ## Qué puede hacer (herramientas)
 
@@ -54,5 +105,6 @@ Las herramientas de una en una no gastan la IA del espacio: entiende la IA de la
 
 ## Pendiente
 
-- OAuth 2.1 (PKCE y registro dinámico) para claude.ai y ChatGPT.
+- Probarlo con claude.ai y ChatGPT de verdad, en producción, y ajustar el texto de los pasos a lo que se vea.
 - Tope de peticiones por clave (hoy solo cuenta el tope de IA en `preparar_apunte`).
+- Tope de registros dinámicos (hoy cualquiera puede registrar un cliente; sin autorizar no consigue nada).

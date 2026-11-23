@@ -288,5 +288,6 @@ export async function logout(ctx: RequestLike): Promise<void> {
 /** Solo rutas internas de la consola (evita open redirect). */
 export function safeNext(raw: string | null | undefined): string {
   // Sin destino, o «/admin» a secas (la entrada típica: el dominio del espacio): a su pantalla de inicio (/admin/home).
-  return raw && raw !== '/admin' && /^\/admin(\/[\w\-/.]*)?(\?[\w\-=&%.]*)?$/.test(raw) && !raw.includes('//') ? raw : '/admin/home';
+  // En la consulta, también «+» y «~»: los usa el «Autorizar» de OAuth (scope=crm+offline_access, PKCE) al volver del login.
+  return raw && raw !== '/admin' && /^\/admin(\/[\w\-/.]*)?(\?[\w\-=&%.+~]*)?$/.test(raw) && !raw.includes('//') ? raw : '/admin/home';
 }

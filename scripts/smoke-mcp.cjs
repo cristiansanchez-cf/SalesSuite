@@ -19,14 +19,17 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForURL(/\/admin/);
 
   // La clave, en Mi cuenta.
-  await p.goto(`${BASE}/admin/account#ia`);
-  assert((await p.inputValue('[data-testid=mcp-url]')).endsWith('/api/mcp'), 'la dirección del servidor');
+  await p.goto(`${BASE}/admin/account`);
+  await Promise.all([p.waitForURL(/\/admin\/ia/), p.click('[data-testid=account-mcp]')]);
+  assert((await p.inputValue('[data-testid=mcp-url]')).startsWith('http') && (await p.inputValue('[data-testid=mcp-url]')).endsWith('/api/mcp'), 'Mi cuenta → Conecta tu IA: la dirección entera');
+  assert(await p.isVisible('[data-testid=ai-mock]'), 'Claude: cómo se ve la ventana, ya rellena');
+  await p.click('label:has([data-testid=ai-tab-key])');
   await p.fill('[data-testid=mcp-name]', 'Claude del portátil');
   await Promise.all([p.waitForLoadState('load'), p.click('[data-testid=mcp-create]')]);
   const key = await p.inputValue('[data-testid=mcp-key]');
   assert(/^ss_mcp_/.test(key), 'clave creada y enseñada una vez');
-  assert((await p.textContent('[data-testid=mcp-snippet-code]')).includes(key), 'instrucciones con la clave ya puesta');
-  await p.goto(`${BASE}/admin/account?v=2#ia`);
+  assert((await p.textContent('[data-testid=mcp-snippet-key]')).includes(key), 'instrucciones con la clave ya puesta');
+  await p.goto(`${BASE}/admin/ia?ia=key`);
   assert(!(await p.locator('[data-testid=mcp-key]').count()) && (await p.locator('[data-testid=mcp-token]').count()) === 1, 'al volver ya no se ve la clave; sí la conexión');
 
   // Sin clave o con una falsa: 401.
@@ -84,7 +87,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await client.close();
 
   // Revocar: deja de valer.
-  await p.goto(`${BASE}/admin/account?v=3#ia`);
+  await p.goto(`${BASE}/admin/ia?ia=key&v=3`);
   p.once('dialog', (d) => d.accept());
   await Promise.all([p.waitForLoadState('load'), p.click('[data-testid=mcp-revoke]')]);
   assert((await p.getAttribute('[data-testid=mcp-token]', 'data-revoked')) === 'true', 'revocada');

@@ -1,0 +1,182 @@
+---
+/**
+ * Conecta tu IA (docs/MCP.md): cómo conectar el CRM a Claude, ChatGPT, Claude Code o Cursor, y las conexiones de esta
+ * persona. Inspirado en el tutorial de conexión del Cerebro (AIBrains docs/tutorial-conectar.md):
+ *  · La dirección SIEMPRE entera, con su https://, y el nombre ya puesto (no hay que inventarse nada).
+ *  · Por cada IA, sus pasos cortos; en Claude, cómo se ve la ventana con los dos campos ya rellenos y qué NO tocar.
+ *  · Se acaba probándolo («¿Qué me toca hoy?»), no en «ya está conectado».
+ * Con cuenta (OAuth) es lo normal; «Con clave» queda para las herramientas que no saben entrar.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Alert from '~/components/ui/Alert.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { mcpMessages } from '~/lib/i18n/messages/mcp';
+import { requestOrigin } from '~/lib/http';
+import { createToken, myTokens, revokeToken } from '~/lib/mcp/tokens';
+import { resourceUrl } from '~/lib/mcp/oauth';
+import { AdminError } from '~/lib/admin/service';
+
+const { admin, tenant } = Astro.locals;
+if (!admin || !tenant) return Astro.redirect('/admin/login');
+const { m: M, f, locale } = i18n(Astro, mcpMessages);
+const P = M.page;
+
+// La clave nueva se enseña solo en esta respuesta (nunca en la URL ni guardada en claro).
+let msg: { ok?: string; error?: string } = {};
+let newKey: string | null = null;
+let tab = Astro.url.searchParams.get('ia') ?? 'claude';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  try {
+    if (String(form.get('do')) === 'revoke') { await revokeToken(admin, String(form.get('id') ?? '')); msg = { ok: M.okRevoked }; }
+    else { newKey = (await createToken(admin, String(form.get('name') ?? ''))).token; msg = { ok: M.okCreated }; tab = 'key'; }
+  } catch (e) { if (!(e instanceof AdminError)) throw e; msg = { error: e.message }; }
+}
+const url = resourceUrl(requestOrigin(Astro.request, Astro.url));
+const name = `${tenant.name} CRM`;
+const list = await myTokens(admin).catch(() => []);
+const key = newKey ?? 'ss_mcp_…';
+const TABS = ['claude', 'chatgpt', 'code', 'ide', 'key'] as const;
+if (!(TABS as readonly string[]).includes(tab)) tab = 'claude';
+const code = `claude mcp add --transport http ${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} ${url}`;
+const ide = JSON.stringify({ mcpServers: { [name]: { url } } }, null, 2);
+const withKey = JSON.stringify({ mcpServers: { [name]: { url, headers: { Authorization: `Bearer ${key}` } } } }, null, 2);
+const keyCli = `claude mcp add --transport http ${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} ${url} --header "Authorization: Bearer ${key}"`;
+const who = admin.session.displayName || admin.session.email;
+---
+<AdminLayout title={P.title}>
+  <PageHeader eyebrow={M.eyebrow} title={P.title} lede={P.lede} />
+  <div class="grid max-w-3xl gap-6 pb-10" data-testid="ai-connect">
+    {msg.ok && <Alert kind="success" title={msg.ok} />}
+    {msg.error && <Alert kind="rejection" title={msg.error} />}
+
+    {/* Lo que hay que pegar: entero y ya puesto. */}
+    <section class="co-card grid gap-3 !p-6">
+      <div class="grid gap-1.5">
+        <span class="text-eyebrow">{P.nameLabel}</span>
+        <span class="flex flex-wrap items-center gap-2"><input class="co-input min-w-0 flex-1 font-semibold" readonly value={name} data-testid="mcp-conn-name" /><button type="button" class="co-btn co-btn--ghost co-btn--sm" data-copy={name} data-copied={P.copied}>{P.copy}</button></span>
+      </div>
+      <div class="grid gap-1.5">
+        <span class="text-eyebrow">{P.address}</span>
+        <span class="flex flex-wrap items-center gap-2"><input class="co-input min-w-0 flex-1 font-mono text-sm" readonly value={url} data-testid="mcp-url" /><button type="button" class="co-btn co-btn--primary co-btn--sm" data-copy={url} data-copied={P.copied}>{P.copy}</button></span>
+        <span class="co-help">{P.full}</span>
+      </div>
+    </section>
+
+    {/* Por cada IA, sus pasos (pestañas sin JS: radios). */}
+    <section class="ai-tabs grid gap-4">
+      <div class="co-tabs w-fit max-w-full overflow-x-auto" role="radiogroup" data-scroll-x>
+        {TABS.map((t) => (
+          <label class="co-tab cursor-pointer whitespace-nowrap"><input type="radio" class="sr-only" name="ai-tab" value={t} checked={tab === t} data-testid={`ai-tab-${t}`} />{P.tabs[t]}{t === 'claude' && <span class="co-badge co-badge--soft ml-1 !text-[10px]">{P.recommended}</span>}</label>
+        ))}
+      </div>
+
+      <div class="ai-panel co-card grid gap-4 !p-6" data-tab="claude">
+        <ol class="m-0 grid list-decimal gap-3 pl-6 marker:font-semibold marker:text-[var(--co-ink)]">{P.claude.map((s) => <li class="co-body">{s}</li>)}</ol>
+        {/* Cómo se ve: la ventana de Claude con los dos campos ya rellenos (una emulación, no una captura). */}
+        <div class="ai-mock mx-auto grid w-full max-w-md gap-3 rounded-2xl border border-[var(--console-divider)] bg-[var(--console-surface)] p-5 shadow-lg" aria-hidden="true" data-testid="ai-mock">
+          <strong class="text-base">{P.modalTitle}</strong>
+          <span class="grid gap-1 text-xs"><span class="co-meta">{P.modalName}</span><span class="rounded-lg border border-[var(--console-divider)] px-3 py-2 text-sm">{name}</span></span>
+          <span class="grid gap-1 text-xs"><span class="co-meta">{P.modalUrl}</span><span class="break-all rounded-lg border border-[var(--console-divider)] px-3 py-2 font-mono text-[12px]">{url}</span></span>
+          <span class="ml-auto rounded-lg bg-[var(--co-ink)] px-3 py-1.5 text-xs font-semibold text-[var(--co-canvas)]">{P.modalGo}</span>
+        </div>
+      </div>
+
+      <div class="ai-panel co-card grid gap-4 !p-6" data-tab="chatgpt">
+        <ol class="m-0 grid list-decimal gap-3 pl-6 marker:font-semibold marker:text-[var(--co-ink)]">{P.chatgpt.map((s) => <li class="co-body">{s}</li>)}</ol>
+      </div>
+
+      <div class="ai-panel co-card grid gap-3 !p-6" data-tab="code">
+        <p class="co-body m-0">{P.code[0]}</p>
+        <pre class="co-inset m-0 overflow-x-auto whitespace-pre-wrap break-all !p-3 text-xs" data-testid="mcp-snippet-code">{code}</pre>
+        <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy={code} data-copied={P.copied}>{P.copy}</button>
+        <p class="co-body m-0">{P.code[1]}</p>
+      </div>
+
+      <div class="ai-panel co-card grid gap-3 !p-6" data-tab="ide">
+        <p class="co-body m-0">{P.ide[0]}</p>
+        <pre class="co-inset m-0 overflow-x-auto !p-3 text-xs">{ide}</pre>
+        <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy={ide} data-copied={P.copied}>{P.copy}</button>
+        <p class="co-body m-0">{P.ide[1]}</p>
+      </div>
+
+      <div class="ai-panel co-card grid gap-3 !p-6" data-tab="key" id="clave">
+        <p class="co-body m-0">{P.key}</p>
+        {newKey && (
+          <div class="grid gap-2 rounded-xl border border-[var(--co-ink)] p-3" data-testid="mcp-new">
+            <strong>{M.newKey}</strong>
+            <span class="flex flex-wrap items-center gap-2"><input class="co-input min-w-0 flex-1 font-mono text-xs" readonly value={newKey} data-testid="mcp-key" /><button type="button" class="co-btn co-btn--primary co-btn--sm" data-copy={newKey} data-copied={P.copied}>{P.copy}</button></span>
+          </div>
+        )}
+        <form method="post" action="?ia=key#clave" class="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="do" value="create" />
+          <label class="co-field min-w-0 flex-1">{M.name}<input class="co-input" name="name" maxlength="80" placeholder={M.namePh} data-testid="mcp-name" /></label>
+          <button class="co-btn co-btn--primary" data-testid="mcp-create">{M.create}</button>
+        </form>
+        <p class="co-meta m-0 text-sm">{M.claudeCode}</p>
+        <pre class="co-inset m-0 overflow-x-auto whitespace-pre-wrap break-all !p-3 text-xs" data-testid="mcp-snippet-key">{keyCli}</pre>
+        <p class="co-meta m-0 text-sm">{M.cursor}</p>
+        <pre class="co-inset m-0 overflow-x-auto !p-3 text-xs">{withKey}</pre>
+        <p class="co-help m-0">{M.secret}</p>
+      </div>
+    </section>
+
+    {/* Lo que verá al entrar (nuestra pantalla de «Autorizar»), y probarlo. */}
+    <section class="grid gap-4 sm:grid-cols-2">
+      <div class="co-card grid content-start gap-3 !p-6">
+        <p class="text-eyebrow m-0">{P.consentTitle}</p>
+        <div class="grid gap-2 rounded-xl border border-[var(--console-divider)] p-4" aria-hidden="true">
+          <strong>{M.consent.title('Claude')}</strong>
+          <span class="co-meta text-sm">{M.consent.as(who, tenant.name)}</span>
+          <span class="flex gap-2"><span class="rounded-lg bg-[var(--co-ink)] px-3 py-1.5 text-xs font-semibold text-[var(--co-canvas)]">{M.consent.approve}</span><span class="rounded-lg border border-[var(--console-divider)] px-3 py-1.5 text-xs">{M.consent.deny}</span></span>
+        </div>
+      </div>
+      <div class="co-card grid content-start gap-3 !p-6" data-testid="ai-try">
+        <p class="text-eyebrow m-0">{P.tryTitle}</p>
+        <p class="co-body m-0">{P.tryText}</p>
+        <ul class="m-0 grid gap-2 p-0">{P.tries.map((t) => <li class="co-inset list-none !p-3 text-sm">«{t}»</li>)}</ul>
+      </div>
+    </section>
+
+    {list.length > 0 && (
+      <section class="co-card grid gap-2 !p-6" data-testid="mcp-connections">
+        <p class="text-eyebrow m-0">{P.connections}</p>
+        <ul class="m-0 grid gap-1 p-0">
+          {list.map((t) => (
+            <li class="flex list-none flex-wrap items-center gap-2 border-t border-[var(--console-divider)] py-2 text-sm first:border-0" data-testid="mcp-token" data-revoked={t.revoked ? 'true' : 'false'} data-via={t.clientId ? 'oauth' : 'key'}>
+              <Icon name={t.clientId ? 'sparkles' : 'link'} size={14} />
+              <strong data-ugc>{t.name}</strong>
+              <span class="co-badge !text-[10px]">{t.clientId ? P.viaAccount : P.viaKey}</span>
+              {!t.clientId && <code class="co-meta text-xs">{t.prefix}…</code>}
+              <span class="co-meta text-xs">{t.lastUsedAt ? M.lastUsed(f.relative(t.lastUsedAt)) : M.never}</span>
+              <span class="flex-1"></span>
+              {t.revoked ? <span class="co-badge">{M.revoked}</span> : (
+                <form method="post"><input type="hidden" name="do" value="revoke" /><input type="hidden" name="id" value={t.id} />
+                  <button class="co-btn co-btn--quiet co-btn--sm !text-[var(--console-danger)]" data-confirm={M.revokeConfirm} data-testid="mcp-revoke">{M.revoke}</button></form>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+    <p class="co-help m-0">{P.help}</p>
+  </div>
+</AdminLayout>
+
+<style>
+  .ai-tabs:has(input[name='ai-tab'][value='claude']:checked) .ai-panel:not([data-tab='claude']),
+  .ai-tabs:has(input[name='ai-tab'][value='chatgpt']:checked) .ai-panel:not([data-tab='chatgpt']),
+  .ai-tabs:has(input[name='ai-tab'][value='code']:checked) .ai-panel:not([data-tab='code']),
+  .ai-tabs:has(input[name='ai-tab'][value='ide']:checked) .ai-panel:not([data-tab='ide']),
+  .ai-tabs:has(input[name='ai-tab'][value='key']:checked) .ai-panel:not([data-tab='key']) { display: none; }
+  .ai-tabs .co-tab:has(input:checked) { background: var(--console-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
+</style>
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    const before = b.textContent;
+    try { await navigator.clipboard.writeText(b.dataset.copy ?? ''); b.textContent = b.dataset.copied ?? 'OK'; setTimeout(() => { b.textContent = before; }, 1800); } catch { /* sin portapapeles */ }
+  }));
+  document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
+</script>

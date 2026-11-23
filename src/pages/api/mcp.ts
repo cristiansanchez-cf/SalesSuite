@@ -10,6 +10,8 @@ import { contextAs, type AdminContext } from '~/lib/admin/auth';
 import { tenantById } from '~/lib/assistant/server';
 import { buildMcpServer } from '~/lib/mcp/tools';
 import { tokenOwner } from '~/lib/mcp/tokens';
+import { wwwAuthenticate } from '~/lib/mcp/oauth';
+import { requestOrigin } from '~/lib/http';
 import { resolveLocale } from '~/lib/i18n/core';
 import { withRequestLocale } from '~/lib/i18n/request';
 
@@ -32,7 +34,8 @@ export const DELETE: APIRoute = GET;
 export const POST: APIRoute = async ({ request, url }) => {
   const m = /^Bearer\s+(\S+)$/i.exec(request.headers.get('authorization') ?? '');
   const owner = m ? await tokenOwner(m[1]) : null;
-  if (!owner) return err(401, 'Falta la clave o no vale (Mi cuenta → Conecta tu IA)', { 'www-authenticate': `Bearer realm="${url.host}", resource_metadata="${url.origin}/.well-known/oauth-protected-resource"` });
+  // Sin token (o caducado): 401 con dónde autenticarse (RFC 9728). Claude solo lo mira en un 401, nunca en un 200.
+  if (!owner) return err(401, 'Falta la clave o no vale (Mi cuenta → Conecta tu IA)', { 'www-authenticate': wwwAuthenticate(requestOrigin(request, url), m ? 'El token no vale o ha caducado' : undefined) });
   const tenant = await tenantById(owner.tenantId);
   if (!tenant) return err(401, 'El espacio de esta clave ya no existe');
   const locale = resolveLocale({ accept: request.headers.get('accept-language') });
