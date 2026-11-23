@@ -10,7 +10,7 @@ on:
       what:
         description: Qué hacer
         type: choice
-        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm, buscar-nombres, tope-ia]
+        options: [migraciones, alta-espacio, las-dos, dossiers-ejemplo, traducir, superadmin, informe-crm, buscar-nombres, tope-ia, recordatorios]
         default: migraciones
       tenant:
         description: Espacio (carpeta de tenants/)
@@ -62,8 +62,8 @@ jobs:
           missing=""
           if [ "$WHAT" != "alta-espacio" ] && [ "$WHAT" != "dossiers-ejemplo" ] && [ "$WHAT" != "superadmin" ] && [ "$WHAT" != "traducir" ] && [ -z "$DB" ]; then missing="$missing SUPABASE_DB_URL"; fi
           if [ "$WHAT" = "traducir" ] && [ "$DRY" != "true" ] && [ -z "$ANTHROPIC" ]; then missing="$missing ANTHROPIC_API_KEY"; fi
-          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ "$WHAT" != "tope-ia" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
-          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ "$WHAT" != "tope-ia" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ "$WHAT" != "tope-ia" ] && [ "$WHAT" != "recordatorios" ] && [ -z "$URL" ]; then missing="$missing PUBLIC_SUPABASE_URL"; fi
+          if [ "$WHAT" != "migraciones" ] && [ "$WHAT" != "informe-crm" ] && [ "$WHAT" != "buscar-nombres" ] && [ "$WHAT" != "tope-ia" ] && [ "$WHAT" != "recordatorios" ] && [ -z "$KEY" ]; then missing="$missing SUPABASE_SERVICE_ROLE_KEY"; fi
           if [ -n "$missing" ]; then echo "::error::Faltan secretos:$missing (ver docs/PUESTA_EN_MARCHA.md, paso 3)"; exit 1; fi
           # Región de la base de datos (para elegir la misma en Vercel: docs/PUESTA_EN_MARCHA.md §Velocidad). Solo el host, nunca la URL.
           host=$(printf '%s' "$DB" | sed -E 's#^[a-z]+://([^@]*@)?([^:/?]+).*#\2#')
@@ -116,6 +116,18 @@ jobs:
           if [ -z "$NAMES" ]; then echo "::error::Pon los nombres en «nombres»"; exit 1; fi
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
           PGOPTIONS='-c default_transaction_read_only=on' psql "$SUPABASE_DB_URL" -v slug="$TENANT" -v names="$NAMES" -f scripts/crm-check-names.sql
+
+      # ¿Por qué no llega el recordatorio de la mañana? (solo lectura; docs/ASSISTANT.md §Recordatorios): tareas de
+      # pg_cron (solo su dirección, nunca el secreto), lo que contestó la app, quién lo tiene activado (números) y envíos.
+      - name: Recordatorios por WhatsApp
+        if: ${{ inputs.what == 'recordatorios' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TENANT: ${{ inputs.tenant }}
+        run: |
+          case "$TENANT" in *[!a-z0-9-]*|'') echo "::error::Nombre de espacio no válido"; exit 1;; esac
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          PGOPTIONS='-c default_transaction_read_only=on' psql "$SUPABASE_DB_URL" -v slug="$TENANT" -f scripts/reminders-report.sql
 
       # Tope de IA de un espacio (docs/COSTES.md §Tope): lo mismo que Plataforma → Coste por empresa → Tope de IA.
       - name: Tope de IA
