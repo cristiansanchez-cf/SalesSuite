@@ -121,6 +121,15 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
       const next = await admin.crm.logActivity(accountId, { channel: 'whatsapp', outcome: 'no_reply', note: 'Mensaje de seguimiento (recordatorio del asistente de WhatsApp)' });
       return { name: account.name, nextAt: next?.at ? new Date(next.at).toISOString() : null };
     },
+    async leadOk(leadId) {
+      const { leadsFor } = await import('../leads/service');
+      const r = await (await leadsFor(admin)).approveWhatsapp(leadId, { whatsappReady: !!env('WHATSAPP_TOKEN') });
+      return { name: r.name };
+    },
+    async leadNo(leadId) {
+      const { leadsFor } = await import('../leads/service');
+      return (await leadsFor(admin)).dismissWhatsapp(leadId);
+    },
     async later(accountId) {
       const { account } = await admin.accounts.get(accountId);
       await admin.crm.setNextStep(accountId, { step: account.nextStep ?? undefined, at: tomorrow(o.now ?? new Date()), contactId: account.nextContactId ?? null, channel: account.nextChannel ?? null });

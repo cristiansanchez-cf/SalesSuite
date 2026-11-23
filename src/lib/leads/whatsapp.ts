@@ -13,7 +13,8 @@ export const META_LANG: Record<string, string> = { es: 'es_ES', en: 'en', fr: 'f
 const LANG = META_LANG;
 
 export interface WhatsApp {
-  sendTemplate(phoneId: string, to: string, template: string, locale: string, params: string[]): Promise<{ id: string | null }>;
+  /** `buttons`: el payload de cada botón de respuesta rápida de la plantilla, en su orden (vuelve en el webhook). */
+  sendTemplate(phoneId: string, to: string, template: string, locale: string, params: string[], buttons?: string[]): Promise<{ id: string | null }>;
   /** Texto libre (solo dentro de las 24 h desde su último mensaje): lo usa el asistente (docs/ASSISTANT.md). */
   sendText?(phoneId: string, to: string, text: string): Promise<{ id: string | null }>;
   /** Texto con hasta 3 botones de respuesta. */
@@ -63,13 +64,14 @@ export function cloudWhatsApp(token: string, fetchImpl: typeof fetch = fetch): W
       if (!f.ok) throw new Error(`WhatsApp media ${f.status}`);
       return { bytes: new Uint8Array(await f.arrayBuffer()), type: m.mime_type ?? f.headers.get('content-type') ?? 'audio/ogg' };
     },
-    async sendTemplate(phoneId, to, template, locale, params) {
+    async sendTemplate(phoneId, to, template, locale, params, buttons) {
       const send = (code: string) => fetchImpl(`${GRAPH}/${encodeURIComponent(phoneId)}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messaging_product: 'whatsapp', to: to.replace(/^\+/, ''), type: 'template',
-          template: { name: template, language: { code }, components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }] },
+          template: { name: template, language: { code }, components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) },
+            ...(buttons ?? []).map((payload, index) => ({ type: 'button', sub_type: 'quick_reply', index: String(index), parameters: [{ type: 'payload', payload: payload.slice(0, 256) }] }))] },
         }),
       });
       type Body = { messages?: { id: string }[]; error?: { message?: string; code?: number } } | null;
@@ -95,7 +97,7 @@ export interface DemoOut { to: string; template: string; locale: string; params:
 type G = typeof globalThis & { [OUTBOX]?: DemoOut[] };
 export function demoWhatsAppOutbox() { return ((globalThis as G)[OUTBOX] ??= []); }
 export const demoWhatsApp: WhatsApp = {
-  async sendTemplate(_p, to, template, locale, params) { demoWhatsAppOutbox().push({ to, template, locale, params }); return { id: `demo-${Date.now()}` }; },
+  async sendTemplate(_p, to, template, locale, params, buttons) { demoWhatsAppOutbox().push({ to, template, locale, params, ...(buttons?.length ? { buttons } : {}) }); return { id: `demo-${Date.now()}` }; },
   async sendText(_p, to, text) { demoWhatsAppOutbox().push({ to, template: '', locale: '', params: [], text }); return { id: `demo-${Date.now()}` }; },
   async sendButtons(_p, to, text, buttons) { demoWhatsAppOutbox().push({ to, template: '', locale: '', params: [], text, buttons: buttons.map((b) => b.id) }); return { id: `demo-${Date.now()}` }; },
   async sendList(_p, to, text, _b, rows) { demoWhatsAppOutbox().push({ to, template: '', locale: '', params: [], text, buttons: rows.map((r) => r.id) }); return { id: `demo-${Date.now()}` }; },

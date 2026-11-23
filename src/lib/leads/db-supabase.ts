@@ -21,6 +21,7 @@ const settingsOf = (r: Row): LeadSettings => ({
   sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [], resendKeyHint: r.resend_key_hint ?? null,
   templates: r.templates ?? {}, aiContext: r.ai_context ?? null, emailSignature: r.email_signature ?? {}, media: r.media ?? {},
   whatsappWa2: r.whatsapp_wa2_enabled ?? true, lastPurgeAt: r.last_purge_at ?? null, emailStyle: r.email_style ?? undefined,
+  waApproval: r.wa_approval ?? 'auto', teamWhatsapp: r.team_whatsapp ?? false,
   retention: {
     leadMonths: r.retention_lead_months ?? DEFAULT_RETENTION.leadMonths, spamMonths: r.retention_spam_months ?? DEFAULT_RETENTION.spamMonths,
     testDays: r.retention_test_days ?? DEFAULT_RETENTION.testDays, proofYears: r.retention_proof_years ?? DEFAULT_RETENTION.proofYears,
@@ -64,6 +65,16 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
       const r = check(await sb.from('lead_settings').select('*').eq('tenant_id', tenantId).maybeSingle()) as Row | null;
       return r ? settingsOf(r) : null;
     },
+    async teamPhone(tenantId, email) {
+      const u = check(await sb.from('users').select('id, display_name, phone, locale').ilike('email', email.replace(/[%_\\]/g, (c) => `\\${c}`)).not('phone', 'is', null).limit(1).maybeSingle()) as Row | null;
+      if (!u?.phone) return null;
+      const [m, sa] = await Promise.all([
+        sb.from('membership').select('role').eq('user_id', u.id).eq('tenant_id', tenantId).in('role', ['admin', 'lead']).limit(1).maybeSingle(),
+        sb.from('platform_admin').select('user_id').eq('user_id', u.id).limit(1).maybeSingle(),
+      ]);
+      if (!m.data && !sa.data) return null;
+      return { userId: u.id, phone: u.phone, name: u.display_name ?? null, locale: u.locale ?? null };
+    },
     async settingsByWhatsappPhone(phoneId) {
       const r = check(await sb.from('lead_settings').select('*').eq('whatsapp_phone_id', phoneId).limit(1).maybeSingle()) as Row | null;
       return r ? settingsOf(r) : null;
@@ -76,6 +87,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
         send_from_hour: s.sendFromHour, send_to_hour: s.sendToHour, holidays: s.holidays,
         ...(s.templates !== undefined ? { templates: s.templates } : {}), ...(s.aiContext !== undefined ? { ai_context: s.aiContext } : {}), ...(s.emailSignature !== undefined ? { email_signature: s.emailSignature } : {}), ...(s.media !== undefined ? { media: s.media } : {}),
         ...(s.whatsappWa2 !== undefined ? { whatsapp_wa2_enabled: s.whatsappWa2 } : {}), ...(s.emailStyle !== undefined ? { email_style: s.emailStyle } : {}),
+        ...(s.waApproval !== undefined ? { wa_approval: s.waApproval } : {}), ...(s.teamWhatsapp !== undefined ? { team_whatsapp: s.teamWhatsapp } : {}),
         ...(s.retention ? { retention_lead_months: s.retention.leadMonths, retention_spam_months: s.retention.spamMonths, retention_test_days: s.retention.testDays, retention_proof_years: s.retention.proofYears } : {}),
       }, { onConflict: 'tenant_id' }));
     },

@@ -4,6 +4,8 @@
  * historial con fecha y hora. Acciones: validar al CRM, cambiar etapa (con motivo para descartar), cuarentena, parar la
  * secuencia y dar de baja.
  */
+import { env } from '~/lib/env';
+import { appMode } from '~/lib/mode';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
@@ -33,6 +35,8 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     switch (str('action')) {
       case 'validate': await svc.validate(id); ok = 'validated'; break;
+      case 'talk': await svc.approveWhatsapp(id, { whatsappReady: !!env('WHATSAPP_TOKEN') || appMode() === 'demo' }); ok = 'talked'; break;
+      case 'not-now': await svc.dismissWhatsapp(id); ok = 'dismissed'; break;
       case 'stage': await svc.setStage(id, str('stage') as Stage, str('reason') || null); ok = 'stage'; break;
       case 'spam': await svc.setStage(id, 'spam'); ok = 'stage'; break;
       case 'contacted': await svc.markContacted(id); ok = 'contacted'; break;
@@ -57,6 +61,10 @@ const lastCtx = (last?.context ?? {}) as { page_url?: string; cta?: { label?: st
 const attrRows = (a: unknown) => (a ? Object.entries(a as Record<string, string>) : []);
 const cls = l.facts.classification as { category: keyof typeof L.cats; auto: boolean; reason: string; by: string } | undefined;
 const reason = (r: string) => (L.reasons as Record<string, string>)[r] ?? r;
+// Se le puede escribir por WhatsApp con «Le hablamos»: teléfono, aviso aceptado, sin baja, sin WhatsApp 1 ya en marcha.
+const awaiting = !!l.facts.waAwaiting && !l.facts.waApproved;
+const waBusy = messages.some((x) => x.channel === 'whatsapp' && x.step === 'wa1' && ['pending', 'sending', 'sent'].includes(x.status));
+const canTalk = !l.isTest && !!l.phoneE164 && l.whatsappOk && !suppressed.whatsapp && !waBusy && !l.lastInboundAt && !['spam', 'discarded', 'lost'].includes(l.stage) && !!data.settings?.whatsappEnabled;
 const bandLabel = l.scoreDetail ? (L.bands as Record<string, string>)[l.scoreDetail.band] ?? l.scoreDetail.band : '';
 const origins: [string, unknown][] = [[D.first, l.attributionFirst], [D.last, l.attributionLast]];
 const evText = (e: (typeof events)[number]) => {
@@ -77,6 +85,17 @@ const evText = (e: (typeof events)[number]) => {
       : !l.isTest && <form method="post"><button class="co-btn co-btn--primary" name="action" value="validate" data-testid="lead-validate"><Icon name="check" size={16} />{D.validate}</button></form>}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {/* «Le hablamos» (docs/LEADS.md §WhatsApp con tu OK): cuando espera tu OK, o si aún no se le ha escrito por WhatsApp. */}
+  {canTalk && (
+    <div class:list={['co-inset mb-4 flex flex-wrap items-center gap-3 !py-3', awaiting && 'co-inset--warn']} data-testid="lead-talk-box">
+      <Icon name="whatsapp" size={18} />
+      <span class="min-w-0 flex-1 text-sm">{awaiting ? <strong>{D.awaiting}</strong> : null}<span class="co-help block">{D.talkHelp}</span></span>
+      <form method="post" class="flex flex-wrap gap-2">
+        <button class="co-btn co-btn--primary co-btn--sm" name="action" value="talk" data-testid="lead-talk">{D.talk}</button>
+        {awaiting && <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="not-now" data-testid="lead-not-now">{D.notNow}</button>}
+      </form>
+    </div>
+  )}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
   {l.isTest && <div class="mb-4"><Alert kind="info" title={D.test} /></div>}
   {l.quarantined && (

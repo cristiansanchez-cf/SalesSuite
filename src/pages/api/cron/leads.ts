@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ request }) => {
   const rt = await leadsRuntime();
   if ('error' in rt) return Response.json({ error: rt.error }, { status: 503 });
   const now = new Date();
-  const r = await processDue({ db: rt.db, mailer: rt.mailer, whatsapp: rt.whatsapp, now, secret: rt.secret, mailerFor: rt.mailerFor, classifier: rt.classifier }, { limit: 100 });
+  const r = await processDue({ db: rt.db, mailer: rt.mailer, whatsapp: rt.whatsapp, now, secret: rt.secret, mailerFor: rt.mailerFor, classifier: rt.classifier, team: rt.team }, { limit: 100 });
   // El borrado diario no puede parar los envíos: si falla, se intenta en el siguiente minuto.
   let purged = 0;
   try { purged = (await purgeDue(rt.privacy, rt.db, now, rt.secret)).length; } catch (e) { console.error('[leads] borrado diario', e instanceof Error ? e.message : e); }

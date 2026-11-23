@@ -41,6 +41,9 @@ export async function processHub(d: AssistantDeps, phoneId: string, members: Mem
   const userId = users[0];
   const tenants = [...new Set(members.map((x) => x.tenantId))];
   if (tenants.length === 1) return processAssistant(d, phoneId, { tenantId: tenants[0], userId }, m);
+  // Botón del aviso de lead nuevo: lleva su espacio («lead:<espacio>:<lead>:ok»); va a ese, sin preguntar.
+  const leadBtn = m.kind === 'button' ? /^lead:([0-9a-f-]{36}):[0-9a-f-]{36}:(ok|no)$/i.exec(m.buttonId ?? '') : null;
+  if (leadBtn && tenants.includes(leadBtn[1])) return processAssistant(d, phoneId, { tenantId: leadBtn[1], userId }, m);
 
   const profile = await d.db.userProfile(userId);
   const T: AssistantText = assistantMessages[(profile.locale ?? 'es') as keyof typeof assistantMessages] ?? assistantMessages.es;

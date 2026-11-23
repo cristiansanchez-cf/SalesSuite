@@ -45,7 +45,15 @@ export interface LeadSettings {
   retention?: Retention;
   /** Último borrado automático (lo escribe el servidor). */
   lastPurgeAt?: string | null;
+  /**
+   * Cuándo espera el WhatsApp 1 al «Le hablamos» de una persona (docs/LEADS.md §WhatsApp con tu OK): 'auto' (los dudosos,
+   * nada), 'doubtful' (los dudosos esperan tu OK; por defecto) o 'all' (todos lo esperan).
+   */
+  waApproval?: WaApproval;
+  /** Avisar por WhatsApp (además del email) a quien atiende, con «Le hablamos». Sin la columna: no. */
+  teamWhatsapp?: boolean;
 }
+export type WaApproval = 'auto' | 'doubtful' | 'all';
 
 export interface Retention {
   /** Leads que no contratan: meses desde el último contacto (se anonimizan). */
@@ -144,7 +152,7 @@ export type EventKind = 'submission' | 'stage' | 'message_out' | 'message_in' | 
 export interface LeadEvent { id: string; tenantId: string; leadId: string; at: string; kind: EventKind; fromStage: string | null; toStage: string | null; byUser: string | null; data: Record<string, unknown> }
 export type NewEvent = Omit<LeadEvent, 'id' | 'at' | 'fromStage' | 'toStage' | 'byUser'> & { at?: string; fromStage?: string | null; toStage?: string | null; byUser?: string | null };
 
-export type Step = 'autoreply' | 'notify' | 'wa1' | 'wa2';
+export type Step = 'autoreply' | 'notify' | 'wa1' | 'wa2' | 'team_wa';
 export type MsgStatus = 'pending' | 'sending' | 'sent' | 'failed' | 'cancelled' | 'skipped';
 export interface LeadMessage {
   id: string; tenantId: string; leadId: string; createdAt: string; channel: 'email' | 'whatsapp'; step: Step; toAddr: string; sendAt: string;

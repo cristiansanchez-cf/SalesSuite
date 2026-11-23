@@ -19,7 +19,7 @@ const es = {
   cats: { venue: 'Local', dj: 'DJ', promoter: 'Promotora', festival: 'Festival', event: 'Evento', wedding: 'Boda', partner: 'Marca o alianza', press: 'Prensa', vendor: 'Nos quiere vender algo', job: 'Busca trabajo', other: 'No está claro' },
   review: 'Lo sigues tú', auto: 'Mensaje automático', looksLike: 'Qué parece',
   detail: {
-    back: 'Leads web', validate: 'Validar y pasar al CRM', validated: 'Ya está en el CRM', openContact: 'Ver en el CRM', release: 'Sacar de cuarentena', spam: 'Es spam',
+    back: 'Leads web', talk: 'Le hablamos', talkHelp: 'Le sale ya el WhatsApp de bienvenida desde el número de la empresa y pasa al CRM.', notNow: 'Lo miro yo', awaiting: 'Espera tu OK para escribirle por WhatsApp', validate: 'Validar y pasar al CRM', validated: 'Ya está en el CRM', openContact: 'Ver en el CRM', release: 'Sacar de cuarentena', spam: 'Es spam',
     contacted: 'Lo he contactado yo', stop: 'Parar la secuencia', suppress: 'No escribirle más', stage: 'Cambiar etapa', reason: 'Motivo (obligatorio para descartar)',
     note: 'Nota', addNote: 'Apuntar', save: 'Guardar',
     data: 'Lo que pidió', submissions: 'Envíos', origin: 'Origen', first: 'Primer contacto', last: 'Último', history: 'Historial', messages: 'Envíos automáticos',
@@ -28,9 +28,9 @@ const es = {
     message: 'Mensaje', cta: 'Botón', page: 'Página', test: 'Prueba: nunca se le escribe',
   },
   status: { pending: 'Programado', sending: 'Enviando', sent: 'Enviado', failed: 'Falló', cancelled: 'Cancelado', skipped: 'No enviado' },
-  steps: { autoreply: 'Email de confirmación', notify: 'Aviso interno', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: 'Recordatorio al equipo' },
+  steps: { autoreply: 'Email de confirmación', notify: 'Aviso interno', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: 'Recordatorio al equipo', team_wa: 'Aviso por WhatsApp al equipo' },
   events: { submission: 'Ha escrito desde la web', stage: 'Etapa', message_out: 'Enviado', message_in: 'Ha contestado', note: 'Nota', validated: 'Validado al CRM', quarantine: 'A cuarentena', suppressed: 'Baja' },
-  ok: { live: 'Activado: ya entran los leads de la web.', paused: 'Pausado: solo entran pruebas.', sigSaved: 'Firma guardada.', textsSaved: 'Mensajes guardados.', textsReset: 'Mensajes de por defecto.', resendSaved: 'Clave de Resend guardada.', resendCleared: 'Clave de Resend quitada: se usa la de la plataforma.', validated: 'Validado: ya está en el CRM.', stage: 'Etapa cambiada.', released: 'Sacado de cuarentena.', note: 'Apuntado.', stopped: 'Secuencia parada.', suppressed: 'No se le volverá a escribir.', saved: 'Ajustes guardados.', contacted: 'Apuntado el primer contacto.' },
+  ok: { live: 'Activado: ya entran los leads de la web.', paused: 'Pausado: solo entran pruebas.', sigSaved: 'Firma guardada.', textsSaved: 'Mensajes guardados.', textsReset: 'Mensajes de por defecto.', resendSaved: 'Clave de Resend guardada.', resendCleared: 'Clave de Resend quitada: se usa la de la plataforma.', validated: 'Validado: ya está en el CRM.', stage: 'Etapa cambiada.', released: 'Sacado de cuarentena.', note: 'Apuntado.', stopped: 'Secuencia parada.', suppressed: 'No se le volverá a escribir.', saved: 'Ajustes guardados.', contacted: 'Apuntado el primer contacto.', talked: 'Hecho: le sale ahora el WhatsApp de bienvenida y ya está en el CRM.', dismissed: 'Vale: sin WhatsApp automático, le escribes tú.' },
   set: {
     title: 'Ajustes de leads', lede: 'Cómo entran y quién contesta. Las claves (Resend, WhatsApp) no van aquí: viven en el servidor.',
     endpoint: 'Dirección para la web', endpointHelp: 'La web hace POST aquí. Desde localhost o con "test": true se guarda como prueba y no se escribe a nadie.',
@@ -83,7 +83,7 @@ export const leadsMessages = defineMessages({
     cats: { venue: 'Venue', dj: 'DJ', promoter: 'Promoter', festival: 'Festival', event: 'Event', wedding: 'Wedding', partner: 'Brand or partnership', press: 'Press', vendor: 'Wants to sell us something', job: 'Looking for a job', other: 'Unclear' },
     review: 'You follow up', auto: 'Automatic message', looksLike: 'Looks like',
     detail: {
-      back: 'Web leads', validate: 'Validate and add to the CRM', validated: 'Already in the CRM', openContact: 'Open in the CRM', release: 'Release from quarantine', spam: "It's spam",
+      back: 'Web leads', talk: 'Message them', talkHelp: 'The welcome WhatsApp goes out now from the company number and they move to the CRM.', notNow: 'I’ll handle it', awaiting: 'Waiting for your OK to message them on WhatsApp', validate: 'Validate and add to the CRM', validated: 'Already in the CRM', openContact: 'Open in the CRM', release: 'Release from quarantine', spam: "It's spam",
       contacted: 'I contacted them', stop: 'Stop the sequence', suppress: 'Never message again', stage: 'Change stage', reason: 'Reason (required to discard)',
       note: 'Note', addNote: 'Add', save: 'Save',
       data: 'What they asked for', submissions: 'Submissions', origin: 'Source', first: 'First touch', last: 'Latest', history: 'History', messages: 'Automatic messages',
@@ -92,9 +92,9 @@ export const leadsMessages = defineMessages({
       message: 'Message', cta: 'Button', page: 'Page', test: 'Test: never contacted',
     },
     status: { pending: 'Scheduled', sending: 'Sending', sent: 'Sent', failed: 'Failed', cancelled: 'Cancelled', skipped: 'Not sent' },
-    steps: { autoreply: 'Confirmation email', notify: 'Internal alert', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: 'Team reminder' },
+    steps: { autoreply: 'Confirmation email', notify: 'Internal alert', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: 'Team reminder', team_wa: 'WhatsApp alert to the team' },
     events: { submission: 'Wrote from the website', stage: 'Stage', message_out: 'Sent', message_in: 'Replied', note: 'Note', validated: 'Validated into the CRM', quarantine: 'Quarantined', suppressed: 'Unsubscribed' },
-    ok: { live: 'Live: website leads are coming in.', paused: 'Paused: only tests come in.', sigSaved: 'Signature saved.', textsSaved: 'Messages saved.', textsReset: 'Default messages restored.', resendSaved: 'Resend key saved.', resendCleared: 'Resend key removed: the platform account is used.', validated: 'Validated: it is in the CRM now.', stage: 'Stage changed.', released: 'Released from quarantine.', note: 'Noted.', stopped: 'Sequence stopped.', suppressed: 'They will not be messaged again.', saved: 'Settings saved.', contacted: 'First contact recorded.' },
+    ok: { live: 'Live: website leads are coming in.', paused: 'Paused: only tests come in.', sigSaved: 'Signature saved.', textsSaved: 'Messages saved.', textsReset: 'Default messages restored.', resendSaved: 'Resend key saved.', resendCleared: 'Resend key removed: the platform account is used.', validated: 'Validated: it is in the CRM now.', stage: 'Stage changed.', released: 'Released from quarantine.', note: 'Noted.', stopped: 'Sequence stopped.', suppressed: 'They will not be messaged again.', saved: 'Settings saved.', contacted: 'First contact recorded.', talked: 'Done: the welcome WhatsApp goes out now and they are in the CRM.', dismissed: 'OK: no automatic WhatsApp, you write to them.' },
     set: {
       title: 'Lead settings', lede: 'How leads come in and who replies. Keys (Resend, WhatsApp) don’t go here: they live on the server.',
       endpoint: 'Address for the website', endpointHelp: 'The website POSTs here. From localhost or with "test": true it is saved as a test and nobody is messaged.',
@@ -144,7 +144,7 @@ export const leadsMessages = defineMessages({
     cats: { venue: 'Local', dj: 'DJ', promoter: 'Promotora', festival: 'Festival', event: 'Evento', wedding: 'Casamento', partner: 'Marca ou parceria', press: 'Imprensa', vendor: 'Quer vender-nos algo', job: 'Procura trabalho', other: 'Pouco claro' },
     review: 'Você acompanha', auto: 'Mensagem automática', looksLike: 'O que parece',
     detail: {
-      back: 'Leads do site', validate: 'Validar e passar ao CRM', validated: 'Já está no CRM', openContact: 'Ver no CRM', release: 'Tirar da quarentena', spam: 'É spam',
+      back: 'Leads do site', talk: 'Falamos com ele', talkHelp: 'Sai já o WhatsApp de boas-vindas do número da empresa e passa ao CRM.', notNow: 'Vejo eu', awaiting: 'Espera o teu OK para lhe escrever por WhatsApp', validate: 'Validar e passar ao CRM', validated: 'Já está no CRM', openContact: 'Ver no CRM', release: 'Tirar da quarentena', spam: 'É spam',
       contacted: 'Eu contatei', stop: 'Parar a sequência', suppress: 'Não escrever mais', stage: 'Mudar etapa', reason: 'Motivo (obrigatório para descartar)',
       note: 'Nota', addNote: 'Anotar', save: 'Salvar',
       data: 'O que pediu', submissions: 'Envios', origin: 'Origem', first: 'Primeiro contato', last: 'Último', history: 'Histórico', messages: 'Envios automáticos',
@@ -153,9 +153,9 @@ export const leadsMessages = defineMessages({
       message: 'Mensagem', cta: 'Botão', page: 'Página', test: 'Teste: nunca é contatado',
     },
     status: { pending: 'Programado', sending: 'Enviando', sent: 'Enviado', failed: 'Falhou', cancelled: 'Cancelado', skipped: 'Não enviado' },
-    steps: { autoreply: 'Email de confirmação', notify: 'Aviso interno', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: 'Lembrete à equipa' },
+    steps: { autoreply: 'Email de confirmação', notify: 'Aviso interno', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: 'Lembrete à equipa', team_wa: 'Aviso por WhatsApp à equipa' },
     events: { submission: 'Escreveu pelo site', stage: 'Etapa', message_out: 'Enviado', message_in: 'Respondeu', note: 'Nota', validated: 'Validado no CRM', quarantine: 'Em quarentena', suppressed: 'Descadastro' },
-    ok: { live: 'Ativado: os leads do site já entram.', paused: 'Pausado: só entram testes.', sigSaved: 'Assinatura salva.', textsSaved: 'Mensagens salvas.', textsReset: 'Mensagens padrão restauradas.', resendSaved: 'Chave do Resend salva.', resendCleared: 'Chave do Resend removida: usa-se a da plataforma.', validated: 'Validado: já está no CRM.', stage: 'Etapa alterada.', released: 'Tirado da quarentena.', note: 'Anotado.', stopped: 'Sequência parada.', suppressed: 'Não voltará a receber mensagens.', saved: 'Configurações salvas.', contacted: 'Primeiro contato registado.' },
+    ok: { live: 'Ativado: os leads do site já entram.', paused: 'Pausado: só entram testes.', sigSaved: 'Assinatura salva.', textsSaved: 'Mensagens salvas.', textsReset: 'Mensagens padrão restauradas.', resendSaved: 'Chave do Resend salva.', resendCleared: 'Chave do Resend removida: usa-se a da plataforma.', validated: 'Validado: já está no CRM.', stage: 'Etapa alterada.', released: 'Tirado da quarentena.', note: 'Anotado.', stopped: 'Sequência parada.', suppressed: 'Não voltará a receber mensagens.', saved: 'Configurações salvas.', contacted: 'Primeiro contato registado.', talked: 'Feito: sai agora o WhatsApp de boas-vindas e já está no CRM.', dismissed: 'Está bem: sem WhatsApp automático, escreves tu.' },
     set: {
       title: 'Configurações de leads', lede: 'Como entram e quem responde. As chaves (Resend, WhatsApp) não ficam aqui: vivem no servidor.',
       endpoint: 'Endereço para o site', endpointHelp: 'O site faz POST aqui. A partir de localhost ou com "test": true fica como teste e ninguém recebe mensagens.',
@@ -205,7 +205,7 @@ export const leadsMessages = defineMessages({
     cats: { venue: '매장', dj: 'DJ', promoter: '프로모터', festival: '페스티벌', event: '이벤트', wedding: '결혼식', partner: '브랜드 또는 제휴', press: '언론', vendor: '우리에게 판매하려는 곳', job: '구직', other: '불분명' },
     review: '직접 응대', auto: '자동 메시지', looksLike: '추정',
     detail: {
-      back: '웹 리드', validate: '검토 후 CRM에 추가', validated: '이미 CRM에 있음', openContact: 'CRM에서 보기', release: '격리 해제', spam: '스팸입니다',
+      back: '웹 리드', talk: '연락하기', talkHelp: '회사 번호로 환영 WhatsApp이 바로 나가고 CRM으로 이동합니다.', notNow: '직접 볼게요', awaiting: 'WhatsApp을 보내려면 확인이 필요합니다', validate: '검토 후 CRM에 추가', validated: '이미 CRM에 있음', openContact: 'CRM에서 보기', release: '격리 해제', spam: '스팸입니다',
       contacted: '제가 연락했어요', stop: '시퀀스 중지', suppress: '더 이상 연락하지 않기', stage: '단계 변경', reason: '이유 (제외 시 필수)',
       note: '메모', addNote: '기록', save: '저장',
       data: '요청한 내용', submissions: '제출', origin: '유입', first: '첫 유입', last: '최근', history: '기록', messages: '자동 발송',
@@ -214,9 +214,9 @@ export const leadsMessages = defineMessages({
       message: '메시지', cta: '버튼', page: '페이지', test: '테스트: 절대 연락하지 않음',
     },
     status: { pending: '예약됨', sending: '보내는 중', sent: '보냄', failed: '실패', cancelled: '취소됨', skipped: '보내지 않음' },
-    steps: { autoreply: '확인 이메일', notify: '내부 알림', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: '팀 알림' },
+    steps: { autoreply: '확인 이메일', notify: '내부 알림', wa1: 'WhatsApp 1', wa2: 'WhatsApp 2', reminder: '팀 알림', team_wa: '팀 WhatsApp 알림' },
     events: { submission: '웹사이트에서 문의함', stage: '단계', message_out: '보냄', message_in: '답장함', note: '메모', validated: 'CRM에 추가됨', quarantine: '격리됨', suppressed: '수신 거부' },
-    ok: { live: '운영을 시작했습니다: 웹사이트 리드가 들어옵니다.', paused: '일시 중지: 테스트만 들어옵니다.', sigSaved: '서명을 저장했습니다.', textsSaved: '메시지를 저장했습니다.', textsReset: '기본 메시지로 되돌렸습니다.', resendSaved: 'Resend 키를 저장했습니다.', resendCleared: 'Resend 키를 삭제했습니다: 플랫폼 계정을 사용합니다.', validated: '검토 완료: CRM에 추가되었습니다.', stage: '단계를 바꿨습니다.', released: '격리를 해제했습니다.', note: '기록했습니다.', stopped: '시퀀스를 중지했습니다.', suppressed: '더 이상 연락하지 않습니다.', saved: '설정을 저장했습니다.', contacted: '첫 연락을 기록했습니다.' },
+    ok: { live: '운영을 시작했습니다: 웹사이트 리드가 들어옵니다.', paused: '일시 중지: 테스트만 들어옵니다.', sigSaved: '서명을 저장했습니다.', textsSaved: '메시지를 저장했습니다.', textsReset: '기본 메시지로 되돌렸습니다.', resendSaved: 'Resend 키를 저장했습니다.', resendCleared: 'Resend 키를 삭제했습니다: 플랫폼 계정을 사용합니다.', validated: '검토 완료: CRM에 추가되었습니다.', stage: '단계를 바꿨습니다.', released: '격리를 해제했습니다.', note: '기록했습니다.', stopped: '시퀀스를 중지했습니다.', suppressed: '더 이상 연락하지 않습니다.', saved: '설정을 저장했습니다.', contacted: '첫 연락을 기록했습니다.', talked: '완료: 지금 환영 WhatsApp이 나가고 CRM에 들어갔습니다.', dismissed: '네: 자동 WhatsApp 없이 직접 연락하세요.' },
     set: {
       title: '리드 설정', lede: '리드가 어떻게 들어오고 누가 답하는지 정합니다. 키(Resend, WhatsApp)는 여기가 아니라 서버에 있습니다.',
       endpoint: '웹사이트용 주소', endpointHelp: '웹사이트가 여기로 POST합니다. localhost에서 오거나 "test": true이면 테스트로 저장되고 아무에게도 연락하지 않습니다.',

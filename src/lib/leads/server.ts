@@ -2,6 +2,8 @@
  * Lo que necesitan las rutas públicas de leads (endpoint, cron, webhook, baja): la base de datos con service role
  * (o la demo en memoria), Resend, WhatsApp y el secreto. Los secretos viven solo aquí, en el servidor.
  */
+import { hubConfig, hubWhatsApp, parseNamed } from '../assistant/hub-config';
+import type { JobDeps } from './job';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../env';
 import { appMode } from '../mode';
@@ -23,6 +25,19 @@ export interface LeadsRuntime {
   mailerFor: (tenantId: string) => Promise<Mailer | null>;
   /** Clasificar cada lead con IA (si hay clave; con AI_RESEARCH_FIXTURE=1, la de pruebas). */
   classifier: Classifier | null;
+  /** El aviso de lead nuevo por WhatsApp a quien atiende (número del asistente). */
+  team: JobDeps['team'];
+}
+
+/**
+ * El aviso por WhatsApp a quien atiende sale del número del asistente (ASSISTANT_WHATSAPP_PHONE_ID) con la plantilla
+ * equipo_nuevo_lead_<idioma> (o ASSISTANT_LEAD_TEMPLATES «es=nombre,en=…»). Sin número del asistente, no se manda.
+ */
+function teamFromEnv(wa: WhatsApp | null): JobDeps['team'] {
+  const hub = hubConfig();
+  if (!hub) return null;
+  const t: Record<'es' | 'en' | 'fr', string> = { es: 'equipo_nuevo_lead_es', en: 'equipo_nuevo_lead_en', fr: 'equipo_nuevo_lead_fr' };
+  return { phoneId: hub.phoneId, templates: { ...t, ...parseNamed(env('ASSISTANT_LEAD_TEMPLATES') ?? '') }, wa: hubWhatsApp(wa) };
 }
 
 /** null + motivo si falta configuración (el endpoint responde 503 y lo dice en los registros). */
@@ -30,7 +45,7 @@ export async function leadsRuntime(): Promise<LeadsRuntime | { error: string }> 
   if (appMode() === 'demo') {
     const { demoLeadsDb } = await import('./db-demo');
     const { demoPrivacyDb } = await import('./privacy-db-demo');
-    return { db: demoLeadsDb(), privacy: demoPrivacyDb(), mailer: demoMailer, whatsapp: demoWhatsApp, secret: leadsSecret()!, demo: true, mailerFor: async () => demoMailer, classifier: classifierFromEnv() };
+    return { db: demoLeadsDb(), privacy: demoPrivacyDb(), mailer: demoMailer, whatsapp: demoWhatsApp, secret: leadsSecret()!, demo: true, mailerFor: async () => demoMailer, classifier: classifierFromEnv(), team: teamFromEnv(demoWhatsApp) };
   }
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   const secret = leadsSecret();
@@ -42,7 +57,7 @@ export async function leadsRuntime(): Promise<LeadsRuntime | { error: string }> 
   const mailer = env('RESEND_API_KEY') && env('RESEND_FROM') ? resendMailer(env('RESEND_API_KEY')!, env('RESEND_FROM')!) : null;
   const wa = env('WHATSAPP_TOKEN') ? cloudWhatsApp(env('WHATSAPP_TOKEN')!) : null;
   const db = supabaseLeadsDb(sb);
-  return { db, privacy: supabasePrivacyDb(sb), mailer, whatsapp: wa, secret, demo: false, mailerFor: mailerFactory(db, mailer, secret), classifier: classifierFromEnv() };
+  return { db, privacy: supabasePrivacyDb(sb), mailer, whatsapp: wa, secret, demo: false, mailerFor: mailerFactory(db, mailer, secret), classifier: classifierFromEnv(), team: teamFromEnv(wa) };
 }
 
 /** Cloudflare Turnstile (opcional): solo si hay TURNSTILE_SECRET. */

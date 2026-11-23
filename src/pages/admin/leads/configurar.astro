@@ -196,7 +196,7 @@ if (Astro.request.method === 'POST') {
         await svc.saveWhatsapp({ templates }, slug);
         to = 4; ok = 'templates';
       } else if (action === 'whatsapp-activate') {
-        await svc.saveWhatsapp({ enabled: f.get('enabled') === 'on', wa2: f.get('wa2') === 'on', fromHour: Number(f.get('fromHour')), toHour: Number(f.get('toHour')) }, slug);
+        await svc.saveWhatsapp({ enabled: f.get('enabled') === 'on', wa2: f.get('wa2') === 'on', fromHour: Number(f.get('fromHour')), toHour: Number(f.get('toHour')), approval: String(f.get('approval') ?? '') || undefined, teamWhatsapp: f.get('teamWhatsapp') === 'on' }, slug);
         to = 5; ok = 'activate';
       } else {
         const day = String(f.get('day') ?? '');
@@ -387,7 +387,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     T={T.whatsapp} langNames={T.messages.langs.names} preview={previewFor(msgBase, s.templates ?? {}, msgCtx).wa1}
     platformReady={demo || !!env('WHATSAPP_TOKEN')} partnerId={env('META_PARTNER_BUSINESS_ID')?.trim() || null}
     phoneId={s.whatsappPhoneId} check={waCheck && waCheck.ok ? waCheck : null} guides={waGuides} saved={waSaved}
-    enabled={s.whatsappEnabled} wa2={s.whatsappWa2 !== false} fromHour={s.sendFromHour} toHour={s.sendToHour} holidays={s.holidays}
+    enabled={s.whatsappEnabled} wa2={s.whatsappWa2 !== false} approval={s.waApproval ?? 'auto'} teamWhatsapp={!!s.teamWhatsapp} fromHour={s.sendFromHour} toHour={s.sendToHour} holidays={s.holidays}
     notice={openParam === 'whatsapp' ? okMsg : null}
     error={error && errorIn === 'whatsapp' ? { title: error, details: errorDetails } : null}
   />

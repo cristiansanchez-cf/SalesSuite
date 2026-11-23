@@ -538,6 +538,20 @@ describe('de punta a punta (demo)', () => {
     expect(await teamMember(demoAssistantDb(), '00000000-0000-4000-8000-000000000a01', '+34699000111')).toBeNull();
   });
 
+  test('el aviso de un lead nuevo: «Lo miro yo» deja de esperar; «Le hablamos» sin WhatsApp listo lo explica', async () => {
+    const { demoLeadsStore, resetDemoLeads } = await import('../leads/db-demo');
+    resetDemoLeads();
+    const id = '00000000-0000-4000-8000-0000000ead01';
+    demoLeadsStore().leads.push({ id, tenantId: ENJOY, name: 'Ana Brand', email: 'ana@x.com', phoneE164: '+34600111222', phoneRaw: null, whatsappOk: true, locale: 'es', type: 'venue', stage: 'new', facts: { waAwaiting: true } } as never);
+    const member = { tenantId: ENJOY, userId: '22222222-2222-4222-8222-222222222222' }; // admin@enjoy.test: quien puede validar
+    await processAssistant(deps(), '123', member, msg('l1', { kind: 'button', buttonId: `lead:${ENJOY}:${id}:no`, text: 'Lo miro yo' }));
+    expect(sent.at(-1)!.text).toContain('a Ana Brand no le escribo nada');
+    expect(demoLeadsStore().leads[0].facts.waAwaiting).toBe(false);
+    await processAssistant(deps(), '123', member, msg('l2', { kind: 'button', buttonId: `lead:${ENJOY}:${id}:ok`, text: 'Le hablamos' }));
+    expect(sent.at(-1)!.text).toMatch(/^No he podido/);
+    resetDemoLeads();
+  });
+
   test('un audio → lo entiende → Guardar → la interacción queda en Club Sol a su nombre', async () => {
     const member = { tenantId: ENJOY, userId: REP };
     expect(await processAssistant(deps(), '123', member, msg('w1', { kind: 'audio', mediaId: 'media-1' }))).toBe('handled');

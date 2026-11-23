@@ -1,5 +1,6 @@
 /** Leads en memoria (demo y pruebas). Mismo comportamiento que Supabase salvo la RLS (la consola filtra por espacio). */
 import { randomUUID } from 'node:crypto';
+import { demoDb } from '../data/store';
 import { CONSOLE_TEST_PREFIX, DuplicateKey, type LeadsDb } from './db';
 import { suppressionKey } from './privacy';
 import type { Lead, LeadEvent, LeadMessage, LeadSettings, Submission } from './types';
@@ -35,13 +36,18 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
   const s = store;
   return {
     async settings(tenantId) { const r = s.settings.find((x) => x.tenantId === tenantId); return r ? clone(r) : null; },
+    async teamPhone(tenantId, email) {
+      const u = demoDb().users.find((x) => x.email.toLowerCase() === email.toLowerCase() && x.phone);
+      if (!u || !(u.platform_admin || u.memberships.some((m) => m.tenant_id === tenantId && (m.role === 'admin' || m.role === 'lead')))) return null;
+      return { userId: u.id, phone: u.phone!, name: u.display_name || null, locale: u.locale ?? null };
+    },
     async settingsByWhatsappPhone(phoneId) { const r = s.settings.find((x) => x.whatsappPhoneId === phoneId); return r ? clone(r) : null; },
     async saveSettings(v) {
       if (s.settings.some((x) => x.brand === v.brand && x.tenantId !== v.tenantId)) throw new DuplicateKey('brand');
       const prev = s.settings.find((x) => x.tenantId === v.tenantId);
       const hint = prev?.resendKeyHint ?? null;
       s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null, emailSignature: v.emailSignature ?? prev?.emailSignature ?? {}, media: v.media ?? prev?.media ?? {},
-        whatsappWa2: v.whatsappWa2 ?? prev?.whatsappWa2 ?? true, retention: v.retention ?? prev?.retention, lastPurgeAt: prev?.lastPurgeAt ?? null });
+        whatsappWa2: v.whatsappWa2 ?? prev?.whatsappWa2 ?? true, waApproval: v.waApproval ?? prev?.waApproval, teamWhatsapp: v.teamWhatsapp ?? prev?.teamWhatsapp, retention: v.retention ?? prev?.retention, lastPurgeAt: prev?.lastPurgeAt ?? null });
     },
     async resendKey(tenantId) { return s.secrets?.[tenantId] ?? null; },
     async setResendKey(tenantId, sealed, hint) {

@@ -139,6 +139,39 @@ El tipo de formulario no basta: una marca de bebidas que busca un acuerdo puede 
    que pidió), en la bandeja aparece «Marca o alianza · Lo sigues tú» y el aviso a quien atiende lo dice. Si la web ya
    le había dicho «te escribo por WhatsApp», el aviso pide escribirle a mano.
 
+## 2f. WhatsApp con tu OK
+Para no escribir (ni pagar) a quien no toca, el primer WhatsApp puede **esperar a que una persona diga «Le hablamos»**.
+En Ajustes → WhatsApp a los leads, «¿Cuándo espera tu OK el primer WhatsApp?» (`lead_settings.wa_approval`):
+
+- **Solo los dudosos** (`doubtful`, por defecto): los claros (un local, un DJ…) reciben el WhatsApp en minutos, como
+  siempre; los que las reglas o la IA marcan para revisar (marca, prensa, «otro»…) quedan **en espera**
+  (`facts.waAwaiting`). Si la IA quita el automático en la cola, el WhatsApp ya programado pasa a esperar en vez de perderse.
+- **Todos** (`all`): ninguno sale solo; cada lead con teléfono y consentimiento espera «Le hablamos».
+- **Nunca** (`auto`): como antes; a los dudosos no se les escribe.
+
+**«Le hablamos»** (en la ficha del lead o en el botón del aviso por WhatsApp, `approveWhatsapp`): lo valida (entra en el
+CRM) si no lo estaba y le sale **ya** el WhatsApp 1 desde el número de la empresa (con coexistencia, la conversación se
+ve en la app de WhatsApp Business); el 2, al día laborable siguiente si está encendido. Queda apuntado quién y cuándo
+(`facts.waApproved`), y eso deja salir el WhatsApp aunque la clasificación dijera «revísalo tú». No se puede dos veces
+ni si ya contestó. **«Lo miro yo»** (`dismissWhatsapp`): no se le escribe nada automático.
+
+**Aviso por WhatsApp a quien atiende** (`lead_settings.team_whatsapp`, encendido por defecto): además del email, a cada
+email de avisos que sea de un/a admin o gerente con su teléfono en Mi cuenta le llega un WhatsApp **desde el número del
+asistente** (paso `team_wa` de la cola) con el nombre, qué es (y «revísalo tú» si es dudoso), su teléfono, lo que
+escribió y qué va a pasar, con los botones «Le hablamos» y «Lo miro yo» (payload `lead:<espacio>:<lead>:ok|no`, lo
+contesta el asistente). Sin teléfono o sin la plantilla, se salta y el email sigue.
+
+Plantilla en la cuenta de WhatsApp del **asistente** (Utilidad), `equipo_nuevo_lead_es` (y `_en`, `_fr`; otros nombres
+con `ASSISTANT_LEAD_TEMPLATES`), con dos botones de respuesta rápida «Le hablamos» y «Lo miro yo»:
+
+```
+Nuevo lead en {{1}}: {{2}} · {{3}}.
+
+Ha escrito: «{{4}}»
+
+{{5}}
+```
+
 ## 2c. Mensajes de cada empresa
 Leads → Ajustes → **Mensajes**, por idioma: asunto y cuerpo del email, WhatsApp 1 y 2 y la pregunta del WhatsApp 1
 según lo que pidió. **Proponer con IA** los escribe a partir de qué vende la empresa, a quién y quién firma (no guarda:

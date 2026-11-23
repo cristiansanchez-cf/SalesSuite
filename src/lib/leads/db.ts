@@ -9,6 +9,11 @@ export class DuplicateKey extends Error {}
 export interface LeadsDb {
   settings(tenantId: string): Promise<LeadSettings | null>;
   settingsByWhatsappPhone(phoneId: string): Promise<LeadSettings | null>;
+  /**
+   * Quién atiende, por su email de avisos (docs/LEADS.md §WhatsApp con tu OK): su teléfono de Mi cuenta, si es admin o
+   * gerente del espacio (o superadmin): quien puede validar. Sin teléfono o sin ese papel: null.
+   */
+  teamPhone(tenantId: string, email: string): Promise<{ userId: string; phone: string; name: string | null; locale: string | null } | null>;
   saveSettings(s: LeadSettings): Promise<void>;
   /** Clave propia de Resend, cifrada (solo con service role). */
   resendKey(tenantId: string): Promise<string | null>;

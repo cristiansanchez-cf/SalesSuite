@@ -175,15 +175,25 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   // WhatsApp: no se reinicia si ya hay una conversación (secuencia en marcha, respuesta suya o un primer mensaje reciente).
   const openChat = !!lead.lastInboundAt || !!lead.sequenceStoppedAt
     || history.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && !['cancelled', 'skipped'].includes(m.status) && Date.parse(m.createdAt) > d.now.getTime() - 30 * 86_400_000);
-  if (live && cls.auto && lead.whatsappOk && lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale)) {
+  // Con tu OK (docs/LEADS.md §WhatsApp con tu OK): según Ajustes, los dudosos (o todos) no reciben el WhatsApp 1 hasta que
+  // alguien pulsa «Le hablamos» (en el aviso por WhatsApp o en la ficha). Mientras, el email sale neutro y no promete WhatsApp.
+  const approval = d.settings.waApproval ?? 'auto';
+  const waReady = live && !!lead.whatsappOk && !!lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale);
+  const awaiting = waReady && !openChat && (approval === 'all' || (approval === 'doubtful' && !cls.auto));
+  if (awaiting && canAuto) {
+    lead.facts = { ...lead.facts, waAwaiting: true };
+    await db.updateLead(lead.id, { facts: lead.facts });
+    await db.addEvent({ tenantId: t, leadId: lead.id, at: nowIso, kind: 'note', data: { text: 'WhatsApp en espera: sale cuando alguien pulse «Le hablamos».' } });
+  }
+  if (waReady && cls.auto && approval !== 'all') {
     if (openChat) next = { channel: 'whatsapp', eta: 'today' };
     else {
       const first1 = firstSendAt(d.now, d.settings, (d.rand ?? Math.random)());
       const second = nextBusinessAt(first1.at, d.settings, 10, (d.rand ?? Math.random)());
       if (canAuto) {
-        msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa1', toAddr: lead.phoneE164, sendAt: first1.at.toISOString(), payload });
+        msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa1', toAddr: lead.phoneE164!, sendAt: first1.at.toISOString(), payload });
         // El 2 (recordatorio con el enlace de reserva) solo si está encendido, tiene plantilla y hay enlace que mandar.
-        if (wa2On(d.settings, i.type, cls.auto ? i.fields : {}, lead.locale)) msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa2', toAddr: lead.phoneE164, sendAt: second.toISOString(), payload });
+        if (wa2On(d.settings, i.type, cls.auto ? i.fields : {}, lead.locale)) msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'wa2', toAddr: lead.phoneE164!, sendAt: second.toISOString(), payload });
       }
       next = { channel: 'whatsapp', eta: first1.eta, at: first1.at.toISOString() };
     }
@@ -202,6 +212,10 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   // Aviso a quien atiende: siempre que no sea prueba ni cuarentena (eso se revisa en la bandeja).
   if (!isTest && !lead.quarantined) {
     for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'notify', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, band: score.band, ...(i.intent ? { intent: i.intent } : {}) } });
+    // Y por WhatsApp (con «Le hablamos»), a quien tenga el teléfono en Mi cuenta. El teléfono se busca al enviar.
+    if (d.settings.teamWhatsapp && d.whatsappReady && !existing) {
+      for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'team_wa', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, awaiting } });
+    }
   }
   await db.enqueue(msgs);
 

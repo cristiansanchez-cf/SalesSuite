@@ -47,6 +47,9 @@ export interface AssistantOps {
   qualifyFrom?(accountId: string, text: string): Promise<{ name: string; marked: string[]; gaps: QualQuestion[] }>;
   /** «Mañana»: el próximo paso, a mañana. */
   later?(accountId: string): Promise<{ name: string }>;
+  /** «Le hablamos» / «Lo miro yo» del aviso de lead nuevo (docs/LEADS.md §WhatsApp con tu OK). */
+  leadOk?(leadId: string): Promise<{ name: string }>;
+  leadNo?(leadId: string): Promise<{ name: string }>;
 }
 /** Una empresa del recordatorio de la mañana (lo de «Hoy»), con lo justo para proponer el mensaje. */
 export interface ReminderItem {
@@ -414,6 +417,14 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       if (what === 'done' && d.ops.done) { const r = await d.ops.done(id); return { state, replies: [say(T.doneOk(r.name, r.nextAt))] }; }
       if (what === 'later' && d.ops.later) { const r = await d.ops.later(id); return { state, replies: [say(T.laterOk(r.name))] }; }
     } catch { return { state, replies: [say(T.failedOne)] }; }
+  }
+  // ---- Botones del aviso de lead nuevo: «lead:<espacio>:<lead>:ok|no» (el espacio ya lo ha elegido hub.ts).
+  if (msg.kind === 'button' && /^lead:[0-9a-f-]{36}:[0-9a-f-]{36}:(ok|no)$/i.test(msg.id)) {
+    const [, , leadId, what] = msg.id.split(':');
+    try {
+      if (what === 'ok' && d.ops.leadOk) { const r = await d.ops.leadOk(leadId); return { state, replies: [say(T.leadOk(r.name))] }; }
+      if (what === 'no' && d.ops.leadNo) { const r = await d.ops.leadNo(leadId); return { state, replies: [say(T.leadNo(r.name))] }; }
+    } catch (e) { return { state, replies: [say(e instanceof Error && e.message ? T.leadFailed(e.message) : T.failedOne)] }; }
   }
   // La respuesta al recordatorio de la mañana (su botón de la plantilla o un «sí» / «más tarde»).
   if (state.step === 'reminder' && (msg.kind === 'button' || msg.kind === 'text')) {

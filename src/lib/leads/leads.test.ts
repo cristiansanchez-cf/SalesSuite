@@ -502,3 +502,93 @@ describe('desde la app (docs/LEADS.md §App)', () => {
     expect(spamReasons({ email: 'a@b.es', name: 'A', message: null, timeToSubmitMs: 900, recentByEmail: 0, fromApp: true })).not.toContain('too_fast');
   });
 });
+
+describe('WhatsApp con tu OK (docs/LEADS.md §WhatsApp con tu OK)', () => {
+  const deps = (over: Partial<IntakeDeps> = {}): IntakeDeps => ({
+    db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: demoLeadsStore().settings[0], now: new Date('2026-11-03T10:00:00Z'),
+    origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://enjoy.ventas.cofundo.io', whatsappReady: true, rand: () => 0.5, ...over,
+  });
+  const setup = (approval: 'auto' | 'doubtful' | 'all') => {
+    resetDemoLeads(); demoWhatsAppOutbox().length = 0;
+    const s = { ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 't1' }, wa2: { es: 't2' } }, waApproval: approval, teamWhatsapp: true };
+    demoLeadsStore().settings = [s];
+    return s;
+  };
+  const team = { phoneId: 'hub', templates: { es: 'equipo_nuevo_lead_es', en: 'equipo_nuevo_lead_en', fr: 'equipo_nuevo_lead_fr' }, wa: demoWhatsApp };
+  const brand = () => v2({ contact: { name: 'Ana Brand', email: 'ana@cervezasx.com', phone: '600111222' }, fields: { venue_name: 'Cervezas X' },
+    message: 'Somos una marca de cerveza y queremos un acuerdo de patrocinio con vuestros locales' });
+  let restore: () => void = () => {};
+  beforeEach(async () => {
+    const { demoDb } = await import('../data/store');
+    const users = demoDb().users;
+    const me = { id: '00000000-0000-4000-8000-00000000c001', email: 'cristian@enjoytheclub.es', display_name: 'Cristian', phone: '+34 600 000 001', memberships: [{ tenant_id: ENJOY, role: 'admin' as const }] };
+    users.push(me);
+    restore = () => { const i = users.indexOf(me); if (i >= 0) users.splice(i, 1); };
+    return () => restore();
+  });
+
+  test('los dudosos esperan: ningún WhatsApp al lead, y a ti te llega el aviso con «Le hablamos» / «Lo miro yo»', async () => {
+    const s = setup('doubtful');
+    await intake(deps({ settings: s }), brand());
+    const lead = demoLeadsStore().leads[0];
+    expect(lead.facts.waAwaiting).toBe(true);
+    expect(demoLeadsStore().msgs.map((m) => m.step).sort()).toEqual(['autoreply', 'notify', 'team_wa']);
+    await processDue({ db: demoLeadsDb(), mailer: { async send() {} }, whatsapp: demoWhatsApp, now: new Date('2026-11-03T10:00:05Z'), secret: 's', team });
+    const out = demoWhatsAppOutbox();
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ to: '+34600000001', template: 'equipo_nuevo_lead_es', buttons: [`lead:${ENJOY}:${lead.id}:ok`, `lead:${ENJOY}:${lead.id}:no`] });
+    expect(out[0].params[1]).toBe('Ana Brand');
+    expect(out[0].params[2]).toContain('revísalo tú');
+    expect(out[0].params[4]).toContain('Espera tu OK');
+  });
+
+  test('«Le hablamos»: lo valida y le sale el WhatsApp 1 aunque no fuera automático; dos veces, no', async () => {
+    const s = setup('doubtful');
+    await intake(deps({ settings: s }), brand());
+    const id = demoLeadsStore().leads[0].id;
+    const { createLeadsService } = await import('./service');
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    await svc.approveWhatsapp(id, { whatsappReady: true });
+    expect(demoLeadsStore().leads[0].validatedAt).toBeTruthy();
+    const l = demoLeadsStore().leads[0];
+    expect(l.facts.waAwaiting).toBe(false);
+    expect((l.facts.waApproved as { by: string }).by).toBe('u1');
+    expect(demoLeadsStore().msgs.filter((m) => m.step === 'wa1' && m.status === 'pending')).toHaveLength(1);
+    demoWhatsAppOutbox().length = 0;
+    await processDue({ db: demoLeadsDb(), mailer: { async send() {} }, whatsapp: demoWhatsApp, now: new Date(Date.now() + 60_000), secret: 's' });
+    expect(demoWhatsAppOutbox().filter((o) => o.template === 't1')).toHaveLength(1);
+    await expect(svc.approveWhatsapp(id, { whatsappReady: true })).rejects.toMatchObject({ status: 409 });
+  });
+
+  test('«Lo miro yo»: deja de esperar y no sale nada', async () => {
+    const s = setup('doubtful');
+    await intake(deps({ settings: s }), brand());
+    const id = demoLeadsStore().leads[0].id;
+    const { createLeadsService } = await import('./service');
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    await svc.dismissWhatsapp(id);
+    expect(demoLeadsStore().leads[0].facts.waAwaiting).toBe(false);
+    expect(demoLeadsStore().msgs.some((m) => m.channel === 'whatsapp' && m.step !== 'team_wa')).toBe(false);
+  });
+
+  test('«todos esperan»: ni el local claro sale solo; «nunca»: el claro sale solo y no hay espera', async () => {
+    let s = setup('all');
+    await intake(deps({ settings: s }), v2());
+    expect(demoLeadsStore().leads[0].facts.waAwaiting).toBe(true);
+    expect(demoLeadsStore().msgs.some((m) => m.step === 'wa1')).toBe(false);
+    s = setup('auto');
+    await intake(deps({ settings: s }), v2());
+    expect(demoLeadsStore().leads[0].facts.waAwaiting).toBeUndefined();
+    expect(demoLeadsStore().msgs.some((m) => m.step === 'wa1')).toBe(true);
+  });
+
+  test('sin teléfono en Mi cuenta o sin número del asistente: el aviso se salta (el email sigue)', async () => {
+    const s = setup('doubtful');
+    restore();
+    await intake(deps({ settings: s }), brand());
+    await processDue({ db: demoLeadsDb(), mailer: { async send() {} }, whatsapp: demoWhatsApp, now: new Date('2026-11-03T10:00:05Z'), secret: 's', team });
+    expect(demoLeadsStore().msgs.find((m) => m.step === 'team_wa')!.status).toBe('skipped');
+    expect(demoLeadsStore().msgs.find((m) => m.step === 'notify')!.status).toBe('sent');
+  });
+});

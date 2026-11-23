@@ -41,6 +41,8 @@ const EXACT: Record<string, T> = {
   'Faltan las props': ['The props are missing', 'Faltam as props', 'props가 없습니다'],
   'Esa clave no es un bloque de deck del catálogo (mira se_pueden_anadir en deck_ver)': ['That key is not a deck block in the catalog (see se_pueden_anadir in deck_ver)', 'Essa chave não é um bloco de deck do catálogo (vê se_pueden_anadir em deck_ver)', '그 키는 카탈로그의 덱 블록이 아닙니다(deck_ver의 se_pueden_anadir 참고)'],
   'Falta la posicion': ['The position is missing', 'Falta a posição', '위치가 없습니다'],
+  'No se le puede escribir por WhatsApp: sin teléfono válido, sin el aviso de WhatsApp aceptado, se dio de baja o WhatsApp no está configurado': ['They cannot be messaged on WhatsApp: no valid phone, the WhatsApp notice was not accepted, they unsubscribed or WhatsApp is not set up', 'Não se lhe pode escrever por WhatsApp: sem telefone válido, sem o aviso de WhatsApp aceite, cancelou ou o WhatsApp não está configurado', 'WhatsApp로 보낼 수 없습니다: 유효한 전화번호가 없거나, WhatsApp 안내를 수락하지 않았거나, 수신 거부했거나, WhatsApp이 설정되지 않았습니다'],
+  'Ya se le ha escrito por WhatsApp o ha contestado': ['They have already been messaged on WhatsApp or have replied', 'Já se lhe escreveu por WhatsApp ou já respondeu', '이미 WhatsApp을 보냈거나 답장을 받았습니다'],
   'Un deck no tiene resultado de venta': ['A deck has no sale outcome', 'Um deck não tem resultado de venda', '덱에는 판매 결과가 없습니다'],
   // Importar con tu IA (docs/IMPORTAR_IA.md)
   'Esta importación no es de la IA': ['This import is not an AI import', 'Esta importação não é da IA', '이 가져오기는 AI 가져오기가 아닙니다'],
