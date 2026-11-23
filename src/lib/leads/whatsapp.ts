@@ -64,15 +64,24 @@ export function cloudWhatsApp(token: string, fetchImpl: typeof fetch = fetch): W
       return { bytes: new Uint8Array(await f.arrayBuffer()), type: m.mime_type ?? f.headers.get('content-type') ?? 'audio/ogg' };
     },
     async sendTemplate(phoneId, to, template, locale, params) {
-      const res = await fetchImpl(`${GRAPH}/${encodeURIComponent(phoneId)}/messages`, {
+      const send = (code: string) => fetchImpl(`${GRAPH}/${encodeURIComponent(phoneId)}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messaging_product: 'whatsapp', to: to.replace(/^\+/, ''), type: 'template',
-          template: { name: template, language: { code: LANG[locale] ?? 'en' }, components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }] },
+          template: { name: template, language: { code }, components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }] },
         }),
       });
-      const body = (await res.json().catch(() => null)) as { messages?: { id: string }[]; error?: { message?: string; code?: number } } | null;
+      type Body = { messages?: { id: string }[]; error?: { message?: string; code?: number } } | null;
+      const code = LANG[locale] ?? 'en';
+      let res = await send(code);
+      let body = (await res.json().catch(() => null)) as Body;
+      // 132001 «no existe en ese idioma»: en Meta «Español» (es) y «Español (España)» (es_ES) son idiomas distintos.
+      // Si se dio de alta con el otro, se prueba ese (es_ES → es; es → es_ES).
+      if (!res.ok && body?.error?.code === 132001) {
+        const other = code.includes('_') ? code.split('_')[0]! : Object.values(LANG).find((c) => c.startsWith(`${code}_`));
+        if (other && other !== code) { res = await send(other); body = (await res.json().catch(() => null)) as Body; }
+      }
       if (!res.ok) throw new Error(`WhatsApp ${res.status}: ${body?.error?.message ?? ''} (${body?.error?.code ?? ''})`.slice(0, 300));
       // Nuestras plantillas son Utility (las de los leads y el recordatorio al equipo).
       await meterUnits('whatsapp.template', 'meta', 1, { model: 'utility' });

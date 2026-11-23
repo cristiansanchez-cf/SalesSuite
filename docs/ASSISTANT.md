@@ -220,6 +220,9 @@ pasada. Lo que hay que dar de alta en Meta (WhatsApp Manager → Plantillas):
 | `equipo_recordatorio_en` | en | Hi {{1}}, you have {{2}} follow-ups due in the CRM today: {{3}}. Shall I draft a message for each one? | «Yes, draft them» · «Later» |
 | `equipo_recordatorio_fr` | fr | Bonjour {{1}}, vous avez {{2}} relances à faire aujourd'hui dans le CRM : {{3}}. Je vous propose un message pour chacune ? | «Oui, prépare-les» · «Plus tard» |
 
+Idioma en Meta: el CRM manda «Español (España)» (`es_ES`); si Meta dice que no existe en ese idioma (132001), prueba
+«Español» (`es`). Vale cualquiera de los dos.
+
 En cada variable, Meta pide un ejemplo: {{1}} el nombre de pila («Marta»), {{2}} el número de seguimientos («3») y {{3}}
 la lista de empresas («Club Sol, Sala Marina y 1 más»).
 
