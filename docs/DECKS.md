@@ -29,3 +29,8 @@ otros bloques: se monta igual (editor de propuestas), se comparte por enlace `/d
 - Migración `20270121000000_decks.sql`: columna, `tenant_feature`, RPC, y para enjoy/oquea/sciscreen la sección activa,
   el tipo «Inversor» y los 9 bloques.
 - Smoke: `node scripts/smoke-decks.cjs` (demo).
+
+## El deck de Enjoy
+`20270122000000_deck_enjoy.sql` pone la versión 2 de seis bloques de Enjoy (portada, problema, solución, mercado,
+modelo, por qué nosotros) con lo que ya está escrito de Enjoy (`tenants/enjoy/tenant.json`, `docs/ventas/enjoy`). Solo
+si el bloque no se ha editado. Siguen como huecos: la ronda (portada y «La ronda»), TAM/SAM/SOM, tracción y equipo.
