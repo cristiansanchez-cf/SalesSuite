@@ -55,6 +55,10 @@ const PACKAGE_SNAP_KEYS = ['packages', 'currency', 'period', 'total', 'listTotal
 
 /** Un bloque de deck de inversión (docs/DECKS.md): los de tipo deck-*. */
 export const isDeckBlock = (blockType: string) => blockType.startsWith('deck-');
+/** Lo que se puede poner en un deck: sus bloques y los de las propuestas (la parte interactiva del producto), sin precios. */
+const NOT_IN_DECKS = new Set(['pricing-card', 'packages-offer']);
+export const fitsKind = (blockType: string, kind: 'proposal' | 'deck' | undefined) =>
+  kind === 'deck' ? !NOT_IN_DECKS.has(blockType) : !isDeckBlock(blockType);
 /** El orden de un deck nuevo: el de siempre (portada, problema… ronda); lo demás, por nombre, al final. */
 const DECK_ORDER = ['deck-portada', 'deck-problema', 'deck-solucion', 'deck-mercado', 'deck-traccion', 'deck-oportunidad', 'deck-modelo', 'deck-competencia', 'deck-equipo', 'deck-ronda', 'deck-ventajas', 'deck-contacto'];
 /** Se añaden a mano a un deck, no salen en uno nuevo (lib/decks/starter.ts → deckExtras). */
@@ -164,7 +168,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
     const chosen = d.priceOptionId ? options.find((o) => o.id === d.priceOptionId) : undefined;
     const payUrl = chosen?.paymentLink ? paymentUrl(chosen.paymentLink, { dossierId: d.id, couponCode: d.discount?.code ?? null }) : null;
     // Los bloques del catálogo según lo que es: los de inversión (deck-*) solo en los decks, y al revés.
-    const latest = latestByModule(catalog.filter((c) => isDeckBlock(c.blockType) === (d.kind === 'deck')));
+    const latest = latestByModule(catalog.filter((c) => fitsKind(c.blockType, d.kind)));
     const pub = toPublicDossier(d, list);
     const total = resolveTotal(pub);
 
@@ -613,8 +617,7 @@ export function createAdminService(db: AdminDb, s: AdminSession, opts: { default
 
   /** Lo que se vende: la última versión publicada de cada módulo (al colaborador, solo los suyos y sin tarifa). */
   async function catalog(opts: { kind?: 'proposal' | 'deck' } = {}): Promise<CatalogVersion[]> {
-    const deck = opts.kind === 'deck';
-    return [...latestByModule((await db.listCatalog(s.tenantId)).filter((c) => isDeckBlock(c.blockType) === deck)).values()].sort((a, b) => a.moduleName.localeCompare(b.moduleName, 'es'));
+    return [...latestByModule((await db.listCatalog(s.tenantId)).filter((c) => fitsKind(c.blockType, opts.kind))).values()].sort((a, b) => a.moduleName.localeCompare(b.moduleName, 'es'));
   }
 
   const media = createMediaService(db, s, opts.assets, canEdit);

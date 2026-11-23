@@ -12,6 +12,7 @@ export const decksMessages = defineMessages({
     opens: (n: number) => (n === 1 ? '1 apertura' : `${n} aperturas`), never: 'Sin abrir', blocks: (n: number) => (n === 1 ? '1 bloque' : `${n} bloques`),
     platform: { label: 'Startup: sección Decks', on: 'Activada', off: 'Desactivada', turnOn: 'Activar', turnOff: 'Quitar' },
     accountTitle: (n: number) => `Decks · ${n}`, newForAccount: 'Crear deck',
+    paste: { title: 'Pegar el contenido del deck', help: 'La lista de bloques en orden (JSON): cada uno con su «clave» del catálogo y, si quieres, sus «props». Sin props, va como en el catálogo (sirven también los bloques interactivos de las propuestas). El deck queda exactamente así; si algo no vale, no se cambia nada y se dice qué.', placeholder: '[{ "clave": "deck-portada", "props": { "title": "…", "tagline": "…" } }, { "clave": "pantalla-en-vivo" }]', button: 'Aplicar al deck', confirm: 'El deck quedará con estos bloques y en este orden (los demás se quitan). ¿Seguir?', done: (n: number) => `Deck actualizado: ${n} bloques` },
   },
   en: {
     nav: 'Decks', eyebrow: 'Investment', title: 'Decks',
@@ -23,6 +24,7 @@ export const decksMessages = defineMessages({
     opens: (n: number) => (n === 1 ? '1 open' : `${n} opens`), never: 'Not opened', blocks: (n: number) => (n === 1 ? '1 block' : `${n} blocks`),
     platform: { label: 'Startup: Decks section', on: 'On', off: 'Off', turnOn: 'Turn on', turnOff: 'Remove' },
     accountTitle: (n: number) => `Decks · ${n}`, newForAccount: 'Create deck',
+    paste: { title: 'Paste the deck content', help: 'The list of blocks in order (JSON): each with its catalog «clave» and, optionally, its «props». Without props it goes as in the catalog (the interactive proposal blocks work too). The deck ends up exactly like this; if anything is invalid, nothing changes and you are told what.', placeholder: '[{ "clave": "deck-portada", "props": { "title": "…", "tagline": "…" } }, { "clave": "pantalla-en-vivo" }]', button: 'Apply to the deck', confirm: 'The deck will have these blocks in this order (the rest are removed). Continue?', done: (n: number) => `Deck updated: ${n} blocks` },
   },
   pt: {
     nav: 'Decks', eyebrow: 'Investimento', title: 'Decks',
@@ -34,6 +36,7 @@ export const decksMessages = defineMessages({
     opens: (n: number) => (n === 1 ? '1 abertura' : `${n} aberturas`), never: 'Por abrir', blocks: (n: number) => (n === 1 ? '1 bloco' : `${n} blocos`),
     platform: { label: 'Startup: secção Decks', on: 'Ativada', off: 'Desativada', turnOn: 'Ativar', turnOff: 'Tirar' },
     accountTitle: (n: number) => `Decks · ${n}`, newForAccount: 'Criar deck',
+    paste: { title: 'Colar o conteúdo do deck', help: 'A lista de blocos por ordem (JSON): cada um com a sua «clave» do catálogo e, se quiseres, as suas «props». Sem props, vai como no catálogo (servem também os blocos interativos das propostas). O deck fica exatamente assim; se algo não for válido, nada muda e diz-se o quê.', placeholder: '[{ "clave": "deck-portada", "props": { "title": "…", "tagline": "…" } }, { "clave": "pantalla-en-vivo" }]', button: 'Aplicar ao deck', confirm: 'O deck ficará com estes blocos e nesta ordem (os outros saem). Continuar?', done: (n: number) => `Deck atualizado: ${n} blocos` },
   },
   ko: {
     nav: '덱', eyebrow: '투자', title: '덱',
@@ -45,5 +48,6 @@ export const decksMessages = defineMessages({
     opens: (n: number) => `열람 ${n}회`, never: '열람 없음', blocks: (n: number) => `블록 ${n}개`,
     platform: { label: '스타트업: 덱 섹션', on: '켜짐', off: '꺼짐', turnOn: '켜기', turnOff: '끄기' },
     accountTitle: (n: number) => `덱 · ${n}`, newForAccount: '덱 만들기',
+    paste: { title: '덱 내용 붙여넣기', help: '블록 목록을 순서대로(JSON): 각각 카탈로그 «clave»와 원하면 «props». props가 없으면 카탈로그 그대로입니다(제안서의 인터랙티브 블록도 됩니다). 덱은 정확히 이렇게 되며, 잘못된 것이 있으면 아무것도 바뀌지 않고 이유를 알려줍니다.', placeholder: '[{ "clave": "deck-portada", "props": { "title": "…", "tagline": "…" } }, { "clave": "pantalla-en-vivo" }]', button: '덱에 적용', confirm: '덱이 이 블록들로 이 순서대로 바뀝니다(나머지는 제거). 계속할까요?', done: (n: number) => `덱 업데이트: 블록 ${n}개` },
   },
 });

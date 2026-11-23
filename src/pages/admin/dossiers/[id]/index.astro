@@ -22,6 +22,8 @@ import { env } from '~/lib/env';
 import { flash } from '~/lib/admin/forms';
 import { CONTACT_CHANNELS, CHANNEL_NAME, type ContactChannel } from '~/lib/contact';
 import { contactError, readContact, saveContact } from '~/lib/admin/rep-contact';
+import { fillDeck, parseFill } from '~/lib/decks/fill';
+import { decksMessages } from '~/lib/i18n/messages/decks';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -32,6 +34,7 @@ const id = Astro.params.id ?? '';
 // Cuenta del CRM y decisión sobre la comisión (docs/ACCOUNTS.md).
 let result: { error: string | null; details: string[] } = { error: null, details: [] };
 const copied = { n: 0 };
+let pasteText = '';
 if (Astro.request.method === 'POST') {
   const f = await Astro.request.formData();
   const str = (k: string) => String(f.get(k) ?? '');
@@ -58,11 +61,18 @@ if (Astro.request.method === 'POST') {
       copied.n = -1;
       return;
     }
+    // Deck (docs/DECKS.md): pegar el contenido entero (lista de bloques en JSON). Si algo no vale, no cambia nada.
+    if (str('action') === 'deck-fill') {
+      pasteText = str('json').slice(0, 200_000);
+      let raw: unknown;
+      try { raw = JSON.parse(pasteText); } catch { throw new AdminError(422, 'Datos no válidos', ['JSON']); }
+      copied.n = -2 - (await fillDeck(admin, id, parseFill(raw))).blocks.length;
+    }
     if (str('action') === 'link') await admin.service.apply(id, { op: 'setAccount', accountId: str('accountId') || null });
     if (str('action') === 'decide') await admin.accounts.decide(id, str('decision') === 'approved' ? 'approved' : 'rejected');
     if (str('action') === 'declare') await admin.commissions.declareSale(id, { amount: str('amount'), offer: str('offer'), occurredAt: str('occurredAt'), kind: str('kind') || 'sale' });
   });
-  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}${copied.n === -1 ? '?ok=contact#rep-contact' : copied.n ? `?ok=copied&n=${copied.n}` : ''}`, 303);
+  if (!result.error) return Astro.redirect(`/admin/dossiers/${id}${copied.n <= -2 ? `?ok=filled&n=${-2 - copied.n}` : copied.n === -1 ? '?ok=contact#rep-contact' : copied.n ? `?ok=copied&n=${copied.n}` : ''}`, 303);
 }
 
 let state: BuilderState;
@@ -87,7 +97,9 @@ const d = state.dossier;
 if (!perms.editAllDossiers && admin.session.role !== 'partner' && d.authorId && d.authorId !== admin.session.userId) return Astro.rewrite('/404');
 const CP = copyMessages[locale];
 const copyTo = perms.editAllDossiers ? (await admin.tenantAdmin.listMembers().catch(() => [])).filter((x) => x.role !== 'partner' && x.userId !== d.authorId) : [];
-const okCopied = flash(Astro.url, { copied: CP.ok(Number(Astro.url.searchParams.get('n')) || 0), contact: t.page.contact.saved });
+const DK = decksMessages[locale];
+const okCopied = flash(Astro.url, { copied: CP.ok(Number(Astro.url.searchParams.get('n')) || 0), contact: t.page.contact.saved, filled: DK.paste.done(Number(Astro.url.searchParams.get('n')) || 0) });
+const isDeck = d.kind === 'deck';
 // Contacto de quien hace la propuesta: sale como botón principal en la propuesta (docs/PERSONALIZE.md §Contacto del comercial).
 const ownContact = !d.authorId || d.authorId === admin.session.userId;
 // Un admin también puede ponerlo por alguien de su equipo (lo pide quien monta el equipo).
@@ -234,6 +246,20 @@ const origin = requestOrigin(Astro.request, Astro.url);
     const sel = document.querySelector<HTMLSelectElement>('[data-testid="rep-contact-channel"]');
     const input = document.querySelector<HTMLInputElement>('[data-testid="rep-contact-value"]');
     sel?.addEventListener('change', () => { if (input) input.placeholder = (JSON.parse(sel.dataset.ph ?? '{}') as Record<string, string>)[sel.value] ?? ''; });
+  </script>
+  {isDeck && state.canEdit && (
+    <details class="co-inset mb-4 grid gap-2 !py-3" data-testid="deck-paste" open={!!result.error && !!pasteText}>
+      <summary class="flex cursor-pointer items-center gap-2 text-sm font-semibold"><Icon name="upload" size={16} />{DK.paste.title}</summary>
+      <form method="post" class="mt-3 grid gap-2">
+        <input type="hidden" name="action" value="deck-fill" />
+        <p class="co-help m-0">{DK.paste.help}</p>
+        <textarea class="co-input min-h-[12rem] font-mono text-xs" name="json" required spellcheck="false" placeholder={DK.paste.placeholder} data-testid="deck-paste-json">{pasteText}</textarea>
+        <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-confirm={DK.paste.confirm} data-testid="deck-paste-apply">{DK.paste.button}</button>
+      </form>
+    </details>
+  )}
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
   </script>
   <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} website={linked?.website ?? null} />
 </AdminLayout>

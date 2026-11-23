@@ -94,6 +94,27 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
     await client.close();
   }
 
+  // Pegar el contenido entero en el editor: lo que no vale se explica y no cambia nada; lo bueno deja el deck así,
+  // con bloques de deck y la pantalla en vivo de las propuestas (solo con su título cambiado).
+  await p.goto(deckUrl);
+  await p.click('[data-testid=deck-paste] summary');
+  await p.fill('[data-testid=deck-paste-json]', JSON.stringify([{ clave: 'deck-portada', props: { tagline: 'sin título' } }]));
+  await Promise.all([p.waitForLoadState('load'), p.click('[data-testid=deck-paste-apply]')]);
+  assert(/title/.test(await p.textContent('main')) && !/ok=filled/.test(p.url()), 'pegar: lo que no vale se explica');
+  await p.fill('[data-testid=deck-paste-json]', JSON.stringify([
+    { clave: 'deck-portada', props: { title: 'Documento de *inversión.*', tagline: 'Pegado (smoke)' } },
+    { clave: 'pantalla-en-vivo', parcial: true, props: { title: 'Así se ve en la sala' } },
+    { clave: 'deck-ronda' },
+  ]));
+  await Promise.all([p.waitForURL(/ok=filled&n=3/), p.click('[data-testid=deck-paste-apply]')]);
+  {
+    const g2 = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+    await g2.goto(`${link.startsWith('http') ? link : `${BASE}${link}`}?ver=scroll`);
+    const txt = await g2.evaluate(() => document.body.innerText);
+    assert((await g2.locator('[data-module]').count()) >= 3 && /Pegado \(smoke\)/.test(txt) && /Así se ve en la sala/i.test(txt) && !/Así se verá en/i.test(txt), 'pegar: el deck queda con sus 3 bloques (y la pantalla en vivo de las propuestas)');
+    await g2.close();
+  }
+
   // La ficha del inversor: tipo Inversor, sus decks y «Crear deck».
   await p.goto(`${BASE}/admin/accounts?ver=all&tipo=inversor&q=${encodeURIComponent(investor)}`);
   await p.click('[data-testid=account] a');

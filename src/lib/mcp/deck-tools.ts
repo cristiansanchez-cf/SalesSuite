@@ -6,7 +6,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { AdminContext } from '../admin/auth';
-import { AdminError, isDeckBlock } from '../admin/service';
+import { AdminError } from '../admin/service';
+import { fillDeck, parseFill, wholeProps as whole } from '../decks/fill';
 import { REGISTRY } from '../../modules/registry';
 import { deepMerge } from '../../modules/resolve';
 
@@ -32,13 +33,9 @@ function view(st: Awaited<ReturnType<AdminContext['service']['getState']>>) {
       bloque_id: i.id, posicion: n, clave: i.moduleKey, tipo: i.blockType, nombre: i.moduleName, visible: i.visible,
       props: deepMerge(i.defaultProps, i.propOverrides, true), ...(i.error ? { error: i.error } : {}),
     })),
-    se_pueden_anadir: st.catalog.filter((c) => isDeckBlock(c.blockType)).map((c) => ({ clave: c.moduleKey, tipo: c.blockType, nombre: c.moduleName })),
+    se_pueden_anadir: st.catalog.map((c) => ({ clave: c.moduleKey, tipo: c.blockType, nombre: c.moduleName })),
   };
 }
-
-/** «editar» manda el bloque entero: lo que traía el catálogo y no viene en las props, fuera (null lo quita, resolve.ts). */
-const whole = (defaults: Record<string, unknown>, props: Record<string, unknown>) =>
-  ({ ...Object.fromEntries(Object.keys(defaults).filter((k) => !(k in props)).map((k) => [k, null])), ...props });
 
 export function registerDeckTools(server: McpServer, run: Run) {
   server.registerTool('decks', {
@@ -75,6 +72,18 @@ export function registerDeckTools(server: McpServer, run: Run) {
     return view(await admin.service.getState(id));
   }));
 
+  server.registerTool('deck_rellenar', {
+    title: 'Decks: rellenar entero',
+    description: 'Deja el deck con estos bloques y en este orden (los que no estén se quitan). Cada uno: clave del catálogo (de se_pueden_anadir en deck_ver; '
+      + 'también valen los bloques interactivos de las propuestas, como la pantalla en vivo) y, si se quiere, props (el bloque entero). Sin props, va como en el catálogo; con parcial=true, solo cambian esos campos. '
+      + 'Se valida todo antes de cambiar nada.',
+    inputSchema: { deck_id: z.string().uuid(), bloques: z.array(z.object({ clave: z.string(), props: z.record(z.unknown()).optional(), parcial: z.boolean().optional(), visible: z.boolean().optional() })).min(1).max(30) },
+  }, run(async (admin, a: { deck_id: string; bloques: unknown }) => {
+    await deckOf(admin, a.deck_id);
+    const r = await fillDeck(admin, a.deck_id, parseFill(a.bloques));
+    return view(r.state);
+  }));
+
   server.registerTool('deck_bloque', {
     title: 'Decks: cambiar un bloque',
     description: 'Cambia un bloque del deck. accion: «editar» (props = todas las del bloque; se valida con su esquema), «anadir» (clave del catálogo, '
@@ -108,7 +117,7 @@ export function registerDeckTools(server: McpServer, run: Run) {
       check(it.blockType, a.props);
       out = await svc.apply(a.deck_id, { op: 'setProps', itemId: it.id, propOverrides: whole(it.defaultProps, a.props) });
     } else if (a.accion === 'anadir') {
-      const c = st.catalog.find((x) => x.moduleKey === a.clave && isDeckBlock(x.blockType));
+      const c = st.catalog.find((x) => x.moduleKey === a.clave);
       if (!c) throw new AdminError(404, 'Esa clave no es un bloque de deck del catálogo (mira se_pueden_anadir en deck_ver)');
       if (a.props) check(c.blockType, a.props);
       const before = new Set(st.items.map((i) => i.id));

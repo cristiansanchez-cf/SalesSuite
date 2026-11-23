@@ -27,8 +27,16 @@ colores y fuentes del espacio. En los textos, `*así*` sale en el color principa
   `deck-casos` no sale en un deck nuevo: se añade a mano.
 - Un `null` en lo personalizado de un bloque de deck quita ese campo del catálogo (p. ej. la pastilla de la ronda).
 
+## Pegar el contenido (editor del deck)
+«Pegar el contenido del deck»: la lista de bloques en orden, en JSON (`[{ "clave": "deck-portada", "props": {…} }, …]`).
+- Valen los bloques de deck y los de las propuestas (la parte interactiva: `pantalla-en-vivo`, `movil-invitado`,
+  `tabs-experiencias`…), menos los de precio.
+- Sin `props`, como en el catálogo; con `props`, el bloque entero; con `"parcial": true`, solo esos campos (p. ej. el
+  título de la pantalla en vivo, que en una propuesta dice «Así se verá en {company}»).
+- El deck queda exactamente así (lo que no está, fuera). Se valida todo antes: si algo no vale, no cambia nada.
+
 ## Por MCP
-`decks`, `deck_ver`, `deck_crear` y `deck_bloque` (editar el bloque entero, añadir, quitar, mover, ocultar, mostrar): la
+`decks`, `deck_ver`, `deck_crear`, `deck_rellenar` (lo mismo que pegar) y `deck_bloque` (editar el bloque entero, añadir, quitar, mover, ocultar, mostrar): la
 IA de la persona monta o corrige un deck; cada bloque se valida con su esquema y lo que no vale se explica campo a campo.
 Así se montan los decks con contenido de la empresa sin que ese contenido pase por el repositorio.
 
